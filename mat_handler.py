@@ -985,6 +985,31 @@ class matrix(object):
         """
         return pandas.DataFrame(data=self.x,index=self.row_names,columns=self.col_names)
 
+    def to_sparse(self,trunc = 0.0):
+        """get the CSR sparse matrix representation of matrix
+        Args:
+            None
+        Returns:
+            scipy sparse matrix object
+        Raises:
+            Exception rethrow on scipy.sparse import failure
+        """
+        try:
+            import scipy.sparse as sparse
+        except:
+            raise Exception("mat.to_sparse() error importing scipy.sparse")
+        iidx, jidx = [], []
+        data = []
+        nrow, ncol = self.shape
+        for i in xrange(nrow):
+            for j in xrange(ncol):
+                val = self.x[i,j]
+                if val > trunc:
+                    iidx.append(i)
+                    jidx.append(j)
+                    data.append(val)
+        # csr_matrix( (data,(row,col)), shape=(3,3)
+        return sparse.csr_matrix((data, (iidx, jidx)), shape=(self.shape))
 
 
 
@@ -1407,4 +1432,8 @@ def test():
     result = first.T * newthird * first
 
 if __name__ == "__main__":
-    test()
+    #test()
+    m = matrix()
+    m.from_binary("pest.jco")
+    sm = m.to_sparse()
+
