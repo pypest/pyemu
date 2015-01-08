@@ -1,7 +1,7 @@
 pyemu
 =====
 
-a set of python modules for linear-based computer model uncertainty analyses
+linear-based computer model uncertainty analyses
 
 What is pyemu?
 ================
@@ -44,7 +44,7 @@ How to get started with pyemu
 
 I recommend the Anaconda scientific python distribution (FREE!), which includes the dependencies for pyemu, as well as the ipython notebook:
 
-[https://store.continuum.io/cshop/anaconda/]((https://store.continuum.io/cshop/anaconda/]
+[https://store.continuum.io/cshop/anaconda/](https://store.continuum.io/cshop/anaconda/])
 
 Once installed, clone (or download) the pyemu repository and run the setup.py script from the command prompt:
 
