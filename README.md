@@ -39,5 +39,20 @@ Langevin, C.D., Thorne, D.T., Jr., Dausman, A.M., Sukop, M.C., and Guo, Weixing,
 Welter, D.E., Doherty, J.E., Hunt, R.J., Muffels, C.T., Tonkin, M.J., and Schreüder, W.A., 2012, Approaches in highly parameterized inversion—PEST++, a Parameter ESTimation code optimized for large environmental models: U.S. Geological Survey Techniques and Methods, book 7, section C5, 47 p., available at http://pubs.usgs.gov/tm/tm7c5.
 
 
+How to get started with pyemu
+=============================
 
+I recommend the Anaconda scientific python distribution (FREE!), which includes the dependencies for pyemu, as well as the ipython notebook:
+
+[https://store.continuum.io/cshop/anaconda/]((https://store.continuum.io/cshop/anaconda/]
+
+Once installed, clone (or download) the pyemu repository and run the setup.py script from the command prompt:
+
+`>>>python setup.py install`
+
+Then start the ipython notebook from the command prompt:
+
+`>>>ipython notebook`
+
+You should then be able to view the example notebooks.
 
