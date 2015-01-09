@@ -854,6 +854,21 @@ class matrix(object):
         data = np.array(zip(icount, flat), dtype=self.binary_rec_dt)
         #--write
         data.tofile(f)
+
+        for name in self.col_names:
+            if len(name) > 12:
+                name = name[:11]
+            elif len(name) < 12:
+                for i in range(len(name), 12):
+                    name = name + ' '
+            f.write(name)
+        for name in self.row_names:
+            if len(name) > 12:
+                name = name[:11]
+            elif len(name) < 12:
+                for i in range(len(name), 12):
+                    name = name + ' '
+            f.write(name)
         f.close()
 
 
@@ -881,16 +896,14 @@ class matrix(object):
         icols = ((data['j'] - 1) / nrow) + 1
         irows = data['j'] - ((icols - 1) * nrow)
         self.__x[irows - 1, icols - 1] = data["dtemp"]
-        #--read parameter names
-        col_names = []
-        for i in range(ncol):
-            cn = np.fromfile(f, self.char, count=12).tostring().lower().strip()
-            col_names.append(cn)
-        #--read obs names
-        row_names = []
-        for i in range(nrow):
-            rn = np.fromfile(f, self.char, count=20).tostring().lower().strip()
-            row_names.append(rn)
+        #--read obs and parameter names
+        col_names, row_names = [], []
+        for i in range(ncol+nrow):
+            n = np.fromfile(f, self.char, count=12).tostring().lower().strip()
+            if i < ncol:
+                col_names.append(n)
+            else:
+                row_names.append(n)
         self.col_names = col_names
         self.row_names = row_names
 
@@ -1433,7 +1446,17 @@ def test():
 
 if __name__ == "__main__":
     #test()
-    m = matrix()
-    m.from_binary("pest.jco")
-    sm = m.to_sparse()
+    a = np.random.random((10, 5))
+    row_names = []
+    [row_names.append("row_{0:02d}".format(i)) for i in xrange(10)]
+    col_names = []
+    [col_names.append("col_{0:02d}".format(i)) for i in xrange(5)]
+    m = matrix(x=a, row_names=row_names, col_names=col_names)
+    print (m.T * m).inv
+
+    m.to_binary("mat_test.bin")
+    m1 = matrix()
+    m1.from_binary("mat_test.bin")
+    print m1.row_names
+
 
