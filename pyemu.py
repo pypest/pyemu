@@ -2,6 +2,7 @@ import os
 import copy
 from datetime import datetime
 import numpy as np
+import pylab as plt
 import pandas
 import mat_handler as mhand
 import pst_handler as phand
@@ -854,6 +855,43 @@ class schur(linear_analysis):
             results[pname] = post_reduc
         return results
 
+    def uncert_percent_bar_plot(self,ax=None,names=None):
+        show = False
+        if ax is None:
+            fig = plt.figure()
+            ax = plt.subplot(111)
+            show = True
+
+        if self.parcov.isdiagonal:
+            prior = self.parcov.x.flatten()
+        else:
+            prior = np.diag(self.parcov.x)
+        post = np.diag(self.posterior_parameter.x)
+        if names is not None:
+            idx = []
+            for name in names:
+                i = self.parcov.row_names.index(name.lower())
+                idx.append(i)
+            prior = prior[idx]
+            post = post[idx]
+
+        else:
+            names = self.parcov.row_names
+        idx = np.arange(1,len(names)+1,1)
+        reduce = 100.0 * ((prior - post) / prior)
+        ax.bar(idx,reduce,width=1.0,facecolor="0.2",edgecolor="none")
+        ax.legend(loc="upper left")
+        ax.set_title("parameter uncertainty reduction")
+        ax.set_ylabel("uncertainty reduction (%)")
+        ax.set_xticks(idx+0.5)
+        ax.set_xticklabels(names,rotation=90)
+        ax.set_xlim(-1,len(names)+1)
+        if show:
+            plt.show()
+        return ax
+
+
+
 
 
 class errvar(linear_analysis):
@@ -1364,18 +1402,25 @@ class errvar(linear_analysis):
         self.log("calc third term parameter @" + str(singular_value))
         return result
 
+    def plot_ident_bar(self,singular_value,ax=None,names=None):
+        raise NotImplementedError()
 
+
+    def plot_errvar_bar(self,singular_values,ax=None):
+        raise NotImplementedError()
 
 if __name__ == "__main__":
     #la = schur(jco="pest.jco",predictions=["C_OBS13_2","c_obs10_2","c_obs05_2"],verbose=False)
     #la = schur(jco="pest.jco",predictions="C_OBS13_2",verbose=False)
-    sing_vals = np.arange(0,40)
-    predictions = ["C_obs13_2","c_obs10_2","c_obs05_2"]
-    la = errvar(jco="pest.jco",predictions=predictions,verbose=False,omitted_parameters="mult1")
-    la.drop_prior_information()
+    #sing_vals = np.arange(0,40)
+    #predictions = ["C_obs13_2","c_obs10_2","c_obs05_2"]
+    #la = errvar(jco="pest.jco",predictions=predictions,verbose=False,omitted_parameters="mult1")
+    #la.drop_prior_information()
+    la = schur(jco="pest.jco")#,predictions=predictions,verbose=False)
+    la.uncert_percent_bar_plot(names=la.parcov.row_names[:150])
     #ident_df = la.get_identifiability_dataframe(15)
 
-    df = la.get_errvar_dataframe(sing_vals)
+    #df = la.get_errvar_dataframe(sing_vals)
 
     # indent_df = la.get_identifiability_dataframe(5)
     # print indent_df
