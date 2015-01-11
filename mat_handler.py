@@ -898,12 +898,28 @@ class matrix(object):
         self.__x[irows - 1, icols - 1] = data["dtemp"]
         #--read obs and parameter names
         col_names, row_names = [], []
-        for i in range(ncol+nrow):
-            n = np.fromfile(f, self.char, count=12).tostring().lower().strip()
-            if i < ncol:
-                col_names.append(n)
-            else:
-                row_names.append(n)
+        raw = ''
+        #for i in range(ncol+nrow):
+        while True:
+            n = np.fromfile(f, self.char, count=12)
+            n = n.tostring()
+            if len(n) == 0:
+                break
+            raw += n.lower()
+            # n = n.lower().strip()
+            # if i < ncol:
+            #     col_names.append(n)
+            # else:
+            #     row_names.append(n)
+        raw = raw.split()
+        col_names = raw[:ncol]
+        row_names = raw[ncol:ncol+nrow]
+        # assert len(row_names) == nrow,"matrix.from_binary() row_names (" + \
+        #                               str(len(row_names)) + ") != nrow (" +\
+        #                               str(nrow) + ")"
+        # assert len(col_names) == ncol,"matrix.from_binary() col_names (" + \
+        #                               str(len(col_names)) + ") != ncol (" +\
+        #                               str(ncol) + ")"
         self.col_names = col_names
         self.row_names = row_names
 
@@ -996,7 +1012,11 @@ class matrix(object):
         Raises:
             None
         """
-        return pandas.DataFrame(data=self.x,index=self.row_names,columns=self.col_names)
+        if self.isdiagonal:
+            x = np.diag(self.__x[:, 0])
+        else:
+            x = self.__x
+        return pandas.DataFrame(data=x,index=self.row_names,columns=self.col_names)
 
     def to_sparse(self,trunc = 0.0):
         """get the CSR sparse matrix representation of matrix
