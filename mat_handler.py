@@ -858,17 +858,17 @@ class matrix(object):
         data.tofile(f)
 
         for name in self.col_names:
-            if len(name) > 12:
-                name = name[:11]
-            elif len(name) < 12:
-                for i in range(len(name), 12):
+            if len(name) > self.par_length:
+                name = name[:self.par_length - 1]
+            elif len(name) < self.par_length:
+                for i in range(len(name), self.par_length):
                     name = name + ' '
             f.write(name)
         for name in self.row_names:
-            if len(name) > 12:
-                name = name[:11]
-            elif len(name) < 12:
-                for i in range(len(name), 12):
+            if len(name) > self.obs_length:
+                name = name[:self.obs_length - 1]
+            elif len(name) < self.obs_length:
+                for i in range(len(name), self.obs_length):
                     name = name + ' '
             f.write(name)
         f.close()
