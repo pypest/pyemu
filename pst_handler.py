@@ -57,6 +57,48 @@ class pst(object):
 
 
     @property
+    def phi(self):
+        """get the weighted total objective function
+        """
+        sum = 0.0
+        for grp,contrib in self.phi_components.iteritems():
+            sum += contrib
+        return sum
+
+    @property
+    def phi_components(self):
+        """ get the individual components of the total objective function
+        Args:
+            None
+        Returns:
+            Dict{observation group : contribution}
+        Raises:
+            Assertion error if self.observation_data groups don't match
+            self.res groups
+
+        """
+
+        # calculate phi components for each obs group
+        components = {}
+        ogroups = self.observation_data.groupby("obgnme").groups
+        rgroups = self.res.groupby("group").groups
+        for og in ogroups.keys():
+            assert og in rgroups.keys(),"pst.adjust_weights_res() obs group " +\
+                "not found: " + str(og)
+            og_res_df = self.res.ix[rgroups[og]]
+            og_res_df.index = og_res_df.name
+            og_df = self.observation_data.ix[ogroups[og]]
+            og_df.index = og_df.obsnme
+            assert og_df.shape[0] == og_res_df.shape[0],\
+            " pst.phi_components error: group residual dataframe row lenght" +\
+            "doesn't match observation data group dataframe row length" + \
+                str(og_df.shape) + " vs. " + str(og_res_df.shape)
+            components[og] = np.sum((og_res_df["residual"] *
+                                     og_df["weight"]) ** 2)
+        return components
+
+
+    @property
     def res(self):
         """get the residuals dataframe
         """
@@ -508,7 +550,7 @@ class pst(object):
         assert os.path.exists(recfile), \
             "pst.adjust_weights_recfile(): recfile not found: " +\
             str(recfile)
-        iter_components = self.get_phi_components(recfile)
+        iter_components = self.get_phi_components_from_recfile(recfile)
         iters = iter_components.keys()
         iters.sort()
         obs = self.observation_data
@@ -526,8 +568,9 @@ class pst(object):
         if last_complete_iter is None:
             raise Exception("pst.pwtadj2(): no complete phi component" +
                             " records found in recfile")
-        self.adjust_weights_by_phi_components(self,iter_components
-                                                   [last_complete_iter])
+        self.adjust_weights_by_phi_components(
+            iter_components[last_complete_iter])
+
 
     def adjust_weights_resfile(self,resfile=None):
         """adjust the weights by phi components in a residual file
@@ -536,34 +579,25 @@ class pst(object):
         Returns:
             None
         Raises:
-            Exception if resfile can't be found
-            Exception if all obs groups are not found
+            None
         """
         if resfile is not None:
-            assert os.path.exists(resfile),"pst.adjust_weights_res(): " \
-                                           "resfile not found: " +\
-                                            str(resfile)
-            res_df = self.load_resfile(resfile)
-        else:
-            res_df = self.res
-        # calculate phi components for each obs group
-        components = {}
-        ogroups = self.observation_data.groupby("obgnme").groups
-        rgroups = res_df.groupby("obgnme").groups
-        for og in ogroups.keys():
-            assert og in rgroups.keys(),"pst.adjust_weights_res() obs group " +\
-                "not found: " + str(og)
-            og_res_df = res_df.ix[rgroups[og]]
-            components[og] = np.sum((og_res_df["residual"] *
-                                     og_res_df["weight"]) ** 2)
-        self.adjust_weights_by_phi_components(components)
+            self.resfile = resfile
+            self.__res = None
+        self.adjust_weights_by_phi_components(self.phi_components)
 
 
     def adjust_weights_by_phi_components(self, components):
         """resets the weights of observations to account for
         residual phi components.
-
-        todo: add support for res files
+        Args:
+            components (dict{obs group:phi contribution}): group specific phi
+                contributions
+        Returns:
+            None
+        Raises:
+            Exception if residual components don't agree with non-zero weighted
+                observations
         """
         obs = self.observation_data
         nz_groups = obs.groupby(obs["weight"].map(lambda x: x == 0)).groups
@@ -582,16 +616,16 @@ class pst(object):
             if False in nz_groups.keys():
                 og_nzobs = len(nz_groups[False])
             if og_nzobs == 0 and og_phi > 0:
-                raise Exception("pst.pwtadj2(): no obs with nonzero weight," +
+                raise Exception("pst.adjust_weights_by_phi_components():"
+                                " no obs with nonzero weight," +
                                 " but phi > 0 for group:" + str(ogroup))
             if og_phi > 0:
-                factor = np.sqrt(float(og_nzobs) / (og_phi * float(nzobs)))
+                factor = np.sqrt(float(og_nzobs) / float(og_phi))
                 obs.weight[idxs] *= factor
-        print obs.weight
         self.observation_data = obs
 
 
-    def get_phi_components(self, recfile):
+    def get_phi_components_from_recfile(self, recfile):
         """read the phi components from a record file
         Args:
             recfile (str) : record file
@@ -664,7 +698,6 @@ class pst(object):
         Raises:
             Exception if a key is not found in the obs or obs groups
         """
-        raise NotImplementedError("don't use this yet!!!")
         if obsgrp_dict is not None:
             res_groups = self.res.groupby("group").groups
             obs_groups = self.observation_data.groupby("obgnme").groups
@@ -715,8 +748,13 @@ class pst(object):
 
 if __name__ == "__main__":
     p = pst("pest.pst")
-
+    print p.phi_components
+    p.adjust_weights_resfile()
+    #print p.resfile
+    print p.res.name
+    print p.phi_components
+    pass
     #p.adjust_phi_by_weights(obsgrp_dict={"head":10},obs_dict={"h_obs01_1":100})
-    p.adjust_phi_by_weights(obsgrp_prefix_dict={"he":10})
+    #p.adjust_phi_by_weights(obsgrp_prefix_dict={"he":10})
     #p.zero_order_tikhonov()
     #p.write("test.pst")

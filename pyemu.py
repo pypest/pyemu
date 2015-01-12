@@ -163,7 +163,7 @@ class linear_analysis(object):
 
         """
         ext = filename.split('.')[-1].lower()
-        if ext in ["jco"]:
+        if ext in ["jco", "jcb"]:
             self.log("loading jco: "+filename)
             m = mhand.jco()
             m.from_binary(filename)
@@ -1366,42 +1366,17 @@ class errvar(linear_analysis):
 
 
 if __name__ == "__main__":
-    #la = schur(jco="pest.jco",predictions=["C_OBS13_2","c_obs10_2","c_obs05_2"],verbose=False)
-    #la = schur(jco="pest.jco",predictions="C_OBS13_2",verbose=False)
-    #sing_vals = np.arange(0,40)
-    #predictions = ["C_obs13_2","c_obs10_2","c_obs05_2"]
-    #la = errvar(jco="pest.jco",predictions=predictions,verbose=False,omitted_parameters="mult1")
+    predictions = ["pd_one","pd_ten","pd_half"]
+    #predictions = ["h01_08","h02_08"]
+    pst = phand.pst("pest.pst")
+    pst.adjust_weights_resfile()
+    la = schur(jco="pest.jco",pst=pst,predictions=predictions,verbose=False)
+    for pred in la.predictions:
+        pred.to_ascii(pred.col_names[0]+".vec")
     #la.drop_prior_information()
-    import pyemu_plot as plt
-    la = schur(jco="pest.jco")#,predictions=predictions,verbose=False)
-    print la.drop_prior_information()
+    print la.prior_parameter
+    print la.posterior_parameter
+    print la.prior_prediction
+    print la.posterior_prediction
 
-    plt.schur_percent_bar(la, names=la.parcov.row_names[:150])
-    #ident_df = la.get_identifiability_dataframe(15)
 
-    #df = la.get_errvar_dataframe(sing_vals)
-
-    # indent_df = la.get_identifiability_dataframe(5)
-    # print indent_df
-    # la.apply_karhunen_loeve_scaling()
-    # ident_df_scale = la.get_identifiability_dataframe(5)
-    # print ident_df_scale
-    #la.drop_prior_information()
-    #print la.prior_prediction
-    #print la.posterior_prediction
-    # keep_names = la.jco.obs_names
-    # keep_names.remove("c_obs15_1")
-    # la_test = la.get(la.jco.par_names,keep_names)
-    # print la_test.prior_prediction
-    # print la_test.posterior_prediction
-    #for oname in la.jco.obs_names:
-    #for oname in ["c_obs15_1"]:
-    #    print oname,la.importance_of_observations(oname)
-    #for iname, pname in enumerate(la.jco.par_names):
-    #    print pname, la.contribution_from_parameters(pname)
-    #    if iname == 2:
-    #        break
-
-    #la.two_step("pest.par")
-    #print la.contribution_from_parameters(la.jco.par_names[1:3])
-    #print la.importance_of_observations(la.jco.obs_names[3:10])
