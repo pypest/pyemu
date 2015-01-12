@@ -1,4 +1,5 @@
 import copy
+import struct
 import numpy as np
 import pandas
 import scipy.linalg as la
@@ -139,7 +140,8 @@ class matrix(object):
                                           ('icount', self.integer)])
         self.binary_rec_dt = np.dtype([('j', self.integer),
                                        ('dtemp', self.double)])
-
+        self.par_length = 12
+        self.obs_length = 20
 
     def __str__(self):
         s = "row names: " + str(self.row_names) + \
@@ -897,16 +899,24 @@ class matrix(object):
         irows = data['j'] - ((icols - 1) * nrow)
         self.__x[irows - 1, icols - 1] = data["dtemp"]
         #--read obs and parameter names
-        raw = ''
-        while True:
-            n = np.fromfile(f, self.char, count=12)
-            n = n.tostring()
-            if len(n) == 0:
-                break
-            raw += n.lower()
-        raw = raw.split()
-        self.col_names = raw[:ncol]
-        self.row_names = raw[ncol:ncol + nrow]
+        for j in xrange(self.shape[1]):
+            name = struct.unpack(str(self.par_length) + "s",
+                                 f.read(self.par_length))[0].strip().lower()
+            self.col_names.append(name)
+        for i in xrange(self.shape[0]):
+            name = struct.unpack(str(self.obs_length) + "s",
+                                 f.read(self.obs_length))[0].strip().lower()
+            self.row_names.append(name)
+        f.close()
+        for n in self.row_names:
+            print n
+        assert len(self.row_names) == self.shape[0],\
+          "matrix.from_binary() len(row_names) (" + str(len(self.row_names)) +\
+          ") != self.shape[0] (" + str(self.shape[0]) + ")"
+        assert len(self.col_names) == self.shape[1],\
+          "matrix.from_binary() len(col_names) (" + str(len(self.col_names)) +\
+          ") != self.shape[1] (" + str(self.shape[1]) + ")"
+
 
     def to_ascii(self, out_filename, icode=2):
         """write a pest-compatible ASCII matrix/vector file
