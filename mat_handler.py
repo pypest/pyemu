@@ -908,15 +908,12 @@ class matrix(object):
                                  f.read(self.obs_length))[0].strip().lower()
             self.row_names.append(name)
         f.close()
-        for n in self.row_names:
-            print n
         assert len(self.row_names) == self.shape[0],\
           "matrix.from_binary() len(row_names) (" + str(len(self.row_names)) +\
           ") != self.shape[0] (" + str(self.shape[0]) + ")"
         assert len(self.col_names) == self.shape[1],\
           "matrix.from_binary() len(col_names) (" + str(len(self.col_names)) +\
           ") != self.shape[1] (" + str(self.shape[1]) + ")"
-
 
     def to_ascii(self, out_filename, icode=2):
         """write a pest-compatible ASCII matrix/vector file
