@@ -127,6 +127,15 @@ class pst(object):
 
 
     @property
+    def nnz_obs(self):
+        nnz = 0
+        for w in self.observation_data.weight:
+            if w > 0.0:
+                nnz += 1
+        return nnz
+
+
+    @property
     def nobs(self):
         """number of observations
         """
@@ -191,7 +200,7 @@ class pst(object):
         """observation names
         """
         pass
-        return list(self.observation_data.values)
+        return list(self.observation_data.obsnme.values)
 
 
     def load_resfile(self,resfile):
@@ -443,13 +452,43 @@ class pst(object):
             new_par.index = new_par.parnme
             new_par = new_par.loc[par_names, :]
         new_obs = copy.deepcopy(self.observation_data)
+        new_res = None
+
+
+
         if obs_names is not None:
             new_obs.index = new_obs.obsnme
             new_obs = new_obs.loc[obs_names]
-        new_pst = pst("modified_from:" + self.filename, load=False)
+            if self.res is not None:
+                new_res = copy.deepcopy(self.res)
+                new_res.index = new_res.name
+                new_res = new_res.loc[obs_names,:]
+
+        new_pst = pst(self.filename, resfile=self.resfile, load=False)
         new_pst.parameter_data = new_par
         new_pst.observation_data = new_obs
-        new_pst.prior_information = self.prior_information
+        new_pst.__res = new_res
+        # this is too slow, just drop the prior info
+        # new_prior = copy.deepcopy(self.prior_information)
+        # if par_names is not None:
+        #     # need to drop all prior information that mentions parameters that
+        #     # are not in the new pst
+        #     dropped = []
+        #     for p in self.par_names:
+        #         if p not in par_names:
+        #             dropped.append(p)
+        #     if len(dropped) > 0:
+        #         # this is painful
+        #         keep_idx = []
+        #         for d in dropped:
+        #             for row in new_prior.iterrows():
+        #                 if d not in row[1].equation.lower():
+        #                     keep_idx.append(row[1].index)
+        #         new_prior = new_prior.loc[keep_idx, :]
+        if par_names is not None:
+            print "pst.get() warning: dropping all prior information in " + \
+                  " new pst instance"
+        new_pst.prior_information = self.null_prior
         new_pst.mode = self.mode
         new_pst.estimation = self.estimation
         return new_pst
@@ -748,12 +787,9 @@ class pst(object):
 
 if __name__ == "__main__":
     p = pst("pest.pst")
-    print p.phi_components
-    p.adjust_weights_resfile()
-    #print p.resfile
-    print p.res.name
-    print p.phi_components
-    pass
+    pnew = p.get(p.par_names[:10],p.obs_names[-10:])
+    print pnew.res
+    pnew.write("test.pst")
     #p.adjust_phi_by_weights(obsgrp_dict={"head":10},obs_dict={"h_obs01_1":100})
     #p.adjust_phi_by_weights(obsgrp_prefix_dict={"he":10})
     #p.zero_order_tikhonov()
