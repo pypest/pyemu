@@ -960,7 +960,36 @@ class matrix(object):
         f = open(filename, 'r')
         raw = f.readline().strip().split()
         nrow, ncol, icode = int(raw[0]), int(raw[1]), int(raw[2])
-        x = np.fromfile(f, dtype=self.double, count=nrow * ncol, sep=' ')
+        #x = np.fromfile(f, dtype=self.double, count=nrow * ncol, sep=' ')
+        # this painfully slow and ungly read is needed to catch the
+        # fortran floating points that have 3-digit exponents,
+        # which leave out the base (e.g. 'e') : "-1.23455+300"
+        count = 0
+        x = []
+        while True:
+            line = f.readline()
+            if line == '':
+                raise Exception("matrix.from_ascii() error: EOF")
+            raw = line.strip().split()
+            for r in raw:
+                try:
+                    x.append(float(r))
+                except:
+                    # overflow
+                    if '+' in r:
+                        x.append(1.0e+30)
+                    # underflow
+                    elif '-' in r:
+                        x.append(0.0)
+                    else:
+                        raise Exception("matrix.from_ascii() error: " +
+                                        " can't cast " + r + " to float")
+                count += 1
+                if count == (nrow * ncol):
+                    break
+            if count == (nrow * ncol):
+                    break
+        x = np.array(x,dtype=self.double)
         x.resize(nrow, ncol)
         self.__x = x
         line = f.readline().strip().lower()
@@ -1457,17 +1486,18 @@ def test():
 
 if __name__ == "__main__":
     #test()
-    a = np.random.random((10, 5))
-    row_names = []
-    [row_names.append("row_{0:02d}".format(i)) for i in xrange(10)]
-    col_names = []
-    [col_names.append("col_{0:02d}".format(i)) for i in xrange(5)]
-    m = matrix(x=a, row_names=row_names, col_names=col_names)
-    print (m.T * m).inv
-
-    m.to_binary("mat_test.bin")
-    m1 = matrix()
-    m1.from_binary("mat_test.bin")
-    print m1.row_names
-
+    # a = np.random.random((10, 5))
+    # row_names = []
+    # [row_names.append("row_{0:02d}".format(i)) for i in xrange(10)]
+    # col_names = []
+    # [col_names.append("col_{0:02d}".format(i)) for i in xrange(5)]
+    # m = matrix(x=a, row_names=row_names, col_names=col_names)
+    # print (m.T * m).inv
+    #
+    # m.to_binary("mat_test.bin")
+    # m1 = matrix()
+    # m1.from_binary("mat_test.bin")
+    # print m1.row_names
+    m = cov()
+    m.from_ascii("post.cov")
 
