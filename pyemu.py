@@ -728,6 +728,14 @@ class linear_analysis(object):
 
 
 
+    def adjust_obscov_resfile(self,resfile=None):
+        """reset the elements of obscov by scaling the implied weights
+        based on the phi components in res_file
+        """
+        self.pst.adjust_weights_resfile(resfile)
+        self.__obscov.from_observation_data(self.pst)
+        
+
 
 
 class schur(linear_analysis):
