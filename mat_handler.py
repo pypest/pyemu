@@ -513,6 +513,11 @@ class matrix(object):
         """
         return self.__x
 
+    @property
+    def as_2d(self):
+        if not self.isdiagonal:
+            return self.__x
+        return np.diag(self.__x.flatten())
 
     @property
     def shape(self):
@@ -1293,8 +1298,8 @@ class cov(matrix):
         idx = 0
         for i, row in pst.parameter_data.iterrows():
             t = row["partrans"]
-            if t in ["fixed", "tied"]:
-                continue
+            #if t in ["fixed", "tied"]:
+            #    continue
             lb, ub = row["parlbnd"], row["parubnd"]
             if t == "log":
                 var = ((np.log10(ub) - np.log10(lb)) / 4.0) ** 2

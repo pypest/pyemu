@@ -614,6 +614,7 @@ class linear_analysis(object):
         pi_names = list(self.pst.prior_information.pilbl.values)
         self.jco.drop(pi_names, axis=0)
         self.pst.prior_information = self.pst.null_prior
+        self.obscov.drop(pi_names,axis=0)
         self.log("removing " + str(self.pst.nprior) + " prior info from jco")
 
 
@@ -684,6 +685,48 @@ class linear_analysis(object):
             return type(self)(jco=new_jco, pst=new_pst, parcov=new_parcov,
                               obscov=new_obscov, predictions=new_preds,
                               verbose=False)
+
+
+    def draw(self, pst_prefix=None, num_reals=1, add_noise=True):
+        """draw stochastic realizations and write to pst
+        Args:
+            pst_prefix (str): realized pst output prefix
+            num_reals (int): number of realization to generate
+            add_noise (bool): add a realization of measurement noise to obs
+        Returns:
+            None
+        Raises:
+            None
+        TODO: check parameter bounds, handle log transform
+        """
+        if pst_prefix is None:
+            pst_prefix = "real."
+        pi = self.pst.prior_information
+        self.drop_prior_information()
+        print self.obscov.row_names
+        pst = self.pst.get(self.parcov.row_names, self.obscov.row_names)
+        mean_pars = pst.parameter_data.parval1
+        self.log("generating parameter realizations")
+        par_vals = np.random.multivariate_normal(mean_pars, self.parcov.as_2d,
+                                                 num_reals)
+        self.log("generating parameter realizations")
+        if add_noise:
+            self.log("generating noise realizations")
+            noise_vals = np.random.multivariate_normal(
+                np.zeros(pst.observation_data.shape[0]), self.obscov.as_2d,
+                num_reals)
+            self.log("generating noise realizations")
+        self.log("writing realized pest control files")
+        pst.prior_information = pi
+        for i in xrange(num_reals):
+            pst.parameter_data.parval1 = par_vals[i, :]
+            if add_noise:
+                pst.observation_data.obsval += noise_vals[i, :]
+            pst_name = pst_prefix + "{0:04d}.pst".format(i)
+            pst.write(pst_name)
+        self.log("writing realized pest control files")
+
+
 
 
 
@@ -1371,12 +1414,13 @@ if __name__ == "__main__":
     pst = phand.pst("pest.pst")
     pst.adjust_weights_resfile()
     la = schur(jco="pest.jco",pst=pst,predictions=predictions,verbose=False)
-    for pred in la.predictions:
-        pred.to_ascii(pred.col_names[0]+".vec")
+    la.draw()
+    #for pred in la.predictions:
+    #    pred.to_ascii(pred.col_names[0]+".vec")
     #la.drop_prior_information()
-    print la.prior_parameter
-    print la.posterior_parameter
-    print la.prior_prediction
-    print la.posterior_prediction
+    #print la.prior_parameter
+    #print la.posterior_parameter
+    #print la.prior_prediction
+    #print la.posterior_prediction
 
 

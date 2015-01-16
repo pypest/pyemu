@@ -49,8 +49,8 @@ class pst(object):
         self.obs_converters = {"obsnme": str.lower, "obgnme": str.lower}
 
         self.prior_format = {"pilbl": self.sfmt, "equation": self.sfmt_long,
-                             "obgnme": self.sfmt, "weight": self.ffmt}
-
+                             "weight": self.ffmt, "obgnme": self.sfmt}
+        self.prior_fieldnames = ["equation", "weight", "obgnme"]
         if load:
             assert os.path.exists(filename)
             self.load(filename)
@@ -290,8 +290,8 @@ class pst(object):
             f.close()
             self.prior_information = pandas.DataFrame({"pilbl": pilbl,
                                                        "equation": equation,
-                                                       "obgnme": obgnme,
-                                                       "weight": weight})
+                                                       "weight": weight,
+                                                       "obgnme": obgnme,}                                                       )
             return
 
 
@@ -410,6 +410,7 @@ class pst(object):
 
             self.prior_information.pop("pilbl")
             f_out.write(self.prior_information.to_string(colSpace=0,
+                                              columns=self.prior_fieldnames,
                                               formatters=self.prior_format,
                                               justify="right",
                                               header=False,
@@ -781,7 +782,6 @@ class pst(object):
                 res_idxs[prefix] = res_groups[True]
                 obs_idxs[prefix] = obs_groups[True]
             self.__reset_weights(obsgrp_prefix_dict, res_idxs, obs_idxs)
-
 
 
 
