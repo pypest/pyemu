@@ -103,7 +103,8 @@ class linear_analysis(object):
             private attributes
     """
     def __init__(self, jco=None, pst=None, parcov=None, obscov=None,
-                 predictions=None, ref_var=1.0, verbose=True, **kwargs):
+                 predictions=None, ref_var=1.0, verbose=True,
+                 resfile=None, **kwargs):
         self.logger = logger(verbose)
         self.log = self.logger.log
         self.jco_arg = jco
@@ -149,6 +150,25 @@ class linear_analysis(object):
             self.logger.warn("unused kwargs in type " +
                              str(self.__class__.__name__) +
                              " : " + str(kwargs))
+        # automatically do some things that should be done
+        self.log("dropping prior information")
+        pi = None
+        try:
+            pi = self.pst.prior_information
+        except:
+            self.logger.warn("unable to access self.pst: can't tell if " +
+                             " any prior information needs to be dropped.")
+        if pi is not None:
+            self.drop_prior_information()
+        self.log("dropping prior information")
+
+        self.log("scaling obscov by residual phi components")
+        try:
+            self.adjust_obscov_resfile(resfile=resfile)
+        except:
+            self.logger.warn("unable to a residuals file to " +\
+                            " scale obscov with")
+        self.log("scaling obscov by residual phi components")
 
 
     def __fromfile(self, filename):
@@ -610,12 +630,16 @@ class linear_analysis(object):
     def drop_prior_information(self):
         """drop the prior information from the jco and pst attributes
         """
-        self.log("removing " + str(self.pst.nprior) + " prior info from jco")
-        pi_names = list(self.pst.prior_information.pilbl.values)
-        self.jco.drop(pi_names, axis=0)
-        self.pst.prior_information = self.pst.null_prior
-        self.obscov.drop(pi_names,axis=0)
-        self.log("removing " + str(self.pst.nprior) + " prior info from jco")
+        nprior_str = str(self.pst.nprior)
+        self.log("removing " + nprior_str + " prior info from jco, pst, and " +
+                                            "obs cov")
+        #pi_names = list(self.pst.prior_information.pilbl.values)
+        pi_names = self.pst.prior_names
+        self.__jco.drop(pi_names, axis=0)
+        self.__pst.prior_information = self.pst.null_prior
+        self.__obscov.drop(pi_names,axis=0)
+        self.log("removing " + nprior_str + " prior info from jco, pst, and " +
+                                            "obs cov")
 
 
     def get(self,par_names=None,obs_names=None,astype=None):
@@ -947,8 +971,7 @@ class errvar(linear_analysis):
         else:
             self.omitted_predictions_arg = None
 
-        #--instantiate the parent class
-        super(errvar, self).__init__(jco, **kwargs)
+
         self.__qhalfx = None
         self.__R = None
         self.__R_sv = None
@@ -960,21 +983,23 @@ class errvar(linear_analysis):
         self.__omitted_parcov = None
         self.__omitted_predictions = None
 
+        #--instantiate the parent class
+        super(errvar, self).__init__(jco, **kwargs)
         if self.__need_omitted:
             self.log("pre-loading omitted components")
-            self._linear_analysis__load_jco()
-            self._linear_analysis__load_parcov()
-            self._linear_analysis__load_obscov()
-            if self.prediction_arg is not None:
-                self._linear_analysis__load_predictions()
+            #self._linear_analysis__load_jco()
+            #self._linear_analysis__load_parcov()
+            #self._linear_analysis__load_obscov()
+            #if self.prediction_arg is not None:
+            #    self._linear_analysis__load_predictions()
             self.__load_omitted_jco()
             self.__load_omitted_parcov()
             if self.prediction_arg is not None:
                 self.__load_omitted_predictions()
             self.log("pre-loading omitted components")
-
         self.valid_terms = ["null","solution", "omitted", "all"]
         self.valid_return_types = ["parameters", "predictions"]
+
 
 
     def __load_omitted_predictions(self):
@@ -1079,7 +1104,7 @@ class errvar(linear_analysis):
                         "errvar.__load_omitted_jco: omitted_jco " +\
                         "arg str not in jco par_names: " + str(arg)
             self.__omitted_jco = \
-                self.jco.extract(col_names=self.omitted_par_arg)
+                self._linear_analysis__jco.extract(col_names=self.omitted_par_arg)
 
 
     # these property decorators help keep from loading potentially
@@ -1421,8 +1446,13 @@ if __name__ == "__main__":
     #predictions = ["h01_08","h02_08"]
     pst = phand.pst("pest.pst")
     pst.adjust_weights_resfile()
-    la = schur(jco="pest.jco",pst=pst,predictions=predictions,verbose=False)
-    la.draw()
+    la = errvar(jco="pest.jco",pst=pst,predictions=predictions,verbose=False,
+                omitted_parameters="mult1")
+    print la.get_errvar_dataframe(np.arange(20))
+
+    la = schur(jco="pest.jco",predictions=predictions,verbose=False)
+    print la.posterior_prediction
+    #la.draw()
     #for pred in la.predictions:
     #    pred.to_ascii(pred.col_names[0]+".vec")
     #la.drop_prior_information()

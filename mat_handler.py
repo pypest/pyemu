@@ -1028,6 +1028,10 @@ class matrix(object):
         f.close()
 
 
+    def df(self):
+        return self.to_dataframe()
+
+
     def to_dataframe(self):
         """return a pandas dataframe of the matrix object
         Args:

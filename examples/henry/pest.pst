@@ -16,7 +16,7 @@ restart estimation
  p     relative    0.01  0.0  switch  2.0 parabolic
  m     relative    0.01  0.0  switch  2.0 parabolic
 * parameter data
-mult1       log    factor     1.0    0.75   1.25   m   1.0    0.0  1
+mult1       log    factor     1.0   0.25     2.5   m   1.0    0.0  1
 kr01c01     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
 kr01c02     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
 kr01c03     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1

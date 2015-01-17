@@ -127,6 +127,18 @@ class pst(object):
 
 
     @property
+    def par_data(self):
+        """convience method to access parameter_data
+        """
+        return self.parameter_data
+
+    @property
+    def obs_data(self):
+        """convience method to access observation_data
+        """
+        return self.observation_data
+
+    @property
     def nnz_obs(self):
         nnz = 0
         for w in self.observation_data.weight:
@@ -186,6 +198,9 @@ class pst(object):
         pass
         return self.prior_information.groupby("obgnme").groups.keys()
 
+    @property
+    def prior_names(self):
+        return self.prior_information.groupby("pilbl").groups.keys()
 
     @property
     def par_names(self):
