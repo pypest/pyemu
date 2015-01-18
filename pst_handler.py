@@ -20,8 +20,7 @@ class pst(object):
             Assertion error if filename cannot be found
         """
         pass
-        self.null_prior = pandas.DataFrame({"pilbl": None,
-                                            "obgnme": None}, index=[])
+
         self.filename = filename
 
         self.resfile = resfile
@@ -48,12 +47,16 @@ class pst(object):
                            "weight": self.ffmt, "obgnme": self.sfmt}
         self.obs_converters = {"obsnme": str.lower, "obgnme": str.lower}
 
+        self.null_prior = pandas.DataFrame({"pilbl": None,
+                                            "obgnme": None}, index=[])
         self.prior_format = {"pilbl": self.sfmt, "equation": self.sfmt_long,
                              "weight": self.ffmt, "obgnme": self.sfmt}
         self.prior_fieldnames = ["equation", "weight", "obgnme"]
         if load:
             assert os.path.exists(filename)
             self.load(filename)
+
+
 
 
     @property
@@ -218,6 +221,15 @@ class pst(object):
         return list(self.observation_data.obsnme.values)
 
 
+    @property
+    def regul_section(self):
+        phimlim = float(self.nnz_obs)
+        sect = "* regularisation\n"
+        sect += "{0:15.6E} {1:15.6E}\n".format(phimlim, phimlim*1.15)
+        sect += "1.0 1.0e-10 1.0e10 linreg continue\n"
+        sect += "1.3  1.0e-2  1\n"
+        return sect
+
     def load_resfile(self,resfile):
         """load the residual file
         """
@@ -325,8 +337,10 @@ class pst(object):
             "tied parameters not supported in pst.write()"
         f_in = open(self.filename, 'r')
         f_out = open(new_filename, 'w')
-        for _ in xrange(3):
+        for _ in xrange(2):
             f_out.write(f_in.readline())
+        f_in.readline()
+        f_out.write("restart "+self.mode+'\n')
         raw = f_in.readline().strip().split()
         npar_gp = len(self.par_groups)
         nobs_gp = len(self.obs_groups) + len(self.prior_groups)
@@ -431,7 +445,7 @@ class pst(object):
                                               header=False,
                                               index_names=False) + '\n')
             self.prior_information["pilbl"] = self.prior_information.index
-        #--read past an option prior information section
+        #--read past an optional prior information section
         while True:
             line = f_in.readline()
             if line == '':
@@ -440,6 +454,8 @@ class pst(object):
             if line.strip().startswith('*') or line.strip().startswith("++"):
                 f_out.write(line)
                 break
+        if self.mode.startswith("regul") and "* regul" not in line.lower():
+            f_out.write(self.regul_section)
         if line != '':
             while True:
                 line = f_in.readline()
@@ -484,23 +500,6 @@ class pst(object):
         new_pst.parameter_data = new_par
         new_pst.observation_data = new_obs
         new_pst.__res = new_res
-        # this is too slow, just drop the prior info
-        # new_prior = copy.deepcopy(self.prior_information)
-        # if par_names is not None:
-        #     # need to drop all prior information that mentions parameters that
-        #     # are not in the new pst
-        #     dropped = []
-        #     for p in self.par_names:
-        #         if p not in par_names:
-        #             dropped.append(p)
-        #     if len(dropped) > 0:
-        #         # this is painful
-        #         keep_idx = []
-        #         for d in dropped:
-        #             for row in new_prior.iterrows():
-        #                 if d not in row[1].equation.lower():
-        #                     keep_idx.append(row[1].index)
-        #         new_prior = new_prior.loc[keep_idx, :]
         if par_names is not None:
             print "pst.get() warning: dropping all prior information in " + \
                   " new pst instance"
@@ -802,9 +801,13 @@ class pst(object):
 
 if __name__ == "__main__":
     p = pst("pest.pst")
-    pnew = p.get(p.par_names[:10],p.obs_names[-10:])
-    print pnew.res
-    pnew.write("test.pst")
+    print p.mode
+    p.mode = "regularisation"
+    print p.mode
+    p.write("test.pst")
+    #pnew = p.get(p.par_names[:10],p.obs_names[-10:])
+    #print pnew.res
+    #pnew.write("test.pst")
     #p.adjust_phi_by_weights(obsgrp_dict={"head":10},obs_dict={"h_obs01_1":100})
     #p.adjust_phi_by_weights(obsgrp_prefix_dict={"he":10})
     #p.zero_order_tikhonov()
