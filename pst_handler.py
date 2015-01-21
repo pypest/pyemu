@@ -796,9 +796,34 @@ class pst(object):
             self.__reset_weights(obsgrp_prefix_dict, res_idxs, obs_idxs)
 
 
+    def proportional_weights(self,fraction_stdev=1.0, wmax=100.0):
+        """setup inversely proportional weights
+        Args:
+            fraction_stdev (float) : the fraction portion of the observation
+                val to treat as the standard deviation.  set to 1.0 for
+                inversely proportional
+            wmax (float) : maximum weight to allow
+        Returns:
+            None
+        Raises:
+            None
+        """
+        new_weights = []
+        for oval, ow in zip(self.observation_data.obsval,
+                           self.observation_data.weight):
+            if oval == 0.0:
+                ow = wmax
+            else:
+                ow = min(wmax, 1.0 / (np.abs(oval) * fraction_stdev))
+            new_weights.append(ow)
+        self.observation_data.weights = new_weights
+
 
 if __name__ == "__main__":
     p = pst("pest.pst")
+    print p.observation_data.weight
+    p.proportional_weights(0.25)
+    print p.observation_data.weight
     print p.mode
     p.mode = "regularisation"
     print p.mode
