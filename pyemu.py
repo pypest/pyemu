@@ -637,7 +637,7 @@ class linear_analysis(object):
         pi_names = self.pst.prior_names
         self.__jco.drop(pi_names, axis=0)
         self.__pst.prior_information = self.pst.null_prior
-        self.__obscov.drop(pi_names,axis=0)
+        #self.__obscov.drop(pi_names,axis=0)
         self.log("removing " + nprior_str + " prior info from jco, pst, and " +
                                             "obs cov")
 
@@ -1442,23 +1442,15 @@ class errvar(linear_analysis):
 
 
 if __name__ == "__main__":
-    predictions = ["pd_one","pd_ten","pd_half"]
-    #predictions = ["h01_08","h02_08"]
-    pst = phand.pst("pest.pst")
-    pst.adjust_weights_resfile()
-    la = errvar(jco="pest.jco",pst=pst,predictions=predictions,verbose=False,
-                omitted_parameters="mult1")
-    print la.get_errvar_dataframe(np.arange(20))
-
-    la = schur(jco="pest.jco",predictions=predictions,verbose=False)
-    print la.posterior_prediction
-    #la.draw()
-    #for pred in la.predictions:
-    #    pred.to_ascii(pred.col_names[0]+".vec")
-    #la.drop_prior_information()
-    #print la.prior_parameter
-    #print la.posterior_parameter
-    #print la.prior_prediction
-    #print la.posterior_prediction
-
-
+    # predictions = ["pd_one","pd_ten","pd_half"]
+    # pst = phand.pst("pest.pst")
+    # pst.adjust_weights_resfile()
+    # la = errvar(jco="pest.jco",pst=pst,predictions=predictions,verbose=False,
+    #             omitted_parameters="mult1")
+    # print la.get_errvar_dataframe(np.arange(20))
+    #
+    # la = schur(jco="pest.jco",predictions=predictions,verbose=False)
+    # print la.posterior_prediction
+    #
+    la = schur(jco="reg.jco")
+    print la.posterior_parameter

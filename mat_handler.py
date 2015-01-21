@@ -1258,13 +1258,13 @@ class cov(matrix):
             x[ocount] = (1.0 / w) ** 2
             ocount += 1
             onames.append(row["obsnme"].lower())
-        if pst.mode == "estimation" and pst.nprior > 0:
-            for iidx, row in pst.prior_information.iterrows():
-                w = float(row["weight"])
-                w = max(w, 1.0e-30)
-                x[ocount] = (1.0 / w) ** 2
-                ocount += 1
-                onames.append(row["pilbl"].lower())
+        # if pst.mode == "estimation" and pst.nprior > 0:
+        #     for iidx, row in pst.prior_information.iterrows():
+        #         w = float(row["weight"])
+        #         w = max(w, 1.0e-30)
+        #         x[ocount] = (1.0 / w) ** 2
+        #         ocount += 1
+        #         onames.append(row["pilbl"].lower())
         self._matrix__x = x
         self.row_names = copy.deepcopy(onames)
         self.col_names = onames
@@ -1302,8 +1302,8 @@ class cov(matrix):
         idx = 0
         for i, row in pst.parameter_data.iterrows():
             t = row["partrans"]
-            #if t in ["fixed", "tied"]:
-            #    continue
+            if t in ["fixed", "tied"]:
+                continue
             lb, ub = row["parlbnd"], row["parubnd"]
             if t == "log":
                 var = ((np.log10(ub) - np.log10(lb)) / 4.0) ** 2

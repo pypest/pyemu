@@ -486,8 +486,6 @@ class pst(object):
         new_obs = copy.deepcopy(self.observation_data)
         new_res = None
 
-
-
         if obs_names is not None:
             new_obs.index = new_obs.obsnme
             new_obs = new_obs.loc[obs_names]
@@ -500,9 +498,9 @@ class pst(object):
         new_pst.parameter_data = new_par
         new_pst.observation_data = new_obs
         new_pst.__res = new_res
-        if par_names is not None:
-            print "pst.get() warning: dropping all prior information in " + \
-                  " new pst instance"
+        #if par_names is not None:
+        #    print "pst.get() warning: dropping all prior information in " + \
+        #          " new pst instance"
         new_pst.prior_information = self.null_prior
         new_pst.mode = self.mode
         new_pst.estimation = self.estimation
