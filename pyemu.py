@@ -1266,10 +1266,13 @@ class errvar(linear_analysis):
                 x=np.zeros((self.jco.npar,self.jco.nobs)),
                 row_names=self.jco.col_names, col_names=self.jco.row_names)
             return self.__G
-        if singular_value > self.jco.npar:
+        print singular_value,self.jco.npar
+        if singular_value > min(self.pst.npar_adj,self.pst.nnz_obs):
             self.logger.warn(
-                "errvar.G(): singular_value > npar:resetting to npar")
-            singular_value = self.jco.npar
+                "errvar.G(): singular_value > min(npar,nobs):" +
+                "resetting to min(npar,nobs): " +
+                str(min(self.pst.npar_adj, self.pst.nnz_obs)))
+            singular_value = min(self.pst.npar_adj, self.pst.nnz_obs)
         self.log("calc G @" + str(singular_value))
         v1 = self.qhalfx.v[:, :singular_value]
         s1 = ((self.qhalfx.s[:singular_value]) ** 2).inv
@@ -1343,7 +1346,7 @@ class errvar(linear_analysis):
             raise Exception("errvar.second(): not predictions are set")
         self.log("calc second term prediction @" + str(singular_value))
 
-        if singular_value > self.jco.npar:
+        if singular_value > min(self.pst.npar_adj, self.pst.nnz_obs):
             inf_pred = {}
             for pred in self.predictions:
                 inf_pred[("second",pred.col_names[0])] = 1.0E+35
@@ -1401,7 +1404,7 @@ class errvar(linear_analysis):
                 zero_preds[("third", pred.col_names[0])] = 0.0
             return zero_preds
         self.log("calc third term prediction @" + str(singular_value))
-        if singular_value > self.jco.npar:
+        if singular_value > min(self.pst.npar_adj, self.pst.nnz_obs):
             inf_pred = {}
             for pred in self.predictions:
                 inf_pred[("third",pred.col_names[0])] = 1.0E+35
@@ -1442,15 +1445,15 @@ class errvar(linear_analysis):
 
 
 if __name__ == "__main__":
-    # predictions = ["pd_one","pd_ten","pd_half"]
-    # pst = phand.pst("pest.pst")
-    # pst.adjust_weights_resfile()
-    # la = errvar(jco="pest.jco",pst=pst,predictions=predictions,verbose=False,
-    #             omitted_parameters="mult1")
+    predictions = ["pd_one","pd_ten","pd_half"]
+
+    la = errvar(jco="pest.jco",predictions=predictions,verbose=False,
+                omitted_parameters="mult1")
+    print la.third_parameter(80)
     # print la.get_errvar_dataframe(np.arange(20))
     #
     # la = schur(jco="pest.jco",predictions=predictions,verbose=False)
     # print la.posterior_prediction
     #
-    la = schur(jco="reg.jco")
-    print la.posterior_parameter
+    #la = schur(jco="reg.jco")
+    #print la.posterior_parameter
