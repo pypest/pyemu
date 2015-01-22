@@ -454,8 +454,11 @@ class pst(object):
             if line.strip().startswith('*') or line.strip().startswith("++"):
                 f_out.write(line)
                 break
-        if update_regul or (self.mode.startswith("regul") and
-                            "* regul" not in line.lower()):
+        if self.mode.startswith("regul") and "* regul" not in line.lower():
+            f_out.write(self.regul_section)
+        elif update_regul:
+            for _ in xrange(4):
+                f_in.readline()
             f_out.write(self.regul_section)
         if line != '':
             while True:
