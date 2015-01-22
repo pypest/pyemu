@@ -994,8 +994,11 @@ class matrix(object):
                     break
             if count == (nrow * ncol):
                     break
+
         x = np.array(x,dtype=self.double)
         x.resize(nrow, ncol)
+
+
         self.__x = x
         line = f.readline().strip().lower()
         if not line.startswith('*'):
@@ -1009,7 +1012,7 @@ class matrix(object):
                 names.append(line)
             self.row_names = copy.deepcopy(names)
             self.col_names = names
-            self.isdiagonal = True
+
         else:
             names = []
             for i in range(nrow):
@@ -1026,6 +1029,13 @@ class matrix(object):
                 names.append(line)
             self.col_names = names
         f.close()
+        #--test for diagonal
+        if nrow == ncol:
+            diag = np.diag(np.diag(x))
+            diag_tol = 1.0e-6
+            diag_delta = np.abs(diag.sum() - x.sum())
+            if diag_delta < diag_tol:
+                self.isdiagonal = True
 
 
     def df(self):
@@ -1047,7 +1057,7 @@ class matrix(object):
             x = self.__x
         return pandas.DataFrame(data=x,index=self.row_names,columns=self.col_names)
 
-    def to_sparse(self,trunc = 0.0):
+    def to_sparse(self,trunc=0.0):
         """get the CSR sparse matrix representation of matrix
         Args:
             None
@@ -1247,8 +1257,8 @@ class cov(matrix):
             None
         """
         nobs = pst.observation_data.shape[0]
-        if pst.mode == "estimation":
-            nobs += pst.nprior
+        # if pst.mode == "estimation":
+        #     nobs += pst.nprior
         x = np.zeros((nobs, 1))
         onames = []
         ocount = 0
@@ -1494,6 +1504,12 @@ def test():
     result = first.T * newthird * first
 
 if __name__ == "__main__":
+    c1 = cov()
+    c1.from_ascii("post.cov")
+    c2 = cov()
+    c2.from_ascii("test.cov")
+    print c1.isdiagonal,c2.isdiagonal
+    print (c1 - c2).x.sum()
     #test()
     # a = np.random.random((10, 5))
     # row_names = []
