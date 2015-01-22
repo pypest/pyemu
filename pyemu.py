@@ -1266,7 +1266,6 @@ class errvar(linear_analysis):
                 x=np.zeros((self.jco.npar,self.jco.nobs)),
                 row_names=self.jco.col_names, col_names=self.jco.row_names)
             return self.__G
-        print singular_value,self.jco.npar
         if singular_value > min(self.pst.npar_adj,self.pst.nnz_obs):
             self.logger.warn(
                 "errvar.G(): singular_value > min(npar,nobs):" +
