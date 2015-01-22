@@ -1,0 +1,6 @@
+ Model predictive error variances for prediction "pd_one" ---->
+ --------------------------------------------------------------
+ Sing_val  variance_1          variance_2         variance_3          total_variance      standard_deviation
+     1    2.3775862E-02       1.5125243E-02       4.3996515E-03       4.3300756E-02       0.2080883    
+     2    2.3582745E-02       1.6250239E-02       6.7595062E-03       4.6592490E-02       0.2158529    
+     3    2.1748100E-02       6.4067134E-02       1.2840261E-02       9.8655495E-02       0.3140947    

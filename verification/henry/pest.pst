@@ -1,0 +1,1322 @@
+pcf
+* control data
+restart estimation
+   601  75  2  601  6  
+      2      5     single  point  1   0   0
+ 10.0  2.0  0.3  0.03  10  999  lamforgive
+ 3.0  3.0  0.001
+ 0.1  noaui
+ -1 0.005  4  4  0.001  4
+ 1  1  1
+* singular value decomposition
+1
+75  1.0e-7
+1  0  0
+* parameter groups
+ p     relative    0.01  0.0  switch  2.0 parabolic
+ m     relative    0.01  0.0  switch  2.0 parabolic
+* parameter data
+mult1       log    factor     1.0   0.25     2.5   m   1.0    0.0  1
+kr01c01     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c02     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c03     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c04     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c05     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c06     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c07     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c08     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c09     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c10     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c11     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c12     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c13     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c14     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c15     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c16     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c17     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c18     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c19     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c20     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c21     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c22     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c23     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c24     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c25     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c26     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c27     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c28     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c29     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c30     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c31     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c32     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c33     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c34     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c35     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c36     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c37     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c38     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c39     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c40     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c41     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c42     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c43     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c44     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c45     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c46     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c47     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c48     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c49     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c50     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c51     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c52     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c53     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c54     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c55     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c56     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c57     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c58     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c59     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr01c60     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c01     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c02     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c03     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c04     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c05     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c06     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c07     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c08     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c09     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c10     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c11     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c12     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c13     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c14     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c15     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c16     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c17     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c18     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c19     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c20     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c21     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c22     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c23     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c24     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c25     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c26     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c27     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c28     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c29     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c30     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c31     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c32     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c33     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c34     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c35     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c36     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c37     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c38     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c39     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c40     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c41     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c42     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c43     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c44     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c45     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c46     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c47     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c48     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c49     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c50     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c51     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c52     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c53     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c54     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c55     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c56     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c57     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c58     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c59     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr02c60     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c01     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c02     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c03     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c04     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c05     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c06     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c07     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c08     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c09     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c10     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c11     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c12     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c13     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c14     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c15     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c16     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c17     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c18     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c19     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c20     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c21     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c22     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c23     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c24     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c25     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c26     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c27     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c28     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c29     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c30     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c31     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c32     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c33     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c34     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c35     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c36     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c37     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c38     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c39     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c40     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c41     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c42     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c43     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c44     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c45     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c46     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c47     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c48     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c49     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c50     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c51     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c52     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c53     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c54     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c55     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c56     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c57     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c58     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c59     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr03c60     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c01     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c02     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c03     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c04     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c05     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c06     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c07     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c08     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c09     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c10     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c11     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c12     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c13     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c14     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c15     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c16     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c17     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c18     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c19     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c20     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c21     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c22     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c23     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c24     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c25     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c26     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c27     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c28     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c29     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c30     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c31     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c32     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c33     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c34     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c35     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c36     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c37     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c38     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c39     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c40     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c41     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c42     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c43     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c44     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c45     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c46     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c47     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c48     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c49     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c50     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c51     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c52     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c53     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c54     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c55     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c56     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c57     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c58     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c59     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr04c60     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c01     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c02     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c03     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c04     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c05     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c06     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c07     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c08     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c09     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c10     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c11     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c12     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c13     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c14     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c15     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c16     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c17     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c18     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c19     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c20     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c21     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c22     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c23     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c24     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c25     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c26     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c27     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c28     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c29     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c30     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c31     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c32     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c33     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c34     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c35     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c36     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c37     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c38     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c39     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c40     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c41     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c42     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c43     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c44     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c45     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c46     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c47     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c48     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c49     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c50     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c51     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c52     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c53     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c54     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c55     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c56     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c57     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c58     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c59     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr05c60     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c01     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c02     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c03     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c04     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c05     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c06     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c07     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c08     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c09     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c10     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c11     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c12     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c13     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c14     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c15     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c16     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c17     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c18     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c19     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c20     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c21     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c22     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c23     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c24     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c25     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c26     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c27     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c28     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c29     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c30     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c31     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c32     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c33     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c34     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c35     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c36     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c37     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c38     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c39     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c40     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c41     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c42     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c43     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c44     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c45     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c46     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c47     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c48     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c49     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c50     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c51     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c52     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c53     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c54     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c55     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c56     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c57     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c58     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c59     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr06c60     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c01     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c02     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c03     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c04     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c05     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c06     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c07     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c08     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c09     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c10     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c11     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c12     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c13     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c14     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c15     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c16     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c17     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c18     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c19     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c20     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c21     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c22     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c23     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c24     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c25     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c26     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c27     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c28     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c29     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c30     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c31     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c32     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c33     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c34     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c35     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c36     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c37     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c38     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c39     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c40     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c41     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c42     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c43     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c44     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c45     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c46     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c47     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c48     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c49     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c50     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c51     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c52     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c53     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c54     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c55     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c56     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c57     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c58     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c59     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr07c60     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c01     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c02     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c03     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c04     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c05     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c06     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c07     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c08     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c09     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c10     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c11     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c12     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c13     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c14     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c15     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c16     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c17     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c18     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c19     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c20     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c21     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c22     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c23     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c24     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c25     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c26     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c27     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c28     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c29     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c30     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c31     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c32     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c33     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c34     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c35     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c36     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c37     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c38     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c39     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c40     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c41     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c42     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c43     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c44     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c45     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c46     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c47     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c48     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c49     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c50     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c51     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c52     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c53     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c54     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c55     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c56     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c57     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c58     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c59     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr08c60     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c01     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c02     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c03     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c04     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c05     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c06     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c07     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c08     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c09     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c10     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c11     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c12     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c13     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c14     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c15     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c16     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c17     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c18     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c19     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c20     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c21     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c22     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c23     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c24     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c25     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c26     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c27     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c28     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c29     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c30     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c31     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c32     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c33     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c34     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c35     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c36     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c37     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c38     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c39     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c40     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c41     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c42     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c43     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c44     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c45     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c46     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c47     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c48     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c49     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c50     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c51     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c52     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c53     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c54     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c55     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c56     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c57     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c58     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c59     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr09c60     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c01     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c02     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c03     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c04     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c05     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c06     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c07     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c08     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c09     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c10     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c11     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c12     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c13     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c14     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c15     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c16     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c17     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c18     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c19     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c20     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c21     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c22     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c23     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c24     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c25     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c26     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c27     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c28     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c29     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c30     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c31     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c32     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c33     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c34     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c35     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c36     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c37     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c38     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c39     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c40     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c41     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c42     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c43     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c44     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c45     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c46     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c47     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c48     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c49     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c50     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c51     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c52     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c53     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c54     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c55     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c56     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c57     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c58     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c59     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+kr10c60     log    factor   200.0   20.0  2000.0   p   1.0    0.0  1
+* observation groups
+ regul_pp
+ conc
+ head
+ pred
+regul_p
+regul_m
+* observation data
+H_OBS01_1         5.139620e-02     1.521458e+02  head
+H_OBS01_2         2.215620e-02     0.000000e+00  head
+H_OBS02_1         4.687940e-02     1.521458e+02  head
+H_OBS02_2         2.085280e-02     0.000000e+00  head
+H_OBS03_1         3.658410e-02     1.521458e+02  head
+H_OBS03_2         1.950220e-02     0.000000e+00  head
+H_OBS04_1         2.754160e-02     1.521458e+02  head
+H_OBS04_2         1.694640e-02     0.000000e+00  head
+H_OBS05_1         2.638160e-02     1.521458e+02  head
+H_OBS05_2         7.545570e-03     0.000000e+00  head
+H_OBS06_1         5.280950e-02     1.521458e+02  head
+H_OBS06_2         2.381930e-02     0.000000e+00  head
+H_OBS07_1         4.128190e-02     1.521458e+02  head
+H_OBS07_2         2.368370e-02     0.000000e+00  head
+H_OBS08_1         3.667930e-02     1.521458e+02  head
+H_OBS08_2         2.139610e-02     0.000000e+00  head
+H_OBS09_1         3.205610e-02     1.521458e+02  head
+H_OBS09_2         9.156920e-03     0.000000e+00  head
+H_OBS10_1         1.753740e-02     1.521458e+02  head
+H_OBS10_2        -1.947420e-03     0.000000e+00  head
+H_OBS11_1         5.837570e-02     1.521458e+02  head
+H_OBS11_2         2.529130e-02     0.000000e+00  head
+H_OBS12_1         4.169660e-02     1.521458e+02  head
+H_OBS12_2         9.385400e-03     0.000000e+00  head
+H_OBS13_1         4.408040e-02     1.521458e+02  head
+H_OBS13_2        -4.330920e-03     0.000000e+00  head
+H_OBS14_1         1.456210e-02     1.521458e+02  head
+H_OBS14_2        -7.172520e-03     0.000000e+00  head
+H_OBS15_1        -7.350730e-03     1.521458e+02  head
+H_OBS15_2        -3.360780e-03     0.000000e+00  head
+H_OBS16_1         1.919970e-02     1.521458e+02  head
+H_OBS16_2         2.339900e-02     0.000000e+00  head
+H_OBS17_1         2.268410e-02     1.521458e+02  head
+H_OBS17_2         2.336660e-02     0.000000e+00  head
+H_OBS18_1         2.424730e-02     1.521458e+02  head
+H_OBS18_2         2.325720e-02     0.000000e+00  head
+H_OBS19_1         2.462710e-02     1.521458e+02  head
+H_OBS19_2         2.343140e-02     0.000000e+00  head
+H_OBS20_1         2.233840e-02     1.521458e+02  head
+H_OBS20_2         2.346510e-02     0.000000e+00  head
+H_OBS21_1         3.157410e-02     1.521458e+02  head
+H_OBS21_2         2.358500e-02     0.000000e+00  head
+C_OBS01_1         4.660110e-16     1.000000e+02  conc
+C_OBS01_2         4.303690e-15     0.000000e+00  conc
+C_OBS02_1         3.076110e-14     1.000000e+02  conc
+C_OBS02_2         1.163590e-09     0.000000e+00  conc
+C_OBS03_1         4.006330e-11     1.000000e+02  conc
+C_OBS03_2         5.849860e-06     0.000000e+00  conc
+C_OBS04_1         6.058410e-07     1.000000e+02  conc
+C_OBS04_2         5.124450e-03     0.000000e+00  conc
+C_OBS05_1         6.100240e-03     1.000000e+02  conc
+C_OBS05_2         3.906160e-01     0.000000e+00  conc
+C_OBS06_1         2.692490e-14     1.000000e+02  conc
+C_OBS06_2         4.396500e-08     0.000000e+00  conc
+C_OBS07_1         8.130690e-12     1.000000e+02  conc
+C_OBS07_2         4.376600e-03     0.000000e+00  conc
+C_OBS08_1         3.916970e-08     1.000000e+02  conc
+C_OBS08_2         9.790620e-02     0.000000e+00  conc
+C_OBS09_1         1.112030e-02     1.000000e+02  conc
+C_OBS09_2         4.976160e-01     0.000000e+00  conc
+C_OBS10_1         6.157030e-01     1.624160e+01  conc
+C_OBS10_2         9.958060e-01     0.000000e+00  conc
+C_OBS11_1         8.850320e-12     1.000000e+02  conc
+C_OBS11_2         9.801620e-04     0.000000e+00  conc
+C_OBS12_1         2.200380e-11     1.000000e+02  conc
+C_OBS12_2         4.325930e-01     0.000000e+00  conc
+C_OBS13_1         8.452830e-06     1.000000e+02  conc
+C_OBS13_2         8.338880e-01     0.000000e+00  conc
+C_OBS14_1         4.969430e-01     2.012303e+01  conc
+C_OBS14_2         9.666310e-01     0.000000e+00  conc
+C_OBS15_1         9.028350e-01     1.107622e+01  conc
+C_OBS15_2         9.996310e-01     0.000000e+00  conc
+PD_one            7.019310e+00     0.000000e+00  pred
+PD_ten            7.311900e+00     0.000000e+00  pred
+PD_half           7.893220e+00     0.000000e+00  pred
+* model command line
+ model.bat
+* model input/output
+ misc\pp_locs.tpl misc\pp_locs.dat
+ misc\par2par_coarse.tpl misc\par2par_coarse.in
+ misc\conc.ins  misc\conc.dat
+ misc\head.ins  misc\head.dat
+ misc\pred_dist_one.ins misc\pred_dist_one.dat
+ misc\pred_dist_ten.ins misc\pred_dist_ten.dat
+ misc\pred_dist_half.ins misc\pred_dist_half.dat
+* prior information
+mult1         1.0 * log(mult1) =   0.000000      1.0 regul_m
+kr01c01       1.0 * log(kr01c01) =   2.301030      1.0 regul_p
+kr01c02       1.0 * log(kr01c02) =   2.301030      1.0 regul_p
+kr01c03       1.0 * log(kr01c03) =   2.301030      1.0 regul_p
+kr01c04       1.0 * log(kr01c04) =   2.301030      1.0 regul_p
+kr01c05       1.0 * log(kr01c05) =   2.301030      1.0 regul_p
+kr01c06       1.0 * log(kr01c06) =   2.301030      1.0 regul_p
+kr01c07       1.0 * log(kr01c07) =   2.301030      1.0 regul_p
+kr01c08       1.0 * log(kr01c08) =   2.301030      1.0 regul_p
+kr01c09       1.0 * log(kr01c09) =   2.301030      1.0 regul_p
+kr01c10       1.0 * log(kr01c10) =   2.301030      1.0 regul_p
+kr01c11       1.0 * log(kr01c11) =   2.301030      1.0 regul_p
+kr01c12       1.0 * log(kr01c12) =   2.301030      1.0 regul_p
+kr01c13       1.0 * log(kr01c13) =   2.301030      1.0 regul_p
+kr01c14       1.0 * log(kr01c14) =   2.301030      1.0 regul_p
+kr01c15       1.0 * log(kr01c15) =   2.301030      1.0 regul_p
+kr01c16       1.0 * log(kr01c16) =   2.301030      1.0 regul_p
+kr01c17       1.0 * log(kr01c17) =   2.301030      1.0 regul_p
+kr01c18       1.0 * log(kr01c18) =   2.301030      1.0 regul_p
+kr01c19       1.0 * log(kr01c19) =   2.301030      1.0 regul_p
+kr01c20       1.0 * log(kr01c20) =   2.301030      1.0 regul_p
+kr01c21       1.0 * log(kr01c21) =   2.301030      1.0 regul_p
+kr01c22       1.0 * log(kr01c22) =   2.301030      1.0 regul_p
+kr01c23       1.0 * log(kr01c23) =   2.301030      1.0 regul_p
+kr01c24       1.0 * log(kr01c24) =   2.301030      1.0 regul_p
+kr01c25       1.0 * log(kr01c25) =   2.301030      1.0 regul_p
+kr01c26       1.0 * log(kr01c26) =   2.301030      1.0 regul_p
+kr01c27       1.0 * log(kr01c27) =   2.301030      1.0 regul_p
+kr01c28       1.0 * log(kr01c28) =   2.301030      1.0 regul_p
+kr01c29       1.0 * log(kr01c29) =   2.301030      1.0 regul_p
+kr01c30       1.0 * log(kr01c30) =   2.301030      1.0 regul_p
+kr01c31       1.0 * log(kr01c31) =   2.301030      1.0 regul_p
+kr01c32       1.0 * log(kr01c32) =   2.301030      1.0 regul_p
+kr01c33       1.0 * log(kr01c33) =   2.301030      1.0 regul_p
+kr01c34       1.0 * log(kr01c34) =   2.301030      1.0 regul_p
+kr01c35       1.0 * log(kr01c35) =   2.301030      1.0 regul_p
+kr01c36       1.0 * log(kr01c36) =   2.301030      1.0 regul_p
+kr01c37       1.0 * log(kr01c37) =   2.301030      1.0 regul_p
+kr01c38       1.0 * log(kr01c38) =   2.301030      1.0 regul_p
+kr01c39       1.0 * log(kr01c39) =   2.301030      1.0 regul_p
+kr01c40       1.0 * log(kr01c40) =   2.301030      1.0 regul_p
+kr01c41       1.0 * log(kr01c41) =   2.301030      1.0 regul_p
+kr01c42       1.0 * log(kr01c42) =   2.301030      1.0 regul_p
+kr01c43       1.0 * log(kr01c43) =   2.301030      1.0 regul_p
+kr01c44       1.0 * log(kr01c44) =   2.301030      1.0 regul_p
+kr01c45       1.0 * log(kr01c45) =   2.301030      1.0 regul_p
+kr01c46       1.0 * log(kr01c46) =   2.301030      1.0 regul_p
+kr01c47       1.0 * log(kr01c47) =   2.301030      1.0 regul_p
+kr01c48       1.0 * log(kr01c48) =   2.301030      1.0 regul_p
+kr01c49       1.0 * log(kr01c49) =   2.301030      1.0 regul_p
+kr01c50       1.0 * log(kr01c50) =   2.301030      1.0 regul_p
+kr01c51       1.0 * log(kr01c51) =   2.301030      1.0 regul_p
+kr01c52       1.0 * log(kr01c52) =   2.301030      1.0 regul_p
+kr01c53       1.0 * log(kr01c53) =   2.301030      1.0 regul_p
+kr01c54       1.0 * log(kr01c54) =   2.301030      1.0 regul_p
+kr01c55       1.0 * log(kr01c55) =   2.301030      1.0 regul_p
+kr01c56       1.0 * log(kr01c56) =   2.301030      1.0 regul_p
+kr01c57       1.0 * log(kr01c57) =   2.301030      1.0 regul_p
+kr01c58       1.0 * log(kr01c58) =   2.301030      1.0 regul_p
+kr01c59       1.0 * log(kr01c59) =   2.301030      1.0 regul_p
+kr01c60       1.0 * log(kr01c60) =   2.301030      1.0 regul_p
+kr02c01       1.0 * log(kr02c01) =   2.301030      1.0 regul_p
+kr02c02       1.0 * log(kr02c02) =   2.301030      1.0 regul_p
+kr02c03       1.0 * log(kr02c03) =   2.301030      1.0 regul_p
+kr02c04       1.0 * log(kr02c04) =   2.301030      1.0 regul_p
+kr02c05       1.0 * log(kr02c05) =   2.301030      1.0 regul_p
+kr02c06       1.0 * log(kr02c06) =   2.301030      1.0 regul_p
+kr02c07       1.0 * log(kr02c07) =   2.301030      1.0 regul_p
+kr02c08       1.0 * log(kr02c08) =   2.301030      1.0 regul_p
+kr02c09       1.0 * log(kr02c09) =   2.301030      1.0 regul_p
+kr02c10       1.0 * log(kr02c10) =   2.301030      1.0 regul_p
+kr02c11       1.0 * log(kr02c11) =   2.301030      1.0 regul_p
+kr02c12       1.0 * log(kr02c12) =   2.301030      1.0 regul_p
+kr02c13       1.0 * log(kr02c13) =   2.301030      1.0 regul_p
+kr02c14       1.0 * log(kr02c14) =   2.301030      1.0 regul_p
+kr02c15       1.0 * log(kr02c15) =   2.301030      1.0 regul_p
+kr02c16       1.0 * log(kr02c16) =   2.301030      1.0 regul_p
+kr02c17       1.0 * log(kr02c17) =   2.301030      1.0 regul_p
+kr02c18       1.0 * log(kr02c18) =   2.301030      1.0 regul_p
+kr02c19       1.0 * log(kr02c19) =   2.301030      1.0 regul_p
+kr02c20       1.0 * log(kr02c20) =   2.301030      1.0 regul_p
+kr02c21       1.0 * log(kr02c21) =   2.301030      1.0 regul_p
+kr02c22       1.0 * log(kr02c22) =   2.301030      1.0 regul_p
+kr02c23       1.0 * log(kr02c23) =   2.301030      1.0 regul_p
+kr02c24       1.0 * log(kr02c24) =   2.301030      1.0 regul_p
+kr02c25       1.0 * log(kr02c25) =   2.301030      1.0 regul_p
+kr02c26       1.0 * log(kr02c26) =   2.301030      1.0 regul_p
+kr02c27       1.0 * log(kr02c27) =   2.301030      1.0 regul_p
+kr02c28       1.0 * log(kr02c28) =   2.301030      1.0 regul_p
+kr02c29       1.0 * log(kr02c29) =   2.301030      1.0 regul_p
+kr02c30       1.0 * log(kr02c30) =   2.301030      1.0 regul_p
+kr02c31       1.0 * log(kr02c31) =   2.301030      1.0 regul_p
+kr02c32       1.0 * log(kr02c32) =   2.301030      1.0 regul_p
+kr02c33       1.0 * log(kr02c33) =   2.301030      1.0 regul_p
+kr02c34       1.0 * log(kr02c34) =   2.301030      1.0 regul_p
+kr02c35       1.0 * log(kr02c35) =   2.301030      1.0 regul_p
+kr02c36       1.0 * log(kr02c36) =   2.301030      1.0 regul_p
+kr02c37       1.0 * log(kr02c37) =   2.301030      1.0 regul_p
+kr02c38       1.0 * log(kr02c38) =   2.301030      1.0 regul_p
+kr02c39       1.0 * log(kr02c39) =   2.301030      1.0 regul_p
+kr02c40       1.0 * log(kr02c40) =   2.301030      1.0 regul_p
+kr02c41       1.0 * log(kr02c41) =   2.301030      1.0 regul_p
+kr02c42       1.0 * log(kr02c42) =   2.301030      1.0 regul_p
+kr02c43       1.0 * log(kr02c43) =   2.301030      1.0 regul_p
+kr02c44       1.0 * log(kr02c44) =   2.301030      1.0 regul_p
+kr02c45       1.0 * log(kr02c45) =   2.301030      1.0 regul_p
+kr02c46       1.0 * log(kr02c46) =   2.301030      1.0 regul_p
+kr02c47       1.0 * log(kr02c47) =   2.301030      1.0 regul_p
+kr02c48       1.0 * log(kr02c48) =   2.301030      1.0 regul_p
+kr02c49       1.0 * log(kr02c49) =   2.301030      1.0 regul_p
+kr02c50       1.0 * log(kr02c50) =   2.301030      1.0 regul_p
+kr02c51       1.0 * log(kr02c51) =   2.301030      1.0 regul_p
+kr02c52       1.0 * log(kr02c52) =   2.301030      1.0 regul_p
+kr02c53       1.0 * log(kr02c53) =   2.301030      1.0 regul_p
+kr02c54       1.0 * log(kr02c54) =   2.301030      1.0 regul_p
+kr02c55       1.0 * log(kr02c55) =   2.301030      1.0 regul_p
+kr02c56       1.0 * log(kr02c56) =   2.301030      1.0 regul_p
+kr02c57       1.0 * log(kr02c57) =   2.301030      1.0 regul_p
+kr02c58       1.0 * log(kr02c58) =   2.301030      1.0 regul_p
+kr02c59       1.0 * log(kr02c59) =   2.301030      1.0 regul_p
+kr02c60       1.0 * log(kr02c60) =   2.301030      1.0 regul_p
+kr03c01       1.0 * log(kr03c01) =   2.301030      1.0 regul_p
+kr03c02       1.0 * log(kr03c02) =   2.301030      1.0 regul_p
+kr03c03       1.0 * log(kr03c03) =   2.301030      1.0 regul_p
+kr03c04       1.0 * log(kr03c04) =   2.301030      1.0 regul_p
+kr03c05       1.0 * log(kr03c05) =   2.301030      1.0 regul_p
+kr03c06       1.0 * log(kr03c06) =   2.301030      1.0 regul_p
+kr03c07       1.0 * log(kr03c07) =   2.301030      1.0 regul_p
+kr03c08       1.0 * log(kr03c08) =   2.301030      1.0 regul_p
+kr03c09       1.0 * log(kr03c09) =   2.301030      1.0 regul_p
+kr03c10       1.0 * log(kr03c10) =   2.301030      1.0 regul_p
+kr03c11       1.0 * log(kr03c11) =   2.301030      1.0 regul_p
+kr03c12       1.0 * log(kr03c12) =   2.301030      1.0 regul_p
+kr03c13       1.0 * log(kr03c13) =   2.301030      1.0 regul_p
+kr03c14       1.0 * log(kr03c14) =   2.301030      1.0 regul_p
+kr03c15       1.0 * log(kr03c15) =   2.301030      1.0 regul_p
+kr03c16       1.0 * log(kr03c16) =   2.301030      1.0 regul_p
+kr03c17       1.0 * log(kr03c17) =   2.301030      1.0 regul_p
+kr03c18       1.0 * log(kr03c18) =   2.301030      1.0 regul_p
+kr03c19       1.0 * log(kr03c19) =   2.301030      1.0 regul_p
+kr03c20       1.0 * log(kr03c20) =   2.301030      1.0 regul_p
+kr03c21       1.0 * log(kr03c21) =   2.301030      1.0 regul_p
+kr03c22       1.0 * log(kr03c22) =   2.301030      1.0 regul_p
+kr03c23       1.0 * log(kr03c23) =   2.301030      1.0 regul_p
+kr03c24       1.0 * log(kr03c24) =   2.301030      1.0 regul_p
+kr03c25       1.0 * log(kr03c25) =   2.301030      1.0 regul_p
+kr03c26       1.0 * log(kr03c26) =   2.301030      1.0 regul_p
+kr03c27       1.0 * log(kr03c27) =   2.301030      1.0 regul_p
+kr03c28       1.0 * log(kr03c28) =   2.301030      1.0 regul_p
+kr03c29       1.0 * log(kr03c29) =   2.301030      1.0 regul_p
+kr03c30       1.0 * log(kr03c30) =   2.301030      1.0 regul_p
+kr03c31       1.0 * log(kr03c31) =   2.301030      1.0 regul_p
+kr03c32       1.0 * log(kr03c32) =   2.301030      1.0 regul_p
+kr03c33       1.0 * log(kr03c33) =   2.301030      1.0 regul_p
+kr03c34       1.0 * log(kr03c34) =   2.301030      1.0 regul_p
+kr03c35       1.0 * log(kr03c35) =   2.301030      1.0 regul_p
+kr03c36       1.0 * log(kr03c36) =   2.301030      1.0 regul_p
+kr03c37       1.0 * log(kr03c37) =   2.301030      1.0 regul_p
+kr03c38       1.0 * log(kr03c38) =   2.301030      1.0 regul_p
+kr03c39       1.0 * log(kr03c39) =   2.301030      1.0 regul_p
+kr03c40       1.0 * log(kr03c40) =   2.301030      1.0 regul_p
+kr03c41       1.0 * log(kr03c41) =   2.301030      1.0 regul_p
+kr03c42       1.0 * log(kr03c42) =   2.301030      1.0 regul_p
+kr03c43       1.0 * log(kr03c43) =   2.301030      1.0 regul_p
+kr03c44       1.0 * log(kr03c44) =   2.301030      1.0 regul_p
+kr03c45       1.0 * log(kr03c45) =   2.301030      1.0 regul_p
+kr03c46       1.0 * log(kr03c46) =   2.301030      1.0 regul_p
+kr03c47       1.0 * log(kr03c47) =   2.301030      1.0 regul_p
+kr03c48       1.0 * log(kr03c48) =   2.301030      1.0 regul_p
+kr03c49       1.0 * log(kr03c49) =   2.301030      1.0 regul_p
+kr03c50       1.0 * log(kr03c50) =   2.301030      1.0 regul_p
+kr03c51       1.0 * log(kr03c51) =   2.301030      1.0 regul_p
+kr03c52       1.0 * log(kr03c52) =   2.301030      1.0 regul_p
+kr03c53       1.0 * log(kr03c53) =   2.301030      1.0 regul_p
+kr03c54       1.0 * log(kr03c54) =   2.301030      1.0 regul_p
+kr03c55       1.0 * log(kr03c55) =   2.301030      1.0 regul_p
+kr03c56       1.0 * log(kr03c56) =   2.301030      1.0 regul_p
+kr03c57       1.0 * log(kr03c57) =   2.301030      1.0 regul_p
+kr03c58       1.0 * log(kr03c58) =   2.301030      1.0 regul_p
+kr03c59       1.0 * log(kr03c59) =   2.301030      1.0 regul_p
+kr03c60       1.0 * log(kr03c60) =   2.301030      1.0 regul_p
+kr04c01       1.0 * log(kr04c01) =   2.301030      1.0 regul_p
+kr04c02       1.0 * log(kr04c02) =   2.301030      1.0 regul_p
+kr04c03       1.0 * log(kr04c03) =   2.301030      1.0 regul_p
+kr04c04       1.0 * log(kr04c04) =   2.301030      1.0 regul_p
+kr04c05       1.0 * log(kr04c05) =   2.301030      1.0 regul_p
+kr04c06       1.0 * log(kr04c06) =   2.301030      1.0 regul_p
+kr04c07       1.0 * log(kr04c07) =   2.301030      1.0 regul_p
+kr04c08       1.0 * log(kr04c08) =   2.301030      1.0 regul_p
+kr04c09       1.0 * log(kr04c09) =   2.301030      1.0 regul_p
+kr04c10       1.0 * log(kr04c10) =   2.301030      1.0 regul_p
+kr04c11       1.0 * log(kr04c11) =   2.301030      1.0 regul_p
+kr04c12       1.0 * log(kr04c12) =   2.301030      1.0 regul_p
+kr04c13       1.0 * log(kr04c13) =   2.301030      1.0 regul_p
+kr04c14       1.0 * log(kr04c14) =   2.301030      1.0 regul_p
+kr04c15       1.0 * log(kr04c15) =   2.301030      1.0 regul_p
+kr04c16       1.0 * log(kr04c16) =   2.301030      1.0 regul_p
+kr04c17       1.0 * log(kr04c17) =   2.301030      1.0 regul_p
+kr04c18       1.0 * log(kr04c18) =   2.301030      1.0 regul_p
+kr04c19       1.0 * log(kr04c19) =   2.301030      1.0 regul_p
+kr04c20       1.0 * log(kr04c20) =   2.301030      1.0 regul_p
+kr04c21       1.0 * log(kr04c21) =   2.301030      1.0 regul_p
+kr04c22       1.0 * log(kr04c22) =   2.301030      1.0 regul_p
+kr04c23       1.0 * log(kr04c23) =   2.301030      1.0 regul_p
+kr04c24       1.0 * log(kr04c24) =   2.301030      1.0 regul_p
+kr04c25       1.0 * log(kr04c25) =   2.301030      1.0 regul_p
+kr04c26       1.0 * log(kr04c26) =   2.301030      1.0 regul_p
+kr04c27       1.0 * log(kr04c27) =   2.301030      1.0 regul_p
+kr04c28       1.0 * log(kr04c28) =   2.301030      1.0 regul_p
+kr04c29       1.0 * log(kr04c29) =   2.301030      1.0 regul_p
+kr04c30       1.0 * log(kr04c30) =   2.301030      1.0 regul_p
+kr04c31       1.0 * log(kr04c31) =   2.301030      1.0 regul_p
+kr04c32       1.0 * log(kr04c32) =   2.301030      1.0 regul_p
+kr04c33       1.0 * log(kr04c33) =   2.301030      1.0 regul_p
+kr04c34       1.0 * log(kr04c34) =   2.301030      1.0 regul_p
+kr04c35       1.0 * log(kr04c35) =   2.301030      1.0 regul_p
+kr04c36       1.0 * log(kr04c36) =   2.301030      1.0 regul_p
+kr04c37       1.0 * log(kr04c37) =   2.301030      1.0 regul_p
+kr04c38       1.0 * log(kr04c38) =   2.301030      1.0 regul_p
+kr04c39       1.0 * log(kr04c39) =   2.301030      1.0 regul_p
+kr04c40       1.0 * log(kr04c40) =   2.301030      1.0 regul_p
+kr04c41       1.0 * log(kr04c41) =   2.301030      1.0 regul_p
+kr04c42       1.0 * log(kr04c42) =   2.301030      1.0 regul_p
+kr04c43       1.0 * log(kr04c43) =   2.301030      1.0 regul_p
+kr04c44       1.0 * log(kr04c44) =   2.301030      1.0 regul_p
+kr04c45       1.0 * log(kr04c45) =   2.301030      1.0 regul_p
+kr04c46       1.0 * log(kr04c46) =   2.301030      1.0 regul_p
+kr04c47       1.0 * log(kr04c47) =   2.301030      1.0 regul_p
+kr04c48       1.0 * log(kr04c48) =   2.301030      1.0 regul_p
+kr04c49       1.0 * log(kr04c49) =   2.301030      1.0 regul_p
+kr04c50       1.0 * log(kr04c50) =   2.301030      1.0 regul_p
+kr04c51       1.0 * log(kr04c51) =   2.301030      1.0 regul_p
+kr04c52       1.0 * log(kr04c52) =   2.301030      1.0 regul_p
+kr04c53       1.0 * log(kr04c53) =   2.301030      1.0 regul_p
+kr04c54       1.0 * log(kr04c54) =   2.301030      1.0 regul_p
+kr04c55       1.0 * log(kr04c55) =   2.301030      1.0 regul_p
+kr04c56       1.0 * log(kr04c56) =   2.301030      1.0 regul_p
+kr04c57       1.0 * log(kr04c57) =   2.301030      1.0 regul_p
+kr04c58       1.0 * log(kr04c58) =   2.301030      1.0 regul_p
+kr04c59       1.0 * log(kr04c59) =   2.301030      1.0 regul_p
+kr04c60       1.0 * log(kr04c60) =   2.301030      1.0 regul_p
+kr05c01       1.0 * log(kr05c01) =   2.301030      1.0 regul_p
+kr05c02       1.0 * log(kr05c02) =   2.301030      1.0 regul_p
+kr05c03       1.0 * log(kr05c03) =   2.301030      1.0 regul_p
+kr05c04       1.0 * log(kr05c04) =   2.301030      1.0 regul_p
+kr05c05       1.0 * log(kr05c05) =   2.301030      1.0 regul_p
+kr05c06       1.0 * log(kr05c06) =   2.301030      1.0 regul_p
+kr05c07       1.0 * log(kr05c07) =   2.301030      1.0 regul_p
+kr05c08       1.0 * log(kr05c08) =   2.301030      1.0 regul_p
+kr05c09       1.0 * log(kr05c09) =   2.301030      1.0 regul_p
+kr05c10       1.0 * log(kr05c10) =   2.301030      1.0 regul_p
+kr05c11       1.0 * log(kr05c11) =   2.301030      1.0 regul_p
+kr05c12       1.0 * log(kr05c12) =   2.301030      1.0 regul_p
+kr05c13       1.0 * log(kr05c13) =   2.301030      1.0 regul_p
+kr05c14       1.0 * log(kr05c14) =   2.301030      1.0 regul_p
+kr05c15       1.0 * log(kr05c15) =   2.301030      1.0 regul_p
+kr05c16       1.0 * log(kr05c16) =   2.301030      1.0 regul_p
+kr05c17       1.0 * log(kr05c17) =   2.301030      1.0 regul_p
+kr05c18       1.0 * log(kr05c18) =   2.301030      1.0 regul_p
+kr05c19       1.0 * log(kr05c19) =   2.301030      1.0 regul_p
+kr05c20       1.0 * log(kr05c20) =   2.301030      1.0 regul_p
+kr05c21       1.0 * log(kr05c21) =   2.301030      1.0 regul_p
+kr05c22       1.0 * log(kr05c22) =   2.301030      1.0 regul_p
+kr05c23       1.0 * log(kr05c23) =   2.301030      1.0 regul_p
+kr05c24       1.0 * log(kr05c24) =   2.301030      1.0 regul_p
+kr05c25       1.0 * log(kr05c25) =   2.301030      1.0 regul_p
+kr05c26       1.0 * log(kr05c26) =   2.301030      1.0 regul_p
+kr05c27       1.0 * log(kr05c27) =   2.301030      1.0 regul_p
+kr05c28       1.0 * log(kr05c28) =   2.301030      1.0 regul_p
+kr05c29       1.0 * log(kr05c29) =   2.301030      1.0 regul_p
+kr05c30       1.0 * log(kr05c30) =   2.301030      1.0 regul_p
+kr05c31       1.0 * log(kr05c31) =   2.301030      1.0 regul_p
+kr05c32       1.0 * log(kr05c32) =   2.301030      1.0 regul_p
+kr05c33       1.0 * log(kr05c33) =   2.301030      1.0 regul_p
+kr05c34       1.0 * log(kr05c34) =   2.301030      1.0 regul_p
+kr05c35       1.0 * log(kr05c35) =   2.301030      1.0 regul_p
+kr05c36       1.0 * log(kr05c36) =   2.301030      1.0 regul_p
+kr05c37       1.0 * log(kr05c37) =   2.301030      1.0 regul_p
+kr05c38       1.0 * log(kr05c38) =   2.301030      1.0 regul_p
+kr05c39       1.0 * log(kr05c39) =   2.301030      1.0 regul_p
+kr05c40       1.0 * log(kr05c40) =   2.301030      1.0 regul_p
+kr05c41       1.0 * log(kr05c41) =   2.301030      1.0 regul_p
+kr05c42       1.0 * log(kr05c42) =   2.301030      1.0 regul_p
+kr05c43       1.0 * log(kr05c43) =   2.301030      1.0 regul_p
+kr05c44       1.0 * log(kr05c44) =   2.301030      1.0 regul_p
+kr05c45       1.0 * log(kr05c45) =   2.301030      1.0 regul_p
+kr05c46       1.0 * log(kr05c46) =   2.301030      1.0 regul_p
+kr05c47       1.0 * log(kr05c47) =   2.301030      1.0 regul_p
+kr05c48       1.0 * log(kr05c48) =   2.301030      1.0 regul_p
+kr05c49       1.0 * log(kr05c49) =   2.301030      1.0 regul_p
+kr05c50       1.0 * log(kr05c50) =   2.301030      1.0 regul_p
+kr05c51       1.0 * log(kr05c51) =   2.301030      1.0 regul_p
+kr05c52       1.0 * log(kr05c52) =   2.301030      1.0 regul_p
+kr05c53       1.0 * log(kr05c53) =   2.301030      1.0 regul_p
+kr05c54       1.0 * log(kr05c54) =   2.301030      1.0 regul_p
+kr05c55       1.0 * log(kr05c55) =   2.301030      1.0 regul_p
+kr05c56       1.0 * log(kr05c56) =   2.301030      1.0 regul_p
+kr05c57       1.0 * log(kr05c57) =   2.301030      1.0 regul_p
+kr05c58       1.0 * log(kr05c58) =   2.301030      1.0 regul_p
+kr05c59       1.0 * log(kr05c59) =   2.301030      1.0 regul_p
+kr05c60       1.0 * log(kr05c60) =   2.301030      1.0 regul_p
+kr06c01       1.0 * log(kr06c01) =   2.301030      1.0 regul_p
+kr06c02       1.0 * log(kr06c02) =   2.301030      1.0 regul_p
+kr06c03       1.0 * log(kr06c03) =   2.301030      1.0 regul_p
+kr06c04       1.0 * log(kr06c04) =   2.301030      1.0 regul_p
+kr06c05       1.0 * log(kr06c05) =   2.301030      1.0 regul_p
+kr06c06       1.0 * log(kr06c06) =   2.301030      1.0 regul_p
+kr06c07       1.0 * log(kr06c07) =   2.301030      1.0 regul_p
+kr06c08       1.0 * log(kr06c08) =   2.301030      1.0 regul_p
+kr06c09       1.0 * log(kr06c09) =   2.301030      1.0 regul_p
+kr06c10       1.0 * log(kr06c10) =   2.301030      1.0 regul_p
+kr06c11       1.0 * log(kr06c11) =   2.301030      1.0 regul_p
+kr06c12       1.0 * log(kr06c12) =   2.301030      1.0 regul_p
+kr06c13       1.0 * log(kr06c13) =   2.301030      1.0 regul_p
+kr06c14       1.0 * log(kr06c14) =   2.301030      1.0 regul_p
+kr06c15       1.0 * log(kr06c15) =   2.301030      1.0 regul_p
+kr06c16       1.0 * log(kr06c16) =   2.301030      1.0 regul_p
+kr06c17       1.0 * log(kr06c17) =   2.301030      1.0 regul_p
+kr06c18       1.0 * log(kr06c18) =   2.301030      1.0 regul_p
+kr06c19       1.0 * log(kr06c19) =   2.301030      1.0 regul_p
+kr06c20       1.0 * log(kr06c20) =   2.301030      1.0 regul_p
+kr06c21       1.0 * log(kr06c21) =   2.301030      1.0 regul_p
+kr06c22       1.0 * log(kr06c22) =   2.301030      1.0 regul_p
+kr06c23       1.0 * log(kr06c23) =   2.301030      1.0 regul_p
+kr06c24       1.0 * log(kr06c24) =   2.301030      1.0 regul_p
+kr06c25       1.0 * log(kr06c25) =   2.301030      1.0 regul_p
+kr06c26       1.0 * log(kr06c26) =   2.301030      1.0 regul_p
+kr06c27       1.0 * log(kr06c27) =   2.301030      1.0 regul_p
+kr06c28       1.0 * log(kr06c28) =   2.301030      1.0 regul_p
+kr06c29       1.0 * log(kr06c29) =   2.301030      1.0 regul_p
+kr06c30       1.0 * log(kr06c30) =   2.301030      1.0 regul_p
+kr06c31       1.0 * log(kr06c31) =   2.301030      1.0 regul_p
+kr06c32       1.0 * log(kr06c32) =   2.301030      1.0 regul_p
+kr06c33       1.0 * log(kr06c33) =   2.301030      1.0 regul_p
+kr06c34       1.0 * log(kr06c34) =   2.301030      1.0 regul_p
+kr06c35       1.0 * log(kr06c35) =   2.301030      1.0 regul_p
+kr06c36       1.0 * log(kr06c36) =   2.301030      1.0 regul_p
+kr06c37       1.0 * log(kr06c37) =   2.301030      1.0 regul_p
+kr06c38       1.0 * log(kr06c38) =   2.301030      1.0 regul_p
+kr06c39       1.0 * log(kr06c39) =   2.301030      1.0 regul_p
+kr06c40       1.0 * log(kr06c40) =   2.301030      1.0 regul_p
+kr06c41       1.0 * log(kr06c41) =   2.301030      1.0 regul_p
+kr06c42       1.0 * log(kr06c42) =   2.301030      1.0 regul_p
+kr06c43       1.0 * log(kr06c43) =   2.301030      1.0 regul_p
+kr06c44       1.0 * log(kr06c44) =   2.301030      1.0 regul_p
+kr06c45       1.0 * log(kr06c45) =   2.301030      1.0 regul_p
+kr06c46       1.0 * log(kr06c46) =   2.301030      1.0 regul_p
+kr06c47       1.0 * log(kr06c47) =   2.301030      1.0 regul_p
+kr06c48       1.0 * log(kr06c48) =   2.301030      1.0 regul_p
+kr06c49       1.0 * log(kr06c49) =   2.301030      1.0 regul_p
+kr06c50       1.0 * log(kr06c50) =   2.301030      1.0 regul_p
+kr06c51       1.0 * log(kr06c51) =   2.301030      1.0 regul_p
+kr06c52       1.0 * log(kr06c52) =   2.301030      1.0 regul_p
+kr06c53       1.0 * log(kr06c53) =   2.301030      1.0 regul_p
+kr06c54       1.0 * log(kr06c54) =   2.301030      1.0 regul_p
+kr06c55       1.0 * log(kr06c55) =   2.301030      1.0 regul_p
+kr06c56       1.0 * log(kr06c56) =   2.301030      1.0 regul_p
+kr06c57       1.0 * log(kr06c57) =   2.301030      1.0 regul_p
+kr06c58       1.0 * log(kr06c58) =   2.301030      1.0 regul_p
+kr06c59       1.0 * log(kr06c59) =   2.301030      1.0 regul_p
+kr06c60       1.0 * log(kr06c60) =   2.301030      1.0 regul_p
+kr07c01       1.0 * log(kr07c01) =   2.301030      1.0 regul_p
+kr07c02       1.0 * log(kr07c02) =   2.301030      1.0 regul_p
+kr07c03       1.0 * log(kr07c03) =   2.301030      1.0 regul_p
+kr07c04       1.0 * log(kr07c04) =   2.301030      1.0 regul_p
+kr07c05       1.0 * log(kr07c05) =   2.301030      1.0 regul_p
+kr07c06       1.0 * log(kr07c06) =   2.301030      1.0 regul_p
+kr07c07       1.0 * log(kr07c07) =   2.301030      1.0 regul_p
+kr07c08       1.0 * log(kr07c08) =   2.301030      1.0 regul_p
+kr07c09       1.0 * log(kr07c09) =   2.301030      1.0 regul_p
+kr07c10       1.0 * log(kr07c10) =   2.301030      1.0 regul_p
+kr07c11       1.0 * log(kr07c11) =   2.301030      1.0 regul_p
+kr07c12       1.0 * log(kr07c12) =   2.301030      1.0 regul_p
+kr07c13       1.0 * log(kr07c13) =   2.301030      1.0 regul_p
+kr07c14       1.0 * log(kr07c14) =   2.301030      1.0 regul_p
+kr07c15       1.0 * log(kr07c15) =   2.301030      1.0 regul_p
+kr07c16       1.0 * log(kr07c16) =   2.301030      1.0 regul_p
+kr07c17       1.0 * log(kr07c17) =   2.301030      1.0 regul_p
+kr07c18       1.0 * log(kr07c18) =   2.301030      1.0 regul_p
+kr07c19       1.0 * log(kr07c19) =   2.301030      1.0 regul_p
+kr07c20       1.0 * log(kr07c20) =   2.301030      1.0 regul_p
+kr07c21       1.0 * log(kr07c21) =   2.301030      1.0 regul_p
+kr07c22       1.0 * log(kr07c22) =   2.301030      1.0 regul_p
+kr07c23       1.0 * log(kr07c23) =   2.301030      1.0 regul_p
+kr07c24       1.0 * log(kr07c24) =   2.301030      1.0 regul_p
+kr07c25       1.0 * log(kr07c25) =   2.301030      1.0 regul_p
+kr07c26       1.0 * log(kr07c26) =   2.301030      1.0 regul_p
+kr07c27       1.0 * log(kr07c27) =   2.301030      1.0 regul_p
+kr07c28       1.0 * log(kr07c28) =   2.301030      1.0 regul_p
+kr07c29       1.0 * log(kr07c29) =   2.301030      1.0 regul_p
+kr07c30       1.0 * log(kr07c30) =   2.301030      1.0 regul_p
+kr07c31       1.0 * log(kr07c31) =   2.301030      1.0 regul_p
+kr07c32       1.0 * log(kr07c32) =   2.301030      1.0 regul_p
+kr07c33       1.0 * log(kr07c33) =   2.301030      1.0 regul_p
+kr07c34       1.0 * log(kr07c34) =   2.301030      1.0 regul_p
+kr07c35       1.0 * log(kr07c35) =   2.301030      1.0 regul_p
+kr07c36       1.0 * log(kr07c36) =   2.301030      1.0 regul_p
+kr07c37       1.0 * log(kr07c37) =   2.301030      1.0 regul_p
+kr07c38       1.0 * log(kr07c38) =   2.301030      1.0 regul_p
+kr07c39       1.0 * log(kr07c39) =   2.301030      1.0 regul_p
+kr07c40       1.0 * log(kr07c40) =   2.301030      1.0 regul_p
+kr07c41       1.0 * log(kr07c41) =   2.301030      1.0 regul_p
+kr07c42       1.0 * log(kr07c42) =   2.301030      1.0 regul_p
+kr07c43       1.0 * log(kr07c43) =   2.301030      1.0 regul_p
+kr07c44       1.0 * log(kr07c44) =   2.301030      1.0 regul_p
+kr07c45       1.0 * log(kr07c45) =   2.301030      1.0 regul_p
+kr07c46       1.0 * log(kr07c46) =   2.301030      1.0 regul_p
+kr07c47       1.0 * log(kr07c47) =   2.301030      1.0 regul_p
+kr07c48       1.0 * log(kr07c48) =   2.301030      1.0 regul_p
+kr07c49       1.0 * log(kr07c49) =   2.301030      1.0 regul_p
+kr07c50       1.0 * log(kr07c50) =   2.301030      1.0 regul_p
+kr07c51       1.0 * log(kr07c51) =   2.301030      1.0 regul_p
+kr07c52       1.0 * log(kr07c52) =   2.301030      1.0 regul_p
+kr07c53       1.0 * log(kr07c53) =   2.301030      1.0 regul_p
+kr07c54       1.0 * log(kr07c54) =   2.301030      1.0 regul_p
+kr07c55       1.0 * log(kr07c55) =   2.301030      1.0 regul_p
+kr07c56       1.0 * log(kr07c56) =   2.301030      1.0 regul_p
+kr07c57       1.0 * log(kr07c57) =   2.301030      1.0 regul_p
+kr07c58       1.0 * log(kr07c58) =   2.301030      1.0 regul_p
+kr07c59       1.0 * log(kr07c59) =   2.301030      1.0 regul_p
+kr07c60       1.0 * log(kr07c60) =   2.301030      1.0 regul_p
+kr08c01       1.0 * log(kr08c01) =   2.301030      1.0 regul_p
+kr08c02       1.0 * log(kr08c02) =   2.301030      1.0 regul_p
+kr08c03       1.0 * log(kr08c03) =   2.301030      1.0 regul_p
+kr08c04       1.0 * log(kr08c04) =   2.301030      1.0 regul_p
+kr08c05       1.0 * log(kr08c05) =   2.301030      1.0 regul_p
+kr08c06       1.0 * log(kr08c06) =   2.301030      1.0 regul_p
+kr08c07       1.0 * log(kr08c07) =   2.301030      1.0 regul_p
+kr08c08       1.0 * log(kr08c08) =   2.301030      1.0 regul_p
+kr08c09       1.0 * log(kr08c09) =   2.301030      1.0 regul_p
+kr08c10       1.0 * log(kr08c10) =   2.301030      1.0 regul_p
+kr08c11       1.0 * log(kr08c11) =   2.301030      1.0 regul_p
+kr08c12       1.0 * log(kr08c12) =   2.301030      1.0 regul_p
+kr08c13       1.0 * log(kr08c13) =   2.301030      1.0 regul_p
+kr08c14       1.0 * log(kr08c14) =   2.301030      1.0 regul_p
+kr08c15       1.0 * log(kr08c15) =   2.301030      1.0 regul_p
+kr08c16       1.0 * log(kr08c16) =   2.301030      1.0 regul_p
+kr08c17       1.0 * log(kr08c17) =   2.301030      1.0 regul_p
+kr08c18       1.0 * log(kr08c18) =   2.301030      1.0 regul_p
+kr08c19       1.0 * log(kr08c19) =   2.301030      1.0 regul_p
+kr08c20       1.0 * log(kr08c20) =   2.301030      1.0 regul_p
+kr08c21       1.0 * log(kr08c21) =   2.301030      1.0 regul_p
+kr08c22       1.0 * log(kr08c22) =   2.301030      1.0 regul_p
+kr08c23       1.0 * log(kr08c23) =   2.301030      1.0 regul_p
+kr08c24       1.0 * log(kr08c24) =   2.301030      1.0 regul_p
+kr08c25       1.0 * log(kr08c25) =   2.301030      1.0 regul_p
+kr08c26       1.0 * log(kr08c26) =   2.301030      1.0 regul_p
+kr08c27       1.0 * log(kr08c27) =   2.301030      1.0 regul_p
+kr08c28       1.0 * log(kr08c28) =   2.301030      1.0 regul_p
+kr08c29       1.0 * log(kr08c29) =   2.301030      1.0 regul_p
+kr08c30       1.0 * log(kr08c30) =   2.301030      1.0 regul_p
+kr08c31       1.0 * log(kr08c31) =   2.301030      1.0 regul_p
+kr08c32       1.0 * log(kr08c32) =   2.301030      1.0 regul_p
+kr08c33       1.0 * log(kr08c33) =   2.301030      1.0 regul_p
+kr08c34       1.0 * log(kr08c34) =   2.301030      1.0 regul_p
+kr08c35       1.0 * log(kr08c35) =   2.301030      1.0 regul_p
+kr08c36       1.0 * log(kr08c36) =   2.301030      1.0 regul_p
+kr08c37       1.0 * log(kr08c37) =   2.301030      1.0 regul_p
+kr08c38       1.0 * log(kr08c38) =   2.301030      1.0 regul_p
+kr08c39       1.0 * log(kr08c39) =   2.301030      1.0 regul_p
+kr08c40       1.0 * log(kr08c40) =   2.301030      1.0 regul_p
+kr08c41       1.0 * log(kr08c41) =   2.301030      1.0 regul_p
+kr08c42       1.0 * log(kr08c42) =   2.301030      1.0 regul_p
+kr08c43       1.0 * log(kr08c43) =   2.301030      1.0 regul_p
+kr08c44       1.0 * log(kr08c44) =   2.301030      1.0 regul_p
+kr08c45       1.0 * log(kr08c45) =   2.301030      1.0 regul_p
+kr08c46       1.0 * log(kr08c46) =   2.301030      1.0 regul_p
+kr08c47       1.0 * log(kr08c47) =   2.301030      1.0 regul_p
+kr08c48       1.0 * log(kr08c48) =   2.301030      1.0 regul_p
+kr08c49       1.0 * log(kr08c49) =   2.301030      1.0 regul_p
+kr08c50       1.0 * log(kr08c50) =   2.301030      1.0 regul_p
+kr08c51       1.0 * log(kr08c51) =   2.301030      1.0 regul_p
+kr08c52       1.0 * log(kr08c52) =   2.301030      1.0 regul_p
+kr08c53       1.0 * log(kr08c53) =   2.301030      1.0 regul_p
+kr08c54       1.0 * log(kr08c54) =   2.301030      1.0 regul_p
+kr08c55       1.0 * log(kr08c55) =   2.301030      1.0 regul_p
+kr08c56       1.0 * log(kr08c56) =   2.301030      1.0 regul_p
+kr08c57       1.0 * log(kr08c57) =   2.301030      1.0 regul_p
+kr08c58       1.0 * log(kr08c58) =   2.301030      1.0 regul_p
+kr08c59       1.0 * log(kr08c59) =   2.301030      1.0 regul_p
+kr08c60       1.0 * log(kr08c60) =   2.301030      1.0 regul_p
+kr09c01       1.0 * log(kr09c01) =   2.301030      1.0 regul_p
+kr09c02       1.0 * log(kr09c02) =   2.301030      1.0 regul_p
+kr09c03       1.0 * log(kr09c03) =   2.301030      1.0 regul_p
+kr09c04       1.0 * log(kr09c04) =   2.301030      1.0 regul_p
+kr09c05       1.0 * log(kr09c05) =   2.301030      1.0 regul_p
+kr09c06       1.0 * log(kr09c06) =   2.301030      1.0 regul_p
+kr09c07       1.0 * log(kr09c07) =   2.301030      1.0 regul_p
+kr09c08       1.0 * log(kr09c08) =   2.301030      1.0 regul_p
+kr09c09       1.0 * log(kr09c09) =   2.301030      1.0 regul_p
+kr09c10       1.0 * log(kr09c10) =   2.301030      1.0 regul_p
+kr09c11       1.0 * log(kr09c11) =   2.301030      1.0 regul_p
+kr09c12       1.0 * log(kr09c12) =   2.301030      1.0 regul_p
+kr09c13       1.0 * log(kr09c13) =   2.301030      1.0 regul_p
+kr09c14       1.0 * log(kr09c14) =   2.301030      1.0 regul_p
+kr09c15       1.0 * log(kr09c15) =   2.301030      1.0 regul_p
+kr09c16       1.0 * log(kr09c16) =   2.301030      1.0 regul_p
+kr09c17       1.0 * log(kr09c17) =   2.301030      1.0 regul_p
+kr09c18       1.0 * log(kr09c18) =   2.301030      1.0 regul_p
+kr09c19       1.0 * log(kr09c19) =   2.301030      1.0 regul_p
+kr09c20       1.0 * log(kr09c20) =   2.301030      1.0 regul_p
+kr09c21       1.0 * log(kr09c21) =   2.301030      1.0 regul_p
+kr09c22       1.0 * log(kr09c22) =   2.301030      1.0 regul_p
+kr09c23       1.0 * log(kr09c23) =   2.301030      1.0 regul_p
+kr09c24       1.0 * log(kr09c24) =   2.301030      1.0 regul_p
+kr09c25       1.0 * log(kr09c25) =   2.301030      1.0 regul_p
+kr09c26       1.0 * log(kr09c26) =   2.301030      1.0 regul_p
+kr09c27       1.0 * log(kr09c27) =   2.301030      1.0 regul_p
+kr09c28       1.0 * log(kr09c28) =   2.301030      1.0 regul_p
+kr09c29       1.0 * log(kr09c29) =   2.301030      1.0 regul_p
+kr09c30       1.0 * log(kr09c30) =   2.301030      1.0 regul_p
+kr09c31       1.0 * log(kr09c31) =   2.301030      1.0 regul_p
+kr09c32       1.0 * log(kr09c32) =   2.301030      1.0 regul_p
+kr09c33       1.0 * log(kr09c33) =   2.301030      1.0 regul_p
+kr09c34       1.0 * log(kr09c34) =   2.301030      1.0 regul_p
+kr09c35       1.0 * log(kr09c35) =   2.301030      1.0 regul_p
+kr09c36       1.0 * log(kr09c36) =   2.301030      1.0 regul_p
+kr09c37       1.0 * log(kr09c37) =   2.301030      1.0 regul_p
+kr09c38       1.0 * log(kr09c38) =   2.301030      1.0 regul_p
+kr09c39       1.0 * log(kr09c39) =   2.301030      1.0 regul_p
+kr09c40       1.0 * log(kr09c40) =   2.301030      1.0 regul_p
+kr09c41       1.0 * log(kr09c41) =   2.301030      1.0 regul_p
+kr09c42       1.0 * log(kr09c42) =   2.301030      1.0 regul_p
+kr09c43       1.0 * log(kr09c43) =   2.301030      1.0 regul_p
+kr09c44       1.0 * log(kr09c44) =   2.301030      1.0 regul_p
+kr09c45       1.0 * log(kr09c45) =   2.301030      1.0 regul_p
+kr09c46       1.0 * log(kr09c46) =   2.301030      1.0 regul_p
+kr09c47       1.0 * log(kr09c47) =   2.301030      1.0 regul_p
+kr09c48       1.0 * log(kr09c48) =   2.301030      1.0 regul_p
+kr09c49       1.0 * log(kr09c49) =   2.301030      1.0 regul_p
+kr09c50       1.0 * log(kr09c50) =   2.301030      1.0 regul_p
+kr09c51       1.0 * log(kr09c51) =   2.301030      1.0 regul_p
+kr09c52       1.0 * log(kr09c52) =   2.301030      1.0 regul_p
+kr09c53       1.0 * log(kr09c53) =   2.301030      1.0 regul_p
+kr09c54       1.0 * log(kr09c54) =   2.301030      1.0 regul_p
+kr09c55       1.0 * log(kr09c55) =   2.301030      1.0 regul_p
+kr09c56       1.0 * log(kr09c56) =   2.301030      1.0 regul_p
+kr09c57       1.0 * log(kr09c57) =   2.301030      1.0 regul_p
+kr09c58       1.0 * log(kr09c58) =   2.301030      1.0 regul_p
+kr09c59       1.0 * log(kr09c59) =   2.301030      1.0 regul_p
+kr09c60       1.0 * log(kr09c60) =   2.301030      1.0 regul_p
+kr10c01       1.0 * log(kr10c01) =   2.301030      1.0 regul_p
+kr10c02       1.0 * log(kr10c02) =   2.301030      1.0 regul_p
+kr10c03       1.0 * log(kr10c03) =   2.301030      1.0 regul_p
+kr10c04       1.0 * log(kr10c04) =   2.301030      1.0 regul_p
+kr10c05       1.0 * log(kr10c05) =   2.301030      1.0 regul_p
+kr10c06       1.0 * log(kr10c06) =   2.301030      1.0 regul_p
+kr10c07       1.0 * log(kr10c07) =   2.301030      1.0 regul_p
+kr10c08       1.0 * log(kr10c08) =   2.301030      1.0 regul_p
+kr10c09       1.0 * log(kr10c09) =   2.301030      1.0 regul_p
+kr10c10       1.0 * log(kr10c10) =   2.301030      1.0 regul_p
+kr10c11       1.0 * log(kr10c11) =   2.301030      1.0 regul_p
+kr10c12       1.0 * log(kr10c12) =   2.301030      1.0 regul_p
+kr10c13       1.0 * log(kr10c13) =   2.301030      1.0 regul_p
+kr10c14       1.0 * log(kr10c14) =   2.301030      1.0 regul_p
+kr10c15       1.0 * log(kr10c15) =   2.301030      1.0 regul_p
+kr10c16       1.0 * log(kr10c16) =   2.301030      1.0 regul_p
+kr10c17       1.0 * log(kr10c17) =   2.301030      1.0 regul_p
+kr10c18       1.0 * log(kr10c18) =   2.301030      1.0 regul_p
+kr10c19       1.0 * log(kr10c19) =   2.301030      1.0 regul_p
+kr10c20       1.0 * log(kr10c20) =   2.301030      1.0 regul_p
+kr10c21       1.0 * log(kr10c21) =   2.301030      1.0 regul_p
+kr10c22       1.0 * log(kr10c22) =   2.301030      1.0 regul_p
+kr10c23       1.0 * log(kr10c23) =   2.301030      1.0 regul_p
+kr10c24       1.0 * log(kr10c24) =   2.301030      1.0 regul_p
+kr10c25       1.0 * log(kr10c25) =   2.301030      1.0 regul_p
+kr10c26       1.0 * log(kr10c26) =   2.301030      1.0 regul_p
+kr10c27       1.0 * log(kr10c27) =   2.301030      1.0 regul_p
+kr10c28       1.0 * log(kr10c28) =   2.301030      1.0 regul_p
+kr10c29       1.0 * log(kr10c29) =   2.301030      1.0 regul_p
+kr10c30       1.0 * log(kr10c30) =   2.301030      1.0 regul_p
+kr10c31       1.0 * log(kr10c31) =   2.301030      1.0 regul_p
+kr10c32       1.0 * log(kr10c32) =   2.301030      1.0 regul_p
+kr10c33       1.0 * log(kr10c33) =   2.301030      1.0 regul_p
+kr10c34       1.0 * log(kr10c34) =   2.301030      1.0 regul_p
+kr10c35       1.0 * log(kr10c35) =   2.301030      1.0 regul_p
+kr10c36       1.0 * log(kr10c36) =   2.301030      1.0 regul_p
+kr10c37       1.0 * log(kr10c37) =   2.301030      1.0 regul_p
+kr10c38       1.0 * log(kr10c38) =   2.301030      1.0 regul_p
+kr10c39       1.0 * log(kr10c39) =   2.301030      1.0 regul_p
+kr10c40       1.0 * log(kr10c40) =   2.301030      1.0 regul_p
+kr10c41       1.0 * log(kr10c41) =   2.301030      1.0 regul_p
+kr10c42       1.0 * log(kr10c42) =   2.301030      1.0 regul_p
+kr10c43       1.0 * log(kr10c43) =   2.301030      1.0 regul_p
+kr10c44       1.0 * log(kr10c44) =   2.301030      1.0 regul_p
+kr10c45       1.0 * log(kr10c45) =   2.301030      1.0 regul_p
+kr10c46       1.0 * log(kr10c46) =   2.301030      1.0 regul_p
+kr10c47       1.0 * log(kr10c47) =   2.301030      1.0 regul_p
+kr10c48       1.0 * log(kr10c48) =   2.301030      1.0 regul_p
+kr10c49       1.0 * log(kr10c49) =   2.301030      1.0 regul_p
+kr10c50       1.0 * log(kr10c50) =   2.301030      1.0 regul_p
+kr10c51       1.0 * log(kr10c51) =   2.301030      1.0 regul_p
+kr10c52       1.0 * log(kr10c52) =   2.301030      1.0 regul_p
+kr10c53       1.0 * log(kr10c53) =   2.301030      1.0 regul_p
+kr10c54       1.0 * log(kr10c54) =   2.301030      1.0 regul_p
+kr10c55       1.0 * log(kr10c55) =   2.301030      1.0 regul_p
+kr10c56       1.0 * log(kr10c56) =   2.301030      1.0 regul_p
+kr10c57       1.0 * log(kr10c57) =   2.301030      1.0 regul_p
+kr10c58       1.0 * log(kr10c58) =   2.301030      1.0 regul_p
+kr10c59       1.0 * log(kr10c59) =   2.301030      1.0 regul_p
+kr10c60       1.0 * log(kr10c60) =   2.301030      1.0 regul_p
+++# PEST++ optional input
+++# SVD_PACK(PROPACK)
+++ N_ITER_BASE(1)
+++ N_ITER_SUPER(4)
+++ SUPER_EIGTHRES(1.0e-8)
+++ MAX_N_SUPER(77)
+++ #AUTO_NORM(4)
+++ predictions(pd_one,pd_ten,pd_half)
