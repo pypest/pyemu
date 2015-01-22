@@ -457,7 +457,7 @@ class pst(object):
             f_out.write(line)
             f_out.write(self.regul_section)
         elif update_regul:
-            for _ in xrange(4):
+            for _ in xrange(3):
                 f_in.readline()
             f_out.write(self.regul_section)
         else:
