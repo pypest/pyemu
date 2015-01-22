@@ -322,7 +322,7 @@ class pst(object):
             return
 
 
-    def write(self,new_filename):
+    def write(self,new_filename,update_regul=False):
         """write a pest control file
         Args:
             new_filename (str) : name of the new pest control file
@@ -454,7 +454,8 @@ class pst(object):
             if line.strip().startswith('*') or line.strip().startswith("++"):
                 f_out.write(line)
                 break
-        if self.mode.startswith("regul") and "* regul" not in line.lower():
+        if update_regul or (self.mode.startswith("regul") and
+                            "* regul" not in line.lower()):
             f_out.write(self.regul_section)
         if line != '':
             while True:
