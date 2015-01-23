@@ -171,7 +171,7 @@ class matrix(object):
             col_names = row_names
         else:
             col_names = self.col_names[:submat.shape[1]]
-        return matrix(x=submat, isdiagonal=self.isdiagonal, row_names=row_names,
+        return type(self)(x=submat, isdiagonal=self.isdiagonal, row_names=row_names,
                       col_names=col_names, autoalign=self.autoalign)
 
 
@@ -204,7 +204,7 @@ class matrix(object):
                 raise NotImplementedError("matrix.__pow__() not implemented " +
                                           "for fractional powers except 0.5")
         else:
-            return matrix(self.__x**power, row_names=self.row_names,
+            return type(self)(self.__x**power, row_names=self.row_names,
                           col_names=self.col_names, isdiagonal=self.isdiagonal)
 
 
@@ -234,10 +234,10 @@ class matrix(object):
                     elem_sub = -1.0 * other
                     for j in xrange(self.shape[0]):
                         elem_sub[j, j] += self.x[j]
-                    return matrix(x=elem_sub, row_names=self.row_names,
+                    return type(self)(x=elem_sub, row_names=self.row_names,
                                   col_names=self.col_names)
                 else:
-                    return matrix(x=self.x - other, row_names=self.row_names,
+                    return type(self)(x=self.x - other, row_names=self.row_names,
                                   col_names=self.col_names)
             elif isinstance(other, matrix):
                 if self.autoalign and other.autoalign \
@@ -258,23 +258,23 @@ class matrix(object):
                     second = other
 
                 if first.isdiagonal and second.isdiagonal:
-                    return matrix(x=first.x - second.x, isdiagonal=True,
+                    return type(self)(x=first.x - second.x, isdiagonal=True,
                                   row_names=first.row_names,
                                   col_names=first.col_names)
                 elif first.isdiagonal:
                     elem_sub = -1.0 * second.newx
                     for j in xrange(first.shape[0]):
                         elem_sub[j, j] += first.x[j, 0]
-                    return matrix(x=elem_sub, row_names=first.row_names,
+                    return type(self)(x=elem_sub, row_names=first.row_names,
                                   col_names=first.col_names)
                 elif second.isdiagonal:
                     elem_sub = first.newx
                     for j in xrange(second.shape[0]):
                         elem_sub[j, j] -= second.x[j, 0]
-                    return matrix(x=elem_sub, row_names=first.row_names,
+                    return type(self)(x=elem_sub, row_names=first.row_names,
                                   col_names=first.col_names)
                 else:
-                    return matrix(x=first.x - second.x,
+                    return type(self)(x=first.x - second.x,
                                   row_names=first.row_names,
                                   col_names=first.col_names)
 
@@ -292,7 +292,7 @@ class matrix(object):
             NotImplementedError for diagonal matrices
         """
         if np.isscalar(other):
-            return matrix(x=self.x + other)
+            return type(self)(x=self.x + other)
         if isinstance(other, np.ndarray):
             assert self.shape == other.shape, \
                 "matrix.__add__(): shape mismatch: "+\
@@ -301,7 +301,7 @@ class matrix(object):
                 raise NotImplementedError("matrix.__add__ not supported for" +
                                           "diagonal self")
             else:
-                return matrix(x=self.x + other, row_names=self.row_names,
+                return type(self)(x=self.x + other, row_names=self.row_names,
                               col_names=self.col_names)
         elif isinstance(other, matrix):
             if self.autoalign and other.autoalign \
@@ -319,23 +319,23 @@ class matrix(object):
                 first = self
                 second = other
             if first.isdiagonal and second.isdiagonal:
-                return matrix(x=first.x + second.x, isdiagonal=True,
+                return type(self)(x=first.x + second.x, isdiagonal=True,
                               row_names=first.row_names,
                               col_names=first.col_names)
             elif first.isdiagonal:
                 ox = second.newx
                 for j in xrange(first.shape[0]):
                     ox[j, j] += first.__x[j]
-                return matrix(x=ox, row_names=first.row_names,
+                return type(self)(x=ox, row_names=first.row_names,
                               col_names=first.col_names)
             elif second.isdiagonal:
                 x = first.x
                 for j in xrange(second.shape[0]):
                     x[j, j] += second.x[j]
-                return matrix(x=x, row_names=first.row_names,
+                return type(self)(x=x, row_names=first.row_names,
                               col_names=first.col_names)
             else:
-                return matrix(x=first.x + second.x, row_names=first.row_names,
+                return type(self)(x=first.x + second.x, row_names=first.row_names,
                               col_names=first.col_names)
         else:
             raise Exception("matrix.__add__(): unrecognized type for " +
@@ -354,15 +354,15 @@ class matrix(object):
             Exception is other is not in supported types
         """
         if np.isscalar(other):
-            return matrix(x=self.__x.copy() * other)
+            return type(self)(x=self.__x.copy() * other)
         elif isinstance(other, np.ndarray):
             assert self.shape[1] == other.shape[0], \
                 "matrix.__mul__(): matrices are not aligned: "+\
                 str(self.shape) + ' ' + str(other.shape)
             if self.isdiagonal:
-                return matrix(x=np.dot(np.diag(self.__x).transpose(), other))
+                return type(self)(x=np.dot(np.diag(self.__x).transpose(), other))
             else:
-                return matrix(x=np.dot(self.__x, other))
+                return type(self)(x=np.dot(self.__x, other))
         elif isinstance(other, matrix):
             if self.autoalign and other.autoalign \
                     and not self.mult_isaligned(other):
@@ -388,7 +388,7 @@ class matrix(object):
                 first = self
                 second = other
             if first.isdiagonal and second.isdiagonal:
-                elem_prod = matrix(x=first.x.transpose() * second.x,
+                elem_prod = type(self)(x=first.x.transpose() * second.x,
                                    row_names=first.row_names,
                                    col_names=second.col_names)
                 elem_prod.isdiagonal = True
@@ -397,17 +397,17 @@ class matrix(object):
                 ox = second.newx
                 for j in range(first.shape[0]):
                     ox[j, :] *= first.x[j]
-                return matrix(x=ox, row_names=first.row_names,
+                return type(self)(x=ox, row_names=first.row_names,
                               col_names=second.col_names)
             elif second.isdiagonal:
                 x = first.newx
                 ox = second.x
                 for j in range(first.shape[1]):
                     x[:, j] *= ox[j]
-                return matrix(x=x, row_names=first.row_names,
+                return type(self)(x=x, row_names=first.row_names,
                               col_names=second.col_names)
             else:
-                return matrix(np.dot(first.x, second.x),
+                return type(self)(np.dot(first.x, second.x),
                               row_names=first.row_names,
                               col_names=second.col_names)
         else:
@@ -1506,10 +1506,13 @@ def test():
 if __name__ == "__main__":
     c1 = cov()
     c1.from_ascii("post.cov")
-    c2 = cov()
+    c2 = jco()
     c2.from_ascii("test.cov")
-    print c1.isdiagonal,c2.isdiagonal
-    print (c1 - c2).x.sum()
+    print type(c1 * c2)
+    print type(c2 * c1)
+    print type(c1 * c2.x)
+
+    print type(c1 * 4)
     #test()
     # a = np.random.random((10, 5))
     # row_names = []

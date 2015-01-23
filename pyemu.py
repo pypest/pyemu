@@ -583,7 +583,9 @@ class linear_analysis(object):
         Raises:
             None
         """
+        cnames = copy.deepcopy(self.jco.col_names)
         self.__jco *= self.fehalf
+        self.__jco.col_names = cnames
         self.__parcov = self.parcov.identity
 
 
@@ -727,7 +729,6 @@ class linear_analysis(object):
             pst_prefix = "real."
         pi = self.pst.prior_information
         self.drop_prior_information()
-        print self.obscov.row_names
         pst = self.pst.get(self.parcov.row_names, self.obscov.row_names)
         mean_pars = pst.parameter_data.parval1
         self.log("generating parameter realizations")
@@ -997,6 +998,9 @@ class errvar(linear_analysis):
             if self.prediction_arg is not None:
                 self.__load_omitted_predictions()
             self.log("pre-loading omitted components")
+        self.log("applying KL scaling")
+        self.apply_karhunen_loeve_scaling()
+        self.log("applying KL scaling")
         self.valid_terms = ["null","solution", "omitted", "all"]
         self.valid_return_types = ["parameters", "predictions"]
 
@@ -1302,7 +1306,7 @@ class errvar(linear_analysis):
                 zero_preds[("first", pred.col_names[0])] = 0.0
             return zero_preds
         self.log("calc first term parameter @" + str(singular_value))
-        first_term = self.I_minus_R(singular_value) * self.parcov *\
+        first_term = self.I_minus_R(singular_value).T * self.parcov *\
                      self.I_minus_R(singular_value)
         if self.predictions:
             results = {}
@@ -1448,8 +1452,9 @@ if __name__ == "__main__":
 
     la = errvar(jco="pest.jco",predictions=predictions,verbose=False,
                 omitted_parameters="mult1")
-    print la.third_parameter(80)
-    # print la.get_errvar_dataframe(np.arange(20))
+    la.apply_karhunen_loeve_scaling()
+    #print la.third_parameter(1)
+    print la.get_errvar_dataframe(np.arange(20))
     #
     # la = schur(jco="pest.jco",predictions=predictions,verbose=False)
     # print la.posterior_prediction
