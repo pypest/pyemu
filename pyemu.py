@@ -166,8 +166,8 @@ class linear_analysis(object):
         try:
             self.adjust_obscov_resfile(resfile=resfile)
         except:
-            self.logger.warn("unable to a residuals file to " +\
-                            " scale obscov with")
+            self.logger.warn("unable to a find a residuals file for " +\
+                            " scaling obscov")
         self.log("scaling obscov by residual phi components")
 
 

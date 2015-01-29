@@ -44,7 +44,7 @@ def concat(mats):
         for mat in mats[1:]:
             mat.align(mats[0].row_names, axis=0)
             other_x = mat.newx
-            x = np.append(x,other_x, axis=1)
+            x = np.append(x, other_x, axis=1)
 
     else:
         col_names = copy.deepcopy(mats[0].col_names)
@@ -55,7 +55,7 @@ def concat(mats):
         for mat in mats[1:]:
             mat.align(mats[0].col_names, axis=1)
             other_x = mat.newx
-            x = np.append(x,other_x, axis=0)
+            x = np.append(x, other_x, axis=0)
     return matrix(x=x, row_names=row_names, col_names=col_names)
 
 
@@ -1383,7 +1383,7 @@ class cov(matrix):
                                             "unrecognized keyword in" +
                                             "std block: " + line2)
                     if var != 1.0:
-                        cov.__x *= var
+                        cov._matrix__x *= var
                     for name in cov.row_names:
                         if name in self.row_names:
                             raise Exception("cov.from_uncfile():" +
