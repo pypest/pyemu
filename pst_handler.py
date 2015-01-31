@@ -2,13 +2,13 @@ import os
 import copy
 import numpy as np
 import pandas
-pandas.options.display.max_colwidth=100
+pandas.options.display.max_colwidth = 100
 
 class pst(object):
     """basic class for handling pest control files to support linear analysis
     as well as replicate some of the functionality of the pest utilities
     """
-    def __init__(self,filename, load=True, resfile=None):
+    def __init__(self, filename, load=True, resfile=None):
         """constructor of pst object
         Args:
             filename : [str] pest control file name
@@ -31,8 +31,8 @@ class pst(object):
         self.ifmt = lambda x: "{0:>10d}".format(int(x))
         self.ffmt = lambda x: "{0:>15.6E}".format(float(x))
 
-        self.par_dtype = np.dtype([("parnme", "a20"),("parval1", np.float),
-                                   ("scale", np.float),("offset", np.float)])
+        self.par_dtype = np.dtype([("parnme", "a20"), ("parval1", np.float),
+                                   ("scale", np.float), ("offset", np.float)])
         self.par_fieldnames = "PARNME PARTRANS PARCHGLIM PARVAL1 PARLBND " +\
                               "PARUBND PARGP SCALE OFFSET DERCOM"
         self.par_fieldnames = self.par_fieldnames.lower().strip().split()
@@ -64,7 +64,7 @@ class pst(object):
         """get the weighted total objective function
         """
         sum = 0.0
-        for grp,contrib in self.phi_components.iteritems():
+        for grp, contrib in self.phi_components.iteritems():
             sum += contrib
         return sum
 
@@ -642,7 +642,8 @@ class pst(object):
         if resfile is not None:
             self.resfile = resfile
             self.__res = None
-        self.adjust_weights_by_phi_components(self.phi_components)
+        phi_comps = self.phi_components
+        self.adjust_weights_by_phi_components(phi_comps)
 
 
     def adjust_weights_by_phi_components(self, components):
@@ -827,13 +828,10 @@ class pst(object):
 
 if __name__ == "__main__":
     p = pst("pest.pst")
-    print p.observation_data.weight
-    p.proportional_weights(0.25)
-    print p.observation_data.weight
-    print p.mode
-    p.mode = "regularisation"
-    print p.mode
-    p.write("test.pst")
+    print p.phi
+    p.adjust_weights_by_group(obsgrp_dict={"head":5, "conc":5})
+    print p.phi
+    p.write(('test.pst'))
     #pnew = p.get(p.par_names[:10],p.obs_names[-10:])
     #print pnew.res
     #pnew.write("test.pst")
