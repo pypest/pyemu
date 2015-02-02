@@ -220,6 +220,16 @@ class pst(object):
         pass
         return list(self.observation_data.obsnme.values)
 
+    @property
+    def nnz_obs_names(self):
+        """non-zero weight obs names
+        """
+        nz_names = []
+        for w,n in zip(self.observation_data.weight,
+                       self.observation_data.obsnme):
+            if w > 0.0:
+                nz_names.append(n)
+        return nz_names
 
     @property
     def regul_section(self):
@@ -729,7 +739,7 @@ class pst(object):
         pass
         for item in target_phis.keys():
             assert item in res_idxs.keys(),\
-                "pst.__reset_weights(): "  + str(item) +\
+                "pst.__reset_weights(): " + str(item) +\
                 " not in residual group indices"
             assert item in obs_idxs.keys(), \
                 "pst.__reset_weights(): " + str(item) +\

@@ -731,29 +731,56 @@ class linear_analysis(object):
         self.drop_prior_information()
         pst = self.pst.get(self.parcov.row_names, self.obscov.row_names)
         mean_pars = pst.parameter_data.parval1
+
+
+        islog = pst.parameter_data.partrans == "log"
+        islog = islog.values
+        ub = pst.parameter_data.parubnd.values
+        lb = pst.parameter_data.parlbnd.values
+
+        #log transform
+        mean_pars[islog] = np.log10(mean_pars[islog])
         self.log("generating parameter realizations")
         par_vals = np.random.multivariate_normal(mean_pars, self.parcov.as_2d,
                                                  num_reals)
+        #back log transform
+        par_vals[:, islog] = 10.0**(par_vals[:, islog])
+
+        #apply parameter bounds
+        for i in xrange(num_reals):
+            par_vals[i, np.where(par_vals[i] > ub)] = \
+                ub[np.where(par_vals[i] > ub)]
+            par_vals[i, np.where(par_vals[i] < lb)] = \
+                ub[np.where(par_vals[i] < lb)]
+
+
         self.log("generating parameter realizations")
         if add_noise:
             self.log("generating noise realizations")
+            nz_idx = []
+            weights = self.pst.observation_data.weight.values
+            for iw,w in enumerate(weights):
+                if w > 0.0:
+                    nz_idx.append(iw)
+            obscov = self.obscov.get(self.pst.nnz_obs_names)
             noise_vals = np.random.multivariate_normal(
-                np.zeros(pst.observation_data.shape[0]), self.obscov.as_2d,
+                np.zeros(pst.nnz_obs), obscov.as_2d,
                 num_reals)
             self.log("generating noise realizations")
         self.log("writing realized pest control files")
         pst.prior_information = pi
+        obs_vals = pst.observation_data.obsval.values
         for i in xrange(num_reals):
             pst.parameter_data.parval1 = par_vals[i, :]
             if add_noise:
-                pst.observation_data.obsval += noise_vals[i, :]
+                ovs = obs_vals
+                ovs[nz_idx] += noise_vals[i,:]
+                pst.observation_data.obsval = ovs
             pst_name = pst_prefix + "{0:04d}.pst".format(i)
             pst.write(pst_name)
         self.log("writing realized pest control files")
 
-
-
-    def adjust_obscov_resfile(self,resfile=None):
+    def adjust_obscov_resfile(self, resfile=None):
         """reset the elements of obscov by scaling the implied weights
         based on the phi components in res_file
         """
@@ -1448,13 +1475,15 @@ class errvar(linear_analysis):
 
 
 if __name__ == "__main__":
-    predictions = ["pd_one","pd_ten","pd_half"]
-
-    la = errvar(jco="pest.jco",predictions=predictions,verbose=False,
-                omitted_parameters="mult1")
-    la.apply_karhunen_loeve_scaling()
+    la = linear_analysis(jco="pest.jco")
+    #la = la.get(par_names="mult1")
+    la.draw("test",num_reals=10)
+    # predictions = ["pd_one","pd_ten","pd_half"]
+    # la = errvar(jco="pest.jco",predictions=predictions,verbose=False,
+    #             omitted_parameters="mult1")
+    # la.apply_karhunen_loeve_scaling()
     #print la.third_parameter(1)
-    print la.get_errvar_dataframe(np.arange(20))
+    # print la.get_errvar_dataframe(np.arange(20))
     #
     # la = schur(jco="pest.jco",predictions=predictions,verbose=False)
     # print la.posterior_prediction
