@@ -808,13 +808,15 @@ class pst(object):
             self.__reset_weights(obsgrp_prefix_dict, res_idxs, obs_idxs)
 
 
-    def proportional_weights(self,fraction_stdev=1.0, wmax=100.0):
+    def proportional_weights(self, fraction_stdev=1.0, wmax=100.0,
+                             leave_zero=True):
         """setup inversely proportional weights
         Args:
             fraction_stdev (float) : the fraction portion of the observation
                 val to treat as the standard deviation.  set to 1.0 for
                 inversely proportional
             wmax (float) : maximum weight to allow
+            leave_zero (bool) : flag to leave existing zero weights
         Returns:
             None
         Raises:
@@ -822,21 +824,27 @@ class pst(object):
         """
         new_weights = []
         for oval, ow in zip(self.observation_data.obsval,
-                           self.observation_data.weight):
-            if oval == 0.0:
+                            self.observation_data.weight):
+            if leave_zero and ow == 0.0:
+                ow = 0.0
+            elif oval == 0.0:
                 ow = wmax
             else:
-                ow = min(wmax, 1.0 / (np.abs(oval) * fraction_stdev))
+                nw = 1.0 / (np.abs(oval) * fraction_stdev)
+                ow = min(wmax, nw)
             new_weights.append(ow)
-        self.observation_data.weights = new_weights
+        self.observation_data.weight = new_weights
 
 
 if __name__ == "__main__":
     p = pst("pest.pst")
-    print p.phi
-    p.adjust_weights_by_group(obsgrp_dict={"head": 5, "conc": 5})
-    print p.phi
-    p.write(('test.pst'))
+    print p.observation_data.weight
+    p.proportional_weights(0.25, wmax=0.5)
+    print p.observation_data.weight
+    #print p.phi
+    #p.adjust_weights_by_group(obsgrp_dict={"head": 5, "conc": 5})
+    #print p.phi
+    #p.write(('test.pst'))
     #pnew = p.get(p.par_names[:10],p.obs_names[-10:])
     #print pnew.res
     #pnew.write("test.pst")
