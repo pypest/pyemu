@@ -131,13 +131,13 @@ class pst(object):
 
     @property
     def par_data(self):
-        """convience method to access parameter_data
+        """method to access parameter_data
         """
         return self.parameter_data
 
     @property
     def obs_data(self):
-        """convience method to access observation_data
+        """method to access observation_data
         """
         return self.observation_data
 
@@ -328,7 +328,7 @@ class pst(object):
             self.prior_information = pandas.DataFrame({"pilbl": pilbl,
                                                        "equation": equation,
                                                        "weight": weight,
-                                                       "obgnme": obgnme,}                                                       )
+                                                       "obgnme": obgnme})
             return
 
 
@@ -374,7 +374,6 @@ class pst(object):
                                 "for * parameter data")
 
             if "* parameter data" in line.lower():
-
                 break
             else:
                 pgrp = line.strip().split()[0]
@@ -508,7 +507,7 @@ class pst(object):
             if self.res is not None:
                 new_res = copy.deepcopy(self.res)
                 new_res.index = new_res.name
-                new_res = new_res.loc[obs_names,:]
+                new_res = new_res.loc[obs_names, :]
 
         new_pst = pst(self.filename, resfile=self.resfile, load=False)
         new_pst.parameter_data = new_par
@@ -523,7 +522,7 @@ class pst(object):
         return new_pst
 
 
-    def zero_order_tikhonov(self,parbounds=True):
+    def zero_order_tikhonov(self, parbounds=True):
         """setup preferred-value regularization
         Args:
             parbounds (bool) : weight the prior information equations according
@@ -576,7 +575,7 @@ class pst(object):
                       " to a parameter: " + str(parnme)
 
 
-    def parrep(self,parfile=None):
+    def parrep(self, parfile=None):
         """replicates the pest parrep util. replaces the parval1 field in the
             parameter data section dataframe
         Args:
@@ -601,7 +600,7 @@ class pst(object):
         self.parameter_data.parval1 = par_df.parval1
 
 
-    def adjust_weights_recfile(self,recfile=None):
+    def adjust_weights_recfile(self, recfile=None):
         """adjusts the weights of the observations based on the phi components
         in a recfile
         Args:
@@ -640,7 +639,7 @@ class pst(object):
             iter_components[last_complete_iter])
 
 
-    def adjust_weights_resfile(self,resfile=None):
+    def adjust_weights_resfile(self, resfile=None):
         """adjust the weights by phi components in a residual file
         Args:
             resfile (str) : residual filename.  If None, use self.resfile
@@ -670,10 +669,6 @@ class pst(object):
         """
         obs = self.observation_data
         nz_groups = obs.groupby(obs["weight"].map(lambda x: x == 0)).groups
-        nzobs = 0
-        if False in nz_groups.keys():
-            nzobs = len(nz_groups[False])
-
         ogroups = obs.groupby("obgnme").groups
         for ogroup, idxs in ogroups.iteritems():
             if self.mode.startswith("regul") and "regul" in ogroup.lower():
@@ -744,16 +739,16 @@ class pst(object):
             assert item in obs_idxs.keys(), \
                 "pst.__reset_weights(): " + str(item) +\
                 " not in observation group indices"
-            actual_phi = ((self.res.loc[res_idxs[item],"residual"] *
+            actual_phi = ((self.res.loc[res_idxs[item], "residual"] *
                            self.observation_data.loc
-                           [obs_idxs[item],"weight"] )**2).sum()
+                           [obs_idxs[item], "weight"])**2).sum()
             weight_mult = np.sqrt(target_phis[item] / actual_phi)
-            self.observation_data.loc[obs_idxs[item],"weight"] *= weight_mult
+            self.observation_data.loc[obs_idxs[item], "weight"] *= weight_mult
 
 
     def adjust_weights_by_group(self,obs_dict=None,
-                              obsgrp_dict=None,obsgrp_suffix_dict=None,
-                              obsgrp_prefix_dict=None,obsgrp_phrase_dict=None):
+                              obsgrp_dict=None, obsgrp_suffix_dict=None,
+                              obsgrp_prefix_dict=None, obsgrp_phrase_dict=None):
         """reset the weights of observation groups to contribute a specified
         amount to the composite objective function
         Args:
@@ -770,11 +765,11 @@ class pst(object):
         if obsgrp_dict is not None:
             res_groups = self.res.groupby("group").groups
             obs_groups = self.observation_data.groupby("obgnme").groups
-            self.__reset_weights(obsgrp_dict,res_groups,obs_groups)
+            self.__reset_weights(obsgrp_dict, res_groups, obs_groups)
         if obs_dict is not None:
             res_groups = self.res.groupby("name").groups
             obs_groups = self.observation_data.groupby("obsnme").groups
-            self.__reset_weights(obs_dict,res_groups, obs_groups)
+            self.__reset_weights(obs_dict, res_groups, obs_groups)
         if obsgrp_suffix_dict is not None:
             self.res.index = self.res.group
             self.observation_data.index = self.observation_data.obgnme
@@ -839,7 +834,7 @@ class pst(object):
 if __name__ == "__main__":
     p = pst("pest.pst")
     print p.phi
-    p.adjust_weights_by_group(obsgrp_dict={"head":5, "conc":5})
+    p.adjust_weights_by_group(obsgrp_dict={"head": 5, "conc": 5})
     print p.phi
     p.write(('test.pst'))
     #pnew = p.get(p.par_names[:10],p.obs_names[-10:])

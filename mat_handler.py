@@ -171,8 +171,9 @@ class matrix(object):
             col_names = row_names
         else:
             col_names = self.col_names[:submat.shape[1]]
-        return type(self)(x=submat, isdiagonal=self.isdiagonal, row_names=row_names,
-                      col_names=col_names, autoalign=self.autoalign)
+        return type(self)(x=submat, isdiagonal=self.isdiagonal,
+                          row_names=row_names, col_names=col_names,
+                          autoalign=self.autoalign)
 
 
     def __pow__(self, power):
@@ -205,7 +206,8 @@ class matrix(object):
                                           "for fractional powers except 0.5")
         else:
             return type(self)(self.__x**power, row_names=self.row_names,
-                          col_names=self.col_names, isdiagonal=self.isdiagonal)
+                              col_names=self.col_names,
+                              isdiagonal=self.isdiagonal)
 
 
     def __sub__(self, other):
@@ -235,10 +237,11 @@ class matrix(object):
                     for j in xrange(self.shape[0]):
                         elem_sub[j, j] += self.x[j]
                     return type(self)(x=elem_sub, row_names=self.row_names,
-                                  col_names=self.col_names)
+                                      col_names=self.col_names)
                 else:
-                    return type(self)(x=self.x - other, row_names=self.row_names,
-                                  col_names=self.col_names)
+                    return type(self)(x=self.x - other,
+                                      row_names=self.row_names,
+                                      col_names=self.col_names)
             elif isinstance(other, matrix):
                 if self.autoalign and other.autoalign \
                         and not self.element_isaligned(other):
@@ -252,31 +255,31 @@ class matrix(object):
                                        col_names=common_cols)
                 else:
                     assert self.shape == other.shape, \
-                        "matrix.__sub__():shape mismatch: "+\
+                        "matrix.__sub__():shape mismatch: " +\
                         str(self.shape) + ' ' + str(other.shape)
                     first = self
                     second = other
 
                 if first.isdiagonal and second.isdiagonal:
                     return type(self)(x=first.x - second.x, isdiagonal=True,
-                                  row_names=first.row_names,
-                                  col_names=first.col_names)
+                                      row_names=first.row_names,
+                                      col_names=first.col_names)
                 elif first.isdiagonal:
                     elem_sub = -1.0 * second.newx
                     for j in xrange(first.shape[0]):
                         elem_sub[j, j] += first.x[j, 0]
                     return type(self)(x=elem_sub, row_names=first.row_names,
-                                  col_names=first.col_names)
+                                      col_names=first.col_names)
                 elif second.isdiagonal:
                     elem_sub = first.newx
                     for j in xrange(second.shape[0]):
                         elem_sub[j, j] -= second.x[j, 0]
                     return type(self)(x=elem_sub, row_names=first.row_names,
-                                  col_names=first.col_names)
+                                      col_names=first.col_names)
                 else:
                     return type(self)(x=first.x - second.x,
-                                  row_names=first.row_names,
-                                  col_names=first.col_names)
+                                      row_names=first.row_names,
+                                      col_names=first.col_names)
 
 
     def __add__(self, other):
@@ -295,14 +298,14 @@ class matrix(object):
             return type(self)(x=self.x + other)
         if isinstance(other, np.ndarray):
             assert self.shape == other.shape, \
-                "matrix.__add__(): shape mismatch: "+\
+                "matrix.__add__(): shape mismatch: " +\
                 str(self.shape) + ' ' + str(other.shape)
             if self.isdiagonal:
                 raise NotImplementedError("matrix.__add__ not supported for" +
                                           "diagonal self")
             else:
                 return type(self)(x=self.x + other, row_names=self.row_names,
-                              col_names=self.col_names)
+                                  col_names=self.col_names)
         elif isinstance(other, matrix):
             if self.autoalign and other.autoalign \
                     and not self.element_isaligned(other):
@@ -320,23 +323,24 @@ class matrix(object):
                 second = other
             if first.isdiagonal and second.isdiagonal:
                 return type(self)(x=first.x + second.x, isdiagonal=True,
-                              row_names=first.row_names,
-                              col_names=first.col_names)
+                                  row_names=first.row_names,
+                                  col_names=first.col_names)
             elif first.isdiagonal:
                 ox = second.newx
                 for j in xrange(first.shape[0]):
                     ox[j, j] += first.__x[j]
                 return type(self)(x=ox, row_names=first.row_names,
-                              col_names=first.col_names)
+                                  col_names=first.col_names)
             elif second.isdiagonal:
                 x = first.x
                 for j in xrange(second.shape[0]):
                     x[j, j] += second.x[j]
                 return type(self)(x=x, row_names=first.row_names,
-                              col_names=first.col_names)
+                                  col_names=first.col_names)
             else:
-                return type(self)(x=first.x + second.x, row_names=first.row_names,
-                              col_names=first.col_names)
+                return type(self)(x=first.x + second.x,
+                                  row_names=first.row_names,
+                                  col_names=first.col_names)
         else:
             raise Exception("matrix.__add__(): unrecognized type for " +
                             "other in __add__: " + str(type(other)))
@@ -357,18 +361,19 @@ class matrix(object):
             return type(self)(x=self.__x.copy() * other)
         elif isinstance(other, np.ndarray):
             assert self.shape[1] == other.shape[0], \
-                "matrix.__mul__(): matrices are not aligned: "+\
+                "matrix.__mul__(): matrices are not aligned: " +\
                 str(self.shape) + ' ' + str(other.shape)
             if self.isdiagonal:
-                return type(self)(x=np.dot(np.diag(self.__x).transpose(), other))
+                return type(self)(x=np.dot(np.diag(self.__x).transpose(),
+                                           other))
             else:
                 return type(self)(x=np.dot(self.__x, other))
         elif isinstance(other, matrix):
             if self.autoalign and other.autoalign \
                     and not self.mult_isaligned(other):
-                common = get_common_elements(self.col_names,other.row_names)
-                assert len(common) > 0,"matrix.__mult__():self.col_names "+\
-                                       "and other.row_names"+\
+                common = get_common_elements(self.col_names, other.row_names)
+                assert len(common) > 0,"matrix.__mult__():self.col_names " +\
+                                       "and other.row_names" +\
                                        "don't share any common elements"
                 #--these should be aligned
                 if isinstance(self, cov):
@@ -383,7 +388,7 @@ class matrix(object):
 
             else:
                 assert self.shape[1] == other.shape[0], \
-                    "matrix.__mul__(): matrices are not aligned: "+\
+                    "matrix.__mul__(): matrices are not aligned: " +\
                     str(self.shape) + ' ' + str(other.shape)
                 first = self
                 second = other
@@ -687,7 +692,7 @@ class matrix(object):
         """
         if not isinstance(names, list):
             names = [names]
-        row_idxs,col_idxs = self.indices(names)
+        row_idxs, col_idxs = self.indices(names)
         if self.isdiagonal or isinstance(self, cov):
             assert row_idxs.shape == col_idxs.shape
             assert row_idxs.shape[0] == self.shape[0]
@@ -723,7 +728,7 @@ class matrix(object):
                                 " must be either 0 or 1")
 
 
-    def get(self,row_names=None, col_names=None, drop=False):
+    def get(self, row_names=None, col_names=None, drop=False):
         """get a (sub)matrix ordered on row_names or col_names
         Args:
             row_names : [enumerable] row_names for new matrix
@@ -920,6 +925,7 @@ class matrix(object):
           "matrix.from_binary() len(col_names) (" + str(len(self.col_names)) +\
           ") != self.shape[1] (" + str(self.shape[1]) + ")"
 
+
     def to_ascii(self, out_filename, icode=2):
         """write a pest-compatible ASCII matrix/vector file
         Args:
@@ -966,7 +972,7 @@ class matrix(object):
         raw = f.readline().strip().split()
         nrow, ncol, icode = int(raw[0]), int(raw[1]), int(raw[2])
         #x = np.fromfile(f, dtype=self.double, count=nrow * ncol, sep=' ')
-        # this painfully slow and ungly read is needed to catch the
+        # this painfully slow and ugly read is needed to catch the
         # fortran floating points that have 3-digit exponents,
         # which leave out the base (e.g. 'e') : "-1.23455+300"
         count = 0
@@ -1057,7 +1063,8 @@ class matrix(object):
             x = self.__x
         return pandas.DataFrame(data=x,index=self.row_names,columns=self.col_names)
 
-    def to_sparse(self,trunc=0.0):
+
+    def to_sparse(self, trunc=0.0):
         """get the CSR sparse matrix representation of matrix
         Args:
             None
@@ -1248,7 +1255,7 @@ class cov(matrix):
 
     def from_observation_data(self, pst):
         """load covariances from a pandas dataframe
-                of the pst obseravtion data section
+                of the pst observation data section
         Args:
             pst : [pst object]
         Returns:
@@ -1268,6 +1275,7 @@ class cov(matrix):
             x[ocount] = (1.0 / w) ** 2
             ocount += 1
             onames.append(row["obsnme"].lower())
+        # leave the prior info out of the obscov
         # if pst.mode == "estimation" and pst.nprior > 0:
         #     for iidx, row in pst.prior_information.iterrows():
         #         w = float(row["weight"])
@@ -1401,7 +1409,7 @@ class cov(matrix):
         f.close()
 
 
-    def get_uncfile_dimensions(self,filename):
+    def get_uncfile_dimensions(self, filename):
         """quickly read an uncertainty file to find the dimensions
         Args:
             filename : [str] uncertainty filename
@@ -1410,7 +1418,7 @@ class cov(matrix):
         Raises:
             Exception for wrong file structure
         """
-        f = open(filename,'r')
+        f = open(filename, 'r')
         nentries = 0
         while True:
             line = f.readline().lower()
