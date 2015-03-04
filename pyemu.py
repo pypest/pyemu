@@ -112,7 +112,7 @@ class linear_analysis(object):
             self.__jco = mhand.jco()
         if pst is None:
             if isinstance(jco, str):
-                pst_case = jco.replace(".jco", ".pst")
+                pst_case = jco.replace(".jco", ".pst").replace(".jcb",".pst")
                 if os.path.exists(pst_case):
                     pst = pst_case
         self.pst_arg = pst
@@ -1475,9 +1475,12 @@ class errvar(linear_analysis):
 
 
 if __name__ == "__main__":
-    la = linear_analysis(jco="pest.jco")
-    #la = la.get(par_names="mult1")
-    la.draw("test",num_reals=10)
+    la = linear_analysis(jco="pest.jcb")
+    la.drop_prior_information()
+    jco_ord = la.jco.get(la.pst.obs_names,la.pst.par_names)
+    ord_base = "pest_ord"
+    jco_ord.to_binary(ord_base + ".jco")
+    #la.draw("test",num_reals=10)
     # predictions = ["pd_one","pd_ten","pd_half"]
     # la = errvar(jco="pest.jco",predictions=predictions,verbose=False,
     #             omitted_parameters="mult1")
