@@ -1192,7 +1192,7 @@ class errvar(linear_analysis):
             singular_values = [singular_values]
         results = {}
         for singular_value in singular_values:
-            sv_results = self.standard_deviation_at(singular_value)
+            sv_results = self.varaince_at(singular_value)
             for key, val in sv_results.iteritems():
                 if key not in results.keys():
                     results[key] = []
@@ -1215,8 +1215,8 @@ class errvar(linear_analysis):
         return v1_df
 
 
-    def standard_deviation_at(self, singular_value):
-        """get the error variance standard deviation of all three terms
+    def variance_at(self, singular_value):
+        """get the error variance of all three terms
         Args:
             singular_value (int) : singular value to test
         Returns:
@@ -1315,6 +1315,9 @@ class errvar(linear_analysis):
         return self.__G
 
 
+    def first_forecast(self,singular_value):
+        return self.first_prediction(singular_value)
+
     def first_prediction(self, singular_value):
         """get the null space term contribution to prediction error variance
             at a singular value
@@ -1359,6 +1362,10 @@ class errvar(linear_analysis):
                      self.I_minus_R(singular_value)
         self.log("calc first term parameter @" + str(singular_value))
         return first_term
+
+
+    def second_forecast(self,singular_value):
+        return self.second_prediction(singular_value)
 
 
     def second_prediction(self, singular_value):
@@ -1413,6 +1420,9 @@ class errvar(linear_analysis):
         self.log("calc second term parameter @" + str(singular_value))
         return result
 
+
+    def third_forecast(self,singular_value):
+        return self.third_prediction(singular_value)
 
     def third_prediction(self,singular_value):
         """get the omitted parameter contribution to error variance at a singular value
