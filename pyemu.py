@@ -150,6 +150,8 @@ class linear_analysis(object):
             self.logger.warn("unused kwargs in type " +
                              str(self.__class__.__name__) +
                              " : " + str(kwargs))
+            raise Exception("unused kwargs" +
+                             " : " + str(kwargs))
         # automatically do some things that should be done
         self.log("dropping prior information")
         pi = None
@@ -162,13 +164,15 @@ class linear_analysis(object):
             self.drop_prior_information()
         self.log("dropping prior information")
 
-        self.log("scaling obscov by residual phi components")
-        try:
-            self.adjust_obscov_resfile(resfile=resfile)
-        except:
-            self.logger.warn("unable to a find a residuals file for " +\
-                            " scaling obscov")
-        self.log("scaling obscov by residual phi components")
+
+        if resfile != False:
+            self.log("scaling obscov by residual phi components")
+            try:
+                self.adjust_obscov_resfile(resfile=resfile)
+            except:
+                self.logger.warn("unable to a find a residuals file for " +\
+                                " scaling obscov")
+            self.log("scaling obscov by residual phi components")
 
 
     def __fromfile(self, filename):
@@ -999,6 +1003,11 @@ class errvar(linear_analysis):
         else:
             self.omitted_predictions_arg = None
 
+        kl = True
+        if "kl" in kwargs.keys():
+            kl = bool(kwargs["kl"])
+            kwargs.pop("kl")
+
 
         self.__qhalfx = None
         self.__R = None
@@ -1025,9 +1034,11 @@ class errvar(linear_analysis):
             if self.prediction_arg is not None:
                 self.__load_omitted_predictions()
             self.log("pre-loading omitted components")
-        self.log("applying KL scaling")
-        #self.apply_karhunen_loeve_scaling()
-        self.log("applying KL scaling")
+        if kl:
+            self.log("applying KL scaling")
+            self.apply_karhunen_loeve_scaling()
+            self.log("applying KL scaling")
+
         self.valid_terms = ["null","solution", "omitted", "all"]
         self.valid_return_types = ["parameters", "predictions"]
 
