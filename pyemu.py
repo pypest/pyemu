@@ -1026,7 +1026,7 @@ class errvar(linear_analysis):
                 self.__load_omitted_predictions()
             self.log("pre-loading omitted components")
         self.log("applying KL scaling")
-        self.apply_karhunen_loeve_scaling()
+        #self.apply_karhunen_loeve_scaling()
         self.log("applying KL scaling")
         self.valid_terms = ["null","solution", "omitted", "all"]
         self.valid_return_types = ["parameters", "predictions"]
@@ -1192,7 +1192,7 @@ class errvar(linear_analysis):
             singular_values = [singular_values]
         results = {}
         for singular_value in singular_values:
-            sv_results = self.varaince_at(singular_value)
+            sv_results = self.variance_at(singular_value)
             for key, val in sv_results.iteritems():
                 if key not in results.keys():
                     results[key] = []
