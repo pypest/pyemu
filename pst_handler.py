@@ -109,7 +109,10 @@ class pst(object):
         if self.__res is not None:
             return self.__res
         else:
-            if self.resfile is None:
+            if self.resfile is not None:
+                assert os.path.exists(self.resfile),"pst.res(): self.resfile " +\
+                    str(self.resfile) + " does not exist"
+            else:
                 self.resfile = self.filename.replace(".pst", ".res")
                 if not os.path.exists(self.resfile):
                     self.resfile = self.resfile.replace(".res", ".rei")
@@ -504,7 +507,7 @@ class pst(object):
         if obs_names is not None:
             new_obs.index = new_obs.obsnme
             new_obs = new_obs.loc[obs_names]
-            if self.res is not None:
+            if self.__res is not None:
                 new_res = copy.deepcopy(self.res)
                 new_res.index = new_res.name
                 new_res = new_res.loc[obs_names, :]

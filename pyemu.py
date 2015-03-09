@@ -104,7 +104,7 @@ class linear_analysis(object):
     """
     def __init__(self, jco=None, pst=None, parcov=None, obscov=None,
                  predictions=None, ref_var=1.0, verbose=True,
-                 resfile=None, **kwargs):
+                 resfile=None, forecasts=None,**kwargs):
         self.logger = logger(verbose)
         self.log = self.logger.log
         self.jco_arg = jco
@@ -123,6 +123,10 @@ class linear_analysis(object):
             obscov = pst
         self.obscov_arg = obscov
         self.ref_var = ref_var
+        if forecasts is not None and predictions is not None:
+            raise Exception("can't pass both forecasts and predictions")
+        if forecasts is not None:
+            predictions = forecasts
         self.prediction_arg = predictions
 
         #private attributes - access is through @decorated functions
@@ -143,6 +147,7 @@ class linear_analysis(object):
             self.__load_parcov()
         if obscov is not None:
             self.__load_obscov()
+
         if predictions is not None:
             self.__load_predictions()
         self.log("pre-loading base components")
@@ -172,6 +177,8 @@ class linear_analysis(object):
             except:
                 self.logger.warn("unable to a find a residuals file for " +\
                                 " scaling obscov")
+                self.resfile = None
+                self.res = None
             self.log("scaling obscov by residual phi components")
 
 
@@ -505,6 +512,9 @@ class linear_analysis(object):
             self.__load_predictions()
         return self.__predictions
 
+    @property
+    def forecasts(self):
+        return self.predictions
 
     @property
     def pst(self):
@@ -545,6 +555,9 @@ class linear_analysis(object):
     def prior_parameter(self):
         return self.parcov
 
+    @property
+    def prior_forecast(self):
+        return self.prior_prediction
 
     @property
     def prior_prediction(self):
@@ -843,6 +856,10 @@ class schur(linear_analysis):
 
 
     @property
+    def posterior_forecast(self):
+        return self.posterior_prediction
+
+    @property
     def posterior_prediction(self):
         """get a dict of posterior prediction variances
         """
@@ -996,7 +1013,11 @@ class errvar(linear_analysis):
         else:
             self.omitted_parcov_arg = None
 
-        if "omitted_predictions" in kwargs.keys():
+        if "omitted_forecasts" in kwargs.keys():
+            self.omitted_predictions_arg = kwargs["omitted_forecasts"]
+            kwargs.pop("omitted_forecasts")
+            self.__need_omitted = True
+        elif "omitted_predictions" in kwargs.keys():
             self.omitted_predictions_arg = kwargs["omitted_predictions"]
             kwargs.pop("omitted_predictions")
             self.__need_omitted = True
@@ -1496,21 +1517,7 @@ class errvar(linear_analysis):
 
 
 if __name__ == "__main__":
-    la = linear_analysis(jco="pest.jcb")
-    la.drop_prior_information()
-    jco_ord = la.jco.get(la.pst.obs_names,la.pst.par_names)
-    ord_base = "pest_ord"
-    jco_ord.to_binary(ord_base + ".jco")
-    #la.draw("test",num_reals=10)
-    # predictions = ["pd_one","pd_ten","pd_half"]
-    # la = errvar(jco="pest.jco",predictions=predictions,verbose=False,
-    #             omitted_parameters="mult1")
-    # la.apply_karhunen_loeve_scaling()
-    #print la.third_parameter(1)
-    # print la.get_errvar_dataframe(np.arange(20))
-    #
-    # la = schur(jco="pest.jco",predictions=predictions,verbose=False)
-    # print la.posterior_prediction
-    #
-    #la = schur(jco="reg.jco")
-    #print la.posterior_parameter
+    #la = linear_analysis(jco="pest.jcb")
+    forecasts = ["C_obs13_2","c_obs10_2","c_obs05_2"]
+    la = schur(jco=os.path.join("henry", "pest.jco"), forecasts=forecasts,verbose=False)
+    print la.importance_of_observations("h_obs01_1")
