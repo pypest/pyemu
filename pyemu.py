@@ -411,7 +411,7 @@ class linear_analysis(object):
         if self.prediction_arg is None:
             self.__predictions = None
             return
-        self.log("loading predictions")
+        self.log("loading forecasts")
         if not isinstance(self.prediction_arg, list):
             self.prediction_arg = [self.prediction_arg]
 
@@ -477,7 +477,7 @@ class linear_analysis(object):
             self.obscov
             self.__obscov.drop(row_names, axis=0)
         self.__predictions = vecs
-        self.log("loading predictions")
+        self.log("loading forecasts")
         return self.__predictions
 
     # these property decorators help keep from loading potentially
@@ -1024,7 +1024,7 @@ class errvar(linear_analysis):
         else:
             self.omitted_predictions_arg = None
 
-        kl = True
+        kl = False
         if "kl" in kwargs.keys():
             kl = bool(kwargs["kl"])
             kwargs.pop("kl")
@@ -1518,6 +1518,13 @@ class errvar(linear_analysis):
 
 if __name__ == "__main__":
     #la = linear_analysis(jco="pest.jcb")
-    forecasts = ["C_obs13_2","c_obs10_2","c_obs05_2"]
+    #forecasts = ["C_obs13_2","c_obs10_2","c_obs05_2"]
+    forecasts = ["pd_one","pd_ten","pd_half"]
     la = schur(jco=os.path.join("henry", "pest.jco"), forecasts=forecasts,verbose=False)
-    print la.importance_of_observations("h_obs01_1")
+    print la.prior_forecast
+
+    ev = errvar(jco=os.path.join("henry", "pest.jco"), forecasts=forecasts,verbose=False,omitted_parameters="mult1",)
+    df = ev.get_errvar_dataframe(singular_values=[0])
+    print df
+
+
