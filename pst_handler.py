@@ -100,6 +100,22 @@ class pst(object):
                                      og_df["weight"]) ** 2)
         return components
 
+    @property
+    def phi_components_normalized(self):
+        """ get the individual components of the total objective function
+            normalized to the total PHI being 1.0
+        Args:
+            None
+        Returns:
+            Dict{observation group : normalized contribution}
+        Raises:
+            Assertion error if self.observation_data groups don't match
+            self.res groups
+
+        """
+        # use a dictionary comprehension to go through and normalize each component of phi to the total
+        phi_components_normalized = {i: self.phi_components[i]/self.phi for i in self.phi_components}
+        return phi_components_normalized
 
     @property
     def res(self):
