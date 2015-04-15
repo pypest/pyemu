@@ -910,7 +910,7 @@ class matrix(object):
            raise TypeError('matrix.from_binary(): Jco produced by ' +
                            'deprecated version of PEST,' +
                            'Use JCOTRANS to convert to new format')
-        icount = np.fromfile(f,np.int32,1)
+        #icount = np.fromfile(f,np.int32,1)
         ncol, nrow = abs(itemp1), abs(itemp2)
         self.__x = np.zeros((nrow, ncol))
         #--read all data records
@@ -1500,7 +1500,6 @@ class cov(matrix):
                                     'unrecognized block:' + str(line))
         f.close()
         return nentries
-
 
 def test():
     arr = np.arange(0,12)
