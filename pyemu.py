@@ -1519,12 +1519,12 @@ class errvar(linear_analysis):
 if __name__ == "__main__":
     #la = linear_analysis(jco="pest.jcb")
     #forecasts = ["C_obs13_2","c_obs10_2","c_obs05_2"]
-    forecasts = ["pd_one","pd_ten","pd_half"]
-    la = schur(jco=os.path.join("henry", "pest.jco"), forecasts=forecasts,verbose=False)
-    print la.prior_forecast
+    #forecasts = ["pd_one","pd_ten","pd_half"]
+    la = schur(jco=os.path.join("for_nick", "tseriesVERArad.jco"))
+    print la.posterior_parameter
 
-    ev = errvar(jco=os.path.join("henry", "pest.jco"), forecasts=forecasts,verbose=False,omitted_parameters="mult1",)
-    df = ev.get_errvar_dataframe(singular_values=[0])
-    print df
+    #ev = errvar(jco=os.path.join("henry", "pest.jco"), forecasts=forecasts,verbose=False,omitted_parameters="mult1",)
+    #df = ev.get_errvar_dataframe(singular_values=[0])
+    #print df
 
 

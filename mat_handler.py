@@ -3,6 +3,7 @@ import struct
 import numpy as np
 import pandas
 import scipy.linalg as la
+from scipy.io import FortranFile
 import pst_handler as phand
 
 def concat(mats):
@@ -893,13 +894,23 @@ class matrix(object):
         Raises:
             TypeError if the binary file is deprecated version
         """
+
         f = open(filename, 'rb')
         #--the header datatype
         itemp1, itemp2, icount = np.fromfile(f, self.binary_header_dt, 1)[0]
+        if itemp1 > 0 and itemp2 < 0 and icount < 0:
+            print " WARNING: it appears this file was \n" +\
+                  " written with 'sequential` " +\
+                  " binary fortran specification\n...calling " +\
+                  " matrix.from_fortranfile()"
+            f.close()
+            self.from_fortranfile(filename)
+            return
         if itemp1 >= 0:
-            raise TypeError('matrix.from_binary(): Jco produced by ' +
-                            'deprecated version of PEST,' +
-                            'Use JCOTRANS to convert to new format')
+           raise TypeError('matrix.from_binary(): Jco produced by ' +
+                           'deprecated version of PEST,' +
+                           'Use JCOTRANS to convert to new format')
+        icount = np.fromfile(f,np.int32,1)
         ncol, nrow = abs(itemp1), abs(itemp2)
         self.__x = np.zeros((nrow, ncol))
         #--read all data records
@@ -924,6 +935,35 @@ class matrix(object):
         assert len(self.col_names) == self.shape[1],\
           "matrix.from_binary() len(col_names) (" + str(len(self.col_names)) +\
           ") != self.shape[1] (" + str(self.shape[1]) + ")"
+
+
+    def from_fortranfile(self,filename):
+        f = FortranFile(filename,mode='r')
+        itemp1, itemp2 = f.read_ints()
+        icount = f.read_ints()
+        if itemp1 >= 0:
+           raise TypeError('matrix.from_binary(): Jco produced by ' +
+                           'deprecated version of PEST,' +
+                           'Use JCOTRANS to convert to new format')
+        ncol, nrow = abs(itemp1), abs(itemp2)
+        data = []
+        for i in xrange(icount):
+            d = f.read_record(self.binary_rec_dt)[0]
+            data.append(d)
+        data = np.array(data,dtype=self.binary_rec_dt)
+        icols = ((data['j'] - 1) / nrow) + 1
+        irows = data['j'] - ((icols - 1) * nrow)
+        self.__x = np.zeros((nrow, ncol))
+        self.__x[irows - 1, icols - 1] = data["dtemp"]
+        par_rec = np.dtype((str,self.par_length))
+        for j in xrange(self.shape[1]):
+            name = f.read_record(par_rec)[0].strip()
+            self.col_names.append(name)
+        obs_rec = np.dtype((str,self.obs_length))
+        for j in xrange(self.shape[0]):
+            name = f.read_record(obs_rec)[0].strip()
+            self.row_names.append(name)
+        pass
 
 
     def to_ascii(self, out_filename, icode=2):
@@ -1512,15 +1552,20 @@ def test():
     result = first.T * newthird * first
 
 if __name__ == "__main__":
-    c1 = cov()
-    c1.from_ascii("post.cov")
-    c2 = jco()
-    c2.from_ascii("test.cov")
-    print type(c1 * c2)
-    print type(c2 * c1)
-    print type(c1 * c2.x)
+    import os
+    jco = matrix()
+    jco.from_binary(os.path.join("for_nick", "tseriesVERArad.jco"))
+    print jco.shape
+    #c1 = cov()
+    #c1.from_ascii("post.cov")
+    #c2 = jco()
+    #c2.from_ascii("test.cov")
+    #print c2.v
+    #print type(c1 * c2)
+    #print type(c2 * c1)
+    #print type(c1 * c2.x)
 
-    print type(c1 * 4)
+
     #test()
     # a = np.random.random((10, 5))
     # row_names = []
@@ -1534,6 +1579,6 @@ if __name__ == "__main__":
     # m1 = matrix()
     # m1.from_binary("mat_test.bin")
     # print m1.row_names
-    m = cov()
-    m.from_ascii("post.cov")
+    #m = cov()
+    #m.from_ascii("post.cov")
 
