@@ -963,7 +963,14 @@ class matrix(object):
         for j in xrange(self.shape[0]):
             name = f.read_record(obs_rec)[0].strip()
             self.row_names.append(name)
-        pass
+        assert len(self.row_names) == self.shape[0],\
+          "matrix.from_fortranfile() len(row_names) (" + \
+          str(len(self.row_names)) +\
+          ") != self.shape[0] (" + str(self.shape[0]) + ")"
+        assert len(self.col_names) == self.shape[1],\
+          "matrix.from_fortranfile() len(col_names) (" + \
+          str(len(self.col_names)) +\
+          ") != self.shape[1] (" + str(self.shape[1]) + ")"
 
 
     def to_ascii(self, out_filename, icode=2):
