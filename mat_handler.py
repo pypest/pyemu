@@ -867,7 +867,7 @@ class matrix(object):
         #--flatten the array
         flat = self.x[row_idxs, col_idxs].flatten()
         #--zip up the index position and value pairs
-        data = np.array(zip(icount, flat), dtype=self.binary_rec_dt)
+        data = np.array(list(zip(icount, flat)), dtype=self.binary_rec_dt)
         #--write
         data.tofile(f)
 
@@ -877,14 +877,14 @@ class matrix(object):
             elif len(name) < self.par_length:
                 for i in range(len(name), self.par_length):
                     name = name + ' '
-            f.write(name)
+            f.write(name.encode())
         for name in self.row_names:
             if len(name) > self.obs_length:
                 name = name[:self.obs_length - 1]
             elif len(name) < self.obs_length:
                 for i in range(len(name), self.obs_length):
                     name = name + ' '
-            f.write(name)
+            f.write(name.encode())
         f.close()
 
 
@@ -923,13 +923,17 @@ class matrix(object):
         irows = data['j'] - ((icols - 1) * nrow)
         self.__x[irows - 1, icols - 1] = data["dtemp"]
         #--read obs and parameter names
+        self.col_names = []
+        self.row_names = []
         for j in range(self.shape[1]):
             name = struct.unpack(str(self.par_length) + "s",
-                                 f.read(self.par_length))[0].strip().lower()
+                                 f.read(self.par_length))[0]\
+                                  .strip().lower().decode()
             self.col_names.append(name)
         for i in range(self.shape[0]):
             name = struct.unpack(str(self.obs_length) + "s",
-                                 f.read(self.obs_length))[0].strip().lower()
+                                 f.read(self.obs_length))[0]\
+                                  .strip().lower().decode()
             self.row_names.append(name)
         f.close()
         assert len(self.row_names) == self.shape[0],\
@@ -959,6 +963,8 @@ class matrix(object):
         self.__x = np.zeros((nrow, ncol))
         self.__x[irows - 1, icols - 1] = data["dtemp"]
         #par_rec = np.dtype(("|S12","name"))
+        self.row_names = []
+        self.col_names = []
         for j in range(self.shape[1]):
             name = f.read_record("|S12")[0].strip().decode()
             self.col_names.append(name)
@@ -990,11 +996,15 @@ class matrix(object):
         f_out = open(out_filename, 'w')
         f_out.write(' {0:7.0f} {1:7.0f} {2:7.0f}\n'.
                     format(nrow, ncol, icode))
+        f_out.close()
+        f_out = open(out_filename,'ab')
         if self.isdiagonal:
             x = np.diag(self.__x[:, 0])
         else:
             x = self.__x
         np.savetxt(f_out, x, fmt='%15.7E', delimiter='')
+        f_out.close()
+        f_out = open(out_filename,'a')
         if icode == 1:
             f_out.write('* row and column names\n')
             for r in self.row_names:
@@ -1565,6 +1575,8 @@ if __name__ == "__main__":
     jco = matrix()
     jco.from_binary(os.path.join("for_nick", "tseriesVERArad.jco"))
     print(jco.shape)
+    jco.to_binary("test.jco")
+    jco.from_binary("test.jco")
     #c1 = cov()
     #c1.from_ascii("post.cov")
     #c2 = jco()
