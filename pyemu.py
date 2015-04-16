@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 import os
 import copy
 from datetime import datetime
@@ -50,14 +51,14 @@ class logger(object):
             s = str(t) + ' finished: ' + str(phrase) + " took: " + \
                 str(t - self.items[phrase]) + '\n'
             if self.echo:
-                print s,
+                print(s,)
             if self.filename:
                 self.f.write(s)
             self.items.pop(phrase)
         else:
             s = str(t) + ' starting: ' + str(phrase) + '\n'
             if self.echo:
-                print s,
+                print(s,)
             if self.filename:
                 self.f.write(s)
             self.items[phrase] = copy.deepcopy(t)
@@ -73,7 +74,7 @@ class logger(object):
         """
         s = str(datetime.now()) + " WARNING: " + message + '\n'
         if self.echo:
-            print s,
+            print(s,)
         if self.filename:
             self.f.write(s)
 
@@ -450,7 +451,7 @@ class linear_analysis(object):
                                  "ndarray, generating generic prediction names")
                 pred_names = []
                 [pred_names.append("pred_" + str(i + 1))
-                 for i in xrange(self.prediction_arg.shape[0])]
+                 for i in range(self.prediction_arg.shape[0])]
 
                 if self.jco:
                     names = self.jco.col_names
@@ -653,7 +654,7 @@ class linear_analysis(object):
         self.log("removing " + nprior_str + " prior info from jco, pst, and " +
                                             "obs cov")
         #pi_names = list(self.pst.prior_information.pilbl.values)
-        pi_names = self.pst.prior_names
+        pi_names = list(self.pst.prior_names)
         self.__jco.drop(pi_names, axis=0)
         self.__pst.prior_information = self.pst.null_prior
         #self.__obscov.drop(pi_names,axis=0)
@@ -764,7 +765,7 @@ class linear_analysis(object):
         par_vals[:, islog] = 10.0**(par_vals[:, islog])
 
         #apply parameter bounds
-        for i in xrange(num_reals):
+        for i in range(num_reals):
             par_vals[i, np.where(par_vals[i] > ub)] = \
                 ub[np.where(par_vals[i] > ub)]
             par_vals[i, np.where(par_vals[i] < lb)] = \
@@ -787,7 +788,7 @@ class linear_analysis(object):
         self.log("writing realized pest control files")
         pst.prior_information = pi
         obs_vals = pst.observation_data.obsval.values
-        for i in xrange(num_reals):
+        for i in range(num_reals):
             pst.parameter_data.parval1 = par_vals[i, :]
             if add_noise:
                 ovs = obs_vals
@@ -831,7 +832,7 @@ class schur(linear_analysis):
                 self.posterior_parameter[iname, iname]. x)))
             iprior = self.parcov.row_names.index(name)
             prior.append(np.sqrt(float(self.parcov[iprior, iprior].x)))
-        for pred_name, pred_var in self.posterior_prediction.iteritems():
+        for pred_name, pred_var in self.posterior_prediction.items():
             names.append(pred_name)
             posterior.append(np.sqrt(pred_var))
             prior.append(self.prior_prediction[pred_name])
@@ -1225,7 +1226,7 @@ class errvar(linear_analysis):
         results = {}
         for singular_value in singular_values:
             sv_results = self.variance_at(singular_value)
-            for key, val in sv_results.iteritems():
+            for key, val in sv_results.items():
                 if key not in results.keys():
                     results[key] = []
                 results[key].append(val)
@@ -1521,7 +1522,7 @@ if __name__ == "__main__":
     #forecasts = ["C_obs13_2","c_obs10_2","c_obs05_2"]
     #forecasts = ["pd_one","pd_ten","pd_half"]
     la = schur(jco=os.path.join("for_nick", "tseriesVERArad.jco"))
-    print la.posterior_parameter
+    print(la.posterior_parameter)
 
     #ev = errvar(jco=os.path.join("henry", "pest.jco"), forecasts=forecasts,verbose=False,omitted_parameters="mult1",)
     #df = ev.get_errvar_dataframe(singular_values=[0])

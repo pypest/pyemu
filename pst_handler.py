@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 import os
 import copy
 import numpy as np
@@ -315,7 +316,7 @@ class pst(object):
                     raise Exception("EOF before prior information " +
                                     "section found")
                 if "* prior information" in line.lower():
-                    for iprior in xrange(nprior):
+                    for iprior in range(nprior):
                         line = f.readline()
                         if line == '':
                             raise Exception("EOF during prior information " +
@@ -350,7 +351,7 @@ class pst(object):
             "tied parameters not supported in pst.write()"
         f_in = open(self.filename, 'r')
         f_out = open(new_filename, 'w')
-        for _ in xrange(2):
+        for _ in range(2):
             f_out.write(f_in.readline())
         f_in.readline()
         f_out.write("restart "+self.mode+'\n')
@@ -469,7 +470,7 @@ class pst(object):
             f_out.write(line)
             f_out.write(self.regul_section)
         elif update_regul:
-            for _ in xrange(3):
+            for _ in range(3):
                 f_in.readline()
             f_out.write(self.regul_section)
         else:
@@ -574,8 +575,8 @@ class pst(object):
                     weight = 1.0 / (ubnd - lbnd)
                 self.prior_information.loc[parnme, "weight"] = weight
             else:
-                print "prior information name does not correspond" +\
-                      " to a parameter: " + str(parnme)
+                print("prior information name does not correspond" +\
+                      " to a parameter: " + str(parnme))
 
 
     def parrep(self, parfile=None):
@@ -841,9 +842,9 @@ class pst(object):
 
 if __name__ == "__main__":
     p = pst("pest.pst")
-    print p.observation_data.weight
+    print(p.observation_data.weight)
     p.proportional_weights(0.25, wmax=0.5)
-    print p.observation_data.weight
+    print(p.observation_data.weight)
     #print p.phi
     #p.adjust_weights_by_group(obsgrp_dict={"head": 5, "conc": 5})
     #print p.phi
