@@ -471,8 +471,10 @@ class linear_analysis(object):
                 raise Exception("unrecognized predictions argument: " +
                                 str(arg))
         if len(row_names) > 0:
+            extract = self.jco.extract(row_names=row_names)
             for row_name in row_names:
-                vecs.append(self.jco.extract(row_names=row_name).T)
+                vecs.append(extract.get(row_names=row_name).T)
+
             # call obscov to load __obscov so that __obscov
             # (priavte) can be manipulated
             self.obscov
