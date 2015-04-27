@@ -889,8 +889,8 @@ class schur(linear_analysis):
         Args:
             parameter_names (list of str) : parameter that are perfectly known
         Returns:
-            dict{prediction name : [% prior uncertainty reduction,
-                % posterior uncertainty reduction]}
+            dict{prediction name : [prior uncertainty w/o parameter_names,
+                % posterior uncertainty w/o parameter names]}
         Raises:
             Exception if no predictions are set
             Exception if one or more parameter_names are not in jco
@@ -930,12 +930,46 @@ class schur(linear_analysis):
         # posterior_%_reduction]}
         results = {}
         for pname in bprior.keys():
-            prior_reduc = 100. * ((bprior[pname] - cprior[pname]) /
-                                  bprior[pname])
-            post_reduc = 100. * ((bpost[pname] - cpost[pname]) / bpost[pname])
-            results[pname] = [prior_reduc, post_reduc]
+            #prior_reduc = 100. * ((bprior[pname] - cprior[pname]) /
+            #                      bprior[pname])
+            #post_reduc = 100. * ((bpost[pname] - cpost[pname]) / bpost[pname])
+            #results[pname] = [prior_reduc, post_reduc]
+            results[pname] = [cprior[pname],cpost[pname]]
         return results
 
+
+    def contribution_dataframe(self,parlist_dict):
+        """get a dataframe the prior and posterior uncertainty
+        reduction as a result of
+        some parameter becoming perfectly known
+        Args:
+            parlist_dict (dict of list of str) : groups of parameters
+                that are to be treated as perfectly known.  key values become
+                row labels in dataframe
+        Returns:
+            dataframe[parlist_dict.keys(),(forecast_name,<prior,post>)
+                multiindex dataframe of schur's complement results for each
+                group of parameters in parlist_dict values.
+        Raises:
+            Exception if no predictions are set
+            Exception if one or more parameter_names are not in jco
+            Exception if no parameter remain
+        """
+        results = {}
+        names = ["base"]
+        for forecast,pr in self.prior_forecast.items():
+            results[(forecast,"prior")] = [pr]
+        for forecast,pt in self.posterior_forecast.items():
+            results[(forecast,"post")] = [pt]
+        for case_name,par_list in parlist_dict.items():
+            names.append(case_name)
+            case_result = self.contribution_from_parameters(par_list)
+            for forecast,(pr,pt) in case_result.items():
+                results[(forecast, "prior")].append(pr)
+                results[(forecast, "post")].append(pt)
+
+        df = pandas.DataFrame(results,index=names)
+        return df
 
     def importance_of_observations(self,observation_names):
         """get the importance of some observations for reducing the

@@ -689,7 +689,7 @@ class pst(object):
                                 " but phi > 0 for group:" + str(ogroup))
             if og_phi > 0:
                 factor = np.sqrt(float(og_nzobs) / float(og_phi))
-                obs.weight[idxs] *= factor
+                obs.weight[idxs] = obs.weight[idxs] * factor
         self.observation_data = obs
 
 
