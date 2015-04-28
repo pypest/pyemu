@@ -925,20 +925,20 @@ class schur(linear_analysis):
         bprior,bpost = self.prior_prediction, self.posterior_prediction
         #get the prior and posterior for the conditioned case
         cprior,cpost = la_cond.prior_prediction, la_cond.posterior_prediction
-
+        return cprior,cpost
         # pack the results into a dict{pred_name:[prior_%_reduction,
         # posterior_%_reduction]}
-        results = {}
-        for pname in bprior.keys():
+        #results = {}
+        #for pname in bprior.keys():
             #prior_reduc = 100. * ((bprior[pname] - cprior[pname]) /
             #                      bprior[pname])
             #post_reduc = 100. * ((bpost[pname] - cpost[pname]) / bpost[pname])
             #results[pname] = [prior_reduc, post_reduc]
-            results[pname] = [cprior[pname],cpost[pname]]
-        return results
+        #    results[pname] = [cprior[pname],cpost[pname]]
+        #return results
 
 
-    def contribution_dataframe(self,parlist_dict):
+    def get_contribution_dataframe(self,parlist_dict):
         """get a dataframe the prior and posterior uncertainty
         reduction as a result of
         some parameter becoming perfectly known
@@ -963,13 +963,23 @@ class schur(linear_analysis):
             results[(forecast,"post")] = [pt]
         for case_name,par_list in parlist_dict.items():
             names.append(case_name)
-            case_result = self.contribution_from_parameters(par_list)
-            for forecast,(pr,pt) in case_result.items():
+            case_prior,case_post = self.contribution_from_parameters(par_list)
+            for forecast,pr in case_prior.items():
                 results[(forecast, "prior")].append(pr)
+            for forecast,pt in case_post.items():
                 results[(forecast, "post")].append(pt)
-
         df = pandas.DataFrame(results,index=names)
         return df
+
+
+    def contribution_from_parameter_groups(self):
+        pargrp_dict = {}
+        par = self.pst.parameter_data
+        groups = par.groupby("pargp").groups
+        for grp,idxs in groups.items():
+            pargrp_dict[grp] = list(par.loc[idxs,"parnme"])
+        return self.get_contribution_dataframe(pargrp_dict)
+
 
     def importance_of_observations(self,observation_names):
         """get the importance of some observations for reducing the
@@ -982,7 +992,6 @@ class schur(linear_analysis):
             Exception if one or more names not in jco obs names
             Exception if all obs are in observation names
             Exception if predictions are not set
-
         """
         if not isinstance(observation_names,list):
             observation_names = [observation_names]
@@ -991,7 +1000,6 @@ class schur(linear_analysis):
             if name.lower() not in self.jco.obs_names:
                 raise Exception("schur.importance_of_observations: " +
                                 "obs name not found in jco: " + name)
-
         keep_names = []
         for name in self.jco.obs_names:
             if name not in observation_names:
@@ -1003,17 +1011,51 @@ class schur(linear_analysis):
             raise Exception("schur.importance_of_observations: " +
                             "no predictions have been set")
 
-
         la_reduced = self.get(par_names=self.jco.par_names,
                               obs_names=keep_names)
-        rpost = la_reduced.posterior_prediction
-        bpost = self.posterior_prediction
+        return la_reduced.posterior_prediction
+        #rpost = la_reduced.posterior_prediction
+        #bpost = self.posterior_prediction
 
+        #results = {}
+        #for pname in rpost.keys():
+        #    post_reduc = 100. * ((rpost[pname] - bpost[pname]) / rpost[pname])
+        #    results[pname] = post_reduc
+        #return results
+
+
+    def get_importance_dataframe(self,obslist_dict):
+        """get a dataframe the posterior uncertainty
+        as a result of losing some observations
+        Args:
+            obslist_dict (dict of list of str) : groups of observations
+                that are to be treated as lost.  key values become
+                row labels in dataframe
+        Returns:
+            dataframe[obslist_dict.keys(),(forecast_name,post)
+                multiindex dataframe of schur's complement results for each
+                group of observations in obslist_dict values.
+        """
         results = {}
-        for pname in rpost.keys():
-            post_reduc = 100. * ((rpost[pname] - bpost[pname]) / rpost[pname])
-            results[pname] = post_reduc
-        return results
+        names = ["base"]
+        for forecast,pt in self.posterior_forecast.items():
+            results[forecast] = [pt]
+        for case_name,obs_list in obslist_dict.items():
+            names.append(case_name)
+            case_post = self.importance_of_observations(obs_list)
+            for forecast,pt in case_post.items():
+                results[forecast].append(pt)
+        df = pandas.DataFrame(results,index=names)
+        return df
+
+
+    def importance_of_observation_groups(self):
+        obsgrp_dict = {}
+        obs = self.pst.observation_data
+        groups = obs.groupby("obgnme").groups
+        for grp,idxs in groups.items():
+            obsgrp_dict[grp] = list(obs.loc[idxs,"obsnme"])
+        return self.get_importance_dataframe(obsgrp_dict)
 
 
 class errvar(linear_analysis):
