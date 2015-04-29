@@ -752,7 +752,7 @@ class matrix(object):
         if col_names is not None and not isinstance(col_names, list):
             col_names = [col_names]
 
-        if isinstance(self,cov):
+        if isinstance(self,cov) and (row_names is None or col_names is None ):
             if row_names is not None:
                 idxs = self.indices(row_names, axis=0)
                 names = row_names
@@ -1256,9 +1256,10 @@ class cov(matrix):
         if self.isdiagonal:
             return new_cov
         #C22^1
-        cond_cov = self.get(conditioning_elements).inv()
+        cond_cov = self.get(conditioning_elements).inv
         #C12
         upper_off_diag = self.get(keep_names, conditioning_elements)
+        print(new_cov.shape,upper_off_diag.shape,cond_cov.shape)
         return new_cov - (upper_off_diag * cond_cov * upper_off_diag.T)
 
 

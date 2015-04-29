@@ -957,17 +957,24 @@ class schur(linear_analysis):
         """
         results = {}
         names = ["base"]
-        for forecast,pr in self.prior_forecast.items():
+        for forecast in self.prior_forecast.keys():
+            pr = self.prior_forecast[forecast]
+            pt = self.posterior_forecast[forecast]
+            reduce = 100.0 * ((pr - pt) / pr)
             results[(forecast,"prior")] = [pr]
-        for forecast,pt in self.posterior_forecast.items():
             results[(forecast,"post")] = [pt]
+            results[(forecast,"percent_reduce")] = [reduce]
         for case_name,par_list in parlist_dict.items():
             names.append(case_name)
             case_prior,case_post = self.contribution_from_parameters(par_list)
-            for forecast,pr in case_prior.items():
+            for forecast in case_prior.keys():
+                pr = case_prior[forecast]
+                pt = case_post[forecast]
+                reduce = 100.0 * ((pr - pt) / pr)
                 results[(forecast, "prior")].append(pr)
-            for forecast,pt in case_post.items():
                 results[(forecast, "post")].append(pt)
+                results[(forecast, "percent_reduce")].append(reduce)
+
         df = pandas.DataFrame(results,index=names)
         return df
 
@@ -1599,7 +1606,8 @@ if __name__ == "__main__":
     #la = linear_analysis(jco="pest.jcb")
     #forecasts = ["C_obs13_2","c_obs10_2","c_obs05_2"]
     forecasts = ["pd_one","pd_ten","pd_half"]
-    la = schur(jco=os.path.join("henry","pest.jco"),forecasts=forecasts)
+    la = schur(jco=os.path.join("pest.jco"),forecasts=forecasts,parcov="posterior.cov")
+    df = la.get_contribution_dataframe({"test1":["mult1"]})
     la.parcov.to_uncfile("test.unc")
     #la = schur(jco=os.path.join("for_nick", "tseriesVERArad.jco"))
     #print(la.posterior_parameter)
