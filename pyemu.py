@@ -883,6 +883,29 @@ class schur(linear_analysis):
             return self.__posterior_prediction
 
 
+    def get_parameter_summary(self):
+        """get a summary of the parameter uncertainty
+        Args:
+            None
+        Returns:
+            pandas.DataFrame() of prior,posterior variances and percent
+            uncertainty reduction of each parameter
+        Raises:
+            None
+        """
+        ureduce = np.diag(100.0 * (1.0 - (self.posterior_parameter *
+                                          (self.parcov**-1)).x))
+        prior = self.parcov.get(self.posterior_parameter.col_names)
+        if prior.isdiagonal:
+            prior = prior.x.flatten()
+        else:
+            prior = np.diag(prior.x)
+        post = np.diag(self.posterior_parameter.x)
+        return pandas.DataFrame({"prior_var":prior,"post_var":post,
+                                 "percent_reduction":ureduce},
+                                index=self.posterior_parameter.col_names)
+
+
     def contribution_from_parameters(self, parameter_names):
         """get the prior and posterior uncertainty reduction as a result of
         some parameter becoming perfectly known
@@ -980,6 +1003,9 @@ class schur(linear_analysis):
 
 
     def contribution_from_parameter_groups(self):
+        """get the forecast uncertainty contribution from each parameter
+        group.  Just some sugar for get_contribution_dataframe
+        """
         pargrp_dict = {}
         par = self.pst.parameter_data
         groups = par.groupby("pargp").groups
@@ -1000,9 +1026,9 @@ class schur(linear_analysis):
             Exception if all obs are in observation names
             Exception if predictions are not set
         """
-        if not isinstance(observation_names,list):
+        if not isinstance(observation_names, list):
             observation_names = [observation_names]
-        for iname,name in enumerate(observation_names):
+        for iname, name in enumerate(observation_names):
             observation_names[iname] = name.lower()
             if name.lower() not in self.jco.obs_names:
                 raise Exception("schur.importance_of_observations: " +
@@ -1600,15 +1626,15 @@ class errvar(linear_analysis):
         self.log("calc third term parameter @" + str(singular_value))
         return result
 
-
-
 if __name__ == "__main__":
     #la = linear_analysis(jco="pest.jcb")
     #forecasts = ["C_obs13_2","c_obs10_2","c_obs05_2"]
     forecasts = ["pd_one","pd_ten","pd_half"]
-    la = schur(jco=os.path.join("pest.jco"),forecasts=forecasts,parcov="posterior.cov")
-    df = la.get_contribution_dataframe({"test1":["mult1"]})
-    la.parcov.to_uncfile("test.unc")
+    la = schur(jco=os.path.join("pest.jco"),forecasts=forecasts)
+    df = la.get_parameter_summary()
+    print(df)
+    #df = la.get_contribution_dataframe({"test1":["mult1"]})
+    #la.parcov.to_uncfile("test.unc")
     #la = schur(jco=os.path.join("for_nick", "tseriesVERArad.jco"))
     #print(la.posterior_parameter)
 

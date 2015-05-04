@@ -427,7 +427,6 @@ class matrix(object):
     def __rmul__(self, other):
         raise NotImplementedError()
 
-
     def __set_svd(self):
         """private method to set SVD components
         Args:
