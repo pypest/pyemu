@@ -906,7 +906,27 @@ class schur(linear_analysis):
                                 index=self.posterior_parameter.col_names)
 
 
-    def contribution_from_parameters(self, parameter_names):
+    def get_forecast_summary(self):
+        """get a summary of the forecast uncertainty
+        Args:
+            None
+        Returns:
+            pandas.DataFrame() of prior,posterior variances and percent
+            uncertainty reduction of each forecast
+        Raises:
+            None
+        """
+        sum = {"prior_var":[], "post_var":[], "percent_reduction":[]}
+        for forecast in self.prior_forecast.keys():
+            pr = self.prior_forecast[forecast]
+            pt = self.posterior_forecast[forecast]
+            ur = 100.0 * (1.0 - (pt/pr))
+            sum["prior_var"].append(pr)
+            sum["post_var"].append(pt)
+            sum["percent_reduction"].append(ur)
+        return pandas.DataFrame(sum,index=self.prior_forecast.keys())
+
+    def __contribution_from_parameters(self, parameter_names):
         """get the prior and posterior uncertainty reduction as a result of
         some parameter becoming perfectly known
         Args:
@@ -989,7 +1009,7 @@ class schur(linear_analysis):
             results[(forecast,"percent_reduce")] = [reduce]
         for case_name,par_list in parlist_dict.items():
             names.append(case_name)
-            case_prior,case_post = self.contribution_from_parameters(par_list)
+            case_prior,case_post = self.__contribution_from_parameters(par_list)
             for forecast in case_prior.keys():
                 pr = case_prior[forecast]
                 pt = case_post[forecast]
@@ -1002,7 +1022,7 @@ class schur(linear_analysis):
         return df
 
 
-    def contribution_from_parameter_groups(self):
+    def contribution_dataframe_groups(self):
         """get the forecast uncertainty contribution from each parameter
         group.  Just some sugar for get_contribution_dataframe
         """
@@ -1014,7 +1034,7 @@ class schur(linear_analysis):
         return self.get_contribution_dataframe(pargrp_dict)
 
 
-    def importance_of_observations(self,observation_names):
+    def __importance_of_observations(self,observation_names):
         """get the importance of some observations for reducing the
         posterior uncertainty
         Args:
@@ -1057,36 +1077,45 @@ class schur(linear_analysis):
         #return results
 
 
-    def get_importance_dataframe(self,obslist_dict):
+    def get_importance_dataframe(self,obslist_dict=None):
         """get a dataframe the posterior uncertainty
         as a result of losing some observations
         Args:
             obslist_dict (dict of list of str) : groups of observations
                 that are to be treated as lost.  key values become
-                row labels in dataframe
+                row labels in dataframe. If None, then test every obs
         Returns:
             dataframe[obslist_dict.keys(),(forecast_name,post)
                 multiindex dataframe of schur's complement results for each
                 group of observations in obslist_dict values.
         """
+        if obslist_dict is None:
+            obs = self.pst.observation_data.loc[:,["obsnme","weight"]]
+            obslist_dict = {}
+            for o, w in zip(obs.obsnme,obs.weight):
+                if w > 0:
+                    obslist_dict[o] = [o]
+
         results = {}
         names = ["base"]
         for forecast,pt in self.posterior_forecast.items():
             results[forecast] = [pt]
         for case_name,obs_list in obslist_dict.items():
             names.append(case_name)
-            case_post = self.importance_of_observations(obs_list)
+            case_post = self.__importance_of_observations(obs_list)
             for forecast,pt in case_post.items():
                 results[forecast].append(pt)
         df = pandas.DataFrame(results,index=names)
         return df
 
 
-    def importance_of_observation_groups(self):
+    def get_importance_dataframe_groups(self):
         obsgrp_dict = {}
         obs = self.pst.observation_data
+        obs.index = obs.obsnme
+        obs = obs.loc[self.jco.obs_names,:]
         groups = obs.groupby("obgnme").groups
-        for grp,idxs in groups.items():
+        for grp, idxs in groups.items():
             obsgrp_dict[grp] = list(obs.loc[idxs,"obsnme"])
         return self.get_importance_dataframe(obsgrp_dict)
 
@@ -1631,7 +1660,9 @@ if __name__ == "__main__":
     #forecasts = ["C_obs13_2","c_obs10_2","c_obs05_2"]
     forecasts = ["pd_one","pd_ten","pd_half"]
     la = schur(jco=os.path.join("pest.jco"),forecasts=forecasts)
-    df = la.get_parameter_summary()
+    df = la.get_importance_dataframe()
+    #df = la.importance_of_observation_groups()
+    #df = la.get_parameter_summary()
     print(df)
     #df = la.get_contribution_dataframe({"test1":["mult1"]})
     #la.parcov.to_uncfile("test.unc")
