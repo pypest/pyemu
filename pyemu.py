@@ -104,8 +104,8 @@ class linear_analysis(object):
             private attributes
     """
     def __init__(self, jco=None, pst=None, parcov=None, obscov=None,
-                 predictions=None, ref_var=1.0, verbose=True,
-                 resfile=None, forecasts=None,**kwargs):
+                 predictions=None, ref_var=1.0, verbose=False,
+                 resfile=False, forecasts=None,**kwargs):
         self.logger = logger(verbose)
         self.log = self.logger.log
         self.jco_arg = jco
@@ -893,14 +893,17 @@ class schur(linear_analysis):
         Raises:
             None
         """
-        ureduce = np.diag(100.0 * (1.0 - (self.posterior_parameter *
-                                          (self.parcov**-1)).x))
+
+        #ureduce = np.diag(100.0 * (1.0 - (self.posterior_parameter *
+        #                                  (self.parcov**-1)).x))
+
         prior = self.parcov.get(self.posterior_parameter.col_names)
         if prior.isdiagonal:
             prior = prior.x.flatten()
         else:
             prior = np.diag(prior.x)
         post = np.diag(self.posterior_parameter.x)
+        ureduce = 100.0 * (1.0 - (post / prior))
         return pandas.DataFrame({"prior_var":prior,"post_var":post,
                                  "percent_reduction":ureduce},
                                 index=self.posterior_parameter.col_names)
@@ -1658,11 +1661,15 @@ class errvar(linear_analysis):
 if __name__ == "__main__":
     #la = linear_analysis(jco="pest.jcb")
     #forecasts = ["C_obs13_2","c_obs10_2","c_obs05_2"]
-    forecasts = ["pd_one","pd_ten","pd_half"]
-    la = schur(jco=os.path.join("pest.jco"),forecasts=forecasts)
-    df = la.get_importance_dataframe()
+    #forecasts = ["pd_one","pd_ten","pd_half"]
+    #la = schur(jco=os.path.join("pest.jcb"),forecasts=forecasts)
+    forecasts = ["pd_jamesriv"]
+    j = os.path.join("ozark","ozark.jco")
+    p = os.path.join("ozark","ozark.unc")
+    la = schur(jco=j,parcov=p,forecasts=forecasts)
+    #df = la.get_importance_dataframe()
     #df = la.importance_of_observation_groups()
-    #df = la.get_parameter_summary()
+    df = la.get_parameter_summary()
     print(df)
     #df = la.get_contribution_dataframe({"test1":["mult1"]})
     #la.parcov.to_uncfile("test.unc")
