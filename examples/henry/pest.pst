@@ -18,7 +18,7 @@ restart estimation
 * parameter data
 global_k    log    factor   200.0   150   250   m   1.0    0.0  1
 mult1       log    factor     1.0   0.75  1.25   m   1.0    0.0  1
-mult2       log    factor     1.0   0.5  1.5   m   1.0    0.0  1
+mult2       log    factor     1.0   0.5  2   m   1.0    0.0  1
 kr01c01     log    factor   1.0   0.1  10.0  p   1.0    0.0  1
 kr01c02     log    factor   1.0   0.1  10.0  p   1.0    0.0  1
 kr01c03     log    factor   1.0   0.1  10.0  p   1.0    0.0  1
@@ -699,9 +699,9 @@ C_OBS14_1         4.969430e-01     2.012303e+01  conc
 C_OBS14_2         9.666310e-01     0.000000e+00  conc
 C_OBS15_1         9.028350e-01     1.107622e+01  conc
 C_OBS15_2         9.996310e-01     0.000000e+00  conc
-PD_one            7.019310e+00     0.000000e+00  pred
-PD_ten            7.311900e+00     0.000000e+00  pred
-PD_half           7.893220e+00     0.000000e+00  pred
+PD_one            7.019310e+00     0.000000e+00  conc
+PD_ten            7.311900e+00     0.000000e+00  conc
+PD_half           7.893220e+00     0.000000e+00  conc
 * model command line
  model.bat
 * model input/output

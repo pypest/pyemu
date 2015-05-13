@@ -1,0 +1,15 @@
+misc\grid_henry_coarse_actual.spc
+misc\bore_coords_henry_coarse_head.dat
+misc\bore_coords_henry_coarse_head.dat
+misc\bore_samp_head.dat
+model\henry_coarse.hds
+f
+999
+d
+01/01/2011
+00:00:00
+100
+0.1
+misc\head.dat
+
+

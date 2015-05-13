@@ -1025,7 +1025,7 @@ class schur(linear_analysis):
         return df
 
 
-    def contribution_dataframe_groups(self):
+    def get_contribution_dataframe_groups(self):
         """get the forecast uncertainty contribution from each parameter
         group.  Just some sugar for get_contribution_dataframe
         """
