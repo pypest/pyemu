@@ -1,0 +1,587 @@
+
+% Default to the notebook output style
+
+    
+
+
+% Inherit from the specified cell style.
+
+
+
+
+    
+\documentclass{article}
+
+    
+    
+    \usepackage{graphicx} % Used to insert images
+    \usepackage{adjustbox} % Used to constrain images to a maximum size 
+    \usepackage{color} % Allow colors to be defined
+    \usepackage{enumerate} % Needed for markdown enumerations to work
+    \usepackage{geometry} % Used to adjust the document margins
+    \usepackage{amsmath} % Equations
+    \usepackage{amssymb} % Equations
+    \usepackage{eurosym} % defines \euro
+    \usepackage[mathletters]{ucs} % Extended unicode (utf-8) support
+    \usepackage[utf8x]{inputenc} % Allow utf-8 characters in the tex document
+    \usepackage{fancyvrb} % verbatim replacement that allows latex
+    \usepackage{grffile} % extends the file name processing of package graphics 
+                         % to support a larger range 
+    % The hyperref package gives us a pdf with properly built
+    % internal navigation ('pdf bookmarks' for the table of contents,
+    % internal cross-reference links, web links for URLs, etc.)
+    \usepackage{hyperref}
+    \usepackage{longtable} % longtable support required by pandoc >1.10
+    \usepackage{booktabs}  % table support for pandoc > 1.12.2
+    
+
+    
+    
+    \definecolor{orange}{cmyk}{0,0.4,0.8,0.2}
+    \definecolor{darkorange}{rgb}{.71,0.21,0.01}
+    \definecolor{darkgreen}{rgb}{.12,.54,.11}
+    \definecolor{myteal}{rgb}{.26, .44, .56}
+    \definecolor{gray}{gray}{0.45}
+    \definecolor{lightgray}{gray}{.95}
+    \definecolor{mediumgray}{gray}{.8}
+    \definecolor{inputbackground}{rgb}{.95, .95, .85}
+    \definecolor{outputbackground}{rgb}{.95, .95, .95}
+    \definecolor{traceback}{rgb}{1, .95, .95}
+    % ansi colors
+    \definecolor{red}{rgb}{.6,0,0}
+    \definecolor{green}{rgb}{0,.65,0}
+    \definecolor{brown}{rgb}{0.6,0.6,0}
+    \definecolor{blue}{rgb}{0,.145,.698}
+    \definecolor{purple}{rgb}{.698,.145,.698}
+    \definecolor{cyan}{rgb}{0,.698,.698}
+    \definecolor{lightgray}{gray}{0.5}
+    
+    % bright ansi colors
+    \definecolor{darkgray}{gray}{0.25}
+    \definecolor{lightred}{rgb}{1.0,0.39,0.28}
+    \definecolor{lightgreen}{rgb}{0.48,0.99,0.0}
+    \definecolor{lightblue}{rgb}{0.53,0.81,0.92}
+    \definecolor{lightpurple}{rgb}{0.87,0.63,0.87}
+    \definecolor{lightcyan}{rgb}{0.5,1.0,0.83}
+    
+    % commands and environments needed by pandoc snippets
+    % extracted from the output of `pandoc -s`
+    \DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+    % Add ',fontsize=\small' for more characters per line
+    \newenvironment{Shaded}{}{}
+    \newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{{#1}}}}
+    \newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{{#1}}}
+    \newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+    \newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+    \newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+    \newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+    \newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+    \newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{{#1}}}}
+    \newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{{#1}}}
+    \newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{{#1}}}}
+    \newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{{#1}}}
+    \newcommand{\RegionMarkerTok}[1]{{#1}}
+    \newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{{#1}}}}
+    \newcommand{\NormalTok}[1]{{#1}}
+    
+    % Define a nice break command that doesn't care if a line doesn't already
+    % exist.
+    \def\br{\hspace*{\fill} \\* }
+    % Math Jax compatability definitions
+    \def\gt{>}
+    \def\lt{<}
+    % Document parameters
+    \title{verify\_unc\_results}
+    
+    
+    
+
+    % Pygments definitions
+    
+\makeatletter
+\def\PY@reset{\let\PY@it=\relax \let\PY@bf=\relax%
+    \let\PY@ul=\relax \let\PY@tc=\relax%
+    \let\PY@bc=\relax \let\PY@ff=\relax}
+\def\PY@tok#1{\csname PY@tok@#1\endcsname}
+\def\PY@toks#1+{\ifx\relax#1\empty\else%
+    \PY@tok{#1}\expandafter\PY@toks\fi}
+\def\PY@do#1{\PY@bc{\PY@tc{\PY@ul{%
+    \PY@it{\PY@bf{\PY@ff{#1}}}}}}}
+\def\PY#1#2{\PY@reset\PY@toks#1+\relax+\PY@do{#2}}
+
+\expandafter\def\csname PY@tok@gd\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.63,0.00,0.00}{##1}}}
+\expandafter\def\csname PY@tok@gu\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.50,0.00,0.50}{##1}}}
+\expandafter\def\csname PY@tok@gt\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.27,0.87}{##1}}}
+\expandafter\def\csname PY@tok@gs\endcsname{\let\PY@bf=\textbf}
+\expandafter\def\csname PY@tok@gr\endcsname{\def\PY@tc##1{\textcolor[rgb]{1.00,0.00,0.00}{##1}}}
+\expandafter\def\csname PY@tok@cm\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@vg\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@m\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@mh\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@go\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.53,0.53,0.53}{##1}}}
+\expandafter\def\csname PY@tok@ge\endcsname{\let\PY@it=\textit}
+\expandafter\def\csname PY@tok@vc\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@il\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@cs\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@cp\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.74,0.48,0.00}{##1}}}
+\expandafter\def\csname PY@tok@gi\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.63,0.00}{##1}}}
+\expandafter\def\csname PY@tok@gh\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,0.50}{##1}}}
+\expandafter\def\csname PY@tok@ni\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.60,0.60,0.60}{##1}}}
+\expandafter\def\csname PY@tok@nl\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.63,0.63,0.00}{##1}}}
+\expandafter\def\csname PY@tok@nn\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@no\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.53,0.00,0.00}{##1}}}
+\expandafter\def\csname PY@tok@na\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.49,0.56,0.16}{##1}}}
+\expandafter\def\csname PY@tok@nb\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@nc\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@nd\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.67,0.13,1.00}{##1}}}
+\expandafter\def\csname PY@tok@ne\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.82,0.25,0.23}{##1}}}
+\expandafter\def\csname PY@tok@nf\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@si\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.73,0.40,0.53}{##1}}}
+\expandafter\def\csname PY@tok@s2\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@vi\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@nt\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@nv\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@s1\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@kd\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@sh\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sc\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sx\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@bp\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@c1\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@kc\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@c\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@mf\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@err\endcsname{\def\PY@bc##1{\setlength{\fboxsep}{0pt}\fcolorbox[rgb]{1.00,0.00,0.00}{1,1,1}{\strut ##1}}}
+\expandafter\def\csname PY@tok@mb\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@ss\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@sr\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.40,0.53}{##1}}}
+\expandafter\def\csname PY@tok@mo\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@kn\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@mi\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@gp\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,0.50}{##1}}}
+\expandafter\def\csname PY@tok@o\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@kr\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@s\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@kp\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@w\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.73,0.73}{##1}}}
+\expandafter\def\csname PY@tok@kt\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.69,0.00,0.25}{##1}}}
+\expandafter\def\csname PY@tok@ow\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.67,0.13,1.00}{##1}}}
+\expandafter\def\csname PY@tok@sb\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@k\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@se\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.73,0.40,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sd\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+
+\def\PYZbs{\char`\\}
+\def\PYZus{\char`\_}
+\def\PYZob{\char`\{}
+\def\PYZcb{\char`\}}
+\def\PYZca{\char`\^}
+\def\PYZam{\char`\&}
+\def\PYZlt{\char`\<}
+\def\PYZgt{\char`\>}
+\def\PYZsh{\char`\#}
+\def\PYZpc{\char`\%}
+\def\PYZdl{\char`\$}
+\def\PYZhy{\char`\-}
+\def\PYZsq{\char`\'}
+\def\PYZdq{\char`\"}
+\def\PYZti{\char`\~}
+% for compatibility with earlier versions
+\def\PYZat{@}
+\def\PYZlb{[}
+\def\PYZrb{]}
+\makeatother
+
+
+    % Exact colors from NB
+    \definecolor{incolor}{rgb}{0.0, 0.0, 0.5}
+    \definecolor{outcolor}{rgb}{0.545, 0.0, 0.0}
+
+
+
+    
+    % Prevent overflowing lines due to hard-to-break entities
+    \sloppy 
+    % Setup hyperref package
+    \hypersetup{
+      breaklinks=true,  % so long urls are correctly broken across lines
+      colorlinks=true,
+      urlcolor=blue,
+      linkcolor=darkorange,
+      citecolor=darkgreen,
+      }
+    % Slightly bigger margins than the latex defaults
+    
+    \geometry{verbose,tmargin=1in,bmargin=1in,lmargin=1in,rmargin=1in}
+    
+    
+
+    \begin{document}
+    
+    
+    \maketitle
+    
+    
+
+    
+    \section{verify pyEMU results with the henry
+problem}\label{verify-pyemu-results-with-the-henry-problem}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}1}]:} \PY{o}{\PYZpc{}}\PY{k}{pylab} inline
+        \PY{k+kn}{import} \PY{n+nn}{os}
+        \PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k+kn}{as} \PY{n+nn}{np}
+        \PY{k+kn}{import} \PY{n+nn}{pylab} \PY{k+kn}{as} \PY{n+nn}{ply}
+        \PY{k+kn}{import} \PY{n+nn}{pyemu}
+        \PY{k+kn}{import} \PY{n+nn}{pst\PYZus{}handler} \PY{k+kn}{as} \PY{n+nn}{phand}
+        \PY{k+kn}{import} \PY{n+nn}{mat\PYZus{}handler} \PY{k+kn}{as} \PY{n+nn}{mhand}
+\end{Verbatim}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+Populating the interactive namespace from numpy and matplotlib
+    \end{Verbatim}
+
+    first reorder the jco
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}2}]:} \PY{n}{la} \PY{o}{=} \PY{n}{pyemu}\PY{o}{.}\PY{n}{schur}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{pest.jco}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{verbose}\PY{o}{=}\PY{n+nb+bp}{False}\PY{p}{)}
+        \PY{n}{la}\PY{o}{.}\PY{n}{drop\PYZus{}prior\PYZus{}information}\PY{p}{(}\PY{p}{)}
+        \PY{n}{jco\PYZus{}ord} \PY{o}{=} \PY{n}{la}\PY{o}{.}\PY{n}{jco}\PY{o}{.}\PY{n}{get}\PY{p}{(}\PY{n}{la}\PY{o}{.}\PY{n}{pst}\PY{o}{.}\PY{n}{obs\PYZus{}names}\PY{p}{,}\PY{n}{la}\PY{o}{.}\PY{n}{pst}\PY{o}{.}\PY{n}{par\PYZus{}names}\PY{p}{)}
+        \PY{n}{ord\PYZus{}base} \PY{o}{=} \PY{l+s}{\PYZdq{}}\PY{l+s}{pest\PYZus{}ord}\PY{l+s}{\PYZdq{}}
+        \PY{n}{jco\PYZus{}ord}\PY{o}{.}\PY{n}{to\PYZus{}binary}\PY{p}{(}\PY{n}{ord\PYZus{}base} \PY{o}{+} \PY{l+s}{\PYZdq{}}\PY{l+s}{.jco}\PY{l+s}{\PYZdq{}}\PY{p}{)}  
+\end{Verbatim}
+
+    extract and save the pred vectors
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}3}]:} \PY{n}{pv\PYZus{}names} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+        \PY{n}{predictions} \PY{o}{=}  \PY{p}{[}\PY{l+s}{\PYZdq{}}\PY{l+s}{pd\PYZus{}ten}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{l+s}{\PYZdq{}}\PY{l+s}{c\PYZus{}obs10\PYZus{}2}\PY{l+s}{\PYZdq{}}\PY{p}{]}
+        \PY{k}{for} \PY{n}{pred} \PY{o+ow}{in} \PY{n}{predictions}\PY{p}{:}
+            \PY{n}{pv} \PY{o}{=} \PY{n}{jco\PYZus{}ord}\PY{o}{.}\PY{n}{extract}\PY{p}{(}\PY{n}{pred}\PY{p}{)}\PY{o}{.}\PY{n}{T}
+            \PY{n}{pv\PYZus{}name} \PY{o}{=} \PY{n}{pred} \PY{o}{+} \PY{l+s}{\PYZdq{}}\PY{l+s}{.vec}\PY{l+s}{\PYZdq{}}
+            \PY{n}{pv}\PY{o}{.}\PY{n}{to\PYZus{}ascii}\PY{p}{(}\PY{n}{pv\PYZus{}name}\PY{p}{)}
+            \PY{n}{pv\PYZus{}names}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{pv\PYZus{}name}\PY{p}{)}
+            
+\end{Verbatim}
+
+    save the parcov as an uncertainty file
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}4}]:} \PY{n}{prior\PYZus{}uncfile} \PY{o}{=} \PY{l+s}{\PYZdq{}}\PY{l+s}{pest.unc}\PY{l+s}{\PYZdq{}}
+        \PY{n}{la}\PY{o}{.}\PY{n}{parcov}\PY{o}{.}\PY{n}{to\PYZus{}uncfile}\PY{p}{(}\PY{n}{prior\PYZus{}uncfile}\PY{p}{,}\PY{n}{covmat\PYZus{}file}\PY{o}{=}\PY{n+nb+bp}{None}\PY{p}{)}
+\end{Verbatim}
+
+    \section{PRECUNC7}\label{precunc7}
+
+This is where things get ugly - in files and system calls - yuk!
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}5}]:} \PY{n}{post\PYZus{}mat} \PY{o}{=} \PY{l+s}{\PYZdq{}}\PY{l+s}{post.cov}\PY{l+s}{\PYZdq{}}
+        \PY{n}{post\PYZus{}unc} \PY{o}{=} \PY{l+s}{\PYZdq{}}\PY{l+s}{post.unc}\PY{l+s}{\PYZdq{}}
+        \PY{n}{args} \PY{o}{=} \PY{p}{[}\PY{n}{ord\PYZus{}base} \PY{o}{+} \PY{l+s}{\PYZdq{}}\PY{l+s}{.pst}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{l+s}{\PYZdq{}}\PY{l+s}{1.0}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{prior\PYZus{}uncfile}\PY{p}{,}\PY{n}{post\PYZus{}mat}\PY{p}{,}\PY{n}{post\PYZus{}unc}\PY{p}{,}\PY{l+s}{\PYZdq{}}\PY{l+s}{1}\PY{l+s}{\PYZdq{}}\PY{p}{]}
+        \PY{n}{pd7\PYZus{}in} \PY{o}{=} \PY{l+s}{\PYZdq{}}\PY{l+s}{predunc7.in}\PY{l+s}{\PYZdq{}}
+        \PY{n}{f} \PY{o}{=} \PY{n+nb}{open}\PY{p}{(}\PY{n}{pd7\PYZus{}in}\PY{p}{,}\PY{l+s}{\PYZsq{}}\PY{l+s}{w}\PY{l+s}{\PYZsq{}}\PY{p}{)}
+        \PY{n}{f}\PY{o}{.}\PY{n}{write}\PY{p}{(}\PY{l+s}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}n}\PY{l+s}{\PYZsq{}}\PY{o}{.}\PY{n}{join}\PY{p}{(}\PY{n}{args}\PY{p}{)}\PY{o}{+}\PY{l+s}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}n}\PY{l+s}{\PYZsq{}}\PY{p}{)}
+        \PY{n}{f}\PY{o}{.}\PY{n}{close}\PY{p}{(}\PY{p}{)}
+        \PY{n}{out} \PY{o}{=} \PY{l+s}{\PYZdq{}}\PY{l+s}{pd7.out}\PY{l+s}{\PYZdq{}}
+        \PY{n}{pd7} \PY{o}{=} \PY{n}{os}\PY{o}{.}\PY{n}{path}\PY{o}{.}\PY{n}{join}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{exe}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{l+s}{\PYZdq{}}\PY{l+s}{i64predunc7.exe}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+        \PY{n}{os}\PY{o}{.}\PY{n}{system}\PY{p}{(}\PY{n}{pd7} \PY{o}{+} \PY{l+s}{\PYZdq{}}\PY{l+s}{ \PYZlt{}}\PY{l+s}{\PYZdq{}} \PY{o}{+} \PY{n}{pd7\PYZus{}in} \PY{o}{+} \PY{l+s}{\PYZdq{}}\PY{l+s}{ \PYZgt{}}\PY{l+s}{\PYZdq{}}\PY{o}{+}\PY{n}{out}\PY{p}{)}
+        \PY{k}{for} \PY{n}{line} \PY{o+ow}{in} \PY{n+nb}{open}\PY{p}{(}\PY{n}{out}\PY{p}{)}\PY{o}{.}\PY{n}{readlines}\PY{p}{(}\PY{p}{)}\PY{p}{:}
+            \PY{k}{print} \PY{n}{line}\PY{p}{,}
+\end{Verbatim}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+PREDUNC7 Version 13.3. Watermark Numerical Computing.
+
+ Enter name of PEST control file:  Enter observation reference variance: 
+ Enter name of prior parameter uncertainty file: 
+ Enter name for posterior parameter covariance matrix file:  Enter name for posterior parameter uncertainty file: 
+ Use which version of linear predictive uncertainty equation:-
+     if version optimized for small number of parameters   - enter 1
+     if version optimized for small number of observations - enter 2
+ Enter your choice: 
+ - reading PEST control file pest\_ord.pst{\ldots}
+ - file pest\_ord.pst read ok.
+
+ - reading Jacobian matrix file pest\_ord.jco{\ldots}
+ - file pest\_ord.jco read ok.
+
+ - reading parameter uncertainty file pest.unc{\ldots}
+ - parameter uncertainty file pest.unc read ok.
+ - forming XtC-1(e)X matrix{\ldots}
+ - inverting prior C(p) matrix{\ldots}
+ - inverting [XtC-1(e)X + C-1(p)] matrix{\ldots}
+ - writing file post.cov{\ldots}
+ - file post.cov written ok.
+ - writing file post.unc{\ldots}
+ - file post.unc written ok.
+    \end{Verbatim}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}6}]:} \PY{n}{post\PYZus{}pd7} \PY{o}{=} \PY{n}{mhand}\PY{o}{.}\PY{n}{cov}\PY{p}{(}\PY{p}{)}
+        \PY{n}{post\PYZus{}pd7}\PY{o}{.}\PY{n}{from\PYZus{}ascii}\PY{p}{(}\PY{n}{post\PYZus{}mat}\PY{p}{)}
+        
+        \PY{n}{la\PYZus{}ord} \PY{o}{=} \PY{n}{pyemu}\PY{o}{.}\PY{n}{schur}\PY{p}{(}\PY{n}{jco}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{pest\PYZus{}ord.jco}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{predictions}\PY{o}{=}\PY{n}{predictions}\PY{p}{)}
+        \PY{n}{post\PYZus{}pyemu} \PY{o}{=} \PY{n}{la\PYZus{}ord}\PY{o}{.}\PY{n}{posterior\PYZus{}parameter}
+        \PY{c}{\PYZsh{}post\PYZus{}pyemu = post\PYZus{}pyemu.get(post\PYZus{}pd7.row\PYZus{}names)}
+\end{Verbatim}
+
+    The cumulative difference between the two posterior matrices:
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}7}]:} \PY{n}{delta} \PY{o}{=} \PY{p}{(}\PY{n}{post\PYZus{}pd7} \PY{o}{\PYZhy{}} \PY{n}{post\PYZus{}pyemu}\PY{p}{)}\PY{o}{.}\PY{n}{x}
+        \PY{p}{(}\PY{n}{post\PYZus{}pd7} \PY{o}{\PYZhy{}} \PY{n}{post\PYZus{}pyemu}\PY{p}{)}\PY{o}{.}\PY{n}{to\PYZus{}ascii}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{delta.cov}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+        \PY{k}{print} \PY{n}{delta}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{p}{)}
+        \PY{k}{print} \PY{n}{delta}\PY{o}{.}\PY{n}{max}\PY{p}{(}\PY{p}{)}\PY{p}{,}\PY{n}{delta}\PY{o}{.}\PY{n}{min}\PY{p}{(}\PY{p}{)}
+        \PY{n}{delta} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{ma}\PY{o}{.}\PY{n}{masked\PYZus{}where}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{abs}\PY{p}{(}\PY{n}{delta}\PY{p}{)} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.0000000001}\PY{p}{,}\PY{n}{delta}\PY{p}{)}
+        \PY{n}{fig} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{,}\PY{l+m+mi}{10}\PY{p}{)}\PY{p}{)}
+        \PY{n}{ax} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{subplot}\PY{p}{(}\PY{l+m+mi}{111}\PY{p}{)}
+        \PY{n}{ax}\PY{o}{.}\PY{n}{imshow}\PY{p}{(}\PY{n}{delta}\PY{p}{)}
+\end{Verbatim}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+1.70407837082e-06
+4.97750649586e-08 -4.98772445567e-08
+    \end{Verbatim}
+
+            \begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}7}]:} <matplotlib.image.AxesImage at 0xc5687f0>
+\end{Verbatim}
+        
+    \begin{center}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{verify_unc_results_files/verify_unc_results_12_2.png}
+    \end{center}
+    { \hspace*{\fill} \\}
+    
+    \section{PREDUNC1}\label{predunc1}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}8}]:} \PY{n}{args} \PY{o}{=} \PY{p}{[}\PY{n}{ord\PYZus{}base} \PY{o}{+} \PY{l+s}{\PYZdq{}}\PY{l+s}{.pst}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{l+s}{\PYZdq{}}\PY{l+s}{1.0}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{n}{prior\PYZus{}uncfile}\PY{p}{,} \PY{n+nb+bp}{None}\PY{p}{,} \PY{l+s}{\PYZdq{}}\PY{l+s}{1}\PY{l+s}{\PYZdq{}}\PY{p}{]}
+        \PY{n}{pd1\PYZus{}in} \PY{o}{=} \PY{l+s}{\PYZdq{}}\PY{l+s}{predunc1.in}\PY{l+s}{\PYZdq{}}
+        \PY{n}{pd1} \PY{o}{=} \PY{n}{os}\PY{o}{.}\PY{n}{path}\PY{o}{.}\PY{n}{join}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{exe}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{l+s}{\PYZdq{}}\PY{l+s}{i64predunc1.exe}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+        \PY{n}{pd1\PYZus{}results} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
+        \PY{k}{for} \PY{n}{pv\PYZus{}name} \PY{o+ow}{in} \PY{n}{pv\PYZus{}names}\PY{p}{:}
+            \PY{n}{args}\PY{p}{[}\PY{l+m+mi}{3}\PY{p}{]} \PY{o}{=} \PY{n}{pv\PYZus{}name}
+            \PY{n}{f} \PY{o}{=} \PY{n+nb}{open}\PY{p}{(}\PY{n}{pd1\PYZus{}in}\PY{p}{,} \PY{l+s}{\PYZsq{}}\PY{l+s}{w}\PY{l+s}{\PYZsq{}}\PY{p}{)}
+            \PY{n}{f}\PY{o}{.}\PY{n}{write}\PY{p}{(}\PY{l+s}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}n}\PY{l+s}{\PYZsq{}}\PY{o}{.}\PY{n}{join}\PY{p}{(}\PY{n}{args}\PY{p}{)} \PY{o}{+} \PY{l+s}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}n}\PY{l+s}{\PYZsq{}}\PY{p}{)}
+            \PY{n}{f}\PY{o}{.}\PY{n}{close}\PY{p}{(}\PY{p}{)}
+            \PY{n}{out} \PY{o}{=} \PY{l+s}{\PYZdq{}}\PY{l+s}{predunc1}\PY{l+s}{\PYZdq{}} \PY{o}{+} \PY{n}{pv\PYZus{}name} \PY{o}{+} \PY{l+s}{\PYZdq{}}\PY{l+s}{.out}\PY{l+s}{\PYZdq{}}
+            \PY{n}{os}\PY{o}{.}\PY{n}{system}\PY{p}{(}\PY{n}{pd1} \PY{o}{+} \PY{l+s}{\PYZdq{}}\PY{l+s}{ \PYZlt{}}\PY{l+s}{\PYZdq{}} \PY{o}{+} \PY{n}{pd1\PYZus{}in} \PY{o}{+} \PY{l+s}{\PYZdq{}}\PY{l+s}{\PYZgt{}}\PY{l+s}{\PYZdq{}} \PY{o}{+} \PY{n}{out}\PY{p}{)}
+            \PY{n}{f} \PY{o}{=} \PY{n+nb}{open}\PY{p}{(}\PY{n}{out}\PY{p}{,}\PY{l+s}{\PYZsq{}}\PY{l+s}{r}\PY{l+s}{\PYZsq{}}\PY{p}{)}
+            \PY{k}{for} \PY{n}{line} \PY{o+ow}{in} \PY{n}{f}\PY{p}{:}
+                \PY{k}{if} \PY{l+s}{\PYZdq{}}\PY{l+s}{pre\PYZhy{}cal }\PY{l+s}{\PYZdq{}} \PY{o+ow}{in} \PY{n}{line}\PY{o}{.}\PY{n}{lower}\PY{p}{(}\PY{p}{)}\PY{p}{:}
+                    \PY{n}{pre\PYZus{}cal} \PY{o}{=} \PY{n+nb}{float}\PY{p}{(}\PY{n}{line}\PY{o}{.}\PY{n}{strip}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{split}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{)}
+                \PY{k}{elif} \PY{l+s}{\PYZdq{}}\PY{l+s}{post\PYZhy{}cal }\PY{l+s}{\PYZdq{}} \PY{o+ow}{in} \PY{n}{line}\PY{o}{.}\PY{n}{lower}\PY{p}{(}\PY{p}{)}\PY{p}{:}
+                    \PY{n}{post\PYZus{}cal} \PY{o}{=} \PY{n+nb}{float}\PY{p}{(}\PY{n}{line}\PY{o}{.}\PY{n}{strip}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{split}\PY{p}{(}\PY{p}{)}\PY{p}{[}\PY{o}{\PYZhy{}}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{)}
+            \PY{n}{f}\PY{o}{.}\PY{n}{close}\PY{p}{(}\PY{p}{)}        
+            \PY{n}{pd1\PYZus{}results}\PY{p}{[}\PY{n}{pv\PYZus{}name}\PY{o}{.}\PY{n}{split}\PY{p}{(}\PY{l+s}{\PYZsq{}}\PY{l+s}{.}\PY{l+s}{\PYZsq{}}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{o}{.}\PY{n}{lower}\PY{p}{(}\PY{p}{)}\PY{p}{]} \PY{o}{=} \PY{p}{[}\PY{n}{pre\PYZus{}cal}\PY{p}{,} \PY{n}{post\PYZus{}cal}\PY{p}{]}  
+           
+          
+\end{Verbatim}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}9}]:} \PY{n}{pyemu\PYZus{}results} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
+        \PY{k}{for} \PY{n}{pname} \PY{o+ow}{in} \PY{n}{la\PYZus{}ord}\PY{o}{.}\PY{n}{prior\PYZus{}prediction}\PY{o}{.}\PY{n}{keys}\PY{p}{(}\PY{p}{)}\PY{p}{:}
+            \PY{n}{pyemu\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]} \PY{o}{=} \PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{la\PYZus{}ord}\PY{o}{.}\PY{n}{prior\PYZus{}prediction}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{)}\PY{p}{,}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{la\PYZus{}ord}\PY{o}{.}\PY{n}{posterior\PYZus{}prediction}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{)}\PY{p}{]}
+\end{Verbatim}
+
+    compare the results:
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}10}]:} \PY{n}{f} \PY{o}{=} \PY{n+nb}{open}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{predunc1\PYZus{}textable.dat}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{l+s}{\PYZsq{}}\PY{l+s}{w}\PY{l+s}{\PYZsq{}}\PY{p}{)}
+         \PY{k}{for} \PY{n}{pname} \PY{o+ow}{in} \PY{n}{pd1\PYZus{}results}\PY{o}{.}\PY{n}{keys}\PY{p}{(}\PY{p}{)}\PY{p}{:}
+             \PY{k}{print} \PY{n}{pname}
+             \PY{n}{f}\PY{o}{.}\PY{n}{write}\PY{p}{(}\PY{n}{pname}\PY{o}{+}\PY{l+s}{\PYZdq{}}\PY{l+s}{\PYZam{}\PYZob{}0:6.5f\PYZcb{}\PYZam{}\PYZob{}1:6.5\PYZcb{}\PYZam{}\PYZob{}2:6.5f\PYZcb{}\PYZam{}\PYZob{}3:6.5f\PYZcb{}}\PY{l+s+se}{\PYZbs{}\PYZbs{}}\PY{l+s+se}{\PYZbs{}n}\PY{l+s}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{pd1\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}\PY{n}{pyemu\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}
+                                                                           \PY{n}{pd1\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,}\PY{n}{pyemu\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+             \PY{k}{print} \PY{l+s}{\PYZdq{}}\PY{l+s}{prior}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{pname}\PY{p}{,}\PY{n}{pd1\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}\PY{n}{pyemu\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
+             \PY{k}{print} \PY{l+s}{\PYZdq{}}\PY{l+s}{post}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{pname}\PY{p}{,}\PY{n}{pd1\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,}\PY{n}{pyemu\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}
+         \PY{n}{f}\PY{o}{.}\PY{n}{close}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+c\_obs10\_2
+prior c\_obs10\_2 0.1509421 0.150942104963
+post c\_obs10\_2 0.089084382 0.0890843823278
+pd\_ten
+prior pd\_ten 0.4716172 0.471617160877
+post pd\_ten 0.2267402 0.226740171374
+    \end{Verbatim}
+
+    \subsection{PREDVAR1b}\label{predvar1b}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}11}]:} \PY{n}{f} \PY{o}{=} \PY{n+nb}{open}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{pred\PYZus{}list.dat}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{l+s}{\PYZsq{}}\PY{l+s}{w}\PY{l+s}{\PYZsq{}}\PY{p}{)}
+         \PY{n}{out\PYZus{}files} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+         \PY{k}{for} \PY{n}{pv} \PY{o+ow}{in} \PY{n}{pv\PYZus{}names}\PY{p}{:}
+             \PY{n}{out\PYZus{}name} \PY{o}{=} \PY{n}{pv}\PY{o}{+}\PY{l+s}{\PYZdq{}}\PY{l+s}{.predvar1b.out}\PY{l+s}{\PYZdq{}}
+             \PY{n}{out\PYZus{}files}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n}{out\PYZus{}name}\PY{p}{)}
+             \PY{n}{f}\PY{o}{.}\PY{n}{write}\PY{p}{(}\PY{n}{pv}\PY{o}{+}\PY{l+s}{\PYZdq{}}\PY{l+s}{ }\PY{l+s}{\PYZdq{}}\PY{o}{+}\PY{n}{out\PYZus{}name}\PY{o}{+}\PY{l+s}{\PYZdq{}}\PY{l+s+se}{\PYZbs{}n}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+         \PY{n}{f}\PY{o}{.}\PY{n}{close}\PY{p}{(}\PY{p}{)}
+         \PY{n}{args} \PY{o}{=} \PY{p}{[}\PY{l+s}{\PYZdq{}}\PY{l+s}{pest\PYZus{}ord.pst}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{l+s}{\PYZdq{}}\PY{l+s}{1.0}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{l+s}{\PYZdq{}}\PY{l+s}{pest.unc}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{l+s}{\PYZdq{}}\PY{l+s}{pred\PYZus{}list.dat}\PY{l+s}{\PYZdq{}}\PY{p}{]}
+         \PY{k}{for} \PY{n}{i} \PY{o+ow}{in} \PY{n+nb}{xrange}\PY{p}{(}\PY{l+m+mi}{36}\PY{p}{)}\PY{p}{:}
+             \PY{n}{args}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{n+nb}{str}\PY{p}{(}\PY{n}{i}\PY{p}{)}\PY{p}{)}
+         \PY{n}{args}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{l+s}{\PYZsq{}}\PY{l+s}{\PYZsq{}}\PY{p}{)}    
+         \PY{n}{args}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{n}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+         \PY{n}{args}\PY{o}{.}\PY{n}{append}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{y}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+         \PY{n}{f} \PY{o}{=} \PY{n+nb}{open}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{predvar1b.in}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{l+s}{\PYZsq{}}\PY{l+s}{w}\PY{l+s}{\PYZsq{}}\PY{p}{)}
+         \PY{n}{f}\PY{o}{.}\PY{n}{write}\PY{p}{(}\PY{l+s}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}n}\PY{l+s}{\PYZsq{}}\PY{o}{.}\PY{n}{join}\PY{p}{(}\PY{n}{args}\PY{p}{)} \PY{o}{+} \PY{l+s}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}n}\PY{l+s}{\PYZsq{}}\PY{p}{)}
+         \PY{n}{f}\PY{o}{.}\PY{n}{close}\PY{p}{(}\PY{p}{)}
+         
+         \PY{n}{os}\PY{o}{.}\PY{n}{system}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{predvar1b.exe \PYZlt{}predvar1b.in}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+\end{Verbatim}
+
+            \begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}11}]:} 0
+\end{Verbatim}
+        
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}12}]:} \PY{n}{pv1b\PYZus{}results} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
+         \PY{k}{for} \PY{n}{out\PYZus{}file} \PY{o+ow}{in} \PY{n}{out\PYZus{}files}\PY{p}{:}
+             \PY{n}{pred\PYZus{}name} \PY{o}{=} \PY{n}{out\PYZus{}file}\PY{o}{.}\PY{n}{split}\PY{p}{(}\PY{l+s}{\PYZsq{}}\PY{l+s}{.}\PY{l+s}{\PYZsq{}}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
+             \PY{n}{f} \PY{o}{=} \PY{n+nb}{open}\PY{p}{(}\PY{n}{out\PYZus{}file}\PY{p}{,}\PY{l+s}{\PYZsq{}}\PY{l+s}{r}\PY{l+s}{\PYZsq{}}\PY{p}{)}
+             \PY{k}{for} \PY{n}{\PYZus{}} \PY{o+ow}{in} \PY{n+nb}{xrange}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)}\PY{p}{:}
+                 \PY{n}{f}\PY{o}{.}\PY{n}{readline}\PY{p}{(}\PY{p}{)}
+             \PY{n}{arr} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{loadtxt}\PY{p}{(}\PY{n}{f}\PY{p}{)}
+             \PY{n}{pv1b\PYZus{}results}\PY{p}{[}\PY{n}{pred\PYZus{}name}\PY{p}{]} \PY{o}{=} \PY{n}{arr}
+\end{Verbatim}
+
+    now for pyemu
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}13}]:} \PY{n}{la\PYZus{}ord\PYZus{}errvar} \PY{o}{=} \PY{n}{pyemu}\PY{o}{.}\PY{n}{errvar}\PY{p}{(}\PY{n}{jco}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{pest\PYZus{}ord.jco}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{predictions}\PY{o}{=}\PY{n}{predictions}\PY{p}{,}\PY{n}{omitted\PYZus{}parameters}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{mult1}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{verbose}\PY{o}{=}\PY{n+nb+bp}{False}\PY{p}{)}
+         \PY{n}{df} \PY{o}{=} \PY{n}{la\PYZus{}ord\PYZus{}errvar}\PY{o}{.}\PY{n}{get\PYZus{}errvar\PYZus{}dataframe}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mi}{36}\PY{p}{)}\PY{p}{)}
+         \PY{n}{df}
+\end{Verbatim}
+
+            \begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}13}]:}         first                  second                       third  \textbackslash{}
+             c\_obs10\_2    pd\_ten     c\_obs10\_2        pd\_ten     c\_obs10\_2   
+         0    0.015706  0.076700  0.000000e+00  0.000000e+00  7.077577e-03   
+         1    0.006040  0.046811  8.323523e-04  2.573705e-03  1.155533e-01   
+         2    0.005905  0.045945  9.201068e-04  3.138167e-03  7.724431e-02   
+         3    0.004850  0.042798  4.135876e-03  1.273156e-02  2.939249e-02   
+         4    0.004582  0.037457  5.612732e-03  4.213813e-02  3.411090e-02   
+         5    0.004233  0.031039  8.756785e-03  9.996844e-02  4.180124e-02   
+         6    0.004156  0.031010  9.697704e-03  1.003232e-01  3.803914e-02   
+         7    0.004155  0.030849  9.728439e-03  1.032245e-01  3.804302e-02   
+         8    0.004084  0.029342  1.123436e-02  1.354974e-01  4.117493e-02   
+         9    0.004084  0.029109  1.123444e-02  1.422348e-01  4.117309e-02   
+         10   0.004084  0.028689  1.124962e-02  1.547092e-01  4.127345e-02   
+         11   0.004083  0.027723  1.127209e-02  1.870549e-01  4.113856e-02   
+         12   0.004044  0.027693  1.373466e-02  1.889087e-01  4.167552e-02   
+         13   0.003870  0.027380  2.509977e-02  2.094440e-01  3.828531e-02   
+         14   0.003397  0.023741  5.647082e-02  4.508064e-01  2.912006e-02   
+         15   0.003397  0.023106  5.648180e-02  4.973744e-01  2.909730e-02   
+         16   0.003397  0.022881  5.654890e-02  5.176496e-01  2.918142e-02   
+         17   0.003395  0.022858  5.673687e-02  5.202939e-01  2.930732e-02   
+         18   0.003021  0.022763  1.240355e-01  5.373727e-01  2.907968e-02   
+         19   0.002723  0.022762  3.052508e+00  5.493474e-01  3.142555e-02   
+         20   0.002716  0.022580  4.771325e+01  1.123392e+03  2.520051e-02   
+         21   0.002714  0.022526  6.754794e+01  1.881534e+03  2.583911e-02   
+         22   0.002700  0.022522  3.533209e+02  1.958512e+03  2.141976e-02   
+         23   0.002695  0.022522  5.097773e+02  1.959862e+03  2.053177e-02   
+         24   0.002693  0.022217  6.125413e+02  1.771097e+04  1.952132e-02   
+         25   0.002685  0.014189  2.167707e+03  1.588460e+06  2.133588e-02   
+         26   0.002672  0.013960  4.329719e+05  9.693323e+06  2.360649e-02   
+         27   0.002652  0.013455  7.992996e+10  2.007430e+12  1.542328e-02   
+         28   0.002650  0.006844  1.799184e+18  6.562896e+21  1.150392e+14   
+         29   0.002650  0.006784  1.054631e+20  2.058308e+22  7.271745e+16   
+         30   0.002519  0.004777  9.475104e+24  4.984723e+25  7.113472e+26   
+         31   0.002496  0.004774  2.922553e+26  1.015110e+26  4.483415e+27   
+         32   0.002348  0.004633  3.540864e+27  3.594508e+27  5.481805e+25   
+         33   0.002208  0.004505  6.190564e+27  9.009335e+27  4.192711e+29   
+         34   0.002155  0.004487  1.507685e+28  1.103374e+28  6.278009e+28   
+         35   0.002011  0.004336  9.173505e+27  8.916057e+27  4.114380e+26   
+         
+                           
+                   pd\_ten  
+         0   1.457226e-01  
+         1   1.324554e-01  
+         2   2.716444e-01  
+         3   4.971922e-01  
+         4   4.173139e-01  
+         5   5.340010e-01  
+         6   5.255830e-01  
+         7   5.257229e-01  
+         8   5.798819e-01  
+         9   5.818767e-01  
+         10  5.711167e-01  
+         11  5.522239e-01  
+         12  5.539267e-01  
+         13  5.710230e-01  
+         14  6.807260e-01  
+         15  6.879139e-01  
+         16  6.950367e-01  
+         17  6.927365e-01  
+         18  6.921780e-01  
+         19  6.928959e-01  
+         20  8.561705e-01  
+         21  8.334545e-01  
+         22  8.198732e-01  
+         23  8.203889e-01  
+         24  9.024169e-01  
+         25  5.597574e-01  
+         26  6.100087e-01  
+         27  7.536910e-01  
+         28  2.887622e+17  
+         29  9.515040e+18  
+         30  3.767866e+27  
+         31  6.497523e+26  
+         32  2.539297e+26  
+         33  7.026078e+29  
+         34  1.427545e+29  
+         35  3.259060e+28  
+\end{Verbatim}
+        
+    Some cheap plots to verify
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}14}]:} \PY{n}{fig} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{6}\PY{p}{,}\PY{l+m+mi}{6}\PY{p}{)}\PY{p}{)}
+         \PY{n}{max\PYZus{}idx} \PY{o}{=} \PY{l+m+mi}{15}
+         \PY{n}{idx} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{n}{max\PYZus{}idx}\PY{p}{)}
+         \PY{k}{for} \PY{n}{ipred}\PY{p}{,}\PY{n}{pred} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{predictions}\PY{p}{)}\PY{p}{:}
+             \PY{n}{arr} \PY{o}{=} \PY{n}{pv1b\PYZus{}results}\PY{p}{[}\PY{n}{pred}\PY{p}{]}\PY{p}{[}\PY{p}{:}\PY{n}{max\PYZus{}idx}\PY{p}{,}\PY{p}{:}\PY{p}{]}
+             \PY{n}{first} \PY{o}{=} \PY{n}{df}\PY{p}{[}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{first}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{n}{pred}\PY{p}{)}\PY{p}{]}\PY{p}{[}\PY{p}{:}\PY{n}{max\PYZus{}idx}\PY{p}{]}
+             \PY{n}{second} \PY{o}{=} \PY{n}{df}\PY{p}{[}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{second}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{n}{pred}\PY{p}{)}\PY{p}{]}\PY{p}{[}\PY{p}{:}\PY{n}{max\PYZus{}idx}\PY{p}{]}
+             \PY{n}{third} \PY{o}{=} \PY{n}{df}\PY{p}{[}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{third}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{n}{pred}\PY{p}{)}\PY{p}{]}\PY{p}{[}\PY{p}{:}\PY{n}{max\PYZus{}idx}\PY{p}{]}
+             \PY{n}{ax} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{subplot}\PY{p}{(}\PY{n+nb}{len}\PY{p}{(}\PY{n}{predictions}\PY{p}{)}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{,}\PY{n}{ipred}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}
+             \PY{c}{\PYZsh{}ax.plot(arr[:,1],color=\PYZsq{}b\PYZsq{},dashes=(6,6),lw=4,alpha=0.5)}
+             \PY{c}{\PYZsh{}ax.plot(first,color=\PYZsq{}b\PYZsq{})}
+             \PY{c}{\PYZsh{}ax.plot(arr[:,2],color=\PYZsq{}g\PYZsq{},dashes=(6,4),lw=4,alpha=0.5)}
+             \PY{c}{\PYZsh{}ax.plot(second,color=\PYZsq{}g\PYZsq{})}
+             \PY{c}{\PYZsh{}ax.plot(arr[:,3],color=\PYZsq{}r\PYZsq{},dashes=(6,4),lw=4,alpha=0.5)}
+             \PY{c}{\PYZsh{}ax.plot(third,color=\PYZsq{}r\PYZsq{})}
+             
+             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{arr}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{x}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{s}\PY{o}{=}\PY{l+m+mi}{40}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{g}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{PREDVAR1B \PYZhy{} first term}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{arr}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{x}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{s}\PY{o}{=}\PY{l+m+mi}{40}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{b}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{PREDVAR1B \PYZhy{} second term}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{arr}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{l+m+mi}{3}\PY{p}{]}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{x}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{s}\PY{o}{=}\PY{l+m+mi}{40}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{r}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{PREVAR1B \PYZhy{} third term}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{first}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{o}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{facecolor}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{none}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{s}\PY{o}{=}\PY{l+m+mi}{50}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{g}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{pyEMU \PYZhy{} first term}\PY{l+s}{\PYZsq{}}\PY{p}{)}
+            
+             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{second}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{o}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{facecolor}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{none}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{s}\PY{o}{=}\PY{l+m+mi}{50}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{b}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{pyEMU \PYZhy{} second term}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+             
+             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{third}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{o}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{facecolor}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{none}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{s}\PY{o}{=}\PY{l+m+mi}{50}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{r}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{pyEMU \PYZhy{} third term}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+             \PY{n}{ax}\PY{o}{.}\PY{n}{set\PYZus{}ylabel}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{forecast variance}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+             \PY{n}{ax}\PY{o}{.}\PY{n}{set\PYZus{}title}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{forecast: }\PY{l+s}{\PYZdq{}} \PY{o}{+} \PY{n}{pred}\PY{p}{)}
+             \PY{k}{if} \PY{n}{ipred} \PY{o}{==} \PY{n+nb}{len}\PY{p}{(}\PY{n}{predictions}\PY{p}{)} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{:}
+                 \PY{n}{ax}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{n}{loc}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{lower center}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{bbox\PYZus{}to\PYZus{}anchor}\PY{o}{=}\PY{p}{(}\PY{l+m+mf}{0.5}\PY{p}{,}\PY{o}{\PYZhy{}}\PY{l+m+mf}{0.75}\PY{p}{)}\PY{p}{,}\PY{n}{scatterpoints}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,}\PY{n}{ncol}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}
+                 \PY{n}{ax}\PY{o}{.}\PY{n}{set\PYZus{}xlabel}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{singular values}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+             \PY{c}{\PYZsh{}break}
+         \PY{n}{plt}\PY{o}{.}\PY{n}{savefig}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{predvar1b\PYZus{}ver.eps}\PY{l+s}{\PYZdq{}}\PY{p}{)}    
+             
+\end{Verbatim}
+
+    \begin{center}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{verify_unc_results_files/verify_unc_results_24_0.png}
+    \end{center}
+    { \hspace*{\fill} \\}
+    
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor} }]:} 
+\end{Verbatim}
+
+
+    % Add a bibliography block to the postdoc
+    
+    
+    
+    \end{document}
