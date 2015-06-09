@@ -228,7 +228,7 @@
 problem}\label{verify-pyemu-results-with-the-henry-problem}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}1}]:} \PY{o}{\PYZpc{}}\PY{k}{pylab} inline
+{\color{incolor}In [{\color{incolor}2}]:} \PY{o}{\PYZpc{}}\PY{k}{pylab} inline
         \PY{k+kn}{import} \PY{n+nn}{os}
         \PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k+kn}{as} \PY{n+nn}{np}
         \PY{k+kn}{import} \PY{n+nn}{pylab} \PY{k+kn}{as} \PY{n+nn}{ply}
@@ -241,20 +241,22 @@ problem}\label{verify-pyemu-results-with-the-henry-problem}
 Populating the interactive namespace from numpy and matplotlib
     \end{Verbatim}
 
-    first reorder the jco
+    instaniate \texttt{pyemu} object and drop prior info. Then reorder the
+jacobian and save as binary. This is needed because the pest utilities
+require strict order between the control file and jacobian
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}2}]:} \PY{n}{la} \PY{o}{=} \PY{n}{pyemu}\PY{o}{.}\PY{n}{schur}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{pest.jco}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{verbose}\PY{o}{=}\PY{n+nb+bp}{False}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}3}]:} \PY{n}{la} \PY{o}{=} \PY{n}{pyemu}\PY{o}{.}\PY{n}{schur}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{pest.jco}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{verbose}\PY{o}{=}\PY{n+nb+bp}{False}\PY{p}{)}
         \PY{n}{la}\PY{o}{.}\PY{n}{drop\PYZus{}prior\PYZus{}information}\PY{p}{(}\PY{p}{)}
         \PY{n}{jco\PYZus{}ord} \PY{o}{=} \PY{n}{la}\PY{o}{.}\PY{n}{jco}\PY{o}{.}\PY{n}{get}\PY{p}{(}\PY{n}{la}\PY{o}{.}\PY{n}{pst}\PY{o}{.}\PY{n}{obs\PYZus{}names}\PY{p}{,}\PY{n}{la}\PY{o}{.}\PY{n}{pst}\PY{o}{.}\PY{n}{par\PYZus{}names}\PY{p}{)}
         \PY{n}{ord\PYZus{}base} \PY{o}{=} \PY{l+s}{\PYZdq{}}\PY{l+s}{pest\PYZus{}ord}\PY{l+s}{\PYZdq{}}
         \PY{n}{jco\PYZus{}ord}\PY{o}{.}\PY{n}{to\PYZus{}binary}\PY{p}{(}\PY{n}{ord\PYZus{}base} \PY{o}{+} \PY{l+s}{\PYZdq{}}\PY{l+s}{.jco}\PY{l+s}{\PYZdq{}}\PY{p}{)}  
 \end{Verbatim}
 
-    extract and save the pred vectors
+    extract and save the forecast sensitivity vectors
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}3}]:} \PY{n}{pv\PYZus{}names} \PY{o}{=} \PY{p}{[}\PY{p}{]}
+{\color{incolor}In [{\color{incolor}4}]:} \PY{n}{pv\PYZus{}names} \PY{o}{=} \PY{p}{[}\PY{p}{]}
         \PY{n}{predictions} \PY{o}{=}  \PY{p}{[}\PY{l+s}{\PYZdq{}}\PY{l+s}{pd\PYZus{}ten}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{l+s}{\PYZdq{}}\PY{l+s}{c\PYZus{}obs10\PYZus{}2}\PY{l+s}{\PYZdq{}}\PY{p}{]}
         \PY{k}{for} \PY{n}{pred} \PY{o+ow}{in} \PY{n}{predictions}\PY{p}{:}
             \PY{n}{pv} \PY{o}{=} \PY{n}{jco\PYZus{}ord}\PY{o}{.}\PY{n}{extract}\PY{p}{(}\PY{n}{pred}\PY{p}{)}\PY{o}{.}\PY{n}{T}
@@ -264,21 +266,22 @@ Populating the interactive namespace from numpy and matplotlib
             
 \end{Verbatim}
 
-    save the parcov as an uncertainty file
+    save the prior parameter covariance matrix as an uncertainty file
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}4}]:} \PY{n}{prior\PYZus{}uncfile} \PY{o}{=} \PY{l+s}{\PYZdq{}}\PY{l+s}{pest.unc}\PY{l+s}{\PYZdq{}}
+{\color{incolor}In [{\color{incolor}5}]:} \PY{n}{prior\PYZus{}uncfile} \PY{o}{=} \PY{l+s}{\PYZdq{}}\PY{l+s}{pest.unc}\PY{l+s}{\PYZdq{}}
         \PY{n}{la}\PY{o}{.}\PY{n}{parcov}\PY{o}{.}\PY{n}{to\PYZus{}uncfile}\PY{p}{(}\PY{n}{prior\PYZus{}uncfile}\PY{p}{,}\PY{n}{covmat\PYZus{}file}\PY{o}{=}\PY{n+nb+bp}{None}\PY{p}{)}
 \end{Verbatim}
 
     \section{PRECUNC7}\label{precunc7}
 
-This is where things get ugly - in files and system calls - yuk!
+write a response file to feed \texttt{stdin} to \texttt{predunc7}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}5}]:} \PY{n}{post\PYZus{}mat} \PY{o}{=} \PY{l+s}{\PYZdq{}}\PY{l+s}{post.cov}\PY{l+s}{\PYZdq{}}
+{\color{incolor}In [{\color{incolor}6}]:} \PY{n}{post\PYZus{}mat} \PY{o}{=} \PY{l+s}{\PYZdq{}}\PY{l+s}{post.cov}\PY{l+s}{\PYZdq{}}
         \PY{n}{post\PYZus{}unc} \PY{o}{=} \PY{l+s}{\PYZdq{}}\PY{l+s}{post.unc}\PY{l+s}{\PYZdq{}}
-        \PY{n}{args} \PY{o}{=} \PY{p}{[}\PY{n}{ord\PYZus{}base} \PY{o}{+} \PY{l+s}{\PYZdq{}}\PY{l+s}{.pst}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{l+s}{\PYZdq{}}\PY{l+s}{1.0}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{prior\PYZus{}uncfile}\PY{p}{,}\PY{n}{post\PYZus{}mat}\PY{p}{,}\PY{n}{post\PYZus{}unc}\PY{p}{,}\PY{l+s}{\PYZdq{}}\PY{l+s}{1}\PY{l+s}{\PYZdq{}}\PY{p}{]}
+        \PY{n}{args} \PY{o}{=} \PY{p}{[}\PY{n}{ord\PYZus{}base} \PY{o}{+} \PY{l+s}{\PYZdq{}}\PY{l+s}{.pst}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{l+s}{\PYZdq{}}\PY{l+s}{1.0}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{prior\PYZus{}uncfile}\PY{p}{,}
+                \PY{n}{post\PYZus{}mat}\PY{p}{,}\PY{n}{post\PYZus{}unc}\PY{p}{,}\PY{l+s}{\PYZdq{}}\PY{l+s}{1}\PY{l+s}{\PYZdq{}}\PY{p}{]}
         \PY{n}{pd7\PYZus{}in} \PY{o}{=} \PY{l+s}{\PYZdq{}}\PY{l+s}{predunc7.in}\PY{l+s}{\PYZdq{}}
         \PY{n}{f} \PY{o}{=} \PY{n+nb}{open}\PY{p}{(}\PY{n}{pd7\PYZus{}in}\PY{p}{,}\PY{l+s}{\PYZsq{}}\PY{l+s}{w}\PY{l+s}{\PYZsq{}}\PY{p}{)}
         \PY{n}{f}\PY{o}{.}\PY{n}{write}\PY{p}{(}\PY{l+s}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}n}\PY{l+s}{\PYZsq{}}\PY{o}{.}\PY{n}{join}\PY{p}{(}\PY{n}{args}\PY{p}{)}\PY{o}{+}\PY{l+s}{\PYZsq{}}\PY{l+s+se}{\PYZbs{}n}\PY{l+s}{\PYZsq{}}\PY{p}{)}
@@ -317,8 +320,10 @@ PREDUNC7 Version 13.3. Watermark Numerical Computing.
  - file post.unc written ok.
     \end{Verbatim}
 
+    load the posterior matrix written by \texttt{predunc7}
+
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}6}]:} \PY{n}{post\PYZus{}pd7} \PY{o}{=} \PY{n}{mhand}\PY{o}{.}\PY{n}{cov}\PY{p}{(}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}7}]:} \PY{n}{post\PYZus{}pd7} \PY{o}{=} \PY{n}{mhand}\PY{o}{.}\PY{n}{cov}\PY{p}{(}\PY{p}{)}
         \PY{n}{post\PYZus{}pd7}\PY{o}{.}\PY{n}{from\PYZus{}ascii}\PY{p}{(}\PY{n}{post\PYZus{}mat}\PY{p}{)}
         
         \PY{n}{la\PYZus{}ord} \PY{o}{=} \PY{n}{pyemu}\PY{o}{.}\PY{n}{schur}\PY{p}{(}\PY{n}{jco}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{pest\PYZus{}ord.jco}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{predictions}\PY{o}{=}\PY{n}{predictions}\PY{p}{)}
@@ -329,14 +334,10 @@ PREDUNC7 Version 13.3. Watermark Numerical Computing.
     The cumulative difference between the two posterior matrices:
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}7}]:} \PY{n}{delta} \PY{o}{=} \PY{p}{(}\PY{n}{post\PYZus{}pd7} \PY{o}{\PYZhy{}} \PY{n}{post\PYZus{}pyemu}\PY{p}{)}\PY{o}{.}\PY{n}{x}
+{\color{incolor}In [{\color{incolor}8}]:} \PY{n}{delta} \PY{o}{=} \PY{p}{(}\PY{n}{post\PYZus{}pd7} \PY{o}{\PYZhy{}} \PY{n}{post\PYZus{}pyemu}\PY{p}{)}\PY{o}{.}\PY{n}{x}
         \PY{p}{(}\PY{n}{post\PYZus{}pd7} \PY{o}{\PYZhy{}} \PY{n}{post\PYZus{}pyemu}\PY{p}{)}\PY{o}{.}\PY{n}{to\PYZus{}ascii}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{delta.cov}\PY{l+s}{\PYZdq{}}\PY{p}{)}
         \PY{k}{print} \PY{n}{delta}\PY{o}{.}\PY{n}{sum}\PY{p}{(}\PY{p}{)}
         \PY{k}{print} \PY{n}{delta}\PY{o}{.}\PY{n}{max}\PY{p}{(}\PY{p}{)}\PY{p}{,}\PY{n}{delta}\PY{o}{.}\PY{n}{min}\PY{p}{(}\PY{p}{)}
-        \PY{n}{delta} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{ma}\PY{o}{.}\PY{n}{masked\PYZus{}where}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{abs}\PY{p}{(}\PY{n}{delta}\PY{p}{)} \PY{o}{\PYZlt{}} \PY{l+m+mf}{0.0000000001}\PY{p}{,}\PY{n}{delta}\PY{p}{)}
-        \PY{n}{fig} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{,}\PY{l+m+mi}{10}\PY{p}{)}\PY{p}{)}
-        \PY{n}{ax} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{subplot}\PY{p}{(}\PY{l+m+mi}{111}\PY{p}{)}
-        \PY{n}{ax}\PY{o}{.}\PY{n}{imshow}\PY{p}{(}\PY{n}{delta}\PY{p}{)}
 \end{Verbatim}
 
     \begin{Verbatim}[commandchars=\\\{\}]
@@ -344,19 +345,13 @@ PREDUNC7 Version 13.3. Watermark Numerical Computing.
 4.97750649586e-08 -4.98772445567e-08
     \end{Verbatim}
 
-            \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}7}]:} <matplotlib.image.AxesImage at 0xc5687f0>
-\end{Verbatim}
-        
-    \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{verify_unc_results_files/verify_unc_results_12_2.png}
-    \end{center}
-    { \hspace*{\fill} \\}
-    
     \section{PREDUNC1}\label{predunc1}
 
+write a response file to feed \texttt{stdin}. Then run \texttt{predunc1}
+for each forecast
+
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}8}]:} \PY{n}{args} \PY{o}{=} \PY{p}{[}\PY{n}{ord\PYZus{}base} \PY{o}{+} \PY{l+s}{\PYZdq{}}\PY{l+s}{.pst}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{l+s}{\PYZdq{}}\PY{l+s}{1.0}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{n}{prior\PYZus{}uncfile}\PY{p}{,} \PY{n+nb+bp}{None}\PY{p}{,} \PY{l+s}{\PYZdq{}}\PY{l+s}{1}\PY{l+s}{\PYZdq{}}\PY{p}{]}
+{\color{incolor}In [{\color{incolor}9}]:} \PY{n}{args} \PY{o}{=} \PY{p}{[}\PY{n}{ord\PYZus{}base} \PY{o}{+} \PY{l+s}{\PYZdq{}}\PY{l+s}{.pst}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{l+s}{\PYZdq{}}\PY{l+s}{1.0}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{n}{prior\PYZus{}uncfile}\PY{p}{,} \PY{n+nb+bp}{None}\PY{p}{,} \PY{l+s}{\PYZdq{}}\PY{l+s}{1}\PY{l+s}{\PYZdq{}}\PY{p}{]}
         \PY{n}{pd1\PYZus{}in} \PY{o}{=} \PY{l+s}{\PYZdq{}}\PY{l+s}{predunc1.in}\PY{l+s}{\PYZdq{}}
         \PY{n}{pd1} \PY{o}{=} \PY{n}{os}\PY{o}{.}\PY{n}{path}\PY{o}{.}\PY{n}{join}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{exe}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{l+s}{\PYZdq{}}\PY{l+s}{i64predunc1.exe}\PY{l+s}{\PYZdq{}}\PY{p}{)}
         \PY{n}{pd1\PYZus{}results} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
@@ -379,20 +374,24 @@ PREDUNC7 Version 13.3. Watermark Numerical Computing.
           
 \end{Verbatim}
 
+    organize the \texttt{pyemu} results into a structure for comparison
+
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}9}]:} \PY{n}{pyemu\PYZus{}results} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
-        \PY{k}{for} \PY{n}{pname} \PY{o+ow}{in} \PY{n}{la\PYZus{}ord}\PY{o}{.}\PY{n}{prior\PYZus{}prediction}\PY{o}{.}\PY{n}{keys}\PY{p}{(}\PY{p}{)}\PY{p}{:}
-            \PY{n}{pyemu\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]} \PY{o}{=} \PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{la\PYZus{}ord}\PY{o}{.}\PY{n}{prior\PYZus{}prediction}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{)}\PY{p}{,}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{la\PYZus{}ord}\PY{o}{.}\PY{n}{posterior\PYZus{}prediction}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{)}\PY{p}{]}
+{\color{incolor}In [{\color{incolor}10}]:} \PY{n}{pyemu\PYZus{}results} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
+         \PY{k}{for} \PY{n}{pname} \PY{o+ow}{in} \PY{n}{la\PYZus{}ord}\PY{o}{.}\PY{n}{prior\PYZus{}prediction}\PY{o}{.}\PY{n}{keys}\PY{p}{(}\PY{p}{)}\PY{p}{:}
+             \PY{n}{pyemu\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]} \PY{o}{=} \PY{p}{[}\PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{la\PYZus{}ord}\PY{o}{.}\PY{n}{prior\PYZus{}prediction}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{)}\PY{p}{,}
+                                     \PY{n}{np}\PY{o}{.}\PY{n}{sqrt}\PY{p}{(}\PY{n}{la\PYZus{}ord}\PY{o}{.}\PY{n}{posterior\PYZus{}prediction}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{)}\PY{p}{]}
 \end{Verbatim}
 
     compare the results:
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}10}]:} \PY{n}{f} \PY{o}{=} \PY{n+nb}{open}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{predunc1\PYZus{}textable.dat}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{l+s}{\PYZsq{}}\PY{l+s}{w}\PY{l+s}{\PYZsq{}}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}11}]:} \PY{n}{f} \PY{o}{=} \PY{n+nb}{open}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{predunc1\PYZus{}textable.dat}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{l+s}{\PYZsq{}}\PY{l+s}{w}\PY{l+s}{\PYZsq{}}\PY{p}{)}
          \PY{k}{for} \PY{n}{pname} \PY{o+ow}{in} \PY{n}{pd1\PYZus{}results}\PY{o}{.}\PY{n}{keys}\PY{p}{(}\PY{p}{)}\PY{p}{:}
              \PY{k}{print} \PY{n}{pname}
-             \PY{n}{f}\PY{o}{.}\PY{n}{write}\PY{p}{(}\PY{n}{pname}\PY{o}{+}\PY{l+s}{\PYZdq{}}\PY{l+s}{\PYZam{}\PYZob{}0:6.5f\PYZcb{}\PYZam{}\PYZob{}1:6.5\PYZcb{}\PYZam{}\PYZob{}2:6.5f\PYZcb{}\PYZam{}\PYZob{}3:6.5f\PYZcb{}}\PY{l+s+se}{\PYZbs{}\PYZbs{}}\PY{l+s+se}{\PYZbs{}n}\PY{l+s}{\PYZdq{}}\PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{pd1\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}\PY{n}{pyemu\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}
-                                                                           \PY{n}{pd1\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,}\PY{n}{pyemu\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}
+             \PY{n}{f}\PY{o}{.}\PY{n}{write}\PY{p}{(}\PY{n}{pname}\PY{o}{+}\PY{l+s}{\PYZdq{}}\PY{l+s}{\PYZam{}\PYZob{}0:6.5f\PYZcb{}\PYZam{}\PYZob{}1:6.5\PYZcb{}\PYZam{}\PYZob{}2:6.5f\PYZcb{}\PYZam{}\PYZob{}3:6.5f\PYZcb{}}\PY{l+s+se}{\PYZbs{}\PYZbs{}}\PY{l+s+se}{\PYZbs{}n}\PY{l+s}{\PYZdq{}}\PYZbs{}
+                     \PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{pd1\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}\PY{n}{pyemu\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}
+                             \PY{n}{pd1\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,}\PY{n}{pyemu\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{)}\PY{p}{)}
              \PY{k}{print} \PY{l+s}{\PYZdq{}}\PY{l+s}{prior}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{pname}\PY{p}{,}\PY{n}{pd1\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}\PY{p}{,}\PY{n}{pyemu\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
              \PY{k}{print} \PY{l+s}{\PYZdq{}}\PY{l+s}{post}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{pname}\PY{p}{,}\PY{n}{pd1\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,}\PY{n}{pyemu\PYZus{}results}\PY{p}{[}\PY{n}{pname}\PY{p}{]}\PY{p}{[}\PY{l+m+mi}{1}\PY{p}{]}
          \PY{n}{f}\PY{o}{.}\PY{n}{close}\PY{p}{(}\PY{p}{)}
@@ -409,8 +408,10 @@ post pd\_ten 0.2267402 0.226740171374
 
     \subsection{PREDVAR1b}\label{predvar1b}
 
+write the nessecary files to run \texttt{predvar1b}
+
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}11}]:} \PY{n}{f} \PY{o}{=} \PY{n+nb}{open}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{pred\PYZus{}list.dat}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{l+s}{\PYZsq{}}\PY{l+s}{w}\PY{l+s}{\PYZsq{}}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}12}]:} \PY{n}{f} \PY{o}{=} \PY{n+nb}{open}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{pred\PYZus{}list.dat}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{l+s}{\PYZsq{}}\PY{l+s}{w}\PY{l+s}{\PYZsq{}}\PY{p}{)}
          \PY{n}{out\PYZus{}files} \PY{o}{=} \PY{p}{[}\PY{p}{]}
          \PY{k}{for} \PY{n}{pv} \PY{o+ow}{in} \PY{n}{pv\PYZus{}names}\PY{p}{:}
              \PY{n}{out\PYZus{}name} \PY{o}{=} \PY{n}{pv}\PY{o}{+}\PY{l+s}{\PYZdq{}}\PY{l+s}{.predvar1b.out}\PY{l+s}{\PYZdq{}}
@@ -431,11 +432,11 @@ post pd\_ten 0.2267402 0.226740171374
 \end{Verbatim}
 
             \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}11}]:} 0
+{\color{outcolor}Out[{\color{outcolor}12}]:} 0
 \end{Verbatim}
         
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}12}]:} \PY{n}{pv1b\PYZus{}results} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
+{\color{incolor}In [{\color{incolor}13}]:} \PY{n}{pv1b\PYZus{}results} \PY{o}{=} \PY{p}{\PYZob{}}\PY{p}{\PYZcb{}}
          \PY{k}{for} \PY{n}{out\PYZus{}file} \PY{o+ow}{in} \PY{n}{out\PYZus{}files}\PY{p}{:}
              \PY{n}{pred\PYZus{}name} \PY{o}{=} \PY{n}{out\PYZus{}file}\PY{o}{.}\PY{n}{split}\PY{p}{(}\PY{l+s}{\PYZsq{}}\PY{l+s}{.}\PY{l+s}{\PYZsq{}}\PY{p}{)}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
              \PY{n}{f} \PY{o}{=} \PY{n+nb}{open}\PY{p}{(}\PY{n}{out\PYZus{}file}\PY{p}{,}\PY{l+s}{\PYZsq{}}\PY{l+s}{r}\PY{l+s}{\PYZsq{}}\PY{p}{)}
@@ -448,13 +449,16 @@ post pd\_ten 0.2267402 0.226740171374
     now for pyemu
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}13}]:} \PY{n}{la\PYZus{}ord\PYZus{}errvar} \PY{o}{=} \PY{n}{pyemu}\PY{o}{.}\PY{n}{errvar}\PY{p}{(}\PY{n}{jco}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{pest\PYZus{}ord.jco}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{predictions}\PY{o}{=}\PY{n}{predictions}\PY{p}{,}\PY{n}{omitted\PYZus{}parameters}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{mult1}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{verbose}\PY{o}{=}\PY{n+nb+bp}{False}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}14}]:} \PY{n}{la\PYZus{}ord\PYZus{}errvar} \PY{o}{=} \PY{n}{pyemu}\PY{o}{.}\PY{n}{errvar}\PY{p}{(}\PY{n}{jco}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{pest\PYZus{}ord.jco}\PY{l+s}{\PYZdq{}}\PY{p}{,}
+                                      \PY{n}{predictions}\PY{o}{=}\PY{n}{predictions}\PY{p}{,}
+                                      \PY{n}{omitted\PYZus{}parameters}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{mult1}\PY{l+s}{\PYZdq{}}\PY{p}{,}
+                                      \PY{n}{verbose}\PY{o}{=}\PY{n+nb+bp}{False}\PY{p}{)}
          \PY{n}{df} \PY{o}{=} \PY{n}{la\PYZus{}ord\PYZus{}errvar}\PY{o}{.}\PY{n}{get\PYZus{}errvar\PYZus{}dataframe}\PY{p}{(}\PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mi}{36}\PY{p}{)}\PY{p}{)}
          \PY{n}{df}
 \end{Verbatim}
 
             \begin{Verbatim}[commandchars=\\\{\}]
-{\color{outcolor}Out[{\color{outcolor}13}]:}         first                  second                       third  \textbackslash{}
+{\color{outcolor}Out[{\color{outcolor}14}]:}         first                  second                       third  \textbackslash{}
              c\_obs10\_2    pd\_ten     c\_obs10\_2        pd\_ten     c\_obs10\_2   
          0    0.015706  0.076700  0.000000e+00  0.000000e+00  7.077577e-03   
          1    0.006040  0.046811  8.323523e-04  2.573705e-03  1.155533e-01   
@@ -533,10 +537,10 @@ post pd\_ten 0.2267402 0.226740171374
          35  3.259060e+28  
 \end{Verbatim}
         
-    Some cheap plots to verify
+    generate some plots to verify
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}14}]:} \PY{n}{fig} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{6}\PY{p}{,}\PY{l+m+mi}{6}\PY{p}{)}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}15}]:} \PY{n}{fig} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{6}\PY{p}{,}\PY{l+m+mi}{6}\PY{p}{)}\PY{p}{)}
          \PY{n}{max\PYZus{}idx} \PY{o}{=} \PY{l+m+mi}{15}
          \PY{n}{idx} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{n}{max\PYZus{}idx}\PY{p}{)}
          \PY{k}{for} \PY{n}{ipred}\PY{p}{,}\PY{n}{pred} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{predictions}\PY{p}{)}\PY{p}{:}
@@ -552,18 +556,25 @@ post pd\_ten 0.2267402 0.226740171374
              \PY{c}{\PYZsh{}ax.plot(arr[:,3],color=\PYZsq{}r\PYZsq{},dashes=(6,4),lw=4,alpha=0.5)}
              \PY{c}{\PYZsh{}ax.plot(third,color=\PYZsq{}r\PYZsq{})}
              
-             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{arr}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{x}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{s}\PY{o}{=}\PY{l+m+mi}{40}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{g}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{PREDVAR1B \PYZhy{} first term}\PY{l+s}{\PYZdq{}}\PY{p}{)}
-             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{arr}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{x}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{s}\PY{o}{=}\PY{l+m+mi}{40}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{b}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{PREDVAR1B \PYZhy{} second term}\PY{l+s}{\PYZdq{}}\PY{p}{)}
-             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{arr}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{l+m+mi}{3}\PY{p}{]}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{x}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{s}\PY{o}{=}\PY{l+m+mi}{40}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{r}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{PREVAR1B \PYZhy{} third term}\PY{l+s}{\PYZdq{}}\PY{p}{)}
-             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{first}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{o}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{facecolor}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{none}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{s}\PY{o}{=}\PY{l+m+mi}{50}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{g}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{pyEMU \PYZhy{} first term}\PY{l+s}{\PYZsq{}}\PY{p}{)}
+             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{arr}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{l+m+mi}{1}\PY{p}{]}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{x}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{s}\PY{o}{=}\PY{l+m+mi}{40}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{g}\PY{l+s}{\PYZsq{}}\PY{p}{,}
+                        \PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{PREDVAR1B \PYZhy{} first term}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{arr}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{l+m+mi}{2}\PY{p}{]}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{x}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{s}\PY{o}{=}\PY{l+m+mi}{40}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{b}\PY{l+s}{\PYZsq{}}\PY{p}{,}
+                        \PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{PREDVAR1B \PYZhy{} second term}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{arr}\PY{p}{[}\PY{p}{:}\PY{p}{,}\PY{l+m+mi}{3}\PY{p}{]}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{x}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{s}\PY{o}{=}\PY{l+m+mi}{40}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{r}\PY{l+s}{\PYZsq{}}\PY{p}{,}
+                        \PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{PREVAR1B \PYZhy{} third term}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{first}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{o}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{facecolor}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{none}\PY{l+s}{\PYZsq{}}\PY{p}{,}
+                        \PY{n}{s}\PY{o}{=}\PY{l+m+mi}{50}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{g}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{pyEMU \PYZhy{} first term}\PY{l+s}{\PYZsq{}}\PY{p}{)}
             
-             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{second}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{o}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{facecolor}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{none}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{s}\PY{o}{=}\PY{l+m+mi}{50}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{b}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{pyEMU \PYZhy{} second term}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{second}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{o}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{facecolor}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{none}\PY{l+s}{\PYZsq{}}\PY{p}{,}
+                        \PY{n}{s}\PY{o}{=}\PY{l+m+mi}{50}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{b}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{pyEMU \PYZhy{} second term}\PY{l+s}{\PYZdq{}}\PY{p}{)}
              
-             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{third}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{o}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{facecolor}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{none}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{s}\PY{o}{=}\PY{l+m+mi}{50}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{r}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{pyEMU \PYZhy{} third term}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+             \PY{n}{ax}\PY{o}{.}\PY{n}{scatter}\PY{p}{(}\PY{n}{idx}\PY{p}{,}\PY{n}{third}\PY{p}{,}\PY{n}{marker}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{o}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{facecolor}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{none}\PY{l+s}{\PYZsq{}}\PY{p}{,}
+                        \PY{n}{s}\PY{o}{=}\PY{l+m+mi}{50}\PY{p}{,}\PY{n}{color}\PY{o}{=}\PY{l+s}{\PYZsq{}}\PY{l+s}{r}\PY{l+s}{\PYZsq{}}\PY{p}{,}\PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{pyEMU \PYZhy{} third term}\PY{l+s}{\PYZdq{}}\PY{p}{)}
              \PY{n}{ax}\PY{o}{.}\PY{n}{set\PYZus{}ylabel}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{forecast variance}\PY{l+s}{\PYZdq{}}\PY{p}{)}
              \PY{n}{ax}\PY{o}{.}\PY{n}{set\PYZus{}title}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{forecast: }\PY{l+s}{\PYZdq{}} \PY{o}{+} \PY{n}{pred}\PY{p}{)}
              \PY{k}{if} \PY{n}{ipred} \PY{o}{==} \PY{n+nb}{len}\PY{p}{(}\PY{n}{predictions}\PY{p}{)} \PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{:}
-                 \PY{n}{ax}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{n}{loc}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{lower center}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{bbox\PYZus{}to\PYZus{}anchor}\PY{o}{=}\PY{p}{(}\PY{l+m+mf}{0.5}\PY{p}{,}\PY{o}{\PYZhy{}}\PY{l+m+mf}{0.75}\PY{p}{)}\PY{p}{,}\PY{n}{scatterpoints}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,}\PY{n}{ncol}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}
+                 \PY{n}{ax}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{n}{loc}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{lower center}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{bbox\PYZus{}to\PYZus{}anchor}\PY{o}{=}\PY{p}{(}\PY{l+m+mf}{0.5}\PY{p}{,}\PY{o}{\PYZhy{}}\PY{l+m+mf}{0.75}\PY{p}{)}\PY{p}{,}
+                           \PY{n}{scatterpoints}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,}\PY{n}{ncol}\PY{o}{=}\PY{l+m+mi}{2}\PY{p}{)}
                  \PY{n}{ax}\PY{o}{.}\PY{n}{set\PYZus{}xlabel}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{singular values}\PY{l+s}{\PYZdq{}}\PY{p}{)}
              \PY{c}{\PYZsh{}break}
          \PY{n}{plt}\PY{o}{.}\PY{n}{savefig}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{predvar1b\PYZus{}ver.eps}\PY{l+s}{\PYZdq{}}\PY{p}{)}    
@@ -571,14 +582,10 @@ post pd\_ten 0.2267402 0.226740171374
 \end{Verbatim}
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{verify_unc_results_files/verify_unc_results_24_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{verify_unc_results_files/verify_unc_results_26_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
-    \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor} }]:} 
-\end{Verbatim}
-
 
     % Add a bibliography block to the postdoc
     

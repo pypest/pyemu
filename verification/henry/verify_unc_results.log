@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012) (format=pdflatex 2012.6.30)  4 JUN 2015 10:11
+This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012) (format=pdflatex 2012.6.30)  4 JUN 2015 10:38
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -552,66 +552,53 @@ LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <10> not available
 [1
 
 {/usr/local/texlive/2012/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
-<verify_unc_results_files/verify_unc_results_12_2.png, id=30, 604.2575pt x 592.
-2125pt>
-File: verify_unc_results_files/verify_unc_results_12_2.png Graphic file (type p
-ng)
- <use verify_unc_results_files/verify_unc_results_12_2.png>
-Package pdftex.def Info: verify_unc_results_files/verify_unc_results_12_2.png u
-sed on input line 352.
-(pdftex.def)             Requested size: 604.25603pt x 592.21104pt.
- [2]
-Underfull \hbox (badness 10000) in paragraph at lines 354--355
-
- []
-
-[3 <./verify_unc_results_files/verify_unc_results_12_2.png>] [4]
-LaTeX Font Info:    Try loading font information for OMS+cmtt on input line 457
+[2] [3]
+LaTeX Font Info:    Try loading font information for OMS+cmtt on input line 461
 .
-LaTeX Font Info:    No file OMScmtt.fd. on input line 457.
+LaTeX Font Info:    No file OMScmtt.fd. on input line 461.
 
 
 LaTeX Font Warning: Font shape `OMS/cmtt/m/n' undefined
 (Font)              using `OMS/cmsy/m/n' instead
-(Font)              for symbol `textbackslash' on input line 457.
+(Font)              for symbol `textbackslash' on input line 461.
 
-[5] [6]
-<verify_unc_results_files/verify_unc_results_24_0.png, id=55, 423.5825pt x 473.
+[4] [5]
+<verify_unc_results_files/verify_unc_results_26_0.png, id=48, 423.5825pt x 473.
 77pt>
-File: verify_unc_results_files/verify_unc_results_24_0.png Graphic file (type p
+File: verify_unc_results_files/verify_unc_results_26_0.png Graphic file (type p
 ng)
- <use verify_unc_results_files/verify_unc_results_24_0.png>
-Package pdftex.def Info: verify_unc_results_files/verify_unc_results_24_0.png u
-sed on input line 574.
+ <use verify_unc_results_files/verify_unc_results_26_0.png>
+Package pdftex.def Info: verify_unc_results_files/verify_unc_results_26_0.png u
+sed on input line 585.
 (pdftex.def)             Requested size: 423.58147pt x 473.76884pt.
- [7]
-Underfull \hbox (badness 10000) in paragraph at lines 576--577
+ [6]
+Underfull \hbox (badness 10000) in paragraph at lines 587--588
 
  []
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 587.
-[8 <./verify_unc_results_files/verify_unc_results_24_0.png>]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 587.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 594.
+[7 <./verify_unc_results_files/verify_unc_results_26_0.png>]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 594.
 
 (./verify_unc_results.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 587.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 587.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 594.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 594.
 Package rerunfilecheck Info: File `verify_unc_results.out' has not changed.
 (rerunfilecheck)             Checksum: 9281E676FE7901E838730D19F69F3D96;222.
 
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 587.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 594.
  ) 
 Here is how much of TeX's memory you used:
- 8096 strings out of 493488
- 120231 string characters out of 3141326
+ 8091 strings out of 493488
+ 119994 string characters out of 3141326
  230991 words of memory out of 3000000
- 11247 multiletter control sequences out of 15000+200000
+ 11243 multiletter control sequences out of 15000+200000
  9832 words of font info for 38 fonts, out of 3000000 for 9000
  957 hyphenation exceptions out of 8191
- 36i,6n,35p,573b,456s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 36i,6n,35p,405b,456s stack positions out of 5000i,500n,10000p,200000b,50000s
 </usr/local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb
 ></usr/local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmitt10.pfb
 ></usr/local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb><
@@ -619,10 +606,10 @@ Here is how much of TeX's memory you used:
 sr/local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb></usr
 /local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/
 local/texlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
-Output written on verify_unc_results.pdf (8 pages, 129904 bytes).
+Output written on verify_unc_results.pdf (7 pages, 116478 bytes).
 PDF statistics:
- 96 PDF objects out of 1000 (max. 8388607)
- 74 compressed objects within 1 object stream
- 13 named destinations out of 1000 (max. 500000)
- 43 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 89 PDF objects out of 1000 (max. 8388607)
+ 70 compressed objects within 1 object stream
+ 12 named destinations out of 1000 (max. 500000)
+ 38 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -807,8 +807,15 @@ class matrix(object):
             names = [names]
         idxs = self.indices(names, axis=axis)
 
-        if self.isdiagonal or isinstance(self, cov):
+        if self.isdiagonal:
             self.__x = np.delete(self.__x, idxs, 0)
+            idxs = np.sort(idxs)
+            for idx in idxs[::-1]:
+                del self.row_names[idx]
+                del self.col_names[idx]
+        elif isinstance(self,cov):
+            self.__x = np.delete(self.__x, idxs, 0)
+            self.__x = np.delete(self.__x, idxs, 1)
             idxs = np.sort(idxs)
             for idx in idxs[::-1]:
                 del self.row_names[idx]
@@ -1570,13 +1577,27 @@ def test():
     newthird = third.get(row_names=["o1"])
     result = first.T * newthird * first
 
+    #--drop testing
+    second.drop("p2",axis=0)
+    assert second.shape == (2, 2)
+
+    third.drop("o1",axis=1)
+    assert third.shape == (3, 3)
+
+    first.drop("p1",axis=1)
+    assert first.shape == (4,2)
+
+    first.drop("o4",axis=0)
+    assert first.shape == (3,2)
+
 if __name__ == "__main__":
-    import os
-    jco = matrix()
-    jco.from_binary(os.path.join("for_nick", "tseriesVERArad.jco"))
-    print(jco.shape)
-    jco.to_binary("test.jco")
-    jco.from_binary("test.jco")
+    test()
+    #import os
+    #jco = matrix()
+    #jco.from_binary(os.path.join("for_nick", "tseriesVERArad.jco"))
+    #print(jco.shape)
+    #jco.to_binary("test.jco")
+    #jco.from_binary("test.jco")
     #c1 = cov()
     #c1.from_ascii("post.cov")
     #c2 = jco()

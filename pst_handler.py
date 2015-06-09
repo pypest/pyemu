@@ -65,7 +65,7 @@ class pst(object):
         """get the weighted total objective function
         """
         sum = 0.0
-        for grp, contrib in self.phi_components.iteritems():
+        for grp, contrib in self.phi_components.items():
             sum += contrib
         return sum
 
@@ -93,8 +93,9 @@ class pst(object):
             og_res_df.index = og_res_df.name
             og_df = self.observation_data.ix[ogroups[og]]
             og_df.index = og_df.obsnme
+            og_res_df = og_res_df.loc[og_df.index,:]
             assert og_df.shape[0] == og_res_df.shape[0],\
-            " pst.phi_components error: group residual dataframe row lenght" +\
+            " pst.phi_components error: group residual dataframe row length" +\
             "doesn't match observation data group dataframe row length" + \
                 str(og_df.shape) + " vs. " + str(og_res_df.shape)
             components[og] = np.sum((og_res_df["residual"] *
@@ -195,7 +196,7 @@ class pst(object):
         """parameter groups
         """
         pass
-        return self.parameter_data.groupby("pargp").groups.keys()
+        return list(self.parameter_data.groupby("pargp").groups.keys())
 
 
     @property
@@ -260,6 +261,7 @@ class pst(object):
                 break
         res_df = pandas.read_csv(f, header=None, names=header, sep="\s+",
                                  converters=converters)
+        res_df.index = res_df.name
         f.close()
         return res_df
 
@@ -674,7 +676,7 @@ class pst(object):
         obs = self.observation_data
         nz_groups = obs.groupby(obs["weight"].map(lambda x: x == 0)).groups
         ogroups = obs.groupby("obgnme").groups
-        for ogroup, idxs in ogroups.iteritems():
+        for ogroup, idxs in ogroups.items():
             if self.mode.startswith("regul") and "regul" in ogroup.lower():
                 continue
             og_phi = components[ogroup]
