@@ -545,6 +545,13 @@ class matrix(object):
             return self.__x.shape
         return None
 
+    @property
+    def ncol(self):
+        return self.shape[1]
+
+    @property
+    def nrow(self):
+        return self.shape[0]
 
     @property
     def T(self):

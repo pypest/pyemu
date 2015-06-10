@@ -694,9 +694,9 @@ class linear_analysis(object):
             obs_names = [obs_names]
 
         if par_names is None:
-            par_names = self.jco.par_names
+            par_names = self.jco.col_names
         if obs_names is None:
-            obs_names = self.jco.obs_names
+            obs_names = self.jco.row_names
         #--if possible, get a new parcov
         if self.parcov:
             new_parcov = self.parcov.get(col_names=par_names)
@@ -947,10 +947,10 @@ class schur(linear_analysis):
 
         for iname, name in enumerate(parameter_names):
             parameter_names[iname] = name.lower()
-            assert name.lower() in self.jco.par_names,\
+            assert name.lower() in self.jco.col_names,\
                 "contribution parameter " + name + " not found jco"
         keep_names = []
-        for name in self.jco.par_names:
+        for name in self.jco.col_names:
             if name not in keep_names:
                 keep_names.append(name)
         if len(keep_names) == 0:
@@ -963,7 +963,7 @@ class schur(linear_analysis):
         cond_preds = []
         for pred in self.predictions:
             cond_preds.append(pred.get(keep_names, pred.col_names))
-        la_cond = schur(jco=self.jco.get(self.jco.obs_names, keep_names),
+        la_cond = schur(jco=self.jco.get(self.jco.row_names, keep_names),
                         parcov=self.parcov.condition_on(parameter_names),
                         obscov=self.obscov, predictions=cond_preds,verbose=False)
 
@@ -1053,11 +1053,11 @@ class schur(linear_analysis):
             observation_names = [observation_names]
         for iname, name in enumerate(observation_names):
             observation_names[iname] = name.lower()
-            if name.lower() not in self.jco.obs_names:
+            if name.lower() not in self.jco.row_names:
                 raise Exception("schur.importance_of_observations: " +
                                 "obs name not found in jco: " + name)
         keep_names = []
-        for name in self.jco.obs_names:
+        for name in self.jco.row_names:
             if name not in observation_names:
                 keep_names.append(name)
         if len(keep_names) == 0:
@@ -1067,7 +1067,7 @@ class schur(linear_analysis):
             raise Exception("schur.importance_of_observations: " +
                             "no predictions have been set")
 
-        la_reduced = self.get(par_names=self.jco.par_names,
+        la_reduced = self.get(par_names=self.jco.col_names,
                               obs_names=keep_names)
         return la_reduced.posterior_prediction
         #rpost = la_reduced.posterior_prediction
@@ -1116,7 +1116,7 @@ class schur(linear_analysis):
         obsgrp_dict = {}
         obs = self.pst.observation_data
         obs.index = obs.obsnme
-        obs = obs.loc[self.jco.obs_names,:]
+        obs = obs.loc[self.jco.row_names,:]
         groups = obs.groupby("obgnme").groups
         for grp, idxs in groups.items():
             obsgrp_dict[grp] = list(obs.loc[idxs,"obsnme"])
@@ -1227,7 +1227,7 @@ class errvar(linear_analysis):
             #--check to see if omitted par names are in each predictions
             found = True
             missing_par,missing_pred = None, None
-            for par_name in self.omitted_jco.par_names:
+            for par_name in self.omitted_jco.col_names:
                 for prediction in self.predictions:
                     if par_name not in prediction.row_names:
                         found = False
@@ -1239,7 +1239,7 @@ class errvar(linear_analysis):
                 # need to access the attribute directly,
                 # not a view of attribute
                 for prediction in self._linear_analysis__predictions:
-                    opred = prediction.extract(self.omitted_jco.par_names)
+                    opred = prediction.extract(self.omitted_jco.col_names)
                     opreds.append(opred)
                 self.__omitted_predictions = opreds
             else:
@@ -1261,7 +1261,7 @@ class errvar(linear_analysis):
         if self.omitted_parcov_arg is None and self.omitted_par_arg is not None:
             # check to see if omitted par names are in parcov
             found = True
-            for par_name in self.omitted_jco.par_names:
+            for par_name in self.omitted_jco.col_names:
                 if par_name not in self.parcov.col_names:
                     found = False
                     break
@@ -1269,14 +1269,14 @@ class errvar(linear_analysis):
                 #--need to access attribute directly, not view of attribute
                 self.__omitted_parcov = \
                     self._linear_analysis__parcov.extract(
-                        row_names=self.omitted_jco.par_names)
+                        row_names=self.omitted_jco.col_names)
             else:
                 self.logger.warn("errvar.__load_omitted_parun: " +
                                  "no omitted parcov arg passed: " +
                         "setting omitted parcov as identity matrix")
                 self.__omitted_parcov = mhand.cov(
                     x=np.ones(self.omitted_jco.shape[1]),
-                    names=self.omitted_jco.par_names, isdiagonal=True)
+                    names=self.omitted_jco.col_names, isdiagonal=True)
         elif self.omitted_parcov_arg is not None:
             raise NotImplementedError()
 
@@ -1287,7 +1287,7 @@ class errvar(linear_analysis):
         if self.omitted_par_arg is None:
             raise Exception("errvar.__load_omitted: omitted_arg is None")
         if isinstance(self.omitted_par_arg,str):
-            if self.omitted_par_arg in self.jco.par_names:
+            if self.omitted_par_arg in self.jco.col_names:
                 #--need to access attribute directly, not view of attribute
                 self.__omitted_jco = \
                     self._linear_analysis__jco.extract(
@@ -1307,7 +1307,7 @@ class errvar(linear_analysis):
         elif isinstance(self.omitted_par_arg,list):
             for arg in self.omitted_par_arg:
                 if isinstance(arg,str):
-                    assert arg in self.jco.par_names,\
+                    assert arg in self.jco.col_names,\
                         "errvar.__load_omitted_jco: omitted_jco " +\
                         "arg str not in jco par_names: " + str(arg)
             self.__omitted_jco = \
@@ -1420,8 +1420,8 @@ class errvar(linear_analysis):
         if self.__R is not None and singular_value == self.__R_sv:
             return self.__R
 
-        elif singular_value > self.jco.npar:
-            self.__R_sv = self.jco.npar
+        elif singular_value > self.jco.ncol:
+            self.__R_sv = self.jco.ncol
             return self.parcov.identity
         else:
             self.log("calc R @" + str(singular_value))
@@ -1445,7 +1445,7 @@ class errvar(linear_analysis):
         if self.__I_R is not None and singular_value == self.__I_R_sv:
             return self.__I_R
         else:
-            if singular_value > self.jco.npar:
+            if singular_value > self.jco.ncol:
                 return self.parcov.zero
             else:
                 v2 = self.qhalfx.v[:, singular_value:]
@@ -1470,10 +1470,15 @@ class errvar(linear_analysis):
         if singular_value == 0:
             self.__G_sv = 0
             self.__G = mhand.matrix(
-                x=np.zeros((self.jco.npar,self.jco.nobs)),
+                x=np.zeros((self.jco.ncol,self.jco.nrow)),
                 row_names=self.jco.col_names, col_names=self.jco.row_names)
             return self.__G
-        if singular_value > min(self.pst.npar_adj,self.pst.nnz_obs):
+        mn = min(self.jco.shape)
+        try:
+            mn = min(self.pst.npar_adj, self.pst.nnz_obs)
+        except:
+            pass
+        if singular_value > mn:
             self.logger.warn(
                 "errvar.G(): singular_value > min(npar,nobs):" +
                 "resetting to min(npar,nobs): " +
@@ -1506,7 +1511,7 @@ class errvar(linear_analysis):
         """
         if not self.predictions:
             raise Exception("errvar.first(): no predictions are set")
-        if singular_value > self.jco.npar:
+        if singular_value > self.jco.ncol:
             zero_preds = {}
             for pred in self.predictions:
                 zero_preds[("first", pred.col_names[0])] = 0.0
@@ -1559,7 +1564,12 @@ class errvar(linear_analysis):
             raise Exception("errvar.second(): not predictions are set")
         self.log("calc second term prediction @" + str(singular_value))
 
-        if singular_value > min(self.pst.npar_adj, self.pst.nnz_obs):
+        mn = min(self.jco.shape)
+        try:
+            mn = min(self.pst.npar_adj, self.pst.nnz_obs)
+        except:
+            pass
+        if singular_value > mn:
             inf_pred = {}
             for pred in self.predictions:
                 inf_pred[("second",pred.col_names[0])] = 1.0E+35
@@ -1620,7 +1630,12 @@ class errvar(linear_analysis):
                 zero_preds[("third", pred.col_names[0])] = 0.0
             return zero_preds
         self.log("calc third term prediction @" + str(singular_value))
-        if singular_value > min(self.pst.npar_adj, self.pst.nnz_obs):
+        mn = min(self.jco.shape)
+        try:
+            mn = min(self.pst.npar_adj, self.pst.nnz_obs)
+        except:
+            pass
+        if singular_value > mn:
             inf_pred = {}
             for pred in self.predictions:
                 inf_pred[("third",pred.col_names[0])] = 1.0E+35
@@ -1658,19 +1673,77 @@ class errvar(linear_analysis):
         self.log("calc third term parameter @" + str(singular_value))
         return result
 
+
+
+def schur_test():
+    #non-pest
+    pnames = ["p1","p2","p3"]
+    onames = ["o1","o2","o3","o4"]
+    npar = len(pnames)
+    nobs = len(onames)
+    j_arr = np.random.random((nobs,npar))
+    jco = mhand.matrix(x=j_arr,row_names=onames,col_names=pnames)
+    parcov = mhand.cov(x=np.eye(npar),names=pnames)
+    obscov = mhand.cov(x=np.eye(nobs),names=onames)
+    forecasts = "o2"
+
+    s = schur(jco=jco,parcov=parcov,obscov=obscov,forecasts=forecasts)
+    print(s.get_parameter_summary())
+    print(s.get_forecast_summary())
+
+
+    #this should fail
+    try:
+        print(s.get_contribution_dataframe_groups())
+    except Exception as e:
+        print(str(e))
+
+    #this should fail
+    try:
+        print(s.get_importance_dataframe_groups())
+    except Exception as e:
+        print(str(e))
+
+    print(s.get_contribution_dataframe({"group1":["p1","p3"]}))
+
+    print(s.get_importance_dataframe({"group1":["o1","o3"]}))
+
+
+
+def errvar_test():
+    #non-pest
+    pnames = ["p1","p2","p3"]
+    onames = ["o1","o2","o3","o4"]
+    npar = len(pnames)
+    nobs = len(onames)
+    j_arr = np.random.random((nobs,npar))
+    jco = mhand.matrix(x=j_arr,row_names=onames,col_names=pnames)
+    parcov = mhand.cov(x=np.eye(npar),names=pnames)
+    obscov = mhand.cov(x=np.eye(nobs),names=onames)
+    forecasts = "o2"
+
+    omitted = "p3"
+
+    e = errvar(jco=jco,parcov=parcov,obscov=obscov,forecasts=forecasts,
+               omitted_parameters=omitted)
+    svs = [0,1,2,3,4,5]
+    print(e.get_errvar_dataframe(svs))
+
 if __name__ == "__main__":
+    schur_test()
+    errvar_test()
     #la = linear_analysis(jco="pest.jcb")
     #forecasts = ["C_obs13_2","c_obs10_2","c_obs05_2"]
     #forecasts = ["pd_one","pd_ten","pd_half"]
     #la = schur(jco=os.path.join("pest.jcb"),forecasts=forecasts)
-    forecasts = ["pd_jamesriv"]
-    j = os.path.join("ozark","ozark.jco")
-    p = os.path.join("ozark","ozark.unc")
-    la = schur(jco=j,parcov=p,forecasts=forecasts)
-    #df = la.get_importance_dataframe()
-    #df = la.importance_of_observation_groups()
-    df = la.get_parameter_summary()
-    print(df)
+    # forecasts = ["pd_jamesriv"]
+    # j = os.path.join("ozark","ozark.jco")
+    # p = os.path.join("ozark","ozark.unc")
+    # la = schur(jco=j,parcov=p,forecasts=forecasts)
+    # #df = la.get_importance_dataframe()
+    # #df = la.importance_of_observation_groups()
+    # df = la.get_parameter_summary()
+    # print(df)
     #df = la.get_contribution_dataframe({"test1":["mult1"]})
     #la.parcov.to_uncfile("test.unc")
     #la = schur(jco=os.path.join("for_nick", "tseriesVERArad.jco"))
