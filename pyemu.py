@@ -136,6 +136,7 @@ class linear_analysis(object):
         self.__obscov = None
         self.__predictions = None
         self.__qhalf = None
+        self.__qhalfx = None
         self.__fehalf = None
         self.__prior_prediction = None
 
@@ -181,7 +182,6 @@ class linear_analysis(object):
                 self.resfile = None
                 self.res = None
             self.log("scaling obscov by residual phi components")
-
 
     def __fromfile(self, filename):
         """a private method to deduce and load a filename into a matrix object
@@ -552,6 +552,12 @@ class linear_analysis(object):
         self.__qhalf = self.obscov ** (-0.5)
         self.log("qhalf")
         return self.__qhalf
+
+    @property
+    def qhalfx(self):
+        if self.__qhalfx is None:
+            self.__qhalfx = self.qhalf * self.jco
+        return self.__qhalfx
 
 
     @property
@@ -1346,13 +1352,6 @@ class errvar(linear_analysis):
         return self.__omitted_parcov
 
 
-    @property
-    def qhalfx(self):
-        if self.__qhalfx is None:
-            self.__qhalfx = self.qhalf * self.jco
-        return self.__qhalfx
-
-
     def get_errvar_dataframe(self, singular_values):
         """get a pandas dataframe of error variance results indexed
             on singular value and (prediction name,<term>)
@@ -1674,6 +1673,66 @@ class errvar(linear_analysis):
         return result
 
 
+class influence(linear_analysis):
+
+    def __init__(self,jco,**kwargs):
+        if "forecasts" in kwargs.keys() or "predictions" in kwargs.keys():
+            raise Exception("influence.__init__(): forecast\\predictions " +
+                            "not  allowed in influence analyses")
+        self.__hat = None
+        super(influence, self).__init__(jco,**kwargs)
+
+    @property
+    def observation_influence(self):
+        obs_inf = []
+        for iobs, obs in enumerate(self.hat.row_names):
+            hii = self.hat[iobs,iobs].x[0][0]
+            obs_inf.append(hii/(1.0 - hii))
+        return pandas.DataFrame({"obs_influence":obs_inf},index=self.hat.row_names)
+
+    @property
+    def dfbetas(self):
+        return
+
+    @property
+    def cooks_d(self):
+        return
+
+    @property
+    def studentized_res(self):
+
+
+    @property
+    def scaled_res(self):
+        if self.res is None:
+            raise Exception("influence.scaled_res: no residuals loaded")
+        return self.qhalf * self.res.loc[:,"residual"]
+
+    @property
+    def hat(self):
+        if self.__hat is not None:
+            return self.__hat
+        self.__hat = self.qhalfx * (self.qhalfx.T * self.qhalfx).inv\
+                     * self.qhalfx.T
+        return self.__hat
+
+def influence_test():
+    #non-pest
+    pnames = ["p1","p2","p3"]
+    onames = ["o1","o2","o3","o4"]
+    npar = len(pnames)
+    nobs = len(onames)
+    j_arr = np.random.random((nobs,npar))
+    parcov = mhand.cov(x=np.eye(npar),names=pnames)
+    obscov = mhand.cov(x=np.eye(nobs),names=onames)
+    jco = mhand.matrix(x=j_arr,row_names=onames,col_names=pnames)
+
+    s = influence(jco=jco,obscov=obscov)
+    print(s.hat)
+    print(s.observation_influence)
+
+
+
 
 def schur_test():
     #non-pest
@@ -1730,8 +1789,10 @@ def errvar_test():
     print(e.get_errvar_dataframe(svs))
 
 if __name__ == "__main__":
-    schur_test()
-    errvar_test()
+    influence_test()
+    #schur_test()
+    #errvar_test()
+
     #la = linear_analysis(jco="pest.jcb")
     #forecasts = ["C_obs13_2","c_obs10_2","c_obs05_2"]
     #forecasts = ["pd_one","pd_ten","pd_half"]
