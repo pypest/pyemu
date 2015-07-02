@@ -1121,6 +1121,13 @@ class matrix(object):
         return self.to_dataframe()
 
 
+    def from_dataframe(self, df):
+        assert isinstance(df, pandas.DataFrame)
+        self.__x = df.as_matrix()
+        self.row_names = copy.deepcopy(list(df.index))
+        self.col_names = copy.deepcopy(list(df.columns))
+
+
     def to_dataframe(self):
         """return a pandas dataframe of the matrix object
         Args:
@@ -1222,7 +1229,6 @@ class cov(matrix):
                                   row_names=row_names,
                                   col_names=col_names,
                                   autoalign=autoalign)
-
 
     @property
     def identity(self):
