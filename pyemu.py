@@ -1700,6 +1700,7 @@ class influence(linear_analysis):
 
     @property
     def studentized_res(self):
+        return
 
 
     @property
