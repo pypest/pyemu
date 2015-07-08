@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 import os
 import copy
 import numpy as np
@@ -64,7 +65,7 @@ class pst(object):
         """get the weighted total objective function
         """
         sum = 0.0
-        for grp, contrib in self.phi_components.iteritems():
+        for grp, contrib in self.phi_components.items():
             sum += contrib
         return sum
 
@@ -92,8 +93,9 @@ class pst(object):
             og_res_df.index = og_res_df.name
             og_df = self.observation_data.ix[ogroups[og]]
             og_df.index = og_df.obsnme
+            og_res_df = og_res_df.loc[og_df.index,:]
             assert og_df.shape[0] == og_res_df.shape[0],\
-            " pst.phi_components error: group residual dataframe row lenght" +\
+            " pst.phi_components error: group residual dataframe row length" +\
             "doesn't match observation data group dataframe row length" + \
                 str(og_df.shape) + " vs. " + str(og_res_df.shape)
             components[og] = np.sum((og_res_df["residual"] *
@@ -210,7 +212,7 @@ class pst(object):
         """parameter groups
         """
         pass
-        return self.parameter_data.groupby("pargp").groups.keys()
+        return list(self.parameter_data.groupby("pargp").groups.keys())
 
 
     @property
@@ -275,6 +277,7 @@ class pst(object):
                 break
         res_df = pandas.read_csv(f, header=None, names=header, sep="\s+",
                                  converters=converters)
+        res_df.index = res_df.name
         f.close()
         return res_df
 
@@ -331,7 +334,7 @@ class pst(object):
                     raise Exception("EOF before prior information " +
                                     "section found")
                 if "* prior information" in line.lower():
-                    for iprior in xrange(nprior):
+                    for iprior in range(nprior):
                         line = f.readline()
                         if line == '':
                             raise Exception("EOF during prior information " +
@@ -366,7 +369,7 @@ class pst(object):
             "tied parameters not supported in pst.write()"
         f_in = open(self.filename, 'r')
         f_out = open(new_filename, 'w')
-        for _ in xrange(2):
+        for _ in range(2):
             f_out.write(f_in.readline())
         f_in.readline()
         f_out.write("restart "+self.mode+'\n')
@@ -485,7 +488,7 @@ class pst(object):
             f_out.write(line)
             f_out.write(self.regul_section)
         elif update_regul:
-            for _ in xrange(3):
+            for _ in range(3):
                 f_in.readline()
             f_out.write(self.regul_section)
         else:
@@ -590,8 +593,8 @@ class pst(object):
                     weight = 1.0 / (ubnd - lbnd)
                 self.prior_information.loc[parnme, "weight"] = weight
             else:
-                print "prior information name does not correspond" +\
-                      " to a parameter: " + str(parnme)
+                print("prior information name does not correspond" +\
+                      " to a parameter: " + str(parnme))
 
 
     def parrep(self, parfile=None):
@@ -689,7 +692,7 @@ class pst(object):
         obs = self.observation_data
         nz_groups = obs.groupby(obs["weight"].map(lambda x: x == 0)).groups
         ogroups = obs.groupby("obgnme").groups
-        for ogroup, idxs in ogroups.iteritems():
+        for ogroup, idxs in ogroups.items():
             if self.mode.startswith("regul") and "regul" in ogroup.lower():
                 continue
             og_phi = components[ogroup]
@@ -704,7 +707,7 @@ class pst(object):
                                 " but phi > 0 for group:" + str(ogroup))
             if og_phi > 0:
                 factor = np.sqrt(float(og_nzobs) / float(og_phi))
-                obs.weight[idxs] *= factor
+                obs.weight[idxs] = obs.weight[idxs] * factor
         self.observation_data = obs
 
 
@@ -857,9 +860,9 @@ class pst(object):
 
 if __name__ == "__main__":
     p = pst("pest.pst")
-    print p.observation_data.weight
+    print(p.observation_data.weight)
     p.proportional_weights(0.25, wmax=0.5)
-    print p.observation_data.weight
+    print(p.observation_data.weight)
     #print p.phi
     #p.adjust_weights_by_group(obsgrp_dict={"head": 5, "conc": 5})
     #print p.phi

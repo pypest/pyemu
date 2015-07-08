@@ -1,3 +1,4 @@
+from __future__ import print_function, division
 import os
 import copy
 from datetime import datetime
@@ -50,14 +51,14 @@ class logger(object):
             s = str(t) + ' finished: ' + str(phrase) + " took: " + \
                 str(t - self.items[phrase]) + '\n'
             if self.echo:
-                print s,
+                print(s,)
             if self.filename:
                 self.f.write(s)
             self.items.pop(phrase)
         else:
             s = str(t) + ' starting: ' + str(phrase) + '\n'
             if self.echo:
-                print s,
+                print(s,)
             if self.filename:
                 self.f.write(s)
             self.items[phrase] = copy.deepcopy(t)
@@ -73,7 +74,7 @@ class logger(object):
         """
         s = str(datetime.now()) + " WARNING: " + message + '\n'
         if self.echo:
-            print s,
+            print(s,)
         if self.filename:
             self.f.write(s)
 
@@ -103,8 +104,8 @@ class linear_analysis(object):
             private attributes
     """
     def __init__(self, jco=None, pst=None, parcov=None, obscov=None,
-                 predictions=None, ref_var=1.0, verbose=True,
-                 resfile=None, forecasts=None,**kwargs):
+                 predictions=None, ref_var=1.0, verbose=False,
+                 resfile=False, forecasts=None,**kwargs):
         self.logger = logger(verbose)
         self.log = self.logger.log
         self.jco_arg = jco
@@ -135,6 +136,8 @@ class linear_analysis(object):
         self.__obscov = None
         self.__predictions = None
         self.__qhalf = None
+        self.__qhalfx = None
+        self.__xtqx = None
         self.__fehalf = None
         self.__prior_prediction = None
 
@@ -180,7 +183,6 @@ class linear_analysis(object):
                 self.resfile = None
                 self.res = None
             self.log("scaling obscov by residual phi components")
-
 
     def __fromfile(self, filename):
         """a private method to deduce and load a filename into a matrix object
@@ -450,7 +452,7 @@ class linear_analysis(object):
                                  "ndarray, generating generic prediction names")
                 pred_names = []
                 [pred_names.append("pred_" + str(i + 1))
-                 for i in xrange(self.prediction_arg.shape[0])]
+                 for i in range(self.prediction_arg.shape[0])]
 
                 if self.jco:
                     names = self.jco.col_names
@@ -470,8 +472,10 @@ class linear_analysis(object):
                 raise Exception("unrecognized predictions argument: " +
                                 str(arg))
         if len(row_names) > 0:
+            extract = self.jco.extract(row_names=row_names)
             for row_name in row_names:
-                vecs.append(self.jco.extract(row_names=row_name).T)
+                vecs.append(extract.get(row_names=row_name).T)
+
             # call obscov to load __obscov so that __obscov
             # (priavte) can be manipulated
             self.obscov
@@ -549,6 +553,22 @@ class linear_analysis(object):
         self.__qhalf = self.obscov ** (-0.5)
         self.log("qhalf")
         return self.__qhalf
+
+    @property
+    def qhalfx(self):
+        if self.__qhalfx is None:
+            self.log("qhalfx")
+            self.__qhalfx = self.qhalf * self.jco
+            self.log("qhalfx")
+        return self.__qhalfx
+
+    @property
+    def xtqx(self):
+        if self.__xtqx is None:
+            self.log("xtqx")
+            self.__xtqx = self.jco.T * (self.obscov ** -1) * self.jco
+            self.log("xtqx")
+        return self.__xtqx
 
 
     @property
@@ -653,7 +673,7 @@ class linear_analysis(object):
         self.log("removing " + nprior_str + " prior info from jco, pst, and " +
                                             "obs cov")
         #pi_names = list(self.pst.prior_information.pilbl.values)
-        pi_names = self.pst.prior_names
+        pi_names = list(self.pst.prior_names)
         self.__jco.drop(pi_names, axis=0)
         self.__pst.prior_information = self.pst.null_prior
         #self.__obscov.drop(pi_names,axis=0)
@@ -691,9 +711,9 @@ class linear_analysis(object):
             obs_names = [obs_names]
 
         if par_names is None:
-            par_names = self.jco.par_names
+            par_names = self.jco.col_names
         if obs_names is None:
-            obs_names = self.jco.obs_names
+            obs_names = self.jco.row_names
         #--if possible, get a new parcov
         if self.parcov:
             new_parcov = self.parcov.get(col_names=par_names)
@@ -764,7 +784,7 @@ class linear_analysis(object):
         par_vals[:, islog] = 10.0**(par_vals[:, islog])
 
         #apply parameter bounds
-        for i in xrange(num_reals):
+        for i in range(num_reals):
             par_vals[i, np.where(par_vals[i] > ub)] = \
                 ub[np.where(par_vals[i] > ub)]
             par_vals[i, np.where(par_vals[i] < lb)] = \
@@ -787,7 +807,7 @@ class linear_analysis(object):
         self.log("writing realized pest control files")
         pst.prior_information = pi
         obs_vals = pst.observation_data.obsval.values
-        for i in xrange(num_reals):
+        for i in range(num_reals):
             pst.parameter_data.parval1 = par_vals[i, :]
             if add_noise:
                 ovs = obs_vals
@@ -831,7 +851,7 @@ class schur(linear_analysis):
                 self.posterior_parameter[iname, iname]. x)))
             iprior = self.parcov.row_names.index(name)
             prior.append(np.sqrt(float(self.parcov[iprior, iprior].x)))
-        for pred_name, pred_var in self.posterior_prediction.iteritems():
+        for pred_name, pred_var in self.posterior_prediction.items():
             names.append(pred_name)
             posterior.append(np.sqrt(pred_var))
             prior.append(self.prior_prediction[pred_name])
@@ -880,14 +900,60 @@ class schur(linear_analysis):
             return self.__posterior_prediction
 
 
-    def contribution_from_parameters(self, parameter_names):
+    def get_parameter_summary(self):
+        """get a summary of the parameter uncertainty
+        Args:
+            None
+        Returns:
+            pandas.DataFrame() of prior,posterior variances and percent
+            uncertainty reduction of each parameter
+        Raises:
+            None
+        """
+
+        #ureduce = np.diag(100.0 * (1.0 - (self.posterior_parameter *
+        #                                  (self.parcov**-1)).x))
+
+        prior = self.parcov.get(self.posterior_parameter.col_names)
+        if prior.isdiagonal:
+            prior = prior.x.flatten()
+        else:
+            prior = np.diag(prior.x)
+        post = np.diag(self.posterior_parameter.x)
+        ureduce = 100.0 * (1.0 - (post / prior))
+        return pandas.DataFrame({"prior_var":prior,"post_var":post,
+                                 "percent_reduction":ureduce},
+                                index=self.posterior_parameter.col_names)
+
+
+    def get_forecast_summary(self):
+        """get a summary of the forecast uncertainty
+        Args:
+            None
+        Returns:
+            pandas.DataFrame() of prior,posterior variances and percent
+            uncertainty reduction of each forecast
+        Raises:
+            None
+        """
+        sum = {"prior_var":[], "post_var":[], "percent_reduction":[]}
+        for forecast in self.prior_forecast.keys():
+            pr = self.prior_forecast[forecast]
+            pt = self.posterior_forecast[forecast]
+            ur = 100.0 * (1.0 - (pt/pr))
+            sum["prior_var"].append(pr)
+            sum["post_var"].append(pt)
+            sum["percent_reduction"].append(ur)
+        return pandas.DataFrame(sum,index=self.prior_forecast.keys())
+
+    def __contribution_from_parameters(self, parameter_names):
         """get the prior and posterior uncertainty reduction as a result of
         some parameter becoming perfectly known
         Args:
             parameter_names (list of str) : parameter that are perfectly known
         Returns:
-            dict{prediction name : [% prior uncertainty reduction,
-                % posterior uncertainty reduction]}
+            dict{prediction name : [prior uncertainty w/o parameter_names,
+                % posterior uncertainty w/o parameter names]}
         Raises:
             Exception if no predictions are set
             Exception if one or more parameter_names are not in jco
@@ -898,10 +964,10 @@ class schur(linear_analysis):
 
         for iname, name in enumerate(parameter_names):
             parameter_names[iname] = name.lower()
-            assert name.lower() in self.jco.par_names,\
+            assert name.lower() in self.jco.col_names,\
                 "contribution parameter " + name + " not found jco"
         keep_names = []
-        for name in self.jco.par_names:
+        for name in self.jco.col_names:
             if name not in keep_names:
                 keep_names.append(name)
         if len(keep_names) == 0:
@@ -914,7 +980,7 @@ class schur(linear_analysis):
         cond_preds = []
         for pred in self.predictions:
             cond_preds.append(pred.get(keep_names, pred.col_names))
-        la_cond = schur(jco=self.jco.get(self.jco.obs_names, keep_names),
+        la_cond = schur(jco=self.jco.get(self.jco.row_names, keep_names),
                         parcov=self.parcov.condition_on(parameter_names),
                         obscov=self.obscov, predictions=cond_preds,verbose=False)
 
@@ -922,19 +988,73 @@ class schur(linear_analysis):
         bprior,bpost = self.prior_prediction, self.posterior_prediction
         #get the prior and posterior for the conditioned case
         cprior,cpost = la_cond.prior_prediction, la_cond.posterior_prediction
-
+        return cprior,cpost
         # pack the results into a dict{pred_name:[prior_%_reduction,
         # posterior_%_reduction]}
+        #results = {}
+        #for pname in bprior.keys():
+            #prior_reduc = 100. * ((bprior[pname] - cprior[pname]) /
+            #                      bprior[pname])
+            #post_reduc = 100. * ((bpost[pname] - cpost[pname]) / bpost[pname])
+            #results[pname] = [prior_reduc, post_reduc]
+        #    results[pname] = [cprior[pname],cpost[pname]]
+        #return results
+
+
+    def get_contribution_dataframe(self,parlist_dict):
+        """get a dataframe the prior and posterior uncertainty
+        reduction as a result of
+        some parameter becoming perfectly known
+        Args:
+            parlist_dict (dict of list of str) : groups of parameters
+                that are to be treated as perfectly known.  key values become
+                row labels in dataframe
+        Returns:
+            dataframe[parlist_dict.keys(),(forecast_name,<prior,post>)
+                multiindex dataframe of schur's complement results for each
+                group of parameters in parlist_dict values.
+        Raises:
+            Exception if no predictions are set
+            Exception if one or more parameter_names are not in jco
+            Exception if no parameter remain
+        """
         results = {}
-        for pname in bprior.keys():
-            prior_reduc = 100. * ((bprior[pname] - cprior[pname]) /
-                                  bprior[pname])
-            post_reduc = 100. * ((bpost[pname] - cpost[pname]) / bpost[pname])
-            results[pname] = [prior_reduc, post_reduc]
-        return results
+        names = ["base"]
+        for forecast in self.prior_forecast.keys():
+            pr = self.prior_forecast[forecast]
+            pt = self.posterior_forecast[forecast]
+            reduce = 100.0 * ((pr - pt) / pr)
+            results[(forecast,"prior")] = [pr]
+            results[(forecast,"post")] = [pt]
+            results[(forecast,"percent_reduce")] = [reduce]
+        for case_name,par_list in parlist_dict.items():
+            names.append(case_name)
+            case_prior,case_post = self.__contribution_from_parameters(par_list)
+            for forecast in case_prior.keys():
+                pr = case_prior[forecast]
+                pt = case_post[forecast]
+                reduce = 100.0 * ((pr - pt) / pr)
+                results[(forecast, "prior")].append(pr)
+                results[(forecast, "post")].append(pt)
+                results[(forecast, "percent_reduce")].append(reduce)
+
+        df = pandas.DataFrame(results,index=names)
+        return df
 
 
-    def importance_of_observations(self,observation_names):
+    def get_contribution_dataframe_groups(self):
+        """get the forecast uncertainty contribution from each parameter
+        group.  Just some sugar for get_contribution_dataframe
+        """
+        pargrp_dict = {}
+        par = self.pst.parameter_data
+        groups = par.groupby("pargp").groups
+        for grp,idxs in groups.items():
+            pargrp_dict[grp] = list(par.loc[idxs,"parnme"])
+        return self.get_contribution_dataframe(pargrp_dict)
+
+
+    def __importance_of_observations(self,observation_names):
         """get the importance of some observations for reducing the
         posterior uncertainty
         Args:
@@ -945,18 +1065,16 @@ class schur(linear_analysis):
             Exception if one or more names not in jco obs names
             Exception if all obs are in observation names
             Exception if predictions are not set
-
         """
-        if not isinstance(observation_names,list):
+        if not isinstance(observation_names, list):
             observation_names = [observation_names]
-        for iname,name in enumerate(observation_names):
+        for iname, name in enumerate(observation_names):
             observation_names[iname] = name.lower()
-            if name.lower() not in self.jco.obs_names:
+            if name.lower() not in self.jco.row_names:
                 raise Exception("schur.importance_of_observations: " +
                                 "obs name not found in jco: " + name)
-
         keep_names = []
-        for name in self.jco.obs_names:
+        for name in self.jco.row_names:
             if name not in observation_names:
                 keep_names.append(name)
         if len(keep_names) == 0:
@@ -966,17 +1084,60 @@ class schur(linear_analysis):
             raise Exception("schur.importance_of_observations: " +
                             "no predictions have been set")
 
-
-        la_reduced = self.get(par_names=self.jco.par_names,
+        la_reduced = self.get(par_names=self.jco.col_names,
                               obs_names=keep_names)
-        rpost = la_reduced.posterior_prediction
-        bpost = self.posterior_prediction
+        return la_reduced.posterior_prediction
+        #rpost = la_reduced.posterior_prediction
+        #bpost = self.posterior_prediction
+
+        #results = {}
+        #for pname in rpost.keys():
+        #    post_reduc = 100. * ((rpost[pname] - bpost[pname]) / rpost[pname])
+        #    results[pname] = post_reduc
+        #return results
+
+
+    def get_importance_dataframe(self,obslist_dict=None):
+        """get a dataframe the posterior uncertainty
+        as a result of losing some observations
+        Args:
+            obslist_dict (dict of list of str) : groups of observations
+                that are to be treated as lost.  key values become
+                row labels in dataframe. If None, then test every obs
+        Returns:
+            dataframe[obslist_dict.keys(),(forecast_name,post)
+                multiindex dataframe of schur's complement results for each
+                group of observations in obslist_dict values.
+        """
+        if obslist_dict is None:
+            obs = self.pst.observation_data.loc[:,["obsnme","weight"]]
+            obslist_dict = {}
+            for o, w in zip(obs.obsnme,obs.weight):
+                if w > 0:
+                    obslist_dict[o] = [o]
 
         results = {}
-        for pname in rpost.keys():
-            post_reduc = 100. * ((rpost[pname] - bpost[pname]) / rpost[pname])
-            results[pname] = post_reduc
-        return results
+        names = ["base"]
+        for forecast,pt in self.posterior_forecast.items():
+            results[forecast] = [pt]
+        for case_name,obs_list in obslist_dict.items():
+            names.append(case_name)
+            case_post = self.__importance_of_observations(obs_list)
+            for forecast,pt in case_post.items():
+                results[forecast].append(pt)
+        df = pandas.DataFrame(results,index=names)
+        return df
+
+
+    def get_importance_dataframe_groups(self):
+        obsgrp_dict = {}
+        obs = self.pst.observation_data
+        obs.index = obs.obsnme
+        obs = obs.loc[self.jco.row_names,:]
+        groups = obs.groupby("obgnme").groups
+        for grp, idxs in groups.items():
+            obsgrp_dict[grp] = list(obs.loc[idxs,"obsnme"])
+        return self.get_importance_dataframe(obsgrp_dict)
 
 
 class errvar(linear_analysis):
@@ -1083,7 +1244,7 @@ class errvar(linear_analysis):
             #--check to see if omitted par names are in each predictions
             found = True
             missing_par,missing_pred = None, None
-            for par_name in self.omitted_jco.par_names:
+            for par_name in self.omitted_jco.col_names:
                 for prediction in self.predictions:
                     if par_name not in prediction.row_names:
                         found = False
@@ -1095,7 +1256,7 @@ class errvar(linear_analysis):
                 # need to access the attribute directly,
                 # not a view of attribute
                 for prediction in self._linear_analysis__predictions:
-                    opred = prediction.extract(self.omitted_jco.par_names)
+                    opred = prediction.extract(self.omitted_jco.col_names)
                     opreds.append(opred)
                 self.__omitted_predictions = opreds
             else:
@@ -1117,7 +1278,7 @@ class errvar(linear_analysis):
         if self.omitted_parcov_arg is None and self.omitted_par_arg is not None:
             # check to see if omitted par names are in parcov
             found = True
-            for par_name in self.omitted_jco.par_names:
+            for par_name in self.omitted_jco.col_names:
                 if par_name not in self.parcov.col_names:
                     found = False
                     break
@@ -1125,14 +1286,14 @@ class errvar(linear_analysis):
                 #--need to access attribute directly, not view of attribute
                 self.__omitted_parcov = \
                     self._linear_analysis__parcov.extract(
-                        row_names=self.omitted_jco.par_names)
+                        row_names=self.omitted_jco.col_names)
             else:
                 self.logger.warn("errvar.__load_omitted_parun: " +
                                  "no omitted parcov arg passed: " +
                         "setting omitted parcov as identity matrix")
                 self.__omitted_parcov = mhand.cov(
                     x=np.ones(self.omitted_jco.shape[1]),
-                    names=self.omitted_jco.par_names, isdiagonal=True)
+                    names=self.omitted_jco.col_names, isdiagonal=True)
         elif self.omitted_parcov_arg is not None:
             raise NotImplementedError()
 
@@ -1143,7 +1304,7 @@ class errvar(linear_analysis):
         if self.omitted_par_arg is None:
             raise Exception("errvar.__load_omitted: omitted_arg is None")
         if isinstance(self.omitted_par_arg,str):
-            if self.omitted_par_arg in self.jco.par_names:
+            if self.omitted_par_arg in self.jco.col_names:
                 #--need to access attribute directly, not view of attribute
                 self.__omitted_jco = \
                     self._linear_analysis__jco.extract(
@@ -1163,7 +1324,7 @@ class errvar(linear_analysis):
         elif isinstance(self.omitted_par_arg,list):
             for arg in self.omitted_par_arg:
                 if isinstance(arg,str):
-                    assert arg in self.jco.par_names,\
+                    assert arg in self.jco.col_names,\
                         "errvar.__load_omitted_jco: omitted_jco " +\
                         "arg str not in jco par_names: " + str(arg)
             self.__omitted_jco = \
@@ -1202,13 +1363,6 @@ class errvar(linear_analysis):
         return self.__omitted_parcov
 
 
-    @property
-    def qhalfx(self):
-        if self.__qhalfx is None:
-            self.__qhalfx = self.qhalf * self.jco
-        return self.__qhalfx
-
-
     def get_errvar_dataframe(self, singular_values):
         """get a pandas dataframe of error variance results indexed
             on singular value and (prediction name,<term>)
@@ -1225,7 +1379,7 @@ class errvar(linear_analysis):
         results = {}
         for singular_value in singular_values:
             sv_results = self.variance_at(singular_value)
-            for key, val in sv_results.iteritems():
+            for key, val in sv_results.items():
                 if key not in results.keys():
                     results[key] = []
                 results[key].append(val)
@@ -1242,7 +1396,8 @@ class errvar(linear_analysis):
          Raises:
             None
         """
-        v1_df = self.qhalfx.v[:, :singular_value].to_dataframe() ** 2
+        #v1_df = self.qhalfx.v[:, :singular_value].to_dataframe() ** 2
+        v1_df = self.xtqx.v[:, :singular_value].to_dataframe() ** 2
         v1_df["ident"] = v1_df.sum(axis=1)
         return v1_df
 
@@ -1276,12 +1431,13 @@ class errvar(linear_analysis):
         if self.__R is not None and singular_value == self.__R_sv:
             return self.__R
 
-        elif singular_value > self.jco.npar:
-            self.__R_sv = self.jco.npar
+        elif singular_value > self.jco.ncol:
+            self.__R_sv = self.jco.ncol
             return self.parcov.identity
         else:
             self.log("calc R @" + str(singular_value))
-            v1 = self.qhalfx.v[:, :singular_value]
+            #v1 = self.qhalfx.v[:, :singular_value]
+            v1 = self.xtqx.v[:, :singular_value]
             self.__R = v1 * v1.T
             self.__R_sv = singular_value
             self.log("calc R @" + str(singular_value))
@@ -1301,10 +1457,11 @@ class errvar(linear_analysis):
         if self.__I_R is not None and singular_value == self.__I_R_sv:
             return self.__I_R
         else:
-            if singular_value > self.jco.npar:
+            if singular_value > self.jco.ncol:
                 return self.parcov.zero
             else:
-                v2 = self.qhalfx.v[:, singular_value:]
+                #v2 = self.qhalfx.v[:, singular_value:]
+                v2 = self.xtqx.v[:, singular_value:]
                 self.__I_R = v2 * v2.T
                 self.__I_R_sv = singular_value
                 return self.__I_R
@@ -1326,18 +1483,25 @@ class errvar(linear_analysis):
         if singular_value == 0:
             self.__G_sv = 0
             self.__G = mhand.matrix(
-                x=np.zeros((self.jco.npar,self.jco.nobs)),
+                x=np.zeros((self.jco.ncol,self.jco.nrow)),
                 row_names=self.jco.col_names, col_names=self.jco.row_names)
             return self.__G
-        if singular_value > min(self.pst.npar_adj,self.pst.nnz_obs):
+        mn = min(self.jco.shape)
+        try:
+            mn = min(self.pst.npar_adj, self.pst.nnz_obs)
+        except:
+            pass
+        if singular_value > mn:
             self.logger.warn(
                 "errvar.G(): singular_value > min(npar,nobs):" +
                 "resetting to min(npar,nobs): " +
                 str(min(self.pst.npar_adj, self.pst.nnz_obs)))
             singular_value = min(self.pst.npar_adj, self.pst.nnz_obs)
         self.log("calc G @" + str(singular_value))
-        v1 = self.qhalfx.v[:, :singular_value]
-        s1 = ((self.qhalfx.s[:singular_value]) ** 2).inv
+        #v1 = self.qhalfx.v[:, :singular_value]
+        v1 = self.xtqx.v[:, :singular_value]
+        #s1 = ((self.qhalfx.s[:singular_value]) ** 2).inv
+        s1 = (self.xtqx.s[:singular_value]).inv
         self.__G = v1 * s1 * v1.T * self.jco.T * self.obscov.inv
         self.__G_sv = singular_value
         self.__G.row_names = self.jco.col_names
@@ -1362,7 +1526,7 @@ class errvar(linear_analysis):
         """
         if not self.predictions:
             raise Exception("errvar.first(): no predictions are set")
-        if singular_value > self.jco.npar:
+        if singular_value > self.jco.ncol:
             zero_preds = {}
             for pred in self.predictions:
                 zero_preds[("first", pred.col_names[0])] = 0.0
@@ -1415,7 +1579,12 @@ class errvar(linear_analysis):
             raise Exception("errvar.second(): not predictions are set")
         self.log("calc second term prediction @" + str(singular_value))
 
-        if singular_value > min(self.pst.npar_adj, self.pst.nnz_obs):
+        mn = min(self.jco.shape)
+        try:
+            mn = min(self.pst.npar_adj, self.pst.nnz_obs)
+        except:
+            pass
+        if singular_value > mn:
             inf_pred = {}
             for pred in self.predictions:
                 inf_pred[("second",pred.col_names[0])] = 1.0E+35
@@ -1476,7 +1645,12 @@ class errvar(linear_analysis):
                 zero_preds[("third", pred.col_names[0])] = 0.0
             return zero_preds
         self.log("calc third term prediction @" + str(singular_value))
-        if singular_value > min(self.pst.npar_adj, self.pst.nnz_obs):
+        mn = min(self.jco.shape)
+        try:
+            mn = min(self.pst.npar_adj, self.pst.nnz_obs)
+        except:
+            pass
+        if singular_value > mn:
             inf_pred = {}
             for pred in self.predictions:
                 inf_pred[("third",pred.col_names[0])] = 1.0E+35
@@ -1515,16 +1689,146 @@ class errvar(linear_analysis):
         return result
 
 
+class influence(linear_analysis):
+
+    def __init__(self,jco,**kwargs):
+        if "forecasts" in kwargs.keys() or "predictions" in kwargs.keys():
+            raise Exception("influence.__init__(): forecast\\predictions " +
+                            "not  allowed in influence analyses")
+        self.__hat = None
+        super(influence, self).__init__(jco,**kwargs)
+
+    @property
+    def observation_influence(self):
+        obs_inf = []
+        for iobs, obs in enumerate(self.hat.row_names):
+            hii = self.hat[iobs,iobs].x[0][0]
+            obs_inf.append(hii/(1.0 - hii))
+        return pandas.DataFrame({"obs_influence":obs_inf},index=self.hat.row_names)
+
+    @property
+    def dfbetas(self):
+        return
+
+    @property
+    def cooks_d(self):
+        return
+
+    @property
+    def studentized_res(self):
+        return
+
+
+    @property
+    def scaled_res(self):
+        if self.res is None:
+            raise Exception("influence.scaled_res: no residuals loaded")
+        return self.qhalf * self.res.loc[:,"residual"]
+
+    @property
+    def hat(self):
+        if self.__hat is not None:
+            return self.__hat
+        self.__hat = self.qhalfx * (self.qhalfx.T * self.qhalfx).inv\
+                     * self.qhalfx.T
+        return self.__hat
+
+def influence_test():
+    #non-pest
+    pnames = ["p1","p2","p3"]
+    onames = ["o1","o2","o3","o4"]
+    npar = len(pnames)
+    nobs = len(onames)
+    j_arr = np.random.random((nobs,npar))
+    parcov = mhand.cov(x=np.eye(npar),names=pnames)
+    obscov = mhand.cov(x=np.eye(nobs),names=onames)
+    jco = mhand.matrix(x=j_arr,row_names=onames,col_names=pnames)
+
+    s = influence(jco=jco,obscov=obscov)
+    print(s.hat)
+    print(s.observation_influence)
+
+
+
+
+def schur_test():
+    #non-pest
+    pnames = ["p1","p2","p3"]
+    onames = ["o1","o2","o3","o4"]
+    npar = len(pnames)
+    nobs = len(onames)
+    j_arr = np.random.random((nobs,npar))
+    jco = mhand.matrix(x=j_arr,row_names=onames,col_names=pnames)
+    parcov = mhand.cov(x=np.eye(npar),names=pnames)
+    obscov = mhand.cov(x=np.eye(nobs),names=onames)
+    forecasts = "o2"
+
+    s = schur(jco=jco,parcov=parcov,obscov=obscov,forecasts=forecasts)
+    print(s.get_parameter_summary())
+    print(s.get_forecast_summary())
+
+
+    #this should fail
+    try:
+        print(s.get_contribution_dataframe_groups())
+    except Exception as e:
+        print(str(e))
+
+    #this should fail
+    try:
+        print(s.get_importance_dataframe_groups())
+    except Exception as e:
+        print(str(e))
+
+    print(s.get_contribution_dataframe({"group1":["p1","p3"]}))
+
+    print(s.get_importance_dataframe({"group1":["o1","o3"]}))
+
+
+
+def errvar_test():
+    #non-pest
+    pnames = ["p1","p2","p3"]
+    onames = ["o1","o2","o3","o4"]
+    npar = len(pnames)
+    nobs = len(onames)
+    j_arr = np.random.random((nobs,npar))
+    jco = mhand.matrix(x=j_arr,row_names=onames,col_names=pnames)
+    parcov = mhand.cov(x=np.eye(npar),names=pnames)
+    obscov = mhand.cov(x=np.eye(nobs),names=onames)
+    forecasts = "o2"
+
+    omitted = "p3"
+
+    e = errvar(jco=jco,parcov=parcov,obscov=obscov,forecasts=forecasts,
+               omitted_parameters=omitted)
+    svs = [0,1,2,3,4,5]
+    print(e.get_errvar_dataframe(svs))
 
 if __name__ == "__main__":
+    influence_test()
+    #schur_test()
+    #errvar_test()
+
     #la = linear_analysis(jco="pest.jcb")
     #forecasts = ["C_obs13_2","c_obs10_2","c_obs05_2"]
-    forecasts = ["pd_one","pd_ten","pd_half"]
-    la = schur(jco=os.path.join("henry", "pest.jco"), forecasts=forecasts,verbose=False)
-    print la.prior_forecast
+    #forecasts = ["pd_one","pd_ten","pd_half"]
+    #la = schur(jco=os.path.join("pest.jcb"),forecasts=forecasts)
+    # forecasts = ["pd_jamesriv"]
+    # j = os.path.join("ozark","ozark.jco")
+    # p = os.path.join("ozark","ozark.unc")
+    # la = schur(jco=j,parcov=p,forecasts=forecasts)
+    # #df = la.get_importance_dataframe()
+    # #df = la.importance_of_observation_groups()
+    # df = la.get_parameter_summary()
+    # print(df)
+    #df = la.get_contribution_dataframe({"test1":["mult1"]})
+    #la.parcov.to_uncfile("test.unc")
+    #la = schur(jco=os.path.join("for_nick", "tseriesVERArad.jco"))
+    #print(la.posterior_parameter)
 
-    ev = errvar(jco=os.path.join("henry", "pest.jco"), forecasts=forecasts,verbose=False,omitted_parameters="mult1",)
-    df = ev.get_errvar_dataframe(singular_values=[0])
-    print df
+    #ev = errvar(jco=os.path.join("henry", "pest.jco"), forecasts=forecasts,verbose=False,omitted_parameters="mult1",)
+    #df = ev.get_errvar_dataframe(singular_values=[0])
+    #print df
 
 

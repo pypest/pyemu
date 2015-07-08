@@ -1,0 +1,520 @@
+
+% Default to the notebook output style
+
+    
+
+
+% Inherit from the specified cell style.
+
+
+
+
+    
+\documentclass{article}
+
+    
+    
+    \usepackage{graphicx} % Used to insert images
+    \usepackage{adjustbox} % Used to constrain images to a maximum size 
+    \usepackage{color} % Allow colors to be defined
+    \usepackage{enumerate} % Needed for markdown enumerations to work
+    \usepackage{geometry} % Used to adjust the document margins
+    \usepackage{amsmath} % Equations
+    \usepackage{amssymb} % Equations
+    \usepackage{eurosym} % defines \euro
+    \usepackage[mathletters]{ucs} % Extended unicode (utf-8) support
+    \usepackage[utf8x]{inputenc} % Allow utf-8 characters in the tex document
+    \usepackage{fancyvrb} % verbatim replacement that allows latex
+    \usepackage{grffile} % extends the file name processing of package graphics 
+                         % to support a larger range 
+    % The hyperref package gives us a pdf with properly built
+    % internal navigation ('pdf bookmarks' for the table of contents,
+    % internal cross-reference links, web links for URLs, etc.)
+    \usepackage{hyperref}
+    \usepackage{longtable} % longtable support required by pandoc >1.10
+    \usepackage{booktabs}  % table support for pandoc > 1.12.2
+    
+
+    
+    
+    \definecolor{orange}{cmyk}{0,0.4,0.8,0.2}
+    \definecolor{darkorange}{rgb}{.71,0.21,0.01}
+    \definecolor{darkgreen}{rgb}{.12,.54,.11}
+    \definecolor{myteal}{rgb}{.26, .44, .56}
+    \definecolor{gray}{gray}{0.45}
+    \definecolor{lightgray}{gray}{.95}
+    \definecolor{mediumgray}{gray}{.8}
+    \definecolor{inputbackground}{rgb}{.95, .95, .85}
+    \definecolor{outputbackground}{rgb}{.95, .95, .95}
+    \definecolor{traceback}{rgb}{1, .95, .95}
+    % ansi colors
+    \definecolor{red}{rgb}{.6,0,0}
+    \definecolor{green}{rgb}{0,.65,0}
+    \definecolor{brown}{rgb}{0.6,0.6,0}
+    \definecolor{blue}{rgb}{0,.145,.698}
+    \definecolor{purple}{rgb}{.698,.145,.698}
+    \definecolor{cyan}{rgb}{0,.698,.698}
+    \definecolor{lightgray}{gray}{0.5}
+    
+    % bright ansi colors
+    \definecolor{darkgray}{gray}{0.25}
+    \definecolor{lightred}{rgb}{1.0,0.39,0.28}
+    \definecolor{lightgreen}{rgb}{0.48,0.99,0.0}
+    \definecolor{lightblue}{rgb}{0.53,0.81,0.92}
+    \definecolor{lightpurple}{rgb}{0.87,0.63,0.87}
+    \definecolor{lightcyan}{rgb}{0.5,1.0,0.83}
+    
+    % commands and environments needed by pandoc snippets
+    % extracted from the output of `pandoc -s`
+    \DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+    % Add ',fontsize=\small' for more characters per line
+    \newenvironment{Shaded}{}{}
+    \newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{{#1}}}}
+    \newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{{#1}}}
+    \newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+    \newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+    \newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{{#1}}}
+    \newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+    \newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{{#1}}}
+    \newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{{#1}}}}
+    \newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{{#1}}}
+    \newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{{#1}}}}
+    \newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{{#1}}}
+    \newcommand{\RegionMarkerTok}[1]{{#1}}
+    \newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{{#1}}}}
+    \newcommand{\NormalTok}[1]{{#1}}
+    
+    % Define a nice break command that doesn't care if a line doesn't already
+    % exist.
+    \def\br{\hspace*{\fill} \\* }
+    % Math Jax compatability definitions
+    \def\gt{>}
+    \def\lt{<}
+    % Document parameters
+    \title{errvarexample}
+    
+    
+    
+
+    % Pygments definitions
+    
+\makeatletter
+\def\PY@reset{\let\PY@it=\relax \let\PY@bf=\relax%
+    \let\PY@ul=\relax \let\PY@tc=\relax%
+    \let\PY@bc=\relax \let\PY@ff=\relax}
+\def\PY@tok#1{\csname PY@tok@#1\endcsname}
+\def\PY@toks#1+{\ifx\relax#1\empty\else%
+    \PY@tok{#1}\expandafter\PY@toks\fi}
+\def\PY@do#1{\PY@bc{\PY@tc{\PY@ul{%
+    \PY@it{\PY@bf{\PY@ff{#1}}}}}}}
+\def\PY#1#2{\PY@reset\PY@toks#1+\relax+\PY@do{#2}}
+
+\expandafter\def\csname PY@tok@gd\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.63,0.00,0.00}{##1}}}
+\expandafter\def\csname PY@tok@gu\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.50,0.00,0.50}{##1}}}
+\expandafter\def\csname PY@tok@gt\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.27,0.87}{##1}}}
+\expandafter\def\csname PY@tok@gs\endcsname{\let\PY@bf=\textbf}
+\expandafter\def\csname PY@tok@gr\endcsname{\def\PY@tc##1{\textcolor[rgb]{1.00,0.00,0.00}{##1}}}
+\expandafter\def\csname PY@tok@cm\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@vg\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@m\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@mh\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@go\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.53,0.53,0.53}{##1}}}
+\expandafter\def\csname PY@tok@ge\endcsname{\let\PY@it=\textit}
+\expandafter\def\csname PY@tok@vc\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@il\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@cs\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@cp\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.74,0.48,0.00}{##1}}}
+\expandafter\def\csname PY@tok@gi\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.63,0.00}{##1}}}
+\expandafter\def\csname PY@tok@gh\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,0.50}{##1}}}
+\expandafter\def\csname PY@tok@ni\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.60,0.60,0.60}{##1}}}
+\expandafter\def\csname PY@tok@nl\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.63,0.63,0.00}{##1}}}
+\expandafter\def\csname PY@tok@nn\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@no\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.53,0.00,0.00}{##1}}}
+\expandafter\def\csname PY@tok@na\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.49,0.56,0.16}{##1}}}
+\expandafter\def\csname PY@tok@nb\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@nc\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@nd\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.67,0.13,1.00}{##1}}}
+\expandafter\def\csname PY@tok@ne\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.82,0.25,0.23}{##1}}}
+\expandafter\def\csname PY@tok@nf\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,1.00}{##1}}}
+\expandafter\def\csname PY@tok@si\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.73,0.40,0.53}{##1}}}
+\expandafter\def\csname PY@tok@s2\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@vi\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@nt\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@nv\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@s1\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@kd\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@sh\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sc\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sx\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@bp\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@c1\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@kc\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@c\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.25,0.50,0.50}{##1}}}
+\expandafter\def\csname PY@tok@mf\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@err\endcsname{\def\PY@bc##1{\setlength{\fboxsep}{0pt}\fcolorbox[rgb]{1.00,0.00,0.00}{1,1,1}{\strut ##1}}}
+\expandafter\def\csname PY@tok@mb\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@ss\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.10,0.09,0.49}{##1}}}
+\expandafter\def\csname PY@tok@sr\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.40,0.53}{##1}}}
+\expandafter\def\csname PY@tok@mo\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@kn\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@mi\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@gp\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.00,0.50}{##1}}}
+\expandafter\def\csname PY@tok@o\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.40,0.40,0.40}{##1}}}
+\expandafter\def\csname PY@tok@kr\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@s\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@kp\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@w\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.73,0.73}{##1}}}
+\expandafter\def\csname PY@tok@kt\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.69,0.00,0.25}{##1}}}
+\expandafter\def\csname PY@tok@ow\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.67,0.13,1.00}{##1}}}
+\expandafter\def\csname PY@tok@sb\endcsname{\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+\expandafter\def\csname PY@tok@k\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.00,0.50,0.00}{##1}}}
+\expandafter\def\csname PY@tok@se\endcsname{\let\PY@bf=\textbf\def\PY@tc##1{\textcolor[rgb]{0.73,0.40,0.13}{##1}}}
+\expandafter\def\csname PY@tok@sd\endcsname{\let\PY@it=\textit\def\PY@tc##1{\textcolor[rgb]{0.73,0.13,0.13}{##1}}}
+
+\def\PYZbs{\char`\\}
+\def\PYZus{\char`\_}
+\def\PYZob{\char`\{}
+\def\PYZcb{\char`\}}
+\def\PYZca{\char`\^}
+\def\PYZam{\char`\&}
+\def\PYZlt{\char`\<}
+\def\PYZgt{\char`\>}
+\def\PYZsh{\char`\#}
+\def\PYZpc{\char`\%}
+\def\PYZdl{\char`\$}
+\def\PYZhy{\char`\-}
+\def\PYZsq{\char`\'}
+\def\PYZdq{\char`\"}
+\def\PYZti{\char`\~}
+% for compatibility with earlier versions
+\def\PYZat{@}
+\def\PYZlb{[}
+\def\PYZrb{]}
+\makeatother
+
+
+    % Exact colors from NB
+    \definecolor{incolor}{rgb}{0.0, 0.0, 0.5}
+    \definecolor{outcolor}{rgb}{0.545, 0.0, 0.0}
+
+
+
+    
+    % Prevent overflowing lines due to hard-to-break entities
+    \sloppy 
+    % Setup hyperref package
+    \hypersetup{
+      breaklinks=true,  % so long urls are correctly broken across lines
+      colorlinks=true,
+      urlcolor=blue,
+      linkcolor=darkorange,
+      citecolor=darkgreen,
+      }
+    % Slightly bigger margins than the latex defaults
+    
+    \geometry{verbose,tmargin=1in,bmargin=1in,lmargin=1in,rmargin=1in}
+    
+    
+
+    \begin{document}
+    
+    
+    \maketitle
+    
+    
+
+    
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}1}]:} \PY{o}{\PYZpc{}}\PY{k}{matplotlib} inline
+        \PY{k+kn}{from} \PY{n+nn}{\PYZus{}\PYZus{}future\PYZus{}\PYZus{}} \PY{k+kn}{import} \PY{n}{print\PYZus{}function}
+        \PY{k+kn}{import} \PY{n+nn}{os}
+        \PY{k+kn}{import} \PY{n+nn}{sys}
+        \PY{k+kn}{import} \PY{n+nn}{numpy} \PY{k+kn}{as} \PY{n+nn}{np}
+        \PY{k+kn}{import} \PY{n+nn}{matplotlib.pyplot} \PY{k+kn}{as} \PY{n+nn}{plt}
+        \PY{k+kn}{import} \PY{n+nn}{plot\PYZus{}domain}
+        \PY{n}{plot\PYZus{}domain}\PY{o}{.}\PY{n}{henry\PYZus{}domain}\PY{p}{(}\PY{p}{)}
+        \PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+
+    \begin{center}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{errvarexample_files/errvarexample_0_0.png}
+    \end{center}
+    { \hspace*{\fill} \\}
+    
+    \subsection{Model background}\label{model-background}
+
+Here is an example based on the Henry saltwater intrusion problem. The
+synthetic model is a 2-dimensional SEAWAT model (X-Z domain) with 1 row,
+120 columns and 20 layers. The left boundary is a specified flux of
+freshwater, the right boundary is a specified head and concentration
+saltwater boundary. The model has two stress periods: an initial steady
+state (calibration) period, then a transient period with less flux
+(forecast).
+
+    The inverse problem has 603 parameters: 600 hydraulic conductivity pilot
+points, 1 global hydraulic conductivity, 1 specified flux multiplier for
+history matching and 1 specified flux multiplier for forecast
+conditions. The inverse problem has 36 obseravtions (21 heads and 15
+concentrations) measured at the end of the steady-state calibration
+period. The forecasts of interest of the distance from the left model
+edge to the 10\% seawater concentration in the basal model layer and the
+concentration at location 10. Both of there forecasts are ``measured''
+at the end of the forecast stress period. The forecasts are both in the
+Jacobian matrix as zero-weight observations named \texttt{pd\_ten} and
+\texttt{C\_obs10\_2}.I previously calculated the jacobian matrix, which
+is in the \texttt{henry/} folder, along with the PEST control file.
+
+Unlike the Schur's complement example notebook, here we will examine the
+consequences of not adjusting the specified flux multiplier parameters
+(\texttt{mult1} and \texttt{mult2}) during inversion, since these types
+of model inputs are not typically considered for adjustment.
+
+    \subsection{\texorpdfstring{Using
+\texttt{pyemu}}{Using pyemu}}\label{using-pyemu}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}2}]:} \PY{k+kn}{import} \PY{n+nn}{pyemu}
+\end{Verbatim}
+
+    First create a linear\_analysis object. We will use \texttt{err\_var}
+derived type, which replicates the behavior of the \texttt{PREDVAR}
+suite of PEST as well as \texttt{ident\_par} utility. We pass it the
+name of the jacobian matrix file. Since we don't pass an explicit
+argument for \texttt{parcov} or \texttt{obscov}, \texttt{pyemu} attempts
+to build them from the parameter bounds and observation weights in a
+pest control file (.pst) with the same base case name as the jacobian.
+Since we are interested in forecast uncertainty as well as parameter
+uncertainty, we also pass the names of the forecast sensitivity vectors
+we are interested in, which are stored in the jacobian as well. Note
+that the \texttt{forecasts} argument can be a mixed list of observation
+names, other jacobian files or PEST-compatible ASCII matrix files.
+Remember you can pass a filename to the \texttt{verbose} argument to
+write log file.
+
+Since most groundwater model history-matching analyses focus on
+adjusting hetergeneous hydraulic properties and not boundary condition
+elements, let's identify the \texttt{mult1} and \texttt{mult2}
+parameters as \texttt{omitted} in the error variance analysis. We can
+conceptually think of this action as excluding the \texttt{mult1} and
+\texttt{mult2} parameters from the history-matching process. Later we
+will explicitly calculate the penalty for not adjusting this parameter.
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}3}]:} \PY{n}{forecasts} \PY{o}{=} \PY{p}{[}\PY{l+s}{\PYZdq{}}\PY{l+s}{pd\PYZus{}ten}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{l+s}{\PYZdq{}}\PY{l+s}{c\PYZus{}obs10\PYZus{}2}\PY{l+s}{\PYZdq{}}\PY{p}{]}
+        \PY{n}{la} \PY{o}{=} \PY{n}{pyemu}\PY{o}{.}\PY{n}{errvar}\PY{p}{(}\PY{n}{jco}\PY{o}{=}\PY{n}{os}\PY{o}{.}\PY{n}{path}\PY{o}{.}\PY{n}{join}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{henry}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{l+s}{\PYZdq{}}\PY{l+s}{pest.jcb}\PY{l+s}{\PYZdq{}}\PY{p}{)}\PY{p}{,}
+                          \PY{n}{forecasts}\PY{o}{=}\PY{n}{forecasts}\PY{p}{,}
+                          \PY{n}{omitted\PYZus{}parameters}\PY{o}{=}\PY{p}{[}\PY{l+s}{\PYZdq{}}\PY{l+s}{mult1}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{l+s}{\PYZdq{}}\PY{l+s}{mult2}\PY{l+s}{\PYZdq{}}\PY{p}{]}\PY{p}{)}
+        \PY{k}{print}\PY{p}{(}\PY{n}{la}\PY{o}{.}\PY{n}{jco}\PY{o}{.}\PY{n}{shape}\PY{p}{)} \PY{c}{\PYZsh{}without the omitted parameter or the prior info}
+\end{Verbatim}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+(73, 601)
+    \end{Verbatim}
+
+    \section{Parameter identifiability}\label{parameter-identifiability}
+
+The \texttt{errvar} dervied type exposes a method to get a
+\texttt{pandas} dataframe of parameter identifiability information.
+Recall that parameter identifiability is expressed as
+\(d_i = \Sigma(\mathbf{V}_{1i})^2\), where \(d_i\) is the parameter
+identifiability, which ranges from 0 (not identified by the data) to 1
+(full identified by the data), and \(\mathbf{V}_1\) are the right
+singular vectors corresonding to non-(numerically) zero singular values.
+First let's look at the singular spectrum of
+\(\mathbf{Q}^{\frac{1}{2}}\mathbf{J}\), where \(\mathbf{Q}\) is the
+cofactor matrix and \(\mathbf{J}\) is the jacobian:
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}4}]:} \PY{n}{s} \PY{o}{=} \PY{n}{la}\PY{o}{.}\PY{n}{qhalfx}\PY{o}{.}\PY{n}{s}
+\end{Verbatim}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}5}]:} \PY{k+kn}{import} \PY{n+nn}{pylab} \PY{k+kn}{as} \PY{n+nn}{plt}
+        \PY{n}{figure} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{5}\PY{p}{)}\PY{p}{)}
+        \PY{n}{ax} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{subplot}\PY{p}{(}\PY{l+m+mi}{111}\PY{p}{)}
+        \PY{n}{ax}\PY{o}{.}\PY{n}{plot}\PY{p}{(}\PY{n}{s}\PY{o}{.}\PY{n}{x}\PY{p}{)}
+        \PY{n}{ax}\PY{o}{.}\PY{n}{set\PYZus{}title}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{singular spectrum}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+        \PY{n}{ax}\PY{o}{.}\PY{n}{set\PYZus{}ylabel}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{power}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+        \PY{n}{ax}\PY{o}{.}\PY{n}{set\PYZus{}xlabel}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{singular value}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+        \PY{n}{ax}\PY{o}{.}\PY{n}{set\PYZus{}xlim}\PY{p}{(}\PY{l+m+mi}{0}\PY{p}{,}\PY{l+m+mi}{20}\PY{p}{)}
+        \PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+
+    \begin{center}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{errvarexample_files/errvarexample_9_0.png}
+    \end{center}
+    { \hspace*{\fill} \\}
+    
+    We see that the singluar spectrum decays rapidly (not uncommon) and that
+we can really only support about 3 right singular vectors even though we
+have 600+ parameters in the inverse problem.
+
+Let's get the identifiability dataframe at 15 singular vectors:
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}6}]:} \PY{n}{ident\PYZus{}df} \PY{o}{=} \PY{n}{la}\PY{o}{.}\PY{n}{get\PYZus{}identifiability\PYZus{}dataframe}\PY{p}{(}\PY{l+m+mi}{3}\PY{p}{)} \PY{c}{\PYZsh{} the method is passed the number of singular vectors to include in V\PYZus{}1}
+        \PY{n}{ident\PYZus{}df}\PY{o}{.}\PY{n}{sort}\PY{p}{(}\PY{p}{)}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{:}\PY{l+m+mi}{10}\PY{p}{]}
+\end{Verbatim}
+
+            \begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}6}]:}           right\_sing\_vec\_1  right\_sing\_vec\_2  right\_sing\_vec\_3         ident
+        global\_k      9.966007e-01      1.084435e-03      2.834900e-04  9.979687e-01
+        kr01c01       3.816852e-13      2.180892e-10      9.040267e-09  9.258738e-09
+        kr01c02       1.350066e-10      3.028964e-08      2.157027e-07  2.461273e-07
+        kr01c03       5.034623e-10      9.942224e-08      5.901479e-07  6.900736e-07
+        kr01c04       3.504914e-09      7.431553e-07      5.734484e-06  6.481144e-06
+        kr01c05       4.865283e-08      1.076199e-05      9.525053e-05  1.060612e-04
+        kr01c06       1.994828e-07      4.468856e-05      4.137545e-04  4.586425e-04
+        kr01c07       3.518241e-07      7.861029e-05      7.174784e-04  7.964405e-04
+        kr01c08       3.663874e-07      8.183073e-05      7.459506e-04  8.281478e-04
+        kr01c09       3.755248e-07      8.321196e-05      7.337729e-04  8.173604e-04
+\end{Verbatim}
+        
+    Plot the indentifiability:
+
+    We see that the \texttt{global\_k} parameter has a much higher
+identifiability than any one of the 600 pilot points
+
+    \section{Forecast error variance}\label{forecast-error-variance}
+
+Now let's explore the error variance of the forecasts we are interested
+in. We will use an extended version of the forecast error variance
+equation:
+
+\(\sigma_{s - \hat{s}}^2 = \underbrace{\textbf{y}_i^T({\bf{I}} - {\textbf{R}})\boldsymbol{\Sigma}_{{\boldsymbol{\theta}}_i}({\textbf{I}} - {\textbf{R}})^T\textbf{y}_i}_{1} + \underbrace{{\textbf{y}}_i^T{\bf{G}}\boldsymbol{\Sigma}_{\mathbf{\epsilon}}{\textbf{G}}^T{\textbf{y}}_i}_{2} + \underbrace{{\bf{p}}\boldsymbol{\Sigma}_{{\boldsymbol{\theta}}_o}{\bf{p}}^T}_{3}\)
+
+Where term 1 is the null-space contribution, term 2 is the solution
+space contribution and term 3 is the model error term (the penalty for
+not adjusting uncertain parameters). Remember the \texttt{mult1} and
+\texttt{mult2} parameters that we marked as omitted? The consequences of
+that action can now be explicitly evaluated. See Moore and Doherty
+(2005) and White and other (2014) for more explanation of these terms.
+Note that if you don't have any \texttt{omitted\_parameters}, the only
+terms 1 and 2 contribute to error variance
+
+First we need to create a list (or numpy ndarray) of the singular values
+we want to test. Since we have \(\lt40\) data, we only need to test up
+to \(40\) singular values because that is where the action is:
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}7}]:} \PY{n}{sing\PYZus{}vals} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{arange}\PY{p}{(}\PY{l+m+mi}{40}\PY{p}{)}
+\end{Verbatim}
+
+    The \texttt{errvar} derived type exposes a convience method to get a
+multi-index pandas dataframe with each of the terms of the error
+variance equation:
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}8}]:} \PY{n}{errvar\PYZus{}df} \PY{o}{=} \PY{n}{la}\PY{o}{.}\PY{n}{get\PYZus{}errvar\PYZus{}dataframe}\PY{p}{(}\PY{n}{sing\PYZus{}vals}\PY{p}{)}
+        \PY{n}{errvar\PYZus{}df}\PY{o}{.}\PY{n}{iloc}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{:}\PY{l+m+mi}{10}\PY{p}{]}
+\end{Verbatim}
+
+            \begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}8}]:}       first              second               third          
+          c\_obs10\_2    pd\_ten c\_obs10\_2    pd\_ten c\_obs10\_2    pd\_ten
+        0  0.839807  3.767852  0.000000  0.000000  0.183547  0.898063
+        1  0.390040  1.143221  0.000251  0.001890  0.290467  1.512740
+        2  0.152808  0.916769  0.001810  0.003379  0.254220  1.418017
+        3  0.152567  0.888371  0.001821  0.004660  0.253266  1.447760
+        4  0.148153  0.867596  0.002512  0.007910  0.257929  1.477116
+        5  0.120518  0.867447  0.008497  0.007942  0.270438  1.474536
+        6  0.096935  0.860581  0.015565  0.010000  0.275265  1.467581
+        7  0.095462  0.860334  0.016207  0.010108  0.274894  1.467982
+        8  0.093688  0.858730  0.017148  0.010959  0.274024  1.465795
+        9  0.093310  0.845932  0.017417  0.020061  0.274652  1.456169
+\end{Verbatim}
+        
+    plot the error variance components for each forecast:
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}9}]:} \PY{n}{fig} \PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{figure}\PY{p}{(}\PY{n}{figsize}\PY{o}{=}\PY{p}{(}\PY{l+m+mi}{10}\PY{p}{,} \PY{l+m+mi}{10}\PY{p}{)}\PY{p}{)}
+        \PY{n}{ax\PYZus{}1}\PY{p}{,} \PY{n}{ax\PYZus{}2}\PY{o}{=} \PY{n}{plt}\PY{o}{.}\PY{n}{subplot}\PY{p}{(}\PY{l+m+mi}{211}\PY{p}{)}\PY{p}{,} \PY{n}{plt}\PY{o}{.}\PY{n}{subplot}\PY{p}{(}\PY{l+m+mi}{212}\PY{p}{)}
+        \PY{n}{axes} \PY{o}{=} \PY{p}{[}\PY{n}{ax\PYZus{}1}\PY{p}{,}\PY{n}{ax\PYZus{}2}\PY{p}{]}
+        
+        \PY{n}{colors} \PY{o}{=} \PY{p}{\PYZob{}}\PY{l+s}{\PYZdq{}}\PY{l+s}{first}\PY{l+s}{\PYZdq{}}\PY{p}{:} \PY{l+s}{\PYZsq{}}\PY{l+s}{g}\PY{l+s}{\PYZsq{}}\PY{p}{,} \PY{l+s}{\PYZdq{}}\PY{l+s}{second}\PY{l+s}{\PYZdq{}}\PY{p}{:} \PY{l+s}{\PYZsq{}}\PY{l+s}{b}\PY{l+s}{\PYZsq{}}\PY{p}{,} \PY{l+s}{\PYZdq{}}\PY{l+s}{third}\PY{l+s}{\PYZdq{}}\PY{p}{:} \PY{l+s}{\PYZsq{}}\PY{l+s}{c}\PY{l+s}{\PYZsq{}}\PY{p}{\PYZcb{}}
+        \PY{n}{max\PYZus{}idx} \PY{o}{=} \PY{l+m+mi}{19}
+        \PY{n}{idx} \PY{o}{=} \PY{n}{sing\PYZus{}vals}\PY{p}{[}\PY{p}{:}\PY{n}{max\PYZus{}idx}\PY{p}{]}
+        \PY{k}{for} \PY{n}{ipred}\PY{p}{,} \PY{n}{pred} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{forecasts}\PY{p}{)}\PY{p}{:}
+            \PY{n}{pred} \PY{o}{=} \PY{n}{pred}\PY{o}{.}\PY{n}{lower}\PY{p}{(}\PY{p}{)}
+            \PY{n}{ax} \PY{o}{=} \PY{n}{axes}\PY{p}{[}\PY{n}{ipred}\PY{p}{]}
+            \PY{n}{ax}\PY{o}{.}\PY{n}{set\PYZus{}title}\PY{p}{(}\PY{n}{pred}\PY{p}{)}
+            \PY{n}{first} \PY{o}{=} \PY{n}{errvar\PYZus{}df}\PY{p}{[}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{first}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{n}{pred}\PY{p}{)}\PY{p}{]}\PY{p}{[}\PY{p}{:}\PY{n}{max\PYZus{}idx}\PY{p}{]}
+            \PY{n}{second} \PY{o}{=} \PY{n}{errvar\PYZus{}df}\PY{p}{[}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{second}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{n}{pred}\PY{p}{)}\PY{p}{]}\PY{p}{[}\PY{p}{:}\PY{n}{max\PYZus{}idx}\PY{p}{]}
+            \PY{n}{third} \PY{o}{=} \PY{n}{errvar\PYZus{}df}\PY{p}{[}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{third}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{n}{pred}\PY{p}{)}\PY{p}{]}\PY{p}{[}\PY{p}{:}\PY{n}{max\PYZus{}idx}\PY{p}{]}
+            \PY{n}{ax}\PY{o}{.}\PY{n}{bar}\PY{p}{(}\PY{n}{idx}\PY{p}{,} \PY{n}{first}\PY{p}{,} \PY{n}{width}\PY{o}{=}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{n}{edgecolor}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{none}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{n}{facecolor}\PY{o}{=}\PY{n}{colors}\PY{p}{[}\PY{l+s}{\PYZdq{}}\PY{l+s}{first}\PY{l+s}{\PYZdq{}}\PY{p}{]}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{first}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{n}{bottom}\PY{o}{=}\PY{l+m+mf}{0.0}\PY{p}{)}
+            \PY{n}{ax}\PY{o}{.}\PY{n}{bar}\PY{p}{(}\PY{n}{idx}\PY{p}{,} \PY{n}{second}\PY{p}{,} \PY{n}{width}\PY{o}{=}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{n}{edgecolor}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{none}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{n}{facecolor}\PY{o}{=}\PY{n}{colors}\PY{p}{[}\PY{l+s}{\PYZdq{}}\PY{l+s}{second}\PY{l+s}{\PYZdq{}}\PY{p}{]}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{second}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{n}{bottom}\PY{o}{=}\PY{n}{first}\PY{p}{)}
+            \PY{n}{ax}\PY{o}{.}\PY{n}{bar}\PY{p}{(}\PY{n}{idx}\PY{p}{,} \PY{n}{third}\PY{p}{,} \PY{n}{width}\PY{o}{=}\PY{l+m+mf}{1.0}\PY{p}{,} \PY{n}{edgecolor}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{none}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{n}{facecolor}\PY{o}{=}\PY{n}{colors}\PY{p}{[}\PY{l+s}{\PYZdq{}}\PY{l+s}{third}\PY{l+s}{\PYZdq{}}\PY{p}{]}\PY{p}{,} \PY{n}{label}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{third}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{n}{bottom}\PY{o}{=}\PY{n}{second}\PY{o}{+}\PY{n}{first}\PY{p}{)}
+            \PY{n}{ax}\PY{o}{.}\PY{n}{set\PYZus{}xlim}\PY{p}{(}\PY{o}{\PYZhy{}}\PY{l+m+mi}{1}\PY{p}{,}\PY{n}{max\PYZus{}idx}\PY{o}{+}\PY{l+m+mi}{1}\PY{p}{)}
+            \PY{n}{ax}\PY{o}{.}\PY{n}{set\PYZus{}xticks}\PY{p}{(}\PY{n}{idx}\PY{o}{+}\PY{l+m+mf}{0.5}\PY{p}{)}
+            \PY{n}{ax}\PY{o}{.}\PY{n}{set\PYZus{}xticklabels}\PY{p}{(}\PY{n}{idx}\PY{p}{)}
+            \PY{k}{if} \PY{n}{ipred} \PY{o}{==} \PY{l+m+mi}{2}\PY{p}{:}
+                \PY{n}{ax}\PY{o}{.}\PY{n}{set\PYZus{}xlabel}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{singular value}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+            
+            \PY{n}{ax}\PY{o}{.}\PY{n}{set\PYZus{}ylabel}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{error variance}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+            \PY{n}{ax}\PY{o}{.}\PY{n}{legend}\PY{p}{(}\PY{n}{loc}\PY{o}{=}\PY{l+s}{\PYZdq{}}\PY{l+s}{upper right}\PY{l+s}{\PYZdq{}}\PY{p}{)}
+        \PY{n}{plt}\PY{o}{.}\PY{n}{show}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+
+    \begin{center}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{errvarexample_files/errvarexample_19_0.png}
+    \end{center}
+    { \hspace*{\fill} \\}
+    
+    Here we see the trade off between getting a good fit to push down the
+null-space (1st) term and the penalty for overfitting (the rise of the
+solution space (2nd) term)). The sum of the first two terms in the
+``appearent'' error variance (e.g.~the uncertainty that standard
+analyses would yield) without considering the contribution from the
+omitted parameters. You can verify this be checking prior uncertainty
+from the Schur's complement notebook against the zero singular value
+result using only terms 1 and 2.
+
+We also see the added penalty for not adjusting the \texttt{mult1} and
+\texttt{mult2} parameters (3rd term). The ability to forecast the
+distance from the left edge of the model to the 10\% saltwater
+concentration and the forecast the concentration at location 10 has been
+compromised by not adjusting \texttt{mult1} and \texttt{mult2} during
+calibration.
+
+Let's check the \texttt{errvar} results against the results from
+\texttt{schur}. This is simple with \texttt{pyemu}, we simply cast the
+\texttt{errvar} type to a \texttt{schur} type:
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}10}]:} \PY{n}{schur} \PY{o}{=} \PY{n}{la}\PY{o}{.}\PY{n}{get}\PY{p}{(}\PY{n}{astype}\PY{o}{=}\PY{n}{pyemu}\PY{o}{.}\PY{n}{schur}\PY{p}{)}
+         \PY{n}{schur\PYZus{}prior} \PY{o}{=} \PY{n}{schur}\PY{o}{.}\PY{n}{prior\PYZus{}forecast}
+         \PY{n}{schur\PYZus{}post} \PY{o}{=} \PY{n}{schur}\PY{o}{.}\PY{n}{posterior\PYZus{}forecast}
+         \PY{k}{print}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{\PYZob{}0:10s\PYZcb{} \PYZob{}1:\PYZgt{}12s\PYZcb{} \PYZob{}2:\PYZgt{}12s\PYZcb{} \PYZob{}3:\PYZgt{}12s\PYZcb{} \PYZob{}4:\PYZgt{}12s\PYZcb{}}\PY{l+s}{\PYZdq{}}
+               \PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{forecast}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{l+s}{\PYZdq{}}\PY{l+s}{errvar prior}\PY{l+s}{\PYZdq{}}\PY{p}{,}\PY{l+s}{\PYZdq{}}\PY{l+s}{errvar min}\PY{l+s}{\PYZdq{}}\PY{p}{,}
+                       \PY{l+s}{\PYZdq{}}\PY{l+s}{schur prior}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{l+s}{\PYZdq{}}\PY{l+s}{schur post}\PY{l+s}{\PYZdq{}}\PY{p}{)}\PY{p}{)}
+         \PY{k}{for} \PY{n}{ipred}\PY{p}{,} \PY{n}{pred} \PY{o+ow}{in} \PY{n+nb}{enumerate}\PY{p}{(}\PY{n}{forecasts}\PY{p}{)}\PY{p}{:}
+             \PY{n}{first} \PY{o}{=} \PY{n}{errvar\PYZus{}df}\PY{p}{[}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{first}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{n}{pred}\PY{p}{)}\PY{p}{]}\PY{p}{[}\PY{p}{:}\PY{n}{max\PYZus{}idx}\PY{p}{]}
+             \PY{n}{second} \PY{o}{=} \PY{n}{errvar\PYZus{}df}\PY{p}{[}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{second}\PY{l+s}{\PYZdq{}}\PY{p}{,} \PY{n}{pred}\PY{p}{)}\PY{p}{]}\PY{p}{[}\PY{p}{:}\PY{n}{max\PYZus{}idx}\PY{p}{]}  
+             \PY{n}{min\PYZus{}ev} \PY{o}{=} \PY{n}{np}\PY{o}{.}\PY{n}{min}\PY{p}{(}\PY{n}{first} \PY{o}{+} \PY{n}{second}\PY{p}{)}
+             \PY{n}{prior\PYZus{}ev} \PY{o}{=} \PY{n}{first}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]} \PY{o}{+} \PY{n}{second}\PY{p}{[}\PY{l+m+mi}{0}\PY{p}{]}
+             \PY{n}{prior\PYZus{}sh} \PY{o}{=} \PY{n}{schur\PYZus{}prior}\PY{p}{[}\PY{n}{pred}\PY{p}{]}
+             \PY{n}{post\PYZus{}sh} \PY{o}{=} \PY{n}{schur\PYZus{}post}\PY{p}{[}\PY{n}{pred}\PY{p}{]}
+             \PY{k}{print}\PY{p}{(}\PY{l+s}{\PYZdq{}}\PY{l+s}{\PYZob{}0:12s\PYZcb{} \PYZob{}1:12.6f\PYZcb{} \PYZob{}2:12.6f\PYZcb{} \PYZob{}3:12.6\PYZcb{} \PYZob{}4:12.6f\PYZcb{}}\PY{l+s}{\PYZdq{}}
+                   \PY{o}{.}\PY{n}{format}\PY{p}{(}\PY{n}{pred}\PY{p}{,}\PY{n}{prior\PYZus{}ev}\PY{p}{,}\PY{n}{min\PYZus{}ev}\PY{p}{,}\PY{n}{prior\PYZus{}sh}\PY{p}{,}\PY{n}{post\PYZus{}sh}\PY{p}{)}\PY{p}{)}
+\end{Verbatim}
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+forecast   errvar prior   errvar min  schur prior   schur post
+pd\_ten           3.767852     0.865610      3.76785     0.832397
+c\_obs10\_2        0.839807     0.108566     0.839807     0.099357
+    \end{Verbatim}
+
+    We see that the prior from \texttt{schur} class matches the two-term
+\texttt{errvar} result at zero singular values. We also see, as
+expected, the posterior from \texttt{schur} is slightly lower than the
+two-term \texttt{errvar} result. This shows us that the ``appearent''
+uncertainty in these predictions, as found through application of Bayes
+equation, is being under estimated because if the ill effects of the
+omitted \texttt{mult1} and \texttt{mult2} parameters.
+
+
+    % Add a bibliography block to the postdoc
+    
+    
+    
+    \end{document}

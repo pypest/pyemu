@@ -1,9 +1,13 @@
+from __future__ import print_function, division
 import copy
 import struct
 import numpy as np
 import pandas
 import scipy.linalg as la
+from scipy.io import FortranFile
 import pst_handler as phand
+
+
 
 def concat(mats):
     """Concatenate matrix objects.  Tries either axis.
@@ -234,7 +238,7 @@ class matrix(object):
                                                   str(other.shape)
                 if self.isdiagonal:
                     elem_sub = -1.0 * other
-                    for j in xrange(self.shape[0]):
+                    for j in range(self.shape[0]):
                         elem_sub[j, j] += self.x[j]
                     return type(self)(x=elem_sub, row_names=self.row_names,
                                       col_names=self.col_names)
@@ -266,13 +270,13 @@ class matrix(object):
                                       col_names=first.col_names)
                 elif first.isdiagonal:
                     elem_sub = -1.0 * second.newx
-                    for j in xrange(first.shape[0]):
+                    for j in range(first.shape[0]):
                         elem_sub[j, j] += first.x[j, 0]
                     return type(self)(x=elem_sub, row_names=first.row_names,
                                       col_names=first.col_names)
                 elif second.isdiagonal:
                     elem_sub = first.newx
-                    for j in xrange(second.shape[0]):
+                    for j in range(second.shape[0]):
                         elem_sub[j, j] -= second.x[j, 0]
                     return type(self)(x=elem_sub, row_names=first.row_names,
                                       col_names=first.col_names)
@@ -327,13 +331,13 @@ class matrix(object):
                                   col_names=first.col_names)
             elif first.isdiagonal:
                 ox = second.newx
-                for j in xrange(first.shape[0]):
+                for j in range(first.shape[0]):
                     ox[j, j] += first.__x[j]
                 return type(self)(x=ox, row_names=first.row_names,
                                   col_names=first.col_names)
             elif second.isdiagonal:
                 x = first.x
-                for j in xrange(second.shape[0]):
+                for j in range(second.shape[0]):
                     x[j, j] += second.x[j]
                 return type(self)(x=x, row_names=first.row_names,
                                   col_names=first.col_names)
@@ -423,7 +427,6 @@ class matrix(object):
     def __rmul__(self, other):
         raise NotImplementedError()
 
-
     def __set_svd(self):
         """private method to set SVD components
         Args:
@@ -450,18 +453,18 @@ class matrix(object):
                                 "unable to compute SVD of self.x")
         col_names = []
         [col_names.append("left_sing_vec_" + str(i + 1))
-         for i in xrange(u.shape[1])]
+         for i in range(u.shape[1])]
         self.__u = matrix(x=u, row_names=self.row_names,
                           col_names=col_names, autoalign=False)
         sing_names = []
         [sing_names.append("sing_val_" + str(i + 1))
-         for i in xrange(s.shape[0])]
+         for i in range(s.shape[0])]
         self.__s = matrix(x=np.atleast_2d(s).transpose(), row_names=sing_names,
                           col_names=sing_names, isdiagonal=True,
                           autoalign=False)
         col_names = []
         [col_names.append("right_sing_vec_" + str(i + 1))
-         for i in xrange(v.shape[0])]
+         for i in range(v.shape[0])]
         self.__v = matrix(v, row_names=self.col_names, col_names=col_names,
                           autoalign=False)
 
@@ -542,6 +545,13 @@ class matrix(object):
             return self.__x.shape
         return None
 
+    @property
+    def ncol(self):
+        return self.shape[1]
+
+    @property
+    def nrow(self):
+        return self.shape[0]
 
     @property
     def T(self):
@@ -748,7 +758,7 @@ class matrix(object):
         if col_names is not None and not isinstance(col_names, list):
             col_names = [col_names]
 
-        if isinstance(self,cov):
+        if isinstance(self,cov) and (row_names is None or col_names is None ):
             if row_names is not None:
                 idxs = self.indices(row_names, axis=0)
                 names = row_names
@@ -804,8 +814,15 @@ class matrix(object):
             names = [names]
         idxs = self.indices(names, axis=axis)
 
-        if self.isdiagonal or isinstance(self, cov):
+        if self.isdiagonal:
             self.__x = np.delete(self.__x, idxs, 0)
+            idxs = np.sort(idxs)
+            for idx in idxs[::-1]:
+                del self.row_names[idx]
+                del self.col_names[idx]
+        elif isinstance(self,cov):
+            self.__x = np.delete(self.__x, idxs, 0)
+            self.__x = np.delete(self.__x, idxs, 1)
             idxs = np.sort(idxs)
             for idx in idxs[::-1]:
                 del self.row_names[idx]
@@ -863,7 +880,7 @@ class matrix(object):
         #--flatten the array
         flat = self.x[row_idxs, col_idxs].flatten()
         #--zip up the index position and value pairs
-        data = np.array(zip(icount, flat), dtype=self.binary_rec_dt)
+        data = np.array(list(zip(icount, flat)), dtype=self.binary_rec_dt)
         #--write
         data.tofile(f)
 
@@ -873,14 +890,14 @@ class matrix(object):
             elif len(name) < self.par_length:
                 for i in range(len(name), self.par_length):
                     name = name + ' '
-            f.write(name)
+            f.write(name.encode())
         for name in self.row_names:
             if len(name) > self.obs_length:
                 name = name[:self.obs_length - 1]
             elif len(name) < self.obs_length:
                 for i in range(len(name), self.obs_length):
                     name = name + ' '
-            f.write(name)
+            f.write(name.encode())
         f.close()
 
 
@@ -893,29 +910,43 @@ class matrix(object):
         Raises:
             TypeError if the binary file is deprecated version
         """
+
         f = open(filename, 'rb')
         #--the header datatype
         itemp1, itemp2, icount = np.fromfile(f, self.binary_header_dt, 1)[0]
+        if itemp1 > 0 and itemp2 < 0 and icount < 0:
+            print(" WARNING: it appears this file was \n" +\
+                  " written with 'sequential` " +\
+                  " binary fortran specification\n...calling " +\
+                  " matrix.from_fortranfile()")
+            f.close()
+            self.from_fortranfile(filename)
+            return
         if itemp1 >= 0:
-            raise TypeError('matrix.from_binary(): Jco produced by ' +
-                            'deprecated version of PEST,' +
-                            'Use JCOTRANS to convert to new format')
+           raise TypeError('matrix.from_binary(): Jco produced by ' +
+                           'deprecated version of PEST,' +
+                           'Use JCOTRANS to convert to new format')
+        #icount = np.fromfile(f,np.int32,1)
         ncol, nrow = abs(itemp1), abs(itemp2)
         self.__x = np.zeros((nrow, ncol))
         #--read all data records
         #--using this a memory hog, but really fast
         data = np.fromfile(f, self.binary_rec_dt, icount)
-        icols = ((data['j'] - 1) / nrow) + 1
+        icols = ((data['j'] - 1) // nrow) + 1
         irows = data['j'] - ((icols - 1) * nrow)
         self.__x[irows - 1, icols - 1] = data["dtemp"]
         #--read obs and parameter names
-        for j in xrange(self.shape[1]):
+        self.col_names = []
+        self.row_names = []
+        for j in range(self.shape[1]):
             name = struct.unpack(str(self.par_length) + "s",
-                                 f.read(self.par_length))[0].strip().lower()
+                                 f.read(self.par_length))[0]\
+                                  .strip().lower().decode()
             self.col_names.append(name)
-        for i in xrange(self.shape[0]):
+        for i in range(self.shape[0]):
             name = struct.unpack(str(self.obs_length) + "s",
-                                 f.read(self.obs_length))[0].strip().lower()
+                                 f.read(self.obs_length))[0]\
+                                  .strip().lower().decode()
             self.row_names.append(name)
         f.close()
         assert len(self.row_names) == self.shape[0],\
@@ -923,6 +954,44 @@ class matrix(object):
           ") != self.shape[0] (" + str(self.shape[0]) + ")"
         assert len(self.col_names) == self.shape[1],\
           "matrix.from_binary() len(col_names) (" + str(len(self.col_names)) +\
+          ") != self.shape[1] (" + str(self.shape[1]) + ")"
+
+
+    def from_fortranfile(self,filename):
+        f = FortranFile(filename,mode='r')
+        itemp1, itemp2 = f.read_ints()
+        icount = f.read_ints()
+        if itemp1 >= 0:
+           raise TypeError('matrix.from_binary(): Jco produced by ' +
+                           'deprecated version of PEST,' +
+                           'Use JCOTRANS to convert to new format')
+        ncol, nrow = abs(itemp1), abs(itemp2)
+        data = []
+        for i in range(icount):
+            d = f.read_record(self.binary_rec_dt)[0]
+            data.append(d)
+        data = np.array(data,dtype=self.binary_rec_dt)
+        icols = ((data['j'] - 1) // nrow) + 1
+        irows = data['j'] - ((icols - 1) * nrow)
+        self.__x = np.zeros((nrow, ncol))
+        self.__x[irows - 1, icols - 1] = data["dtemp"]
+        #par_rec = np.dtype(("|S12","name"))
+        self.row_names = []
+        self.col_names = []
+        for j in range(self.shape[1]):
+            name = f.read_record("|S12")[0].strip().decode()
+            self.col_names.append(name)
+        #obs_rec = np.dtype((np.str_, self.obs_length))
+        for j in range(self.shape[0]):
+            name = f.read_record("|S20")[0].strip().decode()
+            self.row_names.append(name)
+        assert len(self.row_names) == self.shape[0],\
+          "matrix.from_fortranfile() len(row_names) (" + \
+          str(len(self.row_names)) +\
+          ") != self.shape[0] (" + str(self.shape[0]) + ")"
+        assert len(self.col_names) == self.shape[1],\
+          "matrix.from_fortranfile() len(col_names) (" + \
+          str(len(self.col_names)) +\
           ") != self.shape[1] (" + str(self.shape[1]) + ")"
 
 
@@ -940,11 +1009,15 @@ class matrix(object):
         f_out = open(out_filename, 'w')
         f_out.write(' {0:7.0f} {1:7.0f} {2:7.0f}\n'.
                     format(nrow, ncol, icode))
+        f_out.close()
+        f_out = open(out_filename,'ab')
         if self.isdiagonal:
             x = np.diag(self.__x[:, 0])
         else:
             x = self.__x
         np.savetxt(f_out, x, fmt='%15.7E', delimiter='')
+        f_out.close()
+        f_out = open(out_filename,'a')
         if icode == 1:
             f_out.write('* row and column names\n')
             for r in self.row_names:
@@ -1048,6 +1121,13 @@ class matrix(object):
         return self.to_dataframe()
 
 
+    def from_dataframe(self, df):
+        assert isinstance(df, pandas.DataFrame)
+        self.__x = df.as_matrix()
+        self.row_names = copy.deepcopy(list(df.index))
+        self.col_names = copy.deepcopy(list(df.columns))
+
+
     def to_dataframe(self):
         """return a pandas dataframe of the matrix object
         Args:
@@ -1080,8 +1160,8 @@ class matrix(object):
         iidx, jidx = [], []
         data = []
         nrow, ncol = self.shape
-        for i in xrange(nrow):
-            for j in xrange(ncol):
+        for i in range(nrow):
+            for j in range(ncol):
                 val = self.x[i,j]
                 if val > trunc:
                     iidx.append(i)
@@ -1150,7 +1230,6 @@ class cov(matrix):
                                   col_names=col_names,
                                   autoalign=autoalign)
 
-
     @property
     def identity(self):
         """get an identity matrix like self
@@ -1196,9 +1275,10 @@ class cov(matrix):
         if self.isdiagonal:
             return new_cov
         #C22^1
-        cond_cov = self.get(conditioning_elements).inv()
+        cond_cov = self.get(conditioning_elements).inv
         #C12
         upper_off_diag = self.get(keep_names, conditioning_elements)
+        print(new_cov.shape,upper_off_diag.shape,cond_cov.shape)
         return new_cov - (upper_off_diag * cond_cov * upper_off_diag.T)
 
 
@@ -1454,7 +1534,6 @@ class cov(matrix):
         f.close()
         return nentries
 
-
 def test():
     arr = np.arange(0,12)
     arr.resize(4,3)
@@ -1511,22 +1590,43 @@ def test():
     newthird = third.get(row_names=["o1"])
     result = first.T * newthird * first
 
-if __name__ == "__main__":
-    c1 = cov()
-    c1.from_ascii("post.cov")
-    c2 = jco()
-    c2.from_ascii("test.cov")
-    print type(c1 * c2)
-    print type(c2 * c1)
-    print type(c1 * c2.x)
+    #--drop testing
+    second.drop("p2",axis=0)
+    assert second.shape == (2, 2)
 
-    print type(c1 * 4)
+    third.drop("o1",axis=1)
+    assert third.shape == (3, 3)
+
+    first.drop("p1",axis=1)
+    assert first.shape == (4,2)
+
+    first.drop("o4",axis=0)
+    assert first.shape == (3,2)
+
+if __name__ == "__main__":
+    test()
+    #import os
+    #jco = matrix()
+    #jco.from_binary(os.path.join("for_nick", "tseriesVERArad.jco"))
+    #print(jco.shape)
+    #jco.to_binary("test.jco")
+    #jco.from_binary("test.jco")
+    #c1 = cov()
+    #c1.from_ascii("post.cov")
+    #c2 = jco()
+    #c2.from_ascii("test.cov")
+    #print c2.v
+    #print type(c1 * c2)
+    #print type(c2 * c1)
+    #print type(c1 * c2.x)
+
+
     #test()
     # a = np.random.random((10, 5))
     # row_names = []
-    # [row_names.append("row_{0:02d}".format(i)) for i in xrange(10)]
+    # [row_names.append("row_{0:02d}".format(i)) for i in range(10)]
     # col_names = []
-    # [col_names.append("col_{0:02d}".format(i)) for i in xrange(5)]
+    # [col_names.append("col_{0:02d}".format(i)) for i in range(5)]
     # m = matrix(x=a, row_names=row_names, col_names=col_names)
     # print (m.T * m).inv
     #
@@ -1534,6 +1634,6 @@ if __name__ == "__main__":
     # m1 = matrix()
     # m1.from_binary("mat_test.bin")
     # print m1.row_names
-    m = cov()
-    m.from_ascii("post.cov")
+    #m = cov()
+    #m.from_ascii("post.cov")
 
