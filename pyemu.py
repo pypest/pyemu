@@ -137,6 +137,7 @@ class linear_analysis(object):
         self.__predictions = None
         self.__qhalf = None
         self.__qhalfx = None
+        self.__xtqx = None
         self.__fehalf = None
         self.__prior_prediction = None
 
@@ -556,8 +557,18 @@ class linear_analysis(object):
     @property
     def qhalfx(self):
         if self.__qhalfx is None:
+            self.log("qhalfx")
             self.__qhalfx = self.qhalf * self.jco
+            self.log("qhalfx")
         return self.__qhalfx
+
+    @property
+    def xtqx(self):
+        if self.__xtqx is None:
+            self.log("xtqx")
+            self.__xtqx = self.jco.T * (self.obscov ** -1) * self.jco
+            self.log("xtqx")
+        return self.__xtqx
 
 
     @property
@@ -1385,7 +1396,8 @@ class errvar(linear_analysis):
          Raises:
             None
         """
-        v1_df = self.qhalfx.v[:, :singular_value].to_dataframe() ** 2
+        #v1_df = self.qhalfx.v[:, :singular_value].to_dataframe() ** 2
+        v1_df = self.xtqx.v[:, :singular_value].to_dataframe() ** 2
         v1_df["ident"] = v1_df.sum(axis=1)
         return v1_df
 
@@ -1424,7 +1436,8 @@ class errvar(linear_analysis):
             return self.parcov.identity
         else:
             self.log("calc R @" + str(singular_value))
-            v1 = self.qhalfx.v[:, :singular_value]
+            #v1 = self.qhalfx.v[:, :singular_value]
+            v1 = self.xtqx.v[:, :singular_value]
             self.__R = v1 * v1.T
             self.__R_sv = singular_value
             self.log("calc R @" + str(singular_value))
@@ -1447,7 +1460,8 @@ class errvar(linear_analysis):
             if singular_value > self.jco.ncol:
                 return self.parcov.zero
             else:
-                v2 = self.qhalfx.v[:, singular_value:]
+                #v2 = self.qhalfx.v[:, singular_value:]
+                v2 = self.xtqx.v[:, singular_value:]
                 self.__I_R = v2 * v2.T
                 self.__I_R_sv = singular_value
                 return self.__I_R
@@ -1484,8 +1498,10 @@ class errvar(linear_analysis):
                 str(min(self.pst.npar_adj, self.pst.nnz_obs)))
             singular_value = min(self.pst.npar_adj, self.pst.nnz_obs)
         self.log("calc G @" + str(singular_value))
-        v1 = self.qhalfx.v[:, :singular_value]
-        s1 = ((self.qhalfx.s[:singular_value]) ** 2).inv
+        #v1 = self.qhalfx.v[:, :singular_value]
+        v1 = self.xtqx.v[:, :singular_value]
+        #s1 = ((self.qhalfx.s[:singular_value]) ** 2).inv
+        s1 = (self.xtqx.s[:singular_value]).inv
         self.__G = v1 * s1 * v1.T * self.jco.T * self.obscov.inv
         self.__G_sv = singular_value
         self.__G.row_names = self.jco.col_names
