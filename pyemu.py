@@ -79,7 +79,6 @@ class logger(object):
             self.f.write(s)
 
 
-
 class linear_analysis(object):
     """ the super class for linear analysis.  Can be used for prior analyses
         only.  The derived types (schur and errvar) are for posterior analyses
@@ -750,80 +749,12 @@ class linear_analysis(object):
                               verbose=False)
 
 
-    def draw(self, pst_prefix=None, num_reals=1, add_noise=True):
-        """draw stochastic realizations and write to pst
-        Args:
-            pst_prefix (str): realized pst output prefix
-            num_reals (int): number of realization to generate
-            add_noise (bool): add a realization of measurement noise to obs
-        Returns:
-            None
-        Raises:
-            None
-        TODO: check parameter bounds, handle log transform
-        """
-        if pst_prefix is None:
-            pst_prefix = "real."
-        pi = self.pst.prior_information
-        self.drop_prior_information()
-        pst = self.pst.get(self.parcov.row_names, self.obscov.row_names)
-        mean_pars = pst.parameter_data.parval1
-
-
-        islog = pst.parameter_data.partrans == "log"
-        islog = islog.values
-        ub = pst.parameter_data.parubnd.values
-        lb = pst.parameter_data.parlbnd.values
-
-        #log transform
-        mean_pars[islog] = np.log10(mean_pars[islog])
-        self.log("generating parameter realizations")
-        par_vals = np.random.multivariate_normal(mean_pars, self.parcov.as_2d,
-                                                 num_reals)
-        #back log transform
-        par_vals[:, islog] = 10.0**(par_vals[:, islog])
-
-        #apply parameter bounds
-        for i in range(num_reals):
-            par_vals[i, np.where(par_vals[i] > ub)] = \
-                ub[np.where(par_vals[i] > ub)]
-            par_vals[i, np.where(par_vals[i] < lb)] = \
-                ub[np.where(par_vals[i] < lb)]
-
-
-        self.log("generating parameter realizations")
-        if add_noise:
-            self.log("generating noise realizations")
-            nz_idx = []
-            weights = self.pst.observation_data.weight.values
-            for iw,w in enumerate(weights):
-                if w > 0.0:
-                    nz_idx.append(iw)
-            obscov = self.obscov.get(self.pst.nnz_obs_names)
-            noise_vals = np.random.multivariate_normal(
-                np.zeros(pst.nnz_obs), obscov.as_2d,
-                num_reals)
-            self.log("generating noise realizations")
-        self.log("writing realized pest control files")
-        pst.prior_information = pi
-        obs_vals = pst.observation_data.obsval.values
-        for i in range(num_reals):
-            pst.parameter_data.parval1 = par_vals[i, :]
-            if add_noise:
-                ovs = obs_vals
-                ovs[nz_idx] += noise_vals[i,:]
-                pst.observation_data.obsval = ovs
-            pst_name = pst_prefix + "{0:04d}.pst".format(i)
-            pst.write(pst_name)
-        self.log("writing realized pest control files")
-
     def adjust_obscov_resfile(self, resfile=None):
         """reset the elements of obscov by scaling the implied weights
         based on the phi components in res_file
         """
         self.pst.adjust_weights_resfile(resfile)
         self.__obscov.from_observation_data(self.pst)
-        
 
 
 
@@ -1805,8 +1736,152 @@ def errvar_test():
     svs = [0,1,2,3,4,5]
     print(e.get_errvar_dataframe(svs))
 
+
+class ensemble(pandas.DataFrame):
+    def __init__(self,*args,**kwargs):
+        super(ensemble,self).__init__(*args,**kwargs)
+
+
+    def read_parfiles(self,prefix):
+        raise NotImplementedError()
+
+
+    def to_parfiles(self,prefix):
+        raise NotImplementedError()
+
+
+    def to_resfile(self,prefix):
+        raise NotImplementedError()
+
+class monte_carlo(linear_analysis):
+    """derived type for monte carlo analysis
+    """
+    def __init__(self,**kwargs):
+        self.parensemble = ensemble()
+        self.obsensemble = ensemble()
+        super(monte_carlo,self).__init__(**kwargs)
+
+
+    @property
+    def num_reals(self):
+        return self.parensemble.shape[0]
+
+
+    def draw(self, num_reals=1, par_file = None, obs=True, enforce_bounds=False):
+        """draw stochastic realizations of parameters and optionally observations
+        Args:
+            num_reals (int): number of realization to generate
+            par_file (str): parameter file to use as mean values
+            obs (bool): add a realization of measurement noise to obs
+            enforce_bounds (bool): enforce parameter bounds in control file
+        Returns:
+            None
+        Raises:
+            None
+        """
+
+        if par_file is not None:
+            assert os.path.exists(par_file),"monte_carlo.draw() error: par_file not found:" +\
+                par_file
+            self.pst.parrep(par_file)
+        pi = self.pst.prior_information
+        self.drop_prior_information()
+        parcov = self.parcov.get(self.pst.adj_par_names)
+        pst = self.pst.get(parcov.row_names, self.pst.nnz_obs_names)
+        mean_pars = pst.parameter_data.parval1
+
+
+        islog = pst.parameter_data.partrans == "log"
+        islog = islog.values
+        ub = pst.parameter_data.parubnd.values
+        lb = pst.parameter_data.parlbnd.values
+
+        #log transform
+        mean_pars.loc[islog] = np.log10(mean_pars[islog])
+        self.log("generating parameter realizations")
+        par_vals = np.random.multivariate_normal(mean_pars, parcov.as_2d,
+                                                 num_reals)
+        self.parensemble = ensemble(par_vals,columns=parcov.row_names)
+
+        #back log transform
+        par_vals[:, islog] = 10.0**(par_vals[:, islog])
+
+        #apply parameter bounds
+        if enforce_bounds:
+            for i in range(num_reals):
+                par_vals[i, np.where(par_vals[i] > ub)] = \
+                    ub[np.where(par_vals[i] > ub)]
+                par_vals[i, np.where(par_vals[i] < lb)] = \
+                    ub[np.where(par_vals[i] < lb)]
+            self.log("generating parameter realizations")
+
+        if obs:
+            self.log("generating noise realizations")
+            # nz_idx = []
+            # weights = self.pst.observation_data.weight.values
+            # for iw,w in enumerate(weights):
+            #     if w > 0.0:
+            #         nz_idx.append(iw)
+            obscov = self.obscov.get(self.pst.nnz_obs_names)
+            noise_vals = np.random.multivariate_normal(
+                np.zeros(pst.nnz_obs), obscov.as_2d,
+                num_reals)
+            self.obsensemble = ensemble(noise_vals,columns=obscov.row_names)
+            self.obsensemble += pst.observation_data.obsval.T
+            self.log("generating noise realizations")
+        self.log("writing realized pest control files")
+        pst.prior_information = pi
+        obs_vals = pst.observation_data.obsval.values
+
+
+    def project_parensemble(self, par_file=None, nsing=None):
+        raise NotImplementedError("need to add fixed parameters to parensemble")
+        if par_file is not None:
+            assert os.path.exists(par_file),"monte_carlo.draw() error: par_file not found:" +\
+                par_file
+            self.pst.parrep(par_file)
+
+        self.log("projecting parameter ensemble")
+        self.pst.parameter_data.index = self.pst.parameter_data.parnme
+        if nsing is None:
+            nsing = self.xtqx.shape[0] - np.searchsorted(
+                np.sort((self.xtqx.s.x / self.xtqx.s.x.max())[:,0]),1.0e-6)
+        v2_proj = self.xtqx.v[:,nsing:] * self.xtqx.v[:,nsing:].T
+        base_pars = self.pst.parameter_data.parval1
+        for i in range(self.num_reals):
+            pdiff =  (base_pars - self.parensemble.loc[i,:]).as_matrix()
+            self.parensemble.loc[i,:] = v2_proj * pdiff
+        self.log("projecting parameter ensemble")
+
+
+    def write_psts(self,prefix):
+        pst = self.pst.get(par_names=self.pst.par_names,obs_names=self.pst.obs_names)
+        pst.parameter_data.index = pst.parameter_data.parnme
+        pst.observation_data.index = pst.observation_data.obsnme
+        for i in range(self.num_reals):
+            pst.parameter_data.loc[self.parensemble.columns,"parval1"] = self.parensemble.loc[i,:].T
+            if self.obsensemble is not None:
+                pst.observation_data.loc[self.obsensemble.columns,"obsval"] = self.obsensemble.loc[i,:].T
+            pst_name = prefix + "{0:04d}.pst".format(i)
+            pst.write(pst_name)
+        self.log("writing realized pest control files")
+
+
+def montecarlo_test():
+    mc = monte_carlo(jco=os.path.join("montecarlo_test","pest.jcb"))
+    mc.draw(1)
+    mc.project_parensemble()
+
+    #mc.write_psts(os.path.join("montecarlo_test","real"))
+
+    #import matplotlib.pyplot as plt
+    #mc.parensemble.loc[:,"mult1"].plot(kind="hist",bins=50)
+    #plt.show()
+
+
 if __name__ == "__main__":
-    influence_test()
+    montecarlo_test()
+    #influence_test()
     #schur_test()
     #errvar_test()
 
@@ -1830,5 +1905,3 @@ if __name__ == "__main__":
     #ev = errvar(jco=os.path.join("henry", "pest.jco"), forecasts=forecasts,verbose=False,omitted_parameters="mult1",)
     #df = ev.get_errvar_dataframe(singular_values=[0])
     #print df
-
-

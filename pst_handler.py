@@ -217,6 +217,15 @@ class pst(object):
         pass
         return list(self.parameter_data.parnme.values)
 
+    @property
+    def adj_par_names(self):
+        adj_names = []
+        for t,n in zip(self.parameter_data.partrans,
+                       self.parameter_data.parnme):
+            if t.lower() not in ["tied","fixed"]:
+                adj_names.append(n)
+        return adj_names
+
 
     @property
     def obs_names(self):
@@ -500,11 +509,11 @@ class pst(object):
         pass
         if par_names is None and obs_names is None:
             return copy.deepcopy(self)
-        new_par = copy.deepcopy(self.parameter_data)
+        new_par = self.parameter_data.copy()
         if par_names is not None:
             new_par.index = new_par.parnme
             new_par = new_par.loc[par_names, :]
-        new_obs = copy.deepcopy(self.observation_data)
+        new_obs = self.observation_data.copy()
         new_res = None
 
         if obs_names is not None:
@@ -594,6 +603,13 @@ class pst(object):
         """
         if parfile is None:
             parfile = self.filename.replace(".pst", ".par")
+        par_df = self.read_parfile(parfile)
+        self.parameter_data.index = self.parameter_data.parnme
+        par_df.index = par_df.parnme
+        self.parameter_data.parval1 = par_df.parval1
+
+    @staticmethod
+    def read_parfile(parfile):
         assert os.path.exists(parfile), "pst.parrep(): parfile not found: " +\
                                         str(parfile)
         f = open(parfile, 'r')
@@ -601,9 +617,7 @@ class pst(object):
         par_df = pandas.read_csv(f, header=None,
                                  names=["parnme", "parval1", "scale", "offset"],
                                  sep="\s+")
-        self.parameter_data.index = self.parameter_data.parnme
-        par_df.index = par_df.parnme
-        self.parameter_data.parval1 = par_df.parval1
+        return par_df
 
 
     def adjust_weights_recfile(self, recfile=None):
