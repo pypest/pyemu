@@ -1739,16 +1739,87 @@ def errvar_test():
 
 class ensemble(pandas.DataFrame):
     def __init__(self,*args,**kwargs):
+        pst = kwargs.pop("pst",None)
+        pst.parameter_data.index = pst.parameter_data.parnme
+        assert pst is not None,"ensemble requires a kwarg 'pst'"
+        kwargs["columns"] = kwargs.pop("columns",pst.parameter_data.parnme)
+        kwargs["index"] = kwargs.pop("index",None)
+
         super(ensemble,self).__init__(*args,**kwargs)
+        self.pst = pst
+        self.__values = None
+        self.__ubnd = None
+        self.__lbnd = None
+
+    @property
+    def values(self):
+        if self.__values is None:
+            vals = self.pst.parameter_data.parval1.copy()
+            vals[self.log_indexer] = np.log10(vals[self.log_indexer])
+            self.__values = vals
+        return self.__values
+
+    @property
+    def ubnd(self):
+        if self.__ubnd is None:
+            ub = self.pst.parameter_data.parubnd.copy()
+            ub[self.log_indexer] = np.log10(ub[self.log_indexer])
+            self.__ubnd = ub
+        return self.__ubnd
+
+    @property
+    def lbnd(self):
+        if self.__lbnd is None:
+            lb = self.pst.parameter_data.parlbnd.copy()
+            lb[self.log_indexer] = np.log10(lb[self.log_indexer])
+            self.__lbnd = lb
+        return self.__lbnd
+
+    @property
+    def log_indexer(self):
+        islog = self.pst.parameter_data.partrans == "log"
+        return islog.values
+
+    @property
+    def fixed_indexer(self):
+        isfixed = self.pst.parameter_data.partrans == "fixed"
+        return isfixed.values
+
+    def draw(self,cov,num_reals=1,enforce_bounds=False):
+        real_names = ["realization_{0:04d}".format(i)
+                      for i in range(num_reals)]
+        val_array = np.random.multivariate_normal(self.values, cov.as_2d,num_reals)
+        #this sucks - can only set by enlargement one row at a time
+        for rname,vals in zip(real_names,val_array):
+            self.loc[rname,:] = vals
+
+    def transform(self):
+        raise Exception("ensemble is already transformed WRT log10 status")
+
+    def back_transform(self):
+        raise NotImplementedError()
+
+    def project(self,projection_matrix):
+        base_pars = self.pst.parameter_data.parval1
+        for i in range(self.shape[0]):
+            self.loc[i,:] = base_pars + np.dot(projection_matrix,
+                                               (self.loc[i,:] -
+                                                base_pars.as_matrix()))
+
+    def enforce(self):
+        for name in self.columns:
+            #print(self.loc[:,name])
+            self.loc[self.loc[:,name] > self.ubnd[name],name] = self.ubnd[name]
+            print(self.ubnd[name],self.loc[:,name])
+            self.loc[self.loc[:,name] < self.lbnd[name],name] = self.lbnd[name]
+            print(self.lbnd[name],self.loc[:,name])
 
 
     def read_parfiles(self,prefix):
         raise NotImplementedError()
 
-
     def to_parfiles(self,prefix):
         raise NotImplementedError()
-
 
     def to_resfile(self,prefix):
         raise NotImplementedError()
@@ -1757,15 +1828,14 @@ class monte_carlo(linear_analysis):
     """derived type for monte carlo analysis
     """
     def __init__(self,**kwargs):
-        self.parensemble = ensemble()
-        self.obsensemble = ensemble()
         super(monte_carlo,self).__init__(**kwargs)
-
+        assert self.pst is not None
+        self.parensemble = ensemble(pst=self.pst)
+        self.obsensemble = ensemble(pst=self.pst)
 
     @property
     def num_reals(self):
         return self.parensemble.shape[0]
-
 
     def draw(self, num_reals=1, par_file = None, obs=True, enforce_bounds=False):
         """draw stochastic realizations of parameters and optionally observations
@@ -1780,16 +1850,14 @@ class monte_carlo(linear_analysis):
             None
         """
 
+        parcov = self.parcov.get(self.pst.adj_par_names)
+        pst = self.pst.get(parcov.row_names, self.pst.nnz_obs_names)
+        pst.prior_information = pst.null_prior
         if par_file is not None:
             assert os.path.exists(par_file),"monte_carlo.draw() error: par_file not found:" +\
                 par_file
-            self.pst.parrep(par_file)
-        pi = self.pst.prior_information
-        self.drop_prior_information()
-        parcov = self.parcov.get(self.pst.adj_par_names)
-        pst = self.pst.get(parcov.row_names, self.pst.nnz_obs_names)
+            pst.parrep(par_file)
         mean_pars = pst.parameter_data.parval1
-
 
         islog = pst.parameter_data.partrans == "log"
         islog = islog.values
@@ -1801,7 +1869,7 @@ class monte_carlo(linear_analysis):
         self.log("generating parameter realizations")
         par_vals = np.random.multivariate_normal(mean_pars, parcov.as_2d,
                                                  num_reals)
-        self.parensemble = ensemble(par_vals,columns=parcov.row_names)
+        self.parensemble = ensemble(par_vals,columns=parcov.row_names,pst=self.pst)
 
         #back log transform
         par_vals[:, islog] = 10.0**(par_vals[:, islog])
@@ -1826,16 +1894,31 @@ class monte_carlo(linear_analysis):
             noise_vals = np.random.multivariate_normal(
                 np.zeros(pst.nnz_obs), obscov.as_2d,
                 num_reals)
-            self.obsensemble = ensemble(noise_vals,columns=obscov.row_names)
+            self.obsensemble = ensemble(noise_vals,columns=obscov.row_names,pst=self.pst)
             self.obsensemble += pst.observation_data.obsval.T
             self.log("generating noise realizations")
         self.log("writing realized pest control files")
-        pst.prior_information = pi
         obs_vals = pst.observation_data.obsval.values
 
 
+    def project_parensemble2(self,par_file=None,nsing=None):
+        if par_file is not None:
+            assert os.path.exists(par_file),"monte_carlo.draw() error: par_file not found:" +\
+                par_file
+            self.parensemble.pst.parrep(par_file)
+        self.log("projecting parameter ensemble")
+        if nsing is None:
+            nsing = self.xtqx.shape[0] - np.searchsorted(
+                np.sort((self.xtqx.s.x / self.xtqx.s.x.max())[:,0]),1.0e-6)
+        v2_proj = (self.xtqx.v[:,nsing:] * self.xtqx.v[:,nsing:].T).x
+
+        self.parensemble.project(v2_proj)
+
+        self.log("projecting parameter ensemble")
+
+
     def project_parensemble(self, par_file=None, nsing=None):
-        raise NotImplementedError("need to add fixed parameters to parensemble")
+        #raise NotImplementedError("need to add fixed parameters to parensemble")
         if par_file is not None:
             assert os.path.exists(par_file),"monte_carlo.draw() error: par_file not found:" +\
                 par_file
@@ -1846,11 +1929,17 @@ class monte_carlo(linear_analysis):
         if nsing is None:
             nsing = self.xtqx.shape[0] - np.searchsorted(
                 np.sort((self.xtqx.s.x / self.xtqx.s.x.max())[:,0]),1.0e-6)
-        v2_proj = self.xtqx.v[:,nsing:] * self.xtqx.v[:,nsing:].T
+        v2_proj = (self.xtqx.v[:,nsing:] * self.xtqx.v[:,nsing:].T).x
         base_pars = self.pst.parameter_data.parval1
         for i in range(self.num_reals):
-            pdiff =  (base_pars - self.parensemble.loc[i,:]).as_matrix()
-            self.parensemble.loc[i,:] = v2_proj * pdiff
+            #pdiff = (self.parensemble.loc[i,:] - base_pars).as_matrix()
+            #pdiff = np.dot(v2_proj,pdiff)
+            #pdiff = base_pars + pdiff
+            #self.parensemble.loc[i,:] = pdiff
+            self.parensemble.loc[i,:] = base_pars + \
+                                        np.dot(v2_proj,(self.parensemble.loc[i,:] -
+                                                        base_pars.as_matrix()))
+
         self.log("projecting parameter ensemble")
 
 
@@ -1869,14 +1958,21 @@ class monte_carlo(linear_analysis):
 
 def montecarlo_test():
     mc = monte_carlo(jco=os.path.join("montecarlo_test","pest.jcb"))
-    mc.draw(1)
-    mc.project_parensemble()
+    #mc.draw(10)
+    #mc.project_parensemble2()
 
-    #mc.write_psts(os.path.join("montecarlo_test","real"))
-
-    #import matplotlib.pyplot as plt
-    #mc.parensemble.loc[:,"mult1"].plot(kind="hist",bins=50)
-    #plt.show()
+    en = ensemble(pst=mc.pst)
+    en.draw(mc.parcov,10)
+    print(en.loc[:,"mult1"])
+    en.enforce()
+    print(en.loc[:,"mult1"])
+    # import matplotlib.pyplot as plt
+    # mc.parensemble.loc[:,"mult1"].plot(kind="hist",bins=50)
+    #
+    # mc.project_parensemble(nsing=0)
+    # mc.parensemble.loc[:,"mult1"].plot(kind="hist",bins=50)
+    # #mc.write_psts(os.path.join("montecarlo_test","real"))
+    # plt.show()
 
 
 if __name__ == "__main__":
