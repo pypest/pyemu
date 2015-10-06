@@ -1,0 +1,208 @@
+pcf
+* control data
+restart  estimation
+   52   108     9     0     4
+    1     1 single point  1 0 0
+  5.0   2.0   0.3  0.03    10
+  3.0   3.0 0.001
+  0.1
+   0  0.01     3     3  0.01     3
+    1     1     1
+* parameter groups
+fsp      relative 0.01  0.0  switch  2.0 parabolic
+lr       relative 0.01  0.0  switch  2.0 parabolic
+msc      relative 0.01  0.0  switch  2.0 parabolic
+sla      relative 0.01  0.0  switch  2.0 parabolic
+smdc     relative 0.01  0.0  switch  2.0 parabolic
+smdp     relative 0.01  0.0  switch  2.0 parabolic
+npp      relative 0.01  0.0  switch  2.0 parabolic
+fert     relative 0.01  0.0  switch  2.0 parabolic
+asw      relative 0.01  0.0  switch  2.0 parabolic
+* parameter data
+fsp0_1   fixed factor   0.75      0.55    1.0          fsp      1.0     0.0 1
+fsp0_2   fixed factor   0.75      0.55    1.0          fsp      1.0     0.0 1
+fsp0_3   fixed factor   0.75      0.55    1.0          fsp      1.0     0.0 1
+fsp0_4   fixed factor   0.75      0.55    1.0          fsp      1.0     0.0 1
+fsp1_1   none  factor   0.03      0.025   1.5          fsp      1.0     0.0 1
+fsp1_2   tied  factor   0.03      0.025   1.5          fsp      1.0     0.0 1
+fsp1_3   tied  factor   0.03      0.025   1.5          fsp      1.0     0.0 1
+fsp1_4   tied  factor   0.03      0.025   1.5          fsp      1.0     0.0 1
+npp1_1   none  factor   0.8       0.5     1.0          npp      1.0     0.0 1
+npp1_2   tied  factor   0.8       0.5     1.0          npp      1.0     0.0 1
+npp1_3   tied  factor   0.8       0.5     1.0          npp      1.0     0.0 1
+npp1_4   tied  factor   0.8       0.5     1.0          npp      1.0     0.0 1
+npp0_1   fixed factor   0.229     0.015   0.3          npp      1.0     0.0 1
+npp0_2   fixed factor   0.229     0.015   0.3          npp      1.0     0.0 1
+npp0_3   fixed factor   0.229     0.015   0.3          npp      1.0     0.0 1
+npp0_4   fixed factor   0.229     0.015   0.3          npp      1.0     0.0 1
+smdc_1   none  factor   0.095     0.01    10.0         smdc     1.0     0.0 1
+smdc_2   tied  factor   0.095     0.01    10.0         smdc     1.0     0.0 1
+smdc_3   tied  factor   0.095     0.01    10.0         smdc     1.0     0.0 1
+smdc_4   tied  factor   0.095     0.01    10.0         smdc     1.0     0.0 1
+smdp_1   fixed factor   2.4       1.0      4.0         smdp     1.0     0.0 1
+smdp_2   fixed factor   2.4       1.0      4.0         smdp     1.0     0.0 1
+smdp_3   fixed factor   2.4       1.0      4.0         smdp     1.0     0.0 1
+smdp_4   fixed factor   2.4       1.0      4.0         smdp     1.0     0.0 1
+lrm_1    fixed factor   0.042     0.027   0.5          lr       1.0     0.0 1
+lrm_2    fixed factor   0.042     0.027   0.5          lr       1.0     0.0 1
+lrm_3    fixed factor   0.042     0.027   0.5          lr       1.0     0.0 1
+lrm_4    fixed factor   0.042     0.027   0.5          lr       1.0     0.0 1
+lr0_1    fixed factor   0.0015    0.0001  0.015        lr       1.0     0.0 1
+lr0_2    fixed factor   0.0015    0.0001  0.015        lr       1.0     0.0 1
+lr0_3    fixed factor   0.0015    0.0001  0.015        lr       1.0     0.0 1
+lr0_4    fixed factor   0.0015    0.0001  0.015        lr       1.0     0.0 1
+msc_1    none  factor   0.01      0.005   0.015        msc      1.0     0.0 1
+msc_2    tied  factor   0.01      0.005   0.015        msc      1.0     0.0 1
+msc_3    tied  factor   0.01      0.005   0.015        msc      1.0     0.0 1
+msc_4    tied  factor   0.01      0.005   0.015        msc      1.0     0.0 1
+sla0_1   fixed factor   16.1      15.0    26.0         sla      1.0     0.0 1
+sla0_2   fixed factor   16.1      15.0    26.0         sla      1.0     0.0 1
+sla0_3   fixed factor   16.1      15.0    26.0         sla      1.0     0.0 1
+sla0_4   fixed factor   16.1      15.0    26.0         sla      1.0     0.0 1
+sla1_1   none  factor   5.7       5.5     6.0          sla      1.0     0.0 1
+sla1_2   tied  factor   5.7       5.5     6.0          sla      1.0     0.0 1
+sla1_3   tied  factor   5.7       5.5     6.0          sla      1.0     0.0 1
+sla1_4   tied  factor   5.7       5.5     6.0          sla      1.0     0.0 1
+fert_1   fixed factor   1.0       0.2     2.5          fert     1.0     0.0 1
+fert_2   fixed factor   1.0       0.2     2.5          fert     1.0     0.0 1
+fert_3   fixed factor   1.0       0.2     2.5          fert     1.0     0.0 1
+fert_4   fixed factor   1.0       0.2     2.5          fert     1.0     0.0 1
+maxasw_1 fixed factor   300       50      450          asw      1.0     0.0 1
+maxasw_2 fixed factor   300       50      450          asw      1.0     0.0 1
+maxasw_3 fixed factor   300       50      450          asw      1.0     0.0 1
+maxasw_4 fixed factor   300       50      450          asw      1.0     0.0 1
+fsp1_2 fsp1_1                                                               
+fsp1_3 fsp1_1
+fsp1_4 fsp1_1
+npp1_2 npp1_1
+npp1_3 npp1_1
+npp1_4 npp1_1
+smdc_2 smdc_1
+smdc_3 smdc_1
+smdc_4 smdc_1
+msc_2  msc_1
+msc_3  msc_1
+msc_4  msc_1
+sla1_2 sla1_1
+sla1_3 sla1_1
+sla1_4 sla1_1
+* observation groups
+site1
+site2
+site3
+site4
+* observation data
+dbh1_1     17.1000      1.0  site1
+dbh2_1     24.9000      1.0  site1
+dbh3_1     28.3000      1.0  site1
+dbh4_1     29.9000      1.0  site1
+dbh5_1     31.1000      1.0  site1
+dbh6_1     32.4000      1.0  site1
+dbh7_1     33.6000      1.0  site1
+dbh8_1     35.2000      1.0  site1
+dbh9_1     36.8000      1.0  site1
+dbh10_1    38.9000      1.0  site1
+dbh11_1    40.1000      1.0  site1
+dbh12_1    40.7000      1.0  site1
+dbh13_1    42.6000      1.0  site1
+dbh14_1    45.6000      1.0  site1
+dbh15_1    48.6000      1.0  site1
+dbh16_1    50.6000      1.0  site1
+dbh17_1    55.5000      1.0  site1
+dbh18_1    59.1000      1.0  site1
+dbh19_1    59.9000      1.0  site1
+dbh20_1    61.5000      1.0  site1
+dbh21_1    62.5000      1.0  site1
+dbh22_1    63.9000      1.0  site1
+dbh23_1    64.9000      1.0  site1
+dbh24_1    66.7000      1.0  site1
+dbh25_1    68.1000      1.0  site1
+dbh26_1    69.4000      1.0  site1
+dbh27_1    72.0000      1.0  site1
+dbh1_2   17.7     1.0  site2
+dbh2_2   25.8     1.0  site2
+dbh3_2   28.8     1.0  site2
+dbh4_2   30.3     1.0  site2
+dbh5_2   31.2     1.0  site2
+dbh6_2   32.1     1.0  site2
+dbh7_2   32.9     1.0  site2
+dbh8_2   33.8     1.0  site2
+dbh9_2   35.4     1.0  site2
+dbh10_2  37.2     1.0  site2
+dbh11_2  38.0     1.0  site2
+dbh12_2  38.5     1.0  site2
+dbh13_2  39.8     1.0  site2
+dbh14_2  42.2     1.0  site2
+dbh15_2  44.6     1.0  site2
+dbh16_2  45.4     1.0  site2
+dbh17_2  45.5     1.0  site2
+dbh18_2  46.8     1.0  site2
+dbh19_2  47.3     1.0  site2
+dbh20_2  48.3     1.0  site2
+dbh21_2  48.9     1.0  site2
+dbh22_2  49.8     1.0  site2
+dbh23_2  50.4     1.0  site2
+dbh24_2  51.2     1.0  site2
+dbh25_2  52.5     1.0  site2
+dbh26_2  53.1     1.0  site2
+dbh27_2  54.2     1.0  site2
+dbh1_3   18.5      1.0  site3
+dbh2_3   26.5      1.0  site3
+dbh3_3   29.9      1.0  site3
+dbh4_3   31.4      1.0  site3
+dbh5_3   32.6      1.0  site3
+dbh6_3   34.0      1.0  site3
+dbh7_3   35.0      1.0  site3
+dbh8_3   36.6      1.0  site3
+dbh9_3   37.6      1.0  site3
+dbh10_3  39.3      1.0  site3
+dbh11_3  40.3      1.0  site3
+dbh12_3  40.8      1.0  site3
+dbh13_3  42.5      1.0  site3
+dbh14_3  44.6      1.0  site3
+dbh15_3  46.4      1.0  site3
+dbh16_3  47.8      1.0  site3
+dbh17_3  52.8      1.0  site3
+dbh18_3  55.5      1.0  site3
+dbh19_3  57.0      1.0  site3
+dbh20_3  58.6      1.0  site3
+dbh21_3  59.2      1.0  site3
+dbh22_3  60.9      1.0  site3
+dbh23_3  61.6      1.0  site3
+dbh24_3  63.0      1.0  site3
+dbh25_3  64.7      1.0  site3
+dbh26_3  65.6      1.0  site3
+dbh27_3  67.8      1.0  site3
+dbh1_4   20.9      1.0  site4
+dbh2_4   29.5      1.0  site4
+dbh3_4   30.3      1.0  site4
+dbh4_4   31.5      1.0  site4
+dbh5_4   32.6      1.0  site4
+dbh6_4   34.0      1.0  site4
+dbh7_4   35.0      1.0  site4
+dbh8_4   36.5      1.0  site4
+dbh9_4   37.6      1.0  site4
+dbh10_4  39.5      1.0  site4
+dbh11_4  40.4      1.0  site4
+dbh12_4  41.0      1.0  site4
+dbh13_4  42.4      1.0  site4
+dbh14_4  44.8      1.0  site4
+dbh15_4  47.3      1.0  site4
+dbh16_4  48.6      1.0  site4
+dbh17_4  48.9      1.0  site4
+dbh18_4  50.6      1.0  site4
+dbh19_4  51.5      1.0  site4
+dbh20_4  52.3      1.0  site4
+dbh21_4  52.8      1.0  site4
+dbh22_4  53.8      1.0  site4
+dbh23_4  54.1      1.0  site4
+dbh24_4  55.2      1.0  site4
+dbh25_4  56.1      1.0  site4
+dbh26_4  56.8      1.0  site4
+dbh27_4  58.4      1.0  site4
+* model command line
+model.bat
+* model input/output
+test.tpl test.in
+test.ins test.out
+* prior information

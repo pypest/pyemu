@@ -1,0 +1,136 @@
+pcf
+* control data
+ restart estimation
+   100  10  1  0  1  
+      1      1     single  point
+ 10.0  2.0  0.3  0.03  10  999  lamforgive
+ 10.0  10.0  0.001
+ 0.1  noaui
+ 0 0.005  4  4  0.0001  4
+ 1  1  1
+* singular value decomposition
+1
+10  1.0e-5
+0  0  0
+* parameter groups
+ k     relative    0.01  0.0  switch  2.0 parabolic
+* parameter data
+pp_001     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_002     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_003     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_004     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_005     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_006     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_007     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_008     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_009     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_010     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_011     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_012     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_013     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_014     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_015     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_016     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_017     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_018     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_019     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_020     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_021     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_022     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_023     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_024     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_025     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_026     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_027     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_028     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_029     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_030     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_031     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_032     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_033     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_034     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_035     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_036     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_037     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_038     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_039     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_040     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_041     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_042     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_043     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_044     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_045     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_046     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_047     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_048     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_049     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_050     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_051     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_052     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_053     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_054     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_055     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_056     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_057     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_058     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_059     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_060     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_061     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_062     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_063     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_064     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_065     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_066     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_067     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_068     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_069     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_070     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_071     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_072     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_073     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_074     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_075     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_076     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_077     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_078     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_079     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_080     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_081     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_082     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_083     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_084     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_085     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_086     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_087     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_088     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_089     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_090     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_091     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_092     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_093     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_094     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_095     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_096     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_097     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_098     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_099     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+pp_100     log    factor   200.0   1e-10  1e+10   k   1.0    0.0  
+* observation groups
+ head
+* observation data
+OBS_001            7.6451197E-02      1.0  head
+OBS_002             1.392158          1.0  head
+OBS_003             2.040336          1.0  head
+OBS_004             1.521875          1.0  head
+OBS_005             4.661277          1.0  head
+OBS_006             1.749764          1.0  head
+OBS_007             1.693859          1.0  head
+OBS_008             1.677435          1.0  head
+OBS_009             6.139134          1.0  head
+OBS_010             5.053962          1.0  head
+* model command line
+ model_pp.bat
+* model input/output
+ pp_locs.tpl pp_locs.dat  
+ head.ins  head.dat
+* prior information
