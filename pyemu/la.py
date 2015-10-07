@@ -5,8 +5,8 @@ from datetime import datetime
 import numpy as np
 #import mat_handler as mhand
 #import pst_handler as phand
-from pyemu.mat.mat_handler import matrix, jco, cov
-from pyemu.pst.pst_handler import pst
+from pyemu.mat.mat_handler import Matrix, Jco, Cov
+from pyemu.pst.pst_handler import Pst
 
 
 class logger(object):
@@ -81,7 +81,7 @@ class logger(object):
             self.f.write(s)
 
 
-class linear_analysis(object):
+class LinearAnalysis(object):
     """ the super class for linear analysis.  Can be used for prior analyses
         only.  The derived types (schur and errvar) are for posterior analyses
         this class tries hard to not load items until they are needed
@@ -110,8 +110,8 @@ class linear_analysis(object):
         self.logger = logger(verbose)
         self.log = self.logger.log
         self.jco_arg = jco
-        if jco is None:
-            self.__jco = jco()
+        #if jco is None:
+        self.__jco = jco
         if pst is None:
             if isinstance(jco, str):
                 pst_case = jco.replace(".jco", ".pst").replace(".jcb",".pst")
@@ -199,22 +199,22 @@ class linear_analysis(object):
         ext = filename.split('.')[-1].lower()
         if ext in ["jco", "jcb"]:
             self.log("loading jco: "+filename)
-            m = jco()
+            m = Jco()
             m.from_binary(filename)
             self.log("loading jco: "+filename)
         elif ext in ["mat","vec"]:
             self.log("loading ascii: "+filename)
-            m = matrix()
+            m = Matrix()
             m.from_ascii(filename)
             self.log("loading ascii: "+filename)
         elif ext in ["cov"]:
             self.log("loading cov: "+filename)
-            m = cov()
+            m = Cov()
             m.from_ascii(filename)
             self.log("loading cov: "+filename)
         elif ext in["unc"]:
             self.log("loading unc: "+filename)
-            m = cov()
+            m = Cov()
             m.from_uncfile(filename)
             self.log("loading unc: "+filename)
         else:
@@ -234,13 +234,13 @@ class linear_analysis(object):
         """
         if self.pst_arg is None:
             return None
-        if isinstance(self.pst_arg, pst):
+        if isinstance(self.pst_arg, Pst):
             self.__pst = self.pst_arg
             return self.pst
         else:
             try:
                 self.log("loading pst: " + str(self.pst_arg))
-                self.__pst = pst(self.pst_arg)
+                self.__pst = Pst(self.pst_arg)
                 self.log("loading pst: " + str(self.pst_arg))
                 return self.pst
             except Exception as e:
@@ -261,7 +261,7 @@ class linear_analysis(object):
         if self.jco_arg is None:
             return None
             #raise Exception("linear_analysis.__load_jco(): jco_arg is None")
-        if isinstance(self.jco_arg, matrix):
+        if isinstance(self.jco_arg, Matrix):
             self.__jco = self.jco_arg
         elif isinstance(self.jco_arg, str):
             self.__jco = self.__fromfile(self.jco_arg)
@@ -293,7 +293,7 @@ class linear_analysis(object):
             else:
                 raise Exception("linear_analysis.__load_parcov(): " +
                                 "parcov_arg is None")
-        if isinstance(self.parcov_arg, matrix):
+        if isinstance(self.parcov_arg, Matrix):
             self.__parcov = self.parcov_arg
             return
         if isinstance(self.parcov_arg, np.ndarray):
@@ -309,8 +309,8 @@ class linear_analysis(object):
             self.logger.warn("linear_analysis.__load_parcov(): " +
                              "instantiating parcov from ndarray, can't " +
                              "verify parameters alignment with jco")
-            self.__parcov = matrix(x=self.parcov_arg,
-                                         isdiagonal=isdiagaonal,
+            self.__parcov = Matrix(x=self.parcov_arg,
+                                         isdiagonal=isdiagonal,
                                          row_names=self.jco.col_names,
                                          col_names=self.jco.col_names)
         self.log("loading parcov")
@@ -318,13 +318,13 @@ class linear_analysis(object):
             # if the arg is a string ending with "pst"
             # then load parcov from parbounds
             if self.parcov_arg.lower().endswith(".pst"):
-                self.__parcov = cov()
+                self.__parcov = Cov()
                 self.__parcov.from_parbounds(self.parcov_arg)
             else:
                 self.__parcov = self.__fromfile(self.parcov_arg)
         #--if the arg is a pst object
         elif isinstance(self.parcov_arg,pst):
-            self.__parcov = cov()
+            self.__parcov = Cov()
             self.__parcov.from_parameter_data(self.parcov_arg)
         else:
             raise Exception("linear_analysis.__load_parcov(): " +
@@ -356,7 +356,7 @@ class linear_analysis(object):
             else:
                 raise Exception("linear_analysis.__load_obscov(): " +
                                 "obscov_arg is None")
-        if isinstance(self.obscov_arg,matrix):
+        if isinstance(self.obscov_arg, Matrix):
             self.__obscov = self.obscov_arg
             return
         if isinstance(self.obscov_arg,np.ndarray):
@@ -372,19 +372,19 @@ class linear_analysis(object):
             self.logger.warn("linear_analysis.__load_obscov(): " +
                              "instantiating obscov from ndarray,  " +
                              "can't verify observation alignment with jco")
-            self.__parcov = matrix(x=self.obscov_arg,
-                                         isdiagonal=isdiagaonal,
+            self.__parcov = Matrix(x=self.obscov_arg,
+                                         isdiagonal=isdiagonal,
                                          row_names=self.jco.row_names,
                                          col_names=self.jco.row_names)
         self.log("loading obscov")
         if isinstance(self.obscov_arg, str):
             if self.obscov_arg.lower().endswith(".pst"):
-                self.__obscov = cov()
+                self.__obscov = Cov()
                 self.__obscov.from_obsweights(self.obscov_arg)
             else:
                 self.__obscov = self.__fromfile(self.obscov_arg)
-        elif isinstance(self.obscov_arg, pst):
-            self.__obscov = cov()
+        elif isinstance(self.obscov_arg, Pst):
+            self.__obscov = Cov()
             self.__obscov.from_observation_data(self.obscov_arg)
         else:
             raise Exception("linear_analysis.__load_obscov(): " +
@@ -421,7 +421,7 @@ class linear_analysis(object):
         row_names = []
         vecs = []
         for arg in self.prediction_arg:
-            if isinstance(arg, matrix):
+            if isinstance(arg, Matrix):
                 #--a vector
                 if arg.shape[1] == 1:
                     vecs.append(arg)
@@ -464,7 +464,7 @@ class linear_analysis(object):
                                     "ndarray passed for predicitons " +
                                     "requires jco or parcov to get " +
                                     "parameter names")
-                pred_matrix = matrix(x=self.prediction_arg,
+                pred_matrix = Matrix(x=self.prediction_arg,
                                            row_names=pred_names,
                                            col_names=names)
                 for pred_name in pred_names:
@@ -675,22 +675,22 @@ class linear_analysis(object):
                                             "obs cov")
         #pi_names = list(self.pst.prior_information.pilbl.values)
         pi_names = list(self.pst.prior_names)
-        self.__jco.drop(pi_names, axis=0)
+        if self.jco is not None:
+            self.__jco.drop(pi_names, axis=0)
         self.__pst.prior_information = self.pst.null_prior
         #self.__obscov.drop(pi_names,axis=0)
-        self.log("removing " + nprior_str + " prior info from jco, pst, and " +
-                                            "obs cov")
+        self.log("removing " + nprior_str + " prior info from jco and pst")
 
 
     def get(self,par_names=None,obs_names=None,astype=None):
-        """method to get a new linear_analysis class using a
+        """method to get a new LinearAnalysis class using a
              subset of parameters and/or observations
          Args:
             par_names (enumerable of str) : par names for new object
             obs_names (enumerable of str) : obs names for new object
             astype (either schur or errvar type) : type to cast the new object
         Returns:
-            linear_analysis object
+            LinearAnalysis object
         Raises:
             None
         """
@@ -699,7 +699,7 @@ class linear_analysis(object):
         #--if there is nothing to do but copy
         if par_names is None and obs_names is None:
             if astype is not None:
-                self.logger.warn("linear_analysis.get(): astype is not None, " +
+                self.logger.warn("LinearAnalysis.get(): astype is not None, " +
                                  "but par_names and obs_names are None so" +
                                  "\n  ->Omitted attributes will not be " +
                                  "propagated to new instance")
@@ -776,4 +776,4 @@ class linear_analysis(object):
 
 
 if __name__ == "__main__":
-    linear_analysis.test()
+    LinearAnalysis.test()

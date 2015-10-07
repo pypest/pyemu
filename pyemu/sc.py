@@ -1,13 +1,13 @@
 from __future__ import print_function, division
-from pyemu.la import linear_analysis
+from pyemu.la import LinearAnalysis
 
-class schur(linear_analysis):
+class Schur(LinearAnalysis):
     """derived type for posterior covariance analysis using Schur's complement
     """
     def __init__(self,jco,**kwargs):
         self.__posterior_prediction = None
         self.__posterior_parameter = None
-        super(schur,self).__init__(jco,**kwargs)
+        super(Schur,self).__init__(jco,**kwargs)
 
 
     def plot(self):
@@ -145,16 +145,16 @@ class schur(linear_analysis):
             if name not in keep_names:
                 keep_names.append(name)
         if len(keep_names) == 0:
-            raise Exception("schur.contribution_from_parameters: " +
+            raise Exception("Schur.contribution_from_parameters: " +
                             "atleast one parameter must remain uncertain")
         #get the reduced predictions
         if self.predictions is None:
-            raise Exception("schur.contribution_from_parameters: " +
+            raise Exception("Schur.contribution_from_parameters: " +
                             "no predictions have been set")
         cond_preds = []
         for pred in self.predictions:
             cond_preds.append(pred.get(keep_names, pred.col_names))
-        la_cond = schur(jco=self.jco.get(self.jco.row_names, keep_names),
+        la_cond = Schur(jco=self.jco.get(self.jco.row_names, keep_names),
                         parcov=self.parcov.condition_on(parameter_names),
                         obscov=self.obscov, predictions=cond_preds,verbose=False)
 
@@ -185,7 +185,7 @@ class schur(linear_analysis):
                 row labels in dataframe
         Returns:
             dataframe[parlist_dict.keys(),(forecast_name,<prior,post>)
-                multiindex dataframe of schur's complement results for each
+                multiindex dataframe of Schur's complement results for each
                 group of parameters in parlist_dict values.
         Raises:
             Exception if no predictions are set
@@ -245,17 +245,17 @@ class schur(linear_analysis):
         for iname, name in enumerate(observation_names):
             observation_names[iname] = name.lower()
             if name.lower() not in self.jco.row_names:
-                raise Exception("schur.importance_of_observations: " +
+                raise Exception("Schur.importance_of_observations: " +
                                 "obs name not found in jco: " + name)
         keep_names = []
         for name in self.jco.row_names:
             if name not in observation_names:
                 keep_names.append(name)
         if len(keep_names) == 0:
-            raise Exception("schur.importance_of_observations: " +
+            raise Exception("Schur.importance_of_observations: " +
                             " atleast one observation must remain")
         if self.predictions is None:
-            raise Exception("schur.importance_of_observations: " +
+            raise Exception("Schur.importance_of_observations: " +
                             "no predictions have been set")
 
         la_reduced = self.get(par_names=self.jco.col_names,
@@ -280,7 +280,7 @@ class schur(linear_analysis):
                 row labels in dataframe. If None, then test every obs
         Returns:
             dataframe[obslist_dict.keys(),(forecast_name,post)
-                multiindex dataframe of schur's complement results for each
+                multiindex dataframe of Schur's complement results for each
                 group of observations in obslist_dict values.
         """
         if obslist_dict is None:
@@ -321,12 +321,12 @@ class schur(linear_analysis):
         npar = len(pnames)
         nobs = len(onames)
         j_arr = np.random.random((nobs,npar))
-        jco = mhand.matrix(x=j_arr,row_names=onames,col_names=pnames)
-        parcov = mhand.cov(x=np.eye(npar),names=pnames)
-        obscov = mhand.cov(x=np.eye(nobs),names=onames)
+        jco = Matrix(x=j_arr,row_names=onames,col_names=pnames)
+        parcov = Cov(x=np.eye(npar),names=pnames)
+        obscov = Cov(x=np.eye(nobs),names=onames)
         forecasts = "o2"
 
-        s = schur(jco=jco,parcov=parcov,obscov=obscov,forecasts=forecasts)
+        s = Schur(jco=jco,parcov=parcov,obscov=obscov,forecasts=forecasts)
         print(s.get_parameter_summary())
         print(s.get_forecast_summary())
 

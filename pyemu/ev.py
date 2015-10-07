@@ -1,10 +1,10 @@
 from __future__ import print_function, division
 import numpy as np
 import pandas as pd
-from pyemu.la import linear_analysis
-from pyemu.mat.mat_handler import matrix,jco,cov
+from pyemu.la import LinearAnalysis
+from pyemu.mat.mat_handler import Matrix,Jco,Cov
 
-class errvar(linear_analysis):
+class ErrVar(LinearAnalysis):
     """child class for error variance analysis
         todo: add KL parameter scaling with parcov -> identity reset
     """
@@ -14,14 +14,14 @@ class errvar(linear_analysis):
         Args:
             omitted_parameters (list of str): argument that identifies
                 parameters that will be treated as omitted
-            omitted_parcov (matrix or str): argument that identifies
+            omitted_parcov (Matrix or str): argument that identifies
                 omitted parameter parcov
-            omitted_predictions (matrix or str): argument that identifies
+            omitted_predictions (Matrix or str): argument that identifies
             omitted prediction vectors
 
         Note: if only omitted_parameters is passed, then the omitted_parameter
             argument must be a string or list of strings that identifies
-            parameters that are in the linear_analysis attributes that will
+            parameters that are in the LinearAnalysis attributes that will
              extracted
         """
         self.__need_omitted = False
@@ -67,14 +67,14 @@ class errvar(linear_analysis):
         self.__omitted_predictions = None
 
         #--instantiate the parent class
-        super(errvar, self).__init__(jco, **kwargs)
+        super(ErrVar, self).__init__(jco, **kwargs)
         if self.__need_omitted:
             self.log("pre-loading omitted components")
-            #self._linear_analysis__load_jco()
-            #self._linear_analysis__load_parcov()
-            #self._linear_analysis__load_obscov()
+            #self._LinearAnalysis__load_jco()
+            #self._LinearAnalysis__load_parcov()
+            #self._LinearAnalysis__load_obscov()
             #if self.prediction_arg is not None:
-            #    self._linear_analysis__load_predictions()
+            #    self._LinearAnalysis__load_predictions()
             self.__load_omitted_jco()
             self.__load_omitted_parcov()
             if self.prediction_arg is not None:
@@ -95,11 +95,11 @@ class errvar(linear_analysis):
         """
         #--if there are no base predictions
         if self.predictions is None:
-            raise Exception("errvar.__load_omitted_predictions(): " +
+            raise Exception("ErrVar.__load_omitted_predictions(): " +
                             "no 'included' predictions is None")
         if self.omitted_predictions_arg is None and \
                         self.omitted_par_arg is None:
-            raise Exception("errvar.__load_omitted_predictions: " +
+            raise Exception("ErrVar.__load_omitted_predictions: " +
                             "both omitted args are None")
         # try to set omitted_predictions by
         # extracting from existing predictions
@@ -119,12 +119,12 @@ class errvar(linear_analysis):
                 opreds = []
                 # need to access the attribute directly,
                 # not a view of attribute
-                for prediction in self._linear_analysis__predictions:
+                for prediction in self._LinearAnalysis__predictions:
                     opred = prediction.extract(self.omitted_jco.col_names)
                     opreds.append(opred)
                 self.__omitted_predictions = opreds
             else:
-                raise Exception("errvar.__load_omitted_predictions(): " +
+                raise Exception("ErrVar.__load_omitted_predictions(): " +
                                 " omitted parameter " + str(missing_par) +\
                                 " not found in prediction vector " +
                                 str(missing_pred))
@@ -136,7 +136,7 @@ class errvar(linear_analysis):
         """private: set the omitted_parcov attribute
         """
         if self.omitted_parcov_arg is None and self.omitted_par_arg is None:
-            raise Exception("errvar.__load_omitted_parcov: " +
+            raise Exception("ErrVar.__load_omitted_parcov: " +
                             "both omitted args are None")
         # try to set omitted_parcov by extracting from base parcov
         if self.omitted_parcov_arg is None and self.omitted_par_arg is not None:
@@ -149,12 +149,12 @@ class errvar(linear_analysis):
             if found:
                 #--need to access attribute directly, not view of attribute
                 self.__omitted_parcov = \
-                    self._linear_analysis__parcov.extract(
+                    self._LinearAnalysis__parcov.extract(
                         row_names=self.omitted_jco.col_names)
             else:
-                self.logger.warn("errvar.__load_omitted_parun: " +
+                self.logger.warn("ErrVar.__load_omitted_parun: " +
                                  "no omitted parcov arg passed: " +
-                        "setting omitted parcov as identity matrix")
+                        "setting omitted parcov as identity Matrix")
                 self.__omitted_parcov = cov(
                     x=np.ones(self.omitted_jco.shape[1]),
                     names=self.omitted_jco.col_names, isdiagonal=True)
@@ -166,21 +166,21 @@ class errvar(linear_analysis):
         """private: set the omitted jco attribute
         """
         if self.omitted_par_arg is None:
-            raise Exception("errvar.__load_omitted: omitted_arg is None")
+            raise Exception("ErrVar.__load_omitted: omitted_arg is None")
         if isinstance(self.omitted_par_arg,str):
             if self.omitted_par_arg in self.jco.col_names:
                 #--need to access attribute directly, not view of attribute
                 self.__omitted_jco = \
-                    self._linear_analysis__jco.extract(
+                    self._LinearAnalysis__jco.extract(
                         col_names=self.omitted_par_arg)
             else:
                 # must be a filename
                 self.__omitted_jco = self.__fromfile(self.omitted_par_arg)
-        # if the arg is an already instantiated matrix (or jco) object
+        # if the arg is an already instantiated Matrix (or jco) object
         elif isinstance(self.omitted_par_arg,jco) or \
-                isinstance(self.omitted_par_arg,matrix):
+                isinstance(self.omitted_par_arg,Matrix):
             self.__omitted_jco = \
-                jco(x=self.omitted_par_arg.newx(),
+                Jco(x=self.omitted_par_arg.newx(),
                           row_names=self.omitted_par_arg.row_names,
                           col_names=self.omitted_par_arg.col_names)
         # if it is a list, then it must be a list
@@ -189,10 +189,10 @@ class errvar(linear_analysis):
             for arg in self.omitted_par_arg:
                 if isinstance(arg,str):
                     assert arg in self.jco.col_names,\
-                        "errvar.__load_omitted_jco: omitted_jco " +\
+                        "ErrVar.__load_omitted_jco: omitted_jco " +\
                         "arg str not in jco par_names: " + str(arg)
             self.__omitted_jco = \
-                self._linear_analysis__jco.extract(col_names=self.omitted_par_arg)
+                self._LinearAnalysis__jco.extract(col_names=self.omitted_par_arg)
 
 
     # these property decorators help keep from loading potentially
@@ -255,7 +255,7 @@ class errvar(linear_analysis):
         Aergs:
             singular_value (int) : the truncation point
         Returns:
-            A pandas dataframe of the V_1**2 matrix with the
+            A pandas dataframe of the V_1**2 Matrix with the
              identifiability in the column labeled "ident"
          Raises:
             None
@@ -283,7 +283,7 @@ class errvar(linear_analysis):
 
 
     def R(self, singular_value):
-        """get resolution matrix at a singular value
+        """get resolution Matrix at a singular value
              V_1 * V_1^T
         Args:
             singular_value (int) : singular value to calc R at
@@ -332,7 +332,7 @@ class errvar(linear_analysis):
 
 
     def G(self, singular_value):
-        """get the parameter solution matrix at a singular value
+        """get the parameter solution Matrix at a singular value
             V_1 * S_1^(_1) * U_1^T
         Args:
             singular_value (int) : singular value to calc G at
@@ -346,7 +346,7 @@ class errvar(linear_analysis):
 
         if singular_value == 0:
             self.__G_sv = 0
-            self.__G = matrix(
+            self.__G = Matrix(
                 x=np.zeros((self.jco.ncol,self.jco.nrow)),
                 row_names=self.jco.col_names, col_names=self.jco.row_names)
             return self.__G
@@ -357,7 +357,7 @@ class errvar(linear_analysis):
             pass
         if singular_value > mn:
             self.logger.warn(
-                "errvar.G(): singular_value > min(npar,nobs):" +
+                "ErrVar.G(): singular_value > min(npar,nobs):" +
                 "resetting to min(npar,nobs): " +
                 str(min(self.pst.npar_adj, self.pst.nnz_obs)))
             singular_value = min(self.pst.npar_adj, self.pst.nnz_obs)
@@ -389,7 +389,7 @@ class errvar(linear_analysis):
             Exception if no predictions are set
         """
         if not self.predictions:
-            raise Exception("errvar.first(): no predictions are set")
+            raise Exception("ErrVar.first(): no predictions are set")
         if singular_value > self.jco.ncol:
             zero_preds = {}
             for pred in self.predictions:
@@ -440,7 +440,7 @@ class errvar(linear_analysis):
             Exception if no predictions are set
         """
         if not self.predictions:
-            raise Exception("errvar.second(): not predictions are set")
+            raise Exception("ErrVar.second(): not predictions are set")
         self.log("calc second term prediction @" + str(singular_value))
 
         mn = min(self.jco.shape)
@@ -502,7 +502,7 @@ class errvar(linear_analysis):
             Exception if no predictions are set
         """
         if not self.predictions:
-            raise Exception("errvar.third(): not predictions are set")
+            raise Exception("ErrVar.third(): not predictions are set")
         if self.__need_omitted is False:
             zero_preds = {}
             for pred in self.predictions:
@@ -560,14 +560,14 @@ class errvar(linear_analysis):
         npar = len(pnames)
         nobs = len(onames)
         j_arr = np.random.random((nobs,npar))
-        jco = matrix(x=j_arr,row_names=onames,col_names=pnames)
-        parcov = cov(x=np.eye(npar),names=pnames)
-        obscov = cov(x=np.eye(nobs),names=onames)
+        jco = Matrix(x=j_arr,row_names=onames,col_names=pnames)
+        parcov = Cov(x=np.eye(npar),names=pnames)
+        obscov = Cov(x=np.eye(nobs),names=onames)
         forecasts = "o2"
 
         omitted = "p3"
 
-        e = errvar(jco=jco,parcov=parcov,obscov=obscov,forecasts=forecasts,
+        e = ErrVar(jco=jco,parcov=parcov,obscov=obscov,forecasts=forecasts,
                    omitted_parameters=omitted)
         svs = [0,1,2,3,4,5]
         print(e.get_errvar_dataframe(svs))

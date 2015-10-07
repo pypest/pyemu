@@ -4,7 +4,7 @@ import pandas as pd
 
 from pyemu.mat.mat_handler import get_common_elements
 
-class ensemble(pd.DataFrame):
+class Ensemble(pd.DataFrame):
 
     def __init__(self,*args,**kwargs):
 
@@ -12,10 +12,10 @@ class ensemble(pd.DataFrame):
         #assert "index" in kwargs.keys(),"ensemble requires 'index' kwarg"
 
         mean_values = kwargs.pop("mean_values",None)
-        super(ensemble,self).__init__(*args,**kwargs)
+        super(Ensemble,self).__init__(*args,**kwargs)
 
         if mean_values is None:
-            raise Exception("ensemble requires 'mean_values' kwarg")
+            raise Exception("Ensemble requires 'mean_values' kwarg")
         self.__mean_values = mean_values
 
 
@@ -53,7 +53,7 @@ class ensemble(pd.DataFrame):
 
 
     def enforce(self):
-        raise Exception("ensemble.enforce() must overloaded by derived types")
+        raise Exception("Ensemble.enforce() must overloaded by derived types")
     
 
     def plot(self,*args,**kwargs):
@@ -69,13 +69,13 @@ class ensemble(pd.DataFrame):
 
 
 
-class parameter_ensemble(ensemble):
+class ParameterEnsemble(Ensemble):
 
 
     def __init__(self,pst,**kwargs):
         kwargs["columns"] = pst.parameter_data.parnme
         kwargs["mean_values"] = pst.parameter_data.parval1
-        super(parameter_ensemble,self).__init__(**kwargs)
+        super(ParameterEnsemble,self).__init__(**kwargs)
         self.pst = pst
         self.pst.parameter_data.index = self.pst.parameter_data.parnme
         self.__mean_values = None

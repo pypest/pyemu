@@ -1,18 +1,20 @@
 from __future__ import print_function, division
+import os
 import numpy as np
-from pyemu.la import linear_analysis
-from pyemu.en import ensemble, parameter_ensemble
+from pyemu.la import LinearAnalysis
+from pyemu.en import Ensemble, ParameterEnsemble
 
 
-
-class monte_carlo(linear_analysis):
+class MonteCarlo(LinearAnalysis):
     """derived type for monte carlo analysis
     """
     def __init__(self,**kwargs):
-        super(monte_carlo,self).__init__(**kwargs)
-        assert self.pst is not None
-        self.parensemble = parameter_ensemble(pst=self.pst)
-        self.obsensemble = ensemble(mean_values=self.pst.observation_data.values,columns=self.pst.observation_data.obsnme)
+        super(MonteCarlo,self).__init__(**kwargs)
+        assert self.pst is not None, \
+            "monte carlo requires a pest control file"
+        self.parensemble = ParameterEnsemble(pst=self.pst)
+        self.obsensemble = Ensemble(mean_values=self.pst.observation_data.values,
+                                    columns=self.pst.observation_data.obsnme)
 
 
     @property
@@ -46,6 +48,8 @@ class monte_carlo(linear_analysis):
 
 
     def project_parensemble(self,par_file=None,nsing=None):
+        assert self.jco is not None,"MonteCarlo.project_parensemble()" +\
+                                    "requires a jacobian attribute"
         if par_file is not None:
             assert os.path.exists(par_file),"monte_carlo.draw() error: par_file not found:" +\
                 par_file

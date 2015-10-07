@@ -13,7 +13,7 @@ SFMT_LONG = lambda x: "{0:>50s}".format(str(x))
 IFMT = lambda x: "{0:>10d}".format(int(x))
 FFMT = lambda x: "{0:>15.6E}".format(float(x))
 
-class pst(object):
+class Pst(object):
     """basic class for handling pest control files to support linear analysis
     as well as replicate some of the functionality of the pest utilities
     """
@@ -113,7 +113,7 @@ class pst(object):
         ogroups = self.observation_data.groupby("obgnme").groups
         rgroups = self.res.groupby("group").groups
         for og in ogroups.keys():
-            assert og in rgroups.keys(),"pst.adjust_weights_res() obs group " +\
+            assert og in rgroups.keys(),"Pst.adjust_weights_res() obs group " +\
                 "not found: " + str(og)
             og_res_df = self.res.ix[rgroups[og]]
             og_res_df.index = og_res_df.name
@@ -121,7 +121,7 @@ class pst(object):
             og_df.index = og_df.obsnme
             og_res_df = og_res_df.loc[og_df.index,:]
             assert og_df.shape[0] == og_res_df.shape[0],\
-            " pst.phi_components error: group residual dataframe row length" +\
+            " Pst.phi_components error: group residual dataframe row length" +\
             "doesn't match observation data group dataframe row length" + \
                 str(og_df.shape) + " vs. " + str(og_res_df.shape)
             components[og] = np.sum((og_res_df["residual"] *
@@ -138,14 +138,14 @@ class pst(object):
             return self.__res
         else:
             if self.resfile is not None:
-                assert os.path.exists(self.resfile),"pst.res(): self.resfile " +\
+                assert os.path.exists(self.resfile),"Pst.res(): self.resfile " +\
                     str(self.resfile) + " does not exist"
             else:
                 self.resfile = self.filename.replace(".pst", ".res")
                 if not os.path.exists(self.resfile):
                     self.resfile = self.resfile.replace(".res", ".rei")
                     if not os.path.exists(self.resfile):
-                        raise Exception("pst.get_residuals: " +
+                        raise Exception("Pst.get_residuals: " +
                                         "could not residual file case.res" +
                                         " or case.rei")
             self.__res = self.load_resfile(self.resfile)
@@ -294,7 +294,7 @@ class pst(object):
         while True:
             line = f.readline()
             if line == '':
-                raise Exception("pst.get_residuals: EOF before finding "+
+                raise Exception("Pst.get_residuals: EOF before finding "+
                                 "header in resfile: " + resfile)
             if "name" in line.lower():
                 header = line.lower().strip().split()
@@ -325,13 +325,13 @@ class pst(object):
         #control section
         line = f.readline()
         assert "* control data" in line,\
-            "pst.load() error: looking for control" +\
+            "Pst.load() error: looking for control" +\
             " data section, found:" + line
         control_lines = []
         while True:
             line = f.readline()
             if line == '':
-                raise Exception("pst.load() EOF while " +\
+                raise Exception("Pst.load() EOF while " +\
                                 "reading control data section")
             if line.startswith('*'):
                 break
@@ -353,7 +353,7 @@ class pst(object):
         #parameter data
         line = f.readline()
         assert "* parameter data" in line.lower(),\
-            "pst.load() error: looking for parameter" +\
+            "Pst.load() error: looking for parameter" +\
             " data section, found:" + line
         self.parameter_data = self._read_df(f,self.control_data.npar,
                                             self.par_fieldnames,
@@ -367,7 +367,7 @@ class pst(object):
         #obs groups - just read past for now
         line = f.readline()
         assert "* observation groups" in line.lower(),\
-            "pst.load() error: looking for obs" +\
+            "Pst.load() error: looking for obs" +\
             " group section, found:" + line
         [f.readline() for _ in range(self.control_data.nobsgp)]
 
@@ -375,7 +375,7 @@ class pst(object):
         #observation data
         line = f.readline()
         assert "* observation data" in line.lower(),\
-            "pst.load() error: looking for observation" +\
+            "Pst.load() error: looking for observation" +\
             " data section, found:" + line
         self.observation_data = self._read_df(f,self.control_data.nobs,
                                               self.obs_fieldnames,
@@ -383,7 +383,7 @@ class pst(object):
         #model command line
         line = f.readline()
         assert "* model command line" in line.lower(),\
-            "pst.load() error: looking for model " +\
+            "Pst.load() error: looking for model " +\
             "command section, found:" + line
         for i in range(self.control_data.numcom):
             self.model_command.append(f.readline().strip())
@@ -391,7 +391,7 @@ class pst(object):
         #model io
         line = f.readline()
         assert "* model input/output" in line.lower(), \
-            "pst.load() error; looking for model " +\
+            "Pst.load() error; looking for model " +\
             " i/o section, found:" + line
         for i in range(self.control_data.ntplfle):
             raw = f.readline().strip().split()
@@ -554,15 +554,15 @@ class pst(object):
                 new_res = new_res.loc[obs_names, :]
 
         new_pst = pst(self.filename, resfile=self.resfile, load=False)
-        new_pst.parameter_data = new_par
-        new_pst.observation_data = new_obs
-        new_pst.__res = new_res
+        new_Pst.parameter_data = new_par
+        new_Pst.observation_data = new_obs
+        new_Pst.__res = new_res
         #if par_names is not None:
-        #    print "pst.get() warning: dropping all prior information in " + \
+        #    print "Pst.get() warning: dropping all prior information in " + \
         #          " new pst instance"
-        new_pst.prior_information = self.null_prior
-        new_pst.mode = self.mode
-        new_pst.estimation = self.estimation
+        new_Pst.prior_information = self.null_prior
+        new_Pst.mode = self.mode
+        new_Pst.estimation = self.estimation
         return new_pst
 
 
@@ -639,7 +639,7 @@ class pst(object):
 
     @staticmethod
     def read_parfile(parfile):
-        assert os.path.exists(parfile), "pst.parrep(): parfile not found: " +\
+        assert os.path.exists(parfile), "Pst.parrep(): parfile not found: " +\
                                         str(parfile)
         f = open(parfile, 'r')
         header = f.readline()
@@ -664,7 +664,7 @@ class pst(object):
         if recfile is None:
             recfile = self.filename.replace(".pst", ".rec")
         assert os.path.exists(recfile), \
-            "pst.adjust_weights_recfile(): recfile not found: " +\
+            "Pst.adjust_weights_recfile(): recfile not found: " +\
             str(recfile)
         iter_components = self.get_phi_components_from_recfile(recfile)
         iters = iter_components.keys()
@@ -682,7 +682,7 @@ class pst(object):
                     last_complete_iter = iiter
                     break
         if last_complete_iter is None:
-            raise Exception("pst.pwtadj2(): no complete phi component" +
+            raise Exception("Pst.pwtadj2(): no complete phi component" +
                             " records found in recfile")
         self.adjust_weights_by_phi_components(
             iter_components[last_complete_iter])
@@ -729,7 +729,7 @@ class pst(object):
             if False in nz_groups.keys():
                 og_nzobs = len(nz_groups[False])
             if og_nzobs == 0 and og_phi > 0:
-                raise Exception("pst.adjust_weights_by_phi_components():"
+                raise Exception("Pst.adjust_weights_by_phi_components():"
                                 " no obs with nonzero weight," +
                                 " but phi > 0 for group:" + str(ogroup))
             if og_phi > 0:
@@ -783,10 +783,10 @@ class pst(object):
         pass
         for item in target_phis.keys():
             assert item in res_idxs.keys(),\
-                "pst.__reset_weights(): " + str(item) +\
+                "Pst.__reset_weights(): " + str(item) +\
                 " not in residual group indices"
             assert item in obs_idxs.keys(), \
-                "pst.__reset_weights(): " + str(item) +\
+                "Pst.__reset_weights(): " + str(item) +\
                 " not in observation group indices"
             actual_phi = ((self.res.loc[res_idxs[item], "residual"] *
                            self.observation_data.loc
@@ -827,12 +827,12 @@ class pst(object):
                 res_groups = self.res.groupby(lambda x:
                                               x.endswith(suffix)).groups
                 assert True in res_groups.keys(),\
-                    "pst.adjust_weights_by_phi(): obs group suffix \'" +\
+                    "Pst.adjust_weights_by_phi(): obs group suffix \'" +\
                     str(suffix)+"\' not found in res"
                 obs_groups = self.observation_data.groupby(
                     lambda x: x.endswith(suffix)).groups
                 assert True in obs_groups.keys(),\
-                    "pst.adjust_weights_by_phi(): obs group suffix \'" +\
+                    "Pst.adjust_weights_by_phi(): obs group suffix \'" +\
                     str(suffix) + "\' not found in observation_data"
                 res_idxs[suffix] = res_groups[True]
                 obs_idxs[suffix] = obs_groups[True]
@@ -845,12 +845,12 @@ class pst(object):
                 res_groups = self.res.groupby(
                     lambda x: x.startswith(prefix)).groups
                 assert True in res_groups.keys(),\
-                    "pst.adjust_weights_by_phi(): obs group prefix \'" +\
+                    "Pst.adjust_weights_by_phi(): obs group prefix \'" +\
                     str(prefix) + "\' not found in res"
                 obs_groups = self.observation_data.groupby(
                     lambda x:x.startswith(prefix)).groups
                 assert True in obs_groups.keys(),\
-                    "pst.adjust_weights_by_phi(): obs group prefix \'" +\
+                    "Pst.adjust_weights_by_phi(): obs group prefix \'" +\
                     str(prefix) + "\' not found in observation_data"
                 res_idxs[prefix] = res_groups[True]
                 obs_idxs[prefix] = obs_groups[True]
