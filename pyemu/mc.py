@@ -16,11 +16,9 @@ class MonteCarlo(LinearAnalysis):
         self.obsensemble = Ensemble(mean_values=self.pst.observation_data.values,
                                     columns=self.pst.observation_data.obsnme)
 
-
     @property
     def num_reals(self):
         return self.parensemble.shape[0]
-
 
     def draw(self, num_reals=1, par_file = None, obs=False, enforce_bounds=False):
         """draw stochastic realizations of parameters and optionally observations
@@ -43,9 +41,7 @@ class MonteCarlo(LinearAnalysis):
         if obs:
             raise NotImplementedError()
             self.log("generating noise realizations")
-
             self.log("generating noise realizations")
-
 
     def project_parensemble(self,par_file=None,nsing=None):
         assert self.jco is not None,"MonteCarlo.project_parensemble()" +\
@@ -54,16 +50,19 @@ class MonteCarlo(LinearAnalysis):
             assert os.path.exists(par_file),"monte_carlo.draw() error: par_file not found:" +\
                 par_file
             self.parensemble.pst.parrep(par_file)
+
         self.log("projecting parameter ensemble")
+        # work out number of singular values to use based on machine precision
         if nsing is None:
             nsing = self.xtqx.shape[0] - np.searchsorted(
                 np.sort((self.xtqx.s.x / self.xtqx.s.x.max())[:,0]),1.0e-6)
 
+        # form null space projection matrix
         v2_proj = (self.xtqx.v[:,nsing:] * self.xtqx.v[:,nsing:].T)
+
+        # project the ensemble
         self.parensemble.project(v2_proj)
-
         self.log("projecting parameter ensemble")
-
 
     def write_psts(self,prefix):
         pst = self.pst.get(par_names=self.pst.par_names,obs_names=self.pst.obs_names)
@@ -77,20 +76,22 @@ class MonteCarlo(LinearAnalysis):
             pst.write(pst_name)
         self.log("writing realized pest control files")
 
-
     @staticmethod
     def test():
-        mc = monte_carlo(jco=os.path.join("montecarlo_test","pest.jcb"),verbose=True)
+        mc = MonteCarlo(jco=os.path.join('..',"verification","henry","pest.jcb"),verbose=True)
         mc.draw(500)
+        print(mc.parensemble.loc[:,"mult1"])
 
         import matplotlib.pyplot as plt
-        ax = mc.parensemble.loc[:,"kr10c30"].plot(kind="hist",bins=50,alpha=0.5)
-        #plt.show()
-        mc.project_parensemble()
+        ax = mc.parensemble.loc[:,"mult1"].plot(kind="hist",bins=50,alpha=0.5)
 
-        mc.parensemble.loc[:,"kr10c30"].plot(ax=ax,kind="hist",bins=50,
+        mc.project_parensemble()
+        print(mc.parensemble.loc[:,"mult1"])
+        mc.parensemble.loc[:,"mult1"].plot(ax=ax,kind="hist",bins=50,
                                              facecolor="none",hatch='/',alpha=0.5)
         #mc.write_psts(os.path.join("montecarlo_test","real"))
         plt.show()
 
 
+if __name__ == "__main__":
+    MonteCarlo.test()

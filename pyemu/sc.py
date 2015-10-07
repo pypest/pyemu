@@ -1,4 +1,6 @@
 from __future__ import print_function, division
+import numpy as np
+import pandas as pd
 from pyemu.la import LinearAnalysis
 
 class Schur(LinearAnalysis):
@@ -29,7 +31,7 @@ class Schur(LinearAnalysis):
             names.append(pred_name)
             posterior.append(np.sqrt(pred_var))
             prior.append(self.prior_prediction[pred_name])
-        return pandas.DataFrame({"posterior": posterior, "prior": prior},
+        return pd.DataFrame({"posterior": posterior, "prior": prior},
                                 index=names)
 
 
@@ -79,7 +81,7 @@ class Schur(LinearAnalysis):
         Args:
             None
         Returns:
-            pandas.DataFrame() of prior,posterior variances and percent
+            pd.DataFrame() of prior,posterior variances and percent
             uncertainty reduction of each parameter
         Raises:
             None
@@ -95,7 +97,7 @@ class Schur(LinearAnalysis):
             prior = np.diag(prior.x)
         post = np.diag(self.posterior_parameter.x)
         ureduce = 100.0 * (1.0 - (post / prior))
-        return pandas.DataFrame({"prior_var":prior,"post_var":post,
+        return pd.DataFrame({"prior_var":prior,"post_var":post,
                                  "percent_reduction":ureduce},
                                 index=self.posterior_parameter.col_names)
 
@@ -105,7 +107,7 @@ class Schur(LinearAnalysis):
         Args:
             None
         Returns:
-            pandas.DataFrame() of prior,posterior variances and percent
+            pd.DataFrame() of prior,posterior variances and percent
             uncertainty reduction of each forecast
         Raises:
             None
@@ -118,7 +120,7 @@ class Schur(LinearAnalysis):
             sum["prior_var"].append(pr)
             sum["post_var"].append(pt)
             sum["percent_reduction"].append(ur)
-        return pandas.DataFrame(sum,index=self.prior_forecast.keys())
+        return pd.DataFrame(sum,index=self.prior_forecast.keys())
 
     def __contribution_from_parameters(self, parameter_names):
         """get the prior and posterior uncertainty reduction as a result of
@@ -175,7 +177,7 @@ class Schur(LinearAnalysis):
         #return results
 
 
-    def get_contribution_dataframe(self,parlist_dict):
+    def get_contribution_dataframe(self,parlist_dict=None):
         """get a dataframe the prior and posterior uncertainty
         reduction as a result of
         some parameter becoming perfectly known
@@ -192,6 +194,10 @@ class Schur(LinearAnalysis):
             Exception if one or more parameter_names are not in jco
             Exception if no parameter remain
         """
+        self.log("calculating contribution from parameters")
+        if parlist_dict is None:
+            parlist_dict = dict(zip(self.pst.parameter_data.parnme,self.pst.parameter_data.parnme))
+
         results = {}
         names = ["base"]
         for forecast in self.prior_forecast.keys():
@@ -203,7 +209,9 @@ class Schur(LinearAnalysis):
             results[(forecast,"percent_reduce")] = [reduce]
         for case_name,par_list in parlist_dict.items():
             names.append(case_name)
+            self.log("calculating contribution from: " + str(par_list) + '\n')
             case_prior,case_post = self.__contribution_from_parameters(par_list)
+            self.log("calculating contribution from: " + str(par_list) + '\n')
             for forecast in case_prior.keys():
                 pr = case_prior[forecast]
                 pt = case_post[forecast]
@@ -212,7 +220,8 @@ class Schur(LinearAnalysis):
                 results[(forecast, "post")].append(pt)
                 results[(forecast, "percent_reduce")].append(reduce)
 
-        df = pandas.DataFrame(results,index=names)
+        df = pd.DataFrame(results,index=names)
+        self.log("calculating contribution from parameters")
         return df
 
 
@@ -283,6 +292,7 @@ class Schur(LinearAnalysis):
                 multiindex dataframe of Schur's complement results for each
                 group of observations in obslist_dict values.
         """
+        self.log("calculating importance of observations")
         if obslist_dict is None:
             obs = self.pst.observation_data.loc[:,["obsnme","weight"]]
             obslist_dict = {}
@@ -296,10 +306,13 @@ class Schur(LinearAnalysis):
             results[forecast] = [pt]
         for case_name,obs_list in obslist_dict.items():
             names.append(case_name)
+            self.log("calculating contribution from: " + str(obs_list) + '\n')
             case_post = self.__importance_of_observations(obs_list)
+            self.log("calculating contribution from: " + str(obs_list) + '\n')
             for forecast,pt in case_post.items():
                 results[forecast].append(pt)
-        df = pandas.DataFrame(results,index=names)
+        df = pd.DataFrame(results,index=names)
+        self.log("calculating importance of observations")
         return df
 
 

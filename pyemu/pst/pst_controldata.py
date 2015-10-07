@@ -32,12 +32,14 @@ NOPTMAX PHIREDSTP NPHISTP NPHINORED RELPARSTP NRELPAR [PHISTOPTHRESH] [LASTRUN] 
 ICOV ICOR IEIG [IRES] [JCOSAVE] [VERBOSEREC] [JCOSAVEITN] [REISAVEITN] [PARSAVEITN] [PARSAVERUN]"""\
     .lower().split('\n')
 
-class control_data(object):
+class ControlData(object):
     def __init__(self):
-        super(control_data,self).__setattr__("formatters",{np.int32:IFMT,np.float64:FFMT,str:SFMT})
-        super(control_data,self).__setattr__("_df",self.get_control_dataframe())
+
+        super(ControlData,self).__setattr__("formatters",{np.int32:IFMT,np.float64:FFMT,str:SFMT})
+        super(ControlData,self).__setattr__("_df",self.get_dataframe())
+
         # acceptable values for most optional string inputs
-        super(control_data,self).__setattr__("accept_values",{'doaui':['aui','noaui'],
+        super(ControlData,self).__setattr__("accept_values",{'doaui':['aui','noaui'],
                                                               'dosenreuse':['senreuse','nosenreuse'],
                                                               'boundscale':['boundscale','noboundscale'],
                                                               'jcosave':['jcosave','nojcosave'],
@@ -48,18 +50,23 @@ class control_data(object):
                                                               'parsaverun':['parsaverun','noparsaverun']})
 
         self._df.index = self._df.name.apply(lambda x:x.replace('[',''))\
-            .apply(lambda x:x.replace(']',''))
+            .apply(lambda x: x.replace(']',''))
 
     def __setattr__(self, key, value):
+        if key == "_df":
+            super(ControlData,self).__setattr__("_df",value)
+            return
         assert key in self._df.index, str(key)+" not found in attributes"
         self._df.loc[key,"value"] = self._df.loc[key,"type"](value)
 
     def __getattr__(self, item):
+        if item == "_df":
+            return self._df.copy()
         assert item in self._df.index, str(item)+" not found in attributes"
         return self._df.loc[item,"value"]
 
     @staticmethod
-    def get_control_dataframe():
+    def get_dataframe():
         """ get a generic (default) control section dataframe
         
         :return: dataframe
@@ -69,19 +76,21 @@ class control_data(object):
 
         defaults = []
         [defaults.extend(line.split()) for line in CONTROL_DEFAULT_LINES]
+
         types, required,cast_defaults,formats = [],[],[],[]
         for name,default in zip(names,defaults):
             if '[' in name or ']' in name:
                 required.append(False)
             else:
                 required.append(True)
-            v,t,f = control_data._parse_value(default)
+            v,t,f = ControlData._parse_value(default)
             types.append(t)
             formats.append(f)
             cast_defaults.append(v)
         return pandas.DataFrame({"name":names,"type":types,
                                      "value":cast_defaults,"required":required,
                                     "format":formats})
+
 
     @staticmethod
     def _parse_value(value):
@@ -107,7 +116,7 @@ class control_data(object):
         :return: none
         """
         assert len(lines) == len(CONTROL_VARIABLE_LINES),\
-        "control_data error: len of lines not equal to " +\
+        "ControlData error: len of lines not equal to " +\
         str(len(CONTROL_VARIABLE_LINES))
 
         for iline,line in enumerate(lines):
@@ -147,6 +156,12 @@ class control_data(object):
                     self._df.loc[name,"value"] = v
 
 
+    def copy(self):
+        cd = ControlData()
+        cd._df = self._df
+        return cd
+
+
     @property
     def formatted_values(self):
         return self._df.apply(lambda x: self.formatters[x["type"]](x["value"]),axis=1)
@@ -160,7 +175,7 @@ class control_data(object):
         if isinstance(f,str):
             f = open(f,'w')
             f.write("pcf\n")
-        f.write("* control data\n")
+            f.write("* control data\n")
         for line in CONTROL_VARIABLE_LINES:
             [f.write(self.formatted_values[name.replace('[','').replace(']','')]) for name in line.split()]
             f.write('\n')

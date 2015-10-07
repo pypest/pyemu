@@ -2,7 +2,7 @@ from __future__ import print_function, division
 import numpy as np
 import pandas as pd
 from pyemu.la import LinearAnalysis
-from pyemu.mat.mat_handler import Matrix,Jco,Cov
+from pyemu.mat.mat_handler import Matrix, Jco, Cov
 
 class ErrVar(LinearAnalysis):
     """child class for error variance analysis
@@ -155,7 +155,7 @@ class ErrVar(LinearAnalysis):
                 self.logger.warn("ErrVar.__load_omitted_parun: " +
                                  "no omitted parcov arg passed: " +
                         "setting omitted parcov as identity Matrix")
-                self.__omitted_parcov = cov(
+                self.__omitted_parcov = Cov(
                     x=np.ones(self.omitted_jco.shape[1]),
                     names=self.omitted_jco.col_names, isdiagonal=True)
         elif self.omitted_parcov_arg is not None:

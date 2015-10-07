@@ -95,6 +95,10 @@ class ParameterEnsemble(Ensemble):
        return list(self.pst.parameter_data.parnme)
 
     @property
+    def adj_names(self):
+        return list(self.pst.parameter_data.parnme.loc[~self.fixed_indexer])
+
+    @property
     def ubnd(self):
         if self.__ubnd is None:
             ub = self.pst.parameter_data.parubnd.copy()
@@ -131,14 +135,14 @@ class ParameterEnsemble(Ensemble):
 
     def project(self,projection_matrix):
         # check that everything is cool WRT order
-        if self.names != projection_matrix.row_names:
-            common_names = get_common_elements(self.names,
+        if self.adj_names != projection_matrix.row_names:
+            common_names = get_common_elements(self.adj_names,
                                                      projection_matrix.row_names)
             base = self.mean_values.loc[common_names]
             projection_matrix = projection_matrix.get(common_names,common_names)
         else:
             base = self.mean_values
-            common_names = self.mean_values.index
+            common_names = self.adj_names
 
         for real in self.index:
             this = self.loc[real,common_names]

@@ -5,13 +5,9 @@ import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
 
-from .pst_controldata import control_data
+from pyemu.pst.pst_controldata import ControlData
+from pyemu.pst import pst_utils
 
-#formatters
-SFMT = lambda x: "{0:>20s}".format(str(x))
-SFMT_LONG = lambda x: "{0:>50s}".format(str(x))
-IFMT = lambda x: "{0:>10d}".format(int(x))
-FFMT = lambda x: "{0:>15.6E}".format(float(x))
 
 class Pst(object):
     """basic class for handling pest control files to support linear analysis
@@ -33,53 +29,10 @@ class Pst(object):
         self.resfile = resfile
         self.__res = None
 
-        self.par_dtype = np.dtype([("parnme", "a20"), ("partrans","a20"),
-                                   ("parchglim","a20"),("parval1", np.float64),
-                                   ("parlbnd",np.float64),("parubnd",np.float64),
-                                   ("pargp","a20"),("scale", np.float64),
-                                   ("offset", np.float64),("dercom",np.int)])
-        self.par_fieldnames = "PARNME PARTRANS PARCHGLIM PARVAL1 PARLBND PARUBND PARGP SCALE OFFSET DERCOM".lower().strip().split()
-        self.par_format = {"parnme": SFMT, "partrans": SFMT,
-                           "parchglim": SFMT, "parval1": FFMT,
-                           "parlbnd": FFMT, "parubnd": FFMT,
-                           "pargp": SFMT, "scale": FFMT,
-                           "offset": FFMT, "dercom": IFMT}
-        self.par_converters = {"parnme": str.lower, "pargp": str.lower}
-        self.par_defaults = ["dum","log","factor",1.0,1.1e-10,1.1e+10,"pargp",1.0,0.0,1]
+        for key,value in pst_utils.pst_config.items():
+            self.__setattr__(key,value)
 
-        self.pargp_fieldnames = "PARGPNME INCTYP DERINC DERINCLB FORCEN DERINCMUL DERMTHD SPLITTHRESH SPLITRELDIFF SPLITACTION".lower().strip().split()
-
-        self.pargp_format = {"pargpnme":SFMT,"inctype":SFMT,"derinc":FFMT,
-                              "derincmul":FFMT,"dermthd":SFMT,"splitthresh":FFMT,
-                              "splitreldiff":FFMT,"splitaction":SFMT}
-        self.pargp_converters = {"pargpnme":str.lower,"inctype":str.lower,
-                                 "dermethd":str.lower,
-                                 "splitaction":str.lower}
-        self.pargp_defaults=["dum","relative",0.01,0.0,"switch",2.0,
-                             "parabolic",1.0e-5,0.5,"smaller"]
-
-        self.obs_fieldnames = "OBSNME OBSVAL WEIGHT OBGNME".lower().split()
-        self.obs_dtype = np.dtype([("obsnme","a20"),("obsval",np.float64),
-                                   ("weight",np.float64),("obgnme","a20")])
-        self.obs_format = {"obsnme": SFMT, "obsval": FFMT,
-                           "weight": FFMT, "obgnme": SFMT}
-        self.obs_converters = {"obsnme": str.lower, "obgnme": str.lower}
-        self.obs_defaults = ["dum",1.0e+10,0.0,"obgnme"]
-
-        self.null_prior = pd.DataFrame({"pilbl": None,
-                                            "obgnme": None}, index=[])
-        self.prior_format = {"pilbl": SFMT, "equation": SFMT_LONG,
-                             "weight": FFMT, "obgnme": SFMT}
-        self.prior_fieldnames = ["equation", "weight", "obgnme"]
-
-        self.model_command = []
-        self.template_files = []
-        self.input_files = []
-        self.instruction_files = []
-        self.output_files = []
-        self.other_lines = []
-        self.tied_lines = []
-        self.control_data = control_data()
+        self.control_data = ControlData()
 
         if load:
             assert os.path.exists(filename)
@@ -284,12 +237,11 @@ class Pst(object):
             return True
         return False
 
-
     def load_resfile(self,resfile):
         """load the residual file
         """
         pass
-        converters = {"name": str.lower, "group": str.lower}
+        converters = {"name": str_con, "group": str_con}
         f = open(resfile, 'r')
         while True:
             line = f.readline()
@@ -306,11 +258,18 @@ class Pst(object):
         return res_df
 
     @staticmethod
-    def _read_df(f,nrows,names,converters):
+    def _read_df(f,nrows,names,converters,defaults=None):
         seek_point = f.tell()
         df = pd.read_csv(f, header=None, names=names,
                               nrows=nrows,delimiter="\s+",
                               converters=converters)
+                         
+
+        if defaults is not None:
+            for name in names:
+                df.loc[:,name] = df.loc[:,name].fillna(defaults[name])
+        elif np.any(pd.isnull(df)):
+            raise Exception("NANs found")
         f.seek(seek_point)
         [f.readline() for _ in range(nrows)]
         return df
@@ -346,19 +305,26 @@ class Pst(object):
                 break
             self.other_lines.append(line)
             line = f.readline()
+        try:
+            self.parameter_groups = self._read_df(f,self.control_data.npargp,
+                                                  self.pargp_fieldnames,
+                                                  self.pargp_converters,
+                                                  self.pargp_defaults)
+        except:
+            raise Exception("Pst.load() error reading parameter groups")
 
-        self.parameter_groups = self._read_df(f,self.control_data.npargp,
-                                              self.pargp_fieldnames,
-                                              self.pargp_converters)
         #parameter data
         line = f.readline()
         assert "* parameter data" in line.lower(),\
             "Pst.load() error: looking for parameter" +\
             " data section, found:" + line
-        self.parameter_data = self._read_df(f,self.control_data.npar,
-                                            self.par_fieldnames,
-                                            self.par_converters)
-
+        try:
+            self.parameter_data = self._read_df(f,self.control_data.npar,
+                                                self.par_fieldnames,
+                                                self.par_converters,
+                                                self.par_defaults)
+        except:
+            raise Exception("Pst.load() error reading parameter data")
         #oh the tied parameter bullshit, how do I hate thee
         counts = self.parameter_data.partrans.value_counts()
         if "tied" in counts.index:
@@ -377,9 +343,12 @@ class Pst(object):
         assert "* observation data" in line.lower(),\
             "Pst.load() error: looking for observation" +\
             " data section, found:" + line
-        self.observation_data = self._read_df(f,self.control_data.nobs,
-                                              self.obs_fieldnames,
-                                              self.obs_converters)
+        try:
+            self.observation_data = self._read_df(f,self.control_data.nobs,
+                                                  self.obs_fieldnames,
+                                                  self.obs_converters)
+        except:
+            raise Exception("Pst.load() error reading observation data")
         #model command line
         line = f.readline()
         assert "* model command line" in line.lower(),\
@@ -407,31 +376,39 @@ class Pst(object):
             self.prior_information = self.null_prior
         else:
             pilbl, obgnme, weight, equation = [], [], [], []
-            f = open(filename,'r')
-            while True:
+            line = f.readline()
+            assert "* prior information" in line.lower(), \
+                "Pst.load() error; looking for prior " +\
+                " info section, found:" + line
+            for iprior in range(self.control_data.nprior):
                 line = f.readline()
                 if line == '':
-                    raise Exception("EOF before prior information " +
-                                    "section found")
-                if "* prior information" in line.lower():
-                    for iprior in range(self.control_data.nprior):
-                        line = f.readline()
-                        if line == '':
-                            raise Exception("EOF during prior information " +
-                                            "section")
-                        raw = line.strip().split()
-                        pilbl.append(raw[0].lower())
-                        obgnme.append(raw[-1].lower())
-                        weight.append(float(raw[-2]))
-                        eq = ' '.join(raw[1:-2])
-                        equation.append(eq)
-                    break
-            f.close()
+                    raise Exception("EOF during prior information " +
+                                    "section")
+                raw = line.strip().split()
+                pilbl.append(raw[0].lower())
+                obgnme.append(raw[-1].lower())
+                weight.append(float(raw[-2]))
+                eq = ' '.join(raw[1:-2])
+                equation.append(eq)
             self.prior_information = pd.DataFrame({"pilbl": pilbl,
                                                        "equation": equation,
                                                        "weight": weight,
                                                        "obgnme": obgnme})
-            return
+
+        if "regul" in self.control_data.pestmode:
+            line = f.readline()
+            assert "* regul" in line.lower(), \
+                "Pst.load() error; looking for regul " +\
+                " section, found:" + line
+            [self.regul_lines.append(f.readline()) for _ in range(3)]
+
+        for line in f:
+            if line.startswith("++"):
+                self.pestpp_lines.append(line)
+        f.close()
+
+        return
 
 
     def _update_control_section(self):
@@ -467,6 +444,7 @@ class Pst(object):
 
         f_out.write("* parameter groups\n")
         self.parameter_groups.index = self.parameter_groups.pop("pargpnme")
+        #self.parameter_groups.loc[:,"splitaction"] = self.pargp_defaults["splitaction"]
         f_out.write(self.parameter_groups.to_string(col_space=0,
                                                   formatters=self.pargp_format,
                                                   justify="right",
@@ -512,7 +490,6 @@ class Pst(object):
         if self.nprior > 0:
             f_out.write("* prior information\n")
             self.prior_information.index = self.prior_information.pop("pilbl")
-
             f_out.write(self.prior_information.to_string(col_space=0,
                                               columns=self.prior_fieldnames,
                                               formatters=self.prior_format,
@@ -521,7 +498,13 @@ class Pst(object):
                                               index_names=False) + '\n')
             self.prior_information["pilbl"] = self.prior_information.index
         if self.control_data.pestmode.startswith("regul"):
-            f_out.write(self.regul_section)
+            if update_regul:
+                f_out.write(self.regul_section)
+            else:
+                [f_out.write(line) for line in self.regul_lines]
+
+        [f_out.write(line) for line in self.pestpp_lines]
+
         f_out.close()
 
 
@@ -536,8 +519,13 @@ class Pst(object):
             None
         """
         pass
-        if par_names is None and obs_names is None:
-            return copy.deepcopy(self)
+        #if par_names is None and obs_names is None:
+        #    return copy.deepcopy(self)
+        if par_names is None:
+            par_names = self.parameter_data.parnme
+        if obs_names is None:
+            obs_names = self.observation_data.obsnme
+
         new_par = self.parameter_data.copy()
         if par_names is not None:
             new_par.index = new_par.parnme
@@ -553,16 +541,29 @@ class Pst(object):
                 new_res.index = new_res.name
                 new_res = new_res.loc[obs_names, :]
 
-        new_pst = pst(self.filename, resfile=self.resfile, load=False)
-        new_Pst.parameter_data = new_par
-        new_Pst.observation_data = new_obs
-        new_Pst.__res = new_res
-        #if par_names is not None:
-        #    print "Pst.get() warning: dropping all prior information in " + \
-        #          " new pst instance"
-        new_Pst.prior_information = self.null_prior
-        new_Pst.mode = self.mode
-        new_Pst.estimation = self.estimation
+        new_pargp = self.parameter_groups.copy()
+        new_pargp.index = new_pargp.pargpnme
+        new_pargp_names = new_par.pargp.value_counts().index
+        new_pargp = new_pargp.loc[new_pargp_names,:]
+
+        new_pst = Pst(self.filename, resfile=self.resfile, load=False)
+        new_pst.parameter_data = new_par
+        new_pst.observation_data = new_obs
+        new_pst.parameter_groups = new_pargp
+        new_pst.__res = new_res
+        new_pst.prior_information = self.null_prior
+        new_pst.control_data = self.control_data.copy()
+
+        new_pst.model_command = self.model_command
+        new_pst.template_files = self.template_files
+        new_pst.input_files = self.input_files
+        new_pst.instruction_files = self.instruction_files
+        new_pst.output_files = self.output_files
+
+        new_pst.other_lines = self.other_lines
+        new_pst.pestpp_lines = self.pestpp_lines
+        new_pst.regul_lines = self.regul_lines
+
         return new_pst
 
 
@@ -632,21 +633,11 @@ class Pst(object):
         """
         if parfile is None:
             parfile = self.filename.replace(".pst", ".par")
-        par_df = self.read_parfile(parfile)
+        par_df = pst_utils.read_parfile(parfile)
         self.parameter_data.index = self.parameter_data.parnme
         par_df.index = par_df.parnme
         self.parameter_data.parval1 = par_df.parval1
 
-    @staticmethod
-    def read_parfile(parfile):
-        assert os.path.exists(parfile), "Pst.parrep(): parfile not found: " +\
-                                        str(parfile)
-        f = open(parfile, 'r')
-        header = f.readline()
-        par_df = pd.read_csv(f, header=None,
-                                 names=["parnme", "parval1", "scale", "offset"],
-                                 sep="\s+")
-        return par_df
 
 
     def adjust_weights_recfile(self, recfile=None):
@@ -666,7 +657,7 @@ class Pst(object):
         assert os.path.exists(recfile), \
             "Pst.adjust_weights_recfile(): recfile not found: " +\
             str(recfile)
-        iter_components = self.get_phi_components_from_recfile(recfile)
+        iter_components = pst_utils.get_phi_comps_from_recfile(recfile)
         iters = iter_components.keys()
         iters.sort()
         obs = self.observation_data
@@ -687,7 +678,6 @@ class Pst(object):
         self.adjust_weights_by_phi_components(
             iter_components[last_complete_iter])
 
-
     def adjust_weights_resfile(self, resfile=None):
         """adjust the weights by phi components in a residual file
         Args:
@@ -702,7 +692,6 @@ class Pst(object):
             self.__res = None
         phi_comps = self.phi_components
         self.adjust_weights_by_phi_components(phi_comps)
-
 
     def adjust_weights_by_phi_components(self, components):
         """resets the weights of observations to account for
@@ -723,8 +712,7 @@ class Pst(object):
             if self.mode.startswith("regul") and "regul" in ogroup.lower():
                 continue
             og_phi = components[ogroup]
-            odf = obs.loc[idxs, :]
-            nz_groups = odf.groupby(odf["weight"].map(lambda x: x == 0)).groups
+            nz_groups = obs.loc[idxs,:].groupby(odf["weight"].map(lambda x: x == 0)).groups
             og_nzobs = 0
             if False in nz_groups.keys():
                 og_nzobs = len(nz_groups[False])
@@ -738,37 +726,7 @@ class Pst(object):
         self.observation_data = obs
 
 
-    def get_phi_components_from_recfile(self, recfile):
-        """read the phi components from a record file
-        Args:
-            recfile (str) : record file
-        Returns:
-            dict{iteration number:{group,contribution}}
-        Raises:
-            None
-        """
-        iiter = 1
-        iters = {}
-        f = open(recfile,'r')
-        while True:
-            line = f.readline()
-            if line == '':
-                break
-            if "starting phi for this iteration" in line.lower():
-                contributions = {}
-                while True:
-                    line = f.readline()
-                    if line == '':
-                        break
-                    if "contribution to phi" not in line.lower():
-                        iters[iiter] = contributions
-                        iiter += 1
-                        break
-                    raw = line.strip().split()
-                    val = float(raw[-1])
-                    group = raw[-3].lower().replace('\"', '')
-                    contributions[group] = val
-        return iters
+
 
 
     def __reset_weights(self, target_phis, res_idxs, obs_idxs):
@@ -796,8 +754,7 @@ class Pst(object):
 
 
     def adjust_weights_by_group(self,obs_dict=None,
-                              obsgrp_dict=None, obsgrp_suffix_dict=None,
-                              obsgrp_prefix_dict=None, obsgrp_phrase_dict=None):
+                              obsgrp_dict=None):
         """reset the weights of observation groups to contribute a specified
         amount to the composite objective function
         Args:
@@ -819,42 +776,6 @@ class Pst(object):
             res_groups = self.res.groupby("name").groups
             obs_groups = self.observation_data.groupby("obsnme").groups
             self.__reset_weights(obs_dict, res_groups, obs_groups)
-        if obsgrp_suffix_dict is not None:
-            self.res.index = self.res.group
-            self.observation_data.index = self.observation_data.obgnme
-            res_idxs, obs_idxs = {}, {}
-            for suffix,phi in obsgrp_suffix_dict.iteritems():
-                res_groups = self.res.groupby(lambda x:
-                                              x.endswith(suffix)).groups
-                assert True in res_groups.keys(),\
-                    "Pst.adjust_weights_by_phi(): obs group suffix \'" +\
-                    str(suffix)+"\' not found in res"
-                obs_groups = self.observation_data.groupby(
-                    lambda x: x.endswith(suffix)).groups
-                assert True in obs_groups.keys(),\
-                    "Pst.adjust_weights_by_phi(): obs group suffix \'" +\
-                    str(suffix) + "\' not found in observation_data"
-                res_idxs[suffix] = res_groups[True]
-                obs_idxs[suffix] = obs_groups[True]
-            self.__reset_weights(obsgrp_suffix_dict, res_idxs, obs_idxs)
-        if obsgrp_prefix_dict is not None:
-            self.res.index = self.res.group
-            self.observation_data.index = self.observation_data.obgnme
-            res_idxs, obs_idxs = {}, {}
-            for prefix, phi in obsgrp_prefix_dict.iteritems():
-                res_groups = self.res.groupby(
-                    lambda x: x.startswith(prefix)).groups
-                assert True in res_groups.keys(),\
-                    "Pst.adjust_weights_by_phi(): obs group prefix \'" +\
-                    str(prefix) + "\' not found in res"
-                obs_groups = self.observation_data.groupby(
-                    lambda x:x.startswith(prefix)).groups
-                assert True in obs_groups.keys(),\
-                    "Pst.adjust_weights_by_phi(): obs group prefix \'" +\
-                    str(prefix) + "\' not found in observation_data"
-                res_idxs[prefix] = res_groups[True]
-                obs_idxs[prefix] = obs_groups[True]
-            self.__reset_weights(obsgrp_prefix_dict, res_idxs, obs_idxs)
 
 
     def proportional_weights(self, fraction_stdev=1.0, wmax=100.0,
@@ -887,26 +808,36 @@ class Pst(object):
 
     @staticmethod
     def test():
-        raise NotImplementedError()
+        pst_dir = os.path.join('..','tests',"pst")
+        pst_files = os.listdir(pst_dir)
+        pst_files = ["pest_pp.pst"]
+
+        p = Pst(os.path.join(pst_dir,pst_files[0]))
+        new_p = p.get()
+        new_p.write(os.path.join(pst_dir,pst_files[0]+"_new.pst"))
+
+
+        exceptions = []
+        for pst_file in pst_files:
+            if pst_file.endswith(".pst"):
+                try:
+                    p = Pst(os.path.join(pst_dir,pst_file))
+                except Exception as e:
+                    exceptions.append(pst_file + " read fail: " + str(e))
+                    continue
+                p.write(os.path.join(pst_dir,pst_file+"_test"),update_regul=True)
+                try:
+                    p.write(os.path.join(pst_dir,pst_file+"_test"),update_regul=True)
+                except Exception as e:
+                    exceptions.append(pst_file + " write fail: " + str(e))
+        if len(exceptions) > 0:
+            raise Exception('\n'.join(exceptions))
+
+        p = Pst(os.path.join(pst_dir,pst_files[0]))
+        new_p = p.get()
+        new_p.write(os.path.join(pst_dir,pst_files[0]+"_new.pst"))
 
 
 if __name__ == "__main__":
 
-    pst_dir = os.path.join("io_testing","pst")
-    #pst_files = os.listdir(pst_dir)
-    pst_files = ["PEST_Smith-ALL.pst"]
-    for pst_file in pst_files:
-        if pst_file.endswith(".pst"):
-            try:
-                p = pst(os.path.join(pst_dir,pst_file))
-            except Exception as e:
-                print(pst_file + " read fail: " + str(e))
-                continue
-            try:
-                p.write(os.path.join(pst_dir,pst_file+"_test"))
-            except Exception as e:
-                print(pst_file + " write fail: " + str(e))
-
-
-
-
+    Pst.test()

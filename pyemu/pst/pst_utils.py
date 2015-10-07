@@ -2,8 +2,101 @@ from __future__ import print_function, division
 import os
 import copy
 import numpy as np
-import pandas
-pandas.options.display.max_colwidth = 100
+import pandas as pd
+pd.options.display.max_colwidth = 100
+
+#formatters
+SFMT = lambda x: "{0:>20s}".format(str(x))
+SFMT_LONG = lambda x: "{0:>50s}".format(str(x))
+IFMT = lambda x: "{0:>10d}".format(int(x))
+FFMT = lambda x: "{0:>15.6E}".format(float(x))
+
+
+def str_con(item):
+    if len(item) == 0:
+        return np.NaN
+    return item.lower()
+
+pst_config = {}
+
+# parameter stuff
+pst_config["par_dtype"] = np.dtype([("parnme", "a20"), ("partrans","a20"),
+                                   ("parchglim","a20"),("parval1", np.float64),
+                                   ("parlbnd",np.float64),("parubnd",np.float64),
+                                   ("pargp","a20"),("scale", np.float64),
+                                   ("offset", np.float64),("dercom",np.int)])
+pst_config["par_fieldnames"] = "PARNME PARTRANS PARCHGLIM PARVAL1 PARLBND PARUBND " +\
+                              "PARGP SCALE OFFSET DERCOM"
+pst_config["par_fieldnames"] = pst_config["par_fieldnames"].lower().strip().split()
+pst_config["par_format"] = {"parnme": SFMT, "partrans": SFMT,
+                           "parchglim": SFMT, "parval1": FFMT,
+                           "parlbnd": FFMT, "parubnd": FFMT,
+                           "pargp": SFMT, "scale": FFMT,
+                           "offset": FFMT, "dercom": IFMT}
+pst_config["par_converters"] = {"parnme": str_con, "pargp": str_con}
+pst_config["par_defaults"] = {"parnme":"dum","partrans":"log","parchglim":"factor",
+                             "parval1":1.0,"parlbnd":1.1e-10,"parubnd":1.1e+10,
+                             "pargp":"pargp","scale":1.0,"offset":0.0,"dercom":1}
+
+
+# parameter group stuff
+pst_config["pargp_fieldnames"] = "PARGPNME INCTYP DERINC DERINCLB FORCEN DERINCMUL " +\
+                        "DERMTHD SPLITTHRESH SPLITRELDIFF SPLITACTION"
+pst_config["pargp_fieldnames"] = pst_config["pargp_fieldnames"].lower().strip().split()
+
+pst_config["pargp_format"] = {"pargpnme":SFMT,"inctype":SFMT,"derinc":FFMT,
+                      "derincmul":FFMT,"dermthd":SFMT,"splitthresh":FFMT,
+                      "splitreldiff":FFMT,"splitaction":SFMT}
+pst_config["pargp_converters"] = {"pargpnme":str_con,"inctype":str_con,
+                         "dermethd":str_con,
+                         "splitaction":str_con}
+pst_config["pargp_defaults"] = {"pargpnme":"dum","inctyp":"relative","derinc":0.01,
+                       "derinclb":0.0,"forcen":"switch","derincmul":2.0,
+                     "dermthd":"parabolic","splitthresh":1.0e-5,
+                       "splitreldiff":0.5,"splitaction":"smaller"}
+
+
+# observation stuff
+pst_config["obs_fieldnames"] = "OBSNME OBSVAL WEIGHT OBGNME".lower().split()
+pst_config["obs_dtype"] = np.dtype([("obsnme","a20"),("obsval",np.float64),
+                           ("weight",np.float64),("obgnme","a20")])
+pst_config["obs_format"] = {"obsnme": SFMT, "obsval": FFMT,
+                   "weight": FFMT, "obgnme": SFMT}
+pst_config["obs_converters"] = {"obsnme": str_con, "obgnme": str_con}
+pst_config["obs_defaults"] = {"obsnme":"dum","obsval":1.0e+10,
+                     "weight":0.0,"obgnme":"obgnme"}
+
+
+# prior info stuff
+pst_config["null_prior"] = pd.DataFrame({"pilbl": None,
+                                    "obgnme": None}, index=[])
+pst_config["prior_format"] = {"pilbl": SFMT, "equation": SFMT_LONG,
+                     "weight": FFMT, "obgnme": SFMT}
+pst_config["prior_fieldnames"] = ["equation", "weight", "obgnme"]
+
+
+# other containers
+pst_config["model_command"] = []
+pst_config["template_files"] = []
+pst_config["input_files"] = []
+pst_config["instruction_files"] = []
+pst_config["output_files"] = []
+pst_config["other_lines"] = []
+pst_config["tied_lines"] = []
+pst_config["regul_lines"] = []
+pst_config["pestpp_lines"] = []
+
+
+def read_parfile(parfile):
+    assert os.path.exists(parfile), "Pst.parrep(): parfile not found: " +\
+                                    str(parfile)
+    f = open(parfile, 'r')
+    header = f.readline()
+    par_df = pd.read_csv(f, header=None,
+                             names=["parnme", "parval1", "scale", "offset"],
+                             sep="\s+")
+    return par_df
+
 
 def parse_tpl_file(tpl_file):
     par_names = []
@@ -65,7 +158,7 @@ def parse_ins_string(string):
 
 
 def populate_dataframe(index,columns,defaults,dtype):
-    new_df = pandas.DataFrame(index=index,columns=columns)
+    new_df = pd.DataFrame(index=index,columns=columns)
     for fieldname,default,dt in zip(columns,defaults,dtype.descr):
         new_df.loc[:,fieldname] = default
         new_df.loc[:,fieldname] = new_df.loc[:,fieldname].astype(dt[1])
@@ -99,3 +192,37 @@ def pst_from_io_files(pst_filename,tpl_files,in_files,ins_files,out_files):
     new_pst.observation_data = obs_data
     new_pst.mode = "estimation"
     raise NotImplementedError()
+
+
+
+def get_phi_comps_from_recfile(recfile):
+        """read the phi components from a record file
+        Args:
+            recfile (str) : record file
+        Returns:
+            dict{iteration number:{group,contribution}}
+        Raises:
+            None
+        """
+        iiter = 1
+        iters = {}
+        f = open(recfile,'r')
+        while True:
+            line = f.readline()
+            if line == '':
+                break
+            if "starting phi for this iteration" in line.lower():
+                contributions = {}
+                while True:
+                    line = f.readline()
+                    if line == '':
+                        break
+                    if "contribution to phi" not in line.lower():
+                        iters[iiter] = contributions
+                        iiter += 1
+                        break
+                    raw = line.strip().split()
+                    val = float(raw[-1])
+                    group = raw[-3].lower().replace('\"', '')
+                    contributions[group] = val
+        return iters
