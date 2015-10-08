@@ -1283,7 +1283,7 @@ class Cov(Matrix):
         return new_Cov - (upper_off_diag * cond_Cov * upper_off_diag.T)
 
 
-    def to_uncfile(self, unc_file, Covmat_file="Cov.mat", var_mult=1.0):
+    def to_uncfile(self, unc_file, covmat_file="Cov.mat", var_mult=1.0):
         """write a pest-compatible uncertainty file
         Args:
             unc_file : [str] filename
@@ -1297,14 +1297,14 @@ class Cov(Matrix):
         """
         assert len(self.row_names) == self.shape[0], \
             "Cov.to_uncfile(): len(row_names) != x.shape[0] "
-        if Covmat_file:
+        if covmat_file:
             f = open(unc_file, 'w')
-            f.write("START CovARIANCE_Matrix\n")
-            f.write(" file " + Covmat_file + "\n")
+            f.write("START COVARIANCE_MATRIX\n")
+            f.write(" file " + covmat_file + "\n")
             f.write(" variance_multiplier {0:15.6E}\n".format(var_mult))
-            f.write("END CovARIANCE_Matrix\n")
+            f.write("END COVARIANCE_MATRIX\n")
             f.close()
-            self.to_ascii(Covmat_file, icode=1)
+            self.to_ascii(covmat_file, icode=1)
         else:
             if self.isdiagonal:
                 f = open(unc_file, 'w')
