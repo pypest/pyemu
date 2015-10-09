@@ -241,7 +241,7 @@ class Pst(object):
         """load the residual file
         """
         pass
-        converters = {"name": str_con, "group": str_con}
+        converters = {"name": pst_utils.str_con, "group": pst_utils.str_con}
         f = open(resfile, 'r')
         while True:
             line = f.readline()
@@ -709,10 +709,12 @@ class Pst(object):
         nz_groups = obs.groupby(obs["weight"].map(lambda x: x == 0)).groups
         ogroups = obs.groupby("obgnme").groups
         for ogroup, idxs in ogroups.items():
-            if self.mode.startswith("regul") and "regul" in ogroup.lower():
+            if self.control_data.pestmode.startswith("regul") \
+                    and "regul" in ogroup.lower():
                 continue
             og_phi = components[ogroup]
-            nz_groups = obs.loc[idxs,:].groupby(odf["weight"].map(lambda x: x == 0)).groups
+            nz_groups = obs.loc[idxs,:].groupby(obs.loc[idxs,"weight"].\
+                                                map(lambda x: x == 0)).groups
             og_nzobs = 0
             if False in nz_groups.keys():
                 og_nzobs = len(nz_groups[False])
@@ -722,12 +724,8 @@ class Pst(object):
                                 " but phi > 0 for group:" + str(ogroup))
             if og_phi > 0:
                 factor = np.sqrt(float(og_nzobs) / float(og_phi))
-                obs.weight[idxs] = obs.weight[idxs] * factor
+                obs.loc[idxs,"weight"] = obs.weight[idxs] * factor
         self.observation_data = obs
-
-
-
-
 
     def __reset_weights(self, target_phis, res_idxs, obs_idxs):
         """reset weights based on target phi vals for each group
@@ -738,7 +736,7 @@ class Pst(object):
             obs_idxs (dict) : the index positions of each group of interest
                 in the observation data dataframe
         """
-        pass
+
         for item in target_phis.keys():
             assert item in res_idxs.keys(),\
                 "Pst.__reset_weights(): " + str(item) +\
@@ -753,21 +751,22 @@ class Pst(object):
             self.observation_data.loc[obs_idxs[item], "weight"] *= weight_mult
 
 
-    def adjust_weights_by_group(self,obs_dict=None,
+    def adjust_weights(self,obs_dict=None,
                               obsgrp_dict=None):
         """reset the weights of observation groups to contribute a specified
         amount to the composite objective function
         Args:
             obs_dict (dict{obs name:new contribution})
             obsgrp_dict (dict{obs group name:contribution})
-            obsgrp_suffic_dict (dict{obs group suffix:contribution})
-            obsgrp_prefix_dict (dict{obs_group prefix:contribution})
-            obsgrp_phrase_dict (dict{obs group phrase:contribution})
         Returns:
             None
         Raises:
             Exception if a key is not found in the obs or obs groups
         """
+
+        self.observation_data.index = self.observation_data.obsnme
+        self.res.index = self.res.name
+
         if obsgrp_dict is not None:
             res_groups = self.res.groupby("group").groups
             obs_groups = self.observation_data.groupby("obgnme").groups
@@ -809,16 +808,23 @@ class Pst(object):
     @staticmethod
     def test():
         pst_dir = os.path.join('..','tests',"pst")
-        pst_files = os.listdir(pst_dir)
-        pst_files = ["pest_pp.pst"]
 
-        p = Pst(os.path.join(pst_dir,pst_files[0]))
+        # residual functionality testing
+        p = Pst(os.path.join(pst_dir,"pest.pst"))
+        print(p.phi_components)
+        p.adjust_weights_resfile()
+        print(p.phi_components)
+        p.adjust_weights(obsgrp_dict={"head":50})
+        print(p.phi_components)
+
+        # get()
         new_p = p.get()
-        new_p.write(os.path.join(pst_dir,pst_files[0]+"_new.pst"))
+        new_p.write(os.path.join(pst_dir, "new.pst"))
 
-
+        # just testing all sorts of different pst files
+        pst_files = os.listdir(pst_dir)
         exceptions = []
-        for pst_file in pst_files:
+        for pst_file in pst_files[::10]:
             if pst_file.endswith(".pst"):
                 try:
                     p = Pst(os.path.join(pst_dir,pst_file))
@@ -832,11 +838,6 @@ class Pst(object):
                     exceptions.append(pst_file + " write fail: " + str(e))
         if len(exceptions) > 0:
             raise Exception('\n'.join(exceptions))
-
-        p = Pst(os.path.join(pst_dir,pst_files[0]))
-        new_p = p.get()
-        new_p.write(os.path.join(pst_dir,pst_files[0]+"_new.pst"))
-
 
 if __name__ == "__main__":
 
