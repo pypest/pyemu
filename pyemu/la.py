@@ -319,11 +319,12 @@ class LinearAnalysis(object):
             # then load parcov from parbounds
             if self.parcov_arg.lower().endswith(".pst"):
                 self.__parcov = Cov()
+
                 self.__parcov.from_parbounds(self.parcov_arg)
             else:
                 self.__parcov = self.__fromfile(self.parcov_arg)
-        #--if the arg is a pst object
-        elif isinstance(self.parcov_arg,pst):
+        # if the arg is a pst object
+        elif isinstance(self.parcov_arg,Pst):
             self.__parcov = Cov()
             self.__parcov.from_parameter_data(self.parcov_arg)
         else:
@@ -422,7 +423,7 @@ class LinearAnalysis(object):
         vecs = []
         for arg in self.prediction_arg:
             if isinstance(arg, Matrix):
-                #--a vector
+                # a vector
                 if arg.shape[1] == 1:
                     vecs.append(arg)
                 else:
@@ -438,7 +439,7 @@ class LinearAnalysis(object):
                     row_names.append(arg.lower())
                 else:
                     pred_mat = self.__fromfile(arg)
-                    #--vector
+                    # vector
                     if pred_mat.shape[1] == 1:
                         vecs.append(pred_mat)
                     else:
@@ -696,7 +697,7 @@ class LinearAnalysis(object):
         """
         # make sure we aren't fooling with unwanted prior information
         self.clean()
-        #--if there is nothing to do but copy
+        # if there is nothing to do but copy
         if par_names is None and obs_names is None:
             if astype is not None:
                 self.logger.warn("LinearAnalysis.get(): astype is not None, " +
@@ -705,7 +706,7 @@ class LinearAnalysis(object):
                                  "propagated to new instance")
             else:
                 return copy.deepcopy(self)
-        #--make sure the args are lists
+        # make sure the args are lists
         if par_names is not None and not isinstance(par_names, list):
             par_names = [par_names]
         if obs_names is not None and not isinstance(obs_names, list):
@@ -715,17 +716,17 @@ class LinearAnalysis(object):
             par_names = self.jco.col_names
         if obs_names is None:
             obs_names = self.jco.row_names
-        #--if possible, get a new parcov
+        # if possible, get a new parcov
         if self.parcov:
             new_parcov = self.parcov.get(col_names=par_names)
         else:
             new_parcov = None
-        #--if possible, get a new obscov
+        # if possible, get a new obscov
         if self.obscov_arg is not None:
             new_obscov = self.obscov.get(row_names=obs_names)
         else:
             new_obscov = None
-        #--if possible, get a new pst
+        # if possible, get a new pst
         if self.pst_arg is not None:
             new_pst = self.pst.get(par_names=par_names,obs_names=obs_names)
         else:
@@ -745,7 +746,7 @@ class LinearAnalysis(object):
                           obscov=new_obscov, predictions=new_preds,
                           verbose=False)
         else:
-            #--return a new object of the same type
+            # return a new object of the same type
             return type(self)(jco=new_jco, pst=new_pst, parcov=new_parcov,
                               obscov=new_obscov, predictions=new_preds,
                               verbose=False)

@@ -127,7 +127,7 @@ class Matrix(object):
                         'Matrix.__init__(): shape[0] != len(row_names) ' +\
                         str(x.shape) + ' ' + str(len(row_names))
                 if len(col_names) > 0:
-                    #--if this a row vector
+                    # if this a row vector
                     if len(row_names) == 0 and x.shape[1] == 1:
                         x.transpose()
                     assert len(col_names) == x.shape[1],\
@@ -168,7 +168,7 @@ class Matrix(object):
             submat = np.atleast_2d((self.__x[item[0]]))
         else:
             submat = np.atleast_2d(self.__x[item])
-        #--transpose a row vector to a column vector
+        # transpose a row vector to a column vector
         if submat.shape[0] == 1:
             submat = submat.transpose()
         row_names = self.row_names[:submat.shape[0]]
@@ -380,7 +380,7 @@ class Matrix(object):
                 assert len(common) > 0,"Matrix.__mult__():self.col_names " +\
                                        "and other.row_names" +\
                                        "don't share any common elements"
-                #--these should be aligned
+                # these should be aligned
                 if isinstance(self, Cov):
                     first = self.get(row_names=common, col_names=common)
                 else:
@@ -440,7 +440,7 @@ class Matrix(object):
         if self.isdiagonal:
             x = np.diag(self.x.flatten())
         else:
-            #--just a pointer to x
+            # just a pointer to x
             x = self.x
         try:
             u, s, v = la.svd(x, full_matrices=True)
@@ -871,18 +871,18 @@ class Matrix(object):
         """
         f = open(filename, 'wb')
         nnz = np.count_nonzero(self.x) #number of non-zero entries
-        #--write the header
+        # write the header
         header = np.array((-self.shape[1], -self.shape[0], nnz),
                           dtype=self.binary_header_dt)
         header.tofile(f)
-        #--get the indices of non-zero entries
+        # get the indices of non-zero entries
         row_idxs, col_idxs = np.nonzero(self.x)
         icount = row_idxs + 1 + col_idxs * self.shape[0]
-        #--flatten the array
+        # flatten the array
         flat = self.x[row_idxs, col_idxs].flatten()
-        #--zip up the index position and value pairs
+        # zip up the index position and value pairs
         data = np.array(list(zip(icount, flat)), dtype=self.binary_rec_dt)
-        #--write
+        # write
         data.tofile(f)
 
         for name in self.col_names:
@@ -913,7 +913,7 @@ class Matrix(object):
         """
 
         f = open(filename, 'rb')
-        #--the header datatype
+        # the header datatype
         itemp1, itemp2, icount = np.fromfile(f, self.binary_header_dt, 1)[0]
         if itemp1 > 0 and itemp2 < 0 and icount < 0:
             print(" WARNING: it appears this file was \n" +\
@@ -930,13 +930,13 @@ class Matrix(object):
         #icount = np.fromfile(f,np.int32,1)
         ncol, nrow = abs(itemp1), abs(itemp2)
         self.__x = np.zeros((nrow, ncol))
-        #--read all data records
-        #--using this a memory hog, but really fast
+        # read all data records
+        # using this a memory hog, but really fast
         data = np.fromfile(f, self.binary_rec_dt, icount)
         icols = ((data['j'] - 1) // nrow) + 1
         irows = data['j'] - ((icols - 1) * nrow)
         self.__x[irows - 1, icols - 1] = data["dtemp"]
-        #--read obs and parameter names
+        # read obs and parameter names
         self.col_names = []
         self.row_names = []
         for j in range(self.shape[1]):
@@ -1109,7 +1109,7 @@ class Matrix(object):
                 names.append(line)
             self.col_names = names
         f.close()
-        #--test for diagonal
+        # test for diagonal
         if nrow == ncol:
             diag = np.diag(np.diag(x))
             diag_tol = 1.0e-6
@@ -1380,7 +1380,8 @@ class Cov(Matrix):
         """
         if not pst_file.endswith(".pst"):
             pst_file += ".pst"
-        self.from_parameter_data(Pst(pst_file))
+        new_pst = Pst(pst_file)
+        self.from_parameter_data(new_pst)
 
 
     def from_parameter_data(self, pst):
@@ -1553,7 +1554,7 @@ class Cov(Matrix):
 
         si = second.identity
         result = second - second.identity
-        #--add and sub
+        # add and sub
         newfirst = first.get(row_names=["o1"],col_names="p1")
         result = newfirst - first
         result = first - newfirst
@@ -1572,7 +1573,7 @@ class Cov(Matrix):
 
 
 
-        #--mul test
+        # mul test
         result = first.T * third * first
         result = first * second
 
@@ -1596,7 +1597,7 @@ class Cov(Matrix):
         newthird = third.get(row_names=["o1"])
         result = first.T * newthird * first
 
-        #--drop testing
+        # drop testing
         second.drop("p2",axis=0)
         assert second.shape == (2, 2)
 

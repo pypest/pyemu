@@ -37,7 +37,7 @@ class Ensemble(pd.DataFrame):
         :return: None
         """
         # set up some column names
-        real_names = ["realization_{0:04d}".format(i)
+        real_names = ["realization_{0:08d}".format(i)
                       for i in range(num_reals)]
 
         # make sure everything is cool WRT ordering

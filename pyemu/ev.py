@@ -66,7 +66,7 @@ class ErrVar(LinearAnalysis):
         self.__omitted_parcov = None
         self.__omitted_predictions = None
 
-        #--instantiate the parent class
+        # instantiate the parent class
         super(ErrVar, self).__init__(jco, **kwargs)
         if self.__need_omitted:
             self.log("pre-loading omitted components")
@@ -88,12 +88,10 @@ class ErrVar(LinearAnalysis):
         self.valid_terms = ["null","solution", "omitted", "all"]
         self.valid_return_types = ["parameters", "predictions"]
 
-
-
     def __load_omitted_predictions(self):
         """private: set the omitted_predictions attribute
         """
-        #--if there are no base predictions
+        # if there are no base predictions
         if self.predictions is None:
             raise Exception("ErrVar.__load_omitted_predictions(): " +
                             "no 'included' predictions is None")
@@ -105,7 +103,7 @@ class ErrVar(LinearAnalysis):
         # extracting from existing predictions
         if self.omitted_predictions_arg is None and \
                         self.omitted_par_arg is not None:
-            #--check to see if omitted par names are in each predictions
+            # check to see if omitted par names are in each predictions
             found = True
             missing_par,missing_pred = None, None
             for par_name in self.omitted_jco.col_names:
@@ -131,7 +129,6 @@ class ErrVar(LinearAnalysis):
         elif self.omitted_parcov_arg is not None:
             raise NotImplementedError()
 
-
     def __load_omitted_parcov(self):
         """private: set the omitted_parcov attribute
         """
@@ -147,7 +144,7 @@ class ErrVar(LinearAnalysis):
                     found = False
                     break
             if found:
-                #--need to access attribute directly, not view of attribute
+                # need to access attribute directly, not view of attribute
                 self.__omitted_parcov = \
                     self._LinearAnalysis__parcov.extract(
                         row_names=self.omitted_jco.col_names)
@@ -161,7 +158,6 @@ class ErrVar(LinearAnalysis):
         elif self.omitted_parcov_arg is not None:
             raise NotImplementedError()
 
-
     def __load_omitted_jco(self):
         """private: set the omitted jco attribute
         """
@@ -169,7 +165,7 @@ class ErrVar(LinearAnalysis):
             raise Exception("ErrVar.__load_omitted: omitted_arg is None")
         if isinstance(self.omitted_par_arg,str):
             if self.omitted_par_arg in self.jco.col_names:
-                #--need to access attribute directly, not view of attribute
+                # need to access attribute directly, not view of attribute
                 self.__omitted_jco = \
                     self._LinearAnalysis__jco.extract(
                         col_names=self.omitted_par_arg)
@@ -194,11 +190,9 @@ class ErrVar(LinearAnalysis):
             self.__omitted_jco = \
                 self._LinearAnalysis__jco.extract(col_names=self.omitted_par_arg)
 
-
     # these property decorators help keep from loading potentially
     # unneeded items until they are called
     # returns a view only - cheap, but can be dangerous
-
 
     @property
     def omitted_predictions(self):
@@ -208,7 +202,6 @@ class ErrVar(LinearAnalysis):
             self.log("loading omitted_predictions")
         return self.__omitted_predictions
 
-
     @property
     def omitted_jco(self):
         if self.__omitted_jco is None:
@@ -217,7 +210,6 @@ class ErrVar(LinearAnalysis):
             self.log("loading omitted_jco")
         return self.__omitted_jco
 
-
     @property
     def omitted_parcov(self):
         if self.__omitted_parcov is None:
@@ -225,7 +217,6 @@ class ErrVar(LinearAnalysis):
             self.__load_omitted_parcov()
             self.log("loading omitted_parcov")
         return self.__omitted_parcov
-
 
     def get_errvar_dataframe(self, singular_values):
         """get a pandas dataframe of error variance results indexed
@@ -249,7 +240,6 @@ class ErrVar(LinearAnalysis):
                 results[key].append(val)
         return pd.DataFrame(results, index=singular_values)
 
-
     def get_identifiability_dataframe(self,singular_value):
         """get the parameter identifiability as a pandas dataframe
         Aergs:
@@ -265,7 +255,6 @@ class ErrVar(LinearAnalysis):
         v1_df["ident"] = v1_df.sum(axis=1)
         return v1_df
 
-
     def variance_at(self, singular_value):
         """get the error variance of all three terms
         Args:
@@ -280,7 +269,6 @@ class ErrVar(LinearAnalysis):
         results.update(self.second_prediction(singular_value))
         results.update(self.third_prediction(singular_value))
         return results
-
 
     def R(self, singular_value):
         """get resolution Matrix at a singular value
@@ -307,7 +295,6 @@ class ErrVar(LinearAnalysis):
             self.log("calc R @" + str(singular_value))
             return self.__R
 
-
     def I_minus_R(self,singular_value):
         """get I - R at singular value
              V_2 * V_2^T
@@ -329,7 +316,6 @@ class ErrVar(LinearAnalysis):
                 self.__I_R = v2 * v2.T
                 self.__I_R_sv = singular_value
                 return self.__I_R
-
 
     def G(self, singular_value):
         """get the parameter solution Matrix at a singular value
@@ -374,7 +360,6 @@ class ErrVar(LinearAnalysis):
         self.log("calc G @" + str(singular_value))
         return self.__G
 
-
     def first_forecast(self,singular_value):
         return self.first_prediction(singular_value)
 
@@ -406,7 +391,6 @@ class ErrVar(LinearAnalysis):
             self.log("calc first term parameter @" + str(singular_value))
             return results
 
-
     def first_parameter(self, singular_value):
         """get the null space term contribution to parameter error variance
             at a singular value
@@ -423,10 +407,8 @@ class ErrVar(LinearAnalysis):
         self.log("calc first term parameter @" + str(singular_value))
         return first_term
 
-
     def second_forecast(self,singular_value):
         return self.second_prediction(singular_value)
-
 
     def second_prediction(self, singular_value):
         """get the solution space contribution to predictive error variance
@@ -468,7 +450,6 @@ class ErrVar(LinearAnalysis):
             self.log("calc second term prediction @" + str(singular_value))
             return results
 
-
     def second_parameter(self, singular_value):
         """get the solution space contribution to parameter error variance
              at a singular value
@@ -484,7 +465,6 @@ class ErrVar(LinearAnalysis):
         result = self.G(singular_value) * self.obscov * self.G(singular_value).T
         self.log("calc second term parameter @" + str(singular_value))
         return result
-
 
     def third_forecast(self,singular_value):
         return self.third_prediction(singular_value)
@@ -523,14 +503,13 @@ class ErrVar(LinearAnalysis):
             results = {}
             for prediction,omitted_prediction in \
                     zip(self.predictions, self.omitted_predictions):
-                #--comes out as row vector, but needs to be a column vector
+                # comes out as row vector, but needs to be a column vector
                 p = ((prediction.T * self.G(singular_value) * self.omitted_jco)
                      - omitted_prediction.T).T
                 result = float((p.T * self.omitted_parcov * p).x)
                 results[("third", prediction.col_names[0])] = result
             self.log("calc third term prediction @" + str(singular_value))
             return results
-
 
     def third_parameter(self, singular_value):
         """get the omitted parameter contribution to parameter error variance

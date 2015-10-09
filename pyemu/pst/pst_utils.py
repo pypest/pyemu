@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
 
+import pyemu
+
 #formatters
 SFMT = lambda x: "{0:>20s}".format(str(x))
 SFMT_LONG = lambda x: "{0:>50s}".format(str(x))
@@ -180,18 +182,21 @@ def pst_from_io_files(pst_filename,tpl_files,in_files,ins_files,out_files):
         assert os.path.exists(ins_file),"instruction file not found: "+str(ins_file)
         obs_names.extend(parse_ins_file(ins_file))
 
-    new_pst = pst(pst_filename,load=False)
+
+    new_pst = pyemu.Pst(pst_filename,load=False)
     par_data = populate_dataframe(par_names,new_pst.par_fieldnames,
                                   new_pst.par_defaults,new_pst.par_dtype)
     par_data.loc[:,"parnme"] = par_names
     new_pst.parameter_data = par_data
-
     obs_data = populate_dataframe(obs_names,new_pst.obs_fieldnames,
                                   new_pst.obs_defaults,new_pst.obs_dtype)
     obs_data.loc[:,"obsnme"] = obs_names
     new_pst.observation_data = obs_data
-    new_pst.mode = "estimation"
-    raise NotImplementedError()
+    new_pst.template_files = tpl_files
+    new_pst.input_files = in_files
+    new_pst.instruction_files = ins_files
+    new_pst.output_files = out_files
+    new_pst.write(pst_filename)
 
 
 

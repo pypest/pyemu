@@ -30,7 +30,7 @@ class Pst(object):
         self.__res = None
 
         for key,value in pst_utils.pst_config.items():
-            self.__setattr__(key,value)
+            self.__setattr__(key,copy.copy(value))
 
         self.control_data = ControlData()
 
@@ -407,7 +407,6 @@ class Pst(object):
             if line.startswith("++"):
                 self.pestpp_lines.append(line)
         f.close()
-
         return
 
 
@@ -808,6 +807,9 @@ class Pst(object):
     @staticmethod
     def test():
         pst_dir = os.path.join('..','tests',"pst")
+
+        # creation functionality
+
 
         # residual functionality testing
         p = Pst(os.path.join(pst_dir,"pest.pst"))

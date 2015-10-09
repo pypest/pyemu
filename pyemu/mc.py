@@ -113,13 +113,15 @@ class MonteCarlo(LinearAnalysis):
         pst.parameter_data.index = pst.parameter_data.parnme
         pst.observation_data.index = pst.observation_data.obsnme
 
+        par_en = self.parensemble.back_transform(inplace=False)
 
         for i in range(self.num_reals):
             pst_name = prefix + "{0:04d}.pst".format(i)
             self.log("writing realized pest control file " + pst_name)
-            pst.parameter_data.loc[self.parensemble.columns,"parval1"] = self.parensemble.loc[i,:].T
-            if self.obsensemble is not None:
-                pst.observation_data.loc[self.obsensemble.columns,"obsval"] = self.obsensemble.loc[i,:].T
+            pst.parameter_data.loc[par_en.columns,"parval1"] = par_en.iloc[i, :].T
+            if self.obsensemble.shape[0] == self.num_reals:
+                pst.observation_data.loc[self.obsensemble.columns,"obsval"] = \
+                    self.obsensemble.iloc[i, :].T
             pst_name = prefix + "{0:04d}.pst".format(i)
             pst.write(pst_name)
             self.log("writing realized pest control file " + pst_name)
@@ -131,8 +133,13 @@ class MonteCarlo(LinearAnalysis):
         jco = os.path.join('..',"verification","henry","pest.jco")
         pst = jco.replace(".jco",".pst")
 
+        #write testing
         mc = MonteCarlo(jco=jco,verbose=True)
-        mc.draw(50000)
+        mc.draw(10)
+        mc.write_psts(os.path.join("tests","mc","real_"))
+
+        mc = MonteCarlo(jco=jco,verbose=True)
+        mc.draw(500)
         print("prior ensemble variance:",
               np.var(mc.parensemble.loc[:,"mult1"]))
         projected_en = mc.project_parensemble(inplace=False)
@@ -143,7 +150,7 @@ class MonteCarlo(LinearAnalysis):
         sc = pyemu.Schur(jco=jco)
 
         mc = MonteCarlo(pst=pst,parcov=sc.posterior_parameter,verbose=True)
-        mc.draw(50000)
+        mc.draw(500)
         print("posterior ensemble variance:",
               np.var(mc.parensemble.loc[:,"mult1"]))
 
