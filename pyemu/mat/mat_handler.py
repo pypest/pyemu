@@ -1169,7 +1169,7 @@ class Matrix(object):
                     jidx.append(j)
                     data.append(val)
         # csr_Matrix( (data,(row,col)), shape=(3,3)
-        return sparse.csr_Matrix((data, (iidx, jidx)), shape=(self.shape))
+        return sparse.csr_matrix((data, (iidx, jidx)), shape=(self.shape))
 
 
 
@@ -1453,7 +1453,7 @@ class Cov(Matrix):
                         self.col_names.append(name)
                         idx += 1
 
-                elif 'Covariance_Matrix' in line:
+                elif 'covariance_matrix' in line:
                     self.isdiagonal = False
                     var = 1.0
                     while True:
@@ -1461,8 +1461,8 @@ class Cov(Matrix):
                         if line2.strip().lower().startswith("end"):
                             break
                         if line2.startswith('file'):
-                            Cov = Matrix()
-                            Cov.from_ascii(line2.split()[1])
+                            cov = Matrix()
+                            cov.from_ascii(line2.split()[1])
 
                         elif line2.startswith('variance_multiplier'):
                             var = float(line2.split()[1])
@@ -1471,18 +1471,18 @@ class Cov(Matrix):
                                             "unrecognized keyword in" +
                                             "std block: " + line2)
                     if var != 1.0:
-                        Cov._Matrix__x *= var
-                    for name in Cov.row_names:
+                        cov._Matrix__x *= var
+                    for name in cov.row_names:
                         if name in self.row_names:
                             raise Exception("Cov.from_uncfile():" +
                                             " duplicate name: " + str(name))
-                    self.row_names.extend(Cov.row_names)
-                    self.col_names.extend(Cov.col_names)
+                    self.row_names.extend(cov.row_names)
+                    self.col_names.extend(cov.col_names)
 
-                    for i, rname in enumerate(Cov.row_names):
+                    for i, rname in enumerate(cov.row_names):
                         self._Matrix__x[idx + i,
-                                        idx:idx + Cov.shape[0]] = Cov.x[i, :]
-                    idx += Cov.shape[0]
+                                        idx:idx + cov.shape[0]] = cov.x[i, :]
+                    idx += cov.shape[0]
                 else:
                     raise Exception('Cov.from_uncfile(): ' +
                                     'unrecognized block:' + str(line))
@@ -1513,15 +1513,15 @@ class Cov(Matrix):
                             break
                         nentries += 1
 
-                elif 'Covariance_Matrix' in line:
+                elif 'covariance_matrix' in line:
                     while True:
                         line2 = f.readline().strip().lower()
                         if line2.strip().lower().startswith("end"):
                             break
                         if line2.startswith('file'):
-                            Cov = Matrix()
-                            Cov.from_ascii(line2.split()[1])
-                            nentries += len(Cov.row_names)
+                            cov = Matrix()
+                            cov.from_ascii(line2.split()[1])
+                            nentries += len(cov.row_names)
                         elif line2.startswith('variance_multiplier'):
                             var = float(line2.split()[1])
                         else:

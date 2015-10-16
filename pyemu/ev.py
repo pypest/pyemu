@@ -173,7 +173,7 @@ class ErrVar(LinearAnalysis):
                 # must be a filename
                 self.__omitted_jco = self.__fromfile(self.omitted_par_arg)
         # if the arg is an already instantiated Matrix (or jco) object
-        elif isinstance(self.omitted_par_arg,jco) or \
+        elif isinstance(self.omitted_par_arg,Jco) or \
                 isinstance(self.omitted_par_arg,Matrix):
             self.__omitted_jco = \
                 Jco(x=self.omitted_par_arg.newx(),
