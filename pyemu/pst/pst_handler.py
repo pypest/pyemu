@@ -166,8 +166,9 @@ class Pst(object):
     def obs_groups(self):
         """observation groups
         """
-        pass
-        return list(self.observation_data.groupby("obgnme").groups.keys())
+        og = list(self.observation_data.groupby("obgnme").groups.keys())
+        og = map(pst_utils.SFMT, og)
+        return og
 
 
     @property
@@ -182,8 +183,9 @@ class Pst(object):
     def prior_groups(self):
         """prior info groups
         """
-        pass
-        return list(self.prior_information.groupby("obgnme").groups.keys())
+        og = list(self.prior_information.groupby("obgnme").groups.keys())
+        og = map(pst_utils.SFMT, og)
+        return og
 
     @property
     def prior_names(self):
@@ -442,6 +444,11 @@ class Pst(object):
             f_out.write(line)
 
         f_out.write("* parameter groups\n")
+
+        # to catch the byte code ugliness in python 3
+        self.parameter_groups.loc[:,"pargpnme"] = \
+            self.parameter_groups.pargpnme.apply(self.pargp_format["pargpnme"])
+
         self.parameter_groups.index = self.parameter_groups.pop("pargpnme")
         #self.parameter_groups.loc[:,"splitaction"] = self.pargp_defaults["splitaction"]
         f_out.write(self.parameter_groups.to_string(col_space=0,
@@ -464,8 +471,8 @@ class Pst(object):
             f_out.write(line)
 
         f_out.write("* observation groups\n")
-        [f_out.write(group+'\n') for group in self.obs_groups]
-        [f_out.write(group+'\n') for group in self.prior_groups]
+        [f_out.write(str(group)+'\n') for group in self.obs_groups]
+        [f_out.write(str(group)+'\n') for group in self.prior_groups]
 
         f_out.write("* observation data\n")
         self.observation_data.index = self.observation_data.pop("obsnme")
@@ -577,13 +584,12 @@ class Pst(object):
             None
         """
         pass
-        obs_group = "regul"
         pilbl, obgnme, weight, equation = [], [], [], []
         for idx, row in self.parameter_data.iterrows():
             if row["partrans"].lower() not in ["tied", "fixed"]:
                 pilbl.append(row["parnme"])
                 weight.append(1.0)
-                obgnme.append(obs_group)
+                obgnme.append("regul")
                 parnme = row["parnme"]
                 parval1 = row["parval1"]
                 if row["partrans"].lower() == "log":
@@ -593,7 +599,7 @@ class Pst(object):
                 equation.append(eq)
         self.prior_information = pd.DataFrame({"pilbl": pilbl,
                                                    "equation": equation,
-                                                   "obgnme": obs_group,
+                                                   "obgnme": obgnme,
                                                    "weight": weight})
         if parbounds:
             self.regweight_from_parbound()
@@ -806,12 +812,28 @@ class Pst(object):
 
     @staticmethod
     def test():
-        pst_dir = os.path.join('..','tests',"pst")
 
         # creation functionality
+        dir = os.path.join("..","..","verification","henry","misc")
+        files = os.listdir(dir)
+        tpl_files,ins_files = [],[]
+        for f in files:
+            if f.lower().endswith(".tpl") and "coarse" not in f:
+                tpl_files.append(os.path.join(dir,f))
+            if f.lower().endswith(".ins"):
+                ins_files.append(os.path.join(dir,f))
+
+        out_files = [f.replace(".ins",".junk") for f in ins_files]
+        in_files = [f.replace(".tpl",".junk") for f in tpl_files]
+
+        pst_utils.pst_from_io_files("test.pst",tpl_files,in_files,ins_files,out_files)
+        return
+
 
 
         # residual functionality testing
+        pst_dir = os.path.join('..','tests',"pst")
+
         p = Pst(os.path.join(pst_dir,"pest.pst"))
         print(p.phi_components)
         p.adjust_weights_resfile()

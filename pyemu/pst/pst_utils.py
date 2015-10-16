@@ -8,7 +8,14 @@ pd.options.display.max_colwidth = 100
 import pyemu
 
 #formatters
-SFMT = lambda x: "{0:>20s}".format(str(x))
+#SFMT = lambda x: "{0:>20s}".format(str(x.decode()))
+def SFMT(item):
+    try:
+        s = "{0:>20s}".format(item.decode())
+    except:
+        s = "{0:>20s}".format(str(item))
+    return s
+
 SFMT_LONG = lambda x: "{0:>50s}".format(str(x))
 IFMT = lambda x: "{0:>10d}".format(int(x))
 FFMT = lambda x: "{0:>15.6E}".format(float(x))
@@ -42,17 +49,24 @@ pst_config["par_defaults"] = {"parnme":"dum","partrans":"log","parchglim":"facto
 
 
 # parameter group stuff
+pst_config["pargp_dtype"] = np.dtype([("pargpnme", "a20"), ("inctyp","a20"),
+                                   ("derinc", np.float64),
+                                   ("derinclb",np.float64),("forcen","a20"),
+                                   ("derincmul",np.float64),("dermthd", "a20"),
+                                   ("splitthresh", np.float64),("splitreldiff",np.float64),
+                                      ("splitaction","a20")])
 pst_config["pargp_fieldnames"] = "PARGPNME INCTYP DERINC DERINCLB FORCEN DERINCMUL " +\
                         "DERMTHD SPLITTHRESH SPLITRELDIFF SPLITACTION"
 pst_config["pargp_fieldnames"] = pst_config["pargp_fieldnames"].lower().strip().split()
 
-pst_config["pargp_format"] = {"pargpnme":SFMT,"inctype":SFMT,"derinc":FFMT,
+pst_config["pargp_format"] = {"pargpnme":SFMT,"inctyp":SFMT,"derinc":FFMT,"forcen":SFMT,
                       "derincmul":FFMT,"dermthd":SFMT,"splitthresh":FFMT,
                       "splitreldiff":FFMT,"splitaction":SFMT}
+
 pst_config["pargp_converters"] = {"pargpnme":str_con,"inctype":str_con,
                          "dermethd":str_con,
                          "splitaction":str_con}
-pst_config["pargp_defaults"] = {"pargpnme":"dum","inctyp":"relative","derinc":0.01,
+pst_config["pargp_defaults"] = {"pargpnme":"pargp","inctyp":"relative","derinc":0.01,
                        "derinclb":0.0,"forcen":"switch","derincmul":2.0,
                      "dermthd":"parabolic","splitthresh":1.0e-5,
                        "splitreldiff":0.5,"splitaction":"smaller"}
@@ -66,7 +80,7 @@ pst_config["obs_format"] = {"obsnme": SFMT, "obsval": FFMT,
                    "weight": FFMT, "obgnme": SFMT}
 pst_config["obs_converters"] = {"obsnme": str_con, "obgnme": str_con}
 pst_config["obs_defaults"] = {"obsnme":"dum","obsval":1.0e+10,
-                     "weight":0.0,"obgnme":"obgnme"}
+                     "weight":1.0,"obgnme":"obgnme"}
 
 
 # prior info stuff
@@ -103,16 +117,25 @@ def read_parfile(parfile):
 def parse_tpl_file(tpl_file):
     par_names = []
     with open(tpl_file,'r') as f:
-        header = f.readline().strip().split()
-        assert header[0].lower() in ["ptf","jtf"],\
-            "template file error: must start with [ptf,jtf], not:" +\
-            str(header[0])
-        marker = header[1]
-        assert len(marker) == 1,\
-            "template file error: marker must be a single character, not:" +\
-            str(marker)
-        for line in f:
-            par_names.extend(line.strip().split(marker)[1::2])
+        try:
+            header = f.readline().strip().split()
+            assert header[0].lower() in ["ptf","jtf"],\
+                "template file error: must start with [ptf,jtf], not:" +\
+                str(header[0])
+            assert len(header) == 2,\
+                "template file error: header line must have two entries: " +\
+                str(header)
+
+            marker = header[1]
+            assert len(marker) == 1,\
+                "template file error: marker must be a single character, not:" +\
+                str(marker)
+            for line in f:
+                par_names.extend(line.strip().split(marker)[1::2])
+        except Exception as e:
+            raise Exception("error processing template file " +\
+                            tpl_file+" :\n" + str(e))
+
     return par_names
 
 
@@ -159,9 +182,10 @@ def parse_ins_string(string):
     return obs_names
 
 
-def populate_dataframe(index,columns,defaults,dtype):
+def populate_dataframe(index,columns, default_dict, dtype):
     new_df = pd.DataFrame(index=index,columns=columns)
-    for fieldname,default,dt in zip(columns,defaults,dtype.descr):
+    for fieldname,dt in zip(columns,dtype.descr):
+        default = default_dict[fieldname]
         new_df.loc[:,fieldname] = default
         new_df.loc[:,fieldname] = new_df.loc[:,fieldname].astype(dt[1])
     return new_df
@@ -184,6 +208,11 @@ def pst_from_io_files(pst_filename,tpl_files,in_files,ins_files,out_files):
 
 
     new_pst = pyemu.Pst(pst_filename,load=False)
+
+    pargp_data = populate_dataframe(["pargp"], new_pst.pargp_fieldnames,
+                                    new_pst.pargp_defaults, new_pst.pargp_dtype)
+    new_pst.parameter_groups = pargp_data
+
     par_data = populate_dataframe(par_names,new_pst.par_fieldnames,
                                   new_pst.par_defaults,new_pst.par_dtype)
     par_data.loc[:,"parnme"] = par_names
@@ -196,8 +225,11 @@ def pst_from_io_files(pst_filename,tpl_files,in_files,ins_files,out_files):
     new_pst.input_files = in_files
     new_pst.instruction_files = ins_files
     new_pst.output_files = out_files
-    new_pst.write(pst_filename)
+    new_pst.model_command = ["model.bat"]
 
+    new_pst.zero_order_tikhonov()
+
+    new_pst.write(pst_filename,update_regul=True)
 
 
 def get_phi_comps_from_recfile(recfile):
