@@ -1,6 +1,6 @@
 from __future__ import print_function, division
 import os
-import copy
+from datetime import datetime
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
@@ -173,10 +173,16 @@ def parse_ins_string(string):
         char = string[idx]
         if char in istart_markers:
             em = iend_markers[istart_markers.index(char)]
+            # print("\n",idx)
+            # print(string)
+            # print(string[idx+1:])
+            # print(string[idx+1:].index(em))
+            # print(string[idx+1:].index(em)+idx+1)
             eidx = min(len(string),string[idx+1:].index(em)+idx+1)
             obs_name = string[idx+1:eidx]
-            obs_names.append(obs_name)
-            idx = eidx
+            if obs_name.lower() != "dum":
+                obs_names.append(obs_name)
+            idx = eidx + 1
         else:
             idx += 1
     return obs_names
@@ -263,3 +269,120 @@ def get_phi_comps_from_recfile(recfile):
                     group = raw[-3].lower().replace('\"', '')
                     contributions[group] = val
         return iters
+
+def smp_to_ins(smp_filename,ins_filename=None):
+    """ create an instruction file from an smp file
+    :param smp_filename: existing smp file
+    :param ins_filename: instruction file to create.  If None, create
+        an instruction file using the smp filename with the ".ins" suffix
+    :return: dataframe instance of the smp file with the observation names and
+        instruction lines as additional columns
+    """
+    if ins_filename is None:
+        ins_filename = smp_filename+".ins"
+    df = smp_to_dataframe(smp_filename)
+    df.loc[:,"ins_strings"] = None
+    df.loc[:,"observation_names"] = None
+    name_groups = df.groupby("name").groups
+    for name,idxs in name_groups.items():
+        onames = [name+"_{0:d}".format(i) for i in range(len(idxs))]
+        if False in (map(lambda x :len(x) <= 12,onames)):
+            long_names = [oname for oname in onames if len(oname) > 12]
+            raise Exception("observation names longer than 12 chars:\n{0}".format(str(long_names)))
+        ins_strs = ["l1 !dum! !dum! !dum! !{0:s}!".format(on) for on in onames]
+
+        df.loc[idxs,"observation_names"] = onames
+        df.loc[idxs,"ins_strings"] = ins_strs
+
+    with open(ins_filename,'w') as f:
+        f.write("pif ~\n")
+        [f.write(ins_str+"\n") for ins_str in df.loc[:,"ins_strings"]]
+    return df
+
+
+def dataframe_to_smp(dataframe,smp_filename,name_col="name",
+                     datetime_col="datetime",value_col="value",
+                     datetime_format="dd/mm/yyyy",
+                     value_format="{0:15.6E}"):
+    """ write a dataframe as an smp file
+
+    :param dataframe: a pandas dataframe
+    :param smp_filename: smp file to write
+    :param name_col: the column in the dataframe the marks the site namne
+    :param datetime_col: the column in the dataframe that is a datetime instance
+    :param value_col: the column in the dataframe that is the values
+    :param datetime_format: either 'dd/mm/yyyy' or 'mm/dd/yyy'
+    :param value_format: a python float-compatible format
+    :return: None
+    """
+
+    formatters = {"name":lambda x:"{0:10s}".format(str(x)[:10]),
+                  "value":lambda x:value_format.format(x)}
+    if datetime_format.lower().startswith("d"):
+        dt_fmt = "%d/%m/%Y    %H:%M:%S"
+    elif datetime_format.lower().startswith("m"):
+        dt_fmt = "%m/%d/%Y    %H:%M:%S"
+    else:
+        raise Exception("unrecognized datetime_format: " +\
+                        "{0}".format(str(datetime_format)))
+
+    for col in [name_col,datetime_col,value_col]:
+        assert col in dataframe.columns
+
+    dataframe.loc[:,"datetime_str"] = dataframe.loc[:,"datetime"].\
+        apply(lambda x:x.strftime(dt_fmt))
+    if isinstance(smp_filename,str):
+        smp_filename = open(smp_filename,'w')
+        smp_filename.write(dataframe.loc[:,[name_col,"datetime_str",value_col]].\
+                to_string(col_space=0,
+                          formatters=formatters,
+                          justify="right",
+                          header=False,
+                          index=False) + '\n')
+    dataframe.pop("datetime_str")
+
+
+def date_parser(items):
+    """ datetime parser to help load smp files
+    :param items: tuple of date and time strings from smp file
+    :return: a datetime instance
+    """
+    try:
+        dt = datetime.strptime(items,"%d/%m/%Y %H:%M:%S")
+    except Exception as e:
+        try:
+            dt = datetime.strptime(items,"%m/%d/%Y %H:%M:%S")
+        except Exception as ee:
+            raise Exception("error parsing datetime string" +\
+                            " {0}: \n{1}\n{2}".format(str(items),str(e),str(ee)))
+    return dt
+
+
+def smp_to_dataframe(smp_filename):
+    """ load an smp file into a pandas dataframe
+    :param smp_filename: smp filename to load
+    :return: a pandas dataframe instance
+    """
+    df = pd.read_csv(smp_filename, delim_whitespace=True,
+                     parse_dates={"datetime":["date","time"]},
+                     header=None,names=["name","date","time","value"],
+                     dtype={"name":object,"value":np.float64},
+                     na_values=["dry"],
+                     date_parser=date_parser)
+    return df
+
+
+def test_smp():
+    smp_filename = os.path.join('..','..',"examples","smp","sim_hds_v6.smp")
+    df = smp_to_dataframe(smp_filename)
+    print(df.dtypes)
+    dataframe_to_smp(df,smp_filename+".test")
+    smp_to_ins(smp_filename)
+    obs_names = parse_ins_file(smp_filename+".ins")
+    print(len(obs_names))
+
+if __name__ == "__main__":
+    test_smp()
+
+
+
