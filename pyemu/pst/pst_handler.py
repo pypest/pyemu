@@ -422,6 +422,27 @@ class Pst(object):
         self.control_data.nprior = self.prior_information.shape[0]
 
 
+    def _rectify_pgroups(self):
+        # add any parameters groups
+        pdata_groups = list(self.parameter_data.loc[:,"pargp"].\
+            value_counts().keys())
+        need_groups = [pg for pg in pdata_groups \
+                        if pg not in
+                           self.parameter_groups.loc[:,"pargpnme"]]
+        if len(need_groups) > 0:
+            defaults = copy.copy(pst_utils.pst_config["pargp_defaults"])
+            for grp in need_groups:
+                defaults["pargpnme"] = grp
+                self.parameter_groups = \
+                    self.parameter_groups.append(defaults,ignore_index=True)
+
+        # now drop any left over groups that aren't needed
+        for gp in self.parameter_groups.loc[:,"pargpnme"]:
+            if gp in pdata_groups and gp not in need_groups:
+                need_groups.append(gp)
+        self.parameter_groups.index = self.parameter_groups.pargpnme
+        self.parameter_groups = self.parameter_groups.loc[need_groups,:]
+
 
     def write(self,new_filename,update_regul=False):
         """write a pest control file
@@ -434,6 +455,8 @@ class Pst(object):
             Exception if self.filename pst is not the correct format
         """
 
+
+        self._rectify_pgroups()
         self._update_control_section()
 
         f_out = open(new_filename, 'w')
@@ -445,11 +468,14 @@ class Pst(object):
 
         f_out.write("* parameter groups\n")
 
+
         # to catch the byte code ugliness in python 3
         self.parameter_groups.loc[:,"pargpnme"] = \
             self.parameter_groups.pargpnme.apply(self.pargp_format["pargpnme"])
 
+
         self.parameter_groups.index = self.parameter_groups.pop("pargpnme")
+
         #self.parameter_groups.loc[:,"splitaction"] = self.pargp_defaults["splitaction"]
         f_out.write(self.parameter_groups.to_string(col_space=0,
                                                   formatters=self.pargp_format,
@@ -461,10 +487,10 @@ class Pst(object):
         f_out.write("* parameter data\n")
         self.parameter_data.index = self.parameter_data.pop("parnme")
         f_out.write(self.parameter_data.to_string(col_space=0,
-                                                  formatters=self.par_format,
-                                                  justify="right",
-                                                  header=False,
-                                                  index_names=False) + '\n')
+                                  formatters=self.par_format,
+                                  justify="right",
+                                  header=False,
+                                  index_names=False) + '\n')
         self.parameter_data.loc[:,"parnme"] = self.parameter_data.index
 
         for line in self.tied_lines:

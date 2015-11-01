@@ -131,11 +131,14 @@ def parse_tpl_file(tpl_file):
                 "template file error: marker must be a single character, not:" +\
                 str(marker)
             for line in f:
-                par_names.extend(line.strip().split(marker)[1::2])
+                par_line = line.strip().split(marker)[1::2]
+                for p in par_line:
+                    if p not in par_names:
+                        par_names.append(p)
         except Exception as e:
             raise Exception("error processing template file " +\
                             tpl_file+" :\n" + str(e))
-
+    par_names = [pn.strip().lower() for pn in par_names]
     return par_names
 
 
@@ -157,6 +160,7 @@ def parse_ins_file(ins_file):
                     obs_names.extend(parse_ins_string(item))
             else:
                 obs_names.extend(parse_ins_string(line.strip()))
+    obs_names = [on.strip().lower() for on in obs_names]
     return obs_names
 
 
@@ -197,7 +201,7 @@ def populate_dataframe(index,columns, default_dict, dtype):
     return new_df
 
 
-def pst_from_io_files(pst_filename,tpl_files,in_files,ins_files,out_files):
+def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     par_names = []
     if not isinstance(tpl_files,list):
         tpl_files = [tpl_files]
@@ -233,9 +237,11 @@ def pst_from_io_files(pst_filename,tpl_files,in_files,ins_files,out_files):
     new_pst.output_files = out_files
     new_pst.model_command = ["model.bat"]
 
-    new_pst.zero_order_tikhonov()
+    if pst_filename:
+        new_pst.zero_order_tikhonov()
 
-    new_pst.write(pst_filename,update_regul=True)
+        new_pst.write(pst_filename,update_regul=True)
+    return new_pst
 
 
 def get_phi_comps_from_recfile(recfile):
@@ -289,7 +295,7 @@ def smp_to_ins(smp_filename,ins_filename=None):
         if False in (map(lambda x :len(x) <= 12,onames)):
             long_names = [oname for oname in onames if len(oname) > 12]
             raise Exception("observation names longer than 12 chars:\n{0}".format(str(long_names)))
-        ins_strs = ["l1 !dum! !dum! !dum! !{0:s}!".format(on) for on in onames]
+        ins_strs = ["l1  ({0:s})39:46".format(on) for on in onames]
 
         df.loc[idxs,"observation_names"] = onames
         df.loc[idxs,"ins_strings"] = ins_strs
