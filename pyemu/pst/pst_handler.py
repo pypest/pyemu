@@ -420,6 +420,8 @@ class Pst(object):
         self.control_data.nobsgp = self.observation_data.obgnme.\
             value_counts().shape[0]
         self.control_data.nprior = self.prior_information.shape[0]
+        self.control_data.ntplfle = len(self.template_files)
+        self.control_data.ninsfle = len(self.instruction_files)
 
 
     def _rectify_pgroups(self):
@@ -487,10 +489,10 @@ class Pst(object):
         f_out.write("* parameter data\n")
         self.parameter_data.index = self.parameter_data.pop("parnme")
         f_out.write(self.parameter_data.to_string(col_space=0,
-                                  formatters=self.par_format,
-                                  justify="right",
-                                  header=False,
-                                  index_names=False) + '\n')
+                                                  formatters=self.par_format,
+                                                  justify="right",
+                                                  header=False,
+                                                  index_names=False) + '\n')
         self.parameter_data.loc[:,"parnme"] = self.parameter_data.index
 
         for line in self.tied_lines:
