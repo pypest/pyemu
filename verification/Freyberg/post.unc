@@ -1,0 +1,4 @@
+START COVARIANCE_MATRIX
+  file post.cov
+  variance_multiplier 1.0
+END COVARIANCE_MATRIX

@@ -928,7 +928,7 @@ class Matrix(object):
                            'deprecated version of PEST,' +
                            'Use JcoTRANS to convert to new format')
         #icount = np.fromfile(f,np.int32,1)
-        print(itemp1,itemp2,icount)
+        #print(itemp1,itemp2,icount)
         ncol, nrow = abs(itemp1), abs(itemp2)
         self.__x = np.zeros((nrow, ncol))
         # read all data records

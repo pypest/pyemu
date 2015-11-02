@@ -679,6 +679,7 @@ class LinearAnalysis(object):
         if self.jco is not None:
             self.__jco.drop(pi_names, axis=0)
         self.__pst.prior_information = self.pst.null_prior
+        self.__pst.control_data.pestmode = "estimation"
         #self.__obscov.drop(pi_names,axis=0)
         self.log("removing " + nprior_str + " prior info from jco and pst")
 

@@ -418,7 +418,9 @@ class Pst(object):
         self.control_data.nobs = self.nobs
         self.control_data.npargp = self.parameter_groups.shape[0]
         self.control_data.nobsgp = self.observation_data.obgnme.\
+            value_counts().shape[0] + self.prior_information.obgnme.\
             value_counts().shape[0]
+
         self.control_data.nprior = self.prior_information.shape[0]
         self.control_data.ntplfle = len(self.template_files)
         self.control_data.ninsfle = len(self.instruction_files)
