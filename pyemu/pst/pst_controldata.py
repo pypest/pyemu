@@ -19,7 +19,7 @@ CONTROL_DEFAULT_LINES = """restart regularization
 1.000000e+001  1.000000e+001  1.000000e-003  0  0
 1.000000e-001 1 1.1 noaui nosenreuse noboundscale
 30 1.000000e-002  3  3  1.000000e-002  3  0.0 1  -1.0
-0  0  0  0 jcosave verboserec jcosaveitn reisaveitn parsaveitn parsaverun"""\
+0  0  0  0 jcosave verboserec jcosaveitn reisaveitn parsaveitn noparsaverun"""\
     .lower().split('\n')
 
 CONTROL_VARIABLE_LINES = """RSTFLE PESTMODE
