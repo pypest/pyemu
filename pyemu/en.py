@@ -195,7 +195,23 @@ class ParameterEnsemble(Ensemble):
 
             # null space projection of difference vector
             pdiff = np.dot(projection_matrix.x,(self.loc[real,common_names] - base).as_matrix())
-            #factor = pdiff.apply()
+
+            # work out a reduction factor to scale down the vector
+            # factor = 0.0
+            # for val,ub,lb in zip(pdiff,self.ubnd,self.lbnd):
+            #     if val <= ub and val >= lb:
+            #         continue
+            #     if val > 0.0:
+            #         f = ub - val
+            #     else:
+            #         f = val - lb
+            #     if f == 0.0:
+            #         continue
+            #     f = np.abs()
+
+            factor = max(np.abs(pdiff/(pdiff-self.lbnd)).max(),np.abs(pdiff/(self.ubnd-pdiff)).max())
+            if factor > 1.0:
+                pdiff *= 1.0/factor
 
             if inplace:
                 self.loc[real,common_names] = base + pdiff
@@ -247,7 +263,7 @@ class ParameterEnsemble(Ensemble):
                                          "file: {0} not found".format(pfile)
             df = read_parfile(pfile)
             self.loc[pfile] = df.loc[:,'parval1']
-
+        self.loc[:,:] = self.loc[:,:].astype(np.float64)
         islog = self.pst.parameter_data.loc[:,"partrans"] == "log"
         self.loc[:,islog] = np.log10(self.loc[:,islog])
 
