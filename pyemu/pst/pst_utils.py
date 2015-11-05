@@ -403,12 +403,13 @@ def smp_to_dataframe(smp_filename):
 
 
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
-                 port=4004):
+                 port=4004,rel_path='.'):
     """ start a group of pest(++) slaves on the local machine
 
     Parameters:
     ----------
         slave_dir : (str) the path to a complete set of input files
+
         exe_rel_path : (str) the relative path to the pest(++)
                         executable from within the slave_dir
         pst_rel_path : (str) the relative path to the pst file
@@ -417,6 +418,9 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         num_slaves : (int) number of slaves to start. defaults to number of cores
 
         slave_root : (str) the root to make the new slave directories in
+
+        rel_path: (str) the relative path to where pest(++) should be run
+                  from within the slave_dir, defaults to the uppermost level of the slave dir
 
     """
 
@@ -451,7 +455,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         try:
             args = [exe_rel_path,pst_rel_path,"/h",tcp_arg]
             print("starting slave in {0} with args: {1}".format(new_slave_dir,args))
-            p = sp.Popen(args,cwd=new_slave_dir)
+            p = sp.Popen(args,cwd=os.path.join(new_slave_dir,rel_path))
             procs.append(p)
         except Exception as e:
             raise Exception("error starting slave: {0}".format(str(e)))
