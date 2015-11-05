@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 
 from pyemu.mat.mat_handler import get_common_elements
+from pyemu.pst.pst_utils import write_parfile
 
 class Ensemble(pd.DataFrame):
     """ a pandas.DataFrame derived type to store
@@ -99,6 +100,8 @@ class ParameterEnsemble(Ensemble):
                                       "support tied parameters")
         self.pst.parameter_data.index = self.pst.parameter_data.parnme
         self.__mean_values = None
+        self.__ubnd = None
+        self.__lbnd = None
 
     @property
     def mean_values(self):
@@ -169,14 +172,14 @@ class ParameterEnsemble(Ensemble):
         :return: if not inplace, ParameterEnsemble, otherwise None
         """
         # check that everything is cool WRT order
-        if self.adj_names != projection_matrix.row_names:
-            common_names = get_common_elements(self.adj_names,
-                                                     projection_matrix.row_names)
-            base = self.mean_values.loc[common_names]
-            projection_matrix = projection_matrix.get(common_names,common_names)
-        else:
-            base = self.mean_values
-            common_names = self.adj_names
+        #if self.adj_names != projection_matrix.row_names:
+        common_names = get_common_elements(self.adj_names,
+                                                 projection_matrix.row_names)
+        base = self.mean_values.loc[common_names]
+        projection_matrix = projection_matrix.get(common_names,common_names)
+        # else:
+        #     base = self.mean_values
+        #     common_names = self.adj_names
 
         if not inplace:
             vals = self.pst.parameter_data.parval1.copy()
@@ -190,6 +193,7 @@ class ParameterEnsemble(Ensemble):
 
             this = self.loc[real,common_names]
             pdiff = (this - base).as_matrix()
+            print(pdiff.shape,projection_matrix.shape)
             if inplace:
                 self.loc[real,common_names] = base + np.dot(projection_matrix.x,pdiff)
             else:
@@ -217,6 +221,12 @@ class ParameterEnsemble(Ensemble):
 
 
     def to_parfiles(self,prefix):
-        raise NotImplementedError()
+        en = self.back_transform(inplace=False)
+        par_df = self.pst.parameter_data.loc[:,
+                 ["parnme","parval1","scale","offset"]].copy()
 
+        for real in en.index:
+            par_file = prefix+real+".par"
+            par_df.loc[:,"parval1"] = en.loc[real,:]
+            write_parfile(par_df,par_file)
 

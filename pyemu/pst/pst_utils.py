@@ -117,6 +117,25 @@ def read_parfile(parfile):
                              sep="\s+")
     return par_df
 
+def write_parfile(df,parfile):
+    columns = ["parnme","parval1","scale","offset"]
+    formatters = {"parnme":lambda x:"{0:20s}".format(x),
+                  "parval1":lambda x:"{0:20.7E}".format(x),
+                  "scale":lambda x:"{0:20.7E}".format(x),
+                  "offset":lambda x:"{0:20.7E}".format(x)}
+
+    for col in columns:
+        assert col in df.columns,"write_parfile() error: " +\
+                                 "{0} not found in df".format(col)
+    with open(parfile,'w') as f:
+        f.write("single point\n")
+        f.write(df.to_string(col_space=0,
+                      columns=columns,
+                      formatters=formatters,
+                      justify="right",
+                      header=False,
+                      index=False,
+                      index_names=False) + '\n')
 
 def parse_tpl_file(tpl_file):
     par_names = []

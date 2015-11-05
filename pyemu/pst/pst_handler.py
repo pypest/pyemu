@@ -407,7 +407,9 @@ class Pst(object):
 
         for line in f:
             if line.startswith("++"):
-                self.pestpp_lines.append(line)
+                args = line.strip().split('++')
+                args = ['++'+arg.strip() for arg in args]
+                self.pestpp_lines.extend(args)
         f.close()
         return
 
@@ -539,7 +541,7 @@ class Pst(object):
             else:
                 [f_out.write(line) for line in self.regul_lines]
 
-        [f_out.write(line) for line in self.pestpp_lines]
+        [f_out.write(line+'\n') for line in self.pestpp_lines]
 
         f_out.close()
 
@@ -672,6 +674,8 @@ class Pst(object):
         self.parameter_data.index = self.parameter_data.parnme
         par_df.index = par_df.parnme
         self.parameter_data.parval1 = par_df.parval1
+        self.parameter_data.scale = par_df.scale
+        self.parameter_data.offset = par_df.offset
 
 
 
