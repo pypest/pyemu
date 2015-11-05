@@ -1,9 +1,10 @@
 from __future__ import print_function, division
+import os
 import numpy as np
 import pandas as pd
 
 from pyemu.mat.mat_handler import get_common_elements
-from pyemu.pst.pst_utils import write_parfile
+from pyemu.pst.pst_utils import write_parfile,read_parfile
 
 class Ensemble(pd.DataFrame):
     """ a pandas.DataFrame derived type to store
@@ -38,7 +39,7 @@ class Ensemble(pd.DataFrame):
         :return: None
         """
         # set up some column names
-        real_names = ["realization_{0:08d}".format(i)
+        real_names = ["{0:d}".format(i+1)
                       for i in range(num_reals)]
 
         # make sure everything is cool WRT ordering
@@ -183,7 +184,7 @@ class ParameterEnsemble(Ensemble):
 
         if not inplace:
             vals = self.pst.parameter_data.parval1.copy()
-            new_en = Ensemble(data=self.loc[:,:].copy(),
+            new_en = ParameterEnsemble(pst=self.pst,data=self.loc[:,:].copy(),
                               columns=self.columns,
                               mean_values=vals)
 
@@ -191,13 +192,15 @@ class ParameterEnsemble(Ensemble):
             if log is not None:
                 log("projecting realization " + real)
 
-            this = self.loc[real,common_names]
-            pdiff = (this - base).as_matrix()
-            print(pdiff.shape,projection_matrix.shape)
+
+            # null space projection of difference vector
+            pdiff = np.dot(projection_matrix.x,(self.loc[real,common_names] - base).as_matrix())
+            #factor = pdiff.apply()
+
             if inplace:
-                self.loc[real,common_names] = base + np.dot(projection_matrix.x,pdiff)
+                self.loc[real,common_names] = base + pdiff
             else:
-                new_en.loc[real,common_names] = base + np.dot(projection_matrix.x,pdiff)
+                new_en.loc[real,common_names] = base +  pdiff
 
             if log is not None:
                 log("projecting realization " + real)
@@ -210,14 +213,44 @@ class ParameterEnsemble(Ensemble):
         """
         for name in self.columns:
             #print(self.loc[:,name])
+
             self.loc[self.loc[:,name] > self.ubnd[name],name] = self.ubnd[name]
             #print(self.ubnd[name],self.loc[:,name])
             self.loc[self.loc[:,name] < self.lbnd[name],name] = self.lbnd[name]
             #print(self.lbnd[name],self.loc[:,name])
 
 
-    def read_parfiles(self,prefix):
-        raise NotImplementedError()
+    def read_parfiles_prefix(self,prefix):
+        pfile_count = 1
+        parfile_names = []
+        while True:
+            pfile_name = prefix +"{0:d}.par".format(pfile_count)
+            if not os.path.exists(pfile_name):
+                break
+            parfile_names.append(pfile_name)
+            pfile_count += 1
+
+        if len(parfile_names) == 0:
+            raise Exception("ParameterEnsemble.read_parfiles_prefix() error: " + \
+                            "no parfiles found with prefix {0}".format(prefix))
+
+        return self.read_parfiles(parfile_names)
+
+
+
+
+    def read_parfiles(self,parfile_names):
+
+        par_dfs = []
+        for pfile in parfile_names:
+            assert os.path.exists(pfile),"ParameterEnsemble.read_parfiles() error: " +\
+                                         "file: {0} not found".format(pfile)
+            df = read_parfile(pfile)
+            self.loc[pfile] = df.loc[:,'parval1']
+
+        islog = self.pst.parameter_data.loc[:,"partrans"] == "log"
+        self.loc[:,islog] = np.log10(self.loc[:,islog])
+
 
 
     def to_parfiles(self,prefix):

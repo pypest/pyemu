@@ -115,6 +115,7 @@ def read_parfile(parfile):
     par_df = pd.read_csv(f, header=None,
                              names=["parnme", "parval1", "scale", "offset"],
                              sep="\s+")
+    par_df.index = par_df.parnme
     return par_df
 
 def write_parfile(df,parfile):
