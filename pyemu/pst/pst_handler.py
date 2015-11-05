@@ -262,10 +262,15 @@ class Pst(object):
     @staticmethod
     def _read_df(f,nrows,names,converters,defaults=None):
         seek_point = f.tell()
-        df = pd.read_csv(f, header=None, names=names,
+        df = pd.read_csv(f, header=None,names=names,
                               nrows=nrows,delimiter="\s+",
-                              converters=converters)
-                         
+                              converters=converters, index_col=False)
+
+
+        # in case there was some extra junk at the end of the lines
+        if df.shape[1] > len(names):
+            df = df.iloc[:,len(names)]
+            df.columns = names
 
         if defaults is not None:
             for name in names:
@@ -312,8 +317,8 @@ class Pst(object):
                                                   self.pargp_fieldnames,
                                                   self.pargp_converters,
                                                   self.pargp_defaults)
-        except:
-            raise Exception("Pst.load() error reading parameter groups")
+        except Exception as e:
+            raise Exception("Pst.load() error reading parameter groups: {0}".format(str(e)))
 
         #parameter data
         line = f.readline()
