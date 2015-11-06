@@ -1,5 +1,6 @@
 from __future__ import print_function, division
-import os
+import os, sys
+import stat
 import multiprocessing as mp
 import subprocess as sp
 import socket
@@ -401,7 +402,10 @@ def smp_to_dataframe(smp_filename):
                      date_parser=date_parser)
     return df
 
-
+def del_rw(action, name, exc):
+    os.chmod(name, stat.S_IWRITE)
+    os.remove(name)
+    
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
                  port=4004,rel_path='.'):
     """ start a group of pest(++) slaves on the local machine
@@ -430,8 +434,8 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         num_slaves = mp.cpu_count()
     else:
         num_slaves = int(num_slaves)
-    assert os.path.exists(os.path.join(slave_dir,exe_rel_path))
-    assert os.path.exists(os.path.join(slave_dir,pst_rel_path))
+    assert os.path.exists(os.path.join(slave_dir,rel_path,exe_rel_path))
+    assert os.path.exists(os.path.join(slave_dir,rel_path,pst_rel_path))
 
     hostname = socket.gethostname()
     port = int(port)
@@ -443,7 +447,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         new_slave_dir = os.path.join(slave_root,"slave_{0}".format(i))
         if os.path.exists(new_slave_dir):
             try:
-                shutil.rmtree(new_slave_dir)
+                shutil.rmtree(new_slave_dir, onerror=del_rw)
             except Exception as e:
                 raise Exception("unable to remove existing slave dir:" + \
                                 "{0}\n{1}".format(new_slave_dir,str(e)))
@@ -453,7 +457,8 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
             raise Exception("unable to copy files from slave dir: " + \
                             "{0} to new slave dir: {1}\n{2}".format(slave_dir,new_slave_dir,str(e)))
         try:
-            args = [exe_rel_path,pst_rel_path,"/h",tcp_arg]
+            exe_path = os.path.join(new_slave_dir,rel_path,exe_rel_path)
+            args = [exe_path, pst_rel_path, "/h", tcp_arg]
             print("starting slave in {0} with args: {1}".format(new_slave_dir,args))
             p = sp.Popen(args,cwd=os.path.join(new_slave_dir,rel_path))
             procs.append(p)
