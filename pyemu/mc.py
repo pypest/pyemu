@@ -47,8 +47,8 @@ class MonteCarlo(LinearAnalysis):
         if nsing is None:
             nsing = self.get_nsing()
 
-        #v2_proj = (self.xtqx.v[:,nsing:] * self.xtqx.v[:,nsing:].T)
-        v2_proj = (self.qhalfx.v[:,nsing:] * self.qhalfx.v[:,nsing:].T)
+        v2_proj = (self.xtqx.v[:,nsing:] * self.xtqx.v[:,nsing:].T)
+        #v2_proj = (self.qhalfx.v[:,nsing:] * self.qhalfx.v[:,nsing:].T)
         #self.__parcov = self.parcov.identity
         return v2_proj
 

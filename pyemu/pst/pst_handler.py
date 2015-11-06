@@ -263,7 +263,7 @@ class Pst(object):
     def _read_df(f,nrows,names,converters,defaults=None):
         seek_point = f.tell()
         df = pd.read_csv(f, header=None,names=names,
-                              nrows=nrows,delimiter="\s+",
+                              nrows=nrows,delim_whitespace=True,
                               converters=converters, index_col=False)
 
 
@@ -481,6 +481,7 @@ class Pst(object):
 
 
         # to catch the byte code ugliness in python 3
+        pargpnme = self.parameter_groups.loc[:,"pargpnme"].copy()
         self.parameter_groups.loc[:,"pargpnme"] = \
             self.parameter_groups.pargpnme.apply(self.pargp_format["pargpnme"])
 
@@ -493,7 +494,8 @@ class Pst(object):
                                                   justify="right",
                                                   header=False,
                                                   index_names=False) + '\n')
-        self.parameter_groups.loc[:,"pargpnme"] = self.parameter_groups.index
+        self.parameter_groups.loc[:,"pargpnme"] = pargpnme.values
+        self.parameter_groups.index = pargpnme
 
         f_out.write("* parameter data\n")
         self.parameter_data.index = self.parameter_data.pop("parnme")

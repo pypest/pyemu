@@ -1,5 +1,7 @@
 from __future__ import print_function, division
 import os
+import copy
+import math
 import numpy as np
 import pandas as pd
 
@@ -87,30 +89,45 @@ class ParameterEnsemble(Ensemble):
         implements bounds enforcement, log10 transformation,
         fixed parameters and null-space projection
 
+    Parameters:
+    ----------
+        pst : pyemu.Pst instance
         todo: tied parameters
+
+    Note:
+    ----
+        uses the parnme attribute of Pst.parameter_data from column names
+        and uses the parval1 attribute of Pst.parameter_data as mean values
 
     """
 
-    def __init__(self,pst,**kwargs):
+    def __init__(self,pst,islog=False,**kwargs):
         kwargs["columns"] = pst.parameter_data.parnme
         kwargs["mean_values"] = pst.parameter_data.parval1
+
+
         super(ParameterEnsemble,self).__init__(**kwargs)
+        # a flag for current log transform status
+        self.__islog = bool(islog)
         self.pst = pst
         if "tied" in self.pst.parameter_data.partrans:
             raise NotImplementedError("ParameterEnsemble does not " +\
                                       "support tied parameters")
         self.pst.parameter_data.index = self.pst.parameter_data.parnme
-        self.__mean_values = None
-        self.__ubnd = None
-        self.__lbnd = None
+
+
+    @property
+    def islog(self):
+        return copy.copy(self.__islog)
 
     @property
     def mean_values(self):
-        if self.__mean_values is None:
-            vals = self.pst.parameter_data.parval1.copy()
+        """ the mean value vector while respecting log transform
+        """
+        vals = self.pst.parameter_data.parval1.copy()
+        if self.islog:
             vals[self.log_indexer] = np.log10(vals[self.log_indexer])
-            self.__mean_values = vals
-        return self.__mean_values
+        return vals
 
     @property
     def names(self):
@@ -122,71 +139,137 @@ class ParameterEnsemble(Ensemble):
 
     @property
     def ubnd(self):
-        if self.__ubnd is None:
-            ub = self.pst.parameter_data.parubnd.copy()
+        """ the lower bound vector while respecting log transform"""
+        ub = self.pst.parameter_data.parubnd.copy()
+        if self.islog:
             ub[self.log_indexer] = np.log10(ub[self.log_indexer])
-            self.__ubnd = ub
-        return self.__ubnd
-
+        return ub
 
     @property
     def lbnd(self):
-        if self.__lbnd is None:
-            lb = self.pst.parameter_data.parlbnd.copy()
+        """ the lower boubd vectir while respecting log transform"""
+        lb = self.pst.parameter_data.parlbnd.copy()
+        if self.islog:
             lb[self.log_indexer] = np.log10(lb[self.log_indexer])
-            self.__lbnd = lb
-        return self.__lbnd
-
+        return lb
 
     @property
     def log_indexer(self):
+        """ indexer for log transform"""
         islog = self.pst.parameter_data.partrans == "log"
         return islog.values
 
-
     @property
     def fixed_indexer(self):
+        """ indexer for fixed status"""
         isfixed = self.pst.parameter_data.partrans == "fixed"
         return isfixed.values
 
-    def back_transform(self,inplace=True):
+    def draw(self,cov,num_reals=1):
+        if not self.islog:
+            self._transform()
+        super(ParameterEnsemble,self).draw(cov,num_reals=num_reals)
+        self._back_transform()
+
+    def _back_transform(self,inplace=True):
         """ remove log10 transformation from ensemble
-        :param inplace: back transform the self in place
-        :return: if not inplace, ParameterEnsemble, otherwise None
+        Parameters:
+        ----------
+            inplace: (boolean) back transform self in place
+        Returns:
+        -------
+            if not inplace, ParameterEnsemble, otherwise None
+
+        Note:
+        ----
+            Don't call this method unless you know what you are doing
+
         """
+        if not self.islog:
+            raise Exception("ParameterEnsemble already back transformed")
+
         islog = self.pst.parameter_data.loc[:,"partrans"] == "log"
         if inplace:
             self.loc[:,islog] = 10.0**(self.loc[:,islog])
+            self.__islog = False
         else:
             vals = self.pst.parameter_data.parval1.copy()
-            new_en = Ensemble(data=self.loc[:,:].copy(),
+            new_en = ParameterEnsemble(pst=self.pst.get(),data=self.loc[:,:].copy(),
                               columns=self.columns,
-                              mean_values=vals)
+                              mean_values=vals,islog=False)
             new_en.loc[:,islog] = 10.0**(self.loc[:,islog])
             return new_en
 
-    def project(self,projection_matrix,inplace=True,log=None):
-        """ project the ensemble
-        :param projection_matrix: Matrix instance
-        :param inplace: operate on self
-        :param log: a logger instance
-        :return: if not inplace, ParameterEnsemble, otherwise None
+
+    def _transform(self,inplace=True):
+        """ perform log10 transformation for ensemble
+        Parameters:
+        ----------
+            inplace: (boolean) transform self in place
+        Returns:
+        -------
+            if not inplace, ParameterEnsemble, otherwise None
+
+        Note:
+        ----
+            Don't call this method unless you know what you are doing
+
         """
-        # check that everything is cool WRT order
-        #if self.adj_names != projection_matrix.row_names:
+        if self.islog:
+            raise Exception("ParameterEnsemble already transformed")
+
+        islog = self.pst.parameter_data.loc[:,"partrans"] == "log"
+        if inplace:
+            #self.loc[:,islog] = np.log10(self.loc[:,islog])
+            self.loc[:,islog] = self.loc[:,islog].applymap(lambda x: math.log10(x))
+
+            self.__islog = True
+        else:
+            vals = self.pst.parameter_data.parval1.copy()
+            new_en = ParameterEnsemble(pst=self.pst.get(),data=self.loc[:,:].copy(),
+                              columns=self.columns,
+                              mean_values=vals,islog=True)
+            new_en.loc[:,islog] = self.loc[:,islog].applymap(lambda x: math.log10(x))
+            return new_en
+
+
+
+    def project(self,projection_matrix,inplace=True,log=None,enforce=True):
+        """ project the ensemble
+        Parameters:
+        ----------
+            projection_matrix: (pyemu.Matrix) projection operator - must already respect log transform
+
+            inplace: (boolean) project self or return a new ParameterEnsemble instance
+
+            log: (pyemu.la.logger instance) for logging progress
+
+            enforce: (bool) parameter bound enforcement flag (True)
+
+        Returns:
+        -------
+            if not inplace, ParameterEnsemble, otherwise None
+
+
+
+
+        """
+
+        if not self.islog:
+            self._transform()
+
+        #make sure everything is cool WRT ordering
         common_names = get_common_elements(self.adj_names,
                                                  projection_matrix.row_names)
         base = self.mean_values.loc[common_names]
         projection_matrix = projection_matrix.get(common_names,common_names)
-        # else:
-        #     base = self.mean_values
-        #     common_names = self.adj_names
+
+
 
         if not inplace:
-            vals = self.pst.parameter_data.parval1.copy()
-            new_en = ParameterEnsemble(pst=self.pst,data=self.loc[:,:].copy(),
+            new_en = ParameterEnsemble(pst=self.pst.get(),data=self.loc[:,:].copy(),
                               columns=self.columns,
-                              mean_values=vals)
+                              mean_values=self.mean_values.copy(),islog=self.islog)
 
         for real in self.index:
             if log is not None:
@@ -194,24 +277,19 @@ class ParameterEnsemble(Ensemble):
 
 
             # null space projection of difference vector
-            pdiff = np.dot(projection_matrix.x,(self.loc[real,common_names] - base).as_matrix())
+            pdiff = np.dot(projection_matrix.x,
+                           (self.loc[real,common_names] - base)\
+                           .as_matrix())
 
-            # work out a reduction factor to scale down the vector
-            # factor = 0.0
-            # for val,ub,lb in zip(pdiff,self.ubnd,self.lbnd):
-            #     if val <= ub and val >= lb:
-            #         continue
-            #     if val > 0.0:
-            #         f = ub - val
-            #     else:
-            #         f = val - lb
-            #     if f == 0.0:
-            #         continue
-            #     f = np.abs()
 
-            factor = max(np.abs(pdiff/(pdiff-self.lbnd)).max(),np.abs(pdiff/(self.ubnd-pdiff)).max())
-            if factor > 1.0:
-                pdiff *= 1.0/factor
+            # lb_fac = np.abs(pdiff)/((base+pdiff)-self.lbnd)
+            # lb_fac[pdiff>0.0] = 1.0
+            #
+            # ub_fac = np.abs(pdiff)/(self.ubnd-(base+pdiff))
+            # ub_fac[pdiff<=0.0] = 1.0
+            #
+            # factor = max(lb_fac.max(),
+            #              ub_fac.max())
 
             if inplace:
                 self.loc[real,common_names] = base + pdiff
@@ -221,22 +299,32 @@ class ParameterEnsemble(Ensemble):
             if log is not None:
                 log("projecting realization " + real)
         if not inplace:
+            if enforce:
+                new_en.enforce()
+            new_en._back_transform()
             return new_en
+
+        if enforce:
+            self.enforce()
+        self._back_transform()
 
     def enforce(self):
         """ enforce parameter bounds on the ensemble
-        :return: None
-        """
-        for name in self.columns:
-            #print(self.loc[:,name])
 
-            self.loc[self.loc[:,name] > self.ubnd[name],name] = self.ubnd[name]
+        """
+        ub = self.ubnd
+        lb = self.lbnd
+        for iname,name in enumerate(self.columns):
+            self.loc[self.loc[:,name] > ub[name],name] = ub[name].copy()
             #print(self.ubnd[name],self.loc[:,name])
-            self.loc[self.loc[:,name] < self.lbnd[name],name] = self.lbnd[name]
+            self.loc[self.loc[:,name] < lb[name],name] = lb[name].copy()
             #print(self.lbnd[name],self.loc[:,name])
 
 
     def read_parfiles_prefix(self,prefix):
+        """ thin wrapper around read_parfiles using the pnulpar prefix concept
+
+        """
         pfile_count = 1
         parfile_names = []
         while True:
@@ -256,7 +344,17 @@ class ParameterEnsemble(Ensemble):
 
 
     def read_parfiles(self,parfile_names):
+        """ read the ensemble from par files
 
+        Parameters:
+        ----------
+            parfile_names: (list[str]) list of par files to load
+
+        Note:
+        ----
+            log transforms after loading according and possibly resets self.__islog
+
+        """
         par_dfs = []
         for pfile in parfile_names:
             assert os.path.exists(pfile),"ParameterEnsemble.read_parfiles() error: " +\
@@ -264,18 +362,32 @@ class ParameterEnsemble(Ensemble):
             df = read_parfile(pfile)
             self.loc[pfile] = df.loc[:,'parval1']
         self.loc[:,:] = self.loc[:,:].astype(np.float64)
-        islog = self.pst.parameter_data.loc[:,"partrans"] == "log"
-        self.loc[:,islog] = np.log10(self.loc[:,islog])
-
+        #if self.islog:
+        #    self.__islog = False
+        #self._transform(inplace=True)
 
 
     def to_parfiles(self,prefix):
-        en = self.back_transform(inplace=False)
+        """
+            write the parameter ensemble to pest-style parameter files
+
+        Parameters:
+        ----------
+            prefix: (str) file prefix for par files
+
+        Note:
+        ----
+            this function back-transforms before writing
+
+        """
+
+        if self.islog:
+            self._back_transform(inplace=True)
+
         par_df = self.pst.parameter_data.loc[:,
                  ["parnme","parval1","scale","offset"]].copy()
 
-        for real in en.index:
+        for real in self.index:
             par_file = prefix+real+".par"
-            par_df.loc[:,"parval1"] = en.loc[real,:]
+            par_df.loc[:,"parval1"] =self.loc[real,:]
             write_parfile(par_df,par_file)
-

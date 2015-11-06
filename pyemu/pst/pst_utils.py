@@ -29,7 +29,7 @@ FFMT = lambda x: "{0:>15.6E}".format(float(x))
 def str_con(item):
     if len(item) == 0:
         return np.NaN
-    return item.lower()
+    return item.lower().strip()
 
 pst_config = {}
 
