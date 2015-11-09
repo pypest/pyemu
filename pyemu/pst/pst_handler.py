@@ -412,9 +412,16 @@ class Pst(object):
 
         for line in f:
             if line.startswith("++"):
-                args = line.strip().split('++')
-                args = ['++'+arg.strip() for arg in args]
-                self.pestpp_lines.extend(args)
+                args = line.replace('++','').strip().split()
+                #args = ['++'+arg.strip() for arg in args]
+                #self.pestpp_lines.extend(args)
+                keys = [arg.split('(')[0] for arg in args]
+                spl = arg.split('(')[1]
+                values = [arg.split('(')[1].replace(')','') for arg in args]
+                for key,value in zip(keys,values):
+                    if key in self.pestpp_options:
+                        print("Pst.load() warning: duplicate pest++ option found:" + str(key))
+                    self.pestpp_options[key] = value
         f.close()
         return
 
@@ -548,7 +555,9 @@ class Pst(object):
             else:
                 [f_out.write(line) for line in self.regul_lines]
 
-        [f_out.write(line+'\n') for line in self.pestpp_lines]
+
+        for key,value in self.pestpp_options.items():
+            f_out.write("++{0}({1})\n".format(str(key),str(value)))
 
         f_out.close()
 

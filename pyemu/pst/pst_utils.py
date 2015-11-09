@@ -105,7 +105,7 @@ pst_config["output_files"] = []
 pst_config["other_lines"] = []
 pst_config["tied_lines"] = []
 pst_config["regul_lines"] = []
-pst_config["pestpp_lines"] = []
+pst_config["pestpp_options"] = {}
 
 
 def read_parfile(parfile):

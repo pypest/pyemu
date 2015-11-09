@@ -53,26 +53,32 @@ class MonteCarlo(LinearAnalysis):
         return v2_proj
 
     def draw(self, num_reals=1, par_file = None, obs=False,
-             enforce_bounds=False):
+             enforce_bounds=False,cov=None):
         """draw stochastic realizations of parameters and
            optionally observations
 
-        Args:
+        Parameters:
+        ----------
             num_reals (int): number of realization to generate
+
             par_file (str): parameter file to use as mean values
+
             obs (bool): add a realization of measurement noise to obs
+
             enforce_bounds (bool): enforce parameter bounds in control file
+
+
         Returns:
             None
         Raises:
             None
         """
 
-        self.log("generating parameter realizations")
+        self.log("generating {0:d} parameter realizations".format(num_reals))
         self.parensemble.draw(self.parcov,num_reals=num_reals)
         if enforce_bounds:
             self.parensemble.enforce()
-        self.log("generating parameter realizations")
+        self.log("generating {0:d} parameter realizations".format(num_reals))
         if obs:
             raise NotImplementedError()
 

@@ -308,16 +308,16 @@ class ParameterEnsemble(Ensemble):
             self.enforce()
         self._back_transform()
 
-    def enforce(self):
+    def enforce(self,tol=0.01):
         """ enforce parameter bounds on the ensemble
 
         """
         ub = self.ubnd
         lb = self.lbnd
         for iname,name in enumerate(self.columns):
-            self.loc[self.loc[:,name] > ub[name],name] = ub[name].copy()
+            self.loc[self.loc[:,name] > ub[name],name] = ub[name].copy() * (1.0 + tol)
             #print(self.ubnd[name],self.loc[:,name])
-            self.loc[self.loc[:,name] < lb[name],name] = lb[name].copy()
+            self.loc[self.loc[:,name] < lb[name],name] = lb[name].copy() * (1.0 - tol)
             #print(self.lbnd[name],self.loc[:,name])
 
 
