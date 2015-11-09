@@ -45,13 +45,6 @@ class Schur(LinearAnalysis):
         else:
             self.clean()
             self.log("Schur's complement")
-            oc = self.obscov**(-1)
-            jco = self.jco
-            pv = self.parcov.inv
-            t1 = jco.T * oc * jco
-            # self.__posterior_parameter = \
-            #    ((self.jco.transpose * self.obscov**-1 *
-            #      self.jco) + self.parcov.inv).inv
             r = (self.xtqx + self.parcov.inv).inv
             assert r.row_names == r.col_names
             self.__posterior_parameter = Cov(r.x,row_names=r.row_names,col_names=r.col_names)
