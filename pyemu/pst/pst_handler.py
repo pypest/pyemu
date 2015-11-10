@@ -101,7 +101,7 @@ class Pst(object):
                         raise Exception("Pst.get_residuals: " +
                                         "could not residual file case.res" +
                                         " or case.rei")
-            self.__res = self.load_resfile(self.resfile)
+            self.__res = pst_utils.read_resfile(self.resfile)
             return self.__res
 
 
@@ -238,26 +238,6 @@ class Pst(object):
         if self.control_data.pestmode == "estimation":
             return True
         return False
-
-    def load_resfile(self,resfile):
-        """load the residual file
-        """
-        pass
-        converters = {"name": pst_utils.str_con, "group": pst_utils.str_con}
-        f = open(resfile, 'r')
-        while True:
-            line = f.readline()
-            if line == '':
-                raise Exception("Pst.get_residuals: EOF before finding "+
-                                "header in resfile: " + resfile)
-            if "name" in line.lower():
-                header = line.lower().strip().split()
-                break
-        res_df = pd.read_csv(f, header=None, names=header, sep="\s+",
-                                 converters=converters)
-        res_df.index = res_df.name
-        f.close()
-        return res_df
 
     @staticmethod
     def _read_df(f,nrows,names,converters,defaults=None):

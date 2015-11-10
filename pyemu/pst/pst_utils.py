@@ -108,6 +108,28 @@ pst_config["regul_lines"] = []
 pst_config["pestpp_options"] = {}
 
 
+def read_resfile(resfile):
+        """load the residual file
+        """
+        assert os.path.exists(resfile),"read_resfile() error: resfile " +\
+                                       "{0} not found".format(resfile)
+        converters = {"name": str_con, "group": str_con}
+        f = open(resfile, 'r')
+        while True:
+            line = f.readline()
+            if line == '':
+                raise Exception("Pst.get_residuals: EOF before finding "+
+                                "header in resfile: " + resfile)
+            if "name" in line.lower():
+                header = line.lower().strip().split()
+                break
+        res_df = pd.read_csv(f, header=None, names=header, sep="\s+",
+                                 converters=converters)
+        res_df.index = res_df.name
+        f.close()
+        return res_df
+
+
 def read_parfile(parfile):
     assert os.path.exists(parfile), "Pst.parrep(): parfile not found: " +\
                                     str(parfile)
