@@ -27,11 +27,6 @@ class Ensemble(pd.DataFrame):
         self.__mean_values = mean_values
 
 
-    @property
-    def names(self):
-        return list(self.mean_values.index)
-
-
     def draw(self,cov,num_reals=1):
         """ draw random realizations from a multivariate
             Gaussian distribution
@@ -78,10 +73,43 @@ class Ensemble(pd.DataFrame):
             super(self,pd.DataFrame).plot(*args,**kwargs)
 
 
-    @staticmethod
-    def test():
-        raise NotImplementedError()
+class ObservationEnsemble(Ensemble):
+    """ Ensemble derived type observation noise
 
+        Parameters:
+        ----------
+            pst : Pst instance
+
+        Note:
+        ----
+            Does not generate realizations for observations with zero weight
+            uses the obsnme attribute of Pst.observation_data from column names
+    """
+
+    def __init__(self,pst,**kwargs):
+        kwargs["columns"] = pst.observation_data.obsnme
+        kwargs["mean_values"] = pst.observation_data.obsval
+        super(ObservationEnsemble,self).__init__(**kwargs)
+        self.pst = pst
+        self.pst.observation_data.index = self.pst.observation_data.obsnme
+
+    @property
+    def names(self):
+        return self.pst.nnz_obs_names
+
+
+    @property
+    def mean_values(self):
+        """ zeros
+        """
+        vals = self.pst.observation_data.obsval.copy()
+        vals.loc[self.names] = 0.0
+        return vals
+
+
+    def draw(self,cov,num_reals):
+        super(ObservationEnsemble,self).draw(cov,num_reals)
+        self.loc[:,self.names] += self.pst.observation_data.obsval
 
 
 class ParameterEnsemble(Ensemble):

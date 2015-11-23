@@ -2,7 +2,7 @@ from __future__ import print_function, division
 import os
 import numpy as np
 from pyemu.la import LinearAnalysis
-from pyemu.en import Ensemble, ParameterEnsemble
+from pyemu.en import ObservationEnsemble, ParameterEnsemble
 
 
 class MonteCarlo(LinearAnalysis):
@@ -19,8 +19,7 @@ class MonteCarlo(LinearAnalysis):
         assert self.pst is not None, \
             "monte carlo requires a pest control file"
         self.parensemble = ParameterEnsemble(pst=self.pst)
-        self.obsensemble = Ensemble(mean_values=self.pst.observation_data.values,
-                                    columns=self.pst.observation_data.obsnme)
+        self.obsensemble = ObservationEnsemble(pst=self.pst)
 
     @property
     def num_reals(self):
@@ -80,7 +79,12 @@ class MonteCarlo(LinearAnalysis):
             self.parensemble.enforce()
         self.log("generating {0:d} parameter realizations".format(num_reals))
         if obs:
-            raise NotImplementedError()
+            self.log("generating {0:d} observation realizations".format(num_reals))
+            self.obsensemble.draw(self.obscov,num_reals=num_reals)
+            self.log("generating {0:d} observation realizations".format(num_reals))
+
+
+
 
     def project_parensemble(self,par_file=None,nsing=None,
                             inplace=True):
@@ -119,7 +123,10 @@ class MonteCarlo(LinearAnalysis):
         pst.parameter_data.index = pst.parameter_data.parnme
         pst.observation_data.index = pst.observation_data.obsnme
 
-        par_en = self.parensemble.back_transform(inplace=False)
+        if self.parensemble.islog:
+            par_en = self.parensemble._back_transform(inplace=False)
+        else:
+            par_en = self.parensemble
 
         for i in range(self.num_reals):
             pst_name = prefix + "{0:04d}.pst".format(i)
@@ -139,13 +146,17 @@ class MonteCarlo(LinearAnalysis):
         jco = os.path.join('..',"verification","henry","pest.jco")
         pst = jco.replace(".jco",".pst")
 
+        out_dir = os.path.join("tests","mc")
+        if not os.path.exists(out_dir):
+            os.mkdir(out_dir)
+
         #write testing
         mc = MonteCarlo(jco=jco,verbose=True)
-        mc.draw(10)
+        mc.draw(10,obs=True)
         mc.write_psts(os.path.join("tests","mc","real_"))
 
         mc = MonteCarlo(jco=jco,verbose=True)
-        mc.draw(500)
+        mc.draw(500,obs=True)
         print("prior ensemble variance:",
               np.var(mc.parensemble.loc[:,"mult1"]))
         projected_en = mc.project_parensemble(inplace=False)

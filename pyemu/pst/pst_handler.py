@@ -391,7 +391,7 @@ class Pst(object):
             [self.regul_lines.append(f.readline()) for _ in range(3)]
 
         for line in f:
-            if line.startswith("++"):
+            if line.startswith("++") and '#' not in line:
                 args = line.replace('++','').strip().split()
                 #args = ['++'+arg.strip() for arg in args]
                 #self.pestpp_lines.extend(args)
@@ -595,7 +595,7 @@ class Pst(object):
         new_pst.output_files = self.output_files
 
         new_pst.other_lines = self.other_lines
-        new_pst.pestpp_lines = self.pestpp_lines
+        new_pst.pestpp_options = self.pestpp_options
         new_pst.regul_lines = self.regul_lines
 
         return new_pst
