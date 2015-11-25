@@ -530,6 +530,7 @@ class Pst(object):
                                               index_names=False) + '\n')
             self.prior_information["pilbl"] = self.prior_information.index
         if self.control_data.pestmode.startswith("regul"):
+            f_out.write("* regularisation\n")
             if update_regul:
                 f_out.write(self.regul_section)
             else:

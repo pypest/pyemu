@@ -7,7 +7,7 @@ pcf
    1.000000E+01   1.000000E+01   1.000000E-03         0         0
    1.000000E-01         1   1.100000E+00               noaui          nosenreuse        noboundscale
         20   1.000000E-02         3         3   1.000000E-02         3   0.000000E+00         1  -1.000000E+00
-         0         0         0         0             jcosave          verboserec          jcosaveitn          reisaveitn          parsaveitn                    
+         0         0         0         0             jcosave          verboserec          jcosaveitn          reisaveitn          parsaveitn        noparsaverun
 * parameter groups
                   hk              relative    1.000000E-02  0                switch    2.000000E+00             parabolic    1.000000E-05    5.000000E-01               smaller
                   hk              relative    1.000000E-02  0                switch    2.000000E+00             parabolic    1.000000E-05    5.000000E-01               smaller
@@ -2914,8 +2914,4 @@ misc\freyberg.wel.tpl extra_crispy\freyberg.wel
 misc\hk_Layer_1.ref.tpl extra_crispy\ref\hk_Layer_1.ref
 misc\freyberg_heads.smp.ins misc\freyberg_heads.smp
 misc\other.obs.ins misc\other.obs
-++
-++forecasts(travel_time,sw_gw_0,sw_gw_1,sw_gw_2)
-++n_iter_base(1)
-++n_iter_super(4)
-++max_reg_iter(5)
+++forecasts(travel_time,sw_gw_0,sw_gw_1,sw_gw_2n_iter_base)
