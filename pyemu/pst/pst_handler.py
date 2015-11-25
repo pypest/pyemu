@@ -101,7 +101,7 @@ class Pst(object):
                         raise Exception("Pst.get_residuals: " +
                                         "could not residual file case.res" +
                                         " or case.rei")
-            self.__res = self.load_resfile(self.resfile)
+            self.__res = pst_utils.read_resfile(self.resfile)
             return self.__res
 
 
@@ -239,31 +239,11 @@ class Pst(object):
             return True
         return False
 
-    def load_resfile(self,resfile):
-        """load the residual file
-        """
-        pass
-        converters = {"name": pst_utils.str_con, "group": pst_utils.str_con}
-        f = open(resfile, 'r')
-        while True:
-            line = f.readline()
-            if line == '':
-                raise Exception("Pst.get_residuals: EOF before finding "+
-                                "header in resfile: " + resfile)
-            if "name" in line.lower():
-                header = line.lower().strip().split()
-                break
-        res_df = pd.read_csv(f, header=None, names=header, sep="\s+",
-                                 converters=converters)
-        res_df.index = res_df.name
-        f.close()
-        return res_df
-
     @staticmethod
     def _read_df(f,nrows,names,converters,defaults=None):
         seek_point = f.tell()
         df = pd.read_csv(f, header=None,names=names,
-                              nrows=nrows,delimiter="\s+",
+                              nrows=nrows,delim_whitespace=True,
                               converters=converters, index_col=False)
 
 
@@ -411,10 +391,17 @@ class Pst(object):
             [self.regul_lines.append(f.readline()) for _ in range(3)]
 
         for line in f:
-            if line.startswith("++"):
-                args = line.strip().split('++')
-                args = ['++'+arg.strip() for arg in args]
-                self.pestpp_lines.extend(args)
+            if line.startswith("++") and '#' not in line:
+                args = line.replace('++','').strip().split()
+                #args = ['++'+arg.strip() for arg in args]
+                #self.pestpp_lines.extend(args)
+                keys = [arg.split('(')[0] for arg in args]
+                spl = arg.split('(')[1]
+                values = [arg.split('(')[1].replace(')','') for arg in args]
+                for key,value in zip(keys,values):
+                    if key in self.pestpp_options:
+                        print("Pst.load() warning: duplicate pest++ option found:" + str(key))
+                    self.pestpp_options[key] = value
         f.close()
         return
 
@@ -481,6 +468,7 @@ class Pst(object):
 
 
         # to catch the byte code ugliness in python 3
+        pargpnme = self.parameter_groups.loc[:,"pargpnme"].copy()
         self.parameter_groups.loc[:,"pargpnme"] = \
             self.parameter_groups.pargpnme.apply(self.pargp_format["pargpnme"])
 
@@ -493,7 +481,8 @@ class Pst(object):
                                                   justify="right",
                                                   header=False,
                                                   index_names=False) + '\n')
-        self.parameter_groups.loc[:,"pargpnme"] = self.parameter_groups.index
+        self.parameter_groups.loc[:,"pargpnme"] = pargpnme.values
+        self.parameter_groups.index = pargpnme
 
         f_out.write("* parameter data\n")
         self.parameter_data.index = self.parameter_data.pop("parnme")
@@ -541,12 +530,15 @@ class Pst(object):
                                               index_names=False) + '\n')
             self.prior_information["pilbl"] = self.prior_information.index
         if self.control_data.pestmode.startswith("regul"):
+            f_out.write("* regularisation\n")
             if update_regul:
                 f_out.write(self.regul_section)
             else:
                 [f_out.write(line) for line in self.regul_lines]
 
-        [f_out.write(line+'\n') for line in self.pestpp_lines]
+
+        for key,value in self.pestpp_options.items():
+            f_out.write("++{0}({1})\n".format(str(key),str(value)))
 
         f_out.close()
 
@@ -604,7 +596,7 @@ class Pst(object):
         new_pst.output_files = self.output_files
 
         new_pst.other_lines = self.other_lines
-        new_pst.pestpp_lines = self.pestpp_lines
+        new_pst.pestpp_options = self.pestpp_options
         new_pst.regul_lines = self.regul_lines
 
         return new_pst

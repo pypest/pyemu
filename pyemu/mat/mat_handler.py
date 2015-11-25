@@ -9,7 +9,6 @@ from scipy.io import FortranFile
 from pyemu.pst.pst_handler import Pst
 
 
-
 def concat(mats):
     """Concatenate Matrix objects.  Tries either axis.
     Args:
@@ -254,6 +253,12 @@ class Matrix(object):
                                                       other.row_names)
                     common_cols = get_common_elements(self.col_names,
                                                       other.col_names)
+
+                    if len(common_rows) == 0:
+                        raise Exception("Matrix.__sub__ error: no common rows")
+
+                    if len(common_cols) == 0:
+                        raise Exception("Matrix.__sub__ error: no common cols")
                     first = self.get(row_names=common_rows,
                                      col_names=common_cols)
                     second = other.get(row_names=common_rows,
@@ -318,6 +323,12 @@ class Matrix(object):
                                                   other.row_names)
                 common_cols = get_common_elements(self.col_names,
                                                   other.col_names)
+                if len(common_rows) == 0:
+                    raise Exception("Matrix.__add__ error: no common rows")
+
+                if len(common_cols) == 0:
+                    raise Exception("Matrix.__add__ error: no common cols")
+
                 first = self.get(row_names=common_rows, col_names=common_cols)
                 second = other.get(row_names=common_rows, col_names=common_cols)
             else:
