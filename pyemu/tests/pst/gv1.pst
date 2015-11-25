@@ -1,0 +1,82 @@
+pcf
+* control data
+restart regularise
+25  0  1  25  3
+1  1  single  point  1  0  0
+2.000000e+001  -3.000000e+000  3.000000e-001  1.000000e-002  7 999 lamforgive
+1.000000e+001  1.000000e+001  1.000000e-003
+1.000000e-001 1 noaui noboundscale
+25  1.000000e-002  3  3  1.000000e-002  3
+0  0  0   PARSAVEITN
+* singular value decomposition
+  1
+  25  5.000000e-007
+  1
+* parameter groups
+Kp     relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+* parameter data
+KpKp1  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp2  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp3  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp4  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp5  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp6  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp7  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp8  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp9  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp10  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp11  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp12  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp13  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp14  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp15  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp16  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp17  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp18  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp19  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp20  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp21  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp22  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp23  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp24  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+KpKp25  log  factor  100.000000  10.000000  500.000000  Kp  1.0  0.0  1
+* observation groups
+Head1
+regul
+regul_kp1
+* observation data
+* model command line
+pestgv.bat
+* model input/output
+points1.tpl   points1.dat
+targpest.ins   targpest.out
+* prior information
+i1k1  1.0 * log(KpKp1) = 2.000000e+000 1.0 regul_kp1
+i1k2  1.0 * log(KpKp2) = 2.000000e+000 1.0 regul_kp1
+i1k3  1.0 * log(KpKp3) = 2.000000e+000 1.0 regul_kp1
+i1k4  1.0 * log(KpKp4) = 2.000000e+000 1.0 regul_kp1
+i1k5  1.0 * log(KpKp5) = 2.000000e+000 1.0 regul_kp1
+i1k6  1.0 * log(KpKp6) = 2.000000e+000 1.0 regul_kp1
+i1k7  1.0 * log(KpKp7) = 2.000000e+000 1.0 regul_kp1
+i1k8  1.0 * log(KpKp8) = 2.000000e+000 1.0 regul_kp1
+i1k9  1.0 * log(KpKp9) = 2.000000e+000 1.0 regul_kp1
+i1k10  1.0 * log(KpKp10) = 2.000000e+000 1.0 regul_kp1
+i1k11  1.0 * log(KpKp11) = 2.000000e+000 1.0 regul_kp1
+i1k12  1.0 * log(KpKp12) = 2.000000e+000 1.0 regul_kp1
+i1k13  1.0 * log(KpKp13) = 2.000000e+000 1.0 regul_kp1
+i1k14  1.0 * log(KpKp14) = 2.000000e+000 1.0 regul_kp1
+i1k15  1.0 * log(KpKp15) = 2.000000e+000 1.0 regul_kp1
+i1k16  1.0 * log(KpKp16) = 2.000000e+000 1.0 regul_kp1
+i1k17  1.0 * log(KpKp17) = 2.000000e+000 1.0 regul_kp1
+i1k18  1.0 * log(KpKp18) = 2.000000e+000 1.0 regul_kp1
+i1k19  1.0 * log(KpKp19) = 2.000000e+000 1.0 regul_kp1
+i1k20  1.0 * log(KpKp20) = 2.000000e+000 1.0 regul_kp1
+i1k21  1.0 * log(KpKp21) = 2.000000e+000 1.0 regul_kp1
+i1k22  1.0 * log(KpKp22) = 2.000000e+000 1.0 regul_kp1
+i1k23  1.0 * log(KpKp23) = 2.000000e+000 1.0 regul_kp1
+i1k24  1.0 * log(KpKp24) = 2.000000e+000 1.0 regul_kp1
+i1k25  1.0 * log(KpKp25) = 2.000000e+000 1.0 regul_kp1
+* regularisation
+  0.000000  1.000000  0.100000
+  0.010000  0.000001  10000.000000
+  1.300000  0.010000  1

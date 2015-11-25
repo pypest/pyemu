@@ -1,0 +1,46 @@
+pcf
+* control data
+restart estimation
+3  19  2  0  2
+2  1  single  point  1  0  0
+2.000000e+001  -3.000000e+000  3.000000e-001  1.000000e-002  -10 999 lamforgive
+1.000000e+001  1.000000e+001  1.000000e-003
+1.000000e-001 1 noaui
+10  1.000000e-002  3  3  1.000000e-002  3
+0  0  0   PARSAVEITN
+* parameter groups
+Kp     relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+Cond   relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+* parameter data
+Rcond log factor 1.500000e+05 1.00E-10 1.00E+10 Cond 1 0 1
+Ksand  log  factor  45.00000e+00  1.000000e-10  1.000000e+02  kp  1.0  0.0  1
+Ksilt  log  factor  15.00000e+00  1.000000e-10  1.000000e+02  kp  1.0  0.0  1
+* observation groups
+heads
+rflux
+* observation data
+P	509.12	550	heads
+G	508.19	550	heads
+F	508.17	550	heads
+N	512.83	550	heads
+J	515.71	550	heads
+E	513.17	550	heads
+A	512.22	550	heads
+B	511.95	550	heads
+K	513.24	550	heads
+Q	518.32	550	heads
+M	517.12	550	heads
+I	519.28	550	heads
+D	516.71	550	heads
+C	516.03	550	heads
+O	519.02	550	heads
+H	519.7	550	heads
+S	521.96	550	heads
+toRiver	45550	2.20E-04	rflux
+fromRiver	350	2.86E-02	rflux
+* model command line
+P9.bat
+* model input/output
+P9cal_upw.tpl   P9cal.upw
+P9cal_riv.tpl   P9cal.riv
+results_txt.ins results.txt

@@ -1,0 +1,53 @@
+pcf
+* control data
+restart  prediction
+    4    14     4     0     2
+    2     2 single point  1  0   0
+  5.0   2.0   0.3  0.03    10
+  3.0   3.0 0.001
+  0.1
+   30  0.01     3     3  0.01     3
+    1     1     1
+* parameter groups
+s1       relative 0.01  0.0  switch  2.0 parabolic
+s2       relative 0.01  0.0  switch  2.0 parabolic
+y1       relative 0.01  0.0  switch  2.0 parabolic
+xc       relative 0.01  0.0  switch  2.0 parabolic
+* parameter data
+s1       none relative   0.300000      -1.000000E+10   1.000000E+10 s1          1.0000        0.0000   1
+s2       none relative   0.800000      -1.000000E+10   1.000000E+10 s2          1.0000        0.0000   1
+y1       none relative   0.400000      -1.000000E+10   1.000000E+10 y1          1.0000        0.0000   1
+xc       none relative   0.300000      -1.000000E+10   1.000000E+10 xc          1.0000        0.0000   1
+* observation groups
+obsgroup
+predict
+* observation data
+o1        0.501000      1.0  obsgroup
+o2        0.521000      1.0  obsgroup
+o3        0.520000      1.0  obsgroup
+o4        0.531000      1.0  obsgroup
+o5        0.534000      1.0  obsgroup
+o6        0.548000      1.0  obsgroup
+o7        0.601000      1.0  obsgroup
+o8        0.626000      1.0  obsgroup
+o9        0.684000      1.0  obsgroup
+o10       0.696000      1.0  obsgroup
+o11       0.706000      1.0  obsgroup
+o12       0.783000      1.0  obsgroup
+o13       0.832000      1.0  obsgroup
+o14       0.000000      0.0  predict
+* model command line
+model.bat
+* model input/output
+in.tpl     in1.dat
+in2.tpl    in2.dat
+out.ins    out1.dat
+out2.ins   out2.dat
+* prior information
+* predictive analysis
+1
+5.0e-3  5.2e-3  1.0e-2
+0.0     0.005
+0.0     0.05
+4       0.0     0.005    4
+

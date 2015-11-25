@@ -1,0 +1,55 @@
+pcf
+* control data
+restart  estimation
+    4    21     4     0  2
+    1     1 single point  1 1 0
+  5.0   2.0   0.3  0.03    10
+  5.0   5.0 0.001
+  0.1
+   30  0.001     4     4  0.001     4
+    1     1     1
+* group definitions and derivative data
+a    relative 0.01  0.01  switch    2.0 parabolic
+b    relative 0.01  0.01  switch    2.0 parabolic
+c    relative 0.01  0.01  switch    2.0 parabolic
+d    relative 0.01  0.01  switch    2.0 parabolic
+* parameter data
+a    none relative    1.0000     -1.0E-10   1.0E+10 a  1  0.00 0
+b    none relative    1.0000     -1.0E+10   1.0E+10 b  1  0.00 0
+c    none relative    1.0000     -1.0E+10   1.0E+10 c  1  0.00 0
+d    none relative    1.0000     -1.0E+10   1.0E+10 d  1  1.00 0
+* observation groups
+obsgp1
+obsgp2
+* observation data
+o1    -3950.00      1.0  obsgp1
+o2    -2790.00      1.0  obsgp1
+o3    -1880.00      1.0  obsgp1
+o4    -1190.00      1.0  obsgp1
+o5    -690.000      1.0  obsgp1
+o6    -350.000      1.0  obsgp1
+o7    -140.000      1.0  obsgp1
+o8    -30.0000      1.0  obsgp1
+o9     10.0000      1.0  obsgp1
+o10    10.0000      1.0  obsgp1
+o11   0.000000      1.0  obsgp1
+o12    10.0000      1.0  obsgp1
+o13    70.0000      1.0  obsgp1
+o14    210.000      1.0  obsgp1
+o15    460.000      1.0  obsgp1
+o16    850.000      1.0  obsgp1
+o17    1410.00      1.0  obsgp1
+o18    2170.00      1.0  obsgp1
+o19    3160.00      1.0  obsgp1
+o20    4410.00      1.0  obsgp1
+sumcoef    0.0          0.0  obsgp2
+* derivatives command line
+polymod
+poly_der.out
+* model command line
+polymod
+* model input/output
+poly_par.tpl  poly_par.in
+poly_val.ins  poly_val.out
+
+

@@ -1,0 +1,1269 @@
+pcf
+* control data
+restart estimation
+    500    717      1      0     17  
+    1    8 double point  1    0  0
+   20.000       -3.0000      0.3  0.03  10     999  lamforgive	  derforgive
+      0.030  10.0  0.001
+ 0.1      1
+    50  0.005  4  4  0.005  4
+1  1  1  1 nojcosaveitn reisaveitn
+* singular value decomposition
+     1
+   500  5.0000000E-07
+     0
+* svd assist
+cont_rjh22_dane9_nofc_noreg.pst
+cont_rjh22_dane9_nofc_noreg.jco
+    1    2    0    0    0
+* parameter groups
+ pargp absolute    0.015  0.0  switch    2.0 parabolic
+* parameter data
+par1         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par2         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par3         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par4         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par5         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par6         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par7         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par8         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par9         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par10        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par11        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par12        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par13        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par14        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par15        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par16        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par17        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par18        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par19        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par20        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par21        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par22        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par23        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par24        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par25        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par26        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par27        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par28        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par29        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par30        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par31        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par32        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par33        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par34        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par35        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par36        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par37        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par38        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par39        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par40        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par41        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par42        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par43        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par44        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par45        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par46        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par47        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par48        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par49        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par50        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par51        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par52        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par53        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par54        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par55        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par56        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par57        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par58        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par59        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par60        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par61        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par62        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par63        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par64        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par65        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par66        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par67        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par68        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par69        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par70        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par71        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par72        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par73        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par74        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par75        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par76        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par77        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par78        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par79        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par80        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par81        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par82        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par83        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par84        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par85        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par86        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par87        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par88        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par89        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par90        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par91        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par92        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par93        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par94        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par95        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par96        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par97        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par98        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par99        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par100       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par101       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par102       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par103       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par104       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par105       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par106       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par107       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par108       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par109       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par110       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par111       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par112       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par113       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par114       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par115       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par116       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par117       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par118       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par119       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par120       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par121       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par122       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par123       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par124       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par125       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par126       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par127       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par128       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par129       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par130       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par131       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par132       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par133       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par134       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par135       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par136       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par137       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par138       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par139       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par140       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par141       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par142       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par143       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par144       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par145       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par146       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par147       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par148       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par149       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par150       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par151       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par152       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par153       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par154       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par155       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par156       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par157       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par158       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par159       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par160       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par161       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par162       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par163       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par164       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par165       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par166       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par167       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par168       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par169       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par170       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par171       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par172       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par173       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par174       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par175       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par176       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par177       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par178       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par179       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par180       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par181       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par182       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par183       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par184       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par185       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par186       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par187       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par188       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par189       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par190       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par191       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par192       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par193       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par194       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par195       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par196       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par197       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par198       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par199       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par200       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par201       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par202       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par203       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par204       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par205       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par206       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par207       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par208       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par209       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par210       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par211       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par212       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par213       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par214       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par215       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par216       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par217       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par218       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par219       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par220       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par221       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par222       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par223       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par224       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par225       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par226       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par227       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par228       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par229       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par230       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par231       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par232       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par233       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par234       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par235       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par236       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par237       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par238       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par239       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par240       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par241       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par242       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par243       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par244       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par245       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par246       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par247       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par248       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par249       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par250       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par251       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par252       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par253       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par254       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par255       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par256       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par257       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par258       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par259       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par260       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par261       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par262       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par263       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par264       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par265       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par266       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par267       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par268       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par269       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par270       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par271       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par272       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par273       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par274       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par275       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par276       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par277       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par278       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par279       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par280       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par281       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par282       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par283       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par284       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par285       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par286       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par287       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par288       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par289       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par290       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par291       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par292       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par293       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par294       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par295       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par296       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par297       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par298       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par299       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par300       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par301       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par302       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par303       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par304       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par305       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par306       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par307       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par308       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par309       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par310       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par311       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par312       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par313       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par314       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par315       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par316       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par317       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par318       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par319       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par320       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par321       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par322       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par323       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par324       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par325       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par326       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par327       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par328       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par329       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par330       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par331       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par332       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par333       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par334       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par335       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par336       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par337       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par338       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par339       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par340       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par341       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par342       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par343       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par344       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par345       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par346       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par347       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par348       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par349       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par350       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par351       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par352       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par353       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par354       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par355       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par356       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par357       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par358       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par359       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par360       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par361       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par362       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par363       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par364       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par365       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par366       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par367       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par368       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par369       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par370       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par371       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par372       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par373       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par374       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par375       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par376       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par377       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par378       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par379       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par380       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par381       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par382       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par383       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par384       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par385       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par386       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par387       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par388       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par389       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par390       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par391       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par392       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par393       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par394       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par395       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par396       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par397       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par398       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par399       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par400       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par401       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par402       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par403       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par404       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par405       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par406       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par407       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par408       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par409       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par410       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par411       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par412       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par413       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par414       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par415       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par416       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par417       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par418       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par419       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par420       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par421       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par422       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par423       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par424       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par425       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par426       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par427       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par428       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par429       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par430       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par431       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par432       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par433       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par434       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par435       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par436       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par437       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par438       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par439       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par440       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par441       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par442       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par443       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par444       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par445       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par446       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par447       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par448       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par449       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par450       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par451       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par452       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par453       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par454       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par455       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par456       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par457       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par458       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par459       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par460       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par461       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par462       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par463       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par464       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par465       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par466       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par467       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par468       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par469       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par470       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par471       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par472       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par473       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par474       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par475       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par476       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par477       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par478       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par479       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par480       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par481       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par482       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par483       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par484       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par485       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par486       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par487       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par488       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par489       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par490       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par491       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par492       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par493       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par494       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par495       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par496       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par497       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par498       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par499       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par500       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+* observation groups
+stat
+lake1
+lake2
+springs1
+springs2
+bh_flow
+Head1
+Head2
+Head4
+Head11
+Head19
+Head21
+Head22
+Head23
+flux
+flux1
+flux2
+* observation data
+Mendota_massbal    0.0000000E+00   0.0000E+00     stat
+Wingra_massbal     0.0000000E+00   0.0000E+00     stat
+Monona_massbal     0.0000000E+00   0.0000E+00     stat
+Waubesa_massbal    0.0000000E+00   0.0000E+00     stat
+Kegonsa_massbal    0.0000000E+00   0.0000E+00     stat
+Fish_massbal       0.0000000E+00   0.0000E+00     stat
+Crystal_massbal    0.0000000E+00   0.0000E+00     stat
+mf_massbalance     0.0000000E+00   0.0000E+00     stat
+mf_runtime_min     7.0000000E+00   0.0000E+00     stat
+nwt_iter           1.0000000E+02   0.0000E+00     stat
+knt_bad_pct        0.0000000E+00   0.0000E+00     stat
+pct_subdom_lost    0.0000000E+00   6.4000E+02     stat
+pct_headw_dry      0.0000000E+00   0.0000E+00     stat
+pct_nonheadw_dry   0.0000000E+00   0.0000E+00     stat
+non-zero_sprgs     1.8000000E+01   0.0000E+00     stat
+obs/simul_sprfl    1.0000000E+00   0.0000E+00     stat
+lk_mendota         8.4948000E+02   1.5000E+02     lake1
+lk_monona          8.4463000E+02   1.5000E+02     lake1
+lk_wingra          8.4822000E+02   1.5000E+02     lake1
+lk_waubesa         8.4451000E+02   1.5000E+02     lake1
+lk_kegonsa         8.4315000E+02   1.5000E+02     lake1
+fish_lk            8.6137000E+02   0.0000E+00     lake2
+crystal_lk         8.7161000E+02   0.0000E+00     lake2
+englehart         -1.3737600E+04   5.4000E-03     springs2
+syene             -5.5728000E+04   5.4000E-03     springs2
+big_nine          -3.4819200E+04   5.4000E-03     springs2
+nursery           -9.8928000E+04   5.4000E-03     springs2
+duck_pond         -8.1302400E+04   5.4000E-03     springs2
+council_wingra    -7.7068800E+04   5.4000E-03     springs2
+garfoot_obs       -1.9612800E+04   5.4000E-03     springs2
+garfoot_braun     -1.0000000E+05   5.4000E-03     springs2
+big_donald        -6.6000000E+05   4.2000E-03     springs1
+small_donald      -1.3000000E+05   5.4000E-03     springs2
+harbor_mendota    -2.0736000E+03   5.4000E-03     springs2
+fitz              -2.1000000E+05   5.4000E-03     springs2
+cth               -4.4000000E+05   4.2000E-03     springs1
+nevin             -2.9000000E+05   4.2000E-03     springs1
+zeier             -3.3955200E+04   5.4000E-03     springs2
+big_wingra        -2.2291200E+04   5.4000E-03     springs2
+pheasant_branch   -3.0000000E+05   4.2000E-03     springs1
+token             -6.7000000E+05   4.2000E-03     springs1
+mendota_outlt      7.9833600E+06   0.0000E+00     flux
+monona_outlt       1.1128320E+07   0.0000E+00     flux
+waubesa_outlt      1.1128320E+07   0.0000E+00     flux
+kegonsa_outlt      1.9690000E+07   1.0000E-05     flux
+131436_lay6        1.5120000E-01   2.5000E+03     bh_flow
+131436_lay7       -1.0800000E-01   2.5000E+03     bh_flow
+131436_lay8       -4.3200000E-02   2.5000E+03     bh_flow
+131371_lay7       -1.2960000E-02   2.5000E+03     bh_flow
+131371_lay8        0.0000000E+00   2.5000E+03     bh_flow
+131371_lay9        0.0000000E+00   2.5000E+03     bh_flow
+131371_lay10       1.2960000E-02   2.5000E+03     bh_flow
+136049_lay8       -5.7600000E-02   2.5000E+03     bh_flow
+136049_lay9        0.0000000E+00   2.5000E+03     bh_flow
+136049_lay10       5.7600000E-02   2.5000E+03     bh_flow
+131440_lay7        5.7600000E-03   2.5000E+03     bh_flow
+131440_lay8       -2.7360000E-02   2.5000E+03     bh_flow
+131440_lay9        0.0000000E+00   2.5000E+03     bh_flow
+131440_lay10       2.1600000E-02   2.5000E+03     bh_flow
+131466_lay6       -3.6000000E-04   2.5000E+03     bh_flow
+131466_lay7        3.6000000E-04   2.5000E+03     bh_flow
+o1                 8.2020000E+02   2.0000E+00     head1
+o2                 8.8390000E+02   2.0000E+00     head1
+o3                 7.9100000E+02   1.5000E+01     head19
+o4                 9.1420000E+02   2.0000E+00     head1
+o5                 8.3600000E+02   2.0000E+00     head1
+o6                 8.5080000E+02   2.0000E+00     head1
+o7                 8.2800000E+02   2.0000E+00     head1
+o8                 9.0120000E+02   2.0000E+00     head1
+o9                 8.6230000E+02   1.5000E+01     head19
+o10                8.5610000E+02   1.5000E+01     head19
+o11                8.5800000E+02   1.5000E+01     head19
+o12                8.6750000E+02   2.0000E+00     head1
+o13                9.2310000E+02   2.0000E+00     head1
+o14                9.0520000E+02   0.0000E+00     head22
+o15                8.3173000E+02   1.5000E+01     head19
+o16                8.4305000E+02   0.0000E+00     head22
+o17                8.2395000E+02   0.0000E+00     head22
+o18                9.0450000E+02   2.0000E+00     head1
+o19                8.9490000E+02   0.0000E+00     head22
+o20                9.0290000E+02   2.0000E+00     head1
+o21                8.3678000E+02   2.0000E+00     head1
+o22                8.0978000E+02   2.0000E+00     head1
+o23                8.4564000E+02   1.5000E+01     head19
+o24                8.4464000E+02   1.5000E+01     head19
+o25                8.4434000E+02   1.5000E+01     head19
+o26                8.4950000E+02   2.0000E+00     head1
+o27                8.4840000E+02   2.0000E+00     head1
+o28                8.4550000E+02   2.0000E+00     head1
+o29                8.4450000E+02   2.0000E+00     head1
+o30                8.4470000E+02   2.0000E+00     head1
+o31                8.4780000E+02   2.0000E+00     head1
+o32                8.7250000E+02   1.5000E+01     head19
+o33                8.6416000E+02   1.5000E+01     head19
+o34                8.6276000E+02   1.5000E+01     head19
+o35                8.6100000E+02   1.5000E+01     head19
+o36                8.5770000E+02   1.5000E+01     head19
+o37                8.9550000E+02   2.0000E+00     head1
+o38                8.9600000E+02   2.0000E+00     head1
+o39                8.9320000E+02   2.0000E+00     head1
+o40                8.9550000E+02   2.0000E+00     head1
+o41                9.1100000E+02   2.0000E+00     head1
+o42                9.1330000E+02   2.0000E+00     head1
+o43                8.9940000E+02   2.0000E+00     head1
+o44                8.9630000E+02   2.0000E+00     head1
+o45                8.8670000E+02   2.0000E+00     head1
+o46                8.8603670E+02   2.0000E+00     head1
+o47                8.9290000E+02   2.0000E+00     head1
+o48                8.9450000E+02   2.0000E+00     head1
+o49                8.8650000E+02   2.0000E+00     head1
+o50                8.6277000E+02   1.5000E+01     head19
+o51                8.5326000E+02   1.5000E+01     head19
+o52                8.5340000E+02   1.5000E+01     head19
+o53                8.1340000E+02   1.5000E+01     head19
+o54                8.7136000E+02   1.5000E+01     head19
+o55                8.7370000E+02   1.5000E+01     head19
+o56                8.7317000E+02   1.5000E+01     head19
+o57                8.6574000E+02   1.5000E+01     head19
+o58                8.6576000E+02   1.5000E+01     head19
+o59                8.7191000E+02   1.5000E+01     head19
+o60                8.7553000E+02   1.5000E+01     head19
+o61                8.7771000E+02   1.5000E+01     head19
+o62                8.6370000E+02   1.5000E+01     head19
+o63                8.6452000E+02   1.5000E+01     head19
+o64                8.5668000E+02   1.5000E+01     head19
+o65                8.5672000E+02   1.5000E+01     head19
+o66                9.4327000E+02   1.5000E+01     head19
+o67                9.4478000E+02   1.5000E+01     head19
+o68                8.9798000E+02   1.5000E+01     head19
+o69                9.7214000E+02   2.0000E+00     head1
+o70                9.7216000E+02   2.0000E+00     head1
+o71                9.7231000E+02   2.0000E+00     head1
+o72                9.7291000E+02   2.0000E+00     head1
+o73                9.7254000E+02   2.0000E+00     head1
+o74                8.6100000E+02   2.0000E+00     head1
+o75                8.6100000E+02   1.5000E+01     head19
+o76                8.6080000E+02   1.5000E+01     head19
+o77                8.6300000E+02   1.5000E+01     head19
+o78                8.6220000E+02   1.5000E+01     head19
+o79                8.6110000E+02   1.5000E+01     head19
+o80                8.5850000E+02   1.5000E+01     head19
+o81                8.5920000E+02   1.5000E+01     head19
+o82                8.5930000E+02   1.5000E+01     head19
+o83                8.6180000E+02   1.5000E+01     head19
+o84                8.6200000E+02   1.5000E+01     head19
+o85                8.6150000E+02   1.5000E+01     head19
+o86                8.6650000E+02   1.5000E+01     head19
+o87                8.6780000E+02   1.5000E+01     head19
+o88                8.6009000E+02   2.0000E+00     head1
+o89                8.6110000E+02   2.0000E+00     head1
+o90                8.6123000E+02   2.0000E+00     head1
+o91                8.6076000E+02   2.0000E+00     head1
+o92                8.5885000E+02   2.0000E+00     head1
+o93                8.5972000E+02   2.0000E+00     head1
+o94                8.5746000E+02   2.0000E+00     head1
+o95                8.6052000E+02   2.0000E+00     head1
+o96                8.5622000E+02   2.0000E+00     head1
+o97                8.6162000E+02   2.0000E+00     head1
+o98                8.6581000E+02   2.0000E+00     head1
+o99                8.7183000E+02   2.0000E+00     head1
+o100               8.3901000E+02   3.0000E+00     head23
+o101               8.4717000E+02   3.0000E+00     head23
+o102               8.4754000E+02   3.0000E+00     head23
+o103               8.4746000E+02   3.0000E+00     head23
+o104               8.4054000E+02   3.0000E+00     head23
+o105               8.4750000E+02   3.0000E+00     head23
+o106               9.1787000E+02   3.0000E+00     head23
+o107               9.0933000E+02   3.0000E+00     head23
+o108               8.9557000E+02   3.0000E+00     head23
+o109               9.0801000E+02   3.0000E+00     head23
+o110               9.0796000E+02   3.0000E+00     head23
+o111               9.1209000E+02   3.0000E+00     head23
+o112               9.0823000E+02   3.0000E+00     head23
+o113               9.0693000E+02   3.0000E+00     head23
+o114               9.0601000E+02   3.0000E+00     head23
+o115               8.5020000E+02   3.0000E+00     head23
+o116               8.4943000E+02   3.0000E+00     head23
+o117               8.4742000E+02   3.0000E+00     head23
+o118               8.4345000E+02   3.0000E+00     head23
+o119               8.4861000E+02   3.0000E+00     head23
+o120               8.4723000E+02   3.0000E+00     head23
+o121               8.4819000E+02   3.0000E+00     head23
+o122               8.4801000E+02   3.0000E+00     head23
+o123               8.4568000E+02   3.0000E+00     head23
+o124               8.4860000E+02   3.0000E+00     head23
+o125               8.4851000E+02   3.0000E+00     head23
+o126               8.5704000E+02   3.0000E+00     head23
+o127               8.6469000E+02   3.0000E+00     head23
+o128               8.6806000E+02   3.0000E+00     head23
+o129               8.5770000E+02   3.0000E+00     head23
+o130               8.5565000E+02   3.0000E+00     head23
+o131               8.5320000E+02   3.0000E+00     head23
+o132               8.5405000E+02   3.0000E+00     head23
+o133               8.5234000E+02   3.0000E+00     head23
+o134               8.5645000E+02   3.0000E+00     head23
+o135               8.5424000E+02   3.0000E+00     head23
+o136               8.5016000E+02   3.0000E+00     head23
+o137               8.5036000E+02   3.0000E+00     head23
+o138               8.6501000E+02   3.0000E+00     head23
+o139               8.5846000E+02   3.0000E+00     head23
+o140               9.7426000E+02   3.0000E+00     head23
+o141               9.8050000E+02   3.0000E+00     head23
+o142               9.7909000E+02   3.0000E+00     head23
+o143               9.7351000E+02   3.0000E+00     head23
+o144               9.7125000E+02   3.0000E+00     head23
+o145               9.7828000E+02   3.0000E+00     head23
+o146               9.8088000E+02   3.0000E+00     head23
+o147               9.7926000E+02   3.0000E+00     head23
+o148               9.8299000E+02   3.0000E+00     head23
+o149               9.8085000E+02   3.0000E+00     head23
+o150               9.1700000E+02   3.0000E+00     head23
+o151               8.7300000E+02   3.0000E+00     head23
+o152               8.7350000E+02   3.0000E+00     head23
+o153               8.6000000E+02   3.0000E+00     head23
+o154               8.9300000E+02   3.0000E+00     head23
+o155               9.6550000E+02   3.0000E+00     head23
+o156               9.7500000E+02   3.0000E+00     head23
+o157               9.7300000E+02   3.0000E+00     head23
+o158               9.6940000E+02   3.0000E+00     head23
+o159               9.6280000E+02   3.0000E+00     head23
+o160               9.7910000E+02   3.0000E+00     head23
+o161               9.2400000E+02   3.0000E+00     head23
+o162               9.1900000E+02   3.0000E+00     head23
+o163               9.2000000E+02   3.0000E+00     head23
+o164               9.1000000E+02   3.0000E+00     head23
+o165               8.7400000E+02   3.0000E+00     head23
+o166               9.1650000E+02   3.0000E+00     head23
+o167               9.1700000E+02   3.0000E+00     head23
+o168               9.2300000E+02   3.0000E+00     head23
+o169               8.5400000E+02   3.0000E+00     head23
+o170               8.5050000E+02   3.0000E+00     head23
+o171               8.5100000E+02   3.0000E+00     head23
+o172               8.5400000E+02   3.0000E+00     head23
+o173               8.5200000E+02   3.0000E+00     head23
+o174               8.5000000E+02   3.0000E+00     head23
+o175               8.4000000E+02   3.0000E+00     head23
+o176               8.0400000E+02   3.0000E+00     head23
+o177               8.0675000E+02   3.0000E+00     head23
+o178               8.1300000E+02   3.0000E+00     head23
+o179               8.1320000E+02   3.0000E+00     head23
+o180               8.7630000E+02   3.0000E+00     head23
+o181               8.4200000E+02   3.0000E+00     head23
+o182               8.4200000E+02   3.0000E+00     head23
+o183               8.4130000E+02   3.0000E+00     head23
+o184               8.3770000E+02   3.0000E+00     head23
+o185               8.6300000E+02   3.0000E+00     head23
+o186               9.1850000E+02   3.0000E+00     head23
+o187               8.5550000E+02   3.0000E+00     head23
+o188               8.5380000E+02   3.0000E+00     head23
+o189               8.5280000E+02   3.0000E+00     head23
+o190               8.7020000E+02   3.0000E+00     head23
+o191               8.6050000E+02   3.0000E+00     head23
+o192               8.6600000E+02   3.0000E+00     head23
+o193               8.6850000E+02   3.0000E+00     head23
+o194               8.8000000E+02   3.0000E+00     head23
+o195               9.0000000E+02   3.0000E+00     head23
+o196               8.5650000E+02   3.0000E+00     head23
+o197               8.3760000E+02   3.0000E+00     head23
+o198               8.1200000E+02   3.0000E+00     head23
+o199               9.5100000E+02   3.0000E+00     head23
+o200               9.4700000E+02   3.0000E+00     head23
+o201               9.6340000E+02   3.0000E+00     head23
+o202               9.6140000E+02   3.0000E+00     head23
+o203               9.7000000E+02   3.0000E+00     head23
+o204               9.7600000E+02   3.0000E+00     head23
+o205               8.6900000E+02   3.0000E+00     head23
+o206               8.6200000E+02   3.0000E+00     head23
+o207               8.4650000E+02   3.0000E+00     head23
+o208               8.4700000E+02   3.0000E+00     head23
+o209               8.4600000E+02   3.0000E+00     head23
+o210               8.5200000E+02   3.0000E+00     head23
+o211               8.4770000E+02   3.0000E+00     head23
+o212               8.4300000E+02   3.0000E+00     head23
+o213               8.5050000E+02   3.0000E+00     head23
+o214               8.5200000E+02   3.0000E+00     head23
+o215               8.8500000E+02   3.0000E+00     head23
+o216               9.4200000E+02   3.0000E+00     head23
+o217               9.2100000E+02   3.0000E+00     head23
+o218               8.7300000E+02   3.0000E+00     head23
+o219               8.4630000E+02   3.0000E+00     head23
+o220               8.5850000E+02   3.0000E+00     head23
+o221               9.3000000E+02   3.0000E+00     head23
+o222               9.4300000E+02   3.0000E+00     head23
+o223               8.5000000E+02   3.0000E+00     head23
+o224               8.6750000E+02   3.0000E+00     head23
+o225               8.3950000E+02   3.0000E+00     head23
+o226               8.1950000E+02   3.0000E+00     head23
+o227               1.0160000E+03   3.0000E+00     head23
+o228               9.5100000E+02   3.0000E+00     head23
+o229               9.3750000E+02   3.0000E+00     head23
+o230               9.3500000E+02   3.0000E+00     head23
+o231               8.9550000E+02   3.0000E+00     head23
+o232               8.6900000E+02   3.0000E+00     head23
+o233               8.6100000E+02   3.0000E+00     head23
+o234               9.0825000E+02   3.0000E+00     head23
+o235               9.2350000E+02   3.0000E+00     head23
+o236               9.0300000E+02   3.0000E+00     head23
+o237               9.4500000E+02   2.0000E+00     head1
+o238               8.9000000E+02   3.0000E+00     head23
+o239               8.5350000E+02   3.0000E+00     head23
+o240               7.5300000E+02   3.0000E+00     head23
+o241               8.0500000E+02   3.0000E+00     head23
+o242               8.5450000E+02   3.0000E+00     head23
+o243               8.8650000E+02   3.0000E+00     head23
+o244               8.6350000E+02   3.0000E+00     head23
+o245               8.5725000E+02   3.0000E+00     head23
+o246               8.5600000E+02   3.0000E+00     head23
+o247               8.6000000E+02   3.0000E+00     head23
+o248               9.5100000E+02   3.0000E+00     head23
+o249               9.5770000E+02   3.0000E+00     head23
+o250               9.2950000E+02   3.0000E+00     head23
+o251               9.3400000E+02   3.0000E+00     head23
+o252               9.3450000E+02   3.0000E+00     head23
+o253               9.3200000E+02   3.0000E+00     head23
+o254               9.3600000E+02   3.0000E+00     head23
+o255               9.5200000E+02   3.0000E+00     head23
+o256               9.4300000E+02   3.0000E+00     head23
+o257               9.7800000E+02   3.0000E+00     head23
+o258               9.5200000E+02   3.0000E+00     head23
+o259               9.1650000E+02   3.0000E+00     head23
+o260               9.6400000E+02   3.0000E+00     head23
+o261               8.6620000E+02   3.0000E+00     head23
+o262               8.6603000E+02   3.0000E+00     head23
+o263               8.6885000E+02   3.0000E+00     head23
+o264               8.6903000E+02   3.0000E+00     head23
+o265               9.2683000E+02   3.0000E+00     head23
+o266               9.2478000E+02   3.0000E+00     head23
+o267               9.2417000E+02   3.0000E+00     head23
+o268               8.5708000E+02   3.0000E+00     head23
+o269               8.5701980E+02   3.0000E+00     head23
+o270               9.1127500E+02   3.0000E+00     head23
+o271               9.0749170E+02   3.0000E+00     head23
+o272               9.6092540E+02   3.0000E+00     head23
+o273               9.5298770E+02   3.0000E+00     head23
+o274               9.5220290E+02   3.0000E+00     head23
+o275               8.6222150E+02   3.0000E+00     head23
+o276               8.6226460E+02   3.0000E+00     head23
+o277               8.6249460E+02   3.0000E+00     head23
+o278               8.4668500E+02   3.0000E+00     head23
+o279               8.4518880E+02   3.0000E+00     head23
+o280               8.0169140E+02   3.0000E+00     head23
+o281               8.1140000E+02   3.0000E+00     head23
+o282               9.2260000E+02   2.0000E+00     head1
+o283               8.1970000E+02   2.0000E+00     head1
+o284               8.5500000E+02   2.0000E+00     head1
+o285               8.4800000E+02   2.0000E+00     head1
+o286               8.1600000E+02   2.0000E+00     head1
+o287               8.4900000E+02   2.0000E+00     head1
+o288               9.4240000E+02   2.0000E+00     head1
+o289               8.4500000E+02   2.0000E+00     head1
+o290               8.7400000E+02   2.0000E+00     head1
+o291               8.7600000E+02   2.0000E+00     head1
+o292               8.7700000E+02   2.0000E+00     head1
+o293               8.7200000E+02   2.0000E+00     head1
+o294               8.0300000E+02   2.0000E+00     head1
+o295               8.5347000E+02   1.5000E+01     head19
+o296               8.4726000E+02   1.5000E+01     head19
+o297               8.4889000E+02   1.5000E+01     head19
+o298               8.4146000E+02   1.5000E+01     head19
+o299               8.4709000E+02   1.5000E+01     head19
+o300               8.4635000E+02   1.5000E+01     head19
+o301               8.4572000E+02   1.5000E+01     head19
+o302               8.4004000E+02   1.5000E+01     head19
+o303               8.1716000E+02   1.5000E+01     head19
+o304               8.5048000E+02   1.5000E+01     head19
+o305               8.4639000E+02   1.5000E+01     head19
+o306               8.5022000E+02   1.5000E+01     head19
+o307               8.4706000E+02   1.5000E+01     head19
+o308               8.4662000E+02   1.5000E+01     head19
+o309               8.9066000E+02   1.5000E+01     head19
+o310               8.7948000E+02   1.5000E+01     head19
+o311               8.7410000E+02   1.5000E+01     head19
+o312               8.5940000E+02   1.5000E+01     head19
+o313               8.6160000E+02   1.5000E+01     head19
+o314               8.6100000E+02   1.5000E+01     head19
+o315               8.9050000E+02   1.5000E+01     head19
+o316               8.8890000E+02   1.5000E+01     head19
+o317               8.7250000E+02   1.5000E+01     head19
+o318               8.6760000E+02   1.5000E+01     head19
+o319               8.6430000E+02   1.5000E+01     head19
+o320               8.6260000E+02   1.5000E+01     head19
+o321               8.6260000E+02   1.5000E+01     head19
+o322               8.5740000E+02   1.5000E+01     head19
+o323               8.5740000E+02   1.5000E+01     head19
+o324               8.5810000E+02   1.5000E+01     head19
+o325               8.5840000E+02   1.5000E+01     head19
+o326               8.5840000E+02   1.5000E+01     head19
+o327               8.5800000E+02   1.5000E+01     head19
+o328               8.5200000E+02   1.5000E+01     head19
+o329               8.1800000E+02   2.0000E+00     head1
+o330               8.3207800E+02   1.5000E+01     head4
+o331               8.6908790E+02   1.5000E+01     head4
+o332               7.2894050E+02   1.5000E+01     head4
+o333               7.9407800E+02   1.5000E+01     head4
+o334               8.2924380E+02   1.5000E+01     head4
+o335               8.9209000E+02   1.5000E+01     head4
+o336               9.2854500E+02   1.5000E+01     head4
+o337               9.1923550E+02   1.5000E+01     head4
+o338               9.6268890E+02   1.5000E+01     head4
+o339               8.4964130E+02   1.5000E+01     head4
+o340               9.1252030E+02   1.5000E+01     head4
+o341               8.6427750E+02   1.5000E+01     head4
+o342               8.5385670E+02   1.5000E+01     head4
+o343               8.6704000E+02   1.5000E+01     head4
+o344               8.6747330E+02   1.5000E+01     head4
+o345               8.6739330E+02   1.5000E+01     head4
+o346               8.7101000E+02   1.5000E+01     head11
+o347               8.6141000E+02   1.5000E+01     head11
+o348               8.4322880E+02   1.5000E+01     head11
+o349               8.4981880E+02   1.5000E+01     head11
+o350               8.4530020E+02   1.5000E+01     head11
+o351               8.4500640E+02   1.5000E+01     head11
+o352               8.4800000E+02   1.5000E+01     head11
+o353               8.5053840E+02   1.5000E+01     head11
+o354               8.3918540E+02   1.5000E+01     head11
+o355               8.4489860E+02   1.5000E+01     head11
+o356              -2.9000000E+01   0.0000E+00     head2
+o357              -5.1600000E+00   0.0000E+00     head22
+o358              -4.1900000E+00   2.7000E+01     head21
+o359              -2.5000000E+00   2.7000E+01     head21
+o360              -2.2000000E+00   2.7000E+01     head21
+o361              -2.0000000E+00   0.0000E+00     head2
+o362              -1.0000000E+00   0.0000E+00     head2
+o363              -7.0000000E-01   2.7000E+01     head21
+o364              -5.0000000E-01   0.0000E+00     head22
+o365              -2.0000000E-01   2.7000E+01     head21
+o366              -2.0000000E-01   0.0000E+00     head22
+o367              -1.8000000E-01   0.0000E+00     head22
+o368              -1.0000000E-01   2.7000E+01     head21
+o369              -4.0000000E-02   0.0000E+00     head22
+o370               0.0000000E+00   2.7000E+01     head21
+o371               5.0000000E-02   0.0000E+00     head22
+o372               6.0200000E-02   0.0000E+00     head22
+o373               9.0000000E-02   0.0000E+00     head22
+o374               1.0000000E-01   2.7000E+01     head21
+o375               1.8000000E-01   0.0000E+00     head22
+o376               2.0000000E-01   2.7000E+01     head21
+o377               2.0000000E-01   2.7000E+01     head21
+o378               2.0000000E-01   2.7000E+01     head21
+o379               3.0000000E-01   2.7000E+01     head21
+o380               3.7000000E-01   0.0000E+00     head22
+o381               4.7000000E-01   2.7000E+01     head21
+o382               5.0000000E-01   2.7000E+01     head21
+o383               7.7000000E-01   0.0000E+00     head22
+o384               7.8480000E-01   0.0000E+00     head22
+o385               8.0000000E-01   2.7000E+01     head21
+o386               9.2000000E-01   0.0000E+00     head22
+o387               1.0000000E+00   2.7000E+01     head21
+o388               1.0000000E+00   2.7000E+01     head21
+o389               1.1000000E+00   2.7000E+01     head21
+o390               1.3800000E+00   0.0000E+00     head22
+o391               1.4000000E+00   2.7000E+01     head21
+o392               1.5000000E+00   0.0000E+00     head22
+o393               1.6200000E+00   0.0000E+00     head22
+o394               1.7100000E+00   0.0000E+00     head22
+o395               1.9100000E+00   2.7000E+01     head21
+o396               2.0000000E+00   0.0000E+00     head22
+o397               2.0100000E+00   0.0000E+00     head22
+o398               2.1400000E+00   0.0000E+00     head22
+o399               2.2100000E+00   0.0000E+00     head22
+o400               2.2600000E+00   2.7000E+01     head21
+o401               2.3300000E+00   0.0000E+00     head22
+o402               2.4500000E+00   0.0000E+00     head22
+o403               2.6600000E+00   0.0000E+00     head22
+o404               3.7833000E+00   0.0000E+00     head22
+o405               3.8600000E+00   0.0000E+00     head22
+o406               4.3000000E+00   2.7000E+01     head21
+o407               5.0000000E+00   0.0000E+00     head2
+o408               5.5800000E+00   0.0000E+00     head22
+o409               6.2400000E+00   0.0000E+00     head22
+o410               6.5500000E+00   0.0000E+00     head22
+o411               6.9600000E+00   0.0000E+00     head22
+o412               7.0300000E+00   0.0000E+00     head22
+o413               7.6500000E+00   0.0000E+00     head22
+o414               7.9377000E+00   0.0000E+00     head22
+o415               8.1600000E+00   0.0000E+00     head22
+o416               8.5400000E+00   0.0000E+00     head22
+o417               9.5100000E+00   2.7000E+01     head21
+o418               1.0210000E+01   2.7000E+01     head21
+o419               1.0360000E+01   0.0000E+00     head22
+o420               1.3000000E+01   0.0000E+00     head22
+o421               1.3760000E+01   0.0000E+00     head22
+o422               2.1000000E+01   0.0000E+00     head22
+o423               2.2880000E+01   2.7000E+01     head21
+o424               3.2000000E+01   2.7000E+01     head21
+o425               3.5300000E+01   2.7000E+01     head21
+o426               3.7000000E+01   2.7000E+01     head21
+o427               3.8700000E+01   0.0000E+00     head2
+o428               4.0000000E+01   2.7000E+01     head21
+o429               4.5290000E+01   0.0000E+00     head22
+o430               4.4993600E+01   2.7000E+01     head21
+o431               6.9000000E+01   0.0000E+00     head22
+o432               8.4889000E+02   2.0000E+00     head1
+o433               3.1600000E+00   2.7000E+01     head21
+o434               4.4000000E-01   2.7000E+01     head21
+o435               6.2100000E+00   2.7000E+01     head21
+o436               7.4300000E+00   2.7000E+01     head21
+o437               7.4000000E-01   2.7000E+01     head21
+o438               8.4572000E+02   2.0000E+00     head1
+o439               5.6800000E+00   2.7000E+01     head21
+o440               4.0900000E+00   2.7000E+01     head21
+o441               1.1180000E+01   2.7000E+01     head21
+bec_at_be_7        2.7648000E+06   4.8225E-04     flux1
+kosh_nr_rkdl_7     5.3568000E+06   2.4890E-04     flux1
+yah_at_wndsr_7     1.2960000E+06   1.0288E-03     flux1
+tokn_nr_msn_7      1.9008000E+06   7.0146E-04     flux1
+6mi_nr_wnke_7      7.0848000E+05   1.8820E-03     flux1
+pb_at_ar_nr_m_7    8.6400000E+04   1.5432E-02     flux1
+pb_at_m_7          1.2960000E+05   1.0288E-02     flux1
+mv_nr_mv_7         1.5552000E+06   8.5734E-04     flux1
+rwan_at_poynt_6    5.8752000E+05   5.1062E-04     flux2
+spr_nr_lodi_6      2.0908800E+06   1.4348E-04     flux2
+ebm_nr_be_6        2.0822400E+06   1.4408E-04     flux2
+bec_nr_cp_50_6     9.5040000E+04   3.1566E-03     flux2
+bec_nr_cp_509_6    1.0368000E+05   2.8935E-03     flux2
+bec_at_cp_6        6.8256000E+05   4.3952E-04     flux2
+brw_nr_cp_685_6    2.4192000E+05   1.2401E-03     flux2
+brw_nr_cp_75_6     2.3328000E+05   1.2860E-03     flux2
+bec_nr_cp_1_6      1.7107200E+06   1.7536E-04     flux2
+bec_abv_gft_6      1.9440000E+06   1.5432E-04     flux2
+gft_nr_cp_6        2.5056000E+05   1.1973E-03     flux2
+bec_nr_cp_2_6      2.1340800E+06   1.4058E-04     flux2
+bec_at_vmnt_6      2.8339200E+06   1.0586E-04     flux2
+vmnt_nr_be_6       3.1968000E+05   9.3844E-04     flux2
+hlfwp_at_mz_6      4.2336000E+05   7.0862E-04     flux2
+mshv_at_be_6       3.0240000E+05   9.9206E-04     flux2
+mshv_at_mz_6       3.4560000E+05   8.6806E-04     flux2
+bm_nr_holland_6    1.5724800E+06   1.9078E-04     flux2
+pv_nr_bln_924_6    6.6528000E+05   4.5094E-04     flux2
+pv_nr_bln_928_6    1.2960000E+06   2.3148E-04     flux2
+pv_nr_holland_6    1.5724800E+06   1.9078E-04     flux2
+sug_nr_pbluff_6    9.5040000E+04   3.1566E-03     flux2
+sug_at_riley_6     6.1344000E+05   4.8905E-04     flux2
+bgm_nr_vr_6        1.6416000E+05   1.8275E-03     flux2
+bgm_nr_vr_943_6    6.0480000E+05   4.9603E-04     flux2
+sug_nr_vr_6        2.8598400E+06   1.0490E-04     flux2
+sug_at_paoli_6     3.0412800E+06   9.8643E-05     flux2
+wsug_nr_mth_6      1.5552000E+05   1.9290E-03     flux2
+wsug_nr_mtv_6      1.3996800E+06   2.1433E-04     flux2
+fryf_nr_mtv_6      1.9008000E+05   1.5783E-03     flux2
+mv_at_mv_991_6     4.2336000E+05   7.0862E-04     flux2
+mv_at_mv_993_6     9.1584000E+05   3.2757E-04     flux2
+sug_at_bellev_6    8.1475200E+06   3.6821E-05     flux2
+gill_nr_bklyn_6    1.0368000E+05   2.8935E-03     flux2
+alln_at_bklyn_6    2.1600000E+05   1.3889E-03     flux2
+lsug_nr_ng_70_6    5.9616000E+05   5.0322E-04     flux2
+lsug_at_ng_6       1.1232000E+06   2.6709E-04     flux2
+legs_at_ng_6       1.9872000E+05   1.5097E-03     flux2
+crwf_nr_falrx_6    4.2595200E+06   7.0430E-05     flux2
+rbbns_nr_col_6     2.6784000E+05   1.1201E-03     flux2
+maun_nr_sp_6       1.5120000E+06   1.9841E-04     flux2
+maun_at_mshl_6     2.4969600E+06   1.2015E-04     flux2
+maun_at_wtrlo_6    3.5337600E+06   8.4895E-05     flux2
+stny_nr_wtrlo_6    4.3200000E+05   6.9444E-04     flux2
+crwf_nr_lkm_6      1.4688000E+05   2.0425E-03     flux2
+rck_at_lkm_83_6    2.3328000E+05   1.2860E-03     flux2
+rk_t_nr_bv_30_6    2.0736000E+05   1.4468E-03     flux2
+rk_t_nr_bv_23_6    2.5920000E+05   1.1574E-03     flux2
+kosh_nr_deerf_6    1.8316800E+06   1.6378E-04     flux2
+kosh_at_lndn_6     4.3977600E+06   6.8217E-05     flux2
+kosh_nr_bssyv_6    6.5750400E+06   4.5627E-05     flux2
+saun_at_albn_6     1.0540800E+06   2.8461E-04     flux2
+yah_at_def_6       6.2208000E+05   4.8225E-04     flux2
+yah_nr_def_00_6    7.3440000E+05   4.0850E-04     flux2
+tokn_nr_tokn_6     8.1216000E+05   3.6939E-04     flux2
+6mi_nr_wnke_6      1.2268800E+06   2.4452E-04     flux2
+spr_nr_wnke_6      3.9744000E+05   7.5483E-04     flux2
+pb_at_m_6          5.0112000E+05   5.9866E-04     flux2
+wstk_at_msn_6      3.2832000E+05   9.1374E-04     flux2
+estk_at_msn_6      3.0240000E+05   9.9206E-04     flux2
+door_t_at_cgr_6    1.2960000E+05   2.3148E-03     flux2
+door_nr_cgr_6      4.6656000E+05   6.4300E-04     flux2
+door_nr_mcf_6      1.0368000E+06   2.8935E-04     flux2
+bdfor_040_6        4.1472000E+05   0.0000E+00     flux2
+bdfor_055_6        6.9984000E+05   0.0000E+00     flux2
+bdfrt_nr_bkl_6     4.9248000E+05   6.0916E-04     flux2
+9s_sp_artesn_8     1.3737600E+04   0.0000E+00     flux
+9s_sp_syn_pst_8    5.5728000E+04   0.0000E+00     flux
+9s_sp_big_8        3.4819200E+04   0.0000E+00     flux
+9s_sp_nrsry_8      9.8928000E+04   0.0000E+00     flux
+wng_sp_dpnd_8      8.1302400E+04   0.0000E+00     flux
+wng_sp_cnds_8      7.7068800E+04   0.0000E+00     flux
+gft_sp_gft_ob_8    1.9612800E+04   0.0000E+00     flux
+gft_sp_gft_bn_8    1.0000000E+05   0.0000E+00     flux
+mv_sp_big_dpk_8    6.6000000E+05   0.0000E+00     flux
+men_sp_sprh_8      2.0736000E+03   0.0000E+00     flux
+flyn_sp_ftzfl_8    2.1000000E+05   0.0000E+00     flux
+stry_sp_ctha_8     4.4000000E+05   0.0000E+00     flux
+9s_nevinavg_8      2.9000000E+05   0.0000E+00     flux
+stk_sp_espdr_8     3.3955200E+04   0.0000E+00     flux
+wng_sp_big_8       2.2291200E+04   0.0000E+00     flux
+pb_sp_8            3.0000000E+05   0.0000E+00     flux
+culvers_sp_8       6.7000000E+05   0.0000E+00     flux
+kosh_ctht_kel_9    5.5641600E+05   0.0000E+00     flux
+kosh_baxter_9      1.2018240E+06   0.0000E+00     flux
+kosh_uphoff_9      1.5975360E+06   0.0000E+00     flux
+crwf_boelte_9      2.1470400E+06   0.0000E+00     flux
+crwf_hall_9        1.8912960E+06   0.0000E+00     flux
+crwf_ctha_9        1.0739520E+06   0.0000E+00     flux
+sug_paulson_9      1.3426560E+06   0.0000E+00     flux
+sug_valysprng_9    7.4908800E+05   0.0000E+00     flux
+sug_cthp_cths_9    3.1795200E+05   0.0000E+00     flux
+spr_smn_lodi_9     1.7928000E+06   0.0000E+00     flux
+spr_riddle_9       1.7608320E+06   0.0000E+00     flux
+spr_cthj_9         3.7549440E+06   0.0000E+00     flux
+hlfwp_cthk_9       7.6896000E+04   0.0000E+00     flux
+hlfwp_hwy19_9      5.5728000E+05   0.0000E+00     flux
+hlfwp_cthf_9       6.8169600E+05   0.0000E+00     flux
+hlfp_cthf_9        4.6915200E+05   0.0000E+00     flux
+hlfp_hwy78_9       6.2553600E+05   0.0000E+00     flux
+hlfwp_hwy78_9      8.5363200E+05   0.0000E+00     flux
+hlfwp_mz_9         1.2873600E+06   0.0000E+00     flux
+dnlp_racek_9       5.8838400E+05   0.0000E+00     flux
+dnlp_cthy_9        8.6054400E+05   0.0000E+00     flux
+msh_amenda_9       3.5424000E+05   0.0000E+00     flux
+elvrs_cthjj_9      1.5975360E+06   0.0000E+00     flux
+9s_fshhtchrd_10    5.0544000E+02   0.0000E+00     flux
+saun_t_crn_10      1.6210800E+05   0.0000E+00     flux
+lsug_t_w_nes_10    3.0437683E+04   0.0000E+00     flux
+gordn_barber_10    6.6766896E+05   0.0000E+00     flux
+9s_moorland_10     8.6460912E+05   0.0000E+00     flux
+saun_edgertn_10    5.1979320E+05   0.0000E+00     flux
+bec_hudson_10      4.8400416E+06   0.0000E+00     flux
+gmnval_crz_10      4.6326384E+05   0.0000E+00     flux
+sug_t_crj_10       1.9945872E+05   0.0000E+00     flux
+sug_t_sugrrd_10    1.5967368E+05   0.0000E+00     flux
+yah_t_hmmnd_10     1.2111984E+05   0.0000E+00     flux
+mrphy_lalor_10     2.6783352E+05   0.0000E+00     flux
+bdf_t_frkln_10     1.4505264E+05   0.0000E+00     flux
+milum_fritz_10     5.5321920E+04   0.0000E+00     flux
+yah_t_crb_10       6.9159917E+04   0.0000E+00     flux
+maun_crtt_10       8.8687872E+05   0.0000E+00     flux
+ryn_moyer_10       7.2576000E+04   0.0000E+00     flux
+fryf_twnhall_10    1.7870544E+05   0.0000E+00     flux
+maun_t_clksn_10    3.0205440E+04   0.0000E+00     flux
+kosh_oakpark_10    1.4231290E+06   0.0000E+00     flux
+wsug_crjg_10       2.9666736E+05   0.0000E+00     flux
+maun_t_grnwy_10    9.1972800E+04   0.0000E+00     flux
+deer_sutter_10     1.9319904E+05   0.0000E+00     flux
+ktls_t_leevl_10    3.9771216E+05   0.0000E+00     flux
+door_siggelk_10    6.7733280E+05   0.0000E+00     flux
+kosh_bailey_10     5.6140992E+05   0.0000E+00     flux
+maun_grnwy_10      5.1989472E+05   0.0000E+00     flux
+maun_t_crt_10      5.5209600E+04   0.0000E+00     flux
+spr_t_hwy73_10     2.4865920E+04   0.0000E+00     flux
+6mi_kingsley_10    9.1577952E+05   0.0000E+00     flux
+stry_cra_10        1.6924680E+05   0.0000E+00     flux
+syft_hwy78_10      2.4819480E+05   0.0000E+00     flux
+wsug_crpb_10       3.7666037E+06   0.0000E+00     flux
+lsug_crg_10        4.9187520E+04   0.0000E+00     flux
+wsug_crjg_ov_10    4.8634992E+05   0.0000E+00     flux
+yah_yahrd_10       1.3019616E+06   0.0000E+00     flux
+yah_t_sprrd_10     2.0771424E+05   0.0000E+00     flux
+tokn_t_hwy19_10    1.2700800E+04   0.0000E+00     flux
+mtv_hwy19_10       1.9017936E+06   0.0000E+00     flux
+door_crbb_10       1.4358816E+05   0.0000E+00     flux
+yah_t_collns_10    1.6412760E+05   0.0000E+00     flux
+bohn_bohnrd_10     2.5240896E+05   0.0000E+00     flux
+ryn_crf_10         4.1340240E+05   0.0000E+00     flux
+kosh_t_crbb_10     2.3488056E+05   0.0000E+00     flux
+wsug_crv_10        8.9854272E+05   0.0000E+00     flux
+bdf_t_cra_10       7.7068800E+04   0.0000E+00     flux
+saun_t_mpgrv_10    4.7001600E+03   0.0000E+00     flux
+pv_crh_10          5.2275456E+05   0.0000E+00     flux
+wsug_frit_10       3.2861160E+06   0.0000E+00     flux
+stk_t_cmmrcl_10    4.9295520E+05   0.0000E+00     flux
+gmnval_cre_10      2.5589520E+04   0.0000E+00     flux
+saun_cra_10        4.4871840E+05   0.0000E+00     flux
+vmnt_mhaelis_10    2.2772880E+05   0.0000E+00     flux
+dorn_crm_10        7.1032032E+05   0.0000E+00     flux
+bdf_t_lakkeg_10    2.6248320E+04   0.0000E+00     flux
+ldoor_vilas_10     3.6300960E+05   0.0000E+00     flux
+kosh_t_e_bb_10     1.4886720E+04   0.0000E+00     flux
+prmrose_cru_10     5.4416016E+05   0.0000E+00     flux
+maun_t_wilbn_10    1.3966128E+05   0.0000E+00     flux
+kosh_t_conrs_10    5.4000000E+03   0.0000E+00     flux
+ktls_perycnt_10    1.5778368E+05   0.0000E+00     flux
+flyn_fritz_10      1.6459200E+05   0.0000E+00     flux
+elvrs_crjg_10      3.9087792E+05   0.0000E+00     flux
+mud_evergrn_10     3.0161376E+05   0.0000E+00     flux
+yah_t_koshrd_10    1.3147056E+05   0.0000E+00     flux
+bdfrt_cra_10       8.2883088E+05   0.0000E+00     flux
+dnlp_wilknsn_10    3.5974800E+05   0.0000E+00     flux
+door_t_vilas_10    3.5493120E+04   0.0000E+00     flux
+ebm_mc_reeve_10    2.4692688E+06   0.0000E+00     flux
+lsug_t_e_nes_10    1.6636320E+04   0.0000E+00     flux
+brw_brwrd_10       1.8675360E+05   0.0000E+00     flux
+yah_t_rivrrd_10    3.3928416E+05   0.0000E+00     flux
+brw_whillpt_10     1.0622016E+05   0.0000E+00     flux
+swan_lalor_10      2.0783520E+05   0.0000E+00     flux
+maun_muller_10     2.4644520E+05   0.0000E+00     flux
+kosh_t_w_bb_10     6.8791680E+04   0.0000E+00     flux
+stry_bellbrk_10    2.8226880E+05   0.0000E+00     flux
+sug_t_frntwn_10    0.0000000E+00   0.0000E+00     flux
+yah_crn_10         8.0680795E+06   0.0000E+00     flux
+sug_t_rngtr_10     3.4603200E+04   0.0000E+00     flux
+moen_stw_mth_5     4.3200000E+04   0.0000E+00     flux
+bec_at_cp_5        5.2704000E+05   0.0000E+00     flux
+brw_ups_at_cp_5    1.6416000E+05   0.0000E+00     flux
+brw_at_cp_5        3.4560000E+04   0.0000E+00     flux
+bec_lms_at_cp_5    6.2208000E+05   0.0000E+00     flux
+bec_sva_nr_be_5    1.6416000E+06   0.0000E+00     flux
+vmnt_kp_at_be_5    2.5920000E+05   0.0000E+00     flux
+hlfwp_f_nr_mz_5    3.6288000E+05   0.0000E+00     flux
+bec_at_mz_5        2.5488000E+06   0.0000E+00     flux
+yah_113at_msn_5    2.9376000E+06   0.0000E+00     flux
+pb_cent_at_m_5     1.9872000E+05   0.0000E+00     flux
+pb_mouth_at_m_5    3.7152000E+05   0.0000E+00     flux
+yah_em_at_msn_5    3.0240000E+06   0.0000E+00     flux
+stk_aw_at_msn_5    1.5552000E+06   0.0000E+00     flux
+wng_ot_at_msn_5    0.0000000E+00   0.0000E+00     flux
+yah_at_mcf_5       3.4560000E+06   0.0000E+00     flux
+yah_ftn_at_st_5    9.1584000E+06   0.0000E+00     flux
+bdf_cta_nr_st_5    5.4432000E+06   0.0000E+00     flux
+bdf_nr_st_5        6.9120000E+05   0.0000E+00     flux
+pv_h_nr_bln_5      1.1232000E+06   0.0000E+00     flux
+tokn_nr_msn_20     1.5552000E+06   0.0000E+00     flux
+* model command line
+svdabatch.bat
+* model input/output
+parcalc.tpl   parcalc.in
+targpest_heads.ins               targpest.out
+moddane6_sfr_ggo.ins	         moddane9_sfr.ggo
+moddane5_rch_rjh1_lst.ins        dane9.lst
+mnw_moddane5_mns.ins	         dane7-5.mns
+headwat_moddane5_chk.ins	 dane7-5.chk
+backwat_dane5c_cot.ins	         dane7-5.cot
+borehole_dane8_bhf.ins   	 dane7-5.bhf
+springs_moddane6_1cor_sp.ins	 dane7-5.sp

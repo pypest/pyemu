@@ -1,0 +1,968 @@
+pcf
+* control data
+restart estimation
+     697     226       8      0      8
+6  2  single  point  1  0  0
+2.000000e+001  -3.000000e+000  3.000000e-001  1.000000e-002  -7 999 lamforgive
+1.000000e+001  1.000000e+001  1.000000e-003
+1.000000e-001 1 noaui noboundscale
+0 1.000000e-002  3  3  1.000000e-002  3
+0  0  0   PARSAVEITN reisaveitn nojcosaveitn
+* singular value decomposition
+  1
+  19  5.000000e-007
+  1
+* parameter groups
+Kxp     relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic 1.0e-5 0.5 smaller
+Kzp     relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic 1.0e-5 0.5 smaller
+Kx     relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic 1.0e-5 0.5 smaller
+Kz     relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic 1.0e-5 0.5 smaller
+Rch relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic 1.0e-5 0.5 smaller
+KM relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic 1.0e-5 0.5 smaller
+Stor relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic 1.0e-5 0.5 smaller
+SFRc relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic 1.0e-5 0.5 smaller
+* parameter data
+sfrc log factor    2.493963      0.95 12.0 sfrc 1 0 1
+rm3     log     factor   0.2500000      2.500000e-01     5.00000e+00     rch     1     0     1
+rm4     log     factor   0.2500000      2.500000e-01     5.00000e+00     rch     1     0     1
+rm5     log     factor    3.607641      2.500000e-01     5.00000e+00     rch     1     0     1
+rm6     log     factor   0.5869136      2.500000e-01     5.00000e+00     rch     1     0     1
+rm7     log     factor    1.448977      2.500000e-01     5.00000e+00     rch     1     0     1
+rm8     log     factor    2.363580      2.500000e-01     5.00000e+00     rch     1     0     1
+rm9     log     factor    2.436531      2.500000e-01     5.00000e+00     rch     1     0     1
+rm10     log     factor    2.259695      2.500000e-01     5.00000e+00     rch     1     0     1
+rm11     log     factor    1.425054      2.500000e-01     5.00000e+00     rch     1     0     1
+rm12     log     factor    1.039605      2.500000e-01     5.00000e+00     rch     1     0     1
+ss     log     factor   1.0000000E-03  1.000000e-03     3.000000e-03     stor     1     0     1
+sy     log     factor   0.1200000      1.200000e-01     2.400000e-01     stor     1     0     1
+hkm1     fixed     factor    1.000000      2.500000e-01     2.500000e+00     km     1     0     1
+hkm2     fixed     factor    1.000000      2.500000e-01     2.500000e+00     km     1     0     1
+hkm3     fixed     factor    1.000000      2.500000e-01     2.500000e+00     km     1     0     1
+vkm1     fixed     factor    1.000000      2.500000e-01     2.500000e+00     km     1     0     1
+vkm2     fixed     factor    1.000000      2.500000e-01     2.500000e+00     km     1     0     1
+vkm3     fixed     factor    1.000000      2.500000e-01     2.500000e+00     km     1     0     1
+kx1 fixed factor    19.23794      1.0 50.0 kx 1 0 1
+kx2 fixed factor    25.52462      1.0 50.0 kx 1 0 1
+kx21 fixed factor    24.93108      1.0 50.0 kx 1 0 1
+kx3 fixed factor    23.56273      1.0 50.0 kx 1 0 1
+kx4 fixed factor    1.021700      0.1 10.0 kx 1 0 1
+kx5 fixed factor    21.00000      1.0 50.0 kx 1 0 1
+kx6 fixed factor    16.40179      1.0 50.0 kx 1 0 1
+kx8 fixed factor    1.017082      0.1 10.0 kx 1 0 1
+kx81 fixed factor    1.005842      0.1 10.0 kx 1 0 1
+kx13 fixed factor    157.9511      40.0 250.0 kx 1 0 1
+kx14 fixed factor    47.83195      20.0 80.0 kx 1 0 1
+kx15 fixed factor    48.71790      20.0 80.0 kx 1 0 1
+kz1 fixed factor    2.003538      0.10 5.0 kz 1 0 1
+kz2 fixed factor    2.455603      0.10 5.0  kz 1 0 1
+kz21 fixed factor    2.583414      0.10 5.0  kz 1 0 1
+kz3 fixed factor    2.479454      0.10 5.0  kz 1 0 1
+kz4 fixed factor   9.9419264E-02  0.01 1.0 kz 1 0 1
+kz5 fixed factor    21.00000      1.0 50.0 kz 1 0 1
+kz6 fixed factor    15.61768      1.0 50.0 kz 1 0 1
+kz8 fixed factor   0.9590616      0.1 10.0 kz 1 0 1
+kz81 fixed factor   0.9822517      0.1 10.0 kz 1 0 1
+kz13 fixed factor    10.02539      3.0 130.0 kz 1 0 1
+kz14 fixed factor    3.500713      2.0 8.0 kz 1 0 1
+kz15 fixed factor    3.738628      2.0 8.0 kz 1 0 1
+kpkp1  fixed  factor    213.8025      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp2  fixed  factor    218.9222      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp3  fixed  factor    214.2358      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp4  fixed  factor    221.9033      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp5  fixed  factor    220.6002      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp6  fixed  factor    219.9219      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp7  fixed  factor    230.3635      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp8  fixed  factor    223.3713      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp9  fixed  factor    223.0581      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp10  fixed  factor    221.3810      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp11  fixed  factor    216.2354      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp12  fixed  factor    214.2138      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp13  fixed  factor    220.2174      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp14  fixed  factor    221.1409      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp15  fixed  factor    217.6525      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp16  fixed  factor    218.2015      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp17  fixed  factor    224.0931      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp18  fixed  factor    223.3384      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp19  fixed  factor    217.5401      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp20  fixed  factor    232.4312      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp21  fixed  factor    221.8596      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp22  fixed  factor    226.1667      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp23  fixed  factor    217.7518      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp24  fixed  factor    219.9882      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp25  fixed  factor    223.8274      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp26  fixed  factor    221.7040      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp27  fixed  factor    232.6614      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp28  fixed  factor    227.5656      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp29  fixed  factor    217.5507      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp30  fixed  factor    217.0030      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp31  fixed  factor    225.2604      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp32  fixed  factor    227.0420      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp33  fixed  factor    217.1118      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp34  fixed  factor    201.9115      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp35  fixed  factor    225.3331      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp36  fixed  factor    217.3563      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp37  fixed  factor    222.6662      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp38  fixed  factor    218.4004      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp39  fixed  factor    213.2718      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp40  fixed  factor    220.6057      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp41  fixed  factor    218.3620      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp42  fixed  factor    214.2271      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp43  fixed  factor    231.2629      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp44  fixed  factor    209.5357      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp45  fixed  factor    224.8107      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp46  fixed  factor    228.9699      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp47  fixed  factor    223.7344      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp48  fixed  factor    225.3647      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp49  fixed  factor    225.3743      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp50  fixed  factor    212.0571      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp51  fixed  factor    206.2442      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp52  fixed  factor    233.5251      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp53  fixed  factor    215.8987      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp54  fixed  factor    219.7660      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp55  fixed  factor    220.0416      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp56  fixed  factor    219.5079      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp57  fixed  factor    228.8093      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp58  fixed  factor    224.9919      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp59  fixed  factor    224.0044      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp60  fixed  factor    230.4915      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp61  fixed  factor    215.0015      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp62  fixed  factor    223.1562      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp63  fixed  factor    226.3421      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp64  fixed  factor    227.4098      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp65  fixed  factor    213.3844      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp66  fixed  factor    220.2454      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp67  fixed  factor    272.3346      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp68  fixed  factor    234.9071      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp69  fixed  factor    220.4724      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp70  fixed  factor    207.8784      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp71  fixed  factor    213.3927      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp72  fixed  factor    219.6402      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp73  fixed  factor    217.7837      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp74  fixed  factor    213.2801      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp75  fixed  factor    219.4315      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp76  fixed  factor    217.9129      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp77  fixed  factor    226.3743      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp78  fixed  factor    259.0056      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp79  fixed  factor    274.0763      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp80  fixed  factor    210.7747      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp81  fixed  factor    219.3833      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp82  fixed  factor    226.4845      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp83  fixed  factor    209.5811      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp84  fixed  factor    222.6196      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp85  fixed  factor    223.9248      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp86  fixed  factor    225.2675      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp87  fixed  factor    213.9872      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp88  fixed  factor    223.2665      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp89  fixed  factor    225.1914      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp90  fixed  factor    206.7453      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp91  fixed  factor    234.0155      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp92  fixed  factor    244.1468      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp93  fixed  factor    230.2704      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp94  fixed  factor    216.4503      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp95  fixed  factor    221.6827      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp96  fixed  factor    208.2119      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp97  fixed  factor    219.8008      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp98  fixed  factor    216.8209      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp99  fixed  factor    225.0557      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp100  fixed  factor    225.4486      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp101  fixed  factor    216.6105      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp102  fixed  factor    222.0406      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp103  fixed  factor    215.1505      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp104  fixed  factor    213.7060      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp105  fixed  factor    235.4192      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp106  fixed  factor    230.3665      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp107  fixed  factor    220.4675      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp108  fixed  factor    223.5303      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp109  fixed  factor    217.0424      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp110  fixed  factor    221.7577      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp111  fixed  factor    225.4882      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp112  fixed  factor    225.9168      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp113  fixed  factor    216.8617      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp114  fixed  factor    215.4134      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp115  fixed  factor    224.4164      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp116  fixed  factor    209.3847      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp117  fixed  factor    224.2827      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp118  fixed  factor    233.6195      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp119  fixed  factor    231.5544      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp120  fixed  factor    226.7025      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp121  fixed  factor    218.5355      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp122  fixed  factor    227.2763      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp123  fixed  factor    214.5561      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp124  fixed  factor    227.9146      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp125  fixed  factor    222.6100      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp126  fixed  factor    220.7942      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp127  fixed  factor    224.5103      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp128  fixed  factor    226.3728      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp129  fixed  factor    235.5480      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp130  fixed  factor    230.0134      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp131  fixed  factor    217.7741      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp132  fixed  factor    221.7135      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp133  fixed  factor    237.7123      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp134  fixed  factor    226.5045      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp135  fixed  factor    221.2972      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp136  fixed  factor    228.7243      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp137  fixed  factor    218.0262      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp138  fixed  factor    225.6295      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp139  fixed  factor    214.0881      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp140  fixed  factor    220.7291      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp141  fixed  factor    231.7861      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp142  fixed  factor    216.4080      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp143  fixed  factor    219.7917      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp144  fixed  factor    220.0447      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp145  fixed  factor    228.9766      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp146  fixed  factor    224.5179      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp147  fixed  factor    233.9723      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp148  fixed  factor    240.3990      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp149  fixed  factor    219.6668      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp150  fixed  factor    230.8417      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp151  fixed  factor    215.7014      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp152  fixed  factor    215.7829      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp153  fixed  factor    217.5224      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp154  fixed  factor    225.6350      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp155  fixed  factor    240.9710      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp156  fixed  factor    216.3641      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp157  fixed  factor    233.0762      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp158  fixed  factor    220.2177      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp159  fixed  factor    218.2379      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp160  fixed  factor    214.7446      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp161  fixed  factor    244.1592      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp162  fixed  factor    217.9758      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp163  fixed  factor    223.9397      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp164  fixed  factor    226.1829      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp165  fixed  factor    227.1446      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp166  fixed  factor    217.2752      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp167  fixed  factor    216.9877      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp168  fixed  factor    217.9164      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp169  fixed  factor    211.5343      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp170  fixed  factor    217.3246      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp171  fixed  factor    185.9342      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp172  fixed  factor    215.5695      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp173  fixed  factor    205.9605      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp174  fixed  factor    237.5313      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp175  fixed  factor    226.6306      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp176  fixed  factor    353.0317      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp177  fixed  factor    232.2315      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp178  fixed  factor    214.3882      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp179  fixed  factor    217.0889      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp180  fixed  factor    226.3760      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp181  fixed  factor    216.4415      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp182  fixed  factor    301.6697      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp183  fixed  factor    222.5885      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp184  fixed  factor    224.8126      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp185  fixed  factor    200.7745      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp186  fixed  factor    200.3013      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp187  fixed  factor    220.4046      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp188  fixed  factor    222.9837      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp189  fixed  factor    236.6447      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp190  fixed  factor    200.8656      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp191  fixed  factor    225.9315      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp192  fixed  factor    231.9248      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp193  fixed  factor    227.0230      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp194  fixed  factor    207.2882      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp195  fixed  factor    354.2094      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp196  fixed  factor    218.7768      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp197  fixed  factor    223.4546      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp198  fixed  factor    292.9936      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp199  fixed  factor    224.8135      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp200  fixed  factor    208.7513      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp201  fixed  factor    212.0539      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp202  fixed  factor    226.9863      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp203  fixed  factor    236.4774      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp204  fixed  factor    226.9775      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp205  fixed  factor    222.3988      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp206  fixed  factor    249.6908      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp207  fixed  factor    245.0100      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp208  fixed  factor    229.9512      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp209  fixed  factor    216.3257      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp210  fixed  factor    227.0675      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp211  fixed  factor    215.3631      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp212  fixed  factor    227.5629      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp213  fixed  factor    221.1581      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp214  fixed  factor    239.5048      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp215  fixed  factor    220.1932      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp216  fixed  factor    216.4325      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp217  fixed  factor    225.7293      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp218  fixed  factor    229.0719      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp219  fixed  factor    218.4150      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp220  fixed  factor    222.9470      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp221  fixed  factor    236.9169      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp222  fixed  factor    224.9618      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp223  fixed  factor    233.6797      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp224  fixed  factor    232.3029      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp225  fixed  factor    221.1969      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp226  fixed  factor    231.9237      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp227  fixed  factor    250.3901      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp228  fixed  factor    232.7859      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp229  fixed  factor    225.6159      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp230  fixed  factor    253.5599      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp231  fixed  factor    227.4534      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp232  fixed  factor    223.5847      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp233  fixed  factor    215.0521      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp234  fixed  factor    220.1303      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp235  fixed  factor    211.1001      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp236  fixed  factor    242.9496      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp237  fixed  factor    243.1227      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp238  fixed  factor    229.8329      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp239  fixed  factor    232.6444      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp240  fixed  factor    226.9985      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp241  fixed  factor    212.5878      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp242  fixed  factor    255.8288      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp243  fixed  factor    230.6515      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp244  fixed  factor    231.1809      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp245  fixed  factor    233.6548      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp246  fixed  factor    231.1896      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp247  fixed  factor    226.1239      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp248  fixed  factor    228.7155      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp249  fixed  factor    216.8618      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp250  fixed  factor    216.4448      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp251  fixed  factor    227.3941      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp252  fixed  factor    227.4785      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp253  fixed  factor    237.3695      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp254  fixed  factor    234.7393      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp255  fixed  factor    248.2222      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp256  fixed  factor    218.7707      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp257  fixed  factor    220.3147      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp258  fixed  factor    217.9635      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp259  fixed  factor    223.8020      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp260  fixed  factor    216.1269      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp261  fixed  factor    226.0038      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp262  fixed  factor    227.9278      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp263  fixed  factor    225.7167      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp264  fixed  factor    223.6545      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp265  fixed  factor    216.1799      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp266  fixed  factor    226.4099      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp267  fixed  factor    230.6669      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp268  fixed  factor    234.9249      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp269  fixed  factor    237.6628      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp270  fixed  factor    224.4963      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp271  fixed  factor    221.3100      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp272  fixed  factor    228.3615      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp273  fixed  factor    235.1105      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp274  fixed  factor    216.4869      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp275  fixed  factor    219.8048      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp276  fixed  factor    233.7021      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp277  fixed  factor    211.6251      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp278  fixed  factor    218.0783      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp279  fixed  factor    218.6432      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp280  fixed  factor    229.4938      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp281  fixed  factor    242.7437      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp282  fixed  factor    232.6494      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp283  fixed  factor    196.3144      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp284  fixed  factor    218.9836      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp285  fixed  factor    203.0278      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp286  fixed  factor    219.5725      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp287  fixed  factor    240.6286      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp288  fixed  factor    223.5280      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp289  fixed  factor    220.3838      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp290  fixed  factor    229.6494      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp291  fixed  factor    234.6087      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp292  fixed  factor    228.9506      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp293  fixed  factor    224.0648      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp294  fixed  factor    234.3512      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp295  fixed  factor    213.4348      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp296  fixed  factor    210.5052      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp297  fixed  factor    212.7859      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp298  fixed  factor    226.2218      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp299  fixed  factor    231.3603      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp300  fixed  factor    248.5212      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp301  fixed  factor    221.4932      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp302  fixed  factor    208.9602      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp303  fixed  factor    204.0235      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp304  fixed  factor    218.5521      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp305  fixed  factor    223.0350      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp306  fixed  factor    223.0382      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp307  fixed  factor    223.5564      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp308  fixed  factor    210.2135      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp309  fixed  factor    223.0335      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp310  fixed  factor    233.7011      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp311  fixed  factor    240.9452      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp312  fixed  factor    236.4829      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp313  fixed  factor    215.1692      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp314  fixed  factor    209.7058      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp315  fixed  factor    221.7281      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp316  fixed  factor    212.6766      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp317  fixed  factor    228.0392      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp318  fixed  factor    220.4329      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp319  fixed  factor    212.7323      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp320  fixed  factor    200.9119      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp321  fixed  factor    196.6045      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp322  fixed  factor    218.1747      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp323  fixed  factor    221.6818      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp324  fixed  factor    228.4496      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp325  fixed  factor    221.9125      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp326  fixed  factor    233.7747      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp327  fixed  factor    216.0788      1.20e+02  5.00e+02  kxp  1  0  1
+kzkz1  fixed  factor    6.403942      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz2  fixed  factor    7.262059      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz3  fixed  factor    7.544535      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz4  fixed  factor    6.949707      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz5  fixed  factor    7.148439      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz6  fixed  factor    7.099836      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz7  fixed  factor    7.032177      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz8  fixed  factor    6.955526      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz9  fixed  factor    6.942272      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz10  fixed  factor    6.902681      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz11  fixed  factor    7.030191      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz12  fixed  factor    6.909244      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz13  fixed  factor    6.923199      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz14  fixed  factor    7.622437      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz15  fixed  factor    7.041070      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz16  fixed  factor    6.936180      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz17  fixed  factor    7.121644      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz18  fixed  factor    7.132632      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz19  fixed  factor    7.104162      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz20  fixed  factor    7.163777      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz21  fixed  factor    6.981951      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz22  fixed  factor    6.889006      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz23  fixed  factor    6.912247      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz24  fixed  factor    6.947158      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz25  fixed  factor    6.935234      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz26  fixed  factor    7.470113      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz27  fixed  factor    7.094965      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz28  fixed  factor    6.960616      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz29  fixed  factor    7.056297      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz30  fixed  factor    6.937091      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz31  fixed  factor    6.955155      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz32  fixed  factor    6.821364      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz33  fixed  factor    7.191773      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz34  fixed  factor    7.075065      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz35  fixed  factor    7.233869      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz36  fixed  factor    7.063769      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz37  fixed  factor    6.666946      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz38  fixed  factor    7.041000      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz39  fixed  factor    6.755778      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz40  fixed  factor    6.893726      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz41  fixed  factor    6.874113      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz42  fixed  factor    7.389096      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz43  fixed  factor    7.106621      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz44  fixed  factor    6.977102      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz45  fixed  factor    7.218235      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz46  fixed  factor    7.419611      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz47  fixed  factor    7.089504      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz48  fixed  factor    6.963987      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz49  fixed  factor    7.046492      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz50  fixed  factor    7.056733      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz51  fixed  factor    7.114842      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz52  fixed  factor    7.193127      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz53  fixed  factor    7.112794      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz54  fixed  factor    6.882524      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz55  fixed  factor    6.956797      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz56  fixed  factor    7.150202      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz57  fixed  factor    7.177908      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz58  fixed  factor    6.787067      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz59  fixed  factor    6.914984      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz60  fixed  factor    7.279697      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz61  fixed  factor    6.972507      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz62  fixed  factor    7.250296      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz63  fixed  factor    7.430782      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz64  fixed  factor    6.776030      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz65  fixed  factor    7.038007      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz66  fixed  factor    7.142001      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz67  fixed  factor    6.856111      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz68  fixed  factor    7.084991      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz69  fixed  factor    7.101551      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz70  fixed  factor    6.760653      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz71  fixed  factor    7.157829      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz72  fixed  factor    6.999428      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz73  fixed  factor    6.986403      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz74  fixed  factor    6.957019      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz75  fixed  factor    6.608862      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz76  fixed  factor    7.047459      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz77  fixed  factor    6.947656      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz78  fixed  factor    6.919484      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz79  fixed  factor    7.151088      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz80  fixed  factor    7.088742      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz81  fixed  factor    6.872772      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz82  fixed  factor    6.993495      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz83  fixed  factor    7.122955      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz84  fixed  factor    6.984100      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz85  fixed  factor    7.217768      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz86  fixed  factor    6.744833      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz87  fixed  factor    6.830648      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz88  fixed  factor    7.129026      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz89  fixed  factor    6.907453      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz90  fixed  factor    7.250822      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz91  fixed  factor    7.061530      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz92  fixed  factor    6.904980      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz93  fixed  factor    7.075851      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz94  fixed  factor    7.096690      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz95  fixed  factor    7.222753      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz96  fixed  factor    6.858944      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz97  fixed  factor    7.257533      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz98  fixed  factor    7.049799      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz99  fixed  factor    7.019665      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz100  fixed  factor    6.905359      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz101  fixed  factor    7.028668      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz102  fixed  factor    7.363972      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz103  fixed  factor    6.954873      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz104  fixed  factor    7.070493      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz105  fixed  factor    7.257735      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz106  fixed  factor    7.139240      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz107  fixed  factor    7.120432      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz108  fixed  factor    7.056324      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz109  fixed  factor    7.097728      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz110  fixed  factor    7.217303      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz111  fixed  factor    7.062804      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz112  fixed  factor    7.179442      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz113  fixed  factor    7.098644      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz114  fixed  factor    6.968051      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz115  fixed  factor    7.049223      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz116  fixed  factor    7.158564      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz117  fixed  factor    7.208102      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz118  fixed  factor    7.182354      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz119  fixed  factor    6.896014      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz120  fixed  factor    6.990394      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz121  fixed  factor    6.929906      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz122  fixed  factor    6.947172      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz123  fixed  factor    7.229703      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz124  fixed  factor    7.045208      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz125  fixed  factor    7.094002      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz126  fixed  factor    7.143074      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz127  fixed  factor    7.154300      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz128  fixed  factor    6.932038      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz129  fixed  factor    7.048126      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz130  fixed  factor    6.875391      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz131  fixed  factor    6.923754      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz132  fixed  factor    7.189476      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz133  fixed  factor    6.779131      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz134  fixed  factor    6.840436      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz135  fixed  factor    7.223475      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz136  fixed  factor    7.024183      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz137  fixed  factor    7.080395      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz138  fixed  factor    7.119770      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz139  fixed  factor    7.083415      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz140  fixed  factor    6.949357      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz141  fixed  factor    6.987337      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz142  fixed  factor    7.097342      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz143  fixed  factor    7.069589      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz144  fixed  factor    6.993093      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz145  fixed  factor    7.072275      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz146  fixed  factor    7.069982      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz147  fixed  factor    7.009979      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz148  fixed  factor    6.983508      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz149  fixed  factor    6.907929      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz150  fixed  factor    6.941108      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz151  fixed  factor    7.147652      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz152  fixed  factor    7.048278      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz153  fixed  factor    7.124907      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz154  fixed  factor    6.967489      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz155  fixed  factor    7.000246      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz156  fixed  factor    7.056337      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz157  fixed  factor    7.152252      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz158  fixed  factor    7.067262      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz159  fixed  factor    6.787153      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz160  fixed  factor    6.839388      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz161  fixed  factor    7.029456      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz162  fixed  factor    7.164137      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz163  fixed  factor    7.218625      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz164  fixed  factor    6.747430      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz165  fixed  factor    6.880944      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz166  fixed  factor    7.117860      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz167  fixed  factor    7.254044      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz168  fixed  factor    7.240289      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz169  fixed  factor    7.046219      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz170  fixed  factor    7.118611      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz171  fixed  factor    6.813766      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz172  fixed  factor    6.856161      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz173  fixed  factor    7.083845      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz174  fixed  factor    7.118975      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz175  fixed  factor    7.219998      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz176  fixed  factor    6.985881      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz177  fixed  factor    7.397176      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz178  fixed  factor    7.138575      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz179  fixed  factor    7.232454      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz180  fixed  factor    7.056787      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz181  fixed  factor    7.018458      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz182  fixed  factor    7.058941      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz183  fixed  factor    7.023500      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz184  fixed  factor    7.300644      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz185  fixed  factor    6.993631      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz186  fixed  factor    6.983758      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz187  fixed  factor    7.082099      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz188  fixed  factor    7.002495      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz189  fixed  factor    7.128184      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz190  fixed  factor    7.045113      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz191  fixed  factor    7.198380      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz192  fixed  factor    7.058840      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz193  fixed  factor    7.079822      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz194  fixed  factor    7.037790      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz195  fixed  factor    6.908658      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz196  fixed  factor    7.050704      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz197  fixed  factor    7.046976      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz198  fixed  factor    7.108814      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz199  fixed  factor    7.064766      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz200  fixed  factor    7.111390      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz201  fixed  factor    6.649931      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz202  fixed  factor    7.199790      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz203  fixed  factor    6.836135      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz204  fixed  factor    6.649282      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz205  fixed  factor    6.976426      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz206  fixed  factor    7.036874      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz207  fixed  factor    7.931395      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz208  fixed  factor    7.086381      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz209  fixed  factor    7.175039      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz210  fixed  factor    7.016763      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz211  fixed  factor    6.968509      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz212  fixed  factor    6.935902      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz213  fixed  factor    6.998160      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz214  fixed  factor    6.530250      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz215  fixed  factor    7.088041      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz216  fixed  factor    7.134337      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz217  fixed  factor    7.232828      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz218  fixed  factor    6.927825      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz219  fixed  factor    7.114496      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz220  fixed  factor    7.173057      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz221  fixed  factor    7.277286      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz222  fixed  factor    7.114993      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz223  fixed  factor    7.291560      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz224  fixed  factor    7.230477      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz225  fixed  factor    7.171438      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz226  fixed  factor    7.031434      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz227  fixed  factor    6.933108      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz228  fixed  factor    7.044888      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz229  fixed  factor    6.919353      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz230  fixed  factor    7.074596      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz231  fixed  factor    7.042030      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz232  fixed  factor    6.876223      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz233  fixed  factor    6.890187      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz234  fixed  factor    7.143737      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz235  fixed  factor    6.556221      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz236  fixed  factor    7.086479      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz237  fixed  factor    7.219285      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz238  fixed  factor    7.024287      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz239  fixed  factor    7.233086      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz240  fixed  factor    7.117556      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz241  fixed  factor    6.940265      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz242  fixed  factor    7.332311      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz243  fixed  factor    7.228979      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz244  fixed  factor    6.894451      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz245  fixed  factor    7.005203      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz246  fixed  factor    7.146182      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz247  fixed  factor    6.991776      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz248  fixed  factor    6.860440      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz249  fixed  factor    7.337079      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz250  fixed  factor    7.025052      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz251  fixed  factor    7.087948      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz252  fixed  factor    7.128669      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz253  fixed  factor    6.986765      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz254  fixed  factor    7.303990      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz255  fixed  factor    7.090841      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz256  fixed  factor    7.300713      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz257  fixed  factor    6.651753      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz258  fixed  factor    7.054829      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz259  fixed  factor    6.874998      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz260  fixed  factor    6.897097      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz261  fixed  factor    6.923750      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz262  fixed  factor    7.068521      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz263  fixed  factor    6.787545      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz264  fixed  factor    7.432949      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz265  fixed  factor    7.053715      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz266  fixed  factor    6.912775      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz267  fixed  factor    6.878321      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz268  fixed  factor    7.049018      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz269  fixed  factor    7.025708      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz270  fixed  factor    6.981117      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz271  fixed  factor    6.889657      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz272  fixed  factor    7.094165      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz273  fixed  factor    7.270000      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz274  fixed  factor    6.928894      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz275  fixed  factor    7.298838      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz276  fixed  factor    7.155347      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz277  fixed  factor    7.088388      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz278  fixed  factor    6.983267      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz279  fixed  factor    7.124910      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz280  fixed  factor    6.873140      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz281  fixed  factor    6.883895      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz282  fixed  factor    6.811887      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz283  fixed  factor    7.236064      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz284  fixed  factor    7.010583      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz285  fixed  factor    7.164682      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz286  fixed  factor    7.316333      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz287  fixed  factor    6.834184      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz288  fixed  factor    7.574304      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz289  fixed  factor    7.170917      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz290  fixed  factor    7.108660      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz291  fixed  factor    7.076643      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz292  fixed  factor    7.037058      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz293  fixed  factor    7.094225      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz294  fixed  factor    7.126812      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz295  fixed  factor    6.706953      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz296  fixed  factor    6.996251      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz297  fixed  factor    7.299921      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz298  fixed  factor    7.374263      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz299  fixed  factor    7.015424      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz300  fixed  factor    7.153313      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz301  fixed  factor    7.273035      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz302  fixed  factor    6.988966      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz303  fixed  factor    7.211676      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz304  fixed  factor    7.212575      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz305  fixed  factor    6.991391      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz306  fixed  factor    6.801832      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz307  fixed  factor    6.783855      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz308  fixed  factor    7.019838      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz309  fixed  factor    6.857578      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz310  fixed  factor    7.321530      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz311  fixed  factor    7.188195      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz312  fixed  factor    6.829099      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz313  fixed  factor    7.204821      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz314  fixed  factor    6.873578      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz315  fixed  factor    7.088888      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz316  fixed  factor    6.951982      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz317  fixed  factor    7.320042      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz318  fixed  factor    6.503087      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz319  fixed  factor    7.081751      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz320  fixed  factor    7.214129      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz321  fixed  factor    6.989993      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz322  fixed  factor    7.140362      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz323  fixed  factor    7.250634      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz324  fixed  factor    6.993430      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz325  fixed  factor    6.916447      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz326  fixed  factor    7.101265      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz327  fixed  factor    7.171063      6.00e+00  5.00e+01  kzp  1  0  1
+* observation groups
+WISA_H
+DM_H
+PRF_H
+VP_H
+USGS_H
+wgnhs_h
+Q_LPR
+Q_Other
+* observation data
+dm_10_4  1.07885000E+03  5.11882000E+00  dm_h
+dm_10_6  1.08025000E+03  5.11882000E+00  dm_h
+dm_11_4  1.07820000E+03  5.11882000E+00  dm_h
+dm_11_6  1.08020000E+03  5.11882000E+00  dm_h
+dm_12_4  1.07793000E+03  5.11882000E+00  dm_h
+dm_12_6  1.08003000E+03  5.11882000E+00  dm_h
+dm_13_4  1.07934000E+03  5.11882000E+00  dm_h
+dm_13_6  1.08154000E+03  5.11882000E+00  dm_h
+dm_14_4  1.07456000E+03  5.11882000E+00  dm_h
+dm_14_6  1.07676000E+03  5.11882000E+00  dm_h
+dm_15_4  1.07894000E+03  5.11882000E+00  dm_h
+dm_15_6  1.08124000E+03  5.11882000E+00  dm_h
+dm_16_4  1.07561000E+03  5.11882000E+00  dm_h
+dm_16_6  1.07791000E+03  5.11882000E+00  dm_h
+dm_17_4  1.07532000E+03  5.11882000E+00  dm_h
+dm_17_6  1.07772000E+03  5.11882000E+00  dm_h
+dm_18_4  1.07522000E+03  5.11882000E+00  dm_h
+dm_18_6  1.07762000E+03  5.11882000E+00  dm_h
+dm_7_4  1.07578000E+03  5.11882000E+00  dm_h
+dm_7_6  1.07798000E+03  5.11882000E+00  dm_h
+dm_8_4  1.07627000E+03  5.11882000E+00  dm_h
+dm_8_6  1.07747000E+03  5.11882000E+00  dm_h
+dm_9_4  1.07592000E+03  5.11882000E+00  dm_h
+dm_9_6  1.07762000E+03  5.11882000E+00  dm_h
+prf_19_4  1.12992000E+03  1.22651500E+00  prf_h
+prf_20_4  1.12849000E+03  1.22651500E+00  prf_h
+prf_21_4  1.12849000E+03  1.22651500E+00  prf_h
+prf_22_4  1.13792000E+03  1.22651500E+00  prf_h
+prf_23_4  1.13994000E+03  1.22651500E+00  prf_h
+prf_24_4  1.14285000E+03  1.22651500E+00  prf_h
+prf_25_4  1.13847000E+03  1.22651500E+00  prf_h
+prf_26_4  1.08410000E+03  1.22651500E+00  prf_h
+prf_27_4  1.08343000E+03  1.22651500E+00  prf_h
+prf_28_4  1.12616000E+03  1.22651500E+00  prf_h
+prf_29_4  1.12332000E+03  1.22651500E+00  prf_h
+prf_30_4  1.12501000E+03  1.22651500E+00  prf_h
+prf_31_4  1.11972000E+03  1.22651500E+00  prf_h
+prf_32_4  1.12035000E+03  1.22651500E+00  prf_h
+prf_33_4  1.11591000E+03  1.22651500E+00  prf_h
+prf_34_4  1.12617000E+03  1.22651500E+00  prf_h
+prf_35_4  1.13946000E+03  1.22651500E+00  prf_h
+usgs_61_1  1.08660000E+03  4.10343333E+00  usgs_h
+usgs_61_4  1.08838000E+03  4.10343333E+00  usgs_h
+usgs_61_7  1.08938000E+03  4.10343333E+00  usgs_h
+usgs_61_9  1.08949000E+03  4.10343333E+00  usgs_h
+usgs_61_10  1.08959000E+03  4.10343333E+00  usgs_h
+usgs_62_2  1.07901000E+03  4.10343333E+00  usgs_h
+usgs_62_4  1.07972000E+03  4.10343333E+00  usgs_h
+usgs_62_5  1.08080000E+03  4.10343333E+00  usgs_h
+usgs_62_7  1.08193000E+03  4.10343333E+00  usgs_h
+usgs_62_9  1.08177000E+03  4.10343333E+00  usgs_h
+usgs_63_7  1.09499000E+03  4.10343333E+00  usgs_h
+vp_64_1  1.07354000E+03  2.35680000E+00  vp_h
+vp_64_4  1.07466000E+03  2.35680000E+00  vp_h
+vp_64_5  1.07549000E+03  2.35680000E+00  vp_h
+vp_64_6  1.07591000E+03  2.35680000E+00  vp_h
+vp_65_1  1.07456000E+03  2.35680000E+00  vp_h
+vp_65_4  1.07543000E+03  2.35680000E+00  vp_h
+vp_65_5  1.07611000E+03  2.35680000E+00  vp_h
+vp_65_6  1.07681000E+03  2.35680000E+00  vp_h
+vp_66_1  1.08842000E+03  2.35680000E+00  vp_h
+vp_66_3  1.08838000E+03  2.35680000E+00  vp_h
+vp_66_4  1.08940000E+03  2.35680000E+00  vp_h
+vp_66_5  1.09015000E+03  2.35680000E+00  vp_h
+vp_66_6  1.09027000E+03  2.35680000E+00  vp_h
+vp_67_1  1.08807000E+03  2.35680000E+00  vp_h
+vp_67_3  1.08797000E+03  2.35680000E+00  vp_h
+vp_67_4  1.08917000E+03  2.35680000E+00  vp_h
+vp_67_5  1.08985000E+03  2.35680000E+00  vp_h
+vp_67_6  1.08980000E+03  2.35680000E+00  vp_h
+vp_68_1  1.07058000E+03  2.35680000E+00  vp_h
+vp_68_3  1.07043000E+03  2.35680000E+00  vp_h
+vp_68_4  1.07115000E+03  2.35680000E+00  vp_h
+vp_68_5  1.07196000E+03  2.35680000E+00  vp_h
+vp_68_6  1.07253000E+03  2.35680000E+00  vp_h
+vp_69_1  1.07235000E+03  2.35680000E+00  vp_h
+vp_69_3  1.07253000E+03  2.35680000E+00  vp_h
+vp_69_4  1.07345000E+03  2.35680000E+00  vp_h
+vp_69_5  1.07297000E+03  2.35680000E+00  vp_h
+vp_69_6  1.07290000E+03  2.35680000E+00  vp_h
+wgnhs_72_8  1.08581000E+03  1.06365000E+00  wgnhs_h
+wgnhs_72_9  1.08546000E+03  1.06365000E+00  wgnhs_h
+wgnhs_72_10  1.08485000E+03  1.06365000E+00  wgnhs_h
+wgnhs_72_11  1.08462000E+03  1.06365000E+00  wgnhs_h
+wgnhs_72_12  1.08499000E+03  1.06365000E+00  wgnhs_h
+wgnhs_73_8  1.09080000E+03  1.06365000E+00  wgnhs_h
+wgnhs_73_9  1.09070000E+03  1.06365000E+00  wgnhs_h
+wgnhs_73_10  1.09052000E+03  1.06365000E+00  wgnhs_h
+wgnhs_73_11  1.09043000E+03  1.06365000E+00  wgnhs_h
+wgnhs_73_12  1.09063000E+03  1.06365000E+00  wgnhs_h
+wgnhs_74_8  1.09094000E+03  1.06365000E+00  wgnhs_h
+wgnhs_74_9  1.09091000E+03  1.06365000E+00  wgnhs_h
+wgnhs_74_10  1.09072000E+03  1.06365000E+00  wgnhs_h
+wgnhs_74_11  1.09056000E+03  1.06365000E+00  wgnhs_h
+wgnhs_74_12  1.09077000E+03  1.06365000E+00  wgnhs_h
+wgnhs_75_8  1.10270000E+03  1.06365000E+00  wgnhs_h
+wgnhs_75_9  1.10415000E+03  1.06365000E+00  wgnhs_h
+wgnhs_75_10  1.10393000E+03  1.06365000E+00  wgnhs_h
+wgnhs_75_11  1.10383000E+03  1.06365000E+00  wgnhs_h
+wgnhs_75_12  1.10400000E+03  1.06365000E+00  wgnhs_h
+wgnhs_76_8  1.10265000E+03  1.06365000E+00  wgnhs_h
+wgnhs_76_9  1.10375000E+03  1.06365000E+00  wgnhs_h
+wgnhs_76_10  1.10425000E+03  1.06365000E+00  wgnhs_h
+wgnhs_76_11  1.10392000E+03  1.06365000E+00  wgnhs_h
+wgnhs_76_12  1.10397000E+03  1.06365000E+00  wgnhs_h
+wgnhs_77_8  1.09827000E+03  1.06365000E+00  wgnhs_h
+wgnhs_77_9  1.09908000E+03  1.06365000E+00  wgnhs_h
+wgnhs_77_10  1.09888000E+03  1.06365000E+00  wgnhs_h
+wgnhs_77_11  1.09866000E+03  1.06365000E+00  wgnhs_h
+wgnhs_77_12  1.09885000E+03  1.06365000E+00  wgnhs_h
+wgnhs_78_8  1.09817000E+03  1.06365000E+00  wgnhs_h
+wgnhs_78_9  1.09898000E+03  1.06365000E+00  wgnhs_h
+wgnhs_78_10  1.09878000E+03  1.06365000E+00  wgnhs_h
+wgnhs_78_11  1.09855000E+03  1.06365000E+00  wgnhs_h
+wgnhs_78_12  1.09880000E+03  1.06365000E+00  wgnhs_h
+wgnhs_81_8  1.10750000E+03  1.06365000E+00  wgnhs_h
+wgnhs_81_9  1.10832000E+03  1.06365000E+00  wgnhs_h
+wgnhs_81_10  1.10901000E+03  1.06365000E+00  wgnhs_h
+wgnhs_81_11  1.10785000E+03  1.06365000E+00  wgnhs_h
+wgnhs_81_12  1.10867000E+03  1.06365000E+00  wgnhs_h
+wisa_2_1  1.08760000E+03  0.00000000E+00  wisa_h
+wisa_2_2  1.08745000E+03  0.00000000E+00  wisa_h
+wisa_2_3  1.08738000E+03  0.00000000E+00  wisa_h
+wisa_2_5  1.08802000E+03  0.00000000E+00  wisa_h
+wisa_2_6  1.08799000E+03  0.00000000E+00  wisa_h
+wisa_2_7  1.08753000E+03  0.00000000E+00  wisa_h
+wisa_2_8  1.08755000E+03  0.00000000E+00  wisa_h
+wisa_2_9  1.08804000E+03  0.00000000E+00  wisa_h
+wisa_2_10  1.08802000E+03  0.00000000E+00  wisa_h
+wisa_2_11  1.08797000E+03  0.00000000E+00  wisa_h
+wisa_3_1  1.08847000E+03  0.00000000E+00  wisa_h
+wisa_3_2  1.08819000E+03  0.00000000E+00  wisa_h
+wisa_3_3  1.08809000E+03  0.00000000E+00  wisa_h
+wisa_3_4  1.08862000E+03  0.00000000E+00  wisa_h
+wisa_3_5  1.08854000E+03  0.00000000E+00  wisa_h
+wisa_3_6  1.08846000E+03  0.00000000E+00  wisa_h
+wisa_3_7  1.08815000E+03  0.00000000E+00  wisa_h
+wisa_3_8  1.08818000E+03  0.00000000E+00  wisa_h
+wisa_3_9  1.08840000E+03  0.00000000E+00  wisa_h
+wisa_3_10  1.08857000E+03  0.00000000E+00  wisa_h
+wisa_3_11  1.08851000E+03  0.00000000E+00  wisa_h
+wisa_4_1  1.08922000E+03  0.00000000E+00  wisa_h
+wisa_4_4  1.09046000E+03  0.00000000E+00  wisa_h
+wisa_4_5  1.09085000E+03  0.00000000E+00  wisa_h
+wisa_4_6  1.09081000E+03  0.00000000E+00  wisa_h
+wisa_4_7  1.09007000E+03  0.00000000E+00  wisa_h
+wisa_4_8  1.08971000E+03  0.00000000E+00  wisa_h
+wisa_4_9  1.09114000E+03  0.00000000E+00  wisa_h
+wisa_4_10  1.09087000E+03  0.00000000E+00  wisa_h
+wisa_4_11  1.09084000E+03  0.00000000E+00  wisa_h
+wisa_5_1  1.09019000E+03  0.00000000E+00  wisa_h
+wisa_5_2  1.09007000E+03  0.00000000E+00  wisa_h
+wisa_5_3  1.09045000E+03  0.00000000E+00  wisa_h
+wisa_5_4  1.09089000E+03  0.00000000E+00  wisa_h
+wisa_5_5  1.09103000E+03  0.00000000E+00  wisa_h
+wisa_5_6  1.09093000E+03  0.00000000E+00  wisa_h
+wisa_5_7  1.09045000E+03  0.00000000E+00  wisa_h
+wisa_5_8  1.09056000E+03  0.00000000E+00  wisa_h
+wisa_5_9  1.09102000E+03  0.00000000E+00  wisa_h
+wisa_5_10  1.09112000E+03  0.00000000E+00  wisa_h
+wisa_5_11  1.09113000E+03  0.00000000E+00  wisa_h
+wisa_6_1  1.08906000E+03  0.00000000E+00  wisa_h
+wisa_6_5  1.08952000E+03  0.00000000E+00  wisa_h
+wisa_6_6  1.08947000E+03  0.00000000E+00  wisa_h
+wisa_6_7  1.08916000E+03  0.00000000E+00  wisa_h
+wisa_6_8  1.08910000E+03  0.00000000E+00  wisa_h
+wisa_6_9  1.08955000E+03  0.00000000E+00  wisa_h
+wisa_6_10  1.08965000E+03  0.00000000E+00  wisa_h
+wisa_6_11  1.08966000E+03  0.00000000E+00  wisa_h
+bearq_10    1.27E+01    0.00E+00    q_other
+ditch2_1    6.28E+00    0.00E+00    q_other
+ditch2_2    5.86E+00    0.00E+00    q_other
+ditch2_3    6.49E+00    0.00E+00    q_other
+ditch2_4    6.91E+00    0.00E+00    q_other
+ditch2_5    8.40E+00    0.00E+00    q_other
+ditch2_6    8.16E+00    0.00E+00    q_other
+ditch2_7    5.82E+00    0.00E+00    q_other
+ditch2_8    5.28E+00    0.00E+00    q_other
+ditch2_9    6.53E+00    0.00E+00    q_other
+ditch2_10    6.81E+00    0.00E+00    q_other
+ditch2_11    6.51E+00    0.00E+00    q_other
+ditch2_12    6.48E+00    0.00E+00    q_other
+lpreis_4    5.16E+00    2.81E+00    q_lpr
+lpreis_5    5.35E+00    2.71E+00    q_lpr
+lpreis_6    3.94E+00    3.68E+00    q_lpr
+lpreis_7    2.23E+00    6.50E+00    q_lpr
+lpreis_8    2.70E+00    5.36E+00    q_lpr
+lpreis_9    4.33E+00    3.35E+00    q_lpr
+lpreis_10    4.44E+00    3.27E+00    q_lpr
+lpreis_11    4.61E+00    3.15E+00    q_lpr
+lpreis_12    4.61E+00    3.15E+00    q_lpr
+lprhoov_1    5.01E+00    2.89E+00    q_lpr
+lprhoov_2    4.36E+00    3.33E+00    q_lpr
+lprhoov_3    4.17E+00    3.48E+00    q_lpr
+lprhoov_4    8.69E+00    1.67E+00    q_lpr
+lprhoov_5    1.03E+01    1.41E+00    q_lpr
+lprhoov_6    7.59E+00    1.91E+00    q_lpr
+lprhoov_7    6.41E+00    2.26E+00    q_lpr
+lprhoov_8    6.16E+00    2.35E+00    q_lpr
+lprhoov_9    9.76E+00    1.49E+00    q_lpr
+lprhoov_10    9.34E+00    1.55E+00    q_lpr
+lprhoov_11    9.02E+00    1.61E+00    q_lpr
+lprhoov_12    8.58E+00    1.69E+00    q_lpr
+lprken_1    1.64E+00    8.85E+00    q_lpr
+lprken_2    1.61E+00    8.99E+00    q_lpr
+lprken_3    1.55E+00    9.38E+00    q_lpr
+lprken_4    3.21E+00    4.52E+00    q_lpr
+lprken_5    3.32E+00    4.37E+00    q_lpr
+lprken_6    2.45E+00    5.93E+00    q_lpr
+lprken_7    1.50E+00    9.68E+00    q_lpr
+lprken_8    1.54E+00    9.43E+00    q_lpr
+lprken_9    2.80E+00    5.18E+00    q_lpr
+lprken_10    3.07E+00    4.72E+00    q_lpr
+lprken_11    3.21E+00    4.52E+00    q_lpr
+lprken_12    3.71E+00    3.91E+00    q_lpr
+springq_1    2.00E+01    0.00E+00    q_other
+springq_3    1.80E+01    0.00E+00    q_other
+springq_4    1.51E+01    0.00E+00    q_other
+springq_5    1.35E+01    0.00E+00    q_other
+springq_6    9.94E+00    0.00E+00    q_other
+springq_7    1.27E+01    0.00E+00    q_other
+springq_8    1.21E+01    0.00E+00    q_other
+springq_9    1.58E+01    0.00E+00    q_other
+springq_10    1.36E+01    0.00E+00    q_other
+springq_11    1.35E+01    0.00E+00    q_other
+springq_12    1.49E+01    0.00E+00    q_other
+* model command line
+LPR_TRANS_model.bat
+* model input/output
+points2.tpl   points2.dat
+pointz2.tpl   pointz2.dat
+homog_zones.tpl homog_zones
+rech_multipliers_trans.txt.tpl rech_multipliers_trans.txt
+LPR_20150709lpruppser2_spring8.sfr.tpl LPR_20150709lpruppser2_spring8.sfr
+transient_3_31_15.upw.tpl transient_3_31_15.upw
+SFRDataLPR_Trans_Q2014.out.ins SFRDataLPR_Trans_Q2014.out
+LPR_TRANS_mod2014.smp.ins LPR_trans_mod2014.smp

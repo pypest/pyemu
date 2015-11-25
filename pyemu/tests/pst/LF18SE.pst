@@ -1,0 +1,170 @@
+pcf
+* control data
+restart estimation
+10 130 5 0 4
+1  2  double  point  1  0  0
+1.000000e+001  -3.00000e+000  3.000000e-001  1.000000e-002  7   999  LAMFORGIVE
+1.000000e+001  1.000000e+001  1.000000e-003
+1.000000e-001 noaui
+0  1.000000e-002  3  3  1.000000e-002  3
+1  1  1
+* parameter groups
+Kh     relative   1.000000e-002  0.000000e+000  always_3  2.000000e+000  parabolic
+Base   relative   1.000000e-002  0.000000e+000  always_3  2.000000e+000  parabolic
+Khi    relative   1.000000e-002  0.000000e+000  always_3  2.000000e+000  parabolic
+Rch    relative   1.000000e-002  0.000000e+000  always_3  2.000000e+000  parabolic
+Res    relative   1.000000e-002  0.000000e+000  always_3  2.000000e+000  parabolic
+* parameter data
+ldfconduct__	log  factor    47.07676      4.5	 450	kh     1.0      0.0 1
+ldfbase_____	fixed factor    1500.000      150	 15000	base   1.0      0.0 1
+kshallowclay	log   factor    21.11593      2	 200	khi    1.0      0.0 1
+klakes______	tied  factor    47076.76      500	 500000	khi    1.0      0.0 1
+p-e_________	none  factor    1.348391      .0000010	         2.053388	rch   1.0e-03  0.0 1
+recharge____	none  factor    2.093909      .2487597	        24.87597	rch  -1.0e-03  0.0 1
+cdrainage___	log  factor    1.000000      .1	 10	res    1.0      0.0 1
+cseepage____	log  factor    10.00000      1	 100	res    1.0      0.0 1
+cstream_____	log  factor   0.5000000      .05	 5	res    1.0      0.0 1
+cwetland____	log  factor    24.34255      .1	 1000	res    1.0      0.0 1
+klakes______   ldfconduct__
+* observation groups
+Head
+Streamflow
+Lakestage
+Head_diff
+* observation data
+ShermanLake	1599.66	0.9800	Head
+RavenLake	1605.04	0.9800	Head
+IR-0116	1581.4	0.9800	Head
+VI-0659	1611.2	0.9800	Head
+VI-655	1611.6	0.9800	Head
+VI-653	1611.4	0.9800	Head
+VI-658	1600.3	0.9800	Head
+VI-662	1619.5	0.9800	Head
+VI-821	1615.6	0.9800	Head
+VI-828	1588.9	0.9800	Head
+VI-829	1588.7	0.9800	Head
+VI-831	1593.1	0.9800	Head
+VI-830	1589.6	0.9800	Head
+VI-832	1596.3	0.9800	Head
+VI-833	1575.6	0.9800	Head
+VI-819	1585.9	0.9800	Head
+VI-820	1577.5	0.9800	Head
+VI-0929	1592.9	0.3920	Head
+VI-0924	1579	0.3920	Head
+VI-0902	1594.5	0.3920	Head
+VI-0017	1570	0.3920	Head
+VI-0925	1581	0.3920	Head
+VI-0928	1577	0.3920	Head
+VI-0231	1588	0.3920	Head
+VI-0249	1575	0.3920	Head
+UT585	1562.61	0.1960	Head
+HK345	1586.77	0.1960	Head
+UY253	1570.73	0.1960	Head
+UO993	1582.76	0.1960	Head
+UA449	1572.86	0.1960	Head
+UR933	1577.62	0.1960	Head
+UR990	1561.45	0.1960	Head
+UG814	1565.57	0.1960	Head
+LT741	1577.37	0.1960	Head
+UR918	1567.62	0.1960	Head
+UR915	1577.76	0.1960	Head
+UY283	1567.83	0.1960	Head
+UR953	1560.64	0.1960	Head
+AH215	1576.2	0.1960	Head
+GP093	1603.56	0.1960	Head
+TL224	1580.29	0.1960	Head
+TL237	1577.1	0.1960	Head
+KN248	1577.76	0.1960	Head
+GP493	1575.48	0.1960	Head
+UD930	1573.53	0.1960	Head
+RO607	1585.4	0.1960	Head
+UM996	1569.21	0.1960	Head
+UP021	1576.86	0.1960	Head
+UR907	1579.43	0.1960	Head
+UR910	1572.92	0.1960	Head
+UX693	1594.62	0.1960	Head
+US856	1571.83	0.1960	Head
+TL223	1571.4	0.1960	Head
+TL225	1594.36	0.1960	Head
+UW284	1589.61	0.1960	Head
+AK209	1572.87	0.1960	Head
+AK210	1567.94	0.1960	Head
+EQ211	1577.47	0.1960	Head
+UT586	1585.13	0.1960	Head
+UR977	1583.84	0.1960	Head
+UR922	1593.03	0.1960	Head
+UP038	1591.84	0.1960	Head
+TL221	1603.06	0.1960	Head
+UP044	1580.64	0.1960	Head
+UR962	1572.15	0.1960	Head
+UL190	1586.73	0.1960	Head
+UY276	1554.64	0.1960	Head
+UP020	1604.46	0.1960	Head
+UY255	1600.9	0.1960	Head
+UP022	1564.73	0.1960	Head
+MN147	1591.43	0.1960	Head
+UA368	1618.32	0.1960	Head
+UP033	1616.92	0.1960	Head
+UR968	1610.4	0.1960	Head
+MN143	1595.38	0.1960	Head
+UP032	1588.12	0.1960	Head
+UM995	1592.32	0.1960	Head
+DJ947	1608.72	0.1960	Head
+DJ950	1608.09	0.1960	Head
+UR961	1591.38	0.1960	Head
+US861	1602.84	0.1960	Head
+UX679	1596.71	0.1960	Head
+LDF-BG	1595.68	1.9600	Head
+LdF-1A	1585.74	1.9600	Head
+LdF-2A	1584.38	1.9600	Head
+LdF-3A	1588.04	1.9600	Head
+Pre2010-well=NE	1593.47	1.9600	Head
+Pre2010-well=SW	1590.24	1.9600	Head
+Pre2010-well=NW	1597.99	1.9600	Head
+Perchlorate_Site 1568	1.9600	Head
+BirchLake	1595	0.1960	Head
+ThomasLk	1596	0.1960	Head
+NeganiLake	1591	0.1960	Head
+DoudLake	1581	0.1960	Head
+FatLake		1593	0.1960	Head
+GrayLake	1602	0.1960	Head
+Muskesin	1601	0.1960	Head
+LtlSugarBushLake 1610	0.1960	Head
+ReservationLake	1591	0.1960	Head
+CranberryLake	1588	0.1960	Head
+MinetteLake	1589	0.1960	Head
+LostLake	1588	0.1960	Head
+SignalLake	1592	0.1960	Head
+PoupartLake	1593	0.1960	Head
+MunnominLake	1581	0.1960	Head
+HeadflierLake	1611	0.1960	Head
+RossAllenLake	1595	0.1960	Head
+MittenLake	1596	0.1960	Head
+BillsLake	1596	0.1960	Head
+BrokenBowLake	1598	0.1960	Head
+JermsLake	1589	0.1960	Head
+WishowLake	1605	0.1960	Head
+ToulishLake	1606	0.1960	Head
+PlummerLake	1609	0.1960	Head
+StatenakerLake	1609	0.1960	Head
+SternsLake	1612	0.1960	Head
+BobidoshLake	1611	0.1960	Head
+ElsieLake	1618	0.1960	Head
+LittleCornLake	1616	0.1960	Head
+WyandockLake	1586	0.1960	Head
+SandCr072910	    130675	0.00000E-00	Streamflow
+FenceLake072910	    1264256	1.30512E-05	Streamflow
+FlambeauLake072910  4174435	3.95263E-06	Streamflow
+BearRiver072910	    4302720	1.91739E-05	Streamflow
+FenceLakeStage	1584	1.96	Lakestage
+SE_lake	        1593	0.196	Lakestage
+NorthWetland	1597.79	1.96	Lakestage
+Interlaken	1583.84	1.96	Lakestage
+TippecanoeLake	1599	0.196	Lakestage
+Grad_targ	9.94	7.84	Head_diff
+* model command line
+LF18SE.bat
+* model input/output
+par2par_LF18SE.tpl par2par_LF18SE.DAT
+LF18SE.ins LF18SE.XTR
+LF18SE_grad.ins LF18SE_grad_targ.out

@@ -1,0 +1,1490 @@
+pcf
+* control data
+restart estimation
+     686     100       6    0      12
+5  2  single  point  1  0  0
+2.000000e+001  -3.000000e+000  3.000000e-001  1.000000e-002 -7 999 lamforgive
+1.000000e+001  1.000000e+001  1.000000e-003
+1.000000e-001 1 noaui noboundscale
+10 1.000000e-002  3  3  1.000000e-002  3
+0  0  0   PARSAVEITN
+* singular value decomposition
+  1
+  25  5.000000e-007
+  1
+* parameter groups
+Kxp     relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic 1.0e-5 0.5 smaller
+Kzp     relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic 1.0e-5 0.5 smaller
+Kx     relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic 1.0e-5 0.5 smaller
+Kz     relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic 1.0e-5 0.5 smaller
+Rch relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic 1.0e-5 0.5 smaller
+SFRc relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic 1.0e-5 0.5 smaller
+* parameter data
+sfrc fixed factor   2.8      0.5 200.0 sfrc 1 0 1
+rm1 log factor    1.140405      0.85 1.25 rch 1 0 1
+rm2 tied factor    1.140405      0.85 1.25 rch 1 0 1
+rm3 tied factor    1.140405      0.85 1.25 rch 1 0 1
+rm4 tied factor    1.140405      0.85 1.25 rch 1 0 1
+rm5 tied factor    1.140405      0.85 1.25 rch 1 0 1
+rm6 tied factor    1.140405      0.85 1.25 rch 1 0 1
+rm7 tied factor    1.140405      0.85 1.25 rch 1 0 1
+kx1 log factor    19.23794      1.0 50.0 kx 1 0 1
+kx2 log factor    25.52462      1.0 50.0 kx 1 0 1
+kx21 log factor    24.93108      1.0 50.0 kx 1 0 1
+kx3 log factor    23.56273      1.0 50.0 kx 1 0 1
+kx4 log factor    1.021700      0.1 10.0 kx 1 0 1
+kx5 log factor    21.16760      1.0 50.0 kx 1 0 1
+kx6 log factor    16.40179      1.0 50.0 kx 1 0 1
+kx8 log factor    1.017082      0.1 10.0 kx 1 0 1
+kx81 log factor    1.005842      0.1 10.0 kx 1 0 1
+kx13 log factor    157.9511      40.0 250.0 kx 1 0 1
+kx14 log factor    47.83195      20.0 80.0 kx 1 0 1
+kx15 log factor    48.71790      20.0 80.0 kx 1 0 1
+kz1 log factor    2.003538      0.10 5.0 kz 1 0 1
+kz2 log factor    2.455603      0.10 5.0  kz 1 0 1
+kz21 log factor    2.583414      0.10 5.0  kz 1 0 1
+kz3 log factor    2.479454      0.10 5.0  kz 1 0 1
+kz4 log factor   9.9419264E-02  0.01 1.0 kz 1 0 1
+kz5 log factor    20.60792      1.0 50.0 kz 1 0 1
+kz6 log factor    15.61768      1.0 50.0 kz 1 0 1
+kz8 log factor   0.9590616      0.1 10.0 kz 1 0 1
+kz81 log factor   0.9822517      0.1 10.0 kz 1 0 1
+kz13 log factor    10.02539      3.0 130.0 kz 1 0 1
+kz14 log factor    3.500713      2.0 8.0 kz 1 0 1
+kz15 log factor    3.738628      2.0 8.0 kz 1 0 1
+kpkp1  log  factor    213.8025      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp2  tied  factor    218.9222      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp3  tied  factor    214.2358      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp4  tied  factor    221.9033      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp5  tied  factor    220.6002      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp6  tied  factor    219.9219      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp7  tied  factor    230.3635      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp8  tied  factor    223.3713      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp9  tied  factor    223.0581      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp10  tied  factor    221.3810      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp11  tied  factor    216.2354      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp12  tied  factor    214.2138      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp13  tied  factor    220.2174      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp14  tied  factor    221.1409      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp15  tied  factor    217.6525      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp16  tied  factor    218.2015      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp17  tied  factor    224.0931      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp18  tied  factor    223.3384      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp19  tied  factor    217.5401      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp20  tied  factor    232.4312      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp21  tied  factor    221.8596      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp22  tied  factor    226.1667      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp23  tied  factor    217.7518      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp24  tied  factor    219.9882      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp25  tied  factor    223.8274      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp26  tied  factor    221.7040      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp27  tied  factor    232.6614      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp28  tied  factor    227.5656      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp29  tied  factor    217.5507      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp30  tied  factor    217.0030      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp31  tied  factor    225.2604      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp32  tied  factor    227.0420      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp33  tied  factor    217.1118      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp34  tied  factor    201.9115      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp35  tied  factor    225.3331      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp36  tied  factor    217.3563      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp37  tied  factor    222.6662      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp38  tied  factor    218.4004      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp39  tied  factor    213.2718      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp40  tied  factor    220.6057      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp41  tied  factor    218.3620      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp42  tied  factor    214.2271      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp43  tied  factor    231.2629      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp44  tied  factor    209.5357      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp45  tied  factor    224.8107      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp46  tied  factor    228.9699      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp47  tied  factor    223.7344      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp48  tied  factor    225.3647      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp49  tied  factor    225.3743      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp50  tied  factor    212.0571      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp51  tied  factor    206.2442      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp52  tied  factor    233.5251      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp53  tied  factor    215.8987      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp54  tied  factor    219.7660      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp55  tied  factor    220.0416      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp56  tied  factor    219.5079      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp57  tied  factor    228.8093      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp58  tied  factor    224.9919      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp59  tied  factor    224.0044      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp60  tied  factor    230.4915      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp61  tied  factor    215.0015      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp62  tied  factor    223.1562      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp63  tied  factor    226.3421      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp64  tied  factor    227.4098      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp65  tied  factor    213.3844      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp66  tied  factor    220.2454      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp67  tied  factor    272.3346      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp68  tied  factor    234.9071      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp69  tied  factor    220.4724      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp70  tied  factor    207.8784      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp71  tied  factor    213.3927      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp72  tied  factor    219.6402      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp73  tied  factor    217.7837      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp74  tied  factor    213.2801      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp75  tied  factor    219.4315      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp76  tied  factor    217.9129      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp77  tied  factor    226.3743      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp78  tied  factor    259.0056      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp79  tied  factor    274.0763      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp80  tied  factor    210.7747      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp81  tied  factor    219.3833      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp82  tied  factor    226.4845      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp83  tied  factor    209.5811      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp84  tied  factor    222.6196      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp85  tied  factor    223.9248      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp86  tied  factor    225.2675      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp87  tied  factor    213.9872      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp88  tied  factor    223.2665      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp89  tied  factor    225.1914      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp90  tied  factor    206.7453      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp91  tied  factor    234.0155      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp92  tied  factor    244.1468      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp93  tied  factor    230.2704      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp94  tied  factor    216.4503      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp95  tied  factor    221.6827      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp96  tied  factor    208.2119      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp97  tied  factor    219.8008      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp98  tied  factor    216.8209      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp99  tied  factor    225.0557      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp100  tied  factor    225.4486      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp101  tied  factor    216.6105      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp102  tied  factor    222.0406      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp103  tied  factor    215.1505      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp104  tied  factor    213.7060      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp105  tied  factor    235.4192      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp106  tied  factor    230.3665      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp107  tied  factor    220.4675      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp108  tied  factor    223.5303      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp109  tied  factor    217.0424      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp110  tied  factor    221.7577      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp111  tied  factor    225.4882      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp112  tied  factor    225.9168      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp113  tied  factor    216.8617      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp114  tied  factor    215.4134      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp115  tied  factor    224.4164      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp116  tied  factor    209.3847      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp117  tied  factor    224.2827      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp118  tied  factor    233.6195      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp119  tied  factor    231.5544      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp120  tied  factor    226.7025      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp121  tied  factor    218.5355      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp122  tied  factor    227.2763      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp123  tied  factor    214.5561      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp124  tied  factor    227.9146      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp125  tied  factor    222.6100      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp126  tied  factor    220.7942      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp127  tied  factor    224.5103      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp128  tied  factor    226.3728      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp129  tied  factor    235.5480      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp130  tied  factor    230.0134      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp131  tied  factor    217.7741      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp132  tied  factor    221.7135      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp133  tied  factor    237.7123      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp134  tied  factor    226.5045      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp135  tied  factor    221.2972      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp136  tied  factor    228.7243      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp137  tied  factor    218.0262      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp138  tied  factor    225.6295      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp139  tied  factor    214.0881      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp140  tied  factor    220.7291      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp141  tied  factor    231.7861      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp142  tied  factor    216.4080      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp143  tied  factor    219.7917      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp144  tied  factor    220.0447      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp145  tied  factor    228.9766      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp146  tied  factor    224.5179      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp147  tied  factor    233.9723      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp148  tied  factor    240.3990      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp149  tied  factor    219.6668      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp150  tied  factor    230.8417      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp151  tied  factor    215.7014      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp152  tied  factor    215.7829      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp153  tied  factor    217.5224      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp154  tied  factor    225.6350      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp155  tied  factor    240.9710      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp156  tied  factor    216.3641      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp157  tied  factor    233.0762      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp158  tied  factor    220.2177      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp159  tied  factor    218.2379      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp160  tied  factor    214.7446      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp161  tied  factor    244.1592      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp162  tied  factor    217.9758      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp163  tied  factor    223.9397      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp164  tied  factor    226.1829      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp165  tied  factor    227.1446      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp166  tied  factor    217.2752      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp167  tied  factor    216.9877      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp168  tied  factor    217.9164      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp169  tied  factor    211.5343      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp170  tied  factor    217.3246      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp171  tied  factor    185.9342      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp172  tied  factor    215.5695      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp173  tied  factor    205.9605      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp174  tied  factor    237.5313      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp175  tied  factor    226.6306      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp176  tied  factor    353.0317      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp177  tied  factor    232.2315      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp178  tied  factor    214.3882      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp179  tied  factor    217.0889      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp180  tied  factor    226.3760      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp181  tied  factor    216.4415      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp182  tied  factor    301.6697      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp183  tied  factor    222.5885      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp184  tied  factor    224.8126      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp185  tied  factor    200.7745      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp186  tied  factor    200.3013      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp187  tied  factor    220.4046      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp188  tied  factor    222.9837      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp189  tied  factor    236.6447      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp190  tied  factor    200.8656      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp191  tied  factor    225.9315      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp192  tied  factor    231.9248      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp193  tied  factor    227.0230      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp194  tied  factor    207.2882      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp195  tied  factor    354.2094      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp196  tied  factor    218.7768      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp197  tied  factor    223.4546      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp198  tied  factor    292.9936      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp199  tied  factor    224.8135      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp200  tied  factor    208.7513      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp201  tied  factor    212.0539      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp202  tied  factor    226.9863      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp203  tied  factor    236.4774      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp204  tied  factor    226.9775      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp205  tied  factor    222.3988      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp206  tied  factor    249.6908      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp207  tied  factor    245.0100      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp208  tied  factor    229.9512      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp209  tied  factor    216.3257      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp210  tied  factor    227.0675      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp211  tied  factor    215.3631      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp212  tied  factor    227.5629      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp213  tied  factor    221.1581      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp214  tied  factor    239.5048      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp215  tied  factor    220.1932      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp216  tied  factor    216.4325      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp217  tied  factor    225.7293      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp218  tied  factor    229.0719      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp219  tied  factor    218.4150      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp220  tied  factor    222.9470      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp221  tied  factor    236.9169      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp222  tied  factor    224.9618      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp223  tied  factor    233.6797      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp224  tied  factor    232.3029      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp225  tied  factor    221.1969      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp226  tied  factor    231.9237      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp227  tied  factor    250.3901      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp228  tied  factor    232.7859      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp229  tied  factor    225.6159      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp230  tied  factor    253.5599      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp231  tied  factor    227.4534      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp232  tied  factor    223.5847      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp233  tied  factor    215.0521      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp234  tied  factor    220.1303      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp235  tied  factor    211.1001      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp236  tied  factor    242.9496      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp237  tied  factor    243.1227      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp238  tied  factor    229.8329      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp239  tied  factor    232.6444      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp240  tied  factor    226.9985      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp241  tied  factor    212.5878      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp242  tied  factor    255.8288      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp243  tied  factor    230.6515      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp244  tied  factor    231.1809      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp245  tied  factor    233.6548      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp246  tied  factor    231.1896      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp247  tied  factor    226.1239      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp248  tied  factor    228.7155      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp249  tied  factor    216.8618      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp250  tied  factor    216.4448      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp251  tied  factor    227.3941      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp252  tied  factor    227.4785      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp253  tied  factor    237.3695      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp254  tied  factor    234.7393      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp255  tied  factor    248.2222      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp256  tied  factor    218.7707      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp257  tied  factor    220.3147      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp258  tied  factor    217.9635      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp259  tied  factor    223.8020      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp260  tied  factor    216.1269      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp261  tied  factor    226.0038      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp262  tied  factor    227.9278      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp263  tied  factor    225.7167      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp264  tied  factor    223.6545      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp265  tied  factor    216.1799      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp266  tied  factor    226.4099      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp267  tied  factor    230.6669      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp268  tied  factor    234.9249      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp269  tied  factor    237.6628      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp270  tied  factor    224.4963      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp271  tied  factor    221.3100      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp272  tied  factor    228.3615      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp273  tied  factor    235.1105      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp274  tied  factor    216.4869      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp275  tied  factor    219.8048      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp276  tied  factor    233.7021      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp277  tied  factor    211.6251      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp278  tied  factor    218.0783      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp279  tied  factor    218.6432      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp280  tied  factor    229.4938      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp281  tied  factor    242.7437      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp282  tied  factor    232.6494      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp283  tied  factor    196.3144      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp284  tied  factor    218.9836      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp285  tied  factor    203.0278      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp286  tied  factor    219.5725      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp287  tied  factor    240.6286      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp288  tied  factor    223.5280      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp289  tied  factor    220.3838      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp290  tied  factor    229.6494      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp291  tied  factor    234.6087      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp292  tied  factor    228.9506      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp293  tied  factor    224.0648      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp294  tied  factor    234.3512      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp295  tied  factor    213.4348      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp296  tied  factor    210.5052      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp297  tied  factor    212.7859      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp298  tied  factor    226.2218      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp299  tied  factor    231.3603      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp300  tied  factor    248.5212      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp301  tied  factor    221.4932      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp302  tied  factor    208.9602      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp303  tied  factor    204.0235      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp304  tied  factor    218.5521      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp305  tied  factor    223.0350      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp306  tied  factor    223.0382      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp307  tied  factor    223.5564      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp308  tied  factor    210.2135      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp309  tied  factor    223.0335      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp310  tied  factor    233.7011      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp311  tied  factor    240.9452      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp312  tied  factor    236.4829      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp313  tied  factor    215.1692      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp314  tied  factor    209.7058      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp315  tied  factor    221.7281      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp316  tied  factor    212.6766      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp317  tied  factor    228.0392      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp318  tied  factor    220.4329      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp319  tied  factor    212.7323      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp320  tied  factor    200.9119      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp321  tied  factor    196.6045      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp322  tied  factor    218.1747      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp323  tied  factor    221.6818      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp324  tied  factor    228.4496      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp325  tied  factor    221.9125      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp326  tied  factor    233.7747      1.20e+02  5.00e+02  kxp  1  0  1
+kpkp327  tied  factor    216.0788      1.20e+02  5.00e+02  kxp  1  0  1
+kzkz1  log  factor    6.403942      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz2  tied  factor    7.262059      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz3  tied  factor    7.544535      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz4  tied  factor    6.949707      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz5  tied  factor    7.148439      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz6  tied  factor    7.099836      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz7  tied  factor    7.032177      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz8  tied  factor    6.955526      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz9  tied  factor    6.942272      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz10  tied  factor    6.902681      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz11  tied  factor    7.030191      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz12  tied  factor    6.909244      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz13  tied  factor    6.923199      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz14  tied  factor    7.622437      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz15  tied  factor    7.041070      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz16  tied  factor    6.936180      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz17  tied  factor    7.121644      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz18  tied  factor    7.132632      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz19  tied  factor    7.104162      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz20  tied  factor    7.163777      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz21  tied  factor    6.981951      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz22  tied  factor    6.889006      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz23  tied  factor    6.912247      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz24  tied  factor    6.947158      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz25  tied  factor    6.935234      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz26  tied  factor    7.470113      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz27  tied  factor    7.094965      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz28  tied  factor    6.960616      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz29  tied  factor    7.056297      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz30  tied  factor    6.937091      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz31  tied  factor    6.955155      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz32  tied  factor    6.821364      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz33  tied  factor    7.191773      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz34  tied  factor    7.075065      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz35  tied  factor    7.233869      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz36  tied  factor    7.063769      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz37  tied  factor    6.666946      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz38  tied  factor    7.041000      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz39  tied  factor    6.755778      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz40  tied  factor    6.893726      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz41  tied  factor    6.874113      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz42  tied  factor    7.389096      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz43  tied  factor    7.106621      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz44  tied  factor    6.977102      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz45  tied  factor    7.218235      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz46  tied  factor    7.419611      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz47  tied  factor    7.089504      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz48  tied  factor    6.963987      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz49  tied  factor    7.046492      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz50  tied  factor    7.056733      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz51  tied  factor    7.114842      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz52  tied  factor    7.193127      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz53  tied  factor    7.112794      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz54  tied  factor    6.882524      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz55  tied  factor    6.956797      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz56  tied  factor    7.150202      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz57  tied  factor    7.177908      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz58  tied  factor    6.787067      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz59  tied  factor    6.914984      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz60  tied  factor    7.279697      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz61  tied  factor    6.972507      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz62  tied  factor    7.250296      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz63  tied  factor    7.430782      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz64  tied  factor    6.776030      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz65  tied  factor    7.038007      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz66  tied  factor    7.142001      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz67  tied  factor    6.856111      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz68  tied  factor    7.084991      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz69  tied  factor    7.101551      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz70  tied  factor    6.760653      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz71  tied  factor    7.157829      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz72  tied  factor    6.999428      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz73  tied  factor    6.986403      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz74  tied  factor    6.957019      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz75  tied  factor    6.608862      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz76  tied  factor    7.047459      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz77  tied  factor    6.947656      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz78  tied  factor    6.919484      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz79  tied  factor    7.151088      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz80  tied  factor    7.088742      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz81  tied  factor    6.872772      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz82  tied  factor    6.993495      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz83  tied  factor    7.122955      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz84  tied  factor    6.984100      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz85  tied  factor    7.217768      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz86  tied  factor    6.744833      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz87  tied  factor    6.830648      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz88  tied  factor    7.129026      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz89  tied  factor    6.907453      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz90  tied  factor    7.250822      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz91  tied  factor    7.061530      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz92  tied  factor    6.904980      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz93  tied  factor    7.075851      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz94  tied  factor    7.096690      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz95  tied  factor    7.222753      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz96  tied  factor    6.858944      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz97  tied  factor    7.257533      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz98  tied  factor    7.049799      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz99  tied  factor    7.019665      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz100  tied  factor    6.905359      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz101  tied  factor    7.028668      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz102  tied  factor    7.363972      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz103  tied  factor    6.954873      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz104  tied  factor    7.070493      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz105  tied  factor    7.257735      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz106  tied  factor    7.139240      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz107  tied  factor    7.120432      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz108  tied  factor    7.056324      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz109  tied  factor    7.097728      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz110  tied  factor    7.217303      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz111  tied  factor    7.062804      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz112  tied  factor    7.179442      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz113  tied  factor    7.098644      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz114  tied  factor    6.968051      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz115  tied  factor    7.049223      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz116  tied  factor    7.158564      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz117  tied  factor    7.208102      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz118  tied  factor    7.182354      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz119  tied  factor    6.896014      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz120  tied  factor    6.990394      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz121  tied  factor    6.929906      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz122  tied  factor    6.947172      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz123  tied  factor    7.229703      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz124  tied  factor    7.045208      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz125  tied  factor    7.094002      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz126  tied  factor    7.143074      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz127  tied  factor    7.154300      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz128  tied  factor    6.932038      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz129  tied  factor    7.048126      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz130  tied  factor    6.875391      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz131  tied  factor    6.923754      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz132  tied  factor    7.189476      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz133  tied  factor    6.779131      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz134  tied  factor    6.840436      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz135  tied  factor    7.223475      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz136  tied  factor    7.024183      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz137  tied  factor    7.080395      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz138  tied  factor    7.119770      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz139  tied  factor    7.083415      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz140  tied  factor    6.949357      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz141  tied  factor    6.987337      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz142  tied  factor    7.097342      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz143  tied  factor    7.069589      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz144  tied  factor    6.993093      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz145  tied  factor    7.072275      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz146  tied  factor    7.069982      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz147  tied  factor    7.009979      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz148  tied  factor    6.983508      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz149  tied  factor    6.907929      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz150  tied  factor    6.941108      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz151  tied  factor    7.147652      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz152  tied  factor    7.048278      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz153  tied  factor    7.124907      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz154  tied  factor    6.967489      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz155  tied  factor    7.000246      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz156  tied  factor    7.056337      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz157  tied  factor    7.152252      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz158  tied  factor    7.067262      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz159  tied  factor    6.787153      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz160  tied  factor    6.839388      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz161  tied  factor    7.029456      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz162  tied  factor    7.164137      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz163  tied  factor    7.218625      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz164  tied  factor    6.747430      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz165  tied  factor    6.880944      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz166  tied  factor    7.117860      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz167  tied  factor    7.254044      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz168  tied  factor    7.240289      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz169  tied  factor    7.046219      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz170  tied  factor    7.118611      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz171  tied  factor    6.813766      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz172  tied  factor    6.856161      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz173  tied  factor    7.083845      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz174  tied  factor    7.118975      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz175  tied  factor    7.219998      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz176  tied  factor    6.985881      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz177  tied  factor    7.397176      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz178  tied  factor    7.138575      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz179  tied  factor    7.232454      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz180  tied  factor    7.056787      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz181  tied  factor    7.018458      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz182  tied  factor    7.058941      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz183  tied  factor    7.023500      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz184  tied  factor    7.300644      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz185  tied  factor    6.993631      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz186  tied  factor    6.983758      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz187  tied  factor    7.082099      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz188  tied  factor    7.002495      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz189  tied  factor    7.128184      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz190  tied  factor    7.045113      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz191  tied  factor    7.198380      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz192  tied  factor    7.058840      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz193  tied  factor    7.079822      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz194  tied  factor    7.037790      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz195  tied  factor    6.908658      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz196  tied  factor    7.050704      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz197  tied  factor    7.046976      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz198  tied  factor    7.108814      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz199  tied  factor    7.064766      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz200  tied  factor    7.111390      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz201  tied  factor    6.649931      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz202  tied  factor    7.199790      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz203  tied  factor    6.836135      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz204  tied  factor    6.649282      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz205  tied  factor    6.976426      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz206  tied  factor    7.036874      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz207  tied  factor    7.931395      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz208  tied  factor    7.086381      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz209  tied  factor    7.175039      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz210  tied  factor    7.016763      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz211  tied  factor    6.968509      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz212  tied  factor    6.935902      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz213  tied  factor    6.998160      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz214  tied  factor    6.530250      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz215  tied  factor    7.088041      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz216  tied  factor    7.134337      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz217  tied  factor    7.232828      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz218  tied  factor    6.927825      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz219  tied  factor    7.114496      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz220  tied  factor    7.173057      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz221  tied  factor    7.277286      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz222  tied  factor    7.114993      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz223  tied  factor    7.291560      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz224  tied  factor    7.230477      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz225  tied  factor    7.171438      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz226  tied  factor    7.031434      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz227  tied  factor    6.933108      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz228  tied  factor    7.044888      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz229  tied  factor    6.919353      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz230  tied  factor    7.074596      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz231  tied  factor    7.042030      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz232  tied  factor    6.876223      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz233  tied  factor    6.890187      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz234  tied  factor    7.143737      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz235  tied  factor    6.556221      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz236  tied  factor    7.086479      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz237  tied  factor    7.219285      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz238  tied  factor    7.024287      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz239  tied  factor    7.233086      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz240  tied  factor    7.117556      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz241  tied  factor    6.940265      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz242  tied  factor    7.332311      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz243  tied  factor    7.228979      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz244  tied  factor    6.894451      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz245  tied  factor    7.005203      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz246  tied  factor    7.146182      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz247  tied  factor    6.991776      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz248  tied  factor    6.860440      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz249  tied  factor    7.337079      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz250  tied  factor    7.025052      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz251  tied  factor    7.087948      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz252  tied  factor    7.128669      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz253  tied  factor    6.986765      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz254  tied  factor    7.303990      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz255  tied  factor    7.090841      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz256  tied  factor    7.300713      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz257  tied  factor    6.651753      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz258  tied  factor    7.054829      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz259  tied  factor    6.874998      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz260  tied  factor    6.897097      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz261  tied  factor    6.923750      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz262  tied  factor    7.068521      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz263  tied  factor    6.787545      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz264  tied  factor    7.432949      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz265  tied  factor    7.053715      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz266  tied  factor    6.912775      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz267  tied  factor    6.878321      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz268  tied  factor    7.049018      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz269  tied  factor    7.025708      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz270  tied  factor    6.981117      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz271  tied  factor    6.889657      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz272  tied  factor    7.094165      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz273  tied  factor    7.270000      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz274  tied  factor    6.928894      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz275  tied  factor    7.298838      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz276  tied  factor    7.155347      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz277  tied  factor    7.088388      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz278  tied  factor    6.983267      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz279  tied  factor    7.124910      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz280  tied  factor    6.873140      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz281  tied  factor    6.883895      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz282  tied  factor    6.811887      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz283  tied  factor    7.236064      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz284  tied  factor    7.010583      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz285  tied  factor    7.164682      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz286  tied  factor    7.316333      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz287  tied  factor    6.834184      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz288  tied  factor    7.574304      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz289  tied  factor    7.170917      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz290  tied  factor    7.108660      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz291  tied  factor    7.076643      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz292  tied  factor    7.037058      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz293  tied  factor    7.094225      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz294  tied  factor    7.126812      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz295  tied  factor    6.706953      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz296  tied  factor    6.996251      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz297  tied  factor    7.299921      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz298  tied  factor    7.374263      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz299  tied  factor    7.015424      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz300  tied  factor    7.153313      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz301  tied  factor    7.273035      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz302  tied  factor    6.988966      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz303  tied  factor    7.211676      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz304  tied  factor    7.212575      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz305  tied  factor    6.991391      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz306  tied  factor    6.801832      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz307  tied  factor    6.783855      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz308  tied  factor    7.019838      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz309  tied  factor    6.857578      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz310  tied  factor    7.321530      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz311  tied  factor    7.188195      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz312  tied  factor    6.829099      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz313  tied  factor    7.204821      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz314  tied  factor    6.873578      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz315  tied  factor    7.088888      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz316  tied  factor    6.951982      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz317  tied  factor    7.320042      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz318  tied  factor    6.503087      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz319  tied  factor    7.081751      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz320  tied  factor    7.214129      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz321  tied  factor    6.989993      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz322  tied  factor    7.140362      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz323  tied  factor    7.250634      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz324  tied  factor    6.993430      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz325  tied  factor    6.916447      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz326  tied  factor    7.101265      6.00e+00  5.00e+01  kzp  1  0  1
+kzkz327  tied  factor    7.171063      6.00e+00  5.00e+01  kzp  1  0  1
+rm2 rm1
+rm3 rm1
+rm4 rm1
+rm5 rm1
+rm6 rm1
+rm7 rm1
+kpkp2	kpkp1
+kpkp3	kpkp1
+kpkp4	kpkp1
+kpkp5	kpkp1
+kpkp6	kpkp1
+kpkp7	kpkp1
+kpkp8	kpkp1
+kpkp9	kpkp1
+kpkp10	kpkp1
+kpkp11	kpkp1
+kpkp12	kpkp1
+kpkp13	kpkp1
+kpkp14	kpkp1
+kpkp15	kpkp1
+kpkp16	kpkp1
+kpkp17	kpkp1
+kpkp18	kpkp1
+kpkp19	kpkp1
+kpkp20	kpkp1
+kpkp21	kpkp1
+kpkp22	kpkp1
+kpkp23	kpkp1
+kpkp24	kpkp1
+kpkp25	kpkp1
+kpkp26	kpkp1
+kpkp27	kpkp1
+kpkp28	kpkp1
+kpkp29	kpkp1
+kpkp30	kpkp1
+kpkp31	kpkp1
+kpkp32	kpkp1
+kpkp33	kpkp1
+kpkp34	kpkp1
+kpkp35	kpkp1
+kpkp36	kpkp1
+kpkp37	kpkp1
+kpkp38	kpkp1
+kpkp39	kpkp1
+kpkp40	kpkp1
+kpkp41	kpkp1
+kpkp42	kpkp1
+kpkp43	kpkp1
+kpkp44	kpkp1
+kpkp45	kpkp1
+kpkp46	kpkp1
+kpkp47	kpkp1
+kpkp48	kpkp1
+kpkp49	kpkp1
+kpkp50	kpkp1
+kpkp51	kpkp1
+kpkp52	kpkp1
+kpkp53	kpkp1
+kpkp54	kpkp1
+kpkp55	kpkp1
+kpkp56	kpkp1
+kpkp57	kpkp1
+kpkp58	kpkp1
+kpkp59	kpkp1
+kpkp60	kpkp1
+kpkp61	kpkp1
+kpkp62	kpkp1
+kpkp63	kpkp1
+kpkp64	kpkp1
+kpkp65	kpkp1
+kpkp66	kpkp1
+kpkp67	kpkp1
+kpkp68	kpkp1
+kpkp69	kpkp1
+kpkp70	kpkp1
+kpkp71	kpkp1
+kpkp72	kpkp1
+kpkp73	kpkp1
+kpkp74	kpkp1
+kpkp75	kpkp1
+kpkp76	kpkp1
+kpkp77	kpkp1
+kpkp78	kpkp1
+kpkp79	kpkp1
+kpkp80	kpkp1
+kpkp81	kpkp1
+kpkp82	kpkp1
+kpkp83	kpkp1
+kpkp84	kpkp1
+kpkp85	kpkp1
+kpkp86	kpkp1
+kpkp87	kpkp1
+kpkp88	kpkp1
+kpkp89	kpkp1
+kpkp90	kpkp1
+kpkp91	kpkp1
+kpkp92	kpkp1
+kpkp93	kpkp1
+kpkp94	kpkp1
+kpkp95	kpkp1
+kpkp96	kpkp1
+kpkp97	kpkp1
+kpkp98	kpkp1
+kpkp99	kpkp1
+kpkp100	kpkp1
+kpkp101	kpkp1
+kpkp102	kpkp1
+kpkp103	kpkp1
+kpkp104	kpkp1
+kpkp105	kpkp1
+kpkp106	kpkp1
+kpkp107	kpkp1
+kpkp108	kpkp1
+kpkp109	kpkp1
+kpkp110	kpkp1
+kpkp111	kpkp1
+kpkp112	kpkp1
+kpkp113	kpkp1
+kpkp114	kpkp1
+kpkp115	kpkp1
+kpkp116	kpkp1
+kpkp117	kpkp1
+kpkp118	kpkp1
+kpkp119	kpkp1
+kpkp120	kpkp1
+kpkp121	kpkp1
+kpkp122	kpkp1
+kpkp123	kpkp1
+kpkp124	kpkp1
+kpkp125	kpkp1
+kpkp126	kpkp1
+kpkp127	kpkp1
+kpkp128	kpkp1
+kpkp129	kpkp1
+kpkp130	kpkp1
+kpkp131	kpkp1
+kpkp132	kpkp1
+kpkp133	kpkp1
+kpkp134	kpkp1
+kpkp135	kpkp1
+kpkp136	kpkp1
+kpkp137	kpkp1
+kpkp138	kpkp1
+kpkp139	kpkp1
+kpkp140	kpkp1
+kpkp141	kpkp1
+kpkp142	kpkp1
+kpkp143	kpkp1
+kpkp144	kpkp1
+kpkp145	kpkp1
+kpkp146	kpkp1
+kpkp147	kpkp1
+kpkp148	kpkp1
+kpkp149	kpkp1
+kpkp150	kpkp1
+kpkp151	kpkp1
+kpkp152	kpkp1
+kpkp153	kpkp1
+kpkp154	kpkp1
+kpkp155	kpkp1
+kpkp156	kpkp1
+kpkp157	kpkp1
+kpkp158	kpkp1
+kpkp159	kpkp1
+kpkp160	kpkp1
+kpkp161	kpkp1
+kpkp162	kpkp1
+kpkp163	kpkp1
+kpkp164	kpkp1
+kpkp165	kpkp1
+kpkp166	kpkp1
+kpkp167	kpkp1
+kpkp168	kpkp1
+kpkp169	kpkp1
+kpkp170	kpkp1
+kpkp171	kpkp1
+kpkp172	kpkp1
+kpkp173	kpkp1
+kpkp174	kpkp1
+kpkp175	kpkp1
+kpkp176	kpkp1
+kpkp177	kpkp1
+kpkp178	kpkp1
+kpkp179	kpkp1
+kpkp180	kpkp1
+kpkp181	kpkp1
+kpkp182	kpkp1
+kpkp183	kpkp1
+kpkp184	kpkp1
+kpkp185	kpkp1
+kpkp186	kpkp1
+kpkp187	kpkp1
+kpkp188	kpkp1
+kpkp189	kpkp1
+kpkp190	kpkp1
+kpkp191	kpkp1
+kpkp192	kpkp1
+kpkp193	kpkp1
+kpkp194	kpkp1
+kpkp195	kpkp1
+kpkp196	kpkp1
+kpkp197	kpkp1
+kpkp198	kpkp1
+kpkp199	kpkp1
+kpkp200	kpkp1
+kpkp201	kpkp1
+kpkp202	kpkp1
+kpkp203	kpkp1
+kpkp204	kpkp1
+kpkp205	kpkp1
+kpkp206	kpkp1
+kpkp207	kpkp1
+kpkp208	kpkp1
+kpkp209	kpkp1
+kpkp210	kpkp1
+kpkp211	kpkp1
+kpkp212	kpkp1
+kpkp213	kpkp1
+kpkp214	kpkp1
+kpkp215	kpkp1
+kpkp216	kpkp1
+kpkp217	kpkp1
+kpkp218	kpkp1
+kpkp219	kpkp1
+kpkp220	kpkp1
+kpkp221	kpkp1
+kpkp222	kpkp1
+kpkp223	kpkp1
+kpkp224	kpkp1
+kpkp225	kpkp1
+kpkp226	kpkp1
+kpkp227	kpkp1
+kpkp228	kpkp1
+kpkp229	kpkp1
+kpkp230	kpkp1
+kpkp231	kpkp1
+kpkp232	kpkp1
+kpkp233	kpkp1
+kpkp234	kpkp1
+kpkp235	kpkp1
+kpkp236	kpkp1
+kpkp237	kpkp1
+kpkp238	kpkp1
+kpkp239	kpkp1
+kpkp240	kpkp1
+kpkp241	kpkp1
+kpkp242	kpkp1
+kpkp243	kpkp1
+kpkp244	kpkp1
+kpkp245	kpkp1
+kpkp246	kpkp1
+kpkp247	kpkp1
+kpkp248	kpkp1
+kpkp249	kpkp1
+kpkp250	kpkp1
+kpkp251	kpkp1
+kpkp252	kpkp1
+kpkp253	kpkp1
+kpkp254	kpkp1
+kpkp255	kpkp1
+kpkp256	kpkp1
+kpkp257	kpkp1
+kpkp258	kpkp1
+kpkp259	kpkp1
+kpkp260	kpkp1
+kpkp261	kpkp1
+kpkp262	kpkp1
+kpkp263	kpkp1
+kpkp264	kpkp1
+kpkp265	kpkp1
+kpkp266	kpkp1
+kpkp267	kpkp1
+kpkp268	kpkp1
+kpkp269	kpkp1
+kpkp270	kpkp1
+kpkp271	kpkp1
+kpkp272	kpkp1
+kpkp273	kpkp1
+kpkp274	kpkp1
+kpkp275	kpkp1
+kpkp276	kpkp1
+kpkp277	kpkp1
+kpkp278	kpkp1
+kpkp279	kpkp1
+kpkp280	kpkp1
+kpkp281	kpkp1
+kpkp282	kpkp1
+kpkp283	kpkp1
+kpkp284	kpkp1
+kpkp285	kpkp1
+kpkp286	kpkp1
+kpkp287	kpkp1
+kpkp288	kpkp1
+kpkp289	kpkp1
+kpkp290	kpkp1
+kpkp291	kpkp1
+kpkp292	kpkp1
+kpkp293	kpkp1
+kpkp294	kpkp1
+kpkp295	kpkp1
+kpkp296	kpkp1
+kpkp297	kpkp1
+kpkp298	kpkp1
+kpkp299	kpkp1
+kpkp300	kpkp1
+kpkp301	kpkp1
+kpkp302	kpkp1
+kpkp303	kpkp1
+kpkp304	kpkp1
+kpkp305	kpkp1
+kpkp306	kpkp1
+kpkp307	kpkp1
+kpkp308	kpkp1
+kpkp309	kpkp1
+kpkp310	kpkp1
+kpkp311	kpkp1
+kpkp312	kpkp1
+kpkp313	kpkp1
+kpkp314	kpkp1
+kpkp315	kpkp1
+kpkp316	kpkp1
+kpkp317	kpkp1
+kpkp318	kpkp1
+kpkp319	kpkp1
+kpkp320	kpkp1
+kpkp321	kpkp1
+kpkp322	kpkp1
+kpkp323	kpkp1
+kpkp324	kpkp1
+kpkp325	kpkp1
+kpkp326	kpkp1
+kpkp327	kpkp1
+kzkz2	kzkz1
+kzkz3	kzkz1
+kzkz4	kzkz1
+kzkz5	kzkz1
+kzkz6	kzkz1
+kzkz7	kzkz1
+kzkz8	kzkz1
+kzkz9	kzkz1
+kzkz10	kzkz1
+kzkz11	kzkz1
+kzkz12	kzkz1
+kzkz13	kzkz1
+kzkz14	kzkz1
+kzkz15	kzkz1
+kzkz16	kzkz1
+kzkz17	kzkz1
+kzkz18	kzkz1
+kzkz19	kzkz1
+kzkz20	kzkz1
+kzkz21	kzkz1
+kzkz22	kzkz1
+kzkz23	kzkz1
+kzkz24	kzkz1
+kzkz25	kzkz1
+kzkz26	kzkz1
+kzkz27	kzkz1
+kzkz28	kzkz1
+kzkz29	kzkz1
+kzkz30	kzkz1
+kzkz31	kzkz1
+kzkz32	kzkz1
+kzkz33	kzkz1
+kzkz34	kzkz1
+kzkz35	kzkz1
+kzkz36	kzkz1
+kzkz37	kzkz1
+kzkz38	kzkz1
+kzkz39	kzkz1
+kzkz40	kzkz1
+kzkz41	kzkz1
+kzkz42	kzkz1
+kzkz43	kzkz1
+kzkz44	kzkz1
+kzkz45	kzkz1
+kzkz46	kzkz1
+kzkz47	kzkz1
+kzkz48	kzkz1
+kzkz49	kzkz1
+kzkz50	kzkz1
+kzkz51	kzkz1
+kzkz52	kzkz1
+kzkz53	kzkz1
+kzkz54	kzkz1
+kzkz55	kzkz1
+kzkz56	kzkz1
+kzkz57	kzkz1
+kzkz58	kzkz1
+kzkz59	kzkz1
+kzkz60	kzkz1
+kzkz61	kzkz1
+kzkz62	kzkz1
+kzkz63	kzkz1
+kzkz64	kzkz1
+kzkz65	kzkz1
+kzkz66	kzkz1
+kzkz67	kzkz1
+kzkz68	kzkz1
+kzkz69	kzkz1
+kzkz70	kzkz1
+kzkz71	kzkz1
+kzkz72	kzkz1
+kzkz73	kzkz1
+kzkz74	kzkz1
+kzkz75	kzkz1
+kzkz76	kzkz1
+kzkz77	kzkz1
+kzkz78	kzkz1
+kzkz79	kzkz1
+kzkz80	kzkz1
+kzkz81	kzkz1
+kzkz82	kzkz1
+kzkz83	kzkz1
+kzkz84	kzkz1
+kzkz85	kzkz1
+kzkz86	kzkz1
+kzkz87	kzkz1
+kzkz88	kzkz1
+kzkz89	kzkz1
+kzkz90	kzkz1
+kzkz91	kzkz1
+kzkz92	kzkz1
+kzkz93	kzkz1
+kzkz94	kzkz1
+kzkz95	kzkz1
+kzkz96	kzkz1
+kzkz97	kzkz1
+kzkz98	kzkz1
+kzkz99	kzkz1
+kzkz100	kzkz1
+kzkz101	kzkz1
+kzkz102	kzkz1
+kzkz103	kzkz1
+kzkz104	kzkz1
+kzkz105	kzkz1
+kzkz106	kzkz1
+kzkz107	kzkz1
+kzkz108	kzkz1
+kzkz109	kzkz1
+kzkz110	kzkz1
+kzkz111	kzkz1
+kzkz112	kzkz1
+kzkz113	kzkz1
+kzkz114	kzkz1
+kzkz115	kzkz1
+kzkz116	kzkz1
+kzkz117	kzkz1
+kzkz118	kzkz1
+kzkz119	kzkz1
+kzkz120	kzkz1
+kzkz121	kzkz1
+kzkz122	kzkz1
+kzkz123	kzkz1
+kzkz124	kzkz1
+kzkz125	kzkz1
+kzkz126	kzkz1
+kzkz127	kzkz1
+kzkz128	kzkz1
+kzkz129	kzkz1
+kzkz130	kzkz1
+kzkz131	kzkz1
+kzkz132	kzkz1
+kzkz133	kzkz1
+kzkz134	kzkz1
+kzkz135	kzkz1
+kzkz136	kzkz1
+kzkz137	kzkz1
+kzkz138	kzkz1
+kzkz139	kzkz1
+kzkz140	kzkz1
+kzkz141	kzkz1
+kzkz142	kzkz1
+kzkz143	kzkz1
+kzkz144	kzkz1
+kzkz145	kzkz1
+kzkz146	kzkz1
+kzkz147	kzkz1
+kzkz148	kzkz1
+kzkz149	kzkz1
+kzkz150	kzkz1
+kzkz151	kzkz1
+kzkz152	kzkz1
+kzkz153	kzkz1
+kzkz154	kzkz1
+kzkz155	kzkz1
+kzkz156	kzkz1
+kzkz157	kzkz1
+kzkz158	kzkz1
+kzkz159	kzkz1
+kzkz160	kzkz1
+kzkz161	kzkz1
+kzkz162	kzkz1
+kzkz163	kzkz1
+kzkz164	kzkz1
+kzkz165	kzkz1
+kzkz166	kzkz1
+kzkz167	kzkz1
+kzkz168	kzkz1
+kzkz169	kzkz1
+kzkz170	kzkz1
+kzkz171	kzkz1
+kzkz172	kzkz1
+kzkz173	kzkz1
+kzkz174	kzkz1
+kzkz175	kzkz1
+kzkz176	kzkz1
+kzkz177	kzkz1
+kzkz178	kzkz1
+kzkz179	kzkz1
+kzkz180	kzkz1
+kzkz181	kzkz1
+kzkz182	kzkz1
+kzkz183	kzkz1
+kzkz184	kzkz1
+kzkz185	kzkz1
+kzkz186	kzkz1
+kzkz187	kzkz1
+kzkz188	kzkz1
+kzkz189	kzkz1
+kzkz190	kzkz1
+kzkz191	kzkz1
+kzkz192	kzkz1
+kzkz193	kzkz1
+kzkz194	kzkz1
+kzkz195	kzkz1
+kzkz196	kzkz1
+kzkz197	kzkz1
+kzkz198	kzkz1
+kzkz199	kzkz1
+kzkz200	kzkz1
+kzkz201	kzkz1
+kzkz202	kzkz1
+kzkz203	kzkz1
+kzkz204	kzkz1
+kzkz205	kzkz1
+kzkz206	kzkz1
+kzkz207	kzkz1
+kzkz208	kzkz1
+kzkz209	kzkz1
+kzkz210	kzkz1
+kzkz211	kzkz1
+kzkz212	kzkz1
+kzkz213	kzkz1
+kzkz214	kzkz1
+kzkz215	kzkz1
+kzkz216	kzkz1
+kzkz217	kzkz1
+kzkz218	kzkz1
+kzkz219	kzkz1
+kzkz220	kzkz1
+kzkz221	kzkz1
+kzkz222	kzkz1
+kzkz223	kzkz1
+kzkz224	kzkz1
+kzkz225	kzkz1
+kzkz226	kzkz1
+kzkz227	kzkz1
+kzkz228	kzkz1
+kzkz229	kzkz1
+kzkz230	kzkz1
+kzkz231	kzkz1
+kzkz232	kzkz1
+kzkz233	kzkz1
+kzkz234	kzkz1
+kzkz235	kzkz1
+kzkz236	kzkz1
+kzkz237	kzkz1
+kzkz238	kzkz1
+kzkz239	kzkz1
+kzkz240	kzkz1
+kzkz241	kzkz1
+kzkz242	kzkz1
+kzkz243	kzkz1
+kzkz244	kzkz1
+kzkz245	kzkz1
+kzkz246	kzkz1
+kzkz247	kzkz1
+kzkz248	kzkz1
+kzkz249	kzkz1
+kzkz250	kzkz1
+kzkz251	kzkz1
+kzkz252	kzkz1
+kzkz253	kzkz1
+kzkz254	kzkz1
+kzkz255	kzkz1
+kzkz256	kzkz1
+kzkz257	kzkz1
+kzkz258	kzkz1
+kzkz259	kzkz1
+kzkz260	kzkz1
+kzkz261	kzkz1
+kzkz262	kzkz1
+kzkz263	kzkz1
+kzkz264	kzkz1
+kzkz265	kzkz1
+kzkz266	kzkz1
+kzkz267	kzkz1
+kzkz268	kzkz1
+kzkz269	kzkz1
+kzkz270	kzkz1
+kzkz271	kzkz1
+kzkz272	kzkz1
+kzkz273	kzkz1
+kzkz274	kzkz1
+kzkz275	kzkz1
+kzkz276	kzkz1
+kzkz277	kzkz1
+kzkz278	kzkz1
+kzkz279	kzkz1
+kzkz280	kzkz1
+kzkz281	kzkz1
+kzkz282	kzkz1
+kzkz283	kzkz1
+kzkz284	kzkz1
+kzkz285	kzkz1
+kzkz286	kzkz1
+kzkz287	kzkz1
+kzkz288	kzkz1
+kzkz289	kzkz1
+kzkz290	kzkz1
+kzkz291	kzkz1
+kzkz292	kzkz1
+kzkz293	kzkz1
+kzkz294	kzkz1
+kzkz295	kzkz1
+kzkz296	kzkz1
+kzkz297	kzkz1
+kzkz298	kzkz1
+kzkz299	kzkz1
+kzkz300	kzkz1
+kzkz301	kzkz1
+kzkz302	kzkz1
+kzkz303	kzkz1
+kzkz304	kzkz1
+kzkz305	kzkz1
+kzkz306	kzkz1
+kzkz307	kzkz1
+kzkz308	kzkz1
+kzkz309	kzkz1
+kzkz310	kzkz1
+kzkz311	kzkz1
+kzkz312	kzkz1
+kzkz313	kzkz1
+kzkz314	kzkz1
+kzkz315	kzkz1
+kzkz316	kzkz1
+kzkz317	kzkz1
+kzkz318	kzkz1
+kzkz319	kzkz1
+kzkz320	kzkz1
+kzkz321	kzkz1
+kzkz322	kzkz1
+kzkz323	kzkz1
+kzkz324	kzkz1
+kzkz325	kzkz1
+kzkz326	kzkz1
+kzkz327	kzkz1
+* observation groups
+WISA_H
+DM_H
+PRF_H
+RI_H
+VP_H
+USGS_H
+WGNHS_H
+LAKE_H
+Flux
+flux_lpr
+regul_kp2
+regul_kz2
+* observation data
+wisa_1     1.09059000E+03     0.00000000E+00     wisa_h
+wisa_2     1.08751000E+03     0.00000000E+00     wisa_h
+wisa_3     1.08816300E+03     0.00000000E+00     wisa_h
+wisa_4     1.08931700E+03     0.00000000E+00     wisa_h
+wisa_5     1.09029900E+03     0.00000000E+00     wisa_h
+wisa_6     1.08910500E+03     0.00000000E+00     wisa_h
+dm_7     1.07768000E+03     6.47040000E-01     dm_h
+dm_8     1.07724300E+03     6.47040000E-01     dm_h
+dm_9     1.07699500E+03     6.47040000E-01     dm_h
+dm_10     1.07979500E+03     6.47040000E-01     dm_h
+dm_11     1.07959200E+03     6.47040000E-01     dm_h
+dm_12     1.07939700E+03     6.47040000E-01     dm_h
+dm_13     1.08094800E+03     6.47040000E-01     dm_h
+dm_14     1.07647700E+03     6.47040000E-01     dm_h
+dm_15     1.08099000E+03     6.47040000E-01     dm_h
+dm_16     1.07773500E+03     6.47040000E-01     dm_h
+dm_17     1.07756200E+03     6.47040000E-01     dm_h
+dm_18     1.07747000E+03     6.47040000E-01     dm_h
+prf_19     1.12937000E+03     3.01335000E-01     prf_h
+prf_20     1.12812800E+03     3.01335000E-01     prf_h
+prf_21     1.12812800E+03     3.01335000E-01     prf_h
+prf_22     1.13850700E+03     3.01335000E-01     prf_h
+prf_23     1.14048700E+03     3.01335000E-01     prf_h
+prf_24     1.14361300E+03     3.01335000E-01     prf_h
+prf_25     1.13734500E+03     3.01335000E-01     prf_h
+prf_26     1.08491200E+03     3.01335000E-01     prf_h
+prf_27     1.08493000E+03     3.01335000E-01     prf_h
+prf_28     1.12582300E+03     3.01335000E-01     prf_h
+prf_29     1.12267000E+03     3.01335000E-01     prf_h
+prf_30     1.12465600E+03     3.01335000E-01     prf_h
+prf_31     1.12003600E+03     3.01335000E-01     prf_h
+prf_32     1.12035000E+03     3.01335000E-01     prf_h
+prf_33     1.11591400E+03     3.01335000E-01     prf_h
+prf_34     1.12638400E+03     3.01335000E-01     prf_h
+prf_35     1.13786400E+03     3.01335000E-01     prf_h
+ri_36     1.01509000E+03     2.47820000E-01     ri_h
+ri_37     1.13368000E+03     2.47820000E-01     ri_h
+ri_38     1.13483000E+03     2.47820000E-01     ri_h
+ri_39     1.04870000E+03     2.47820000E-01     ri_h
+ri_40     1.16542000E+03     2.47820000E-01     ri_h
+ri_41     1.11802000E+03     2.47820000E-01     ri_h
+ri_42     1.05701000E+03     2.47820000E-01     ri_h
+ri_43     1.09200000E+03     2.47820000E-01     ri_h
+ri_44     1.11797000E+03     2.47820000E-01     ri_h
+ri_45     1.08044000E+03     2.47820000E-01     ri_h
+ri_46     1.10351000E+03     2.47820000E-01     ri_h
+ri_47     1.05497000E+03     2.47820000E-01     ri_h
+ri_48     1.06696000E+03     2.47820000E-01     ri_h
+ri_49     1.05646000E+03     2.47820000E-01     ri_h
+ri_50     1.10427000E+03     2.47820000E-01     ri_h
+ri_51     1.12726000E+03     2.47820000E-01     ri_h
+ri_52     1.09721000E+03     2.47820000E-01     ri_h
+ri_53     1.15602000E+03     2.47820000E-01     ri_h
+ri_54     1.04256000E+03     2.47820000E-01     ri_h
+ri_55     1.14232000E+03     2.47820000E-01     ri_h
+ri_56     1.11935000E+03     2.47820000E-01     ri_h
+ri_57     1.05393000E+03     2.47820000E-01     ri_h
+ri_58     1.10505000E+03     2.47820000E-01     ri_h
+ri_59     1.08115000E+03     2.47820000E-01     ri_h
+ri_60     1.08692000E+03     2.47820000E-01     ri_h
+usgs_61     1.08779000E+03     1.37136000E+00     usgs_h
+usgs_62     1.08127000E+03     1.37136000E+00     usgs_h
+usgs_63     1.09480000E+03     1.37136000E+00     usgs_h
+vp_64     1.07614000E+03     7.18360000E-01     vp_h
+vp_65     1.07678700E+03     7.18360000E-01     vp_h
+vp_66     1.08980300E+03     7.18360000E-01     vp_h
+vp_67     1.08936800E+03     7.18360000E-01     vp_h
+vp_68     1.07093400E+03     7.18360000E-01     vp_h
+vp_69     1.07302800E+03     7.18360000E-01     vp_h
+wgnhs_70     1.07373000E+03     6.48560000E-01     wgnhs_h
+wgnhs_71     1.08518000E+03     6.48560000E-01     wgnhs_h
+wgnhs_72     1.08507000E+03     6.48560000E-01     wgnhs_h
+wgnhs_73     1.09055000E+03     6.48560000E-01     wgnhs_h
+wgnhs_74     1.09070000E+03     6.48560000E-01     wgnhs_h
+wgnhs_75     1.10265000E+03     6.48560000E-01     wgnhs_h
+wgnhs_76     1.10324000E+03     6.48560000E-01     wgnhs_h
+wgnhs_77     1.09792000E+03     6.48560000E-01     wgnhs_h
+wgnhs_78     1.09792000E+03     6.48560000E-01     wgnhs_h
+wgnhs_79     1.08237000E+03     6.48560000E-01     wgnhs_h
+wgnhs_80     1.06820000E+03     6.48560000E-01     wgnhs_h
+wgnhs_81     1.10795000E+03     6.48560000E-01     wgnhs_h
+lake_82     1.10675000E+03     3.46980000E-01     lake_h
+lake_83     1.08870000E+03     3.46980000E-01     lake_h
+lake_84     1.02520000E+03     3.46980000E-01     lake_h
+lake_85     1.07420000E+03     3.46980000E-01     lake_h
+lake_86     1.07250000E+03     3.46980000E-01     lake_h
+lake_87     1.06660000E+03     3.46980000E-01     lake_h
+lake_88     1.07610000E+03     3.46980000E-01     lake_h
+lake_89     1.11460000E+03     3.46980000E-01     lake_h
+lpri39     4.00196832E+00     6.30007486E+00     flux_lpr
+lprhoov     5.21891325E+00     4.83102493E+00     flux_lpr
+lpreis     1.94728274E+00     1.29476318E+01     flux_lpr
+bearq     8.54589545E+00     1.66298548E+00     flux
+springq     3.66571493E+00     3.87692450E+00     flux
+ditch2     4.83722137E+00     2.93798834E+00     flux
+noname     1.21529094E+00     1.16940722E+01     flux
+swcan3     1.59202828E+01     8.92678866E-01     flux
+swcan2     1.22587004E+01     1.15931539E+00     flux
+swcan1     7.51483200E+00     1.89115339E+00     flux
+lprken     9.08786252E-01     2.77432674E+01     flux_lpr
+* model command line
+LPR_SS_model.bat
+* model input/output
+points2.tpl   points2.dat
+pointz2.tpl   pointz2.dat
+homog_zones.tpl homog_zones
+rech_multiplier_zoned.txt.tpl rech_multiplier_zoned.txt
+LPR_20150709lpruppser2_spring8.sfr.tpl LPR_20150709lpruppser2_spring8.sfr
+SFRData_LPR_Q.out.ins SFRData_LPR_Q.out
+LPR_SS_mod.smp.ins LPR_SS_mod.smp

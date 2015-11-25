@@ -430,7 +430,9 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         num_slaves = mp.cpu_count()
     else:
         num_slaves = int(num_slaves)
-    assert os.path.exists(os.path.join(slave_dir,exe_rel_path))
+    #assert os.path.exists(os.path.join(slave_dir,exe_rel_path))
+    if not os.path.exists(os.path.join(slave_dir,exe_rel_path)):
+        print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
     assert os.path.exists(os.path.join(slave_dir,pst_rel_path))
 
     hostname = socket.gethostname()

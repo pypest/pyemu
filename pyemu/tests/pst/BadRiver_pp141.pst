@@ -1,0 +1,1642 @@
+pcf
+* control data
+ restart regularisation
+     417       0       4    1185       3
+6  1  single  point  1  0  0
+2.000000e+001  -3.000000e+000  3.000000e-001  1.000000e-002  7 999 lamforgive
+1.000000e+001  1.000000e+001  1.000000e-003
+1.000000e-001 1 noaui
+25  1.000000e-002  3  3  1.000000e-002  3
+0  0  0   PARSAVEITN
+* singular value decomposition
+  1
+  417  5.000000e-007
+  1
+* parameter groups
+Kp     relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+Kz     relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+Rech   relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+Cond   relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+* parameter data
+R1  none  factor  1.480900e-004    1.000000e-005  1.000000e+004    Rech   1.0   0.0 1
+R2  none  factor  2.824040e-003    1.000000e-005  1.000000e+004    Rech   1.0   0.0 1
+R3  none  factor  4.566210e-004    1.000000e-005  1.000000e+004    Rech   1.0   0.0 1
+R4  none  factor  2.635890e-003    1.000000e-005  1.000000e+004    Rech   1.0   0.0 1
+R5  none  factor  1.089500e-003    1.000000e-005  1.000000e+004    Rech   1.0   0.0 1
+R6  none  factor  2.965210e-003    1.000000e-005  1.000000e+004    Rech   1.0   0.0 1
+R7  none  factor  2.539140e-003    1.000000e-005  1.000000e+004    Rech   1.0   0.0 1
+R8  none  factor  1.978140e-003    1.000000e-005  1.000000e+004    Rech   1.0   0.0 1
+R9  none  factor  4.662710e-004    1.000000e-005  1.000000e+004    Rech   1.0   0.0 1
+R10  none  factor  3.223790e-003    1.000000e-005  1.000000e+004    Rech   1.0   0.0 1
+R11  none  factor  1.332910e-003    1.000000e-005  1.000000e+004    Rech   1.0   0.0 1
+R12  none  factor  1.226590e-003    1.000000e-005  1.000000e+004    Rech   1.0   0.0 1
+R13  none  factor  1.733110e-003    1.000000e-005  1.000000e+004    Rech   1.0   0.0 1
+R14  none  factor  2.444410e-003    1.000000e-005  1.000000e+004    Rech   1.0   0.0 1
+R15  none  factor  1.160860e-003    1.000000e-005  1.000000e+004    Rech   1.0   0.0 1
+R16  none  factor  6.288600e-004    1.000000e-005  1.000000e+004    Rech   1.0   0.0 1
+GHc1  log  factor  1.115146e+000    1.000000e-005  1.000000e+004    Cond   1.0   0.0 1
+KpKx3SS1  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS2  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS3  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS4  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS5  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS6  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS7  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS8  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS9  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS10  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS11  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS12  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS13  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS14  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS15  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS16  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS17  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS18  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS19  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS20  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS21  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS22  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS23  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS24  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS25  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS26  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS27  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS28  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS29  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS30  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS31  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS32  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS33  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS34  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS35  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS36  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS37  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS38  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS39  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS40  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS41  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS42  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS43  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS44  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS45  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3SS46  log  factor  64.983200  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx3C47  log  factor  0.131712  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C48  log  factor  0.131712  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C49  log  factor  0.131712  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C50  log  factor  0.131712  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C51  log  factor  0.131712  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C52  log  factor  0.131712  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C53  log  factor  0.131712  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C54  log  factor  0.131712  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C55  log  factor  1.983690  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C56  log  factor  0.131712  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C57  log  factor  0.131712  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C58  log  factor  1.983690  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C59  log  factor  1.983690  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C60  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C61  log  factor  0.131712  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C62  log  factor  0.131712  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C63  log  factor  0.131712  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C64  log  factor  0.131712  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C65  log  factor  0.131712  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C66  log  factor  1.983690  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C67  log  factor  1.983690  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C68  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C69  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C70  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C71  log  factor  0.131712  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C72  log  factor  0.131712  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C73  log  factor  6.108770  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C74  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C75  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C76  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C77  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C78  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C79  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C80  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C81  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C82  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C83  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C84  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C85  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C86  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C87  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C88  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C89  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C90  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C91  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C92  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C93  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C94  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C95  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C96  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C97  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C98  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C99  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx3C100  log  factor  0.428055  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS101  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS102  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS103  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS104  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS105  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS106  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS107  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS108  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS109  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS110  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS111  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS112  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS113  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS114  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS115  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS116  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS117  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS118  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS119  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS120  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS121  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS122  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS123  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS124  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS125  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS126  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS127  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS128  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS129  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS130  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS131  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS132  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS133  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS134  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS135  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS136  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS137  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS138  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS139  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS140  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS141  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS142  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS143  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS144  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS145  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4SS146  log  factor  6.013950  0.010000  1000.000000  Kp  1.0  0.0  1
+KpKx4C147  log  factor  0.151516  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C148  log  factor  0.151516  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C149  log  factor  0.151516  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C150  log  factor  0.151516  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C151  log  factor  0.151516  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C152  log  factor  0.151516  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C153  log  factor  0.151516  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C154  log  factor  0.151516  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C155  log  factor  0.148429  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C156  log  factor  0.151516  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C157  log  factor  0.151516  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C158  log  factor  0.148429  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C159  log  factor  0.148429  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C160  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C161  log  factor  0.151516  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C162  log  factor  0.151516  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C163  log  factor  0.151516  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C164  log  factor  0.151516  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C165  log  factor  0.151516  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C166  log  factor  0.148429  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C167  log  factor  0.148429  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C168  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C169  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C170  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C171  log  factor  0.151516  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C172  log  factor  0.151516  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C173  log  factor  0.825521  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C174  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C175  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C176  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C177  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C178  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C179  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C180  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C181  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C182  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C183  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C184  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C185  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C186  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C187  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C188  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C189  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C190  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C191  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C192  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C193  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C194  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C195  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C196  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C197  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C198  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C199  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KpKx4C200  log  factor  0.440022  0.001000  1000.000000  Kp  1.0  0.0  1
+KzKz3SS1  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS2  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS3  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS4  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS5  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS6  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS7  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS8  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS9  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS10  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS11  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS12  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS13  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS14  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS15  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS16  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS17  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS18  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS19  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS20  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS21  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS22  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS23  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS24  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS25  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS26  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS27  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS28  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS29  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS30  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS31  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS32  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS33  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS34  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS35  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS36  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS37  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS38  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS39  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS40  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS41  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS42  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS43  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS44  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS45  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3SS46  log  factor  1.211020e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C47  log  factor  1.251250e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C48  log  factor  1.251250e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C49  log  factor  1.251250e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C50  log  factor  1.251250e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C51  log  factor  1.251250e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C52  log  factor  1.251250e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C53  log  factor  1.251250e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C54  log  factor  1.251250e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C55  log  factor  3.461270e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C56  log  factor  1.251250e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C57  log  factor  1.251250e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C58  log  factor  3.461270e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C59  log  factor  3.461270e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C60  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C61  log  factor  1.251250e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C62  log  factor  1.251250e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C63  log  factor  1.251250e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C64  log  factor  1.251250e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C65  log  factor  1.251250e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C66  log  factor  3.461270e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C67  log  factor  3.461270e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C68  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C69  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C70  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C71  log  factor  1.251250e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C72  log  factor  1.251250e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C73  log  factor  2.499990e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C74  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C75  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C76  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C77  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C78  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C79  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C80  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C81  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C82  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C83  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C84  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C85  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C86  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C87  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C88  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C89  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C90  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C91  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C92  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C93  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C94  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C95  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C96  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C97  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C98  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C99  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz3C100  log  factor  1.244950e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS101  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS102  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS103  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS104  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS105  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS106  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS107  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS108  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS109  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS110  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS111  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS112  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS113  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS114  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS115  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS116  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS117  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS118  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS119  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS120  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS121  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS122  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS123  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS124  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS125  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS126  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS127  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS128  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS129  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS130  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS131  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS132  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS133  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS134  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS135  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS136  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS137  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS138  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS139  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS140  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS141  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS142  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS143  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS144  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS145  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4SS146  log  factor  7.652080e+000  1.000000e-002  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C147  log  factor  6.370740e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C148  log  factor  6.370740e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C149  log  factor  6.370740e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C150  log  factor  6.370740e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C151  log  factor  6.370740e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C152  log  factor  6.370740e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C153  log  factor  6.370740e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C154  log  factor  6.370740e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C155  log  factor  2.414610e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C156  log  factor  6.370740e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C157  log  factor  6.370740e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C158  log  factor  2.414610e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C159  log  factor  2.414610e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C160  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C161  log  factor  6.370740e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C162  log  factor  6.370740e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C163  log  factor  6.370740e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C164  log  factor  6.370740e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C165  log  factor  6.370740e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C166  log  factor  2.414610e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C167  log  factor  2.414610e+000  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C168  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C169  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C170  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C171  log  factor  6.370740e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C172  log  factor  6.370740e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C173  log  factor  6.639240e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C174  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C175  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C176  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C177  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C178  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C179  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C180  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C181  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C182  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C183  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C184  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C185  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C186  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C187  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C188  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C189  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C190  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C191  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C192  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C193  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C194  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C195  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C196  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C197  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C198  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C199  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+KzKz4C200  log  factor  7.860790e-001  1.000000e-003  1.000000e+003  Kz  1.0  0.0  1
+* observation groups
+regul_kp3
+Head1
+regul
+* observation data
+* model command line
+pestgv.bat
+* model input/output
+points3.tpl   points3.dat
+points4.tpl   points4.dat
+pointz3.tpl   pointz3.dat
+pointz4.tpl   pointz4.dat
+ghb.tpl   BadRiver_pp14.ghb
+recharge.tpl   BadRiver_pp14.rch
+targpest.ins   targpest.out
+* prior information
+i3k1  1.0 * log(kpkx3ss2) - 1.0 * log(kpkx3ss1) = 0.0   1.1273      regul_kp3
+i3k2  1.0 * log(kpkx3ss3) - 1.0 * log(kpkx3ss1) = 0.0  0.88938      regul_kp3
+i3k3  1.0 * log(kpkx3ss3) - 1.0 * log(kpkx3ss2) = 0.0   1.1273      regul_kp3
+i3k4  1.0 * log(kpkx3ss4) - 1.0 * log(kpkx3ss1) = 0.0  0.80225      regul_kp3
+i3k5  1.0 * log(kpkx3ss4) - 1.0 * log(kpkx3ss2) = 0.0  0.88938      regul_kp3
+i3k6  1.0 * log(kpkx3ss4) - 1.0 * log(kpkx3ss3) = 0.0   1.1273      regul_kp3
+i3k7  1.0 * log(kpkx3ss5) - 1.0 * log(kpkx3ss1) = 0.0  0.76043      regul_kp3
+i3k8  1.0 * log(kpkx3ss5) - 1.0 * log(kpkx3ss2) = 0.0  0.80225      regul_kp3
+i3k9  1.0 * log(kpkx3ss5) - 1.0 * log(kpkx3ss3) = 0.0  0.88938      regul_kp3
+i3k10  1.0 * log(kpkx3ss5) - 1.0 * log(kpkx3ss4) = 0.0   1.1273      regul_kp3
+i3k11  1.0 * log(kpkx3ss6) - 1.0 * log(kpkx3ss2) = 0.0  0.76043      regul_kp3
+i3k12  1.0 * log(kpkx3ss6) - 1.0 * log(kpkx3ss3) = 0.0  0.80225      regul_kp3
+i3k13  1.0 * log(kpkx3ss6) - 1.0 * log(kpkx3ss4) = 0.0  0.88938      regul_kp3
+i3k14  1.0 * log(kpkx3ss6) - 1.0 * log(kpkx3ss5) = 0.0   1.1273      regul_kp3
+i3k15  1.0 * log(kpkx3ss7) - 1.0 * log(kpkx3ss3) = 0.0  0.76043      regul_kp3
+i3k16  1.0 * log(kpkx3ss7) - 1.0 * log(kpkx3ss4) = 0.0  0.80225      regul_kp3
+i3k17  1.0 * log(kpkx3ss7) - 1.0 * log(kpkx3ss5) = 0.0  0.88938      regul_kp3
+i3k18  1.0 * log(kpkx3ss7) - 1.0 * log(kpkx3ss6) = 0.0   1.1273      regul_kp3
+i3k19  1.0 * log(kpkx3ss8) - 1.0 * log(kpkx3ss4) = 0.0  0.76043      regul_kp3
+i3k20  1.0 * log(kpkx3ss8) - 1.0 * log(kpkx3ss5) = 0.0  0.80225      regul_kp3
+i3k21  1.0 * log(kpkx3ss8) - 1.0 * log(kpkx3ss6) = 0.0  0.88938      regul_kp3
+i3k22  1.0 * log(kpkx3ss8) - 1.0 * log(kpkx3ss7) = 0.0   1.1273      regul_kp3
+i3k23  1.0 * log(kpkx3ss9) - 1.0 * log(kpkx3ss5) = 0.0  0.76043      regul_kp3
+i3k24  1.0 * log(kpkx3ss9) - 1.0 * log(kpkx3ss6) = 0.0  0.80225      regul_kp3
+i3k25  1.0 * log(kpkx3ss9) - 1.0 * log(kpkx3ss7) = 0.0  0.88938      regul_kp3
+i3k26  1.0 * log(kpkx3ss9) - 1.0 * log(kpkx3ss8) = 0.0   1.1273      regul_kp3
+i3k27  1.0 * log(kpkx3ss10) - 1.0 * log(kpkx3ss6) = 0.0  0.76043      regul_kp3
+i3k28  1.0 * log(kpkx3ss10) - 1.0 * log(kpkx3ss7) = 0.0  0.80225      regul_kp3
+i3k29  1.0 * log(kpkx3ss10) - 1.0 * log(kpkx3ss8) = 0.0  0.88938      regul_kp3
+i3k30  1.0 * log(kpkx3ss10) - 1.0 * log(kpkx3ss9) = 0.0   1.1273      regul_kp3
+i3k31  1.0 * log(kpkx3ss11) - 1.0 * log(kpkx3ss1) = 0.0   1.1273      regul_kp3
+i3k32  1.0 * log(kpkx3ss11) - 1.0 * log(kpkx3ss2) = 0.0  0.99314      regul_kp3
+i3k33  1.0 * log(kpkx3ss11) - 1.0 * log(kpkx3ss3) = 0.0  0.86189      regul_kp3
+i3k34  1.0 * log(kpkx3ss11) - 1.0 * log(kpkx3ss4) = 0.0  0.79342      regul_kp3
+i3k35  1.0 * log(kpkx3ss12) - 1.0 * log(kpkx3ss1) = 0.0  0.99314      regul_kp3
+i3k36  1.0 * log(kpkx3ss12) - 1.0 * log(kpkx3ss2) = 0.0   1.1273      regul_kp3
+i3k37  1.0 * log(kpkx3ss12) - 1.0 * log(kpkx3ss3) = 0.0  0.99314      regul_kp3
+i3k38  1.0 * log(kpkx3ss12) - 1.0 * log(kpkx3ss4) = 0.0  0.86189      regul_kp3
+i3k39  1.0 * log(kpkx3ss12) - 1.0 * log(kpkx3ss5) = 0.0  0.79342      regul_kp3
+i3k40  1.0 * log(kpkx3ss12) - 1.0 * log(kpkx3ss11) = 0.0   1.1273      regul_kp3
+i3k41  1.0 * log(kpkx3ss13) - 1.0 * log(kpkx3ss1) = 0.0  0.86189      regul_kp3
+i3k42  1.0 * log(kpkx3ss13) - 1.0 * log(kpkx3ss2) = 0.0  0.99314      regul_kp3
+i3k43  1.0 * log(kpkx3ss13) - 1.0 * log(kpkx3ss3) = 0.0   1.1273      regul_kp3
+i3k44  1.0 * log(kpkx3ss13) - 1.0 * log(kpkx3ss4) = 0.0  0.99314      regul_kp3
+i3k45  1.0 * log(kpkx3ss13) - 1.0 * log(kpkx3ss5) = 0.0  0.86189      regul_kp3
+i3k46  1.0 * log(kpkx3ss13) - 1.0 * log(kpkx3ss6) = 0.0  0.79342      regul_kp3
+i3k47  1.0 * log(kpkx3ss13) - 1.0 * log(kpkx3ss11) = 0.0  0.88938      regul_kp3
+i3k48  1.0 * log(kpkx3ss13) - 1.0 * log(kpkx3ss12) = 0.0   1.1273      regul_kp3
+i3k49  1.0 * log(kpkx3ss14) - 1.0 * log(kpkx3ss1) = 0.0  0.79342      regul_kp3
+i3k50  1.0 * log(kpkx3ss14) - 1.0 * log(kpkx3ss2) = 0.0  0.86189      regul_kp3
+i3k51  1.0 * log(kpkx3ss14) - 1.0 * log(kpkx3ss3) = 0.0  0.99314      regul_kp3
+i3k52  1.0 * log(kpkx3ss14) - 1.0 * log(kpkx3ss4) = 0.0   1.1273      regul_kp3
+i3k53  1.0 * log(kpkx3ss14) - 1.0 * log(kpkx3ss5) = 0.0  0.99314      regul_kp3
+i3k54  1.0 * log(kpkx3ss14) - 1.0 * log(kpkx3ss6) = 0.0  0.86189      regul_kp3
+i3k55  1.0 * log(kpkx3ss14) - 1.0 * log(kpkx3ss7) = 0.0  0.79342      regul_kp3
+i3k56  1.0 * log(kpkx3ss14) - 1.0 * log(kpkx3ss11) = 0.0  0.80225      regul_kp3
+i3k57  1.0 * log(kpkx3ss14) - 1.0 * log(kpkx3ss12) = 0.0  0.88938      regul_kp3
+i3k58  1.0 * log(kpkx3ss14) - 1.0 * log(kpkx3ss13) = 0.0   1.1273      regul_kp3
+i3k59  1.0 * log(kpkx3ss15) - 1.0 * log(kpkx3ss2) = 0.0  0.79342      regul_kp3
+i3k60  1.0 * log(kpkx3ss15) - 1.0 * log(kpkx3ss3) = 0.0  0.86189      regul_kp3
+i3k61  1.0 * log(kpkx3ss15) - 1.0 * log(kpkx3ss4) = 0.0  0.99314      regul_kp3
+i3k62  1.0 * log(kpkx3ss15) - 1.0 * log(kpkx3ss5) = 0.0   1.1273      regul_kp3
+i3k63  1.0 * log(kpkx3ss15) - 1.0 * log(kpkx3ss6) = 0.0  0.99314      regul_kp3
+i3k64  1.0 * log(kpkx3ss15) - 1.0 * log(kpkx3ss7) = 0.0  0.86189      regul_kp3
+i3k65  1.0 * log(kpkx3ss15) - 1.0 * log(kpkx3ss8) = 0.0  0.79342      regul_kp3
+i3k66  1.0 * log(kpkx3ss15) - 1.0 * log(kpkx3ss12) = 0.0  0.80225      regul_kp3
+i3k67  1.0 * log(kpkx3ss15) - 1.0 * log(kpkx3ss13) = 0.0  0.88938      regul_kp3
+i3k68  1.0 * log(kpkx3ss15) - 1.0 * log(kpkx3ss14) = 0.0   1.1273      regul_kp3
+i3k69  1.0 * log(kpkx3ss16) - 1.0 * log(kpkx3ss3) = 0.0  0.79342      regul_kp3
+i3k70  1.0 * log(kpkx3ss16) - 1.0 * log(kpkx3ss4) = 0.0  0.86189      regul_kp3
+i3k71  1.0 * log(kpkx3ss16) - 1.0 * log(kpkx3ss5) = 0.0  0.99314      regul_kp3
+i3k72  1.0 * log(kpkx3ss16) - 1.0 * log(kpkx3ss6) = 0.0   1.1273      regul_kp3
+i3k73  1.0 * log(kpkx3ss16) - 1.0 * log(kpkx3ss7) = 0.0  0.99314      regul_kp3
+i3k74  1.0 * log(kpkx3ss16) - 1.0 * log(kpkx3ss8) = 0.0  0.86189      regul_kp3
+i3k75  1.0 * log(kpkx3ss16) - 1.0 * log(kpkx3ss9) = 0.0  0.79342      regul_kp3
+i3k76  1.0 * log(kpkx3ss16) - 1.0 * log(kpkx3ss13) = 0.0  0.80225      regul_kp3
+i3k77  1.0 * log(kpkx3ss16) - 1.0 * log(kpkx3ss14) = 0.0  0.88938      regul_kp3
+i3k78  1.0 * log(kpkx3ss16) - 1.0 * log(kpkx3ss15) = 0.0   1.1273      regul_kp3
+i3k79  1.0 * log(kpkx3ss17) - 1.0 * log(kpkx3ss4) = 0.0  0.79342      regul_kp3
+i3k80  1.0 * log(kpkx3ss17) - 1.0 * log(kpkx3ss5) = 0.0  0.86189      regul_kp3
+i3k81  1.0 * log(kpkx3ss17) - 1.0 * log(kpkx3ss6) = 0.0  0.99314      regul_kp3
+i3k82  1.0 * log(kpkx3ss17) - 1.0 * log(kpkx3ss7) = 0.0   1.1273      regul_kp3
+i3k83  1.0 * log(kpkx3ss17) - 1.0 * log(kpkx3ss8) = 0.0  0.99314      regul_kp3
+i3k84  1.0 * log(kpkx3ss17) - 1.0 * log(kpkx3ss9) = 0.0  0.86189      regul_kp3
+i3k85  1.0 * log(kpkx3ss17) - 1.0 * log(kpkx3ss10) = 0.0  0.79342      regul_kp3
+i3k86  1.0 * log(kpkx3ss17) - 1.0 * log(kpkx3ss14) = 0.0  0.80225      regul_kp3
+i3k87  1.0 * log(kpkx3ss17) - 1.0 * log(kpkx3ss15) = 0.0  0.88938      regul_kp3
+i3k88  1.0 * log(kpkx3ss17) - 1.0 * log(kpkx3ss16) = 0.0   1.1273      regul_kp3
+i3k89  1.0 * log(kpkx3ss18) - 1.0 * log(kpkx3ss5) = 0.0  0.79342      regul_kp3
+i3k90  1.0 * log(kpkx3ss18) - 1.0 * log(kpkx3ss6) = 0.0  0.86189      regul_kp3
+i3k91  1.0 * log(kpkx3ss18) - 1.0 * log(kpkx3ss7) = 0.0  0.99314      regul_kp3
+i3k92  1.0 * log(kpkx3ss18) - 1.0 * log(kpkx3ss8) = 0.0   1.1273      regul_kp3
+i3k93  1.0 * log(kpkx3ss18) - 1.0 * log(kpkx3ss9) = 0.0  0.99314      regul_kp3
+i3k94  1.0 * log(kpkx3ss18) - 1.0 * log(kpkx3ss10) = 0.0  0.86189      regul_kp3
+i3k95  1.0 * log(kpkx3ss18) - 1.0 * log(kpkx3ss15) = 0.0  0.80225      regul_kp3
+i3k96  1.0 * log(kpkx3ss18) - 1.0 * log(kpkx3ss16) = 0.0  0.88938      regul_kp3
+i3k97  1.0 * log(kpkx3ss18) - 1.0 * log(kpkx3ss17) = 0.0   1.1273      regul_kp3
+i3k98  1.0 * log(kpkx3ss19) - 1.0 * log(kpkx3ss6) = 0.0  0.79342      regul_kp3
+i3k99  1.0 * log(kpkx3ss19) - 1.0 * log(kpkx3ss7) = 0.0  0.86189      regul_kp3
+i3k100  1.0 * log(kpkx3ss19) - 1.0 * log(kpkx3ss8) = 0.0  0.99314      regul_kp3
+i3k101  1.0 * log(kpkx3ss19) - 1.0 * log(kpkx3ss9) = 0.0   1.1273      regul_kp3
+i3k102  1.0 * log(kpkx3ss19) - 1.0 * log(kpkx3ss10) = 0.0  0.99314      regul_kp3
+i3k103  1.0 * log(kpkx3ss19) - 1.0 * log(kpkx3ss16) = 0.0  0.80225      regul_kp3
+i3k104  1.0 * log(kpkx3ss19) - 1.0 * log(kpkx3ss17) = 0.0  0.88938      regul_kp3
+i3k105  1.0 * log(kpkx3ss19) - 1.0 * log(kpkx3ss18) = 0.0   1.1273      regul_kp3
+i3k106  1.0 * log(kpkx3ss20) - 1.0 * log(kpkx3ss7) = 0.0  0.79342      regul_kp3
+i3k107  1.0 * log(kpkx3ss20) - 1.0 * log(kpkx3ss8) = 0.0  0.86189      regul_kp3
+i3k108  1.0 * log(kpkx3ss20) - 1.0 * log(kpkx3ss9) = 0.0  0.99314      regul_kp3
+i3k109  1.0 * log(kpkx3ss20) - 1.0 * log(kpkx3ss10) = 0.0   1.1273      regul_kp3
+i3k110  1.0 * log(kpkx3ss20) - 1.0 * log(kpkx3ss17) = 0.0  0.80225      regul_kp3
+i3k111  1.0 * log(kpkx3ss20) - 1.0 * log(kpkx3ss18) = 0.0  0.88938      regul_kp3
+i3k112  1.0 * log(kpkx3ss20) - 1.0 * log(kpkx3ss19) = 0.0   1.1273      regul_kp3
+i3k113  1.0 * log(kpkx3ss21) - 1.0 * log(kpkx3ss1) = 0.0  0.88938      regul_kp3
+i3k114  1.0 * log(kpkx3ss21) - 1.0 * log(kpkx3ss2) = 0.0  0.86189      regul_kp3
+i3k115  1.0 * log(kpkx3ss21) - 1.0 * log(kpkx3ss3) = 0.0  0.81278      regul_kp3
+i3k116  1.0 * log(kpkx3ss21) - 1.0 * log(kpkx3ss4) = 0.0  0.77375      regul_kp3
+i3k117  1.0 * log(kpkx3ss21) - 1.0 * log(kpkx3ss11) = 0.0   1.1273      regul_kp3
+i3k118  1.0 * log(kpkx3ss21) - 1.0 * log(kpkx3ss12) = 0.0  0.99314      regul_kp3
+i3k119  1.0 * log(kpkx3ss21) - 1.0 * log(kpkx3ss13) = 0.0  0.86189      regul_kp3
+i3k120  1.0 * log(kpkx3ss22) - 1.0 * log(kpkx3ss1) = 0.0  0.86189      regul_kp3
+i3k121  1.0 * log(kpkx3ss22) - 1.0 * log(kpkx3ss2) = 0.0  0.88938      regul_kp3
+i3k122  1.0 * log(kpkx3ss22) - 1.0 * log(kpkx3ss3) = 0.0  0.86189      regul_kp3
+i3k123  1.0 * log(kpkx3ss22) - 1.0 * log(kpkx3ss4) = 0.0  0.81278      regul_kp3
+i3k124  1.0 * log(kpkx3ss22) - 1.0 * log(kpkx3ss11) = 0.0  0.99314      regul_kp3
+i3k125  1.0 * log(kpkx3ss22) - 1.0 * log(kpkx3ss12) = 0.0   1.1273      regul_kp3
+i3k126  1.0 * log(kpkx3ss22) - 1.0 * log(kpkx3ss13) = 0.0  0.99314      regul_kp3
+i3k127  1.0 * log(kpkx3ss22) - 1.0 * log(kpkx3ss14) = 0.0  0.86189      regul_kp3
+i3k128  1.0 * log(kpkx3ss22) - 1.0 * log(kpkx3ss21) = 0.0   1.1273      regul_kp3
+i3k129  1.0 * log(kpkx3ss23) - 1.0 * log(kpkx3ss1) = 0.0  0.81278      regul_kp3
+i3k130  1.0 * log(kpkx3ss23) - 1.0 * log(kpkx3ss2) = 0.0  0.86189      regul_kp3
+i3k131  1.0 * log(kpkx3ss23) - 1.0 * log(kpkx3ss3) = 0.0  0.88938      regul_kp3
+i3k132  1.0 * log(kpkx3ss23) - 1.0 * log(kpkx3ss4) = 0.0  0.86189      regul_kp3
+i3k133  1.0 * log(kpkx3ss23) - 1.0 * log(kpkx3ss5) = 0.0  0.81278      regul_kp3
+i3k134  1.0 * log(kpkx3ss23) - 1.0 * log(kpkx3ss11) = 0.0  0.86189      regul_kp3
+i3k135  1.0 * log(kpkx3ss23) - 1.0 * log(kpkx3ss12) = 0.0  0.99314      regul_kp3
+i3k136  1.0 * log(kpkx3ss23) - 1.0 * log(kpkx3ss13) = 0.0   1.1273      regul_kp3
+i3k137  1.0 * log(kpkx3ss23) - 1.0 * log(kpkx3ss14) = 0.0  0.99314      regul_kp3
+i3k138  1.0 * log(kpkx3ss23) - 1.0 * log(kpkx3ss15) = 0.0  0.86189      regul_kp3
+i3k139  1.0 * log(kpkx3ss23) - 1.0 * log(kpkx3ss21) = 0.0  0.88938      regul_kp3
+i3k140  1.0 * log(kpkx3ss23) - 1.0 * log(kpkx3ss22) = 0.0   1.1273      regul_kp3
+i3k141  1.0 * log(kpkx3ss24) - 1.0 * log(kpkx3ss2) = 0.0  0.81278      regul_kp3
+i3k142  1.0 * log(kpkx3ss24) - 1.0 * log(kpkx3ss3) = 0.0  0.86189      regul_kp3
+i3k143  1.0 * log(kpkx3ss24) - 1.0 * log(kpkx3ss4) = 0.0  0.88938      regul_kp3
+i3k144  1.0 * log(kpkx3ss24) - 1.0 * log(kpkx3ss5) = 0.0  0.86189      regul_kp3
+i3k145  1.0 * log(kpkx3ss24) - 1.0 * log(kpkx3ss6) = 0.0  0.81278      regul_kp3
+i3k146  1.0 * log(kpkx3ss24) - 1.0 * log(kpkx3ss12) = 0.0  0.86189      regul_kp3
+i3k147  1.0 * log(kpkx3ss24) - 1.0 * log(kpkx3ss13) = 0.0  0.99314      regul_kp3
+i3k148  1.0 * log(kpkx3ss24) - 1.0 * log(kpkx3ss14) = 0.0   1.1273      regul_kp3
+i3k149  1.0 * log(kpkx3ss24) - 1.0 * log(kpkx3ss15) = 0.0  0.99314      regul_kp3
+i3k150  1.0 * log(kpkx3ss24) - 1.0 * log(kpkx3ss16) = 0.0  0.86189      regul_kp3
+i3k151  1.0 * log(kpkx3ss24) - 1.0 * log(kpkx3ss21) = 0.0  0.80225      regul_kp3
+i3k152  1.0 * log(kpkx3ss24) - 1.0 * log(kpkx3ss22) = 0.0  0.88938      regul_kp3
+i3k153  1.0 * log(kpkx3ss24) - 1.0 * log(kpkx3ss23) = 0.0   1.1273      regul_kp3
+i3k154  1.0 * log(kpkx3ss25) - 1.0 * log(kpkx3ss3) = 0.0  0.81278      regul_kp3
+i3k155  1.0 * log(kpkx3ss25) - 1.0 * log(kpkx3ss4) = 0.0  0.86189      regul_kp3
+i3k156  1.0 * log(kpkx3ss25) - 1.0 * log(kpkx3ss5) = 0.0  0.88938      regul_kp3
+i3k157  1.0 * log(kpkx3ss25) - 1.0 * log(kpkx3ss6) = 0.0  0.86189      regul_kp3
+i3k158  1.0 * log(kpkx3ss25) - 1.0 * log(kpkx3ss7) = 0.0  0.81278      regul_kp3
+i3k159  1.0 * log(kpkx3ss25) - 1.0 * log(kpkx3ss13) = 0.0  0.86189      regul_kp3
+i3k160  1.0 * log(kpkx3ss25) - 1.0 * log(kpkx3ss14) = 0.0  0.99314      regul_kp3
+i3k161  1.0 * log(kpkx3ss25) - 1.0 * log(kpkx3ss15) = 0.0   1.1273      regul_kp3
+i3k162  1.0 * log(kpkx3ss25) - 1.0 * log(kpkx3ss16) = 0.0  0.99314      regul_kp3
+i3k163  1.0 * log(kpkx3ss25) - 1.0 * log(kpkx3ss17) = 0.0  0.86189      regul_kp3
+i3k164  1.0 * log(kpkx3ss25) - 1.0 * log(kpkx3ss22) = 0.0  0.80225      regul_kp3
+i3k165  1.0 * log(kpkx3ss25) - 1.0 * log(kpkx3ss23) = 0.0  0.88938      regul_kp3
+i3k166  1.0 * log(kpkx3ss25) - 1.0 * log(kpkx3ss24) = 0.0   1.1273      regul_kp3
+i3k167  1.0 * log(kpkx3ss26) - 1.0 * log(kpkx3ss4) = 0.0  0.81278      regul_kp3
+i3k168  1.0 * log(kpkx3ss26) - 1.0 * log(kpkx3ss5) = 0.0  0.86189      regul_kp3
+i3k169  1.0 * log(kpkx3ss26) - 1.0 * log(kpkx3ss6) = 0.0  0.88938      regul_kp3
+i3k170  1.0 * log(kpkx3ss26) - 1.0 * log(kpkx3ss7) = 0.0  0.86189      regul_kp3
+i3k171  1.0 * log(kpkx3ss26) - 1.0 * log(kpkx3ss8) = 0.0  0.81278      regul_kp3
+i3k172  1.0 * log(kpkx3ss26) - 1.0 * log(kpkx3ss14) = 0.0  0.86189      regul_kp3
+i3k173  1.0 * log(kpkx3ss26) - 1.0 * log(kpkx3ss15) = 0.0  0.99314      regul_kp3
+i3k174  1.0 * log(kpkx3ss26) - 1.0 * log(kpkx3ss16) = 0.0   1.1273      regul_kp3
+i3k175  1.0 * log(kpkx3ss26) - 1.0 * log(kpkx3ss17) = 0.0  0.99314      regul_kp3
+i3k176  1.0 * log(kpkx3ss26) - 1.0 * log(kpkx3ss18) = 0.0  0.86189      regul_kp3
+i3k177  1.0 * log(kpkx3ss26) - 1.0 * log(kpkx3ss23) = 0.0  0.80225      regul_kp3
+i3k178  1.0 * log(kpkx3ss26) - 1.0 * log(kpkx3ss24) = 0.0  0.88938      regul_kp3
+i3k179  1.0 * log(kpkx3ss26) - 1.0 * log(kpkx3ss25) = 0.0   1.1273      regul_kp3
+i3k180  1.0 * log(kpkx3ss27) - 1.0 * log(kpkx3ss5) = 0.0  0.81278      regul_kp3
+i3k181  1.0 * log(kpkx3ss27) - 1.0 * log(kpkx3ss6) = 0.0  0.86189      regul_kp3
+i3k182  1.0 * log(kpkx3ss27) - 1.0 * log(kpkx3ss7) = 0.0  0.88938      regul_kp3
+i3k183  1.0 * log(kpkx3ss27) - 1.0 * log(kpkx3ss8) = 0.0  0.86189      regul_kp3
+i3k184  1.0 * log(kpkx3ss27) - 1.0 * log(kpkx3ss9) = 0.0  0.81278      regul_kp3
+i3k185  1.0 * log(kpkx3ss27) - 1.0 * log(kpkx3ss15) = 0.0  0.86189      regul_kp3
+i3k186  1.0 * log(kpkx3ss27) - 1.0 * log(kpkx3ss16) = 0.0  0.99314      regul_kp3
+i3k187  1.0 * log(kpkx3ss27) - 1.0 * log(kpkx3ss17) = 0.0   1.1273      regul_kp3
+i3k188  1.0 * log(kpkx3ss27) - 1.0 * log(kpkx3ss18) = 0.0  0.99314      regul_kp3
+i3k189  1.0 * log(kpkx3ss27) - 1.0 * log(kpkx3ss19) = 0.0  0.86189      regul_kp3
+i3k190  1.0 * log(kpkx3ss27) - 1.0 * log(kpkx3ss24) = 0.0  0.80225      regul_kp3
+i3k191  1.0 * log(kpkx3ss27) - 1.0 * log(kpkx3ss25) = 0.0  0.88938      regul_kp3
+i3k192  1.0 * log(kpkx3ss27) - 1.0 * log(kpkx3ss26) = 0.0   1.1273      regul_kp3
+i3k193  1.0 * log(kpkx3ss28) - 1.0 * log(kpkx3ss6) = 0.0  0.81278      regul_kp3
+i3k194  1.0 * log(kpkx3ss28) - 1.0 * log(kpkx3ss7) = 0.0  0.86189      regul_kp3
+i3k195  1.0 * log(kpkx3ss28) - 1.0 * log(kpkx3ss8) = 0.0  0.88938      regul_kp3
+i3k196  1.0 * log(kpkx3ss28) - 1.0 * log(kpkx3ss9) = 0.0  0.86189      regul_kp3
+i3k197  1.0 * log(kpkx3ss28) - 1.0 * log(kpkx3ss10) = 0.0  0.81278      regul_kp3
+i3k198  1.0 * log(kpkx3ss28) - 1.0 * log(kpkx3ss16) = 0.0  0.86189      regul_kp3
+i3k199  1.0 * log(kpkx3ss28) - 1.0 * log(kpkx3ss17) = 0.0  0.99314      regul_kp3
+i3k200  1.0 * log(kpkx3ss28) - 1.0 * log(kpkx3ss18) = 0.0   1.1273      regul_kp3
+i3k201  1.0 * log(kpkx3ss28) - 1.0 * log(kpkx3ss19) = 0.0  0.99314      regul_kp3
+i3k202  1.0 * log(kpkx3ss28) - 1.0 * log(kpkx3ss20) = 0.0  0.86189      regul_kp3
+i3k203  1.0 * log(kpkx3ss28) - 1.0 * log(kpkx3ss25) = 0.0  0.80225      regul_kp3
+i3k204  1.0 * log(kpkx3ss28) - 1.0 * log(kpkx3ss26) = 0.0  0.88938      regul_kp3
+i3k205  1.0 * log(kpkx3ss28) - 1.0 * log(kpkx3ss27) = 0.0   1.1273      regul_kp3
+i3k206  1.0 * log(kpkx3ss29) - 1.0 * log(kpkx3ss1) = 0.0  0.80225      regul_kp3
+i3k207  1.0 * log(kpkx3ss29) - 1.0 * log(kpkx3ss2) = 0.0  0.79342      regul_kp3
+i3k208  1.0 * log(kpkx3ss29) - 1.0 * log(kpkx3ss3) = 0.0  0.77375      regul_kp3
+i3k209  1.0 * log(kpkx3ss29) - 1.0 * log(kpkx3ss11) = 0.0  0.88938      regul_kp3
+i3k210  1.0 * log(kpkx3ss29) - 1.0 * log(kpkx3ss12) = 0.0  0.86189      regul_kp3
+i3k211  1.0 * log(kpkx3ss29) - 1.0 * log(kpkx3ss13) = 0.0  0.81278      regul_kp3
+i3k212  1.0 * log(kpkx3ss29) - 1.0 * log(kpkx3ss21) = 0.0   1.1273      regul_kp3
+i3k213  1.0 * log(kpkx3ss29) - 1.0 * log(kpkx3ss22) = 0.0  0.99314      regul_kp3
+i3k214  1.0 * log(kpkx3ss29) - 1.0 * log(kpkx3ss23) = 0.0  0.86189      regul_kp3
+i3k215  1.0 * log(kpkx3ss30) - 1.0 * log(kpkx3ss1) = 0.0  0.79342      regul_kp3
+i3k216  1.0 * log(kpkx3ss30) - 1.0 * log(kpkx3ss2) = 0.0  0.80225      regul_kp3
+i3k217  1.0 * log(kpkx3ss30) - 1.0 * log(kpkx3ss11) = 0.0  0.86189      regul_kp3
+i3k218  1.0 * log(kpkx3ss30) - 1.0 * log(kpkx3ss12) = 0.0  0.88938      regul_kp3
+i3k219  1.0 * log(kpkx3ss30) - 1.0 * log(kpkx3ss13) = 0.0  0.86189      regul_kp3
+i3k220  1.0 * log(kpkx3ss30) - 1.0 * log(kpkx3ss14) = 0.0  0.81278      regul_kp3
+i3k221  1.0 * log(kpkx3ss30) - 1.0 * log(kpkx3ss21) = 0.0  0.99314      regul_kp3
+i3k222  1.0 * log(kpkx3ss30) - 1.0 * log(kpkx3ss22) = 0.0   1.1273      regul_kp3
+i3k223  1.0 * log(kpkx3ss30) - 1.0 * log(kpkx3ss23) = 0.0  0.99314      regul_kp3
+i3k224  1.0 * log(kpkx3ss30) - 1.0 * log(kpkx3ss24) = 0.0  0.86189      regul_kp3
+i3k225  1.0 * log(kpkx3ss30) - 1.0 * log(kpkx3ss29) = 0.0   1.1273      regul_kp3
+i3k226  1.0 * log(kpkx3ss31) - 1.0 * log(kpkx3ss2) = 0.0  0.79342      regul_kp3
+i3k227  1.0 * log(kpkx3ss31) - 1.0 * log(kpkx3ss3) = 0.0  0.80225      regul_kp3
+i3k228  1.0 * log(kpkx3ss31) - 1.0 * log(kpkx3ss11) = 0.0  0.81278      regul_kp3
+i3k229  1.0 * log(kpkx3ss31) - 1.0 * log(kpkx3ss12) = 0.0  0.86189      regul_kp3
+i3k230  1.0 * log(kpkx3ss31) - 1.0 * log(kpkx3ss13) = 0.0  0.88938      regul_kp3
+i3k231  1.0 * log(kpkx3ss31) - 1.0 * log(kpkx3ss14) = 0.0  0.86189      regul_kp3
+i3k232  1.0 * log(kpkx3ss31) - 1.0 * log(kpkx3ss15) = 0.0  0.81278      regul_kp3
+i3k233  1.0 * log(kpkx3ss31) - 1.0 * log(kpkx3ss21) = 0.0  0.86189      regul_kp3
+i3k234  1.0 * log(kpkx3ss31) - 1.0 * log(kpkx3ss22) = 0.0  0.99314      regul_kp3
+i3k235  1.0 * log(kpkx3ss31) - 1.0 * log(kpkx3ss23) = 0.0   1.1273      regul_kp3
+i3k236  1.0 * log(kpkx3ss31) - 1.0 * log(kpkx3ss24) = 0.0  0.99314      regul_kp3
+i3k237  1.0 * log(kpkx3ss31) - 1.0 * log(kpkx3ss25) = 0.0  0.86189      regul_kp3
+i3k238  1.0 * log(kpkx3ss31) - 1.0 * log(kpkx3ss29) = 0.0  0.88938      regul_kp3
+i3k239  1.0 * log(kpkx3ss31) - 1.0 * log(kpkx3ss30) = 0.0   1.1273      regul_kp3
+i3k240  1.0 * log(kpkx3ss32) - 1.0 * log(kpkx3ss3) = 0.0  0.79342      regul_kp3
+i3k241  1.0 * log(kpkx3ss32) - 1.0 * log(kpkx3ss4) = 0.0  0.80225      regul_kp3
+i3k242  1.0 * log(kpkx3ss32) - 1.0 * log(kpkx3ss12) = 0.0  0.81278      regul_kp3
+i3k243  1.0 * log(kpkx3ss32) - 1.0 * log(kpkx3ss13) = 0.0  0.86189      regul_kp3
+i3k244  1.0 * log(kpkx3ss32) - 1.0 * log(kpkx3ss14) = 0.0  0.88938      regul_kp3
+i3k245  1.0 * log(kpkx3ss32) - 1.0 * log(kpkx3ss15) = 0.0  0.86189      regul_kp3
+i3k246  1.0 * log(kpkx3ss32) - 1.0 * log(kpkx3ss16) = 0.0  0.81278      regul_kp3
+i3k247  1.0 * log(kpkx3ss32) - 1.0 * log(kpkx3ss22) = 0.0  0.86189      regul_kp3
+i3k248  1.0 * log(kpkx3ss32) - 1.0 * log(kpkx3ss23) = 0.0  0.99314      regul_kp3
+i3k249  1.0 * log(kpkx3ss32) - 1.0 * log(kpkx3ss24) = 0.0   1.1273      regul_kp3
+i3k250  1.0 * log(kpkx3ss32) - 1.0 * log(kpkx3ss25) = 0.0  0.99314      regul_kp3
+i3k251  1.0 * log(kpkx3ss32) - 1.0 * log(kpkx3ss26) = 0.0  0.86189      regul_kp3
+i3k252  1.0 * log(kpkx3ss32) - 1.0 * log(kpkx3ss29) = 0.0  0.80225      regul_kp3
+i3k253  1.0 * log(kpkx3ss32) - 1.0 * log(kpkx3ss30) = 0.0  0.88938      regul_kp3
+i3k254  1.0 * log(kpkx3ss32) - 1.0 * log(kpkx3ss31) = 0.0   1.1273      regul_kp3
+i3k255  1.0 * log(kpkx3ss33) - 1.0 * log(kpkx3ss4) = 0.0  0.79342      regul_kp3
+i3k256  1.0 * log(kpkx3ss33) - 1.0 * log(kpkx3ss5) = 0.0  0.80225      regul_kp3
+i3k257  1.0 * log(kpkx3ss33) - 1.0 * log(kpkx3ss13) = 0.0  0.81278      regul_kp3
+i3k258  1.0 * log(kpkx3ss33) - 1.0 * log(kpkx3ss14) = 0.0  0.86189      regul_kp3
+i3k259  1.0 * log(kpkx3ss33) - 1.0 * log(kpkx3ss15) = 0.0  0.88938      regul_kp3
+i3k260  1.0 * log(kpkx3ss33) - 1.0 * log(kpkx3ss16) = 0.0  0.86189      regul_kp3
+i3k261  1.0 * log(kpkx3ss33) - 1.0 * log(kpkx3ss17) = 0.0  0.81278      regul_kp3
+i3k262  1.0 * log(kpkx3ss33) - 1.0 * log(kpkx3ss23) = 0.0  0.86189      regul_kp3
+i3k263  1.0 * log(kpkx3ss33) - 1.0 * log(kpkx3ss24) = 0.0  0.99314      regul_kp3
+i3k264  1.0 * log(kpkx3ss33) - 1.0 * log(kpkx3ss25) = 0.0   1.1273      regul_kp3
+i3k265  1.0 * log(kpkx3ss33) - 1.0 * log(kpkx3ss26) = 0.0  0.99314      regul_kp3
+i3k266  1.0 * log(kpkx3ss33) - 1.0 * log(kpkx3ss27) = 0.0  0.86189      regul_kp3
+i3k267  1.0 * log(kpkx3ss33) - 1.0 * log(kpkx3ss30) = 0.0  0.80225      regul_kp3
+i3k268  1.0 * log(kpkx3ss33) - 1.0 * log(kpkx3ss31) = 0.0  0.88938      regul_kp3
+i3k269  1.0 * log(kpkx3ss33) - 1.0 * log(kpkx3ss32) = 0.0   1.1273      regul_kp3
+i3k270  1.0 * log(kpkx3ss34) - 1.0 * log(kpkx3ss5) = 0.0  0.79342      regul_kp3
+i3k271  1.0 * log(kpkx3ss34) - 1.0 * log(kpkx3ss6) = 0.0  0.80225      regul_kp3
+i3k272  1.0 * log(kpkx3ss34) - 1.0 * log(kpkx3ss14) = 0.0  0.81278      regul_kp3
+i3k273  1.0 * log(kpkx3ss34) - 1.0 * log(kpkx3ss15) = 0.0  0.86189      regul_kp3
+i3k274  1.0 * log(kpkx3ss34) - 1.0 * log(kpkx3ss16) = 0.0  0.88938      regul_kp3
+i3k275  1.0 * log(kpkx3ss34) - 1.0 * log(kpkx3ss17) = 0.0  0.86189      regul_kp3
+i3k276  1.0 * log(kpkx3ss34) - 1.0 * log(kpkx3ss18) = 0.0  0.81278      regul_kp3
+i3k277  1.0 * log(kpkx3ss34) - 1.0 * log(kpkx3ss24) = 0.0  0.86189      regul_kp3
+i3k278  1.0 * log(kpkx3ss34) - 1.0 * log(kpkx3ss25) = 0.0  0.99314      regul_kp3
+i3k279  1.0 * log(kpkx3ss34) - 1.0 * log(kpkx3ss26) = 0.0   1.1273      regul_kp3
+i3k280  1.0 * log(kpkx3ss34) - 1.0 * log(kpkx3ss27) = 0.0  0.99314      regul_kp3
+i3k281  1.0 * log(kpkx3ss34) - 1.0 * log(kpkx3ss28) = 0.0  0.86189      regul_kp3
+i3k282  1.0 * log(kpkx3ss34) - 1.0 * log(kpkx3ss31) = 0.0  0.80225      regul_kp3
+i3k283  1.0 * log(kpkx3ss34) - 1.0 * log(kpkx3ss32) = 0.0  0.88938      regul_kp3
+i3k284  1.0 * log(kpkx3ss34) - 1.0 * log(kpkx3ss33) = 0.0   1.1273      regul_kp3
+i3k285  1.0 * log(kpkx3ss35) - 1.0 * log(kpkx3ss6) = 0.0  0.79342      regul_kp3
+i3k286  1.0 * log(kpkx3ss35) - 1.0 * log(kpkx3ss7) = 0.0  0.80225      regul_kp3
+i3k287  1.0 * log(kpkx3ss35) - 1.0 * log(kpkx3ss15) = 0.0  0.81278      regul_kp3
+i3k288  1.0 * log(kpkx3ss35) - 1.0 * log(kpkx3ss16) = 0.0  0.86189      regul_kp3
+i3k289  1.0 * log(kpkx3ss35) - 1.0 * log(kpkx3ss17) = 0.0  0.88938      regul_kp3
+i3k290  1.0 * log(kpkx3ss35) - 1.0 * log(kpkx3ss18) = 0.0  0.86189      regul_kp3
+i3k291  1.0 * log(kpkx3ss35) - 1.0 * log(kpkx3ss19) = 0.0  0.81278      regul_kp3
+i3k292  1.0 * log(kpkx3ss35) - 1.0 * log(kpkx3ss25) = 0.0  0.86189      regul_kp3
+i3k293  1.0 * log(kpkx3ss35) - 1.0 * log(kpkx3ss26) = 0.0  0.99314      regul_kp3
+i3k294  1.0 * log(kpkx3ss35) - 1.0 * log(kpkx3ss27) = 0.0   1.1273      regul_kp3
+i3k295  1.0 * log(kpkx3ss35) - 1.0 * log(kpkx3ss28) = 0.0  0.99314      regul_kp3
+i3k296  1.0 * log(kpkx3ss35) - 1.0 * log(kpkx3ss32) = 0.0  0.80225      regul_kp3
+i3k297  1.0 * log(kpkx3ss35) - 1.0 * log(kpkx3ss33) = 0.0  0.88938      regul_kp3
+i3k298  1.0 * log(kpkx3ss35) - 1.0 * log(kpkx3ss34) = 0.0   1.1273      regul_kp3
+i3k299  1.0 * log(kpkx3ss36) - 1.0 * log(kpkx3ss1) = 0.0  0.76043      regul_kp3
+i3k300  1.0 * log(kpkx3ss36) - 1.0 * log(kpkx3ss11) = 0.0  0.80225      regul_kp3
+i3k301  1.0 * log(kpkx3ss36) - 1.0 * log(kpkx3ss12) = 0.0  0.79342      regul_kp3
+i3k302  1.0 * log(kpkx3ss36) - 1.0 * log(kpkx3ss21) = 0.0  0.88938      regul_kp3
+i3k303  1.0 * log(kpkx3ss36) - 1.0 * log(kpkx3ss22) = 0.0  0.86189      regul_kp3
+i3k304  1.0 * log(kpkx3ss36) - 1.0 * log(kpkx3ss23) = 0.0  0.81278      regul_kp3
+i3k305  1.0 * log(kpkx3ss36) - 1.0 * log(kpkx3ss29) = 0.0   1.1273      regul_kp3
+i3k306  1.0 * log(kpkx3ss36) - 1.0 * log(kpkx3ss30) = 0.0  0.99314      regul_kp3
+i3k307  1.0 * log(kpkx3ss36) - 1.0 * log(kpkx3ss31) = 0.0  0.86189      regul_kp3
+i3k308  1.0 * log(kpkx3ss37) - 1.0 * log(kpkx3ss11) = 0.0  0.79342      regul_kp3
+i3k309  1.0 * log(kpkx3ss37) - 1.0 * log(kpkx3ss12) = 0.0  0.80225      regul_kp3
+i3k310  1.0 * log(kpkx3ss37) - 1.0 * log(kpkx3ss21) = 0.0  0.86189      regul_kp3
+i3k311  1.0 * log(kpkx3ss37) - 1.0 * log(kpkx3ss22) = 0.0  0.88938      regul_kp3
+i3k312  1.0 * log(kpkx3ss37) - 1.0 * log(kpkx3ss23) = 0.0  0.86189      regul_kp3
+i3k313  1.0 * log(kpkx3ss37) - 1.0 * log(kpkx3ss24) = 0.0  0.81278      regul_kp3
+i3k314  1.0 * log(kpkx3ss37) - 1.0 * log(kpkx3ss29) = 0.0  0.99314      regul_kp3
+i3k315  1.0 * log(kpkx3ss37) - 1.0 * log(kpkx3ss30) = 0.0   1.1273      regul_kp3
+i3k316  1.0 * log(kpkx3ss37) - 1.0 * log(kpkx3ss31) = 0.0  0.99314      regul_kp3
+i3k317  1.0 * log(kpkx3ss37) - 1.0 * log(kpkx3ss32) = 0.0  0.86189      regul_kp3
+i3k318  1.0 * log(kpkx3ss37) - 1.0 * log(kpkx3ss36) = 0.0   1.1273      regul_kp3
+i3k319  1.0 * log(kpkx3ss38) - 1.0 * log(kpkx3ss12) = 0.0  0.79342      regul_kp3
+i3k320  1.0 * log(kpkx3ss38) - 1.0 * log(kpkx3ss13) = 0.0  0.80225      regul_kp3
+i3k321  1.0 * log(kpkx3ss38) - 1.0 * log(kpkx3ss21) = 0.0  0.81278      regul_kp3
+i3k322  1.0 * log(kpkx3ss38) - 1.0 * log(kpkx3ss22) = 0.0  0.86189      regul_kp3
+i3k323  1.0 * log(kpkx3ss38) - 1.0 * log(kpkx3ss23) = 0.0  0.88938      regul_kp3
+i3k324  1.0 * log(kpkx3ss38) - 1.0 * log(kpkx3ss24) = 0.0  0.86189      regul_kp3
+i3k325  1.0 * log(kpkx3ss38) - 1.0 * log(kpkx3ss25) = 0.0  0.81278      regul_kp3
+i3k326  1.0 * log(kpkx3ss38) - 1.0 * log(kpkx3ss29) = 0.0  0.86189      regul_kp3
+i3k327  1.0 * log(kpkx3ss38) - 1.0 * log(kpkx3ss30) = 0.0  0.99314      regul_kp3
+i3k328  1.0 * log(kpkx3ss38) - 1.0 * log(kpkx3ss31) = 0.0   1.1273      regul_kp3
+i3k329  1.0 * log(kpkx3ss38) - 1.0 * log(kpkx3ss32) = 0.0  0.99314      regul_kp3
+i3k330  1.0 * log(kpkx3ss38) - 1.0 * log(kpkx3ss33) = 0.0  0.86189      regul_kp3
+i3k331  1.0 * log(kpkx3ss38) - 1.0 * log(kpkx3ss36) = 0.0  0.88938      regul_kp3
+i3k332  1.0 * log(kpkx3ss38) - 1.0 * log(kpkx3ss37) = 0.0   1.1273      regul_kp3
+i3k333  1.0 * log(kpkx3ss39) - 1.0 * log(kpkx3ss13) = 0.0  0.79342      regul_kp3
+i3k334  1.0 * log(kpkx3ss39) - 1.0 * log(kpkx3ss14) = 0.0  0.80225      regul_kp3
+i3k335  1.0 * log(kpkx3ss39) - 1.0 * log(kpkx3ss22) = 0.0  0.81278      regul_kp3
+i3k336  1.0 * log(kpkx3ss39) - 1.0 * log(kpkx3ss23) = 0.0  0.86189      regul_kp3
+i3k337  1.0 * log(kpkx3ss39) - 1.0 * log(kpkx3ss24) = 0.0  0.88938      regul_kp3
+i3k338  1.0 * log(kpkx3ss39) - 1.0 * log(kpkx3ss25) = 0.0  0.86189      regul_kp3
+i3k339  1.0 * log(kpkx3ss39) - 1.0 * log(kpkx3ss26) = 0.0  0.81278      regul_kp3
+i3k340  1.0 * log(kpkx3ss39) - 1.0 * log(kpkx3ss30) = 0.0  0.86189      regul_kp3
+i3k341  1.0 * log(kpkx3ss39) - 1.0 * log(kpkx3ss31) = 0.0  0.99314      regul_kp3
+i3k342  1.0 * log(kpkx3ss39) - 1.0 * log(kpkx3ss32) = 0.0   1.1273      regul_kp3
+i3k343  1.0 * log(kpkx3ss39) - 1.0 * log(kpkx3ss33) = 0.0  0.99314      regul_kp3
+i3k344  1.0 * log(kpkx3ss39) - 1.0 * log(kpkx3ss34) = 0.0  0.86189      regul_kp3
+i3k345  1.0 * log(kpkx3ss39) - 1.0 * log(kpkx3ss36) = 0.0  0.80225      regul_kp3
+i3k346  1.0 * log(kpkx3ss39) - 1.0 * log(kpkx3ss37) = 0.0  0.88938      regul_kp3
+i3k347  1.0 * log(kpkx3ss39) - 1.0 * log(kpkx3ss38) = 0.0   1.1273      regul_kp3
+i3k348  1.0 * log(kpkx3ss40) - 1.0 * log(kpkx3ss14) = 0.0  0.79342      regul_kp3
+i3k349  1.0 * log(kpkx3ss40) - 1.0 * log(kpkx3ss15) = 0.0  0.80225      regul_kp3
+i3k350  1.0 * log(kpkx3ss40) - 1.0 * log(kpkx3ss23) = 0.0  0.81278      regul_kp3
+i3k351  1.0 * log(kpkx3ss40) - 1.0 * log(kpkx3ss24) = 0.0  0.86189      regul_kp3
+i3k352  1.0 * log(kpkx3ss40) - 1.0 * log(kpkx3ss25) = 0.0  0.88938      regul_kp3
+i3k353  1.0 * log(kpkx3ss40) - 1.0 * log(kpkx3ss26) = 0.0  0.86189      regul_kp3
+i3k354  1.0 * log(kpkx3ss40) - 1.0 * log(kpkx3ss27) = 0.0  0.81278      regul_kp3
+i3k355  1.0 * log(kpkx3ss40) - 1.0 * log(kpkx3ss31) = 0.0  0.86189      regul_kp3
+i3k356  1.0 * log(kpkx3ss40) - 1.0 * log(kpkx3ss32) = 0.0  0.99314      regul_kp3
+i3k357  1.0 * log(kpkx3ss40) - 1.0 * log(kpkx3ss33) = 0.0   1.1273      regul_kp3
+i3k358  1.0 * log(kpkx3ss40) - 1.0 * log(kpkx3ss34) = 0.0  0.99314      regul_kp3
+i3k359  1.0 * log(kpkx3ss40) - 1.0 * log(kpkx3ss35) = 0.0  0.86189      regul_kp3
+i3k360  1.0 * log(kpkx3ss40) - 1.0 * log(kpkx3ss37) = 0.0  0.80225      regul_kp3
+i3k361  1.0 * log(kpkx3ss40) - 1.0 * log(kpkx3ss38) = 0.0  0.88938      regul_kp3
+i3k362  1.0 * log(kpkx3ss40) - 1.0 * log(kpkx3ss39) = 0.0   1.1273      regul_kp3
+i3k363  1.0 * log(kpkx3ss41) - 1.0 * log(kpkx3ss15) = 0.0  0.79342      regul_kp3
+i3k364  1.0 * log(kpkx3ss41) - 1.0 * log(kpkx3ss16) = 0.0  0.80225      regul_kp3
+i3k365  1.0 * log(kpkx3ss41) - 1.0 * log(kpkx3ss24) = 0.0  0.81278      regul_kp3
+i3k366  1.0 * log(kpkx3ss41) - 1.0 * log(kpkx3ss25) = 0.0  0.86189      regul_kp3
+i3k367  1.0 * log(kpkx3ss41) - 1.0 * log(kpkx3ss26) = 0.0  0.88938      regul_kp3
+i3k368  1.0 * log(kpkx3ss41) - 1.0 * log(kpkx3ss27) = 0.0  0.86189      regul_kp3
+i3k369  1.0 * log(kpkx3ss41) - 1.0 * log(kpkx3ss28) = 0.0  0.81278      regul_kp3
+i3k370  1.0 * log(kpkx3ss41) - 1.0 * log(kpkx3ss32) = 0.0  0.86189      regul_kp3
+i3k371  1.0 * log(kpkx3ss41) - 1.0 * log(kpkx3ss33) = 0.0  0.99314      regul_kp3
+i3k372  1.0 * log(kpkx3ss41) - 1.0 * log(kpkx3ss34) = 0.0   1.1273      regul_kp3
+i3k373  1.0 * log(kpkx3ss41) - 1.0 * log(kpkx3ss35) = 0.0  0.99314      regul_kp3
+i3k374  1.0 * log(kpkx3ss41) - 1.0 * log(kpkx3ss38) = 0.0  0.80225      regul_kp3
+i3k375  1.0 * log(kpkx3ss41) - 1.0 * log(kpkx3ss39) = 0.0  0.88938      regul_kp3
+i3k376  1.0 * log(kpkx3ss41) - 1.0 * log(kpkx3ss40) = 0.0   1.1273      regul_kp3
+i3k377  1.0 * log(kpkx3ss42) - 1.0 * log(kpkx3ss11) = 0.0  0.76043      regul_kp3
+i3k378  1.0 * log(kpkx3ss42) - 1.0 * log(kpkx3ss21) = 0.0  0.80225      regul_kp3
+i3k379  1.0 * log(kpkx3ss42) - 1.0 * log(kpkx3ss22) = 0.0  0.79342      regul_kp3
+i3k380  1.0 * log(kpkx3ss42) - 1.0 * log(kpkx3ss29) = 0.0  0.88938      regul_kp3
+i3k381  1.0 * log(kpkx3ss42) - 1.0 * log(kpkx3ss30) = 0.0  0.86189      regul_kp3
+i3k382  1.0 * log(kpkx3ss42) - 1.0 * log(kpkx3ss31) = 0.0  0.81278      regul_kp3
+i3k383  1.0 * log(kpkx3ss42) - 1.0 * log(kpkx3ss36) = 0.0   1.1273      regul_kp3
+i3k384  1.0 * log(kpkx3ss42) - 1.0 * log(kpkx3ss37) = 0.0  0.99314      regul_kp3
+i3k385  1.0 * log(kpkx3ss42) - 1.0 * log(kpkx3ss38) = 0.0  0.86189      regul_kp3
+i3k386  1.0 * log(kpkx3ss43) - 1.0 * log(kpkx3ss21) = 0.0  0.79342      regul_kp3
+i3k387  1.0 * log(kpkx3ss43) - 1.0 * log(kpkx3ss22) = 0.0  0.80225      regul_kp3
+i3k388  1.0 * log(kpkx3ss43) - 1.0 * log(kpkx3ss29) = 0.0  0.86189      regul_kp3
+i3k389  1.0 * log(kpkx3ss43) - 1.0 * log(kpkx3ss30) = 0.0  0.88938      regul_kp3
+i3k390  1.0 * log(kpkx3ss43) - 1.0 * log(kpkx3ss31) = 0.0  0.86189      regul_kp3
+i3k391  1.0 * log(kpkx3ss43) - 1.0 * log(kpkx3ss32) = 0.0  0.81278      regul_kp3
+i3k392  1.0 * log(kpkx3ss43) - 1.0 * log(kpkx3ss36) = 0.0  0.99314      regul_kp3
+i3k393  1.0 * log(kpkx3ss43) - 1.0 * log(kpkx3ss37) = 0.0   1.1273      regul_kp3
+i3k394  1.0 * log(kpkx3ss43) - 1.0 * log(kpkx3ss38) = 0.0  0.99314      regul_kp3
+i3k395  1.0 * log(kpkx3ss43) - 1.0 * log(kpkx3ss39) = 0.0  0.86189      regul_kp3
+i3k396  1.0 * log(kpkx3ss43) - 1.0 * log(kpkx3ss42) = 0.0   1.1273      regul_kp3
+i3k397  1.0 * log(kpkx3ss44) - 1.0 * log(kpkx3ss22) = 0.0  0.79342      regul_kp3
+i3k398  1.0 * log(kpkx3ss44) - 1.0 * log(kpkx3ss23) = 0.0  0.80225      regul_kp3
+i3k399  1.0 * log(kpkx3ss44) - 1.0 * log(kpkx3ss29) = 0.0  0.81278      regul_kp3
+i3k400  1.0 * log(kpkx3ss44) - 1.0 * log(kpkx3ss30) = 0.0  0.86189      regul_kp3
+i3k401  1.0 * log(kpkx3ss44) - 1.0 * log(kpkx3ss31) = 0.0  0.88938      regul_kp3
+i3k402  1.0 * log(kpkx3ss44) - 1.0 * log(kpkx3ss32) = 0.0  0.86189      regul_kp3
+i3k403  1.0 * log(kpkx3ss44) - 1.0 * log(kpkx3ss33) = 0.0  0.81278      regul_kp3
+i3k404  1.0 * log(kpkx3ss44) - 1.0 * log(kpkx3ss36) = 0.0  0.86189      regul_kp3
+i3k405  1.0 * log(kpkx3ss44) - 1.0 * log(kpkx3ss37) = 0.0  0.99314      regul_kp3
+i3k406  1.0 * log(kpkx3ss44) - 1.0 * log(kpkx3ss38) = 0.0   1.1273      regul_kp3
+i3k407  1.0 * log(kpkx3ss44) - 1.0 * log(kpkx3ss39) = 0.0  0.99314      regul_kp3
+i3k408  1.0 * log(kpkx3ss44) - 1.0 * log(kpkx3ss40) = 0.0  0.86189      regul_kp3
+i3k409  1.0 * log(kpkx3ss44) - 1.0 * log(kpkx3ss42) = 0.0  0.88938      regul_kp3
+i3k410  1.0 * log(kpkx3ss44) - 1.0 * log(kpkx3ss43) = 0.0   1.1273      regul_kp3
+i3k411  1.0 * log(kpkx3ss45) - 1.0 * log(kpkx3ss23) = 0.0  0.79342      regul_kp3
+i3k412  1.0 * log(kpkx3ss45) - 1.0 * log(kpkx3ss24) = 0.0  0.80225      regul_kp3
+i3k413  1.0 * log(kpkx3ss45) - 1.0 * log(kpkx3ss30) = 0.0  0.81278      regul_kp3
+i3k414  1.0 * log(kpkx3ss45) - 1.0 * log(kpkx3ss31) = 0.0  0.86189      regul_kp3
+i3k415  1.0 * log(kpkx3ss45) - 1.0 * log(kpkx3ss32) = 0.0  0.88938      regul_kp3
+i3k416  1.0 * log(kpkx3ss45) - 1.0 * log(kpkx3ss33) = 0.0  0.86189      regul_kp3
+i3k417  1.0 * log(kpkx3ss45) - 1.0 * log(kpkx3ss34) = 0.0  0.81278      regul_kp3
+i3k418  1.0 * log(kpkx3ss45) - 1.0 * log(kpkx3ss37) = 0.0  0.86189      regul_kp3
+i3k419  1.0 * log(kpkx3ss45) - 1.0 * log(kpkx3ss38) = 0.0  0.99314      regul_kp3
+i3k420  1.0 * log(kpkx3ss45) - 1.0 * log(kpkx3ss39) = 0.0   1.1273      regul_kp3
+i3k421  1.0 * log(kpkx3ss45) - 1.0 * log(kpkx3ss40) = 0.0  0.99314      regul_kp3
+i3k422  1.0 * log(kpkx3ss45) - 1.0 * log(kpkx3ss41) = 0.0  0.86189      regul_kp3
+i3k423  1.0 * log(kpkx3ss45) - 1.0 * log(kpkx3ss42) = 0.0  0.80225      regul_kp3
+i3k424  1.0 * log(kpkx3ss45) - 1.0 * log(kpkx3ss43) = 0.0  0.88938      regul_kp3
+i3k425  1.0 * log(kpkx3ss45) - 1.0 * log(kpkx3ss44) = 0.0   1.1273      regul_kp3
+i3k426  1.0 * log(kpkx3ss46) - 1.0 * log(kpkx3ss24) = 0.0  0.79342      regul_kp3
+i3k427  1.0 * log(kpkx3ss46) - 1.0 * log(kpkx3ss25) = 0.0  0.80225      regul_kp3
+i3k428  1.0 * log(kpkx3ss46) - 1.0 * log(kpkx3ss31) = 0.0  0.81278      regul_kp3
+i3k429  1.0 * log(kpkx3ss46) - 1.0 * log(kpkx3ss32) = 0.0  0.86189      regul_kp3
+i3k430  1.0 * log(kpkx3ss46) - 1.0 * log(kpkx3ss33) = 0.0  0.88938      regul_kp3
+i3k431  1.0 * log(kpkx3ss46) - 1.0 * log(kpkx3ss34) = 0.0  0.86189      regul_kp3
+i3k432  1.0 * log(kpkx3ss46) - 1.0 * log(kpkx3ss35) = 0.0  0.81278      regul_kp3
+i3k433  1.0 * log(kpkx3ss46) - 1.0 * log(kpkx3ss38) = 0.0  0.86189      regul_kp3
+i3k434  1.0 * log(kpkx3ss46) - 1.0 * log(kpkx3ss39) = 0.0  0.99314      regul_kp3
+i3k435  1.0 * log(kpkx3ss46) - 1.0 * log(kpkx3ss40) = 0.0   1.1273      regul_kp3
+i3k436  1.0 * log(kpkx3ss46) - 1.0 * log(kpkx3ss41) = 0.0  0.99314      regul_kp3
+i3k437  1.0 * log(kpkx3ss46) - 1.0 * log(kpkx3ss43) = 0.0  0.80225      regul_kp3
+i3k438  1.0 * log(kpkx3ss46) - 1.0 * log(kpkx3ss44) = 0.0  0.88938      regul_kp3
+i3k439  1.0 * log(kpkx3ss46) - 1.0 * log(kpkx3ss45) = 0.0   1.1273      regul_kp3
+i3k440  1.0 * log(kpkx3c47) - 1.0 * log(kpkx3ss7) = 0.0  0.81278      regul_kp3
+i3k441  1.0 * log(kpkx3c47) - 1.0 * log(kpkx3ss8) = 0.0  0.86189      regul_kp3
+i3k442  1.0 * log(kpkx3c47) - 1.0 * log(kpkx3ss9) = 0.0  0.88938      regul_kp3
+i3k443  1.0 * log(kpkx3c47) - 1.0 * log(kpkx3ss10) = 0.0  0.86189      regul_kp3
+i3k444  1.0 * log(kpkx3c47) - 1.0 * log(kpkx3ss17) = 0.0  0.86189      regul_kp3
+i3k445  1.0 * log(kpkx3c47) - 1.0 * log(kpkx3ss18) = 0.0  0.99314      regul_kp3
+i3k446  1.0 * log(kpkx3c47) - 1.0 * log(kpkx3ss19) = 0.0   1.1273      regul_kp3
+i3k447  1.0 * log(kpkx3c47) - 1.0 * log(kpkx3ss20) = 0.0  0.99314      regul_kp3
+i3k448  1.0 * log(kpkx3c47) - 1.0 * log(kpkx3ss26) = 0.0  0.80225      regul_kp3
+i3k449  1.0 * log(kpkx3c47) - 1.0 * log(kpkx3ss27) = 0.0  0.88938      regul_kp3
+i3k450  1.0 * log(kpkx3c47) - 1.0 * log(kpkx3ss28) = 0.0   1.1273      regul_kp3
+i3k451  1.0 * log(kpkx3c47) - 1.0 * log(kpkx3ss35) = 0.0  0.86189      regul_kp3
+i3k452  1.0 * log(kpkx3c48) - 1.0 * log(kpkx3ss7) = 0.0  0.77375      regul_kp3
+i3k453  1.0 * log(kpkx3c48) - 1.0 * log(kpkx3ss8) = 0.0  0.81278      regul_kp3
+i3k454  1.0 * log(kpkx3c48) - 1.0 * log(kpkx3ss9) = 0.0  0.86189      regul_kp3
+i3k455  1.0 * log(kpkx3c48) - 1.0 * log(kpkx3ss10) = 0.0  0.88938      regul_kp3
+i3k456  1.0 * log(kpkx3c48) - 1.0 * log(kpkx3ss18) = 0.0  0.86189      regul_kp3
+i3k457  1.0 * log(kpkx3c48) - 1.0 * log(kpkx3ss19) = 0.0  0.99314      regul_kp3
+i3k458  1.0 * log(kpkx3c48) - 1.0 * log(kpkx3ss20) = 0.0   1.1273      regul_kp3
+i3k459  1.0 * log(kpkx3c48) - 1.0 * log(kpkx3ss27) = 0.0  0.80225      regul_kp3
+i3k460  1.0 * log(kpkx3c48) - 1.0 * log(kpkx3ss28) = 0.0  0.88938      regul_kp3
+i3k461  1.0 * log(kpkx3c48) - 1.0 * log(kpkx3c47) = 0.0   1.1273      regul_kp3
+i3k462  1.0 * log(kpkx3c49) - 1.0 * log(kpkx3ss7) = 0.0  0.79342      regul_kp3
+i3k463  1.0 * log(kpkx3c49) - 1.0 * log(kpkx3ss8) = 0.0  0.80225      regul_kp3
+i3k464  1.0 * log(kpkx3c49) - 1.0 * log(kpkx3ss16) = 0.0  0.81278      regul_kp3
+i3k465  1.0 * log(kpkx3c49) - 1.0 * log(kpkx3ss17) = 0.0  0.86189      regul_kp3
+i3k466  1.0 * log(kpkx3c49) - 1.0 * log(kpkx3ss18) = 0.0  0.88938      regul_kp3
+i3k467  1.0 * log(kpkx3c49) - 1.0 * log(kpkx3ss19) = 0.0  0.86189      regul_kp3
+i3k468  1.0 * log(kpkx3c49) - 1.0 * log(kpkx3ss20) = 0.0  0.81278      regul_kp3
+i3k469  1.0 * log(kpkx3c49) - 1.0 * log(kpkx3ss26) = 0.0  0.86189      regul_kp3
+i3k470  1.0 * log(kpkx3c49) - 1.0 * log(kpkx3ss27) = 0.0  0.99314      regul_kp3
+i3k471  1.0 * log(kpkx3c49) - 1.0 * log(kpkx3ss28) = 0.0   1.1273      regul_kp3
+i3k472  1.0 * log(kpkx3c49) - 1.0 * log(kpkx3ss33) = 0.0  0.80225      regul_kp3
+i3k473  1.0 * log(kpkx3c49) - 1.0 * log(kpkx3ss34) = 0.0  0.88938      regul_kp3
+i3k474  1.0 * log(kpkx3c49) - 1.0 * log(kpkx3ss35) = 0.0   1.1273      regul_kp3
+i3k475  1.0 * log(kpkx3c49) - 1.0 * log(kpkx3ss41) = 0.0  0.86189      regul_kp3
+i3k476  1.0 * log(kpkx3c49) - 1.0 * log(kpkx3c47) = 0.0  0.99314      regul_kp3
+i3k477  1.0 * log(kpkx3c49) - 1.0 * log(kpkx3c48) = 0.0  0.86189      regul_kp3
+i3k478  1.0 * log(kpkx3c50) - 1.0 * log(kpkx3ss8) = 0.0  0.79342      regul_kp3
+i3k479  1.0 * log(kpkx3c50) - 1.0 * log(kpkx3ss9) = 0.0  0.80225      regul_kp3
+i3k480  1.0 * log(kpkx3c50) - 1.0 * log(kpkx3ss10) = 0.0  0.79342      regul_kp3
+i3k481  1.0 * log(kpkx3c50) - 1.0 * log(kpkx3ss17) = 0.0  0.81278      regul_kp3
+i3k482  1.0 * log(kpkx3c50) - 1.0 * log(kpkx3ss18) = 0.0  0.86189      regul_kp3
+i3k483  1.0 * log(kpkx3c50) - 1.0 * log(kpkx3ss19) = 0.0  0.88938      regul_kp3
+i3k484  1.0 * log(kpkx3c50) - 1.0 * log(kpkx3ss20) = 0.0  0.86189      regul_kp3
+i3k485  1.0 * log(kpkx3c50) - 1.0 * log(kpkx3ss27) = 0.0  0.86189      regul_kp3
+i3k486  1.0 * log(kpkx3c50) - 1.0 * log(kpkx3ss28) = 0.0  0.99314      regul_kp3
+i3k487  1.0 * log(kpkx3c50) - 1.0 * log(kpkx3ss34) = 0.0  0.80225      regul_kp3
+i3k488  1.0 * log(kpkx3c50) - 1.0 * log(kpkx3ss35) = 0.0  0.88938      regul_kp3
+i3k489  1.0 * log(kpkx3c50) - 1.0 * log(kpkx3c47) = 0.0   1.1273      regul_kp3
+i3k490  1.0 * log(kpkx3c50) - 1.0 * log(kpkx3c48) = 0.0  0.99314      regul_kp3
+i3k491  1.0 * log(kpkx3c50) - 1.0 * log(kpkx3c49) = 0.0   1.1273      regul_kp3
+i3k492  1.0 * log(kpkx3c51) - 1.0 * log(kpkx3ss9) = 0.0  0.79342      regul_kp3
+i3k493  1.0 * log(kpkx3c51) - 1.0 * log(kpkx3ss10) = 0.0  0.80225      regul_kp3
+i3k494  1.0 * log(kpkx3c51) - 1.0 * log(kpkx3ss18) = 0.0  0.81278      regul_kp3
+i3k495  1.0 * log(kpkx3c51) - 1.0 * log(kpkx3ss19) = 0.0  0.86189      regul_kp3
+i3k496  1.0 * log(kpkx3c51) - 1.0 * log(kpkx3ss20) = 0.0  0.88938      regul_kp3
+i3k497  1.0 * log(kpkx3c51) - 1.0 * log(kpkx3ss28) = 0.0  0.86189      regul_kp3
+i3k498  1.0 * log(kpkx3c51) - 1.0 * log(kpkx3ss35) = 0.0  0.80225      regul_kp3
+i3k499  1.0 * log(kpkx3c51) - 1.0 * log(kpkx3c47) = 0.0  0.99314      regul_kp3
+i3k500  1.0 * log(kpkx3c51) - 1.0 * log(kpkx3c48) = 0.0   1.1273      regul_kp3
+i3k501  1.0 * log(kpkx3c51) - 1.0 * log(kpkx3c49) = 0.0  0.88938      regul_kp3
+i3k502  1.0 * log(kpkx3c51) - 1.0 * log(kpkx3c50) = 0.0   1.1273      regul_kp3
+i3k503  1.0 * log(kpkx3c52) - 1.0 * log(kpkx3ss16) = 0.0  0.79342      regul_kp3
+i3k504  1.0 * log(kpkx3c52) - 1.0 * log(kpkx3ss17) = 0.0  0.80225      regul_kp3
+i3k505  1.0 * log(kpkx3c52) - 1.0 * log(kpkx3ss25) = 0.0  0.81278      regul_kp3
+i3k506  1.0 * log(kpkx3c52) - 1.0 * log(kpkx3ss26) = 0.0  0.86189      regul_kp3
+i3k507  1.0 * log(kpkx3c52) - 1.0 * log(kpkx3ss27) = 0.0  0.88938      regul_kp3
+i3k508  1.0 * log(kpkx3c52) - 1.0 * log(kpkx3ss28) = 0.0  0.86189      regul_kp3
+i3k509  1.0 * log(kpkx3c52) - 1.0 * log(kpkx3ss33) = 0.0  0.86189      regul_kp3
+i3k510  1.0 * log(kpkx3c52) - 1.0 * log(kpkx3ss34) = 0.0  0.99314      regul_kp3
+i3k511  1.0 * log(kpkx3c52) - 1.0 * log(kpkx3ss35) = 0.0   1.1273      regul_kp3
+i3k512  1.0 * log(kpkx3c52) - 1.0 * log(kpkx3ss39) = 0.0  0.80225      regul_kp3
+i3k513  1.0 * log(kpkx3c52) - 1.0 * log(kpkx3ss40) = 0.0  0.88938      regul_kp3
+i3k514  1.0 * log(kpkx3c52) - 1.0 * log(kpkx3ss41) = 0.0   1.1273      regul_kp3
+i3k515  1.0 * log(kpkx3c52) - 1.0 * log(kpkx3ss46) = 0.0  0.86189      regul_kp3
+i3k516  1.0 * log(kpkx3c52) - 1.0 * log(kpkx3c47) = 0.0  0.81278      regul_kp3
+i3k517  1.0 * log(kpkx3c52) - 1.0 * log(kpkx3c49) = 0.0  0.99314      regul_kp3
+i3k518  1.0 * log(kpkx3c52) - 1.0 * log(kpkx3c50) = 0.0  0.86189      regul_kp3
+i3k519  1.0 * log(kpkx3c53) - 1.0 * log(kpkx3ss17) = 0.0  0.79342      regul_kp3
+i3k520  1.0 * log(kpkx3c53) - 1.0 * log(kpkx3ss18) = 0.0  0.80225      regul_kp3
+i3k521  1.0 * log(kpkx3c53) - 1.0 * log(kpkx3ss26) = 0.0  0.81278      regul_kp3
+i3k522  1.0 * log(kpkx3c53) - 1.0 * log(kpkx3ss27) = 0.0  0.86189      regul_kp3
+i3k523  1.0 * log(kpkx3c53) - 1.0 * log(kpkx3ss28) = 0.0  0.88938      regul_kp3
+i3k524  1.0 * log(kpkx3c53) - 1.0 * log(kpkx3ss34) = 0.0  0.86189      regul_kp3
+i3k525  1.0 * log(kpkx3c53) - 1.0 * log(kpkx3ss35) = 0.0  0.99314      regul_kp3
+i3k526  1.0 * log(kpkx3c53) - 1.0 * log(kpkx3ss40) = 0.0  0.80225      regul_kp3
+i3k527  1.0 * log(kpkx3c53) - 1.0 * log(kpkx3ss41) = 0.0  0.88938      regul_kp3
+i3k528  1.0 * log(kpkx3c53) - 1.0 * log(kpkx3c47) = 0.0  0.86189      regul_kp3
+i3k529  1.0 * log(kpkx3c53) - 1.0 * log(kpkx3c48) = 0.0  0.81278      regul_kp3
+i3k530  1.0 * log(kpkx3c53) - 1.0 * log(kpkx3c49) = 0.0   1.1273      regul_kp3
+i3k531  1.0 * log(kpkx3c53) - 1.0 * log(kpkx3c50) = 0.0  0.99314      regul_kp3
+i3k532  1.0 * log(kpkx3c53) - 1.0 * log(kpkx3c51) = 0.0  0.86189      regul_kp3
+i3k533  1.0 * log(kpkx3c53) - 1.0 * log(kpkx3c52) = 0.0   1.1273      regul_kp3
+i3k534  1.0 * log(kpkx3c54) - 1.0 * log(kpkx3ss18) = 0.0  0.79342      regul_kp3
+i3k535  1.0 * log(kpkx3c54) - 1.0 * log(kpkx3ss19) = 0.0  0.80225      regul_kp3
+i3k536  1.0 * log(kpkx3c54) - 1.0 * log(kpkx3ss20) = 0.0  0.79342      regul_kp3
+i3k537  1.0 * log(kpkx3c54) - 1.0 * log(kpkx3ss27) = 0.0  0.81278      regul_kp3
+i3k538  1.0 * log(kpkx3c54) - 1.0 * log(kpkx3ss28) = 0.0  0.86189      regul_kp3
+i3k539  1.0 * log(kpkx3c54) - 1.0 * log(kpkx3ss35) = 0.0  0.86189      regul_kp3
+i3k540  1.0 * log(kpkx3c54) - 1.0 * log(kpkx3ss41) = 0.0  0.80225      regul_kp3
+i3k541  1.0 * log(kpkx3c54) - 1.0 * log(kpkx3c47) = 0.0  0.88938      regul_kp3
+i3k542  1.0 * log(kpkx3c54) - 1.0 * log(kpkx3c48) = 0.0  0.86189      regul_kp3
+i3k543  1.0 * log(kpkx3c54) - 1.0 * log(kpkx3c49) = 0.0  0.99314      regul_kp3
+i3k544  1.0 * log(kpkx3c54) - 1.0 * log(kpkx3c50) = 0.0   1.1273      regul_kp3
+i3k545  1.0 * log(kpkx3c54) - 1.0 * log(kpkx3c51) = 0.0  0.99314      regul_kp3
+i3k546  1.0 * log(kpkx3c54) - 1.0 * log(kpkx3c52) = 0.0  0.88938      regul_kp3
+i3k547  1.0 * log(kpkx3c54) - 1.0 * log(kpkx3c53) = 0.0   1.1273      regul_kp3
+i3k548  1.0 * log(kpkx3c55) - 1.0 * log(kpkx3ss10) = 0.0  0.76043      regul_kp3
+i3k549  1.0 * log(kpkx3c55) - 1.0 * log(kpkx3ss19) = 0.0  0.79342      regul_kp3
+i3k550  1.0 * log(kpkx3c55) - 1.0 * log(kpkx3ss20) = 0.0  0.80225      regul_kp3
+i3k551  1.0 * log(kpkx3c55) - 1.0 * log(kpkx3ss28) = 0.0  0.81278      regul_kp3
+i3k552  1.0 * log(kpkx3c55) - 1.0 * log(kpkx3c47) = 0.0  0.86189      regul_kp3
+i3k553  1.0 * log(kpkx3c55) - 1.0 * log(kpkx3c48) = 0.0  0.88938      regul_kp3
+i3k554  1.0 * log(kpkx3c55) - 1.0 * log(kpkx3c49) = 0.0  0.86189      regul_kp3
+i3k555  1.0 * log(kpkx3c55) - 1.0 * log(kpkx3c50) = 0.0  0.99314      regul_kp3
+i3k556  1.0 * log(kpkx3c55) - 1.0 * log(kpkx3c51) = 0.0   1.1273      regul_kp3
+i3k557  1.0 * log(kpkx3c55) - 1.0 * log(kpkx3c52) = 0.0  0.80225      regul_kp3
+i3k558  1.0 * log(kpkx3c55) - 1.0 * log(kpkx3c53) = 0.0  0.88938      regul_kp3
+i3k559  1.0 * log(kpkx3c55) - 1.0 * log(kpkx3c54) = 0.0   1.1273      regul_kp3
+i3k560  1.0 * log(kpkx3c56) - 1.0 * log(kpkx3ss25) = 0.0  0.79342      regul_kp3
+i3k561  1.0 * log(kpkx3c56) - 1.0 * log(kpkx3ss26) = 0.0  0.80225      regul_kp3
+i3k562  1.0 * log(kpkx3c56) - 1.0 * log(kpkx3ss32) = 0.0  0.81278      regul_kp3
+i3k563  1.0 * log(kpkx3c56) - 1.0 * log(kpkx3ss33) = 0.0  0.86189      regul_kp3
+i3k564  1.0 * log(kpkx3c56) - 1.0 * log(kpkx3ss34) = 0.0  0.88938      regul_kp3
+i3k565  1.0 * log(kpkx3c56) - 1.0 * log(kpkx3ss35) = 0.0  0.86189      regul_kp3
+i3k566  1.0 * log(kpkx3c56) - 1.0 * log(kpkx3ss39) = 0.0  0.86189      regul_kp3
+i3k567  1.0 * log(kpkx3c56) - 1.0 * log(kpkx3ss40) = 0.0  0.99314      regul_kp3
+i3k568  1.0 * log(kpkx3c56) - 1.0 * log(kpkx3ss41) = 0.0   1.1273      regul_kp3
+i3k569  1.0 * log(kpkx3c56) - 1.0 * log(kpkx3ss44) = 0.0  0.80225      regul_kp3
+i3k570  1.0 * log(kpkx3c56) - 1.0 * log(kpkx3ss45) = 0.0  0.88938      regul_kp3
+i3k571  1.0 * log(kpkx3c56) - 1.0 * log(kpkx3ss46) = 0.0   1.1273      regul_kp3
+i3k572  1.0 * log(kpkx3c56) - 1.0 * log(kpkx3c49) = 0.0  0.81278      regul_kp3
+i3k573  1.0 * log(kpkx3c56) - 1.0 * log(kpkx3c52) = 0.0  0.99314      regul_kp3
+i3k574  1.0 * log(kpkx3c56) - 1.0 * log(kpkx3c53) = 0.0  0.86189      regul_kp3
+i3k575  1.0 * log(kpkx3c57) - 1.0 * log(kpkx3ss26) = 0.0  0.79342      regul_kp3
+i3k576  1.0 * log(kpkx3c57) - 1.0 * log(kpkx3ss27) = 0.0  0.80225      regul_kp3
+i3k577  1.0 * log(kpkx3c57) - 1.0 * log(kpkx3ss33) = 0.0  0.81278      regul_kp3
+i3k578  1.0 * log(kpkx3c57) - 1.0 * log(kpkx3ss34) = 0.0  0.86189      regul_kp3
+i3k579  1.0 * log(kpkx3c57) - 1.0 * log(kpkx3ss35) = 0.0  0.88938      regul_kp3
+i3k580  1.0 * log(kpkx3c57) - 1.0 * log(kpkx3ss40) = 0.0  0.86189      regul_kp3
+i3k581  1.0 * log(kpkx3c57) - 1.0 * log(kpkx3ss41) = 0.0  0.99314      regul_kp3
+i3k582  1.0 * log(kpkx3c57) - 1.0 * log(kpkx3ss45) = 0.0  0.80225      regul_kp3
+i3k583  1.0 * log(kpkx3c57) - 1.0 * log(kpkx3ss46) = 0.0  0.88938      regul_kp3
+i3k584  1.0 * log(kpkx3c57) - 1.0 * log(kpkx3c49) = 0.0  0.86189      regul_kp3
+i3k585  1.0 * log(kpkx3c57) - 1.0 * log(kpkx3c50) = 0.0  0.81278      regul_kp3
+i3k586  1.0 * log(kpkx3c57) - 1.0 * log(kpkx3c52) = 0.0   1.1273      regul_kp3
+i3k587  1.0 * log(kpkx3c57) - 1.0 * log(kpkx3c53) = 0.0  0.99314      regul_kp3
+i3k588  1.0 * log(kpkx3c57) - 1.0 * log(kpkx3c54) = 0.0  0.86189      regul_kp3
+i3k589  1.0 * log(kpkx3c57) - 1.0 * log(kpkx3c56) = 0.0   1.1273      regul_kp3
+i3k590  1.0 * log(kpkx3c58) - 1.0 * log(kpkx3ss27) = 0.0  0.79342      regul_kp3
+i3k591  1.0 * log(kpkx3c58) - 1.0 * log(kpkx3ss28) = 0.0  0.80225      regul_kp3
+i3k592  1.0 * log(kpkx3c58) - 1.0 * log(kpkx3ss34) = 0.0  0.81278      regul_kp3
+i3k593  1.0 * log(kpkx3c58) - 1.0 * log(kpkx3ss35) = 0.0  0.86189      regul_kp3
+i3k594  1.0 * log(kpkx3c58) - 1.0 * log(kpkx3ss41) = 0.0  0.86189      regul_kp3
+i3k595  1.0 * log(kpkx3c58) - 1.0 * log(kpkx3ss46) = 0.0  0.80225      regul_kp3
+i3k596  1.0 * log(kpkx3c58) - 1.0 * log(kpkx3c49) = 0.0  0.88938      regul_kp3
+i3k597  1.0 * log(kpkx3c58) - 1.0 * log(kpkx3c50) = 0.0  0.86189      regul_kp3
+i3k598  1.0 * log(kpkx3c58) - 1.0 * log(kpkx3c51) = 0.0  0.81278      regul_kp3
+i3k599  1.0 * log(kpkx3c58) - 1.0 * log(kpkx3c52) = 0.0  0.99314      regul_kp3
+i3k600  1.0 * log(kpkx3c58) - 1.0 * log(kpkx3c53) = 0.0   1.1273      regul_kp3
+i3k601  1.0 * log(kpkx3c58) - 1.0 * log(kpkx3c54) = 0.0  0.99314      regul_kp3
+i3k602  1.0 * log(kpkx3c58) - 1.0 * log(kpkx3c55) = 0.0  0.86189      regul_kp3
+i3k603  1.0 * log(kpkx3c58) - 1.0 * log(kpkx3c56) = 0.0  0.88938      regul_kp3
+i3k604  1.0 * log(kpkx3c58) - 1.0 * log(kpkx3c57) = 0.0   1.1273      regul_kp3
+i3k605  1.0 * log(kpkx3c59) - 1.0 * log(kpkx3ss28) = 0.0  0.79342      regul_kp3
+i3k606  1.0 * log(kpkx3c59) - 1.0 * log(kpkx3ss35) = 0.0  0.81278      regul_kp3
+i3k607  1.0 * log(kpkx3c59) - 1.0 * log(kpkx3c47) = 0.0  0.80225      regul_kp3
+i3k608  1.0 * log(kpkx3c59) - 1.0 * log(kpkx3c48) = 0.0  0.79342      regul_kp3
+i3k609  1.0 * log(kpkx3c59) - 1.0 * log(kpkx3c49) = 0.0  0.86189      regul_kp3
+i3k610  1.0 * log(kpkx3c59) - 1.0 * log(kpkx3c50) = 0.0  0.88938      regul_kp3
+i3k611  1.0 * log(kpkx3c59) - 1.0 * log(kpkx3c51) = 0.0  0.86189      regul_kp3
+i3k612  1.0 * log(kpkx3c59) - 1.0 * log(kpkx3c52) = 0.0  0.86189      regul_kp3
+i3k613  1.0 * log(kpkx3c59) - 1.0 * log(kpkx3c53) = 0.0  0.99314      regul_kp3
+i3k614  1.0 * log(kpkx3c59) - 1.0 * log(kpkx3c54) = 0.0   1.1273      regul_kp3
+i3k615  1.0 * log(kpkx3c59) - 1.0 * log(kpkx3c55) = 0.0  0.99314      regul_kp3
+i3k616  1.0 * log(kpkx3c59) - 1.0 * log(kpkx3c56) = 0.0  0.80225      regul_kp3
+i3k617  1.0 * log(kpkx3c59) - 1.0 * log(kpkx3c57) = 0.0  0.88938      regul_kp3
+i3k618  1.0 * log(kpkx3c59) - 1.0 * log(kpkx3c58) = 0.0   1.1273      regul_kp3
+i3k619  1.0 * log(kpkx3c60) - 1.0 * log(kpkx3ss20) = 0.0  0.76043      regul_kp3
+i3k620  1.0 * log(kpkx3c60) - 1.0 * log(kpkx3c47) = 0.0  0.79342      regul_kp3
+i3k621  1.0 * log(kpkx3c60) - 1.0 * log(kpkx3c48) = 0.0  0.80225      regul_kp3
+i3k622  1.0 * log(kpkx3c60) - 1.0 * log(kpkx3c49) = 0.0  0.81278      regul_kp3
+i3k623  1.0 * log(kpkx3c60) - 1.0 * log(kpkx3c50) = 0.0  0.86189      regul_kp3
+i3k624  1.0 * log(kpkx3c60) - 1.0 * log(kpkx3c51) = 0.0  0.88938      regul_kp3
+i3k625  1.0 * log(kpkx3c60) - 1.0 * log(kpkx3c53) = 0.0  0.86189      regul_kp3
+i3k626  1.0 * log(kpkx3c60) - 1.0 * log(kpkx3c54) = 0.0  0.99314      regul_kp3
+i3k627  1.0 * log(kpkx3c60) - 1.0 * log(kpkx3c55) = 0.0   1.1273      regul_kp3
+i3k628  1.0 * log(kpkx3c60) - 1.0 * log(kpkx3c57) = 0.0  0.80225      regul_kp3
+i3k629  1.0 * log(kpkx3c60) - 1.0 * log(kpkx3c58) = 0.0  0.88938      regul_kp3
+i3k630  1.0 * log(kpkx3c60) - 1.0 * log(kpkx3c59) = 0.0   1.1273      regul_kp3
+i3k631  1.0 * log(kpkx3c61) - 1.0 * log(kpkx3ss21) = 0.0  0.76043      regul_kp3
+i3k632  1.0 * log(kpkx3c61) - 1.0 * log(kpkx3ss29) = 0.0  0.80225      regul_kp3
+i3k633  1.0 * log(kpkx3c61) - 1.0 * log(kpkx3ss30) = 0.0  0.79342      regul_kp3
+i3k634  1.0 * log(kpkx3c61) - 1.0 * log(kpkx3ss36) = 0.0  0.88938      regul_kp3
+i3k635  1.0 * log(kpkx3c61) - 1.0 * log(kpkx3ss37) = 0.0  0.86189      regul_kp3
+i3k636  1.0 * log(kpkx3c61) - 1.0 * log(kpkx3ss38) = 0.0  0.81278      regul_kp3
+i3k637  1.0 * log(kpkx3c61) - 1.0 * log(kpkx3ss42) = 0.0   1.1273      regul_kp3
+i3k638  1.0 * log(kpkx3c61) - 1.0 * log(kpkx3ss43) = 0.0  0.99314      regul_kp3
+i3k639  1.0 * log(kpkx3c61) - 1.0 * log(kpkx3ss44) = 0.0  0.86189      regul_kp3
+i3k640  1.0 * log(kpkx3c62) - 1.0 * log(kpkx3ss29) = 0.0  0.79342      regul_kp3
+i3k641  1.0 * log(kpkx3c62) - 1.0 * log(kpkx3ss30) = 0.0  0.80225      regul_kp3
+i3k642  1.0 * log(kpkx3c62) - 1.0 * log(kpkx3ss36) = 0.0  0.86189      regul_kp3
+i3k643  1.0 * log(kpkx3c62) - 1.0 * log(kpkx3ss37) = 0.0  0.88938      regul_kp3
+i3k644  1.0 * log(kpkx3c62) - 1.0 * log(kpkx3ss38) = 0.0  0.86189      regul_kp3
+i3k645  1.0 * log(kpkx3c62) - 1.0 * log(kpkx3ss39) = 0.0  0.81278      regul_kp3
+i3k646  1.0 * log(kpkx3c62) - 1.0 * log(kpkx3ss42) = 0.0  0.99314      regul_kp3
+i3k647  1.0 * log(kpkx3c62) - 1.0 * log(kpkx3ss43) = 0.0   1.1273      regul_kp3
+i3k648  1.0 * log(kpkx3c62) - 1.0 * log(kpkx3ss44) = 0.0  0.99314      regul_kp3
+i3k649  1.0 * log(kpkx3c62) - 1.0 * log(kpkx3ss45) = 0.0  0.86189      regul_kp3
+i3k650  1.0 * log(kpkx3c62) - 1.0 * log(kpkx3c61) = 0.0   1.1273      regul_kp3
+i3k651  1.0 * log(kpkx3c63) - 1.0 * log(kpkx3ss30) = 0.0  0.79342      regul_kp3
+i3k652  1.0 * log(kpkx3c63) - 1.0 * log(kpkx3ss31) = 0.0  0.80225      regul_kp3
+i3k653  1.0 * log(kpkx3c63) - 1.0 * log(kpkx3ss36) = 0.0  0.81278      regul_kp3
+i3k654  1.0 * log(kpkx3c63) - 1.0 * log(kpkx3ss37) = 0.0  0.86189      regul_kp3
+i3k655  1.0 * log(kpkx3c63) - 1.0 * log(kpkx3ss38) = 0.0  0.88938      regul_kp3
+i3k656  1.0 * log(kpkx3c63) - 1.0 * log(kpkx3ss39) = 0.0  0.86189      regul_kp3
+i3k657  1.0 * log(kpkx3c63) - 1.0 * log(kpkx3ss40) = 0.0  0.81278      regul_kp3
+i3k658  1.0 * log(kpkx3c63) - 1.0 * log(kpkx3ss42) = 0.0  0.86189      regul_kp3
+i3k659  1.0 * log(kpkx3c63) - 1.0 * log(kpkx3ss43) = 0.0  0.99314      regul_kp3
+i3k660  1.0 * log(kpkx3c63) - 1.0 * log(kpkx3ss44) = 0.0   1.1273      regul_kp3
+i3k661  1.0 * log(kpkx3c63) - 1.0 * log(kpkx3ss45) = 0.0  0.99314      regul_kp3
+i3k662  1.0 * log(kpkx3c63) - 1.0 * log(kpkx3ss46) = 0.0  0.86189      regul_kp3
+i3k663  1.0 * log(kpkx3c63) - 1.0 * log(kpkx3c61) = 0.0  0.88938      regul_kp3
+i3k664  1.0 * log(kpkx3c63) - 1.0 * log(kpkx3c62) = 0.0   1.1273      regul_kp3
+i3k665  1.0 * log(kpkx3c64) - 1.0 * log(kpkx3ss31) = 0.0  0.79342      regul_kp3
+i3k666  1.0 * log(kpkx3c64) - 1.0 * log(kpkx3ss32) = 0.0  0.80225      regul_kp3
+i3k667  1.0 * log(kpkx3c64) - 1.0 * log(kpkx3ss37) = 0.0  0.81278      regul_kp3
+i3k668  1.0 * log(kpkx3c64) - 1.0 * log(kpkx3ss38) = 0.0  0.86189      regul_kp3
+i3k669  1.0 * log(kpkx3c64) - 1.0 * log(kpkx3ss39) = 0.0  0.88938      regul_kp3
+i3k670  1.0 * log(kpkx3c64) - 1.0 * log(kpkx3ss40) = 0.0  0.86189      regul_kp3
+i3k671  1.0 * log(kpkx3c64) - 1.0 * log(kpkx3ss41) = 0.0  0.81278      regul_kp3
+i3k672  1.0 * log(kpkx3c64) - 1.0 * log(kpkx3ss43) = 0.0  0.86189      regul_kp3
+i3k673  1.0 * log(kpkx3c64) - 1.0 * log(kpkx3ss44) = 0.0  0.99314      regul_kp3
+i3k674  1.0 * log(kpkx3c64) - 1.0 * log(kpkx3ss45) = 0.0   1.1273      regul_kp3
+i3k675  1.0 * log(kpkx3c64) - 1.0 * log(kpkx3ss46) = 0.0  0.99314      regul_kp3
+i3k676  1.0 * log(kpkx3c64) - 1.0 * log(kpkx3c56) = 0.0  0.86189      regul_kp3
+i3k677  1.0 * log(kpkx3c64) - 1.0 * log(kpkx3c61) = 0.0  0.80225      regul_kp3
+i3k678  1.0 * log(kpkx3c64) - 1.0 * log(kpkx3c62) = 0.0  0.88938      regul_kp3
+i3k679  1.0 * log(kpkx3c64) - 1.0 * log(kpkx3c63) = 0.0   1.1273      regul_kp3
+i3k680  1.0 * log(kpkx3c65) - 1.0 * log(kpkx3ss32) = 0.0  0.79342      regul_kp3
+i3k681  1.0 * log(kpkx3c65) - 1.0 * log(kpkx3ss33) = 0.0  0.80225      regul_kp3
+i3k682  1.0 * log(kpkx3c65) - 1.0 * log(kpkx3ss38) = 0.0  0.81278      regul_kp3
+i3k683  1.0 * log(kpkx3c65) - 1.0 * log(kpkx3ss39) = 0.0  0.86189      regul_kp3
+i3k684  1.0 * log(kpkx3c65) - 1.0 * log(kpkx3ss40) = 0.0  0.88938      regul_kp3
+i3k685  1.0 * log(kpkx3c65) - 1.0 * log(kpkx3ss41) = 0.0  0.86189      regul_kp3
+i3k686  1.0 * log(kpkx3c65) - 1.0 * log(kpkx3ss44) = 0.0  0.86189      regul_kp3
+i3k687  1.0 * log(kpkx3c65) - 1.0 * log(kpkx3ss45) = 0.0  0.99314      regul_kp3
+i3k688  1.0 * log(kpkx3c65) - 1.0 * log(kpkx3ss46) = 0.0   1.1273      regul_kp3
+i3k689  1.0 * log(kpkx3c65) - 1.0 * log(kpkx3c52) = 0.0  0.81278      regul_kp3
+i3k690  1.0 * log(kpkx3c65) - 1.0 * log(kpkx3c56) = 0.0  0.99314      regul_kp3
+i3k691  1.0 * log(kpkx3c65) - 1.0 * log(kpkx3c57) = 0.0  0.86189      regul_kp3
+i3k692  1.0 * log(kpkx3c65) - 1.0 * log(kpkx3c62) = 0.0  0.80225      regul_kp3
+i3k693  1.0 * log(kpkx3c65) - 1.0 * log(kpkx3c63) = 0.0  0.88938      regul_kp3
+i3k694  1.0 * log(kpkx3c65) - 1.0 * log(kpkx3c64) = 0.0   1.1273      regul_kp3
+i3k695  1.0 * log(kpkx3c66) - 1.0 * log(kpkx3ss33) = 0.0  0.79342      regul_kp3
+i3k696  1.0 * log(kpkx3c66) - 1.0 * log(kpkx3ss34) = 0.0  0.80225      regul_kp3
+i3k697  1.0 * log(kpkx3c66) - 1.0 * log(kpkx3ss39) = 0.0  0.81278      regul_kp3
+i3k698  1.0 * log(kpkx3c66) - 1.0 * log(kpkx3ss40) = 0.0  0.86189      regul_kp3
+i3k699  1.0 * log(kpkx3c66) - 1.0 * log(kpkx3ss41) = 0.0  0.88938      regul_kp3
+i3k700  1.0 * log(kpkx3c66) - 1.0 * log(kpkx3ss45) = 0.0  0.86189      regul_kp3
+i3k701  1.0 * log(kpkx3c66) - 1.0 * log(kpkx3ss46) = 0.0  0.99314      regul_kp3
+i3k702  1.0 * log(kpkx3c66) - 1.0 * log(kpkx3c52) = 0.0  0.86189      regul_kp3
+i3k703  1.0 * log(kpkx3c66) - 1.0 * log(kpkx3c53) = 0.0  0.81278      regul_kp3
+i3k704  1.0 * log(kpkx3c66) - 1.0 * log(kpkx3c56) = 0.0   1.1273      regul_kp3
+i3k705  1.0 * log(kpkx3c66) - 1.0 * log(kpkx3c57) = 0.0  0.99314      regul_kp3
+i3k706  1.0 * log(kpkx3c66) - 1.0 * log(kpkx3c58) = 0.0  0.86189      regul_kp3
+i3k707  1.0 * log(kpkx3c66) - 1.0 * log(kpkx3c63) = 0.0  0.80225      regul_kp3
+i3k708  1.0 * log(kpkx3c66) - 1.0 * log(kpkx3c64) = 0.0  0.88938      regul_kp3
+i3k709  1.0 * log(kpkx3c66) - 1.0 * log(kpkx3c65) = 0.0   1.1273      regul_kp3
+i3k710  1.0 * log(kpkx3c67) - 1.0 * log(kpkx3ss34) = 0.0  0.79342      regul_kp3
+i3k711  1.0 * log(kpkx3c67) - 1.0 * log(kpkx3ss35) = 0.0  0.80225      regul_kp3
+i3k712  1.0 * log(kpkx3c67) - 1.0 * log(kpkx3ss40) = 0.0  0.81278      regul_kp3
+i3k713  1.0 * log(kpkx3c67) - 1.0 * log(kpkx3ss41) = 0.0  0.86189      regul_kp3
+i3k714  1.0 * log(kpkx3c67) - 1.0 * log(kpkx3ss46) = 0.0  0.86189      regul_kp3
+i3k715  1.0 * log(kpkx3c67) - 1.0 * log(kpkx3c52) = 0.0  0.88938      regul_kp3
+i3k716  1.0 * log(kpkx3c67) - 1.0 * log(kpkx3c53) = 0.0  0.86189      regul_kp3
+i3k717  1.0 * log(kpkx3c67) - 1.0 * log(kpkx3c54) = 0.0  0.81278      regul_kp3
+i3k718  1.0 * log(kpkx3c67) - 1.0 * log(kpkx3c56) = 0.0  0.99314      regul_kp3
+i3k719  1.0 * log(kpkx3c67) - 1.0 * log(kpkx3c57) = 0.0   1.1273      regul_kp3
+i3k720  1.0 * log(kpkx3c67) - 1.0 * log(kpkx3c58) = 0.0  0.99314      regul_kp3
+i3k721  1.0 * log(kpkx3c67) - 1.0 * log(kpkx3c59) = 0.0  0.86189      regul_kp3
+i3k722  1.0 * log(kpkx3c67) - 1.0 * log(kpkx3c64) = 0.0  0.80225      regul_kp3
+i3k723  1.0 * log(kpkx3c67) - 1.0 * log(kpkx3c65) = 0.0  0.88938      regul_kp3
+i3k724  1.0 * log(kpkx3c67) - 1.0 * log(kpkx3c66) = 0.0   1.1273      regul_kp3
+i3k725  1.0 * log(kpkx3c68) - 1.0 * log(kpkx3ss35) = 0.0  0.79342      regul_kp3
+i3k726  1.0 * log(kpkx3c68) - 1.0 * log(kpkx3ss41) = 0.0  0.81278      regul_kp3
+i3k727  1.0 * log(kpkx3c68) - 1.0 * log(kpkx3c49) = 0.0  0.80225      regul_kp3
+i3k728  1.0 * log(kpkx3c68) - 1.0 * log(kpkx3c52) = 0.0  0.86189      regul_kp3
+i3k729  1.0 * log(kpkx3c68) - 1.0 * log(kpkx3c53) = 0.0  0.88938      regul_kp3
+i3k730  1.0 * log(kpkx3c68) - 1.0 * log(kpkx3c54) = 0.0  0.86189      regul_kp3
+i3k731  1.0 * log(kpkx3c68) - 1.0 * log(kpkx3c55) = 0.0  0.81278      regul_kp3
+i3k732  1.0 * log(kpkx3c68) - 1.0 * log(kpkx3c56) = 0.0  0.86189      regul_kp3
+i3k733  1.0 * log(kpkx3c68) - 1.0 * log(kpkx3c57) = 0.0  0.99314      regul_kp3
+i3k734  1.0 * log(kpkx3c68) - 1.0 * log(kpkx3c58) = 0.0   1.1273      regul_kp3
+i3k735  1.0 * log(kpkx3c68) - 1.0 * log(kpkx3c59) = 0.0  0.99314      regul_kp3
+i3k736  1.0 * log(kpkx3c68) - 1.0 * log(kpkx3c60) = 0.0  0.86189      regul_kp3
+i3k737  1.0 * log(kpkx3c68) - 1.0 * log(kpkx3c65) = 0.0  0.80225      regul_kp3
+i3k738  1.0 * log(kpkx3c68) - 1.0 * log(kpkx3c66) = 0.0  0.88938      regul_kp3
+i3k739  1.0 * log(kpkx3c68) - 1.0 * log(kpkx3c67) = 0.0   1.1273      regul_kp3
+i3k740  1.0 * log(kpkx3c69) - 1.0 * log(kpkx3c49) = 0.0  0.79342      regul_kp3
+i3k741  1.0 * log(kpkx3c69) - 1.0 * log(kpkx3c50) = 0.0  0.80225      regul_kp3
+i3k742  1.0 * log(kpkx3c69) - 1.0 * log(kpkx3c51) = 0.0  0.79342      regul_kp3
+i3k743  1.0 * log(kpkx3c69) - 1.0 * log(kpkx3c52) = 0.0  0.81278      regul_kp3
+i3k744  1.0 * log(kpkx3c69) - 1.0 * log(kpkx3c53) = 0.0  0.86189      regul_kp3
+i3k745  1.0 * log(kpkx3c69) - 1.0 * log(kpkx3c54) = 0.0  0.88938      regul_kp3
+i3k746  1.0 * log(kpkx3c69) - 1.0 * log(kpkx3c55) = 0.0  0.86189      regul_kp3
+i3k747  1.0 * log(kpkx3c69) - 1.0 * log(kpkx3c57) = 0.0  0.86189      regul_kp3
+i3k748  1.0 * log(kpkx3c69) - 1.0 * log(kpkx3c58) = 0.0  0.99314      regul_kp3
+i3k749  1.0 * log(kpkx3c69) - 1.0 * log(kpkx3c59) = 0.0   1.1273      regul_kp3
+i3k750  1.0 * log(kpkx3c69) - 1.0 * log(kpkx3c60) = 0.0  0.99314      regul_kp3
+i3k751  1.0 * log(kpkx3c69) - 1.0 * log(kpkx3c66) = 0.0  0.80225      regul_kp3
+i3k752  1.0 * log(kpkx3c69) - 1.0 * log(kpkx3c67) = 0.0  0.88938      regul_kp3
+i3k753  1.0 * log(kpkx3c69) - 1.0 * log(kpkx3c68) = 0.0   1.1273      regul_kp3
+i3k754  1.0 * log(kpkx3c70) - 1.0 * log(kpkx3c48) = 0.0  0.76043      regul_kp3
+i3k755  1.0 * log(kpkx3c70) - 1.0 * log(kpkx3c50) = 0.0  0.79342      regul_kp3
+i3k756  1.0 * log(kpkx3c70) - 1.0 * log(kpkx3c51) = 0.0  0.80225      regul_kp3
+i3k757  1.0 * log(kpkx3c70) - 1.0 * log(kpkx3c53) = 0.0  0.81278      regul_kp3
+i3k758  1.0 * log(kpkx3c70) - 1.0 * log(kpkx3c54) = 0.0  0.86189      regul_kp3
+i3k759  1.0 * log(kpkx3c70) - 1.0 * log(kpkx3c55) = 0.0  0.88938      regul_kp3
+i3k760  1.0 * log(kpkx3c70) - 1.0 * log(kpkx3c58) = 0.0  0.86189      regul_kp3
+i3k761  1.0 * log(kpkx3c70) - 1.0 * log(kpkx3c59) = 0.0  0.99314      regul_kp3
+i3k762  1.0 * log(kpkx3c70) - 1.0 * log(kpkx3c60) = 0.0   1.1273      regul_kp3
+i3k763  1.0 * log(kpkx3c70) - 1.0 * log(kpkx3c67) = 0.0  0.80225      regul_kp3
+i3k764  1.0 * log(kpkx3c70) - 1.0 * log(kpkx3c68) = 0.0  0.88938      regul_kp3
+i3k765  1.0 * log(kpkx3c70) - 1.0 * log(kpkx3c69) = 0.0   1.1273      regul_kp3
+i3k766  1.0 * log(kpkx3c71) - 1.0 * log(kpkx3ss29) = 0.0  0.76043      regul_kp3
+i3k767  1.0 * log(kpkx3c71) - 1.0 * log(kpkx3ss36) = 0.0  0.80225      regul_kp3
+i3k768  1.0 * log(kpkx3c71) - 1.0 * log(kpkx3ss37) = 0.0  0.79342      regul_kp3
+i3k769  1.0 * log(kpkx3c71) - 1.0 * log(kpkx3ss42) = 0.0  0.88938      regul_kp3
+i3k770  1.0 * log(kpkx3c71) - 1.0 * log(kpkx3ss43) = 0.0  0.86189      regul_kp3
+i3k771  1.0 * log(kpkx3c71) - 1.0 * log(kpkx3ss44) = 0.0  0.81278      regul_kp3
+i3k772  1.0 * log(kpkx3c71) - 1.0 * log(kpkx3c61) = 0.0   1.1273      regul_kp3
+i3k773  1.0 * log(kpkx3c71) - 1.0 * log(kpkx3c62) = 0.0  0.99314      regul_kp3
+i3k774  1.0 * log(kpkx3c71) - 1.0 * log(kpkx3c63) = 0.0  0.86189      regul_kp3
+i3k775  1.0 * log(kpkx3c72) - 1.0 * log(kpkx3ss36) = 0.0  0.79342      regul_kp3
+i3k776  1.0 * log(kpkx3c72) - 1.0 * log(kpkx3ss37) = 0.0  0.80225      regul_kp3
+i3k777  1.0 * log(kpkx3c72) - 1.0 * log(kpkx3ss42) = 0.0  0.86189      regul_kp3
+i3k778  1.0 * log(kpkx3c72) - 1.0 * log(kpkx3ss43) = 0.0  0.88938      regul_kp3
+i3k779  1.0 * log(kpkx3c72) - 1.0 * log(kpkx3ss44) = 0.0  0.86189      regul_kp3
+i3k780  1.0 * log(kpkx3c72) - 1.0 * log(kpkx3ss45) = 0.0  0.81278      regul_kp3
+i3k781  1.0 * log(kpkx3c72) - 1.0 * log(kpkx3c61) = 0.0  0.99314      regul_kp3
+i3k782  1.0 * log(kpkx3c72) - 1.0 * log(kpkx3c62) = 0.0   1.1273      regul_kp3
+i3k783  1.0 * log(kpkx3c72) - 1.0 * log(kpkx3c63) = 0.0  0.99314      regul_kp3
+i3k784  1.0 * log(kpkx3c72) - 1.0 * log(kpkx3c64) = 0.0  0.86189      regul_kp3
+i3k785  1.0 * log(kpkx3c72) - 1.0 * log(kpkx3c71) = 0.0   1.1273      regul_kp3
+i3k786  1.0 * log(kpkx3c73) - 1.0 * log(kpkx3ss37) = 0.0  0.79342      regul_kp3
+i3k787  1.0 * log(kpkx3c73) - 1.0 * log(kpkx3ss38) = 0.0  0.80225      regul_kp3
+i3k788  1.0 * log(kpkx3c73) - 1.0 * log(kpkx3ss42) = 0.0  0.81278      regul_kp3
+i3k789  1.0 * log(kpkx3c73) - 1.0 * log(kpkx3ss43) = 0.0  0.86189      regul_kp3
+i3k790  1.0 * log(kpkx3c73) - 1.0 * log(kpkx3ss44) = 0.0  0.88938      regul_kp3
+i3k791  1.0 * log(kpkx3c73) - 1.0 * log(kpkx3ss45) = 0.0  0.86189      regul_kp3
+i3k792  1.0 * log(kpkx3c73) - 1.0 * log(kpkx3ss46) = 0.0  0.81278      regul_kp3
+i3k793  1.0 * log(kpkx3c73) - 1.0 * log(kpkx3c61) = 0.0  0.86189      regul_kp3
+i3k794  1.0 * log(kpkx3c73) - 1.0 * log(kpkx3c62) = 0.0  0.99314      regul_kp3
+i3k795  1.0 * log(kpkx3c73) - 1.0 * log(kpkx3c63) = 0.0   1.1273      regul_kp3
+i3k796  1.0 * log(kpkx3c73) - 1.0 * log(kpkx3c64) = 0.0  0.99314      regul_kp3
+i3k797  1.0 * log(kpkx3c73) - 1.0 * log(kpkx3c65) = 0.0  0.86189      regul_kp3
+i3k798  1.0 * log(kpkx3c73) - 1.0 * log(kpkx3c71) = 0.0  0.88938      regul_kp3
+i3k799  1.0 * log(kpkx3c73) - 1.0 * log(kpkx3c72) = 0.0   1.1273      regul_kp3
+i3k800  1.0 * log(kpkx3c74) - 1.0 * log(kpkx3ss38) = 0.0  0.79342      regul_kp3
+i3k801  1.0 * log(kpkx3c74) - 1.0 * log(kpkx3ss39) = 0.0  0.80225      regul_kp3
+i3k802  1.0 * log(kpkx3c74) - 1.0 * log(kpkx3ss43) = 0.0  0.81278      regul_kp3
+i3k803  1.0 * log(kpkx3c74) - 1.0 * log(kpkx3ss44) = 0.0  0.86189      regul_kp3
+i3k804  1.0 * log(kpkx3c74) - 1.0 * log(kpkx3ss45) = 0.0  0.88938      regul_kp3
+i3k805  1.0 * log(kpkx3c74) - 1.0 * log(kpkx3ss46) = 0.0  0.86189      regul_kp3
+i3k806  1.0 * log(kpkx3c74) - 1.0 * log(kpkx3c56) = 0.0  0.81278      regul_kp3
+i3k807  1.0 * log(kpkx3c74) - 1.0 * log(kpkx3c62) = 0.0  0.86189      regul_kp3
+i3k808  1.0 * log(kpkx3c74) - 1.0 * log(kpkx3c63) = 0.0  0.99314      regul_kp3
+i3k809  1.0 * log(kpkx3c74) - 1.0 * log(kpkx3c64) = 0.0   1.1273      regul_kp3
+i3k810  1.0 * log(kpkx3c74) - 1.0 * log(kpkx3c65) = 0.0  0.99314      regul_kp3
+i3k811  1.0 * log(kpkx3c74) - 1.0 * log(kpkx3c66) = 0.0  0.86189      regul_kp3
+i3k812  1.0 * log(kpkx3c74) - 1.0 * log(kpkx3c71) = 0.0  0.80225      regul_kp3
+i3k813  1.0 * log(kpkx3c74) - 1.0 * log(kpkx3c72) = 0.0  0.88938      regul_kp3
+i3k814  1.0 * log(kpkx3c74) - 1.0 * log(kpkx3c73) = 0.0   1.1273      regul_kp3
+i3k815  1.0 * log(kpkx3c75) - 1.0 * log(kpkx3ss39) = 0.0  0.79342      regul_kp3
+i3k816  1.0 * log(kpkx3c75) - 1.0 * log(kpkx3ss40) = 0.0  0.80225      regul_kp3
+i3k817  1.0 * log(kpkx3c75) - 1.0 * log(kpkx3ss44) = 0.0  0.81278      regul_kp3
+i3k818  1.0 * log(kpkx3c75) - 1.0 * log(kpkx3ss45) = 0.0  0.86189      regul_kp3
+i3k819  1.0 * log(kpkx3c75) - 1.0 * log(kpkx3ss46) = 0.0  0.88938      regul_kp3
+i3k820  1.0 * log(kpkx3c75) - 1.0 * log(kpkx3c56) = 0.0  0.86189      regul_kp3
+i3k821  1.0 * log(kpkx3c75) - 1.0 * log(kpkx3c57) = 0.0  0.81278      regul_kp3
+i3k822  1.0 * log(kpkx3c75) - 1.0 * log(kpkx3c63) = 0.0  0.86189      regul_kp3
+i3k823  1.0 * log(kpkx3c75) - 1.0 * log(kpkx3c64) = 0.0  0.99314      regul_kp3
+i3k824  1.0 * log(kpkx3c75) - 1.0 * log(kpkx3c65) = 0.0   1.1273      regul_kp3
+i3k825  1.0 * log(kpkx3c75) - 1.0 * log(kpkx3c66) = 0.0  0.99314      regul_kp3
+i3k826  1.0 * log(kpkx3c75) - 1.0 * log(kpkx3c67) = 0.0  0.86189      regul_kp3
+i3k827  1.0 * log(kpkx3c75) - 1.0 * log(kpkx3c72) = 0.0  0.80225      regul_kp3
+i3k828  1.0 * log(kpkx3c75) - 1.0 * log(kpkx3c73) = 0.0  0.88938      regul_kp3
+i3k829  1.0 * log(kpkx3c75) - 1.0 * log(kpkx3c74) = 0.0   1.1273      regul_kp3
+i3k830  1.0 * log(kpkx3c76) - 1.0 * log(kpkx3ss40) = 0.0  0.79342      regul_kp3
+i3k831  1.0 * log(kpkx3c76) - 1.0 * log(kpkx3ss41) = 0.0  0.80225      regul_kp3
+i3k832  1.0 * log(kpkx3c76) - 1.0 * log(kpkx3ss45) = 0.0  0.81278      regul_kp3
+i3k833  1.0 * log(kpkx3c76) - 1.0 * log(kpkx3ss46) = 0.0  0.86189      regul_kp3
+i3k834  1.0 * log(kpkx3c76) - 1.0 * log(kpkx3c56) = 0.0  0.88938      regul_kp3
+i3k835  1.0 * log(kpkx3c76) - 1.0 * log(kpkx3c57) = 0.0  0.86189      regul_kp3
+i3k836  1.0 * log(kpkx3c76) - 1.0 * log(kpkx3c58) = 0.0  0.81278      regul_kp3
+i3k837  1.0 * log(kpkx3c76) - 1.0 * log(kpkx3c64) = 0.0  0.86189      regul_kp3
+i3k838  1.0 * log(kpkx3c76) - 1.0 * log(kpkx3c65) = 0.0  0.99314      regul_kp3
+i3k839  1.0 * log(kpkx3c76) - 1.0 * log(kpkx3c66) = 0.0   1.1273      regul_kp3
+i3k840  1.0 * log(kpkx3c76) - 1.0 * log(kpkx3c67) = 0.0  0.99314      regul_kp3
+i3k841  1.0 * log(kpkx3c76) - 1.0 * log(kpkx3c68) = 0.0  0.86189      regul_kp3
+i3k842  1.0 * log(kpkx3c76) - 1.0 * log(kpkx3c73) = 0.0  0.80225      regul_kp3
+i3k843  1.0 * log(kpkx3c76) - 1.0 * log(kpkx3c74) = 0.0  0.88938      regul_kp3
+i3k844  1.0 * log(kpkx3c76) - 1.0 * log(kpkx3c75) = 0.0   1.1273      regul_kp3
+i3k845  1.0 * log(kpkx3c77) - 1.0 * log(kpkx3ss41) = 0.0  0.79342      regul_kp3
+i3k846  1.0 * log(kpkx3c77) - 1.0 * log(kpkx3ss46) = 0.0  0.81278      regul_kp3
+i3k847  1.0 * log(kpkx3c77) - 1.0 * log(kpkx3c52) = 0.0  0.80225      regul_kp3
+i3k848  1.0 * log(kpkx3c77) - 1.0 * log(kpkx3c56) = 0.0  0.86189      regul_kp3
+i3k849  1.0 * log(kpkx3c77) - 1.0 * log(kpkx3c57) = 0.0  0.88938      regul_kp3
+i3k850  1.0 * log(kpkx3c77) - 1.0 * log(kpkx3c58) = 0.0  0.86189      regul_kp3
+i3k851  1.0 * log(kpkx3c77) - 1.0 * log(kpkx3c59) = 0.0  0.81278      regul_kp3
+i3k852  1.0 * log(kpkx3c77) - 1.0 * log(kpkx3c65) = 0.0  0.86189      regul_kp3
+i3k853  1.0 * log(kpkx3c77) - 1.0 * log(kpkx3c66) = 0.0  0.99314      regul_kp3
+i3k854  1.0 * log(kpkx3c77) - 1.0 * log(kpkx3c67) = 0.0   1.1273      regul_kp3
+i3k855  1.0 * log(kpkx3c77) - 1.0 * log(kpkx3c68) = 0.0  0.99314      regul_kp3
+i3k856  1.0 * log(kpkx3c77) - 1.0 * log(kpkx3c69) = 0.0  0.86189      regul_kp3
+i3k857  1.0 * log(kpkx3c77) - 1.0 * log(kpkx3c74) = 0.0  0.80225      regul_kp3
+i3k858  1.0 * log(kpkx3c77) - 1.0 * log(kpkx3c75) = 0.0  0.88938      regul_kp3
+i3k859  1.0 * log(kpkx3c77) - 1.0 * log(kpkx3c76) = 0.0   1.1273      regul_kp3
+i3k860  1.0 * log(kpkx3c78) - 1.0 * log(kpkx3c52) = 0.0  0.79342      regul_kp3
+i3k861  1.0 * log(kpkx3c78) - 1.0 * log(kpkx3c53) = 0.0  0.80225      regul_kp3
+i3k862  1.0 * log(kpkx3c78) - 1.0 * log(kpkx3c56) = 0.0  0.81278      regul_kp3
+i3k863  1.0 * log(kpkx3c78) - 1.0 * log(kpkx3c57) = 0.0  0.86189      regul_kp3
+i3k864  1.0 * log(kpkx3c78) - 1.0 * log(kpkx3c58) = 0.0  0.88938      regul_kp3
+i3k865  1.0 * log(kpkx3c78) - 1.0 * log(kpkx3c59) = 0.0  0.86189      regul_kp3
+i3k866  1.0 * log(kpkx3c78) - 1.0 * log(kpkx3c60) = 0.0  0.81278      regul_kp3
+i3k867  1.0 * log(kpkx3c78) - 1.0 * log(kpkx3c66) = 0.0  0.86189      regul_kp3
+i3k868  1.0 * log(kpkx3c78) - 1.0 * log(kpkx3c67) = 0.0  0.99314      regul_kp3
+i3k869  1.0 * log(kpkx3c78) - 1.0 * log(kpkx3c68) = 0.0   1.1273      regul_kp3
+i3k870  1.0 * log(kpkx3c78) - 1.0 * log(kpkx3c69) = 0.0  0.99314      regul_kp3
+i3k871  1.0 * log(kpkx3c78) - 1.0 * log(kpkx3c70) = 0.0  0.86189      regul_kp3
+i3k872  1.0 * log(kpkx3c78) - 1.0 * log(kpkx3c75) = 0.0  0.80225      regul_kp3
+i3k873  1.0 * log(kpkx3c78) - 1.0 * log(kpkx3c76) = 0.0  0.88938      regul_kp3
+i3k874  1.0 * log(kpkx3c78) - 1.0 * log(kpkx3c77) = 0.0   1.1273      regul_kp3
+i3k875  1.0 * log(kpkx3c79) - 1.0 * log(kpkx3c53) = 0.0  0.79342      regul_kp3
+i3k876  1.0 * log(kpkx3c79) - 1.0 * log(kpkx3c54) = 0.0  0.80225      regul_kp3
+i3k877  1.0 * log(kpkx3c79) - 1.0 * log(kpkx3c55) = 0.0  0.79342      regul_kp3
+i3k878  1.0 * log(kpkx3c79) - 1.0 * log(kpkx3c57) = 0.0  0.81278      regul_kp3
+i3k879  1.0 * log(kpkx3c79) - 1.0 * log(kpkx3c58) = 0.0  0.86189      regul_kp3
+i3k880  1.0 * log(kpkx3c79) - 1.0 * log(kpkx3c59) = 0.0  0.88938      regul_kp3
+i3k881  1.0 * log(kpkx3c79) - 1.0 * log(kpkx3c60) = 0.0  0.86189      regul_kp3
+i3k882  1.0 * log(kpkx3c79) - 1.0 * log(kpkx3c67) = 0.0  0.86189      regul_kp3
+i3k883  1.0 * log(kpkx3c79) - 1.0 * log(kpkx3c68) = 0.0  0.99314      regul_kp3
+i3k884  1.0 * log(kpkx3c79) - 1.0 * log(kpkx3c69) = 0.0   1.1273      regul_kp3
+i3k885  1.0 * log(kpkx3c79) - 1.0 * log(kpkx3c70) = 0.0  0.99314      regul_kp3
+i3k886  1.0 * log(kpkx3c79) - 1.0 * log(kpkx3c76) = 0.0  0.80225      regul_kp3
+i3k887  1.0 * log(kpkx3c79) - 1.0 * log(kpkx3c77) = 0.0  0.88938      regul_kp3
+i3k888  1.0 * log(kpkx3c79) - 1.0 * log(kpkx3c78) = 0.0   1.1273      regul_kp3
+i3k889  1.0 * log(kpkx3c80) - 1.0 * log(kpkx3c51) = 0.0  0.76043      regul_kp3
+i3k890  1.0 * log(kpkx3c80) - 1.0 * log(kpkx3c54) = 0.0  0.79342      regul_kp3
+i3k891  1.0 * log(kpkx3c80) - 1.0 * log(kpkx3c55) = 0.0  0.80225      regul_kp3
+i3k892  1.0 * log(kpkx3c80) - 1.0 * log(kpkx3c58) = 0.0  0.81278      regul_kp3
+i3k893  1.0 * log(kpkx3c80) - 1.0 * log(kpkx3c59) = 0.0  0.86189      regul_kp3
+i3k894  1.0 * log(kpkx3c80) - 1.0 * log(kpkx3c60) = 0.0  0.88938      regul_kp3
+i3k895  1.0 * log(kpkx3c80) - 1.0 * log(kpkx3c68) = 0.0  0.86189      regul_kp3
+i3k896  1.0 * log(kpkx3c80) - 1.0 * log(kpkx3c69) = 0.0  0.99314      regul_kp3
+i3k897  1.0 * log(kpkx3c80) - 1.0 * log(kpkx3c70) = 0.0   1.1273      regul_kp3
+i3k898  1.0 * log(kpkx3c80) - 1.0 * log(kpkx3c77) = 0.0  0.80225      regul_kp3
+i3k899  1.0 * log(kpkx3c80) - 1.0 * log(kpkx3c78) = 0.0  0.88938      regul_kp3
+i3k900  1.0 * log(kpkx3c80) - 1.0 * log(kpkx3c79) = 0.0   1.1273      regul_kp3
+i3k901  1.0 * log(kpkx3c81) - 1.0 * log(kpkx3ss36) = 0.0  0.76043      regul_kp3
+i3k902  1.0 * log(kpkx3c81) - 1.0 * log(kpkx3ss42) = 0.0  0.80225      regul_kp3
+i3k903  1.0 * log(kpkx3c81) - 1.0 * log(kpkx3ss43) = 0.0  0.79342      regul_kp3
+i3k904  1.0 * log(kpkx3c81) - 1.0 * log(kpkx3c61) = 0.0  0.88938      regul_kp3
+i3k905  1.0 * log(kpkx3c81) - 1.0 * log(kpkx3c62) = 0.0  0.86189      regul_kp3
+i3k906  1.0 * log(kpkx3c81) - 1.0 * log(kpkx3c63) = 0.0  0.81278      regul_kp3
+i3k907  1.0 * log(kpkx3c81) - 1.0 * log(kpkx3c71) = 0.0   1.1273      regul_kp3
+i3k908  1.0 * log(kpkx3c81) - 1.0 * log(kpkx3c72) = 0.0  0.99314      regul_kp3
+i3k909  1.0 * log(kpkx3c81) - 1.0 * log(kpkx3c73) = 0.0  0.86189      regul_kp3
+i3k910  1.0 * log(kpkx3c82) - 1.0 * log(kpkx3ss42) = 0.0  0.79342      regul_kp3
+i3k911  1.0 * log(kpkx3c82) - 1.0 * log(kpkx3ss43) = 0.0  0.80225      regul_kp3
+i3k912  1.0 * log(kpkx3c82) - 1.0 * log(kpkx3c61) = 0.0  0.86189      regul_kp3
+i3k913  1.0 * log(kpkx3c82) - 1.0 * log(kpkx3c62) = 0.0  0.88938      regul_kp3
+i3k914  1.0 * log(kpkx3c82) - 1.0 * log(kpkx3c63) = 0.0  0.86189      regul_kp3
+i3k915  1.0 * log(kpkx3c82) - 1.0 * log(kpkx3c64) = 0.0  0.81278      regul_kp3
+i3k916  1.0 * log(kpkx3c82) - 1.0 * log(kpkx3c71) = 0.0  0.99314      regul_kp3
+i3k917  1.0 * log(kpkx3c82) - 1.0 * log(kpkx3c72) = 0.0   1.1273      regul_kp3
+i3k918  1.0 * log(kpkx3c82) - 1.0 * log(kpkx3c73) = 0.0  0.99314      regul_kp3
+i3k919  1.0 * log(kpkx3c82) - 1.0 * log(kpkx3c74) = 0.0  0.86189      regul_kp3
+i3k920  1.0 * log(kpkx3c82) - 1.0 * log(kpkx3c81) = 0.0   1.1273      regul_kp3
+i3k921  1.0 * log(kpkx3c83) - 1.0 * log(kpkx3ss43) = 0.0  0.79342      regul_kp3
+i3k922  1.0 * log(kpkx3c83) - 1.0 * log(kpkx3ss44) = 0.0  0.80225      regul_kp3
+i3k923  1.0 * log(kpkx3c83) - 1.0 * log(kpkx3c61) = 0.0  0.81278      regul_kp3
+i3k924  1.0 * log(kpkx3c83) - 1.0 * log(kpkx3c62) = 0.0  0.86189      regul_kp3
+i3k925  1.0 * log(kpkx3c83) - 1.0 * log(kpkx3c63) = 0.0  0.88938      regul_kp3
+i3k926  1.0 * log(kpkx3c83) - 1.0 * log(kpkx3c64) = 0.0  0.86189      regul_kp3
+i3k927  1.0 * log(kpkx3c83) - 1.0 * log(kpkx3c65) = 0.0  0.81278      regul_kp3
+i3k928  1.0 * log(kpkx3c83) - 1.0 * log(kpkx3c71) = 0.0  0.86189      regul_kp3
+i3k929  1.0 * log(kpkx3c83) - 1.0 * log(kpkx3c72) = 0.0  0.99314      regul_kp3
+i3k930  1.0 * log(kpkx3c83) - 1.0 * log(kpkx3c73) = 0.0   1.1273      regul_kp3
+i3k931  1.0 * log(kpkx3c83) - 1.0 * log(kpkx3c74) = 0.0  0.99314      regul_kp3
+i3k932  1.0 * log(kpkx3c83) - 1.0 * log(kpkx3c75) = 0.0  0.86189      regul_kp3
+i3k933  1.0 * log(kpkx3c83) - 1.0 * log(kpkx3c81) = 0.0  0.88938      regul_kp3
+i3k934  1.0 * log(kpkx3c83) - 1.0 * log(kpkx3c82) = 0.0   1.1273      regul_kp3
+i3k935  1.0 * log(kpkx3c84) - 1.0 * log(kpkx3ss44) = 0.0  0.79342      regul_kp3
+i3k936  1.0 * log(kpkx3c84) - 1.0 * log(kpkx3ss45) = 0.0  0.80225      regul_kp3
+i3k937  1.0 * log(kpkx3c84) - 1.0 * log(kpkx3c62) = 0.0  0.81278      regul_kp3
+i3k938  1.0 * log(kpkx3c84) - 1.0 * log(kpkx3c63) = 0.0  0.86189      regul_kp3
+i3k939  1.0 * log(kpkx3c84) - 1.0 * log(kpkx3c64) = 0.0  0.88938      regul_kp3
+i3k940  1.0 * log(kpkx3c84) - 1.0 * log(kpkx3c65) = 0.0  0.86189      regul_kp3
+i3k941  1.0 * log(kpkx3c84) - 1.0 * log(kpkx3c66) = 0.0  0.81278      regul_kp3
+i3k942  1.0 * log(kpkx3c84) - 1.0 * log(kpkx3c72) = 0.0  0.86189      regul_kp3
+i3k943  1.0 * log(kpkx3c84) - 1.0 * log(kpkx3c73) = 0.0  0.99314      regul_kp3
+i3k944  1.0 * log(kpkx3c84) - 1.0 * log(kpkx3c74) = 0.0   1.1273      regul_kp3
+i3k945  1.0 * log(kpkx3c84) - 1.0 * log(kpkx3c75) = 0.0  0.99314      regul_kp3
+i3k946  1.0 * log(kpkx3c84) - 1.0 * log(kpkx3c76) = 0.0  0.86189      regul_kp3
+i3k947  1.0 * log(kpkx3c84) - 1.0 * log(kpkx3c81) = 0.0  0.80225      regul_kp3
+i3k948  1.0 * log(kpkx3c84) - 1.0 * log(kpkx3c82) = 0.0  0.88938      regul_kp3
+i3k949  1.0 * log(kpkx3c84) - 1.0 * log(kpkx3c83) = 0.0   1.1273      regul_kp3
+i3k950  1.0 * log(kpkx3c85) - 1.0 * log(kpkx3ss45) = 0.0  0.79342      regul_kp3
+i3k951  1.0 * log(kpkx3c85) - 1.0 * log(kpkx3ss46) = 0.0  0.80225      regul_kp3
+i3k952  1.0 * log(kpkx3c85) - 1.0 * log(kpkx3c63) = 0.0  0.81278      regul_kp3
+i3k953  1.0 * log(kpkx3c85) - 1.0 * log(kpkx3c64) = 0.0  0.86189      regul_kp3
+i3k954  1.0 * log(kpkx3c85) - 1.0 * log(kpkx3c65) = 0.0  0.88938      regul_kp3
+i3k955  1.0 * log(kpkx3c85) - 1.0 * log(kpkx3c66) = 0.0  0.86189      regul_kp3
+i3k956  1.0 * log(kpkx3c85) - 1.0 * log(kpkx3c67) = 0.0  0.81278      regul_kp3
+i3k957  1.0 * log(kpkx3c85) - 1.0 * log(kpkx3c73) = 0.0  0.86189      regul_kp3
+i3k958  1.0 * log(kpkx3c85) - 1.0 * log(kpkx3c74) = 0.0  0.99314      regul_kp3
+i3k959  1.0 * log(kpkx3c85) - 1.0 * log(kpkx3c75) = 0.0   1.1273      regul_kp3
+i3k960  1.0 * log(kpkx3c85) - 1.0 * log(kpkx3c76) = 0.0  0.99314      regul_kp3
+i3k961  1.0 * log(kpkx3c85) - 1.0 * log(kpkx3c77) = 0.0  0.86189      regul_kp3
+i3k962  1.0 * log(kpkx3c85) - 1.0 * log(kpkx3c82) = 0.0  0.80225      regul_kp3
+i3k963  1.0 * log(kpkx3c85) - 1.0 * log(kpkx3c83) = 0.0  0.88938      regul_kp3
+i3k964  1.0 * log(kpkx3c85) - 1.0 * log(kpkx3c84) = 0.0   1.1273      regul_kp3
+i3k965  1.0 * log(kpkx3c86) - 1.0 * log(kpkx3ss46) = 0.0  0.79342      regul_kp3
+i3k966  1.0 * log(kpkx3c86) - 1.0 * log(kpkx3c56) = 0.0  0.80225      regul_kp3
+i3k967  1.0 * log(kpkx3c86) - 1.0 * log(kpkx3c64) = 0.0  0.81278      regul_kp3
+i3k968  1.0 * log(kpkx3c86) - 1.0 * log(kpkx3c65) = 0.0  0.86189      regul_kp3
+i3k969  1.0 * log(kpkx3c86) - 1.0 * log(kpkx3c66) = 0.0  0.88938      regul_kp3
+i3k970  1.0 * log(kpkx3c86) - 1.0 * log(kpkx3c67) = 0.0  0.86189      regul_kp3
+i3k971  1.0 * log(kpkx3c86) - 1.0 * log(kpkx3c68) = 0.0  0.81278      regul_kp3
+i3k972  1.0 * log(kpkx3c86) - 1.0 * log(kpkx3c74) = 0.0  0.86189      regul_kp3
+i3k973  1.0 * log(kpkx3c86) - 1.0 * log(kpkx3c75) = 0.0  0.99314      regul_kp3
+i3k974  1.0 * log(kpkx3c86) - 1.0 * log(kpkx3c76) = 0.0   1.1273      regul_kp3
+i3k975  1.0 * log(kpkx3c86) - 1.0 * log(kpkx3c77) = 0.0  0.99314      regul_kp3
+i3k976  1.0 * log(kpkx3c86) - 1.0 * log(kpkx3c78) = 0.0  0.86189      regul_kp3
+i3k977  1.0 * log(kpkx3c86) - 1.0 * log(kpkx3c83) = 0.0  0.80225      regul_kp3
+i3k978  1.0 * log(kpkx3c86) - 1.0 * log(kpkx3c84) = 0.0  0.88938      regul_kp3
+i3k979  1.0 * log(kpkx3c86) - 1.0 * log(kpkx3c85) = 0.0   1.1273      regul_kp3
+i3k980  1.0 * log(kpkx3c87) - 1.0 * log(kpkx3c56) = 0.0  0.79342      regul_kp3
+i3k981  1.0 * log(kpkx3c87) - 1.0 * log(kpkx3c57) = 0.0  0.80225      regul_kp3
+i3k982  1.0 * log(kpkx3c87) - 1.0 * log(kpkx3c65) = 0.0  0.81278      regul_kp3
+i3k983  1.0 * log(kpkx3c87) - 1.0 * log(kpkx3c66) = 0.0  0.86189      regul_kp3
+i3k984  1.0 * log(kpkx3c87) - 1.0 * log(kpkx3c67) = 0.0  0.88938      regul_kp3
+i3k985  1.0 * log(kpkx3c87) - 1.0 * log(kpkx3c68) = 0.0  0.86189      regul_kp3
+i3k986  1.0 * log(kpkx3c87) - 1.0 * log(kpkx3c69) = 0.0  0.81278      regul_kp3
+i3k987  1.0 * log(kpkx3c87) - 1.0 * log(kpkx3c75) = 0.0  0.86189      regul_kp3
+i3k988  1.0 * log(kpkx3c87) - 1.0 * log(kpkx3c76) = 0.0  0.99314      regul_kp3
+i3k989  1.0 * log(kpkx3c87) - 1.0 * log(kpkx3c77) = 0.0   1.1273      regul_kp3
+i3k990  1.0 * log(kpkx3c87) - 1.0 * log(kpkx3c78) = 0.0  0.99314      regul_kp3
+i3k991  1.0 * log(kpkx3c87) - 1.0 * log(kpkx3c79) = 0.0  0.86189      regul_kp3
+i3k992  1.0 * log(kpkx3c87) - 1.0 * log(kpkx3c84) = 0.0  0.80225      regul_kp3
+i3k993  1.0 * log(kpkx3c87) - 1.0 * log(kpkx3c85) = 0.0  0.88938      regul_kp3
+i3k994  1.0 * log(kpkx3c87) - 1.0 * log(kpkx3c86) = 0.0   1.1273      regul_kp3
+i3k995  1.0 * log(kpkx3c88) - 1.0 * log(kpkx3c57) = 0.0  0.79342      regul_kp3
+i3k996  1.0 * log(kpkx3c88) - 1.0 * log(kpkx3c58) = 0.0  0.80225      regul_kp3
+i3k997  1.0 * log(kpkx3c88) - 1.0 * log(kpkx3c66) = 0.0  0.81278      regul_kp3
+i3k998  1.0 * log(kpkx3c88) - 1.0 * log(kpkx3c67) = 0.0  0.86189      regul_kp3
+i3k999  1.0 * log(kpkx3c88) - 1.0 * log(kpkx3c68) = 0.0  0.88938      regul_kp3
+i3k1000  1.0 * log(kpkx3c88) - 1.0 * log(kpkx3c69) = 0.0  0.86189      regul_kp3
+i3k1001  1.0 * log(kpkx3c88) - 1.0 * log(kpkx3c70) = 0.0  0.81278      regul_kp3
+i3k1002  1.0 * log(kpkx3c88) - 1.0 * log(kpkx3c76) = 0.0  0.86189      regul_kp3
+i3k1003  1.0 * log(kpkx3c88) - 1.0 * log(kpkx3c77) = 0.0  0.99314      regul_kp3
+i3k1004  1.0 * log(kpkx3c88) - 1.0 * log(kpkx3c78) = 0.0   1.1273      regul_kp3
+i3k1005  1.0 * log(kpkx3c88) - 1.0 * log(kpkx3c79) = 0.0  0.99314      regul_kp3
+i3k1006  1.0 * log(kpkx3c88) - 1.0 * log(kpkx3c80) = 0.0  0.86189      regul_kp3
+i3k1007  1.0 * log(kpkx3c88) - 1.0 * log(kpkx3c85) = 0.0  0.80225      regul_kp3
+i3k1008  1.0 * log(kpkx3c88) - 1.0 * log(kpkx3c86) = 0.0  0.88938      regul_kp3
+i3k1009  1.0 * log(kpkx3c88) - 1.0 * log(kpkx3c87) = 0.0   1.1273      regul_kp3
+i3k1010  1.0 * log(kpkx3c89) - 1.0 * log(kpkx3c58) = 0.0  0.79342      regul_kp3
+i3k1011  1.0 * log(kpkx3c89) - 1.0 * log(kpkx3c59) = 0.0  0.80225      regul_kp3
+i3k1012  1.0 * log(kpkx3c89) - 1.0 * log(kpkx3c60) = 0.0  0.79342      regul_kp3
+i3k1013  1.0 * log(kpkx3c89) - 1.0 * log(kpkx3c67) = 0.0  0.81278      regul_kp3
+i3k1014  1.0 * log(kpkx3c89) - 1.0 * log(kpkx3c68) = 0.0  0.86189      regul_kp3
+i3k1015  1.0 * log(kpkx3c89) - 1.0 * log(kpkx3c69) = 0.0  0.88938      regul_kp3
+i3k1016  1.0 * log(kpkx3c89) - 1.0 * log(kpkx3c70) = 0.0  0.86189      regul_kp3
+i3k1017  1.0 * log(kpkx3c89) - 1.0 * log(kpkx3c77) = 0.0  0.86189      regul_kp3
+i3k1018  1.0 * log(kpkx3c89) - 1.0 * log(kpkx3c78) = 0.0  0.99314      regul_kp3
+i3k1019  1.0 * log(kpkx3c89) - 1.0 * log(kpkx3c79) = 0.0   1.1273      regul_kp3
+i3k1020  1.0 * log(kpkx3c89) - 1.0 * log(kpkx3c80) = 0.0  0.99314      regul_kp3
+i3k1021  1.0 * log(kpkx3c89) - 1.0 * log(kpkx3c86) = 0.0  0.80225      regul_kp3
+i3k1022  1.0 * log(kpkx3c89) - 1.0 * log(kpkx3c87) = 0.0  0.88938      regul_kp3
+i3k1023  1.0 * log(kpkx3c89) - 1.0 * log(kpkx3c88) = 0.0   1.1273      regul_kp3
+i3k1024  1.0 * log(kpkx3c90) - 1.0 * log(kpkx3c55) = 0.0  0.76043      regul_kp3
+i3k1025  1.0 * log(kpkx3c90) - 1.0 * log(kpkx3c59) = 0.0  0.79342      regul_kp3
+i3k1026  1.0 * log(kpkx3c90) - 1.0 * log(kpkx3c60) = 0.0  0.80225      regul_kp3
+i3k1027  1.0 * log(kpkx3c90) - 1.0 * log(kpkx3c68) = 0.0  0.81278      regul_kp3
+i3k1028  1.0 * log(kpkx3c90) - 1.0 * log(kpkx3c69) = 0.0  0.86189      regul_kp3
+i3k1029  1.0 * log(kpkx3c90) - 1.0 * log(kpkx3c70) = 0.0  0.88938      regul_kp3
+i3k1030  1.0 * log(kpkx3c90) - 1.0 * log(kpkx3c78) = 0.0  0.86189      regul_kp3
+i3k1031  1.0 * log(kpkx3c90) - 1.0 * log(kpkx3c79) = 0.0  0.99314      regul_kp3
+i3k1032  1.0 * log(kpkx3c90) - 1.0 * log(kpkx3c80) = 0.0   1.1273      regul_kp3
+i3k1033  1.0 * log(kpkx3c90) - 1.0 * log(kpkx3c87) = 0.0  0.80225      regul_kp3
+i3k1034  1.0 * log(kpkx3c90) - 1.0 * log(kpkx3c88) = 0.0  0.88938      regul_kp3
+i3k1035  1.0 * log(kpkx3c90) - 1.0 * log(kpkx3c89) = 0.0   1.1273      regul_kp3
+i3k1036  1.0 * log(kpkx3c91) - 1.0 * log(kpkx3ss42) = 0.0  0.76043      regul_kp3
+i3k1037  1.0 * log(kpkx3c91) - 1.0 * log(kpkx3c61) = 0.0  0.80225      regul_kp3
+i3k1038  1.0 * log(kpkx3c91) - 1.0 * log(kpkx3c62) = 0.0  0.79342      regul_kp3
+i3k1039  1.0 * log(kpkx3c91) - 1.0 * log(kpkx3c71) = 0.0  0.88938      regul_kp3
+i3k1040  1.0 * log(kpkx3c91) - 1.0 * log(kpkx3c72) = 0.0  0.86189      regul_kp3
+i3k1041  1.0 * log(kpkx3c91) - 1.0 * log(kpkx3c73) = 0.0  0.81278      regul_kp3
+i3k1042  1.0 * log(kpkx3c91) - 1.0 * log(kpkx3c81) = 0.0   1.1273      regul_kp3
+i3k1043  1.0 * log(kpkx3c91) - 1.0 * log(kpkx3c82) = 0.0  0.99314      regul_kp3
+i3k1044  1.0 * log(kpkx3c91) - 1.0 * log(kpkx3c83) = 0.0  0.86189      regul_kp3
+i3k1045  1.0 * log(kpkx3c91) - 1.0 * log(kpkx3c84) = 0.0  0.79342      regul_kp3
+i3k1046  1.0 * log(kpkx3c92) - 1.0 * log(kpkx3c61) = 0.0  0.79342      regul_kp3
+i3k1047  1.0 * log(kpkx3c92) - 1.0 * log(kpkx3c62) = 0.0  0.80225      regul_kp3
+i3k1048  1.0 * log(kpkx3c92) - 1.0 * log(kpkx3c71) = 0.0  0.86189      regul_kp3
+i3k1049  1.0 * log(kpkx3c92) - 1.0 * log(kpkx3c72) = 0.0  0.88938      regul_kp3
+i3k1050  1.0 * log(kpkx3c92) - 1.0 * log(kpkx3c73) = 0.0  0.86189      regul_kp3
+i3k1051  1.0 * log(kpkx3c92) - 1.0 * log(kpkx3c74) = 0.0  0.81278      regul_kp3
+i3k1052  1.0 * log(kpkx3c92) - 1.0 * log(kpkx3c81) = 0.0  0.99314      regul_kp3
+i3k1053  1.0 * log(kpkx3c92) - 1.0 * log(kpkx3c82) = 0.0   1.1273      regul_kp3
+i3k1054  1.0 * log(kpkx3c92) - 1.0 * log(kpkx3c83) = 0.0  0.99314      regul_kp3
+i3k1055  1.0 * log(kpkx3c92) - 1.0 * log(kpkx3c84) = 0.0  0.86189      regul_kp3
+i3k1056  1.0 * log(kpkx3c92) - 1.0 * log(kpkx3c85) = 0.0  0.79342      regul_kp3
+i3k1057  1.0 * log(kpkx3c92) - 1.0 * log(kpkx3c91) = 0.0   1.1273      regul_kp3
+i3k1058  1.0 * log(kpkx3c93) - 1.0 * log(kpkx3c61) = 0.0  0.77375      regul_kp3
+i3k1059  1.0 * log(kpkx3c93) - 1.0 * log(kpkx3c62) = 0.0  0.79342      regul_kp3
+i3k1060  1.0 * log(kpkx3c93) - 1.0 * log(kpkx3c63) = 0.0  0.80225      regul_kp3
+i3k1061  1.0 * log(kpkx3c93) - 1.0 * log(kpkx3c71) = 0.0  0.81278      regul_kp3
+i3k1062  1.0 * log(kpkx3c93) - 1.0 * log(kpkx3c72) = 0.0  0.86189      regul_kp3
+i3k1063  1.0 * log(kpkx3c93) - 1.0 * log(kpkx3c73) = 0.0  0.88938      regul_kp3
+i3k1064  1.0 * log(kpkx3c93) - 1.0 * log(kpkx3c74) = 0.0  0.86189      regul_kp3
+i3k1065  1.0 * log(kpkx3c93) - 1.0 * log(kpkx3c75) = 0.0  0.81278      regul_kp3
+i3k1066  1.0 * log(kpkx3c93) - 1.0 * log(kpkx3c81) = 0.0  0.86189      regul_kp3
+i3k1067  1.0 * log(kpkx3c93) - 1.0 * log(kpkx3c82) = 0.0  0.99314      regul_kp3
+i3k1068  1.0 * log(kpkx3c93) - 1.0 * log(kpkx3c83) = 0.0   1.1273      regul_kp3
+i3k1069  1.0 * log(kpkx3c93) - 1.0 * log(kpkx3c84) = 0.0  0.99314      regul_kp3
+i3k1070  1.0 * log(kpkx3c93) - 1.0 * log(kpkx3c85) = 0.0  0.86189      regul_kp3
+i3k1071  1.0 * log(kpkx3c93) - 1.0 * log(kpkx3c86) = 0.0  0.79342      regul_kp3
+i3k1072  1.0 * log(kpkx3c93) - 1.0 * log(kpkx3c91) = 0.0  0.88938      regul_kp3
+i3k1073  1.0 * log(kpkx3c93) - 1.0 * log(kpkx3c92) = 0.0   1.1273      regul_kp3
+i3k1074  1.0 * log(kpkx3c94) - 1.0 * log(kpkx3c63) = 0.0  0.79342      regul_kp3
+i3k1075  1.0 * log(kpkx3c94) - 1.0 * log(kpkx3c64) = 0.0  0.80225      regul_kp3
+i3k1076  1.0 * log(kpkx3c94) - 1.0 * log(kpkx3c72) = 0.0  0.81278      regul_kp3
+i3k1077  1.0 * log(kpkx3c94) - 1.0 * log(kpkx3c73) = 0.0  0.86189      regul_kp3
+i3k1078  1.0 * log(kpkx3c94) - 1.0 * log(kpkx3c74) = 0.0  0.88938      regul_kp3
+i3k1079  1.0 * log(kpkx3c94) - 1.0 * log(kpkx3c75) = 0.0  0.86189      regul_kp3
+i3k1080  1.0 * log(kpkx3c94) - 1.0 * log(kpkx3c76) = 0.0  0.81278      regul_kp3
+i3k1081  1.0 * log(kpkx3c94) - 1.0 * log(kpkx3c81) = 0.0  0.79342      regul_kp3
+i3k1082  1.0 * log(kpkx3c94) - 1.0 * log(kpkx3c82) = 0.0  0.86189      regul_kp3
+i3k1083  1.0 * log(kpkx3c94) - 1.0 * log(kpkx3c83) = 0.0  0.99314      regul_kp3
+i3k1084  1.0 * log(kpkx3c94) - 1.0 * log(kpkx3c84) = 0.0   1.1273      regul_kp3
+i3k1085  1.0 * log(kpkx3c94) - 1.0 * log(kpkx3c85) = 0.0  0.99314      regul_kp3
+i3k1086  1.0 * log(kpkx3c94) - 1.0 * log(kpkx3c86) = 0.0  0.86189      regul_kp3
+i3k1087  1.0 * log(kpkx3c94) - 1.0 * log(kpkx3c87) = 0.0  0.79342      regul_kp3
+i3k1088  1.0 * log(kpkx3c94) - 1.0 * log(kpkx3c91) = 0.0  0.80225      regul_kp3
+i3k1089  1.0 * log(kpkx3c94) - 1.0 * log(kpkx3c92) = 0.0  0.88938      regul_kp3
+i3k1090  1.0 * log(kpkx3c94) - 1.0 * log(kpkx3c93) = 0.0   1.1273      regul_kp3
+i3k1091  1.0 * log(kpkx3c95) - 1.0 * log(kpkx3c64) = 0.0  0.79342      regul_kp3
+i3k1092  1.0 * log(kpkx3c95) - 1.0 * log(kpkx3c65) = 0.0  0.80225      regul_kp3
+i3k1093  1.0 * log(kpkx3c95) - 1.0 * log(kpkx3c73) = 0.0  0.81278      regul_kp3
+i3k1094  1.0 * log(kpkx3c95) - 1.0 * log(kpkx3c74) = 0.0  0.86189      regul_kp3
+i3k1095  1.0 * log(kpkx3c95) - 1.0 * log(kpkx3c75) = 0.0  0.88938      regul_kp3
+i3k1096  1.0 * log(kpkx3c95) - 1.0 * log(kpkx3c76) = 0.0  0.86189      regul_kp3
+i3k1097  1.0 * log(kpkx3c95) - 1.0 * log(kpkx3c77) = 0.0  0.81278      regul_kp3
+i3k1098  1.0 * log(kpkx3c95) - 1.0 * log(kpkx3c82) = 0.0  0.79342      regul_kp3
+i3k1099  1.0 * log(kpkx3c95) - 1.0 * log(kpkx3c83) = 0.0  0.86189      regul_kp3
+i3k1100  1.0 * log(kpkx3c95) - 1.0 * log(kpkx3c84) = 0.0  0.99314      regul_kp3
+i3k1101  1.0 * log(kpkx3c95) - 1.0 * log(kpkx3c85) = 0.0   1.1273      regul_kp3
+i3k1102  1.0 * log(kpkx3c95) - 1.0 * log(kpkx3c86) = 0.0  0.99314      regul_kp3
+i3k1103  1.0 * log(kpkx3c95) - 1.0 * log(kpkx3c87) = 0.0  0.86189      regul_kp3
+i3k1104  1.0 * log(kpkx3c95) - 1.0 * log(kpkx3c88) = 0.0  0.79342      regul_kp3
+i3k1105  1.0 * log(kpkx3c95) - 1.0 * log(kpkx3c92) = 0.0  0.80225      regul_kp3
+i3k1106  1.0 * log(kpkx3c95) - 1.0 * log(kpkx3c93) = 0.0  0.88938      regul_kp3
+i3k1107  1.0 * log(kpkx3c95) - 1.0 * log(kpkx3c94) = 0.0   1.1273      regul_kp3
+i3k1108  1.0 * log(kpkx3c96) - 1.0 * log(kpkx3c65) = 0.0  0.79342      regul_kp3
+i3k1109  1.0 * log(kpkx3c96) - 1.0 * log(kpkx3c66) = 0.0  0.80225      regul_kp3
+i3k1110  1.0 * log(kpkx3c96) - 1.0 * log(kpkx3c74) = 0.0  0.81278      regul_kp3
+i3k1111  1.0 * log(kpkx3c96) - 1.0 * log(kpkx3c75) = 0.0  0.86189      regul_kp3
+i3k1112  1.0 * log(kpkx3c96) - 1.0 * log(kpkx3c76) = 0.0  0.88938      regul_kp3
+i3k1113  1.0 * log(kpkx3c96) - 1.0 * log(kpkx3c77) = 0.0  0.86189      regul_kp3
+i3k1114  1.0 * log(kpkx3c96) - 1.0 * log(kpkx3c78) = 0.0  0.81278      regul_kp3
+i3k1115  1.0 * log(kpkx3c96) - 1.0 * log(kpkx3c83) = 0.0  0.79342      regul_kp3
+i3k1116  1.0 * log(kpkx3c96) - 1.0 * log(kpkx3c84) = 0.0  0.86189      regul_kp3
+i3k1117  1.0 * log(kpkx3c96) - 1.0 * log(kpkx3c85) = 0.0  0.99314      regul_kp3
+i3k1118  1.0 * log(kpkx3c96) - 1.0 * log(kpkx3c86) = 0.0   1.1273      regul_kp3
+i3k1119  1.0 * log(kpkx3c96) - 1.0 * log(kpkx3c87) = 0.0  0.99314      regul_kp3
+i3k1120  1.0 * log(kpkx3c96) - 1.0 * log(kpkx3c88) = 0.0  0.86189      regul_kp3
+i3k1121  1.0 * log(kpkx3c96) - 1.0 * log(kpkx3c89) = 0.0  0.79342      regul_kp3
+i3k1122  1.0 * log(kpkx3c96) - 1.0 * log(kpkx3c93) = 0.0  0.80225      regul_kp3
+i3k1123  1.0 * log(kpkx3c96) - 1.0 * log(kpkx3c94) = 0.0  0.88938      regul_kp3
+i3k1124  1.0 * log(kpkx3c96) - 1.0 * log(kpkx3c95) = 0.0   1.1273      regul_kp3
+i3k1125  1.0 * log(kpkx3c97) - 1.0 * log(kpkx3c66) = 0.0  0.79342      regul_kp3
+i3k1126  1.0 * log(kpkx3c97) - 1.0 * log(kpkx3c67) = 0.0  0.80225      regul_kp3
+i3k1127  1.0 * log(kpkx3c97) - 1.0 * log(kpkx3c75) = 0.0  0.81278      regul_kp3
+i3k1128  1.0 * log(kpkx3c97) - 1.0 * log(kpkx3c76) = 0.0  0.86189      regul_kp3
+i3k1129  1.0 * log(kpkx3c97) - 1.0 * log(kpkx3c77) = 0.0  0.88938      regul_kp3
+i3k1130  1.0 * log(kpkx3c97) - 1.0 * log(kpkx3c78) = 0.0  0.86189      regul_kp3
+i3k1131  1.0 * log(kpkx3c97) - 1.0 * log(kpkx3c79) = 0.0  0.81278      regul_kp3
+i3k1132  1.0 * log(kpkx3c97) - 1.0 * log(kpkx3c84) = 0.0  0.79342      regul_kp3
+i3k1133  1.0 * log(kpkx3c97) - 1.0 * log(kpkx3c85) = 0.0  0.86189      regul_kp3
+i3k1134  1.0 * log(kpkx3c97) - 1.0 * log(kpkx3c86) = 0.0  0.99314      regul_kp3
+i3k1135  1.0 * log(kpkx3c97) - 1.0 * log(kpkx3c87) = 0.0   1.1273      regul_kp3
+i3k1136  1.0 * log(kpkx3c97) - 1.0 * log(kpkx3c88) = 0.0  0.99314      regul_kp3
+i3k1137  1.0 * log(kpkx3c97) - 1.0 * log(kpkx3c89) = 0.0  0.86189      regul_kp3
+i3k1138  1.0 * log(kpkx3c97) - 1.0 * log(kpkx3c90) = 0.0  0.79342      regul_kp3
+i3k1139  1.0 * log(kpkx3c97) - 1.0 * log(kpkx3c94) = 0.0  0.80225      regul_kp3
+i3k1140  1.0 * log(kpkx3c97) - 1.0 * log(kpkx3c95) = 0.0  0.88938      regul_kp3
+i3k1141  1.0 * log(kpkx3c97) - 1.0 * log(kpkx3c96) = 0.0   1.1273      regul_kp3
+i3k1142  1.0 * log(kpkx3c98) - 1.0 * log(kpkx3c67) = 0.0  0.79342      regul_kp3
+i3k1143  1.0 * log(kpkx3c98) - 1.0 * log(kpkx3c68) = 0.0  0.80225      regul_kp3
+i3k1144  1.0 * log(kpkx3c98) - 1.0 * log(kpkx3c76) = 0.0  0.81278      regul_kp3
+i3k1145  1.0 * log(kpkx3c98) - 1.0 * log(kpkx3c77) = 0.0  0.86189      regul_kp3
+i3k1146  1.0 * log(kpkx3c98) - 1.0 * log(kpkx3c78) = 0.0  0.88938      regul_kp3
+i3k1147  1.0 * log(kpkx3c98) - 1.0 * log(kpkx3c79) = 0.0  0.86189      regul_kp3
+i3k1148  1.0 * log(kpkx3c98) - 1.0 * log(kpkx3c80) = 0.0  0.81278      regul_kp3
+i3k1149  1.0 * log(kpkx3c98) - 1.0 * log(kpkx3c85) = 0.0  0.79342      regul_kp3
+i3k1150  1.0 * log(kpkx3c98) - 1.0 * log(kpkx3c86) = 0.0  0.86189      regul_kp3
+i3k1151  1.0 * log(kpkx3c98) - 1.0 * log(kpkx3c87) = 0.0  0.99314      regul_kp3
+i3k1152  1.0 * log(kpkx3c98) - 1.0 * log(kpkx3c88) = 0.0   1.1273      regul_kp3
+i3k1153  1.0 * log(kpkx3c98) - 1.0 * log(kpkx3c89) = 0.0  0.99314      regul_kp3
+i3k1154  1.0 * log(kpkx3c98) - 1.0 * log(kpkx3c90) = 0.0  0.86189      regul_kp3
+i3k1155  1.0 * log(kpkx3c98) - 1.0 * log(kpkx3c95) = 0.0  0.80225      regul_kp3
+i3k1156  1.0 * log(kpkx3c98) - 1.0 * log(kpkx3c96) = 0.0  0.88938      regul_kp3
+i3k1157  1.0 * log(kpkx3c98) - 1.0 * log(kpkx3c97) = 0.0   1.1273      regul_kp3
+i3k1158  1.0 * log(kpkx3c99) - 1.0 * log(kpkx3c68) = 0.0  0.79342      regul_kp3
+i3k1159  1.0 * log(kpkx3c99) - 1.0 * log(kpkx3c69) = 0.0  0.80225      regul_kp3
+i3k1160  1.0 * log(kpkx3c99) - 1.0 * log(kpkx3c70) = 0.0  0.79342      regul_kp3
+i3k1161  1.0 * log(kpkx3c99) - 1.0 * log(kpkx3c77) = 0.0  0.81278      regul_kp3
+i3k1162  1.0 * log(kpkx3c99) - 1.0 * log(kpkx3c78) = 0.0  0.86189      regul_kp3
+i3k1163  1.0 * log(kpkx3c99) - 1.0 * log(kpkx3c79) = 0.0  0.88938      regul_kp3
+i3k1164  1.0 * log(kpkx3c99) - 1.0 * log(kpkx3c80) = 0.0  0.86189      regul_kp3
+i3k1165  1.0 * log(kpkx3c99) - 1.0 * log(kpkx3c86) = 0.0  0.79342      regul_kp3
+i3k1166  1.0 * log(kpkx3c99) - 1.0 * log(kpkx3c87) = 0.0  0.86189      regul_kp3
+i3k1167  1.0 * log(kpkx3c99) - 1.0 * log(kpkx3c88) = 0.0  0.99314      regul_kp3
+i3k1168  1.0 * log(kpkx3c99) - 1.0 * log(kpkx3c89) = 0.0   1.1273      regul_kp3
+i3k1169  1.0 * log(kpkx3c99) - 1.0 * log(kpkx3c90) = 0.0  0.99314      regul_kp3
+i3k1170  1.0 * log(kpkx3c99) - 1.0 * log(kpkx3c96) = 0.0  0.80225      regul_kp3
+i3k1171  1.0 * log(kpkx3c99) - 1.0 * log(kpkx3c97) = 0.0  0.88938      regul_kp3
+i3k1172  1.0 * log(kpkx3c99) - 1.0 * log(kpkx3c98) = 0.0   1.1273      regul_kp3
+i3k1173  1.0 * log(kpkx3c100) - 1.0 * log(kpkx3c60) = 0.0  0.76043      regul_kp3
+i3k1174  1.0 * log(kpkx3c100) - 1.0 * log(kpkx3c69) = 0.0  0.79342      regul_kp3
+i3k1175  1.0 * log(kpkx3c100) - 1.0 * log(kpkx3c70) = 0.0  0.80225      regul_kp3
+i3k1176  1.0 * log(kpkx3c100) - 1.0 * log(kpkx3c78) = 0.0  0.81278      regul_kp3
+i3k1177  1.0 * log(kpkx3c100) - 1.0 * log(kpkx3c79) = 0.0  0.86189      regul_kp3
+i3k1178  1.0 * log(kpkx3c100) - 1.0 * log(kpkx3c80) = 0.0  0.88938      regul_kp3
+i3k1179  1.0 * log(kpkx3c100) - 1.0 * log(kpkx3c87) = 0.0  0.79342      regul_kp3
+i3k1180  1.0 * log(kpkx3c100) - 1.0 * log(kpkx3c88) = 0.0  0.86189      regul_kp3
+i3k1181  1.0 * log(kpkx3c100) - 1.0 * log(kpkx3c89) = 0.0  0.99314      regul_kp3
+i3k1182  1.0 * log(kpkx3c100) - 1.0 * log(kpkx3c90) = 0.0   1.1273      regul_kp3
+i3k1183  1.0 * log(kpkx3c100) - 1.0 * log(kpkx3c97) = 0.0  0.80225      regul_kp3
+i3k1184  1.0 * log(kpkx3c100) - 1.0 * log(kpkx3c98) = 0.0  0.88938      regul_kp3
+i3k1185  1.0 * log(kpkx3c100) - 1.0 * log(kpkx3c99) = 0.0   1.1273      regul_kp3
+* regularisation
+   1.000000       1.050000      0.1000000    
+  1.00000E-02  1.00000E-10  1.00000E+10
+   1.3 1.0e-2  1

@@ -1,0 +1,712 @@
+pcf
+* control data
+ restart regularisation
+      41      11       1     630       3
+            2            2       double        point            1            0            0
+   10.000       2.0000      0.30000      3.00000E-02           10
+   5.0000       5.0000      1.00000E-03
+  0.10000      noaui
+            50  1.00000E-03            4            4  1.00000E-03            4
+            1            1            1
+* parameter groups
+ general      relative     1.00000E-02   0.0000         always_3   2.0000     outside_pts
+* parameter data
+ k_rb         none   factor     1.20000E-03  1.20000E-08  1.20000E-00      general   1.0000       0.0000       1
+ vk_cb        none   factor     1.00000E-07  1.00000E-12  1.00000E-00      general   1.0000       0.0000       1
+ hk_2         none   factor     4.00000E-05  4.00000E-12  4.00000E-00      general   1.0000       0.0000       1
+ rch_1        none   factor      60          3.000e-4       880.000          general   1.0000       0.0000       1
+ rch_2        none   factor      90          2.000e-4      960.000          general   1.0000       0.0000       1
+ pobs1        log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p2           log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p3           log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p4           log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p5           log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p6           log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p7           log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ pobs2        log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p9           log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p10          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ pobs4        log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p12          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p13          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p14          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p15          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ pobs3        log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ pobs5        log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p18          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p19          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p20          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p21          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p22          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p23          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p24          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p25          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p26          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p27          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p28          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p29          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p30          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p31          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p32          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p33          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p34          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p35          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+ p36          log    factor     3.00000E-04  3.00000E-09  3.00000E-00      general   1.0000       0.0000       1
+* observation groups
+regulhk1
+ head
+ river
+* observation data
+ 1.0            100.225       0.998752      head
+ 2.0            126.939       0.998752      head
+ 3.0            157.146       0.998752      head
+ 4.0            126.939       0.998752      head
+ 5.0            140.863       0.998752      head
+ 6.0            127.149       0.998752      head
+ 7.0            101.235       0.998752      head
+ 8.0            157.133       0.998752      head
+ 9.0            176.945       0.998752      head
+ 10.0           140.973       0.998752      head
+ ss            -4.05404        2.50000      river
+* model command line
+ modrun1.bat >nul
+* model input/output
+ tc1-new.sen.tpl tc1-new.sen
+ points.file.tpl points.file.new
+ modobs.ins tc1._os
+ precision.ins testPrecision.out
+* prior information
+r1  1.0 * log(p2) - 1.0 * log(pobs1) = 0.0   7.3304      regulhk1
+r2  1.0 * log(p3) - 1.0 * log(pobs1) = 0.0   4.8675      regulhk1
+r3  1.0 * log(p3) - 1.0 * log(p2) = 0.0   6.3319      regulhk1
+r4  1.0 * log(p4) - 1.0 * log(pobs1) = 0.0   3.8907      regulhk1
+r5  1.0 * log(p4) - 1.0 * log(p2) = 0.0   4.4930      regulhk1
+r6  1.0 * log(p4) - 1.0 * log(p3) = 0.0   6.3319      regulhk1
+r7  1.0 * log(p5) - 1.0 * log(pobs1) = 0.0   3.3491      regulhk1
+r8  1.0 * log(p5) - 1.0 * log(p2) = 0.0   3.6901      regulhk1
+r9  1.0 * log(p5) - 1.0 * log(p3) = 0.0   4.4930      regulhk1
+r10  1.0 * log(p5) - 1.0 * log(p4) = 0.0   6.3319      regulhk1
+r11  1.0 * log(p6) - 1.0 * log(pobs1) = 0.0   3.0010      regulhk1
+r12  1.0 * log(p6) - 1.0 * log(p2) = 0.0   3.2225      regulhk1
+r13  1.0 * log(p6) - 1.0 * log(p3) = 0.0   3.6901      regulhk1
+r14  1.0 * log(p6) - 1.0 * log(p4) = 0.0   4.4930      regulhk1
+r15  1.0 * log(p6) - 1.0 * log(p5) = 0.0   6.3319      regulhk1
+r16  1.0 * log(p7) - 1.0 * log(pobs1) = 0.0   5.4067      regulhk1
+r17  1.0 * log(p7) - 1.0 * log(p2) = 0.0   5.3306      regulhk1
+r18  1.0 * log(p7) - 1.0 * log(p3) = 0.0   4.2542      regulhk1
+r19  1.0 * log(p7) - 1.0 * log(p4) = 0.0   3.5985      regulhk1
+r20  1.0 * log(p7) - 1.0 * log(p5) = 0.0   3.1779      regulhk1
+r21  1.0 * log(p7) - 1.0 * log(p6) = 0.0   2.8891      regulhk1
+r22  1.0 * log(pobs2) - 1.0 * log(pobs1) = 0.0   6.1681      regulhk1
+r23  1.0 * log(pobs2) - 1.0 * log(p2) = 0.0   7.3304      regulhk1
+r24  1.0 * log(pobs2) - 1.0 * log(p3) = 0.0   5.1934      regulhk1
+r25  1.0 * log(pobs2) - 1.0 * log(p4) = 0.0   4.0879      regulhk1
+r26  1.0 * log(pobs2) - 1.0 * log(p5) = 0.0   3.4771      regulhk1
+r27  1.0 * log(pobs2) - 1.0 * log(p6) = 0.0   3.0900      regulhk1
+r28  1.0 * log(pobs2) - 1.0 * log(p7) = 0.0   7.3304      regulhk1
+r29  1.0 * log(p9) - 1.0 * log(pobs1) = 0.0   4.3521      regulhk1
+r30  1.0 * log(p9) - 1.0 * log(p2) = 0.0   5.3306      regulhk1
+r31  1.0 * log(p9) - 1.0 * log(p3) = 0.0   6.3319      regulhk1
+r32  1.0 * log(p9) - 1.0 * log(p4) = 0.0   5.3306      regulhk1
+r33  1.0 * log(p9) - 1.0 * log(p5) = 0.0   4.2542      regulhk1
+r34  1.0 * log(p9) - 1.0 * log(p6) = 0.0   3.5985      regulhk1
+r35  1.0 * log(p9) - 1.0 * log(p7) = 0.0   4.4930      regulhk1
+r36  1.0 * log(p9) - 1.0 * log(pobs2) = 0.0   5.4067      regulhk1
+r37  1.0 * log(p10) - 1.0 * log(pobs1) = 0.0   3.7011      regulhk1
+r38  1.0 * log(p10) - 1.0 * log(p2) = 0.0   4.2542      regulhk1
+r39  1.0 * log(p10) - 1.0 * log(p3) = 0.0   5.3306      regulhk1
+r40  1.0 * log(p10) - 1.0 * log(p4) = 0.0   6.3319      regulhk1
+r41  1.0 * log(p10) - 1.0 * log(p5) = 0.0   5.3306      regulhk1
+r42  1.0 * log(p10) - 1.0 * log(p6) = 0.0   4.2542      regulhk1
+r43  1.0 * log(p10) - 1.0 * log(p7) = 0.0   3.6901      regulhk1
+r44  1.0 * log(p10) - 1.0 * log(pobs2) = 0.0   4.1463      regulhk1
+r45  1.0 * log(p10) - 1.0 * log(p9) = 0.0   6.3319      regulhk1
+r46  1.0 * log(pobs4) - 1.0 * log(pobs1) = 0.0   3.4388      regulhk1
+r47  1.0 * log(pobs4) - 1.0 * log(p2) = 0.0   3.8485      regulhk1
+r48  1.0 * log(pobs4) - 1.0 * log(p3) = 0.0   4.7382      regulhk1
+r49  1.0 * log(pobs4) - 1.0 * log(p4) = 0.0   6.5203      regulhk1
+r50  1.0 * log(pobs4) - 1.0 * log(p5) = 0.0   7.3304      regulhk1
+r51  1.0 * log(pobs4) - 1.0 * log(p6) = 0.0   5.1934      regulhk1
+r52  1.0 * log(pobs4) - 1.0 * log(p7) = 0.0   3.3491      regulhk1
+r53  1.0 * log(pobs4) - 1.0 * log(pobs2) = 0.0   3.6901      regulhk1
+r54  1.0 * log(pobs4) - 1.0 * log(p9) = 0.0   4.8675      regulhk1
+r55  1.0 * log(pobs4) - 1.0 * log(p10) = 0.0   7.3304      regulhk1
+r56  1.0 * log(p12) - 1.0 * log(pobs1) = 0.0   2.9524      regulhk1
+r57  1.0 * log(p12) - 1.0 * log(p2) = 0.0   3.1779      regulhk1
+r58  1.0 * log(p12) - 1.0 * log(p3) = 0.0   3.5985      regulhk1
+r59  1.0 * log(p12) - 1.0 * log(p4) = 0.0   4.2542      regulhk1
+r60  1.0 * log(p12) - 1.0 * log(p5) = 0.0   5.3306      regulhk1
+r61  1.0 * log(p12) - 1.0 * log(p6) = 0.0   6.3319      regulhk1
+r62  1.0 * log(p12) - 1.0 * log(p7) = 0.0   2.9140      regulhk1
+r63  1.0 * log(p12) - 1.0 * log(pobs2) = 0.0   3.1023      regulhk1
+r64  1.0 * log(p12) - 1.0 * log(p9) = 0.0   3.6901      regulhk1
+r65  1.0 * log(p12) - 1.0 * log(p10) = 0.0   4.4930      regulhk1
+r66  1.0 * log(p12) - 1.0 * log(pobs4) = 0.0   5.4067      regulhk1
+r67  1.0 * log(p13) - 1.0 * log(pobs1) = 0.0   4.1463      regulhk1
+r68  1.0 * log(p13) - 1.0 * log(p2) = 0.0   4.2542      regulhk1
+r69  1.0 * log(p13) - 1.0 * log(p3) = 0.0   3.7959      regulhk1
+r70  1.0 * log(p13) - 1.0 * log(p4) = 0.0   3.3820      regulhk1
+r71  1.0 * log(p13) - 1.0 * log(p5) = 0.0   3.0624      regulhk1
+r72  1.0 * log(p13) - 1.0 * log(p6) = 0.0   2.8218      regulhk1
+r73  1.0 * log(p13) - 1.0 * log(p7) = 0.0   6.3319      regulhk1
+r74  1.0 * log(p13) - 1.0 * log(pobs2) = 0.0   5.1934      regulhk1
+r75  1.0 * log(p13) - 1.0 * log(p9) = 0.0   4.2542      regulhk1
+r76  1.0 * log(p13) - 1.0 * log(p10) = 0.0   3.5985      regulhk1
+r77  1.0 * log(p13) - 1.0 * log(pobs4) = 0.0   3.2599      regulhk1
+r78  1.0 * log(p13) - 1.0 * log(p12) = 0.0   2.8891      regulhk1
+r79  1.0 * log(p14) - 1.0 * log(pobs1) = 0.0   4.0879      regulhk1
+r80  1.0 * log(p14) - 1.0 * log(p2) = 0.0   4.4930      regulhk1
+r81  1.0 * log(p14) - 1.0 * log(p3) = 0.0   4.2542      regulhk1
+r82  1.0 * log(p14) - 1.0 * log(p4) = 0.0   3.7959      regulhk1
+r83  1.0 * log(p14) - 1.0 * log(p5) = 0.0   3.3820      regulhk1
+r84  1.0 * log(p14) - 1.0 * log(p6) = 0.0   3.0624      regulhk1
+r85  1.0 * log(p14) - 1.0 * log(p7) = 0.0   5.3306      regulhk1
+r86  1.0 * log(p14) - 1.0 * log(pobs2) = 0.0   5.4067      regulhk1
+r87  1.0 * log(p14) - 1.0 * log(p9) = 0.0   5.3306      regulhk1
+r88  1.0 * log(p14) - 1.0 * log(p10) = 0.0   4.2542      regulhk1
+r89  1.0 * log(p14) - 1.0 * log(pobs4) = 0.0   3.7011      regulhk1
+r90  1.0 * log(p14) - 1.0 * log(p12) = 0.0   3.1779      regulhk1
+r91  1.0 * log(p14) - 1.0 * log(p13) = 0.0   6.3319      regulhk1
+r92  1.0 * log(p15) - 1.0 * log(pobs1) = 0.0   3.7710      regulhk1
+r93  1.0 * log(p15) - 1.0 * log(p2) = 0.0   4.2542      regulhk1
+r94  1.0 * log(p15) - 1.0 * log(p3) = 0.0   4.4930      regulhk1
+r95  1.0 * log(p15) - 1.0 * log(p4) = 0.0   4.2542      regulhk1
+r96  1.0 * log(p15) - 1.0 * log(p5) = 0.0   3.7959      regulhk1
+r97  1.0 * log(p15) - 1.0 * log(p6) = 0.0   3.3820      regulhk1
+r98  1.0 * log(p15) - 1.0 * log(p7) = 0.0   4.2542      regulhk1
+r99  1.0 * log(p15) - 1.0 * log(pobs2) = 0.0   4.6249      regulhk1
+r100  1.0 * log(p15) - 1.0 * log(p9) = 0.0   6.3319      regulhk1
+r101  1.0 * log(p15) - 1.0 * log(p10) = 0.0   5.3306      regulhk1
+r102  1.0 * log(p15) - 1.0 * log(pobs4) = 0.0   4.3521      regulhk1
+r103  1.0 * log(p15) - 1.0 * log(p12) = 0.0   3.5985      regulhk1
+r104  1.0 * log(p15) - 1.0 * log(p13) = 0.0   4.4930      regulhk1
+r105  1.0 * log(p15) - 1.0 * log(p14) = 0.0   6.3319      regulhk1
+r106  1.0 * log(pobs3) - 1.0 * log(pobs1) = 0.0   3.4098      regulhk1
+r107  1.0 * log(pobs3) - 1.0 * log(p2) = 0.0   3.7710      regulhk1
+r108  1.0 * log(pobs3) - 1.0 * log(p3) = 0.0   4.0879      regulhk1
+r109  1.0 * log(pobs3) - 1.0 * log(p4) = 0.0   4.1463      regulhk1
+r110  1.0 * log(pobs3) - 1.0 * log(p5) = 0.0   3.8907      regulhk1
+r111  1.0 * log(pobs3) - 1.0 * log(p6) = 0.0   3.5264      regulhk1
+r112  1.0 * log(pobs3) - 1.0 * log(p7) = 0.0   3.7011      regulhk1
+r113  1.0 * log(pobs3) - 1.0 * log(pobs2) = 0.0   3.9509      regulhk1
+r114  1.0 * log(pobs3) - 1.0 * log(p9) = 0.0   5.1934      regulhk1
+r115  1.0 * log(pobs3) - 1.0 * log(p10) = 0.0   5.4067      regulhk1
+r116  1.0 * log(pobs3) - 1.0 * log(pobs4) = 0.0   4.5565      regulhk1
+r117  1.0 * log(pobs3) - 1.0 * log(p12) = 0.0   3.8907      regulhk1
+r118  1.0 * log(pobs3) - 1.0 * log(p13) = 0.0   3.8907      regulhk1
+r119  1.0 * log(pobs3) - 1.0 * log(p14) = 0.0   4.8675      regulhk1
+r120  1.0 * log(pobs3) - 1.0 * log(p15) = 0.0   7.3304      regulhk1
+r121  1.0 * log(pobs5) - 1.0 * log(pobs1) = 0.0   3.2123      regulhk1
+r122  1.0 * log(pobs5) - 1.0 * log(p2) = 0.0   3.5350      regulhk1
+r123  1.0 * log(pobs5) - 1.0 * log(p3) = 0.0   4.1069      regulhk1
+r124  1.0 * log(pobs5) - 1.0 * log(p4) = 0.0   4.9148      regulhk1
+r125  1.0 * log(pobs5) - 1.0 * log(p5) = 0.0   5.4885      regulhk1
+r126  1.0 * log(pobs5) - 1.0 * log(p6) = 0.0   4.9148      regulhk1
+r127  1.0 * log(pobs5) - 1.0 * log(p7) = 0.0   3.2174      regulhk1
+r128  1.0 * log(pobs5) - 1.0 * log(pobs2) = 0.0   3.4771      regulhk1
+r129  1.0 * log(pobs5) - 1.0 * log(p9) = 0.0   4.4629      regulhk1
+r130  1.0 * log(pobs5) - 1.0 * log(p10) = 0.0   6.1681      regulhk1
+r131  1.0 * log(pobs5) - 1.0 * log(pobs4) = 0.0   7.3304      regulhk1
+r132  1.0 * log(pobs5) - 1.0 * log(p12) = 0.0   6.1681      regulhk1
+r133  1.0 * log(pobs5) - 1.0 * log(p13) = 0.0   3.2022      regulhk1
+r134  1.0 * log(pobs5) - 1.0 * log(p14) = 0.0   3.6478      regulhk1
+r135  1.0 * log(pobs5) - 1.0 * log(p15) = 0.0   4.3785      regulhk1
+r136  1.0 * log(pobs5) - 1.0 * log(pobs3) = 0.0   4.9148      regulhk1
+r137  1.0 * log(p18) - 1.0 * log(pobs1) = 0.0   2.8604      regulhk1
+r138  1.0 * log(p18) - 1.0 * log(p2) = 0.0   3.0624      regulhk1
+r139  1.0 * log(p18) - 1.0 * log(p3) = 0.0   3.3820      regulhk1
+r140  1.0 * log(p18) - 1.0 * log(p4) = 0.0   3.7959      regulhk1
+r141  1.0 * log(p18) - 1.0 * log(p5) = 0.0   4.2542      regulhk1
+r142  1.0 * log(p18) - 1.0 * log(p6) = 0.0   4.4930      regulhk1
+r143  1.0 * log(p18) - 1.0 * log(p7) = 0.0   2.8891      regulhk1
+r144  1.0 * log(p18) - 1.0 * log(pobs2) = 0.0   3.0436      regulhk1
+r145  1.0 * log(p18) - 1.0 * log(p9) = 0.0   3.5985      regulhk1
+r146  1.0 * log(p18) - 1.0 * log(p10) = 0.0   4.2542      regulhk1
+r147  1.0 * log(p18) - 1.0 * log(pobs4) = 0.0   4.6249      regulhk1
+r148  1.0 * log(p18) - 1.0 * log(p12) = 0.0   6.3319      regulhk1
+r149  1.0 * log(p18) - 1.0 * log(p13) = 0.0   2.9140      regulhk1
+r150  1.0 * log(p18) - 1.0 * log(p14) = 0.0   3.2225      regulhk1
+r151  1.0 * log(p18) - 1.0 * log(p15) = 0.0   3.6901      regulhk1
+r152  1.0 * log(p18) - 1.0 * log(pobs3) = 0.0   4.1463      regulhk1
+r153  1.0 * log(p18) - 1.0 * log(pobs5) = 0.0   5.7787      regulhk1
+r154  1.0 * log(p19) - 1.0 * log(pobs1) = 0.0   3.5013      regulhk1
+r155  1.0 * log(p19) - 1.0 * log(p2) = 0.0   3.5985      regulhk1
+r156  1.0 * log(p19) - 1.0 * log(p3) = 0.0   3.3820      regulhk1
+r157  1.0 * log(p19) - 1.0 * log(p4) = 0.0   3.1366      regulhk1
+r158  1.0 * log(p19) - 1.0 * log(p5) = 0.0   2.9140      regulhk1
+r159  1.0 * log(p19) - 1.0 * log(p6) = 0.0   2.7287      regulhk1
+r160  1.0 * log(p19) - 1.0 * log(p7) = 0.0   4.4930      regulhk1
+r161  1.0 * log(p19) - 1.0 * log(pobs2) = 0.0   4.0879      regulhk1
+r162  1.0 * log(p19) - 1.0 * log(p9) = 0.0   3.7959      regulhk1
+r163  1.0 * log(p19) - 1.0 * log(p10) = 0.0   3.3820      regulhk1
+r164  1.0 * log(p19) - 1.0 * log(pobs4) = 0.0   3.1023      regulhk1
+r165  1.0 * log(p19) - 1.0 * log(p12) = 0.0   2.8218      regulhk1
+r166  1.0 * log(p19) - 1.0 * log(p13) = 0.0   6.3319      regulhk1
+r167  1.0 * log(p19) - 1.0 * log(p14) = 0.0   5.3306      regulhk1
+r168  1.0 * log(p19) - 1.0 * log(p15) = 0.0   4.2542      regulhk1
+r169  1.0 * log(p19) - 1.0 * log(pobs3) = 0.0   3.8485      regulhk1
+r170  1.0 * log(p19) - 1.0 * log(pobs5) = 0.0   3.1065      regulhk1
+r171  1.0 * log(p19) - 1.0 * log(p18) = 0.0   2.8891      regulhk1
+r172  1.0 * log(p20) - 1.0 * log(pobs1) = 0.0   3.4771      regulhk1
+r173  1.0 * log(p20) - 1.0 * log(p2) = 0.0   3.6901      regulhk1
+r174  1.0 * log(p20) - 1.0 * log(p3) = 0.0   3.5985      regulhk1
+r175  1.0 * log(p20) - 1.0 * log(p4) = 0.0   3.3820      regulhk1
+r176  1.0 * log(p20) - 1.0 * log(p5) = 0.0   3.1366      regulhk1
+r177  1.0 * log(p20) - 1.0 * log(p6) = 0.0   2.9140      regulhk1
+r178  1.0 * log(p20) - 1.0 * log(p7) = 0.0   4.2542      regulhk1
+r179  1.0 * log(p20) - 1.0 * log(pobs2) = 0.0   4.1463      regulhk1
+r180  1.0 * log(p20) - 1.0 * log(p9) = 0.0   4.2542      regulhk1
+r181  1.0 * log(p20) - 1.0 * log(p10) = 0.0   3.7959      regulhk1
+r182  1.0 * log(p20) - 1.0 * log(pobs4) = 0.0   3.4098      regulhk1
+r183  1.0 * log(p20) - 1.0 * log(p12) = 0.0   3.0624      regulhk1
+r184  1.0 * log(p20) - 1.0 * log(p13) = 0.0   5.3306      regulhk1
+r185  1.0 * log(p20) - 1.0 * log(p14) = 0.0   6.3319      regulhk1
+r186  1.0 * log(p20) - 1.0 * log(p15) = 0.0   5.3306      regulhk1
+r187  1.0 * log(p20) - 1.0 * log(pobs3) = 0.0   4.7382      regulhk1
+r188  1.0 * log(p20) - 1.0 * log(pobs5) = 0.0   3.4615      regulhk1
+r189  1.0 * log(p20) - 1.0 * log(p18) = 0.0   3.1779      regulhk1
+r190  1.0 * log(p20) - 1.0 * log(p19) = 0.0   6.3319      regulhk1
+r191  1.0 * log(p21) - 1.0 * log(pobs1) = 0.0   3.3301      regulhk1
+r192  1.0 * log(p21) - 1.0 * log(p2) = 0.0   3.5985      regulhk1
+r193  1.0 * log(p21) - 1.0 * log(p3) = 0.0   3.6901      regulhk1
+r194  1.0 * log(p21) - 1.0 * log(p4) = 0.0   3.5985      regulhk1
+r195  1.0 * log(p21) - 1.0 * log(p5) = 0.0   3.3820      regulhk1
+r196  1.0 * log(p21) - 1.0 * log(p6) = 0.0   3.1366      regulhk1
+r197  1.0 * log(p21) - 1.0 * log(p7) = 0.0   3.7959      regulhk1
+r198  1.0 * log(p21) - 1.0 * log(pobs2) = 0.0   3.8907      regulhk1
+r199  1.0 * log(p21) - 1.0 * log(p9) = 0.0   4.4930      regulhk1
+r200  1.0 * log(p21) - 1.0 * log(p10) = 0.0   4.2542      regulhk1
+r201  1.0 * log(p21) - 1.0 * log(pobs4) = 0.0   3.7710      regulhk1
+r202  1.0 * log(p21) - 1.0 * log(p12) = 0.0   3.3820      regulhk1
+r203  1.0 * log(p21) - 1.0 * log(p13) = 0.0   4.2542      regulhk1
+r204  1.0 * log(p21) - 1.0 * log(p14) = 0.0   5.3306      regulhk1
+r205  1.0 * log(p21) - 1.0 * log(p15) = 0.0   6.3319      regulhk1
+r206  1.0 * log(p21) - 1.0 * log(pobs3) = 0.0   6.5203      regulhk1
+r207  1.0 * log(p21) - 1.0 * log(pobs5) = 0.0   3.9509      regulhk1
+r208  1.0 * log(p21) - 1.0 * log(p18) = 0.0   3.5985      regulhk1
+r209  1.0 * log(p21) - 1.0 * log(p19) = 0.0   4.4930      regulhk1
+r210  1.0 * log(p21) - 1.0 * log(p20) = 0.0   6.3319      regulhk1
+r211  1.0 * log(p22) - 1.0 * log(pobs1) = 0.0   3.1278      regulhk1
+r212  1.0 * log(p22) - 1.0 * log(p2) = 0.0   3.3820      regulhk1
+r213  1.0 * log(p22) - 1.0 * log(p3) = 0.0   3.5985      regulhk1
+r214  1.0 * log(p22) - 1.0 * log(p4) = 0.0   3.6901      regulhk1
+r215  1.0 * log(p22) - 1.0 * log(p5) = 0.0   3.5985      regulhk1
+r216  1.0 * log(p22) - 1.0 * log(p6) = 0.0   3.3820      regulhk1
+r217  1.0 * log(p22) - 1.0 * log(p7) = 0.0   3.3820      regulhk1
+r218  1.0 * log(p22) - 1.0 * log(pobs2) = 0.0   3.5264      regulhk1
+r219  1.0 * log(p22) - 1.0 * log(p9) = 0.0   4.2542      regulhk1
+r220  1.0 * log(p22) - 1.0 * log(p10) = 0.0   4.4930      regulhk1
+r221  1.0 * log(p22) - 1.0 * log(pobs4) = 0.0   4.0879      regulhk1
+r222  1.0 * log(p22) - 1.0 * log(p12) = 0.0   3.7959      regulhk1
+r223  1.0 * log(p22) - 1.0 * log(p13) = 0.0   3.5985      regulhk1
+r224  1.0 * log(p22) - 1.0 * log(p14) = 0.0   4.2542      regulhk1
+r225  1.0 * log(p22) - 1.0 * log(p15) = 0.0   5.3306      regulhk1
+r226  1.0 * log(p22) - 1.0 * log(pobs3) = 0.0   7.3304      regulhk1
+r227  1.0 * log(p22) - 1.0 * log(pobs5) = 0.0   4.5565      regulhk1
+r228  1.0 * log(p22) - 1.0 * log(p18) = 0.0   4.2542      regulhk1
+r229  1.0 * log(p22) - 1.0 * log(p19) = 0.0   3.6901      regulhk1
+r230  1.0 * log(p22) - 1.0 * log(p20) = 0.0   4.4930      regulhk1
+r231  1.0 * log(p22) - 1.0 * log(p21) = 0.0   6.3319      regulhk1
+r232  1.0 * log(p23) - 1.0 * log(pobs1) = 0.0   2.9255      regulhk1
+r233  1.0 * log(p23) - 1.0 * log(p2) = 0.0   3.1366      regulhk1
+r234  1.0 * log(p23) - 1.0 * log(p3) = 0.0   3.3820      regulhk1
+r235  1.0 * log(p23) - 1.0 * log(p4) = 0.0   3.5985      regulhk1
+r236  1.0 * log(p23) - 1.0 * log(p5) = 0.0   3.6901      regulhk1
+r237  1.0 * log(p23) - 1.0 * log(p6) = 0.0   3.5985      regulhk1
+r238  1.0 * log(p23) - 1.0 * log(p7) = 0.0   3.0624      regulhk1
+r239  1.0 * log(p23) - 1.0 * log(pobs2) = 0.0   3.1973      regulhk1
+r240  1.0 * log(p23) - 1.0 * log(p9) = 0.0   3.7959      regulhk1
+r241  1.0 * log(p23) - 1.0 * log(p10) = 0.0   4.2542      regulhk1
+r242  1.0 * log(p23) - 1.0 * log(pobs4) = 0.0   4.1463      regulhk1
+r243  1.0 * log(p23) - 1.0 * log(p12) = 0.0   4.2542      regulhk1
+r244  1.0 * log(p23) - 1.0 * log(p13) = 0.0   3.1779      regulhk1
+r245  1.0 * log(p23) - 1.0 * log(p14) = 0.0   3.5985      regulhk1
+r246  1.0 * log(p23) - 1.0 * log(p15) = 0.0   4.2542      regulhk1
+r247  1.0 * log(p23) - 1.0 * log(pobs3) = 0.0   5.1934      regulhk1
+r248  1.0 * log(p23) - 1.0 * log(pobs5) = 0.0   4.9148      regulhk1
+r249  1.0 * log(p23) - 1.0 * log(p18) = 0.0   5.3306      regulhk1
+r250  1.0 * log(p23) - 1.0 * log(p19) = 0.0   3.2225      regulhk1
+r251  1.0 * log(p23) - 1.0 * log(p20) = 0.0   3.6901      regulhk1
+r252  1.0 * log(p23) - 1.0 * log(p21) = 0.0   4.4930      regulhk1
+r253  1.0 * log(p23) - 1.0 * log(p22) = 0.0   6.3319      regulhk1
+r254  1.0 * log(p24) - 1.0 * log(pobs1) = 0.0   2.7477      regulhk1
+r255  1.0 * log(p24) - 1.0 * log(p2) = 0.0   2.9140      regulhk1
+r256  1.0 * log(p24) - 1.0 * log(p3) = 0.0   3.1366      regulhk1
+r257  1.0 * log(p24) - 1.0 * log(p4) = 0.0   3.3820      regulhk1
+r258  1.0 * log(p24) - 1.0 * log(p5) = 0.0   3.5985      regulhk1
+r259  1.0 * log(p24) - 1.0 * log(p6) = 0.0   3.6901      regulhk1
+r260  1.0 * log(p24) - 1.0 * log(p7) = 0.0   2.8218      regulhk1
+r261  1.0 * log(p24) - 1.0 * log(pobs2) = 0.0   2.9343      regulhk1
+r262  1.0 * log(p24) - 1.0 * log(p9) = 0.0   3.3820      regulhk1
+r263  1.0 * log(p24) - 1.0 * log(p10) = 0.0   3.7959      regulhk1
+r264  1.0 * log(p24) - 1.0 * log(pobs4) = 0.0   3.8907      regulhk1
+r265  1.0 * log(p24) - 1.0 * log(p12) = 0.0   4.4930      regulhk1
+r266  1.0 * log(p24) - 1.0 * log(p13) = 0.0   2.8891      regulhk1
+r267  1.0 * log(p24) - 1.0 * log(p14) = 0.0   3.1779      regulhk1
+r268  1.0 * log(p24) - 1.0 * log(p15) = 0.0   3.5985      regulhk1
+r269  1.0 * log(p24) - 1.0 * log(pobs3) = 0.0   4.0879      regulhk1
+r270  1.0 * log(p24) - 1.0 * log(pobs5) = 0.0   4.5565      regulhk1
+r271  1.0 * log(p24) - 1.0 * log(p18) = 0.0   6.3319      regulhk1
+r272  1.0 * log(p24) - 1.0 * log(p19) = 0.0   2.9140      regulhk1
+r273  1.0 * log(p24) - 1.0 * log(p20) = 0.0   3.2225      regulhk1
+r274  1.0 * log(p24) - 1.0 * log(p21) = 0.0   3.6901      regulhk1
+r275  1.0 * log(p24) - 1.0 * log(p22) = 0.0   4.4930      regulhk1
+r276  1.0 * log(p24) - 1.0 * log(p23) = 0.0   6.3319      regulhk1
+r277  1.0 * log(p25) - 1.0 * log(pobs1) = 0.0   3.1023      regulhk1
+r278  1.0 * log(p25) - 1.0 * log(p2) = 0.0   3.1779      regulhk1
+r279  1.0 * log(p25) - 1.0 * log(p3) = 0.0   3.0624      regulhk1
+r280  1.0 * log(p25) - 1.0 * log(p4) = 0.0   2.9140      regulhk1
+r281  1.0 * log(p25) - 1.0 * log(p5) = 0.0   2.7635      regulhk1
+r282  1.0 * log(p25) - 1.0 * log(p6) = 0.0   2.6272      regulhk1
+r283  1.0 * log(p25) - 1.0 * log(p7) = 0.0   3.6901      regulhk1
+r284  1.0 * log(p25) - 1.0 * log(pobs2) = 0.0   3.4771      regulhk1
+r285  1.0 * log(p25) - 1.0 * log(p9) = 0.0   3.3820      regulhk1
+r286  1.0 * log(p25) - 1.0 * log(p10) = 0.0   3.1366      regulhk1
+r287  1.0 * log(p25) - 1.0 * log(pobs4) = 0.0   2.9255      regulhk1
+r288  1.0 * log(p25) - 1.0 * log(p12) = 0.0   2.7287      regulhk1
+r289  1.0 * log(p25) - 1.0 * log(p13) = 0.0   4.4930      regulhk1
+r290  1.0 * log(p25) - 1.0 * log(p14) = 0.0   4.2542      regulhk1
+r291  1.0 * log(p25) - 1.0 * log(p15) = 0.0   3.7959      regulhk1
+r292  1.0 * log(p25) - 1.0 * log(pobs3) = 0.0   3.6080      regulhk1
+r293  1.0 * log(p25) - 1.0 * log(pobs5) = 0.0   2.9649      regulhk1
+r294  1.0 * log(p25) - 1.0 * log(p18) = 0.0   2.8218      regulhk1
+r295  1.0 * log(p25) - 1.0 * log(p19) = 0.0   6.3319      regulhk1
+r296  1.0 * log(p25) - 1.0 * log(p20) = 0.0   5.3306      regulhk1
+r297  1.0 * log(p25) - 1.0 * log(p21) = 0.0   4.2542      regulhk1
+r298  1.0 * log(p25) - 1.0 * log(p22) = 0.0   3.5985      regulhk1
+r299  1.0 * log(p25) - 1.0 * log(p23) = 0.0   3.1779      regulhk1
+r300  1.0 * log(p25) - 1.0 * log(p24) = 0.0   2.8891      regulhk1
+r301  1.0 * log(p26) - 1.0 * log(pobs1) = 0.0   3.0900      regulhk1
+r302  1.0 * log(p26) - 1.0 * log(p2) = 0.0   3.2225      regulhk1
+r303  1.0 * log(p26) - 1.0 * log(p3) = 0.0   3.1779      regulhk1
+r304  1.0 * log(p26) - 1.0 * log(p4) = 0.0   3.0624      regulhk1
+r305  1.0 * log(p26) - 1.0 * log(p5) = 0.0   2.9140      regulhk1
+r306  1.0 * log(p26) - 1.0 * log(p6) = 0.0   2.7635      regulhk1
+r307  1.0 * log(p26) - 1.0 * log(p7) = 0.0   3.5985      regulhk1
+r308  1.0 * log(p26) - 1.0 * log(pobs2) = 0.0   3.5013      regulhk1
+r309  1.0 * log(p26) - 1.0 * log(p9) = 0.0   3.5985      regulhk1
+r310  1.0 * log(p26) - 1.0 * log(p10) = 0.0   3.3820      regulhk1
+r311  1.0 * log(p26) - 1.0 * log(pobs4) = 0.0   3.1278      regulhk1
+r312  1.0 * log(p26) - 1.0 * log(p12) = 0.0   2.9140      regulhk1
+r313  1.0 * log(p26) - 1.0 * log(p13) = 0.0   4.2542      regulhk1
+r314  1.0 * log(p26) - 1.0 * log(p14) = 0.0   4.4930      regulhk1
+r315  1.0 * log(p26) - 1.0 * log(p15) = 0.0   4.2542      regulhk1
+r316  1.0 * log(p26) - 1.0 * log(pobs3) = 0.0   4.1463      regulhk1
+r317  1.0 * log(p26) - 1.0 * log(pobs5) = 0.0   3.2174      regulhk1
+r318  1.0 * log(p26) - 1.0 * log(p18) = 0.0   3.0624      regulhk1
+r319  1.0 * log(p26) - 1.0 * log(p19) = 0.0   5.3306      regulhk1
+r320  1.0 * log(p26) - 1.0 * log(p20) = 0.0   6.3319      regulhk1
+r321  1.0 * log(p26) - 1.0 * log(p21) = 0.0   5.3306      regulhk1
+r322  1.0 * log(p26) - 1.0 * log(p22) = 0.0   4.2542      regulhk1
+r323  1.0 * log(p26) - 1.0 * log(p23) = 0.0   3.5985      regulhk1
+r324  1.0 * log(p26) - 1.0 * log(p24) = 0.0   3.1779      regulhk1
+r325  1.0 * log(p26) - 1.0 * log(p25) = 0.0   6.3319      regulhk1
+r326  1.0 * log(p27) - 1.0 * log(pobs1) = 0.0   3.0113      regulhk1
+r327  1.0 * log(p27) - 1.0 * log(p2) = 0.0   3.1779      regulhk1
+r328  1.0 * log(p27) - 1.0 * log(p3) = 0.0   3.2225      regulhk1
+r329  1.0 * log(p27) - 1.0 * log(p4) = 0.0   3.1779      regulhk1
+r330  1.0 * log(p27) - 1.0 * log(p5) = 0.0   3.0624      regulhk1
+r331  1.0 * log(p27) - 1.0 * log(p6) = 0.0   2.9140      regulhk1
+r332  1.0 * log(p27) - 1.0 * log(p7) = 0.0   3.3820      regulhk1
+r333  1.0 * log(p27) - 1.0 * log(pobs2) = 0.0   3.3889      regulhk1
+r334  1.0 * log(p27) - 1.0 * log(p9) = 0.0   3.6901      regulhk1
+r335  1.0 * log(p27) - 1.0 * log(p10) = 0.0   3.5985      regulhk1
+r336  1.0 * log(p27) - 1.0 * log(pobs4) = 0.0   3.3301      regulhk1
+r337  1.0 * log(p27) - 1.0 * log(p12) = 0.0   3.1366      regulhk1
+r338  1.0 * log(p27) - 1.0 * log(p13) = 0.0   3.7959      regulhk1
+r339  1.0 * log(p27) - 1.0 * log(p14) = 0.0   4.2542      regulhk1
+r340  1.0 * log(p27) - 1.0 * log(p15) = 0.0   4.4930      regulhk1
+r341  1.0 * log(p27) - 1.0 * log(pobs3) = 0.0   4.7382      regulhk1
+r342  1.0 * log(p27) - 1.0 * log(pobs5) = 0.0   3.5095      regulhk1
+r343  1.0 * log(p27) - 1.0 * log(p18) = 0.0   3.3820      regulhk1
+r344  1.0 * log(p27) - 1.0 * log(p19) = 0.0   4.2542      regulhk1
+r345  1.0 * log(p27) - 1.0 * log(p20) = 0.0   5.3306      regulhk1
+r346  1.0 * log(p27) - 1.0 * log(p21) = 0.0   6.3319      regulhk1
+r347  1.0 * log(p27) - 1.0 * log(p22) = 0.0   5.3306      regulhk1
+r348  1.0 * log(p27) - 1.0 * log(p23) = 0.0   4.2542      regulhk1
+r349  1.0 * log(p27) - 1.0 * log(p24) = 0.0   3.5985      regulhk1
+r350  1.0 * log(p27) - 1.0 * log(p25) = 0.0   4.4930      regulhk1
+r351  1.0 * log(p27) - 1.0 * log(p26) = 0.0   6.3319      regulhk1
+r352  1.0 * log(p28) - 1.0 * log(pobs1) = 0.0   2.8918      regulhk1
+r353  1.0 * log(p28) - 1.0 * log(p2) = 0.0   3.0624      regulhk1
+r354  1.0 * log(p28) - 1.0 * log(p3) = 0.0   3.1779      regulhk1
+r355  1.0 * log(p28) - 1.0 * log(p4) = 0.0   3.2225      regulhk1
+r356  1.0 * log(p28) - 1.0 * log(p5) = 0.0   3.1779      regulhk1
+r357  1.0 * log(p28) - 1.0 * log(p6) = 0.0   3.0624      regulhk1
+r358  1.0 * log(p28) - 1.0 * log(p7) = 0.0   3.1366      regulhk1
+r359  1.0 * log(p28) - 1.0 * log(pobs2) = 0.0   3.1973      regulhk1
+r360  1.0 * log(p28) - 1.0 * log(p9) = 0.0   3.5985      regulhk1
+r361  1.0 * log(p28) - 1.0 * log(p10) = 0.0   3.6901      regulhk1
+r362  1.0 * log(p28) - 1.0 * log(pobs4) = 0.0   3.4771      regulhk1
+r363  1.0 * log(p28) - 1.0 * log(p12) = 0.0   3.3820      regulhk1
+r364  1.0 * log(p28) - 1.0 * log(p13) = 0.0   3.3820      regulhk1
+r365  1.0 * log(p28) - 1.0 * log(p14) = 0.0   3.7959      regulhk1
+r366  1.0 * log(p28) - 1.0 * log(p15) = 0.0   4.2542      regulhk1
+r367  1.0 * log(p28) - 1.0 * log(pobs3) = 0.0   4.8675      regulhk1
+r368  1.0 * log(p28) - 1.0 * log(pobs5) = 0.0   3.7833      regulhk1
+r369  1.0 * log(p28) - 1.0 * log(p18) = 0.0   3.7959      regulhk1
+r370  1.0 * log(p28) - 1.0 * log(p19) = 0.0   3.5985      regulhk1
+r371  1.0 * log(p28) - 1.0 * log(p20) = 0.0   4.2542      regulhk1
+r372  1.0 * log(p28) - 1.0 * log(p21) = 0.0   5.3306      regulhk1
+r373  1.0 * log(p28) - 1.0 * log(p22) = 0.0   6.3319      regulhk1
+r374  1.0 * log(p28) - 1.0 * log(p23) = 0.0   5.3306      regulhk1
+r375  1.0 * log(p28) - 1.0 * log(p24) = 0.0   4.2542      regulhk1
+r376  1.0 * log(p28) - 1.0 * log(p25) = 0.0   3.6901      regulhk1
+r377  1.0 * log(p28) - 1.0 * log(p26) = 0.0   4.4930      regulhk1
+r378  1.0 * log(p28) - 1.0 * log(p27) = 0.0   6.3319      regulhk1
+r379  1.0 * log(p29) - 1.0 * log(pobs1) = 0.0   2.7595      regulhk1
+r380  1.0 * log(p29) - 1.0 * log(p2) = 0.0   2.9140      regulhk1
+r381  1.0 * log(p29) - 1.0 * log(p3) = 0.0   3.0624      regulhk1
+r382  1.0 * log(p29) - 1.0 * log(p4) = 0.0   3.1779      regulhk1
+r383  1.0 * log(p29) - 1.0 * log(p5) = 0.0   3.2225      regulhk1
+r384  1.0 * log(p29) - 1.0 * log(p6) = 0.0   3.1779      regulhk1
+r385  1.0 * log(p29) - 1.0 * log(p7) = 0.0   2.9140      regulhk1
+r386  1.0 * log(p29) - 1.0 * log(pobs2) = 0.0   2.9909      regulhk1
+r387  1.0 * log(p29) - 1.0 * log(p9) = 0.0   3.3820      regulhk1
+r388  1.0 * log(p29) - 1.0 * log(p10) = 0.0   3.5985      regulhk1
+r389  1.0 * log(p29) - 1.0 * log(pobs4) = 0.0   3.5013      regulhk1
+r390  1.0 * log(p29) - 1.0 * log(p12) = 0.0   3.5985      regulhk1
+r391  1.0 * log(p29) - 1.0 * log(p13) = 0.0   3.0624      regulhk1
+r392  1.0 * log(p29) - 1.0 * log(p14) = 0.0   3.3820      regulhk1
+r393  1.0 * log(p29) - 1.0 * log(p15) = 0.0   3.7959      regulhk1
+r394  1.0 * log(p29) - 1.0 * log(pobs3) = 0.0   4.3521      regulhk1
+r395  1.0 * log(p29) - 1.0 * log(pobs5) = 0.0   3.9053      regulhk1
+r396  1.0 * log(p29) - 1.0 * log(p18) = 0.0   4.2542      regulhk1
+r397  1.0 * log(p29) - 1.0 * log(p19) = 0.0   3.1779      regulhk1
+r398  1.0 * log(p29) - 1.0 * log(p20) = 0.0   3.5985      regulhk1
+r399  1.0 * log(p29) - 1.0 * log(p21) = 0.0   4.2542      regulhk1
+r400  1.0 * log(p29) - 1.0 * log(p22) = 0.0   5.3306      regulhk1
+r401  1.0 * log(p29) - 1.0 * log(p23) = 0.0   6.3319      regulhk1
+r402  1.0 * log(p29) - 1.0 * log(p24) = 0.0   5.3306      regulhk1
+r403  1.0 * log(p29) - 1.0 * log(p25) = 0.0   3.2225      regulhk1
+r404  1.0 * log(p29) - 1.0 * log(p26) = 0.0   3.6901      regulhk1
+r405  1.0 * log(p29) - 1.0 * log(p27) = 0.0   4.4930      regulhk1
+r406  1.0 * log(p29) - 1.0 * log(p28) = 0.0   6.3319      regulhk1
+r407  1.0 * log(p30) - 1.0 * log(pobs1) = 0.0   2.6328      regulhk1
+r408  1.0 * log(p30) - 1.0 * log(p2) = 0.0   2.7635      regulhk1
+r409  1.0 * log(p30) - 1.0 * log(p3) = 0.0   2.9140      regulhk1
+r410  1.0 * log(p30) - 1.0 * log(p4) = 0.0   3.0624      regulhk1
+r411  1.0 * log(p30) - 1.0 * log(p5) = 0.0   3.1779      regulhk1
+r412  1.0 * log(p30) - 1.0 * log(p6) = 0.0   3.2225      regulhk1
+r413  1.0 * log(p30) - 1.0 * log(p7) = 0.0   2.7287      regulhk1
+r414  1.0 * log(p30) - 1.0 * log(pobs2) = 0.0   2.8036      regulhk1
+r415  1.0 * log(p30) - 1.0 * log(p9) = 0.0   3.1366      regulhk1
+r416  1.0 * log(p30) - 1.0 * log(p10) = 0.0   3.3820      regulhk1
+r417  1.0 * log(p30) - 1.0 * log(pobs4) = 0.0   3.3889      regulhk1
+r418  1.0 * log(p30) - 1.0 * log(p12) = 0.0   3.6901      regulhk1
+r419  1.0 * log(p30) - 1.0 * log(p13) = 0.0   2.8218      regulhk1
+r420  1.0 * log(p30) - 1.0 * log(p14) = 0.0   3.0624      regulhk1
+r421  1.0 * log(p30) - 1.0 * log(p15) = 0.0   3.3820      regulhk1
+r422  1.0 * log(p30) - 1.0 * log(pobs3) = 0.0   3.7710      regulhk1
+r423  1.0 * log(p30) - 1.0 * log(pobs5) = 0.0   3.7833      regulhk1
+r424  1.0 * log(p30) - 1.0 * log(p18) = 0.0   4.4930      regulhk1
+r425  1.0 * log(p30) - 1.0 * log(p19) = 0.0   2.8891      regulhk1
+r426  1.0 * log(p30) - 1.0 * log(p20) = 0.0   3.1779      regulhk1
+r427  1.0 * log(p30) - 1.0 * log(p21) = 0.0   3.5985      regulhk1
+r428  1.0 * log(p30) - 1.0 * log(p22) = 0.0   4.2542      regulhk1
+r429  1.0 * log(p30) - 1.0 * log(p23) = 0.0   5.3306      regulhk1
+r430  1.0 * log(p30) - 1.0 * log(p24) = 0.0   6.3319      regulhk1
+r431  1.0 * log(p30) - 1.0 * log(p25) = 0.0   2.9140      regulhk1
+r432  1.0 * log(p30) - 1.0 * log(p26) = 0.0   3.2225      regulhk1
+r433  1.0 * log(p30) - 1.0 * log(p27) = 0.0   3.6901      regulhk1
+r434  1.0 * log(p30) - 1.0 * log(p28) = 0.0   4.4930      regulhk1
+r435  1.0 * log(p30) - 1.0 * log(p29) = 0.0   6.3319      regulhk1
+r436  1.0 * log(p31) - 1.0 * log(pobs1) = 0.0   2.8311      regulhk1
+r437  1.0 * log(p31) - 1.0 * log(p2) = 0.0   2.8891      regulhk1
+r438  1.0 * log(p31) - 1.0 * log(p3) = 0.0   2.8218      regulhk1
+r439  1.0 * log(p31) - 1.0 * log(p4) = 0.0   2.7287      regulhk1
+r440  1.0 * log(p31) - 1.0 * log(p5) = 0.0   2.6272      regulhk1
+r441  1.0 * log(p31) - 1.0 * log(p6) = 0.0   2.5293      regulhk1
+r442  1.0 * log(p31) - 1.0 * log(p7) = 0.0   3.2225      regulhk1
+r443  1.0 * log(p31) - 1.0 * log(pobs2) = 0.0   3.0900      regulhk1
+r444  1.0 * log(p31) - 1.0 * log(p9) = 0.0   3.0624      regulhk1
+r445  1.0 * log(p31) - 1.0 * log(p10) = 0.0   2.9140      regulhk1
+r446  1.0 * log(p31) - 1.0 * log(pobs4) = 0.0   2.7595      regulhk1
+r447  1.0 * log(p31) - 1.0 * log(p12) = 0.0   2.6272      regulhk1
+r448  1.0 * log(p31) - 1.0 * log(p13) = 0.0   3.6901      regulhk1
+r449  1.0 * log(p31) - 1.0 * log(p14) = 0.0   3.5985      regulhk1
+r450  1.0 * log(p31) - 1.0 * log(p15) = 0.0   3.3820      regulhk1
+r451  1.0 * log(p31) - 1.0 * log(pobs3) = 0.0   3.3117      regulhk1
+r452  1.0 * log(p31) - 1.0 * log(pobs5) = 0.0   2.8126      regulhk1
+r453  1.0 * log(p31) - 1.0 * log(p18) = 0.0   2.7287      regulhk1
+r454  1.0 * log(p31) - 1.0 * log(p19) = 0.0   4.4930      regulhk1
+r455  1.0 * log(p31) - 1.0 * log(p20) = 0.0   4.2542      regulhk1
+r456  1.0 * log(p31) - 1.0 * log(p21) = 0.0   3.7959      regulhk1
+r457  1.0 * log(p31) - 1.0 * log(p22) = 0.0   3.3820      regulhk1
+r458  1.0 * log(p31) - 1.0 * log(p23) = 0.0   3.0624      regulhk1
+r459  1.0 * log(p31) - 1.0 * log(p24) = 0.0   2.8218      regulhk1
+r460  1.0 * log(p31) - 1.0 * log(p25) = 0.0   6.3319      regulhk1
+r461  1.0 * log(p31) - 1.0 * log(p26) = 0.0   5.3306      regulhk1
+r462  1.0 * log(p31) - 1.0 * log(p27) = 0.0   4.2542      regulhk1
+r463  1.0 * log(p31) - 1.0 * log(p28) = 0.0   3.5985      regulhk1
+r464  1.0 * log(p31) - 1.0 * log(p29) = 0.0   3.1779      regulhk1
+r465  1.0 * log(p31) - 1.0 * log(p30) = 0.0   2.8891      regulhk1
+r466  1.0 * log(p32) - 1.0 * log(pobs1) = 0.0   2.8241      regulhk1
+r467  1.0 * log(p32) - 1.0 * log(p2) = 0.0   2.9140      regulhk1
+r468  1.0 * log(p32) - 1.0 * log(p3) = 0.0   2.8891      regulhk1
+r469  1.0 * log(p32) - 1.0 * log(p4) = 0.0   2.8218      regulhk1
+r470  1.0 * log(p32) - 1.0 * log(p5) = 0.0   2.7287      regulhk1
+r471  1.0 * log(p32) - 1.0 * log(p6) = 0.0   2.6272      regulhk1
+r472  1.0 * log(p32) - 1.0 * log(p7) = 0.0   3.1779      regulhk1
+r473  1.0 * log(p32) - 1.0 * log(pobs2) = 0.0   3.1023      regulhk1
+r474  1.0 * log(p32) - 1.0 * log(p9) = 0.0   3.1779      regulhk1
+r475  1.0 * log(p32) - 1.0 * log(p10) = 0.0   3.0624      regulhk1
+r476  1.0 * log(p32) - 1.0 * log(pobs4) = 0.0   2.8918      regulhk1
+r477  1.0 * log(p32) - 1.0 * log(p12) = 0.0   2.7635      regulhk1
+r478  1.0 * log(p32) - 1.0 * log(p13) = 0.0   3.5985      regulhk1
+r479  1.0 * log(p32) - 1.0 * log(p14) = 0.0   3.6901      regulhk1
+r480  1.0 * log(p32) - 1.0 * log(p15) = 0.0   3.5985      regulhk1
+r481  1.0 * log(p32) - 1.0 * log(pobs3) = 0.0   3.6080      regulhk1
+r482  1.0 * log(p32) - 1.0 * log(pobs5) = 0.0   2.9843      regulhk1
+r483  1.0 * log(p32) - 1.0 * log(p18) = 0.0   2.9140      regulhk1
+r484  1.0 * log(p32) - 1.0 * log(p19) = 0.0   4.2542      regulhk1
+r485  1.0 * log(p32) - 1.0 * log(p20) = 0.0   4.4930      regulhk1
+r486  1.0 * log(p32) - 1.0 * log(p21) = 0.0   4.2542      regulhk1
+r487  1.0 * log(p32) - 1.0 * log(p22) = 0.0   3.7959      regulhk1
+r488  1.0 * log(p32) - 1.0 * log(p23) = 0.0   3.3820      regulhk1
+r489  1.0 * log(p32) - 1.0 * log(p24) = 0.0   3.0624      regulhk1
+r490  1.0 * log(p32) - 1.0 * log(p25) = 0.0   5.3306      regulhk1
+r491  1.0 * log(p32) - 1.0 * log(p26) = 0.0   6.3319      regulhk1
+r492  1.0 * log(p32) - 1.0 * log(p27) = 0.0   5.3306      regulhk1
+r493  1.0 * log(p32) - 1.0 * log(p28) = 0.0   4.2542      regulhk1
+r494  1.0 * log(p32) - 1.0 * log(p29) = 0.0   3.5985      regulhk1
+r495  1.0 * log(p32) - 1.0 * log(p30) = 0.0   3.1779      regulhk1
+r496  1.0 * log(p32) - 1.0 * log(p31) = 0.0   6.3319      regulhk1
+r497  1.0 * log(p33) - 1.0 * log(pobs1) = 0.0   2.7778      regulhk1
+r498  1.0 * log(p33) - 1.0 * log(p2) = 0.0   2.8891      regulhk1
+r499  1.0 * log(p33) - 1.0 * log(p3) = 0.0   2.9140      regulhk1
+r500  1.0 * log(p33) - 1.0 * log(p4) = 0.0   2.8891      regulhk1
+r501  1.0 * log(p33) - 1.0 * log(p5) = 0.0   2.8218      regulhk1
+r502  1.0 * log(p33) - 1.0 * log(p6) = 0.0   2.7287      regulhk1
+r503  1.0 * log(p33) - 1.0 * log(p7) = 0.0   3.0624      regulhk1
+r504  1.0 * log(p33) - 1.0 * log(pobs2) = 0.0   3.0436      regulhk1
+r505  1.0 * log(p33) - 1.0 * log(p9) = 0.0   3.2225      regulhk1
+r506  1.0 * log(p33) - 1.0 * log(p10) = 0.0   3.1779      regulhk1
+r507  1.0 * log(p33) - 1.0 * log(pobs4) = 0.0   3.0113      regulhk1
+r508  1.0 * log(p33) - 1.0 * log(p12) = 0.0   2.9140      regulhk1
+r509  1.0 * log(p33) - 1.0 * log(p13) = 0.0   3.3820      regulhk1
+r510  1.0 * log(p33) - 1.0 * log(p14) = 0.0   3.5985      regulhk1
+r511  1.0 * log(p33) - 1.0 * log(p15) = 0.0   3.6901      regulhk1
+r512  1.0 * log(p33) - 1.0 * log(pobs3) = 0.0   3.8485      regulhk1
+r513  1.0 * log(p33) - 1.0 * log(pobs5) = 0.0   3.1591      regulhk1
+r514  1.0 * log(p33) - 1.0 * log(p18) = 0.0   3.1366      regulhk1
+r515  1.0 * log(p33) - 1.0 * log(p19) = 0.0   3.7959      regulhk1
+r516  1.0 * log(p33) - 1.0 * log(p20) = 0.0   4.2542      regulhk1
+r517  1.0 * log(p33) - 1.0 * log(p21) = 0.0   4.4930      regulhk1
+r518  1.0 * log(p33) - 1.0 * log(p22) = 0.0   4.2542      regulhk1
+r519  1.0 * log(p33) - 1.0 * log(p23) = 0.0   3.7959      regulhk1
+r520  1.0 * log(p33) - 1.0 * log(p24) = 0.0   3.3820      regulhk1
+r521  1.0 * log(p33) - 1.0 * log(p25) = 0.0   4.2542      regulhk1
+r522  1.0 * log(p33) - 1.0 * log(p26) = 0.0   5.3306      regulhk1
+r523  1.0 * log(p33) - 1.0 * log(p27) = 0.0   6.3319      regulhk1
+r524  1.0 * log(p33) - 1.0 * log(p28) = 0.0   5.3306      regulhk1
+r525  1.0 * log(p33) - 1.0 * log(p29) = 0.0   4.2542      regulhk1
+r526  1.0 * log(p33) - 1.0 * log(p30) = 0.0   3.5985      regulhk1
+r527  1.0 * log(p33) - 1.0 * log(p31) = 0.0   4.4930      regulhk1
+r528  1.0 * log(p33) - 1.0 * log(p32) = 0.0   6.3319      regulhk1
+r529  1.0 * log(p34) - 1.0 * log(pobs1) = 0.0   2.7037      regulhk1
+r530  1.0 * log(p34) - 1.0 * log(p2) = 0.0   2.8218      regulhk1
+r531  1.0 * log(p34) - 1.0 * log(p3) = 0.0   2.8891      regulhk1
+r532  1.0 * log(p34) - 1.0 * log(p4) = 0.0   2.9140      regulhk1
+r533  1.0 * log(p34) - 1.0 * log(p5) = 0.0   2.8891      regulhk1
+r534  1.0 * log(p34) - 1.0 * log(p6) = 0.0   2.8218      regulhk1
+r535  1.0 * log(p34) - 1.0 * log(p7) = 0.0   2.9140      regulhk1
+r536  1.0 * log(p34) - 1.0 * log(pobs2) = 0.0   2.9343      regulhk1
+r537  1.0 * log(p34) - 1.0 * log(p9) = 0.0   3.1779      regulhk1
+r538  1.0 * log(p34) - 1.0 * log(p10) = 0.0   3.2225      regulhk1
+r539  1.0 * log(p34) - 1.0 * log(pobs4) = 0.0   3.0900      regulhk1
+r540  1.0 * log(p34) - 1.0 * log(p12) = 0.0   3.0624      regulhk1
+r541  1.0 * log(p34) - 1.0 * log(p13) = 0.0   3.1366      regulhk1
+r542  1.0 * log(p34) - 1.0 * log(p14) = 0.0   3.3820      regulhk1
+r543  1.0 * log(p34) - 1.0 * log(p15) = 0.0   3.5985      regulhk1
+r544  1.0 * log(p34) - 1.0 * log(pobs3) = 0.0   3.8907      regulhk1
+r545  1.0 * log(p34) - 1.0 * log(pobs5) = 0.0   3.2998      regulhk1
+r546  1.0 * log(p34) - 1.0 * log(p18) = 0.0   3.3820      regulhk1
+r547  1.0 * log(p34) - 1.0 * log(p19) = 0.0   3.3820      regulhk1
+r548  1.0 * log(p34) - 1.0 * log(p20) = 0.0   3.7959      regulhk1
+r549  1.0 * log(p34) - 1.0 * log(p21) = 0.0   4.2542      regulhk1
+r550  1.0 * log(p34) - 1.0 * log(p22) = 0.0   4.4930      regulhk1
+r551  1.0 * log(p34) - 1.0 * log(p23) = 0.0   4.2542      regulhk1
+r552  1.0 * log(p34) - 1.0 * log(p24) = 0.0   3.7959      regulhk1
+r553  1.0 * log(p34) - 1.0 * log(p25) = 0.0   3.5985      regulhk1
+r554  1.0 * log(p34) - 1.0 * log(p26) = 0.0   4.2542      regulhk1
+r555  1.0 * log(p34) - 1.0 * log(p27) = 0.0   5.3306      regulhk1
+r556  1.0 * log(p34) - 1.0 * log(p28) = 0.0   6.3319      regulhk1
+r557  1.0 * log(p34) - 1.0 * log(p29) = 0.0   5.3306      regulhk1
+r558  1.0 * log(p34) - 1.0 * log(p30) = 0.0   4.2542      regulhk1
+r559  1.0 * log(p34) - 1.0 * log(p31) = 0.0   3.6901      regulhk1
+r560  1.0 * log(p34) - 1.0 * log(p32) = 0.0   4.4930      regulhk1
+r561  1.0 * log(p34) - 1.0 * log(p33) = 0.0   6.3319      regulhk1
+r562  1.0 * log(p35) - 1.0 * log(pobs1) = 0.0   2.6161      regulhk1
+r563  1.0 * log(p35) - 1.0 * log(p2) = 0.0   2.7287      regulhk1
+r564  1.0 * log(p35) - 1.0 * log(p3) = 0.0   2.8218      regulhk1
+r565  1.0 * log(p35) - 1.0 * log(p4) = 0.0   2.8891      regulhk1
+r566  1.0 * log(p35) - 1.0 * log(p5) = 0.0   2.9140      regulhk1
+r567  1.0 * log(p35) - 1.0 * log(p6) = 0.0   2.8891      regulhk1
+r568  1.0 * log(p35) - 1.0 * log(p7) = 0.0   2.7635      regulhk1
+r569  1.0 * log(p35) - 1.0 * log(pobs2) = 0.0   2.8036      regulhk1
+r570  1.0 * log(p35) - 1.0 * log(p9) = 0.0   3.0624      regulhk1
+r571  1.0 * log(p35) - 1.0 * log(p10) = 0.0   3.1779      regulhk1
+r572  1.0 * log(p35) - 1.0 * log(pobs4) = 0.0   3.1023      regulhk1
+r573  1.0 * log(p35) - 1.0 * log(p12) = 0.0   3.1779      regulhk1
+r574  1.0 * log(p35) - 1.0 * log(p13) = 0.0   2.9140      regulhk1
+r575  1.0 * log(p35) - 1.0 * log(p14) = 0.0   3.1366      regulhk1
+r576  1.0 * log(p35) - 1.0 * log(p15) = 0.0   3.3820      regulhk1
+r577  1.0 * log(p35) - 1.0 * log(pobs3) = 0.0   3.7011      regulhk1
+r578  1.0 * log(p35) - 1.0 * log(pobs5) = 0.0   3.3555      regulhk1
+r579  1.0 * log(p35) - 1.0 * log(p18) = 0.0   3.5985      regulhk1
+r580  1.0 * log(p35) - 1.0 * log(p19) = 0.0   3.0624      regulhk1
+r581  1.0 * log(p35) - 1.0 * log(p20) = 0.0   3.3820      regulhk1
+r582  1.0 * log(p35) - 1.0 * log(p21) = 0.0   3.7959      regulhk1
+r583  1.0 * log(p35) - 1.0 * log(p22) = 0.0   4.2542      regulhk1
+r584  1.0 * log(p35) - 1.0 * log(p23) = 0.0   4.4930      regulhk1
+r585  1.0 * log(p35) - 1.0 * log(p24) = 0.0   4.2542      regulhk1
+r586  1.0 * log(p35) - 1.0 * log(p25) = 0.0   3.1779      regulhk1
+r587  1.0 * log(p35) - 1.0 * log(p26) = 0.0   3.5985      regulhk1
+r588  1.0 * log(p35) - 1.0 * log(p27) = 0.0   4.2542      regulhk1
+r589  1.0 * log(p35) - 1.0 * log(p28) = 0.0   5.3306      regulhk1
+r590  1.0 * log(p35) - 1.0 * log(p29) = 0.0   6.3319      regulhk1
+r591  1.0 * log(p35) - 1.0 * log(p30) = 0.0   5.3306      regulhk1
+r592  1.0 * log(p35) - 1.0 * log(p31) = 0.0   3.2225      regulhk1
+r593  1.0 * log(p35) - 1.0 * log(p32) = 0.0   3.6901      regulhk1
+r594  1.0 * log(p35) - 1.0 * log(p33) = 0.0   4.4930      regulhk1
+r595  1.0 * log(p35) - 1.0 * log(p34) = 0.0   6.3319      regulhk1
+r596  1.0 * log(p36) - 1.0 * log(pobs1) = 0.0   2.5272      regulhk1
+r597  1.0 * log(p36) - 1.0 * log(p2) = 0.0   2.6272      regulhk1
+r598  1.0 * log(p36) - 1.0 * log(p3) = 0.0   2.7287      regulhk1
+r599  1.0 * log(p36) - 1.0 * log(p4) = 0.0   2.8218      regulhk1
+r600  1.0 * log(p36) - 1.0 * log(p5) = 0.0   2.8891      regulhk1
+r601  1.0 * log(p36) - 1.0 * log(p6) = 0.0   2.9140      regulhk1
+r602  1.0 * log(p36) - 1.0 * log(p7) = 0.0   2.6272      regulhk1
+r603  1.0 * log(p36) - 1.0 * log(pobs2) = 0.0   2.6737      regulhk1
+r604  1.0 * log(p36) - 1.0 * log(p9) = 0.0   2.9140      regulhk1
+r605  1.0 * log(p36) - 1.0 * log(p10) = 0.0   3.0624      regulhk1
+r606  1.0 * log(p36) - 1.0 * log(pobs4) = 0.0   3.0436      regulhk1
+r607  1.0 * log(p36) - 1.0 * log(p12) = 0.0   3.2225      regulhk1
+r608  1.0 * log(p36) - 1.0 * log(p13) = 0.0   2.7287      regulhk1
+r609  1.0 * log(p36) - 1.0 * log(p14) = 0.0   2.9140      regulhk1
+r610  1.0 * log(p36) - 1.0 * log(p15) = 0.0   3.1366      regulhk1
+r611  1.0 * log(p36) - 1.0 * log(pobs3) = 0.0   3.4098      regulhk1
+r612  1.0 * log(p36) - 1.0 * log(pobs5) = 0.0   3.2998      regulhk1
+r613  1.0 * log(p36) - 1.0 * log(p18) = 0.0   3.6901      regulhk1
+r614  1.0 * log(p36) - 1.0 * log(p19) = 0.0   2.8218      regulhk1
+r615  1.0 * log(p36) - 1.0 * log(p20) = 0.0   3.0624      regulhk1
+r616  1.0 * log(p36) - 1.0 * log(p21) = 0.0   3.3820      regulhk1
+r617  1.0 * log(p36) - 1.0 * log(p22) = 0.0   3.7959      regulhk1
+r618  1.0 * log(p36) - 1.0 * log(p23) = 0.0   4.2542      regulhk1
+r619  1.0 * log(p36) - 1.0 * log(p24) = 0.0   4.4930      regulhk1
+r620  1.0 * log(p36) - 1.0 * log(p25) = 0.0   2.8891      regulhk1
+r621  1.0 * log(p36) - 1.0 * log(p26) = 0.0   3.1779      regulhk1
+r622  1.0 * log(p36) - 1.0 * log(p27) = 0.0   3.5985      regulhk1
+r623  1.0 * log(p36) - 1.0 * log(p28) = 0.0   4.2542      regulhk1
+r624  1.0 * log(p36) - 1.0 * log(p29) = 0.0   5.3306      regulhk1
+r625  1.0 * log(p36) - 1.0 * log(p30) = 0.0   6.3319      regulhk1
+r626  1.0 * log(p36) - 1.0 * log(p31) = 0.0   2.9140      regulhk1
+r627  1.0 * log(p36) - 1.0 * log(p32) = 0.0   3.2225      regulhk1
+r628  1.0 * log(p36) - 1.0 * log(p33) = 0.0   3.6901      regulhk1
+r629  1.0 * log(p36) - 1.0 * log(p34) = 0.0   4.4930      regulhk1
+r630  1.0 * log(p36) - 1.0 * log(p35) = 0.0   6.3319      regulhk1
+* regularisation
+ 8.0E-05  8.20E-05
+   1.0000      1.00000E-10  1.00000E+10
+   1.3 1.0e-2  1

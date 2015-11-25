@@ -1,0 +1,1790 @@
+pcf
+* control data
+restart estimation
+    300   1449      1      0     12  
+    1    2 double point  1    0  0
+   20.000       -3.0000      0.3  0.03  -10     999  lamforgive
+      0.100  10.0  0.001
+ 0.1      1
+    50  0.005  4  4  0.005  4
+1  1  1  1 nojcosaveitn reisaveitn
+* singular value decomposition
+     1
+   300  5.0000000E-07
+     1
+* svd assist
+badriver.pst
+badriver.jco
+    1    2    0    1    0
+* parameter groups
+ pargp absolute    0.015  0.0  switch    2.0 parabolic
+* parameter data
+par1         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par2         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par3         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par4         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par5         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par6         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par7         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par8         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par9         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par10        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par11        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par12        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par13        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par14        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par15        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par16        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par17        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par18        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par19        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par20        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par21        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par22        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par23        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par24        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par25        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par26        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par27        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par28        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par29        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par30        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par31        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par32        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par33        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par34        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par35        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par36        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par37        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par38        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par39        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par40        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par41        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par42        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par43        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par44        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par45        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par46        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par47        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par48        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par49        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par50        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par51        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par52        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par53        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par54        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par55        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par56        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par57        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par58        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par59        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par60        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par61        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par62        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par63        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par64        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par65        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par66        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par67        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par68        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par69        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par70        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par71        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par72        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par73        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par74        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par75        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par76        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par77        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par78        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par79        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par80        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par81        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par82        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par83        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par84        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par85        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par86        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par87        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par88        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par89        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par90        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par91        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par92        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par93        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par94        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par95        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par96        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par97        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par98        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par99        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par100       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par101       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par102       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par103       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par104       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par105       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par106       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par107       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par108       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par109       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par110       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par111       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par112       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par113       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par114       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par115       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par116       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par117       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par118       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par119       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par120       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par121       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par122       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par123       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par124       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par125       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par126       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par127       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par128       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par129       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par130       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par131       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par132       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par133       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par134       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par135       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par136       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par137       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par138       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par139       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par140       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par141       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par142       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par143       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par144       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par145       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par146       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par147       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par148       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par149       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par150       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par151       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par152       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par153       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par154       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par155       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par156       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par157       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par158       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par159       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par160       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par161       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par162       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par163       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par164       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par165       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par166       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par167       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par168       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par169       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par170       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par171       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par172       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par173       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par174       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par175       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par176       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par177       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par178       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par179       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par180       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par181       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par182       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par183       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par184       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par185       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par186       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par187       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par188       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par189       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par190       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par191       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par192       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par193       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par194       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par195       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par196       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par197       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par198       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par199       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par200       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par201       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par202       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par203       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par204       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par205       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par206       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par207       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par208       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par209       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par210       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par211       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par212       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par213       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par214       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par215       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par216       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par217       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par218       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par219       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par220       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par221       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par222       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par223       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par224       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par225       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par226       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par227       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par228       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par229       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par230       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par231       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par232       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par233       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par234       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par235       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par236       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par237       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par238       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par239       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par240       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par241       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par242       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par243       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par244       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par245       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par246       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par247       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par248       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par249       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par250       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par251       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par252       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par253       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par254       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par255       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par256       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par257       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par258       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par259       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par260       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par261       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par262       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par263       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par264       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par265       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par266       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par267       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par268       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par269       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par270       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par271       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par272       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par273       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par274       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par275       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par276       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par277       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par278       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par279       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par280       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par281       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par282       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par283       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par284       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par285       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par286       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par287       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par288       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par289       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par290       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par291       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par292       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par293       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par294       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par295       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par296       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par297       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par298       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par299       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par300       none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+* observation groups
+WCRs1
+WCRs2
+head_best
+head_fair
+head_good
+head_poor
+Bad_Odanah
+Lrg_streams
+Med_streams
+Sm_streams
+headwaters
+zero_streams
+* observation data
+PrenticePark 610.0 0.05 head_good
+MinersvilleA 800.0 0.05 head_good
+DiapervilleM 609.75 0.05 head_good
+TolmanMW1_go 613.7 0.05 head_good
+BigBoy_good 610.06 0.05 head_good
+4inHP_good 609.98 0.05 head_good
+DeGodt_good 613.78 0.05 head_good
+2090224601_b 1187.279579 0.2 head_best
+7090434201_b 613.6115554 0.2 head_best
+1090415801_b 608.8412745 0.2 head_best
+5090481101_b 614.6261538 0.2 head_best
+9090373001_b 1511.141285 0.2 head_best
+8090444101_b 617.0788889 0.2 head_best
+8090243201_g 1384.02 0.05 head_good
+7090200301_g 1461.8036 0.05 head_good
+6090435501_g 679.62 0.05 head_good
+7090434602_g 675.23 0.05 head_good
+3090435402_g 679.02 0.05 head_good
+5090435101_g 689.32 0.05 head_good
+9090364201_g 668.0 0.05 head_good
+8090413001_g 610.0 0.05 head_good
+2090391801_g 610.0 0.05 head_good
+0090424501_g 610.0 0.05 head_good
+2090422501_g 609.75 0.05 head_good
+7090464801_g 607.0 0.05 head_good
+W4803234202_ 606.049377 0.05 head_good
+W4803234303_ 605.918029 0.05 head_good
+W4803234301_ 612.28302 0.05 head_good
+W4802274201_ 674.254028 0.05 head_good
+W4602244301_ 1032.0 0.05 head_good
+5090303401_f 1555.0 0.02 head_fair
+4090583301_f 1446.0 0.02 head_fair
+9090380901_f 1512.87 0.02 head_fair
+1090175601_f 1696.0 0.02 head_fair
+2090494601_f 1384.0 0.02 head_fair
+1090385301_f 1240.0 0.02 head_fair
+1090385302_f 1240.0 0.02 head_fair
+5090375901_f 1180.0 0.02 head_fair
+6090411601_f 1216.39 0.02 head_fair
+9090242701_f 1460.75 0.02 head_fair
+2090430501_f 1046.0 0.02 head_fair
+9090362001_f 1130.0 0.02 head_fair
+9090413101_f 1017.0 0.02 head_fair
+0090354601_f 1176.0 0.02 head_fair
+2090345801_f 1174.0 0.02 head_fair
+4090434601_f 985.0 0.02 head_fair
+6090434601_f 963.0 0.02 head_fair
+6090435101_f 1000.0 0.02 head_fair
+8090440101_f 988.0 0.02 head_fair
+8090440102_f 985.0 0.02 head_fair
+9090440501_f 996.0 0.02 head_fair
+9090441101_f 998.0 0.02 head_fair
+0090440001_f 987.0 0.02 head_fair
+2090460201_f 950.0 0.02 head_fair
+3270904011_f 1022.0 0.02 head_fair
+0090463301_f 860.0 0.02 head_fair
+1090462901_f 865.0 0.02 head_fair
+2090461601_f 872.0 0.02 head_fair
+4090454701_f 840.0 0.02 head_fair
+4090463501_f 880.0 0.02 head_fair
+5090453801_f 865.0 0.02 head_fair
+3370904011_f 990.0 0.02 head_fair
+1090444401_f 871.0 0.02 head_fair
+5090435501_f 882.0 0.02 head_fair
+6090464401_f 828.0 0.02 head_fair
+4090441301_f 830.0 0.02 head_fair
+8090341101_f 1160.0 0.02 head_fair
+8090420101_f 880.0 0.02 head_fair
+5090340001_f 1140.0 0.02 head_fair
+7090414701_f 900.0 0.02 head_fair
+3090473601_f 790.0 0.02 head_fair
+5090351501_f 1215.0 0.02 head_fair
+6090473301_f 819.0 0.02 head_fair
+6090473302_f 808.0 0.02 head_fair
+7090424901_f 761.0 0.02 head_fair
+4090341801_f 1184.0 0.02 head_fair
+8090335801_f 1184.0 0.02 head_fair
+1090482301_f 744.0 0.02 head_fair
+5090472601_f 760.0 0.02 head_fair
+3090490701_f 768.72 0.02 head_fair
+5090483601_f 754.17 0.02 head_fair
+8090484101_f 760.0 0.02 head_fair
+3090561601_f 831.0 0.02 head_fair
+4090473301_f 760.0 0.02 head_fair
+9090513801_f 791.0 0.02 head_fair
+6090314501_f 1095.0 0.02 head_fair
+8090312401_f 1090.0 0.02 head_fair
+8090303001_f 1040.0 0.02 head_fair
+1090501901_f 751.0 0.02 head_fair
+7090303901_f 1105.0 0.02 head_fair
+9090162201_f 1146.0 0.02 head_fair
+6090541101_f 664.0 0.02 head_fair
+7090541001_f 667.3452204 0.02 head_fair
+7090330201_f 759.0 0.02 head_fair
+9090342701_f 737.0 0.02 head_fair
+7090434601_f 694.07 0.02 head_fair
+0090435601_f 694.91 0.02 head_fair
+2090434601_f 687.96 0.02 head_fair
+3090435401_f 683.02 0.02 head_fair
+8090510901_f 640.0 0.02 head_fair
+1090500801_f 650.5 0.02 head_fair
+3090502801_f 634.0 0.02 head_fair
+0090581401_f 625.0 0.02 head_fair
+2090485301_f 626.0 0.02 head_fair
+6090382001_f 645.0 0.02 head_fair
+7090483701_f 628.0 0.02 head_fair
+8090472401_f 604.0 0.02 head_fair
+9090441601_f 610.0 0.02 head_fair
+0090440701_f 612.0 0.02 head_fair
+3090570501_f 640.0 0.02 head_fair
+8090342801_f 628.76 0.02 head_fair
+3090343301_f 598.0 0.02 head_fair
+1090352201_f 633.0 0.02 head_fair
+1090413001_f 612.53 0.02 head_fair
+3090431001_f 633.81 0.02 head_fair
+8090425401_f 606.0 0.02 head_fair
+2090391101_f 606.0 0.02 head_fair
+2090391102_f 608.0 0.02 head_fair
+9090581001_f 681.33 0.02 head_fair
+0090442901_f 616.8 0.02 head_fair
+1090405701_f 613.5 0.02 head_fair
+2090475901_f 611.0 0.02 head_fair
+4090470001_f 612.0 0.02 head_fair
+5090445401_f 620.0 0.02 head_fair
+5090451901_f 615.0 0.02 head_fair
+8090443701_f 595.0 0.02 head_fair
+4090440002_f 606.0 0.02 head_fair
+0090473201_f 604.96 0.02 head_fair
+1090473001_f 600.0 0.02 head_fair
+0090574001_f 795.0 0.02 head_fair
+0090542001_f 637.0 0.02 head_fair
+2090411801_f 614.0 0.02 head_fair
+6090391401_p 1215.0 0.0 head_poor
+9090384001_p 1105.0 0.0 head_poor
+9090384902_p 1218.0 0.0 head_poor
+4090384501_p 1163.0 0.0 head_poor
+3090472001_p 790.0 0.0 head_poor
+9090491401_p 747.5 0.0 head_poor
+0090571401_p 798.0 0.0 head_poor
+2090494401_p 636.51 0.0 head_poor
+5090541401_p 632.0 0.0 head_poor
+6090525801_p 642.92 0.0 head_poor
+W4804363301_ 695.062561 0.02 head_fair
+W4804253201_ 600.920349 0.02 head_fair
+W4804252101_ 607.148742 0.02 head_fair
+W4804251301_ 607.234558 0.02 head_fair
+W4803193301_ 599.309692 0.02 head_fair
+W4803302301_ 609.399597 0.02 head_fair
+W4803191401_ 604.771911 0.02 head_fair
+W4803292304_ 602.254211 0.02 head_fair
+W4803292305_ 605.854492 0.02 head_fair
+W4803292303_ 609.461853 0.02 head_fair
+W4803292302_ 599.437683 0.02 head_fair
+W4803292301_ 608.403442 0.02 head_fair
+W4803292401_ 605.85791 0.02 head_fair
+W4803332303_ 617.861633 0.02 head_fair
+W4803332302_ 614.25531 0.02 head_fair
+W4803333301_ 623.590148 0.02 head_fair
+W4803333302_ 616.184021 0.02 head_fair
+W4803332301_ 613.904724 0.02 head_fair
+W4803282301_ 616.947387 0.02 head_fair
+W4703042301_ 609.390869 0.02 head_fair
+W4803333201_ 619.720214 0.02 head_fair
+W4803283103_ 601.858093 0.02 head_fair
+W4703042201_ 618.934082 0.02 head_fair
+W4803283104_ 600.197021 0.02 head_fair
+W4803283102_ 612.85205 0.02 head_fair
+W4803282402_ 613.052185 0.02 head_fair
+W4803283101_ 611.213256 0.02 head_fair
+W4803334301_ 619.116699 0.02 head_fair
+W4803281101_ 611.508483 0.02 head_fair
+W4803334401_ 619.365417 0.02 head_fair
+W4803334402_ 613.264343 0.02 head_fair
+W4803273201_ 625.147338 0.02 head_fair
+W4803223301_ 605.268371 0.02 head_fair
+W4803223302_ 604.143249 0.02 head_fair
+W4803223401_ 610.38623 0.02 head_fair
+W4803342402_ 622.854698 0.02 head_fair
+W4803272401_ 614.238037 0.02 head_fair
+W4803343102_ 613.077575 0.02 head_fair
+W4803344201_ 609.055859 0.02 head_fair
+W4803263106_ 610.136108 0.02 head_fair
+W4803263104_ 609.136108 0.02 head_fair
+W4803263103_ 607.555969 0.02 head_fair
+W4703021201_ 612.301879 0.02 head_fair
+W4703021402_ 606.292846 0.02 head_fair
+W4803261404_ 606.999511 0.02 head_fair
+W4803362305_ 610.033699 0.02 head_fair
+W4803362307_ 604.273376 0.02 head_fair
+W4803362301_ 608.824035 0.02 head_fair
+W4803362303_ 610.832397 0.02 head_fair
+W4803362302_ 604.482604 0.02 head_fair
+W4803253101_ 610.134094 0.02 head_fair
+W4803253404_ 606.977172 0.02 head_fair
+W4803253401_ 599.623645 0.02 head_fair
+W4803362101_ 610.268493 0.02 head_fair
+W4803253402_ 611.649475 0.02 head_fair
+W4803253405_ 608.937866 0.02 head_fair
+W4803361401_ 608.505737 0.02 head_fair
+W4802303201_ 607.390939 0.02 head_fair
+W4802312401_ 608.622375 0.02 head_fair
+W4802311102_ 618.935073 0.02 head_fair
+W4802311401_ 615.440612 0.02 head_fair
+W4802322202_ 631.174621 0.02 head_fair
+W4802322301_ 612.89923 0.02 head_fair
+W4702151302_ 671.177062 0.02 head_fair
+W4702151301_ 625.979614 0.02 head_fair
+W4802354101_ 742.73944 0.02 head_fair
+W4702231401_ 746.466125 0.02 head_fair
+W4702231405_ 745.015869 0.02 head_fair
+W4702231402_ 728.80806 0.02 head_fair
+W4702234103_ 743.02246 0.02 head_fair
+W4702234102_ 743.824523 0.02 head_fair
+W4702231403_ 1031.923583 0.02 head_fair
+AA457_WCRs1 1028.0 0.02 WCRs1
+AA707_WCRs1 640.0 0.02 WCRs1
+AA719_WCRs1 846.0 0.02 WCRs1
+AC565_WCRs2 1267.0 0.0 WCRs2
+AC584_WCRs1 1091.0 0.02 WCRs1
+AC592_WCRs2 625.0 0.0 WCRs2
+AC918_WCRs1 610.0 0.02 WCRs1
+AH939_WCRs1 1159.0 0.02 WCRs1
+AH940_WCRs1 1457.0 0.02 WCRs1
+AH941_WCRs1 1072.0 0.02 WCRs1
+AH942_WCRs2 1016.0 0.0 WCRs2
+AH977_WCRs1 752.0 0.02 WCRs1
+AH988_WCRs1 974.0 0.02 WCRs1
+AH996_WCRs1 789.0 0.02 WCRs1
+AJ958_WCRs1 926.0 0.02 WCRs1
+AJ959_WCRs1 682.0 0.02 WCRs1
+AJ960_WCRs1 674.0 0.02 WCRs1
+AJ962_WCRs1 812.0 0.02 WCRs1
+AP799_WCRs2 665.0 0.0 WCRs2
+AP808_WCRs1 775.0 0.02 WCRs1
+AS868_WCRs1 812.0 0.02 WCRs1
+AZ001_WCRs1 725.0 0.02 WCRs1
+AZ002_WCRs1 619.0 0.02 WCRs1
+AZ004_WCRs1 625.0 0.02 WCRs1
+AZ005_WCRs1 630.0 0.02 WCRs1
+AZ006_WCRs1 648.0 0.02 WCRs1
+AZ007_WCRs1 631.0 0.02 WCRs1
+AZ008_WCRs1 647.0 0.02 WCRs1
+AZ010_WCRs1 659.0 0.02 WCRs1
+AZ771_WCRs1 630.0 0.02 WCRs1
+AZ773_WCRs1 630.0 0.02 WCRs1
+AZ776_WCRs1 789.0 0.02 WCRs1
+AZ792_WCRs1 630.0 0.02 WCRs1
+AZ797_WCRs1 680.0 0.02 WCRs1
+AZ798_WCRs2 694.0 0.0 WCRs2
+AZ919_WCRs1 648.0 0.02 WCRs1
+AZ924_WCRs1 686.0 0.02 WCRs1
+AZ926_WCRs1 723.0 0.02 WCRs1
+AZ927_WCRs1 748.0 0.02 WCRs1
+AZ928_WCRs1 872.0 0.02 WCRs1
+AZ929_WCRs2 635.0 0.0 WCRs2
+AZ938_WCRs1 617.0 0.02 WCRs1
+AZ939_WCRs1 1499.0 0.02 WCRs1
+AZ944_WCRs1 824.0 0.02 WCRs1
+AZ945_WCRs2 1130.0 0.0 WCRs2
+AZ947_WCRs1 1421.0 0.02 WCRs1
+AZ948_WCRs1 1417.0 0.02 WCRs1
+BF120_WCRs1 1243.0 0.02 WCRs1
+BF121_WCRs1 1201.0 0.02 WCRs1
+BQ235_WCRs1 1281.0 0.02 WCRs1
+BQ236_WCRs1 1286.0 0.02 WCRs1
+BQ239_WCRs1 643.0 0.02 WCRs1
+BQ385_WCRs1 1449.0 0.02 WCRs1
+CB733_WCRs2 969.0 0.0 WCRs2
+CC341_WCRs1 1407.0 0.02 WCRs1
+CE969_WCRs1 1435.0 0.02 WCRs1
+CF573_WCRs1 761.0 0.02 WCRs1
+CH165_WCRs1 1307.0 0.02 WCRs1
+CI207_WCRs1 826.0 0.02 WCRs1
+CI208_WCRs1 647.0 0.02 WCRs1
+CI209_WCRs1 646.0 0.02 WCRs1
+CI211_WCRs1 866.0 0.02 WCRs1
+CI555_WCRs1 732.0 0.02 WCRs1
+CI855_WCRs1 1165.0 0.02 WCRs1
+CJ052_WCRs2 1091.0 0.0 WCRs2
+CJ055_WCRs2 919.0 0.0 WCRs2
+CJ064_WCRs1 906.0 0.02 WCRs1
+CJ552_WCRs1 996.0 0.02 WCRs1
+CJ554_WCRs2 923.0 0.0 WCRs2
+CJ556_WCRs2 1024.0 0.0 WCRs2
+CJ557_WCRs1 805.0 0.02 WCRs1
+CJ562_WCRs1 815.0 0.02 WCRs1
+CN296_WCRs1 1154.1 0.02 WCRs1
+CN297_WCRs1 1154.0 0.02 WCRs1
+CN298_WCRs1 1536.0 0.02 WCRs1
+CN316_WCRs2 1143.0 0.0 WCRs2
+CN730_WCRs1 1490.0 0.02 WCRs1
+CN731_WCRs1 683.0 0.02 WCRs1
+CN735_WCRs1 634.0 0.02 WCRs1
+CN991_WCRs1 1499.0 0.02 WCRs1
+CN992_WCRs1 683.0 0.02 WCRs1
+CO156_WCRs1 1095.0 0.02 WCRs1
+CO170_WCRs2 996.0 0.0 WCRs2
+CS235_WCRs1 1035.0 0.02 WCRs1
+CS293_WCRs1 763.0 0.02 WCRs1
+CW619_WCRs1 864.0 0.02 WCRs1
+CW625_WCRs1 1398.0 0.02 WCRs1
+CX533_WCRs1 579.0 0.02 WCRs1
+CX535_WCRs2 604.0 0.0 WCRs2
+CX947_WCRs2 988.0 0.0 WCRs2
+CX948_WCRs1 770.0 0.02 WCRs1
+CX954_WCRs2 554.0 0.0 WCRs2
+CX955_WCRs1 659.0 0.02 WCRs1
+CY053_WCRs1 642.0 0.02 WCRs1
+CY620_WCRs1 647.0 0.02 WCRs1
+CY624_WCRs1 674.0 0.02 WCRs1
+CY720_WCRs1 1103.0 0.02 WCRs1
+CZ221_WCRs1 558.0 0.02 WCRs1
+CZ222_WCRs2 674.0 0.0 WCRs2
+CZ228_WCRs1 754.0 0.02 WCRs1
+DA234_WCRs1 644.0 0.02 WCRs1
+DA238_WCRs1 796.0 0.02 WCRs1
+DB470_WCRs1 893.0 0.02 WCRs1
+DB471_WCRs2 1011.0 0.0 WCRs2
+DB472_WCRs2 1114.0 0.0 WCRs2
+DC045_WCRs1 763.0 0.02 WCRs1
+DC454_WCRs1 769.0 0.02 WCRs1
+DC859_WCRs1 660.0 0.02 WCRs1
+DC863_WCRs1 757.0 0.02 WCRs1
+DC865_WCRs1 617.0 0.02 WCRs1
+DC869_WCRs2 808.0 0.0 WCRs2
+DC870_WCRs1 627.0 0.02 WCRs1
+DD019_WCRs1 761.0 0.02 WCRs1
+DD021_WCRs1 766.0 0.02 WCRs1
+DD024_WCRs1 613.0 0.02 WCRs1
+DD025_WCRs1 644.0 0.02 WCRs1
+DD036_WCRs2 843.0 0.0 WCRs2
+DD639_WCRs1 1375.0 0.02 WCRs1
+DE187_WCRs1 676.0 0.02 WCRs1
+DE447_WCRs1 1111.0 0.02 WCRs1
+DE479_WCRs1 1089.0 0.02 WCRs1
+DE482_WCRs1 770.0 0.02 WCRs1
+DE483_WCRs1 769.0 0.02 WCRs1
+DE484_WCRs1 764.0 0.02 WCRs1
+DE498_WCRs1 778.0 0.02 WCRs1
+DE836_WCRs2 1053.0 0.0 WCRs2
+DE839_WCRs1 890.0 0.02 WCRs1
+DF203_WCRs1 793.0 0.02 WCRs1
+DN933_WCRs1 1050.0 0.02 WCRs1
+DO167_WCRs1 1466.0 0.02 WCRs1
+DO181_WCRs1 1537.0 0.02 WCRs1
+DP993_WCRs2 890.0 0.0 WCRs2
+DQ098_WCRs1 753.0 0.02 WCRs1
+DQ101_WCRs1 854.0 0.02 WCRs1
+DQ103_WCRs1 750.0 0.02 WCRs1
+DQ106_WCRs1 780.0 0.02 WCRs1
+DQ234_WCRs1 1479.0 0.02 WCRs1
+DS066_WCRs1 1686.0 0.02 WCRs1
+DU129_WCRs1 1074.0 0.02 WCRs1
+DU131_WCRs1 1705.0 0.02 WCRs1
+DU132_WCRs1 1233.0 0.02 WCRs1
+DU136_WCRs1 1010.0 0.02 WCRs1
+DU140_WCRs1 1280.0 0.02 WCRs1
+DU141_WCRs1 1162.0 0.02 WCRs1
+DU143_WCRs1 1650.0 0.02 WCRs1
+DU145_WCRs1 1046.0 0.02 WCRs1
+DV311_WCRs1 1048.0 0.02 WCRs1
+DV343_WCRs1 1010.0 0.02 WCRs1
+EC067_WCRs1 1356.0 0.02 WCRs1
+EJ756_WCRs2 1397.0 0.0 WCRs2
+EM675_WCRs1 1531.0 0.02 WCRs1
+EM690_WCRs2 1540.0 0.0 WCRs2
+EM691_WCRs1 1539.0 0.02 WCRs1
+EP034_WCRs1 731.0 0.02 WCRs1
+EP056_WCRs1 1302.0 0.02 WCRs1
+EQ189_WCRs1 620.0 0.02 WCRs1
+FD080_WCRs1 607.0 0.02 WCRs1
+FF026_WCRs1 707.0 0.02 WCRs1
+FF101_WCRs2 576.0 0.0 WCRs2
+FF361_WCRs1 794.0 0.02 WCRs1
+FF650_WCRs1 1416.0 0.02 WCRs1
+FF656_WCRs1 640.0 0.02 WCRs1
+FI581_WCRs1 1419.0 0.02 WCRs1
+FI583_WCRs1 1417.5 0.02 WCRs1
+FJ541_WCRs1 866.0 0.02 WCRs1
+FK790_WCRs1 1083.0 0.02 WCRs1
+FL082_WCRs1 618.0 0.02 WCRs1
+FL083_WCRs1 721.0 0.02 WCRs1
+FL084_WCRs1 728.0 0.02 WCRs1
+FL086_WCRs1 810.0 0.02 WCRs1
+FL087_WCRs1 644.0 0.02 WCRs1
+FL089_WCRs1 756.0 0.02 WCRs1
+FL090_WCRs1 650.0 0.02 WCRs1
+FL095_WCRs2 913.0 0.0 WCRs2
+FL096_WCRs1 668.0 0.02 WCRs1
+FL101_WCRs1 668.0 0.02 WCRs1
+FL102_WCRs1 796.0 0.02 WCRs1
+FN385_WCRs1 619.0 0.02 WCRs1
+FO176_WCRs1 794.0 0.02 WCRs1
+FO178_WCRs1 811.0 0.02 WCRs1
+FQ151_WCRs1 1416.0 0.02 WCRs1
+FQ152_WCRs2 1289.0 0.0 WCRs2
+FQ153_WCRs2 1303.0 0.0 WCRs2
+FQ155_WCRs2 1220.0 0.0 WCRs2
+FQ156_WCRs1 1415.0 0.02 WCRs1
+FQ159_WCRs1 1440.0 0.02 WCRs1
+FQ161_WCRs1 1323.0 0.02 WCRs1
+FQ163_WCRs1 1212.0 0.02 WCRs1
+FQ165_WCRs2 1207.0 0.0 WCRs2
+FQ166_WCRs1 1452.0 0.02 WCRs1
+FQ169_WCRs2 1399.0 0.0 WCRs2
+FQ170_WCRs1 1434.0 0.02 WCRs1
+FQ173_WCRs1 1362.0 0.02 WCRs1
+FQ564_WCRs2 1574.0 0.0 WCRs2
+FS802_WCRs1 1151.0 0.02 WCRs1
+FT315_WCRs1 1079.0 0.02 WCRs1
+FT327_WCRs2 1087.0 0.0 WCRs2
+FU871_WCRs1 1199.0 0.02 WCRs1
+FV073_WCRs2 1136.0 0.0 WCRs2
+FW586_WCRs2 720.0 0.0 WCRs2
+FY509_WCRs2 1555.0 0.0 WCRs2
+FY997_WCRs2 1497.0 0.0 WCRs2
+GD023_WCRs2 903.0 0.0 WCRs2
+GD039_WCRs1 960.0 0.02 WCRs1
+GD067_WCRs1 771.0 0.02 WCRs1
+GD069_WCRs1 684.0 0.02 WCRs1
+GD070_WCRs2 1112.0 0.0 WCRs2
+GD141_WCRs2 1401.0 0.0 WCRs2
+GD151_WCRs1 813.0 0.02 WCRs1
+GD152_WCRs1 714.0 0.02 WCRs1
+GD153_WCRs1 652.0 0.02 WCRs1
+GD154_WCRs1 744.0 0.02 WCRs1
+GD155_WCRs1 797.0 0.02 WCRs1
+GD156_WCRs1 1125.0 0.02 WCRs1
+GD157_WCRs1 1396.0 0.02 WCRs1
+GD158_WCRs1 822.0 0.02 WCRs1
+GD510_WCRs1 1478.0 0.02 WCRs1
+GD511_WCRs1 1231.0 0.02 WCRs1
+GD673_WCRs1 1420.0 0.02 WCRs1
+GD674_WCRs1 615.0 0.02 WCRs1
+GD675_WCRs1 728.0 0.02 WCRs1
+GD676_WCRs1 709.0 0.02 WCRs1
+GD677_WCRs1 667.0 0.02 WCRs1
+GD857_WCRs2 901.0 0.0 WCRs2
+GD860_WCRs2 864.0 0.0 WCRs2
+GF879_WCRs1 885.0 0.02 WCRs1
+GF881_WCRs1 891.0 0.02 WCRs1
+GL251_WCRs1 637.0 0.02 WCRs1
+GL253_WCRs1 671.0 0.02 WCRs1
+GL255_WCRs1 624.0 0.02 WCRs1
+GL259_WCRs1 611.0 0.02 WCRs1
+GL508_WCRs1 650.0 0.02 WCRs1
+GT422_WCRs2 621.0 0.0 WCRs2
+GT423_WCRs1 596.0 0.02 WCRs1
+GT432_WCRs2 1696.0 0.0 WCRs2
+GU924_WCRs1 811.0 0.02 WCRs1
+GU937_WCRs1 626.0 0.02 WCRs1
+GU940_WCRs1 1164.0 0.02 WCRs1
+GU945_WCRs1 672.0 0.02 WCRs1
+GZ827_WCRs1 1548.0 0.02 WCRs1
+HC955_WCRs1 1504.0 0.02 WCRs1
+HI921_WCRs2 832.0 0.0 WCRs2
+HJ463_WCRs1 878.0 0.02 WCRs1
+HK001_WCRs1 1008.0 0.02 WCRs1
+HK160_WCRs1 1678.0 0.02 WCRs1
+HK226_WCRs2 866.0 0.0 WCRs2
+HK296_WCRs1 885.0 0.02 WCRs1
+HK299_WCRs1 807.0 0.02 WCRs1
+HK300_WCRs1 808.0 0.02 WCRs1
+HK421_WCRs1 1691.0 0.02 WCRs1
+HO283_WCRs1 1090.0 0.02 WCRs1
+HO284_WCRs1 1091.0 0.02 WCRs1
+HO285_WCRs1 1094.0 0.02 WCRs1
+HO293_WCRs1 1083.0 0.02 WCRs1
+HO294_WCRs1 1083.0 0.02 WCRs1
+HO304_WCRs1 1018.0 0.02 WCRs1
+HP517_WCRs1 708.0 0.02 WCRs1
+HP528_WCRs1 630.0 0.02 WCRs1
+HP556_WCRs1 697.0 0.02 WCRs1
+HP558_WCRs1 621.0 0.02 WCRs1
+HP559_WCRs1 644.0 0.02 WCRs1
+HP560_WCRs1 615.0 0.02 WCRs1
+HR238_WCRs1 718.0 0.02 WCRs1
+HV215_WCRs1 620.0 0.02 WCRs1
+HV216_WCRs1 623.0 0.02 WCRs1
+HV222_WCRs1 781.0 0.02 WCRs1
+HV223_WCRs1 761.0 0.02 WCRs1
+HV224_WCRs1 645.0 0.02 WCRs1
+HV228_WCRs1 729.0 0.02 WCRs1
+HV234_WCRs2 933.0 0.0 WCRs2
+HV240_WCRs1 1140.0 0.02 WCRs1
+HV273_WCRs1 1695.0 0.02 WCRs1
+HV418_WCRs2 1373.0 0.0 WCRs2
+HV433_WCRs1 759.0 0.02 WCRs1
+HV447_WCRs1 1012.0 0.02 WCRs1
+HV451_WCRs1 763.0 0.02 WCRs1
+HX553_WCRs1 815.0 0.02 WCRs1
+HX566_WCRs1 1494.0 0.02 WCRs1
+HY802_WCRs1 1497.0 0.02 WCRs1
+HY803_WCRs1 1479.0 0.02 WCRs1
+HY804_WCRs1 1490.0 0.02 WCRs1
+HY805_WCRs1 1475.0 0.02 WCRs1
+HY806_WCRs2 1443.0 0.0 WCRs2
+HY807_WCRs1 1258.0 0.02 WCRs1
+HY808_WCRs1 1677.0 0.02 WCRs1
+HY809_WCRs2 1410.0 0.0 WCRs2
+HY810_WCRs1 1482.0 0.02 WCRs1
+HY811_WCRs1 1538.0 0.02 WCRs1
+HY812_WCRs2 1344.0 0.0 WCRs2
+HY813_WCRs1 1641.0 0.02 WCRs1
+HY819_WCRs1 1233.0 0.02 WCRs1
+HY822_WCRs1 1065.0 0.02 WCRs1
+HY825_WCRs2 1267.0 0.0 WCRs2
+HZ947_WCRs1 867.0 0.02 WCRs1
+IA326_WCRs1 1209.0 0.02 WCRs1
+IB619_WCRs1 770.0 0.02 WCRs1
+IB623_WCRs1 718.0 0.02 WCRs1
+IB648_WCRs1 1693.0 0.02 WCRs1
+IB661_WCRs1 1424.0 0.02 WCRs1
+IB883_WCRs1 865.0 0.02 WCRs1
+IB887_WCRs1 1416.0 0.02 WCRs1
+IB888_WCRs1 704.0 0.02 WCRs1
+IB956_WCRs1 755.0 0.02 WCRs1
+IB980_WCRs1 765.0 0.02 WCRs1
+IC025_WCRs1 757.0 0.02 WCRs1
+IC026_WCRs1 653.0 0.02 WCRs1
+IC708_WCRs1 790.0 0.02 WCRs1
+IC710_WCRs1 786.0 0.02 WCRs1
+IC729_WCRs1 648.0 0.02 WCRs1
+IK591_WCRs1 946.0 0.02 WCRs1
+IK633_WCRs2 966.0 0.0 WCRs2
+IQ939_WCRs1 1463.0 0.02 WCRs1
+IQ999_WCRs1 1443.0 0.02 WCRs1
+IW834_WCRs1 1447.0 0.02 WCRs1
+IW910_WCRs1 1140.0 0.02 WCRs1
+JB350_WCRs1 986.0 0.02 WCRs1
+JB352_WCRs1 622.0 0.02 WCRs1
+JB353_WCRs1 640.0 0.02 WCRs1
+JB982_WCRs2 1396.0 0.0 WCRs2
+KK196_WCRs1 1245.0 0.02 WCRs1
+KK198_WCRs1 791.0 0.02 WCRs1
+KK199_WCRs1 1073.0 0.02 WCRs1
+KK200_WCRs1 1139.0 0.02 WCRs1
+KK201_WCRs1 1535.0 0.02 WCRs1
+KK203_WCRs1 1122.0 0.02 WCRs1
+KK209_WCRs1 1681.0 0.02 WCRs1
+KK210_WCRs1 1681.0 0.02 WCRs1
+KK211_WCRs1 1203.0 0.02 WCRs1
+KK214_WCRs1 1216.0 0.02 WCRs1
+KK216_WCRs2 1205.0 0.0 WCRs2
+KK219_WCRs2 1383.0 0.0 WCRs2
+KK220_WCRs1 1477.0 0.02 WCRs1
+KK224_WCRs1 597.0 0.02 WCRs1
+KK232_WCRs1 619.0 0.02 WCRs1
+KL106_WCRs1 1529.0 0.02 WCRs1
+KL109_WCRs1 608.0 0.02 WCRs1
+KL111_WCRs1 598.0 0.02 WCRs1
+KL115_WCRs1 684.0 0.02 WCRs1
+KL116_WCRs1 674.0 0.02 WCRs1
+KL134_WCRs1 965.0 0.02 WCRs1
+KL142_WCRs2 865.0 0.0 WCRs2
+KN062_WCRs1 1066.0 0.02 WCRs1
+KN135_WCRs1 1525.0 0.02 WCRs1
+KN136_WCRs1 951.0 0.02 WCRs1
+KN137_WCRs1 809.0 0.02 WCRs1
+KN146_WCRs1 1396.0 0.02 WCRs1
+KN262_WCRs1 1546.0 0.02 WCRs1
+KN274_WCRs1 921.0 0.02 WCRs1
+KN275_WCRs1 907.0 0.02 WCRs1
+KN276_WCRs1 1113.0 0.02 WCRs1
+KN304_WCRs1 896.0 0.02 WCRs1
+KN405_WCRs1 901.0 0.02 WCRs1
+KN691_WCRs1 825.0 0.02 WCRs1
+KN697_WCRs1 1011.0 0.02 WCRs1
+KN903_WCRs1 601.0 0.02 WCRs1
+KN905_WCRs2 1278.0 0.0 WCRs2
+KN909_WCRs1 1075.0 0.02 WCRs1
+KN910_WCRs1 1080.0 0.02 WCRs1
+KN912_WCRs1 610.0 0.02 WCRs1
+KN913_WCRs2 1451.0 0.0 WCRs2
+KN914_WCRs1 1189.0 0.02 WCRs1
+KN916_WCRs2 1126.0 0.0 WCRs2
+KN918_WCRs1 1515.0 0.02 WCRs1
+KP821_WCRs2 895.0 0.0 WCRs2
+KP830_WCRs1 1492.0 0.02 WCRs1
+KR252_WCRs1 1177.0 0.02 WCRs1
+KT006_WCRs1 860.0 0.02 WCRs1
+KT022_WCRs1 638.0 0.02 WCRs1
+KT024_WCRs2 625.0 0.0 WCRs2
+KT025_WCRs1 692.0 0.02 WCRs1
+KT026_WCRs1 883.0 0.02 WCRs1
+KT027_WCRs1 706.0 0.02 WCRs1
+KT028_WCRs1 593.0 0.02 WCRs1
+KT030_WCRs1 602.0 0.02 WCRs1
+KT031_WCRs1 647.0 0.02 WCRs1
+KT033_WCRs1 651.0 0.02 WCRs1
+KT034_WCRs2 619.0 0.0 WCRs2
+KT038_WCRs1 653.0 0.02 WCRs1
+KT039_WCRs1 662.0 0.02 WCRs1
+KT041_WCRs1 683.0 0.02 WCRs1
+KT043_WCRs1 668.0 0.02 WCRs1
+KT044_WCRs1 647.0 0.02 WCRs1
+KT045_WCRs1 721.0 0.02 WCRs1
+KT046_WCRs1 632.0 0.02 WCRs1
+KT047_WCRs1 674.0 0.02 WCRs1
+KT048_WCRs1 862.0 0.02 WCRs1
+KT050_WCRs2 778.0 0.0 WCRs2
+KT053_WCRs1 1051.0 0.02 WCRs1
+KT055_WCRs1 597.0 0.02 WCRs1
+KT056_WCRs1 603.0 0.02 WCRs1
+KV410_WCRs1 999.0 0.02 WCRs1
+LA486_WCRs1 1108.0 0.02 WCRs1
+LA495_WCRs1 793.0 0.02 WCRs1
+LA497_WCRs1 723.0 0.02 WCRs1
+LA499_WCRs1 813.0 0.02 WCRs1
+LA607_WCRs1 1673.7 0.02 WCRs1
+LA714_WCRs1 651.0 0.02 WCRs1
+LB003_WCRs1 804.0 0.02 WCRs1
+LB005_WCRs1 1021.0 0.02 WCRs1
+LB013_WCRs1 682.0 0.02 WCRs1
+LB390_WCRs1 764.0 0.02 WCRs1
+LB396_WCRs1 999.0 0.02 WCRs1
+LB398_WCRs1 952.0 0.02 WCRs1
+LB400_WCRs1 833.0 0.02 WCRs1
+LB405_WCRs1 785.0 0.02 WCRs1
+LB406_WCRs1 1419.0 0.02 WCRs1
+LB757_WCRs1 831.0 0.02 WCRs1
+LB761_WCRs1 1421.0 0.02 WCRs1
+LB763_WCRs1 682.0 0.02 WCRs1
+LB768_WCRs1 804.0 0.02 WCRs1
+LC403_WCRs1 929.0 0.02 WCRs1
+LC408_WCRs1 688.0 0.02 WCRs1
+LC410_WCRs1 683.0 0.02 WCRs1
+LC411_WCRs2 726.0 0.0 WCRs2
+LC741_WCRs1 662.0 0.02 WCRs1
+LC903_WCRs2 1515.0 0.0 WCRs2
+LC904_WCRs1 1070.0 0.02 WCRs1
+LC915_WCRs2 1229.0 0.0 WCRs2
+LC916_WCRs1 1495.0 0.02 WCRs1
+LC948_WCRs1 723.0 0.02 WCRs1
+LC951_WCRs2 681.0 0.0 WCRs2
+LC956_WCRs1 700.0 0.02 WCRs1
+LC960_WCRs1 1014.0 0.02 WCRs1
+LD208_WCRs2 1438.0 0.0 WCRs2
+LD391_WCRs1 889.0 0.02 WCRs1
+LD400_WCRs1 630.0 0.02 WCRs1
+LD822_WCRs1 624.0 0.02 WCRs1
+LD828_WCRs1 606.0 0.02 WCRs1
+LD829_WCRs1 663.0 0.02 WCRs1
+LD838_WCRs1 787.0 0.02 WCRs1
+LE366_WCRs1 898.0 0.02 WCRs1
+LE369_WCRs2 1038.0 0.0 WCRs2
+LE372_WCRs1 662.0 0.02 WCRs1
+LE373_WCRs1 1011.0 0.02 WCRs1
+LE379_WCRs1 597.0 0.02 WCRs1
+LE381_WCRs1 740.0 0.02 WCRs1
+LE385_WCRs1 601.0 0.02 WCRs1
+LE386_WCRs1 800.0 0.02 WCRs1
+LE659_WCRs1 1355.0 0.02 WCRs1
+LE690_WCRs1 1686.0 0.02 WCRs1
+LE853_WCRs2 779.0 0.0 WCRs2
+LE859_WCRs2 905.0 0.0 WCRs2
+LE866_WCRs1 830.0 0.02 WCRs1
+LF379_WCRs1 851.0 0.02 WCRs1
+LF570_WCRs1 1148.0 0.02 WCRs1
+LF571_WCRs1 1149.0 0.02 WCRs1
+LF597_WCRs1 739.0 0.02 WCRs1
+LF878_WCRs2 1409.0 0.0 WCRs2
+LF890_WCRs2 1148.0 0.0 WCRs2
+LF891_WCRs1 1104.0 0.02 WCRs1
+LF909_WCRs1 628.0 0.02 WCRs1
+LH527_WCRs2 810.0 0.0 WCRs2
+LH532_WCRs1 684.0 0.02 WCRs1
+LH559_WCRs1 671.0 0.02 WCRs1
+LH571_WCRs1 955.0 0.02 WCRs1
+LH573_WCRs1 980.0 0.02 WCRs1
+LL409_WCRs1 604.0 0.02 WCRs1
+LL440_WCRs1 998.0 0.02 WCRs1
+LN660_WCRs2 705.0 0.0 WCRs2
+LV304_WCRs1 1324.0 0.02 WCRs1
+LV307_WCRs1 1492.0 0.02 WCRs1
+LV323_WCRs1 1413.0 0.02 WCRs1
+LV324_WCRs1 881.0 0.02 WCRs1
+LV325_WCRs1 905.0 0.02 WCRs1
+LX238_WCRs1 627.0 0.02 WCRs1
+LX239_WCRs1 761.0 0.02 WCRs1
+LX261_WCRs1 623.0 0.02 WCRs1
+LX262_WCRs2 1134.0 0.0 WCRs2
+LZ052_WCRs1 1213.0 0.02 WCRs1
+LZ054_WCRs1 684.0 0.02 WCRs1
+LZ056_WCRs1 1019.0 0.02 WCRs1
+LZ058_WCRs1 992.0 0.02 WCRs1
+LZ059_WCRs1 1220.0 0.02 WCRs1
+LZ060_WCRs1 1218.0 0.02 WCRs1
+LZ061_WCRs1 1220.0 0.02 WCRs1
+LZ062_WCRs1 1253.0 0.02 WCRs1
+LZ069_WCRs2 895.0 0.0 WCRs2
+MB603_WCRs1 626.0 0.02 WCRs1
+MB618_WCRs1 686.0 0.02 WCRs1
+MB626_WCRs1 936.0 0.02 WCRs1
+MB629_WCRs1 677.0 0.02 WCRs1
+MB630_WCRs1 976.0 0.02 WCRs1
+MD362_WCRs2 732.0 0.0 WCRs2
+MD364_WCRs1 614.0 0.02 WCRs1
+MD371_WCRs1 673.0 0.02 WCRs1
+MD376_WCRs2 897.0 0.0 WCRs2
+MD393_WCRs1 600.0 0.02 WCRs1
+MD716_WCRs1 675.0 0.02 WCRs1
+MD722_WCRs1 611.0 0.02 WCRs1
+MD729_WCRs1 657.0 0.02 WCRs1
+MD737_WCRs2 586.0 0.0 WCRs2
+MF501_WCRs1 631.0 0.02 WCRs1
+MF516_WCRs1 770.0 0.02 WCRs1
+MF524_WCRs1 830.0 0.02 WCRs1
+MF525_WCRs1 762.0 0.02 WCRs1
+MF549_WCRs1 623.0 0.02 WCRs1
+MF965_WCRs1 635.0 0.02 WCRs1
+MK301_WCRs1 1231.0 0.02 WCRs1
+MN758_WCRs1 775.0 0.02 WCRs1
+MN759_WCRs1 1014.0 0.02 WCRs1
+MN760_WCRs1 1409.0 0.02 WCRs1
+MP905_WCRs1 1130.0 0.02 WCRs1
+MP908_WCRs2 1183.0 0.0 WCRs2
+MP910_WCRs1 1075.0 0.02 WCRs1
+MP915_WCRs1 1271.0 0.02 WCRs1
+MP916_WCRs1 1286.0 0.02 WCRs1
+MP922_WCRs1 1063.0 0.02 WCRs1
+MP925_WCRs1 1105.0 0.02 WCRs1
+MP932_WCRs1 1055.0 0.02 WCRs1
+MP934_WCRs1 1689.0 0.02 WCRs1
+MP940_WCRs2 1185.0 0.0 WCRs2
+MP942_WCRs1 1251.0 0.02 WCRs1
+MP943_WCRs1 1132.0 0.02 WCRs1
+MP944_WCRs2 613.0 0.0 WCRs2
+MP945_WCRs1 1085.0 0.02 WCRs1
+MP946_WCRs1 1112.0 0.02 WCRs1
+MP948_WCRs2 1311.0 0.0 WCRs2
+MP949_WCRs1 1405.0 0.02 WCRs1
+MP966_WCRs1 884.0 0.02 WCRs1
+MP968_WCRs1 1668.0 0.02 WCRs1
+MQ477_WCRs1 1169.0 0.02 WCRs1
+MQ482_WCRs2 1270.0 0.0 WCRs2
+MV912_WCRs1 1541.0 0.02 WCRs1
+MW912_WCRs1 632.0 0.02 WCRs1
+MW913_WCRs2 940.0 0.0 WCRs2
+MW920_WCRs1 989.0 0.02 WCRs1
+MW937_WCRs1 773.0 0.02 WCRs1
+MZ691_WCRs1 768.0 0.02 WCRs1
+MZ694_WCRs1 1121.0 0.02 WCRs1
+MZ698_WCRs1 1084.0 0.02 WCRs1
+MZ699_WCRs2 1551.0 0.0 WCRs2
+NA011_WCRs1 821.0 0.02 WCRs1
+NA012_WCRs1 647.0 0.02 WCRs1
+NA016_WCRs1 694.0 0.02 WCRs1
+NB554_WCRs2 695.0 0.0 WCRs2
+NB556_WCRs1 617.0 0.02 WCRs1
+NB557_WCRs1 814.0 0.02 WCRs1
+NB560_WCRs1 694.0 0.02 WCRs1
+NB561_WCRs2 1019.0 0.0 WCRs2
+NB565_WCRs1 608.0 0.02 WCRs1
+NB566_WCRs1 603.0 0.02 WCRs1
+NB572_WCRs1 609.0 0.02 WCRs1
+NB573_WCRs1 650.0 0.02 WCRs1
+NB575_WCRs1 908.0 0.02 WCRs1
+NB576_WCRs1 703.0 0.02 WCRs1
+NB579_WCRs1 677.0 0.02 WCRs1
+NB580_WCRs1 648.0 0.02 WCRs1
+NB586_WCRs1 710.0 0.02 WCRs1
+NB587_WCRs1 616.0 0.02 WCRs1
+NB588_WCRs1 636.0 0.02 WCRs1
+NB589_WCRs1 627.0 0.02 WCRs1
+NB590_WCRs1 623.0 0.02 WCRs1
+NB591_WCRs1 667.0 0.02 WCRs1
+NB594_WCRs1 742.0 0.02 WCRs1
+NC358_WCRs1 720.0 0.02 WCRs1
+NC966_WCRs2 1477.0 0.0 WCRs2
+NC975_WCRs1 727.0 0.02 WCRs1
+NC982_WCRs1 720.0 0.02 WCRs1
+NC990_WCRs2 970.0 0.0 WCRs2
+NC992_WCRs2 1116.0 0.0 WCRs2
+ND204_WCRs1 634.0 0.02 WCRs1
+NE247_WCRs1 1030.0 0.02 WCRs1
+NE249_WCRs1 686.0 0.02 WCRs1
+NE250_WCRs1 776.0 0.02 WCRs1
+NE252_WCRs1 640.0 0.02 WCRs1
+NE253_WCRs1 673.0 0.02 WCRs1
+NE258_WCRs1 991.0 0.02 WCRs1
+NE261_WCRs1 768.0 0.02 WCRs1
+NE432_WCRs1 1673.0 0.02 WCRs1
+NE436_WCRs1 1208.0 0.02 WCRs1
+NE440_WCRs1 842.0 0.02 WCRs1
+NE446_WCRs1 1492.0 0.02 WCRs1
+NE447_WCRs1 1493.0 0.02 WCRs1
+NE449_WCRs1 1140.0 0.02 WCRs1
+NE452_WCRs1 949.0 0.02 WCRs1
+NE503_WCRs1 834.0 0.02 WCRs1
+NE504_WCRs1 656.0 0.02 WCRs1
+NE514_WCRs1 634.0 0.02 WCRs1
+NE515_WCRs1 970.0 0.02 WCRs1
+NE786_WCRs1 778.0 0.02 WCRs1
+NE790_WCRs1 727.0 0.02 WCRs1
+NG185_WCRs1 1393.0 0.02 WCRs1
+NK912_WCRs1 787.0 0.02 WCRs1
+NK924_WCRs1 1093.0 0.02 WCRs1
+NL866_WCRs1 1095.0 0.02 WCRs1
+NL867_WCRs1 650.0 0.02 WCRs1
+NL881_WCRs2 955.0 0.0 WCRs2
+NL892_WCRs1 950.0 0.02 WCRs1
+NL893_WCRs2 1272.0 0.0 WCRs2
+NN989_WCRs1 827.0 0.02 WCRs1
+NN992_WCRs1 604.0 0.02 WCRs1
+NN997_WCRs2 1073.0 0.0 WCRs2
+NR060_WCRs1 1685.0 0.02 WCRs1
+NR064_WCRs1 1688.0 0.02 WCRs1
+NS131_WCRs1 817.0 0.02 WCRs1
+NS132_WCRs1 1109.0 0.02 WCRs1
+NS136_WCRs1 840.0 0.02 WCRs1
+NS147_WCRs1 1071.0 0.02 WCRs1
+NS149_WCRs1 1129.0 0.02 WCRs1
+NS583_WCRs1 1696.0 0.02 WCRs1
+NT491_WCRs1 750.0 0.02 WCRs1
+NT492_WCRs1 678.0 0.02 WCRs1
+NT709_WCRs1 707.0 0.02 WCRs1
+NT715_WCRs1 626.0 0.02 WCRs1
+NT723_WCRs1 676.0 0.02 WCRs1
+NU591_WCRs1 650.0 0.02 WCRs1
+NX535_WCRs2 805.0 0.0 WCRs2
+NX563_WCRs1 708.0 0.02 WCRs1
+NX577_WCRs1 608.0 0.02 WCRs1
+NY159_WCRs1 1693.0 0.02 WCRs1
+OC733_WCRs1 727.0 0.02 WCRs1
+OC736_WCRs1 748.0 0.02 WCRs1
+OC771_WCRs2 1473.0 0.0 WCRs2
+OF202_WCRs1 627.0 0.02 WCRs1
+OF230_WCRs2 1012.0 0.0 WCRs2
+OF250_WCRs2 1536.0 0.0 WCRs2
+OF264_WCRs1 958.0 0.02 WCRs1
+OF267_WCRs2 1115.0 0.0 WCRs2
+OF285_WCRs2 726.0 0.0 WCRs2
+OF286_WCRs1 684.0 0.02 WCRs1
+OI865_WCRs1 931.0 0.02 WCRs1
+OJ052_WCRs2 1446.0 0.0 WCRs2
+OJ056_WCRs1 621.0 0.02 WCRs1
+OJ061_WCRs1 710.0 0.02 WCRs1
+OJ062_WCRs1 639.0 0.02 WCRs1
+OJ332_WCRs1 973.0 0.02 WCRs1
+OJ402_WCRs1 1011.0 0.02 WCRs1
+OJ411_WCRs1 979.0 0.02 WCRs1
+OJ416_WCRs1 974.0 0.02 WCRs1
+OK138_WCRs2 1565.0 0.0 WCRs2
+OK693_WCRs2 798.0 0.0 WCRs2
+OK695_WCRs2 644.0 0.0 WCRs2
+OK706_WCRs1 682.0 0.02 WCRs1
+OK711_WCRs1 1145.0 0.02 WCRs1
+OM240_WCRs1 711.0 0.02 WCRs1
+OM484_WCRs1 697.0 0.02 WCRs1
+OM493_WCRs1 821.0 0.02 WCRs1
+OO387_WCRs1 1702.0 0.02 WCRs1
+OP610_WCRs1 1008.0 0.02 WCRs1
+OP625_WCRs1 881.0 0.02 WCRs1
+OP643_WCRs1 973.0 0.02 WCRs1
+OQ069_WCRs1 979.0 0.02 WCRs1
+OR410_WCRs2 1236.0 0.0 WCRs2
+OR449_WCRs1 929.0 0.02 WCRs1
+OS506_WCRs1 769.0 0.02 WCRs1
+OS544_WCRs2 1156.0 0.0 WCRs2
+OS547_WCRs1 837.0 0.02 WCRs1
+OU343_WCRs1 1489.0 0.02 WCRs1
+OU345_WCRs2 1322.0 0.0 WCRs2
+PS056_WCRs1 1472.0 0.02 WCRs1
+QJ580_WCRs1 899.0 0.02 WCRs1
+QJ611_WCRs1 710.0 0.02 WCRs1
+QJ612_WCRs1 748.0 0.02 WCRs1
+QK912_WCRs1 1638.0 0.02 WCRs1
+QL686_WCRs1 768.0 0.02 WCRs1
+QL880_WCRs1 693.0 0.02 WCRs1
+QL883_WCRs1 921.0 0.02 WCRs1
+QL887_WCRs1 658.0 0.02 WCRs1
+QL888_WCRs1 670.0 0.02 WCRs1
+QN859_WCRs1 911.0 0.02 WCRs1
+QN866_WCRs2 683.0 0.0 WCRs2
+QO106_WCRs1 1400.0 0.02 WCRs1
+QO108_WCRs1 1119.0 0.02 WCRs1
+QO110_WCRs1 1032.0 0.02 WCRs1
+QO112_WCRs1 1122.0 0.02 WCRs1
+QO113_WCRs1 1131.0 0.02 WCRs1
+QO115_WCRs1 1234.0 0.02 WCRs1
+QO117_WCRs1 770.0 0.02 WCRs1
+QO121_WCRs1 753.0 0.02 WCRs1
+QO123_WCRs1 918.0 0.02 WCRs1
+QO125_WCRs1 713.0 0.02 WCRs1
+QQ585_WCRs2 655.9 0.0 WCRs2
+QQ597_WCRs1 681.0 0.02 WCRs1
+QS051_WCRs1 1081.0 0.02 WCRs1
+QS053_WCRs1 1017.0 0.02 WCRs1
+QS058_WCRs1 1119.0 0.02 WCRs1
+QS062_WCRs1 1299.0 0.02 WCRs1
+QS064_WCRs1 1682.0 0.02 WCRs1
+QS065_WCRs1 1403.0 0.02 WCRs1
+QS067_WCRs2 1651.0 0.0 WCRs2
+QS071_WCRs1 1468.0 0.02 WCRs1
+QS072_WCRs1 1216.0 0.02 WCRs1
+QS073_WCRs1 1216.0 0.02 WCRs1
+QS074_WCRs1 1308.0 0.02 WCRs1
+QS076_WCRs2 1443.0 0.0 WCRs2
+QS077_WCRs1 1532.0 0.02 WCRs1
+QS079_WCRs1 1423.0 0.02 WCRs1
+QS081_WCRs1 975.0 0.02 WCRs1
+QS082_WCRs1 1100.0 0.02 WCRs1
+QW377_WCRs1 1094.0 0.02 WCRs1
+QX269_WCRs1 765.0 0.02 WCRs1
+QX271_WCRs2 1371.0 0.0 WCRs2
+QX272_WCRs1 1096.0 0.02 WCRs1
+QX273_WCRs1 590.0 0.02 WCRs1
+QX276_WCRs1 630.0 0.02 WCRs1
+QX278_WCRs1 776.0 0.02 WCRs1
+QX281_WCRs1 582.0 0.02 WCRs1
+QX282_WCRs1 833.0 0.02 WCRs1
+QX285_WCRs1 662.0 0.02 WCRs1
+QX288_WCRs1 761.0 0.02 WCRs1
+QX291_WCRs1 741.0 0.02 WCRs1
+QX301_WCRs1 1164.0 0.02 WCRs1
+QX302_WCRs1 1534.0 0.02 WCRs1
+QX631_WCRs1 715.0 0.02 WCRs1
+QX655_WCRs1 910.0 0.02 WCRs1
+QY265_WCRs1 805.0 0.02 WCRs1
+QY271_WCRs1 1332.0 0.02 WCRs1
+QY275_WCRs1 598.0 0.02 WCRs1
+QY276_WCRs1 1192.0 0.02 WCRs1
+RA726_WCRs1 848.0 0.02 WCRs1
+RA782_WCRs1 670.0 0.02 WCRs1
+RA785_WCRs1 658.0 0.02 WCRs1
+RA808_WCRs1 611.0 0.02 WCRs1
+RA809_WCRs1 645.0 0.02 WCRs1
+RA810_WCRs1 619.0 0.02 WCRs1
+RA813_WCRs1 702.0 0.02 WCRs1
+RA817_WCRs1 737.0 0.02 WCRs1
+RA818_WCRs1 652.0 0.02 WCRs1
+RA820_WCRs1 642.5 0.02 WCRs1
+RA822_WCRs1 680.0 0.02 WCRs1
+RA825_WCRs1 606.0 0.02 WCRs1
+RA827_WCRs1 607.0 0.02 WCRs1
+RA832_WCRs1 647.0 0.02 WCRs1
+RA835_WCRs1 822.0 0.02 WCRs1
+RA836_WCRs1 644.0 0.02 WCRs1
+RA837_WCRs1 711.0 0.02 WCRs1
+RA838_WCRs1 684.0 0.02 WCRs1
+RA839_WCRs1 652.0 0.02 WCRs1
+RA840_WCRs1 619.0 0.02 WCRs1
+RA842_WCRs1 711.0 0.02 WCRs1
+RA843_WCRs1 597.0 0.02 WCRs1
+RA845_WCRs1 718.0 0.02 WCRs1
+RA849_WCRs1 764.0 0.02 WCRs1
+RA851_WCRs1 781.0 0.02 WCRs1
+RA855_WCRs1 758.0 0.02 WCRs1
+RA856_WCRs1 609.0 0.02 WCRs1
+RA859_WCRs1 743.0 0.02 WCRs1
+RA861_WCRs1 918.0 0.02 WCRs1
+RA862_WCRs2 1010.0 0.0 WCRs2
+RA865_WCRs1 769.0 0.02 WCRs1
+RA867_WCRs1 1548.0 0.02 WCRs1
+RA868_WCRs1 908.0 0.02 WCRs1
+RA870_WCRs1 917.0 0.02 WCRs1
+RA871_WCRs1 814.0 0.02 WCRs1
+RA878_WCRs1 732.0 0.02 WCRs1
+RA880_WCRs2 761.0 0.0 WCRs2
+RA881_WCRs2 764.0 0.0 WCRs2
+RA882_WCRs1 620.0 0.02 WCRs1
+RA884_WCRs1 612.0 0.02 WCRs1
+RA887_WCRs1 784.0 0.02 WCRs1
+RA888_WCRs1 686.0 0.02 WCRs1
+RA891_WCRs2 821.0 0.0 WCRs2
+RA893_WCRs2 599.0 0.0 WCRs2
+RA895_WCRs1 610.0 0.02 WCRs1
+RA897_WCRs1 665.0 0.02 WCRs1
+RA898_WCRs1 690.0 0.02 WCRs1
+RB966_WCRs1 591.0 0.02 WCRs1
+RB987_WCRs1 1096.0 0.02 WCRs1
+RC701_WCRs1 1476.0 0.02 WCRs1
+RD990_WCRs1 1000.0 0.02 WCRs1
+RD993_WCRs1 764.0 0.02 WCRs1
+RE336_WCRs1 1081.0 0.02 WCRs1
+RE341_WCRs1 831.0 0.02 WCRs1
+RE342_WCRs1 811.0 0.02 WCRs1
+RE347_WCRs1 797.0 0.02 WCRs1
+RE351_WCRs1 645.0 0.02 WCRs1
+RE354_WCRs1 650.0 0.02 WCRs1
+RE357_WCRs1 909.0 0.02 WCRs1
+RE359_WCRs2 867.0 0.0 WCRs2
+RE360_WCRs1 801.0 0.02 WCRs1
+RF971_WCRs1 693.0 0.02 WCRs1
+RF972_WCRs1 1099.0 0.02 WCRs1
+RF980_WCRs1 1087.0 0.02 WCRs1
+RF988_WCRs1 807.0 0.02 WCRs1
+RG025_WCRs2 1429.0 0.0 WCRs2
+RG085_WCRs2 971.0 0.0 WCRs2
+RG096_WCRs1 739.0 0.02 WCRs1
+RG097_WCRs1 663.9 0.02 WCRs1
+RG098_WCRs1 647.7 0.02 WCRs1
+RH390_WCRs1 632.0 0.02 WCRs1
+RH721_WCRs1 1526.0 0.02 WCRs1
+RH723_WCRs1 1520.0 0.02 WCRs1
+RK298_WCRs1 675.0 0.02 WCRs1
+RM154_WCRs1 1420.0 0.02 WCRs1
+RN873_WCRs1 1691.0 0.02 WCRs1
+RP932_WCRs1 950.0 0.02 WCRs1
+RP945_WCRs1 617.0 0.02 WCRs1
+RQ011_WCRs1 733.0 0.02 WCRs1
+RR252_WCRs2 1401.0 0.0 WCRs2
+RR263_WCRs1 1349.0 0.02 WCRs1
+RR269_WCRs1 1463.0 0.02 WCRs1
+RR270_WCRs1 1464.0 0.02 WCRs1
+RR273_WCRs1 1688.0 0.02 WCRs1
+RR274_WCRs1 1690.0 0.02 WCRs1
+RU057_WCRs1 1380.0 0.02 WCRs1
+RU064_WCRs1 843.0 0.02 WCRs1
+RU070_WCRs1 580.0 0.02 WCRs1
+RU477_WCRs1 1201.0 0.02 WCRs1
+RV604_WCRs1 702.0 0.02 WCRs1
+RV608_WCRs1 653.0 0.02 WCRs1
+SA053_WCRs1 942.0 0.02 WCRs1
+SC702_WCRs1 763.0 0.02 WCRs1
+SE076_WCRs1 982.0 0.02 WCRs1
+SE094_WCRs1 838.0 0.02 WCRs1
+SE095_WCRs1 858.0 0.02 WCRs1
+SE098_WCRs1 982.0 0.02 WCRs1
+SH001_WCRs1 709.0 0.02 WCRs1
+SH030_WCRs1 906.0 0.02 WCRs1
+SH077_WCRs1 785.0 0.02 WCRs1
+SH079_WCRs1 792.0 0.02 WCRs1
+SH080_WCRs1 790.0 0.02 WCRs1
+SH081_WCRs1 763.0 0.02 WCRs1
+SH084_WCRs1 776.0 0.02 WCRs1
+SK201_WCRs1 1530.6 0.02 WCRs1
+SK227_WCRs1 645.0 0.02 WCRs1
+SK245_WCRs1 982.0 0.02 WCRs1
+SK282_WCRs1 643.0 0.02 WCRs1
+SK291_WCRs1 861.0 0.02 WCRs1
+SK295_WCRs1 830.0 0.02 WCRs1
+SL214_WCRs1 832.0 0.02 WCRs1
+SL223_WCRs1 788.0 0.02 WCRs1
+SL225_WCRs1 1412.0 0.02 WCRs1
+SL226_WCRs1 889.0 0.02 WCRs1
+SL227_WCRs2 884.0 0.0 WCRs2
+SL246_WCRs1 1070.0 0.02 WCRs1
+SL247_WCRs1 1077.0 0.02 WCRs1
+SL501_WCRs1 1147.0 0.02 WCRs1
+SL504_WCRs1 1069.0 0.02 WCRs1
+SL506_WCRs1 1688.0 0.02 WCRs1
+SL507_WCRs2 1277.0 0.0 WCRs2
+SL510_WCRs2 918.0 0.0 WCRs2
+SL530_WCRs1 1137.0 0.02 WCRs1
+SL535_WCRs1 1125.0 0.02 WCRs1
+SL539_WCRs1 1460.0 0.02 WCRs1
+SL540_WCRs1 1687.0 0.02 WCRs1
+SL542_WCRs1 1692.0 0.02 WCRs1
+SL543_WCRs1 1690.0 0.02 WCRs1
+SL544_WCRs1 1698.0 0.02 WCRs1
+SL549_WCRs1 1480.0 0.02 WCRs1
+SM912_WCRs1 1407.0 0.02 WCRs1
+SM913_WCRs1 1505.0 0.02 WCRs1
+SO720_WCRs1 902.0 0.02 WCRs1
+SR629_WCRs1 1235.0 0.02 WCRs1
+SR638_WCRs1 749.0 0.02 WCRs1
+SR640_WCRs1 1056.0 0.02 WCRs1
+SS546_WCRs1 1423.0 0.02 WCRs1
+SS634_WCRs1 761.0 0.02 WCRs1
+SS636_WCRs1 695.0 0.02 WCRs1
+SS638_WCRs1 652.0 0.02 WCRs1
+SS651_WCRs1 812.0 0.02 WCRs1
+SS654_WCRs1 792.0 0.02 WCRs1
+SS655_WCRs1 835.0 0.02 WCRs1
+SS664_WCRs1 837.0 0.02 WCRs1
+SS670_WCRs1 700.0 0.02 WCRs1
+SS671_WCRs1 837.0 0.02 WCRs1
+SW057_WCRs1 845.0 0.02 WCRs1
+SW341_WCRs1 717.0 0.02 WCRs1
+SW349_WCRs1 806.0 0.02 WCRs1
+SZ371_WCRs1 848.0 0.02 WCRs1
+TA607_WCRs1 692.0 0.02 WCRs1
+TA621_WCRs1 760.0 0.02 WCRs1
+TA622_WCRs1 805.0 0.02 WCRs1
+TB505_WCRs1 626.0 0.02 WCRs1
+TB508_WCRs1 700.0 0.02 WCRs1
+TB517_WCRs1 664.0 0.02 WCRs1
+TB518_WCRs1 649.0 0.02 WCRs1
+TB522_WCRs1 943.0 0.02 WCRs1
+TB523_WCRs1 651.0 0.02 WCRs1
+TB528_WCRs1 632.0 0.02 WCRs1
+TB530_WCRs2 818.0 0.0 WCRs2
+TB531_WCRs1 749.0 0.02 WCRs1
+TB534_WCRs2 895.0 0.0 WCRs2
+TB535_WCRs2 968.0 0.0 WCRs2
+TB536_WCRs1 682.0 0.02 WCRs1
+TB537_WCRs1 730.0 0.02 WCRs1
+TB540_WCRs1 827.0 0.02 WCRs1
+TB792_WCRs1 637.0 0.02 WCRs1
+TB800_WCRs1 1105.0 0.02 WCRs1
+TB901_WCRs2 879.0 0.0 WCRs2
+TB916_WCRs1 635.0 0.02 WCRs1
+TC313_WCRs1 1508.0 0.02 WCRs1
+TC949_WCRs1 1458.0 0.02 WCRs1
+TF108_WCRs1 589.0 0.02 WCRs1
+TF109_WCRs1 604.0 0.02 WCRs1
+TF112_WCRs1 700.0 0.02 WCRs1
+TF113_WCRs2 759.0 0.0 WCRs2
+TF114_WCRs1 610.0 0.02 WCRs1
+TF702_WCRs1 793.0 0.02 WCRs1
+TF740_WCRs1 651.0 0.02 WCRs1
+TF741_WCRs1 719.0 0.02 WCRs1
+TF756_WCRs1 816.0 0.02 WCRs1
+TF761_WCRs2 979.0 0.0 WCRs2
+TF767_WCRs2 841.0 0.0 WCRs2
+TF775_WCRs1 691.0 0.02 WCRs1
+TF777_WCRs1 605.0 0.02 WCRs1
+TF778_WCRs1 795.0 0.02 WCRs1
+TF783_WCRs1 803.0 0.02 WCRs1
+TF786_WCRs2 1084.0 0.0 WCRs2
+TI162_WCRs1 758.0 0.02 WCRs1
+TI187_WCRs1 735.0 0.02 WCRs1
+TI188_WCRs1 737.0 0.02 WCRs1
+TI190_WCRs1 740.0 0.02 WCRs1
+TI352_WCRs1 602.0 0.02 WCRs1
+TK357_WCRs2 958.0 0.0 WCRs2
+TK360_WCRs2 606.0 0.0 WCRs2
+TK361_WCRs2 595.0 0.0 WCRs2
+TK363_WCRs1 646.0 0.02 WCRs1
+TK364_WCRs1 615.0 0.02 WCRs1
+TK365_WCRs1 627.0 0.02 WCRs1
+TK374_WCRs2 951.0 0.0 WCRs2
+TK375_WCRs1 1102.0 0.02 WCRs1
+TK377_WCRs1 818.0 0.02 WCRs1
+TK378_WCRs1 784.0 0.02 WCRs1
+TK381_WCRs1 677.0 0.02 WCRs1
+TK382_WCRs1 919.0 0.02 WCRs1
+TK384_WCRs1 687.0 0.02 WCRs1
+TK385_WCRs1 933.0 0.02 WCRs1
+TK386_WCRs2 859.0 0.0 WCRs2
+TK389_WCRs1 905.0 0.02 WCRs1
+TK395_WCRs1 731.0 0.02 WCRs1
+TK396_WCRs2 658.0 0.0 WCRs2
+TK400_WCRs1 683.0 0.02 WCRs1
+TN759_WCRs2 829.0 0.0 WCRs2
+TN761_WCRs1 750.0 0.02 WCRs1
+TN762_WCRs1 783.0 0.02 WCRs1
+TN764_WCRs1 736.0 0.02 WCRs1
+TO442_WCRs1 1415.0 0.02 WCRs1
+TO460_WCRs1 1449.0 0.02 WCRs1
+TO986_WCRs1 1428.0 0.02 WCRs1
+TO993_WCRs1 1305.0 0.02 WCRs1
+TO996_WCRs1 598.0 0.02 WCRs1
+TO998_WCRs1 1146.0 0.02 WCRs1
+TO999_WCRs2 1276.0 0.0 WCRs2
+TP008_WCRs2 939.0 0.0 WCRs2
+TP010_WCRs1 1509.0 0.02 WCRs1
+TP012_WCRs1 1697.0 0.02 WCRs1
+TP013_WCRs2 991.0 0.0 WCRs2
+TP018_WCRs2 865.0 0.0 WCRs2
+TS752_WCRs1 967.0 0.02 WCRs1
+TU016_WCRs1 1676.0 0.02 WCRs1
+TU702_WCRs1 1040.0 0.02 WCRs1
+TU840_WCRs1 710.0 0.02 WCRs1
+TV160_WCRs2 1081.0 0.0 WCRs2
+TV161_WCRs1 641.0 0.02 WCRs1
+TV163_WCRs2 1078.5 0.0 WCRs2
+TV164_WCRs1 1183.0 0.02 WCRs1
+TV165_WCRs1 862.0 0.02 WCRs1
+TX164_WCRs1 755.0 0.02 WCRs1
+TX165_WCRs1 757.0 0.02 WCRs1
+TX178_WCRs2 1428.0 0.0 WCRs2
+TX302_WCRs1 724.0 0.02 WCRs1
+TX303_WCRs2 690.0 0.0 WCRs2
+TX304_WCRs1 860.0 0.02 WCRs1
+TX307_WCRs1 1224.0 0.02 WCRs1
+TX313_WCRs1 603.5 0.02 WCRs1
+TX316_WCRs1 790.0 0.02 WCRs1
+TX317_WCRs1 653.0 0.02 WCRs1
+TX322_WCRs1 1006.0 0.02 WCRs1
+TX323_WCRs2 605.0 0.0 WCRs2
+TX324_WCRs1 883.0 0.02 WCRs1
+TX328_WCRs1 629.0 0.02 WCRs1
+TX331_WCRs2 712.5 0.0 WCRs2
+TX334_WCRs1 722.0 0.02 WCRs1
+TX336_WCRs1 655.0 0.02 WCRs1
+TX337_WCRs1 1040.0 0.02 WCRs1
+TX340_WCRs1 711.0 0.02 WCRs1
+TX344_WCRs1 600.5 0.02 WCRs1
+TX346_WCRs1 856.0 0.02 WCRs1
+TX349_WCRs1 613.0 0.02 WCRs1
+TZ170_WCRs1 887.0 0.02 WCRs1
+TZ184_WCRs1 799.0 0.02 WCRs1
+UA801_WCRs1 624.0 0.02 WCRs1
+UA813_WCRs1 775.0 0.02 WCRs1
+UA814_WCRs1 634.0 0.02 WCRs1
+UA818_WCRs1 1135.0 0.02 WCRs1
+UA824_WCRs2 644.0 0.0 WCRs2
+UA835_WCRs1 808.0 0.02 WCRs1
+UA838_WCRs1 762.0 0.02 WCRs1
+UF209_WCRs1 659.0 0.02 WCRs1
+UF307_WCRs1 762.0 0.02 WCRs1
+UF332_WCRs1 919.0 0.02 WCRs1
+UF335_WCRs1 761.0 0.02 WCRs1
+UF375_WCRs2 771.0 0.0 WCRs2
+UF388_WCRs1 766.0 0.02 WCRs1
+UF391_WCRs1 753.0 0.02 WCRs1
+UF393_WCRs1 770.0 0.02 WCRs1
+UH077_WCRs2 1208.0 0.0 WCRs2
+UH078_WCRs1 1398.0 0.02 WCRs1
+UH081_WCRs1 1524.0 0.02 WCRs1
+UH085_WCRs2 1662.0 0.0 WCRs2
+UH086_WCRs1 1418.0 0.02 WCRs1
+UH090_WCRs2 1131.0 0.0 WCRs2
+UH091_WCRs2 1007.0 0.0 WCRs2
+UH094_WCRs1 1067.0 0.02 WCRs1
+UH100_WCRs1 1410.0 0.02 WCRs1
+UH101_WCRs2 1365.0 0.0 WCRs2
+UH107_WCRs1 651.0 0.02 WCRs1
+UH110_WCRs2 680.0 0.0 WCRs2
+UH112_WCRs1 1108.0 0.02 WCRs1
+UK554_WCRs1 646.0 0.02 WCRs1
+UK555_WCRs1 855.0 0.02 WCRs1
+UK558_WCRs1 688.0 0.02 WCRs1
+UK563_WCRs1 742.0 0.02 WCRs1
+UK564_WCRs1 652.5 0.02 WCRs1
+UK567_WCRs1 678.0 0.02 WCRs1
+UK568_WCRs1 647.0 0.02 WCRs1
+UK569_WCRs2 696.5 0.0 WCRs2
+UK573_WCRs1 659.0 0.02 WCRs1
+UK575_WCRs1 610.0 0.02 WCRs1
+UK576_WCRs1 756.0 0.02 WCRs1
+UK579_WCRs1 805.0 0.02 WCRs1
+UK581_WCRs1 731.0 0.02 WCRs1
+UK586_WCRs1 728.0 0.02 WCRs1
+UK588_WCRs1 655.0 0.02 WCRs1
+UK589_WCRs1 604.0 0.02 WCRs1
+UK590_WCRs1 605.0 0.02 WCRs1
+UK593_WCRs1 667.0 0.02 WCRs1
+UK594_WCRs1 698.0 0.02 WCRs1
+UK733_WCRs1 781.0 0.02 WCRs1
+UK738_WCRs1 648.0 0.02 WCRs1
+UK739_WCRs1 1380.0 0.02 WCRs1
+UK740_WCRs1 774.0 0.02 WCRs1
+UK742_WCRs1 803.0 0.02 WCRs1
+UK747_WCRs1 783.0 0.02 WCRs1
+UK749_WCRs1 785.0 0.02 WCRs1
+UK753_WCRs1 805.0 0.02 WCRs1
+UK765_WCRs1 805.0 0.02 WCRs1
+UK766_WCRs2 913.0 0.0 WCRs2
+UK767_WCRs1 770.0 0.02 WCRs1
+UK771_WCRs1 804.0 0.02 WCRs1
+UL454_WCRs1 738.0 0.02 WCRs1
+UL498_WCRs1 769.0 0.02 WCRs1
+UN348_WCRs1 1384.0 0.02 WCRs1
+UN889_WCRs1 1063.0 0.02 WCRs1
+UO440_WCRs1 718.0 0.02 WCRs1
+UO441_WCRs1 711.0 0.02 WCRs1
+UO443_WCRs1 1223.0 0.02 WCRs1
+UO444_WCRs2 787.0 0.0 WCRs2
+UQ360_WCRs1 787.0 0.02 WCRs1
+UQ400_WCRs1 783.0 0.02 WCRs1
+UR281_WCRs1 1124.5 0.02 WCRs1
+UR320_WCRs1 1416.0 0.02 WCRs1
+UR501_WCRs1 712.0 0.02 WCRs1
+UR513_WCRs1 745.0 0.02 WCRs1
+UR517_WCRs1 910.0 0.02 WCRs1
+UR530_WCRs1 776.0 0.02 WCRs1
+UR531_WCRs1 1005.0 0.02 WCRs1
+UR535_WCRs1 755.0 0.02 WCRs1
+UR536_WCRs2 1037.0 0.0 WCRs2
+UR540_WCRs1 623.0 0.02 WCRs1
+UR541_WCRs1 991.0 0.02 WCRs1
+UR545_WCRs1 690.0 0.02 WCRs1
+UR546_WCRs1 785.0 0.02 WCRs1
+UR551_WCRs2 1576.0 0.0 WCRs2
+UR552_WCRs1 1379.0 0.02 WCRs1
+UR555_WCRs1 1493.0 0.02 WCRs1
+UR558_WCRs2 1487.0 0.0 WCRs2
+UR559_WCRs1 1538.0 0.02 WCRs1
+UR561_WCRs1 1703.0 0.02 WCRs1
+UR565_WCRs2 1323.0 0.0 WCRs2
+UR572_WCRs2 1179.0 0.0 WCRs2
+UR574_WCRs1 824.0 0.02 WCRs1
+UR575_WCRs2 1381.0 0.0 WCRs2
+UR578_WCRs1 760.0 0.02 WCRs1
+UR580_WCRs1 1701.0 0.02 WCRs1
+UR586_WCRs2 1687.0 0.0 WCRs2
+UR587_WCRs1 1084.0 0.02 WCRs1
+UR613_WCRs1 1681.0 0.02 WCRs1
+US272_WCRs1 615.0 0.02 WCRs1
+US428_WCRs1 684.0 0.02 WCRs1
+US440_WCRs1 794.0 0.02 WCRs1
+US444_WCRs1 755.0 0.02 WCRs1
+US445_WCRs1 678.0 0.02 WCRs1
+US446_WCRs1 686.0 0.02 WCRs1
+US447_WCRs1 756.0 0.02 WCRs1
+US448_WCRs1 650.0 0.02 WCRs1
+US450_WCRs2 641.0 0.0 WCRs2
+US451_WCRs1 1054.0 0.02 WCRs1
+US455_WCRs2 727.0 0.0 WCRs2
+UT168_WCRs1 1043.0 0.02 WCRs1
+UU098_WCRs1 1367.0 0.02 WCRs1
+UV357_WCRs1 653.0 0.02 WCRs1
+UV371_WCRs1 625.0 0.02 WCRs1
+UV373_WCRs2 636.0 0.0 WCRs2
+UV376_WCRs1 891.0 0.02 WCRs1
+UW334_WCRs1 968.0 0.02 WCRs1
+UX261_WCRs2 601.0 0.0 WCRs2
+UX287_WCRs1 620.0 0.02 WCRs1
+UX404_WCRs1 927.0 0.02 WCRs1
+UX406_WCRs2 737.0 0.0 WCRs2
+UX408_WCRs1 792.0 0.02 WCRs1
+UX413_WCRs1 775.0 0.02 WCRs1
+UX416_WCRs1 649.0 0.02 WCRs1
+UX417_WCRs1 657.0 0.02 WCRs1
+UX420_WCRs1 618.0 0.02 WCRs1
+UX422_WCRs1 651.0 0.02 WCRs1
+UX423_WCRs1 623.0 0.02 WCRs1
+UX424_WCRs1 609.0 0.02 WCRs1
+UX495_WCRs2 765.0 0.0 WCRs2
+UX501_WCRs1 1147.0 0.02 WCRs1
+UX520_WCRs2 797.0 0.0 WCRs2
+UX996_WCRs1 735.0 0.02 WCRs1
+UZ120_WCRs1 1444.0 0.02 WCRs1
+UZ877_WCRs1 681.0 0.02 WCRs1
+UZ882_WCRs2 694.0 0.0 WCRs2
+VB507_WCRs2 1040.0 0.0 WCRs2
+VB526_WCRs1 806.0 0.02 WCRs1
+VB852_WCRs1 819.0 0.02 WCRs1
+VB861_WCRs2 665.0 0.0 WCRs2
+VB862_WCRs2 948.0 0.0 WCRs2
+VB863_WCRs2 978.5 0.0 WCRs2
+VC529_WCRs1 886.0 0.02 WCRs1
+VC532_WCRs1 642.0 0.02 WCRs1
+VC543_WCRs1 643.0 0.02 WCRs1
+VC545_WCRs1 730.0 0.02 WCRs1
+VC547_WCRs1 992.0 0.02 WCRs1
+VC559_WCRs1 766.0 0.02 WCRs1
+VK010_WCRs1 776.0 0.02 WCRs1
+VK015_WCRs2 1367.0 0.0 WCRs2
+VK023_WCRs2 1236.0 0.0 WCRs2
+VK025_WCRs1 681.0 0.02 WCRs1
+VK026_WCRs1 642.0 0.02 WCRs1
+VK630_WCRs1 1089.0 0.02 WCRs1
+VK631_WCRs1 1067.0 0.02 WCRs1
+VK833_WCRs2 1029.0 0.0 WCRs2
+VL118_WCRs1 892.0 0.02 WCRs1
+VL119_WCRs1 828.0 0.02 WCRs1
+VL125_WCRs2 1027.0 0.0 WCRs2
+VL141_WCRs1 779.0 0.02 WCRs1
+VL142_WCRs1 734.0 0.02 WCRs1
+WG165_WCRs2 1301.0 0.0 WCRs2
+WG257_WCRs1 769.0 0.02 WCRs1
+WG269_WCRs2 858.0 0.0 WCRs2
+WG275_WCRs1 1181.0 0.02 WCRs1
+WG291_WCRs2 1131.0 0.0 WCRs2
+WG963_WCRs1 621.0 0.02 WCRs1
+WG964_WCRs1 1181.0 0.02 WCRs1
+WH001_WCRs2 1076.0 0.0 WCRs2
+WH607_WCRs1 660.0 0.02 WCRs1
+WH623_WCRs1 1341.0 0.02 WCRs1
+WH831_WCRs1 723.0 0.02 WCRs1
+WH838_WCRs1 990.0 0.02 WCRs1
+WH842_WCRs1 830.0 0.02 WCRs1
+WH848_WCRs1 770.0 0.02 WCRs1
+WH852_WCRs1 1282.0 0.02 WCRs1
+WH859_WCRs1 738.0 0.02 WCRs1
+WH862_WCRs1 602.0 0.02 WCRs1
+WH867_WCRs2 601.0 0.0 WCRs2
+WH889_WCRs1 777.0 0.02 WCRs1
+WH902_WCRs1 652.0 0.02 WCRs1
+WJ694_WCRs1 776.0 0.02 WCRs1
+WJ695_WCRs1 762.0 0.02 WCRs1
+WJ713_WCRs1 677.0 0.02 WCRs1
+WL029_WCRs1 984.0 0.02 WCRs1
+WL030_WCRs1 1100.0 0.02 WCRs1
+WL032_WCRs1 763.0 0.02 WCRs1
+WL043_WCRs1 786.0 0.02 WCRs1
+WL290_WCRs1 863.0 0.02 WCRs1
+WL296_WCRs1 780.0 0.02 WCRs1
+WL301_WCRs1 788.0 0.02 WCRs1
+WL314_WCRs1 912.0 0.02 WCRs1
+WM248_WCRs2 944.0 0.0 WCRs2
+WM588_WCRs1 774.0 0.02 WCRs1
+WM606_WCRs1 1165.0 0.02 WCRs1
+WM939_WCRs1 822.0 0.02 WCRs1
+WN073_WCRs1 699.0 0.02 WCRs1
+WN095_WCRs1 1118.0 0.02 WCRs1
+WN928_WCRs2 644.0 0.0 WCRs2
+WN930_WCRs1 1337.0 0.02 WCRs1
+WN955_WCRs1 749.0 0.02 WCRs1
+WO122_WCRs1 754.0 0.02 WCRs1
+WO128_WCRs2 1062.0 0.0 WCRs2
+WO129_WCRs2 1082.0 0.0 WCRs2
+WO130_WCRs2 1064.0 0.0 WCRs2
+WO133_WCRs1 784.0 0.02 WCRs1
+WO142_WCRs1 994.0 0.02 WCRs1
+WO143_WCRs1 794.0 0.02 WCRs1
+WO144_WCRs1 946.0 0.02 WCRs1
+WO152_WCRs2 1461.0 0.0 WCRs2
+WO162_WCRs2 729.0 0.0 WCRs2
+WO166_WCRs1 671.0 0.02 WCRs1
+WO167_WCRs2 730.0 0.0 WCRs2
+WO399_WCRs1 1001.0 0.02 WCRs1
+WP098_WCRs1 1683.0 0.02 WCRs1
+WP132_WCRs1 790.0 0.02 WCRs1
+WP231_WCRs1 1010.0 0.02 WCRs1
+YE236_WCRs1 735.0 0.02 WCRs1
+4027000_Bad_Odanah 24065360.4822 4.15535017952e-06 Bad_Odanah
+4026740_Marengo_Me~1 8280189.89456 2.41540354203e-06 Lrg_streams
+4026600_Marengo_Ma~1 5002615.21331 3.99790892308e-06 Lrg_streams
+4026590_MarengoGra~1 1949866.37054 1.02571131551e-05 Lrg_streams
+4026620_Brunsweile~1 2213243.25668 9.03651233983e-06 Lrg_streams
+40266205_Brunsweil~1 2553924.36001 7.83108549069e-06 Lrg_streams
+4026910_Potato_Gur~1 2621373.05366 7.62958937571e-06 Lrg_streams
+4026580_MarengoGra~1 1248860.57287 1.00091237337e-05 Med_streams
+4026900_Potato_Gur~1 2280523.0672 5.48119866875e-06 Med_streams
+4026616_Brunsweile~1 1457958.68926 8.5736311269e-06 Med_streams
+4026880_Potato_Upton 1733943.61133 7.20900029177e-06 Med_streams
+4026559_Tyler_Fork~1 1717957.11294 7.2760838474e-06 Med_streams
+4026561_Tyler_Fork~1 1721921.26006 7.25933310074e-06 Med_streams
+4026560_Tyler_Fks_~1 1670327.9831 7.48356019085e-06 Med_streams
+4026450_Bad_R_Mellen 1746196.6415 7.15841486743e-06 Med_streams
+4026550_Tyler_Fks_~1 934581.872713 5.34998606969e-06 Sm_streams
+4026510_Montreal_M~1 743421.2182 6.72566221893e-06 Sm_streams
+4027689_Graveyard_~1 249310.346208 2.00553249236e-05 Sm_streams
+4026950_Vaughncree~1 546441.1832 9.15011560936e-06 Sm_streams
+4026859_Potato_Upson 525721.46499 9.51073968437e-06 Sm_streams
+4027522_Deer_Ashland 345491.396328 1.44721404155e-05 Sm_streams
+4026530_Tyler_Fks_~1 471927.316698 1.05948518407e-05 Sm_streams
+4026760_Silver_Mel~1 255048.347565 1.96041262284e-05 Sm_streams
+4026505_Devils_Mel~1 215753.138815 2.31746338776e-05 Sm_streams
+4026410_Bad_R_Morse 542751.732982 9.21231512707e-06 Sm_streams
+4027650_Denomie_Od~1 262962.683272 3.80282094614e-06 headwaters
+4026894_Lawrence_S~1 195541.283307 5.11400959984e-06 headwaters
+4026400_Spillerber~1 158205.224938 6.32090375265e-06 headwaters
+4026413_Minnow_Morse 148906.725986 6.71561337057e-06 headwaters
+40266173_Spring_Ma~1 103877.003348 9.62676981205e-06 headwaters
+4027675_Bell_Odanah 78918.8348747 1.26712463709e-05 headwaters
+4025552__Erickson_~1 64074.2202731 1.56069008056e-05 headwaters
+4026650_Trout_High~1 153016.661441 6.53523603626e-06 headwaters
+4026635_Trout_High~1 94067.4454464 1.06306703159e-05 headwaters
+40265095_City_Mellen 70077.253308 1.42699656849e-05 headwaters
+Happy_Crk_Conley 82828.4260881 1.207314985e-05 headwaters
+Bull_Gus_Crk_Co_P 48206.9689092 2.07438887494e-05 headwaters
+Javorski_77 23473.5567091 0.0 zero_streams
+4026955_Uvaughn 74458.3145205 0.0 zero_streams
+4026613_MCcarthy_M~1 11350.86 0.0 zero_streams
+4026911_Winks_Gurney 14033.1343311 0.0 zero_streams
+4026514_Krause_Mel~1 0.0 0.0 zero_streams
+4026553_Route_Upson 0.0 0.0 zero_streams
+4026757_Silver_Hig~1 0.0 0.0 zero_streams
+4026820_Potato_Iro~1 0.0 0.0 zero_streams
+4026850_Apple_Upson 0.0 0.0 zero_streams
+Drycreekbed 0.0 0.0 zero_streams
+Sugarbush 0.0 0.0 zero_streams
+* model command line
+svdabatch.bat
+* model input/output
+parcalc.tpl   parcalc.in
+BadRiver_heads.ins HobData.txt
+BadRiver_fluxes.ins BadRiver_SFR.out
