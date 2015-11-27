@@ -3676,4 +3676,7 @@ hkr39c14                1.0 * log(hkr39c14) =   7.743353E-01    5.000000E-01    
    1.300000E+01    1.495000E+01
 1.0 1.0e-10 1.0e10 linreg continue
 1.3  1.0e-2  1
-++forecasts(travel_time,sw_gw_0,sw_gw_1,sw_gw_2)++n_iter_base(1)++n_iter_super(4)++max_reg_iter(5)
+++forecasts(sw_gw_0,sw_gw_1,or28c05_0,or28c05_1)
+++n_iter_base(1)
+++n_iter_super(4)
+++max_reg_iter(5)
