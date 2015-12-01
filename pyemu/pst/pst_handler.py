@@ -396,7 +396,6 @@ class Pst(object):
                 #args = ['++'+arg.strip() for arg in args]
                 #self.pestpp_lines.extend(args)
                 keys = [arg.split('(')[0] for arg in args]
-                spl = arg.split('(')[1]
                 values = [arg.split('(')[1].replace(')','') for arg in args]
                 for key,value in zip(keys,values):
                     if key in self.pestpp_options:

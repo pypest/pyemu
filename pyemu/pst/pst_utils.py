@@ -429,7 +429,7 @@ def del_rw(action, name, exc):
     os.remove(name)
     
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
-                 port=4004,rel_path='.'):
+                 port=4004,rel_path=None):
     """ start a group of pest(++) slaves on the local machine
 
     Parameters:
@@ -457,10 +457,14 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
     else:
         num_slaves = int(num_slaves)
     #assert os.path.exists(os.path.join(slave_dir,rel_path,exe_rel_path))
+    exe_verf = True
     if not os.path.exists(os.path.join(slave_dir,exe_rel_path)):
         print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
-    assert os.path.exists(os.path.join(slave_dir,rel_path,pst_rel_path))
-
+        exe_verf = False
+    if rel_path is not None:
+        assert os.path.exists(os.path.join(slave_dir,rel_path,pst_rel_path))
+    else:
+        assert os.path.exists(os.path.join(slave_dir,pst_rel_path))
     hostname = socket.gethostname()
     port = int(port)
 
@@ -481,10 +485,20 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
             raise Exception("unable to copy files from slave dir: " + \
                             "{0} to new slave dir: {1}\n{2}".format(slave_dir,new_slave_dir,str(e)))
         try:
-            exe_path = os.path.join(new_slave_dir,rel_path,exe_rel_path)
+            if exe_verf:
+                if rel_path is not None:
+                    exe_path = os.path.join(rel_path,exe_rel_path)
+                else:
+                    exe_path = exe_rel_path
+            else:
+                exe_path = exe_rel_path
             args = [exe_path, pst_rel_path, "/h", tcp_arg]
             print("starting slave in {0} with args: {1}".format(new_slave_dir,args))
-            p = sp.Popen(args,cwd=os.path.join(new_slave_dir,rel_path))
+            if rel_path is not None:
+                cwd = os.path.join(new_slave_dir,rel_path)
+            else:
+                cwd = new_slave_dir
+            p = sp.Popen(args,cwd=cwd)
             procs.append(p)
         except Exception as e:
             raise Exception("error starting slave: {0}".format(str(e)))
