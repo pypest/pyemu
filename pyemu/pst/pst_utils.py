@@ -283,6 +283,7 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     new_pst.instruction_files = ins_files
     new_pst.output_files = out_files
     new_pst.model_command = ["model.bat"]
+    new_pst.prior_information = new_pst.null_prior
 
     if pst_filename:
         new_pst.zero_order_tikhonov()
