@@ -459,7 +459,8 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         num_slaves = int(num_slaves)
     #assert os.path.exists(os.path.join(slave_dir,rel_path,exe_rel_path))
     exe_verf = True
-    if not os.path.exists(os.path.join(slave_dir,exe_rel_path)):
+
+    if not os.path.exists(os.path.join(slave_dir,rel_path,exe_rel_path)):
         print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
         exe_verf = False
     if rel_path is not None:
@@ -487,10 +488,10 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
                             "{0} to new slave dir: {1}\n{2}".format(slave_dir,new_slave_dir,str(e)))
         try:
             if exe_verf:
-                if rel_path is not None:
-                    exe_path = os.path.join(rel_path,exe_rel_path)
-                else:
-                    exe_path = exe_rel_path
+                # if rel_path is not None:
+                #     exe_path = os.path.join(rel_path,exe_rel_path)
+                # else:
+                exe_path = exe_rel_path
             else:
                 exe_path = exe_rel_path
             args = [exe_path, pst_rel_path, "/h", tcp_arg]
@@ -499,13 +500,15 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
                 cwd = os.path.join(new_slave_dir,rel_path)
             else:
                 cwd = new_slave_dir
-            p = sp.Popen(args,cwd=cwd)
+
+            os.chdir(cwd)
+            p = sp.Popen(args, cwd=cwd)
             procs.append(p)
         except Exception as e:
             raise Exception("error starting slave: {0}".format(str(e)))
 
-    for p in procs:
-        p.wait()
+    # for p in procs:
+    #     p.wait()
 
 
 def test_smp():
