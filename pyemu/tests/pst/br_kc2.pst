@@ -1,0 +1,1010 @@
+pcf
+* control data
+restart estimation
+32 944 5 0 10
+1  1  double  point  1  0  0
+1.000000e+001  -3.000000e+000  3.000000e-001  1.000000e-002  10 999 lamforgive
+1.000000e+001  1.000000e+001  1.000000e-003
+1.000000e-001 noaui senreuse
+20  1.000000e-003 4 4  1.000000e-002  3 1.00e-03 0
+1  1  1 1 jcosave noverboserec nojcosaveitn reisaveitn parsaveitn
+* parameter groups
+Kh     relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+Base   relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+Khi    relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+Rch    relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+Res    relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+* parameter data
+kbackground_  log  factor    4.659222      0.0001  10000  kh  1  0  1
+kcoppern____  log  factor    1.839386      0.0001  10000  khi  1  0  1
+kcoppersg___  log  factor    2.735834      0.0001  10000  khi  1  0  1
+kdeepaqf____  log  factor    6.365263      0.0001  10000  khi  1  0  1
+kironfm_____  log  factor   4.8607218E-03  0.0001  10000  khi  1  0  1
+ktrans______  log  factor   0.7445520      0.0001  10000  khi  1  0  1
+ktranse_____  log  factor   0.5345724      0.0001  10000  khi  1  0  1
+ktransw_____  log  factor    9.533269      0.0001  10000  khi  1  0  1
+ktyler______  log  factor   0.6185717      0.0001  10000  khi  1  0  1
+kvolcanicse_  log  factor    1.733886      0.0001  10000  khi  1  0  1
+kvolcanicsw_  log  factor    3.403551      0.0001  10000  khi  1  0  1
+rcoppergg___  none  factor    8.003945      0.0001  10000  rch  -0.0001  0  1
+rcoppersg___  none  factor    9.035477      0.0001  10000  rch  -0.001  0  1
+rmiller1____  none  factor    4.727184      0.0001  10000  rch  -0.0001  0  1
+rmiller2____  none  factor   1.2899259E-03  0.0001  10000  rch  -0.0001  0  1
+rmiller3____  none  factor    10.20975      0.0001  10000  rch  -0.0001  0  1
+rmiller4____  none  factor    15.43568      0.0001  10000  rch  -0.0001  0  1
+rmiller5____  none  factor    2.456708      0.0001  10000  rch  -0.0001  0  1
+rmiller6____  none  factor    1.483313      0.0001  10000  rch  -0.0001  0  1
+rmiller7____  none  factor    12.36695      0.0001  10000  rch  -0.0001  0  1
+rmtnfrontw__  none  factor    1.904103      0.0001  10000  rch  -0.001  0  1
+rtyler______  none  factor    22.45475      0.0001  10000  rch  -0.0001  0  1
+rvolcanicse_  none  factor   1.0000000E-04  0.0001  10000  rch  -0.0001  0  1
+rvolcanicsw_  none  factor    12.63953      0.0001  10000  rch  -0.0001  0  1
+cdrainage___  none  factor    11.20820      0.0001  10000  res  1  0  1
+cincised____  none  factor    25.42764      0.0001  10000  res  1  0  1
+cmiller_____  none  factor    50.43182      0.0001  10000  res  1  0  1
+cseepage____  none  factor    20.88605      0.0001  10000  res  1  0  1
+cslope______  none  factor    42.92415      0.0001  10000  res  1  0  1
+csmiller____  none  factor    47.69160      0.0001  10000  res  1  0  1
+cstream_____  none  factor    22.16280      0.0001  10000  res  1  0  1
+csuperior___  none  factor    5.174858      0.0001  10000  res  1  0  1
+* observation groups
+head_best
+head_good
+head_pr70
+head_fair
+head_poor
+head_zero
+Bad_Odanah
+Lrg_streams
+Med_streams
+Sm_streams
+* observation data
+ UR539_fair  922  0.1  head_fair
+ IC701_fair  910  0.1  head_fair
+ IC027_fair  926  0.1  head_fair
+ ER346_fair  1416  0.1  head_fair
+ LE858_fair  1402  0.1  head_fair
+ UX142_fair  1398  0.1  head_fair
+ MW945_good  1409  1  head_good
+ UA812_fair  1414  0.1  head_fair
+ UA816_fair  1408  0.1  head_fair
+ OR443_fair  1139  0.1  head_fair
+ VB856_fair  1132  0.1  head_fair
+ LB762_fair  1413  0.1  head_fair
+ CY623_fair  1402  0.1  head_fair
+ UA840_zero  1430  0  head_zero
+ FF680_poor  923  0  head_poor
+ OJ059_fair  968  0.1  head_fair
+ AC573_fair  983  0.1  head_fair
+ CX536_fair  894  0.1  head_fair
+ UR529_fair  899  0.1  head_fair
+ GD160_fair  1028  0.1  head_fair
+ UX412_fair  895  0.1  head_fair
+ CN728_fair  964  0.1  head_fair
+ NS959_fair  1257  0.1  head_fair
+ GU923_zero  910  0  head_zero
+ RA864_fair  891  0.1  head_fair
+ OJ058_fair  791  0.1  head_fair
+ RP934_fair  887  0.1  head_fair
+ NC334_fair  880  0.1  head_fair
+ NS137_fair  898  0.1  head_fair
+ QN883_fair  842  0.1  head_fair
+ VL110_fair  1009  0.1  head_fair
+ OS547_zero  837  0  head_zero
+ OJ411_fair  979  0.1  head_fair
+ TK389_fair  905  0.1  head_fair
+ RA726_fair  848  0.1  head_fair
+ NE258_fair  991  0.1  head_fair
+ NE515_fair  970  0.1  head_fair
+ VC547_fair  992  0.1  head_fair
+ VC529_zero  886  0  head_zero
+ LC960_fair  1014  0.1  head_fair
+ HK299_fair  807  0.1  head_fair
+ IB883_poor  865  0  head_poor
+ NS149_fair  1129  0.1  head_fair
+ KL134_fair  965  0.1  head_fair
+ SL226_poor  889  0  head_poor
+ RE359_poor  867  0  head_poor
+ TB901_zero  879  0  head_zero
+ DQ101_fair  854  0.1  head_fair
+ DD036_zero  843  0  head_zero
+ CW619_fair  864  0.1  head_fair
+ LA486_fair  1108  0.1  head_fair
+ UW334_fair  968  0.1  head_fair
+ UR546_fair  785  0.1  head_fair
+ TX337_fair  1040  0.1  head_fair
+ TB530_fair  818  0.1  head_fair
+ UK579_fair  805  0.1  head_fair
+ AS868_fair  812  0.1  head_fair
+ HO304_fair  1018  0.1  head_fair
+ SS654_fair  792  0.1  head_fair
+ CI211_zero  866  0  head_zero
+ DB471_fair  1011  0.1  head_fair
+ TX304_poor  860  0  head_poor
+ NL881_fair  955  0.1  head_fair
+ LE386_zero  800  0  head_zero
+ UK771_fair  804  0.1  head_fair
+ UA813_zero  775  0  head_zero
+ DB472_fair  1114  0.1  head_fair
+ FJ541_poor  866  0  head_poor
+ VL119_fair  828  0.1  head_fair
+ QX655_fair  910  0.1  head_fair
+ KN136_fair  951  0.1  head_fair
+ GD141_zero  1401  0  head_zero
+ KN691_zero  825  0  head_zero
+ TB540_fair  827  0.1  head_fair
+ HK296_fair  885  0.1  head_fair
+ LB398_fair  952  0.1  head_fair
+ UK742_fair  803  0.1  head_fair
+ KN405_fair  901  0.1  head_fair
+ RE342_poor  811  0  head_poor
+ VL142_fair  734  0.1  head_fair
+ VB507_fair  1040  0.1  head_fair
+ RA870_fair  917  0.1  head_fair
+ LE369_poor  1038  0  head_poor
+ RA865_fair  769  0.1  head_fair
+ RA871_fair  814  0.1  head_fair
+ HX553_fair  815  0.1  head_fair
+ DB470_poor  893  0  head_poor
+ RE341_zero  831  0  head_zero
+ TV165_poor  862  0  head_poor
+ TK386_poor  859  0  head_poor
+ SE094_zero  838  0  head_zero
+ LA499_fair  813  0.1  head_fair
+ SE095_zero  858  0  head_zero
+ DN933_fair  1050  0.1  head_fair
+ UK555_poor  855  0  head_poor
+ DV311_fair  1048  0.1  head_fair
+ DE836_zero  1053  0  head_zero
+ WH842_poor  830  0  head_poor
+ CX947_fair  988  0.1  head_fair
+ RE360_poor  801  0  head_poor
+ SL246_poor  1070  0  head_poor
+ AA719_poor  846  0  head_poor
+ SS664_poor  837  0  head_poor
+ QW377_poor  1094  0  head_poor
+ AZ944_poor  824  0  head_poor
+ RE336_fair  1081  0.1  head_fair
+ SS671_zero  837  0  head_zero
+ TB800_fair  1105  0.1  head_fair
+ AZ945_fair  1130  0.1  head_fair
+ CJ052_fair  1091  0.1  head_fair
+ SL247_poor  1077  0  head_poor
+ TF786_fair  1084  0.1  head_fair
+ AC584_fair  1091  0.1  head_fair
+ SK291_fair  861  0.1  head_fair
+ QX272_fair  1096  0.1  head_fair
+ KN137_fair  809  0.1  head_fair
+ UV376_zero  891  0  head_zero
+ TK377_fair  818  0.1  head_fair
+ GD158_poor  822  0  head_poor
+ FL086_fair  810  0.1  head_fair
+ VB852_fair  819  0.1  head_fair
+ TK375_fair  1102  0.1  head_fair
+ NS136_poor  840  0  head_poor
+ LE859_fair  905  0.1  head_fair
+ SS655_poor  835  0  head_poor
+ UA835_fair  808  0.1  head_fair
+ UR517_poor  910  0  head_poor
+ NL866_fair  1095  0.1  head_fair
+ IK591_fair  946  0.1  head_fair
+ UR536_fair  1037  0.1  head_fair
+ TF702_fair  793  0.1  head_fair
+ LE373_fair  1011  0.1  head_fair
+ DV343_fair  1010  0.1  head_fair
+ OK711_fair  1145  0.1  head_fair
+ RA835_poor  822  0  head_poor
+ RA868_fair  908  0.1  head_fair
+ LB005_good  1021  1  head_good
+ NS147_fair  1071  0.1  head_fair
+ NE247_fair  1030  0.1  head_fair
+ NS132_fair  1109  0.1  head_fair
+ LA497_fair  723  0.1  head_fair
+ LB396_fair  999  0.1  head_fair
+ LB400_zero  833  0  head_zero
+ UR501_fair  712  0.1  head_fair
+ NB561_fair  1019  0.1  head_fair
+ YE236_fair  735  0.1  head_fair
+ QX291_fair  741  0.1  head_fair
+ RE347_fair  797  0.1  head_fair
+ UK576_poor  756  0  head_poor
+ TF761_fair  979  0.1  head_fair
+ NX535_poor  805  0  head_poor
+ LB405_poor  785  0  head_poor
+ NT709_poor  707  0  head_poor
+ RU064_poor  843  0  head_poor
+ QY265_poor  805  0  head_poor
+ FO178_poor  811  0  head_poor
+ TN759_poor  829  0  head_poor
+ RA862_fair  1010  0.1  head_fair
+ OM493_poor  821  0  head_poor
+ NC966_fair  1477  0.1  head_fair
+ CJ552_zero  996  0  head_zero
+ LA495_poor  793  0  head_poor
+ NS131_poor  817  0  head_poor
+ SL214_poor  832  0  head_poor
+ US446_poor  686  0  head_poor
+ CJ556_fair  1024  0.1  head_fair
+ NB560_poor  694  0  head_poor
+ AH988_fair  974  0.1  head_fair
+ TF756_poor  816  0  head_poor
+ TF767_fair  841  0.1  head_fair
+ VB526_poor  806  0  head_poor
+ IB623_poor  718  0  head_poor
+ HV224_poor  645  0  head_poor
+ CJ557_fair  805  0.1  head_fair
+ LV304_fair  1324  0.1  head_fair
+ GD069_poor  684  0  head_poor
+ KT027_fair  706  0.1  head_fair
+ DE839_fair  890  0.1  head_fair
+ KT026_fair  883  0.1  head_fair
+ US428_poor  684  0  head_poor
+ RA837_fair  711  0.1  head_fair
+ CI207_fair  826  0.1  head_fair
+ SK245_fair  982  0.1  head_fair
+ SS651_zero  812  0  head_zero
+ NE250_fair  776  0.1  head_fair
+ LD391_fair  889  0.1  head_fair
+ UK733_fair  781  0.1  head_fair
+ AJ962_fair  812  0.1  head_fair
+ OK693_fair  798  0.1  head_fair
+ CJ562_fair  815  0.1  head_fair
+ LB390_zero  764  0  head_zero
+ GD675_fair  728  0.1  head_fair
+ UK569_fair  696.5  0.1  head_fair
+ FL102_fair  796  0.1  head_fair
+ UK747_zero  783  0  head_zero
+ GD676_zero  709  0  head_zero
+ UK740_fair  774  0.1  head_fair
+ UK765_fair  805  0.1  head_fair
+ GU945_poor  672  0  head_poor
+ MB618_poor  686  0  head_poor
+ UK567_zero  678  0  head_zero
+ NE786_fair  778  0.1  head_fair
+ UK753_fair  805  0.1  head_fair
+ GU924_zero  811  0  head_zero
+ UK749_fair  785  0.1  head_fair
+ LB768_fair  804  0.1  head_fair
+ LZ054_poor  684  0  head_poor
+ TB508_poor  700  0  head_poor
+ UR540_poor  623  0  head_poor
+ SS636_poor  695  0  head_poor
+ MW937_fair  773  0.1  head_fair
+ KT041_poor  683  0  head_poor
+ RA898_poor  690  0  head_poor
+ US445_poor  678  0  head_poor
+ LE853_fair  779  0.1  head_fair
+ TF778_fair  795  0.1  head_fair
+ GL253_zero  671  0  head_zero
+ FI581_fair  1419  0.1  head_fair
+ TB536_poor  682  0  head_poor
+ WJ713_poor  677  0  head_poor
+ DA238_fair  796  0.1  head_fair
+ UH110_poor  680  0  head_poor
+ LB003_fair  804  0.1  head_fair
+ QX288_fair  761  0.1  head_fair
+ HK001_fair  1008  0.1  head_fair
+ VC559_fair  766  0.1  head_fair
+ QX631_poor  715  0  head_poor
+ WH838_fair  990  0.1  head_fair
+ GD155_fair  797  0.1  head_fair
+ SH030_fair  906  0.1  head_fair
+ UR545_poor  690  0  head_poor
+ RA813_poor  702  0  head_poor
+ FO176_fair  794  0.1  head_fair
+ AH996_fair  789  0.1  head_fair
+ FF650_fair  1416  0.1  head_fair
+ KN275_fair  907  0.1  head_fair
+ CJ064_fair  906  0.1  head_fair
+ RA838_poor  684  0  head_poor
+ KN274_fair  921  0.1  head_fair
+ NB579_poor  677  0  head_poor
+ RA822_poor  680  0  head_poor
+ LH532_poor  684  0  head_poor
+ TF783_fair  803  0.1  head_fair
+ LL440_fair  998  0.1  head_fair
+ TK400_poor  683  0  head_poor
+ CY624_poor  674  0  head_poor
+ AZ924_poor  686  0  head_poor
+ CN992_poor  683  0  head_poor
+ QX285_zero  662  0  head_zero
+ IC708_fair  790  0.1  head_fair
+ QQ597_poor  681  0  head_poor
+ KT047_poor  674  0  head_poor
+ WP231_zero  1010  0  head_zero
+ RD990_fair  1000  0.1  head_fair
+ UF332_fair  919  0.1  head_fair
+ RE357_fair  909  0.1  head_fair
+ NE253_poor  673  0  head_poor
+ GD152_poor  714  0  head_poor
+ SL223_fair  788  0.1  head_fair
+ AJ958_fair  926  0.1  head_fair
+ IC025_fair  757  0.1  head_fair
+ TK384_poor  687  0  head_poor
+ OF286_fair  684  0.1  head_fair
+ LC948_poor  723  0  head_poor
+ UK766_fair  913  0.1  head_fair
+ WO399_fair  1001  0.1  head_fair
+ GD154_fair  744  0.1  head_fair
+ HV447_fair  1012  0.1  head_fair
+ DD021_fair  766  0.1  head_fair
+ HV228_fair  729  0.1  head_fair
+ FF361_fair  794  0.1  head_fair
+ UK593_poor  667  0  head_poor
+ TN764_fair  736  0.1  head_fair
+ CI208_poor  647  0  head_poor
+ DD019_fair  761  0.1  head_fair
+ DF203_fair  793  0.1  head_fair
+ WH902_poor  652  0  head_poor
+ GL251_poor  637  0  head_poor
+ UX417_poor  657  0  head_poor
+ DP993_fair  890  0.1  head_fair
+ UF335_fair  761  0.1  head_fair
+ SC702_fair  763  0.1  head_fair
+ UK767_fair  770  0.1  head_fair
+ US440_fair  794  0.1  head_fair
+ UR541_fair  991  0.1  head_fair
+ HP559_zero  644  0  head_zero
+ UR531_zero  1005  0  head_zero
+ LB406_fair  1419  0.1  head_fair
+ AZ948_fair  1417  0.1  head_fair
+ UR513_fair  745  0.1  head_fair
+ DC859_poor  660  0  head_poor
+ KN697_fair  1011  0.1  head_fair
+ MN760_fair  1409  0.1  head_fair
+ FI583_fair  1417.5  0.1  head_fair
+ UR320_fair  1416  0.1  head_fair
+ KN146_zero  1396  0  head_zero
+ GD157_fair  1396  0.1  head_fair
+ CW625_fair  1398  0.1  head_fair
+ QO106_fair  1400  0.1  head_fair
+ SL225_fair  1412  0.1  head_fair
+ IB887_fair  1416  0.1  head_fair
+ LC951_fair  681  0.1  head_fair
+ NE261_fair  768  0.1  head_fair
+ TO442_fair  1415  0.1  head_fair
+ LB761_fair  1421  0.1  head_fair
+ QX269_fair  765  0.1  head_fair
+ LC956_fair  700  0.1  head_fair
+ CI555_fair  732  0.1  head_fair
+ TI190_fair  740  0.1  head_fair
+ NE514_poor  634  0  head_poor
+ SH001_fair  709  0.1  head_fair
+ SS546_fair  1423  0.1  head_fair
+ JB353_poor  640  0  head_poor
+ UN348_zero  1384  0  head_zero
+ AZ947_zero  1421  0  head_zero
+ UQ400_fair  783  0.1  head_fair
+ TX165_fair  757  0.1  head_fair
+ RP932_fair  950  0.1  head_fair
+ RM154_fair  1420  0.1  head_fair
+ GD673_fair  1420  0.1  head_fair
+ NN989_fair  827  0.1  head_fair
+ DQ106_fair  780  0.1  head_fair
+ SW341_fair  717  0.1  head_fair
+ TZ170_fair  887  0.1  head_fair
+ QO125_fair  713  0.1  head_fair
+ FL087_poor  644  0  head_poor
+ QJ611_fair  710  0.1  head_fair
+ RV604_fair  702  0.1  head_fair
+ UR530_fair  776  0.1  head_fair
+ NB576_poor  703  0  head_poor
+ TX303_poor  690  0  head_poor
+ QL883_fair  921  0.1  head_fair
+ UF393_fair  770  0.1  head_fair
+ OM240_fair  711  0.1  head_fair
+ TI188_fair  737  0.1  head_fair
+ TX164_fair  755  0.1  head_fair
+ TI187_fair  735  0.1  head_fair
+ OJ052_fair  1446  0.1  head_fair
+ FF026_fair  707  0.1  head_fair
+ QL880_poor  693  0  head_poor
+ NL892_fair  950  0.1  head_fair
+ LD838_fair  787  0.1  head_fair
+ QX282_zero  833  0  head_zero
+ SO720_fair  902  0.1  head_fair
+ IB956_fair  755  0.1  head_fair
+ UO440_fair  718  0.1  head_fair
+ UO441_fair  711  0.1  head_fair
+ TB522_fair  943  0.1  head_fair
+ LH527_zero  810  0  head_zero
+ SK295_fair  830  0.1  head_fair
+ UX408_fair  792  0.1  head_fair
+ NC990_fair  970  0.1  head_fair
+ DE483_fair  769  0.1  head_fair
+ SW349_fair  806  0.1  head_fair
+ SH077_fair  785  0.1  head_fair
+ TN762_fair  783  0.1  head_fair
+ GD023_fair  903  0.1  head_fair
+ SS634_zero  761  0  head_zero
+ TX324_fair  883  0.1  head_fair
+ SH080_fair  790  0.1  head_fair
+ UO444_fair  787  0.1  head_fair
+ SH079_fair  792  0.1  head_fair
+ RF988_fair  807  0.1  head_fair
+ UF391_fair  753  0.1  head_fair
+ DE482_fair  770  0.1  head_fair
+ JB982_fair  1396  0.1  head_fair
+ NE503_fair  834  0.1  head_fair
+ SH081_poor  763  0  head_poor
+ TI162_fair  758  0.1  head_fair
+ UQ360_fair  787  0.1  head_fair
+ SH084_fair  776  0.1  head_fair
+ HV451_zero  763  0  head_zero
+ MF525_zero  762  0  head_zero
+ RD993_fair  764  0.1  head_fair
+ WO142_zero  994  0  head_zero
+ IB619_fair  770  0.1  head_fair
+ QO117_fair  770  0.1  head_fair
+ UF375_fair  771  0.1  head_fair
+ DE484_zero  764  0  head_zero
+ IB888_zero  704  0  head_zero
+ UF307_fair  762  0.1  head_fair
+ CX948_zero  770  0  head_zero
+ QL686_fair  768  0.1  head_fair
+ MF516_fair  770  0.1  head_fair
+ UX520_fair  797  0.1  head_fair
+ TN761_zero  750  0  head_zero
+ QO121_fair  753  0.1  head_fair
+ UF388_fair  766  0.1  head_fair
+ RK298_fair  675  0.1  head_fair
+ TZ184_fair  799  0.1  head_fair
+ OF267_fair  1115  0.1  head_fair
+ IB980_fair  765  0.1  head_fair
+ NN997_fair  1073  0.1  head_fair
+ OS506_fair  769  0.1  head_fair
+ TA621_fair  760  0.1  head_fair
+ MP915_fair  1271  0.1  head_fair
+ UH090_fair  1131  0.1  head_fair
+ DQ098_zero  753  0  head_zero
+ TP008_fair  939  0.1  head_fair
+ OC736_fair  748  0.1  head_fair
+ HV234_fair  933  0.1  head_fair
+ TA607_fair  692  0.1  head_fair
+ OF285_fair  726  0.1  head_fair
+ WG165_fair  1301  0.1  head_fair
+ QY271_fair  1332  0.1  head_fair
+ QJ612_fair  748  0.1  head_fair
+ LE381_fair  740  0.1  head_fair
+ SL549_fair  1480  0.1  head_fair
+ OC771_fair  1473  0.1  head_fair
+ NK924_fair  1093  0.1  head_fair
+ FK790_zero  1083  0  head_zero
+ UH112_fair  1108  0.1  head_fair
+ HV433_fair  759  0.1  head_fair
+ GD067_fair  771  0.1  head_fair
+ LE366_fair  898  0.1  head_fair
+ GD860_fair  864  0.1  head_fair
+ HK226_fair  866  0.1  head_fair
+ UZ120_fair  1444  0.1  head_fair
+ VL125_fair  1027  0.1  head_fair
+ UH091_fair  1007  0.1  head_fair
+ SR640_fair  1056  0.1  head_fair
+ US451_fair  1054  0.1  head_fair
+ OU343_fair  1489  0.1  head_fair
+ RC701_fair  1476  0.1  head_fair
+ TX178_zero  1428  0  head_zero
+ UR575_fair  1381  0.1  head_fair
+ VK630_fair  1089  0.1  head_fair
+ LV324_zero  881  0  head_zero
+ AH977_fair  752  0.1  head_fair
+ MN758_fair  775  0.1  head_fair
+ RU057_zero  1380  0  head_zero
+ HI921_fair  832  0.1  head_fair
+ UX501_fair  1147  0.1  head_fair
+ WG964_fair  1181  0.1  head_fair
+ TV160_fair  1081  0.1  head_fair
+ LF379_fair  851  0.1  head_fair
+ MK301_fair  1231  0.1  head_fair
+ NT491_fair  750  0.1  head_fair
+ HV418_fair  1373  0.1  head_fair
+ QX271_poor  1371  0  head_poor
+ WN955_fair  749  0.1  head_fair
+ KK219_fair  1383  0.1  head_fair
+ GD039_zero  960  0  head_zero
+ UZ877_zero  681  0  head_zero
+ TV163_fair  1078.5  0.1  head_fair
+ WH001_fair  1076  0.1  head_fair
+ WH831_fair  723  0.1  head_fair
+ UX495_fair  765  0.1  head_fair
+ MF524_zero  830  0  head_zero
+ UO443_fair  1223  0.1  head_fair
+ LZ062_zero  1253  0  head_zero
+ TX307_fair  1224  0.1  head_fair
+ LZ056_fair  1019  0.1  head_fair
+ OU345_zero  1322  0  head_zero
+ UL498_fair  769  0.1  head_fair
+ OF230_good  1012  1  head_good
+ EP034_fair  731  0.1  head_fair
+ MW920_fair  989  0.1  head_fair
+ UL454_fair  738  0.1  head_fair
+ TX322_fair  1006  0.1  head_fair
+ VK010_fair  776  0.1  head_fair
+ NC982_fair  720  0.1  head_fair
+ KK198_zero  791  0  head_zero
+ LZ059_zero  1220  0  head_zero
+ AA457_fair  1028  0.1  head_fair
+ KR252_fair  1177  0.1  head_fair
+ LH573_fair  980  0.1  head_fair
+ OP610_fair  1008  0.1  head_fair
+ WL030_fair  1100  0.1  head_fair
+ JB350_zero  986  0  head_zero
+ OC733_fair  727  0.1  head_fair
+ OP643_fair  973  0.1  head_fair
+ SE076_fair  982  0.1  head_fair
+ IK633_zero  966  0  head_zero
+ DO167_fair  1466  0.1  head_fair
+ WL043_fair  786  0.1  head_fair
+ UT168_fair  1043  0.1  head_fair
+ FQ173_fair  1362  0.1  head_fair
+ MP949_fair  1405  0.1  head_fair
+ MD364_zero  614  0  head_zero
+ RA810_zero  619  0  head_zero
+ UH077_fair  1208  0.1  head_fair
+ FQ169_fair  1399  0.1  head_fair
+ PS056_zero  1472  0  head_zero
+ OR410_fair  1236  0.1  head_fair
+ RB987_fair  1096  0.1  head_fair
+ QS079_fair  1423  0.1  head_fair
+ UR281_zero  1124.5  0  head_zero
+ KL111_zero  598  0  head_zero
+ QO123_fair  918  0.1  head_fair
+ FQ170_zero  1434  0  head_zero
+ FQ155_fair  1220  0.1  head_fair
+ LE659_zero  1355  0  head_zero
+ FQ151_fair  1416  0.1  head_fair
+ AC918_poor  610  0  head_poor
+ IQ939_fair  1463  0.1  head_fair
+ RH721_fair  1526  0.1  head_fair
+ KT053_fair  1051  0.1  head_fair
+ LZ052_fair  1213  0.1  head_fair
+ QX302_fair  1534  0.1  head_fair
+ KP830_fair  1492  0.1  head_fair
+ MN759_fair  1014  0.1  head_fair
+ QJ580_fair  899  0.1  head_fair
+ MB630_zero  976  0  head_zero
+ TO999_fair  1276  0.1  head_fair
+ HY809_fair  1410  0.1  head_fair
+ TP013_fair  991  0.1  head_fair
+ OS544_fair  1156  0.1  head_fair
+ MQ482_zero  1270  0  head_zero
+ RH723_fair  1520  0.1  head_fair
+ EP056_fair  1302  0.1  head_fair
+ LV323_fair  1413  0.1  head_fair
+ GU940_zero  1164  0  head_zero
+ IW834_zero  1447  0  head_zero
+ UR565_fair  1323  0.1  head_fair
+ CE969_zero  1435  0  head_zero
+ KN262_fair  1546  0.1  head_fair
+ CN296_zero  1154.1  0  head_zero
+ VK631_fair  1067  0.1  head_fair
+ UH078_fair  1398  0.1  head_fair
+ VK023_fair  1236  0.1  head_fair
+ TO460_fair  1449  0.1  head_fair
+ DQ234_fair  1479  0.1  head_fair
+ TV164_fair  1183  0.1  head_fair
+ FQ153_fair  1303  0.1  head_fair
+ AH942_fair  1016  0.1  head_fair
+ KN276_fair  1113  0.1  head_fair
+ FQ156_fair  1415  0.1  head_fair
+ QO110_fair  1032  0.1  head_fair
+ KN062_poor  1066  0  head_poor
+ RF980_fair  1087  0.1  head_fair
+ AH940_zero  1457  0  head_zero
+ MP908_fair  1183  0.1  head_fair
+ IQ999_fair  1443  0.1  head_fair
+ WL029_fair  984  0.1  head_fair
+ EC067_zero  1356  0  head_zero
+ RF972_fair  1099  0.1  head_fair
+ MP948_fair  1311  0.1  head_fair
+ HY812_zero  1344  0  head_zero
+ TC313_fair  1508  0.1  head_fair
+ WN930_fair  1337  0.1  head_fair
+ LZ058_zero  992  0  head_zero
+ HY819_zero  1233  0  head_zero
+ SM912_fair  1407  0.1  head_fair
+ NL893_fair  1272  0.1  head_fair
+ QS072_fair  1216  0.1  head_fair
+ SL510_fair  918  0.1  head_fair
+ FQ163_poor  1212  0  head_poor
+ QS073_fair  1216  0.1  head_fair
+ NE452_fair  949  0.1  head_fair
+ IA326_fair  1209  0.1  head_fair
+ TP018_fair  865  0.1  head_fair
+ BF121_zero  1201  0  head_zero
+ GD510_fair  1478  0.1  head_fair
+ AH941_fair  1072  0.1  head_fair
+ NE447_fair  1493  0.1  head_fair
+ BF120_zero  1243  0  head_zero
+ HY803_fair  1479  0.1  head_fair
+ CN316_zero  1143  0  head_zero
+ IW910_zero  1140  0  head_zero
+ NE446_fair  1492  0.1  head_fair
+ HO293_fair  1083  0.1  head_fair
+ HO294_zero  1083  0  head_zero
+ FQ152_fair  1289  0.1  head_fair
+ BQ236_zero  1286  0  head_zero
+ LV307_fair  1492  0.1  head_fair
+ HY810_fair  1482  0.1  head_fair
+ KK220_fair  1477  0.1  head_fair
+ DE498_poor  778  0  head_poor
+ SL507_fair  1277  0.1  head_fair
+ HY804_fair  1490  0.1  head_fair
+ LC915_fair  1229  0.1  head_fair
+ HO283_zero  1090  0  head_zero
+ HO284_zero  1091  0  head_zero
+ HO285_zero  1094  0  head_zero
+ FQ165_zero  1207  0  head_zero
+ UR555_fair  1493  0.1  head_fair
+ UU098_fair  1367  0.1  head_fair
+ CN730_fair  1490  0.1  head_fair
+ WH623_zero  1341  0  head_zero
+ FU871_fair  1199  0.1  head_fair
+ NG185_fair  1393  0.1  head_fair
+ LC916_poor  1495  0  head_poor
+ HC955_fair  1504  0.1  head_fair
+ KN135_zero  1525  0  head_zero
+ HX566_fair  1494  0.1  head_fair
+ AZ939_fair  1499  0.1  head_fair
+ CN991_fair  1499  0.1  head_fair
+ LD208_fair  1438  0.1  head_fair
+ FY997_fair  1497  0.1  head_fair
+ NC992_fair  1116  0.1  head_fair
+ MZ694_fair  1121  0.1  head_fair
+ SM913_fair  1505  0.1  head_fair
+ QO113_fair  1131  0.1  head_fair
+ LX239_zero  761  0  head_zero
+ FS802_fair  1151  0.1  head_fair
+ WN095_fair  1118  0.1  head_fair
+ KL115_zero  684  0  head_zero
+ KL116_zero  674  0  head_zero
+ QO108_fair  1119  0.1  head_fair
+ QO115_fair  1234  0.1  head_fair
+ GD156_fair  1125  0.1  head_fair
+ HY807_zero  1258  0  head_zero
+ QO112_fair  1122  0.1  head_fair
+ RG025_fair  1429  0.1  head_fair
+ NB586_zero  710  0  head_zero
+ CC341_fair  1407  0.1  head_fair
+ KK201_fair  1535  0.1  head_fair
+ SL530_fair  1137  0.1  head_fair
+ UH081_poor  1524  0  head_poor
+ EM691_fair  1539  0.1  head_fair
+ AC565_fair  1267  0.1  head_fair
+ EM690_fair  1540  0.1  head_fair
+ RR270_fair  1464  0.1  head_fair
+ SK201_fair  1530.6  0.1  head_fair
+ MQ477_fair  1169  0.1  head_fair
+ QY276_fair  1192  0.1  head_fair
+ QX301_fair  1164  0.1  head_fair
+ SR629_fair  1235  0.1  head_fair
+ TO998_fair  1146  0.1  head_fair
+ KN905_fair  1278  0.1  head_fair
+ HY825_fair  1267  0.1  head_fair
+ QS077_fair  1532  0.1  head_fair
+ AH939_fair  1159  0.1  head_fair
+ HY811_fair  1538  0.1  head_fair
+ UA818_fair  1135  0.1  head_fair
+ FQ564_zero  1574  0  head_zero
+ CN298_zero  1536  0  head_zero
+ NB594_zero  742  0  head_zero
+ UH086_fair  1418  0.1  head_fair
+ OF250_fair  1536  0.1  head_fair
+ DO181_fair  1537  0.1  head_fair
+ FQ159_fair  1440  0.1  head_fair
+ WH852_fair  1282  0.1  head_fair
+ MZ699_fair  1551  0.1  head_fair
+ KL106_fair  1529  0.1  head_fair
+ FY509_fair  1555  0.1  head_fair
+ UR572_poor  1179  0  head_poor
+ MV912_fair  1541  0.1  head_fair
+ WG275_fair  1181  0.1  head_fair
+ FQ161_fair  1323  0.1  head_fair
+ QS074_fair  1308  0.1  head_fair
+ GZ827_fair  1548  0.1  head_fair
+ RA867_fair  1548  0.1  head_fair
+ EM675_zero  1531  0  head_zero
+ TF113_poor  759  0  head_poor
+ GD511_fair  1231  0.1  head_fair
+ RU477_poor  1201  0  head_poor
+ MP940_poor  1185  0  head_poor
+ UR551_zero  1576  0  head_zero
+ UR559_fair  1538  0.1  head_fair
+ OK138_poor  1565  0  head_poor
+ QS053_zero  1017  0  head_zero
+ LF570_poor  1148  0  head_poor
+ LF571_poor  1149  0  head_poor
+ WG257_zero  769  0  head_zero
+ MP910_poor  1075  0  head_poor
+ WL290_zero  863  0  head_zero
+ WO144_poor  946  0  head_poor
+ WJ695_poor  762  0  head_poor
+ WJ694_poor  776  0  head_poor
+ OP625_poor  881  0  head_poor
+ WH889_poor  777  0  head_poor
+ NE440_zero  842  0  head_zero
+ NB557_zero  814  0  head_zero
+ GD857_poor  901  0  head_poor
+ VK833_poor  1029  0  head_poor
+ TU702_poor  1040  0  head_poor
+ CO156_poor  1095  0  head_poor
+ WL296_poor  780  0  head_poor
+ FT327_poor  1087  0  head_poor
+ WO130_zero  1064  0  head_zero
+ CO170_poor  996  0  head_poor
+ WO129_zero  1082  0  head_zero
+ WO128_poor  1062  0  head_poor
+ KN304_poor  896  0  head_poor
+ KT048_poor  862  0  head_poor
+ MP966_poor  884  0  head_poor
+ NA011_poor  821  0  head_poor
+ OQ069_poor  979  0  head_poor
+ DU129_poor  1074  0  head_poor
+ MP932_zero  1055  0  head_zero
+ KN909_poor  1075  0  head_poor
+ KK199_poor  1073  0  head_poor
+ WG269_poor  858  0  head_poor
+ UR574_poor  824  0  head_poor
+ MZ698_poor  1084  0  head_poor
+ FW586_poor  720  0  head_poor
+ MZ691_poor  768  0  head_poor
+ MP946_poor  1112  0  head_poor
+ UR578_poor  760  0  head_poor
+ KN910_poor  1080  0  head_poor
+ CY720_poor  1103  0  head_poor
+ WP132_poor  790  0  head_poor
+ DU143_fair  1650  0.1  head_fair
+ SL501_poor  1147  0  head_poor
+ MP945_poor  1085  0  head_poor
+ QS082_zero  1100  0  head_zero
+ QS081_poor  975  0  head_poor
+ HV240_poor  1140  0  head_poor
+ DE479_poor  1089  0  head_poor
+ MP925_poor  1105  0  head_poor
+ KK203_poor  1122  0  head_poor
+ LF891_poor  1104  0  head_poor
+ OJ332_poor  973  0  head_poor
+ SL504_poor  1069  0  head_poor
+ MP942_poor  1251  0  head_poor
+ HY802_zero  1497  0  head_zero
+ WG291_poor  1131  0  head_poor
+ HY806_poor  1443  0  head_poor
+ QS076_poor  1443  0  head_poor
+ KN916_poor  1126  0  head_poor
+ TC949_poor  1458  0  head_poor
+ TO986_poor  1428  0  head_poor
+ RR269_poor  1463  0  head_poor
+ DE447_poor  1111  0  head_poor
+ QS062_poor  1299  0  head_poor
+ SL539_poor  1460  0  head_poor
+ HY805_poor  1475  0  head_poor
+ QS071_poor  1468  0  head_poor
+ QS058_poor  1119  0  head_poor
+ LA607_poor  1673.7  0  head_poor
+ WO152_poor  1461  0  head_poor
+ CS235_poor  1035  0  head_poor
+ BQ385_zero  1449  0  head_zero
+ KN913_poor  1451  0  head_poor
+ MP905_poor  1130  0  head_poor
+ UN889_poor  1063  0  head_poor
+ FT315_poor  1079  0  head_poor
+ FQ166_poor  1452  0  head_poor
+ QS051_poor  1081  0  head_poor
+ LF890_poor  1148  0  head_poor
+ FV073_poor  1136  0  head_poor
+ EJ756_poor  1397  0  head_poor
+ UR587_poor  1084  0  head_poor
+ LX262_poor  1134  0  head_poor
+ GD070_poor  1112  0  head_poor
+ NE449_poor  1140  0  head_poor
+ DD639_poor  1375  0  head_poor
+ RR263_poor  1349  0  head_poor
+ SL535_poor  1125  0  head_poor
+ TP010_poor  1509  0  head_poor
+ HY813_zero  1641  0  head_zero
+ MP968_poor  1668  0  head_poor
+ CH165_poor  1307  0  head_poor
+ DU140_poor  1280  0  head_poor
+ MP916_poor  1286  0  head_poor
+ QK912_zero  1638  0  head_zero
+ TU016_zero  1676  0  head_zero
+ UH100_poor  1410  0  head_poor
+ RR274_fair  1690  0.1  head_fair
+ RR273_fair  1688  0.1  head_fair
+ QS064_fair  1682  0.1  head_fair
+ SL540_fair  1687  0.1  head_fair
+ WP098_zero  1683  0  head_zero
+ NS583_zero  1696  0  head_zero
+ TP012_poor  1697  0  head_poor
+ UR561_fair  1703  0.1  head_fair
+ IB648_fair  1693  0.1  head_fair
+ MP934_fair  1689  0.1  head_fair
+ SL544_fair  1698  0.1  head_fair
+ DU131_poor  1705  0  head_poor
+ UR580_zero  1701  0  head_zero
+ NR060_zero  1685  0  head_zero
+ OO387_zero  1702  0  head_zero
+ DS066_zero  1686  0  head_zero
+ NR064_fair  1688  0.1  head_fair
+ KK210_fair  1681  0.1  head_fair
+ KK209_fair  1681  0.1  head_fair
+ HV273_fair  1695  0.1  head_fair
+ HY808_fair  1677  0.1  head_fair
+ LE690_fair  1686  0.1  head_fair
+ RN873_poor  1691  0  head_poor
+ SL506_fair  1688  0.1  head_fair
+ HK160_fair  1678  0.1  head_fair
+ SL543_good  1690  1  head_good
+ NY159_poor  1693  0  head_poor
+ SL542_fair  1692  0.1  head_fair
+ HK421_good  1691  1  head_good
+ UR613_poor  1681  0  head_poor
+ UH085_fair  1662  0.1  head_fair
+ UR586_poor  1687  0  head_poor
+ LF878_poor  1409  0  head_poor
+ QS067_fair  1651  0.1  head_fair
+ KN918_poor  1515  0  head_poor
+ GT432_zero  1696  0  head_zero
+ 463635090481101_best  619  10  head_best
+ PrenticePark_best  610  10  head_best
+ MinersvilleArt_best  800  10  head_best
+ DiapervilleMW1_best  610  10  head_best
+ TolmanMW1_best  614  10  head_best
+ 462639090513801_good  791  1  head_good
+ 463331090500801_good  650.5  1  head_good
+ 463332090494401_good  640.765  1  head_good
+ 461722090494601_good  1384  1  head_good
+ 462819090491401_good  725  1  head_good
+ 463422090485301_good  626  1  head_good
+ 463427090483701_good  628  1  head_good
+ 463730090473201_good  604.96  1  head_good
+ 462426090473301_good  819  1  head_good
+ 462505090472601_good  760  1  head_good
+ 462423090472001_good  780  1  head_good
+ 463727090464801_good  607  1  head_good
+ 462334090463501_good  880  1  head_good
+ 462330090463301_good  860  1  head_good
+ 462332090461601_good  872  1  head_good
+ 462322090460201_good  950  1  head_good
+ 462335090453801_good  865  1  head_good
+ 463635090445401_good  620  1  head_good
+ 463518090444101_best  617.079  10  head_best
+ 463630090442901_good  616.8  1  head_good
+ 462354090441301_good  830  1  head_good
+ 462345090435501_good  882  1  head_good
+ 462316090435101_good  1000  1  head_good
+ 462314090434601_good  985  1  head_good
+ 463553090431001_good  633.81  1  head_good
+ 463610090424501_good  610  1  head_good
+ 463622090422501_good  613  1  head_good
+ 463631090415801_good  609.51  1  head_good
+ 463548090413001_good  610  1  head_good
+ 463612090411801_good  614  1  head_good
+ 463602090391801_good  610  1  head_good
+ 462109090384902_good  1218  1  head_good
+ 462134090384501_good  1163  1  head_good
+ 462109090384001_good  1105  1  head_good
+ 463349090364201_good  668  1  head_good
+ 462310090354601_good  1176  1  head_good
+ 463528090342801_good  628.76  1  head_good
+ 462358090341101_good  1160  1  head_good
+ 463137090330201_good  759  1  head_good
+ 462818090303001_good  1040  1  head_good
+ 462308090243201_good  1384.02  1  head_good
+ 462942090224601_best  1187.28  10  head_best
+ 461319090380901_pr70  1512.87  0.5  head_pr70
+ 461851090385301_pr70  1240  0.5  head_pr70
+ 462006090391401_pr70  1215  0.5  head_pr70
+ 462125090375901_pr70  1180  0.5  head_pr70
+ 462126090411601_pr70  1216.39  0.5  head_pr70
+ 462157090384701_pr70  1067  0.5  head_pr70
+ 462159090242701_pr70  1460.75  0.5  head_pr70
+ 462302090430501_pr70  1046  0.5  head_pr70
+ 462309090362001_pr70  1130  0.5  head_pr70
+ 462309090413101_pr70  1017  0.5  head_pr70
+ 462312090345801_pr70  1174  0.5  head_pr70
+ 462316090434601_pr70  963  0.5  head_pr70
+ 462318090440101_pr70  988  0.5  head_pr70
+ 462319090440501_pr70  996  0.5  head_pr70
+ 462319090441101_pr70  998  0.5  head_pr70
+ 462320090440001_pr70  987  0.5  head_pr70
+ 462327090401101_pr70  1022  0.5  head_pr70
+ 462331090462901_pr70  865  0.5  head_pr70
+ 462334090454701_pr70  840  0.5  head_pr70
+ 462337090401101_pr70  990  0.5  head_pr70
+ 462341090444401_pr70  871  0.5  head_pr70
+ 462346090464401_pr70  828  0.5  head_pr70
+ 462358090420101_pr70  880  0.5  head_pr70
+ 462405090340001_pr70  1140  0.5  head_pr70
+ 462417090414701_pr70  900  0.5  head_pr70
+ 462423090473601_pr70  790  0.5  head_pr70
+ 462425090351501_pr70  1215  0.5  head_pr70
+ 462427090200301_pr70  1461.8  0.5  head_pr70
+ 462427090424901_pr70  761  0.5  head_pr70
+ 462434090341801_pr70  1184  0.5  head_pr70
+ 462448090335801_pr70  1184  0.5  head_pr70
+ 462501090482301_pr70  744  0.5  head_pr70
+ 462523090490701_pr70  768.72  0.5  head_pr70
+ 462525090483601_pr70  754.17  0.5  head_pr70
+ 462528090484101_pr70  760  0.5  head_pr70
+ 462530090485801_pr70  760  0.5  head_pr70
+ 462623090561601_pr70  831  0.5  head_pr70
+ 462634090473301_pr70  760  0.5  head_pr70
+ 462646090314501_pr70  1095  0.5  head_pr70
+ 462658090312401_pr70  1090  0.5  head_pr70
+ 462821090501901_pr70  751  0.5  head_pr70
+ 462827090303901_pr70  1105  0.5  head_pr70
+ 462930090571401_pr70  798  0.5  head_pr70
+ 462956090541101_pr70  664  0.5  head_pr70
+ 462957090541001_pr70  667.345  0.5  head_pr70
+ 463209090342701_pr70  737  0.5  head_pr70
+ 463318090510901_pr70  640  0.5  head_pr70
+ 463333090502801_pr70  634  0.5  head_pr70
+ 463420090581401_pr70  625  0.5  head_pr70
+ 463426090382001_pr70  645  0.5  head_pr70
+ 463451090541901_pr70  660  0.5  head_pr70
+ 463518090472401_pr70  604  0.5  head_pr70
+ 463519090441601_pr70  610  0.5  head_pr70
+ 463520090440701_pr70  612  0.5  head_pr70
+ 463523090570501_pr70  640  0.5  head_pr70
+ 463533090343301_pr70  598  0.5  head_pr70
+ 463541090352201_pr70  633  0.5  head_pr70
+ 463551090413001_pr70  612.53  0.5  head_pr70
+ 463558090425401_pr70  606  0.5  head_pr70
+ 463602090521601_pr70  606  0.5  head_pr70
+ 463602090391102_pr70  612  0.5  head_pr70
+ 463631090405701_pr70  613.5  0.5  head_pr70
+ 463632090475901_pr70  611  0.5  head_pr70
+ 463634090470001_pr70  612  0.5  head_pr70
+ 463635090451901_pr70  615  0.5  head_pr70
+ 463658090443701_pr70  595  0.5  head_pr70
+ 463704090440002_pr70  606  0.5  head_pr70
+ 463731090473001_pr70  600  0.5  head_pr70
+4027000_Bad_Odanah  23577698.07  4.241296E-05  Bad_Odanah
+4026740_Marengo_Me~1  8280189.895  2.415404E-05  Lrg_streams
+4026600_Marengo_Ma~1  5002615.213  3.997909E-05  Lrg_streams
+4026910_Potato_Gur~1  2621373.054  7.629589E-05  Lrg_streams
+40266205_Brunsweil~1  2553924.36  7.831085E-05  Lrg_streams
+4026900_Potato_Gur~1  2280523.067  8.769918E-05  Lrg_streams
+4026620_Brunsweile~1  2213243.257  9.036512E-05  Lrg_streams
+4026590_MarengoGra~1  1949866.371  1.025711E-04  Lrg_streams
+4026880_Potato_Upton  1733943.611  1.153440E-04  Lrg_streams
+4026561_Tyler_Fork~1  1721921.26  1.161493E-04  Lrg_streams
+4026560_Tyler_Fks_~1  1670327.983  1.197370E-04  Lrg_streams
+4026616_Brunsweile~1  1457958.689  1.371781E-04  Lrg_streams
+4026580_MarengoGra~1  1248860.573  1.601460E-04  Lrg_streams
+4027200_Twenty_Mil~1  931821.3534  2.146334E-04  Lrg_streams
+4026559_Tyler_Fork~1  598752  3.340281E-05  Med_streams
+4026950_Vaughncree~1  546441.1832  3.660046E-05  Med_streams
+4026859_Potato_Upson  525721.465  3.804296E-05  Med_streams
+4026450_Bad_R_Mellen  488160  4.097017E-05  Med_streams
+4027522_Deer_Ashland  345491.3963  5.788856E-05  Med_streams
+4026550_Tyler_Fks_~1  305856  6.539025E-05  Med_streams
+4026510_Montreal_M~1  285120  7.014590E-05  Med_streams
+4027650_Denomie_Od~1  262962.6833  7.605642E-05  Med_streams
+4026760_Silver_Mel~1  255048.3476  7.841650E-05  Med_streams
+4027689_Graveyard_~1  249310.3462  8.022130E-05  Med_streams
+4026894_Lawrence_S~1  195541.2833  1.022802E-04  Med_streams
+4026650_Trout_High~1  153016.6614  1.307047E-04  Med_streams
+4026530_Tyler_Fks_~1  139968  1.428898E-04  Med_streams
+40266173_Spring_Ma~1  103877.0033  1.925354E-04  Med_streams
+4026635_Trout_High~1  94067.44545  2.126134E-04  Med_streams
+4026505_Devils_Mel~1  84672  0.000000E+00  Sm_streams
+4027675_Bell_Odanah  78918.83487  0.000000E+00  Sm_streams
+4026410_Bad_R_Morse  55296  0.000000E+00  Sm_streams
+4026400_Spillerber~1  54432  0.000000E+00  Sm_streams
+4026413_Minnow_Morse  44064  0.000000E+00  Sm_streams
+4025552__Erickson_~1  26784  0.000000E+00  Sm_streams
+40265095_City_Mellen  23328  0.000000E+00  Sm_streams
+4026911_Winks_Gurney  2955.419161  0.000000E+00  Sm_streams
+4026514_Krause_Mel~1  0  0.000000E+00  Sm_streams
+4026553_Route_Upson  0  0.000000E+00  Sm_streams
+4026613_MCcarthy_M~1  0  0.000000E+00  Sm_streams
+4026757_Silver_Hig~1  0  0.000000E+00  Sm_streams
+4026820_Potato_Iro~1  0  0.000000E+00  Sm_streams
+4026850_Apple_Upson  0  0.000000E+00  Sm_streams
+* model command line
+G-PEST.bat
+* model input/output
+BR_KC.tpl BR_KC.DAT
+BR_KC.ins BR_KC.XTR

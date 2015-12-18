@@ -1,0 +1,4 @@
+name,prior_mean,prior_stdev,prior_lower_bound,prior_upper_bound,post_mean,post_stdev,post_lower_bound,post_upper_bound
+PD_HALF,9.39664,0.428946,8.53875,10.2545,9.39664,0.245593,8.90546,9.88783
+PD_ONE,8.77066,0.358235,8.05419,9.48713,8.77066,0.177856,8.41495,9.12637
+PD_TEN,9.00757,0.471617,8.06433,9.9508,9.00757,0.24603,8.51551,9.49963

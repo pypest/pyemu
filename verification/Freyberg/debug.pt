@@ -1,0 +1,14 @@
+pst = pyemu.Pst(os.path.join("freyberg","freyberg.pst"))
+mc = pyemu.MonteCarlo(pst=pst)
+mc.draw(10)
+par_dir = os.path.join("prior_par_draws")
+if not os.path.exists(par_dir):
+    os.mkdir(par_dir)
+mc.parensemble.to_parfiles(os.path.join(par_dir,"draw_"))
+
+par_files = [os.path.join(par_dir,f) for f in os.listdir(par_dir) if f.endswith(".par")]
+
+en = pyemu.ParameterEnsemble(pst)
+en.read_parfiles(par_files)
+
+sys.exit()

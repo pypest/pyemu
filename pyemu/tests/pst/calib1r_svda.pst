@@ -1,0 +1,168 @@
+pcf
+* control data
+restart regularisation
+     12    118      1      0      4  
+    1    3 double point  1    0  0
+   10.000       -3.0000      0.3  0.03  10
+      0.100  10.0  0.001
+ 0.1
+    30  0.005  4  4  0.005  4     12.1
+1  1  1  1 nojcosaveitn noreisaveitn
+* singular value decomposition
+     1
+    12  5.0000000E-07
+     0
+* svd assist
+calib1r.pst
+calib1r.jco
+    0    2    0    1    0
+* parameter groups
+ pargp absolute    0.015  0.0  switch    2.0 parabolic
+* parameter data
+par1         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par2         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par3         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par4         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par5         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par6         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par7         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par8         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par9         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par10        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par11        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par12        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+* observation groups
+ heads
+ time
+ distance
+ regul_k  hk_cov.mat
+* observation data
+ well01_1        5.747240      10.0  heads
+ well02_1        5.696160      10.0  heads
+ well03_1        5.491990      10.0  heads
+ well04_1        4.091900      10.0  heads
+ well05_1        3.920140      10.0  heads
+ well06_1        4.059910      10.0  heads
+ well07_1        2.593690      10.0  heads
+ well08_1        3.259790      10.0  heads
+ well09_1        2.973680      10.0  heads
+ well10_1        1.124170      10.0  heads
+ well11_1        1.203610      10.0  heads
+ well12_1        1.192560      10.0  heads
+ part_time       0.000000      0.0  time
+ part_east       0.000000      0.0  distance
+ k_ppt1    0.000000        1.000000      regul_k
+ k_ppt2    0.000000        1.000000      regul_k
+ k_ppt3    0.000000        1.000000      regul_k
+ k_ppt4    0.000000        1.000000      regul_k
+ k_ppt5    0.000000        1.000000      regul_k
+ k_ppt6    0.000000        1.000000      regul_k
+ k_ppt7    0.000000        1.000000      regul_k
+ k_ppt8    0.000000        1.000000      regul_k
+ k_ppt9    0.000000        1.000000      regul_k
+ k_ppt10    0.000000        1.000000      regul_k
+ k_ppt11    0.000000        1.000000      regul_k
+ k_ppt12    0.000000        1.000000      regul_k
+ k_ppt13    0.000000        1.000000      regul_k
+ k_ppt14    0.000000        1.000000      regul_k
+ k_ppt15    0.000000        1.000000      regul_k
+ k_ppt16    0.000000        1.000000      regul_k
+ k_ppt17    0.000000        1.000000      regul_k
+ k_ppt18    0.000000        1.000000      regul_k
+ k_ppt19    0.000000        1.000000      regul_k
+ k_ppt20    0.000000        1.000000      regul_k
+ k_ppt21    0.000000        1.000000      regul_k
+ k_ppt22    0.000000        1.000000      regul_k
+ k_ppt23    0.000000        1.000000      regul_k
+ k_ppt24    0.000000        1.000000      regul_k
+ k_ppt25    0.000000        1.000000      regul_k
+ k_ppt26    0.000000        1.000000      regul_k
+ k_ppt27    0.000000        1.000000      regul_k
+ k_ppt28    0.000000        1.000000      regul_k
+ k_ppt29    0.000000        1.000000      regul_k
+ k_ppt30    0.000000        1.000000      regul_k
+ k_ppt31    0.000000        1.000000      regul_k
+ k_ppt32    0.000000        1.000000      regul_k
+ k_ppt33    0.000000        1.000000      regul_k
+ k_ppt34    0.000000        1.000000      regul_k
+ k_ppt35    0.000000        1.000000      regul_k
+ k_ppt36    0.000000        1.000000      regul_k
+ k_ppt37    0.000000        1.000000      regul_k
+ k_ppt38    0.000000        1.000000      regul_k
+ k_ppt39    0.000000        1.000000      regul_k
+ k_ppt40    0.000000        1.000000      regul_k
+ k_ppt41    0.000000        1.000000      regul_k
+ k_ppt42    0.000000        1.000000      regul_k
+ k_ppt43    0.000000        1.000000      regul_k
+ k_ppt44    0.000000        1.000000      regul_k
+ k_ppt45    0.000000        1.000000      regul_k
+ k_ppt46    0.000000        1.000000      regul_k
+ k_ppt47    0.000000        1.000000      regul_k
+ k_ppt48    0.000000        1.000000      regul_k
+ k_ppt49    0.000000        1.000000      regul_k
+ k_ppt50    0.000000        1.000000      regul_k
+ k_ppt51    0.000000        1.000000      regul_k
+ k_ppt52    0.000000        1.000000      regul_k
+ k_ppt53    0.000000        1.000000      regul_k
+ k_ppt54    0.000000        1.000000      regul_k
+ k_ppt55    0.000000        1.000000      regul_k
+ k_ppt56    0.000000        1.000000      regul_k
+ k_ppt57    0.000000        1.000000      regul_k
+ k_ppt58    0.000000        1.000000      regul_k
+ k_ppt59    0.000000        1.000000      regul_k
+ k_ppt60    0.000000        1.000000      regul_k
+ k_ppt61    0.000000        1.000000      regul_k
+ k_ppt62    0.000000        1.000000      regul_k
+ k_ppt63    0.000000        1.000000      regul_k
+ k_ppt64    0.000000        1.000000      regul_k
+ k_ppt65    0.000000        1.000000      regul_k
+ k_ppt66    0.000000        1.000000      regul_k
+ k_ppt67    0.000000        1.000000      regul_k
+ k_ppt68    0.000000        1.000000      regul_k
+ k_ppt69    0.000000        1.000000      regul_k
+ k_ppt70    0.000000        1.000000      regul_k
+ k_ppt71    0.000000        1.000000      regul_k
+ k_ppt72    0.000000        1.000000      regul_k
+ k_ppt73    0.000000        1.000000      regul_k
+ k_ppt74    0.000000        1.000000      regul_k
+ k_ppt75    0.000000        1.000000      regul_k
+ k_ppt76    0.000000        1.000000      regul_k
+ k_ppt77    0.000000        1.000000      regul_k
+ k_ppt78    0.000000        1.000000      regul_k
+ k_ppt79    0.000000        1.000000      regul_k
+ k_ppt80    0.000000        1.000000      regul_k
+ k_ppt81    0.000000        1.000000      regul_k
+ k_ppt82    0.000000        1.000000      regul_k
+ k_ppt83    0.000000        1.000000      regul_k
+ k_ppt84    0.000000        1.000000      regul_k
+ k_ppt85    0.000000        1.000000      regul_k
+ k_ppt86    0.000000        1.000000      regul_k
+ k_ppt87    0.000000        1.000000      regul_k
+ k_ppt88    0.000000        1.000000      regul_k
+ k_ppt89    0.000000        1.000000      regul_k
+ k_ppt90    0.000000        1.000000      regul_k
+ k_ppt91    0.000000        1.000000      regul_k
+ k_ppt92    0.000000        1.000000      regul_k
+ k_ppt93    0.000000        1.000000      regul_k
+ k_ppt94    0.000000        1.000000      regul_k
+ k_ppt95    0.000000        1.000000      regul_k
+ k_ppt96    0.000000        1.000000      regul_k
+ k_ppt97    0.000000        1.000000      regul_k
+ k_ppt98    0.000000        1.000000      regul_k
+ k_ppt99    0.000000        1.000000      regul_k
+ k_ppt100    0.000000        1.000000      regul_k
+ k_ppt101    0.000000        1.000000      regul_k
+ k_ppt102    0.000000        1.000000      regul_k
+ k_ppt103    0.000000        1.000000      regul_k
+ k_ppt104    0.000000        1.000000      regul_k
+* model command line
+svdabatch.bat
+* model input/output
+parcalc.tpl   parcalc.in
+ model_smp.ins  model.smp
+ time_dat.ins   time.dat
+picalc.ins   picalc.out
+* regularisation
+   12.000000       12.100000      0.1000000
+ 1.0   1.0e-10    1.0e10
+ 1.3   1.0e-2     1

@@ -1,0 +1,58 @@
+pcf
+* control data
+restart estimation
+     12     14      1      0      3  
+    1    2 double point  1    0  0
+   10.000       -3.0000      0.3  0.03  10
+      0.100  10.0  0.001
+ 0.1
+     2  0.005  4  4  0.005  4      12.1
+1  1  1  1 nojcosaveitn noreisaveitn
+* singular value decomposition
+     1
+    12  5.0000000E-07
+     0
+* svd assist
+calib3.pst
+calib3.jco
+    0    2    0    1    0
+* parameter groups
+ pargp absolute    0.015  0.0  switch    2.0 parabolic
+* parameter data
+par1         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par2         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par3         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par4         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par5         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par6         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par7         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par8         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par9         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par10        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par11        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par12        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+* observation groups
+ heads
+ time
+ distance
+* observation data
+ well01_1        5.747240      10.0  heads
+ well02_1        5.696160      10.0  heads
+ well03_1        5.491990      10.0  heads
+ well04_1        4.091900      10.0  heads
+ well05_1        3.920140      10.0  heads
+ well06_1        4.059910      10.0  heads
+ well07_1        2.593690      10.0  heads
+ well08_1        3.259790      10.0  heads
+ well09_1        2.973680      10.0  heads
+ well10_1        1.124170      10.0  heads
+ well11_1        1.203610      10.0  heads
+ well12_1        1.192560      10.0  heads
+ part_time       0.000000      0.0  time
+ part_east       0.000000      0.0  distance
+* model command line
+svdabatch.bat
+* model input/output
+parcalc.tpl   parcalc.in
+ model_smp.ins  model.smp
+ time_dat.ins   time.dat

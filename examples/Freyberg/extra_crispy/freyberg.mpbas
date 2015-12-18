@@ -1,0 +1,7 @@
+ 1.0E+30  1.0E+20
+ 1
+RECHARGE
+   6  DefaultIFACE
+ 0
+OPEN/CLOSE  ref/ibound.ref  1 (FREE)
+CONSTANT     1.000000E-2

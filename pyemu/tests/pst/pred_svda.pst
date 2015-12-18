@@ -1,0 +1,97 @@
+pcf
+* control data
+restart estimation
+     12     55      1      0      2  
+    1    1 double point  1    0  0
+   20.000       -3.0000      0.3  0.03  10     999  lamforgive
+      0.100  10.0  0.001
+ 0.1      1
+     2  0.005  4  4  0.005  4    9.0E+06
+1  1  1  1 nojcosaveitn noreisaveitn
+* singular value decomposition
+     1
+    12  5.0000000E-07
+     1
+* svd assist
+pred.pst
+pred.jco
+    0    2    0    1    0
+* parameter groups
+ pargp absolute    0.015  0.0  switch    2.0 parabolic
+* parameter data
+par1         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par2         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par3         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par4         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par5         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par6         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par7         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par8         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par9         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par10        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par11        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par12        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+* observation groups
+heads
+rflux
+* observation data
+P	509.12	550	heads
+G	508.19	550	heads
+F	508.17	550	heads
+N	512.83	550	heads
+J	515.71	550	heads
+E	513.17	550	heads
+A	512.22	550	heads
+B	511.95	550	heads
+K	513.24	550	heads
+Q	518.32	550	heads
+M	517.12	550	heads
+I	519.28	550	heads
+D	516.71	550	heads
+C	516.03	550	heads
+O	519.02	550	heads
+H	519.7	550	heads
+S	521.96	550	heads
+P_T	509.11	550	heads
+G_T	507.99	550	heads
+F_T	507.79	550	heads
+N_T	512.83	550	heads
+J_T	515.71	550	heads
+E_T	513.04	550	heads
+A_T	508.8	550	heads
+B_T	511.29	550	heads
+K_T	512.21	550	heads
+Q_T	518.18	550	heads
+M_T	516.88	550	heads
+I_T	518.86	550	heads
+D_T	516.17	550	heads
+C_T	515.66	550	heads
+O_T	518.86	550	heads
+H_T	519.55	550	heads
+S_T	521.95	550	heads
+P_T_1yr	508.53	0	heads
+G_T_1yr	506.84	0	heads
+F_T_1yr	506.25	0	heads
+N_T_1yr	509.78	0	heads
+J_T_1yr	511.62	0	heads
+E_T_1yr	507.68	0	heads
+A_T_1yr	507.27	0	heads
+B_T_1yr	507.63	0	heads
+K_T_1yr	507.76	0	heads
+Q_T_1yr	510	0	heads
+M_T_1yr	504.36	0	heads
+I_T_1yr	512.82	0	heads
+D_T_1yr	509.44	0	heads
+C_T_1yr	510.12	0	heads
+O_T_1yr	511.08	0	heads
+H_T_1yr	512.94	0	heads
+S_T_1yr	515.85	0	heads
+toRiver	45550	0.011	rflux
+fromRiver	350	1.43	rflux
+toRiverT	125700	0.011	rflux
+fromRiverT	1030	1.43	rflux
+* model command line
+svdabatch.bat
+* model input/output
+parcalc.tpl   parcalc.in
+resultsT_txt.ins resultsT.txt

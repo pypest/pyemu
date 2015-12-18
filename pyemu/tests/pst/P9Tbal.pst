@@ -1,0 +1,68 @@
+pcf
+* control data
+restart estimation
+4  38  3  0  2
+2  1  single  point  1  0  0
+2.000000e+001  -3.000000e+000  3.000000e-001  1.000000e-002  -10 999 lamforgive
+1.000000e+001  1.000000e+001  1.000000e-003
+1.000000e-001 1 noaui
+10  1.000000e-002  3  3  1.000000e-002  3
+0  0  0   PARSAVEITN
+* parameter groups
+Kp     relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+Cond   relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+syg    relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+* parameter data
+Rcond log factor 1.500000e+05 1.00E-10 5.00E+5 Cond 1 0 1
+Ksand  log  factor  45.00000e+00  1.000000e-10  1.00E+10  kp  1.0  0.0  1
+Ksilt  log  factor  15.00000e+00  1.000000e-10  1.00E+10  kp  1.0  0.0  1
+sy log  factor  1.00000e-01  1.000000e-10  1.0  syg  1.0  0.0  1
+* observation groups
+heads
+rflux
+* observation data
+P	509.12	550	heads
+G	508.19	550	heads
+F	508.17	550	heads
+N	512.83	550	heads
+J	515.71	550	heads
+E	513.17	550	heads
+A	512.22	550	heads
+B	511.95	550	heads
+K	513.24	550	heads
+Q	518.32	550	heads
+M	517.12	550	heads
+I	519.28	550	heads
+D	516.71	550	heads
+C	516.03	550	heads
+O	519.02	550	heads
+H	519.7	550	heads
+S	521.96	550	heads
+P_T	509.11	550	heads
+G_T	507.99	550	heads
+F_T	507.79	550	heads
+N_T	512.83	550	heads
+J_T	515.71	550	heads
+E_T	513.04	550	heads
+A_T	508.8	550	heads
+B_T	511.29	550	heads
+K_T	512.21	550	heads
+Q_T	518.18	550	heads
+M_T	516.88	550	heads
+I_T	518.86	550	heads
+D_T	516.17	550	heads
+C_T	515.66	550	heads
+O_T	518.86	550	heads
+H_T	519.55	550	heads
+S_T	521.95	550	heads
+toRiver	45550	0.011	rflux
+fromRiver	350	1.43	rflux
+toRiverT	125700	0.011	rflux
+fromRiverT	1030	1.43	rflux
+* model command line
+P9T.bat
+* model input/output
+P9Tcal_upw.tpl   P9Tcal.upw
+P9cal_riv.tpl   P9Tcal.riv
+resultsT_txt.ins resultsT.txt
+

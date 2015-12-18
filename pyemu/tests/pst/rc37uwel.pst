@@ -1,0 +1,492 @@
+pcf
+* control data
+restart estimation
+20  430  5  0  5
+4  5  single  point  1  0  0
+2.000000e+001  -3.000000e+000  3.000000e-001  1.000000e-002  7 999 lamforgive
+1.000000e+001  1.000000e+001  1.000000e-003
+1.000000e-001 1 noaui
+10  1.000000e-002  3  3  1.000000e-002  3
+1  1  1   PARSAVEITN REISAVEITN
+* singular value decomposition
+  1
+  19  5.000000e-007
+  1
+* parameter groups
+Rech   relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+Cond   relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+Kh   relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+Vani   relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+PLRange relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
+* parameter data
+R1  fixed  factor  0.000000e+000    -1.0000000E10    1.00E+10     Rech   1.0   0.0 1
+R2  log  factor  9.130000e-004    1.0000000E-10    1.00E+10   Rech   1.0   0.0 1
+R3  log  factor  4.279000e-003    1.0000000E-10    1.00E+10   Rech   1.0   0.0 1
+Ghbc  log  factor  1.3939200e-01    1.0000000E-10    1.00E+10   Cond   1.0   0.0 1
+SFRc  log  factor  5.000000e+000    1.0000000E-10    1.00E+10   Cond   1.0   0.0 1
+subls_kh    log factor  4.0000000E-01    1.0000000E-10    1.00E+10    Kh    1.00E+00    0.00    1
+copfal_kh    log factor      4.0000000E+01    1.0000000E-10    1.00E+10    Kh    1.00E+00    0.00    1
+ss_kh3    log factor      1.2000000E+01    1.0000000E-10    1.00E+10    Kh    1.00E+00    0.00    1
+ss_kh4    log factor      1.2000000E+01    1.0000000E-10    1.00E+10    Kh    1.00E+00    0.00    1
+ss_kh5    log factor      1.2000000E+01    1.0000000E-10    1.00E+10    Kh    1.00E+00    0.00    1
+submc_kh    log factor      5.0000000E+00    1.0000000E-10    1.00E+10    Kh    1.00E+00    0.00    1
+mc_min_kh    log factor      4.0000000E-01    1.0000000E-10    1.00E+10    Kh    1.00E+00    0.00    1
+subls_vani    log factor      1.0000000E+02    1.0000000E-10    1.00E+10    Vani    1.00E+00    0.00    1
+copfal_vani    log factor      1.0000000E+02    1.0000000E-10    1.00E+10    Vani    1.00E+00    0.00    1
+ss_up_vani    log factor      1.0000000E+03    1.0000000E-10    1.00E+10    Vani    1.00E+00    0.00    1
+ss_mid_vani    log  factor     1.0000000E+02    1.0000000E-10    1.00E+10    Vani    1.00E+00    0.00    1
+ss_deep_vani    log  factor     1.0000000E+02    1.0000000E-10    1.00E+10    Vani    1.00E+00    0.00    1
+submc_vani    log factor      1.0000000E+02    1.0000000E-10    1.00E+10    Vani    1.00E+00    0.00    1
+mc_vani    log factor      1.0000000E+02    1.0000000E-10    1.00E+10    Vani    1.00E+00    0.00    1
+mc_ord_rng    log factor      2.0000000E+00    1.0000000E-10    1.00E+10    PLRange    1.00E+00    0.00    1
+* observation groups
+Head
+Flux
+GHBflux
+DryTargs
+SFRTargs
+* observation data
+UA801    6.25E+02    1.00000    Head
+OJ056    6.22E+02    0.00000    Head
+RE351    6.43E+02    1.00000    Head
+RU052    1.08E+03    0.00000    Head
+RU053    1.06E+03    0.00000    Head
+QN859    8.90E+02    1.00000    Head
+UF226    1.04E+03    0.00000    Head
+QN867    1.08E+03    0.00000    Head
+TU850    1.06E+03    0.00000    Head
+RH390    6.31E+02    1.00000    Head
+UR514    1.07E+03    0.00000    Head
+UF221    1.08E+03    0.00000    Head
+TX318    1.10E+03    0.00000    Head
+UA838    7.62E+02    1.00000    Head
+UV308    1.07E+03    0.00000    Head
+UM401    9.49E+02    0.00000    Head
+OR952    1.07E+03    0.00000    Head
+TS724    1.06E+03    0.00000    Head
+UV312    8.55E+02    0.00000    Head
+SS638    6.51E+02    1.00000    Head
+OI875    1.08E+03    0.00000    Head
+LE372    6.61E+02    1.00000    Head
+QL888    6.71E+02    1.00000    Head
+WL032    7.63E+02    1.00000    Head
+QN866    6.74E+02    0.00000    Head
+QN861    9.68E+02    0.00000    Head
+VC543    6.43E+02    1.00000    Head
+RA851    7.80E+02    1.00000    Head
+UV311    1.02E+03    0.00000    Head
+UV306    1.02E+03    0.00000    Head
+QN891    9.80E+02    0.00000    Head
+TJ223    1.07E+03    0.00000    Head
+VK783    9.66E+02    0.00000    Head
+OM481    1.05E+03    0.00000    Head
+UV313    9.37E+02    0.00000    Head
+UA824    6.40E+02    0.00000    Head
+TO968    9.19E+02    0.00000    Head
+SA058    5.95E+02    1.00000    Head
+RB990    9.73E+02    0.00000    Head
+QN894    1.08E+03    0.00000    Head
+VB863    9.52E+02    1.00000    Head
+UV379    1.05E+03    0.00000    Head
+QQ573    1.04E+03    0.00000    Head
+WH447    5.88E+02    1.00000    Head
+TU862    5.98E+02    1.00000    Head
+WO133    7.84E+02    1.00000    Head
+RU005    8.92E+02    0.00000    Head
+VB861    6.65E+02    1.00000    Head
+RA782    6.69E+02    1.00000    Head
+QN865    8.57E+02    0.00000    Head
+VE376    8.56E+02    0.00000    Head
+SK230    8.95E+02    0.00000    Head
+WL314    9.12E+02    1.00000    Head
+VJ070    9.08E+02    1.00000    Head
+TS747    9.65E+02    0.00000    Head
+TJ241    6.01E+02    1.00000    Head
+OI895    1.09E+03    0.00000    Head
+UF207    1.03E+03    0.00000    Head
+SA054    1.05E+03    0.00000    Head
+OK706    6.83E+02    0.00000    Head
+QN855    1.06E+03    0.00000    Head
+UR535    7.54E+02    1.00000    Head
+NQ860    1.04E+03    0.00000    Head
+UK560    5.97E+02    1.00000    Head
+RU358    8.44E+02    0.00000    Head
+VJ071    8.92E+02    1.00000    Head
+UX404    9.09E+02    1.00000    Head
+UK772    8.79E+02    0.00000    Head
+UV310    1.02E+03    0.00000    Head
+RA821    8.11E+02    1.00000    Head
+RA884    6.12E+02    0.00000    Head
+UK594    6.98E+02    1.00000    Head
+RB979    6.03E+02    1.00000    Head
+TS752    9.52E+02    1.00000    Head
+RE348    8.06E+02    0.00000    Head
+TK366    9.08E+02    1.00000    Head
+VE385    8.69E+02    1.00000    Head
+VB862    9.42E+02    1.00000    Head
+OR431    5.99E+02    1.00000    Head
+WH618    5.15E+02    1.00000    Head
+TB520    8.31E+02    0.00000    Head
+VB857    5.84E+02    1.00000    Head
+UK596    8.31E+02    1.00000    Head
+UA972    7.42E+02    1.00000    Head
+OR430    5.97E+02    1.00000    Head
+NS144    7.95E+02    0.00000    Head
+VB858    6.01E+02    1.00000    Head
+TX342    8.79E+02    1.00000    Head
+RG085    9.77E+02    1.00000    Head
+RA861    9.17E+02    1.00000    Head
+US433    8.72E+02    1.00000    Head
+NB574    9.53E+02    1.00000    Head
+UK561    8.10E+02    1.00000    Head
+RA887    7.84E+02    1.00000    Head
+RA888    6.86E+02    1.00000    Head
+TX320    9.04E+02    1.00000    Head
+UK572    8.73E+02    1.00000    Head
+VE384    8.84E+02    1.00000    Head
+SL936    1.05E+03    0.00000    Head
+OM477    1.13E+03    0.00000    Head
+VJ460    8.15E+02    1.00000    Head
+US432    8.79E+02    1.00000    Head
+TB506    6.05E+02    1.00000    Head
+UQ371    8.71E+02    1.00000    Head
+RA886    8.08E+02    1.00000    Head
+TU861    9.72E+02    0.00000    Head
+SW057    8.42E+02    1.00000    Head
+NB598    8.63E+02    1.00000    Head
+UM445    1.05E+03    0.00000    Head
+OF264    9.47E+02    1.00000    Head
+TX346    8.57E+02    1.00000    Head
+TK383    8.80E+02    1.00000    Head
+TB526    8.17E+02    1.00000    Head
+TX046    9.00E+02    1.00000    Head
+UF213    1.04E+03    0.00000    Head
+TK357    9.58E+02    1.00000    Head
+VC545    7.20E+02    1.00000    Head
+SZ371    8.48E+02    1.00000    Head
+TK367    8.54E+02    1.00000    Head
+TK392    8.60E+02    1.00000    Head
+NT712    8.88E+02    1.00000    Head
+WM248    9.23E+02    1.00000    Head
+SL937    1.09E+03    0.00000    Head
+TB513    9.49E+02    1.00000    Head
+TK374    9.35E+02    1.00000    Head
+NB575    9.08E+02    1.00000    Head
+TX330    9.51E+02    1.00000    Head
+TK382    8.88E+02    1.00000    Head
+WH605    9.45E+02    1.00000    Head
+SA053    9.69E+02    1.00000    Head
+TB535    9.59E+02    1.00000    Head
+RA883    8.40E+02    1.00000    Head
+OF892    1.27E+03    0.00000    Head
+OF893    1.28E+03    0.00000    Head
+OF891    1.28E+03    0.00000    Head
+TB521    9.15E+02    0.00000    Head
+TK385    9.26E+02    1.00000    Head
+YE246    8.72E+02    1.00000    Head
+WH848    7.64E+02    0.00000    Head
+US439    9.80E+02    1.00000    Head
+OR449    9.20E+02    1.00000    Head
+RA879    9.15E+02    0.00000    Head
+WN075    8.72E+02    1.00000    Head
+RA804    9.72E+02    1.00000    Head
+WP133    9.09E+02    1.00000    Head
+OR423    6.52E+02    1.00000    Head
+TX314    7.47E+02    1.00000    Head
+TX347    7.44E+02    1.00000    Head
+UK570    6.89E+02    1.00000    Head
+UK580    8.33E+02    1.00000    Head
+US431    7.20E+02    1.00000    Head
+TK395    7.25E+02    1.00000    Head
+TB524    6.99E+02    1.00000    Head
+TX305    7.72E+02    1.00000    Head
+US273    7.65E+02    1.00000    Head
+TK378    7.61E+02    1.00000    Head
+WL283    8.46E+02    1.00000    Head
+TU841    5.35E+02    1.00000    Head
+NX526    6.18E+02    1.00000    Head
+RA877    6.04E+02    1.00000    Head
+OF263    8.62E+02    1.00000    Head
+RA814    7.99E+02    1.00000    Head
+US233    6.87E+02    1.00000    Head
+WM249    5.90E+02    1.00000    Head
+WH615    7.50E+02    1.00000    Head
+RA897    4.66E+02    1.00000    Head
+RA803    6.52E+02    1.00000    Head
+RA892    6.05E+02    1.00000    Head
+UK584    6.29E+02    1.00000    Head
+OM466    7.85E+02    1.00000    Head
+SW099    8.45E+02    1.00000    Head
+TX321    6.11E+02    1.00000    Head
+NB571    5.95E+02    0.00000    Head
+QN875    5.91E+02    1.00000    Head
+QN876    6.01E+02    1.00000    Head
+QN877    6.11E+02    1.00000    Head
+QN878    5.96E+02    1.00000    Head
+QN879    5.96E+02    1.00000    Head
+QN880    5.96E+02    1.00000    Head
+QN881    6.01E+02    1.00000    Head
+QN899    6.11E+02    1.00000    Head
+RB977    5.87E+02    1.00000    Head
+RB983    5.92E+02    1.00000    Head
+RB985    5.82E+02    1.00000    Head
+RB984    6.02E+02    1.00000    Head
+TS725    6.02E+02    1.00000    Head
+TS726    6.02E+02    1.00000    Head
+TS727    5.90E+02    1.00000    Head
+TU829    5.69E+02    1.00000    Head
+TU830    5.70E+02    1.00000    Head
+TU831    5.72E+02    1.00000    Head
+TU832    6.12E+02    1.00000    Head
+TU833    6.04E+02    1.00000    Head
+TU828    5.71E+02    1.00000    Head
+WH429    5.96E+02    1.00000    Head
+WH430    6.16E+02    1.00000    Head
+TB519    6.75E+02    1.00000    Head
+OR414    6.24E+02    1.00000    Head
+RA874    5.95E+02    1.00000    Head
+UM408    8.13E+02    0.00000    Head
+TX325    6.00E+02    0.00000    Head
+TJ256    7.26E+02    1.00000    Head
+US429    6.47E+02    1.00000    Head
+VB885    6.22E+02    1.00000    Head
+TK368    6.06E+02    1.00000    Head
+WH446    5.87E+02    1.00000    Head
+TX315    6.07E+02    1.00000    Head
+UK598    6.46E+02    1.00000    Head
+US436    6.25E+02    1.00000    Head
+SW068    7.51E+02    1.00000    Head
+UK599    5.81E+02    1.00000    Head
+OP627    6.36E+02    1.00000    Head
+RA824    7.11E+02    1.00000    Head
+OM465    7.66E+02    1.00000    Head
+WL066    7.76E+02    1.00000    Head
+WL067    7.43E+02    1.00000    Head
+WN093    7.87E+02    1.00000    Head
+QR578    6.84E+02    1.00000    Head
+QN887    8.24E+02    0.00000    Head
+OR409    7.62E+02    1.00000    Head
+NB567    7.10E+02    1.00000    Head
+NB577    7.97E+02    1.00000    Head
+UK557    7.27E+02    1.00000    Head
+SR638    7.57E+02    1.00000    Head
+RA878    7.26E+02    1.00000    Head
+TB531    7.59E+02    1.00000    Head
+UK586    7.25E+02    1.00000    Head
+UX996    7.00E+02    1.00000    Head
+OM479    6.88E+02    1.00000    Head
+OM470    4.37E+02    1.00000    Head
+RG097    6.53E+02    1.00000    Head
+SK227    6.54E+02    1.00000    Head
+SS670    6.98E+02    1.00000    Head
+TK381    7.02E+02    1.00000    Head
+UX416    6.44E+02    1.00000    Head
+RA880    6.31E+02    1.00000    Head
+TB546    6.49E+02    1.00000    Head
+VB859    9.15E+02    1.00000    Head
+RG018    7.17E+02    0.00000    Head
+NB597    5.67E+02    1.00000    Head
+UX401    6.65E+02    1.00000    Head
+UX411    7.36E+02    1.00000    Head
+RG096    7.40E+02    1.00000    Head
+TU840    6.88E+02    1.00000    Head
+UX413    7.58E+02    1.00000    Head
+UV334    6.78E+02    0.00000    Head
+NB562    8.10E+02    1.00000    Head
+OS542    8.52E+02    1.00000    Head
+QJ476    7.90E+02    1.00000    Head
+SA059    8.56E+02    1.00000    Head
+RA863    7.84E+02    1.00000    Head
+RA899    7.33E+02    1.00000    Head
+TB541    7.78E+02    1.00000    Head
+TK359    7.67E+02    1.00000    Head
+TK358    7.30E+02    1.00000    Head
+TX311    8.06E+02    1.00000    Head
+TX312    5.74E+02    1.00000    Head
+UK565    7.80E+02    1.00000    Head
+VB853    7.24E+02    1.00000    Head
+VL141    7.75E+02    1.00000    Head
+TB534    7.88E+02    1.00000    Head
+TU872    7.82E+02    1.00000    Head
+RM861    6.51E+02    1.00000    Head
+RB966    5.94E+02    1.00000    Head
+TK360    6.09E+02    1.00000    Head
+TK364    5.97E+02    1.00000    Head
+TX323    5.98E+02    1.00000    Head
+TX344    5.86E+02    1.00000    Head
+VB871    6.12E+02    1.00000    Head
+OM483    7.45E+02    1.00000    Head
+SA057    7.81E+02    1.00000    Head
+TK388    7.76E+02    1.00000    Head
+RA876    7.69E+02    1.00000    Head
+RA885    8.26E+02    1.00000    Head
+UX300    7.52E+02    1.00000    Head
+SA055    7.63E+02    0.00000    Head
+TJ233    7.86E+02    0.00000    Head
+VE169    7.67E+02    0.00000    Head
+NX577    6.16E+02    1.00000    Head
+LE385    6.04E+02    1.00000    Head
+RA893    6.19E+02    1.00000    Head
+UK589    6.20E+02    0.00000    Head
+VK636    6.09E+02    0.00000    Head
+VE191    6.76E+02    1.00000    Head
+RF932    7.10E+02    1.00000    Head
+RA823    8.32E+02    1.00000    Head
+TS712    8.40E+02    1.00000    Head
+QN892    7.38E+02    1.00000    Head
+TX349    5.98E+02    1.00000    Head
+RA853    8.48E+02    1.00000    Head
+TK399    6.95E+02    1.00000    Head
+TX343    6.72E+02    1.00000    Head
+WK315    5.34E+02    1.00000    Head
+MG131    5.93E+02    1.00000    Head
+VB880    6.47E+02    1.00000    Head
+TX350    7.83E+02    1.00000    Head
+NB569    6.10E+02    1.00000    Head
+TU842    6.54E+02    1.00000    Head
+RA831    6.47E+02    1.00000    Head
+TU837    7.25E+02    1.00000    Head
+TU838    5.70E+02    0.00000    Head
+TB549    6.27E+02    1.00000    Head
+TB550    6.27E+02    1.00000    Head
+TX329    6.21E+02    1.00000    Head
+VB881    6.24E+02    1.00000    Head
+NC365    5.93E+02    1.00000    Head
+VB870    6.05E+02    0.00000    Head
+RG098    6.29E+02    1.00000    Head
+RA881    6.54E+02    1.00000    Head
+WH452    7.34E+02    1.00000    Head
+RA717    6.90E+02    1.00000    Head
+TX302    7.21E+02    1.00000    Head
+RB978    7.10E+02    1.00000    Head
+VB869    6.53E+02    1.00000    Head
+SG502    7.33E+02    0.00000    Head
+WH606    7.61E+02    0.00000    Head
+UK571    5.94E+02    1.00000    Head
+TB515    6.71E+02    1.00000    Head
+TJ219    6.87E+02    1.00000    Head
+TJ226    6.24E+02    1.00000    Head
+QJ525    6.57E+02    0.00000    Head
+UV349    6.97E+02    0.00000    Head
+OM204    5.95E+02    1.00000    Head
+TK361    6.11E+02    1.00000    Head
+VB867    7.34E+02    1.00000    Head
+UX252    6.30E+02    1.00000    Head
+VB873    6.31E+02    1.00000    Head
+NC362    5.35E+02    1.00000    Head
+TX301    5.99E+02    1.00000    Head
+UF216    7.29E+02    1.00000    Head
+UF219    7.68E+02    1.00000    Head
+VB882    6.08E+02    1.00000    Head
+NB591    6.50E+02    1.00000    Head
+WN073    6.97E+02    1.00000    Head
+NB555    7.36E+02    1.00000    Head
+NB592    7.58E+02    1.00000    Head
+NB593    7.65E+02    1.00000    Head
+NC364    6.78E+02    1.00000    Head
+SL955    6.94E+02    1.00000    Head
+TX334    7.21E+02    1.00000    Head
+SK285    7.29E+02    1.00000    Head
+RB989    6.03E+02    1.00000    Head
+TU856    6.15E+02    1.00000    Head
+UX262    6.26E+02    1.00000    Head
+NB554    6.96E+02    1.00000    Head
+RQ011    7.36E+02    1.00000    Head
+UA971    6.43E+02    1.00000    Head
+MG138    5.94E+02    1.00000    Head
+MG139    5.94E+02    1.00000    Head
+VJ079    5.91E+02    1.00000    Head
+QN854    6.86E+02    1.00000    Head
+NB588    6.42E+02    1.00000    Head
+UX261    6.40E+02    1.00000    Head
+RA807    5.74E+02    1.00000    Head
+US430    5.40E+02    1.00000    Head
+WM627    6.12E+02    1.00000    Head
+US454    6.08E+02    1.00000    Head
+TU843    6.56E+02    1.00000    Head
+WH433    6.73E+02    1.00000    Head
+US427    6.64E+02    1.00000    Head
+VB891    7.31E+02    1.00000    Head
+TK362    5.98E+02    1.00000    Head
+TX341    5.84E+02    1.00000    Head
+VC486    7.03E+02    1.00000    Head
+RA833    6.21E+02    1.00000    Head
+RA869    6.48E+02    1.00000    Head
+VB876    6.23E+02    1.00000    Head
+RB982    7.96E+02    1.00000    Head
+OP642    6.05E+02    1.00000    Head
+UF328    6.06E+02    1.00000    Head
+NB570    6.69E+02    1.00000    Head
+TB516    6.88E+02    1.00000    Head
+SA048    7.05E+02    0.00000    Head
+SL972    6.11E+02    0.00000    Head
+TU859    5.76E+02    0.00000    Head
+SW089    6.16E+02    0.00000    Head
+TB503    6.88E+02    1.00000    Head
+OR417    7.20E+02    1.00000    Head
+RB972    7.56E+02    0.00000    Head
+4026309        2.955127E+06        5.000000E-04        Flux
+4026160        1.613355E+06        5.000000E-04        Flux
+40263205       2.088601E+06        5.000000E-04        Flux
+4026300        1.388413E+06        5.000000E-04        Flux
+4026120        2.601100E+06        5.000000E-04        Flux
+4026130        2.075419E+06        5.000000E-04        Flux
+4026190        1.043329E+06        5.000000E-04        Flux
+4026308        1.992633E+06        5.000000E-04        Flux
+4026315        1.444766E+06        5.000000E-04        Flux
+4026128        1.532427E+06        5.000000E-04        Flux
+4026215        4.143930E+05        0.000000E+00        Flux
+4026295        4.689100E+05        0.000000E+00        Flux
+4026140        9.366470E+05        0.000000E+00        Flux
+4026209        1.903130E+05        0.000000E+00        Flux
+4026137        5.455310E+05        0.000000E+00        Flux
+4026290        1.132160E+05        0.000000E+00        Flux
+4026131        1.852320E+05        0.000000E+00        Flux
+4026127        3.068960E+05        0.000000E+00        Flux
+40261248       5.987480E+05        0.000000E+00        Flux
+4026126        1.844750E+05        0.000000E+00        Flux
+4026305        2.880320E+05        0.000000E+00        Flux
+4026318        7.659400E+04        0.000000E+00        Flux
+4026311        1.465870E+05        0.000000E+00        Flux
+4026150        8.873300E+04        0.000000E+00        Flux
+4026200        3.285600E+04        0.000000E+00        Flux
+4026135        4.965200E+04        0.000000E+00        Flux
+GHB_flux_LakeS 10.0   0.0000000   GHBflux
+glac_tot   0.000 0.000 DryTargs
+tot_dry   0.000 0.000 DryTargs
+ss_tot   0.000 0.000 DryTargs
+ss_dry   0.000 0.000 DryTargs
+big_flux_tot   0.000 0.000 DryTargs
+big_flux_dry   0.000 0.000 DryTargs
+biglostfluxcfs   0.000 0.000 DryTargs
+bigtotfluxcfs   0.000 0.000 DryTargs
+sm_flux_tot   0.000 0.000 DryTargs
+sm_flux_dry   0.000 0.000 DryTargs
+smlostfluxcfs   0.000 0.000 DryTargs
+smtofluxtcfs   0.000 0.000 DryTargs
+targs_tot   0.000 0.000 DryTargs
+targs_dry   0.000 0.000 DryTargs
+sfr_dry_rchs_pct         0.000 0.000 SFRTargs
+sfr_ord1_dry_pct         0.000 0.000 SFRTargs
+sfr_ord2_dry_pct         0.000 0.000 SFRTargs
+sfr_ord3_dry_pct         0.000 0.000 SFRTargs
+sfr_ord4_dry_pct         0.000 0.000 SFRTargs
+sfr_eph_dry_pct          0.000 0.000 SFRTargs
+sfr_per_dry_pct          0.000 0.000 SFRTargs
+sfr_art_dry_pct          0.000 0.000 SFRTargs
+sfr_rch_rising_pct       0.000 0.000 SFRTargs
+sfr_seg_rising_pct       0.000 0.000 SFRTargs
+* model command line
+RC-WEL.bat
+* model input/output
+RC37uWEL_ghb.tpl     RC37uWEL.ghb
+RCPEST_RCH.tpl       RCPEST.RCH
+rcpestk_fil.tpl      rcpestk.fil
+RC37uWEL_sfr.tpl     RC37uWEL.sfr
+lst_summary_dat.ins  lst_summary.dat
+CHKDRTAR_out.ins     CHKDRTAR.out
+RC37u-WEL-nf_SFR_CHK.ins       RC37u-WEL-nf_SFR.CHK
+flux_targets_sfr_flux_out.ins  flux_targets_sfr_flux.out
+RC37uWEL_smp.ins                RC37uWEL.smp
+
+

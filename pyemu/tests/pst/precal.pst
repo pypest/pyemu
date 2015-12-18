@@ -1,0 +1,45 @@
+pcf
+* control data
+restart estimation
+     10    1     10      0      1
+     1     1   single   point   1   0   0
+ 1e-1   -4.0   0.3  0.03    10	    999
+5.0   5.0   1.0e-3
+0.1  noaui
+0   .005  4   4  .005   4
+1    1    1
+* singular value decomposition
+1
+    10  5.0000000E-07
+0
+* parameter groups
+lzsn         relative     1.0000E-02  0.1000      switch      2.000      parabolic
+infilt       relative     1.0000E-02  0.1000      switch      2.000      parabolic
+deepfr       relative     0.1000      1.0000E-02  switch      2.000      parabolic
+basetp       relative     0.1000      1.0000E-02  switch      2.000      parabolic
+agwetp       relative     0.1000      1.0000E-02  switch      2.000      parabolic
+uzsn         relative     1.0000E-02  0.1000      switch      2.000      parabolic
+intfw        relative     1.0000E-02  1.0000E-02  switch      2.000      parabolic
+lzetp        relative     0.1000      1.0000E-02  switch      2.000      parabolic
+irctrans     relative     1.0000E-02  1.0000E-02  switch      2.000      parabolic
+agwrctrans   relative     1.0000E-02  0.1000      switch      2.000      parabolic
+* parameter data
+lzsn         log    factor        150.00        50.000        380.00      lzsn           1.000       0.000        1
+infilt       log    factor        5.0000       2.50000E-02    12.700      infilt         1.000       0.000        1
+deepfr       fixed  factor       0.10000       1.00000E-05   0.50000      deepfr         1.000       0.000        1
+basetp       log    factor       0.10000       1.00000E-05   0.20000      basetp         1.000       0.000        1
+agwetp       fixed  factor       1.08000E-03   1.00000E-05   0.20000      agwetp         1.000       0.000        1
+uzsn         log    factor        25.000        1.3000        51.000      uzsn           1.000       0.000        1
+intfw        log    factor        5.0000        1.0000        10.000      intfw          1.000       0.000        1
+lzetp        fixed  factor       0.50000       0.10000       0.90000      lzetp          1.000       0.000        1
+irctrans     log    factor        2.5000       0.53000        5.6000      irctrans       1.000       0.000        1
+agwrctrans   log    factor        50.000        5.7000        999.00      agwrctrans     1.000       0.000        1
+* observation groups
+prediction
+* observation data
+qmax_sim   0.0     0.0    prediction
+* model command line
+model_predict.bat
+* model input/output
+par2par.tpl           par2par.dat
+tsproc_predict.ins   tsproc_predict.out

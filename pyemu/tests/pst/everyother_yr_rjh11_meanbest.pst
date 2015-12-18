@@ -1,0 +1,483 @@
+pcf
+* control data
+restart  estimation
+34   379     5     0     6
+1    1    single    point    1    0    0
+20    -3.0    0.3    0.001   -7    999 lamforgive
+0.05  1.1   0.001
+0.1
+0  .005  4   4  .005   4
+ 1    1    1  REISAVEITN PARSAVEITN
+* singular value decomposition
+1
+26  5.0E-7
+1
+* parameter groups
+lg          relative    0.01     0.000      always_3      2.000      parabolic  1.0e-4    0.5    smaller
+llg         relative    0.01     0.000      always_3      2.000      parabolic  1.0e-4    0.5    smaller
+lllg        relative    0.01     0.000      always_3      2.000      parabolic  1.0e-4    0.5    smaller
+ssm         relative    0.01     0.000      always_3      2.000      parabolic  1.0e-4    0.5    smaller
+sssm        relative    0.01     0.000      always_3      2.000      parabolic  1.0e-4    0.5    smaller
+* parameter data
+s21     log    factor    5.000000      1     5      llg      1      0       1
+s22     log    factor    4.918865      3     6      llg      1      0       1
+s24     log    factor    3.649755      2     5      llg      1      0       1
+s26     log    factor    3.354132      2     6      llg      1      0       1
+a21     log    factor   6.0346100E-02  0.05    .1     lg      1      0       1
+a22     log    factor   5.0000000E-02  0.05    .08     lg      1      0       1
+a24     log    factor   8.8388800E-02  0.05    0.12  lg      1      0       1
+a26     log    factor   6.0749498E-02  0.05    0.1   lg      1      0       1
+c11     log    factor    9.126524      1     12      llg      1      0       1
+c12     log    factor    7.372638      1     12      llg      1      0       1
+c14     log    factor    6.671518      1     12      llg      1      0       1
+c16     log    factor    8.301139      1     12       llg      1      0       1
+p1     log    factor    1.167082      0.8   1.2      llg      1      0      1
+p2     log    factor    1.135339      0.8   1.2      llg      1      0      1
+p3     log    factor   0.9000000      0.9   1.1      llg      1      0      1
+p4     log    factor    1.100000      0.9   1.1      llg      1      0      1
+p5     log    factor    1.600000      1.2   1.6      llg      1      0      1
+p6     log    factor    1.124688      1.1   1.5      llg      1      0      1
+lhg     log      factor   1.5870496E-05  1e-6 4e-5      ssm      1      0      1
+chc     log      factor   0.1000000      .01    .1      lg       1      0      1
+nmac    log      factor   1.7187983E-02  .005    .06    lg       1      0      1
+mac_r   log      factor   0.1180031      .03    .15      lg       1      0      1
+lks     log      factor    7.633459      5      20      llg      1      0      1
+koc     log      factor    234.2020      170    250     llg      1      0      1
+half    log      factor    30.00000      30    80       llg      1      0      1
+h2      fixed    factor    1.000000      0.99    3      llg      1      0      1
+expr    log      factor   1.7334000E-02  0.01  0.03     lg       1      0      1
+est     fixed    factor   0.6000000      0.5    1.0     lg       1      0      1
+rsw     fixed    factor   0.3354100      0.25   0.35    lg       1      0      1
+rst     fixed    factor    20.07780      15     25      llg      1      0      1
+ea      fixed    factor    50367.60      50000  60000   lg       1      0      1
+wsm     fixed    factor   0.7354860      0.6    0.99    lg       1      0      1
+mrad    fixed    factor    1.000000      0.99    20     llg      1      0      1
+h_3     fixed    factor    15.00000      1      30      llg      1      0      1
+* observation groups
+water_conc
+soil_conc
+prof_conc
+tile_flow
+tf_loss
+tf_annual
+* observation data
+c1                      0.00000          0.000       water_conc
+c2                     1.000000E-03      0.000       water_conc
+c3                     1.000000E-03      0.000       water_conc
+c4                     1.000000E-03      0.000       water_conc
+c5                     1.000000E-03      0.000       water_conc
+c6                     1.000000E-03      0.000       water_conc
+c7                     1.000000E-03      0.000       water_conc
+c8                     1.000000E-03      0.000       water_conc
+c9                     2.000000E-03      0.000       water_conc
+c10                    3.000000E-03      0.000       water_conc
+c11                    2.000000E-03      0.000       water_conc
+c12                    3.000000E-03      0.000       water_conc
+c13                    3.000000E-03      0.000       water_conc
+c14                    2.000000E-03      0.000       water_conc
+c15                     0.00000          0.000       water_conc
+c16                    1.000000E-03      0.000       water_conc
+c17                    1.000000E-03      0.000       water_conc
+c18                    1.000000E-03      0.000       water_conc
+c19                     0.00000          0.000       water_conc
+c20                     0.00000          0.000       water_conc
+c21                     0.00000          0.000       water_conc
+c22                     0.00000          0.000       water_conc
+c23                     0.00000          0.000       water_conc
+c24                     0.00000          0.000       water_conc
+c25                     0.00000          0.000       water_conc
+c26                     0.00000          0.000       water_conc
+c27                     0.00000          0.000       water_conc
+c28                     0.00000          0.000       water_conc
+c29                    5.000000E-04      80.00       water_conc
+c30                    9.000000E-04      80.00       water_conc
+c31                    8.000000E-04      80.00       water_conc
+c32                    5.300000E-03      80.00       water_conc
+c33                    1.300000E-03      80.00       water_conc
+c34                    2.600000E-03      80.00       water_conc
+c35                    4.000000E-03      80.00       water_conc
+c36                    -99.0000          0.000       water_conc
+c37                    1.400000E-03      80.00       water_conc
+c38                    -99.0000          0.000       water_conc
+c39                    -99.0000          0.000       water_conc
+c40                     0.00000          0.000       water_conc
+c41                    5.000000E-04      0.000       water_conc
+c42                    5.000000E-04      0.000       water_conc
+c43                    3.000000E-04      0.000       water_conc
+c44                    6.000000E-04      0.000       water_conc
+c45                    6.000000E-04      0.000       water_conc
+c46                     0.00000          0.000       water_conc
+c47                    9.000000E-04      0.000       water_conc
+c48                    5.000000E-04      0.000       water_conc
+c49                    6.000000E-04      0.000       water_conc
+c50                    -99.0000          0.000       water_conc
+c51                    7.000000E-04      0.000       water_conc
+c52                    5.000000E-04      0.000       water_conc
+c53                     0.00000          0.000       water_conc
+c54                    4.000000E-04      0.000       water_conc
+c55                    6.000000E-04      0.000       water_conc
+c56                    6.000000E-04      0.000       water_conc
+c57                    -99.0000          0.000       water_conc
+c58                    -99.0000          0.000       water_conc
+c59                    3.000000E-04      80.00       water_conc
+c60                     0.00000          80.00       water_conc
+c61                    4.000000E-04      80.00       water_conc
+c62                     0.00000          80.00       water_conc
+c63                    7.000000E-04      80.00       water_conc
+c64                    9.000000E-04      80.00       water_conc
+c65                    6.000000E-04      80.00       water_conc
+c66                    5.000000E-04      80.00       water_conc
+c67                    6.000000E-04      80.00       water_conc
+c68                    1.800000E-03      80.00       water_conc
+c69                    1.000000E-03      80.00       water_conc
+c70                    1.200000E-03      80.00       water_conc
+c71                     0.00000          80.00       water_conc
+c72                    9.000000E-04      80.00       water_conc
+c73                    5.000000E-04      80.00       water_conc
+c74                    -99.0000          0.000       water_conc
+c75                    5.000000E-04      80.00       water_conc
+c76                    1.300000E-03      80.00       water_conc
+c77                    5.000000E-04      80.00       water_conc
+c78                    6.000000E-04      80.00       water_conc
+c79                    5.000000E-04      80.00       water_conc
+c80                    7.000000E-04      80.00       water_conc
+c81                    6.000000E-04      80.00       water_conc
+c82                    4.000000E-04      80.00       water_conc
+c83                    4.000000E-04      80.00       water_conc
+c84                    4.000000E-04      80.00       water_conc
+c85                     0.00000          80.00       water_conc
+c86                    -99.0000          0.000       water_conc
+c87                    4.000000E-04      0.000       water_conc
+c88                    3.000000E-04      0.000       water_conc
+c89                     0.00000          0.000       water_conc
+c90                     0.00000          0.000       water_conc
+c91                     0.00000          0.000       water_conc
+c92                    3.000000E-04      0.000       water_conc
+c93                    3.000000E-04      0.000       water_conc
+c94                    3.000000E-04      0.000       water_conc
+c95                    6.000000E-04      0.000       water_conc
+c96                    6.000000E-04      0.000       water_conc
+c97                    3.000000E-04      0.000       water_conc
+c98                    4.000000E-04      0.000       water_conc
+c99                    6.000000E-04      0.000       water_conc
+c100                   1.100000E-03      0.000       water_conc
+c101                    0.00000          0.000       water_conc
+c102                   -99.0000          0.000       water_conc
+c103                    0.00000          0.000       water_conc
+t1                      0.00000          0.000       tile_flow
+t2                     3.900000E-02      0.000       tile_flow
+t3                     3.000000E-02      0.000       tile_flow
+t4                     1.300000E-02      0.000       tile_flow
+t5                     6.300000E-02      0.000       tile_flow
+t6                     9.600000E-02      0.000       tile_flow
+t7                     3.100000E-02      0.000       tile_flow
+t8                     1.400000E-02      0.000       tile_flow
+t9                     3.300000E-02      0.000       tile_flow
+t10                    0.226000          0.000       tile_flow
+t11                    0.424000          0.000       tile_flow
+t12                    6.000000E-02      0.000       tile_flow
+t13                    1.000000E-02      0.000       tile_flow
+t14                    6.900000E-02      0.000       tile_flow
+t15                    0.256000          0.000       tile_flow
+t16                    9.400000E-02      0.000       tile_flow
+t17                    2.900000E-02      0.000       tile_flow
+t18                    9.000000E-03      0.000       tile_flow
+t19                    1.100000E-02      0.000       tile_flow
+t20                    3.800000E-02      0.000       tile_flow
+t21                    3.300000E-02      0.000       tile_flow
+t22                    2.000000E-02      0.000       tile_flow
+t23                    1.600000E-02      0.000       tile_flow
+t24                    6.000000E-03      0.000       tile_flow
+t25                    4.000000E-03      0.000       tile_flow
+t26                    1.000000E-03      0.000       tile_flow
+t27                     0.00000          0.000       tile_flow
+t28                     0.00000          0.000       tile_flow
+t29                    9.000000E-03     0.8000       tile_flow
+t30                    0.246000         0.8000       tile_flow
+t31                    0.236000         0.8000       tile_flow
+t32                    0.218000         0.8000       tile_flow
+t33                    0.194000         0.8000       tile_flow
+t34                    0.164000         0.8000       tile_flow
+t35                    0.247000         0.8000       tile_flow
+t36                    9.000000E-02     0.8000       tile_flow
+t37                    2.900000E-02     0.8000       tile_flow
+t38                    3.000000E-03     0.8000       tile_flow
+t39                    1.600000E-02      0.000       tile_flow
+t40                    0.128000          0.000       tile_flow
+t41                    0.100000          0.000       tile_flow
+t42                    6.300000E-02      0.000       tile_flow
+t43                    4.300000E-02      0.000       tile_flow
+t44                    4.700000E-02      0.000       tile_flow
+t45                    3.100000E-02      0.000       tile_flow
+t46                    1.700000E-02      0.000       tile_flow
+t47                    2.000000E-02      0.000       tile_flow
+t48                    2.100000E-02      0.000       tile_flow
+t49                    4.000000E-03      0.000       tile_flow
+t50                     0.00000          0.000       tile_flow
+t51                    5.100000E-02      0.000       tile_flow
+t52                    4.100000E-02      0.000       tile_flow
+t53                    4.900000E-02      0.000       tile_flow
+t54                    3.700000E-02      0.000       tile_flow
+t55                    4.600000E-02      0.000       tile_flow
+t56                    6.000000E-03      0.000       tile_flow
+t57                     0.00000          0.000       tile_flow
+t58                    3.500000E-02      0.000       tile_flow
+t59                    0.352000         0.8000       tile_flow
+t60                    0.224000         0.8000       tile_flow
+t61                    0.104000         0.8000       tile_flow
+t62                    5.900000E-02     0.8000       tile_flow
+t63                    7.700000E-02     0.8000       tile_flow
+t64                    0.339000         0.8000       tile_flow
+t65                    0.177000         0.8000       tile_flow
+t66                    0.230000         0.8000       tile_flow
+t67                    0.191000         0.8000       tile_flow
+t68                    0.261000         0.8000       tile_flow
+t69                    0.627000         0.8000       tile_flow
+t70                    0.737000         0.8000       tile_flow
+t71                    0.246000         0.8000       tile_flow
+t72                    8.200000E-02     0.8000       tile_flow
+t73                    9.000000E-03     0.8000       tile_flow
+t74                     0.00000         0.8000       tile_flow
+t75                    2.000000E-03     0.8000       tile_flow
+t76                    3.000000E-03     0.8000       tile_flow
+t77                    2.300000E-02     0.8000       tile_flow
+t78                    0.227000         0.8000       tile_flow
+t79                    0.180000         0.8000       tile_flow
+t80                    4.600000E-02     0.8000       tile_flow
+t81                    8.700000E-02     0.8000       tile_flow
+t82                    0.216000         0.8000       tile_flow
+t83                    0.101000         0.8000       tile_flow
+t84                    9.000000E-03     0.8000       tile_flow
+t85                    1.400000E-02     0.8000       tile_flow
+t86                    6.000000E-03      0.000       tile_flow
+t87                    6.100000E-02      0.000       tile_flow
+t88                    0.108000          0.000       tile_flow
+t89                    2.900000E-02      0.000       tile_flow
+t90                    1.700000E-02      0.000       tile_flow
+t91                    4.400000E-02      0.000       tile_flow
+t92                    0.133000          0.000       tile_flow
+t93                    9.000000E-02      0.000       tile_flow
+t94                    3.900000E-02      0.000       tile_flow
+t95                    0.414000          0.000       tile_flow
+t96                    0.330000          0.000       tile_flow
+t97                    0.157000          0.000       tile_flow
+t98                    2.500000E-02      0.000       tile_flow
+t99                    3.000000E-03      0.000       tile_flow
+t100                   1.000000E-03      0.000       tile_flow
+t101                    0.00000          0.000       tile_flow
+t102                    0.00000          0.000       tile_flow
+t103                   1.100000E-02      0.000       tile_flow
+sc1                     1.56800          0.000       soil_conc
+sc2                    0.179000          0.000       soil_conc
+sc3                    0.189000          0.000       soil_conc
+sc4                    2.500000E-02      0.000       soil_conc
+sc5                    7.000000E-03      0.000       soil_conc
+sc6                     0.00000          0.000       soil_conc
+sc7                    1.200000E-02      0.000       soil_conc
+sc8                    9.000000E-03      0.000       soil_conc
+sc9                     0.00000          0.000       soil_conc
+sc12                    0.00000          0.000       soil_conc
+sc13                   0.140000          0.000       soil_conc
+sc14                   2.100000E-02      0.000       soil_conc
+sc15                   2.200000E-02      0.000       soil_conc
+sc16                   3.000000E-02      0.000       soil_conc
+sc17                    0.00000          0.000       soil_conc
+sc18                    0.00000          0.000       soil_conc
+sc19                    0.00000          0.000       soil_conc
+sc20                    0.00000          0.000       soil_conc
+sc23                   0.390000          0.000       soil_conc
+sc24                   0.139000          0.000       soil_conc
+sc25                   8.000000E-02      0.000       soil_conc
+sc26                   2.800000E-02      0.000       soil_conc
+sc27                   1.100000E-02      0.000       soil_conc
+sc28                   3.000000E-03      0.000       soil_conc
+sc29                   1.000000E-03      0.000       soil_conc
+sc30                   1.000000E-03      0.000       soil_conc
+sc31                   1.000000E-03      0.000       soil_conc
+sc34                   0.180000          1.000       soil_conc
+sc35                   6.100000E-02      1.000       soil_conc
+sc36                   4.600000E-02      1.000       soil_conc
+sc37                   1.100000E-02      1.000       soil_conc
+sc38                   1.200000E-02      1.000       soil_conc
+sc39                    0.00000          1.000       soil_conc
+sc42                   9.800000E-02      1.000       soil_conc
+sc43                   7.900000E-02      1.000       soil_conc
+sc44                   4.400000E-02      1.000       soil_conc
+sc45                   2.400000E-02      1.000       soil_conc
+sc46                   8.000000E-03      1.000       soil_conc
+sc47                    0.00000          1.000       soil_conc
+sc50                   5.600000E-02      0.000       soil_conc
+sc51                   7.500000E-02      0.000       soil_conc
+sc52                   3.700000E-02      0.000       soil_conc
+sc53                   8.000000E-03      0.000       soil_conc
+sc54                    0.00000          0.000       soil_conc
+sc55                    0.00000          0.000       soil_conc
+sc56                    0.00000          0.000       soil_conc
+sc59                   0.976000          0.000       soil_conc
+sc60                   5.600000E-02      0.000       soil_conc
+sc61                   1.300000E-02      0.000       soil_conc
+sc62                   8.000000E-03      0.000       soil_conc
+sc63                    0.00000          0.000       soil_conc
+sc64                    0.00000          0.000       soil_conc
+sc65                    0.00000          0.000       soil_conc
+sc68                   0.121000          0.000       soil_conc
+sc69                   5.200000E-02      0.000       soil_conc
+sc70                   2.000000E-02      0.000       soil_conc
+sc71                   6.000000E-03      0.000       soil_conc
+sc72                    0.00000          0.000       soil_conc
+sc73                    0.00000          0.000       soil_conc
+sc74                    0.00000          0.000       soil_conc
+sc77                   0.104000          0.000       soil_conc
+sc78                   5.600000E-02      0.000       soil_conc
+sc79                   1.300000E-02      0.000       soil_conc
+sc80                    0.00000          0.000       soil_conc
+sc81                    0.00000          0.000       soil_conc
+sc82                    0.00000          0.000       soil_conc
+sc83                    0.00000          0.000       soil_conc
+sc86                   0.156000          1.000       soil_conc
+sc87                   0.115000          1.000       soil_conc
+sc88                   7.800000E-02      1.000       soil_conc
+sc89                   6.200000E-02      1.000       soil_conc
+sc90                   1.400000E-02      1.000       soil_conc
+sc91                    0.00000          1.000       soil_conc
+sc92                    0.00000          1.000       soil_conc
+sc95                   0.427000          1.000       soil_conc
+sc96                   6.200000E-02      1.000       soil_conc
+sc97                   3.000000E-02      1.000       soil_conc
+sc100                  0.190000          1.000       soil_conc
+sc101                  4.000000E-02      1.000       soil_conc
+sc102                  1.300000E-02      1.000       soil_conc
+sc103                   0.00000          1.000       soil_conc
+sc104                  1.000000E-02      1.000       soil_conc
+sc105                   0.00000          1.000       soil_conc
+sc106                   0.00000          1.000       soil_conc
+sc109                  0.108000          1.000       soil_conc
+sc110                  7.100000E-02      1.000       soil_conc
+sc111                   0.00000          1.000       soil_conc
+sc112                   0.00000          1.000       soil_conc
+sc113                   0.00000          1.000       soil_conc
+sc114                   0.00000          1.000       soil_conc
+sc115                   0.00000          1.000       soil_conc
+sc118                  5.600000E-02      1.000       soil_conc
+sc119                  3.200000E-02      1.000       soil_conc
+sc120                  1.900000E-02      1.000       soil_conc
+sc121                   0.00000          1.000       soil_conc
+sc122                   0.00000          1.000       soil_conc
+sc123                   0.00000          1.000       soil_conc
+sc124                   0.00000          1.000       soil_conc
+sc127                  -99.0000          0.000       soil_conc
+sc128                  -99.0000          0.000       soil_conc
+sc129                  -99.0000          0.000       soil_conc
+sc130                  -99.0000          0.000       soil_conc
+sc131                  -99.0000          0.000       soil_conc
+sc132                  -99.0000          0.000       soil_conc
+sc133                  -99.0000          0.000       soil_conc
+sc136                  4.800000E-02      1.000       soil_conc
+sc139                  0.192000          1.000       soil_conc
+sc140                  3.900000E-02      1.000       soil_conc
+sc141                  1.900000E-02      1.000       soil_conc
+sc142                  -99.0000          0.000       soil_conc
+sc143                  -99.0000          0.000       soil_conc
+sc144                  -99.0000          0.000       soil_conc
+sc147                  0.143000          1.000       soil_conc
+sc148                  5.200000E-02      1.000       soil_conc
+sc149                  2.100000E-02      1.000       soil_conc
+sc150                  -99.0000          0.000       soil_conc
+sc151                  -99.0000          0.000       soil_conc
+sc152                  -99.0000          0.000       soil_conc
+sc155                  5.800000E-02      1.000       soil_conc
+sc156                  3.700000E-02      1.000       soil_conc
+sc157                  2.100000E-02      1.000       soil_conc
+sc158                  -99.0000          0.000       soil_conc
+sc159                  -99.0000          0.000       soil_conc
+sc160                  -99.0000          0.000       soil_conc
+sc163                  -99.0000          0.000       soil_conc
+sc164                  -99.0000          0.000       soil_conc
+sc165                  -99.0000          0.000       soil_conc
+sc166                  -99.0000          0.000       soil_conc
+sc167                  -99.0000          0.000       soil_conc
+sc168                  -99.0000          0.000       soil_conc
+sc171                  0.168000          0.000       soil_conc
+sc172                  2.200000E-02      0.000       soil_conc
+sc173                  6.000000E-03      0.000       soil_conc
+sc176                  0.157000          0.000       soil_conc
+sc177                  5.000000E-02      0.000       soil_conc
+sc178                  1.300000E-02      0.000       soil_conc
+sc179                  5.000000E-03      0.000       soil_conc
+sc180                  -99.0000          0.000       soil_conc
+sc181                  -99.0000          0.000       soil_conc
+spc1                    3.00360          0.000       prof_conc
+spc2                   0.355190          0.000       prof_conc
+spc3                    1.00768          0.000       prof_conc
+spc4                   0.472080         0.5000       prof_conc
+spc5                   0.396290         0.5000       prof_conc
+spc6                   0.263940          0.000       prof_conc
+spc7                    1.53415          0.000       prof_conc
+spc8                   0.294640          0.000       prof_conc
+spc9                   0.251630          0.000       prof_conc
+spc10                  0.684130         0.5000       prof_conc
+spc11                  0.754350         0.5000       prof_conc
+spc12                  0.376680         0.5000       prof_conc
+spc13                  0.259550         0.5000       prof_conc
+spc14                  0.156290         0.5000       prof_conc
+spc15                   0.00000         0.5000       prof_conc
+spc16                  0.104400         0.5000       prof_conc
+spc17                  0.363640         0.5000       prof_conc
+spc18                  0.314460         0.5000       prof_conc
+spc19                  0.169460         0.5000       prof_conc
+spc20                   0.00000          0.000       prof_conc
+spc21                  0.284560          0.000       prof_conc
+spc22                  0.342880          0.000       prof_conc
+tfl1                   1.680000E-03      0.000       tf_loss
+tfl2                   3.140000E-03      1000.       tf_loss
+tfl3                   3.400000E-04      0.000       tf_loss
+tfl4                   2.430000E-03      1000.       tf_loss
+tfl5                   3.240000E-04      1000.       tf_loss
+tfl6                   6.010000E-04      0.000       tf_loss
+tfa1                    11.7700          0.000       tf_annual
+tfa2                    20.6100         4.0000E-02   tf_annual
+tfa3                    12.0800          0.000       tf_annual
+tfa4                    50.7600         4.0000E-02   tf_annual
+tfa5                    7.27000         4.0000E-02   tf_annual
+tfa6                    15.2800          0.000       tf_annual
+* model command line
+rzwqmb.bat
+* model input/output
+par2par_rzdat.tpl   par2par_rzdat.in
+conc1.ins    comp2exp.OUT
+* prior information
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

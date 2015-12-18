@@ -1,0 +1,76 @@
+pcf
+* control data
+restart  estimation
+   13    27     9     0     1
+    2     1 single point  1 0 0
+  0.0   2.0   0.3  0.03    1
+  3.0   3.0 0.001
+  0.1
+   1  0.01     3     3  0.01     3
+    1     1     1
+* singular value decomposition
+1
+8  1.0e-7
+0  0  0
+* parameter groups
+fsp      relative 0.01  0.0  switch  2.0 parabolic
+lr       relative 0.01  0.0  switch  2.0 parabolic
+msc      relative 0.01  0.0  switch  2.0 parabolic
+sla      relative 0.01  0.0  switch  2.0 parabolic
+smdc     relative 0.01  0.0  switch  2.0 parabolic
+smdp     relative 0.01  0.0  switch  2.0 parabolic
+npp      relative 0.01  0.0  switch  2.0 parabolic
+fert     relative 0.01  0.0  switch  2.0 parabolic
+asw      relative 0.01  0.0  switch  2.0 parabolic
+* parameter data
+fsp0_1   fixed factor   0.75          0.55    1.0       fsp      1.0     0.0 1
+fsp1_1   none  factor   0.03          0.025   1.5       fsp      1.0     0.0 1
+npp1_1   none  factor   0.8           0.5     1.0       npp      1.0     0.0 1
+npp0_1   fixed factor   0.229         0.015   0.3       npp      1.0     0.0 1
+smdc_1   none  factor   0.095         0.01    10.0      smdc     1.0     0.0 1
+smdp_1   fixed factor   2.4           1.0      4.0      smdp     1.0     0.0 1
+lrm_1    fixed factor   0.042         0.027   0.5       lr       1.0     0.0 1
+lr0_1    fixed factor   0.0015        0.0001  0.015     lr       1.0     0.0 1
+msc_1    none  factor   0.01          0.005   0.015     msc      1.0     0.0 1
+sla0_1   fixed factor   16.1          15.0    26.0      sla      1.0     0.0 1
+sla1_1   none  factor   5.7           5.5     6.0       sla      1.0     0.0 1
+fert_1   fixed factor   1.0           0.5     1.5       fert     1.0     0.0 1
+maxasw_1 fixed factor   300           50      450       asw      1.0     0.0 1
+* observation groups
+obsgroup
+* observation data
+dbh1_1     17.1000      1.0  obsgroup
+dbh2_1     24.9000      1.0  obsgroup
+dbh3_1     28.3000      1.0  obsgroup
+dbh4_1     29.9000      1.0  obsgroup
+dbh5_1     31.1000      1.0  obsgroup
+dbh6_1     32.4000      1.0  obsgroup
+dbh7_1     33.6000      1.0  obsgroup
+dbh8_1     35.2000      1.0  obsgroup
+dbh9_1     36.8000      1.0  obsgroup
+dbh10_1    38.9000      1.0  obsgroup
+dbh11_1    40.1000      1.0  obsgroup
+dbh12_1    40.7000      1.0  obsgroup
+dbh13_1    42.6000      1.0  obsgroup
+dbh14_1    45.6000      1.0  obsgroup
+dbh15_1    48.6000      1.0  obsgroup
+dbh16_1    50.6000      1.0  obsgroup
+dbh17_1    55.5000      1.0  obsgroup
+dbh18_1    59.1000      1.0  obsgroup
+dbh19_1    59.9000      1.0  obsgroup
+dbh20_1    61.5000      1.0  obsgroup
+dbh21_1    62.5000      1.0  obsgroup
+dbh22_1    63.9000      1.0  obsgroup
+dbh23_1    64.9000      1.0  obsgroup
+dbh24_1    66.7000      1.0  obsgroup
+dbh25_1    68.1000      1.0  obsgroup
+dbh26_1    69.4000      1.0  obsgroup
+dbh27_1    72.0000      1.0  obsgroup
+* model command line
+exe\3pg -d misc\rsgparm1.txt -s misc\rsgsite1.txt
+* model input/output
+misc\rsgparm1.tpl  misc\rsgparm1.txt
+misc\rsgsite1.tpl  misc\rsgsite1.txt
+misc\rsgsite1.ins  misc\rsgsite1.out
+* prior information
+++# SVD_PACK(PROPACK)

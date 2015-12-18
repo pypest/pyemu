@@ -1,0 +1,7 @@
+*.pyc
+*.pst_test
+*__pycache__*
+examples/.ipynb_checkpoints/errvarexample-checkpoint.ipynb
+examples/.ipynb_checkpoints/mat_demo-checkpoint.ipynb
+examples/.ipynb_checkpoints/pst_demo-checkpoint.ipynb
+examples/.ipynb_checkpoints/Schurexample-checkpoint.ipynb

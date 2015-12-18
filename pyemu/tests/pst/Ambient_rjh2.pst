@@ -1,0 +1,1083 @@
+pcf
+* control data
+restart  estimation
+136   872     31     0     16
+1    2    single    point    1    0    0
+ 20    -3.0    0.30    0.03    -7    999 lamforgive 
+3.0  3.0   0.001
+0.1
+0   .005  4   4  .005   4
+ 1    1    1  REISAVEITN PARSAVEITN
+* singular value decomposition
+1
+79  5.0E-7
+0
+* parameter groups
+k	     relative    0.01     0.000      switch      2.000      parabolic
+bio	     relative    0.01     0.000      switch      2.000      parabolic
+demeth	     absolute    0.01     0.000      switch      2.000      parabolic
+diff	     relative    0.01     0.000      switch      2.000      parabolic
+ke	     relative    0.01     0.000      switch      2.000      parabolic
+lendiff	     relative    0.01     0.000      switch      2.000      parabolic
+mtc	     relative    0.01     0.000      switch      2.000      parabolic
+q10	     relative    0.01     0.000      switch      2.000      parabolic
+r_	     relative    0.01     0.000      switch      2.000      parabolic
+tbase	     relative    0.01     0.000      switch      2.000      parabolic
+density	     relative    0.01     0.000      switch      2.000      parabolic
+par	     relative    0.01     0.000      switch      2.000      parabolic
+vsettle	     relative    0.01     0.000      switch      2.000      parabolic
+kso4	     relative    0.01     0.000      switch      2.000      parabolic
+kso5	     relative    0.01     0.000      switch      2.000      parabolic
+kso6	     relative    0.01     0.000      switch      2.000      parabolic
+kso7	     relative    0.01     0.000      switch      2.000      parabolic
+kso8	     relative    0.01     0.000      switch      2.000      parabolic
+kso9	     relative    0.01     0.000      switch      2.000      parabolic
+uso4	     relative    0.01     0.000      switch      2.000      parabolic
+uso5	     relative    0.01     0.000      switch      2.000      parabolic
+uso6	     relative    0.01     0.000      switch      2.000      parabolic
+uso7	     relative    0.01     0.000      switch      2.000      parabolic
+uso8	     relative    0.01     0.000      switch      2.000      parabolic
+uso9	     relative    0.01     0.000      switch      2.000      parabolic
+mole	     relative    0.01     0.000      switch      2.000      parabolic
+xoh	     relative    0.01     0.000      switch      2.000      parabolic
+cfrac	     relative    0.01     0.000      switch      2.000      parabolic
+interfrac    relative    0.01     0.000      switch      2.000      parabolic
+k_rs	     relative    0.01     0.000      switch      2.000      parabolic
+k_xo	     relative    0.01     0.000      switch      2.000      parabolic
+* parameter data
+k_adsorp         log         factor           0.005       0.0005        0.05       k                1.0     0.0       1
+k_desorp         log         factor          0.0001      0.00001       0.001       k                1.0     0.0       1
+k_oxid_1         log         factor      2.1969E-05  2.19686E-06 0.000219686       k                1.0     0.0       1
+k_oxid_2         log         factor        0.431372    0.0431372     4.31372       k               -1.0     0.0       1
+k_oxid_3         log         factor       4.1308153   0.41308153   41.308153       k                1.0     0.0       1
+BioDeMethHI      log         factor               2          0.2          20       bio              1.0     0.0       1
+BioDemethLO      log         factor             0.1         0.01           1       bio              1.0     0.0       1
+DeMeth_CT        none        relative             0         -0.1         0.1       demeth           1.0     0.0       1
+Diff_sed_sed     log         factor          0.0001      0.00001       0.001       diff             1.0     0.0       1
+Diff_sed_wat     log         factor          0.0001      0.00001       0.001       diff             1.0     0.0       1
+Diff_wat_wat     log         factor          0.0001      0.00001       0.001       diff             1.0     0.0       1
+ke_PAR_1         log         factor               1          0.1          10       ke               1.0     0.0       1
+ke_PAR_2         fixed       factor               0         -0.1         0.1       ke               1.0     0.0       1
+ke_PAR_3         fixed       factor               0         -0.1         0.1       ke               1.0     0.0       1
+ke_UVA_1         log         factor               1          0.1          10       ke               1.0     0.0       1
+ke_UVA_2         fixed       factor               0         -0.1         0.1       ke               1.0     0.0       1
+ke_UVA_3         fixed       factor               0         -0.1         0.1       ke               1.0     0.0       1
+ke_UVB_1         log         factor               1          0.1          10       ke               1.0     0.0       1
+ke_UVB_2         fixed       factor               0         -0.1         0.1       ke               1.0     0.0       1
+ke_UVB_3         fixed       factor               0         -0.1         0.1       ke               1.0     0.0       1
+LenDiffsed_m     fixed       factor             0.5         0.05           5       lendiff          1.0     0.0       1
+LenDiffwat_m     fixed       factor               1          0.1          10       lendiff          1.0     0.0       1
+MTC_Hg0Air       fixed       factor             100           10        1000       mtc              1.0     0.0       1
+MTC_Hg0Wat       fixed       factor             0.5         0.05           5       mtc              1.0     0.0       1
+MTCMeHgAir       log         factor             100           10        1000       mtc              1.0     0.0       1
+MTCMeHgWat       log         factor             0.5         0.05           5       mtc              1.0     0.0       1
+Q10CT            log         factor               2          0.2          20       q10              1.0     0.0       1
+Q10CTInt         log         factor               2          0.2          20       q10              1.0     0.0       1
+Q10DeMeth        log         factor            1.26        0.126        12.6       q10              1.0     0.0       1
+Q10Meth          log         factor            1.26        0.126        12.6       q10              1.0     0.0       1
+r_PhotoPAR       fixed       factor               0         -0.1         0.1       r_               1.0     0.0       1
+r_PhotoUVA       log         factor          0.0006      0.00006       0.006       r_               1.0     0.0       1
+r_PhotoUVB       fixed       factor               0         -0.1         0.1       r_               1.0     0.0       1
+r_Oxid_PAR       fixed       factor               0         -0.1         0.1       r_               1.0     0.0       1
+r_Oxid_UVA       log         factor            0.05        0.005         0.5       r_               1.0     0.0       1
+r_Oxid_UVB       fixed       factor               0         -0.1         0.1       r_               1.0     0.0       1
+r_PAR_PhotoR     fixed       factor               0         -0.1         0.1       r_               1.0     0.0       1
+r_UVA_PhotoR     log         factor          300000        30000     3000000       r_               1.0     0.0       1
+r_UVB_PhotoR     fixed       factor               0         -0.1         0.1       r_               1.0     0.0       1
+TBaseCT          log         factor              15          1.5         150       tbase            1.0     0.0       1
+TBaseCTInt       log         factor              15          1.5         150       tbase            1.0     0.0       1
+TBaseDeMeth      log         factor              15          1.5         150       tbase            1.0     0.0       1
+TBaseMeth        log         factor              15          1.5         150       tbase            1.0     0.0       1
+density[0]       fixed       factor             1.8         0.18          18       density          1.0     0.0       1
+density[1]       fixed       factor             1.8         0.18          18       density          1.0     0.0       1
+density[2]       fixed       factor             1.8         0.18          18       density          1.0     0.0       1
+density[3]       fixed       factor             2.3         0.23          23       density          1.0     0.0       1
+PAR_threshol     fixed       factor               1          0.1          10       par              1.0     0.0       1
+vsettle[0]       fixed       factor            0.35        0.035         3.5       vsettle          1.0     0.0       1
+vsettle[1]       fixed       factor            0.35        0.035         3.5       vsettle          1.0     0.0       1
+vsettle[2]       fixed       factor            0.35        0.035         3.5       vsettle          1.0     0.0       1
+vsettle[3]       fixed       factor               1          0.1          10       vsettle          1.0     0.0       1
+kSO4_0           fixed       factor               0         -0.1         0.1       kso4             1.0     0.0       1
+kSO4_1           fixed       factor               0         -0.1         0.1       kso5             1.0     0.0       1
+kSO4_2           fixed       factor               0         -0.1         0.1       kso6             1.0     0.0       1
+kSO4_4           fixed       factor               0         -0.1         0.1       kso7             1.0     0.0       1
+kSO4_3           fixed       factor               0         -0.1         0.1       kso8             1.0     0.0       1
+kSO4_5           fixed       factor               0         -0.1         0.1       kso9             1.0     0.0       1
+r_BioDeMet_0     log         factor            0.02        0.002         0.2       r_               1.0     0.0       1
+r_BioDeMet_1     log         factor            0.02        0.002         0.2       r_               1.0     0.0       1
+r_BioDeMet_2     log         factor             0.6         0.06           6       r_               1.0     0.0       1
+r_BioDeMet_4     log         factor             0.6         0.06           6       r_               1.0     0.0       1
+r_BioDeMet_3     log         factor            0.02        0.002         0.2       r_               1.0     0.0       1
+r_BioDeMet_5     log         factor            0.02        0.002         0.2       r_               1.0     0.0       1
+r_BioDeMtl_0    log         factor            0.01        0.001         0.1       r_               1.0     0.0       1
+r_BioDeMtl_2    log         factor             0.6         0.06           6       r_               1.0     0.0       1
+r_BioDeMtl_3    log         factor            0.01        0.001         0.1       r_               1.0     0.0       1
+r_ct_labil_2     log         factor         0.00006     0.000006      0.0006       r_               1.0     0.0       1
+r_ct_labil_3     fixed       factor               0         -0.1         0.1       r_               1.0     0.0       1
+r_ct_refra_2     log         factor        0.000006    0.0000006     0.00006       r_               1.0     0.0       1
+r_ct_refra_3     fixed       factor               0         -0.1         0.1       r_               1.0     0.0       1
+r_Meth_Int_0     log         factor            0.18        0.018         1.8       r_               1.0     0.0       1
+r_Meth_Int_1     log         factor            0.18        0.018         1.8       r_               1.0     0.0       1
+r_Methyl_0       fixed       factor               0         -0.1         0.1       r_               1.0     0.0       1
+r_Methyl_2       log         factor            0.01        0.001         0.1       r_               1.0     0.0       1
+uSO4_0           fixed       factor               1          0.1          10       uso4             1.0     0.0       1
+uSO4_1           fixed       factor               1          0.1          10       uso5             1.0     0.0       1
+uSO4_2           fixed       factor               1          0.1          10       uso6             1.0     0.0       1
+uSO4_4           fixed       factor               1          0.1          10       uso7             1.0     0.0       1
+uSO4_3           fixed       factor               1          0.1          10       uso8             1.0     0.0       1
+uSO4_5           fixed       factor               1          0.1          10       uso9             1.0     0.0       1
+mole_RS_0        fixed       factor           5E-09        5E-10  0.00000005       mole             1.0     0.0       1
+mole_RS_1        fixed       factor           5E-09        5E-10  0.00000005       mole             1.0     0.0       1
+mole_RS_2        fixed       factor           5E-09        5E-10  0.00000005       mole             1.0     0.0       1
+mole_RS_4        fixed       factor           5E-09        5E-10  0.00000005       mole             1.0     0.0       1
+mole_RS_3        fixed       factor           5E-09        5E-10  0.00000005       mole             1.0     0.0       1
+mole_RS_5        fixed       factor           5E-09        5E-10  0.00000005       mole             1.0     0.0       1
+mole_XOH_0_0     log         factor         1.5E-08      1.5E-09  0.00000015       mole             1.0     0.0       1
+mole_XOH_0_2     log         factor      0.00000002  0.000000002   0.0000002       mole             1.0     0.0       1
+mole_XOH_1_0     log         factor      0.00000001  0.000000001   0.0000001       mole             1.0     0.0       1
+mole_XOH_1_2     log         factor      0.00000002  0.000000002   0.0000002       mole             1.0     0.0       1
+mole_XOH_2_0     log         factor           5E-09        5E-10  0.00000005       mole             1.0     0.0       1
+mole_XOH_2_2     log         factor      0.00000001  0.000000001   0.0000001       mole             1.0     0.0       1
+mole_XOH_3_0     log         factor           5E-09        5E-10  0.00000005       mole             1.0     0.0       1
+mole_XOH_3_2     log         factor      0.00000001  0.000000001   0.0000001       mole             1.0     0.0       1
+XOH_frac_0_0     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_0_1     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_0_2     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_0_4     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_0_3     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_0_5     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_1_0     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_1_1     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_1_2     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_1_4     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_1_3     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_1_5     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_2_0     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_2_1     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_2_2     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_2_4     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_2_3     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_2_5     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_3_0     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_3_1     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_3_2     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_3_4     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_3_3     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+XOH_frac_3_5     log         factor            0.75        0.075         7.5       xoh              1.0     0.0       1
+Cfrac_Labi_0     fixed       factor             0.4         0.04           4       cfrac            1.0     0.0       1
+Cfrac_Labi_1     fixed       factor             0.5         0.05           5       cfrac            1.0     0.0       1
+Cfrac_Labi_2     fixed       factor             0.2         0.02           2       cfrac            1.0     0.0       1
+Cfrac_Labi_4     fixed       factor             0.2         0.02           2       cfrac            1.0     0.0       1
+Cfrac_Labi_3     fixed       factor             0.2         0.02           2       cfrac            1.0     0.0       1
+Cfrac_Labi_5     fixed       factor             0.2         0.02           2       cfrac            1.0     0.0       1
+Cfrac_Refr_2     fixed       factor             0.2         0.02           2       cfrac            1.0     0.0       1
+Inter_frac_0     log         factor             0.3         0.03           3       interfrac        1.0     0.0       1
+Inter_frac_1     log         factor             0.3         0.03           3       interfrac        1.0     0.0       1
+k_RS_2_Hg_0      fixed       factor              42          4.2         420       k_rs             1.0     0.0       1
+k_RSH_0          fixed       factor              10            1         100       k_rs            -1.0     0.0       1
+k_RSHg_0         fixed       factor              38          3.8         380       k_rs             1.0     0.0       1
+k_RSMeHg_0       fixed       factor              10            1         100       k_rs             1.0     0.0       1
+k_XOHg_0         log         factor            17.8         1.78         178       k_xo             1.0     0.0       1
+k_XOHg_2         log         factor           17.75        1.775       177.5       k_xo             1.0     0.0       1
+k_XOMeHg_0       log         factor             3.9         0.39          39       k_xo             1.0     0.0       1
+k_XOMeHg_2       log         factor             3.2         0.32          32       k_xo             1.0     0.0       1
+* observation groups
+MeHg_e_un
+MeHg_e_f
+MeHg_h_un
+MeHg_h_f
+HgII_e_un
+HgII_e_f
+HgII_h_un
+HgII_h_f
+MeHg_pw_1_1
+MeHg_pw_2_1
+MeHg_sed_1_1
+MeHg_sed_2_1
+HgII_pw_1_1
+HgII_pw_2_1
+HgII_sed_1_1
+HgII_sed_2_1
+* observation data
+MeHg_pw_1_1_0019	0.206823796	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_0020	0.550785237	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_0022	0.901979455	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_0053	0.183913547	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_0055	0.142672151	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_0082	0.240662397	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_0085	0.186191753	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_0086	0.154802441	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_0344	0.167464428	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_0345	0.302192004	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_0369	0.40118614	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_0395	0.389375943	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_0422	0.165526445	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_0425	0.112525595	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_0460	0.39107578	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_1135	0.270557113	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_1137	0.309813675	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_1139	0.129209187	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_1501	0.494852316	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_1502	0.821575136	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_1504	0.492004481	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_2544	0.89289957	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_2545	0.234786339	2.7450	MeHg_pw_1_1
+MeHg_pw_1_1_2546	0.600298191	2.7450	MeHg_pw_1_1
+MeHg_pw_2_1_0023	0.704169517	2.0073	MeHg_pw_2_1
+MeHg_pw_2_1_0058	1.174494143	2.0073	MeHg_pw_2_1
+MeHg_pw_2_1_0083	0.810406291	2.0073	MeHg_pw_2_1
+MeHg_pw_2_1_0371	0.040528254	2.0073	MeHg_pw_2_1
+MeHg_pw_2_1_0459	0.447540704	2.0073	MeHg_pw_2_1
+MeHg_pw_2_1_1136	0.093281725	2.0073	MeHg_pw_2_1
+MeHg_pw_2_1_1503	0.613627576	2.0073	MeHg_pw_2_1
+MeHg_pw_2_1_2547	0.10131581	2.0073	MeHg_pw_2_1
+MeHg_Sed_1_1_0020	0.00338637	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0022	0.00175545	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0053	0.00327575	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0054	0.00196934	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0055	0.00453034	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0082	0.00353434	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0085	0.00461385	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0086	0.00229053	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0089	0.00240348	539.177	MeHg_sed_1_1
+MeHg_Sed_1_1_0344	0.00340681	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0345	0.00349559	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0348	0.00289903	539.177	MeHg_sed_1_1
+MeHg_Sed_1_1_0349	0.00261269	482.255	MeHg_sed_1_1
+MeHg_Sed_1_1_0369	0.00241363	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0395	0.0054532	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0422	0.00261156	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0425	0.00179846	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0460	0.00284408	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0463	0.00511353	723.382	MeHg_sed_1_1
+MeHg_Sed_1_1_0464	0.00550772	590.639	MeHg_sed_1_1
+MeHg_Sed_1_1_0710	0.0015985	341.006	MeHg_sed_1_1
+MeHg_Sed_1_1_0712	0.00437818	341.006	MeHg_sed_1_1
+MeHg_Sed_1_1_0714	0.00341535	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0716	0.00595694	341.006	MeHg_sed_1_1
+MeHg_Sed_1_1_0756	0.00256168	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0757	0.00089819	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0758	0.00255867	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_0812	0.00481539	341.006	MeHg_sed_1_1
+MeHg_Sed_1_1_0814	0.00395035	417.645	MeHg_sed_1_1
+MeHg_Sed_1_1_0817	0.00306417	341.006	MeHg_sed_1_1
+MeHg_Sed_1_1_1085	0.00931539	417.645	MeHg_sed_1_1
+MeHg_Sed_1_1_1087	0.01197272	417.645	MeHg_sed_1_1
+MeHg_Sed_1_1_1088	0.01063237	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_1135	0.00368684	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_1137	0.00429056	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_1139	0.00344544	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_1183	0.00579657	417.645	MeHg_sed_1_1
+MeHg_Sed_1_1_1184	0.00565546	482.255	MeHg_sed_1_1
+MeHg_Sed_1_1_1186	0.00580108	341.006	MeHg_sed_1_1
+MeHg_Sed_1_1_1435	0.00686158	637.963	MeHg_sed_1_1
+MeHg_Sed_1_1_1436	0.009342	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_1437	0.00581285	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_1501	0.00375406	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_1502	0.00235291	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_1504	0.00390526	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_1551	0.00335842	482.255	MeHg_sed_1_1
+MeHg_Sed_1_1_1552	0.00376602	341.006	MeHg_sed_1_1
+MeHg_Sed_1_1_1810	0.00518062	341.006	MeHg_sed_1_1
+MeHg_Sed_1_1_1811	0.00258229	417.645	MeHg_sed_1_1
+MeHg_Sed_1_1_1911	0.00193324	637.963	MeHg_sed_1_1
+MeHg_Sed_1_1_1912	0.00232256	341.006	MeHg_sed_1_1
+MeHg_Sed_1_1_2284	0.00706263	682.011	MeHg_sed_1_1
+MeHg_Sed_1_1_2544	0.00420274	417.645	MeHg_sed_1_1
+MeHg_Sed_1_1_2545	0.00269517	241.127	MeHg_sed_1_1
+MeHg_Sed_1_1_2546	0.00325334	241.127	MeHg_sed_1_1
+MeHg_Sed_2_1_0023	0.00298159	171.745	MeHg_sed_2_1
+MeHg_Sed_2_1_0058	0.00184336	171.745	MeHg_sed_2_1
+MeHg_Sed_2_1_0082	0.00313548	171.745	MeHg_sed_2_1
+MeHg_Sed_2_1_0089	0.0026615	343.489	MeHg_sed_2_1
+MeHg_Sed_2_1_0347	0.00120285	171.745	MeHg_sed_2_1
+MeHg_Sed_2_1_0349	0.0042813	171.745	MeHg_sed_2_1
+MeHg_Sed_2_1_0371	0.00359207	171.745	MeHg_sed_2_1
+MeHg_Sed_2_1_0459	0.00252815	171.745	MeHg_sed_2_1
+MeHg_Sed_2_1_0464	0.00380014	171.745	MeHg_sed_2_1
+MeHg_Sed_2_1_0465	0.0054089	343.489	MeHg_sed_2_1
+MeHg_Sed_2_1_0714	0.0041349	171.745	MeHg_sed_2_1
+MeHg_Sed_2_1_0715	0.00539291	242.884	MeHg_sed_2_1
+MeHg_Sed_2_1_0759	0.00451514	171.745	MeHg_sed_2_1
+MeHg_Sed_2_1_0813	0.00583793	171.745	MeHg_sed_2_1
+MeHg_Sed_2_1_0814	0.00377992	297.470	MeHg_sed_2_1
+MeHg_Sed_2_1_1087	0.02294289	171.745	MeHg_sed_2_1
+MeHg_Sed_2_1_1088	0.01645638	297.470	MeHg_sed_2_1
+MeHg_Sed_2_1_1136	0.00641002	171.745	MeHg_sed_2_1
+MeHg_Sed_2_1_1183	0.01346254	171.745	MeHg_sed_2_1
+MeHg_Sed_2_1_1185	0.01092507	343.489	MeHg_sed_2_1
+MeHg_Sed_2_1_1436	0.00909837	297.470	MeHg_sed_2_1
+MeHg_Sed_2_1_1437	0.0084383	297.470	MeHg_sed_2_1
+MeHg_Sed_2_1_1503	0.00533026	171.745	MeHg_sed_2_1
+MeHg_Sed_2_1_1551	0.01127072	242.884	MeHg_sed_2_1
+MeHg_Sed_2_1_1552	0.00628552	242.884	MeHg_sed_2_1
+MeHg_Sed_2_1_1809	0.00364047	384.033	MeHg_sed_2_1
+MeHg_Sed_2_1_1810	0.0044129	343.489	MeHg_sed_2_1
+MeHg_Sed_2_1_1811	0.00380151	420.687	MeHg_sed_2_1
+MeHg_Sed_2_1_1911	0.00360328	297.470	MeHg_sed_2_1
+MeHg_Sed_2_1_1912	0.00183798	485.767	MeHg_sed_2_1
+MeHg_Sed_2_1_2284	0.00605252	594.941	MeHg_sed_2_1
+MeHg_Sed_2_1_2543	0.00231762	343.489	MeHg_sed_2_1
+MeHg_Sed_2_1_2544	0.00559502	171.745	MeHg_sed_2_1
+MeHg_Sed_2_1_2545	0.00270566	242.884	MeHg_sed_2_1
+MeHg_Sed_2_1_2547	0.00410785	297.470	MeHg_sed_2_1
+HgII_pw_1_1_0019	1.158860944	0.5958	HgII_pw_1_1
+HgII_pw_1_1_0020	1.732877715	0.5958	HgII_pw_1_1
+HgII_pw_1_1_0022	1.943236796	0.5958	HgII_pw_1_1
+HgII_pw_1_1_0053	1.391300747	0.5958	HgII_pw_1_1
+HgII_pw_1_1_0054	2.133370679	0.5958	HgII_pw_1_1
+HgII_pw_1_1_0055	0.965800342	0.5958	HgII_pw_1_1
+HgII_pw_1_1_0082	1.322454809	0.5958	HgII_pw_1_1
+HgII_pw_1_1_0085	0.7414973	0.5958	HgII_pw_1_1
+HgII_pw_1_1_0086	0.793471764	0.5958	HgII_pw_1_1
+HgII_pw_1_1_0344	1.221791831	0.5958	HgII_pw_1_1
+HgII_pw_1_1_0345	4.731466288	0.5958	HgII_pw_1_1
+HgII_pw_1_1_0369	2.282626619	0.5958	HgII_pw_1_1
+HgII_pw_1_1_0395	1.157539318	0.5958	HgII_pw_1_1
+HgII_pw_1_1_0422	2.16733046	0.5958	HgII_pw_1_1
+HgII_pw_1_1_0425	2.293169297	0.5958	HgII_pw_1_1
+HgII_pw_1_1_0460	0.707118695	0.5958	HgII_pw_1_1
+HgII_pw_1_1_1135	3.459442887	0.5958	HgII_pw_1_1
+HgII_pw_1_1_1137	1.650186325	0.5958	HgII_pw_1_1
+HgII_pw_1_1_1139	1.490790813	0.5958	HgII_pw_1_1
+HgII_pw_1_1_1501	1.054302867	0.5958	HgII_pw_1_1
+HgII_pw_1_1_1502	1.057710279	0.5958	HgII_pw_1_1
+HgII_pw_1_1_1504	0.742176285	0.5958	HgII_pw_1_1
+HgII_pw_1_1_2544	1.812020086	0.5958	HgII_pw_1_1
+HgII_pw_1_1_2545	1.185271474	0.5958	HgII_pw_1_1
+HgII_pw_1_1_2546	2.762913503	0.5958	HgII_pw_1_1
+HgII_pw_2_1_0023	1.160346009	0.5627	HgII_pw_2_1
+HgII_pw_2_1_0058	1.542934161	0.5627	HgII_pw_2_1
+HgII_pw_2_1_0083	1.739653638	0.5627	HgII_pw_2_1
+HgII_pw_2_1_0345	1.893069764	0.5627	HgII_pw_2_1
+HgII_pw_2_1_0371	1.684615476	0.5627	HgII_pw_2_1
+HgII_pw_2_1_0459	0.345282641	0.5627	HgII_pw_2_1
+HgII_pw_2_1_1136	4.516718275	0.5627	HgII_pw_2_1
+HgII_pw_2_1_1503	0.695934045	0.5627	HgII_pw_2_1
+HgII_pw_2_1_2547	2.415917963	0.5627	HgII_pw_2_1
+HgII_Sed_1_1_0020	0.09837727	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0022	0.04108129	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0053	0.10103524	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0054	0.06159486	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0055	0.11993494	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0082	0.1005375	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0085	0.14094749	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0086	0.07617679	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0089	0.08742346	16.1992	HgII_sed_1_1
+HgII_Sed_1_1_0344	0.12906916	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0345	0.11961873	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0348	0.04782704	16.1992	HgII_sed_1_1
+HgII_Sed_1_1_0349	0.04809444	14.489	HgII_sed_1_1
+HgII_Sed_1_1_0369	0.13658464	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0395	0.13548676	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0422	0.16322854	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0425	0.10770509	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0460	0.16039334	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0463	0.0979164	21.7335	HgII_sed_1_1
+HgII_Sed_1_1_0464	0.15425926	17.7453	HgII_sed_1_1
+HgII_Sed_1_1_0710	0.11205437	12.5478	HgII_sed_1_1
+HgII_Sed_1_1_0712	0.19865192	10.2453	HgII_sed_1_1
+HgII_Sed_1_1_0714	0.15305791	10.2453	HgII_sed_1_1
+HgII_Sed_1_1_0716	0.09834027	12.5478	HgII_sed_1_1
+HgII_Sed_1_1_0756	0.08114239	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0757	0.0425978	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0758	0.10826298	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_0812	0.11228561	12.5478	HgII_sed_1_1
+HgII_Sed_1_1_0814	0.11134393	14.489	HgII_sed_1_1
+HgII_Sed_1_1_0817	0.10387581	12.5478	HgII_sed_1_1
+HgII_Sed_1_1_1085	0.20704288	12.5478	HgII_sed_1_1
+HgII_Sed_1_1_1087	0.30036982	12.5478	HgII_sed_1_1
+HgII_Sed_1_1_1088	0.47921779	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_1135	0.07285962	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_1137	0.16147163	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_1139	0.12086523	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_1183	0.23358714	12.5478	HgII_sed_1_1
+HgII_Sed_1_1_1184	0.24472379	14.489	HgII_sed_1_1
+HgII_Sed_1_1_1186	0.24947946	10.2453	HgII_sed_1_1
+HgII_Sed_1_1_1435	0.22449523	19.1671	HgII_sed_1_1
+HgII_Sed_1_1_1436	0.18742178	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_1437	0.17939944	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_1501	0.11199895	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_1502	0.07137057	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_1504	0.10285884	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_1551	0.10943535	14.489	HgII_sed_1_1
+HgII_Sed_1_1_1552	0.09066748	10.2453	HgII_sed_1_1
+HgII_Sed_1_1_1810	0.11278798	10.2453	HgII_sed_1_1
+HgII_Sed_1_1_1811	0.10260718	12.5478	HgII_sed_1_1
+HgII_Sed_1_1_1911	0.08262762	19.1671	HgII_sed_1_1
+HgII_Sed_1_1_1912	0.06961115	10.2453	HgII_sed_1_1
+HgII_Sed_1_1_2284	0.22387115	20.4905	HgII_sed_1_1
+HgII_Sed_1_1_2544	0.21646241	12.5478	HgII_sed_1_1
+HgII_Sed_1_1_2545	0.21245747	7.2445	HgII_sed_1_1
+HgII_Sed_1_1_2546	0.1753761	7.2445	HgII_sed_1_1
+HgII_Sed_2_1_0023	0.14812826	3.9529	HgII_sed_2_1
+HgII_Sed_2_1_0058	0.113242	3.9529	HgII_sed_2_1
+HgII_Sed_2_1_0082	0.14433024	3.9529	HgII_sed_2_1
+HgII_Sed_2_1_0089	0.09562604	7.9058	HgII_sed_2_1
+HgII_Sed_2_1_0347	0.26520587	3.9529	HgII_sed_2_1
+HgII_Sed_2_1_0349	0.1601468	3.9529	HgII_sed_2_1
+HgII_Sed_2_1_0371	0.20321287	3.9529	HgII_sed_2_1
+HgII_Sed_2_1_0459	0.21145768	3.9529	HgII_sed_2_1
+HgII_Sed_2_1_0464	0.13833978	3.9529	HgII_sed_2_1
+HgII_Sed_2_1_0465	0.15532342	7.9058	HgII_sed_2_1
+HgII_Sed_2_1_0711	0.15058912	3.9529	HgII_sed_2_1
+HgII_Sed_2_1_0714	0.12367679	3.9529	HgII_sed_2_1
+HgII_Sed_2_1_0715	0.18364475	5.5903	HgII_sed_2_1
+HgII_Sed_2_1_0759	0.16899616	3.9529	HgII_sed_2_1
+HgII_Sed_2_1_0813	0.14634046	5.5903	HgII_sed_2_1
+HgII_Sed_2_1_0814	0.27785721	6.8466	HgII_sed_2_1
+HgII_Sed_2_1_1087	0.62990004	3.9529	HgII_sed_2_1
+HgII_Sed_2_1_1088	0.4810775	6.8466	HgII_sed_2_1
+HgII_Sed_2_1_1136	0.21020741	3.9529	HgII_sed_2_1
+HgII_Sed_2_1_1183	0.60900599	3.9529	HgII_sed_2_1
+HgII_Sed_2_1_1185	0.40164253	7.9058	HgII_sed_2_1
+HgII_Sed_2_1_1436	0.34461723	6.8466	HgII_sed_2_1
+HgII_Sed_2_1_1437	0.50089549	6.8466	HgII_sed_2_1
+HgII_Sed_2_1_1503	0.1911562	3.9529	HgII_sed_2_1
+HgII_Sed_2_1_1551	0.20130639	5.5903	HgII_sed_2_1
+HgII_Sed_2_1_1552	0.2573544	5.5903	HgII_sed_2_1
+HgII_Sed_2_1_1809	0.16739166	8.839	HgII_sed_2_1
+HgII_Sed_2_1_1810	0.17925087	7.9058	HgII_sed_2_1
+HgII_Sed_2_1_1811	0.18036788	9.6826	HgII_sed_2_1
+HgII_Sed_2_1_1911	0.18692104	6.8466	HgII_sed_2_1
+HgII_Sed_2_1_1912	0.09067452	11.1805	HgII_sed_2_1
+HgII_Sed_2_1_2284	0.48389233	13.6933	HgII_sed_2_1
+HgII_Sed_2_1_2543	0.5372598	7.9058	HgII_sed_2_1
+HgII_Sed_2_1_2544	0.38754757	3.9529	HgII_sed_2_1
+HgII_Sed_2_1_2545	0.12377554	5.5903	HgII_sed_2_1
+HgII_Sed_2_1_2547	0.25684221	6.8466	HgII_sed_2_1
+MeHg_unflt_epi_0000	0.100727152	9.9315	MeHg_e_un
+MeHg_unflt_epi_0003	0.097206275	7.0226	MeHg_e_un
+MeHg_unflt_epi_0005	0.146657032	7.0226	MeHg_e_un
+MeHg_unflt_epi_0008	0.144862224	9.9315	MeHg_e_un
+MeHg_unflt_epi_0015	0.179608256	9.9315	MeHg_e_un
+MeHg_unflt_epi_0029	0.118368863	9.9315	MeHg_e_un
+MeHg_unflt_epi_0041	0.07725036	9.9315	MeHg_e_un
+MeHg_unflt_epi_0056	0.085587894	9.9315	MeHg_e_un
+MeHg_unflt_epi_0070	0.080390456	9.9315	MeHg_e_un
+MeHg_unflt_epi_0084	0.071683519	9.9315	MeHg_e_un
+MeHg_unflt_epi_0098	0.137931422	9.9315	MeHg_e_un
+MeHg_unflt_epi_0112	0.076084871	9.9315	MeHg_e_un
+MeHg_unflt_epi_0204	0.156462933	7.0226	MeHg_e_un
+MeHg_unflt_epi_0277	0.061234128	7.0226	MeHg_e_un
+MeHg_unflt_epi_0329	0.296189683	9.9315	MeHg_e_un
+MeHg_unflt_epi_0337	0.215629642	9.9315	MeHg_e_un
+MeHg_unflt_epi_0350	0.159938451	7.0226	MeHg_e_un
+MeHg_unflt_epi_0364	0.274339502	9.9315	MeHg_e_un
+MeHg_unflt_epi_0378	0.123154432	9.9315	MeHg_e_un
+MeHg_unflt_epi_0392	0.307718058	9.9315	MeHg_e_un
+MeHg_unflt_epi_0406	0.212292857	9.9315	MeHg_e_un
+MeHg_unflt_epi_0421	0.140476038	9.9315	MeHg_e_un
+MeHg_unflt_epi_0434	0.220977031	9.9315	MeHg_e_un
+MeHg_unflt_epi_0448	0.057793995	9.9315	MeHg_e_un
+MeHg_unflt_epi_0462	0.168989391	9.9315	MeHg_e_un
+MeHg_unflt_epi_0476	0.129343062	7.0226	MeHg_e_un
+MeHg_unflt_epi_0499	0.156386948	7.0226	MeHg_e_un
+MeHg_unflt_epi_0568	0.2682442	7.0226	MeHg_e_un
+MeHg_unflt_epi_0639	0.204975527	7.0226	MeHg_e_un
+MeHg_unflt_epi_0687	0.155714406	9.9315	MeHg_e_un
+MeHg_unflt_epi_0695	0.11208402	9.9315	MeHg_e_un
+MeHg_unflt_epi_0707	0.264088807	9.9315	MeHg_e_un
+MeHg_unflt_epi_0722	0.131341869	9.9315	MeHg_e_un
+MeHg_unflt_epi_0751	0.082870191	9.9315	MeHg_e_un
+MeHg_unflt_epi_0778	0.179981958	9.9315	MeHg_e_un
+MeHg_unflt_epi_0806	0.09380552	9.9315	MeHg_e_un
+MeHg_unflt_epi_0833	0.117446055	9.9315	MeHg_e_un
+MeHg_unflt_epi_0868	0.397120281	7.0226	MeHg_e_un
+MeHg_unflt_epi_0932	0.277527349	7.0226	MeHg_e_un
+MeHg_unflt_epi_1010	0.217642846	7.0226	MeHg_e_un
+MeHg_unflt_epi_1051	0.173540457	9.9315	MeHg_e_un
+MeHg_unflt_epi_1066	0.154904854	9.9315	MeHg_e_un
+MeHg_unflt_epi_1080	0.12938544	9.9315	MeHg_e_un
+MeHg_unflt_epi_1093	0.089611944	9.9315	MeHg_e_un
+MeHg_unflt_epi_1106	0.113122232	9.9315	MeHg_e_un
+MeHg_unflt_epi_1120	0.087146989	9.9315	MeHg_e_un
+MeHg_unflt_epi_1134	0.072866254	9.9315	MeHg_e_un
+MeHg_unflt_epi_1149	0.102631752	9.9315	MeHg_e_un
+MeHg_unflt_epi_1163	0.070627256	9.9315	MeHg_e_un
+MeHg_unflt_epi_1177	0.071869042	9.9315	MeHg_e_un
+MeHg_unflt_epi_1191	0.08034161	9.9315	MeHg_e_un
+MeHg_unflt_epi_1204	0.080985696	9.9315	MeHg_e_un
+MeHg_unflt_epi_1233	0.117258641	9.9315	MeHg_e_un
+MeHg_unflt_epi_1303	0.18153561	7.0226	MeHg_e_un
+MeHg_unflt_epi_1387	0.170616813	7.0226	MeHg_e_un
+MeHg_unflt_epi_1408	0.12551476	9.9315	MeHg_e_un
+MeHg_unflt_epi_1424	0.13877876	9.9315	MeHg_e_un
+MeHg_unflt_epi_1444	0.10006138	9.9315	MeHg_e_un
+MeHg_unflt_epi_1457	0.092673691	9.9315	MeHg_e_un
+MeHg_unflt_epi_1471	0.11210896	9.9315	MeHg_e_un
+MeHg_unflt_epi_1485	0.089992933	9.9315	MeHg_e_un
+MeHg_unflt_epi_1498	0.10560156	9.9315	MeHg_e_un
+MeHg_unflt_epi_1513	0.088555032	9.9315	MeHg_e_un
+MeHg_unflt_epi_1527	0.058653807	9.9315	MeHg_e_un
+MeHg_unflt_epi_1542	0.068268537	9.9315	MeHg_e_un
+MeHg_unflt_epi_1555	0.093945893	9.9315	MeHg_e_un
+MeHg_unflt_epi_1569	0.075417888	9.9315	MeHg_e_un
+MeHg_unflt_epi_1604	0.226680213	9.9315	MeHg_e_un
+MeHg_unflt_epi_1662	0.248466482	7.0226	MeHg_e_un
+MeHg_unflt_epi_1751	0.291550691	7.0226	MeHg_e_un
+MeHg_unflt_epi_1780	0.125871949	9.9315	MeHg_e_un
+MeHg_unflt_epi_1794	0.126821249	9.9315	MeHg_e_un
+MeHg_unflt_epi_1808	0.106666082	9.9315	MeHg_e_un
+MeHg_unflt_epi_1821	0.089101187	9.9315	MeHg_e_un
+MeHg_unflt_epi_1835	0.078260454	9.9315	MeHg_e_un
+MeHg_unflt_epi_1849	0.057457703	9.9315	MeHg_e_un
+MeHg_unflt_epi_1863	0.05563389	9.9315	MeHg_e_un
+MeHg_unflt_epi_1878	0.060320574	9.9315	MeHg_e_un
+MeHg_unflt_epi_1891	0.051066218	9.9315	MeHg_e_un
+MeHg_unflt_epi_1906	0.035679639	9.9315	MeHg_e_un
+MeHg_unflt_epi_1921	0.061444635	9.9315	MeHg_e_un
+MeHg_unflt_epi_1933	0.054052034	9.9315	MeHg_e_un
+MeHg_unflt_epi_1946	0.249197016	9.9315	MeHg_e_un
+MeHg_unflt_epi_1960	0.291216866	9.9315	MeHg_e_un
+MeHg_unflt_epi_2031	0.269589447	7.0226	MeHg_e_un
+MeHg_unflt_epi_2115	0.241560559	7.0226	MeHg_e_un
+MeHg_unflt_epi_2171	0.075287977	7.0226	MeHg_e_un
+MeHg_unflt_epi_2199	0.029041607	7.0226	MeHg_e_un
+MeHg_unflt_epi_2227	0.094522995	7.0226	MeHg_e_un
+MeHg_unflt_epi_2254	0.10888673	7.0226	MeHg_e_un
+MeHg_unflt_epi_2282	0.210169296	7.0226	MeHg_e_un
+MeHg_unflt_epi_2332	0.227783779	7.0226	MeHg_e_un
+MeHg_unflt_epi_2396	0.276817283	7.0226	MeHg_e_un
+MeHg_unflt_epi_2481	0.258330711	7.0226	MeHg_e_un
+MeHg_unflt_epi_2520	0.207833446	7.0226	MeHg_e_un
+MeHg_unflt_epi_2542	0.114670911	7.0226	MeHg_e_un
+MeHg_flt_epi_0000	0.092618252	11.2764	MeHg_e_f
+MeHg_flt_epi_0003	0.052067377	7.9736	MeHg_e_f
+MeHg_flt_epi_0005	0.120050889	7.9736	MeHg_e_f
+MeHg_flt_epi_0008	0.129899847	11.2764	MeHg_e_f
+MeHg_flt_epi_0015	0.167741325	11.2764	MeHg_e_f
+MeHg_flt_epi_0029	0.100970609	11.2764	MeHg_e_f
+MeHg_flt_epi_0041	0.054955404	11.2764	MeHg_e_f
+MeHg_flt_epi_0056	0.069833138	11.2764	MeHg_e_f
+MeHg_flt_epi_0070	0.061983175	11.2764	MeHg_e_f
+MeHg_flt_epi_0084	0.056956262	11.2764	MeHg_e_f
+MeHg_flt_epi_0098	0.106654893	11.2764	MeHg_e_f
+MeHg_flt_epi_0112	0.064025328	11.2764	MeHg_e_f
+MeHg_flt_epi_0204	0.154971734	7.9736	MeHg_e_f
+MeHg_flt_epi_0277	0.049767967	7.9736	MeHg_e_f
+MeHg_flt_epi_0329	0.286406947	11.2764	MeHg_e_f
+MeHg_flt_epi_0337	0.192709028	11.2764	MeHg_e_f
+MeHg_flt_epi_0350	0.141135649	7.9736	MeHg_e_f
+MeHg_flt_epi_0364	0.264042723	11.2764	MeHg_e_f
+MeHg_flt_epi_0378	0.101419706	11.2764	MeHg_e_f
+MeHg_flt_epi_0392	0.234303723	11.2764	MeHg_e_f
+MeHg_flt_epi_0406	0.136159036	11.2764	MeHg_e_f
+MeHg_flt_epi_0421	0.085217188	11.2764	MeHg_e_f
+MeHg_flt_epi_0434	0.196836	11.2764	MeHg_e_f
+MeHg_flt_epi_0448	0.063145121	7.9736	MeHg_e_f
+MeHg_flt_epi_0462	0.156321454	11.2764	MeHg_e_f
+MeHg_flt_epi_0476	0.10162262	7.9736	MeHg_e_f
+MeHg_flt_epi_0499	0.136452484	7.9736	MeHg_e_f
+MeHg_flt_epi_0568	0.225668938	7.9736	MeHg_e_f
+MeHg_flt_epi_0639	0.197005606	7.9736	MeHg_e_f
+MeHg_flt_epi_0687	0.135295575	11.2764	MeHg_e_f
+MeHg_flt_epi_0695	0.098049238	11.2764	MeHg_e_f
+MeHg_flt_epi_0707	0.254292693	11.2764	MeHg_e_f
+MeHg_flt_epi_0722	0.105428336	11.2764	MeHg_e_f
+MeHg_flt_epi_0751	0.086134198	11.2764	MeHg_e_f
+MeHg_flt_epi_0778	0.16914509	11.2764	MeHg_e_f
+MeHg_flt_epi_0791	0.367152041	11.2764	MeHg_e_f
+MeHg_flt_epi_0806	0.081614631	11.2764	MeHg_e_f
+MeHg_flt_epi_0833	0.099146395	11.2764	MeHg_e_f
+MeHg_flt_epi_0868	0.352404621	7.9736	MeHg_e_f
+MeHg_flt_epi_0932	0.276035265	7.9736	MeHg_e_f
+MeHg_flt_epi_1010	0.210712154	7.9736	MeHg_e_f
+MeHg_flt_epi_1051	0.146972806	11.2764	MeHg_e_f
+MeHg_flt_epi_1066	0.119148187	11.2764	MeHg_e_f
+MeHg_flt_epi_1080	0.095385863	11.2764	MeHg_e_f
+MeHg_flt_epi_1093	0.073713611	11.2764	MeHg_e_f
+MeHg_flt_epi_1106	0.101778655	11.2764	MeHg_e_f
+MeHg_flt_epi_1120	0.071045707	11.2764	MeHg_e_f
+MeHg_flt_epi_1134	0.063169589	11.2764	MeHg_e_f
+MeHg_flt_epi_1149	0.08436595	11.2764	MeHg_e_f
+MeHg_flt_epi_1163	0.060233586	11.2764	MeHg_e_f
+MeHg_flt_epi_1177	0.052782748	11.2764	MeHg_e_f
+MeHg_flt_epi_1191	0.06989904	11.2764	MeHg_e_f
+MeHg_flt_epi_1204	0.066962692	11.2764	MeHg_e_f
+MeHg_flt_epi_1233	0.091720921	11.2764	MeHg_e_f
+MeHg_flt_epi_1303	0.170016803	7.9736	MeHg_e_f
+MeHg_flt_epi_1387	0.169330984	7.9736	MeHg_e_f
+MeHg_flt_epi_1408	0.110953279	11.2764	MeHg_e_f
+MeHg_flt_epi_1424	0.125814973	11.2764	MeHg_e_f
+MeHg_flt_epi_1444	0.09201203	11.2764	MeHg_e_f
+MeHg_flt_epi_1457	0.075231256	11.2764	MeHg_e_f
+MeHg_flt_epi_1471	0.093512069	11.2764	MeHg_e_f
+MeHg_flt_epi_1485	0.078851051	11.2764	MeHg_e_f
+MeHg_flt_epi_1498	0.094263601	11.2764	MeHg_e_f
+MeHg_flt_epi_1513	0.077758491	11.2764	MeHg_e_f
+MeHg_flt_epi_1527	0.046621533	11.2764	MeHg_e_f
+MeHg_flt_epi_1542	0.057825739	11.2764	MeHg_e_f
+MeHg_flt_epi_1555	0.077376664	11.2764	MeHg_e_f
+MeHg_flt_epi_1569	0.054207705	11.2764	MeHg_e_f
+MeHg_flt_epi_1604	0.205540336	11.2764	MeHg_e_f
+MeHg_flt_epi_1662	0.243767155	7.9736	MeHg_e_f
+MeHg_flt_epi_1751	0.284436139	7.9736	MeHg_e_f
+MeHg_flt_epi_1780	0.108324227	11.2764	MeHg_e_f
+MeHg_flt_epi_1794	0.114988201	11.2764	MeHg_e_f
+MeHg_flt_epi_1808	0.091064394	11.2764	MeHg_e_f
+MeHg_flt_epi_1821	0.069775994	11.2764	MeHg_e_f
+MeHg_flt_epi_1835	0.06226765	11.2764	MeHg_e_f
+MeHg_flt_epi_1849	0.043583422	11.2764	MeHg_e_f
+MeHg_flt_epi_1863	0.045726193	11.2764	MeHg_e_f
+MeHg_flt_epi_1878	0.047410688	11.2764	MeHg_e_f
+MeHg_flt_epi_1891	0.038011973	11.2764	MeHg_e_f
+MeHg_flt_epi_1906	0.026987385	11.2764	MeHg_e_f
+MeHg_flt_epi_1921	0.041152054	11.2764	MeHg_e_f
+MeHg_flt_epi_1933	0.046121978	11.2764	MeHg_e_f
+MeHg_flt_epi_1946	0.21375676	11.2764	MeHg_e_f
+MeHg_flt_epi_1960	0.25129123	11.2764	MeHg_e_f
+MeHg_flt_epi_2031	0.25647026	7.9736	MeHg_e_f
+MeHg_flt_epi_2115	0.234616699	7.9736	MeHg_e_f
+MeHg_flt_epi_2520	0.177056761	7.9736	MeHg_e_f
+MeHg_flt_epi_2542	0.102127361	7.9736	MeHg_e_f
+MeHg_unflt_hyp_0000	0.209469996	6.2983	MeHg_h_un
+MeHg_unflt_hyp_0003	0.186206876	6.2983	MeHg_h_un
+MeHg_unflt_hyp_0005	0.212396805	6.2983	MeHg_h_un
+MeHg_unflt_hyp_0008	0.150917098	7.0418	MeHg_h_un
+MeHg_unflt_hyp_0015	0.172505334	7.7139	MeHg_h_un
+MeHg_unflt_hyp_0029	0.150336259	7.7139	MeHg_h_un
+MeHg_unflt_hyp_0056	0.221986197	7.7139	MeHg_h_un
+MeHg_unflt_hyp_0084	0.417392755	7.7139	MeHg_h_un
+MeHg_unflt_hyp_0112	0.991491884	7.7139	MeHg_h_un
+MeHg_unflt_hyp_0204	0.174381407	6.2983	MeHg_h_un
+MeHg_unflt_hyp_0277	0.095330273	5.4545	MeHg_h_un
+MeHg_unflt_hyp_0329	0.312001407	6.2983	MeHg_h_un
+MeHg_unflt_hyp_0350	0.180037809	7.7139	MeHg_h_un
+MeHg_unflt_hyp_0364	0.238842499	7.7139	MeHg_h_un
+MeHg_unflt_hyp_0378	0.218950029	7.7139	MeHg_h_un
+MeHg_unflt_hyp_0406	0.392829564	7.7139	MeHg_h_un
+MeHg_unflt_hyp_0434	0.467655559	7.7139	MeHg_h_un
+MeHg_unflt_hyp_0462	0.679168158	6.2983	MeHg_h_un
+MeHg_unflt_hyp_0499	0.40594796	5.4545	MeHg_h_un
+MeHg_unflt_hyp_0568	0.287442948	6.2983	MeHg_h_un
+MeHg_unflt_hyp_0639	0.262824284	6.2983	MeHg_h_un
+MeHg_unflt_hyp_0687	0.251283109	7.7139	MeHg_h_un
+MeHg_unflt_hyp_0722	0.223217726	7.7139	MeHg_h_un
+MeHg_unflt_hyp_0751	0.233697612	7.7139	MeHg_h_un
+MeHg_unflt_hyp_0778	0.513817098	7.7139	MeHg_h_un
+MeHg_unflt_hyp_0806	0.4838351	7.7139	MeHg_h_un
+MeHg_unflt_hyp_0833	0.812845319	7.7139	MeHg_h_un
+MeHg_unflt_hyp_0868	0.820042601	5.4545	MeHg_h_un
+MeHg_unflt_hyp_0932	0.361919507	6.2983	MeHg_h_un
+MeHg_unflt_hyp_1010	0.282015933	6.2983	MeHg_h_un
+MeHg_unflt_hyp_1051	0.187080182	6.2983	MeHg_h_un
+MeHg_unflt_hyp_1080	0.152007587	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1106	0.222922925	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1134	0.246215755	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1163	0.309567726	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1191	0.342895276	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1233	0.271773948	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1303	0.160760908	6.2983	MeHg_h_un
+MeHg_unflt_hyp_1387	0.27565553	6.2983	MeHg_h_un
+MeHg_unflt_hyp_1408	0.177355183	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1444	0.136194744	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1471	0.193556206	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1498	0.256413928	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1527	0.248737402	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1555	0.484086597	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1604	0.298047421	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1662	0.345004963	6.2983	MeHg_h_un
+MeHg_unflt_hyp_1751	0.349391836	6.2983	MeHg_h_un
+MeHg_unflt_hyp_1780	0.259101074	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1808	0.177881685	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1835	0.235539756	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1863	0.202893107	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1891	0.578659978	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1921	0.987172471	6.2983	MeHg_h_un
+MeHg_unflt_hyp_1946	0.304969222	7.7139	MeHg_h_un
+MeHg_unflt_hyp_1960	0.357856802	7.0418	MeHg_h_un
+MeHg_unflt_hyp_2031	0.253795442	6.2983	MeHg_h_un
+MeHg_unflt_hyp_2115	0.194049896	5.4545	MeHg_h_un
+MeHg_unflt_hyp_2171	0.143226814	6.2983	MeHg_h_un
+MeHg_unflt_hyp_2199	0.231657766	6.2983	MeHg_h_un
+MeHg_unflt_hyp_2227	0.301416248	6.2983	MeHg_h_un
+MeHg_unflt_hyp_2254	0.411317763	6.2983	MeHg_h_un
+MeHg_unflt_hyp_2282	0.567898981	6.2983	MeHg_h_un
+MeHg_unflt_hyp_2332	0.449338606	6.2983	MeHg_h_un
+MeHg_unflt_hyp_2396	0.264222554	6.2983	MeHg_h_un
+MeHg_unflt_hyp_2481	0.160604084	6.2983	MeHg_h_un
+MeHg_unflt_hyp_2520	0.242520172	6.2983	MeHg_h_un
+MeHg_unflt_hyp_2542	0.200399339	6.2983	MeHg_h_un
+MeHg_flt_hyp_0000	0.192295306	6.9662	MeHg_h_f
+MeHg_flt_hyp_0003	0.164979443	6.9662	MeHg_h_f
+MeHg_flt_hyp_0005	0.190004518	6.9662	MeHg_h_f
+MeHg_flt_hyp_0008	0.140649389	7.7885	MeHg_h_f
+MeHg_flt_hyp_0015	0.154320249	8.5319	MeHg_h_f
+MeHg_flt_hyp_0029	0.117717274	8.5319	MeHg_h_f
+MeHg_flt_hyp_0056	0.196865777	8.5319	MeHg_h_f
+MeHg_flt_hyp_0084	0.393760171	8.5319	MeHg_h_f
+MeHg_flt_hyp_0112	0.781048199	7.7885	MeHg_h_f
+MeHg_flt_hyp_0204	0.166224977	6.9662	MeHg_h_f
+MeHg_flt_hyp_0277	0.086426085	6.0329	MeHg_h_f
+MeHg_flt_hyp_0329	0.289898528	6.9662	MeHg_h_f
+MeHg_flt_hyp_0350	0.163664559	8.5319	MeHg_h_f
+MeHg_flt_hyp_0364	0.22304125	8.5319	MeHg_h_f
+MeHg_flt_hyp_0378	0.195022752	8.5319	MeHg_h_f
+MeHg_flt_hyp_0406	0.325430274	8.5319	MeHg_h_f
+MeHg_flt_hyp_0434	0.41800308	8.5319	MeHg_h_f
+MeHg_flt_hyp_0462	0.646643197	6.9662	MeHg_h_f
+MeHg_flt_hyp_0499	0.381365219	6.0329	MeHg_h_f
+MeHg_flt_hyp_0568	0.235376207	6.9662	MeHg_h_f
+MeHg_flt_hyp_0639	0.256856075	6.9662	MeHg_h_f
+MeHg_flt_hyp_0687	0.227409869	8.5319	MeHg_h_f
+MeHg_flt_hyp_0722	0.199622588	8.5319	MeHg_h_f
+MeHg_flt_hyp_0751	0.210060534	8.5319	MeHg_h_f
+MeHg_flt_hyp_0778	0.476484176	8.5319	MeHg_h_f
+MeHg_flt_hyp_0806	0.452385599	8.5319	MeHg_h_f
+MeHg_flt_hyp_0833	0.796789767	8.5319	MeHg_h_f
+MeHg_flt_hyp_0868	0.759968157	6.0329	MeHg_h_f
+MeHg_flt_hyp_0932	0.347779426	6.9662	MeHg_h_f
+MeHg_flt_hyp_1010	0.269403345	6.9662	MeHg_h_f
+MeHg_flt_hyp_1051	0.162616896	6.9662	MeHg_h_f
+MeHg_flt_hyp_1080	0.121947037	8.5319	MeHg_h_f
+MeHg_flt_hyp_1106	0.184679404	8.5319	MeHg_h_f
+MeHg_flt_hyp_1134	0.208436565	8.5319	MeHg_h_f
+MeHg_flt_hyp_1163	0.259000831	8.5319	MeHg_h_f
+MeHg_flt_hyp_1191	0.315170081	8.5319	MeHg_h_f
+MeHg_flt_hyp_1233	0.249933979	8.5319	MeHg_h_f
+MeHg_flt_hyp_1303	0.157532617	6.9662	MeHg_h_f
+MeHg_flt_hyp_1387	0.265913515	6.9662	MeHg_h_f
+MeHg_flt_hyp_1408	0.161858961	8.5319	MeHg_h_f
+MeHg_flt_hyp_1444	0.119023771	8.5319	MeHg_h_f
+MeHg_flt_hyp_1471	0.168957562	8.5319	MeHg_h_f
+MeHg_flt_hyp_1498	0.223132304	8.5319	MeHg_h_f
+MeHg_flt_hyp_1527	0.209288584	8.5319	MeHg_h_f
+MeHg_flt_hyp_1555	0.441983155	8.5319	MeHg_h_f
+MeHg_flt_hyp_1604	0.275727581	8.5319	MeHg_h_f
+MeHg_flt_hyp_1662	0.34324752	6.9662	MeHg_h_f
+MeHg_flt_hyp_1751	0.340152237	6.9662	MeHg_h_f
+MeHg_flt_hyp_1780	0.238100743	8.5319	MeHg_h_f
+MeHg_flt_hyp_1808	0.150944203	8.5319	MeHg_h_f
+MeHg_flt_hyp_1835	0.19936388	8.5319	MeHg_h_f
+MeHg_flt_hyp_1863	0.144639259	8.5319	MeHg_h_f
+MeHg_flt_hyp_1891	0.520470047	8.5319	MeHg_h_f
+MeHg_flt_hyp_1921	0.882920011	8.5319	MeHg_h_f
+MeHg_flt_hyp_1946	0.278345144	8.5319	MeHg_h_f
+MeHg_flt_hyp_1960	0.316742557	7.7885	MeHg_h_f
+MeHg_flt_hyp_2031	0.231196989	6.9662	MeHg_h_f
+MeHg_flt_hyp_2115	0.189426737	6.0329	MeHg_h_f
+MeHg_flt_hyp_2520	0.223586918	6.9662	MeHg_h_f
+MeHg_flt_hyp_2542	0.182107019	6.9662	MeHg_h_f
+HgII_unflt_epi_0000	1.64	0.8093	HgII_e_un
+HgII_unflt_epi_0003	2.23	0.5722	HgII_e_un
+HgII_unflt_epi_0005	1.19	0.5722	HgII_e_un
+HgII_unflt_epi_0008	2.99	0.5722	HgII_e_un
+HgII_unflt_epi_0015	2.895	0.8093	HgII_e_un
+HgII_unflt_epi_0029	2.37	0.8093	HgII_e_un
+HgII_unflt_epi_0041	1.775	0.8093	HgII_e_un
+HgII_unflt_epi_0056	2.305	0.8093	HgII_e_un
+HgII_unflt_epi_0070	2.325	0.8093	HgII_e_un
+HgII_unflt_epi_0084	1.895	0.8093	HgII_e_un
+HgII_unflt_epi_0098	1.975	0.8093	HgII_e_un
+HgII_unflt_epi_0112	1.605	0.8093	HgII_e_un
+HgII_unflt_epi_0204	2.42	0.5722	HgII_e_un
+HgII_unflt_epi_0277	6.23	0.5722	HgII_e_un
+HgII_unflt_epi_0329	4.095	0.8093	HgII_e_un
+HgII_unflt_epi_0337	2.14	0.8093	HgII_e_un
+HgII_unflt_epi_0350	1.57	0.5722	HgII_e_un
+HgII_unflt_epi_0364	2.25	0.8093	HgII_e_un
+HgII_unflt_epi_0378	3.365	0.8093	HgII_e_un
+HgII_unflt_epi_0392	1.22	0.8093	HgII_e_un
+HgII_unflt_epi_0406	1.745	0.8093	HgII_e_un
+HgII_unflt_epi_0421	2.11	0.8093	HgII_e_un
+HgII_unflt_epi_0434	1.495	0.8093	HgII_e_un
+HgII_unflt_epi_0448	2.135	0.8093	HgII_e_un
+HgII_unflt_epi_0462	2.155	0.8093	HgII_e_un
+HgII_unflt_epi_0476	2.37	0.5722	HgII_e_un
+HgII_unflt_epi_0499	0.92	0.5722	HgII_e_un
+HgII_unflt_epi_0568	0.69	0.5722	HgII_e_un
+HgII_unflt_epi_0639	1.97	0.5722	HgII_e_un
+HgII_unflt_epi_0687	1.96	0.8093	HgII_e_un
+HgII_unflt_epi_0695	1.455	0.8093	HgII_e_un
+HgII_unflt_epi_0707	1.21	0.8093	HgII_e_un
+HgII_unflt_epi_0722	1.655	0.8093	HgII_e_un
+HgII_unflt_epi_0751	0.97	0.8093	HgII_e_un
+HgII_unflt_epi_0778	1.735	0.8093	HgII_e_un
+HgII_unflt_epi_0806	1.52	0.8093	HgII_e_un
+HgII_unflt_epi_0833	2.585	0.8093	HgII_e_un
+HgII_unflt_epi_0868	4.22	0.5722	HgII_e_un
+HgII_unflt_epi_0932	1.31	0.5722	HgII_e_un
+HgII_unflt_epi_1010	0.92	0.5722	HgII_e_un
+HgII_unflt_epi_1051	1.26	0.8093	HgII_e_un
+HgII_unflt_epi_1066	1.775	0.8093	HgII_e_un
+HgII_unflt_epi_1080	1.64	0.8093	HgII_e_un
+HgII_unflt_epi_1093	1.595	0.8093	HgII_e_un
+HgII_unflt_epi_1106	2.045	0.8093	HgII_e_un
+HgII_unflt_epi_1120	1.115	0.8093	HgII_e_un
+HgII_unflt_epi_1134	1.41	0.8093	HgII_e_un
+HgII_unflt_epi_1149	0.555	0.8093	HgII_e_un
+HgII_unflt_epi_1163	1.92	0.8093	HgII_e_un
+HgII_unflt_epi_1177	0.67	0.8093	HgII_e_un
+HgII_unflt_epi_1191	1.33	0.8093	HgII_e_un
+HgII_unflt_epi_1204	0.875	0.8093	HgII_e_un
+HgII_unflt_epi_1233	1.035	0.8093	HgII_e_un
+HgII_unflt_epi_1303	0.83	0.5722	HgII_e_un
+HgII_unflt_epi_1387	1.06	0.5722	HgII_e_un
+HgII_unflt_epi_1408	2.755	0.8093	HgII_e_un
+HgII_unflt_epi_1424	2.305	0.8093	HgII_e_un
+HgII_unflt_epi_1444	2.735	0.8093	HgII_e_un
+HgII_unflt_epi_1457	2.325	0.8093	HgII_e_un
+HgII_unflt_epi_1471	3.225	0.8093	HgII_e_un
+HgII_unflt_epi_1485	2.415	0.8093	HgII_e_un
+HgII_unflt_epi_1498	1.95	0.8093	HgII_e_un
+HgII_unflt_epi_1513	2.07	0.8093	HgII_e_un
+HgII_unflt_epi_1527	1.99	0.8093	HgII_e_un
+HgII_unflt_epi_1542	2.09	0.8093	HgII_e_un
+HgII_unflt_epi_1555	2.46	0.8093	HgII_e_un
+HgII_unflt_epi_1569	1.865	0.8093	HgII_e_un
+HgII_unflt_epi_1604	1.21	0.8093	HgII_e_un
+HgII_unflt_epi_1662	3.7	0.5722	HgII_e_un
+HgII_unflt_epi_1751	1.04	0.5722	HgII_e_un
+HgII_unflt_epi_1780	1.435	0.8093	HgII_e_un
+HgII_unflt_epi_1794	1.38	0.8093	HgII_e_un
+HgII_unflt_epi_1808	1.43	0.8093	HgII_e_un
+HgII_unflt_epi_1821	1.37	0.8093	HgII_e_un
+HgII_unflt_epi_1835	1.195	0.8093	HgII_e_un
+HgII_unflt_epi_1849	1.24	0.8093	HgII_e_un
+HgII_unflt_epi_1863	1.11	0.8093	HgII_e_un
+HgII_unflt_epi_1878	1.035	0.8093	HgII_e_un
+HgII_unflt_epi_1891	1.205	0.8093	HgII_e_un
+HgII_unflt_epi_1906	0.89	0.8093	HgII_e_un
+HgII_unflt_epi_1921	0.73	0.8093	HgII_e_un
+HgII_unflt_epi_1933	0.775	0.8093	HgII_e_un
+HgII_unflt_epi_1946	0.7	0.8093	HgII_e_un
+HgII_unflt_epi_1960	0.785	0.8093	HgII_e_un
+HgII_unflt_epi_2031	0.27	0.5722	HgII_e_un
+HgII_unflt_epi_2115	0.4	0.5722	HgII_e_un
+HgII_unflt_epi_2171	0.52	0.5722	HgII_e_un
+HgII_unflt_epi_2199	1.96	0.5722	HgII_e_un
+HgII_unflt_epi_2227	1.67	0.5722	HgII_e_un
+HgII_unflt_epi_2254	1.1	0.5722	HgII_e_un
+HgII_unflt_epi_2282	0.7	0.5722	HgII_e_un
+HgII_unflt_epi_2332	0.83	0.5722	HgII_e_un
+HgII_unflt_epi_2396	1.39	0.5722	HgII_e_un
+HgII_unflt_epi_2481	1.34	0.5722	HgII_e_un
+HgII_unflt_epi_2520	1.65	0.5722	HgII_e_un
+HgII_unflt_epi_2542	3.79	0.5722	HgII_e_un
+HgII_flt_epi_0000	1.44	0.9314	HgII_e_f
+HgII_flt_epi_0003	1.92	0.6586	HgII_e_f
+HgII_flt_epi_0005	1.08	0.6586	HgII_e_f
+HgII_flt_epi_0008	2.8	0.6586	HgII_e_f
+HgII_flt_epi_0015	2.72	0.9314	HgII_e_f
+HgII_flt_epi_0029	2.225	0.9314	HgII_e_f
+HgII_flt_epi_0041	1.645	0.9314	HgII_e_f
+HgII_flt_epi_0056	2.09	0.9314	HgII_e_f
+HgII_flt_epi_0070	2.17	0.9314	HgII_e_f
+HgII_flt_epi_0084	1.735	0.9314	HgII_e_f
+HgII_flt_epi_0098	1.74	0.9314	HgII_e_f
+HgII_flt_epi_0112	1.36	0.9314	HgII_e_f
+HgII_flt_epi_0204	2.15	0.6586	HgII_e_f
+HgII_flt_epi_0277	2.56	0.6586	HgII_e_f
+HgII_flt_epi_0329	2.385	0.9314	HgII_e_f
+HgII_flt_epi_0337	1.72	0.9314	HgII_e_f
+HgII_flt_epi_0350	1.47	0.6586	HgII_e_f
+HgII_flt_epi_0364	2.1	0.9314	HgII_e_f
+HgII_flt_epi_0378	2.915	0.9314	HgII_e_f
+HgII_flt_epi_0392	1.14	0.9314	HgII_e_f
+HgII_flt_epi_0406	1.455	0.9314	HgII_e_f
+HgII_flt_epi_0421	1.915	0.9314	HgII_e_f
+HgII_flt_epi_0434	1.395	0.9314	HgII_e_f
+HgII_flt_epi_0448	2.18	0.6586	HgII_e_f
+HgII_flt_epi_0462	1.495	0.9314	HgII_e_f
+HgII_flt_epi_0476	2.2	0.6586	HgII_e_f
+HgII_flt_epi_0499	0.83	0.6586	HgII_e_f
+HgII_flt_epi_0568	0.73	0.6586	HgII_e_f
+HgII_flt_epi_0639	1.98	0.6586	HgII_e_f
+HgII_flt_epi_0687	1.34	0.9314	HgII_e_f
+HgII_flt_epi_0707	1.05	0.9314	HgII_e_f
+HgII_flt_epi_0722	0.905	0.9314	HgII_e_f
+HgII_flt_epi_0751	0.87	0.9314	HgII_e_f
+HgII_flt_epi_0778	1.17	0.9314	HgII_e_f
+HgII_flt_epi_0791	0.555	0.9314	HgII_e_f
+HgII_flt_epi_0806	1.32	0.9314	HgII_e_f
+HgII_flt_epi_0833	1.335	0.9314	HgII_e_f
+HgII_flt_epi_0868	1.43	0.6586	HgII_e_f
+HgII_flt_epi_0932	1	0.6586	HgII_e_f
+HgII_flt_epi_1010	0.56	0.6586	HgII_e_f
+HgII_flt_epi_1051	0.98	0.9314	HgII_e_f
+HgII_flt_epi_1066	1.815	0.9314	HgII_e_f
+HgII_flt_epi_1080	1.67	0.9314	HgII_e_f
+HgII_flt_epi_1093	1.61	0.9314	HgII_e_f
+HgII_flt_epi_1106	2.06	0.9314	HgII_e_f
+HgII_flt_epi_1120	1.105	0.9314	HgII_e_f
+HgII_flt_epi_1134	1.415	0.9314	HgII_e_f
+HgII_flt_epi_1149	0.575	0.9314	HgII_e_f
+HgII_flt_epi_1163	1.83	0.9314	HgII_e_f
+HgII_flt_epi_1177	0.685	0.9314	HgII_e_f
+HgII_flt_epi_1191	0.955	0.9314	HgII_e_f
+HgII_flt_epi_1204	0.88	0.9314	HgII_e_f
+HgII_flt_epi_1233	1.06	0.9314	HgII_e_f
+HgII_flt_epi_1303	0.84	0.6586	HgII_e_f
+HgII_flt_epi_1387	1.03	0.6586	HgII_e_f
+HgII_flt_epi_1408	2.715	0.9314	HgII_e_f
+HgII_flt_epi_1424	2.315	0.9314	HgII_e_f
+HgII_flt_epi_1444	2.55	0.9314	HgII_e_f
+HgII_flt_epi_1457	2.14	0.9314	HgII_e_f
+HgII_flt_epi_1471	2.505	0.9314	HgII_e_f
+HgII_flt_epi_1485	2.285	0.9314	HgII_e_f
+HgII_flt_epi_1498	1.865	0.9314	HgII_e_f
+HgII_flt_epi_1513	2.025	0.9314	HgII_e_f
+HgII_flt_epi_1527	1.87	0.9314	HgII_e_f
+HgII_flt_epi_1542	2.045	0.9314	HgII_e_f
+HgII_flt_epi_1555	2.34	0.9314	HgII_e_f
+HgII_flt_epi_1569	1.67	0.9314	HgII_e_f
+HgII_flt_epi_1604	1.07	0.9314	HgII_e_f
+HgII_flt_epi_1662	2.26	0.6586	HgII_e_f
+HgII_flt_epi_1751	0.95	0.6586	HgII_e_f
+HgII_flt_epi_1780	1.37	0.9314	HgII_e_f
+HgII_flt_epi_1794	1.305	0.9314	HgII_e_f
+HgII_flt_epi_1808	1.305	0.9314	HgII_e_f
+HgII_flt_epi_1821	1.215	0.9314	HgII_e_f
+HgII_flt_epi_1835	1.07	0.9314	HgII_e_f
+HgII_flt_epi_1849	1.11	0.9314	HgII_e_f
+HgII_flt_epi_1863	1.005	0.9314	HgII_e_f
+HgII_flt_epi_1878	0.925	0.9314	HgII_e_f
+HgII_flt_epi_1891	1.08	0.9314	HgII_e_f
+HgII_flt_epi_1906	0.775	0.9314	HgII_e_f
+HgII_flt_epi_1921	0.61	0.9314	HgII_e_f
+HgII_flt_epi_1933	0.645	0.9314	HgII_e_f
+HgII_flt_epi_1946	0.505	0.9314	HgII_e_f
+HgII_flt_epi_1960	0.62	0.9314	HgII_e_f
+HgII_flt_epi_2031	0.28	0.6586	HgII_e_f
+HgII_flt_epi_2115	0.38	0.6586	HgII_e_f
+HgII_flt_epi_2520	1.56	0.6586	HgII_e_f
+HgII_flt_epi_2542	3.66	0.6586	HgII_e_f
+HgII_unflt_hyp_0000	1.57581	1.3349	HgII_h_un
+HgII_unflt_hyp_0003	1.71967	1.3349	HgII_h_un
+HgII_unflt_hyp_0005	1.79832	1.3349	HgII_h_un
+HgII_unflt_hyp_0008	3.89891	1.4924	HgII_h_un
+HgII_unflt_hyp_0015	2.26715	1.6349	HgII_h_un
+HgII_unflt_hyp_0029	2.44327	1.6349	HgII_h_un
+HgII_unflt_hyp_0056	2.14534	1.6349	HgII_h_un
+HgII_unflt_hyp_0084	2.83015	1.6349	HgII_h_un
+HgII_unflt_hyp_0112	2.22141	1.6349	HgII_h_un
+HgII_unflt_hyp_0204	3.47102	1.3349	HgII_h_un
+HgII_unflt_hyp_0277	3.60459	1.1560	HgII_h_un
+HgII_unflt_hyp_0329	2.91948	1.3349	HgII_h_un
+HgII_unflt_hyp_0350	1.29784	1.6349	HgII_h_un
+HgII_unflt_hyp_0364	1.05103	1.6349	HgII_h_un
+HgII_unflt_hyp_0378	1.11082	1.6349	HgII_h_un
+HgII_unflt_hyp_0406	1.35897	1.4924	HgII_h_un
+HgII_unflt_hyp_0434	1.08865	1.6349	HgII_h_un
+HgII_unflt_hyp_0462	1.79165	1.3349	HgII_h_un
+HgII_unflt_hyp_0499	1.06763	1.1560	HgII_h_un
+HgII_unflt_hyp_0568	0.99965	1.3349	HgII_h_un
+HgII_unflt_hyp_0639	1.59808	1.3349	HgII_h_un
+HgII_unflt_hyp_0687	1.37835	1.6349	HgII_h_un
+HgII_unflt_hyp_0722	1.01482	1.6349	HgII_h_un
+HgII_unflt_hyp_0751	1.01387	1.6349	HgII_h_un
+HgII_unflt_hyp_0778	1.83707	1.6349	HgII_h_un
+HgII_unflt_hyp_0806	1.38136	1.6349	HgII_h_un
+HgII_unflt_hyp_0833	1.84978	1.6349	HgII_h_un
+HgII_unflt_hyp_0868	0.94028	1.1560	HgII_h_un
+HgII_unflt_hyp_0932	0.98798	1.3349	HgII_h_un
+HgII_unflt_hyp_1010	0.58839	1.3349	HgII_h_un
+HgII_unflt_hyp_1051	1.13608	1.1560	HgII_h_un
+HgII_unflt_hyp_1080	1.72007	1.6349	HgII_h_un
+HgII_unflt_hyp_1106	1.32457	1.6349	HgII_h_un
+HgII_unflt_hyp_1134	1.23698	1.6349	HgII_h_un
+HgII_unflt_hyp_1163	1.58858	1.6349	HgII_h_un
+HgII_unflt_hyp_1191	0.82412	1.6349	HgII_h_un
+HgII_unflt_hyp_1233	1.39996	1.6349	HgII_h_un
+HgII_unflt_hyp_1303	0.87158	1.3349	HgII_h_un
+HgII_unflt_hyp_1387	0.84122	1.3349	HgII_h_un
+HgII_unflt_hyp_1408	2.09507	1.6349	HgII_h_un
+HgII_unflt_hyp_1444	2.10359	1.6349	HgII_h_un
+HgII_unflt_hyp_1471	2.64622	1.6349	HgII_h_un
+HgII_unflt_hyp_1498	1.66958	1.6349	HgII_h_un
+HgII_unflt_hyp_1527	1.75116	1.6349	HgII_h_un
+HgII_unflt_hyp_1555	2.09040	1.6349	HgII_h_un
+HgII_unflt_hyp_1604	1.26754	1.6349	HgII_h_un
+HgII_unflt_hyp_1662	2.52365	1.3349	HgII_h_un
+HgII_unflt_hyp_1751	1.01825	1.3349	HgII_h_un
+HgII_unflt_hyp_1780	1.21475	1.6349	HgII_h_un
+HgII_unflt_hyp_1808	1.39351	1.6349	HgII_h_un
+HgII_unflt_hyp_1835	1.24433	1.6349	HgII_h_un
+HgII_unflt_hyp_1863	1.30335	1.6349	HgII_h_un
+HgII_unflt_hyp_1891	1.10905	1.6349	HgII_h_un
+HgII_unflt_hyp_1921	1.34397	1.3349	HgII_h_un
+HgII_unflt_hyp_1946	1.04210	1.6349	HgII_h_un
+HgII_unflt_hyp_1960	0.68525	1.4924	HgII_h_un
+HgII_unflt_hyp_2031	0.81398	1.3349	HgII_h_un
+HgII_unflt_hyp_2115	0.67403	1.1560	HgII_h_un
+HgII_unflt_hyp_2171	0.65155	1.3349	HgII_h_un
+HgII_unflt_hyp_2199	0.57478	1.3349	HgII_h_un
+HgII_unflt_hyp_2227	0.57884	1.3349	HgII_h_un
+HgII_unflt_hyp_2254	0.47172	1.3349	HgII_h_un
+HgII_unflt_hyp_2282	0.44986	1.3349	HgII_h_un
+HgII_unflt_hyp_2332	0.71709	1.3349	HgII_h_un
+HgII_unflt_hyp_2396	1.57947	1.3349	HgII_h_un
+HgII_unflt_hyp_2481	1.65735	1.3349	HgII_h_un
+HgII_unflt_hyp_2520	1.54986	1.3349	HgII_h_un
+HgII_unflt_hyp_2542	1.46718	1.3349	HgII_h_un
+HgII_flt_hyp_0000	1.378979795	1.5515	HgII_h_f
+HgII_flt_hyp_0003	1.513333072	1.5515	HgII_h_f
+HgII_flt_hyp_0005	1.499515726	1.5515	HgII_h_f
+HgII_flt_hyp_0008	3.75875016	1.7346	HgII_h_f
+HgII_flt_hyp_0015	1.951025574	1.9001	HgII_h_f
+HgII_flt_hyp_0029	2.19437376	1.9001	HgII_h_f
+HgII_flt_hyp_0056	1.83169389	1.9001	HgII_h_f
+HgII_flt_hyp_0084	2.210613268	1.9001	HgII_h_f
+HgII_flt_hyp_0112	1.342113373	1.7346	HgII_h_f
+HgII_flt_hyp_0204	3.001778976	1.5515	HgII_h_f
+HgII_flt_hyp_0277	2.075027053	1.3436	HgII_h_f
+HgII_flt_hyp_0329	1.041036292	1.5515	HgII_h_f
+HgII_flt_hyp_0350	0.937361282	1.9001	HgII_h_f
+HgII_flt_hyp_0364	0.607856199	1.9001	HgII_h_f
+HgII_flt_hyp_0378	0.876630276	1.9001	HgII_h_f
+HgII_flt_hyp_0406	1.281055081	1.7346	HgII_h_f
+HgII_flt_hyp_0434	0.892161215	1.9001	HgII_h_f
+HgII_flt_hyp_0462	1.171984001	1.5515	HgII_h_f
+HgII_flt_hyp_0499	0.926293072	1.3436	HgII_h_f
+HgII_flt_hyp_0568	1.052752926	1.5515	HgII_h_f
+HgII_flt_hyp_0639	1.524810223	1.5515	HgII_h_f
+HgII_flt_hyp_0687	1.141399761	1.9001	HgII_h_f
+HgII_flt_hyp_0722	0.948896165	1.9001	HgII_h_f
+HgII_flt_hyp_0751	0.749196312	1.9001	HgII_h_f
+HgII_flt_hyp_0778	1.257337906	1.9001	HgII_h_f
+HgII_flt_hyp_0806	1.061337554	1.9001	HgII_h_f
+HgII_flt_hyp_0833	1.211915596	1.9001	HgII_h_f
+HgII_flt_hyp_0868	0.91982875	1.3436	HgII_h_f
+HgII_flt_hyp_0932	0.994261586	1.5515	HgII_h_f
+HgII_flt_hyp_1010	0.543442761	1.5515	HgII_h_f
+HgII_flt_hyp_1051	1.164323522	1.3436	HgII_h_f
+HgII_flt_hyp_1080	1.482126509	1.9001	HgII_h_f
+HgII_flt_hyp_1106	1.256670934	1.9001	HgII_h_f
+HgII_flt_hyp_1134	1.00307378	1.9001	HgII_h_f
+HgII_flt_hyp_1163	1.087304545	1.9001	HgII_h_f
+HgII_flt_hyp_1191	0.66792387	1.9001	HgII_h_f
+HgII_flt_hyp_1233	1.322318136	1.9001	HgII_h_f
+HgII_flt_hyp_1303	0.875985919	1.5515	HgII_h_f
+HgII_flt_hyp_1387	0.760252987	1.5515	HgII_h_f
+HgII_flt_hyp_1408	2.057074282	1.9001	HgII_h_f
+HgII_flt_hyp_1444	1.93623803	1.9001	HgII_h_f
+HgII_flt_hyp_1471	2.46229817	1.9001	HgII_h_f
+HgII_flt_hyp_1498	1.447157184	1.9001	HgII_h_f
+HgII_flt_hyp_1527	1.561418607	1.9001	HgII_h_f
+HgII_flt_hyp_1555	1.722176574	1.9001	HgII_h_f
+HgII_flt_hyp_1604	1.079205001	1.9001	HgII_h_f
+HgII_flt_hyp_1662	1.675780708	1.5515	HgII_h_f
+HgII_flt_hyp_1751	0.953106645	1.5515	HgII_h_f
+HgII_flt_hyp_1780	1.090516318	1.9001	HgII_h_f
+HgII_flt_hyp_1808	1.206960397	1.9001	HgII_h_f
+HgII_flt_hyp_1835	1.05186759	1.9001	HgII_h_f
+HgII_flt_hyp_1863	1.119142634	1.9001	HgII_h_f
+HgII_flt_hyp_1891	0.885886422	1.9001	HgII_h_f
+HgII_flt_hyp_1921	0.776898842	1.9001	HgII_h_f
+HgII_flt_hyp_1946	0.787234674	1.9001	HgII_h_f
+HgII_flt_hyp_1960	0.504508743	1.7346	HgII_h_f
+HgII_flt_hyp_2031	0.372753075	1.5515	HgII_h_f
+HgII_flt_hyp_2115	0.433361871	1.3436	HgII_h_f
+HgII_flt_hyp_2520	1.386669664	1.5515	HgII_h_f
+HgII_flt_hyp_2542	1.319682724	1.5515	HgII_h_f
+* model command line
+DMCM_PEST_rjh2.bat
+* model input/output
+DMCM_input_rjh.tpl   pinputs.prn
+L658_ambient_H20_02.ins  ".\outputs\METAALICUS ambient.8.DMCM_wat_concs.csv"
+L658_ambient_Sed_02.ins	 ".\outputs\METAALICUS ambient.8.DMCM_sed_concs.csv"
+
+
+
+

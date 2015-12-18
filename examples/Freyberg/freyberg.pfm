@@ -1,0 +1,366 @@
+PEST++ performance logger started at:  12:32:20
+  starting to process control file
+          ( time = 12:32:20,  elapsed time = 1ms )
+  finished processing control file
+          ( time = 12:32:20,  elapsed time = 147ms )
+
+beginning iteration 1
+        ( time = 12:32:20,  elapsed time = 90ms )
+  commencing to build jacobian parameter sets
+          ( time = 12:32:20,  elapsed time = 1ms )
+  jacobian parameter sets built, commencing model runs
+          ( time = 12:32:20,  elapsed time = 171ms )
+  jacobian runs complete, processing runs
+          ( time = 12:33:42,  elapsed time = 1min )
+  processing jacobian runs complete
+          ( time = 12:33:43,  elapsed time = 1sec )
+  saving jacobian and sen files
+          ( time = 12:33:43,  elapsed time = 0us )
+  commencing calculation of upgrade vector
+          ( time = 12:33:44,  elapsed time = 1sec )
+  commencing to scale JtQJ matrix
+          ( time = 12:33:46,  elapsed time = 1sec )
+  multiplying JtQJ matrix
+          ( time = 12:35:31,  elapsed time = 1min )
+  scaling of  JtQJ matrix complete
+          ( time = 12:35:33,  elapsed time = 1sec )
+  commencing SVD factorization
+          ( time = 12:35:33,  elapsed time = 0us )
+  SVD factorization complete
+          ( time = 12:37:54,  elapsed time = 2min )
+  commencing linear algebra multiplication to compute ugrade
+          ( time = 12:37:54,  elapsed time = 2ms )
+  Vt info: rows = 760: cols = 761: size = 578360: nonzeros = 557276
+          ( time = 12:37:54,  elapsed time = 0us )
+  U info: rows = 761: cols = 760: size = 578360: nonzeros = 557276
+          ( time = 12:37:54,  elapsed time = 0us )
+  S info: rows = 761: cols = 761: size = 579121: nonzeros = 761
+          ( time = 12:37:54,  elapsed time = 0us )
+  jac info: rows = 2880: cols = 761: size = 2191680: nonzeros = 705276
+          ( time = 12:37:54,  elapsed time = 0us )
+  linear algebra multiplication to compute ugrade complete
+          ( time = 12:37:54,  elapsed time = 143ms )
+  commencing check of parameter bounds
+          ( time = 12:37:54,  elapsed time = 6ms )
+  commencing to scale JtQJ matrix
+          ( time = 12:37:56,  elapsed time = 1sec )
+  multiplying JtQJ matrix
+          ( time = 12:40:00,  elapsed time = 2min )
+  scaling of  JtQJ matrix complete
+          ( time = 12:40:02,  elapsed time = 1sec )
+  commencing SVD factorization
+          ( time = 12:40:02,  elapsed time = 0us )
+  SVD factorization complete
+          ( time = 12:42:23,  elapsed time = 2min )
+  commencing linear algebra multiplication to compute ugrade
+          ( time = 12:42:23,  elapsed time = 3ms )
+  Vt info: rows = 760: cols = 761: size = 578360: nonzeros = 557276
+          ( time = 12:42:23,  elapsed time = 0us )
+  U info: rows = 761: cols = 760: size = 578360: nonzeros = 557276
+          ( time = 12:42:23,  elapsed time = 0us )
+  S info: rows = 761: cols = 761: size = 579121: nonzeros = 761
+          ( time = 12:42:23,  elapsed time = 0us )
+  jac info: rows = 2880: cols = 761: size = 2191680: nonzeros = 705276
+          ( time = 12:42:23,  elapsed time = 567us )
+  linear algebra multiplication to compute ugrade complete
+          ( time = 12:42:23,  elapsed time = 153ms )
+  commencing to scale JtQJ matrix
+          ( time = 12:42:26,  elapsed time = 2sec )
+  multiplying JtQJ matrix
+          ( time = 12:44:34,  elapsed time = 2min )
+  scaling of  JtQJ matrix complete
+          ( time = 12:44:36,  elapsed time = 1sec )
+  commencing SVD factorization
+          ( time = 12:44:36,  elapsed time = 999us )
+  SVD factorization complete
+          ( time = 12:46:55,  elapsed time = 2min )
+  commencing linear algebra multiplication to compute ugrade
+          ( time = 12:46:55,  elapsed time = 2ms )
+  Vt info: rows = 760: cols = 761: size = 578360: nonzeros = 557276
+          ( time = 12:46:55,  elapsed time = 0us )
+  U info: rows = 761: cols = 760: size = 578360: nonzeros = 557276
+          ( time = 12:46:55,  elapsed time = 0us )
+  S info: rows = 761: cols = 761: size = 579121: nonzeros = 761
+          ( time = 12:46:55,  elapsed time = 0us )
+  jac info: rows = 2880: cols = 761: size = 2191680: nonzeros = 705276
+          ( time = 12:46:55,  elapsed time = 0us )
+  linear algebra multiplication to compute ugrade complete
+          ( time = 12:46:56,  elapsed time = 134ms )
+  commencing to scale JtQJ matrix
+          ( time = 12:46:58,  elapsed time = 2sec )
+  multiplying JtQJ matrix
+          ( time = 12:48:59,  elapsed time = 2min )
+  scaling of  JtQJ matrix complete
+          ( time = 12:49:01,  elapsed time = 1sec )
+  commencing SVD factorization
+          ( time = 12:49:01,  elapsed time = 0us )
+  SVD factorization complete
+          ( time = 12:51:26,  elapsed time = 2min )
+  commencing linear algebra multiplication to compute ugrade
+          ( time = 12:51:26,  elapsed time = 2ms )
+  Vt info: rows = 760: cols = 761: size = 578360: nonzeros = 557276
+          ( time = 12:51:26,  elapsed time = 0us )
+  U info: rows = 761: cols = 760: size = 578360: nonzeros = 557276
+          ( time = 12:51:26,  elapsed time = 997us )
+  S info: rows = 761: cols = 761: size = 579121: nonzeros = 761
+          ( time = 12:51:26,  elapsed time = 0us )
+  jac info: rows = 2880: cols = 761: size = 2191680: nonzeros = 705276
+          ( time = 12:51:26,  elapsed time = 0us )
+  linear algebra multiplication to compute ugrade complete
+          ( time = 12:51:26,  elapsed time = 133ms )
+  commencing to scale JtQJ matrix
+          ( time = 12:51:28,  elapsed time = 2sec )
+  multiplying JtQJ matrix
+          ( time = 12:53:30,  elapsed time = 2min )
+  scaling of  JtQJ matrix complete
+          ( time = 12:53:32,  elapsed time = 1sec )
+  commencing SVD factorization
+          ( time = 12:53:32,  elapsed time = 0us )
+  SVD factorization complete
+          ( time = 12:55:54,  elapsed time = 2min )
+  commencing linear algebra multiplication to compute ugrade
+          ( time = 12:55:54,  elapsed time = 2ms )
+  Vt info: rows = 760: cols = 761: size = 578360: nonzeros = 557276
+          ( time = 12:55:54,  elapsed time = 0us )
+  U info: rows = 761: cols = 760: size = 578360: nonzeros = 557276
+          ( time = 12:55:54,  elapsed time = 0us )
+  S info: rows = 761: cols = 761: size = 579121: nonzeros = 761
+          ( time = 12:55:54,  elapsed time = 0us )
+  jac info: rows = 2880: cols = 761: size = 2191680: nonzeros = 705276
+          ( time = 12:55:54,  elapsed time = 0us )
+  linear algebra multiplication to compute ugrade complete
+          ( time = 12:55:54,  elapsed time = 133ms )
+  commencing to scale JtQJ matrix
+          ( time = 12:55:56,  elapsed time = 2sec )
+  multiplying JtQJ matrix
+          ( time = 12:57:55,  elapsed time = 1min )
+  scaling of  JtQJ matrix complete
+          ( time = 12:57:57,  elapsed time = 1sec )
+  commencing SVD factorization
+          ( time = 12:57:57,  elapsed time = 0us )
+  SVD factorization complete
+          ( time = 13:00:17,  elapsed time = 2min )
+  commencing linear algebra multiplication to compute ugrade
+          ( time = 13:00:17,  elapsed time = 2ms )
+  Vt info: rows = 760: cols = 761: size = 578360: nonzeros = 557276
+          ( time = 13:00:17,  elapsed time = 0us )
+  U info: rows = 761: cols = 760: size = 578360: nonzeros = 557276
+          ( time = 13:00:17,  elapsed time = 0us )
+  S info: rows = 761: cols = 761: size = 579121: nonzeros = 761
+          ( time = 13:00:17,  elapsed time = 0us )
+  jac info: rows = 2880: cols = 761: size = 2191680: nonzeros = 705276
+          ( time = 13:00:17,  elapsed time = 0us )
+  linear algebra multiplication to compute ugrade complete
+          ( time = 13:00:17,  elapsed time = 127ms )
+  commencing to scale JtQJ matrix
+          ( time = 13:00:20,  elapsed time = 2sec )
+  multiplying JtQJ matrix
+          ( time = 13:02:15,  elapsed time = 1min )
+  scaling of  JtQJ matrix complete
+          ( time = 13:02:17,  elapsed time = 1sec )
+  commencing SVD factorization
+          ( time = 13:02:17,  elapsed time = 0us )
+  SVD factorization complete
+          ( time = 13:04:38,  elapsed time = 2min )
+  commencing linear algebra multiplication to compute ugrade
+          ( time = 13:04:38,  elapsed time = 2ms )
+  Vt info: rows = 760: cols = 761: size = 578360: nonzeros = 557276
+          ( time = 13:04:38,  elapsed time = 0us )
+  U info: rows = 761: cols = 760: size = 578360: nonzeros = 557276
+          ( time = 13:04:38,  elapsed time = 0us )
+  S info: rows = 761: cols = 761: size = 579121: nonzeros = 761
+          ( time = 13:04:38,  elapsed time = 0us )
+  jac info: rows = 2880: cols = 761: size = 2191680: nonzeros = 705276
+          ( time = 13:04:38,  elapsed time = 0us )
+  linear algebra multiplication to compute ugrade complete
+          ( time = 13:04:38,  elapsed time = 137ms )
+  commencing to scale JtQJ matrix
+          ( time = 13:04:41,  elapsed time = 2sec )
+  multiplying JtQJ matrix
+          ( time = 13:06:26,  elapsed time = 1min )
+  scaling of  JtQJ matrix complete
+          ( time = 13:06:28,  elapsed time = 1sec )
+  commencing SVD factorization
+          ( time = 13:06:28,  elapsed time = 0us )
+  SVD factorization complete
+          ( time = 13:08:49,  elapsed time = 2min )
+  commencing linear algebra multiplication to compute ugrade
+          ( time = 13:08:49,  elapsed time = 2ms )
+  Vt info: rows = 760: cols = 761: size = 578360: nonzeros = 557276
+          ( time = 13:08:49,  elapsed time = 0us )
+  U info: rows = 761: cols = 760: size = 578360: nonzeros = 557276
+          ( time = 13:08:49,  elapsed time = 0us )
+  S info: rows = 761: cols = 761: size = 579121: nonzeros = 761
+          ( time = 13:08:49,  elapsed time = 0us )
+  jac info: rows = 2880: cols = 761: size = 2191680: nonzeros = 705276
+          ( time = 13:08:49,  elapsed time = 0us )
+  linear algebra multiplication to compute ugrade complete
+          ( time = 13:08:50,  elapsed time = 141ms )
+  commencing to scale JtQJ matrix
+          ( time = 13:08:52,  elapsed time = 2sec )
+  multiplying JtQJ matrix
+          ( time = 13:10:42,  elapsed time = 1min )
+  scaling of  JtQJ matrix complete
+          ( time = 13:10:43,  elapsed time = 1sec )
+  commencing SVD factorization
+          ( time = 13:10:43,  elapsed time = 0us )
+  SVD factorization complete
+          ( time = 13:13:03,  elapsed time = 2min )
+  commencing linear algebra multiplication to compute ugrade
+          ( time = 13:13:03,  elapsed time = 1ms )
+  Vt info: rows = 760: cols = 761: size = 578360: nonzeros = 557276
+          ( time = 13:13:03,  elapsed time = 0us )
+  U info: rows = 761: cols = 760: size = 578360: nonzeros = 557276
+          ( time = 13:13:03,  elapsed time = 0us )
+  S info: rows = 761: cols = 761: size = 579121: nonzeros = 761
+          ( time = 13:13:03,  elapsed time = 0us )
+  jac info: rows = 2880: cols = 761: size = 2191680: nonzeros = 705276
+          ( time = 13:13:03,  elapsed time = 0us )
+  linear algebra multiplication to compute ugrade complete
+          ( time = 13:13:03,  elapsed time = 132ms )
+  commencing to scale JtQJ matrix
+          ( time = 13:13:05,  elapsed time = 2sec )
+  multiplying JtQJ matrix
+          ( time = 13:14:43,  elapsed time = 1min )
+  scaling of  JtQJ matrix complete
+          ( time = 13:14:45,  elapsed time = 1sec )
+  commencing SVD factorization
+          ( time = 13:14:45,  elapsed time = 0us )
+  SVD factorization complete
+          ( time = 13:17:04,  elapsed time = 2min )
+  commencing linear algebra multiplication to compute ugrade
+          ( time = 13:17:04,  elapsed time = 1ms )
+  Vt info: rows = 760: cols = 761: size = 578360: nonzeros = 557276
+          ( time = 13:17:04,  elapsed time = 1ms )
+  U info: rows = 761: cols = 760: size = 578360: nonzeros = 557276
+          ( time = 13:17:04,  elapsed time = 0us )
+  S info: rows = 761: cols = 761: size = 579121: nonzeros = 761
+          ( time = 13:17:04,  elapsed time = 0us )
+  jac info: rows = 2880: cols = 761: size = 2191680: nonzeros = 705276
+          ( time = 13:17:04,  elapsed time = 0us )
+  linear algebra multiplication to compute ugrade complete
+          ( time = 13:17:05,  elapsed time = 144ms )
+  beginning upgrade vector calculations, lambda = 0.1
+          ( time = 13:17:05,  elapsed time = 330ms )
+    commencing calculation of upgrade vector
+            ( time = 13:17:05,  elapsed time = 0us )
+    commencing to scale JtQJ matrix
+            ( time = 13:17:07,  elapsed time = 1sec )
+    multiplying JtQJ matrix
+            ( time = 13:18:49,  elapsed time = 1min )
+    scaling of  JtQJ matrix complete
+            ( time = 13:18:51,  elapsed time = 1sec )
+    commencing SVD factorization
+            ( time = 13:18:51,  elapsed time = 0us )
+    SVD factorization complete
+            ( time = 13:21:13,  elapsed time = 2min )
+    commencing linear algebra multiplication to compute ugrade
+            ( time = 13:21:13,  elapsed time = 1ms )
+    Vt info: rows = 760: cols = 761: size = 578360: nonzeros = 557276
+            ( time = 13:21:13,  elapsed time = 0us )
+    U info: rows = 761: cols = 760: size = 578360: nonzeros = 557276
+            ( time = 13:21:13,  elapsed time = 0us )
+    S info: rows = 761: cols = 761: size = 579121: nonzeros = 761
+            ( time = 13:21:13,  elapsed time = 0us )
+    jac info: rows = 2880: cols = 761: size = 2191680: nonzeros = 705276
+            ( time = 13:21:13,  elapsed time = 0us )
+    linear algebra multiplication to compute ugrade complete
+            ( time = 13:21:13,  elapsed time = 134ms )
+    commencing check of parameter bounds
+            ( time = 13:21:13,  elapsed time = 7ms )
+  beginning upgrade vector calculations, lambda = 1
+          ( time = 13:21:13,  elapsed time = 3ms )
+    commencing calculation of upgrade vector
+            ( time = 13:21:13,  elapsed time = 996us )
+    commencing to scale JtQJ matrix
+            ( time = 13:21:15,  elapsed time = 1sec )
+    multiplying JtQJ matrix
+            ( time = 13:23:00,  elapsed time = 1min )
+    scaling of  JtQJ matrix complete
+            ( time = 13:23:02,  elapsed time = 1sec )
+    commencing SVD factorization
+            ( time = 13:23:02,  elapsed time = 0us )
+    SVD factorization complete
+            ( time = 13:25:23,  elapsed time = 2min )
+    commencing linear algebra multiplication to compute ugrade
+            ( time = 13:25:23,  elapsed time = 2ms )
+    Vt info: rows = 760: cols = 761: size = 578360: nonzeros = 557276
+            ( time = 13:25:23,  elapsed time = 0us )
+    U info: rows = 761: cols = 760: size = 578360: nonzeros = 557276
+            ( time = 13:25:23,  elapsed time = 0us )
+    S info: rows = 761: cols = 761: size = 579121: nonzeros = 761
+            ( time = 13:25:23,  elapsed time = 0us )
+    jac info: rows = 2880: cols = 761: size = 2191680: nonzeros = 705276
+            ( time = 13:25:23,  elapsed time = 0us )
+    linear algebra multiplication to compute ugrade complete
+            ( time = 13:25:23,  elapsed time = 138ms )
+    commencing check of parameter bounds
+            ( time = 13:25:23,  elapsed time = 7ms )
+  beginning upgrade vector calculations, lambda = 10
+          ( time = 13:25:23,  elapsed time = 2ms )
+    commencing calculation of upgrade vector
+            ( time = 13:25:23,  elapsed time = 0us )
+    commencing to scale JtQJ matrix
+            ( time = 13:25:25,  elapsed time = 1sec )
+    multiplying JtQJ matrix
+            ( time = 13:27:08,  elapsed time = 1min )
+    scaling of  JtQJ matrix complete
+            ( time = 13:27:10,  elapsed time = 1sec )
+    commencing SVD factorization
+            ( time = 13:27:10,  elapsed time = 1ms )
+    SVD factorization complete
+            ( time = 13:29:32,  elapsed time = 2min )
+    commencing linear algebra multiplication to compute ugrade
+            ( time = 13:29:32,  elapsed time = 3ms )
+    Vt info: rows = 760: cols = 761: size = 578360: nonzeros = 557276
+            ( time = 13:29:32,  elapsed time = 0us )
+    U info: rows = 761: cols = 760: size = 578360: nonzeros = 557276
+            ( time = 13:29:32,  elapsed time = 0us )
+    S info: rows = 761: cols = 761: size = 579121: nonzeros = 761
+            ( time = 13:29:32,  elapsed time = 0us )
+    jac info: rows = 2880: cols = 761: size = 2191680: nonzeros = 705276
+            ( time = 13:29:32,  elapsed time = 0us )
+    linear algebra multiplication to compute ugrade complete
+            ( time = 13:29:32,  elapsed time = 134ms )
+    commencing check of parameter bounds
+            ( time = 13:29:32,  elapsed time = 6ms )
+  beginning upgrade vector calculations, lambda = 20
+          ( time = 13:29:32,  elapsed time = 3ms )
+    commencing calculation of upgrade vector
+            ( time = 13:29:32,  elapsed time = 0us )
+    commencing to scale JtQJ matrix
+            ( time = 13:29:34,  elapsed time = 1sec )
+    multiplying JtQJ matrix
+            ( time = 13:31:18,  elapsed time = 1min )
+    scaling of  JtQJ matrix complete
+            ( time = 13:31:20,  elapsed time = 1sec )
+    commencing SVD factorization
+            ( time = 13:31:20,  elapsed time = 0us )
+    SVD factorization complete
+            ( time = 13:33:40,  elapsed time = 2min )
+    commencing linear algebra multiplication to compute ugrade
+            ( time = 13:33:40,  elapsed time = 1ms )
+    Vt info: rows = 761: cols = 761: size = 579121: nonzeros = 558023
+            ( time = 13:33:40,  elapsed time = 0us )
+    U info: rows = 761: cols = 761: size = 579121: nonzeros = 558023
+            ( time = 13:33:40,  elapsed time = 0us )
+    S info: rows = 761: cols = 761: size = 579121: nonzeros = 761
+            ( time = 13:33:40,  elapsed time = 0us )
+    jac info: rows = 2880: cols = 761: size = 2191680: nonzeros = 705276
+            ( time = 13:33:40,  elapsed time = 0us )
+    linear algebra multiplication to compute ugrade complete
+            ( time = 13:33:40,  elapsed time = 134ms )
+    commencing check of parameter bounds
+            ( time = 13:33:40,  elapsed time = 7ms )
+  beginning upgrade vector calculations, lambda = 40
+          ( time = 13:33:40,  elapsed time = 2ms )
+    commencing calculation of upgrade vector
+            ( time = 13:33:40,  elapsed time = 0us )
+    commencing to scale JtQJ matrix
+            ( time = 13:33:42,  elapsed time = 1sec )
+    multiplying JtQJ matrix
+            ( time = 13:35:27,  elapsed time = 1min )
+    scaling of  JtQJ matrix complete
+            ( time = 13:35:29,  elapsed time = 1sec )
+    commencing SVD factorization
+            ( time = 13:35:29,  elapsed time = 0us )
