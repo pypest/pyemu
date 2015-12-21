@@ -218,16 +218,20 @@ class ErrVar(LinearAnalysis):
             self.log("loading omitted_parcov")
         return self.__omitted_parcov
 
-    def get_errvar_dataframe(self, singular_values):
+    def get_errvar_dataframe(self, singular_values=None):
         """get a pandas dataframe of error variance results indexed
             on singular value and (prediction name,<term>)
         Args:
-            singular_values (list of int) : singular values to test
+            singular_values (list of int) : singular values to test.  defaults
+            to range(0,min(nnz_obs,nadj_par) + 1)
         Returns:
             multi-indexed pandas dataframe
         Raises:
             None
         """
+        if singular_values is None:
+            singular_values = \
+                np.arange(0, min(self.pst.nnz_obs, self.pst.npar_adj) + 1)
         if not isinstance(singular_values, list) and \
                 not isinstance(singular_values, np.ndarray):
             singular_values = [singular_values]

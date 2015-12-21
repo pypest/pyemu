@@ -511,17 +511,6 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
     #     p.wait()
 
 
-def test_smp():
-    smp_filename = os.path.join('..','..',"examples","smp","sim_hds_v6.smp")
-    df = smp_to_dataframe(smp_filename)
-    print(df.dtypes)
-    dataframe_to_smp(df,smp_filename+".test")
-    smp_to_ins(smp_filename)
-    obs_names = parse_ins_file(smp_filename+".ins")
-    print(len(obs_names))
-
-if __name__ == "__main__":
-    test_smp()
 
 
 

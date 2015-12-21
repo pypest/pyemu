@@ -150,7 +150,7 @@ class ControlData(object):
                         if not found:
                             print("warning: non-conforming value found for " +\
                                   name + ":" + str(v))
-                            print("ignoring...\n")
+                            print("ignoring...")
 
                 else:
                     self._df.loc[name,"value"] = v

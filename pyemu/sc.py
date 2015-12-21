@@ -327,39 +327,3 @@ class Schur(LinearAnalysis):
             obsgrp_dict[grp] = list(obs.loc[idxs,"obsnme"])
         return self.get_importance_dataframe(obsgrp_dict)
 
-    @staticmethod
-    def test():
-        #non-pest
-        pnames = ["p1","p2","p3"]
-        onames = ["o1","o2","o3","o4"]
-        npar = len(pnames)
-        nobs = len(onames)
-        j_arr = np.random.random((nobs,npar))
-        jco = Matrix(x=j_arr,row_names=onames,col_names=pnames)
-        parcov = Cov(x=np.eye(npar),names=pnames)
-        obscov = Cov(x=np.eye(nobs),names=onames)
-        forecasts = "o2"
-
-        s = Schur(jco=jco,parcov=parcov,obscov=obscov,forecasts=forecasts)
-        print(s.get_parameter_summary())
-        print(s.get_forecast_summary())
-
-
-        #this should fail
-        try:
-            print(s.get_contribution_dataframe_groups())
-        except Exception as e:
-            print(str(e))
-
-        #this should fail
-        try:
-            print(s.get_importance_dataframe_groups())
-        except Exception as e:
-            print(str(e))
-
-        print(s.get_contribution_dataframe({"group1":["p1","p3"]}))
-
-        print(s.get_importance_dataframe({"group1":["o1","o3"]}))
-
-
-

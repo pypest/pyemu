@@ -7,14 +7,14 @@ pcf
    3.000000E+00   3.000000E+00   1.000000E-03         0         0
    1.000000E-01         1   1.100000E+00               noaui          nosenreuse        noboundscale
         -1   5.000000E-03         4         4   1.000000E-03         4   0.000000E+00         1  -1.000000E+00
-         1         1         1         0             jcosave          verboserec          jcosaveitn          reisaveitn          parsaveitn          parsaverun
+         1         1         1         0             jcosave          verboserec          jcosaveitn          reisaveitn          parsaveitn        noparsaverun
 * singular value decomposition
 1
 75  1.0e-7
 1  0  0
 * parameter groups
-p  relative    1.000000E-02  0  switch    2.000000E+00             parabolic    1.000000E-05    5.000000E-01               smaller
-m  relative    1.000000E-02  0  switch    2.000000E+00             parabolic    1.000000E-05    5.000000E-01               smaller
+                   p              relative    1.000000E-02  0                switch    2.000000E+00             parabolic    1.000000E-05    5.000000E-01               smaller
+                   m              relative    1.000000E-02  0                switch    2.000000E+00             parabolic    1.000000E-05    5.000000E-01               smaller
 * parameter data
 mult1                     log                factor    1.000000E+00    2.500000E-01    2.500000E+00                     m    1.000000E+00    0.000000E+00          1
 kr01c01                   log                factor    2.000000E+02    2.000000E+01    2.000000E+03                     p    1.000000E+00    0.000000E+00          1
@@ -618,9 +618,9 @@ kr10c58                   log                factor    2.000000E+02    2.000000E
 kr10c59                   log                factor    2.000000E+02    2.000000E+01    2.000000E+03                     p    1.000000E+00    0.000000E+00          1
 kr10c60                   log                factor    2.000000E+02    2.000000E+01    2.000000E+03                     p    1.000000E+00    0.000000E+00          1
 * observation groups
-pred
-head
-conc
+                pred
+                head
+                conc
 * observation data
 h_obs01_1    5.139620E-02    8.141342E+01                  head
 h_obs01_2    2.215620E-02    0.000000E+00                  head
@@ -707,11 +707,8 @@ misc\head.ins misc\head.dat
 misc\pred_dist_one.ins misc\pred_dist_one.dat
 misc\pred_dist_ten.ins misc\pred_dist_ten.dat
 misc\pred_dist_half.ins misc\pred_dist_half.dat
-++# PEST++ optional input
-++# SVD_PACK(PROPACK)
-++ N_ITER_BASE(1)
-++ N_ITER_SUPER(4)
-++ SUPER_EIGTHRES(1.0e-8)
-++ MAX_N_SUPER(77)
-++ #AUTO_NORM(4)
-++ predictions(pd_one,pd_ten,pd_half)
+++N_ITER_BASE(1)
+++N_ITER_SUPER(4)
+++MAX_N_SUPER(77)
+++SUPER_EIGTHRES(1.0e-8)
+++predictions(pd_one,pd_ten,pd_half)

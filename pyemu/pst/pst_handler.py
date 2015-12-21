@@ -35,7 +35,8 @@ class Pst(object):
         self.control_data = ControlData()
 
         if load:
-            assert os.path.exists(filename)
+            assert os.path.exists(filename),\
+                "pst file not found:{0}".format(filename)
             self.load(filename)
 
 
@@ -91,19 +92,27 @@ class Pst(object):
             return self.__res
         else:
             if self.resfile is not None:
-                assert os.path.exists(self.resfile),"Pst.res(): self.resfile " +\
+                assert os.path.exists(self.resfile),"Pst.res: self.resfile " +\
                     str(self.resfile) + " does not exist"
             else:
                 self.resfile = self.filename.replace(".pst", ".res")
                 if not os.path.exists(self.resfile):
                     self.resfile = self.resfile.replace(".res", ".rei")
                     if not os.path.exists(self.resfile):
-                        raise Exception("Pst.get_residuals: " +
+                        raise Exception("Pst.res: " +
                                         "could not residual file case.res" +
                                         " or case.rei")
-            self.__res = pst_utils.read_resfile(self.resfile)
-            return self.__res
 
+            res = pst_utils.read_resfile(self.resfile)
+            missing_bool = self.observation_data.obsnme.apply\
+                (lambda x: x not in res.name)
+            missing = self.observation_data.obsnme[missing_bool]
+            if missing.shape[0] > 0:
+                raise Exception("Pst.res: the following observations " +
+                                "were not found in " +
+                                "{0}:{1}".format(self.resfile,','.join(missing)))
+            self.__res = res
+            return self.__res
 
     @property
     def nprior(self):
@@ -330,12 +339,15 @@ class Pst(object):
         assert "* observation data" in line.lower(),\
             "Pst.load() error: looking for observation" +\
             " data section, found:" + line
-        try:
-            self.observation_data = self._read_df(f,self.control_data.nobs,
-                                                  self.obs_fieldnames,
-                                                  self.obs_converters)
-        except:
-            raise Exception("Pst.load() error reading observation data")
+        if self.control_data.nobs > 0:
+            try:
+                self.observation_data = self._read_df(f,self.control_data.nobs,
+                                                      self.obs_fieldnames,
+                                                      self.obs_converters)
+            except:
+                raise Exception("Pst.load() error reading observation data")
+        else:
+            raise Exception("nobs == 0")
         #model command line
         line = f.readline()
         assert "* model command line" in line.lower(),\
@@ -838,61 +850,3 @@ class Pst(object):
                 ow = min(wmax, nw)
             new_weights.append(ow)
         self.observation_data.weight = new_weights
-
-
-    @staticmethod
-    def test():
-
-        # creation functionality
-        dir = os.path.join("..","..","verification","henry","misc")
-        files = os.listdir(dir)
-        tpl_files,ins_files = [],[]
-        for f in files:
-            if f.lower().endswith(".tpl") and "coarse" not in f:
-                tpl_files.append(os.path.join(dir,f))
-            if f.lower().endswith(".ins"):
-                ins_files.append(os.path.join(dir,f))
-
-        out_files = [f.replace(".ins",".junk") for f in ins_files]
-        in_files = [f.replace(".tpl",".junk") for f in tpl_files]
-
-        pst_utils.pst_from_io_files("test.pst",tpl_files,in_files,ins_files,out_files)
-        return
-
-
-
-        # residual functionality testing
-        pst_dir = os.path.join('..','tests',"pst")
-
-        p = Pst(os.path.join(pst_dir,"pest.pst"))
-        print(p.phi_components)
-        p.adjust_weights_resfile()
-        print(p.phi_components)
-        p.adjust_weights(obsgrp_dict={"head":50})
-        print(p.phi_components)
-
-        # get()
-        new_p = p.get()
-        new_p.write(os.path.join(pst_dir, "new.pst"))
-
-        # just testing all sorts of different pst files
-        pst_files = os.listdir(pst_dir)
-        exceptions = []
-        for pst_file in pst_files[::10]:
-            if pst_file.endswith(".pst"):
-                try:
-                    p = Pst(os.path.join(pst_dir,pst_file))
-                except Exception as e:
-                    exceptions.append(pst_file + " read fail: " + str(e))
-                    continue
-                p.write(os.path.join(pst_dir,pst_file+"_test"),update_regul=True)
-                try:
-                    p.write(os.path.join(pst_dir,pst_file+"_test"),update_regul=True)
-                except Exception as e:
-                    exceptions.append(pst_file + " write fail: " + str(e))
-        if len(exceptions) > 0:
-            raise Exception('\n'.join(exceptions))
-
-if __name__ == "__main__":
-
-    Pst.test()
