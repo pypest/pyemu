@@ -72,6 +72,8 @@ class MonteCarlo(LinearAnalysis):
         Raises:
             None
         """
+        if par_file is not None:
+            self.pst.parrep(par_file)
 
         self.log("generating {0:d} parameter realizations".format(num_reals))
         self.parensemble.draw(self.parcov,num_reals=num_reals)

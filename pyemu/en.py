@@ -53,6 +53,9 @@ class Ensemble(pd.DataFrame):
         # generate random numbers
         val_array = np.random.multivariate_normal(vals, cov.as_2d,num_reals)
 
+        self.loc[:,:] = np.NaN
+        self.dropna(inplace=True)
+
         # this sucks - can only set by enlargement one row at a time
         for rname,vals in zip(real_names,val_array):
             self.loc[rname,common_names] = vals
