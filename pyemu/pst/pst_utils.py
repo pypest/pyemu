@@ -340,9 +340,9 @@ def smp_to_ins(smp_filename,ins_filename=None):
     name_groups = df.groupby("name").groups
     for name,idxs in name_groups.items():
         onames = [name+"_{0:d}".format(i) for i in range(len(idxs))]
-        if False in (map(lambda x :len(x) <= 12,onames)):
-            long_names = [oname for oname in onames if len(oname) > 12]
-            raise Exception("observation names longer than 12 chars:\n{0}".format(str(long_names)))
+        if False in (map(lambda x :len(x) <= 20,onames)):
+            long_names = [oname for oname in onames if len(oname) > 20]
+            raise Exception("observation names longer than 20 chars:\n{0}".format(str(long_names)))
         ins_strs = ["l1  ({0:s})39:46".format(on) for on in onames]
 
         df.loc[idxs,"observation_names"] = onames
@@ -357,7 +357,8 @@ def smp_to_ins(smp_filename,ins_filename=None):
 def dataframe_to_smp(dataframe,smp_filename,name_col="name",
                      datetime_col="datetime",value_col="value",
                      datetime_format="dd/mm/yyyy",
-                     value_format="{0:15.6E}"):
+                     value_format="{0:15.6E}",
+                     max_name_len=12):
     """ write a dataframe as an smp file
 
     :param dataframe: a pandas dataframe
@@ -370,7 +371,7 @@ def dataframe_to_smp(dataframe,smp_filename,name_col="name",
     :return: None
     """
 
-    formatters = {"name":lambda x:"{0:10s}".format(str(x)[:10]),
+    formatters = {"name":lambda x:"{0:10s}".format(str(x)[:max_name_len]),
                   "value":lambda x:value_format.format(x)}
     if datetime_format.lower().startswith("d"):
         dt_fmt = "%d/%m/%Y    %H:%M:%S"
