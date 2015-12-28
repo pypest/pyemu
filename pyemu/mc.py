@@ -29,8 +29,10 @@ class MonteCarlo(LinearAnalysis):
         """ get the number of solution space dimensions given
             a machine floating point precision (epsilon)
 
-        :param epsilon: machine floating point precision
-        :return: integer
+        Parameters:
+            epsilon: machine floating point precision
+        Returns : integer
+            number of singular components above the epsilon ratio threshold
         """
         nsing = self.xtqx.shape[0] - np.searchsorted(
                 np.sort((self.xtqx.s.x / self.xtqx.s.x.max())[:,0]),epsilon)
@@ -39,9 +41,13 @@ class MonteCarlo(LinearAnalysis):
     def get_null_proj(self,nsing=None):
         """ get a null-space projection matrix of XTQX
 
-        :param nsing: optional number of singular components to use
+        Parameters:
+        ----------
+            nsing: optional number of singular components to use
                       if none, call self.get_nsing()
-        :return: Matrix instance
+        Returns:
+        -------
+            Matrix instance : V2V2^T
         """
         if nsing is None:
             nsing = self.get_nsing()
@@ -92,11 +98,17 @@ class MonteCarlo(LinearAnalysis):
                             inplace=True):
         """ perform the null-space projection operations for null-space monte carlo
 
-        :param par_file: an optional file of parameter values to use
-        :param nsing: number of singular values to in forming null subspace matrix
-        :param inplace: overwrite the existing parameter ensemble with the
-                        projected values
-        :return: is inplace is False, ParameterEnsemble instance, otherwise None
+        Parameters:
+            par_file: str
+                an optional file of parameter values to use
+            nsing: int
+                number of singular values to in forming null subspace matrix
+            inplace: bool
+                overwrite the existing parameter ensemble with the
+                projected values
+        Returns:
+        -------
+            if inplace is False, ParameterEnsemble instance, otherwise None
         """
         assert self.jco is not None,"MonteCarlo.project_parensemble()" +\
                                     "requires a jacobian attribute"
@@ -114,8 +126,13 @@ class MonteCarlo(LinearAnalysis):
     def write_psts(self,prefix):
         """ write parameter and optionally observation realizations
             to pest control files
-        :param prefix: pest control file prefix
-        :return: None
+        Parameters:
+        ----------
+            prefix: str
+                pest control file prefix
+        Returns:
+        -------
+            None
         """
         self.log("writing realized pest control files")
         # get a copy of the pest control file

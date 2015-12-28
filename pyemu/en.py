@@ -31,9 +31,15 @@ class Ensemble(pd.DataFrame):
         """ draw random realizations from a multivariate
             Gaussian distribution
 
-        :param cov: a Cov instance
-        :param num_reals: number of realizatios to generate
-        :return: None
+        Parameters:
+        ----------
+            cov: a Cov instance
+                covariance structure to draw from
+            num_reals: int
+                number of realizations to generate
+        Returns:
+        -------
+            None
         """
         # set up some column names
         real_names = ["{0:d}".format(i+1)
@@ -170,7 +176,7 @@ class ParameterEnsemble(Ensemble):
 
     @property
     def ubnd(self):
-        """ the lower bound vector while respecting log transform"""
+        """ the upper bound vector while respecting log transform"""
         ub = self.pst.parameter_data.parubnd.copy()
         if self.islog:
             ub[self.log_indexer] = np.log10(ub[self.log_indexer])
@@ -178,7 +184,7 @@ class ParameterEnsemble(Ensemble):
 
     @property
     def lbnd(self):
-        """ the lower boubd vectir while respecting log transform"""
+        """ the lower bound vector while respecting log transform"""
         lb = self.pst.parameter_data.parlbnd.copy()
         if self.islog:
             lb[self.log_indexer] = np.log10(lb[self.log_indexer])

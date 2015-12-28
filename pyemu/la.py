@@ -12,11 +12,13 @@ from pyemu.pst.pst_handler import Pst
 class logger(object):
     """ a basic class for logging events during the linear analysis calculations
         if filename is passed, then an file handle is opened
-    Args:
+    Parameters:
+    ----------
         filename (bool or string): if string, it is the log file to write
             if a bool, then log is written to the screen
         echo (bool): a flag to force screen output
     Attributes:
+    ----------
         items (dict) : tracks when something is started.  If a log entry is
             not in items, then it is treated as a new entry with the string
             being the key and the datetime as the value.  If a log entry is
@@ -40,11 +42,11 @@ class logger(object):
 
     def log(self,phrase):
         """log something that happened
-        Args:
+        Parameters:
+        ----------
             phrase (str) : the thing that happened
         Returns:
-            None
-        Raises:
+        -------
             None
         """
         pass
@@ -67,11 +69,11 @@ class logger(object):
 
     def warn(self,message):
         """write a warning to the log file
-        Args:
+        Parameters:
+        ----------
             message (str) : the warning text
         Returns:
-            None
-        Raises:
+        -------
             None
         """
         s = str(datetime.now()) + " WARNING: " + message + '\n'
@@ -87,22 +89,21 @@ class LinearAnalysis(object):
         this class tries hard to not load items until they are needed
         all arguments are optional
 
-        Args:
-            jco ([enumerable of] [string,ndarray,matrix objects]) : jacobian
-            pst (pst object) : the pest control file object
-            parcov ([enumerable of] [string,ndarray,matrix objects]) :
-                parameter covariance matrix
-            obscov ([enumerable of] [string,ndarray,matrix objects]):
-                observation noise covariance matrix
-            predictions ([enumerable of] [string,ndarray,matrix objects]) :
-                prediction sensitivity vectors
-            ref_var (float) : reference variance
-            verbose (either bool or string) : controls log file / screen output
-        Attributes:
-            too many to list...just figure it out
-        Notes:
-            the class makes heavy use of property decorator to encapsulate
-            private attributes
+    Parameters:
+    ----------
+        jco ([enumerable of] [string,ndarray,matrix objects]) : jacobian
+        pst (pst object) : the pest control file object
+        parcov ([enumerable of] [string,ndarray,matrix objects]) :
+            parameter covariance matrix
+        obscov ([enumerable of] [string,ndarray,matrix objects]):
+            observation noise covariance matrix
+        predictions ([enumerable of] [string,ndarray,matrix objects]) :
+            prediction sensitivity vectors
+        ref_var (float) : reference variance
+        verbose (either bool or string) : controls log file / screen output
+    Notes:
+        the class makes heavy use of property decorator to encapsulate
+        private attributes
     """
     def __init__(self, jco=None, pst=None, parcov=None, obscov=None,
                  predictions=None, ref_var=1.0, verbose=False,
@@ -188,13 +189,12 @@ class LinearAnalysis(object):
     def __fromfile(self, filename):
         """a private method to deduce and load a filename into a matrix object
 
-            Args:
-                filename (str) : the name of the file
-            Returns:
-                mat (or cov) object
-            Raises:
-                Exception if filename extension is not in [jco,mat,vec,cov,unc]
-
+        Parameters:
+        ----------
+            filename (str) : the name of the file
+        Returns:
+        -------
+            mat (or cov) object
         """
         ext = filename.split('.')[-1].lower()
         if ext in ["jco", "jcb"]:
@@ -225,12 +225,12 @@ class LinearAnalysis(object):
 
     def __load_pst(self):
         """private: set the pst attribute
-        Args:
+        Parameters:
+        ----------
             None
         Returns:
+        -------
             None
-        Raises:
-            Exception from instantiating a pst object
         """
         if self.pst_arg is None:
             return None
@@ -251,12 +251,12 @@ class LinearAnalysis(object):
 
     def __load_jco(self):
         """private :set the jco attribute from a file or a matrix object
-        Args:
+        Parameters:
+        ----------
             None
         Returns:
+        -------
             None
-        Raises:
-            Exception if the jco_arg is not a matrix object or str
         """
         if self.jco_arg is None:
             return None
@@ -278,12 +278,6 @@ class LinearAnalysis(object):
                 a matrix object
                 an uncert file
                 an ascii matrix file
-        Args:
-            None
-        Returns:
-            None
-        Raises:
-            Exception is the parcov_arg is not a matrix object or string
         """
         # if the parcov arg was not passed but the pst arg was,
         # reset and use parbounds to build parcov
@@ -342,12 +336,6 @@ class LinearAnalysis(object):
                 a matrix object
                 an uncert file
                 an ascii matrix file
-        Args:
-            None
-        Returns:
-            None
-        Raises:
-            Exception if the obscov_arg is not a matrix object or string
         """
         # if the obscov arg is None, but the pst arg is not None,
         # reset and load from obs weights
@@ -404,13 +392,6 @@ class LinearAnalysis(object):
 
             linear_analysis.__predictions is stored as a list of column vectors
 
-        Args:
-            None
-        Returns:
-            None
-        Raises:
-            Assertion error if prediction matrix object is not aligned with
-                jco attribute
         """
         if self.prediction_arg is None:
             self.__predictions = None
@@ -558,6 +539,8 @@ class LinearAnalysis(object):
 
     @property
     def qhalfx(self):
+        """set the half normal matrix attribute
+        """
         if self.__qhalfx is None:
             self.log("qhalfx")
             self.__qhalfx = self.qhalf * self.jco
@@ -566,6 +549,8 @@ class LinearAnalysis(object):
 
     @property
     def xtqx(self):
+        """set the normal matrix attribute
+        """
         if self.__xtqx is None:
             self.log("xtqx")
             self.__xtqx = self.jco.T * (self.obscov ** -1) * self.jco
@@ -575,21 +560,25 @@ class LinearAnalysis(object):
 
     @property
     def prior_parameter(self):
+        """the prior parameter covariance matrix
+        """
         return self.parcov
 
     @property
     def prior_forecast(self):
+        """thin wrapper for prior_prediction
+        """
         return self.prior_prediction
 
     @property
     def prior_prediction(self):
         """get a dict of prior prediction variances
-        Args:
+        Parameters:
+        ----------
             None
-        Returns
+        Returns:
+        -------
             dict{prediction name(str):prior variance(float)}
-        Raises:
-            None
         """
         if self.__prior_prediction is not None:
             return self.__prior_prediction
@@ -615,12 +604,6 @@ class LinearAnalysis(object):
             analyses.  This operation effectively transfers prior knowledge
             specified in the parcov to the jacobian and reset parcov to the
             identity matrix.
-        Args:
-            None
-        Returns:
-            None
-        Raises:
-            None
         """
         cnames = copy.deepcopy(self.jco.col_names)
         self.__jco *= self.fehalf
@@ -640,11 +623,11 @@ class LinearAnalysis(object):
 
     def reset_parcov(self,arg=None):
         """reset the parcov attribute to None
-        Args:
+        Parameters:
+        ----------
             arg (str or matrix) : the value to assign to the parcov_arg attrib
         Returns:
-            None
-        Raises:
+        -------
             None
         """
         self.logger.warn("resetting parcov")
@@ -655,11 +638,11 @@ class LinearAnalysis(object):
 
     def reset_obscov(self,arg=None):
         """reset the obscov attribute to None
-        Args:
+        Parameters:
+        ----------
             arg (str or matrix) : the value to assign to the obscov_arg attrib
         Returns:
-            None
-        Raises:
+        -------
             None
         """
         self.logger.warn("resetting obscov")
@@ -687,14 +670,14 @@ class LinearAnalysis(object):
     def get(self,par_names=None,obs_names=None,astype=None):
         """method to get a new LinearAnalysis class using a
              subset of parameters and/or observations
-         Args:
+         Parameters:
+         ----------
             par_names (enumerable of str) : par names for new object
             obs_names (enumerable of str) : obs names for new object
             astype (either schur or errvar type) : type to cast the new object
         Returns:
+        -------
             LinearAnalysis object
-        Raises:
-            None
         """
         # make sure we aren't fooling with unwanted prior information
         self.clean()
@@ -760,22 +743,3 @@ class LinearAnalysis(object):
         self.pst.adjust_weights_resfile(resfile)
         self.__obscov.from_observation_data(self.pst)
 
-
-    @staticmethod
-    def test():
-        raise NotImplementedError()
-
-
-
-
-
-
-
-
-
-
-
-
-
-if __name__ == "__main__":
-    LinearAnalysis.test()

@@ -6,12 +6,12 @@ from pyemu.mat.mat_handler import Matrix, Jco, Cov
 
 class ErrVar(LinearAnalysis):
     """child class for error variance analysis
-        todo: add KL parameter scaling with parcov -> identity reset
     """
     def __init__(self,jco,**kwargs):
         """there are some additional keyword args that can be passed to active
             the 3-term error variance calculation
-        Args:
+        Parameters:
+        ----------
             omitted_parameters (list of str): argument that identifies
                 parameters that will be treated as omitted
             omitted_parcov (Matrix or str): argument that identifies
@@ -196,6 +196,8 @@ class ErrVar(LinearAnalysis):
 
     @property
     def omitted_predictions(self):
+        """set the omitted prediction sensitivity vectors
+        """
         if self.__omitted_predictions is None:
             self.log("loading omitted_predictions")
             self.__load_omitted_predictions()
@@ -204,6 +206,8 @@ class ErrVar(LinearAnalysis):
 
     @property
     def omitted_jco(self):
+        """set the omitted jco
+        """
         if self.__omitted_jco is None:
             self.log("loading omitted_jco")
             self.__load_omitted_jco()
@@ -212,6 +216,8 @@ class ErrVar(LinearAnalysis):
 
     @property
     def omitted_parcov(self):
+        """set the ommitted prior parameter covariance matrix
+        """
         if self.__omitted_parcov is None:
             self.log("loading omitted_parcov")
             self.__load_omitted_parcov()
@@ -221,13 +227,13 @@ class ErrVar(LinearAnalysis):
     def get_errvar_dataframe(self, singular_values=None):
         """get a pandas dataframe of error variance results indexed
             on singular value and (prediction name,<term>)
-        Args:
+        Parameters:
+        ----------
             singular_values (list of int) : singular values to test.  defaults
             to range(0,min(nnz_obs,nadj_par) + 1)
         Returns:
+        -------
             multi-indexed pandas dataframe
-        Raises:
-            None
         """
         if singular_values is None:
             singular_values = \
@@ -246,13 +252,13 @@ class ErrVar(LinearAnalysis):
 
     def get_identifiability_dataframe(self,singular_value):
         """get the parameter identifiability as a pandas dataframe
-        Aergs:
+        Parameters:
+        ----------
             singular_value (int) : the truncation point
         Returns:
+        -------
             A pandas dataframe of the V_1**2 Matrix with the
              identifiability in the column labeled "ident"
-         Raises:
-            None
         """
         #v1_df = self.qhalfx.v[:, :singular_value].to_dataframe() ** 2
         v1_df = self.xtqx.v[:, :singular_value].to_dataframe() ** 2
@@ -261,12 +267,12 @@ class ErrVar(LinearAnalysis):
 
     def variance_at(self, singular_value):
         """get the error variance of all three terms
-        Args:
+        Parameters:
+        ----------
             singular_value (int) : singular value to test
         Returns:
+        -------
             dict{[<term>,prediction_name]:standard_deviation}
-        Raises:
-            None
         """
         results = {}
         results.update(self.first_prediction(singular_value))
@@ -277,12 +283,12 @@ class ErrVar(LinearAnalysis):
     def R(self, singular_value):
         """get resolution Matrix at a singular value
              V_1 * V_1^T
-        Args:
+        Parameters:
+        ----------
             singular_value (int) : singular value to calc R at
         Returns:
+        -------
             R at singular_value
-        Raises:
-            None
         """
         if self.__R is not None and singular_value == self.__R_sv:
             return self.__R
@@ -302,12 +308,12 @@ class ErrVar(LinearAnalysis):
     def I_minus_R(self,singular_value):
         """get I - R at singular value
              V_2 * V_2^T
-         Args:
+         Parameters:
+         ----------
             singular_value (int) : singular value to calc I - R at
         Returns:
+        -------
             I - R at singular_value
-        Raises:
-            None
         """
         if self.__I_R is not None and singular_value == self.__I_R_sv:
             return self.__I_R
@@ -324,12 +330,12 @@ class ErrVar(LinearAnalysis):
     def G(self, singular_value):
         """get the parameter solution Matrix at a singular value
             V_1 * S_1^(_1) * U_1^T
-        Args:
+        Parameters:
+        ----------
             singular_value (int) : singular value to calc G at
         Returns:
+        -------
             G at singular_value
-        Raises:
-            None
         """
         if self.__G is not None and singular_value == self.__G_sv:
             return self.__G
@@ -370,12 +376,12 @@ class ErrVar(LinearAnalysis):
     def first_prediction(self, singular_value):
         """get the null space term contribution to prediction error variance
             at a singular value
-        Args:
+        Parameters:
+        ----------
             singular_value (int) : singular value to calc first term at
         Returns:
+        -------
             dict{["first",prediction_names]:error variance} at singular_value
-        Raises:
-            Exception if no predictions are set
         """
         if not self.predictions:
             raise Exception("ErrVar.first(): no predictions are set")
@@ -398,12 +404,12 @@ class ErrVar(LinearAnalysis):
     def first_parameter(self, singular_value):
         """get the null space term contribution to parameter error variance
             at a singular value
-        Args:
+        Parameters:
+        ----------
             singular_value (int) : singular value to calc first term at
         Returns:
+        -------
             Cov object of first term error variance
-        Raises:
-            None
         """
         self.log("calc first term parameter @" + str(singular_value))
         first_term = self.I_minus_R(singular_value) * self.parcov * \
@@ -418,12 +424,12 @@ class ErrVar(LinearAnalysis):
         """get the solution space contribution to predictive error variance
             at a singular value
             y^t * G * obscov * G^T * y
-        Args:
+        Parameters:
+        ----------
             singular_value (int) : singular value to calc second term at
         Returns:
+        -------
              dict{["second",prediction_names]:error variance} at singular_value
-        Raises:
-            Exception if no predictions are set
         """
         if not self.predictions:
             raise Exception("ErrVar.second(): not predictions are set")
@@ -439,11 +445,6 @@ class ErrVar(LinearAnalysis):
             for pred in self.predictions:
                 inf_pred[("second",pred.col_names[0])] = 1.0E+35
             return inf_pred
-        # elif singular_value == 0:
-        #     zero_preds = {}
-        #     for pred in self.predictions:
-        #         zero_preds[("second", pred.col_names[0])] = 0.0
-        #     return zero_preds
         else:
             second_term = self.G(singular_value) * self.obscov * \
                           self.G(singular_value).T
@@ -458,12 +459,12 @@ class ErrVar(LinearAnalysis):
         """get the solution space contribution to parameter error variance
              at a singular value
             G * obscov * G^T
-        Args:
+        Parameters:
+        ----------
             singular_value (int) : singular value to calc second term at
         Returns:
+        -------
             Cov object of second term error variance
-        Raises:
-            None
         """
         self.log("calc second term parameter @" + str(singular_value))
         result = self.G(singular_value) * self.obscov * self.G(singular_value).T
@@ -478,12 +479,12 @@ class ErrVar(LinearAnalysis):
             predictions:
                 p * Simga_(omitted_pars) * p^T
                 p = prediction^T * G * omitted_jco - omitted_prediction^T
-        Args:
+        Parameters:
+        ----------
             singular_value (int) : singular value to calc third term at
         Returns:
+        -------
             dict{["third",prediction_names]:error variance} at singular_value
-        Raises:
-            Exception if no predictions are set
         """
         if not self.predictions:
             raise Exception("ErrVar.third(): not predictions are set")
@@ -519,13 +520,13 @@ class ErrVar(LinearAnalysis):
         """get the omitted parameter contribution to parameter error variance
              at a singular value
                 G * omitted_jco * Sigma_(omitted_pars) * omitted_jco^T * G^T
-        Args:
+        Parameters:
+        ----------
             singular_value (int) : singular value to calc third term at
         Returns:
+        -------
             0.0 if need_omitted is False
             Cov object of third term error variance
-        Raises:
-            None
         """
         if self.__need_omitted is False:
             return 0.0
@@ -535,22 +536,3 @@ class ErrVar(LinearAnalysis):
         self.log("calc third term parameter @" + str(singular_value))
         return result
 
-    @staticmethod
-    def test():
-        #non-pest
-        pnames = ["p1","p2","p3"]
-        onames = ["o1","o2","o3","o4"]
-        npar = len(pnames)
-        nobs = len(onames)
-        j_arr = np.random.random((nobs,npar))
-        jco = Matrix(x=j_arr,row_names=onames,col_names=pnames)
-        parcov = Cov(x=np.eye(npar),names=pnames)
-        obscov = Cov(x=np.eye(nobs),names=onames)
-        forecasts = "o2"
-
-        omitted = "p3"
-
-        e = ErrVar(jco=jco,parcov=parcov,obscov=obscov,forecasts=forecasts,
-                   omitted_parameters=omitted)
-        svs = [0,1,2,3,4,5]
-        print(e.get_errvar_dataframe(svs))

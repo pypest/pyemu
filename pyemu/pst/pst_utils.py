@@ -109,7 +109,15 @@ pst_config["pestpp_options"] = {}
 
 
 def read_resfile(resfile):
-        """load the residual file
+        """load a residual file into a pandas dataframe
+
+        Parameters:
+        ----------
+            resfile : str
+                residual file
+        Returns:
+        -------
+            pandas DataFrame
         """
         assert os.path.exists(resfile),"read_resfile() error: resfile " +\
                                        "{0} not found".format(resfile)
@@ -131,6 +139,16 @@ def read_resfile(resfile):
 
 
 def read_parfile(parfile):
+    """load a pest-compatible .par file into a pandas dataframe
+
+    Parameters:
+    ----------
+        parfile : str
+            pest parameter file
+    Returns:
+    -------
+        pandas DataFrame
+    """
     assert os.path.exists(parfile), "Pst.parrep(): parfile not found: " +\
                                     str(parfile)
     f = open(parfile, 'r')
@@ -142,6 +160,20 @@ def read_parfile(parfile):
     return par_df
 
 def write_parfile(df,parfile):
+    """ write a pest parameter file from a dataframe
+
+    Parameters:
+    ----------
+        df : pandas DataFrame
+            with column names that correspond to the entries
+            in the parameter data section of a pest control file
+        parfile : str
+            name of the parameter file to write
+    Returns:
+    -------
+        None
+
+    """
     columns = ["parnme","parval1","scale","offset"]
     formatters = {"parnme":lambda x:"{0:20s}".format(x),
                   "parval1":lambda x:"{0:20.7E}".format(x),
@@ -162,6 +194,16 @@ def write_parfile(df,parfile):
                       index_names=False) + '\n')
 
 def parse_tpl_file(tpl_file):
+    """ parse a pest template file to get the parameter names
+
+    Parameters:
+    ----------
+        tpl_file : str
+            template file name
+    Returns:
+    -------
+        list of parameter names
+    """
     par_names = []
     with open(tpl_file,'r') as f:
         try:
@@ -190,6 +232,15 @@ def parse_tpl_file(tpl_file):
 
 
 def parse_ins_file(ins_file):
+    """parse a pest instruction file to get observation names
+    Parameters:
+    ----------
+        ins_file : str
+            instruction file name
+    Returns:
+        list of observation names
+    """
+
     obs_names = []
     with open(ins_file,'r') as f:
         header = f.readline().strip().split()
@@ -249,6 +300,23 @@ def populate_dataframe(index,columns, default_dict, dtype):
 
 
 def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
+    """generate a Pst instance from the model io files
+    Parameters:
+    ----------
+        tpl_files : list[str]
+            list of pest template files
+        in_files : list[str]
+            list of corresponding model input files
+        ins_files : list[str]
+            list of pest instruction files
+        out_files: list[str]
+            list of corresponding model output files
+        pst_filename : str (optional)
+            name of file to write the control file to
+    Returns:
+    -------
+        Pst instance
+    """
     par_names = []
     if not isinstance(tpl_files,list):
         tpl_files = [tpl_files]
@@ -294,12 +362,12 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
 
 def get_phi_comps_from_recfile(recfile):
         """read the phi components from a record file
-        Args:
+        Parameters:
+        ----------
             recfile (str) : record file
         Returns:
+        -------
             dict{iteration number:{group,contribution}}
-        Raises:
-            None
         """
         iiter = 1
         iters = {}
@@ -326,10 +394,17 @@ def get_phi_comps_from_recfile(recfile):
 
 def smp_to_ins(smp_filename,ins_filename=None):
     """ create an instruction file from an smp file
-    :param smp_filename: existing smp file
-    :param ins_filename: instruction file to create.  If None, create
-        an instruction file using the smp filename with the ".ins" suffix
-    :return: dataframe instance of the smp file with the observation names and
+    Parameters:
+    ----------
+        smp_filename : str
+            existing smp file
+        ins_filename: str:
+            instruction file to create.  If None, create
+            an instruction file using the smp filename
+            with the ".ins" suffix
+    Returns:
+    -------
+        dataframe instance of the smp file with the observation names and
         instruction lines as additional columns
     """
     if ins_filename is None:
@@ -361,14 +436,23 @@ def dataframe_to_smp(dataframe,smp_filename,name_col="name",
                      max_name_len=12):
     """ write a dataframe as an smp file
 
-    :param dataframe: a pandas dataframe
-    :param smp_filename: smp file to write
-    :param name_col: the column in the dataframe the marks the site namne
-    :param datetime_col: the column in the dataframe that is a datetime instance
-    :param value_col: the column in the dataframe that is the values
-    :param datetime_format: either 'dd/mm/yyyy' or 'mm/dd/yyy'
-    :param value_format: a python float-compatible format
-    :return: None
+    Parameters:
+    ----------
+        dataframe : a pandas dataframe
+        smp_filename : str
+            smp file to write
+        name_col: str
+            the column in the dataframe the marks the site namne
+        datetime_col: str
+            the column in the dataframe that is a datetime instance
+        value_col: str
+            the column in the dataframe that is the values
+        datetime_format: str
+            either 'dd/mm/yyyy' or 'mm/dd/yyy'
+        value_format: a python float-compatible format
+    Returns:
+    -------
+        None
     """
 
     formatters = {"name":lambda x:"{0:10s}".format(str(x)[:max_name_len]),
@@ -399,8 +483,6 @@ def dataframe_to_smp(dataframe,smp_filename,name_col="name",
 
 def date_parser(items):
     """ datetime parser to help load smp files
-    :param items: tuple of date and time strings from smp file
-    :return: a datetime instance
     """
     try:
         dt = datetime.strptime(items,"%d/%m/%Y %H:%M:%S")
@@ -415,8 +497,13 @@ def date_parser(items):
 
 def smp_to_dataframe(smp_filename):
     """ load an smp file into a pandas dataframe
-    :param smp_filename: smp filename to load
-    :return: a pandas dataframe instance
+    Parameters:
+    ----------
+        smp_filename : str
+            smp filename to load
+    Returns:
+    -------
+        a pandas dataframe instance
     """
     df = pd.read_csv(smp_filename, delim_whitespace=True,
                      parse_dates={"datetime":["date","time"]},

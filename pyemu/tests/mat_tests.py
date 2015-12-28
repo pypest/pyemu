@@ -4,6 +4,8 @@ def mat_test():
     import numpy as np
     from pyemu.mat import Jco,Cov
     test_dir = os.path.join("mat")
+    if not os.path.exists(test_dir):
+        os.mkdir(test_dir)
     arr = np.arange(0,12)
     arr.resize(4,3)
     first = Jco(x=arr,col_names=["p1","p2","p3"],row_names=["o1","o2","o3","o4"])

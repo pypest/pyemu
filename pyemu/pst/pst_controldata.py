@@ -112,8 +112,12 @@ class ControlData(object):
 
     def parse_values_from_lines(self,lines):
         """ cast the string lines for a pest control file into actual inputs
-        :param lines: strings from pest control file
-        :return: none
+        Parameters:
+        ----------
+            lines: strings from pest control file
+        Returns:
+        -------
+            None
         """
         assert len(lines) == len(CONTROL_VARIABLE_LINES),\
         "ControlData error: len of lines not equal to " +\
@@ -169,8 +173,12 @@ class ControlData(object):
     def write(self,f):
         """ write control data section to a file
         
-        :param f: file handle or string filename
-        :return: none
+        Parameters:
+        ----------
+            f: file handle or string filename
+        Returns:
+        -------
+            None
         """
         if isinstance(f,str):
             f = open(f,'w')

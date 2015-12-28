@@ -15,14 +15,14 @@ class Pst(object):
     """
     def __init__(self, filename, load=True, resfile=None):
         """constructor of pst object
-        Args:
+        Parameters:
+        ----------
             filename : [str] pest control file name
             load : [bool] flag for loading
             resfile : [str] residual filename
         Returns:
+        -------
             None
-        Raises:
-            Assertion error if filename cannot be found
         """
 
         self.filename = filename
@@ -52,14 +52,12 @@ class Pst(object):
     @property
     def phi_components(self):
         """ get the individual components of the total objective function
-        Args:
+        Parameters:
+        ----------
             None
         Returns:
+        -------
             Dict{observation group : contribution}
-        Raises:
-            Assertion error if self.observation_data groups don't match
-            self.res groups
-
         """
 
         # calculate phi components for each obs group
@@ -272,6 +270,13 @@ class Pst(object):
 
     def load(self, filename):
         """load the pest control file
+        Parameters:
+        ----------
+            filename : str
+                pst filename
+        Returns:
+        -------
+            None
         """
 
         f = open(filename, 'r')
@@ -455,13 +460,12 @@ class Pst(object):
 
     def write(self,new_filename,update_regul=False):
         """write a pest control file
-        Args:
+        Parameters:
+        ----------
             new_filename (str) : name of the new pest control file
         Returns:
+        -------
             None
-        Raises:
-            Assertion error if tied parameters are found - not supported
-            Exception if self.filename pst is not the correct format
         """
 
 
@@ -615,12 +619,12 @@ class Pst(object):
 
     def zero_order_tikhonov(self, parbounds=True):
         """setup preferred-value regularization
-        Args:
+        Parameters:
+        ----------
             parbounds (bool) : weight the prior information equations according
                 to parameter bound width - approx the KL transform
         Returns:
-            None
-        Raises:
+        -------
             None
         """
         pass
@@ -668,13 +672,13 @@ class Pst(object):
     def parrep(self, parfile=None):
         """replicates the pest parrep util. replaces the parval1 field in the
             parameter data section dataframe
-        Args:
+        Parameters:
+        ----------
             parfile (str) : parameter file to use.  If None, try to use
                             a parameter file that corresponds to the case name
         Returns:
+        -------
             None
-        Raises:
-            assertion error if parfile not found
         """
         if parfile is None:
             parfile = self.filename.replace(".pst", ".par")
@@ -690,14 +694,13 @@ class Pst(object):
     def adjust_weights_recfile(self, recfile=None):
         """adjusts the weights of the observations based on the phi components
         in a recfile
-        Args:
+        Parameters:
+        ----------
             recfile (str) : record file name.  If None, try to use a record file
                             with the case name
         Returns:
+        -------
             None
-        Raises:
-            Assertion error if recfile not found
-            Exception if no complete iteration output was found in recfile
         """
         if recfile is None:
             recfile = self.filename.replace(".pst", ".rec")
@@ -727,11 +730,11 @@ class Pst(object):
 
     def adjust_weights_resfile(self, resfile=None):
         """adjust the weights by phi components in a residual file
-        Args:
+        Parameters:
+        ----------
             resfile (str) : residual filename.  If None, use self.resfile
         Returns:
-            None
-        Raises:
+        -------
             None
         """
         if resfile is not None:
@@ -743,14 +746,13 @@ class Pst(object):
     def adjust_weights_by_phi_components(self, components):
         """resets the weights of observations to account for
         residual phi components.
-        Args:
+        Parameters:
+        ----------
             components (dict{obs group:phi contribution}): group specific phi
                 contributions
         Returns:
+        -------
             None
-        Raises:
-            Exception if residual components don't agree with non-zero weighted
-                observations
         """
         obs = self.observation_data
         nz_groups = obs.groupby(obs["weight"].map(lambda x: x == 0)).groups
@@ -776,7 +778,8 @@ class Pst(object):
 
     def __reset_weights(self, target_phis, res_idxs, obs_idxs):
         """reset weights based on target phi vals for each group
-        Args:
+        Parameters:
+        ----------
             target_phis (dict) : target phi contribution for groups to reweight
             res_idxs (dict) : the index positions of each group of interest
                  in the res dataframe
@@ -802,13 +805,13 @@ class Pst(object):
                               obsgrp_dict=None):
         """reset the weights of observation groups to contribute a specified
         amount to the composite objective function
-        Args:
+        Parameters:
+        ----------
             obs_dict (dict{obs name:new contribution})
             obsgrp_dict (dict{obs group name:contribution})
         Returns:
+        -------
             None
-        Raises:
-            Exception if a key is not found in the obs or obs groups
         """
 
         self.observation_data.index = self.observation_data.obsnme
@@ -827,15 +830,15 @@ class Pst(object):
     def proportional_weights(self, fraction_stdev=1.0, wmax=100.0,
                              leave_zero=True):
         """setup inversely proportional weights
-        Args:
+        Parameters:
+        ----------
             fraction_stdev (float) : the fraction portion of the observation
                 val to treat as the standard deviation.  set to 1.0 for
                 inversely proportional
             wmax (float) : maximum weight to allow
             leave_zero (bool) : flag to leave existing zero weights
         Returns:
-            None
-        Raises:
+        -------
             None
         """
         new_weights = []
