@@ -129,7 +129,11 @@ class ParameterEnsemble(Ensemble):
     Parameters:
     ----------
         pst : pyemu.Pst instance
-        todo: tied parameters
+        bound_tol : float
+            fractional amount to reset bounds transgression within the bound.
+            This has been shown to be very useful for the subsequent recalibration
+            because it moves parameters off of their bounds, so they are not treated as frozen in
+            the upgrade calculations. defaults to 0.0
 
     Note:
     ----
@@ -151,7 +155,7 @@ class ParameterEnsemble(Ensemble):
             raise NotImplementedError("ParameterEnsemble does not " +\
                                       "support tied parameters")
         self.pst.parameter_data.index = self.pst.parameter_data.parnme
-
+        self.bound_tol = kwargs.get("bound_tol",0.0)
 
     @property
     def islog(self):
@@ -345,16 +349,16 @@ class ParameterEnsemble(Ensemble):
             self.enforce()
         self._back_transform()
 
-    def enforce(self,tol=0.01):
+    def enforce(self):
         """ enforce parameter bounds on the ensemble
 
         """
         ub = self.ubnd
         lb = self.lbnd
         for iname,name in enumerate(self.columns):
-            self.loc[self.loc[:,name] > ub[name],name] = ub[name].copy() * (1.0 + tol)
+            self.loc[self.loc[:,name] > ub[name],name] = ub[name].copy() * (1.0 + self.bound_tol)
             #print(self.ubnd[name],self.loc[:,name])
-            self.loc[self.loc[:,name] < lb[name],name] = lb[name].copy() * (1.0 - tol)
+            self.loc[self.loc[:,name] < lb[name],name] = lb[name].copy() * (1.0 - self.bound_tol)
             #print(self.lbnd[name],self.loc[:,name])
 
 
