@@ -352,10 +352,8 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     new_pst.output_files = out_files
     new_pst.model_command = ["model.bat"]
     new_pst.prior_information = new_pst.null_prior
-
+    new_pst.zero_order_tikhonov()
     if pst_filename:
-        new_pst.zero_order_tikhonov()
-
         new_pst.write(pst_filename,update_regul=True)
     return new_pst
 
@@ -414,7 +412,10 @@ def smp_to_ins(smp_filename,ins_filename=None):
     df.loc[:,"observation_names"] = None
     name_groups = df.groupby("name").groups
     for name,idxs in name_groups.items():
-        onames = [name+"_{0:d}".format(i) for i in range(len(idxs))]
+        if len(name) <=12:
+            onames = df.datetime.apply(lambda x: name+'_'+x.strftime("%d%m%Y")).values
+        else:
+            onames = [name+"_{0:d}".format(i) for i in range(len(idxs))]
         if False in (map(lambda x :len(x) <= 20,onames)):
             long_names = [oname for oname in onames if len(oname) > 20]
             raise Exception("observation names longer than 20 chars:\n{0}".format(str(long_names)))

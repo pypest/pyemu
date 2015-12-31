@@ -440,10 +440,14 @@ class Pst(object):
         # add any parameters groups
         pdata_groups = list(self.parameter_data.loc[:,"pargp"].\
             value_counts().keys())
-        need_groups = [pg for pg in pdata_groups \
-                        if pg not in
-                           self.parameter_groups.loc[:,"pargpnme"]]
+        #print(pdata_groups)
+        need_groups = []
+        existing_groups = list(self.parameter_groups.pargpnme)
+        for pg in pdata_groups:
+            if pg not in existing_groups:
+                need_groups.append(pg)
         if len(need_groups) > 0:
+            print(need_groups)
             defaults = copy.copy(pst_utils.pst_config["pargp_defaults"])
             for grp in need_groups:
                 defaults["pargpnme"] = grp
@@ -546,7 +550,7 @@ class Pst(object):
             self.prior_information["pilbl"] = self.prior_information.index
         if self.control_data.pestmode.startswith("regul"):
             f_out.write("* regularisation\n")
-            if update_regul:
+            if update_regul or len(self.regul_lines) == 0:
                 f_out.write(self.regul_section)
             else:
                 [f_out.write(line) for line in self.regul_lines]
