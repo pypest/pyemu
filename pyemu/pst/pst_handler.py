@@ -234,8 +234,8 @@ class Pst(object):
     @property
     def regul_section(self):
         phimlim = float(self.nnz_obs)
-        sect = "* regularisation\n"
-        sect += "{0:15.6E} {1:15.6E}\n".format(phimlim, phimlim*1.15)
+        #sect = "* regularisation\n"
+        sect = "{0:15.6E} {1:15.6E}\n".format(phimlim, phimlim*1.15)
         sect += "1.0 1.0e-10 1.0e10 linreg continue\n"
         sect += "1.3  1.0e-2  1\n"
         return sect

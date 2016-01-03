@@ -333,7 +333,6 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
 
 
     new_pst = pyemu.Pst(pst_filename,load=False)
-
     pargp_data = populate_dataframe(["pargp"], new_pst.pargp_fieldnames,
                                     new_pst.pargp_defaults, new_pst.pargp_dtype)
     new_pst.parameter_groups = pargp_data
@@ -352,6 +351,11 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     new_pst.output_files = out_files
     new_pst.model_command = ["model.bat"]
     new_pst.prior_information = new_pst.null_prior
+
+    new_pst.other_lines = ["* singular value decomposition\n","1\n",
+                           "{0:d} {1:15.6E}\n".format(new_pst.npar_adj,1.0E-6),
+                           "1 1 1\n"]
+
     new_pst.zero_order_tikhonov()
     if pst_filename:
         new_pst.write(pst_filename,update_regul=True)

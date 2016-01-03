@@ -45,6 +45,22 @@ def res_test():
         d = np.abs(p.phi_components[gname] - p_load.phi_components[gname])
         assert d < 1.0e-5
 
+def pst_manip_test():
+    import os
+    from pyemu import Pst
+    pst_dir = os.path.join('..','tests',"pst")
+    org_path = os.path.join(pst_dir,"pest.pst")
+    new_path = os.path.join(pst_dir,"pest1.pst")
+    pst = Pst(org_path)
+    pst.control_data.pestmode = "regularisation"
+    pst.write(new_path)
+    pst = Pst(new_path)
+
+    pst.write(new_path,update_regul=True)
+
+
+
+
 def load_test():
     import os
     from pyemu import Pst,pst_utils
@@ -97,8 +113,9 @@ def smp_test():
 
 
 if __name__ == "__main__":
-    #tpl_ins_test()
+    #pst_manip_test()
+    tpl_ins_test()
     #load_test()
     #res_test()
-    smp_test()
+    #smp_test()
 
