@@ -15,14 +15,14 @@ class Pst(object):
     """
     def __init__(self, filename, load=True, resfile=None):
         """constructor of pst object
-        Args:
+        Parameters:
+        ----------
             filename : [str] pest control file name
             load : [bool] flag for loading
             resfile : [str] residual filename
         Returns:
+        -------
             None
-        Raises:
-            Assertion error if filename cannot be found
         """
 
         self.filename = filename
@@ -35,7 +35,8 @@ class Pst(object):
         self.control_data = ControlData()
 
         if load:
-            assert os.path.exists(filename)
+            assert os.path.exists(filename),\
+                "pst file not found:{0}".format(filename)
             self.load(filename)
 
 
@@ -51,14 +52,12 @@ class Pst(object):
     @property
     def phi_components(self):
         """ get the individual components of the total objective function
-        Args:
+        Parameters:
+        ----------
             None
         Returns:
+        -------
             Dict{observation group : contribution}
-        Raises:
-            Assertion error if self.observation_data groups don't match
-            self.res groups
-
         """
 
         # calculate phi components for each obs group
@@ -107,19 +106,27 @@ class Pst(object):
             return self.__res
         else:
             if self.resfile is not None:
-                assert os.path.exists(self.resfile),"Pst.res(): self.resfile " +\
+                assert os.path.exists(self.resfile),"Pst.res: self.resfile " +\
                     str(self.resfile) + " does not exist"
             else:
                 self.resfile = self.filename.replace(".pst", ".res")
                 if not os.path.exists(self.resfile):
                     self.resfile = self.resfile.replace(".res", ".rei")
                     if not os.path.exists(self.resfile):
-                        raise Exception("Pst.get_residuals: " +
+                        raise Exception("Pst.res: " +
                                         "could not residual file case.res" +
                                         " or case.rei")
-            self.__res = pst_utils.read_resfile(self.resfile)
-            return self.__res
 
+            res = pst_utils.read_resfile(self.resfile)
+            missing_bool = self.observation_data.obsnme.apply\
+                (lambda x: x not in res.name)
+            missing = self.observation_data.obsnme[missing_bool]
+            if missing.shape[0] > 0:
+                raise Exception("Pst.res: the following observations " +
+                                "were not found in " +
+                                "{0}:{1}".format(self.resfile,','.join(missing)))
+            self.__res = res
+            return self.__res
 
     @property
     def nprior(self):
@@ -243,8 +250,8 @@ class Pst(object):
     @property
     def regul_section(self):
         phimlim = float(self.nnz_obs)
-        sect = "* regularisation\n"
-        sect += "{0:15.6E} {1:15.6E}\n".format(phimlim, phimlim*1.15)
+        #sect = "* regularisation\n"
+        sect = "{0:15.6E} {1:15.6E}\n".format(phimlim, phimlim*1.15)
         sect += "1.0 1.0e-10 1.0e10 linreg continue\n"
         sect += "1.3  1.0e-2  1\n"
         return sect
@@ -279,6 +286,13 @@ class Pst(object):
 
     def load(self, filename):
         """load the pest control file
+        Parameters:
+        ----------
+            filename : str
+                pst filename
+        Returns:
+        -------
+            None
         """
 
         f = open(filename, 'r')
@@ -346,12 +360,15 @@ class Pst(object):
         assert "* observation data" in line.lower(),\
             "Pst.load() error: looking for observation" +\
             " data section, found:" + line
-        try:
-            self.observation_data = self._read_df(f,self.control_data.nobs,
-                                                  self.obs_fieldnames,
-                                                  self.obs_converters)
-        except:
-            raise Exception("Pst.load() error reading observation data")
+        if self.control_data.nobs > 0:
+            try:
+                self.observation_data = self._read_df(f,self.control_data.nobs,
+                                                      self.obs_fieldnames,
+                                                      self.obs_converters)
+            except:
+                raise Exception("Pst.load() error reading observation data")
+        else:
+            raise Exception("nobs == 0")
         #model command line
         line = f.readline()
         assert "* model command line" in line.lower(),\
@@ -439,10 +456,14 @@ class Pst(object):
         # add any parameters groups
         pdata_groups = list(self.parameter_data.loc[:,"pargp"].\
             value_counts().keys())
-        need_groups = [pg for pg in pdata_groups \
-                        if pg not in
-                           self.parameter_groups.loc[:,"pargpnme"]]
+        #print(pdata_groups)
+        need_groups = []
+        existing_groups = list(self.parameter_groups.pargpnme)
+        for pg in pdata_groups:
+            if pg not in existing_groups:
+                need_groups.append(pg)
         if len(need_groups) > 0:
+            print(need_groups)
             defaults = copy.copy(pst_utils.pst_config["pargp_defaults"])
             for grp in need_groups:
                 defaults["pargpnme"] = grp
@@ -459,13 +480,12 @@ class Pst(object):
 
     def write(self,new_filename,update_regul=False):
         """write a pest control file
-        Args:
+        Parameters:
+        ----------
             new_filename (str) : name of the new pest control file
         Returns:
+        -------
             None
-        Raises:
-            Assertion error if tied parameters are found - not supported
-            Exception if self.filename pst is not the correct format
         """
 
 
@@ -546,7 +566,7 @@ class Pst(object):
             self.prior_information["pilbl"] = self.prior_information.index
         if self.control_data.pestmode.startswith("regul"):
             f_out.write("* regularisation\n")
-            if update_regul:
+            if update_regul or len(self.regul_lines) == 0:
                 f_out.write(self.regul_section)
             else:
                 [f_out.write(line) for line in self.regul_lines]
@@ -619,12 +639,12 @@ class Pst(object):
 
     def zero_order_tikhonov(self, parbounds=True):
         """setup preferred-value regularization
-        Args:
+        Parameters:
+        ----------
             parbounds (bool) : weight the prior information equations according
                 to parameter bound width - approx the KL transform
         Returns:
-            None
-        Raises:
+        -------
             None
         """
         pass
@@ -672,13 +692,13 @@ class Pst(object):
     def parrep(self, parfile=None):
         """replicates the pest parrep util. replaces the parval1 field in the
             parameter data section dataframe
-        Args:
+        Parameters:
+        ----------
             parfile (str) : parameter file to use.  If None, try to use
                             a parameter file that corresponds to the case name
         Returns:
+        -------
             None
-        Raises:
-            assertion error if parfile not found
         """
         if parfile is None:
             parfile = self.filename.replace(".pst", ".par")
@@ -694,14 +714,13 @@ class Pst(object):
     def adjust_weights_recfile(self, recfile=None):
         """adjusts the weights of the observations based on the phi components
         in a recfile
-        Args:
+        Parameters:
+        ----------
             recfile (str) : record file name.  If None, try to use a record file
                             with the case name
         Returns:
+        -------
             None
-        Raises:
-            Assertion error if recfile not found
-            Exception if no complete iteration output was found in recfile
         """
         if recfile is None:
             recfile = self.filename.replace(".pst", ".rec")
@@ -731,11 +750,11 @@ class Pst(object):
 
     def adjust_weights_resfile(self, resfile=None):
         """adjust the weights by phi components in a residual file
-        Args:
+        Parameters:
+        ----------
             resfile (str) : residual filename.  If None, use self.resfile
         Returns:
-            None
-        Raises:
+        -------
             None
         """
         if resfile is not None:
@@ -747,14 +766,13 @@ class Pst(object):
     def adjust_weights_by_phi_components(self, components):
         """resets the weights of observations to account for
         residual phi components.
-        Args:
+        Parameters:
+        ----------
             components (dict{obs group:phi contribution}): group specific phi
                 contributions
         Returns:
+        -------
             None
-        Raises:
-            Exception if residual components don't agree with non-zero weighted
-                observations
         """
         obs = self.observation_data
         nz_groups = obs.groupby(obs["weight"].map(lambda x: x == 0)).groups
@@ -780,7 +798,8 @@ class Pst(object):
 
     def __reset_weights(self, target_phis, res_idxs, obs_idxs):
         """reset weights based on target phi vals for each group
-        Args:
+        Parameters:
+        ----------
             target_phis (dict) : target phi contribution for groups to reweight
             res_idxs (dict) : the index positions of each group of interest
                  in the res dataframe
@@ -806,13 +825,13 @@ class Pst(object):
                               obsgrp_dict=None):
         """reset the weights of observation groups to contribute a specified
         amount to the composite objective function
-        Args:
+        Parameters:
+        ----------
             obs_dict (dict{obs name:new contribution})
             obsgrp_dict (dict{obs group name:contribution})
         Returns:
+        -------
             None
-        Raises:
-            Exception if a key is not found in the obs or obs groups
         """
 
         self.observation_data.index = self.observation_data.obsnme
@@ -831,15 +850,15 @@ class Pst(object):
     def proportional_weights(self, fraction_stdev=1.0, wmax=100.0,
                              leave_zero=True):
         """setup inversely proportional weights
-        Args:
+        Parameters:
+        ----------
             fraction_stdev (float) : the fraction portion of the observation
                 val to treat as the standard deviation.  set to 1.0 for
                 inversely proportional
             wmax (float) : maximum weight to allow
             leave_zero (bool) : flag to leave existing zero weights
         Returns:
-            None
-        Raises:
+        -------
             None
         """
         new_weights = []
@@ -854,61 +873,3 @@ class Pst(object):
                 ow = min(wmax, nw)
             new_weights.append(ow)
         self.observation_data.weight = new_weights
-
-
-    @staticmethod
-    def test():
-
-        # creation functionality
-        dir = os.path.join("..","..","verification","henry","misc")
-        files = os.listdir(dir)
-        tpl_files,ins_files = [],[]
-        for f in files:
-            if f.lower().endswith(".tpl") and "coarse" not in f:
-                tpl_files.append(os.path.join(dir,f))
-            if f.lower().endswith(".ins"):
-                ins_files.append(os.path.join(dir,f))
-
-        out_files = [f.replace(".ins",".junk") for f in ins_files]
-        in_files = [f.replace(".tpl",".junk") for f in tpl_files]
-
-        pst_utils.pst_from_io_files("test.pst",tpl_files,in_files,ins_files,out_files)
-        return
-
-
-
-        # residual functionality testing
-        pst_dir = os.path.join('..','tests',"pst")
-
-        p = Pst(os.path.join(pst_dir,"pest.pst"))
-        print(p.phi_components)
-        p.adjust_weights_resfile()
-        print(p.phi_components)
-        p.adjust_weights(obsgrp_dict={"head":50})
-        print(p.phi_components)
-
-        # get()
-        new_p = p.get()
-        new_p.write(os.path.join(pst_dir, "new.pst"))
-
-        # just testing all sorts of different pst files
-        pst_files = os.listdir(pst_dir)
-        exceptions = []
-        for pst_file in pst_files[::10]:
-            if pst_file.endswith(".pst"):
-                try:
-                    p = Pst(os.path.join(pst_dir,pst_file))
-                except Exception as e:
-                    exceptions.append(pst_file + " read fail: " + str(e))
-                    continue
-                p.write(os.path.join(pst_dir,pst_file+"_test"),update_regul=True)
-                try:
-                    p.write(os.path.join(pst_dir,pst_file+"_test"),update_regul=True)
-                except Exception as e:
-                    exceptions.append(pst_file + " write fail: " + str(e))
-        if len(exceptions) > 0:
-            raise Exception('\n'.join(exceptions))
-
-if __name__ == "__main__":
-
-    Pst.test()

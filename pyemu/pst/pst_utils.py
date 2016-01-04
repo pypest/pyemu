@@ -109,7 +109,15 @@ pst_config["pestpp_options"] = {}
 
 
 def read_resfile(resfile):
-        """load the residual file
+        """load a residual file into a pandas dataframe
+
+        Parameters:
+        ----------
+            resfile : str
+                residual file
+        Returns:
+        -------
+            pandas DataFrame
         """
         assert os.path.exists(resfile),"read_resfile() error: resfile " +\
                                        "{0} not found".format(resfile)
@@ -131,6 +139,16 @@ def read_resfile(resfile):
 
 
 def read_parfile(parfile):
+    """load a pest-compatible .par file into a pandas dataframe
+
+    Parameters:
+    ----------
+        parfile : str
+            pest parameter file
+    Returns:
+    -------
+        pandas DataFrame
+    """
     assert os.path.exists(parfile), "Pst.parrep(): parfile not found: " +\
                                     str(parfile)
     f = open(parfile, 'r')
@@ -142,6 +160,20 @@ def read_parfile(parfile):
     return par_df
 
 def write_parfile(df,parfile):
+    """ write a pest parameter file from a dataframe
+
+    Parameters:
+    ----------
+        df : pandas DataFrame
+            with column names that correspond to the entries
+            in the parameter data section of a pest control file
+        parfile : str
+            name of the parameter file to write
+    Returns:
+    -------
+        None
+
+    """
     columns = ["parnme","parval1","scale","offset"]
     formatters = {"parnme":lambda x:"{0:20s}".format(x),
                   "parval1":lambda x:"{0:20.7E}".format(x),
@@ -162,6 +194,16 @@ def write_parfile(df,parfile):
                       index_names=False) + '\n')
 
 def parse_tpl_file(tpl_file):
+    """ parse a pest template file to get the parameter names
+
+    Parameters:
+    ----------
+        tpl_file : str
+            template file name
+    Returns:
+    -------
+        list of parameter names
+    """
     par_names = []
     with open(tpl_file,'r') as f:
         try:
@@ -190,6 +232,15 @@ def parse_tpl_file(tpl_file):
 
 
 def parse_ins_file(ins_file):
+    """parse a pest instruction file to get observation names
+    Parameters:
+    ----------
+        ins_file : str
+            instruction file name
+    Returns:
+        list of observation names
+    """
+
     obs_names = []
     with open(ins_file,'r') as f:
         header = f.readline().strip().split()
@@ -249,6 +300,23 @@ def populate_dataframe(index,columns, default_dict, dtype):
 
 
 def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
+    """generate a Pst instance from the model io files
+    Parameters:
+    ----------
+        tpl_files : list[str]
+            list of pest template files
+        in_files : list[str]
+            list of corresponding model input files
+        ins_files : list[str]
+            list of pest instruction files
+        out_files: list[str]
+            list of corresponding model output files
+        pst_filename : str (optional)
+            name of file to write the control file to
+    Returns:
+    -------
+        Pst instance
+    """
     par_names = []
     if not isinstance(tpl_files,list):
         tpl_files = [tpl_files]
@@ -265,7 +333,6 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
 
 
     new_pst = pyemu.Pst(pst_filename,load=False)
-
     pargp_data = populate_dataframe(["pargp"], new_pst.pargp_fieldnames,
                                     new_pst.pargp_defaults, new_pst.pargp_dtype)
     new_pst.parameter_groups = pargp_data
@@ -285,21 +352,24 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     new_pst.model_command = ["model.bat"]
     new_pst.prior_information = new_pst.null_prior
 
-    if pst_filename:
-        new_pst.zero_order_tikhonov()
+    new_pst.other_lines = ["* singular value decomposition\n","1\n",
+                           "{0:d} {1:15.6E}\n".format(new_pst.npar_adj,1.0E-6),
+                           "1 1 1\n"]
 
+    new_pst.zero_order_tikhonov()
+    if pst_filename:
         new_pst.write(pst_filename,update_regul=True)
     return new_pst
 
 
 def get_phi_comps_from_recfile(recfile):
         """read the phi components from a record file
-        Args:
+        Parameters:
+        ----------
             recfile (str) : record file
         Returns:
+        -------
             dict{iteration number:{group,contribution}}
-        Raises:
-            None
         """
         iiter = 1
         iters = {}
@@ -326,10 +396,17 @@ def get_phi_comps_from_recfile(recfile):
 
 def smp_to_ins(smp_filename,ins_filename=None):
     """ create an instruction file from an smp file
-    :param smp_filename: existing smp file
-    :param ins_filename: instruction file to create.  If None, create
-        an instruction file using the smp filename with the ".ins" suffix
-    :return: dataframe instance of the smp file with the observation names and
+    Parameters:
+    ----------
+        smp_filename : str
+            existing smp file
+        ins_filename: str:
+            instruction file to create.  If None, create
+            an instruction file using the smp filename
+            with the ".ins" suffix
+    Returns:
+    -------
+        dataframe instance of the smp file with the observation names and
         instruction lines as additional columns
     """
     if ins_filename is None:
@@ -339,10 +416,13 @@ def smp_to_ins(smp_filename,ins_filename=None):
     df.loc[:,"observation_names"] = None
     name_groups = df.groupby("name").groups
     for name,idxs in name_groups.items():
-        onames = [name+"_{0:d}".format(i) for i in range(len(idxs))]
-        if False in (map(lambda x :len(x) <= 12,onames)):
-            long_names = [oname for oname in onames if len(oname) > 12]
-            raise Exception("observation names longer than 12 chars:\n{0}".format(str(long_names)))
+        if len(name) <=12:
+            onames = df.datetime.apply(lambda x: name+'_'+x.strftime("%d%m%Y")).values
+        else:
+            onames = [name+"_{0:d}".format(i) for i in range(len(idxs))]
+        if False in (map(lambda x :len(x) <= 20,onames)):
+            long_names = [oname for oname in onames if len(oname) > 20]
+            raise Exception("observation names longer than 20 chars:\n{0}".format(str(long_names)))
         ins_strs = ["l1  ({0:s})39:46".format(on) for on in onames]
 
         df.loc[idxs,"observation_names"] = onames
@@ -357,20 +437,30 @@ def smp_to_ins(smp_filename,ins_filename=None):
 def dataframe_to_smp(dataframe,smp_filename,name_col="name",
                      datetime_col="datetime",value_col="value",
                      datetime_format="dd/mm/yyyy",
-                     value_format="{0:15.6E}"):
+                     value_format="{0:15.6E}",
+                     max_name_len=12):
     """ write a dataframe as an smp file
 
-    :param dataframe: a pandas dataframe
-    :param smp_filename: smp file to write
-    :param name_col: the column in the dataframe the marks the site namne
-    :param datetime_col: the column in the dataframe that is a datetime instance
-    :param value_col: the column in the dataframe that is the values
-    :param datetime_format: either 'dd/mm/yyyy' or 'mm/dd/yyy'
-    :param value_format: a python float-compatible format
-    :return: None
+    Parameters:
+    ----------
+        dataframe : a pandas dataframe
+        smp_filename : str
+            smp file to write
+        name_col: str
+            the column in the dataframe the marks the site namne
+        datetime_col: str
+            the column in the dataframe that is a datetime instance
+        value_col: str
+            the column in the dataframe that is the values
+        datetime_format: str
+            either 'dd/mm/yyyy' or 'mm/dd/yyy'
+        value_format: a python float-compatible format
+    Returns:
+    -------
+        None
     """
 
-    formatters = {"name":lambda x:"{0:10s}".format(str(x)[:10]),
+    formatters = {"name":lambda x:"{0:10s}".format(str(x)[:max_name_len]),
                   "value":lambda x:value_format.format(x)}
     if datetime_format.lower().startswith("d"):
         dt_fmt = "%d/%m/%Y    %H:%M:%S"
@@ -398,8 +488,6 @@ def dataframe_to_smp(dataframe,smp_filename,name_col="name",
 
 def date_parser(items):
     """ datetime parser to help load smp files
-    :param items: tuple of date and time strings from smp file
-    :return: a datetime instance
     """
     try:
         dt = datetime.strptime(items,"%d/%m/%Y %H:%M:%S")
@@ -414,8 +502,13 @@ def date_parser(items):
 
 def smp_to_dataframe(smp_filename):
     """ load an smp file into a pandas dataframe
-    :param smp_filename: smp filename to load
-    :return: a pandas dataframe instance
+    Parameters:
+    ----------
+        smp_filename : str
+            smp filename to load
+    Returns:
+    -------
+        a pandas dataframe instance
     """
     df = pd.read_csv(smp_filename, delim_whitespace=True,
                      parse_dates={"datetime":["date","time"]},
@@ -460,9 +553,14 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
     #assert os.path.exists(os.path.join(slave_dir,rel_path,exe_rel_path))
     exe_verf = True
 
-    if not os.path.exists(os.path.join(slave_dir,rel_path,exe_rel_path)):
-        print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
-        exe_verf = False
+    if rel_path:
+        if not os.path.exists(os.path.join(slave_dir,rel_path,exe_rel_path)):
+            print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
+            exe_verf = False
+    else:
+        if not os.path.exists(os.path.join(slave_dir,exe_rel_path)):
+            print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
+            exe_verf = False
     if rel_path is not None:
         assert os.path.exists(os.path.join(slave_dir,rel_path,pst_rel_path))
     else:
@@ -473,6 +571,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
     tcp_arg = "{0}:{1}".format(hostname,port)
 
     procs = []
+    base_dir = os.getcwd()
     for i in range(num_slaves):
         new_slave_dir = os.path.join(slave_root,"slave_{0}".format(i))
         if os.path.exists(new_slave_dir):
@@ -502,26 +601,16 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
                 cwd = new_slave_dir
 
             os.chdir(cwd)
-            p = sp.Popen(args, cwd=cwd)
+            p = sp.Popen(args)
             procs.append(p)
+            os.chdir(base_dir)
         except Exception as e:
             raise Exception("error starting slave: {0}".format(str(e)))
 
-    # for p in procs:
-    #     p.wait()
+    for p in procs:
+        p.wait()
 
 
-def test_smp():
-    smp_filename = os.path.join('..','..',"examples","smp","sim_hds_v6.smp")
-    df = smp_to_dataframe(smp_filename)
-    print(df.dtypes)
-    dataframe_to_smp(df,smp_filename+".test")
-    smp_to_ins(smp_filename)
-    obs_names = parse_ins_file(smp_filename+".ins")
-    print(len(obs_names))
-
-if __name__ == "__main__":
-    test_smp()
 
 
 

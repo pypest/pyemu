@@ -31,9 +31,15 @@ class Ensemble(pd.DataFrame):
         """ draw random realizations from a multivariate
             Gaussian distribution
 
-        :param cov: a Cov instance
-        :param num_reals: number of realizatios to generate
-        :return: None
+        Parameters:
+        ----------
+            cov: a Cov instance
+                covariance structure to draw from
+            num_reals: int
+                number of realizations to generate
+        Returns:
+        -------
+            None
         """
         # set up some column names
         real_names = ["{0:d}".format(i+1)
@@ -52,6 +58,9 @@ class Ensemble(pd.DataFrame):
 
         # generate random numbers
         val_array = np.random.multivariate_normal(vals, cov.as_2d,num_reals)
+
+        self.loc[:,:] = np.NaN
+        self.dropna(inplace=True)
 
         # this sucks - can only set by enlargement one row at a time
         for rname,vals in zip(real_names,val_array):
@@ -120,7 +129,11 @@ class ParameterEnsemble(Ensemble):
     Parameters:
     ----------
         pst : pyemu.Pst instance
-        todo: tied parameters
+        bound_tol : float
+            fractional amount to reset bounds transgression within the bound.
+            This has been shown to be very useful for the subsequent recalibration
+            because it moves parameters off of their bounds, so they are not treated as frozen in
+            the upgrade calculations. defaults to 0.0
 
     Note:
     ----
@@ -142,7 +155,7 @@ class ParameterEnsemble(Ensemble):
             raise NotImplementedError("ParameterEnsemble does not " +\
                                       "support tied parameters")
         self.pst.parameter_data.index = self.pst.parameter_data.parnme
-
+        self.bound_tol = kwargs.get("bound_tol",0.0)
 
     @property
     def islog(self):
@@ -167,7 +180,7 @@ class ParameterEnsemble(Ensemble):
 
     @property
     def ubnd(self):
-        """ the lower bound vector while respecting log transform"""
+        """ the upper bound vector while respecting log transform"""
         ub = self.pst.parameter_data.parubnd.copy()
         if self.islog:
             ub[self.log_indexer] = np.log10(ub[self.log_indexer])
@@ -175,7 +188,7 @@ class ParameterEnsemble(Ensemble):
 
     @property
     def lbnd(self):
-        """ the lower boubd vectir while respecting log transform"""
+        """ the lower bound vector while respecting log transform"""
         lb = self.pst.parameter_data.parlbnd.copy()
         if self.islog:
             lb[self.log_indexer] = np.log10(lb[self.log_indexer])
@@ -336,16 +349,16 @@ class ParameterEnsemble(Ensemble):
             self.enforce()
         self._back_transform()
 
-    def enforce(self,tol=0.01):
+    def enforce(self):
         """ enforce parameter bounds on the ensemble
 
         """
         ub = self.ubnd
         lb = self.lbnd
         for iname,name in enumerate(self.columns):
-            self.loc[self.loc[:,name] > ub[name],name] = ub[name].copy() * (1.0 + tol)
+            self.loc[self.loc[:,name] > ub[name],name] = ub[name].copy() * (1.0 + self.bound_tol)
             #print(self.ubnd[name],self.loc[:,name])
-            self.loc[self.loc[:,name] < lb[name],name] = lb[name].copy() * (1.0 - tol)
+            self.loc[self.loc[:,name] < lb[name],name] = lb[name].copy() * (1.0 - self.bound_tol)
             #print(self.lbnd[name],self.loc[:,name])
 
 
