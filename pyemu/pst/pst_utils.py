@@ -417,7 +417,7 @@ def smp_to_ins(smp_filename,ins_filename=None):
     name_groups = df.groupby("name").groups
     for name,idxs in name_groups.items():
         if len(name) <=12:
-            onames = df.datetime.apply(lambda x: name+'_'+x.strftime("%d%m%Y")).values
+            onames = df.loc[idxs,"datetime"].apply(lambda x: name+'_'+x.strftime("%d%m%Y")).values
         else:
             onames = [name+"_{0:d}".format(i) for i in range(len(idxs))]
         if False in (map(lambda x :len(x) <= 20,onames)):
