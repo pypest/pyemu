@@ -530,8 +530,8 @@ class Matrix(object):
     @property
     def as_2d(self):
         if not self.isdiagonal:
-            return self.__x
-        return np.diag(self.__x.flatten())
+            return self.x
+        return np.diag(self.x.flatten())
 
     @property
     def shape(self):
@@ -1509,6 +1509,9 @@ class Cov(Matrix):
                     raise Exception('Cov.from_uncfile(): ' +
                                     'unrecognized block:' + str(line))
         f.close()
+        if self.isdiagonal:
+            self._Matrix__x = np.diag(self.x)
+
 
 
     def get_uncfile_dimensions(self, filename):
