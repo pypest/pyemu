@@ -42,7 +42,7 @@ class Ensemble(pd.DataFrame):
             None
         """
         # set up some column names
-        real_names = ["{0:d}".format(i+1)
+        real_names = ["{0:d}".format(i)
                       for i in range(num_reals)]
 
         # make sure everything is cool WRT ordering

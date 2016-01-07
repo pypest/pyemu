@@ -14,7 +14,7 @@ def mc_test():
     mc = MonteCarlo(jco=jco,verbose=True)
     mc.draw(10,obs=True)
     mc.write_psts(os.path.join("mc","real_"))
-
+    mc.parensemble.to_parfiles(os.path.join("mc","real_"))
     mc = MonteCarlo(jco=jco,verbose=True)
     mc.draw(500,obs=True)
     print("prior ensemble variance:",

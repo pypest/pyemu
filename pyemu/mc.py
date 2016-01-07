@@ -148,13 +148,12 @@ class MonteCarlo(LinearAnalysis):
             par_en = self.parensemble
 
         for i in range(self.num_reals):
-            pst_name = prefix + "{0:04d}.pst".format(i)
+            pst_name = prefix + "{0:d}.pst".format(i)
             self.log("writing realized pest control file " + pst_name)
             pst.parameter_data.loc[par_en.columns,"parval1"] = par_en.iloc[i, :].T
             if self.obsensemble.shape[0] == self.num_reals:
                 pst.observation_data.loc[self.obsensemble.columns,"obsval"] = \
                     self.obsensemble.iloc[i, :].T
-            pst_name = prefix + "{0:04d}.pst".format(i)
             pst.write(pst_name)
             self.log("writing realized pest control file " + pst_name)
         self.log("writing realized pest control files")
