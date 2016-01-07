@@ -118,13 +118,16 @@ def tied_test():
     pst = pyemu.Pst(os.path.join(pst_dir,"br_opt_no_zero_weighted.pst"))
     print(pst.tied_lines)
     pst.write(os.path.join(pst_dir,"pest_tied_tester_1.pst"))
+    mc = pyemu.MonteCarlo(pst=pst)
+    mc.draw(1)
+    mc.write_psts(os.path.join(pst_dir,"tiedtest_"))
 
 if __name__ == "__main__":
     tied_test()
-    #smp_test()
-    #pst_manip_test()
-    #tpl_ins_test()
-    #load_test()
-    #res_test()
+    smp_test()
+    pst_manip_test()
+    tpl_ins_test()
+    load_test()
+    res_test()
     #smp_test()
 

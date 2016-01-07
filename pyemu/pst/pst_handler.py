@@ -31,7 +31,7 @@ class Pst(object):
 
         for key,value in pst_utils.pst_config.items():
             self.__setattr__(key,copy.copy(value))
-
+        self.tied = None
         self.control_data = ControlData()
 
         if load:
@@ -269,7 +269,6 @@ class Pst(object):
                               nrows=nrows,delim_whitespace=True,
                               converters=converters, index_col=False)
 
-
         # in case there was some extra junk at the end of the lines
         if df.shape[1] > len(names):
             df = df.iloc[:,len(names)]
@@ -342,28 +341,24 @@ class Pst(object):
                                                 self.par_defaults)
         except:
             raise Exception("Pst.load() error reading parameter data")
-        #oh the tied parameter bullshit, how do I hate thee
+
+        # oh the tied parameter bullshit, how do I hate thee
         counts = self.parameter_data.partrans.value_counts()
         if "tied" in counts.index:
-            # self.parameter_data.index = self.parameter_data.parnme
-            # for i in range(counts["tied"]):
-            #     t_par, t_to_par = f.readline().lower().strip().split()
-            #     assert t_par != t_to_par
-            #     assert t_par in self.parameter_data.index
-            #     assert t_to_par in self.parameter_data.index
-            #     assert self.parameter_data.loc[t_to_par,"partrans"] not in ["tied","fixed"]
-            #
-            [self.tied_lines.append(f.readline()) for _ in range(counts["tied"])]
+            # tied_lines = [f.readline().lower().strip().split() for _ in range(counts["tied"])]
+            # self.tied = pd.DataFrame(tied_lines,columns=["parnme","partied"])
+            # self.tied.index = self.tied.pop("parnme")
+            self.tied = self._read_df(f,counts["tied"],self.tied_fieldnames,
+                                      self.tied_converters)
 
-        #obs groups - just read past for now
+        # obs groups - just read past for now
         line = f.readline()
         assert "* observation groups" in line.lower(),\
             "Pst.load() error: looking for obs" +\
             " group section, found:" + line
         [f.readline() for _ in range(self.control_data.nobsgp)]
 
-
-        #observation data
+        # observation data
         line = f.readline()
         assert "* observation data" in line.lower(),\
             "Pst.load() error: looking for observation" +\
@@ -534,9 +529,14 @@ class Pst(object):
                                                   index_names=False) + '\n')
         self.parameter_data.loc[:,"parnme"] = self.parameter_data.index
 
-        for line in self.tied_lines:
-            f_out.write(line)
-
+        if self.tied is not None:
+            self.tied.index = self.tied.pop("parnme")
+            f_out.write(self.tied.to_string(col_space=0,
+                                            formatters=self.tied_format,
+                                            justify='right',
+                                            header=False,
+                                            index_names=False)+'\n')
+            self.tied.loc[:,"parnme"] = self.tied.index
         f_out.write("* observation groups\n")
         [f_out.write(str(group)+'\n') for group in self.obs_groups]
         [f_out.write(str(group)+'\n') for group in self.prior_groups]
@@ -636,6 +636,10 @@ class Pst(object):
         new_pst.instruction_files = self.instruction_files
         new_pst.output_files = self.output_files
 
+        if self.tied is not None:
+            print("Pst.get() warning: not checking for tied parameter " +
+                  "compatibility in new Pst instance")
+            new_pst.tied = self.tied.copy()
         new_pst.other_lines = self.other_lines
         new_pst.pestpp_options = self.pestpp_options
         new_pst.regul_lines = self.regul_lines

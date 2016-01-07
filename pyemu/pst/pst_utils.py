@@ -34,6 +34,12 @@ def str_con(item):
 pst_config = {}
 
 # parameter stuff
+pst_config["tied_dtype"] = np.dtype([("parnme", "a20"), ("partied","a20")])
+pst_config["tied_fieldnames"] = ["parnme","partied"]
+pst_config["tied_format"] = {"parnme":SFMT,"partied":SFMT}
+pst_config["tied_converters"] = {"parnme":str_con,"partied":str_con}
+pst_config["tied_defaults"] = {"parnme":"dum","partied":"dum"}
+
 pst_config["par_dtype"] = np.dtype([("parnme", "a20"), ("partrans","a20"),
                                    ("parchglim","a20"),("parval1", np.float64),
                                    ("parlbnd",np.float64),("parubnd",np.float64),
