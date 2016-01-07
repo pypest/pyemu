@@ -111,10 +111,19 @@ def smp_test():
     obs_names = parse_ins_file(smp_filename+".ins")
     print(len(obs_names))
 
+def tied_test():
+    import os
+    import pyemu
+    pst_dir = os.path.join('..','tests',"pst")
+    pst = pyemu.Pst(os.path.join(pst_dir,"br_opt_no_zero_weighted.pst"))
+    print(pst.tied_lines)
+    pst.write(os.path.join(pst_dir,"pest_tied_tester_1.pst"))
 
 if __name__ == "__main__":
+    tied_test()
+    #smp_test()
     #pst_manip_test()
-    tpl_ins_test()
+    #tpl_ins_test()
     #load_test()
     #res_test()
     #smp_test()

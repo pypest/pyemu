@@ -345,6 +345,14 @@ class Pst(object):
         #oh the tied parameter bullshit, how do I hate thee
         counts = self.parameter_data.partrans.value_counts()
         if "tied" in counts.index:
+            # self.parameter_data.index = self.parameter_data.parnme
+            # for i in range(counts["tied"]):
+            #     t_par, t_to_par = f.readline().lower().strip().split()
+            #     assert t_par != t_to_par
+            #     assert t_par in self.parameter_data.index
+            #     assert t_to_par in self.parameter_data.index
+            #     assert self.parameter_data.loc[t_to_par,"partrans"] not in ["tied","fixed"]
+            #
             [self.tied_lines.append(f.readline()) for _ in range(counts["tied"])]
 
         #obs groups - just read past for now
@@ -507,10 +515,8 @@ class Pst(object):
         self.parameter_groups.loc[:,"pargpnme"] = \
             self.parameter_groups.pargpnme.apply(self.pargp_format["pargpnme"])
 
-
         self.parameter_groups.index = self.parameter_groups.pop("pargpnme")
 
-        #self.parameter_groups.loc[:,"splitaction"] = self.pargp_defaults["splitaction"]
         f_out.write(self.parameter_groups.to_string(col_space=0,
                                                   formatters=self.pargp_format,
                                                   justify="right",
