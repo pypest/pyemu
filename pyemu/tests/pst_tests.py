@@ -123,11 +123,11 @@ def tied_test():
     mc.write_psts(os.path.join(pst_dir,"tiedtest_"))
 
 if __name__ == "__main__":
-    tied_test()
+    #tied_test()
     smp_test()
-    pst_manip_test()
-    tpl_ins_test()
-    load_test()
-    res_test()
+    # pst_manip_test()
+    # tpl_ins_test()
+    # load_test()
+    # res_test()
     #smp_test()
 

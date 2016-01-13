@@ -456,7 +456,9 @@ def smp_to_ins(smp_filename,ins_filename=None):
         if False in (map(lambda x :len(x) <= 20,onames)):
             long_names = [oname for oname in onames if len(oname) > 20]
             raise Exception("observation names longer than 20 chars:\n{0}".format(str(long_names)))
-        ins_strs = ["l1  ({0:s})39:46".format(on) for on in onames]
+        #ins_strs = ["l1  ({0:s})39:46".format(on) for on in onames]
+        ins_strs = ["l1 !dum! !dum! !dum! !{0:s}!".format(on) for on in onames]
+
 
         df.loc[idxs,"observation_names"] = onames
         df.loc[idxs,"ins_strings"] = ins_strs
