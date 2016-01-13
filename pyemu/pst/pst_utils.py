@@ -457,7 +457,7 @@ def smp_to_ins(smp_filename,ins_filename=None):
             long_names = [oname for oname in onames if len(oname) > 20]
             raise Exception("observation names longer than 20 chars:\n{0}".format(str(long_names)))
         #ins_strs = ["l1  ({0:s})39:46".format(on) for on in onames]
-        ins_strs = ["l1 !dum! !dum! !dum! !{0:s}!".format(on) for on in onames]
+        ins_strs = ["l1 w w w  !{0:s}!".format(on) for on in onames]
 
 
         df.loc[idxs,"observation_names"] = onames
@@ -494,8 +494,7 @@ def dataframe_to_smp(dataframe,smp_filename,name_col="name",
     -------
         None
     """
-
-    formatters = {"name":lambda x:"{0:10s}".format(str(x)[:max_name_len]),
+    formatters = {"name":lambda x:"{0:<20s}".format(str(x)[:max_name_len]),
                   "value":lambda x:value_format.format(x)}
     if datetime_format.lower().startswith("d"):
         dt_fmt = "%d/%m/%Y    %H:%M:%S"
@@ -512,12 +511,15 @@ def dataframe_to_smp(dataframe,smp_filename,name_col="name",
         apply(lambda x:x.strftime(dt_fmt))
     if isinstance(smp_filename,str):
         smp_filename = open(smp_filename,'w')
-        smp_filename.write(dataframe.loc[:,[name_col,"datetime_str",value_col]].\
+        # need this to remove the leading space that pandas puts in front
+        s = dataframe.loc[:,[name_col,"datetime_str",value_col]].\
                 to_string(col_space=0,
                           formatters=formatters,
-                          justify="right",
+                          justify=None,
                           header=False,
-                          index=False) + '\n')
+                          index=False)
+        for ss in s.split('\n'):
+            smp_filename.write("{0:<s}\n".format(ss.strip()))
     dataframe.pop("datetime_str")
 
 

@@ -103,6 +103,15 @@ def smp_test():
     import os
     from pyemu.pst.pst_utils import smp_to_dataframe,dataframe_to_smp,\
         parse_ins_file,smp_to_ins
+    
+    smp_filename = os.path.join("misc","gainloss.smp")
+    df = smp_to_dataframe(smp_filename)
+    print(df.dtypes)
+    dataframe_to_smp(df,smp_filename+".test")
+    smp_to_ins(smp_filename)
+    obs_names = parse_ins_file(smp_filename+".ins")
+    print(len(obs_names))
+
     smp_filename = os.path.join("misc","sim_hds_v6.smp")
     df = smp_to_dataframe(smp_filename)
     print(df.dtypes)
