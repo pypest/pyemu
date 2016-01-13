@@ -97,11 +97,13 @@ class Pst(object):
         phi_components_normalized = {i: self.phi_components[i]/self.phi for i in self.phi_components}
         return phi_components_normalized
 
+    def set_res(self,res):
+        self.__res = res
+
     @property
     def res(self):
         """get the residuals dataframe
         """
-        pass
         if self.__res is not None:
             return self.__res
         else:

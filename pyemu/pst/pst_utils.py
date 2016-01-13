@@ -305,6 +305,52 @@ def populate_dataframe(index,columns, default_dict, dtype):
     return new_df
 
 
+def generic_pst(par_names=["par1"],obs_names=["obs1"]):
+    """generate a generic pst instance
+    Parameters:
+    ----------
+        par_names : list(str)
+            parameter names to setup
+        obs_names : list(str)
+            observation names to setup
+    Returns:
+    -------
+        Pst instance
+
+    """
+    new_pst = pyemu.Pst("pest.pst",load=False)
+    pargp_data = populate_dataframe(["pargp"], new_pst.pargp_fieldnames,
+                                    new_pst.pargp_defaults, new_pst.pargp_dtype)
+    new_pst.parameter_groups = pargp_data
+
+    par_data = populate_dataframe(par_names,new_pst.par_fieldnames,
+                                  new_pst.par_defaults,new_pst.par_dtype)
+    par_data.loc[:,"parnme"] = par_names
+    par_data.index = par_names
+    new_pst.parameter_data = par_data
+    obs_data = populate_dataframe(obs_names,new_pst.obs_fieldnames,
+                                  new_pst.obs_defaults,new_pst.obs_dtype)
+    obs_data.loc[:,"obsnme"] = obs_names
+    obs_data.index = obs_names
+    new_pst.observation_data = obs_data
+
+    new_pst.template_files = ["file.tpl"]
+    new_pst.input_files = ["file.in"]
+    new_pst.instruction_files = ["file.ins"]
+    new_pst.output_files = ["file.out"]
+    new_pst.model_command = ["model.bat"]
+
+    new_pst.prior_information = new_pst.null_prior
+
+    new_pst.other_lines = ["* singular value decomposition\n","1\n",
+                           "{0:d} {1:15.6E}\n".format(new_pst.npar_adj,1.0E-6),
+                           "1 1 1\n"]
+
+    new_pst.zero_order_tikhonov()
+
+    return new_pst
+
+
 def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     """generate a Pst instance from the model io files
     Parameters:
@@ -337,32 +383,13 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
         assert os.path.exists(ins_file),"instruction file not found: "+str(ins_file)
         obs_names.extend(parse_ins_file(ins_file))
 
+    new_pst = generic_pst(par_names,obs_names)
 
-    new_pst = pyemu.Pst(pst_filename,load=False)
-    pargp_data = populate_dataframe(["pargp"], new_pst.pargp_fieldnames,
-                                    new_pst.pargp_defaults, new_pst.pargp_dtype)
-    new_pst.parameter_groups = pargp_data
-
-    par_data = populate_dataframe(par_names,new_pst.par_fieldnames,
-                                  new_pst.par_defaults,new_pst.par_dtype)
-    par_data.loc[:,"parnme"] = par_names
-    new_pst.parameter_data = par_data
-    obs_data = populate_dataframe(obs_names,new_pst.obs_fieldnames,
-                                  new_pst.obs_defaults,new_pst.obs_dtype)
-    obs_data.loc[:,"obsnme"] = obs_names
-    new_pst.observation_data = obs_data
     new_pst.template_files = tpl_files
     new_pst.input_files = in_files
     new_pst.instruction_files = ins_files
     new_pst.output_files = out_files
-    new_pst.model_command = ["model.bat"]
-    new_pst.prior_information = new_pst.null_prior
 
-    new_pst.other_lines = ["* singular value decomposition\n","1\n",
-                           "{0:d} {1:15.6E}\n".format(new_pst.npar_adj,1.0E-6),
-                           "1 1 1\n"]
-
-    new_pst.zero_order_tikhonov()
     if pst_filename:
         new_pst.write(pst_filename,update_regul=True)
     return new_pst
@@ -422,7 +449,7 @@ def smp_to_ins(smp_filename,ins_filename=None):
     df.loc[:,"observation_names"] = None
     name_groups = df.groupby("name").groups
     for name,idxs in name_groups.items():
-        if len(name) <=12:
+        if len(name) <= 11:
             onames = df.loc[idxs,"datetime"].apply(lambda x: name+'_'+x.strftime("%d%m%Y")).values
         else:
             onames = [name+"_{0:d}".format(i) for i in range(len(idxs))]
@@ -616,7 +643,13 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
     for p in procs:
         p.wait()
 
-
-
+def res_from_obseravtion_data(observation_data):
+    res_df = observation_data.copy()
+    res_df.loc[:, "name"] = res_df.pop("obsnme")
+    res_df.loc[:, "measured"] = res_df.pop("obsval")
+    res_df.loc[:, "group"] = res_df.pop("obgnme")
+    res_df.loc[:, "modelled"] = np.NaN
+    res_df.loc[:, "residual"] = np.NaN
+    return res_df
 
 
