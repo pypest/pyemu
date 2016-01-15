@@ -372,12 +372,21 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     par_names = []
     if not isinstance(tpl_files,list):
         tpl_files = [tpl_files]
+    if not isinstance(in_files,list):
+        in_files = [in_files]
+    assert len(in_files) == len(tpl_files),"len(in_files) != len(tpl_files)"
+
     for tpl_file in tpl_files:
         assert os.path.exists(tpl_file),"template file not found: "+str(tpl_file)
         par_names.extend(parse_tpl_file(tpl_file))
-
+    
     if not isinstance(ins_files,list):
         ins_files = [ins_files]
+    if not isinstance(out_files,list):
+        out_files = [out_files]
+    assert len(ins_files) == len(out_files),"len(out_files) != len(out_files)"
+
+
     obs_names = []
     for ins_file in ins_files:
         assert os.path.exists(ins_file),"instruction file not found: "+str(ins_file)
