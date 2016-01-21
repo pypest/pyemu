@@ -33,6 +33,8 @@ class logger(object):
             self.echo = True
             self.filename = None
         elif filename:
+            self.filename = filename
+            self.echo = True
             self.f = open(filename, 'w', 0) #unbuffered
             self.t = datetime.now()
             self.log("opening " + str(filename) + " for logging")

@@ -305,8 +305,6 @@ class ParameterEnsemble(Ensemble):
         base = self.mean_values.loc[common_names]
         projection_matrix = projection_matrix.get(common_names,common_names)
 
-
-
         if not inplace:
             new_en = ParameterEnsemble(pst=self.pst.get(),data=self.loc[:,:].copy(),
                               columns=self.columns,
@@ -316,12 +314,10 @@ class ParameterEnsemble(Ensemble):
             if log is not None:
                 log("projecting realization " + real)
 
-
             # null space projection of difference vector
             pdiff = np.dot(projection_matrix.x,
                            (self.loc[real,common_names] - base)\
                            .as_matrix())
-
 
             # lb_fac = np.abs(pdiff)/((base+pdiff)-self.lbnd)
             # lb_fac[pdiff>0.0] = 1.0

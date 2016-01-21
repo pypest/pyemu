@@ -3,7 +3,7 @@ import os
 import numpy as np
 from pyemu.la import LinearAnalysis
 from pyemu.en import ObservationEnsemble, ParameterEnsemble
-
+from pyemu.mat import Cov
 
 class MonteCarlo(LinearAnalysis):
     """LinearAnalysis derived type for monte carlo analysis
@@ -81,8 +81,13 @@ class MonteCarlo(LinearAnalysis):
         if par_file is not None:
             self.pst.parrep(par_file)
 
+        if cov is not None:
+            assert isinstance(cov,Cov)
+        else:
+            cov = self.parcov
+
         self.log("generating {0:d} parameter realizations".format(num_reals))
-        self.parensemble.draw(self.parcov,num_reals=num_reals)
+        self.parensemble.draw(cov,num_reals=num_reals)
         if enforce_bounds:
             self.parensemble.enforce()
         self.log("generating {0:d} parameter realizations".format(num_reals))
