@@ -42,6 +42,15 @@ class logger(object):
             self.filename = None
 
 
+    def statement(self,phrase):
+        t = datetime.now()
+        s = str(t) + str(phrase)
+        if self.echo:
+            print(s,)
+        if self.filename:
+            self.f.write(s)
+
+
     def log(self,phrase):
         """log something that happened
         Parameters:
@@ -514,6 +523,7 @@ class LinearAnalysis(object):
             return self.__pst
         else:
             self.__load_pst()
+            return self.__pst
 
 
     @property
@@ -622,6 +632,10 @@ class LinearAnalysis(object):
         if not self.pst.estimation and self.pst.nprior > 0:
             self.drop_prior_information()
 
+    def reset_pst(self,arg):
+        self.logger.warn("resetting pst")
+        self.__pst = None
+        self.pst_arg = arg
 
     def reset_parcov(self,arg=None):
         """reset the parcov attribute to None

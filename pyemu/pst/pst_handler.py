@@ -250,6 +250,16 @@ class Pst(object):
         return nz_names
 
     @property
+    def zero_weight_obs_names(self):
+        self.observation_data.index = self.observation_data.obsnme
+        groups = self.observation_data.groupby(
+                self.observation_data.weight.apply(lambda x: x==0.0)).groups
+        if True in groups:
+            return list(self.observation_data.loc[groups[True],"obsnme"])
+        else:
+            return []
+
+    @property
     def regul_section(self):
         phimlim = float(self.nnz_obs)
         #sect = "* regularisation\n"
@@ -831,6 +841,25 @@ class Pst(object):
                            [obs_idxs[item], "weight"])**2).sum()
             weight_mult = np.sqrt(target_phis[item] / actual_phi)
             self.observation_data.loc[obs_idxs[item], "weight"] *= weight_mult
+
+    def adjust_weights_by_list(self,obslist,weight):
+        """apply a single weight to a list of obsevation names.  supports that
+        data worth analyses in Schur
+        Parameters:
+        ----------
+            obslist : list of obseravtion names
+            weight : (flaot) new weight to assign
+        """
+
+        obs = self.observation_data
+        if not isinstance(obslist,list):
+            obslist = [obslist]
+        obslist = [i.lower() for i in obslist]
+        groups = obs.groupby([lambda x:x in obslist,
+                             obs.weight.apply(lambda x:x==0.0)]).groups
+        if (True,True) in groups:
+            obs.loc[groups[True,True],"weight"] = weight
+
 
 
     def adjust_weights(self,obs_dict=None,
