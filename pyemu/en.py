@@ -378,8 +378,6 @@ class ParameterEnsemble(Ensemble):
         return self.read_parfiles(parfile_names)
 
 
-
-
     def read_parfiles(self,parfile_names):
         """ read the ensemble from par files
 
