@@ -852,6 +852,7 @@ class Pst(object):
         """
 
         obs = self.observation_data
+        obs = self.observation_data
         if not isinstance(obslist,list):
             obslist = [obslist]
         obslist = [i.lower() for i in obslist]

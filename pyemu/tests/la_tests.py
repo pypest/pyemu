@@ -74,6 +74,7 @@ def errvar_test_nonpest():
     svs = [0,1,2,3,4,5]
     print(e.get_errvar_dataframe(svs))
 
+
 def errvar_test():
     import os
     from pyemu import ErrVar
@@ -82,6 +83,7 @@ def errvar_test():
     ev = ErrVar(jco=os.path.join(w_dir,"pest.jcb"),forecasts=forecasts)
     print(ev.prior_forecast)
     print(ev.get_errvar_dataframe())
+
 
 def dataworth_test():
     import os
@@ -146,9 +148,27 @@ def dataworth_next_test():
     assert next_test.shape[0] == 4
 
 
+def par_contrib_test():
+    import os
+    import numpy as np
+    from pyemu import Schur
+    w_dir = os.path.join("..","..","verification","Freyberg")
+    forecasts = ["travel_time","sw_gw_0","sw_gw_1"]
+    sc = Schur(jco=os.path.join(w_dir,"freyberg.jcb"),forecasts=forecasts,verbose=True)
+    par = sc.pst.parameter_data
+    par.index = par.parnme
+    groups = par.groupby(par.pargp).groups
+
+    parlist_dict = {}
+    print(sc.next_most_par_contribution(forecast="travel_time",
+                                        parlist_dict=groups))
+
+
+
 if __name__ == "__main__":
+    par_contrib_test()
     #dataworth_test()
-    dataworth_next_test()
+    #dataworth_next_test()
     #schur_test_nonpest()
     #schur_test()
     #errvar_test_nonpest()

@@ -1285,6 +1285,8 @@ class Cov(Matrix):
         -------
             Cov object
         """
+        if not isinstance(conditioning_elements,list):
+            conditioning_elements = [conditioning_elements]
         for iname, name in enumerate(conditioning_elements):
             conditioning_elements[iname] = name.lower()
             assert name.lower() in self.col_names,\
