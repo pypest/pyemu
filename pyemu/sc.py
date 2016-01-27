@@ -77,7 +77,6 @@ class Schur(LinearAnalysis):
                 self.__posterior_prediction = {}
             return self.__posterior_prediction
 
-
     def get_parameter_summary(self):
         """get a summary of the parameter uncertainty
         Parameters:
@@ -100,7 +99,6 @@ class Schur(LinearAnalysis):
         return pd.DataFrame({"prior_var":prior,"post_var":post,
                                  "percent_reduction":ureduce},
                                 index=self.posterior_parameter.col_names)
-
 
     def get_forecast_summary(self):
         """get a summary of the forecast uncertainty
@@ -133,6 +131,16 @@ class Schur(LinearAnalysis):
             dict{prediction name : [prior uncertainty w/o parameter_names,
                 % posterior uncertainty w/o parameter names]}
         """
+
+
+        #get the prior and posterior for the base case
+        bprior,bpost = self.prior_prediction, self.posterior_prediction
+        #get the prior and posterior for the conditioned case
+        la_cond = self.get_conditional_instance(parameter_names)
+        cprior,cpost = la_cond.prior_prediction, la_cond.posterior_prediction
+        return cprior,cpost
+
+    def get_conditional_instance(self, parameter_names):
         if not isinstance(parameter_names, list):
             parameter_names = [parameter_names]
 
@@ -157,13 +165,7 @@ class Schur(LinearAnalysis):
         la_cond = Schur(jco=self.jco.get(self.jco.row_names, keep_names),
                         parcov=self.parcov.condition_on(parameter_names),
                         obscov=self.obscov, predictions=cond_preds,verbose=False)
-
-        #get the prior and posterior for the base case
-        bprior,bpost = self.prior_prediction, self.posterior_prediction
-        #get the prior and posterior for the conditioned case
-        cprior,cpost = la_cond.prior_prediction, la_cond.posterior_prediction
-        return cprior,cpost
-
+        return la_cond
 
     def get_par_contribution(self,parlist_dict=None):
         """get a dataframe the prior and posterior uncertainty
@@ -220,7 +222,6 @@ class Schur(LinearAnalysis):
         for grp,idxs in groups.items():
             pargrp_dict[grp] = list(par.loc[idxs,"parnme"])
         return self.get_par_contribution(pargrp_dict)
-
 
     def get_added_obs_importance(self,obslist_dict=None,base_obslist=None,
                                  reset_zero_weight=False):
@@ -539,5 +540,56 @@ class Schur(LinearAnalysis):
 
         return pd.DataFrame(best_results,index=best_case)
 
+    def next_most_par_contribution(self,niter=3,forecast=None,parlist_dict=None):
+        """find the largest parameter(s) contribution for prior and posterior
+        forecast  by sequentailly evaluating the contribution of parameters in
+        parlist_dict
 
+        Parameters:
+        ----------
+            forecast : name of the forecast to use in the ranking process.  If
+                more than one forecast has been listed, this argument is required
+            parlist_dict (dict of list of str) : groups of parameters
+                that are to be treated as perfectly known.  key values become
+                row labels in dataframe
+        Returns:
+        -------
+            dataframe[parlist_dict.keys(),(forecast_name,<prior,post>)
+                multiindex dataframe of Schur's complement results for each
+                group of parameters in parlist_dict values.
+        """
+        if forecast is None:
+            assert len(self.forecasts) == 1,"forecast arg list one and only one" +\
+                                            " forecast"
+        elif forecast not in self.prediction_arg:
+            raise Exception("forecast {0} not found".format(forecast))
+        org_parcov = self.parcov.get(row_names=self.parcov.row_names)
+        if parlist_dict is None:
+            parlist_dict = dict(zip(self.pst.adj_par_names,self.pst.adj_par_names))
+
+        base_prior,base_post = self.prior_forecast,self.posterior_forecast
+        iter_results = [base_post[forecast]]
+        iter_names = ["base"]
+        for iiter in range(niter):
+            iter_contrib = {forecast:[base_post[forecast]]}
+            iter_case_names = ["base"]
+            self.log("next most par iteration {0}".format(iiter+1))
+
+            for case,parlist in parlist_dict.items():
+                iter_case_names.append(case)
+                la_cond = self.get_conditional_instance(parlist)
+                iter_contrib[forecast].append(la_cond.posterior_forecast[forecast])
+            df = pd.DataFrame(iter_contrib,index=iter_case_names)
+            df.sort(columns=forecast,inplace=True)
+            iter_best = df.index[0]
+            self.logger.statement("next best iter {0}: {1}".format(iiter+1,iter_best))
+            self.log("next most par iteration {0}".format(iiter+1))
+            if iter_best.lower() == "base":
+                break
+            iter_results.append(df.loc[iter_best,forecast])
+            iter_names.append(iter_best)
+            self.reset_parcov(self.parcov.condition_on(parlist_dict.pop(iter_best)))
+
+        self.reset_parcov(org_parcov)
+        return pd.DataFrame(iter_results,index=iter_names)
 
