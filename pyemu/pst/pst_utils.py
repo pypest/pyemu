@@ -411,7 +411,8 @@ def get_phi_comps_from_recfile(recfile):
             line = f.readline()
             if line == '':
                 break
-            if "starting phi for this iteration" in line.lower():
+            if "starting phi for this iteration" in line.lower() or \
+                "final phi" in line.lower():
                 contributions = {}
                 while True:
                     line = f.readline()
