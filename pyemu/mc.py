@@ -3,7 +3,7 @@ import os
 import numpy as np
 from pyemu.la import LinearAnalysis
 from pyemu.en import ObservationEnsemble, ParameterEnsemble
-
+from pyemu.mat import Cov
 
 class MonteCarlo(LinearAnalysis):
     """LinearAnalysis derived type for monte carlo analysis
@@ -51,10 +51,11 @@ class MonteCarlo(LinearAnalysis):
         """
         if nsing is None:
             nsing = self.get_nsing()
-
+        self.log("forming null space projection matrix with " +\
+                 "{0} singular components".format(nsing))
         v2_proj = (self.xtqx.v[:,nsing:] * self.xtqx.v[:,nsing:].T)
-        #v2_proj = (self.qhalfx.v[:,nsing:] * self.qhalfx.v[:,nsing:].T)
-        #self.__parcov = self.parcov.identity
+        self.log("forming null space projection matrix with " +\
+                 "{0} singular components".format(nsing))
         return v2_proj
 
     def draw(self, num_reals=1, par_file = None, obs=False,
@@ -81,8 +82,13 @@ class MonteCarlo(LinearAnalysis):
         if par_file is not None:
             self.pst.parrep(par_file)
 
+        if cov is not None:
+            assert isinstance(cov,Cov)
+        else:
+            cov = self.parcov
+
         self.log("generating {0:d} parameter realizations".format(num_reals))
-        self.parensemble.draw(self.parcov,num_reals=num_reals)
+        self.parensemble.draw(cov,num_reals=num_reals)
         if enforce_bounds:
             self.parensemble.enforce()
         self.log("generating {0:d} parameter realizations".format(num_reals))
