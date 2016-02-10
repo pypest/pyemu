@@ -46,7 +46,7 @@ class Schur(LinearAnalysis):
             self.log("Schur's complement")
             r = (self.xtqx + self.parcov.inv).inv
             assert r.row_names == r.col_names
-            self.__posterior_parameter = Cov(r.x,row_names=r.row_names,col_names=r.col_names)
+            self.__posterior_parameter = Cov(r.x, row_names=r.row_names, col_names=r.col_names)
             self.log("Schur's complement")
             return self.__posterior_parameter
 
@@ -185,6 +185,9 @@ class Schur(LinearAnalysis):
         self.log("calculating contribution from parameters")
         if parlist_dict is None:
             parlist_dict = dict(zip(self.pst.parameter_data.parnme,self.pst.parameter_data.parnme))
+        else:
+            if type(parlist_dict) == list:
+                parlist_dict = dict(zip(parlist_dict,parlist_dict))
 
         results = {}
         names = ["base"]
@@ -252,6 +255,12 @@ class Schur(LinearAnalysis):
             all observations listed in obslist_dict and base_obslist with zero
             weights will be dropped unless reset_zero_weight is set
         """
+
+        if obslist_dict is not None:
+            if type(obslist_dict) == list:
+                obslist_dict = dict(zip(obslist_dict,obslist_dict))
+
+
 
         reset = False
         if reset_zero_weight is not False:
@@ -364,7 +373,7 @@ class Schur(LinearAnalysis):
         as a result of losing some observations
         Parameters:
         ----------
-            obslist_dict (dict of list of str) : groups of observations
+            obslist_dict (dict of list of str, or just list of str) : groups of observations
                 that are to be treated as lost.  key values become
                 row labels in result dataframe. If None, then test every
                 (nonzero weight - see reset_zero_weight) observation
@@ -385,6 +394,12 @@ class Schur(LinearAnalysis):
             all observations listed in obslist_dict with zero
             weights will be dropped unless reset_zero_weight is set
         """
+
+        if obslist_dict is not None:
+            if type(obslist_dict) == list:
+                obslist_dict = dict(zip(obslist_dict,obslist_dict))
+
+
         reset = False
         if reset_zero_weight is not False:
             if not self.obscov.isdiagonal:
