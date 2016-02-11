@@ -536,7 +536,7 @@ class Schur(LinearAnalysis):
                 best_results.append(df.loc["base",forecast])
             fore_df = df.loc[:,forecast]
             fore_diff_df = fore_df - fore_df.loc["base"]
-            fore_diff_df.sort(inplace=True)
+            fore_diff_df.sort_values(inplace=True)
             iter_best = fore_diff_df.index[0]
             self.log("next most important added obs iteration {0}".format(iiter+1))
             if iter_best.lower() == "base":
@@ -553,7 +553,7 @@ class Schur(LinearAnalysis):
                 onames = [onames]
             obs_being_used.extend(onames)
 
-        return pd.DataFrame(best_results,index=best_case)
+        return pd.DataFrame(best_results,index=best_case, names=[forecast])
 
     def next_most_par_contribution(self,niter=3,forecast=None,parlist_dict=None):
         """find the largest parameter(s) contribution for prior and posterior
