@@ -23,7 +23,7 @@ def run():
 
     if platform.system().lower() == "windows":
         mf_exe = os.path.join("MF_NWT.exe")
-        m2s_exe = os.path.join("exe","mod2smp.exe")
+        m2s_exe = os.path.join("mod2smp.exe")
     else:
         mf_exe = "mfnwt"
         m2s_exe = None
@@ -35,9 +35,10 @@ def run():
 
 def process():
     if platform.system().lower() == "windows":
-        m2s_exe = os.path.join("exe","mod2smp.exe")
+        m2s_exe = os.path.join("mod2smp.exe")
     else:
         m2s_exe = None
+	print m2s_exe + "< "+os.path.join("misc","mod2smp.in")
     os.system(m2s_exe + "< "+os.path.join("misc","mod2smp.in"))
 
     # sw-gw exchange
@@ -61,7 +62,6 @@ def process():
     ovals = []
     ovals.extend(diffs)
     with open(out_file, 'w') as f:
-        f.write("{0:20s} {1:20.7E}\n".format("travel_time", travel_time))
         for i, diff in enumerate(diffs):
             oname = "sw_gw_{0:d}".format(i)
             f.write("{0:20s} {1:20.7E}\n".format(oname, diff))
