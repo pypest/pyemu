@@ -10,7 +10,7 @@ hds_file = os.path.join("extra_crispy","freyberg.hds")
 smp_file = os.path.join("misc","freyberg_heads.smp")
 
 def prep():
-    to_remove = [endpoint_file, list_file,out_file,smp_file,
+    to_remove = [list_file,out_file,smp_file,
                  os.path.join(hds_file)]
     for f in to_remove:
         try:
@@ -23,16 +23,13 @@ def run():
 
     if platform.system().lower() == "windows":
         mf_exe = os.path.join("MF_NWT.exe")
-        mp_exe = os.path.join("mp6x64.exe")
         m2s_exe = os.path.join("exe","mod2smp.exe")
     else:
         mf_exe = "mfnwt"
-        mp_exe = "mp6"
         m2s_exe = None
 
     os.chdir("extra_crispy")
     os.system(mf_exe + ' freyberg.nam')
-    os.system(mp_exe + ' <mpath.in')
     os.chdir("..")
 
 
@@ -42,13 +39,6 @@ def process():
     else:
         m2s_exe = None
     os.system(m2s_exe + "< "+os.path.join("misc","mod2smp.in"))
-    # particle travel time
-    lines = open(endpoint_file, 'r').readlines()
-
-    items = lines[-1].strip().split()
-
-    travel_time = float(items[4]) - float(items[3])
-    #print(travel_time)
 
     # sw-gw exchange
 
@@ -67,8 +57,8 @@ def process():
     diffs = [i - o for i, o in zip(vals[:-1:2], vals[1::2])]
     #print(diffs)
 
-    onames = ["travel_time"]
-    ovals = [travel_time]
+    onames = []
+    ovals = []
     ovals.extend(diffs)
     with open(out_file, 'w') as f:
         f.write("{0:20s} {1:20.7E}\n".format("travel_time", travel_time))
