@@ -553,7 +553,7 @@ class Schur(LinearAnalysis):
                 onames = [onames]
             obs_being_used.extend(onames)
 
-        return pd.DataFrame(best_results,index=best_case, names=[forecast])
+        return pd.DataFrame(best_results,index=best_case, columns=[forecast])
 
     def next_most_par_contribution(self,niter=3,forecast=None,parlist_dict=None):
         """find the largest parameter(s) contribution for prior and posterior
