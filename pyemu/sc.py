@@ -511,6 +511,11 @@ class Schur(LinearAnalysis):
                 If the value of reset_zero_weights can be cast to a float,
                 then that value will be assigned to zero weight obs.  Otherwise,
                 zero weight obs will be given a weight of 1.0
+        Returns:
+        -------
+            DataFrame with columns = [best obslist_dict key, forecast variance,
+                percent reduction for this iteration, percent reduction
+                compared to initial base case]
         """
 
         if forecast is None:
@@ -532,28 +537,37 @@ class Schur(LinearAnalysis):
                                                    reset_zero_weight=reset_zero_weight)
 
             if iiter == 0:
-                best_case.append("base")
-                best_results.append(df.loc["base",forecast])
+                init_base = df.loc["base",forecast]
             fore_df = df.loc[:,forecast]
             fore_diff_df = fore_df - fore_df.loc["base"]
-            fore_diff_df.sort_values(inplace=True)
-            iter_best = fore_diff_df.index[0]
+            fore_diff_df.sort(inplace=True)
+            iter_best_name = fore_diff_df.index[0]
+            iter_best_result = df.loc[iter_best_name,forecast]
+            iter_base_result = df.loc["base",forecast]
+            diff_percent_init = 100.0 * (init_base -
+                                              iter_best_result) / init_base
+            diff_percent_iter = 100.0 * (iter_base_result -
+                                              iter_best_result) / iter_base_result
             self.log("next most important added obs iteration {0}".format(iiter+1))
-            if iter_best.lower() == "base":
+
+
+            best_results.append([iter_best_name,iter_best_result,
+                                 diff_percent_iter,diff_percent_init])
+            best_case.append(iter_best_name)
+
+            if iter_best_name.lower() == "base":
                 break
 
-            best_results.append(df.loc[iter_best,forecast])
-            best_case.append(iter_best)
             if obslist_dict is None:
-                onames = [iter_best]
+                onames = [iter_best_name]
             else:
-                onames = obslist_dict.pop(iter_best)
-
+                onames = obslist_dict.pop(iter_best_name)
             if not isinstance(onames,list):
                 onames = [onames]
             obs_being_used.extend(onames)
-
-        return pd.DataFrame(best_results,index=best_case, columns=[forecast])
+        columns = ["best_obs",forecast+"_variance",
+                   "unc_reduce_initial_base","unc_reduce_iter_base"]
+        return pd.DataFrame(best_results,index=best_case,columns=columns)
 
     def next_most_par_contribution(self,niter=3,forecast=None,parlist_dict=None):
         """find the largest parameter(s) contribution for prior and posterior
