@@ -525,6 +525,10 @@ class Pst(object):
         f_out.write("* parameter data\n")
         self.parameter_data.index = self.parameter_data.pop("parnme")
         f_out.write(self.parameter_data.to_string(col_space=0,
+                                                  columns=[
+                                                  'partrans','parchglim',
+                                                  'parval1','parlbnd','parubnd',
+                                                  'pargp','scale','offset','dercom'],
                                                   formatters=self.par_format,
                                                   justify="right",
                                                   header=False,
