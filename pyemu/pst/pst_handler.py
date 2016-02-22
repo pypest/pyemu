@@ -829,9 +829,11 @@ class Pst(object):
             actual_phi = ((self.res.loc[res_idxs[item], "residual"] *
                            self.observation_data.loc
                            [obs_idxs[item], "weight"])**2).sum()
-            weight_mult = np.sqrt(target_phis[item] / actual_phi)
-            self.observation_data.loc[obs_idxs[item], "weight"] *= weight_mult
-
+            if actual_phi > 0.0:
+                weight_mult = np.sqrt(target_phis[item] / actual_phi)
+                self.observation_data.loc[obs_idxs[item], "weight"] *= weight_mult
+            else:
+                print("Pst.__reset_weights() warning: phi group {0} has zero phi, skipping...".format(item))
 
     def adjust_weights(self,obs_dict=None,
                               obsgrp_dict=None):
