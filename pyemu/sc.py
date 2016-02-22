@@ -540,7 +540,7 @@ class Schur(LinearAnalysis):
                 init_base = df.loc["base",forecast]
             fore_df = df.loc[:,forecast]
             fore_diff_df = fore_df - fore_df.loc["base"]
-            fore_diff_df.sort(inplace=True)
+            fore_diff_df.sort_values(inplace=True)
             iter_best_name = fore_diff_df.index[0]
             iter_best_result = df.loc[iter_best_name,forecast]
             iter_base_result = df.loc["base",forecast]
