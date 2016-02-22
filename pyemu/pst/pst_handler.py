@@ -526,6 +526,7 @@ class Pst(object):
 
         f_out.write(self.parameter_groups.to_string(col_space=0,
                                                   formatters=self.pargp_format,
+                                                  columns=self.pargp_fieldnames,
                                                   justify="right",
                                                   header=False,
                                                   index_names=False) + '\n')
@@ -535,10 +536,7 @@ class Pst(object):
         f_out.write("* parameter data\n")
         self.parameter_data.index = self.parameter_data.pop("parnme")
         f_out.write(self.parameter_data.to_string(col_space=0,
-                                                  columns=[
-                                                  'partrans','parchglim',
-                                                  'parval1','parlbnd','parubnd',
-                                                  'pargp','scale','offset','dercom'],
+                                                  columns=self.par_fieldnames,
                                                   formatters=self.par_format,
                                                   justify="right",
                                                   header=False,
@@ -548,6 +546,7 @@ class Pst(object):
         if self.tied is not None:
             self.tied.index = self.tied.pop("parnme")
             f_out.write(self.tied.to_string(col_space=0,
+                                            columns=self.tied_names,
                                             formatters=self.tied_format,
                                             justify='right',
                                             header=False,
@@ -561,6 +560,7 @@ class Pst(object):
         self.observation_data.index = self.observation_data.pop("obsnme")
         f_out.write(self.observation_data.to_string(col_space=0,
                                                   formatters=self.obs_format,
+                                                  columns=self.obs_fieldnames,
                                                   justify="right",
                                                   header=False,
                                                   index_names=False) + '\n')
