@@ -69,7 +69,7 @@ class MonteCarlo(LinearAnalysis):
         return v2_proj
 
     def draw(self, num_reals=1, par_file = None, obs=False,
-             enforce_bounds=False,cov=None):
+             enforce_bounds=False,cov=None, how="gaussian"):
         """draw stochastic realizations of parameters and
            optionally observations
 
@@ -83,7 +83,7 @@ class MonteCarlo(LinearAnalysis):
 
             enforce_bounds (bool): enforce parameter bounds in control file
 
-
+            how (str): type of distribution.  Must be in ["gaussian","uniform"]
         Returns:
             None
         Raises:
@@ -91,14 +91,19 @@ class MonteCarlo(LinearAnalysis):
         """
         if par_file is not None:
             self.pst.parrep(par_file)
+        how = how.lower().strip()
+        assert how in ["gaussian","uniform"]
 
         if cov is not None:
             assert isinstance(cov,Cov)
+            if how == "uniform":
+                raise Exception("MonteCarlo.draw() error: 'how'='uniform'," +\
+                                " 'cov' arg cannot be passed")
         else:
             cov = self.parcov
 
         self.log("generating {0:d} parameter realizations".format(num_reals))
-        self.parensemble.draw(cov,num_reals=num_reals)
+        self.parensemble.draw(cov,num_reals=num_reals, how=how)
         if enforce_bounds:
             self.parensemble.enforce()
         self.log("generating {0:d} parameter realizations".format(num_reals))

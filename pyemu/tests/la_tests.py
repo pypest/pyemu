@@ -142,7 +142,8 @@ def dataworth_next_test():
     next_test = sc.next_most_important_added_obs(forecast="travel_time",
                                                  base_obslist=sc.pst.nnz_obs_names,
                                                  obslist_dict=obslist_dict,
-                                                 reset_zero_weight=1.0)
+                                                 reset_zero_weight=1.0,
+                                                 niter=4)
     print(next_test)
     print(imp_df.sort_index())
     assert next_test.shape[0] == 4
@@ -166,9 +167,9 @@ def par_contrib_test():
 
 
 if __name__ == "__main__":
-    par_contrib_test()
+    #par_contrib_test()
     #dataworth_test()
-    #dataworth_next_test()
+    dataworth_next_test()
     #schur_test_nonpest()
     #schur_test()
     #errvar_test_nonpest()
