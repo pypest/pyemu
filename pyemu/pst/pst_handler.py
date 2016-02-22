@@ -522,49 +522,49 @@ class Pst(object):
         self.parameter_groups.loc[:,"pargpnme"] = \
             self.parameter_groups.pargpnme.apply(self.pargp_format["pargpnme"])
 
-        self.parameter_groups.index = self.parameter_groups.pop("pargpnme")
-
+        #self.parameter_groups.index = self.parameter_groups.pop("pargpnme")
+        #gp_fieldnames = [name for name in self.pargp_fieldnames if name in self.parameter_groups.columns]
         f_out.write(self.parameter_groups.to_string(col_space=0,
                                                   formatters=self.pargp_format,
                                                   columns=self.pargp_fieldnames,
                                                   justify="right",
                                                   header=False,
-                                                  index_names=False) + '\n')
+                                                  index=False) + '\n')
         self.parameter_groups.loc[:,"pargpnme"] = pargpnme.values
-        self.parameter_groups.index = pargpnme
+        #self.parameter_groups.index = pargpnme
 
         f_out.write("* parameter data\n")
-        self.parameter_data.index = self.parameter_data.pop("parnme")
+        #self.parameter_data.index = self.parameter_data.pop("parnme")
         f_out.write(self.parameter_data.to_string(col_space=0,
                                                   columns=self.par_fieldnames,
                                                   formatters=self.par_format,
                                                   justify="right",
                                                   header=False,
-                                                  index_names=False) + '\n')
-        self.parameter_data.loc[:,"parnme"] = self.parameter_data.index
+                                                  index=False) + '\n')
+        #self.parameter_data.loc[:,"parnme"] = self.parameter_data.index
 
         if self.tied is not None:
-            self.tied.index = self.tied.pop("parnme")
+            #self.tied.index = self.tied.pop("parnme")
             f_out.write(self.tied.to_string(col_space=0,
-                                            columns=self.tied_names,
+                                            columns=self.tied_fieldnames,
                                             formatters=self.tied_format,
                                             justify='right',
                                             header=False,
-                                            index_names=False)+'\n')
-            self.tied.loc[:,"parnme"] = self.tied.index
+                                            index=False)+'\n')
+            #self.tied.loc[:,"parnme"] = self.tied.index
         f_out.write("* observation groups\n")
         [f_out.write(str(group)+'\n') for group in self.obs_groups]
         [f_out.write(str(group)+'\n') for group in self.prior_groups]
 
         f_out.write("* observation data\n")
-        self.observation_data.index = self.observation_data.pop("obsnme")
+        #self.observation_data.index = self.observation_data.pop("obsnme")
         f_out.write(self.observation_data.to_string(col_space=0,
                                                   formatters=self.obs_format,
                                                   columns=self.obs_fieldnames,
                                                   justify="right",
                                                   header=False,
-                                                  index_names=False) + '\n')
-        self.observation_data.loc[:,"obsnme"] = self.observation_data.index
+                                                  index=False) + '\n')
+        #self.observation_data.loc[:,"obsnme"] = self.observation_data.index
 
         f_out.write("* model command line\n")
         for cline in self.model_command:
@@ -578,14 +578,14 @@ class Pst(object):
 
         if self.nprior > 0:
             f_out.write("* prior information\n")
-            self.prior_information.index = self.prior_information.pop("pilbl")
+            #self.prior_information.index = self.prior_information.pop("pilbl")
             f_out.write(self.prior_information.to_string(col_space=0,
                                               columns=self.prior_fieldnames,
                                               formatters=self.prior_format,
                                               justify="right",
                                               header=False,
-                                              index_names=False) + '\n')
-            self.prior_information["pilbl"] = self.prior_information.index
+                                              index=False) + '\n')
+            #self.prior_information["pilbl"] = self.prior_information.index
         if self.control_data.pestmode.startswith("regul"):
             f_out.write("* regularisation\n")
             if update_regul or len(self.regul_lines) == 0:
