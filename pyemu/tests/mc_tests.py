@@ -31,5 +31,37 @@ def mc_test():
     print("posterior ensemble variance:",
           np.var(mc.parensemble.loc[:,"mult1"]))
 
+def fixed_par_test():
+    import os
+    import numpy as np
+    from pyemu import MonteCarlo
+    jco = os.path.join("pst","pest.jcb")
+    pst = jco.replace(".jcb",".pst")
+    mc = MonteCarlo(jco=jco,pst=pst)
+    mc.pst.parameter_data.loc["mult1","partrans"] = "fixed"
+    mc.draw(10)
+    assert np.all(mc.parensemble.loc[:,"mult1"] ==
+                  mc.pst.parameter_data.loc["mult1","parval1"])
+
+
+def uniform_draw_test():
+    import os
+    import numpy as np
+    from pyemu import MonteCarlo
+    jco = os.path.join("pst","pest.jcb")
+    pst = jco.replace(".jcb",".pst")
+    mc = MonteCarlo(jco=jco,pst=pst)
+    from datetime import datetime
+    start = datetime.now()
+    mc.draw(num_reals=1000,how="uniform")
+    print(datetime.now() - start)
+    import matplotlib.pyplot as plt
+    ax = mc.parensemble.loc[:,"mult1"].plot(kind="hist",bins=50,alpha=0.5)
+    mc.draw(num_reals=1000)
+    mc.parensemble.loc[:,"mult1"].plot(kind="hist",bins=50,ax=ax,alpha=0.5)
+    plt.show()
+
 if __name__ == "__main__":
-    mc_test()
+    #mc_test()
+    #fixed_par_test()
+    uniform_draw_test()

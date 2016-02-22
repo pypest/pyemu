@@ -46,7 +46,7 @@ class Schur(LinearAnalysis):
             self.log("Schur's complement")
             r = (self.xtqx + self.parcov.inv).inv
             assert r.row_names == r.col_names
-            self.__posterior_parameter = Cov(r.x,row_names=r.row_names,col_names=r.col_names)
+            self.__posterior_parameter = Cov(r.x, row_names=r.row_names, col_names=r.col_names)
             self.log("Schur's complement")
             return self.__posterior_parameter
 
@@ -77,7 +77,6 @@ class Schur(LinearAnalysis):
                 self.__posterior_prediction = {}
             return self.__posterior_prediction
 
-
     def get_parameter_summary(self):
         """get a summary of the parameter uncertainty
         Parameters:
@@ -100,7 +99,6 @@ class Schur(LinearAnalysis):
         return pd.DataFrame({"prior_var":prior,"post_var":post,
                                  "percent_reduction":ureduce},
                                 index=self.posterior_parameter.col_names)
-
 
     def get_forecast_summary(self):
         """get a summary of the forecast uncertainty
@@ -133,6 +131,16 @@ class Schur(LinearAnalysis):
             dict{prediction name : [prior uncertainty w/o parameter_names,
                 % posterior uncertainty w/o parameter names]}
         """
+
+
+        #get the prior and posterior for the base case
+        bprior,bpost = self.prior_prediction, self.posterior_prediction
+        #get the prior and posterior for the conditioned case
+        la_cond = self.get_conditional_instance(parameter_names)
+        cprior,cpost = la_cond.prior_prediction, la_cond.posterior_prediction
+        return cprior,cpost
+
+    def get_conditional_instance(self, parameter_names):
         if not isinstance(parameter_names, list):
             parameter_names = [parameter_names]
 
@@ -157,15 +165,9 @@ class Schur(LinearAnalysis):
         la_cond = Schur(jco=self.jco.get(self.jco.row_names, keep_names),
                         parcov=self.parcov.condition_on(parameter_names),
                         obscov=self.obscov, predictions=cond_preds,verbose=False)
+        return la_cond
 
-        #get the prior and posterior for the base case
-        bprior,bpost = self.prior_prediction, self.posterior_prediction
-        #get the prior and posterior for the conditioned case
-        cprior,cpost = la_cond.prior_prediction, la_cond.posterior_prediction
-        return cprior,cpost
-
-
-    def get_contribution_dataframe(self,parlist_dict=None):
+    def get_par_contribution(self,parlist_dict=None):
         """get a dataframe the prior and posterior uncertainty
         reduction as a result of
         some parameter becoming perfectly known
@@ -183,6 +185,9 @@ class Schur(LinearAnalysis):
         self.log("calculating contribution from parameters")
         if parlist_dict is None:
             parlist_dict = dict(zip(self.pst.parameter_data.parnme,self.pst.parameter_data.parnme))
+        else:
+            if type(parlist_dict) == list:
+                parlist_dict = dict(zip(parlist_dict,parlist_dict))
 
         results = {}
         names = ["base"]
@@ -210,8 +215,7 @@ class Schur(LinearAnalysis):
         self.log("calculating contribution from parameters")
         return df
 
-
-    def get_contribution_dataframe_groups(self):
+    def get_par_group_contribution(self):
         """get the forecast uncertainty contribution from each parameter
         group.  Just some sugar for get_contribution_dataframe()
         """
@@ -220,81 +224,260 @@ class Schur(LinearAnalysis):
         groups = par.groupby("pargp").groups
         for grp,idxs in groups.items():
             pargrp_dict[grp] = list(par.loc[idxs,"parnme"])
-        return self.get_contribution_dataframe(pargrp_dict)
+        return self.get_par_contribution(pargrp_dict)
 
-
-    def __importance_of_observations(self,observation_names):
-        """get the importance of some observations for reducing the
-        posterior uncertainty
-        Parameters:
-        ----------
-            observation_names (list of str) : observations to analyze
-        Returns:
-        -------
-            dict{prediction_name:% posterior reduction}
-        """
-        if not isinstance(observation_names, list):
-            observation_names = [observation_names]
-        for iname, name in enumerate(observation_names):
-            observation_names[iname] = name.lower()
-            if name.lower() not in self.jco.row_names:
-                raise Exception("Schur.importance_of_observations: " +
-                                "obs name not found in jco: " + name)
-        keep_names = []
-        for name in self.jco.row_names:
-            if name not in observation_names:
-                keep_names.append(name)
-        if len(keep_names) == 0:
-            raise Exception("Schur.importance_of_observations: " +
-                            " atleast one observation must remain")
-        if self.predictions is None:
-            raise Exception("Schur.importance_of_observations: " +
-                            "no predictions have been set")
-
-        la_reduced = self.get(par_names=self.jco.col_names,
-                              obs_names=keep_names)
-        return la_reduced.posterior_prediction
-
-
-    def get_importance_dataframe(self,obslist_dict=None):
-        """get a dataframe the posterior uncertainty
-        as a result of losing some observations
+    def get_added_obs_importance(self,obslist_dict=None,base_obslist=None,
+                                 reset_zero_weight=False):
+        """get a dataframe fo the posterior uncertainty
+        as a results of added some observations
         Parameters:
         ----------
             obslist_dict (dict of list of str) : groups of observations
                 that are to be treated as lost.  key values become
-                row labels in dataframe. If None, then test every obs
+                row labels in result dataframe. If None, then test every obs
+            base_obslist (list of str) : observation names to treat as
+                the "existing" observations.  The values of obslist_dict
+                will be added to this list.  If None, then each list in the
+                values of obslist_dict will be treated as an individual
+                calibration dataset
+            reset_zero_weight : (bool or float) a flag to reset observations
+                with zero weight in either obslist_dict or base_obslist.
+                If the value of reset_zero_weights can be cast to a float,
+                then that value will be assigned to zero weight obs.  Otherwise,
+                zero weight obs will be given a weight of 1.0
         Returns:
         -------
             dataframe[obslist_dict.keys(),(forecast_name,post)
                 multiindex dataframe of Schur's complement results for each
                 group of observations in obslist_dict values.
+        Note:
+        ----
+            all observations listed in obslist_dict and base_obslist with zero
+            weights will be dropped unless reset_zero_weight is set
         """
-        self.log("calculating importance of observations")
+
+        if obslist_dict is not None:
+            if type(obslist_dict) == list:
+                obslist_dict = dict(zip(obslist_dict,obslist_dict))
+
+
+
+        reset = False
+        if reset_zero_weight is not False:
+            if not self.obscov.isdiagonal:
+                raise NotImplementedError("cannot reset weights for non-"+\
+                                          "diagonal obscov")
+            reset = True
+            try:
+                weight = float(reset_zero_weight)
+            except:
+                weight = 1.0
+            self.logger.statement("resetting zero weights to {0}".format(weight))
+            # make copies of the original obscov and pst
+            org_obscov = self.obscov.get(self.obscov.row_names)
+            org_pst = self.pst.get()
+
+        obs = self.pst.observation_data
+        obs.index = obs.obsnme
+
+        # if we don't care about grouping obs, then just reset all weights at once
+        if base_obslist is None and obslist_dict is None and reset:
+            obs.loc[obs.weight==0.0,"weight"] = weight
+
+        # if needed reset the zero-weight obs in base_obslist
+        if base_obslist is not None and reset:
+            self.log("resetting zero weight obs in base_obslist")
+            self.pst.adjust_weights_by_list(base_obslist, weight)
+            self.log("resetting zero weight obs in base_obslist")
+
+        if base_obslist is None:
+            base_obslist = []
+
+        # if needed reset the zero-weight obs in obslist_dict
+        if obslist_dict is not None and reset:
+            for case,obslist in obslist_dict.items():
+                if not isinstance(obslist,list):
+                    obslist_dict[case] = [obslist]
+                inboth = set(base_obslist).intersection(set(obslist))
+                if len(inboth) > 0:
+                    raise Exception("observation(s) listed in both "+\
+                                    "base_obslist and obslist_dict: "+\
+                                    ','.join(inboth))
+                self.log("resetting zero weight obs in {0}".format(case))
+                self.pst.adjust_weights_by_list(obslist, weight)
+                self.log("resetting zero weight obs in {0}".format(case))
+
+        # for a comprehensive obslist_dict
+        if obslist_dict is None and reset:
+            obs = self.pst.observation_data
+            obs.index = obs.obsnme
+            onames = [name for name in self.pst.zero_weight_obs_names
+                      if name in self.jco.obs_names]
+            obs.loc[onames,"weight"] = weight
+
         if obslist_dict is None:
-            obs = self.pst.observation_data.loc[:,["obsnme","weight"]]
-            obslist_dict = {}
-            for o, w in zip(obs.obsnme,obs.weight):
-                if w > 0:
-                    obslist_dict[o] = [o]
+            obslist_dict = dict(zip(self.pst.nnz_obs_names,self.pst.nnz_obs_names))
+
+        # reset the obs cov from the newly adjusted weights
+        if reset:
+            self.log("resetting self.obscov")
+            self.reset_obscov(self.pst)
+            self.log("resetting self.obscov")
+
+        results = {}
+        names = ["base"]
+
+        if base_obslist is None or len(base_obslist) == 0:
+            self.logger.statement("no base observation passed, 'base' case"+
+                                  " is just the prior of the forecasts")
+            for forecast,pr in self.prior_forecast.items():
+                results[forecast] = [pr]
+            # reset base obslist for use later
+            base_obslist = []
+
+        else:
+            base_posterior = self.get(par_names=self.jco.par_names,
+                                      obs_names=base_obslist).posterior_forecast
+            for forecast,pt in base_posterior.items():
+                results[forecast] = [pt]
+
+        for case_name,obslist in obslist_dict.items():
+            names.append(case_name)
+            if not isinstance(obslist,list):
+                obslist = [obslist]
+            self.log("calculating importance of observations by adding: " +
+                     str(obslist) + '\n')
+            # this case is the combination of the base obs plus whatever unique
+            # obs names in obslist
+            case_obslist = base_obslist.copy()
+            dedup_obslist = [oname for oname in obslist if oname not in case_obslist]
+            case_obslist.extend(dedup_obslist)
+            case_post = self.get(par_names=self.jco.par_names,
+                                 obs_names=case_obslist).posterior_forecast
+            for forecast,pt in case_post.items():
+                results[forecast].append(pt)
+            self.log("calculating importance of observations by adding: " +
+                     str(obslist) + '\n')
+        df = pd.DataFrame(results,index=names)
+
+
+        if reset:
+            self.reset_obscov(org_obscov)
+            self.reset_pst(org_pst)
+
+        return df
+
+    def get_removed_obs_importance(self,obslist_dict=None,
+                                   reset_zero_weight=False):
+        """get a dataframe the posterior uncertainty
+        as a result of losing some observations
+        Parameters:
+        ----------
+            obslist_dict (dict of list of str, or just list of str) : groups of observations
+                that are to be treated as lost.  key values become
+                row labels in result dataframe. If None, then test every
+                (nonzero weight - see reset_zero_weight) observation
+            reset_zero_weight : (bool or float) a flag to reset observations
+                with zero weight in obslist_dict.
+                If the value of reset_zero_weights can be cast to a float,
+                then that value will be assigned to zero weight obs.  Otherwise,
+                zero weight obs will be given a weight of 1.0
+
+        Returns:
+        -------
+            dataframe[obslist_dict.keys(),(forecast_name,post)
+                multiindex dataframe of Schur's complement results for each
+                group of observations in obslist_dict values.
+
+        Note:
+        ----
+            all observations listed in obslist_dict with zero
+            weights will be dropped unless reset_zero_weight is set
+        """
+
+        if obslist_dict is not None:
+            if type(obslist_dict) == list:
+                obslist_dict = dict(zip(obslist_dict,obslist_dict))
+
+
+        reset = False
+        if reset_zero_weight is not False:
+            if not self.obscov.isdiagonal:
+                raise NotImplementedError("cannot reset weights for non-"+\
+                                          "diagonal obscov")
+            reset = True
+            try:
+                weight = float(reset_zero_weight)
+            except:
+                weight = 1.0
+            self.logger.statement("resetting zero weights to {0}".format(weight))
+            # make copies of the original obscov and pst
+            org_obscov = self.obscov.get(self.obscov.row_names)
+            org_pst = self.pst.get()
+
+        self.log("calculating importance of observations")
+        if reset and obslist_dict is None:
+            obs = self.pst.observation_data
+            obs.loc[obs.weight==0.0,"weight"] = weight
+
+        if obslist_dict is None:
+            obslist_dict = dict(zip(self.pst.nnz_obs_names,
+                                        self.pst.nnz_obs_names))
+
+
+        elif reset:
+            self.pst.observation_data.index = self.pst.observation_data.obsnme
+            for name,obslist in obslist_dict.items():
+                self.log("resetting weights in obs in group {0}".format(name))
+                self.pst.adjust_weights_by_list(obslist,weight)
+                self.log("resetting weights in obs in group {0}".format(name))
+
+        for case,obslist in obslist_dict.items():
+            if not isinstance(obslist,list):
+                obslist = [obslist]
+            obslist_dict[case] = obslist
+
+
+        if reset:
+            self.log("resetting self.obscov")
+            self.reset_obscov(self.pst)
+            self.log("resetting self.obscov")
 
         results = {}
         names = ["base"]
         for forecast,pt in self.posterior_forecast.items():
             results[forecast] = [pt]
-        for case_name,obs_list in obslist_dict.items():
+        for case_name,obslist in obslist_dict.items():
+            if not isinstance(obslist,list):
+                obslist = [obslist]
             names.append(case_name)
-            self.log("calculating contribution from: " + str(obs_list) + '\n')
-            case_post = self.__importance_of_observations(obs_list)
-            self.log("calculating contribution from: " + str(obs_list) + '\n')
+            self.log("calculating importance of observations by removing: " +
+                     str(obslist) + '\n')
+            # check for missing names
+            missing_onames = [oname for oname in obslist if oname not in self.jco.obs_names]
+            if len(missing_onames) > 0:
+                raise Exception("case {0} has observation names ".format(case_name) + \
+                                "not found: " + ','.join(missing_onames))
+            # find the set difference between obslist and jco obs names
+            diff_onames = [oname for oname in self.jco.obs_names if oname not in obslist]
+
+            # calculate the increase in forecast variance by not using the obs
+            # in obslist
+            case_post = self.get(par_names=self.jco.par_names,
+                                 obs_names=diff_onames).posterior_forecast
+
             for forecast,pt in case_post.items():
                 results[forecast].append(pt)
         df = pd.DataFrame(results,index=names)
-        self.log("calculating importance of observations")
+        self.log("calculating importance of observations by removing: " +
+                     str(obslist) + '\n')
+
+        if reset:
+            self.reset_obscov(org_obscov)
+            self.reset_pst(org_pst)
         return df
 
-
-    def get_importance_dataframe_groups(self):
+    def get_removed_obs_group_importance(self):
         obsgrp_dict = {}
         obs = self.pst.observation_data
         obs.index = obs.obsnme
@@ -302,5 +485,140 @@ class Schur(LinearAnalysis):
         groups = obs.groupby("obgnme").groups
         for grp, idxs in groups.items():
             obsgrp_dict[grp] = list(obs.loc[idxs,"obsnme"])
-        return self.get_importance_dataframe(obsgrp_dict)
+        return self.get_removed_obs_importance(obsgrp_dict)
+
+
+    def next_most_important_added_obs(self,forecast=None,niter=3, obslist_dict=None,
+                                      base_obslist=None,
+                                      reset_zero_weight=False):
+        """find the most important observation(s) by sequentailly evaluating
+        the importance of the observations in obslist_dict.
+        Parameters:
+        ----------
+            forecast : name of the forecast to use in the ranking process.  If
+                more than one forecast has been listed, this argument is required
+            niter : number of sequential iterations
+            obslist_dict (dict of list of str) : groups of observations
+                that are to be treated as lost.  key values become
+                row labels in result dataframe. If None, then test every obs
+            base_obslist (list of str) : observation names to treat as
+                the "existing" observations.  The values of obslist_dict
+                will be added to this list.  If None, then each list in the
+                values of obslist_dict will be treated as an individual
+                calibration dataset
+            reset_zero_weight : (bool or float) a flag to reset observations
+                with zero weight in either obslist_dict or base_obslist.
+                If the value of reset_zero_weights can be cast to a float,
+                then that value will be assigned to zero weight obs.  Otherwise,
+                zero weight obs will be given a weight of 1.0
+        Returns:
+        -------
+            DataFrame with columns = [best obslist_dict key, forecast variance,
+                percent reduction for this iteration, percent reduction
+                compared to initial base case]
+        """
+
+        if forecast is None:
+            assert len(self.forecasts) == 1,"forecast arg list one and only one" +\
+                                            " forecast"
+        elif forecast not in self.prediction_arg:
+            raise Exception("forecast {0} not found".format(forecast))
+
+        if base_obslist:
+            obs_being_used = base_obslist.copy()
+        else:
+            obs_being_used = []
+
+        best_case, best_results = [],[]
+        for iiter in range(niter):
+            self.log("next most important added obs iteration {0}".format(iiter+1))
+            df = self.get_added_obs_importance(obslist_dict=obslist_dict,
+                                                   base_obslist=obs_being_used,
+                                                   reset_zero_weight=reset_zero_weight)
+
+            if iiter == 0:
+                init_base = df.loc["base",forecast]
+            fore_df = df.loc[:,forecast]
+            fore_diff_df = fore_df - fore_df.loc["base"]
+            fore_diff_df.sort(inplace=True)
+            iter_best_name = fore_diff_df.index[0]
+            iter_best_result = df.loc[iter_best_name,forecast]
+            iter_base_result = df.loc["base",forecast]
+            diff_percent_init = 100.0 * (init_base -
+                                              iter_best_result) / init_base
+            diff_percent_iter = 100.0 * (iter_base_result -
+                                              iter_best_result) / iter_base_result
+            self.log("next most important added obs iteration {0}".format(iiter+1))
+
+
+            best_results.append([iter_best_name,iter_best_result,
+                                 diff_percent_iter,diff_percent_init])
+            best_case.append(iter_best_name)
+
+            if iter_best_name.lower() == "base":
+                break
+
+            if obslist_dict is None:
+                onames = [iter_best_name]
+            else:
+                onames = obslist_dict.pop(iter_best_name)
+            if not isinstance(onames,list):
+                onames = [onames]
+            obs_being_used.extend(onames)
+        columns = ["best_obs",forecast+"_variance",
+                   "unc_reduce_initial_base","unc_reduce_iter_base"]
+        return pd.DataFrame(best_results,index=best_case,columns=columns)
+
+    def next_most_par_contribution(self,niter=3,forecast=None,parlist_dict=None):
+        """find the largest parameter(s) contribution for prior and posterior
+        forecast  by sequentailly evaluating the contribution of parameters in
+        parlist_dict
+
+        Parameters:
+        ----------
+            forecast : name of the forecast to use in the ranking process.  If
+                more than one forecast has been listed, this argument is required
+            parlist_dict (dict of list of str) : groups of parameters
+                that are to be treated as perfectly known.  key values become
+                row labels in dataframe
+        Returns:
+        -------
+            dataframe[parlist_dict.keys(),(forecast_name,<prior,post>)
+                multiindex dataframe of Schur's complement results for each
+                group of parameters in parlist_dict values.
+        """
+        if forecast is None:
+            assert len(self.forecasts) == 1,"forecast arg list one and only one" +\
+                                            " forecast"
+        elif forecast not in self.prediction_arg:
+            raise Exception("forecast {0} not found".format(forecast))
+        org_parcov = self.parcov.get(row_names=self.parcov.row_names)
+        if parlist_dict is None:
+            parlist_dict = dict(zip(self.pst.adj_par_names,self.pst.adj_par_names))
+
+        base_prior,base_post = self.prior_forecast,self.posterior_forecast
+        iter_results = [base_post[forecast]]
+        iter_names = ["base"]
+        for iiter in range(niter):
+            iter_contrib = {forecast:[base_post[forecast]]}
+            iter_case_names = ["base"]
+            self.log("next most par iteration {0}".format(iiter+1))
+
+            for case,parlist in parlist_dict.items():
+                iter_case_names.append(case)
+                la_cond = self.get_conditional_instance(parlist)
+                iter_contrib[forecast].append(la_cond.posterior_forecast[forecast])
+            df = pd.DataFrame(iter_contrib,index=iter_case_names)
+            df.sort(columns=forecast,inplace=True)
+            iter_best = df.index[0]
+            self.logger.statement("next best iter {0}: {1}".format(iiter+1,iter_best))
+            self.log("next most par iteration {0}".format(iiter+1))
+            if iter_best.lower() == "base":
+                break
+            iter_results.append(df.loc[iter_best,forecast])
+            iter_names.append(iter_best)
+            self.reset_parcov(self.parcov.condition_on(parlist_dict.pop(iter_best)))
+
+        self.reset_parcov(org_parcov)
+        return pd.DataFrame(iter_results,index=iter_names)
 

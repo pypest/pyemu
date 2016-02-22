@@ -206,11 +206,39 @@ class ParameterEnsemble(Ensemble):
         isfixed = self.pst.parameter_data.partrans == "fixed"
         return isfixed.values
 
-    def draw(self,cov,num_reals=1):
-        if not self.islog:
-            self._transform()
-        super(ParameterEnsemble,self).draw(cov,num_reals=num_reals)
-        self._back_transform()
+    def draw(self,cov,num_reals=1,how="normal"):
+        how = how.lower().strip()
+        if how == "uniform":
+            self.draw_uniform(num_reals=num_reals)
+        else:
+            if not self.islog:
+                self._transform()
+            super(ParameterEnsemble,self).draw(cov,num_reals=num_reals)
+            self._back_transform()
+
+            # replace the realizations for fixed parameters with the original
+            # parval1 in the control file
+            self.pst.parameter_data.index = self.pst.parameter_data.parnme
+            fixed_vals = self.pst.parameter_data.loc[self.fixed_indexer,"parval1"]
+            for fname,fval in zip(fixed_vals.index,fixed_vals.values):
+                self.loc[:,fname] = fval
+
+
+    def draw_uniform(self,num_reals=1):
+        if self.islog:
+            self._back_transform()
+        self.loc[:,:] = np.NaN
+        self.dropna(inplace=True)
+        self.pst.parameter_data.index = self.pst.parameter_data.parnme
+        for pname in self.names:
+            if pname in self.adj_names:
+                self.loc[:,pname] = np.random.uniform(self.lbnd[pname],
+                                                      self.ubnd[pname],
+                                                      size=num_reals)
+            else:
+                self.loc[:,pname] = self.pst.parameter_data.\
+                                         loc[pname,"parval1"]
+
 
     def _back_transform(self,inplace=True):
         """ remove log10 transformation from ensemble

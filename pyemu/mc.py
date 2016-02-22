@@ -25,17 +25,23 @@ class MonteCarlo(LinearAnalysis):
     def num_reals(self):
         return self.parensemble.shape[0]
 
-    def get_nsing(self,epsilon=1.0e-6):
+    def get_nsing(self,epsilon=1.0e-4):
         """ get the number of solution space dimensions given
-            a machine floating point precision (epsilon)
+            a ratio between the largest and smallest singular
+            values
 
         Parameters:
-            epsilon: machine floating point precision
-        Returns : integer
+            epsilon: ratio
+        Returns : integer (or None)
             number of singular components above the epsilon ratio threshold
+            If nsing == nadj_par, then None is returned
         """
-        nsing = self.xtqx.shape[0] - np.searchsorted(
+        mx = self.xtqx.shape[0]
+        nsing = mx - np.searchsorted(
                 np.sort((self.xtqx.s.x / self.xtqx.s.x.max())[:,0]),epsilon)
+        if nsing == mx:
+            self.logger.warn("optimal nsing=npar")
+            nsing = None
         return nsing
 
     def get_null_proj(self,nsing=None):
@@ -51,15 +57,19 @@ class MonteCarlo(LinearAnalysis):
         """
         if nsing is None:
             nsing = self.get_nsing()
+        if nsing is None:
+            raise Exception("nsing is None")
         self.log("forming null space projection matrix with " +\
-                 "{0} singular components".format(nsing))
+                 "{0} of {1} singular components".format(nsing,self.jco.shape[1]))
+
         v2_proj = (self.xtqx.v[:,nsing:] * self.xtqx.v[:,nsing:].T)
         self.log("forming null space projection matrix with " +\
-                 "{0} singular components".format(nsing))
+                 "{0} of {1} singular components".format(nsing,self.jco.shape[1]))
+
         return v2_proj
 
     def draw(self, num_reals=1, par_file = None, obs=False,
-             enforce_bounds=False,cov=None):
+             enforce_bounds=False,cov=None, how="gaussian"):
         """draw stochastic realizations of parameters and
            optionally observations
 
@@ -73,7 +83,7 @@ class MonteCarlo(LinearAnalysis):
 
             enforce_bounds (bool): enforce parameter bounds in control file
 
-
+            how (str): type of distribution.  Must be in ["gaussian","uniform"]
         Returns:
             None
         Raises:
@@ -81,14 +91,19 @@ class MonteCarlo(LinearAnalysis):
         """
         if par_file is not None:
             self.pst.parrep(par_file)
+        how = how.lower().strip()
+        assert how in ["gaussian","uniform"]
 
         if cov is not None:
             assert isinstance(cov,Cov)
+            if how == "uniform":
+                raise Exception("MonteCarlo.draw() error: 'how'='uniform'," +\
+                                " 'cov' arg cannot be passed")
         else:
             cov = self.parcov
 
         self.log("generating {0:d} parameter realizations".format(num_reals))
-        self.parensemble.draw(cov,num_reals=num_reals)
+        self.parensemble.draw(cov,num_reals=num_reals, how=how)
         if enforce_bounds:
             self.parensemble.enforce()
         self.log("generating {0:d} parameter realizations".format(num_reals))

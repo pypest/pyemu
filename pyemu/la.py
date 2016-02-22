@@ -42,6 +42,15 @@ class logger(object):
             self.filename = None
 
 
+    def statement(self,phrase):
+        t = datetime.now()
+        s = str(t) + str(phrase)
+        if self.echo:
+            print(s,)
+        if self.filename:
+            self.f.write(s)
+
+
     def log(self,phrase):
         """log something that happened
         Parameters:
@@ -435,9 +444,8 @@ class LinearAnalysis(object):
                 self.logger.warn("linear_analysis.__load_predictions(): " +
                                  "instantiating prediction matrix from " +
                                  "ndarray, generating generic prediction names")
-                pred_names = []
-                [pred_names.append("pred_" + str(i + 1))
-                 for i in range(self.prediction_arg.shape[0])]
+
+                pred_names = ["pred_{0}".format(i+1) for i in range(arg.shape[0])]
 
                 if self.jco:
                     names = self.jco.col_names
@@ -448,11 +456,9 @@ class LinearAnalysis(object):
                                     "ndarray passed for predicitons " +
                                     "requires jco or parcov to get " +
                                     "parameter names")
-                pred_matrix = Matrix(x=self.prediction_arg,
-                                           row_names=pred_names,
-                                           col_names=names)
+                pred_matrix = Matrix(x=arg,row_names=pred_names,col_names=names)
                 for pred_name in pred_names:
-                    vecs.append(pred_matrix.extract(row_names=pred_name).T)
+                    vecs.append(pred_matrix.get(row_names=pred_name).T)
             else:
                 raise Exception("unrecognized predictions argument: " +
                                 str(arg))
@@ -514,6 +520,7 @@ class LinearAnalysis(object):
             return self.__pst
         else:
             self.__load_pst()
+            return self.__pst
 
 
     @property
@@ -622,6 +629,10 @@ class LinearAnalysis(object):
         if not self.pst.estimation and self.pst.nprior > 0:
             self.drop_prior_information()
 
+    def reset_pst(self,arg):
+        self.logger.warn("resetting pst")
+        self.__pst = None
+        self.pst_arg = arg
 
     def reset_parcov(self,arg=None):
         """reset the parcov attribute to None
