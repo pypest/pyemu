@@ -70,10 +70,8 @@ class Ensemble(pd.DataFrame):
             idx = pd.isnull(self.loc[rname,:])
             self.loc[rname,idx] = self.mean_values[idx]
 
-
     def enforce(self):
         raise Exception("Ensemble.enforce() must overloaded by derived types")
-    
 
     def plot(self,*args,**kwargs):
         if "marginals" in kwargs.keys():
@@ -223,7 +221,6 @@ class ParameterEnsemble(Ensemble):
             for fname,fval in zip(fixed_vals.index,fixed_vals.values):
                 self.loc[:,fname] = fval
 
-
     def draw_uniform(self,num_reals=1):
         if self.islog:
             self._back_transform()
@@ -238,6 +235,7 @@ class ParameterEnsemble(Ensemble):
             else:
                 self.loc[:,pname] = self.pst.parameter_data.\
                                          loc[pname,"parval1"]
+
 
 
     def _back_transform(self,inplace=True):

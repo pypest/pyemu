@@ -59,6 +59,7 @@ class MonteCarlo(LinearAnalysis):
             nsing = self.get_nsing()
         if nsing is None:
             raise Exception("nsing is None")
+        print("using {0} singular components".format(nsing))
         self.log("forming null space projection matrix with " +\
                  "{0} of {1} singular components".format(nsing,self.jco.shape[1]))
 
@@ -102,6 +103,8 @@ class MonteCarlo(LinearAnalysis):
         else:
             cov = self.parcov
 
+        self.parensemble = ParameterEnsemble(pst=self.pst)
+        self.obsensemble = ObservationEnsemble(pst=self.pst)
         self.log("generating {0:d} parameter realizations".format(num_reals))
         self.parensemble.draw(cov,num_reals=num_reals, how=how)
         if enforce_bounds:
@@ -144,13 +147,21 @@ class MonteCarlo(LinearAnalysis):
         self.log("projecting parameter ensemble")
         return en
 
-    def write_psts(self,prefix):
+    def write_psts(self,prefix,existing_jco=None,noptmax=None):
         """ write parameter and optionally observation realizations
             to pest control files
         Parameters:
         ----------
             prefix: str
                 pest control file prefix
+            existing_jco: str
+                filename of an existing jacobian matrix to add to the
+                pest++ options in the control file.  This is useful for
+                NSMC since this jco can be used to get the first set of
+                parameter upgrades for free!  Needs to be the path the jco
+                file as seen from the location where pest++ will be run
+            noptmax: int
+                value of NOPTMAX to set in new pest control files
         Returns:
         -------
             None
@@ -158,6 +169,12 @@ class MonteCarlo(LinearAnalysis):
         self.log("writing realized pest control files")
         # get a copy of the pest control file
         pst = self.pst.get(par_names=self.pst.par_names,obs_names=self.pst.obs_names)
+
+        if noptmax is not None:
+            pst.control_data.noptmax = noptmax
+
+        if existing_jco is not None:
+            pst.pestpp_options["BASE_JACOBIAN"] = existing_jco
 
         # set the indices
         pst.parameter_data.index = pst.parameter_data.parnme
@@ -172,9 +189,17 @@ class MonteCarlo(LinearAnalysis):
             pst_name = prefix + "{0:d}.pst".format(i)
             self.log("writing realized pest control file " + pst_name)
             pst.parameter_data.loc[par_en.columns,"parval1"] = par_en.iloc[i, :].T
+
+            # reset the regularization
+            if pst.control_data.pestmode == "regularization":
+                pst.zero_order_tikhonov(parbounds=True)
+
+            # add the obs noise realization if needed
             if self.obsensemble.shape[0] == self.num_reals:
                 pst.observation_data.loc[self.obsensemble.columns,"obsval"] = \
                     self.obsensemble.iloc[i, :].T
+
+            # write
             pst.write(pst_name)
             self.log("writing realized pest control file " + pst_name)
         self.log("writing realized pest control files")

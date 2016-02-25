@@ -61,7 +61,24 @@ def uniform_draw_test():
     mc.parensemble.loc[:,"mult1"].plot(kind="hist",bins=50,ax=ax,alpha=0.5)
     plt.show()
 
+
+def write_regul_test():
+    import os
+    import numpy as np
+    from pyemu import MonteCarlo
+
+    mc = MonteCarlo(jco=os.path.join("verf_results","freyberg_ord.jco"))
+    mc.pst.control_data.pestmode = "regularization"
+    mc.draw(10)
+    mc.write_psts(os.path.join("temp","freyberg_real"),existing_jco="freyberg_ord.jco")
+
+
+
+
+
+
 if __name__ == "__main__":
     #mc_test()
     #fixed_par_test()
-    uniform_draw_test()
+    #uniform_draw_test()
+    write_regul_test()
