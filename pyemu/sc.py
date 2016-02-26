@@ -349,7 +349,7 @@ class Schur(LinearAnalysis):
                      str(obslist) + '\n')
             # this case is the combination of the base obs plus whatever unique
             # obs names in obslist
-            case_obslist = base_obslist.copy()
+            case_obslist = list(base_obslist)
             dedup_obslist = [oname for oname in obslist if oname not in case_obslist]
             case_obslist.extend(dedup_obslist)
             case_post = self.get(par_names=self.jco.par_names,
@@ -525,7 +525,7 @@ class Schur(LinearAnalysis):
             raise Exception("forecast {0} not found".format(forecast))
 
         if base_obslist:
-            obs_being_used = base_obslist.copy()
+            obs_being_used = list(base_obslist)
         else:
             obs_being_used = []
 
