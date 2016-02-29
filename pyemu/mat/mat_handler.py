@@ -98,6 +98,20 @@ class Matrix(object):
         private attributes
 
     """
+
+    integer = np.int32
+    double = np.float64
+    char = np.uint8
+
+    binary_header_dt = np.dtype([('itemp1', integer),
+                                ('itemp2', integer),
+                                ('icount', integer)])
+    binary_rec_dt = np.dtype([('j', integer),
+                            ('dtemp', double)])
+
+    par_length = 12
+    obs_length = 20
+
     def __init__(self, x=None, row_names=[], col_names=[], isdiagonal=False,
                  autoalign=True):
         """constructor for Matrix objects
@@ -137,25 +151,14 @@ class Matrix(object):
                         'Matrix.__init__(): shape[1] != len(col_names) ' + \
                         str(x.shape) + ' ' + str(len(col_names))
             self.__x = x
-        self.integer = np.int32
-        self.double = np.float64
-        self.char = np.uint8
+
         self.isdiagonal = bool(isdiagonal)
         self.autoalign = bool(autoalign)
-
-        self.binary_header_dt = np.dtype([('itemp1', self.integer),
-                                          ('itemp2', self.integer),
-                                          ('icount', self.integer)])
-        self.binary_rec_dt = np.dtype([('j', self.integer),
-                                       ('dtemp', self.double)])
-        self.par_length = 12
-        self.obs_length = 20
 
     def __str__(self):
         s = "row names: " + str(self.row_names) + \
             '\n' + "col names: " + str(self.col_names) + '\n' + str(self.__x)
         return s
-
 
     def __getitem__(self, item):
         """a very crude overload of getitem - not trying to parse item,
@@ -901,8 +904,8 @@ class Matrix(object):
             f.write(name.encode())
         f.close()
 
-
-    def from_binary(self, filename):
+    @classmethod
+    def from_binary(cls, filename):
         """load from pest-compatible binary file
         Parameters:
         ----------
@@ -914,15 +917,15 @@ class Matrix(object):
 
         f = open(filename, 'rb')
         # the header datatype
-        itemp1, itemp2, icount = np.fromfile(f, self.binary_header_dt, 1)[0]
+        itemp1, itemp2, icount = np.fromfile(f, Matrix.binary_header_dt, 1)[0]
         if itemp1 > 0 and itemp2 < 0 and icount < 0:
             print(" WARNING: it appears this file was \n" +\
                   " written with 'sequential` " +\
                   " binary fortran specification\n...calling " +\
                   " Matrix.from_fortranfile()")
             f.close()
-            self.from_fortranfile(filename)
-            return
+            return Matrix.from_fortranfile(filename)
+
         if itemp1 >= 0:
            raise TypeError('Matrix.from_binary(): Jco produced by ' +
                            'deprecated version of PEST,' +
@@ -930,37 +933,38 @@ class Matrix(object):
         #icount = np.fromfile(f,np.int32,1)
         #print(itemp1,itemp2,icount)
         ncol, nrow = abs(itemp1), abs(itemp2)
-        self.__x = np.zeros((nrow, ncol))
+        x = np.zeros((nrow, ncol))
         # read all data records
         # using this a memory hog, but really fast
-        data = np.fromfile(f, self.binary_rec_dt, icount)
+        data = np.fromfile(f, Matrix.binary_rec_dt, icount)
         icols = ((data['j'] - 1) // nrow) + 1
         irows = data['j'] - ((icols - 1) * nrow)
-        self.__x[irows - 1, icols - 1] = data["dtemp"]
+        x[irows - 1, icols - 1] = data["dtemp"]
         # read obs and parameter names
-        self.col_names = []
-        self.row_names = []
-        for j in range(self.shape[1]):
-            name = struct.unpack(str(self.par_length) + "s",
-                                 f.read(self.par_length))[0]\
+        col_names = []
+        row_names = []
+        for j in range(ncol):
+            name = struct.unpack(str(Matrix.par_length) + "s",
+                                 f.read(Matrix.par_length))[0]\
                                   .strip().lower().decode()
-            self.col_names.append(name)
-        for i in range(self.shape[0]):
-            name = struct.unpack(str(self.obs_length) + "s",
-                                 f.read(self.obs_length))[0]\
+            col_names.append(name)
+        for i in range(nrow):
+            name = struct.unpack(str(Matrix.obs_length) + "s",
+                                 f.read(Matrix.obs_length))[0]\
                                   .strip().lower().decode()
-            self.row_names.append(name)
+            row_names.append(name)
         f.close()
-        assert len(self.row_names) == self.shape[0],\
-          "Matrix.from_binary() len(row_names) (" + str(len(self.row_names)) +\
-          ") != self.shape[0] (" + str(self.shape[0]) + ")"
-        assert len(self.col_names) == self.shape[1],\
-          "Matrix.from_binary() len(col_names) (" + str(len(self.col_names)) +\
-          ") != self.shape[1] (" + str(self.shape[1]) + ")"
+        assert len(row_names) == x.shape[0],\
+          "Matrix.from_binary() len(row_names) (" + str(len(row_names)) +\
+          ") != x.shape[0] (" + str(x.shape[0]) + ")"
+        assert len(col_names) == x.shape[1],\
+          "Matrix.from_binary() len(col_names) (" + str(len(col_names)) +\
+          ") != self.shape[1] (" + str(x.shape[1]) + ")"
+        return cls(x=x,row_names=row_names,col_names=col_names)
 
-
-    def from_fortranfile(self,filename):
-        """ a binary load method to accomodate one of the many
+    @classmethod
+    def from_fortranfile(cls, filename):
+        """ a binary load method to accommodate one of the many
             bizzare fortran binary writing formats
         Parameters:
         ----------
@@ -980,32 +984,31 @@ class Matrix(object):
         ncol, nrow = abs(itemp1), abs(itemp2)
         data = []
         for i in range(icount):
-            d = f.read_record(self.binary_rec_dt)[0]
+            d = f.read_record(Matrix.binary_rec_dt)[0]
             data.append(d)
-        data = np.array(data,dtype=self.binary_rec_dt)
+        data = np.array(data,dtype=Matrix.binary_rec_dt)
         icols = ((data['j'] - 1) // nrow) + 1
         irows = data['j'] - ((icols - 1) * nrow)
-        self.__x = np.zeros((nrow, ncol))
-        self.__x[irows - 1, icols - 1] = data["dtemp"]
-        #par_rec = np.dtype(("|S12","name"))
-        self.row_names = []
-        self.col_names = []
-        for j in range(self.shape[1]):
+        x = np.zeros((nrow, ncol))
+        x[irows - 1, icols - 1] = data["dtemp"]
+        row_names = []
+        col_names = []
+        for j in range(ncol):
             name = f.read_record("|S12")[0].strip().decode()
-            self.col_names.append(name)
+            col_names.append(name)
         #obs_rec = np.dtype((np.str_, self.obs_length))
-        for j in range(self.shape[0]):
+        for i in range(nrow):
             name = f.read_record("|S20")[0].strip().decode()
-            self.row_names.append(name)
-        assert len(self.row_names) == self.shape[0],\
+            row_names.append(name)
+        assert len(row_names) == x.shape[0],\
           "Matrix.from_fortranfile() len(row_names) (" + \
-          str(len(self.row_names)) +\
-          ") != self.shape[0] (" + str(self.shape[0]) + ")"
-        assert len(self.col_names) == self.shape[1],\
+          str(len(row_names)) +\
+          ") != self.shape[0] (" + str(x.shape[0]) + ")"
+        assert len(col_names) == x.shape[1],\
           "Matrix.from_fortranfile() len(col_names) (" + \
-          str(len(self.col_names)) +\
-          ") != self.shape[1] (" + str(self.shape[1]) + ")"
-
+          str(len(col_names)) +\
+          ") != self.shape[1] (" + str(x.shape[1]) + ")"
+        return cls(x=x,row_names=row_names,col_names=col_names)
 
     def to_ascii(self, out_filename, icode=2):
         """write a pest-compatible ASCII Matrix/vector file
@@ -1043,8 +1046,8 @@ class Matrix(object):
                 f_out.write(c + '\n')
             f_out.close()
 
-
-    def from_ascii(self, filename):
+    @classmethod
+    def from_ascii(cls, filename):
         """load a pest-compatible ASCII Matrix/vector file
         Parameters:
         ----------
@@ -1087,11 +1090,8 @@ class Matrix(object):
             if count == (nrow * ncol):
                     break
 
-        x = np.array(x,dtype=self.double)
+        x = np.array(x,dtype=Matrix.double)
         x.resize(nrow, ncol)
-
-
-        self.__x = x
         line = f.readline().strip().lower()
         if not line.startswith('*'):
             raise Exception('Matrix.from_ascii(): error loading ascii file," +\
@@ -1102,15 +1102,15 @@ class Matrix(object):
             for i in range(nrow):
                 line = f.readline().strip().lower()
                 names.append(line)
-            self.row_names = copy.deepcopy(names)
-            self.col_names = names
+            row_names = copy.deepcopy(names)
+            col_names = names
 
         else:
             names = []
             for i in range(nrow):
                 line = f.readline().strip().lower()
                 names.append(line)
-            self.row_names = names
+            row_names = names
             line = f.readline().strip().lower()
             assert "column" in line, \
                 "Matrix.from_ascii(): line should be * column names " +\
@@ -1119,22 +1119,24 @@ class Matrix(object):
             for j in range(ncol):
                 line = f.readline().strip().lower()
                 names.append(line)
-            self.col_names = names
+            col_names = names
         f.close()
         # test for diagonal
+        isdiagonal=False
         if nrow == ncol:
             diag = np.diag(np.diag(x))
             diag_tol = 1.0e-6
             diag_delta = np.abs(diag.sum() - x.sum())
             if diag_delta < diag_tol:
-                self.isdiagonal = True
-
+                isdiagonal = True
+        return cls(x=x,row_names=row_names,col_names=col_names,
+                   isdiagonal=isdiagonal)
 
     def df(self):
         return self.to_dataframe()
 
-
-    def from_dataframe(self, df):
+    @classmethod
+    def from_dataframe(cls, df):
         """ populate self with dataframe information
         Parameters:
         ----------
@@ -1146,10 +1148,9 @@ class Matrix(object):
 
         """
         assert isinstance(df, pandas.DataFrame)
-        self.__x = df.as_Matrix()
-        self.row_names = copy.deepcopy(list(df.index))
-        self.col_names = copy.deepcopy(list(df.columns))
-
+        row_names = copy.deepcopy(list(df.index))
+        col_names = copy.deepcopy(list(df.columns))
+        return cls(x=df.as_Matrix(),row_names=row_names,col_names=col_names)
 
     def to_dataframe(self):
         """return a pandas dataframe of the Matrix object
@@ -1341,8 +1342,8 @@ class Cov(Matrix):
                 raise Exception("Cov.to_uncfile(): can't write non-diagonal " +
                                 "object as standard deviation block")
 
-
-    def from_obsweights(self, pst_file):
+    @classmethod
+    def from_obsweights(cls, pst_file):
         """load Covariance from observation weights
         Parameters:
         ----------
@@ -1353,10 +1354,10 @@ class Cov(Matrix):
         """
         if not pst_file.endswith(".pst"):
             pst_file += ".pst"
-        self.from_observation_data(Pst(pst_file))
+        return Cov.from_observation_data(Pst(pst_file))
 
-
-    def from_observation_data(self, pst):
+    @classmethod
+    def from_observation_data(cls, pst):
         """load Covariances from a pandas dataframe
                 of the pst observation data section
         Parameters:
@@ -1386,13 +1387,11 @@ class Cov(Matrix):
         #         x[ocount] = (1.0 / w) ** 2
         #         ocount += 1
         #         onames.append(row["pilbl"].lower())
-        self._Matrix__x = x
-        self.row_names = copy.deepcopy(onames)
-        self.col_names = onames
-        self.isdiagonal = True
 
+        return cls(x=x,names=onames,isdiagonal=True)
 
-    def from_parbounds(self, pst_file):
+    @classmethod
+    def from_parbounds(cls, pst_file):
         """load Covariances from a pest control file parameter data section
         Parameters:
         ----------
@@ -1404,10 +1403,10 @@ class Cov(Matrix):
         if not pst_file.endswith(".pst"):
             pst_file += ".pst"
         new_pst = Pst(pst_file)
-        self.from_parameter_data(new_pst)
+        return Cov.from_parameter_data(new_pst)
 
-
-    def from_parameter_data(self, pst):
+    @classmethod
+    def from_parameter_data(cls, pst):
         """load Covariances from a pandas dataframe of the
                 pst parameter data section
         Parameters:
@@ -1433,14 +1432,11 @@ class Cov(Matrix):
             x[idx] = var
             names.append(row["parnme"].lower())
             idx += 1
-        self._Matrix__x = x
-        assert len(names) == x.shape[0]
-        self.row_names = copy.deepcopy(names)
-        self.col_names = copy.deepcopy(names)
-        self.isdiagonal = True
 
+        return cls(x=x,names=names,isdiagonal=True)
 
-    def from_uncfile(self, filename):
+    @classmethod
+    def from_uncfile(cls, filename):
         """load Covariances from a pest-compatible uncertainty file
         Parameters:
         ----------
@@ -1449,12 +1445,12 @@ class Cov(Matrix):
         -------
             None
        """
-        nentries = self.get_uncfile_dimensions(filename)
-        self._Matrix__x = np.zeros((nentries, nentries))
-        self.row_names = []
-        self.col_names = []
+        nentries = Cov.get_uncfile_dimensions(filename)
+        x = np.zeros((nentries, nentries))
+        row_names = []
+        col_names = []
         f = open(filename, 'r')
-        self.isdiagonal = True
+        isdiagonal = True
         idx = 0
         while True:
             line = f.readline().lower()
@@ -1469,24 +1465,23 @@ class Cov(Matrix):
                             break
                         raw = line2.strip().split()
                         name,val = raw[0], float(raw[1])
-                        self._Matrix__x[idx, idx] = val**2
-                        if name in self.row_names:
+                        x[idx, idx] = val**2
+                        if name in row_names:
                             raise Exception("Cov.from_uncfile():" +
                                             "duplicate name: " + str(name))
-                        self.row_names.append(name)
-                        self.col_names.append(name)
+                        row_names.append(name)
+                        col_names.append(name)
                         idx += 1
 
                 elif 'covariance_matrix' in line:
-                    self.isdiagonal = False
+                    isdiagonal = False
                     var = 1.0
                     while True:
                         line2 = f.readline().strip().lower()
                         if line2.strip().lower().startswith("end"):
                             break
                         if line2.startswith('file'):
-                            cov = Matrix()
-                            cov.from_ascii(line2.split()[1])
+                            cov = Matrix.from_ascii(line2.split()[1])
 
                         elif line2.startswith('variance_multiplier'):
                             var = float(line2.split()[1])
@@ -1495,28 +1490,27 @@ class Cov(Matrix):
                                             "unrecognized keyword in" +
                                             "std block: " + line2)
                     if var != 1.0:
-                        cov._Matrix__x *= var
+                        x *= var
                     for name in cov.row_names:
-                        if name in self.row_names:
+                        if name in row_names:
                             raise Exception("Cov.from_uncfile():" +
                                             " duplicate name: " + str(name))
-                    self.row_names.extend(cov.row_names)
-                    self.col_names.extend(cov.col_names)
+                    row_names.extend(cov.row_names)
+                    col_names.extend(cov.col_names)
 
                     for i, rname in enumerate(cov.row_names):
-                        self._Matrix__x[idx + i,
-                                        idx:idx + cov.shape[0]] = cov.x[i, :]
+                        x[idx + i,idx:idx + cov.shape[0]] = cov.x[i, :]
                     idx += cov.shape[0]
                 else:
                     raise Exception('Cov.from_uncfile(): ' +
                                     'unrecognized block:' + str(line))
         f.close()
-        if self.isdiagonal:
-            self._Matrix__x = np.diag(self.x)
+        if isdiagonal:
+            x = np.diag(x)
+        return cls(x=x,names=row_names,isdiagonal=isdiagonal)
 
-
-
-    def get_uncfile_dimensions(self, filename):
+    @staticmethod
+    def get_uncfile_dimensions(filename):
         """quickly read an uncertainty file to find the dimensions
         Parameters:
         ----------
@@ -1546,8 +1540,7 @@ class Cov(Matrix):
                         if line2.strip().lower().startswith("end"):
                             break
                         if line2.startswith('file'):
-                            cov = Matrix()
-                            cov.from_ascii(line2.split()[1])
+                            cov = Matrix.from_ascii(line2.split()[1])
                             nentries += len(cov.row_names)
                         elif line2.startswith('variance_multiplier'):
                             var = float(line2.split()[1])

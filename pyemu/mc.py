@@ -172,6 +172,7 @@ class MonteCarlo(LinearAnalysis):
 
         if noptmax is not None:
             pst.control_data.noptmax = noptmax
+            pst.control_data.noptmax = noptmax
 
         if existing_jco is not None:
             pst.pestpp_options["BASE_JACOBIAN"] = existing_jco

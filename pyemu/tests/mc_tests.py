@@ -59,7 +59,7 @@ def uniform_draw_test():
     ax = mc.parensemble.loc[:,"mult1"].plot(kind="hist",bins=50,alpha=0.5)
     mc.draw(num_reals=1000)
     mc.parensemble.loc[:,"mult1"].plot(kind="hist",bins=50,ax=ax,alpha=0.5)
-    plt.show()
+    #plt.show()
 
 
 def write_regul_test():

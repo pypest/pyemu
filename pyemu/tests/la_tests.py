@@ -1,13 +1,13 @@
 def schur_test_nonpest():
     import numpy as np
-    from pyemu import Matrix, Cov, Schur
+    from pyemu import Matrix, Cov, Schur, Jco
     #non-pest
     pnames = ["p1","p2","p3"]
     onames = ["o1","o2","o3","o4"]
     npar = len(pnames)
     nobs = len(onames)
     j_arr = np.random.random((nobs,npar))
-    jco = Matrix(x=j_arr,row_names=onames,col_names=pnames)
+    jco = Jco(x=j_arr,row_names=onames,col_names=pnames)
     parcov = Cov(x=np.eye(npar),names=pnames)
     obscov = Cov(x=np.eye(nobs),names=onames)
     forecasts = "o2"
@@ -169,8 +169,8 @@ def par_contrib_test():
 if __name__ == "__main__":
     #par_contrib_test()
     #dataworth_test()
-    dataworth_next_test()
-    #schur_test_nonpest()
+    #dataworth_next_test()
+    schur_test_nonpest()
     #schur_test()
     #errvar_test_nonpest()
     #errvar_test()

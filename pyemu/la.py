@@ -210,23 +210,19 @@ class LinearAnalysis(object):
         ext = filename.split('.')[-1].lower()
         if ext in ["jco", "jcb"]:
             self.log("loading jco: "+filename)
-            m = Jco()
-            m.from_binary(filename)
+            m = Jco.from_binary(filename)
             self.log("loading jco: "+filename)
         elif ext in ["mat","vec"]:
             self.log("loading ascii: "+filename)
-            m = Matrix()
-            m.from_ascii(filename)
+            m = Matrix.from_ascii(filename)
             self.log("loading ascii: "+filename)
         elif ext in ["cov"]:
             self.log("loading cov: "+filename)
-            m = Cov()
-            m.from_ascii(filename)
+            m = Cov.from_ascii(filename)
             self.log("loading cov: "+filename)
         elif ext in["unc"]:
             self.log("loading unc: "+filename)
-            m = Cov()
-            m.from_uncfile(filename)
+            m = Cov.from_uncfile(filename)
             self.log("loading unc: "+filename)
         else:
             raise Exception("linear_analysis.__fromfile(): unrecognized" +
@@ -281,7 +277,6 @@ class LinearAnalysis(object):
                             "be a matrix object or a file name: " +
                             str(self.jco_arg))
 
-
     def __load_parcov(self):
         """private: set the parcov attribute from:
                 a pest control file (parameter bounds)
@@ -323,15 +318,12 @@ class LinearAnalysis(object):
             # if the arg is a string ending with "pst"
             # then load parcov from parbounds
             if self.parcov_arg.lower().endswith(".pst"):
-                self.__parcov = Cov()
-
-                self.__parcov.from_parbounds(self.parcov_arg)
+                self.__parcov = Cov.from_parbounds(self.parcov_arg)
             else:
                 self.__parcov = self.__fromfile(self.parcov_arg)
         # if the arg is a pst object
         elif isinstance(self.parcov_arg,Pst):
-            self.__parcov = Cov()
-            self.__parcov.from_parameter_data(self.parcov_arg)
+            self.__parcov = Cov.from_parameter_data(self.parcov_arg)
         else:
             raise Exception("linear_analysis.__load_parcov(): " +
                             "parcov_arg must be a " +
@@ -363,7 +355,7 @@ class LinearAnalysis(object):
             # if the ndarray arg is a vector,
             # assume it is the diagonal of the obscov matrix
             if len(self.obscov_arg.shape) == 1:
-                assert self.parcov_arg.shape[0] == self.jco.shape[1]
+                assert self.obscov_arg.shape[0] == self.jco.shape[1]
                 isdiagonal = True
             else:
                 assert self.obscov_arg.shape[0] == self.jco.shape[0]
@@ -372,20 +364,18 @@ class LinearAnalysis(object):
             self.logger.warn("linear_analysis.__load_obscov(): " +
                              "instantiating obscov from ndarray,  " +
                              "can't verify observation alignment with jco")
-            self.__parcov = Matrix(x=self.obscov_arg,
+            self.__obscov = Matrix(x=self.obscov_arg,
                                          isdiagonal=isdiagonal,
                                          row_names=self.jco.row_names,
                                          col_names=self.jco.row_names)
         self.log("loading obscov")
         if isinstance(self.obscov_arg, str):
             if self.obscov_arg.lower().endswith(".pst"):
-                self.__obscov = Cov()
-                self.__obscov.from_obsweights(self.obscov_arg)
+                self.__obscov = Cov.from_obsweights(self.obscov_arg)
             else:
                 self.__obscov = self.__fromfile(self.obscov_arg)
         elif isinstance(self.obscov_arg, Pst):
-            self.__obscov = Cov()
-            self.__obscov.from_observation_data(self.obscov_arg)
+            self.__obscov = Cov.from_observation_data(self.obscov_arg)
         else:
             raise Exception("linear_analysis.__load_obscov(): " +
                             "obscov_arg must be a " +
