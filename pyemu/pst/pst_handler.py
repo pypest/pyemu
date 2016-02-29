@@ -338,6 +338,7 @@ class Pst(object):
                                                   self.pargp_fieldnames,
                                                   self.pargp_converters,
                                                   self.pargp_defaults)
+            self.parameter_groups.index = self.parameter_groups.pargpnme
         except Exception as e:
             raise Exception("Pst.load() error reading parameter groups: {0}".format(str(e)))
 
@@ -351,6 +352,7 @@ class Pst(object):
                                                 self.par_fieldnames,
                                                 self.par_converters,
                                                 self.par_defaults)
+            self.parameter_data.index = self.parameter_data.parnme
         except:
             raise Exception("Pst.load() error reading parameter data")
 
@@ -362,7 +364,7 @@ class Pst(object):
             # self.tied.index = self.tied.pop("parnme")
             self.tied = self._read_df(f,counts["tied"],self.tied_fieldnames,
                                       self.tied_converters)
-
+            self.tied.index = self.tied.parnme
         # obs groups - just read past for now
         line = f.readline()
         assert "* observation groups" in line.lower(),\
@@ -380,6 +382,7 @@ class Pst(object):
                 self.observation_data = self._read_df(f,self.control_data.nobs,
                                                       self.obs_fieldnames,
                                                       self.obs_converters)
+                self.observation_data.index = self.observation_data.obsnme
             except:
                 raise Exception("Pst.load() error reading observation data")
         else:
@@ -430,7 +433,7 @@ class Pst(object):
                                                        "equation": equation,
                                                        "weight": weight,
                                                        "obgnme": obgnme})
-
+            self.prior_information.index = self.prior_information.pilbl
         if "regul" in self.control_data.pestmode:
             line = f.readline()
             assert "* regul" in line.lower(), \
