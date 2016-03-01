@@ -16,7 +16,7 @@ pcf
                  rch              relative    1.000000E-02  0                switch    2.000000E+00             parabolic    1.000000E-05    5.000000E-01               smaller
 * parameter data
 rch_1                      log                factor    1.000000E+00    9.000000E-01    1.100000E+00                   rch    1.000000E+00    0.000000E+00          1
-rch_2                      log                factor    1.000000E+00    5.000000E-01    1.500000E+00                   rch    1.000000E+00    0.000000E+00          1
+rch_2                      log                factor    1.000000E+00    9.000000E-01    1.100000E+00                   rch    1.000000E+00    0.000000E+00          1
 rcond00                    log                factor    4.904372E+03    4.904372E+02    4.904372E+04                 rcond    1.000000E+00    0.000000E+00          1
 rcond01                    log                factor    4.904372E+03    4.904372E+02    4.904372E+04                 rcond    1.000000E+00    0.000000E+00          1
 rcond02                    log                factor    4.904372E+03    4.904372E+02    4.904372E+04                 rcond    1.000000E+00    0.000000E+00          1
@@ -1170,7 +1170,7 @@ or10c00_0      2.889227E+01    0.000000E+00              forecast
 or10c00_1      2.548396E+01    0.000000E+00              forecast
 or10c01_0      2.884811E+01    0.000000E+00              forecast
 or10c01_1      2.544806E+01    0.000000E+00              forecast
-or10c02_0      2.879867E+01    1.000000E+02              head_cal
+or10c02_0      2.879867E+01    0.000000E+00              head_cal
 or10c02_1      2.541133E+01    0.000000E+00              forecast
 or10c03_0      2.876896E+01    0.000000E+00              forecast
 or10c03_1      2.538858E+01    0.000000E+00              forecast
