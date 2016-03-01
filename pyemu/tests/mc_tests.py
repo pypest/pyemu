@@ -85,6 +85,7 @@ def from_dataframe_test():
     names = ["par_{0}".format(_) for _ in range(10)]
     df = pd.DataFrame(np.random.random((10,mc.pst.npar)),columns=mc.pst.par_names)
     mc.parensemble = ParameterEnsemble.from_dataframe(df=df,pst=mc.pst)
+    print(mc.parensemble.shape)
     mc.project_parensemble()
     mc.parensemble.to_csv(os.path.join("temp","test.csv"))
 

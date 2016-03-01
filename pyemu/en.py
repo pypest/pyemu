@@ -84,9 +84,8 @@ class Ensemble(pd.DataFrame):
         df = kwargs.pop("df")
         assert isinstance(df,pd.DataFrame)
         mean_values = kwargs.pop("mean_values",df.mean(axis=1))
-        e = cls(mean_values=mean_values,**kwargs)
-        for i in range(df.shape[0]):
-            e.loc[i,:] = df.loc[i,:]
+        e = cls(data=df,index=df.index,columns=df.columns,
+                mean_values=mean_values,**kwargs)
         return e
 
 
