@@ -65,7 +65,6 @@ class Ensemble(pd.DataFrame):
         # this sucks - can only set by enlargement one row at a time
         for rname,vals in zip(real_names,val_array):
             self.loc[rname,common_names] = vals
-    
             # set NaNs to mean_values
             idx = pd.isnull(self.loc[rname,:])
             self.loc[rname,idx] = self.mean_values[idx]
@@ -78,6 +77,17 @@ class Ensemble(pd.DataFrame):
             raise NotImplementedError()
         else:
             super(self,pd.DataFrame).plot(*args,**kwargs)
+
+
+    @classmethod
+    def from_dataframe(cls,**kwargs):
+        df = kwargs.pop("df")
+        assert isinstance(df,pd.DataFrame)
+        mean_values = kwargs.pop("mean_values",df.mean(axis=1))
+        e = cls(mean_values=mean_values,**kwargs)
+        for i in range(df.shape[0]):
+            e.loc[i,:] = df.loc[i,:]
+        return e
 
 
 class ObservationEnsemble(Ensemble):
@@ -338,7 +348,7 @@ class ParameterEnsemble(Ensemble):
 
         for real in self.index:
             if log is not None:
-                log("projecting realization " + real)
+                log("projecting realization {0}".format(real))
 
             # null space projection of difference vector
             pdiff = np.dot(projection_matrix.x,
@@ -360,7 +370,7 @@ class ParameterEnsemble(Ensemble):
                 new_en.loc[real,common_names] = base +  pdiff
 
             if log is not None:
-                log("projecting realization " + real)
+                log("projecting realization {0}".format(real))
         if not inplace:
             if enforce:
                 new_en.enforce()

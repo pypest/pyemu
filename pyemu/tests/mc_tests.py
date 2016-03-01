@@ -73,7 +73,20 @@ def write_regul_test():
     mc.write_psts(os.path.join("temp","freyberg_real"),existing_jco="freyberg_ord.jco")
 
 
+def from_dataframe_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    from pyemu import MonteCarlo,Ensemble,ParameterEnsemble,Pst
 
+    jco = os.path.join("pst","pest.jcb")
+    pst = jco.replace(".jcb",".pst")
+    mc = MonteCarlo(jco=jco,pst=pst)
+    names = ["par_{0}".format(_) for _ in range(10)]
+    df = pd.DataFrame(np.random.random((10,mc.pst.npar)),columns=mc.pst.par_names)
+    mc.parensemble = ParameterEnsemble.from_dataframe(df=df,pst=mc.pst)
+    mc.project_parensemble()
+    mc.parensemble.to_csv(os.path.join("temp","test.csv"))
 
 
 
@@ -81,4 +94,5 @@ if __name__ == "__main__":
     #mc_test()
     #fixed_par_test()
     #uniform_draw_test()
-    write_regul_test()
+    #write_regul_test()
+    from_dataframe_test()
