@@ -544,10 +544,10 @@ class Schur(LinearAnalysis):
             iter_best_name = fore_diff_df.index[0]
             iter_best_result = df.loc[iter_best_name,forecast]
             iter_base_result = df.loc["base",forecast]
-            diff_percent_init = 100.0 * (1.0 - (init_base -
-                                              iter_best_result) / init_base)
-            diff_percent_iter = 100.0 * (1.0 - (iter_base_result -
-                                              iter_best_result) / iter_base_result)
+            diff_percent_init = 100.0 * (init_base -
+                                              iter_best_result) / init_base
+            diff_percent_iter = 100.0 * (iter_base_result -
+                                              iter_best_result) / iter_base_result
             self.log("next most important added obs iteration {0}".format(iiter+1))
 
 
