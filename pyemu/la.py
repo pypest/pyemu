@@ -662,6 +662,10 @@ class LinearAnalysis(object):
                                             "obs cov")
         #pi_names = list(self.pst.prior_information.pilbl.values)
         pi_names = list(self.pst.prior_names)
+        missing = [name for name in pi_names if name not in self.jco.row_names]
+        if len(missing) > 0:
+            raise Exception("LinearAnalysis.drop_prior_information(): "+
+                            " prior info not found: {0}".format(missing))
         if self.jco is not None:
             self.__jco.drop(pi_names, axis=0)
         self.__pst.prior_information = self.pst.null_prior
