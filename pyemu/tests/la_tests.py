@@ -116,10 +116,11 @@ def dataworth_next_test():
     import os
     import numpy as np
     from pyemu import Schur
-    w_dir = os.path.join("..","..","verification","Freyberg")
-    forecasts = ["travel_time","sw_gw_0","sw_gw_1"]
-    sc = Schur(jco=os.path.join(w_dir,"freyberg.jcb"),forecasts=forecasts,verbose=True)
-    next_test = sc.next_most_important_added_obs(forecast="travel_time",
+    #w_dir = os.path.join("..","..","verification","Freyberg")
+    w_dir = os.path.join("..","..","examples","freyberg")
+    forecasts = ["sw_gw_0","sw_gw_1"]
+    sc = Schur(jco=os.path.join(w_dir,"freyberg_drop.jcb"),forecasts=forecasts,verbose=True)
+    next_test = sc.next_most_important_added_obs(forecast="sw_gw_0",
                                            base_obslist=sc.pst.nnz_obs_names,
                                            obslist_dict={"test":sc.pst.nnz_obs_names})
     # the returned dataframe should only have one row since the 'base' case
@@ -139,7 +140,7 @@ def dataworth_next_test():
     imp_df = sc.get_added_obs_importance(base_obslist=sc.pst.nnz_obs_names,
                                          obslist_dict=obslist_dict,
                                          reset_zero_weight=1.0)
-    next_test = sc.next_most_important_added_obs(forecast="travel_time",
+    next_test = sc.next_most_important_added_obs(forecast="sw_gw_0",
                                                  base_obslist=sc.pst.nnz_obs_names,
                                                  obslist_dict=obslist_dict,
                                                  reset_zero_weight=1.0,
@@ -169,8 +170,8 @@ def par_contrib_test():
 if __name__ == "__main__":
     #par_contrib_test()
     #dataworth_test()
-    #dataworth_next_test()
-    schur_test_nonpest()
+    dataworth_next_test()
+    #schur_test_nonpest()
     #schur_test()
     #errvar_test_nonpest()
     #errvar_test()
