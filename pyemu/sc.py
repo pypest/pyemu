@@ -521,8 +521,22 @@ class Schur(LinearAnalysis):
         if forecast is None:
             assert len(self.forecasts) == 1,"forecast arg list one and only one" +\
                                             " forecast"
-        elif forecast not in self.prediction_arg:
-            raise Exception("forecast {0} not found".format(forecast))
+            forecast = self.forecasts[0].col_names[0]
+        #elif forecast not in self.prediction_arg:
+        #    raise Exception("forecast {0} not found".format(forecast))
+
+        else:
+            forecast = forecast.lower()
+            found = False
+            for fore in self.forecasts:
+                if fore.col_names[0] == forecast:
+                    found = True
+                    break
+            if not found:
+                raise Exception("forecast {0} not found".format(forecast))
+
+
+
 
         if base_obslist:
             obs_being_used = list(base_obslist)
