@@ -133,11 +133,16 @@ class Matrix(object):
         self.__s = None
         self.__v = None
         if x is not None:
-            x = np.atleast_2d(x)
+            assert x.ndim == 2
+            #x = np.atleast_2d(x)
             if isdiagonal and len(row_names) > 0:
-                assert len(row_names) == x.shape[0],\
+                #assert 1 in x.shape,"Matrix error: diagonal matrix must have " +\
+                #                    "one dimension == 1,shape is {0}".format(x.shape)
+                mx_dim = max(x.shape)
+                assert len(row_names) == mx_dim,\
                     'Matrix.__init__(): diagonal shape[1] != len(row_names) ' +\
                     str(x.shape) + ' ' + str(len(row_names))
+                #x = x.transpose()
             else:
                 if len(row_names) > 0:
                     assert len(row_names) == x.shape[0],\
@@ -1506,7 +1511,7 @@ class Cov(Matrix):
                                     'unrecognized block:' + str(line))
         f.close()
         if isdiagonal:
-            x = np.diag(x)
+            x = np.atleast_2d(np.diag(x)).transpose()
         return cls(x=x,names=row_names,isdiagonal=isdiagonal)
 
     @staticmethod

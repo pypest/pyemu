@@ -10,8 +10,7 @@ verf_dir = "verf_results"
 ord_base = os.path.join(verf_dir,"freyberg_ord")
 
 def predunc7_test():
-    post_pd7 = pyemu.Cov()
-    post_pd7.from_ascii(post_mat)
+    post_pd7 = pyemu.Cov.from_ascii(post_mat)
 
     la_ord = pyemu.Schur(jco=ord_base+".jco",predictions=predictions)
     post_pyemu = la_ord.posterior_parameter
@@ -41,12 +40,12 @@ def predunc1_test():
 
 def predvar1b_test():
 
-    out_files = [os.path.join(verf_dir,f) for f in os.listdir(verf_dir) if f.endswith(".out")]
+    out_files = [os.path.join(verf_dir,f) for f in os.listdir(verf_dir) if f.endswith(".out") and "ident" not in f]
     pv1b_results = {}
     for out_file in out_files:
         pred_name = os.path.split(out_file)[-1].split('.')[0]
         f = open(out_file,'r')
-        for _ in xrange(3):
+        for _ in range(3):
             f.readline()
         arr = np.loadtxt(f)
         pv1b_results[pred_name] = arr
@@ -115,7 +114,7 @@ def pnulpar_test():
 if __name__ == "__main__":
     #predunc7_test()
     #predunc1_test()
-    #predvar1b_test()
+    predvar1b_test()
     #ident_test()
-    pnulpar_test()
+    #pnulpar_test()
 

@@ -1,7 +1,7 @@
 pcf
 * control data
 restart regularisation
-2710  1455  4  16925  18
+2710  1455  4  16924  18
 3  2  single  point  1  0  0
 2.000000e+001  -3.000000e+000  3.000000e-001  1.000000e-002  -10 999 lamforgive
 1.000000e+001  1.000000e+001  1.000000e-003
@@ -22128,7 +22128,6 @@ i4z3675  1.0 * log(kzkpz23_pl4) - 1.0 * log(kzkpz12_pl4) = 0.0  0.71934      reg
 i4z3676  1.0 * log(kzkpz23_pl4) - 1.0 * log(kzkpz14_pl4) = 0.0  0.73029      regul_kz4
 i4z3677  1.0 * log(kzkpz23_pl4) - 1.0 * log(kzkpz16_pl4) = 0.0  0.76602      regul_kz4
 i4z3678  1.0 * log(kzkpz23_pl4) - 1.0 * log(kzkpz17_pl4) = 0.0   1.0390      regul_kz4
-i4z3679  1.0 * log(kzkpz23_pl4) - 1.0 * log(kzkpz20_pl4) = 0.0  0.85241      regul_kz4
 * regularisation
    1224.0000       1300.0      0
   1.0  1.00000E-10  1.00000E+10 continue

@@ -43,10 +43,16 @@ def schur_test_nonpest():
 
 def schur_test():
     import os
-    from pyemu import Schur
+    from pyemu import Schur, Cov, Pst
     w_dir = os.path.join("..","..","verification","henry")
     forecasts = ["pd_ten","c_obs10_2"]
-    sc = Schur(jco=os.path.join(w_dir,"pest.jcb"),forecasts=forecasts)
+    pst = Pst(os.path.join(w_dir,"pest.pst"))
+    cov = Cov.from_parameter_data(pst)
+    cov.to_uncfile(os.path.join("temp","pest.unc"),covmat_file=None)
+    cov2 = Cov.from_uncfile(os.path.join("temp","pest.unc"))
+    sc = Schur(jco=os.path.join(w_dir,"pest.jcb"),
+               forecasts=forecasts,
+               parcov=cov2)
     print(sc.prior_forecast)
     print(sc.posterior_forecast)
     print(sc.get_par_group_contribution())
@@ -166,12 +172,11 @@ def par_contrib_test():
                                         parlist_dict=groups))
 
 
-
 if __name__ == "__main__":
-    #par_contrib_test()
-    #dataworth_test()
+    par_contrib_test()
+    dataworth_test()
     dataworth_next_test()
-    #schur_test_nonpest()
-    #schur_test()
-    #errvar_test_nonpest()
-    #errvar_test()
+    schur_test_nonpest()
+    schur_test()
+    errvar_test_nonpest()
+    errvar_test()

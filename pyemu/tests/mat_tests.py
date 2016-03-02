@@ -79,9 +79,10 @@ def load_jco_test():
     import os
     import pyemu
     jco = pyemu.Jco.from_binary(os.path.join("mat","base_pest.jco"))
-    mc = pyemu.MonteCarlo(jco=os.path.join("mat","base_pest.jco"))
-
+    sc = pyemu.Schur(jco=os.path.join("mat","base_pest.jco"),
+                     parcov=os.path.join("mat","parameters.unc"))
+    print(sc.get_parameter_summary())
 
 if __name__ == "__main__":
-    #mat_test()
+    mat_test()
     load_jco_test()

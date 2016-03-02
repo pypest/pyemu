@@ -657,12 +657,15 @@ class LinearAnalysis(object):
     def drop_prior_information(self):
         """drop the prior information from the jco and pst attributes
         """
+        if self.jco is None:
+            self.logger.warn("can't drop prior info, LinearAnalysis.jco is None")
+            return
         nprior_str = str(self.pst.nprior)
         self.log("removing " + nprior_str + " prior info from jco, pst, and " +
                                             "obs cov")
         #pi_names = list(self.pst.prior_information.pilbl.values)
         pi_names = list(self.pst.prior_names)
-        missing = [name for name in pi_names if name not in self.jco.row_names]
+        missing = [name for name in pi_names if name not in self.jco.obs_names]
         if len(missing) > 0:
             raise Exception("LinearAnalysis.drop_prior_information(): "+
                             " prior info not found: {0}".format(missing))

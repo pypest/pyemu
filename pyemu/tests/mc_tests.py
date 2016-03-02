@@ -92,8 +92,8 @@ def from_dataframe_test():
 
 
 if __name__ == "__main__":
-    #mc_test()
+    mc_test()
     #fixed_par_test()
     #uniform_draw_test()
     #write_regul_test()
-    from_dataframe_test()
+    #from_dataframe_test()
