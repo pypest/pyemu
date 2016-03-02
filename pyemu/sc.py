@@ -537,10 +537,10 @@ class Schur(LinearAnalysis):
                                                    reset_zero_weight=reset_zero_weight)
 
             if iiter == 0:
-                init_base = df.loc["base",forecast]
+                init_base = df.loc["base",forecast].copy()
             fore_df = df.loc[:,forecast]
             fore_diff_df = fore_df - fore_df.loc["base"]
-            fore_diff_df.sort_values(inplace=True)
+            fore_diff_df.sort(inplace=True)
             iter_best_name = fore_diff_df.index[0]
             iter_best_result = df.loc[iter_best_name,forecast]
             iter_base_result = df.loc["base",forecast]
@@ -566,7 +566,7 @@ class Schur(LinearAnalysis):
                 onames = [onames]
             obs_being_used.extend(onames)
         columns = ["best_obs",forecast+"_variance",
-                   "unc_reduce_initial_base","unc_reduce_iter_base"]
+                   "unc_reduce_iter_base","unc_reduce_initial_base"]
         return pd.DataFrame(best_results,index=best_case,columns=columns)
 
     def next_most_par_contribution(self,niter=3,forecast=None,parlist_dict=None):
@@ -597,7 +597,7 @@ class Schur(LinearAnalysis):
             parlist_dict = dict(zip(self.pst.adj_par_names,self.pst.adj_par_names))
 
         base_prior,base_post = self.prior_forecast,self.posterior_forecast
-        iter_results = [base_post[forecast]]
+        iter_results = [base_post[forecast].copy()]
         iter_names = ["base"]
         for iiter in range(niter):
             iter_contrib = {forecast:[base_post[forecast]]}
