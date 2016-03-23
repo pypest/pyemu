@@ -235,14 +235,14 @@ class ParameterEnsemble(Ensemble):
             self._back_transform()
         self.loc[:,:] = np.NaN
         self.dropna(inplace=True)
-        self.pst.parameter_data.index = self.pst.parameter_data.parnme
         for pname in self.names:
             if pname in self.adj_names:
                 self.loc[:,pname] = np.random.uniform(self.lbnd[pname],
                                                       self.ubnd[pname],
                                                       size=num_reals)
             else:
-                self.loc[:,pname] = self.pst.parameter_data.\
+                self.loc[:,pname] = np.zeros((num_reals)) + \
+                                    self.pst.parameter_data.\
                                          loc[pname,"parval1"]
 
 
