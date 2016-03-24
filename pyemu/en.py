@@ -215,24 +215,23 @@ class ParameterEnsemble(Ensemble):
 
     def draw(self,cov,num_reals=1,how="normal"):
         how = how.lower().strip()
+        if not self.islog:
+                self._transform()
         if how == "uniform":
             self.draw_uniform(num_reals=num_reals)
         else:
-            if not self.islog:
-                self._transform()
             super(ParameterEnsemble,self).draw(cov,num_reals=num_reals)
-            self._back_transform()
-
             # replace the realizations for fixed parameters with the original
             # parval1 in the control file
             self.pst.parameter_data.index = self.pst.parameter_data.parnme
             fixed_vals = self.pst.parameter_data.loc[self.fixed_indexer,"parval1"]
             for fname,fval in zip(fixed_vals.index,fixed_vals.values):
                 self.loc[:,fname] = fval
+        self._back_transform()
 
     def draw_uniform(self,num_reals=1):
-        if self.islog:
-            self._back_transform()
+        #if self.islog:
+        #    self._back_transform()
         self.loc[:,:] = np.NaN
         self.dropna(inplace=True)
         for pname in self.names:
