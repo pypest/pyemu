@@ -171,12 +171,25 @@ def par_contrib_test():
     print(sc.next_most_par_contribution(forecast="travel_time",
                                         parlist_dict=groups))
 
+def bayes_linear_estimation_test():
+    import os
+    from pyemu import Schur
+    w_dir = os.path.join("..","..","verification","10par_xsec","master_opt0")
+    forecasts = ["h01_08","h02_08"]
+    sc = Schur(jco=os.path.join(w_dir,"pest.jcb"),
+               forecasts=forecasts)
+    print(sc.bayes_linear_parameter_expectation)
+
+
+
+
 
 if __name__ == "__main__":
-    par_contrib_test()
-    dataworth_test()
-    dataworth_next_test()
-    schur_test_nonpest()
-    schur_test()
-    errvar_test_nonpest()
-    errvar_test()
+    bayes_linear_estimation_test()
+    #par_contrib_test()
+    #dataworth_test()
+    #dataworth_next_test()
+    #schur_test_nonpest()
+    #schur_test()
+    #errvar_test_nonpest()
+    #errvar_test()

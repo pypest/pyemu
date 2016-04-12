@@ -2,7 +2,7 @@ from __future__ import print_function, division
 import numpy as np
 import pandas as pd
 from pyemu.la import LinearAnalysis
-from pyemu.mat import Cov
+from pyemu.mat import Cov, Matrix
 
 class Schur(LinearAnalysis):
     """derived type for posterior covariance analysis using Schur's complement
@@ -46,10 +46,39 @@ class Schur(LinearAnalysis):
             self.log("Schur's complement")
             r = (self.xtqx + self.parcov.inv).inv
             assert r.row_names == r.col_names
-            self.__posterior_parameter = Cov(r.x, row_names=r.row_names, col_names=r.col_names)
+            self.__posterior_parameter = Cov(r.x, row_names=r.row_names,
+                                             col_names=r.col_names)
             self.log("Schur's complement")
             return self.__posterior_parameter
 
+
+    @property
+    def bayes_linear_parameter_expectation(self):
+        res = self.pst.res
+        assert res is not None
+        # build the prior expectation parameter vector
+        prior_expt = self.pst.parameter_data.loc[:,["parval1"]].copy()
+        islog = self.pst.parameter_data.partrans == "log"
+        prior_expt.loc[islog] = prior_expt.loc[islog].apply(np.log10)
+        prior_expt = Matrix.from_dataframe(prior_expt)
+        prior_expt.col_names = ["prior_expt"]
+        # build the residual vector
+        res_vec = Matrix.from_dataframe(res.loc[:,["residual"]])
+
+        # form the terms of Schur's complement
+        b = self.parcov * self.jco.T
+        c = (self.jco * self.parcov * self.jco.T + self.obscov).inv
+        bc = Matrix((b * c).x,row_names=b.row_names,col_names=c.col_names)
+
+        # calc posterior expectation
+        term2 = bc * res_vec
+        term2.col_names = ["prior_expt"]
+        post_expt = prior_expt + term2
+
+        # post processing - back log transform
+        post_expt = pd.DataFrame(data=post_expt.x,index=post_expt.row_names,columns=["post_expt"])
+        post_expt.loc[islog,:] = 10.0**post_expt.loc[islog,:]
+        return post_expt
 
     @property
     def posterior_forecast(self):

@@ -482,7 +482,6 @@ class Matrix(object):
         self.__v = Matrix(v, row_names=self.col_names, col_names=col_names,
                           autoalign=False)
 
-
     def mult_isaligned(self, other):
         """check if matrices are aligned for multiplication
         Parameters:
@@ -1248,6 +1247,8 @@ class Cov(Matrix):
         """
         self.__identity = None
         self.__zero = None
+        #if len(row_names) > 0 and len(col_names) > 0:
+        #    assert row_names == col_names
         if len(names) != 0 and len(row_names) == 0:
             row_names = names
         if len(names) != 0 and len(col_names) == 0:

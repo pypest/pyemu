@@ -1,0 +1,423 @@
+             PEST++ Version 3.2.0
+
+                 by Dave Welter
+     Computational Water Resource Engineering
+
+
+
+using control file: "pest.pst"
+
+
+PEST++ run mode:- 
+   estimation
+
+Case dimensions:- 
+    Number of parameters = 11
+    Number of adjustable parameters = 11
+    Number of observations = 20
+    Number of prior estimates = 0
+
+Model command line(s):- 
+    model.bat
+
+Model interface files:-
+    template files:
+      misc\k.tpl
+      misc\strt_Layer_1.tpl
+    model input files:
+      model\ref_cal\hk_Layer_1.ref
+      model\ref_cal\strt_Layer_1.ref
+
+    instruction files:
+      misc\head.ins
+    model output files:
+      model\10par_xsec.hds
+
+
+PEST Control Information
+    relparmax = 5
+    facparmax = 5
+    facorig = 0.001
+    phiredswh = 0.1
+    noptmax = 20
+    phiredstp = 0.005
+    nphistp = 4
+    nphinored = 4
+    relparstp = 0.005
+    nrelpar = 4
+
+PEST++ Options
+    n_iter_base = 1                   
+    n_iter_super = 4                   
+    max_n_super = 10                  
+    super eigthres = 1e-08               
+    svd pack = 0                   
+    auto norm = 4                   
+    super relparmax = 0.1                 
+    max super frz iter = 5                   
+    mat inv = 1                   
+    max run fail = 3                   
+    max reg iter = 20                  
+    lambdas = 
+            0.1
+              1
+             10
+            100
+           1000
+    uncertainty flag = 1                   
+    parameter covariance file =                     
+    prediction names = 
+
+
+Parameter group information
+NAME            INCREMENT TYPE     DERIVATIVE INCREMENT    INCREMENT LOWER BOUND  FORCE CENTRAL     INCREMENT MULTIPLIER
+k                     RELATIVE                     0.01                        0         SWITCH                        2
+
+Parameter information
+NAME           TRANSFORMATION        CHANGE LIMIT  INITIAL VALUE    LOWER BOUND    UPPER BOUND          GROUP          SCALE         OFFSET  DERIVATIVE COMMAND
+stage          log                     FACTOR              1            0.1              3              k              1              0                   0
+k_01           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_02           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_03           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_04           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_05           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_06           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_07           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_08           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_09           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_10           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+
+Observation information
+NAME                                    VALUE               GROUP              WEIGHT
+h01_01                                    1.5                head                   0
+h01_02                                    1.7                head                   0
+h01_03                                    1.9                head                   0
+h01_04                                    2.1                head                  10
+h01_05                                    2.3                head                   0
+h01_06                                    2.5                head                  10
+h01_07                                    2.7                head                   0
+h01_08                                    2.9                head                   0
+h01_09                                    3.1                head                   0
+h01_10                                    3.3                head                   0
+h02_01                                    1.5                head                   0
+h02_02                                    1.9                head                   0
+h02_03                                    2.3                head                   0
+h02_04                                    2.7                head                   0
+h02_05                                    3.1                head                   0
+h02_06                                    3.5                head                   0
+h02_07                                    3.9                head                   0
+h02_08                                    4.3                head                   0
+h02_09                                    4.7                head                   0
+h02_10                                    5.1                head                   0
+
+Prior information
+
+   no prior information provided
+
+PEST SVD Information
+    maxsing = 11
+    eigthresh = 1e-06
+
+
+   -----    Starting PEST++ Iterations    ----    
+
+
+OPTIMISATION ITERATION NUMBER: 1
+
+  Iteration type: base parameter solution
+    SVD Package: Eigen JacobiSVD
+    Matrix Inversion: "Jt Q J"
+    Model calls so far : 0
+
+    Starting phi for this iteration                     Total : 50
+    Contribution to phi from observation group         "head" : 50
+    Number of terms in the jacobian equal to zero: 92 / 220 (42%)
+
+    Summary of upgrade runs:
+      Lambda =     0.10; Type: upgrade_run; length = 7.70e-01;  phi = 2.2261 (4.45% of starting phi)
+      Lambda =     1.00; Type: upgrade_run; length = 7.62e-01;  phi = 2.0018 (4.00% of starting phi)
+      Lambda =    10.00; Type: upgrade_run; length = 7.33e-01;  phi = 0.8033 (1.61% of starting phi)
+      Lambda =    20.00; Type: upgrade_run; length = 7.00e-01;  phi = 0.1889 (0.38% of starting phi)
+      Lambda =    40.00; Type: upgrade_run; length = 6.37e-01;  phi = 0.1777 (0.36% of starting phi)
+      Lambda =   100.00; Type: upgrade_run; length = 5.00e-01;  phi = 4.0225 (8.05% of starting phi)
+      Lambda =  1000.00; Type: upgrade_run; length = 1.17e-01;  phi = 35.6176 (71.24% of starting phi)
+
+  Model calls in iteration 1: 19
+  Total model calls at end of iteration 1: 19
+
+
+    Iteration 1 Parameter Upgrades (Control File Parameters) 
+      Parameter     Current       Previous       Factor       Relative
+        Name         Value         Value         Change        Change
+      ----------  ------------  ------------  ------------  ------------
+           stage       1.39374             1       1.39374     -0.393742
+            k_01       2.35238           2.5       1.06275     0.0590481
+            k_02       2.21348           2.5       1.12945       0.11461
+            k_03       2.21348           2.5       1.12945       0.11461
+            k_04       2.29033           2.5       1.09154      0.083866
+            k_05       2.36986           2.5       1.05491      0.052055
+            k_06       2.43406           2.5       1.02709     0.0263753
+            k_07           2.5           2.5             1             0
+            k_08           2.5           2.5             1             0
+            k_09           2.5           2.5             1             0
+            k_10           2.5           2.5             1             0
+       Maximum changes in "Control File" parameters:
+         Maximum relative change = -0.393742   [stage]
+         Maximum factor change = 1.39374   [stage]
+
+    Iteration 1 Parameter Upgrades (Transformed Numeric Parameters) 
+      Parameter     Current       Previous       Factor       Relative
+        Name         Value         Value         Change        Change
+      ----------  ------------  ------------  ------------  ------------
+            k_01    -0.0528652  -1.11022e-16   4.76167e+14  -4.76167e+14
+            k_02      -0.10573  -1.11022e-16   9.52335e+14  -9.52335e+14
+            k_03      -0.10573  -1.11022e-16   9.52335e+14  -9.52335e+14
+            k_04     -0.076082  -1.11022e-16   6.85286e+14  -6.85286e+14
+            k_05    -0.0464337  -1.11022e-16   4.18237e+14  -4.18237e+14
+            k_06    -0.0232169  -1.11022e-16   2.09119e+14  -2.09119e+14
+            k_07  -1.11022e-16  -1.11022e-16             1            -0
+            k_08  -1.11022e-16  -1.11022e-16             1            -0
+            k_09  -1.11022e-16  -1.11022e-16             1            -0
+            k_10  -1.11022e-16  -1.11022e-16             1            -0
+           stage       1.09841       0.70797       1.55149     -0.551494
+       Maximum changes in "Transformed Numeric" parameters:
+         Maximum relative change = -9.52335e+14   [k_03]
+         Maximum factor change = 9.52335e+14   [k_03]
+
+OPTIMISATION ITERATION NUMBER: 2
+
+  Iteration type: super parameter solution
+    SVD Package: Eigen JacobiSVD
+    Matrix Inversion: "Jt Q J"
+    Model calls so far : 19
+
+    Starting phi for this iteration                     Total : 0.1777
+    Contribution to phi from observation group         "head" : 0.1777
+    Number of terms in the jacobian equal to zero: 1 / 40 (2.5%)
+
+    Summary of upgrade runs:
+      Lambda =     0.10; Type: upgrade_run; length = 2.19e-01;   phi = 0.0005 (0.28% of starting phi)
+      Lambda =     1.00; Type: upgrade_run; length = 1.83e-01;   phi = 0.0017 (0.96% of starting phi)
+      Lambda =    10.00; Type: upgrade_run; length = 7.13e-02;   phi = 0.0145 (8.16% of starting phi)
+      Lambda =    20.00; Type: upgrade_run; length = 4.67e-02;   phi = 0.0185 (10.41% of starting phi)
+      Lambda =    40.00; Type: upgrade_run; length = 3.34e-02;   phi = 0.026 (14.63% of starting phi)
+      Lambda =   100.00; Type: upgrade_run; length = 2.51e-02;   phi = 0.0349 (19.64% of starting phi)
+      Lambda =  1000.00; Type: upgrade_run; length = 7.76e-03;   phi = 0.1189 (66.91% of starting phi)
+
+  Model calls in iteration 2: 10
+  Total model calls at end of iteration 2: 29
+
+
+    Iteration 2 Parameter Upgrades (Control File Parameters) 
+      Parameter     Current       Previous       Factor       Relative
+        Name         Value         Value         Change        Change
+      ----------  ------------  ------------  ------------  ------------
+           stage       1.43232       1.39374       1.02768    -0.0276797
+            k_01       2.34063       2.35238       1.00502    0.00499299
+            k_02       2.19143       2.21348       1.01006    0.00996103
+            k_03       2.19143       2.21348       1.01006    0.00996103
+            k_04       2.36333       2.29033       1.03187    -0.0318721
+            k_05       2.54872       2.36986       1.07547    -0.0754729
+            k_06       2.52424       2.43406       1.03705    -0.0370501
+            k_07           2.5           2.5             1             0
+            k_08           2.5           2.5             1             0
+            k_09           2.5           2.5             1             0
+            k_10           2.5           2.5             1             0
+       Maximum changes in "Control File" parameters:
+         Maximum relative change = -0.0754729   [k_05]
+         Maximum factor change = 1.07547   [k_05]
+
+    Iteration 2 Parameter Upgrades (Transformed Numeric Parameters) 
+      Parameter     Current       Previous       Factor       Relative
+        Name         Value         Value         Change        Change
+      ----------  ------------  ------------  ------------  ------------
+           sup_1       10.0187            10       1.00187   -0.00187395
+           sup_2       10.0812            10       1.00812     -0.008115
+       Maximum changes in "Transformed Numeric" parameters:
+         Maximum relative change = -0.008115   [sup_2]
+         Maximum factor change = 1.00812   [sup_2]
+
+OPTIMISATION ITERATION NUMBER: 3
+
+  Iteration type: super parameter solution
+    SVD Package: Eigen JacobiSVD
+    Matrix Inversion: "Jt Q J"
+    Model calls so far : 29
+
+    Starting phi for this iteration                     Total : 0.0005
+    Contribution to phi from observation group         "head" : 0.0005
+    Number of terms in the jacobian equal to zero: 1 / 40 (2.5%)
+
+    Summary of upgrade runs:
+      Lambda =     0.05; Type: upgrade_run; length = 1.48e-02;   phi = 0 (0.00% of starting phi)
+      Lambda =     0.10; Type: upgrade_run; length = 1.44e-02;   phi = 0 (0.00% of starting phi)
+      Lambda =     0.20; Type: upgrade_run; length = 1.38e-02;   phi = 0 (0.00% of starting phi)
+      Lambda =     1.00; Type: upgrade_run; length = 1.02e-02;   phi = 0 (0.00% of starting phi)
+      Lambda =    10.00; Type: upgrade_run; length = 3.20e-03;   phi = 0.0001 (20.00% of starting phi)
+      Lambda =   100.00; Type: upgrade_run; length = 1.43e-03;   phi = 0.0001 (20.00% of starting phi)
+      Lambda =  1000.00; Type: upgrade_run; length = 4.52e-04;   phi = 0.0005 (100.00% of starting phi)
+
+  Model calls in iteration 3: 10
+  Total model calls at end of iteration 3: 39
+
+
+    Iteration 3 Parameter Upgrades (Control File Parameters) 
+      Parameter     Current       Previous       Factor       Relative
+        Name         Value         Value         Change        Change
+      ----------  ------------  ------------  ------------  ------------
+           stage       1.43176       1.43232       1.00039   0.000393557
+            k_01        2.3408       2.34063       1.00007  -7.21599e-05
+            k_02       2.19174       2.19143       1.00014  -0.000144335
+            k_03       2.19174       2.19143       1.00014  -0.000144335
+            k_04       2.36913       2.36333       1.00245   -0.00245289
+            k_05       2.56087       2.54872       1.00477   -0.00476674
+            k_06       2.53025       2.52424       1.00238   -0.00238055
+            k_07           2.5           2.5             1             0
+            k_08           2.5           2.5             1             0
+            k_09           2.5           2.5             1             0
+            k_10           2.5           2.5             1             0
+       Maximum changes in "Control File" parameters:
+         Maximum relative change = -0.00476674   [k_05]
+         Maximum factor change = 1.00477   [k_05]
+
+    Iteration 3 Parameter Upgrades (Transformed Numeric Parameters) 
+      Parameter     Current       Previous       Factor       Relative
+        Name         Value         Value         Change        Change
+      ----------  ------------  ------------  ------------  ------------
+           sup_1       10.0172       10.0187       1.00015   0.000152574
+           sup_2        10.086       10.0812       1.00048  -0.000483595
+       Maximum changes in "Transformed Numeric" parameters:
+         Maximum relative change = -0.000483595   [sup_2]
+         Maximum factor change = 1.00048   [sup_2]
+
+-----------------------------------------
+     ---   OPTIMIZATION COMPLETE   ---   
+  Reason for terminating PEST++ simulation: PHI is zero
+  Summary of termination criteria:
+  NOPTMAX = 20 ;  NOPT at termination = 3
+  NPHINORED = 4 ;  NPHINORED at termination = 0
+  NRELPAR = 4; RELPARSTP = 0.005 ;  NRELPAR at termination = 1
+  PHIREDSTP = 0.005; NPHISTP = 4
+  NPHISTP lowest PHI's:
+        0
+        0.0005
+        0.1777
+
+FINAL OPTIMISATION RESULTS
+
+  Optimal parameter values  
+
+     Parameter            
+        Name         Value
+    ------------  ------------
+    stage              1.43176
+    k_01                2.3408
+    k_02               2.19174
+    k_03               2.19174
+    k_04               2.36913
+    k_05               2.56087
+    k_06               2.53025
+    k_07                   2.5
+    k_08                   2.5
+    k_09                   2.5
+    k_10                   2.5
+
+
+  Observations with optimal model-simulated equivalents and residuals
+                 Name        Group             Measured             Modelled             Residual               Weight
+               h01_01         head              1.50000              1.43200            0.0680000              0.00000
+               h01_02         head              1.70000              1.65300            0.0470000              0.00000
+               h01_03         head              1.90000              1.88100            0.0190000              0.00000
+               h01_04         head              2.10000              2.10000              0.00000              10.0000
+               h01_05         head              2.30000              2.30300          -0.00300000              0.00000
+               h01_06         head              2.50000              2.50000              0.00000              10.0000
+               h01_07         head              2.70000              2.69900           0.00100000              0.00000
+               h01_08         head              2.90000              2.89900           0.00100000              0.00000
+               h01_09         head              3.10000              3.09900           0.00100000              0.00000
+               h01_10         head              3.30000              3.29900           0.00100000              0.00000
+               h02_01         head              1.50000              1.43200            0.0680000              0.00000
+               h02_02         head              1.90000              1.87300            0.0270000              0.00000
+               h02_03         head              2.30000              2.33000           -0.0300000              0.00000
+               h02_04         head              2.70000              2.76900           -0.0690000              0.00000
+               h02_05         head              3.10000              3.17500           -0.0750000              0.00000
+               h02_06         head              3.50000              3.56800           -0.0680000              0.00000
+               h02_07         head              3.90000              3.96600           -0.0660000              0.00000
+               h02_08         head              4.30000              4.36600           -0.0660000              0.00000
+               h02_09         head              4.70000              4.76600           -0.0660000              0.00000
+               h02_10         head              5.10000              5.16600           -0.0660000              0.00000
+
+Final composite objective function 
+    Final phi                                           Total : 0.00000
+    Contribution to phi from observation group         "head" : 0.00000
+
+
+Number of forward model runs performed during optimiztion: 39
+
+
+
+
+-----------------------------------------------------------------------
+Note: The following uncertainty estimates were calculated using 
+      Schur's complement for linear-based conditional uncertainty 
+      propogation.  For a derviation from Bayes equation, see 
+      M. N. Fienen, J. E. Doherty, R. J. Hunt, and H. W. Reeves. 
+      2010. 'Using Prediction Uncertainty Analysis to Design 
+      Hydrologic Monitoring Networks : Example Applications 
+      from the Great Lakes Water Availability Pilot Project'. 
+      See PEST++ V3 documentation for implementation details.
+-----------------------------------------------------------------------
+
+Note: Any observations or prior information equations with a group name
+      starting with 'regul' are dropped from the jacobian and observation
+      covariance matrices before uncertainty calculations.  Please
+      make sure that all expert knowledge is expressed in the prior 
+      parameter bounds or through a covariance matix, which can be 
+      supplied as a pest++ option as 'parameter_covariance(<matrix_file_name>),
+      where <matrix_file_name> can be an ASCII PEST-compatible matrix file (.mat) or
+      a PEST-compatible uncertainty file (.unc).
+
+WARNING: PEST++ 'autonorm' option != 0.0. This can greatly effect the outcome 
+         of the following analyses, which depend heavily on the Jacobian
+
+Note: The observation covariance matrix has been constructed from 
+      weights listed in the pest control file that have been scaled by 
+      by the final objective function components to account for 
+      the level of measurement noise implied by the original weights so
+      the total objective function is equal to the number of  
+      non-zero weighted observations.
+
+Scaled observation weights used to form observation noise covariance matrix:
+
+         observation               group       scaled_weight
+              H01_04                HEAD             10.0000
+              H01_06                HEAD             10.0000
+
+
+Note : posterior parameter covariance matrix written to file 'pest.post.cov'
+
+
+---------------------------------------
+---- parameter uncertainty summary ----
+---------------------------------------
+
+
+                name          prior_mean         prior_stdev   prior_lower_bound   prior_upper_bound           post_mean          post_stdev    post_lower_bound    post_upper_bound
+               STAGE            0.707970            0.369280          -0.0305907             1.44653             1.13006            0.201741            0.726578             1.53354
+                K_01        -1.11022e-16            0.500000            -1.00000             1.00000          -0.0571502            0.494070            -1.04529            0.930990
+                K_02        -1.11022e-16            0.500000            -1.00000             1.00000           -0.114300            0.475838            -1.06598            0.837375
+                K_03        -1.11022e-16            0.500000            -1.00000             1.00000           -0.114300            0.475838            -1.06598            0.837375
+                K_04        -1.11022e-16            0.500000            -1.00000             1.00000          -0.0467023            0.470224           -0.987150            0.893746
+                K_05        -1.11022e-16            0.500000            -1.00000             1.00000           0.0208958            0.407245           -0.793594            0.835385
+                K_06        -1.11022e-16            0.500000            -1.00000             1.00000           0.0104479            0.478500           -0.946552            0.967448
+                K_07        -1.11022e-16            0.500000            -1.00000             1.00000        -1.11022e-16            0.500000            -1.00000             1.00000
+                K_08        -1.11022e-16            0.500000            -1.00000             1.00000        -1.11022e-16            0.500000            -1.00000             1.00000
+                K_09        -1.11022e-16            0.500000            -1.00000             1.00000        -1.11022e-16            0.500000            -1.00000             1.00000
+                K_10        -1.11022e-16            0.500000            -1.00000             1.00000        -1.11022e-16            0.500000            -1.00000             1.00000
+
+Note: Upper and lower uncertainty bounds reported above are 
+      calculated as: <prior,post>_mean +/- (2.0 * <prior,post>_stdev). 
+      For log-transformed parameters, the mean, stdev and range are reported 
+      with respect to the log of the parameter value. 
+
+Note : the above parameter uncertainty summary was written to file 'pest.par.usum.csv'
+
