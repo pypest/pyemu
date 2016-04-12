@@ -51,9 +51,8 @@ class Schur(LinearAnalysis):
             self.log("Schur's complement")
             return self.__posterior_parameter
 
-
     @property
-    def bayes_linear_parameter_expectation(self):
+    def map_parameter_estimate(self):
         res = self.pst.res
         assert res is not None
         # build the prior expectation parameter vector
@@ -67,8 +66,8 @@ class Schur(LinearAnalysis):
 
         # form the terms of Schur's complement
         b = self.parcov * self.jco.T
-        c = (self.jco * self.parcov * self.jco.T + self.obscov).inv
-        bc = Matrix((b * c).x,row_names=b.row_names,col_names=c.col_names)
+        c = ((self.jco * self.parcov * self.jco.T) + self.obscov).inv
+        bc = Matrix((b * c).x, row_names=b.row_names, col_names=c.col_names)
 
         # calc posterior expectation
         term2 = bc * res_vec
@@ -79,6 +78,15 @@ class Schur(LinearAnalysis):
         post_expt = pd.DataFrame(data=post_expt.x,index=post_expt.row_names,columns=["post_expt"])
         post_expt.loc[islog,:] = 10.0**post_expt.loc[islog,:]
         return post_expt
+
+    @property
+    def map_forecast_estimate(self):
+        assert self.forecasts is not None
+        maps = {}
+        par_map = Matrix.from_dataframe(self.map_parameter_estimate)
+        for forecast in self.forecasts:
+            maps[forecast.col_names[0]] = (forecast.T * par_map).x[0 ,0]
+        return maps
 
     @property
     def posterior_forecast(self):

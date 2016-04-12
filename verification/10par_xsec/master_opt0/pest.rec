@@ -1,0 +1,183 @@
+             PEST++ Version 3.2.0
+
+                 by Dave Welter
+     Computational Water Resource Engineering
+
+
+
+using control file: "pest.pst"
+
+
+PEST++ run mode:- 
+   estimation
+
+Case dimensions:- 
+    Number of parameters = 11
+    Number of adjustable parameters = 11
+    Number of observations = 20
+    Number of prior estimates = 0
+
+Model command line(s):- 
+    python model.py
+
+Model interface files:-
+    template files:
+      misc/k.tpl
+      misc/strt_Layer_1.tpl
+    model input files:
+      model/ref_cal/hk_Layer_1.ref
+      model/ref_cal/strt_Layer_1.ref
+
+    instruction files:
+      misc/head.ins
+    model output files:
+      model/10par_xsec.hds
+
+
+PEST Control Information
+    relparmax = 5
+    facparmax = 5
+    facorig = 0.001
+    phiredswh = 0.1
+    noptmax = 0
+    phiredstp = 0.005
+    nphistp = 4
+    nphinored = 4
+    relparstp = 0.005
+    nrelpar = 4
+
+PEST++ Options
+    n_iter_base = 1                   
+    n_iter_super = 4                   
+    max_n_super = 10                  
+    super eigthres = 1e-08               
+    svd pack = 0                   
+    auto norm = 4                   
+    super relparmax = 0.1                 
+    max super frz iter = 5                   
+    mat inv = 1                   
+    max run fail = 3                   
+    max reg iter = 20                  
+    lambdas = 
+            0.1
+              1
+             10
+            100
+           1000
+    uncertainty flag = 1                   
+    parameter covariance file =                     
+    prediction names = 
+
+
+Parameter group information
+NAME            INCREMENT TYPE     DERIVATIVE INCREMENT    INCREMENT LOWER BOUND  FORCE CENTRAL     INCREMENT MULTIPLIER
+k                     RELATIVE                     0.01                        0         SWITCH                        2
+
+Parameter information
+NAME           TRANSFORMATION        CHANGE LIMIT  INITIAL VALUE    LOWER BOUND    UPPER BOUND          GROUP          SCALE         OFFSET  DERIVATIVE COMMAND
+stage          log                     FACTOR              1            0.1              3              k              1              0                   0
+k_01           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_02           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_03           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_04           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_05           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_06           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_07           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_08           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_09           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+k_10           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+
+Observation information
+NAME                                    VALUE               GROUP              WEIGHT
+h01_01                                    1.5                head                   0
+h01_02                                    1.7                head                   0
+h01_03                                    1.9                head                   0
+h01_04                                    2.1                head                  10
+h01_05                                    2.3                head                   0
+h01_06                                    2.5                head                  10
+h01_07                                    2.7                head                   0
+h01_08                                    2.9                head                   0
+h01_09                                    3.1                head                   0
+h01_10                                    3.3                head                   0
+h02_01                                    1.5                head                   0
+h02_02                                    1.9                head                   0
+h02_03                                    2.3                head                   0
+h02_04                                    2.7                head                   0
+h02_05                                    3.1                head                   0
+h02_06                                    3.5                head                   0
+h02_07                                    3.9                head                   0
+h02_08                                    4.3                head                   0
+h02_09                                    4.7                head                   0
+h02_10                                    5.1                head                   0
+
+Prior information
+
+   no prior information provided
+
+PEST SVD Information
+    maxsing = 11
+    eigthresh = 1e-06
+
+
+   -----    Starting PEST++ Iterations    ----    
+
+
+-----------------------------------------
+     ---   OPTIMIZATION COMPLETE   ---   
+  Reason for terminating PEST++ simulation: NOPTMAX criterion met
+  Summary of termination criteria:
+  NOPTMAX = 0 ;  NOPT at termination = 0
+  NPHINORED = 4 ;  NPHINORED at termination = 0
+  NRELPAR = 4; RELPARSTP = 0.005 ;  NRELPAR at termination = 0
+  PHIREDSTP = 0.005; NPHISTP = 4
+  NPHISTP lowest PHI's:
+
+FINAL OPTIMISATION RESULTS
+
+  Optimal parameter values  
+
+     Parameter            
+        Name         Value
+    ------------  ------------
+    stage                    1
+    k_01                   2.5
+    k_02                   2.5
+    k_03                   2.5
+    k_04                   2.5
+    k_05                   2.5
+    k_06                   2.5
+    k_07                   2.5
+    k_08                   2.5
+    k_09                   2.5
+    k_10                   2.5
+
+
+  Observations with optimal model-simulated equivalents and residuals
+                 Name        Group             Measured             Modelled             Residual               Weight
+               h01_01         head              1.50000              1.00000             0.500000              0.00000
+               h01_02         head              1.70000              1.20000             0.500000              0.00000
+               h01_03         head              1.90000              1.40000             0.500000              0.00000
+               h01_04         head              2.10000              1.60000             0.500000              10.0000
+               h01_05         head              2.30000              1.80000             0.500000              0.00000
+               h01_06         head              2.50000              2.00000             0.500000              10.0000
+               h01_07         head              2.70000              2.20000             0.500000              0.00000
+               h01_08         head              2.90000              2.40000             0.500000              0.00000
+               h01_09         head              3.10000              2.60000             0.500000              0.00000
+               h01_10         head              3.30000              2.80000             0.500000              0.00000
+               h02_01         head              1.50000              1.00000             0.500000              0.00000
+               h02_02         head              1.90000              1.40000             0.500000              0.00000
+               h02_03         head              2.30000              1.80000             0.500000              0.00000
+               h02_04         head              2.70000              2.20000             0.500000              0.00000
+               h02_05         head              3.10000              2.60000             0.500000              0.00000
+               h02_06         head              3.50000              3.00000             0.500000              0.00000
+               h02_07         head              3.90000              3.40000             0.500000              0.00000
+               h02_08         head              4.30000              3.80000             0.500000              0.00000
+               h02_09         head              4.70000              4.20000             0.500000              0.00000
+               h02_10         head              5.10000              4.60000             0.500000              0.00000
+
+Final composite objective function 
+    Final phi                                           Total : 50.0000
+    Contribution to phi from observation group         "head" : 50.0000
+
+
+Number of forward model runs performed during optimiztion: 1
