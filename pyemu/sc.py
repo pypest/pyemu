@@ -75,7 +75,8 @@ class Schur(LinearAnalysis):
         post_expt = prior_expt + term2
 
         # post processing - back log transform
-        post_expt = pd.DataFrame(data=post_expt.x,index=post_expt.row_names,columns=["post_expt"])
+        post_expt = pd.DataFrame(data=post_expt.x,index=post_expt.row_names,
+                                 columns=["post_expt"])
         post_expt.loc[islog,:] = 10.0**post_expt.loc[islog,:]
         return post_expt
 
@@ -83,9 +84,14 @@ class Schur(LinearAnalysis):
     def map_forecast_estimate(self):
         assert self.forecasts is not None
         maps = {}
-        par_map = Matrix.from_dataframe(self.map_parameter_estimate)
+        islog = self.pst.parameter_data.partrans == "log"
+        par_map = self.map_parameter_estimate
+        par_map.loc[islog,:] = np.log10(par_map.loc[islog,:])
+        par_map = Matrix.from_dataframe(par_map)
         for forecast in self.forecasts:
-            maps[forecast.col_names[0]] = (forecast.T * par_map).x[0 ,0]
+            fname = forecast.col_names[0]
+            pr = self.pst.res.loc[fname,"modelled"]
+            maps[forecast.col_names[0]] = pr + (forecast.T * par_map).x[0, 0]
         return maps
 
     @property
