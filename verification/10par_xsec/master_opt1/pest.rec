@@ -52,7 +52,7 @@ PEST++ Options
     max_n_super = 10                  
     super eigthres = 1e-08               
     svd pack = 0                   
-    auto norm = 4                   
+    auto norm = -999                
     super relparmax = 0.1                 
     max super frz iter = 5                   
     mat inv = 1                   
@@ -73,8 +73,8 @@ k                     RELATIVE                     0.01                        0
 
 Parameter information
 NAME           TRANSFORMATION        CHANGE LIMIT  INITIAL VALUE    LOWER BOUND    UPPER BOUND          GROUP          SCALE         OFFSET  DERIVATIVE COMMAND
-stage          log                     FACTOR              1            0.1              3              k              1              0                   0
-k_01           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+stage          log                     FACTOR            1.5            0.1              3              k              1              0                   0
+k_01           log                     FACTOR            2.6           0.25             25              k              1              0                   0
 k_02           log                     FACTOR            2.5           0.25             25              k              1              0                   0
 k_03           log                     FACTOR            2.5           0.25             25              k              1              0                   0
 k_04           log                     FACTOR            2.5           0.25             25              k              1              0                   0
@@ -127,57 +127,54 @@ OPTIMISATION ITERATION NUMBER: 1
     Matrix Inversion: "Jt Q J"
     Model calls so far : 0
 
-    Starting phi for this iteration                     Total : 50
-    Contribution to phi from observation group         "head" : 50
+    Starting phi for this iteration                     Total : 0.0032
+    Contribution to phi from observation group         "head" : 0.0032
     Number of terms in the jacobian equal to zero: 92 / 220 (42%)
 
     Summary of upgrade runs:
-      Lambda =     1.00; Type: upgrade_run; length = 7.62e-01;  phi = 2.0018 (4.00% of starting phi)
-      Lambda =    10.00; Type: upgrade_run; length = 7.33e-01;  phi = 0.8033 (1.61% of starting phi)
-      Lambda =    20.00; Type: upgrade_run; length = 7.00e-01;  phi = 0.1889 (0.38% of starting phi)
-      Lambda =    40.00; Type: upgrade_run; length = 6.37e-01;  phi = 0.1777 (0.36% of starting phi)
+      Lambda =     1.00; Type: upgrade_run; length = 3.10e-02;  phi = 0 (0.00% of starting phi)
 
-  Model calls in iteration 1: 16
-  Total model calls at end of iteration 1: 16
+  Model calls in iteration 1: 13
+  Total model calls at end of iteration 1: 13
 
 
     Iteration 1 Parameter Upgrades (Control File Parameters) 
       Parameter     Current       Previous       Factor       Relative
         Name         Value         Value         Change        Change
       ----------  ------------  ------------  ------------  ------------
-           stage       1.39374             1       1.39374     -0.393742
-            k_01       2.35238           2.5       1.06275     0.0590481
-            k_02       2.21348           2.5       1.12945       0.11461
-            k_03       2.21348           2.5       1.12945       0.11461
-            k_04       2.29033           2.5       1.09154      0.083866
-            k_05       2.36986           2.5       1.05491      0.052055
-            k_06       2.43406           2.5       1.02709     0.0263753
+           stage           1.5           1.5             1  -4.66667e-07
+            k_01       2.58976           2.6       1.00395    0.00393835
+            k_02       2.48034           2.5       1.00793    0.00786388
+            k_03       2.48035           2.5       1.00792    0.00786144
+            k_04       2.49141           2.5       1.00345    0.00343692
+            k_05       2.50252           2.5       1.00101   -0.00100768
+            k_06       2.50126           2.5        1.0005   -0.00050368
             k_07           2.5           2.5             1             0
             k_08           2.5           2.5             1             0
             k_09           2.5           2.5             1             0
             k_10           2.5           2.5             1             0
        Maximum changes in "Control File" parameters:
-         Maximum relative change = -0.393742   [stage]
-         Maximum factor change = 1.39374   [stage]
+         Maximum relative change = 0.00786388   [k_02]
+         Maximum factor change = 1.00793   [k_02]
 
     Iteration 1 Parameter Upgrades (Transformed Numeric Parameters) 
       Parameter     Current       Previous       Factor       Relative
         Name         Value         Value         Change        Change
       ----------  ------------  ------------  ------------  ------------
-            k_01    -0.0528652  -1.11022e-16   4.76167e+14  -4.76167e+14
-            k_02      -0.10573  -1.11022e-16   9.52335e+14  -9.52335e+14
-            k_03      -0.10573  -1.11022e-16   9.52335e+14  -9.52335e+14
-            k_04     -0.076082  -1.11022e-16   6.85286e+14  -6.85286e+14
-            k_05    -0.0464337  -1.11022e-16   4.18237e+14  -4.18237e+14
-            k_06    -0.0232169  -1.11022e-16   2.09119e+14  -2.09119e+14
-            k_07  -1.11022e-16  -1.11022e-16             1            -0
-            k_08  -1.11022e-16  -1.11022e-16             1            -0
-            k_09  -1.11022e-16  -1.11022e-16             1            -0
-            k_10  -1.11022e-16  -1.11022e-16             1            -0
-           stage       1.09841       0.70797       1.55149     -0.551494
+            k_01       0.41326      0.414973       1.00415    0.00412985
+            k_02      0.394511       0.39794       1.00869    0.00861622
+            k_03      0.394512       0.39794       1.00869    0.00861354
+            k_04      0.396445       0.39794       1.00377    0.00375737
+            k_05      0.398377       0.39794        1.0011   -0.00109918
+            k_06      0.398159       0.39794       1.00055  -0.000549556
+            k_07       0.39794       0.39794             1             0
+            k_08       0.39794       0.39794             1             0
+            k_09       0.39794       0.39794             1             0
+            k_10       0.39794       0.39794             1             0
+           stage      0.176091      0.176091             1  -1.15094e-06
        Maximum changes in "Transformed Numeric" parameters:
-         Maximum relative change = -9.52335e+14   [k_03]
-         Maximum factor change = 9.52335e+14   [k_03]
+         Maximum relative change = 0.00861622   [k_02]
+         Maximum factor change = 1.00869   [k_02]
 
 -----------------------------------------
      ---   OPTIMIZATION COMPLETE   ---   
@@ -188,7 +185,7 @@ OPTIMISATION ITERATION NUMBER: 1
   NRELPAR = 4; RELPARSTP = 0.005 ;  NRELPAR at termination = 0
   PHIREDSTP = 0.005; NPHISTP = 4
   NPHISTP lowest PHI's:
-        0.1777
+        0
 
 FINAL OPTIMISATION RESULTS
 
@@ -197,13 +194,13 @@ FINAL OPTIMISATION RESULTS
      Parameter            
         Name         Value
     ------------  ------------
-    stage              1.39374
-    k_01               2.35238
-    k_02               2.21348
-    k_03               2.21348
-    k_04               2.29033
-    k_05               2.36986
-    k_06               2.43406
+    stage                  1.5
+    k_01               2.58976
+    k_02               2.48034
+    k_03               2.48035
+    k_04               2.49141
+    k_05               2.50252
+    k_06               2.50126
     k_07                   2.5
     k_08                   2.5
     k_09                   2.5
@@ -212,33 +209,33 @@ FINAL OPTIMISATION RESULTS
 
   Observations with optimal model-simulated equivalents and residuals
                  Name        Group             Measured             Modelled             Residual               Weight
-               h01_01         head              1.50000              1.39400             0.106000              0.00000
-               h01_02         head              1.70000              1.61300            0.0870000              0.00000
-               h01_03         head              1.90000              1.83900            0.0610000              0.00000
-               h01_04         head              2.10000              2.06100            0.0390000              10.0000
-               h01_05         head              2.30000              2.27600            0.0240000              0.00000
-               h01_06         head              2.50000              2.48400            0.0160000              10.0000
-               h01_07         head              2.70000              2.68700            0.0130000              0.00000
-               h01_08         head              2.90000              2.88700            0.0130000              0.00000
-               h01_09         head              3.10000              3.08700            0.0130000              0.00000
-               h01_10         head              3.30000              3.28700            0.0130000              0.00000
-               h02_01         head              1.50000              1.39400             0.106000              0.00000
-               h02_02         head              1.90000              1.83200            0.0680000              0.00000
-               h02_03         head              2.30000              2.28400            0.0160000              0.00000
-               h02_04         head              2.70000              2.72800           -0.0280000              0.00000
-               h02_05         head              3.10000              3.15700           -0.0570000              0.00000
-               h02_06         head              3.50000              3.57400           -0.0740000              0.00000
-               h02_07         head              3.90000              3.97900           -0.0790000              0.00000
-               h02_08         head              4.30000              4.37900           -0.0790000              0.00000
-               h02_09         head              4.70000              4.77900           -0.0790000              0.00000
-               h02_10         head              5.10000              5.17900           -0.0790000              0.00000
+               h01_01         head              1.50000              1.50000              0.00000              0.00000
+               h01_02         head              1.70000              1.69700           0.00300000              0.00000
+               h01_03         head              1.90000              1.89900           0.00100000              0.00000
+               h01_04         head              2.10000              2.10000              0.00000              10.0000
+               h01_05         head              2.30000              2.30000              0.00000              0.00000
+               h01_06         head              2.50000              2.50000              0.00000              10.0000
+               h01_07         head              2.70000              2.70000              0.00000              0.00000
+               h01_08         head              2.90000              2.90000              0.00000              0.00000
+               h01_09         head              3.10000              3.10000              0.00000              0.00000
+               h01_10         head              3.30000              3.30000              0.00000              0.00000
+               h02_01         head              1.50000              1.50000              0.00000              0.00000
+               h02_02         head              1.90000              1.89500           0.00500000              0.00000
+               h02_03         head              2.30000              2.29800           0.00200000              0.00000
+               h02_04         head              2.70000              2.70000              0.00000              0.00000
+               h02_05         head              3.10000              3.10100          -0.00100000              0.00000
+               h02_06         head              3.50000              3.50000              0.00000              0.00000
+               h02_07         head              3.90000              3.90000              0.00000              0.00000
+               h02_08         head              4.30000              4.30000              0.00000              0.00000
+               h02_09         head              4.70000              4.70000              0.00000              0.00000
+               h02_10         head              5.10000              5.10000              0.00000              0.00000
 
 Final composite objective function 
-    Final phi                                           Total : 0.177700
-    Contribution to phi from observation group         "head" : 0.177700
+    Final phi                                           Total : 0.00000
+    Contribution to phi from observation group         "head" : 0.00000
 
 
-Number of forward model runs performed during optimiztion: 16
+Number of forward model runs performed during optimiztion: 13
 
 
 
@@ -263,8 +260,6 @@ Note: Any observations or prior information equations with a group name
       where <matrix_file_name> can be an ASCII PEST-compatible matrix file (.mat) or
       a PEST-compatible uncertainty file (.unc).
 
-WARNING: PEST++ 'autonorm' option != 0.0. This can greatly effect the outcome 
-         of the following analyses, which depend heavily on the Jacobian
 
 Note: The observation covariance matrix has been constructed from 
       weights listed in the pest control file that have been scaled by 
@@ -276,8 +271,8 @@ Note: The observation covariance matrix has been constructed from
 Scaled observation weights used to form observation noise covariance matrix:
 
          observation               group       scaled_weight
-              H01_04                HEAD             33.5484
-              H01_06                HEAD             33.5484
+              H01_04                HEAD             10.0000
+              H01_06                HEAD             10.0000
 
 
 Note : posterior parameter covariance matrix written to file 'pest.post.cov'
@@ -289,17 +284,17 @@ Note : posterior parameter covariance matrix written to file 'pest.post.cov'
 
 
                 name          prior_mean         prior_stdev   prior_lower_bound   prior_upper_bound           post_mean          post_stdev    post_lower_bound    post_upper_bound
-               STAGE            0.707970            0.369280          -0.0305907             1.44653             1.09841            0.186468            0.725475             1.47135
-                K_01        -1.11022e-16            0.500000            -1.00000             1.00000          -0.0528652            0.493700            -1.04027            0.934536
-                K_02        -1.11022e-16            0.500000            -1.00000             1.00000           -0.105730            0.474300            -1.05433            0.842870
-                K_03        -1.11022e-16            0.500000            -1.00000             1.00000           -0.105730            0.474300            -1.05433            0.842870
-                K_04        -1.11022e-16            0.500000            -1.00000             1.00000          -0.0760820            0.454741           -0.985565            0.833401
-                K_05        -1.11022e-16            0.500000            -1.00000             1.00000          -0.0464337            0.310751           -0.667935            0.575068
-                K_06        -1.11022e-16            0.500000            -1.00000             1.00000          -0.0232169            0.460045           -0.943307            0.896873
-                K_07        -1.11022e-16            0.500000            -1.00000             1.00000        -1.11022e-16            0.500000            -1.00000             1.00000
-                K_08        -1.11022e-16            0.500000            -1.00000             1.00000        -1.11022e-16            0.500000            -1.00000             1.00000
-                K_09        -1.11022e-16            0.500000            -1.00000             1.00000        -1.11022e-16            0.500000            -1.00000             1.00000
-                K_10        -1.11022e-16            0.500000            -1.00000             1.00000        -1.11022e-16            0.500000            -1.00000             1.00000
+               STAGE            0.176091            0.369280           -0.562469            0.914652            0.176091            0.104745          -0.0333995            0.385582
+                K_01            0.414973            0.500000           -0.585027             1.41497            0.413260            0.498123           -0.582987             1.40951
+                K_02            0.397940            0.500000           -0.602060             1.39794            0.394511            0.492451           -0.590390             1.37941
+                K_03            0.397940            0.500000           -0.602060             1.39794            0.394512            0.492451           -0.590389             1.37941
+                K_04            0.397940            0.500000           -0.602060             1.39794            0.396445            0.463563           -0.530682             1.32357
+                K_05            0.397940            0.500000           -0.602060             1.39794            0.398377            0.341395           -0.284412             1.08117
+                K_06            0.397940            0.500000           -0.602060             1.39794            0.398159            0.465443           -0.532728             1.32905
+                K_07            0.397940            0.500000           -0.602060             1.39794            0.397940            0.500000           -0.602060             1.39794
+                K_08            0.397940            0.500000           -0.602060             1.39794            0.397940            0.500000           -0.602060             1.39794
+                K_09            0.397940            0.500000           -0.602060             1.39794            0.397940            0.500000           -0.602060             1.39794
+                K_10            0.397940            0.500000           -0.602060             1.39794            0.397940            0.500000           -0.602060             1.39794
 
 Note: Upper and lower uncertainty bounds reported above are 
       calculated as: <prior,post>_mean +/- (2.0 * <prior,post>_stdev). 
@@ -315,8 +310,8 @@ Note : the above parameter uncertainty summary was written to file 'pest.par.usu
 
 
      prediction_name          prior_mean         prior_stdev   prior_lower_bound   prior_upper_bound           post_mean          post_stdev    post_lower_bound    post_upper_bound
-              H01_08             2.40000            0.431972             1.53606             3.26394             2.88700            0.143849             2.59930             3.17470
-              H02_08             3.80000            0.669070             2.46186             5.13814             4.37900            0.327623             3.72375             5.03425
+              H01_08             2.89600             1.41107           0.0738562             5.71814             2.90000            0.300350             2.29930             3.50070
+              H02_08             4.29200             1.74222            0.807554             7.77645             4.30000            0.701864             2.89627             5.70373
 
 
 Note: predictive sensitivity vectors for both prior and 

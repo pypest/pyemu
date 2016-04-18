@@ -1,165 +1,81 @@
-PEST++ performance logger started at:  2016-04-12 13:58:25
+PEST++ performance logger started at:  2016-04-18 15:13:40
   starting to process control file
-          ( time = 2016-04-12 13:58:25,  elapsed time = 582us )
+          ( time = 2016-04-18 15:13:40,  elapsed time = 664us )
   finished processing control file
-          ( time = 2016-04-12 13:58:25,  elapsed time = 3ms )
+          ( time = 2016-04-18 15:13:40,  elapsed time = 2ms )
     starting basic model IO error checking
-            ( time = 2016-04-12 13:58:25,  elapsed time = 364us )
+            ( time = 2016-04-18 15:13:40,  elapsed time = 388us )
     finished basic model IO error checking
-            ( time = 2016-04-12 13:58:25,  elapsed time = 87us )
+            ( time = 2016-04-18 15:13:40,  elapsed time = 94us )
 
 beginning iteration 1
-        ( time = 2016-04-12 13:58:25,  elapsed time = 335us )
+        ( time = 2016-04-18 15:13:40,  elapsed time = 359us )
   commencing to build jacobian parameter sets
-          ( time = 2016-04-12 13:58:25,  elapsed time = 20us )
+          ( time = 2016-04-18 15:13:40,  elapsed time = 33us )
   jacobian parameter sets built, commencing model runs
-          ( time = 2016-04-12 13:58:25,  elapsed time = 254us )
+          ( time = 2016-04-18 15:13:40,  elapsed time = 282us )
   jacobian runs complete, processing runs
-          ( time = 2016-04-12 13:58:26,  elapsed time = 1sec )
+          ( time = 2016-04-18 15:13:41,  elapsed time = 1sec )
   processing jacobian runs complete
-          ( time = 2016-04-12 13:58:26,  elapsed time = 580us )
+          ( time = 2016-04-18 15:13:41,  elapsed time = 443us )
   saving jacobian and sen files
-          ( time = 2016-04-12 13:58:26,  elapsed time = 25us )
+          ( time = 2016-04-18 15:13:41,  elapsed time = 16us )
   commencing calculation of upgrade vector
-          ( time = 2016-04-12 13:58:26,  elapsed time = 743us )
+          ( time = 2016-04-18 15:13:41,  elapsed time = 477us )
   commencing to scale JtQJ matrix
-          ( time = 2016-04-12 13:58:26,  elapsed time = 127us )
+          ( time = 2016-04-18 15:13:41,  elapsed time = 89us )
   multiplying JtQJ matrix
-          ( time = 2016-04-12 13:58:26,  elapsed time = 83us )
+          ( time = 2016-04-18 15:13:41,  elapsed time = 81us )
   scaling of  JtQJ matrix complete
-          ( time = 2016-04-12 13:58:26,  elapsed time = 48us )
+          ( time = 2016-04-18 15:13:41,  elapsed time = 46us )
   commencing SVD factorization
-          ( time = 2016-04-12 13:58:26,  elapsed time = 12us )
+          ( time = 2016-04-18 15:13:41,  elapsed time = 11us )
   SVD factorization complete
-          ( time = 2016-04-12 13:58:26,  elapsed time = 44us )
+          ( time = 2016-04-18 15:13:41,  elapsed time = 43us )
   commencing linear algebra multiplication to compute ugrade
-          ( time = 2016-04-12 13:58:26,  elapsed time = 41us )
+          ( time = 2016-04-18 15:13:41,  elapsed time = 40us )
   Vt info: rows = 2: cols = 11: size = 22: nonzeros = 14
-          ( time = 2016-04-12 13:58:26,  elapsed time = 20us )
+          ( time = 2016-04-18 15:13:41,  elapsed time = 21us )
   U info: rows = 11: cols = 2: size = 22: nonzeros = 14
-          ( time = 2016-04-12 13:58:26,  elapsed time = 13us )
+          ( time = 2016-04-18 15:13:41,  elapsed time = 13us )
   S info: rows = 11: cols = 11: size = 121: nonzeros = 7
-          ( time = 2016-04-12 13:58:26,  elapsed time = 11us )
+          ( time = 2016-04-18 15:13:41,  elapsed time = 10us )
   jac info: rows = 20: cols = 11: size = 220: nonzeros = 128
-          ( time = 2016-04-12 13:58:26,  elapsed time = 10us )
+          ( time = 2016-04-18 15:13:41,  elapsed time = 11us )
   linear algebra multiplication to compute ugrade complete
-          ( time = 2016-04-12 13:58:26,  elapsed time = 26us )
+          ( time = 2016-04-18 15:13:41,  elapsed time = 83us )
   commencing check of parameter bounds
-          ( time = 2016-04-12 13:58:26,  elapsed time = 40us )
+          ( time = 2016-04-18 15:13:41,  elapsed time = 37us )
   beginning upgrade vector calculations, lambda = 1
-          ( time = 2016-04-12 13:58:26,  elapsed time = 203us )
+          ( time = 2016-04-18 15:13:41,  elapsed time = 204us )
     commencing calculation of upgrade vector
-            ( time = 2016-04-12 13:58:26,  elapsed time = 23us )
+            ( time = 2016-04-18 15:13:41,  elapsed time = 23us )
     commencing to scale JtQJ matrix
-            ( time = 2016-04-12 13:58:26,  elapsed time = 77us )
+            ( time = 2016-04-18 15:13:41,  elapsed time = 74us )
     multiplying JtQJ matrix
-            ( time = 2016-04-12 13:58:26,  elapsed time = 81us )
+            ( time = 2016-04-18 15:13:41,  elapsed time = 59us )
     scaling of  JtQJ matrix complete
-            ( time = 2016-04-12 13:58:26,  elapsed time = 76us )
+            ( time = 2016-04-18 15:13:41,  elapsed time = 45us )
     commencing SVD factorization
-            ( time = 2016-04-12 13:58:26,  elapsed time = 18us )
+            ( time = 2016-04-18 15:13:41,  elapsed time = 10us )
     SVD factorization complete
-            ( time = 2016-04-12 13:58:26,  elapsed time = 72us )
+            ( time = 2016-04-18 15:13:41,  elapsed time = 43us )
     commencing linear algebra multiplication to compute ugrade
-            ( time = 2016-04-12 13:58:26,  elapsed time = 57us )
-    Vt info: rows = 7: cols = 11: size = 77: nonzeros = 49
-            ( time = 2016-04-12 13:58:26,  elapsed time = 19us )
-    U info: rows = 11: cols = 7: size = 77: nonzeros = 49
-            ( time = 2016-04-12 13:58:26,  elapsed time = 17us )
+            ( time = 2016-04-18 15:13:41,  elapsed time = 36us )
+    Vt info: rows = 6: cols = 11: size = 66: nonzeros = 42
+            ( time = 2016-04-18 15:13:41,  elapsed time = 11us )
+    U info: rows = 11: cols = 6: size = 66: nonzeros = 42
+            ( time = 2016-04-18 15:13:41,  elapsed time = 11us )
     S info: rows = 11: cols = 11: size = 121: nonzeros = 7
-            ( time = 2016-04-12 13:58:26,  elapsed time = 17us )
+            ( time = 2016-04-18 15:13:41,  elapsed time = 10us )
     jac info: rows = 20: cols = 11: size = 220: nonzeros = 128
-            ( time = 2016-04-12 13:58:26,  elapsed time = 17us )
+            ( time = 2016-04-18 15:13:41,  elapsed time = 11us )
     linear algebra multiplication to compute ugrade complete
-            ( time = 2016-04-12 13:58:26,  elapsed time = 35us )
+            ( time = 2016-04-18 15:13:41,  elapsed time = 21us )
     commencing check of parameter bounds
-            ( time = 2016-04-12 13:58:26,  elapsed time = 63us )
-  beginning upgrade vector calculations, lambda = 10
-          ( time = 2016-04-12 13:58:26,  elapsed time = 79us )
-    commencing calculation of upgrade vector
-            ( time = 2016-04-12 13:58:26,  elapsed time = 26us )
-    commencing to scale JtQJ matrix
-            ( time = 2016-04-12 13:58:26,  elapsed time = 73us )
-    multiplying JtQJ matrix
-            ( time = 2016-04-12 13:58:26,  elapsed time = 58us )
-    scaling of  JtQJ matrix complete
-            ( time = 2016-04-12 13:58:26,  elapsed time = 41us )
-    commencing SVD factorization
-            ( time = 2016-04-12 13:58:26,  elapsed time = 11us )
-    SVD factorization complete
-            ( time = 2016-04-12 13:58:26,  elapsed time = 42us )
-    commencing linear algebra multiplication to compute ugrade
-            ( time = 2016-04-12 13:58:26,  elapsed time = 34us )
-    Vt info: rows = 7: cols = 11: size = 77: nonzeros = 49
-            ( time = 2016-04-12 13:58:26,  elapsed time = 12us )
-    U info: rows = 11: cols = 7: size = 77: nonzeros = 49
-            ( time = 2016-04-12 13:58:26,  elapsed time = 10us )
-    S info: rows = 11: cols = 11: size = 121: nonzeros = 7
-            ( time = 2016-04-12 13:58:26,  elapsed time = 10us )
-    jac info: rows = 20: cols = 11: size = 220: nonzeros = 128
-            ( time = 2016-04-12 13:58:26,  elapsed time = 10us )
-    linear algebra multiplication to compute ugrade complete
-            ( time = 2016-04-12 13:58:26,  elapsed time = 21us )
-    commencing check of parameter bounds
-            ( time = 2016-04-12 13:58:26,  elapsed time = 38us )
-  beginning upgrade vector calculations, lambda = 20
-          ( time = 2016-04-12 13:58:26,  elapsed time = 59us )
-    commencing calculation of upgrade vector
-            ( time = 2016-04-12 13:58:26,  elapsed time = 22us )
-    commencing to scale JtQJ matrix
-            ( time = 2016-04-12 13:58:26,  elapsed time = 75us )
-    multiplying JtQJ matrix
-            ( time = 2016-04-12 13:58:26,  elapsed time = 56us )
-    scaling of  JtQJ matrix complete
-            ( time = 2016-04-12 13:58:26,  elapsed time = 42us )
-    commencing SVD factorization
-            ( time = 2016-04-12 13:58:26,  elapsed time = 11us )
-    SVD factorization complete
-            ( time = 2016-04-12 13:58:26,  elapsed time = 41us )
-    commencing linear algebra multiplication to compute ugrade
-            ( time = 2016-04-12 13:58:26,  elapsed time = 35us )
-    Vt info: rows = 7: cols = 11: size = 77: nonzeros = 49
-            ( time = 2016-04-12 13:58:26,  elapsed time = 11us )
-    U info: rows = 11: cols = 7: size = 77: nonzeros = 49
-            ( time = 2016-04-12 13:58:26,  elapsed time = 10us )
-    S info: rows = 11: cols = 11: size = 121: nonzeros = 7
-            ( time = 2016-04-12 13:58:26,  elapsed time = 10us )
-    jac info: rows = 20: cols = 11: size = 220: nonzeros = 128
-            ( time = 2016-04-12 13:58:26,  elapsed time = 12us )
-    linear algebra multiplication to compute ugrade complete
-            ( time = 2016-04-12 13:58:26,  elapsed time = 21us )
-    commencing check of parameter bounds
-            ( time = 2016-04-12 13:58:26,  elapsed time = 38us )
-  beginning upgrade vector calculations, lambda = 40
-          ( time = 2016-04-12 13:58:26,  elapsed time = 59us )
-    commencing calculation of upgrade vector
-            ( time = 2016-04-12 13:58:26,  elapsed time = 19us )
-    commencing to scale JtQJ matrix
-            ( time = 2016-04-12 13:58:26,  elapsed time = 73us )
-    multiplying JtQJ matrix
-            ( time = 2016-04-12 13:58:26,  elapsed time = 58us )
-    scaling of  JtQJ matrix complete
-            ( time = 2016-04-12 13:58:26,  elapsed time = 42us )
-    commencing SVD factorization
-            ( time = 2016-04-12 13:58:26,  elapsed time = 11us )
-    SVD factorization complete
-            ( time = 2016-04-12 13:58:26,  elapsed time = 43us )
-    commencing linear algebra multiplication to compute ugrade
-            ( time = 2016-04-12 13:58:26,  elapsed time = 35us )
-    Vt info: rows = 7: cols = 11: size = 77: nonzeros = 49
-            ( time = 2016-04-12 13:58:26,  elapsed time = 12us )
-    U info: rows = 11: cols = 7: size = 77: nonzeros = 49
-            ( time = 2016-04-12 13:58:26,  elapsed time = 10us )
-    S info: rows = 11: cols = 11: size = 121: nonzeros = 7
-            ( time = 2016-04-12 13:58:26,  elapsed time = 19us )
-    jac info: rows = 20: cols = 11: size = 220: nonzeros = 128
-            ( time = 2016-04-12 13:58:26,  elapsed time = 11us )
-    linear algebra multiplication to compute ugrade complete
-            ( time = 2016-04-12 13:58:26,  elapsed time = 21us )
-    commencing check of parameter bounds
-            ( time = 2016-04-12 13:58:26,  elapsed time = 38us )
+            ( time = 2016-04-18 15:13:41,  elapsed time = 35us )
 completed iteration 1
-        ( time = 2016-04-12 13:58:26,  elapsed time = 417ms )
+        ( time = 2016-04-18 15:13:41,  elapsed time = 101ms )
 time to complete iteration 1
         ( elapsed time = 1sec )
 
@@ -168,61 +84,61 @@ time to complete iteration 1
 starting linear uncertainty analyses
 -----------------------------------
 
-2016-04-12 13:58:26-> starting set_predictions
-2016-04-12 13:58:26->-> starting extracting prediction H01_08 from jacobian
-2016-04-12 13:58:26->-> finished extracting prediction H01_08 from jacobian, elapsed time = 147us
-2016-04-12 13:58:26->-> starting extracting prediction H02_08 from jacobian
-2016-04-12 13:58:26->-> finished extracting prediction H02_08 from jacobian, elapsed time = 112us
-2016-04-12 13:58:26-> finished set_predictions, elapsed time = 340us
-2016-04-12 13:58:26-> starting calc_posterior
-2016-04-12 13:58:26->-> starting align
-2016-04-12 13:58:26->-> finished align, elapsed time = 100us
-2016-04-12 13:58:26-> finished calc_posterior, elapsed time = 354us
-2016-04-12 13:58:26-> starting prior_parameter_variance
-2016-04-12 13:58:26-> finished prior_parameter_variance, elapsed time = 13us
-2016-04-12 13:58:26-> starting prior_parameter_variance
-2016-04-12 13:58:26-> finished prior_parameter_variance, elapsed time = 8us
-2016-04-12 13:58:26-> starting prior_parameter_variance
-2016-04-12 13:58:26-> finished prior_parameter_variance, elapsed time = 8us
-2016-04-12 13:58:26-> starting prior_parameter_variance
-2016-04-12 13:58:26-> finished prior_parameter_variance, elapsed time = 7us
-2016-04-12 13:58:26-> starting prior_parameter_variance
-2016-04-12 13:58:26-> finished prior_parameter_variance, elapsed time = 8us
-2016-04-12 13:58:26-> starting prior_parameter_variance
-2016-04-12 13:58:26-> finished prior_parameter_variance, elapsed time = 8us
-2016-04-12 13:58:26-> starting prior_parameter_variance
-2016-04-12 13:58:26-> finished prior_parameter_variance, elapsed time = 7us
-2016-04-12 13:58:26-> starting prior_parameter_variance
-2016-04-12 13:58:26-> finished prior_parameter_variance, elapsed time = 7us
-2016-04-12 13:58:26-> starting prior_parameter_variance
-2016-04-12 13:58:26-> finished prior_parameter_variance, elapsed time = 8us
-2016-04-12 13:58:26-> starting prior_parameter_variance
-2016-04-12 13:58:26-> finished prior_parameter_variance, elapsed time = 7us
-2016-04-12 13:58:26-> starting prior_parameter_variance
-2016-04-12 13:58:26-> finished prior_parameter_variance, elapsed time = 8us
-2016-04-12 13:58:26-> starting posterior_parameter_variance
-2016-04-12 13:58:26-> finished posterior_parameter_variance, elapsed time = 8us
-2016-04-12 13:58:26-> starting posterior_parameter_variance
-2016-04-12 13:58:26-> finished posterior_parameter_variance, elapsed time = 8us
-2016-04-12 13:58:26-> starting posterior_parameter_variance
-2016-04-12 13:58:26-> finished posterior_parameter_variance, elapsed time = 7us
-2016-04-12 13:58:26-> starting posterior_parameter_variance
-2016-04-12 13:58:26-> finished posterior_parameter_variance, elapsed time = 7us
-2016-04-12 13:58:26-> starting posterior_parameter_variance
-2016-04-12 13:58:26-> finished posterior_parameter_variance, elapsed time = 7us
-2016-04-12 13:58:26-> starting posterior_parameter_variance
-2016-04-12 13:58:26-> finished posterior_parameter_variance, elapsed time = 8us
-2016-04-12 13:58:26-> starting posterior_parameter_variance
-2016-04-12 13:58:26-> finished posterior_parameter_variance, elapsed time = 8us
-2016-04-12 13:58:26-> starting posterior_parameter_variance
-2016-04-12 13:58:26-> finished posterior_parameter_variance, elapsed time = 7us
-2016-04-12 13:58:26-> starting posterior_parameter_variance
-2016-04-12 13:58:26-> finished posterior_parameter_variance, elapsed time = 9us
-2016-04-12 13:58:26-> starting posterior_parameter_variance
-2016-04-12 13:58:26-> finished posterior_parameter_variance, elapsed time = 8us
-2016-04-12 13:58:26-> starting posterior_parameter_variance
-2016-04-12 13:58:26-> finished posterior_parameter_variance, elapsed time = 7us
-2016-04-12 13:58:26-> starting prior_prediction_variance
-2016-04-12 13:58:26-> finished prior_prediction_variance, elapsed time = 35us
-2016-04-12 13:58:26-> starting posterior_prediction_variance
-2016-04-12 13:58:26-> finished posterior_prediction_variance, elapsed time = 28us
+2016-04-18 15:13:41-> starting set_predictions
+2016-04-18 15:13:41->-> starting extracting prediction H01_08 from jacobian
+2016-04-18 15:13:41->-> finished extracting prediction H01_08 from jacobian, elapsed time = 63us
+2016-04-18 15:13:41->-> starting extracting prediction H02_08 from jacobian
+2016-04-18 15:13:41->-> finished extracting prediction H02_08 from jacobian, elapsed time = 52us
+2016-04-18 15:13:41-> finished set_predictions, elapsed time = 156us
+2016-04-18 15:13:41-> starting calc_posterior
+2016-04-18 15:13:41->-> starting align
+2016-04-18 15:13:41->-> finished align, elapsed time = 47us
+2016-04-18 15:13:41-> finished calc_posterior, elapsed time = 226us
+2016-04-18 15:13:41-> starting prior_parameter_variance
+2016-04-18 15:13:41-> finished prior_parameter_variance, elapsed time = 13us
+2016-04-18 15:13:41-> starting prior_parameter_variance
+2016-04-18 15:13:41-> finished prior_parameter_variance, elapsed time = 6us
+2016-04-18 15:13:41-> starting prior_parameter_variance
+2016-04-18 15:13:41-> finished prior_parameter_variance, elapsed time = 6us
+2016-04-18 15:13:41-> starting prior_parameter_variance
+2016-04-18 15:13:41-> finished prior_parameter_variance, elapsed time = 6us
+2016-04-18 15:13:41-> starting prior_parameter_variance
+2016-04-18 15:13:41-> finished prior_parameter_variance, elapsed time = 5us
+2016-04-18 15:13:41-> starting prior_parameter_variance
+2016-04-18 15:13:41-> finished prior_parameter_variance, elapsed time = 6us
+2016-04-18 15:13:41-> starting prior_parameter_variance
+2016-04-18 15:13:41-> finished prior_parameter_variance, elapsed time = 6us
+2016-04-18 15:13:41-> starting prior_parameter_variance
+2016-04-18 15:13:41-> finished prior_parameter_variance, elapsed time = 6us
+2016-04-18 15:13:41-> starting prior_parameter_variance
+2016-04-18 15:13:41-> finished prior_parameter_variance, elapsed time = 9us
+2016-04-18 15:13:41-> starting prior_parameter_variance
+2016-04-18 15:13:41-> finished prior_parameter_variance, elapsed time = 6us
+2016-04-18 15:13:41-> starting prior_parameter_variance
+2016-04-18 15:13:41-> finished prior_parameter_variance, elapsed time = 6us
+2016-04-18 15:13:41-> starting posterior_parameter_variance
+2016-04-18 15:13:41-> finished posterior_parameter_variance, elapsed time = 6us
+2016-04-18 15:13:41-> starting posterior_parameter_variance
+2016-04-18 15:13:41-> finished posterior_parameter_variance, elapsed time = 6us
+2016-04-18 15:13:41-> starting posterior_parameter_variance
+2016-04-18 15:13:41-> finished posterior_parameter_variance, elapsed time = 6us
+2016-04-18 15:13:41-> starting posterior_parameter_variance
+2016-04-18 15:13:41-> finished posterior_parameter_variance, elapsed time = 5us
+2016-04-18 15:13:41-> starting posterior_parameter_variance
+2016-04-18 15:13:41-> finished posterior_parameter_variance, elapsed time = 6us
+2016-04-18 15:13:41-> starting posterior_parameter_variance
+2016-04-18 15:13:41-> finished posterior_parameter_variance, elapsed time = 6us
+2016-04-18 15:13:41-> starting posterior_parameter_variance
+2016-04-18 15:13:41-> finished posterior_parameter_variance, elapsed time = 6us
+2016-04-18 15:13:41-> starting posterior_parameter_variance
+2016-04-18 15:13:41-> finished posterior_parameter_variance, elapsed time = 6us
+2016-04-18 15:13:41-> starting posterior_parameter_variance
+2016-04-18 15:13:41-> finished posterior_parameter_variance, elapsed time = 5us
+2016-04-18 15:13:41-> starting posterior_parameter_variance
+2016-04-18 15:13:41-> finished posterior_parameter_variance, elapsed time = 6us
+2016-04-18 15:13:41-> starting posterior_parameter_variance
+2016-04-18 15:13:41-> finished posterior_parameter_variance, elapsed time = 6us
+2016-04-18 15:13:41-> starting prior_prediction_variance
+2016-04-18 15:13:41-> finished prior_prediction_variance, elapsed time = 78us
+2016-04-18 15:13:41-> starting posterior_prediction_variance
+2016-04-18 15:13:41-> finished posterior_prediction_variance, elapsed time = 31us

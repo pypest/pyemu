@@ -15,8 +15,8 @@ restart estimation
 * parameter groups
 k     relative     1.0000E-02   0.000      switch      2.000      parabolic
 * parameter data
-stage    log   factor      1.0       1.00000E-01   3.00000E+00  k      1.0000       0.000        1 
-k_01     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
+stage    log   factor      1.5       1.00000E-01   3.00000E+00  k      1.0000       0.000        1 
+k_01     log   factor       2.6       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
 k_02     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
 k_03     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
 k_04     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
@@ -61,7 +61,6 @@ misc/head.ins model/10par_xsec.hds
 ++ N_ITER_SUPER(4)
 ++ SUPER_EIGTHRES(1.0e-8)
 ++ MAX_N_SUPER(10)
-++ AUTO_NORM(4)
 ++ lambdas(1.0)
 ++ forecasts(h01_08,h02_08)
 ++ sweep_parameter_csv_file(sweep_in.csv)

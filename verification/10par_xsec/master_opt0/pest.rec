@@ -39,7 +39,7 @@ PEST Control Information
     facparmax = 5
     facorig = 0.001
     phiredswh = 0.1
-    noptmax = 0
+    noptmax = -1
     phiredstp = 0.005
     nphistp = 4
     nphinored = 4
@@ -75,8 +75,8 @@ k                     RELATIVE                     0.01                        0
 
 Parameter information
 NAME           TRANSFORMATION        CHANGE LIMIT  INITIAL VALUE    LOWER BOUND    UPPER BOUND          GROUP          SCALE         OFFSET  DERIVATIVE COMMAND
-stage          log                     FACTOR              1            0.1              3              k              1              0                   0
-k_01           log                     FACTOR            2.5           0.25             25              k              1              0                   0
+stage          log                     FACTOR            1.5            0.1              3              k              1              0                   0
+k_01           log                     FACTOR            2.6           0.25             25              k              1              0                   0
 k_02           log                     FACTOR            2.5           0.25             25              k              1              0                   0
 k_03           log                     FACTOR            2.5           0.25             25              k              1              0                   0
 k_04           log                     FACTOR            2.5           0.25             25              k              1              0                   0
@@ -122,11 +122,17 @@ PEST SVD Information
    -----    Starting PEST++ Iterations    ----    
 
 
+COMPUTING JACOBIAN:
+
+    Iteration type: base parameter solution
+    Model calls so far : 0
+
+
 -----------------------------------------
      ---   OPTIMIZATION COMPLETE   ---   
   Reason for terminating PEST++ simulation: NOPTMAX criterion met
   Summary of termination criteria:
-  NOPTMAX = 0 ;  NOPT at termination = 0
+  NOPTMAX = -1 ;  NOPT at termination = 0
   NPHINORED = 4 ;  NPHINORED at termination = 0
   NRELPAR = 4; RELPARSTP = 0.005 ;  NRELPAR at termination = 0
   PHIREDSTP = 0.005; NPHISTP = 4
@@ -139,8 +145,8 @@ FINAL OPTIMISATION RESULTS
      Parameter            
         Name         Value
     ------------  ------------
-    stage                    1
-    k_01                   2.5
+    stage                  1.5
+    k_01                   2.6
     k_02                   2.5
     k_03                   2.5
     k_04                   2.5
@@ -154,30 +160,99 @@ FINAL OPTIMISATION RESULTS
 
   Observations with optimal model-simulated equivalents and residuals
                  Name        Group             Measured             Modelled             Residual               Weight
-               h01_01         head              1.50000              1.00000             0.500000              0.00000
-               h01_02         head              1.70000              1.20000             0.500000              0.00000
-               h01_03         head              1.90000              1.40000             0.500000              0.00000
-               h01_04         head              2.10000              1.60000             0.500000              10.0000
-               h01_05         head              2.30000              1.80000             0.500000              0.00000
-               h01_06         head              2.50000              2.00000             0.500000              10.0000
-               h01_07         head              2.70000              2.20000             0.500000              0.00000
-               h01_08         head              2.90000              2.40000             0.500000              0.00000
-               h01_09         head              3.10000              2.60000             0.500000              0.00000
-               h01_10         head              3.30000              2.80000             0.500000              0.00000
-               h02_01         head              1.50000              1.00000             0.500000              0.00000
-               h02_02         head              1.90000              1.40000             0.500000              0.00000
-               h02_03         head              2.30000              1.80000             0.500000              0.00000
-               h02_04         head              2.70000              2.20000             0.500000              0.00000
-               h02_05         head              3.10000              2.60000             0.500000              0.00000
-               h02_06         head              3.50000              3.00000             0.500000              0.00000
-               h02_07         head              3.90000              3.40000             0.500000              0.00000
-               h02_08         head              4.30000              3.80000             0.500000              0.00000
-               h02_09         head              4.70000              4.20000             0.500000              0.00000
-               h02_10         head              5.10000              4.60000             0.500000              0.00000
+               h01_01         head              1.50000              1.50000              0.00000              0.00000
+               h01_02         head              1.70000              1.69600           0.00400000              0.00000
+               h01_03         head              1.90000              1.89600           0.00400000              0.00000
+               h01_04         head              2.10000              2.09600           0.00400000              10.0000
+               h01_05         head              2.30000              2.29600           0.00400000              0.00000
+               h01_06         head              2.50000              2.49600           0.00400000              10.0000
+               h01_07         head              2.70000              2.69600           0.00400000              0.00000
+               h01_08         head              2.90000              2.89600           0.00400000              0.00000
+               h01_09         head              3.10000              3.09600           0.00400000              0.00000
+               h01_10         head              3.30000              3.29600           0.00400000              0.00000
+               h02_01         head              1.50000              1.50000              0.00000              0.00000
+               h02_02         head              1.90000              1.89200           0.00800000              0.00000
+               h02_03         head              2.30000              2.29200           0.00800000              0.00000
+               h02_04         head              2.70000              2.69200           0.00800000              0.00000
+               h02_05         head              3.10000              3.09200           0.00800000              0.00000
+               h02_06         head              3.50000              3.49200           0.00800000              0.00000
+               h02_07         head              3.90000              3.89200           0.00800000              0.00000
+               h02_08         head              4.30000              4.29200           0.00800000              0.00000
+               h02_09         head              4.70000              4.69200           0.00800000              0.00000
+               h02_10         head              5.10000              5.09200           0.00800000              0.00000
 
 Final composite objective function 
-    Final phi                                           Total : 50.0000
-    Contribution to phi from observation group         "head" : 50.0000
+    Final phi                                           Total : 0.00320000
+    Contribution to phi from observation group         "head" : 0.00320000
 
 
-Number of forward model runs performed during optimiztion: 1
+Number of forward model runs performed during optimiztion: 12
+
+
+
+
+-----------------------------------------------------------------------
+Note: The following uncertainty estimates were calculated using 
+      Schur's complement for linear-based conditional uncertainty 
+      propogation.  For a derviation from Bayes equation, see 
+      M. N. Fienen, J. E. Doherty, R. J. Hunt, and H. W. Reeves. 
+      2010. 'Using Prediction Uncertainty Analysis to Design 
+      Hydrologic Monitoring Networks : Example Applications 
+      from the Great Lakes Water Availability Pilot Project'. 
+      See PEST++ V3 documentation for implementation details.
+-----------------------------------------------------------------------
+
+Note: Any observations or prior information equations with a group name
+      starting with 'regul' are dropped from the jacobian and observation
+      covariance matrices before uncertainty calculations.  Please
+      make sure that all expert knowledge is expressed in the prior 
+      parameter bounds or through a covariance matix, which can be 
+      supplied as a pest++ option as 'parameter_covariance(<matrix_file_name>),
+      where <matrix_file_name> can be an ASCII PEST-compatible matrix file (.mat) or
+      a PEST-compatible uncertainty file (.unc).
+
+WARNING: PEST++ 'autonorm' option != 0.0. This can greatly effect the outcome 
+         of the following analyses, which depend heavily on the Jacobian
+
+Note: The observation covariance matrix has been constructed from 
+      weights listed in the pest control file that have been scaled by 
+      by the final objective function components to account for 
+      the level of measurement noise implied by the original weights so
+      the total objective function is equal to the number of  
+      non-zero weighted observations.
+
+Scaled observation weights used to form observation noise covariance matrix:
+
+         observation               group       scaled_weight
+              H01_04                HEAD             250.000
+              H01_06                HEAD             250.000
+
+
+Note : posterior parameter covariance matrix written to file 'pest.post.cov'
+
+
+---------------------------------------
+---- parameter uncertainty summary ----
+---------------------------------------
+
+
+                name          prior_mean         prior_stdev   prior_lower_bound   prior_upper_bound           post_mean          post_stdev    post_lower_bound    post_upper_bound
+               STAGE             1.18482            0.369280            0.446259             1.92338             1.18482            0.132194            0.920432             1.44921
+                K_01           0.0340667            0.500000           -0.965933             1.03407           0.0340667            0.496734           -0.959400             1.02753
+                K_02        -1.11022e-16            0.500000            -1.00000             1.00000        -1.11022e-16            0.486803           -0.973605            0.973605
+                K_03        -1.11022e-16            0.500000            -1.00000             1.00000        -1.11022e-16            0.486803           -0.973605            0.973605
+                K_04        -1.11022e-16            0.500000            -1.00000             1.00000        -1.11022e-16            0.454019           -0.908037            0.908037
+                K_05        -1.11022e-16            0.500000            -1.00000             1.00000        -1.11022e-16            0.288516           -0.577031            0.577031
+                K_06        -1.11022e-16            0.500000            -1.00000             1.00000        -1.11022e-16            0.456410           -0.912821            0.912821
+                K_07        -1.11022e-16            0.500000            -1.00000             1.00000        -1.11022e-16            0.500000            -1.00000             1.00000
+                K_08        -1.11022e-16            0.500000            -1.00000             1.00000        -1.11022e-16            0.500000            -1.00000             1.00000
+                K_09        -1.11022e-16            0.500000            -1.00000             1.00000        -1.11022e-16            0.500000            -1.00000             1.00000
+                K_10        -1.11022e-16            0.500000            -1.00000             1.00000        -1.11022e-16            0.500000            -1.00000             1.00000
+
+Note: Upper and lower uncertainty bounds reported above are 
+      calculated as: <prior,post>_mean +/- (2.0 * <prior,post>_stdev). 
+      For log-transformed parameters, the mean, stdev and range are reported 
+      with respect to the log of the parameter value. 
+
+Note : the above parameter uncertainty summary was written to file 'pest.par.usum.csv'
+

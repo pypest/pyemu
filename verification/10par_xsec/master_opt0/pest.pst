@@ -6,7 +6,7 @@ restart estimation
  1e-1   -4.0   0.3  0.03    10	    999
 5.0   5.0   1.0e-3
 0.1  
-0   .005  4   4  .005   4
+-1   .005  4   4  .005   4
 1    1    1
 * singular value decomposition
 1
@@ -15,8 +15,8 @@ restart estimation
 * parameter groups
 k     relative     1.0000E-02   0.000      switch      2.000      parabolic
 * parameter data
-stage    log   factor      1.0       1.00000E-01   3.00000E+00  k      1.0000       0.000        1 
-k_01     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
+stage    log   factor      1.5       1.00000E-01   3.00000E+00  k      1.0000       0.000        1 
+k_01     log   factor       2.6       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
 k_02     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
 k_03     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
 k_04     log   factor       2.5       2.50000E-01   2.50000E+01  k      1.0000       0.000        1
