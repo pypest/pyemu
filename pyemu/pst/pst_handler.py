@@ -580,14 +580,6 @@ class Pst(object):
             f_out.write(insfle+' '+outfle+'\n')
 
         if self.nprior > 0:
-            print ('here prior-->{0}'.format(self.prior_information.to_string(col_space=0,
-                                              columns=self.prior_fieldnames,
-                                              formatters=self.prior_format,
-                                              justify="right",
-                                              header=False,
-                                              index=False)))
-            print (self.prior_fieldnames[0])
-            print ('ginger?')
             f_out.write("* prior information\n")
             #self.prior_information.index = self.prior_information.pop("pilbl")
             f_out.write(self.prior_information.to_string(col_space=0,
