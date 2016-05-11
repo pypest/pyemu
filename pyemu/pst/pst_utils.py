@@ -666,7 +666,8 @@ def res_from_obseravtion_data(observation_data):
     res_df.loc[:, "residual"] = np.NaN
     return res_df
 
-def fac2real(pp_file,factors_file,out_file="test.ref",upper_lim=1.0e+30,lower_lim=-1.0e+30):
+def fac2real(pp_file,factors_file,out_file="test.ref",
+             upper_lim=1.0e+30,lower_lim=-1.0e+30):
     assert os.path.exists(pp_file)
     assert os.path.exists(factors_file)
     pp_data = pd.read_csv(pp_file,delim_whitespace=True,header=None,
