@@ -14,5 +14,5 @@ setup(name="pyemu",
       url='https://code.google.com/p/flopy/',
       license='GNU GPL',
       platforms='Windows, Mac OS-X',
-      packages = ["pyemu","pyemu.pst","pyemu.mat"],
+      packages = ["pyemu","pyemu.pst","pyemu.utils","pyemu.mat"],
       version="0.1")
