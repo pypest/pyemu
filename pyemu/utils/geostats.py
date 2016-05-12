@@ -2,6 +2,8 @@ import os
 import numpy as np
 import pandas as pd
 
+#TODO:  plot variogram elipse
+
 EPSILON = 1.0e-7
 
 class GeoStruct(object):

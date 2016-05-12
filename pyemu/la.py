@@ -139,9 +139,7 @@ class LinearAnalysis(object):
         self.ref_var = ref_var
         if forecasts is not None and predictions is not None:
             raise Exception("can't pass both forecasts and predictions")
-        if forecasts is not None:
-            predictions = forecasts
-        self.prediction_arg = predictions
+
 
         #private attributes - access is through @decorated functions
         self.__pst = None
@@ -164,8 +162,23 @@ class LinearAnalysis(object):
         if obscov is not None:
             self.__load_obscov()
 
+        self.prediction_arg = None
         if predictions is not None:
+            self.prediction_arg = predictions
+        elif forecasts is not None:
+            self.prediction_arg = forecasts
+        elif self.pst is not None:
+            if "forecasts" in self.pst.pestpp_options:
+                self.prediction_arg = self.pst.pestpp_options["forecasts"].\
+                    lower().split(',')
+                self.__load_predictions()
+            elif "predictions" in self.pst.pestpp_options:
+                self.prediction_arg = self.pst.pestpp_options["predictions"].\
+                    lower().split(',')
+        if self.prediction_arg:
             self.__load_predictions()
+
+
         self.log("pre-loading base components")
         if len(kwargs.keys()) > 0:
             self.logger.warn("unused kwargs in type " +

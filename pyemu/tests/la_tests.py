@@ -181,9 +181,21 @@ def map_test():
     print(sc.map_forecast_estimate)
 
 
+def forecast_pestpp_load_test():
+    import os
+    import pyemu
+    pst_name = os.path.join("pst","forecast.pst")
+    jco_name = pst_name.replace(".pst",".jcb")
+    pst = pyemu.Pst(pst_name)
+    print(pst.pestpp_options)
+    sc = pyemu.Schur(jco=jco_name)
+
+    print(sc.get_forecast_summary())
+
 
 if __name__ == "__main__":
-    map_test()
+    forecast_pestpp_load_test()
+    #map_test()
     #bayes_linear_estimation_test()
     #par_contrib_test()
     #dataworth_test()
