@@ -571,91 +571,11 @@ def del_rw(action, name, exc):
     
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
                  port=4004,rel_path=None):
-    """ start a group of pest(++) slaves on the local machine
-
-    Parameters:
-    ----------
-        slave_dir : (str) the path to a complete set of input files
-
-        exe_rel_path : (str) the relative path to the pest(++)
-                        executable from within the slave_dir
-        pst_rel_path : (str) the relative path to the pst file
-                        from within the slave_dir
-
-        num_slaves : (int) number of slaves to start. defaults to number of cores
-
-        slave_root : (str) the root to make the new slave directories in
-
-        rel_path: (str) the relative path to where pest(++) should be run
-                  from within the slave_dir, defaults to the uppermost level of the slave dir
-
-    """
-
-    assert os.path.isdir(slave_dir)
-    assert os.path.isdir(slave_root)
-    if num_slaves is None:
-        num_slaves = mp.cpu_count()
-    else:
-        num_slaves = int(num_slaves)
-    #assert os.path.exists(os.path.join(slave_dir,rel_path,exe_rel_path))
-    exe_verf = True
-
-    if rel_path:
-        if not os.path.exists(os.path.join(slave_dir,rel_path,exe_rel_path)):
-            print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
-            exe_verf = False
-    else:
-        if not os.path.exists(os.path.join(slave_dir,exe_rel_path)):
-            print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
-            exe_verf = False
-    if rel_path is not None:
-        assert os.path.exists(os.path.join(slave_dir,rel_path,pst_rel_path))
-    else:
-        assert os.path.exists(os.path.join(slave_dir,pst_rel_path))
-    hostname = socket.gethostname()
-    port = int(port)
-
-    tcp_arg = "{0}:{1}".format(hostname,port)
-
-    procs = []
-    base_dir = os.getcwd()
-    for i in range(num_slaves):
-        new_slave_dir = os.path.join(slave_root,"slave_{0}".format(i))
-        if os.path.exists(new_slave_dir):
-            try:
-                shutil.rmtree(new_slave_dir, onerror=del_rw)
-            except Exception as e:
-                raise Exception("unable to remove existing slave dir:" + \
-                                "{0}\n{1}".format(new_slave_dir,str(e)))
-        try:
-            shutil.copytree(slave_dir,new_slave_dir)
-        except Exception as e:
-            raise Exception("unable to copy files from slave dir: " + \
-                            "{0} to new slave dir: {1}\n{2}".format(slave_dir,new_slave_dir,str(e)))
-        try:
-            if exe_verf:
-                # if rel_path is not None:
-                #     exe_path = os.path.join(rel_path,exe_rel_path)
-                # else:
-                exe_path = exe_rel_path
-            else:
-                exe_path = exe_rel_path
-            args = [exe_path, pst_rel_path, "/h", tcp_arg]
-            print("starting slave in {0} with args: {1}".format(new_slave_dir,args))
-            if rel_path is not None:
-                cwd = os.path.join(new_slave_dir,rel_path)
-            else:
-                cwd = new_slave_dir
-
-            os.chdir(cwd)
-            p = sp.Popen(args)
-            procs.append(p)
-            os.chdir(base_dir)
-        except Exception as e:
-            raise Exception("error starting slave: {0}".format(str(e)))
-
-    for p in procs:
-        p.wait()
+    import warnings
+    warnings.warn("deprecation warning:start_slaves() has moved to the utils.helpers module")
+    from pyemu.utils import start_slaves
+    start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=num_slaves,slave_root=slave_root,
+                 port=port,rel_path=rel_path)
 
 def res_from_obseravtion_data(observation_data):
     res_df = observation_data.copy()
@@ -665,57 +585,6 @@ def res_from_obseravtion_data(observation_data):
     res_df.loc[:, "modelled"] = np.NaN
     res_df.loc[:, "residual"] = np.NaN
     return res_df
-
-def fac2real(pp_file,factors_file,out_file="test.ref",
-             upper_lim=1.0e+30,lower_lim=-1.0e+30):
-    assert os.path.exists(pp_file)
-    assert os.path.exists(factors_file)
-    pp_data = pd.read_csv(pp_file,delim_whitespace=True,header=None,
-                          names=["name","value"],usecols=[0,4])
-    pp_data.loc[:,"name"] = pp_data.name.apply(lambda x: x.lower())
-
-    f_fac = open(factors_file,'r')
-    fpp_file = f_fac.readline()
-    fzone_file = f_fac.readline()
-    ncol,nrow = [int(i) for i in f_fac.readline().strip().split()]
-    npp = int(f_fac.readline().strip())
-    pp_names = [f_fac.readline().strip().lower() for _ in range(npp)]
-
-    # check that pp_names is sync'd with pp_data
-    diff = set(list(pp_data.name)).symmetric_difference(set(pp_names))
-    if len(diff) > 0:
-        raise Exception("the following pilot point names are not common " +\
-                        "between the factors file and the pilot points file " +\
-                        ','.join(list(diff)))
-
-    arr = np.zeros((nrow,ncol),dtype=np.float32) - 1.0e+30
-    for i in range(nrow):
-        for j in range(ncol):
-            line = f_fac.readline()
-            if len(line) == 0:
-                raise Exception("unexpected EOF in factors file")
-            try:
-                fac_data = parse_factor_line(line)
-            except Exception as e:
-                raise Exception("error parsing factor line {0}:{1}".format(line,str(e)))
-            fac_prods = [pp_data.loc[pp,"value"]*fac_data[pp] for pp in fac_data]
-            arr[i,j] = np.sum(np.array(fac_prods))
-    #arr[arr<lower_lim] = lower_lim
-    #arr[arr>upper_lim] = upper_lim
-    np.savetxt(out_file,arr,fmt="%15.6E",delimiter='')
-
-def parse_factor_line(line):
-    raw = line.strip().split()
-    inode,zone,nfac = [int(i) for i in raw[:3]]
-    offset = float(raw[3])
-    fac_data = {}
-    for ifac in range(4,4+nfac*2,2):
-        pnum = int(raw[ifac]) - 1 #zero based to sync with pandas
-        fac = float(raw[ifac+1])
-        fac_data[pnum] = fac
-    return fac_data
-
-
 
 
 

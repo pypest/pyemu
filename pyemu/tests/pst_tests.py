@@ -131,16 +131,8 @@ def tied_test():
     mc.draw(1)
     mc.write_psts(os.path.join(pst_dir,"tiedtest_"))
 
-def fac2real_test():
-    import os
-    import pyemu
-    pp_file = os.path.join("pst","points1.dat")
-    factors_file = os.path.join("pst","factors1.dat")
-    pyemu.pst_utils.fac2real(pp_file,factors_file)
-
 if __name__ == "__main__":
-    fac2real_test()
-    #tied_test()
+    tied_test()
     #smp_test()
     #pst_manip_test()
     #tpl_ins_test()
