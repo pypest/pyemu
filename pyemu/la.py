@@ -169,12 +169,11 @@ class LinearAnalysis(object):
             self.prediction_arg = forecasts
         elif self.pst is not None:
             if "forecasts" in self.pst.pestpp_options:
-                self.prediction_arg = self.pst.pestpp_options["forecasts"].\
-                    lower().split(',')
-                self.__load_predictions()
+                self.prediction_arg = [i.strip() for i in self.pst.pestpp_options["forecasts"].\
+                    lower().split(',')]
             elif "predictions" in self.pst.pestpp_options:
-                self.prediction_arg = self.pst.pestpp_options["predictions"].\
-                    lower().split(',')
+                self.prediction_arg = [i.strip() for i in self.pst.pestpp_options["predictions"].\
+                    lower().split(',')]
         if self.prediction_arg:
             self.__load_predictions()
 
