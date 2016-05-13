@@ -8,13 +8,26 @@ EPSILON = 1.0e-7
 
 class GeoStruct(object):
 
-    def __init__(self,nugget):
-        pass
+    def __init__(self,nugget,variograms):
+        self.nugget = float(nugget)
+        if not isinstance(variograms,list):
+            variograms = [variograms]
+        for vario in variograms:
+            assert isinstance(vario,Vario2d)
+        self.variograms = variograms
 
     @classmethod
     def from_struct_file(cls,struct_file):
 
         return cls()
+
+
+    def covariance(self,pt0,pt1):
+        cov = self.nugget
+        for vario in self.variograms:
+            cov += vario.covariance(pt0,pt1)
+        return cov
+
 
 class Vario2d(object):
 
@@ -46,23 +59,25 @@ class Vario2d(object):
                  (dy * self.rotation_coefs[3])) /\
                  self.anisotropy
             dx = temp
-        h = np.sqrt(max(dx*dx+dy*dy),0.0)
+        h = np.sqrt(max(dx*dx+dy*dy,0.0))
         return self.h_function(h)
 
 
 class ExpVario(Vario2d):
 
-    def __init__(self):
+    def __init__(self,contribution,a,anisotropy=1.0,angle=None):
 
-        super(ExpVario,self).__init__()
+        super(ExpVario,self).__init__(contribution,a,anisotropy=anisotropy,
+                                      angle=angle)
 
     def h_function(self,h):
         return self.contribution * np.exp(-1.0 * h / self.a)
 
 class GauVario(Vario2d):
 
-    def __init__(self):
-        super(GauVario,self).__init__()
+    def __init__(self,contribution,a,anisotropy=1.0,angle=None):
+        super(GauVario,self).__init__(contribution,a,anisotropy=anisotropy,
+                                      angle=angle)
 
     def h_function(self,h):
         hh = -1.0 * (h * h) / (self.a * self.a)
@@ -70,10 +85,13 @@ class GauVario(Vario2d):
 
 class SphVario(Vario2d):
 
-    def __init__(self):
-        super(SphVario,self).__init__()
+    def __init__(self,contribution,a,anisotropy=1.0,angle=None):
+        super(SphVario,self).__init__(contribution,a,anisotropy=anisotropy,
+                                      angle=angle)
 
     def h_function(self,h):
         hh = h / self.a
-        return self.contribution * (1.0 - hh * (1.5-0.5 * hh * hh))
-
+        if hh < 1.0:
+            return self.contribution * (1.0 - (hh * (1.5 - (0.5 * hh * hh))))
+        else:
+            return 0.0
