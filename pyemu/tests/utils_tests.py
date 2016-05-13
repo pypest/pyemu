@@ -28,9 +28,6 @@ def aniso_test():
     import pyemu
     contribution = 0.1
     a = 2.0
-
-
-
     for const in [pyemu.utils.geostats.ExpVario,pyemu.utils.geostats.GauVario,
                   pyemu.utils.geostats.SphVario]:
 
@@ -44,7 +41,7 @@ def aniso_test():
         pt0 = (0,0)
         pt1 = (0,1)
         assert v.covariance(pt0,pt1) == v3.covariance(pt0,pt1)
-        
+
 
 def geostruct_test():
     import pyemu
