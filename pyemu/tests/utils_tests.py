@@ -84,7 +84,7 @@ def covariance_matrix_test():
             os.path.join("utils","struct.dat"))[0]
     struct.variograms[0].covariance_matrix(pts.x,pts.y,names=pts.name)
 
-    struct.covariance_matrix(pts.x,pts.y,names=pts.name)
+    print(struct.covariance_matrix(pts.x,pts.y,names=pts.name).x)
 
 if __name__ == "__main__":
     #fac2real_test()

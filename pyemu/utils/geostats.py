@@ -144,6 +144,7 @@ class GeoStruct(object):
                             "names or cov arg")
         for v in self.variograms:
             v.covariance_matrix(x,y,cov=cov)
+        return cov
 
 
 
