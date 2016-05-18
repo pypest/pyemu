@@ -388,7 +388,7 @@ class Matrix(object):
                 "Matrix.__mul__(): matrices are not aligned: " +\
                 str(self.shape) + ' ' + str(other.shape)
             if self.isdiagonal:
-                return type(self)(x=np.dot(np.diag(self.__x).transpose(),
+                return type(self)(x=np.dot(np.diag(self.__x.flatten()).transpose(),
                                            other))
             else:
                 return type(self)(x=np.dot(self.__x, other))
