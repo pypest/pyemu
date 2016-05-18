@@ -28,13 +28,16 @@ def read_struct_file(struct_file):
             elif line.startswith("variogram"):
 
                 name = line.strip().split()[1].lower()
-                vartype,bearing,a,anisotropy = read_variogram(f)
-                v = VARTYPE[vartype](variogram_info[name],a,anisotropy=anisotropy,
-                                     bearing=bearing,name=name)
-                variograms.append(v)
 
-    for s in structures:
-        for vname in s.variogram_info:
+
+                vartype,bearing,a,anisotropy = read_variogram(f)
+                if name in variogram_info:
+                    v = VARTYPE[vartype](variogram_info[name],a,anisotropy=anisotropy,
+                                         bearing=bearing,name=name)
+                    variograms.append(v)
+
+    for st in structures:
+        for vname in st.variogram_info:
             vfound = None
             for v in variograms:
                 if v.name == vname:
@@ -43,7 +46,8 @@ def read_struct_file(struct_file):
             if vfound is None:
                 raise Exception("variogram {0} not found for structure {1}".\
                                 format(vname,s.name))
-            s.variograms.append(v)
+
+            st.variograms.append(vfound)
 
     return structures
 
@@ -69,6 +73,8 @@ def read_variogram(f):
         if line == '':
             raise Exception("EOF while read variogram")
         line = line.strip().lower().split()
+        if line[0].startswith('#'):
+            continue
         if line[0] == "vartype":
             vartype = int(line[1])
         elif line[0] == "bearing":
@@ -92,6 +98,8 @@ def _read_structure_attributes(f):
         if line == '':
             raise Exception("EOF while reading structure")
         line = line.strip().lower().split()
+        if line[0].startswith('#'):
+            continue
         if line[0] == "nugget":
             nugget = float(line[1])
         elif line[0] == "transform":
@@ -110,15 +118,17 @@ def _read_structure_attributes(f):
 
 
 class GeoStruct(object):
-    def __init__(self,nugget=0.0,variograms=[],name="struct1",
+    def __init__(self,nugget=0.0,variograms=None,name="struct1",
                  transform="none"):
         self.name = name
         self.nugget = float(nugget)
-        if not isinstance(variograms,list):
+        if variograms is None:
+            self.variograms = []
+        elif not isinstance(variograms,list):
             variograms = [variograms]
-        for vario in variograms:
-            assert isinstance(vario,Vario2d)
-        self.variograms = variograms
+            for vario in variograms:
+                assert isinstance(vario,Vario2d)
+            self.variograms = variograms
         transform = transform.lower()
         assert transform in ["none","log"]
         self.transform = transform
@@ -134,19 +144,22 @@ class GeoStruct(object):
         assert x.shape[0] == y.shape[0]
         if names is not None:
             assert x.shape[0] == len(names)
-            c = np.diag(np.zeros(len(names))) + self.nugget
+            c = np.zeros((len(names),len(names)))
+            np.fill_diagonal(c,self.nugget)
             cov = Cov(x=c,names=names)
         elif cov is not None:
             assert cov.shape[0] == x.shape[0]
             names = cov.row_names
+            c = np.zeros((len(names),1)) + self.nugget
+            cont = Cov(x=c,names=names,isdiagonal=True)
+            cov += cont
+
         else:
             raise Exception("GeoStruct.covariance_matrix() requires either" +
                             "names or cov arg")
         for v in self.variograms:
             v.covariance_matrix(x,y,cov=cov)
         return cov
-
-
 
     def covariance(self,pt0,pt1):
         cov = self.nugget
@@ -167,27 +180,21 @@ class GeoStruct(object):
 
 class Vario2d(object):
 
-    def __init__(self,contribution,a,anisotropy=1.0,bearing=None,name="var1"):
+    def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
         self.name = name
         self.epsilon = EPSILON
         self.contribution = float(contribution)
         assert self.contribution > 0.0
         self.a = float(a)
         assert self.a > 0.0
-
         self.anisotropy = float(anisotropy)
-        if bearing is None:
-            self.rotation_coefs = [1,1,1,1]
-            self.bearing = None
-        elif anisotropy != 1.0:
-            assert anisotropy > 0.0
-            self.bearing = float(bearing)
-            self.bearing_rads = (np.pi / 180.0 ) * (90.0 - self.bearing)
-            self.rotation_coefs = [np.cos(self.bearing_rads),
-                                   np.sin(self.bearing_rads),
-                                   -1.0*np.sin(self.bearing_rads),
-                                   np.cos(self.bearing_rads)]
-        pass
+        assert self.anisotropy > 0.0
+        self.bearing = float(bearing)
+        self.bearing_rads = (np.pi / 180.0 ) * (90.0 - self.bearing)
+        self.rotation_coefs = [np.cos(self.bearing_rads),
+                               np.sin(self.bearing_rads),
+                               -1.0*np.sin(self.bearing_rads),
+                               np.cos(self.bearing_rads)]
 
     def covariance_matrix(self,x,y,names=None,cov=None):
         if not isinstance(x,np.ndarray):
@@ -195,13 +202,19 @@ class Vario2d(object):
         if not isinstance(y,np.ndarray):
             y = np.array(y)
         assert x.shape[0] == y.shape[0]
+
         if names is not None:
             assert x.shape[0] == len(names)
-            c = np.diag(np.zeros(len(names))) + self.contribution
+            c = np.zeros((len(names),len(names)))
+            np.fill_diagonal(c,self.contribution)
             cov = Cov(x=c,names=names)
         elif cov is not None:
             assert cov.shape[0] == x.shape[0]
             names = cov.row_names
+            c = np.zeros((len(names),1)) + self.contribution
+            cont = Cov(x=c,names=names,isdiagonal=True)
+            cov += cont
+
         else:
             raise Exception("Vario2d.covariance_matrix() requires either" +
                             "names or cov arg")
@@ -209,16 +222,14 @@ class Vario2d(object):
         for i1,(n1,x1,y1) in enumerate(zip(names,x,y)):
             dx = x1 - x[i1+1:]
             dy = y1 - y[i1+1:]
-            if self.bearing is not None:
-                temp = (dx * self.rotation_coefs[0]) +\
-                     (dy * self.rotation_coefs[1])
-                dy = ((dx * self.rotation_coefs[2]) +\
-                     (dy * self.rotation_coefs[3])) /\
-                     self.anisotropy
-                dx = temp
-            h = np.sqrt(dx*dx + dy*dy)
+            dxx = (dx * self.rotation_coefs[0]) +\
+                 (dy * self.rotation_coefs[1])
+            dyy = ((dx * self.rotation_coefs[2]) +\
+                 (dy * self.rotation_coefs[3])) *\
+                 self.anisotropy
+            h = np.sqrt(dxx*dxx + dyy*dyy)
             h[h<0.0] = 0.0
-            cov.x[i1,i1+1:] = self.h_function(h)
+            cov.x[i1,i1+1:] += self.h_function(h)
         for i in range(len(names)):
             cov.x[i+1:,i] = cov.x[i,i+1:]
         return cov
@@ -228,19 +239,6 @@ class Vario2d(object):
         y = np.array([pt0[1],pt1[1]])
         names = ["n1","n2"]
         return self.covariance_matrix(x,y,names=names).x[0,1]
-
-    # def covariance(self,pt0,pt1):
-    #     dx = pt0[0] - pt1[0]
-    #     dy = pt0[1] - pt1[1]
-    #     if self.bearing is not None:
-    #         temp = (dx * self.rotation_coefs[0]) +\
-    #              (dy * self.rotation_coefs[1])
-    #         dy = ((dx * self.rotation_coefs[2]) +\
-    #              (dy * self.rotation_coefs[3])) /\
-    #              self.anisotropy
-    #         dx = temp
-    #     h = np.sqrt(max(dx*dx+dy*dy,0.0))
-    #     return self.h_function(h)
 
     def plot(self):
         raise NotImplementedError()
