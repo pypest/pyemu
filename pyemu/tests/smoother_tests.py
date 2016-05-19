@@ -2,10 +2,12 @@
 def freyberg_smoother_test():
     import os
     import pyemu
-    pst = pyemu.Pst(os.path.join("..","..","verification","Freyberg","freyberg.pst"))
+    pst = pyemu.Pst(os.path.join("smoother","freyberg.pst"))
     num_reals = 10
-    es = pyemu.LM_enRML(pst)
+    es = pyemu.EnsembleSmoother(pst)
     es.initialize(num_reals)
+    es.update()
+
 
 
 

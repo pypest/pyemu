@@ -9,7 +9,7 @@ from pyemu.mat import Cov
 from pyemu.pst import Pst
 
 
-class LM_enRML(object):
+class EnsembleSmoother(object):
 
     def __init__(self,pst,parcov=None,obscov=None):
         assert isinstance(pst,Pst)
@@ -49,8 +49,8 @@ class LM_enRML(object):
             self.half_parcov_diag = self.parcov.sqrt
         else:
             self.half_parcov_diag = Cov(x=np.diag(self.parcov.x),
-                                       names=self.parcov.col_names,
-                                       isdiagonal=True)
+                                        names=self.parcov.col_names,
+                                        isdiagonal=True)
         if self.obscov.isdiagonal:
             self.half_obscov_diag = self.obscov.sqrt
         else:
@@ -85,11 +85,12 @@ class LM_enRML(object):
         '''
         propagate the ensemble forward...
         '''
-        self.parensemble.to_csv("LM_enRML.pars.csv")
+        self.parensemble.to_csv("EnsembleSmoother.pars.csv")
+        os.system("sweep ")
         #todo: modifiy sweep to be interactive...
 
 
     def update(self):
         if not self.__initialized:
-            self.initialize()
-        raise NotImplementedError()
+            raise Exception("must call initialize() before update()")
+        self._calc_obs()
