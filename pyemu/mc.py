@@ -181,7 +181,7 @@ class MonteCarlo(LinearAnalysis):
         pst.parameter_data.index = pst.parameter_data.parnme
         pst.observation_data.index = pst.observation_data.obsnme
 
-        if self.parensemble.islog:
+        if self.parensemble.istransformed:
             par_en = self.parensemble._back_transform(inplace=False)
         else:
             par_en = self.parensemble

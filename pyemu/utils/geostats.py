@@ -118,17 +118,15 @@ def _read_structure_attributes(f):
 
 
 class GeoStruct(object):
-    def __init__(self,nugget=0.0,variograms=None,name="struct1",
+    def __init__(self,nugget=0.0,variograms=[],name="struct1",
                  transform="none"):
         self.name = name
         self.nugget = float(nugget)
-        if variograms is None:
-            self.variograms = []
-        elif not isinstance(variograms,list):
+        if not isinstance(variograms,list):
             variograms = [variograms]
-            for vario in variograms:
-                assert isinstance(vario,Vario2d)
-            self.variograms = variograms
+        for vario in variograms:
+            assert isinstance(vario,Vario2d)
+        self.variograms = variograms
         transform = transform.lower()
         assert transform in ["none","log"]
         self.transform = transform
@@ -251,7 +249,7 @@ class Vario2d(object):
 
 class ExpVario(Vario2d):
 
-    def __init__(self,contribution,a,anisotropy=1.0,bearing=None,name="var1"):
+    def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
 
         super(ExpVario,self).__init__(contribution,a,anisotropy=anisotropy,
                                       bearing=bearing,name=name)
@@ -261,7 +259,7 @@ class ExpVario(Vario2d):
 
 class GauVario(Vario2d):
 
-    def __init__(self,contribution,a,anisotropy=1.0,bearing=None,name="var1"):
+    def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
         super(GauVario,self).__init__(contribution,a,anisotropy=anisotropy,
                                       bearing=bearing,name=name)
 
@@ -271,7 +269,7 @@ class GauVario(Vario2d):
 
 class SphVario(Vario2d):
 
-    def __init__(self,contribution,a,anisotropy=1.0,bearing=None,name="var1"):
+    def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
         super(SphVario,self).__init__(contribution,a,anisotropy=anisotropy,
                                       bearing=bearing,name=name)
 

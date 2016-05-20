@@ -122,10 +122,10 @@ def dataworth_next_test():
     import os
     import numpy as np
     from pyemu import Schur
-    #w_dir = os.path.join("..","..","verification","Freyberg")
-    w_dir = os.path.join("..","..","examples","freyberg")
+    w_dir = os.path.join("..","..","verification","Freyberg")
+    #w_dir = os.path.join("..","..","examples","freyberg")
     forecasts = ["sw_gw_0","sw_gw_1"]
-    sc = Schur(jco=os.path.join(w_dir,"freyberg_drop.jcb"),forecasts=forecasts,verbose=True)
+    sc = Schur(jco=os.path.join(w_dir,"freyberg.jcb"),forecasts=forecasts,verbose=True)
     next_test = sc.next_most_important_added_obs(forecast="sw_gw_0",
                                            base_obslist=sc.pst.nnz_obs_names,
                                            obslist_dict={"test":sc.pst.nnz_obs_names})
@@ -194,12 +194,12 @@ def forecast_pestpp_load_test():
 
 
 if __name__ == "__main__":
-    forecast_pestpp_load_test()
+    #forecast_pestpp_load_test()
     #map_test()
     #bayes_linear_estimation_test()
     #par_contrib_test()
     #dataworth_test()
-    #dataworth_next_test()
+    dataworth_next_test()
     #schur_test_nonpest()
     #schur_test()
     #errvar_test_nonpest()
