@@ -45,8 +45,8 @@ def run():
         mp_exe = "mp6"
         m2s_exe = None
 
-    os.system(mf_exe + ' freyberg.truth.nam')
-    os.system(mp_exe + ' <mpath.in')
+    os.system(mf_exe + ' freyberg.nam')
+    #os.system(mp_exe + ' <mpath.in')
 
 
 def process():

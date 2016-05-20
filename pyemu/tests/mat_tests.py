@@ -83,6 +83,25 @@ def load_jco_test():
                      parcov=os.path.join("mat","parameters.unc"))
     print(sc.get_parameter_summary())
 
+def extend_test():
+    import numpy as np
+    import pyemu
+    first = pyemu.Cov(x=np.ones((3,3))+1.0,names=["p1","p2","p3"],isdiagonal=False)
+    second = pyemu.Cov(x=np.ones((4,1))+2.0,names=["o1","o2","o3","o4"],isdiagonal=True)
+
+    third = first.extend(second)
+    print(third)
+    assert third.x[:,0].sum() == 6
+    assert third.x[0,:].sum() == 6
+    assert third.x[:,2].sum() == 6
+    assert third.x[2,:].sum() == 6
+    assert third.x[:,3].sum() == 3
+    assert third.x[3,:].sum() == 3
+    assert third.x[:,6].sum() == 3
+    assert third.x[6,:].sum() == 3
+
+
 if __name__ == "__main__":
-    mat_test()
-    load_jco_test()
+    #mat_test()
+    #load_jco_test()
+    extend_test()

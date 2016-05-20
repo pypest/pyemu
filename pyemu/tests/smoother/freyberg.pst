@@ -6,7 +6,7 @@ pcf
    2.000000E+01  -3.000000E+00   3.000000E-01   1.000000E-02        -7       999          lamforgive        noderforgive
    1.000000E+01   1.000000E+01   1.000000E-03         0         0
    1.000000E-01         1   1.100000E+00               noaui          nosenreuse        noboundscale
-         0   1.000000E-02         3         3   1.000000E-02         3   0.000000E+00         1  -1.000000E+00
+        10   1.000000E-02         3         3   1.000000E-02         3   0.000000E+00         1  -1.000000E+00
          0         0         0         0             jcosave          verboserec          jcosaveitn          reisaveitn          parsaveitn        noparsaverun
 * singular value decomposition
 1

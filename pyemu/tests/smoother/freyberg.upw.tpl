@@ -6,7 +6,7 @@ ptf ~
          1
          0
          0
-OPEN/CLOSE              ref\hk_Layer_1.ref               1  (20G15.6) -1 hk Layer 1                    
+OPEN/CLOSE              hk_Layer_1.ref               1  (20G15.6) -1 hk Layer 1                    
 CONSTANT    1.000000E+00                           #vka Layer 1                   
-OPEN/CLOSE              ref\ss_Layer_1.ref        ~      ss       ~  (20G15.6) -1 ss Layer 1                    
+OPEN/CLOSE              ss_Layer_1.ref        ~      ss       ~  (20G15.6) -1 ss Layer 1                    
 CONSTANT    ~     sy     ~                       #sy Layer 1                    
