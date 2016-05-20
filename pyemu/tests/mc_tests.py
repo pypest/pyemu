@@ -16,7 +16,7 @@ def mc_test():
     mc.write_psts(os.path.join("mc","real_"))
     mc.parensemble.to_parfiles(os.path.join("mc","real_"))
     mc = MonteCarlo(jco=jco,verbose=True)
-    mc.draw(500,obs=True)
+    mc.draw(10,obs=True)
     print("prior ensemble variance:",
           np.var(mc.parensemble.loc[:,"mult1"]))
     projected_en = mc.project_parensemble(inplace=False)
@@ -27,7 +27,7 @@ def mc_test():
     sc = pyemu.Schur(jco=jco)
 
     mc = MonteCarlo(pst=pst,parcov=sc.posterior_parameter,verbose=True)
-    mc.draw(500)
+    mc.draw(10)
     print("posterior ensemble variance:",
           np.var(mc.parensemble.loc[:,"mult1"]))
 
@@ -112,8 +112,8 @@ def scale_offset_test():
 
 if __name__ == "__main__":
     #scale_offset_test()
-    #mc_test()
+    mc_test()
     #fixed_par_test()
     #uniform_draw_test()
-    write_regul_test()
+    #write_regul_test()
     #from_dataframe_test()

@@ -1203,9 +1203,9 @@ class Matrix(object):
         assert len(set(self.row_names).intersection(set(other.row_names))) == 0
         assert len(set(self.col_names).intersection(set(other.col_names))) == 0
         assert type(self) == type(other)
-        new_row_names = self.row_names.copy()
+        new_row_names = copy.copy(self.row_names)
         new_row_names.extend(other.row_names)
-        new_col_names = self.col_names.copy()
+        new_col_names = copy.copy(self.col_names)
         new_col_names.extend(other.col_names)
 
         new_x = np.zeros((len(new_row_names),len(new_col_names)))
