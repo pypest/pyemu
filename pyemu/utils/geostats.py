@@ -1,4 +1,5 @@
 import os
+import copy
 import numpy as np
 import pandas as pd
 from pyemu import Cov
@@ -24,7 +25,9 @@ def read_struct_file(struct_file):
                 nugget,transform,variogram_info = _read_structure_attributes(f)
                 s = GeoStruct(nugget=nugget,transform=transform,name=name)
                 s.variogram_info = variogram_info
-                structures.append(s)
+                # not sure what is going on, but if I don't copy s here,
+                # all the structures end up sharing all the variograms later
+                structures.append(copy.deepcopy(s))
             elif line.startswith("variogram"):
 
                 name = line.strip().split()[1].lower()
@@ -36,7 +39,7 @@ def read_struct_file(struct_file):
                                          bearing=bearing,name=name)
                     variograms.append(v)
 
-    for st in structures:
+    for i,st in enumerate(structures):
         for vname in st.variogram_info:
             vfound = None
             for v in variograms:
@@ -48,6 +51,7 @@ def read_struct_file(struct_file):
                                 format(vname,s.name))
 
             st.variograms.append(vfound)
+
 
     return structures
 

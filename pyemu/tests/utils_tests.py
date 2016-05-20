@@ -203,9 +203,9 @@ def ppcov_complex_test():
 
 
 if __name__ == "__main__":
-    #setup_ppcov_complex()
+    setup_ppcov_complex()
     ppcov_complex_test()
-    # setup_ppcov_simple()
+    setup_ppcov_simple()
     ppcov_simple_test()
     fac2real_test()
     vario_test()
