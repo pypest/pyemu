@@ -583,7 +583,7 @@ class Pst(object):
             f_out.write("* prior information\n")
             #self.prior_information.index = self.prior_information.pop("pilbl")
             f_out.write(self.prior_information.to_string(col_space=0,
-                                              columns=['pilbl']+ self.prior_fieldnames,
+                                              columns=self.prior_fieldnames,
                                               formatters=self.prior_format,
                                               justify="right",
                                               header=False,
