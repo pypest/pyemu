@@ -99,7 +99,7 @@ pst_config["null_prior"] = pd.DataFrame({"pilbl": None,
                                     "obgnme": None}, index=[])
 pst_config["prior_format"] = {"pilbl": SFMT, "equation": SFMT_LONG,
                      "weight": FFMT, "obgnme": SFMT}
-pst_config["prior_fieldnames"] = ["equation", "weight", "obgnme"]
+pst_config["prior_fieldnames"] = ["pilbl","equation", "weight", "obgnme"]
 
 
 # other containers

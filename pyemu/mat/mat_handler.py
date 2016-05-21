@@ -388,7 +388,7 @@ class Matrix(object):
                 "Matrix.__mul__(): matrices are not aligned: " +\
                 str(self.shape) + ' ' + str(other.shape)
             if self.isdiagonal:
-                return type(self)(x=np.dot(np.diag(self.__x).transpose(),
+                return type(self)(x=np.dot(np.diag(self.__x.flatten()).transpose(),
                                            other))
             else:
                 return type(self)(x=np.dot(self.__x, other))
@@ -1199,6 +1199,26 @@ class Matrix(object):
         return sparse.csr_matrix((data, (iidx, jidx)), shape=(self.shape))
 
 
+    def extend(self,other):
+        assert len(set(self.row_names).intersection(set(other.row_names))) == 0
+        assert len(set(self.col_names).intersection(set(other.col_names))) == 0
+        assert type(self) == type(other)
+        new_row_names = copy.copy(self.row_names)
+        new_row_names.extend(other.row_names)
+        new_col_names = copy.copy(self.col_names)
+        new_col_names.extend(other.col_names)
+
+        new_x = np.zeros((len(new_row_names),len(new_col_names)))
+        new_x[0:self.shape[0],0:self.shape[1]] = self.as_2d
+        new_x[self.shape[0]:self.shape[0]+other.shape[0],
+              self.shape[1]:self.shape[1]+other.shape[1]] = other.as_2d
+        isdiagonal = True
+        if not self.isdiagonal or not other.isdiagonal:
+            isdiagonal = False
+
+        return type(self)(x=new_x,row_names=new_row_names,
+                           col_names=new_col_names,isdiagonal=isdiagonal)
+
 
 class Jco(Matrix):
     """a thin wrapper class to get more intuitive attribute names
@@ -1430,11 +1450,17 @@ class Cov(Matrix):
             t = row["partrans"]
             if t in ["fixed", "tied"]:
                 continue
-            lb, ub = row["parlbnd"], row["parubnd"]
+            lb = row["parlbnd"] * row["scale"] + row["offset"]
+            ub = row["parubnd"] * row["scale"] + row["offset"]
+
             if t == "log":
                 var = ((np.log10(ub) - np.log10(lb)) / 4.0) ** 2
             else:
                 var = ((ub - lb) / 4.0) ** 2
+            if np.isnan(var):
+                raise Exception("Cov.from_parameter_data() error: " +\
+                                "variance for parameter {0} is nan".\
+                                format(row["parnme"]))
             x[idx] = var
             names.append(row["parnme"].lower())
             idx += 1

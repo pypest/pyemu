@@ -149,14 +149,14 @@ class ParameterEnsemble(Ensemble):
 
     """
 
-    def __init__(self,pst,islog=False,**kwargs):
+    def __init__(self,pst,istransformed=False,**kwargs):
         kwargs["columns"] = pst.parameter_data.parnme
         kwargs["mean_values"] = pst.parameter_data.parval1
 
 
         super(ParameterEnsemble,self).__init__(**kwargs)
         # a flag for current log transform status
-        self.__islog = bool(islog)
+        self.__istransformed = bool(istransformed)
         self.pst = pst
         if "tied" in self.pst.parameter_data.partrans:
             raise NotImplementedError("ParameterEnsemble does not " +\
@@ -165,17 +165,21 @@ class ParameterEnsemble(Ensemble):
         self.bound_tol = kwargs.get("bound_tol",0.0)
 
     @property
-    def islog(self):
-        return copy.copy(self.__islog)
+    def istransformed(self):
+        return copy.copy(self.__istransformed)
 
     @property
     def mean_values(self):
         """ the mean value vector while respecting log transform
         """
-        vals = self.pst.parameter_data.parval1.copy()
-        if self.islog:
+        if not self.istransformed:
+            return self.pst.parameter_data.parval1.copy()
+        else:
+            vals = (self.pst.parameter_data.parval1 *
+                    self.pst.parameter_data.scale) +\
+                    self.pst.parameter_data.offset
             vals[self.log_indexer] = np.log10(vals[self.log_indexer])
-        return vals
+            return vals
 
     @property
     def names(self):
@@ -188,24 +192,33 @@ class ParameterEnsemble(Ensemble):
     @property
     def ubnd(self):
         """ the upper bound vector while respecting log transform"""
-        ub = self.pst.parameter_data.parubnd.copy()
-        if self.islog:
+        if not self.istransformed:
+            return self.pst.parameter_data.parubnd.copy()
+        else:
+            ub = (self.pst.parameter_data.parubnd *
+                  self.pst.parameter_data.scale) +\
+                  self.pst.parameter_data.offset
+
             ub[self.log_indexer] = np.log10(ub[self.log_indexer])
-        return ub
+            return ub
 
     @property
     def lbnd(self):
         """ the lower bound vector while respecting log transform"""
-        lb = self.pst.parameter_data.parlbnd.copy()
-        if self.islog:
+        if not self.istransformed:
+            return self.pst.parameter_data.parlbnd.copy()
+        else:
+            lb = (self.pst.parameter_data.parlbnd * \
+                  self.pst.parameter_data.scale) + \
+                  self.pst.parameter_data.offset
             lb[self.log_indexer] = np.log10(lb[self.log_indexer])
-        return lb
+            return lb
 
     @property
     def log_indexer(self):
         """ indexer for log transform"""
-        islog = self.pst.parameter_data.partrans == "log"
-        return islog.values
+        istransformed = self.pst.parameter_data.partrans == "log"
+        return istransformed.values
 
     @property
     def fixed_indexer(self):
@@ -213,12 +226,18 @@ class ParameterEnsemble(Ensemble):
         isfixed = self.pst.parameter_data.partrans == "fixed"
         return isfixed.values
 
+
+    # def plot(self,*args,**kwargs):
+    #     if self.istransformed:
+    #         self._back_transform(inplace=True)
+    #     super(ParameterEnsemble,self).plot(*args,**kwargs)
+
     def draw(self,cov,num_reals=1,how="normal"):
         how = how.lower().strip()
-        if not self.islog:
+        if not self.istransformed:
                 self._transform()
         if how == "uniform":
-            self.draw_uniform(num_reals=num_reals)
+            self._draw_uniform(num_reals=num_reals)
         else:
             super(ParameterEnsemble,self).draw(cov,num_reals=num_reals)
             # replace the realizations for fixed parameters with the original
@@ -229,9 +248,9 @@ class ParameterEnsemble(Ensemble):
                 self.loc[:,fname] = fval
         self._back_transform()
 
-    def draw_uniform(self,num_reals=1):
-        #if self.islog:
-        #    self._back_transform()
+    def _draw_uniform(self,num_reals=1):
+        if not self.istransformed:
+            self._transform()
         self.loc[:,:] = np.NaN
         self.dropna(inplace=True)
         for pname in self.names:
@@ -260,19 +279,29 @@ class ParameterEnsemble(Ensemble):
             Don't call this method unless you know what you are doing
 
         """
-        if not self.islog:
+        if not self.istransformed:
             raise Exception("ParameterEnsemble already back transformed")
 
-        islog = self.pst.parameter_data.loc[:,"partrans"] == "log"
+        istransformed = self.pst.parameter_data.loc[:,"partrans"] == "log"
         if inplace:
-            self.loc[:,islog] = 10.0**(self.loc[:,islog])
-            self.__islog = False
+            self.loc[:,istransformed] = 10.0**(self.loc[:,istransformed])
+            self.loc[:,:] = (self.loc[:,:] -\
+                             self.pst.parameter_data.offset)/\
+                             self.pst.parameter_data.scale
+
+
+            self.__istransformed = False
         else:
-            vals = self.pst.parameter_data.parval1.copy()
+            vals = (self.pst.parameter_data.parval1 -\
+                    self.pst.parameter_data.offset) /\
+                    self.pst.parameter_data.scale
             new_en = ParameterEnsemble(pst=self.pst.get(),data=self.loc[:,:].copy(),
                               columns=self.columns,
-                              mean_values=vals,islog=False)
-            new_en.loc[:,islog] = 10.0**(self.loc[:,islog])
+                              mean_values=vals,istransformed=False)
+            new_en.loc[:,istransformed] = 10.0**(self.loc[:,istransformed])
+            new_en.loc[:,:] = (new_en.loc[:,:] -\
+                             new_en.pst.parameter_data.offset)/\
+                             new_en.pst.parameter_data.scale
             return new_en
 
 
@@ -290,21 +319,25 @@ class ParameterEnsemble(Ensemble):
             Don't call this method unless you know what you are doing
 
         """
-        if self.islog:
+        if self.istransformed:
             raise Exception("ParameterEnsemble already transformed")
 
-        islog = self.pst.parameter_data.loc[:,"partrans"] == "log"
+        istransformed = self.pst.parameter_data.loc[:,"partrans"] == "log"
         if inplace:
-            #self.loc[:,islog] = np.log10(self.loc[:,islog])
-            self.loc[:,islog] = self.loc[:,islog].applymap(lambda x: math.log10(x))
+            #self.loc[:,istransformed] = np.log10(self.loc[:,istransformed])
+            self.loc[:,:] = (self.loc[:,:] * self.pst.parameter_data.scale) +\
+                             self.pst.parameter_data.offset
+            self.loc[:,istransformed] = self.loc[:,istransformed].applymap(lambda x: math.log10(x))
 
-            self.__islog = True
+            self.__istransformed = True
         else:
             vals = self.pst.parameter_data.parval1.copy()
             new_en = ParameterEnsemble(pst=self.pst.get(),data=self.loc[:,:].copy(),
                               columns=self.columns,
-                              mean_values=vals,islog=True)
-            new_en.loc[:,islog] = self.loc[:,islog].applymap(lambda x: math.log10(x))
+                              mean_values=vals,istransformed=True)
+            new_en.loc[:,:] = (new_en.loc[:,:] * self.pst.parameter_data.scale) +\
+                             new_en.pst.parameter_data.offset
+            new_en.loc[:,istransformed] = self.loc[:,istransformed].applymap(lambda x: math.log10(x))
             return new_en
 
 
@@ -330,7 +363,7 @@ class ParameterEnsemble(Ensemble):
 
         """
 
-        if not self.islog:
+        if not self.istransformed:
             self._transform()
 
         #make sure everything is cool WRT ordering
@@ -342,7 +375,7 @@ class ParameterEnsemble(Ensemble):
         if not inplace:
             new_en = ParameterEnsemble(pst=self.pst.get(),data=self.loc[:,:].copy(),
                               columns=self.columns,
-                              mean_values=self.mean_values.copy(),islog=self.islog)
+                              mean_values=self.mean_values.copy(),istransformed=self.istransformed)
 
         for real in self.index:
             if log is not None:
@@ -421,7 +454,7 @@ class ParameterEnsemble(Ensemble):
 
         Note:
         ----
-            log transforms after loading according and possibly resets self.__islog
+            log transforms after loading according and possibly resets self.__istransformed
 
         """
         par_dfs = []
@@ -431,8 +464,8 @@ class ParameterEnsemble(Ensemble):
             df = read_parfile(pfile)
             self.loc[pfile] = df.loc[:,'parval1']
         self.loc[:,:] = self.loc[:,:].astype(np.float64)
-        #if self.islog:
-        #    self.__islog = False
+        #if self.istransformed:
+        #    self.__istransformed = False
         #self._transform(inplace=True)
 
 
@@ -450,7 +483,7 @@ class ParameterEnsemble(Ensemble):
 
         """
 
-        if self.islog:
+        if self.istransformed:
             self._back_transform(inplace=True)
 
         par_df = self.pst.parameter_data.loc[:,

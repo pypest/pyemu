@@ -64,18 +64,18 @@ rcond38                    log                factor    4.904372E+03    4.904372
 rcond39                    log                factor    4.904372E+03    4.904372E+02    4.904372E+04                 rcond    1.000000E+00    0.000000E+00          1
 ss                         log                factor    1.000000E-05    1.000000E-06    1.000000E-04               storage    1.000000E+00    0.000000E+00          1
 sy                         log                factor    9.999999E-03    9.999999E-04    9.999999E-02               storage    1.000000E+00    0.000000E+00          1
-wf1_1                      log                factor    7.084800E+02    6.376320E+02    7.793280E+02               welflux   -1.000000E+00    0.000000E+00          1
-wf2_1                      log                factor    3.542400E+02    3.188160E+02    3.896640E+02               welflux   -1.000000E+00    0.000000E+00          1
-wf3_1                      log                factor    3.369600E+02    3.032640E+02    3.706560E+02               welflux   -1.000000E+00    0.000000E+00          1
-wf4_1                      log                factor    7.171200E+01    6.454079E+01    7.888320E+01               welflux   -1.000000E+00    0.000000E+00          1
-wf5_1                      log                factor    6.220800E+01    5.598720E+01    6.842880E+01               welflux   -1.000000E+00    0.000000E+00          1
-wf6_1                      log                factor    3.715200E+02    3.343680E+02    4.086720E+02               welflux   -1.000000E+00    0.000000E+00          1
-wf1_2                      log                factor    8.856000E+02    4.428000E+02    1.328400E+03               welflux   -1.000000E+00    0.000000E+00          1
-wf2_2                      log                factor    4.428000E+02    2.214000E+02    6.642000E+02               welflux   -1.000000E+00    0.000000E+00          1
-wf3_2                      log                factor    4.212000E+02    2.106000E+02    6.318000E+02               welflux   -1.000000E+00    0.000000E+00          1
-wf4_2                      log                factor    8.964000E+01    4.482000E+01    1.344600E+02               welflux   -1.000000E+00    0.000000E+00          1
-wf5_2                      log                factor    7.776000E+01    3.888000E+01    1.166400E+02               welflux   -1.000000E+00    0.000000E+00          1
-wf6_2                      log                factor    4.644000E+02    2.322000E+02    6.966000E+02               welflux   -1.000000E+00    0.000000E+00          1
+wf1_1                      log                factor    7.084800E+02    6.376320E+02    7.793280E+02               welflux    1.000000E+00    0.000000E+00          1
+wf2_1                      log                factor    3.542400E+02    3.188160E+02    3.896640E+02               welflux    1.000000E+00    0.000000E+00          1
+wf3_1                      log                factor    3.369600E+02    3.032640E+02    3.706560E+02               welflux    1.000000E+00    0.000000E+00          1
+wf4_1                      log                factor    7.171200E+01    6.454079E+01    7.888320E+01               welflux    1.000000E+00    0.000000E+00          1
+wf5_1                      log                factor    6.220800E+01    5.598720E+01    6.842880E+01               welflux    1.000000E+00    0.000000E+00          1
+wf6_1                      log                factor    3.715200E+02    3.343680E+02    4.086720E+02               welflux    1.000000E+00    0.000000E+00          1
+wf1_2                      log                factor    8.856000E+02    4.428000E+02    1.328400E+03               welflux    1.000000E+00    0.000000E+00          1
+wf2_2                      log                factor    4.428000E+02    2.214000E+02    6.642000E+02               welflux    1.000000E+00    0.000000E+00          1
+wf3_2                      log                factor    4.212000E+02    2.106000E+02    6.318000E+02               welflux    1.000000E+00    0.000000E+00          1
+wf4_2                      log                factor    8.964000E+01    4.482000E+01    1.344600E+02               welflux    1.000000E+00    0.000000E+00          1
+wf5_2                      log                factor    7.776000E+01    3.888000E+01    1.166400E+02               welflux    1.000000E+00    0.000000E+00          1
+wf6_2                      log                factor    4.644000E+02    2.322000E+02    6.966000E+02               welflux    1.000000E+00    0.000000E+00          1
 hkr00c00                   log                factor    5.947512E+00    5.947512E-01    5.947512E+01                    hk    1.000000E+00    0.000000E+00          1
 hkr00c01                   log                factor    5.947512E+00    5.947512E-01    5.947512E+01                    hk    1.000000E+00    0.000000E+00          1
 hkr00c02                   log                factor    5.947512E+00    5.947512E-01    5.947512E+01                    hk    1.000000E+00    0.000000E+00          1
@@ -2914,4 +2914,4 @@ misc\freyberg.wel.tpl extra_crispy\freyberg.wel
 misc\hk_Layer_1.ref.tpl extra_crispy\ref\hk_Layer_1.ref
 misc\freyberg_heads.smp.ins misc\freyberg_heads.smp
 misc\other.obs.ins misc\other.obs
-++forecasts(travel_time,sw_gw_0,sw_gw_1,sw_gw_2n_iter_base)
+++forecasts(travel_time,sw_gw_0,sw_gw_1,sw_gw_2)
