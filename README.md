@@ -1,12 +1,22 @@
 pyEMU
 =====
 
-FOSM (linear-based) environmental computer model uncertainty analyses.
+model-independent FOSM (first-order, second-moment) (a.k.a linear-based, a.k.a. Bayes linear) computer model uncertainty analyses.
 
 What is pyEMU?
 ================
 
-pyEMU is a set of python modules for uesr-friendly FOSM (linear-based) environmental computer model uncertainty analysis.  pyEMU is tightly coupled to the open-source suite PEST (Doherty 2010a and 2010b, and Doherty and other, 2010) and PEST++ (Welter and others, 2015, Welter and other, 2012), which are tools for model-independent parameter estimation.  Several equations are implemented, including Schur's complement for conditional uncertainty propagation (the foundation of the PREDUNC suite from PEST) and error variance analysis (the foundation of the PREDVAR suite of PEST).  Support is also provided for monte carlo analyses, including the null-space monte carlo approach of Tonkin and Doherty (2009)
+pyEMU is a set of python modules for model-independent, user-friendly, computer model uncertainty analysis.  pyEMU is tightly coupled to the open-source suite PEST (Doherty 2010a and 2010b, and Doherty and other, 2010) and PEST++ (Welter and others, 2015, Welter and other, 2012), which are tools for model-independent parameter estimation.  However, pyEMU can be used with generic array objects, such as numpy ndarrays.
+
+Several equations are implemented, including Schur's complement for conditional uncertainty propagation (a.k.a. Bayes Linear estimation) (the foundation of the PREDUNC suite from PEST) and error variance analysis (the foundation of the PREDVAR suite of PEST).  pyEMU has easy-to-use routines for parmaeter and data worth analyses, which estimate how increased parameter knowledge and/or additional data effect forecast uncertainty in linear, Bayesian framework.  Support is also provided for monte carlo analyses via an Ensemble and MonteCarlo class, including the null-space monte carlo approach of Tonkin and Doherty (2009).
+
+pyEMU also includes lots of functionality for dealing with PEST(++) datasets, such as:
+* manipulation of control files, including the use of pandas for sophisticated editing of the parameter data and observation data sections
+* creation of a control files from instruction and template files
+* going between site sample files and pandas dataframes - really cool for observation processing
+* easy-to-use observation (re)weigthing via residuals or user-defined functions
+* handling Jacoabian and covariance matrices, including functionality to go between binary and ASCII matrices, reading and writing PEST uncertaity files.  Covariance matrices can be instaniated from relevant control file sections, such as parameter bounds or observation weights.  The base Matrix class overloads most common linear algebra operators so that operations are automatically aligned by row and column name.  Builtin SVD is also included in all Matrix instances.
+* geostatistical structure support, including reading and writing PEST structure files and creating covariance matrices implied by nested geostatistical structures
 
 Examples
 ========
@@ -16,11 +26,11 @@ Several example ipython notebooks are provided to demostrate typical workflows f
 Links
 =====
 
+[https://github.com/dwelter/pestpp](https://github.com/dwelter/pestpp)
+
 [PEST - http://www.pesthomepage.org/](http://www.pesthomepage.org/)
 
-[PEST++ - http://www.inversemodeler.org/](http://www.inversemodeler.org/)
 
-[https://github.com/dwelter/pestpp](https://github.com/dwelter/pestpp)
 
 References
 ==========
@@ -58,7 +68,7 @@ Once installed, clone (or download) the pyemu repository and run the setup.py sc
 
 Then start the ipython notebook from the command prompt:
 
-`>>>ipython notebook`
+`>>>jupyter notebook`
 
 You should then be able to view the example notebooks.
 
