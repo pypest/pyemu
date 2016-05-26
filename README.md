@@ -8,14 +8,14 @@ What is pyEMU?
 
 pyEMU is a set of python modules for model-independent, user-friendly, computer model uncertainty analysis.  pyEMU is tightly coupled to the open-source suite PEST (Doherty 2010a and 2010b, and Doherty and other, 2010) and PEST++ (Welter and others, 2015, Welter and other, 2012), which are tools for model-independent parameter estimation.  However, pyEMU can be used with generic array objects, such as numpy ndarrays.
 
-Several equations are implemented, including Schur's complement for conditional uncertainty propagation (a.k.a. Bayes Linear estimation) (the foundation of the PREDUNC suite from PEST) and error variance analysis (the foundation of the PREDVAR suite of PEST).  pyEMU has easy-to-use routines for parmaeter and data worth analyses, which estimate how increased parameter knowledge and/or additional data effect forecast uncertainty in linear, Bayesian framework.  Support is also provided for monte carlo analyses via an Ensemble and MonteCarlo class, including the null-space monte carlo approach of Tonkin and Doherty (2009).
+Several equations are implemented, including Schur's complement for conditional uncertainty propagation (a.k.a. Bayes Linear estimation) (the foundation of the PREDUNC suite from PEST) and error variance analysis (the foundation of the PREDVAR suite of PEST).  pyEMU has easy-to-use routines for parmaeter and data worth analyses, which estimate how increased parameter knowledge and/or additional data effect forecast uncertainty in linear, Bayesian framework.  Support is also provided for Monte Carlo analyses via an Ensemble and MonteCarlo class, including the null-space monte carlo approach of Tonkin and Doherty (2009).
 
 pyEMU also includes lots of functionality for dealing with PEST(++) datasets, such as:
-* manipulation of control files, including the use of pandas for sophisticated editing of the parameter data and observation data sections
-* creation of a control files from instruction and template files
+* manipulation of PEST control files, including the use of pandas for sophisticated editing of the parameter data and observation data sections
+* creation of PEST control files from instruction and template files
 * going between site sample files and pandas dataframes - really cool for observation processing
 * easy-to-use observation (re)weigthing via residuals or user-defined functions
-* handling Jacoabian and covariance matrices, including functionality to go between binary and ASCII matrices, reading and writing PEST uncertaity files.  Covariance matrices can be instaniated from relevant control file sections, such as parameter bounds or observation weights.  The base Matrix class overloads most common linear algebra operators so that operations are automatically aligned by row and column name.  Builtin SVD is also included in all Matrix instances.
+* handling Jacobian and covariance matrices, including functionality to go between binary and ASCII matrices, reading and writing PEST uncertaity files.  Covariance matrices can be instaniated from relevant control file sections, such as parameter bounds or observation weights.  The base Matrix class overloads most common linear algebra operators so that operations are automatically aligned by row and column name.  Builtin SVD is also included in all Matrix instances.
 * geostatistical structure support, including reading and writing PEST structure files and creating covariance matrices implied by nested geostatistical structures
 
 Examples
@@ -55,10 +55,10 @@ Welter, D.E., Doherty, J.E., Hunt, R.J., Muffels, C.T., Tonkin, M.J., and SchreÃ
 Welter, D.E., White, J.T., Hunt, R.J., and Doherty, J.E., 2015, Approaches in highly parameterized inversionâ€” PEST++ Version 3, a Parameter ESTimation and uncertainty analysis software suite optimized for large environmental models: U.S. Geological Survey Techniques and Methods, book 7, chap. C12, 54 p., http://dx.doi.org/10.3133/tm7C12.
 
 
-How to get started with pyemu
+How to get started with pyEMU
 =============================
 
-I recommend the Anaconda scientific python distribution (FREE!), which includes the dependencies for pyemu, as well as the ipython notebook:
+I recommend the Anaconda scientific python distribution (FREE!), which includes the dependencies for pyemu, as well as the jupyter notebook:
 
 [https://store.continuum.io/cshop/anaconda/](https://store.continuum.io/cshop/anaconda/])
 
