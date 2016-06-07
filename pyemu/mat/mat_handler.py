@@ -126,8 +126,8 @@ class Matrix(object):
             None
         """
         self.col_names, self.row_names = [], []
-        [self.col_names.append(c.lower()) for c in col_names]
-        [self.row_names.append(r.lower()) for r in row_names]
+        [self.col_names.append(str(c).lower()) for c in col_names]
+        [self.row_names.append(str(r).lower()) for r in row_names]
         self.__x = None
         self.__u = None
         self.__s = None
@@ -465,20 +465,17 @@ class Matrix(object):
             except:
                 raise Exception("Matrix.__set_svd(): " +
                                 "unable to compute SVD of self.x")
-        col_names = []
-        [col_names.append("left_sing_vec_" + str(i + 1))
-         for i in range(u.shape[1])]
+
+        col_names = ["left_sing_vec_" + str(i + 1) for i in range(u.shape[1])]
         self.__u = Matrix(x=u, row_names=self.row_names,
                           col_names=col_names, autoalign=False)
-        sing_names = []
-        [sing_names.append("sing_val_" + str(i + 1))
-         for i in range(s.shape[0])]
+
+        sing_names = ["sing_val_" + str(i + 1) for i in range(s.shape[0])]
         self.__s = Matrix(x=np.atleast_2d(s).transpose(), row_names=sing_names,
                           col_names=sing_names, isdiagonal=True,
                           autoalign=False)
-        col_names = []
-        [col_names.append("right_sing_vec_" + str(i + 1))
-         for i in range(v.shape[0])]
+
+        col_names = ["right_sing_vec_" + str(i + 1) for i in range(v.shape[0])]
         self.__v = Matrix(v, row_names=self.col_names, col_names=col_names,
                           autoalign=False)
 
@@ -614,6 +611,21 @@ class Matrix(object):
                               col_names=self.col_names,
                               autoalign=self.autoalign)
 
+    def get_maxsing(self,eigthresh=1.0e-5):
+        sthresh =np.abs((self.s.x / self.s.x[0]) - eigthresh)
+        return np.argmin(sthresh)
+
+    def pseudo_inv(self,maxsing=None,eigthresh=1.0e-5):
+        if maxsing is None:
+            maxsing = self.get_maxsing(eigthresh=eigthresh)
+        full_s = self.full_s.T
+        for i in range(self.s.shape[0]):
+            if i <= maxsing:
+                full_s.x[i,i] = 1.0 / full_s.x[i,i]
+            else:
+                full_s.x[i,i] = 0.0
+        return self.v * full_s * self.u.T
+
     @property
     def sqrt(self):
         """square root operation
@@ -633,6 +645,17 @@ class Matrix(object):
             return type(self)(x=la.sqrtm(self.__x), row_names=self.row_names,
                               col_names=self.col_names,
                               autoalign=self.autoalign)
+    @property
+    def full_s(self):
+        x = np.zeros((self.shape),dtype=np.float32)
+
+        x[:self.s.shape[0],:self.s.shape[0]] = self.s.as_2d
+        s = Matrix(x=x, row_names=self.row_names,
+                          col_names=self.col_names, isdiagonal=False,
+                          autoalign=False)
+        return s
+
+
 
 
     @property
