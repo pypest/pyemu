@@ -9,7 +9,7 @@ def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
         tpl_file = pp_file+".tpl"
 
     pp_df = pd.read_csv(pp_file,delim_whitespace=True,header=None,
-                        names=["name","x","y","zone","value"])
+                        names=["name","x","y","zone","parval1"])
 
     if name_prefix is not None:
         digits = str(len(str(pp_df.shape[0])))
@@ -28,6 +28,7 @@ def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
 
     tpl_entries = ["~    {0}    ~".format(name) for name in names]
     pp_df.loc[:,"tpl"] = tpl_entries
+    pp_df.loc[:,"parnme"] = names
     fmt = {"name":SFMT,"x":FFMT,"y":FFMT,"zone":IFMT,"tpl":SFMT}
 
     f_tpl = open(tpl_file,'w')
