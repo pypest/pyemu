@@ -205,10 +205,8 @@ def pp_to_tpl_test():
     import os
     import pyemu
     pp_file = os.path.join("utils","points1.dat")
-    pyemu.gw_utils.pilot_points_to_tpl(pp_file,name_prefix="test_")
-
-
-
+    pp_df = pyemu.gw_utils.pilot_points_to_tpl(pp_file,name_prefix="test_")
+    print(pp_df.columns)
 
 if __name__ == "__main__":
     pp_to_tpl_test()
