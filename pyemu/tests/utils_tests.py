@@ -201,15 +201,24 @@ def ppcov_complex_test():
         assert np.abs(delt).max() < 1.0e-7
         #break
 
+def pp_to_tpl_test():
+    import os
+    import pyemu
+    pp_file = os.path.join("utils","points1.dat")
+    pyemu.gw_utils.pilot_points_to_tpl(pp_file,name_prefix="test_")
+
+
+
 
 if __name__ == "__main__":
-    setup_ppcov_complex()
-    ppcov_complex_test()
-    setup_ppcov_simple()
-    ppcov_simple_test()
-    fac2real_test()
-    vario_test()
-    geostruct_test()
-    aniso_test()
-    struct_file_test()
-    covariance_matrix_test()
+    pp_to_tpl_test()
+    # setup_ppcov_complex()
+    # ppcov_complex_test()
+    # setup_ppcov_simple()
+    # ppcov_simple_test()
+    # fac2real_test()
+    # vario_test()
+    # geostruct_test()
+    # aniso_test()
+    # struct_file_test()
+    # covariance_matrix_test()

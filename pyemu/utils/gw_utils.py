@@ -1,6 +1,45 @@
 import os
 import numpy as np
 import pandas as pd
+from pyemu.pst.pst_utils import SFMT,IFMT,FFMT
+
+def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
+    assert os.path.exists(pp_file)
+    if tpl_file is None:
+        tpl_file = pp_file+".tpl"
+
+    pp_df = pd.read_csv(pp_file,delim_whitespace=True,header=None,
+                        names=["name","x","y","zone","value"])
+
+    if name_prefix is not None:
+        digits = str(len(str(pp_df.shape[0])))
+        fmt = "{0:0"+digits+"d}"
+        names = [name_prefix+fmt.format(i) for i in range(pp_df.shape[0])]
+    else:
+        names = pp_df.name.copy()
+
+    too_long = []
+    for name in names:
+        if len(name) > 12:
+            too_long.append(name)
+    if len(too_long) > 0:
+        raise Exception("the following parameter names are too long:" +\
+                        ",".join(too_long))
+
+    tpl_entries = ["~    {0}    ~".format(name) for name in names]
+    pp_df.loc[:,"tpl"] = tpl_entries
+    fmt = {"name":SFMT,"x":FFMT,"y":FFMT,"zone":IFMT,"tpl":SFMT}
+
+    f_tpl = open(tpl_file,'w')
+    f_tpl.write("ptf ~\n")
+    f_tpl.write(pp_df.to_string(col_space=0,
+                              columns=["name","x","y","zone","tpl"],
+                              formatters=fmt,
+                              justify="left",
+                              header=False,
+                              index=False) + '\n')
+
+    return pp_df
 
 def fac2real(pp_file,factors_file,out_file="test.ref",
              upper_lim=1.0e+30,lower_lim=-1.0e+30):
