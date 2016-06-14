@@ -445,7 +445,68 @@ class Matrix(object):
 
 
     def __rmul__(self, other):
-        raise NotImplementedError()
+        if np.isscalar(other):
+            return type(self)(x=self.__x.copy() * other)
+        elif isinstance(other, np.ndarray):
+            assert self.shape[0] == other.shape[1], \
+                "Matrix.__rmul__(): matrices are not aligned: " +\
+                str(other.shape) + ' ' + str(self.shape)
+            if self.isdiagonal:
+                return type(self)(x=np.dot(other,np.diag(self.__x.flatten()).\
+                                           transpose()))
+            else:
+                return type(self)(x=np.dot(other,self.__x))
+        elif isinstance(other, Matrix):
+            if self.autoalign and other.autoalign \
+                    and not self.mult_isaligned(other):
+                common = get_common_elements(self.row_names, other.col_names)
+                assert len(common) > 0,"Matrix.__rmul__():self.col_names " +\
+                                       "and other.row_names" +\
+                                       "don't share any common elements"
+                # these should be aligned
+                if isinstance(self, Cov):
+                    first = self.get(row_names=common, col_names=common)
+                else:
+                    first = self.get(col_names=self.row_names, row_names=common)
+                if isinstance(other, Cov):
+                    second = other.get(row_names=common, col_names=common)
+                else:
+                    second = other.get(col_names=common,
+                                       row_names=other.col_names)
+
+            else:
+                assert self.shape[0] == other.shape[1], \
+                    "Matrix.__rmul__(): matrices are not aligned: " +\
+                    str(other.shape) + ' ' + str(self.shape)
+                first = other
+                second = self
+            if first.isdiagonal and second.isdiagonal:
+                elem_prod = type(self)(x=first.x.transpose() * second.x,
+                                   row_names=first.row_names,
+                                   col_names=second.col_names)
+                elem_prod.isdiagonal = True
+                return elem_prod
+            elif first.isdiagonal:
+                ox = second.newx
+                for j in range(first.shape[0]):
+                    ox[j, :] *= first.x[j]
+                return type(self)(x=ox, row_names=first.row_names,
+                              col_names=second.col_names)
+            elif second.isdiagonal:
+                x = first.newx
+                ox = second.x
+                for j in range(first.shape[1]):
+                    x[:, j] *= ox[j]
+                return type(self)(x=x, row_names=first.row_names,
+                              col_names=second.col_names)
+            else:
+                return type(self)(np.dot(first.x, second.x),
+                              row_names=first.row_names,
+                              col_names=second.col_names)
+        else:
+            raise Exception("Matrix.__rmul__(): unrecognized " +
+                            "other arg type in __mul__: " + str(type(other)))
+
 
     def __set_svd(self):
         """private method to set SVD components
@@ -614,6 +675,16 @@ class Matrix(object):
     def get_maxsing(self,eigthresh=1.0e-5):
         sthresh =np.abs((self.s.x / self.s.x[0]) - eigthresh)
         return np.argmin(sthresh)
+
+    def pseudo_inv_components(self,maxsing=None,eigthresh=1.0e-5):
+        if maxsing is None:
+            maxsing = self.get_maxsing(eigthresh=eigthresh)
+
+        s = self.s[:maxsing,:maxsing]
+        v = self.v[:,:maxsing]
+        u = self.u[:,:maxsing]
+
+        return u,s,v
 
     def pseudo_inv(self,maxsing=None,eigthresh=1.0e-5):
         if maxsing is None:
@@ -1609,3 +1680,7 @@ class Cov(Matrix):
         f.close()
         return nentries
 
+    @classmethod
+    def identity_like(cls,names):
+        x = np.ones((len(names)))
+        return cls(x=x,names=names,isdiagonal=True)

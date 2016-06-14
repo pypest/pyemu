@@ -83,6 +83,10 @@ class Ensemble(pd.DataFrame):
             super(self,pd.DataFrame).plot(*args,**kwargs)
 
 
+    def __sub__(self,other):
+        diff = super(Ensemble,self).__sub__(other)
+        return Ensemble.from_dataframe(df=diff)
+
     @classmethod
     def from_dataframe(cls,**kwargs):
         df = kwargs.pop("df")

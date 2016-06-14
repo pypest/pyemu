@@ -7,5 +7,5 @@
          0
 OPEN/CLOSE              hk_Layer_1.ref               1  (20G15.6) -1 hk Layer 1
 CONSTANT    1.000000E+00                           #vka Layer 1
-OPEN/CLOSE              ss_Layer_1.ref            2.9249511E-04  (20G15.6) -1 ss Layer 1
-CONSTANT     4.7119641E-02                       #sy Layer 1
+OPEN/CLOSE              ss_Layer_1.ref            2.2732968E-04  (20G15.6) -1 ss Layer 1
+CONSTANT     1.3477887E-01                       #sy Layer 1
