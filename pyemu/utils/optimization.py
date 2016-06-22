@@ -8,7 +8,7 @@ OPERATOR_WORDS = ["l","g","n","e"]
 OPERATOR_SYMBOLS = ["<=",">=","=","="]
 
 
-def to_mps(jco,obs_constraint_sense=None,pst=None,decision_var_names=None,
+def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,decision_var_names=None,
            mps_filename=None,):
 
     if isinstance(jco,str):
@@ -37,7 +37,6 @@ def to_mps(jco,obs_constraint_sense=None,pst=None,decision_var_names=None,
             assert dv in jco.col_names,"decision var {0} not in jco column names".format(dv)
             assert dv in pst.parameter_data.index,"decision var {0} not in pst parameter names".format(dv)
 
-
     if obs_constraint_sense is None:
         const_groups = [grp for grp in pst.obs_groups if grp.lower() in OPERATOR_WORDS]
         if len(const_groups) == 0:
@@ -46,12 +45,13 @@ def to_mps(jco,obs_constraint_sense=None,pst=None,decision_var_names=None,
         obs_constraint_sense = {}
         obs_groups = pst.observation_data.groupby(pst.observation_data.obgnme).groups
         for og,obs_names in obs_groups.items():
-            if og.lower in const_groups:
+            if og == 'n':
+                continue
+            if og in const_groups:
                 for oname in obs_names:
-                    obs_constraint_sense[oname] = og.lower()
+                    obs_constraint_sense[oname] = og
 
     assert isinstance(obs_constraint_sense,dict)
-
 
     operators = {}
     rhs = {}
@@ -104,6 +104,47 @@ def to_mps(jco,obs_constraint_sense=None,pst=None,decision_var_names=None,
         else:
             new_decision_names[name] = name
 
+
+    if obj_func is None:
+        # look for an obs group named 'n' with a single member
+        og = pst.obs_groups
+        if 'n' not in pst.obs_groups:
+            raise Exception("to_mps(): obj_func is None but no "+\
+                            "obs group named 'n'")
+        grps = pst.observation_data.groupby(pst.observation_data.obgnme).groups
+        assert len(grps["n"]) == 1,"to_mps(): 'n' obj_func group has more " +\
+                                   " one member"
+        obj_name = grps['n'][0]
+        obj_iidx = jco.row_names.index(obj_name)
+        obj = {}
+        for name in order_dec_var:
+            jco_jidx = jco.col_names.index(name)
+            obj[name] = jco.x[obj_iidx,jco_jidx]
+
+    elif isinstance(obj_func,str):
+        obj_func = obj_func.lower()
+        assert obj_func in jco.row_names,\
+            "obj_func {0} not in jco.row_names".format(obj_func)
+        assert obj_func in pst.observation_data.obsnme,\
+            "obj_func {0} not in pst observations".format(obj_func)
+
+        obj_iidx = jco.row_names.index(obj_func)
+        obj = {}
+        for name in order_dec_var:
+            jco_jidx = jco.col_names.index(name)
+            obj[name] = jco.x[obj_iidx,jco_jidx]
+        obj_name = str(obj_func)
+
+    elif isinstance(obj_func,dict):
+        obj = {}
+        for name,value in obj_func.items():
+            assert name in jco.col_names,"to_mps(): obj_func key {0} not ".format(name) +\
+                "in jco col names"
+            obj[name] = float(value)
+        obj_name = "obj_func"
+    else:
+        raise NotImplementedError
+
     if mps_filename is None:
         mps_filename = pst.filename.replace(".pst",".mps")
 
@@ -113,28 +154,34 @@ def to_mps(jco,obs_constraint_sense=None,pst=None,decision_var_names=None,
         for name in order_obs_constraints:
             f.write(" {0}  {1}\n".format(operators[name],
                                          new_constraint_names[name]))
+        f.write(" {0}  {1}\n".format('n',obj_name))
+
         f.write("COLUMNS\n")
         for dname in order_dec_var:
             jco_jidx = jco.col_names.index(dname)
             for cname in order_obs_constraints:
                 jco_iidx = jco.row_names.index(cname)
-                f.write("    {0:8}  {1:8}{2:11G}\n".\
+                f.write("    {0:8}  {1:8}   {2:10G}\n".\
                         format(new_decision_names[dname],
                                new_constraint_names[cname],
                                jco.x[jco_iidx,jco_jidx]))
+            f.write("    {0:8}  {1:8}   {2:10G}\n".\
+                    format(new_decision_names[dname],
+                           obj_name,obj[dname]))
+
         f.write("RHS\n")
         for name in order_obs_constraints:
-            f.write("    {0:8}  {1:8}{2:11G}\n".
+            f.write("    {0:8}  {1:8}   {2:10G}\n".
                     format("rhs",new_constraint_names[name],rhs[name]))
         f.write("BOUNDS\n")
         for name in order_dec_var:
             up,lw = pst.parameter_data.loc[name,"parubnd"],\
                     pst.parameter_data.loc[name,"parlbnd"]
-            print(type(up),type(lw))
-            f.write(" {0:2} {1:8}  {2:8}{3:11G}\n".format("UP","BOUND",name,up))
-            f.write(" {0:2} {1:8}  {2:8}{3:11G}\n".format("LO","BOUND",name,lw))
-
-
+            f.write(" {0:2} {1:8}  {2:8}  {3:10G}\n".\
+                    format("UP","BOUND",name,up))
+            f.write(" {0:2} {1:8}  {2:8}  {3:10G}\n".\
+                    format("LO","BOUND",name,lw))
+        f.write("ENDATA\n")
 
 
 
