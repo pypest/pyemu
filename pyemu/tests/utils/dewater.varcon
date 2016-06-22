@@ -1,0 +1,11 @@
+#DEWATER Sample Problem, VARCON file
+#February 20, 2005
+  1                          #1-IPRN
+ Q1 0.0d2  2.0d4  0.0d2      #2-FVNAME  FVMIN  FVMAX  FVREF
+ Q2 0.0d2  2.0d4  0.0d2
+ Q3 0.0d2  2.0d4  0.0d2
+ Q4 0.0d2  2.0d4  0.0d2
+ Q5 0.0d2  2.0d4  0.0d2
+ Q6 0.0d2  2.0d4  0.0d2
+ Q7 0.0d2  2.0d4  0.0d2
+                          

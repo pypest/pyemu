@@ -115,14 +115,25 @@ class EnsembleSmoother():
         self._calc_obs()
         delta_obs = self._calc_delta_obs()
         u,s,v = delta_obs.pseudo_inv_components()
-        print(u.shape,s.shape,v.shape)
-        maxsing = delta_obs.get_maxsing()
-        diff = (self.obsensemble - self.obsensemble_0).as_pyemu_matrix().T
-        x1 = delta_obs.u.T * self.obscov.inv.sqrt * diff
-
-        print(x1.shape,delta_obs.full_s.shape,delta_obs.s.shape)
-        print(type(s))
+        #print(v)
+        #print(s)
+        #print(v)
+        diff = self.obsensemble.as_pyemu_matrix() - self.obsensemble_0.as_pyemu_matrix()
+        #print(diff)
+        x1 = u.T * self.obscov.inv.sqrt * diff.T
+        x1.autoalign = False
+        #print(x1)
+        x2 = (Cov.identity_like(s) + s**2).inv * x1
+        #print(x2)
+        x3 = v * s * x2
+        #print(x3)
+        upgrade_1 = (self.half_parcov_diag * self._calc_delta_par() * x3).to_dataframe()
+        upgrade_1.index.name = "parnme"
+        print(upgrade_1)
+        self.parensemble += upgrade_1.T
+        print(self.parensemble)
         if self.iter_num > 0:
             raise NotImplementedError()
 
+        print(upgrade_1.shape)
 

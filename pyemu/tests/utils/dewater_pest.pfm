@@ -1,0 +1,57 @@
+PEST++ performance logger started at:  2016-06-22 13:31:58
+  starting to process control file
+          ( time = 2016-06-22 13:31:58,  elapsed time = 614us )
+  finished processing control file
+          ( time = 2016-06-22 13:31:58,  elapsed time = 3ms )
+    starting basic model IO error checking
+            ( time = 2016-06-22 13:31:58,  elapsed time = 1ms )
+    finished basic model IO error checking
+            ( time = 2016-06-22 13:31:58,  elapsed time = 85us )
+    commencing to build jacobian parameter sets
+            ( time = 2016-06-22 13:31:58,  elapsed time = 653us )
+    jacobian parameter sets built, commencing model runs
+            ( time = 2016-06-22 13:31:58,  elapsed time = 466us )
+    jacobian runs complete, processing runs
+            ( time = 2016-06-22 13:31:59,  elapsed time = 864ms )
+    processing jacobian runs complete
+            ( time = 2016-06-22 13:31:59,  elapsed time = 298us )
+    saving jacobian and sen files
+            ( time = 2016-06-22 13:31:59,  elapsed time = 15us )
+
+
+-----------------------------------
+starting linear uncertainty analyses
+-----------------------------------
+
+2016-06-22 13:31:59-> starting calc_posterior
+2016-06-22 13:31:59->-> starting align
+2016-06-22 13:31:59->-> finished align, elapsed time = 1ms
+2016-06-22 13:31:59-> finished calc_posterior, elapsed time = 3ms
+2016-06-22 13:31:59-> starting prior_parameter_variance
+2016-06-22 13:31:59-> finished prior_parameter_variance, elapsed time = 10us
+2016-06-22 13:31:59-> starting prior_parameter_variance
+2016-06-22 13:31:59-> finished prior_parameter_variance, elapsed time = 5us
+2016-06-22 13:31:59-> starting prior_parameter_variance
+2016-06-22 13:31:59-> finished prior_parameter_variance, elapsed time = 5us
+2016-06-22 13:31:59-> starting prior_parameter_variance
+2016-06-22 13:31:59-> finished prior_parameter_variance, elapsed time = 5us
+2016-06-22 13:31:59-> starting prior_parameter_variance
+2016-06-22 13:31:59-> finished prior_parameter_variance, elapsed time = 5us
+2016-06-22 13:31:59-> starting prior_parameter_variance
+2016-06-22 13:31:59-> finished prior_parameter_variance, elapsed time = 6us
+2016-06-22 13:31:59-> starting prior_parameter_variance
+2016-06-22 13:31:59-> finished prior_parameter_variance, elapsed time = 5us
+2016-06-22 13:31:59-> starting posterior_parameter_variance
+2016-06-22 13:31:59-> finished posterior_parameter_variance, elapsed time = 6us
+2016-06-22 13:31:59-> starting posterior_parameter_variance
+2016-06-22 13:31:59-> finished posterior_parameter_variance, elapsed time = 5us
+2016-06-22 13:31:59-> starting posterior_parameter_variance
+2016-06-22 13:31:59-> finished posterior_parameter_variance, elapsed time = 5us
+2016-06-22 13:31:59-> starting posterior_parameter_variance
+2016-06-22 13:31:59-> finished posterior_parameter_variance, elapsed time = 5us
+2016-06-22 13:31:59-> starting posterior_parameter_variance
+2016-06-22 13:31:59-> finished posterior_parameter_variance, elapsed time = 5us
+2016-06-22 13:31:59-> starting posterior_parameter_variance
+2016-06-22 13:31:59-> finished posterior_parameter_variance, elapsed time = 5us
+2016-06-22 13:31:59-> starting posterior_parameter_variance
+2016-06-22 13:31:59-> finished posterior_parameter_variance, elapsed time = 5us

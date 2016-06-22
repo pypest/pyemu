@@ -1,0 +1,7 @@
+#DEWATER Sample Problem, SOLN file
+#June 15, 2009
+ MPS                #1-SOLNTYP
+ 0.5               #4c-DELTA
+ 1  10  0.5        #4d-NSIGDIG  NPGNMX  PGFACT  CRITMFC
+dewater.mps
+ 0                 #6a-IBASE

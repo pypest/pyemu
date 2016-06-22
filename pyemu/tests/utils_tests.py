@@ -208,8 +208,30 @@ def pp_to_tpl_test():
     pp_df = pyemu.gw_utils.pilot_points_to_tpl(pp_file,name_prefix="test_")
     print(pp_df.columns)
 
+
+def to_mps_test():
+    import os
+    import pyemu
+    jco_file = os.path.join("utils","dewater_pest.jcb")
+    jco = pyemu.Jco.from_binary(jco_file)
+    pst = pyemu.Pst(jco_file.replace(".jcb",".pst"))
+    print(pst.nnz_obs_names)
+    oc_dict = {oc:"l" for oc in pst.nnz_obs_names}
+
+    pyemu.optimization.to_mps(jco=jco_file,obs_constraint_sense=oc_dict)
+
+
+
+
+
+
+
+
+
+
 if __name__ == "__main__":
-    pp_to_tpl_test()
+    to_mps_test()
+    #pp_to_tpl_test()
     # setup_ppcov_complex()
     # ppcov_complex_test()
     # setup_ppcov_simple()

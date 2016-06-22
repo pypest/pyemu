@@ -382,7 +382,9 @@ class Matrix(object):
             Matrix object
         """
         if np.isscalar(other):
-            return type(self)(x=self.__x.copy() * other)
+            return type(self)(x=self.__x.copy() * other,
+                              row_names=self.row_names,
+                              col_names=self.col_names)
         elif isinstance(other, np.ndarray):
             assert self.shape[1] == other.shape[0], \
                 "Matrix.__mul__(): matrices are not aligned: " +\
@@ -398,7 +400,9 @@ class Matrix(object):
                 common = get_common_elements(self.col_names, other.row_names)
                 assert len(common) > 0,"Matrix.__mult__():self.col_names " +\
                                        "and other.row_names" +\
-                                       "don't share any common elements"
+                                       "don't share any common elements: " +\
+                                       ','.join(self.col_names) + '...and..' +\
+                                       ','.join(other.row_names)
                 # these should be aligned
                 if isinstance(self, Cov):
                     first = self.get(row_names=common, col_names=common)
@@ -446,7 +450,7 @@ class Matrix(object):
 
     def __rmul__(self, other):
         if np.isscalar(other):
-            return type(self)(x=self.__x.copy() * other)
+            return type(self)(x=self.__x.copy() * other,row_names=self.row_names,col_names=self.col_names)
         elif isinstance(other, np.ndarray):
             assert self.shape[0] == other.shape[1], \
                 "Matrix.__rmul__(): matrices are not aligned: " +\
@@ -1681,6 +1685,7 @@ class Cov(Matrix):
         return nentries
 
     @classmethod
-    def identity_like(cls,names):
-        x = np.ones((len(names)))
-        return cls(x=x,names=names,isdiagonal=True)
+    def identity_like(cls,other):
+        assert other.shape[0] == other.shape[1]
+        x = np.ones((len(other.row_names),1))
+        return cls(x=x,names=other.row_names,isdiagonal=True)
