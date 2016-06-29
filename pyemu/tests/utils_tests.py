@@ -249,9 +249,17 @@ def read_hob_test():
     pyemu.gw_utils.modflow_hob_to_instruction_file(hob_file)
 
 
+def read_pval_test():
+    import os
+    import pyemu
+    pval_file = os.path.join("utils", "meras_trEnhance.pval")
+    pyemu.gw_utils.modflow_pval_to_template_file(pval_file)
+
+
 
 if __name__ == "__main__":
-    read_hob_test()
+    read_pval_test()
+    #read_hob_test()
     #setup_pp_test()
     #to_mps_test()
     #pp_to_tpl_test()

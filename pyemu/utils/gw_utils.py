@@ -1,17 +1,37 @@
 import os
 import numpy as np
 import pandas as pd
+pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config
 
 PP_FMT = {"name": SFMT, "x": FFMT, "y": FFMT, "zone": IFMT, "tpl": SFMT,
           "parval1": FFMT}
 PP_NAMES = ["name","x","y","zone","parval1"]
 
+
+def modflow_pval_to_template_file(pval_file,tpl_file=None):
+    if tpl_file is None:
+        tpl_file = pval_file + ".tpl"
+    pval_df = pd.read_csv(pval_file,delim_whitespace=True,
+                          header=None,skiprows=2,
+                          names=["parnme","parval1"])
+    pval_df.index = pval_df.parnme
+    pval_df.loc[:,"tpl"] = pval_df.parnme.apply(lambda x: " ~   {0:15s}   ~".format(x))
+    with open(tpl_file,'w') as f:
+        f.write("ptf ~\n#pval template file from pyemu\n")
+        f.write("{0:10d} #NP\n".format(pval_df.shape[0]))
+        f.write(pval_df.loc[:,["parnme","tpl"]].to_string(col_space=0,
+                                                          formatters=[SFMT,SFMT],
+                                                          index=False,
+                                                          header=False,
+                                                          justify="left"))
+
 def modflow_hob_to_instruction_file(hob_file,ins_file=None):
 
     hob_df = pd.read_csv(hob_file,delim_whitespace=True,skiprows=1,
-                         header=None,names=["simval","obsval","name"])
-    hob_df.loc[:,"ins_line"] = hob_df.name.apply(lambda x:"l1 w w !{0:s}!".format(x))
+                         header=None,names=["simval","obsval","obsnme"])
+
+    hob_df.loc[:,"ins_line"] = hob_df.obsnme.apply(lambda x:"l1 w w !{0:s}!".format(x))
     hob_df.loc[0,"ins_line"] = hob_df.loc[0,"ins_line"].replace('l1','l2')
 
     if ins_file is None:
@@ -99,7 +119,7 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
                 # get the attributes we need
                 x = ml.sr.xcentergrid[i,j]
                 y = ml.sr.ycentergrid[i,j]
-                name = "pp_{0:03d}".format(pp_count)
+                name = "pp_{0:04d}".format(pp_count)
                 parval1 = 1.0
 
                 #decide what to use as the zone
