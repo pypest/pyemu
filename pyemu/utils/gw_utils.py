@@ -52,7 +52,8 @@ def modflow_hob_to_instruction_file(hob_file,ins_file=None):
 def setup_pilotpoints_grid(ml,prefix_dict=None,
                            every_n_cell=4,
                            use_ibound_zones=False,
-                           pp_dir='.',tpl_dir='.'):
+                           pp_dir='.',tpl_dir='.',
+                           shapename="pp.shp"):
     """setup grid-based pilot points.  Uses the ibound to determine
        where to set pilot points. pilot points are given generic "pp_"
        names.  write template files as well...hopefully this is useful
@@ -75,7 +76,9 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
         pp_dir : str
             directory for pilot point files
         tpl_dir : str
-            directoru for template files
+            directory for template files
+        shapename : str
+            name of pilot point shapefile.  set to None to disable
     Returns
     -------
         par_info : pd.DataFrame
@@ -102,6 +105,8 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
         raise Exception("error getting model.bas6.ibound:{0}".format(str(e)))
     par_info = []
     pp_files,tpl_files = [],[]
+    pp_names = PP_NAMES
+    pp_names.extend(["k","i","j"])
     for k in range(ml.nlay):
         pp_df = None
         ib = ibound[k]
@@ -128,10 +133,11 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
                     zone = ib[i,j]
                 #stick this pilot point into a dataframe container
                 if pp_df is None:
-                    data = {"name": name, "x": x, "y": y, "zone": zone, "parval1": parval1}
-                    pp_df = pd.DataFrame(data=data,index=[0],columns=PP_NAMES)
+                    data = {"name": name, "x": x, "y": y, "zone": zone,
+                            "parval1": parval1, "k":k, "i":i, "j":j}
+                    pp_df = pd.DataFrame(data=data,index=[0],columns=pp_names)
                 else:
-                    data = [name, x, y, zone, parval1]
+                    data = [name, x, y, zone, parval1, k, i, j]
                     pp_df.loc[pp_count,:] = data
                 pp_count += 1
         #if we found some acceptable locs...
@@ -161,6 +167,30 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
             continue
         par_info.loc[:,key] = default
 
+    if shapename is not None:
+        try:
+            import shapefile
+        except:
+            print("error importing shapefile, try pip install pyshp...")
+            return par_info
+        shp = shapefile.Writer(shapeType=shapefile.POINT)
+        for name,dtype in par_info.dtypes.iteritems():
+            if dtype == object:
+                shp.field(name=name,fieldType='C',size=50)
+            elif dtype in [int,np.int,np.int64,np.int32]:
+                shp.field(name=name, fieldType='N', size=20, decimal=0)
+            elif dtype in [float,np.float,np.float32,np.float32]:
+                shp.field(name=name, fieldType='N', size=20, decimal=8)
+            else:
+                raise Exception("unrecognized field type in par_info:{0}:{1}".format(name,dtype))
+
+        #some pandas awesomeness..
+        par_info.apply(lambda x:shp.poly([[[x.x,x.y]]]), axis=1)
+        par_info.apply(lambda x:shp.record(*x),axis=1)
+
+        shp.save(shapename)
+        shp = shapefile.Reader(shapename)
+        assert shp.numRecords == par_info.shape[0]
     return par_info
 
 def write_pp_file(filename,pp_df):
