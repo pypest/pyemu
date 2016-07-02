@@ -35,7 +35,7 @@ class logger(object):
         elif filename:
             self.filename = filename
             self.echo = True
-            self.f = open(filename, 'w', 0) #unbuffered
+            self.f = open(filename, 'w')
             self.t = datetime.now()
             self.log("opening " + str(filename) + " for logging")
         else:
@@ -49,6 +49,7 @@ class logger(object):
             print(s,)
         if self.filename:
             self.f.write(s)
+            self.f.flush()
 
 
     def log(self,phrase):
@@ -69,6 +70,7 @@ class logger(object):
                 print(s,)
             if self.filename:
                 self.f.write(s)
+                self.f.flush()
             self.items.pop(phrase)
         else:
             s = str(t) + ' starting: ' + str(phrase) + '\n'
@@ -76,6 +78,7 @@ class logger(object):
                 print(s,)
             if self.filename:
                 self.f.write(s)
+                self.f.flush()
             self.items[phrase] = copy.deepcopy(t)
 
     def warn(self,message):
@@ -92,6 +95,7 @@ class logger(object):
             print(s,)
         if self.filename:
             self.f.write(s)
+            self.f.flush
 
 
 class LinearAnalysis(object):
