@@ -214,15 +214,15 @@ def to_mps_test():
     import pyemu
     jco_file = os.path.join("utils","dewater_pest.jcb")
     jco = pyemu.Jco.from_binary(jco_file)
-    print(jco.x)
+    #print(jco.x)
     pst = pyemu.Pst(jco_file.replace(".jcb",".pst"))
-    print(pst.nnz_obs_names)
+    #print(pst.nnz_obs_names)
     oc_dict = {oc:"l" for oc in pst.nnz_obs_names}
     obj_func = {name:1.0 for name in pst.par_names}
 
-    #pyemu.optimization.to_mps(jco=jco_file)
-    #pyemu.optimization.to_mps(jco=jco_file,obs_constraint_sense=oc_dict)
-    #pyemu.optimization.to_mps(jco=jco_file,obj_func="h00_00")
+    pyemu.optimization.to_mps(jco=jco_file)
+    pyemu.optimization.to_mps(jco=jco_file,obs_constraint_sense=oc_dict)
+    pyemu.optimization.to_mps(jco=jco_file,obj_func="h00_00")
     pyemu.optimization.to_mps(jco=jco_file,obj_func=obj_func)
 
 def setup_pp_test():
@@ -261,8 +261,8 @@ def read_pval_test():
 if __name__ == "__main__":
     #read_pval_test()
     #read_hob_test()
-    setup_pp_test()
-    #to_mps_test()
+    #setup_pp_test()
+    to_mps_test()
     #pp_to_tpl_test()
     # setup_ppcov_complex()
     # ppcov_complex_test()
