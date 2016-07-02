@@ -101,7 +101,16 @@ def extend_test():
     assert third.x[6,:].sum() == 3
 
 
+def pseudo_inv_test():
+    import os
+    import pyemu
+    jco = pyemu.Jco.from_binary(os.path.join("mat","pest.jcb"))
+    print(jco.shape)
+    jpi = jco.pseudo_inv(maxsing=1)
+    jpi = jco.pseudo_inv(maxsing=19)
+
 if __name__ == "__main__":
     #mat_test()
     #load_jco_test()
-    extend_test()
+    #extend_test()
+    pseudo_inv_test()

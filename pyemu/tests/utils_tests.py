@@ -201,15 +201,76 @@ def ppcov_complex_test():
         assert np.abs(delt).max() < 1.0e-7
         #break
 
+def pp_to_tpl_test():
+    import os
+    import pyemu
+    pp_file = os.path.join("utils","points1.dat")
+    pp_df = pyemu.gw_utils.pilot_points_to_tpl(pp_file,name_prefix="test_")
+    print(pp_df.columns)
+
+
+def to_mps_test():
+    import os
+    import pyemu
+    jco_file = os.path.join("utils","dewater_pest.jcb")
+    jco = pyemu.Jco.from_binary(jco_file)
+    print(jco.x)
+    pst = pyemu.Pst(jco_file.replace(".jcb",".pst"))
+    print(pst.nnz_obs_names)
+    oc_dict = {oc:"l" for oc in pst.nnz_obs_names}
+    obj_func = {name:1.0 for name in pst.par_names}
+
+    #pyemu.optimization.to_mps(jco=jco_file)
+    #pyemu.optimization.to_mps(jco=jco_file,obs_constraint_sense=oc_dict)
+    #pyemu.optimization.to_mps(jco=jco_file,obj_func="h00_00")
+    pyemu.optimization.to_mps(jco=jco_file,obj_func=obj_func)
+
+def setup_pp_test():
+    import os
+    import pyemu
+    try:
+        import flopy
+    except:
+        return
+    model_ws = os.path.join("..","..","examples","Freyberg","extra_crispy")
+    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws)
+    ml.sr.rotation = 45
+    #pyemu.gw_utils.setup_pilotpoints_grid(ml)
+    pp_dir = os.path.join("utils")
+    par_info = pyemu.gw_utils.setup_pilotpoints_grid(ml,prefix_dict={0:["hk1_","sy1_","rch_"]},
+                                                     every_n_cell=1,pp_dir=pp_dir,tpl_dir=pp_dir,
+                                                     shapename=os.path.join(pp_dir,"test.shp"))
+    print(par_info.head())
+
+
+def read_hob_test():
+    import os
+    import pyemu
+    hob_file = os.path.join("utils","HOB.txt")
+    pyemu.gw_utils.modflow_hob_to_instruction_file(hob_file)
+
+
+def read_pval_test():
+    import os
+    import pyemu
+    pval_file = os.path.join("utils", "meras_trEnhance.pval")
+    pyemu.gw_utils.modflow_pval_to_template_file(pval_file)
+
+
 
 if __name__ == "__main__":
-    setup_ppcov_complex()
-    ppcov_complex_test()
-    setup_ppcov_simple()
-    ppcov_simple_test()
-    fac2real_test()
-    vario_test()
-    geostruct_test()
-    aniso_test()
-    struct_file_test()
-    covariance_matrix_test()
+    #read_pval_test()
+    #read_hob_test()
+    setup_pp_test()
+    #to_mps_test()
+    #pp_to_tpl_test()
+    # setup_ppcov_complex()
+    # ppcov_complex_test()
+    # setup_ppcov_simple()
+    # ppcov_simple_test()
+    # fac2real_test()
+    # vario_test()
+    # geostruct_test()
+    # aniso_test()
+    # struct_file_test()
+    # covariance_matrix_test()

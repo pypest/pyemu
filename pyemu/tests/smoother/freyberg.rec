@@ -1,7 +1,7 @@
-             PEST++ Version 3.2.0
+             sweep.exe - a parameteric sweep utility
+for PEST(++) datasets 
 
-                 by Dave Welter
-     Computational Water Resource Engineering
+                 by the PEST++ developement team
 
 
 
@@ -3266,14 +3266,4 @@ PEST SVD Information
     maxsing = 761
     eigthresh = 1e-06
 
-
-   -----    Starting PEST++ Iterations    ----    
-
-
-OPTIMISATION ITERATION NUMBER: 1
-
-  Iteration type: base parameter solution
-    SVD Package: Eigen JacobiSVD
-    Matrix Inversion: "Jt Q J"
-    Model calls so far : 0
 

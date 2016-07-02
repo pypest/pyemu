@@ -126,8 +126,8 @@ class Matrix(object):
             None
         """
         self.col_names, self.row_names = [], []
-        [self.col_names.append(c.lower()) for c in col_names]
-        [self.row_names.append(r.lower()) for r in row_names]
+        [self.col_names.append(str(c).lower()) for c in col_names]
+        [self.row_names.append(str(r).lower()) for r in row_names]
         self.__x = None
         self.__u = None
         self.__s = None
@@ -382,7 +382,9 @@ class Matrix(object):
             Matrix object
         """
         if np.isscalar(other):
-            return type(self)(x=self.__x.copy() * other)
+            return type(self)(x=self.__x.copy() * other,
+                              row_names=self.row_names,
+                              col_names=self.col_names)
         elif isinstance(other, np.ndarray):
             assert self.shape[1] == other.shape[0], \
                 "Matrix.__mul__(): matrices are not aligned: " +\
@@ -398,7 +400,9 @@ class Matrix(object):
                 common = get_common_elements(self.col_names, other.row_names)
                 assert len(common) > 0,"Matrix.__mult__():self.col_names " +\
                                        "and other.row_names" +\
-                                       "don't share any common elements"
+                                       "don't share any common elements: " +\
+                                       ','.join(self.col_names) + '...and..' +\
+                                       ','.join(other.row_names)
                 # these should be aligned
                 if isinstance(self, Cov):
                     first = self.get(row_names=common, col_names=common)
@@ -445,7 +449,68 @@ class Matrix(object):
 
 
     def __rmul__(self, other):
-        raise NotImplementedError()
+        if np.isscalar(other):
+            return type(self)(x=self.__x.copy() * other,row_names=self.row_names,col_names=self.col_names)
+        elif isinstance(other, np.ndarray):
+            assert self.shape[0] == other.shape[1], \
+                "Matrix.__rmul__(): matrices are not aligned: " +\
+                str(other.shape) + ' ' + str(self.shape)
+            if self.isdiagonal:
+                return type(self)(x=np.dot(other,np.diag(self.__x.flatten()).\
+                                           transpose()))
+            else:
+                return type(self)(x=np.dot(other,self.__x))
+        elif isinstance(other, Matrix):
+            if self.autoalign and other.autoalign \
+                    and not self.mult_isaligned(other):
+                common = get_common_elements(self.row_names, other.col_names)
+                assert len(common) > 0,"Matrix.__rmul__():self.col_names " +\
+                                       "and other.row_names" +\
+                                       "don't share any common elements"
+                # these should be aligned
+                if isinstance(self, Cov):
+                    first = self.get(row_names=common, col_names=common)
+                else:
+                    first = self.get(col_names=self.row_names, row_names=common)
+                if isinstance(other, Cov):
+                    second = other.get(row_names=common, col_names=common)
+                else:
+                    second = other.get(col_names=common,
+                                       row_names=other.col_names)
+
+            else:
+                assert self.shape[0] == other.shape[1], \
+                    "Matrix.__rmul__(): matrices are not aligned: " +\
+                    str(other.shape) + ' ' + str(self.shape)
+                first = other
+                second = self
+            if first.isdiagonal and second.isdiagonal:
+                elem_prod = type(self)(x=first.x.transpose() * second.x,
+                                   row_names=first.row_names,
+                                   col_names=second.col_names)
+                elem_prod.isdiagonal = True
+                return elem_prod
+            elif first.isdiagonal:
+                ox = second.newx
+                for j in range(first.shape[0]):
+                    ox[j, :] *= first.x[j]
+                return type(self)(x=ox, row_names=first.row_names,
+                              col_names=second.col_names)
+            elif second.isdiagonal:
+                x = first.newx
+                ox = second.x
+                for j in range(first.shape[1]):
+                    x[:, j] *= ox[j]
+                return type(self)(x=x, row_names=first.row_names,
+                              col_names=second.col_names)
+            else:
+                return type(self)(np.dot(first.x, second.x),
+                              row_names=first.row_names,
+                              col_names=second.col_names)
+        else:
+            raise Exception("Matrix.__rmul__(): unrecognized " +
+                            "other arg type in __mul__: " + str(type(other)))
+
 
     def __set_svd(self):
         """private method to set SVD components
@@ -465,20 +530,17 @@ class Matrix(object):
             except:
                 raise Exception("Matrix.__set_svd(): " +
                                 "unable to compute SVD of self.x")
-        col_names = []
-        [col_names.append("left_sing_vec_" + str(i + 1))
-         for i in range(u.shape[1])]
+
+        col_names = ["left_sing_vec_" + str(i + 1) for i in range(u.shape[1])]
         self.__u = Matrix(x=u, row_names=self.row_names,
                           col_names=col_names, autoalign=False)
-        sing_names = []
-        [sing_names.append("sing_val_" + str(i + 1))
-         for i in range(s.shape[0])]
+
+        sing_names = ["sing_val_" + str(i + 1) for i in range(s.shape[0])]
         self.__s = Matrix(x=np.atleast_2d(s).transpose(), row_names=sing_names,
                           col_names=sing_names, isdiagonal=True,
                           autoalign=False)
-        col_names = []
-        [col_names.append("right_sing_vec_" + str(i + 1))
-         for i in range(v.shape[0])]
+
+        col_names = ["right_sing_vec_" + str(i + 1) for i in range(v.shape[0])]
         self.__v = Matrix(v, row_names=self.col_names, col_names=col_names,
                           autoalign=False)
 
@@ -614,6 +676,31 @@ class Matrix(object):
                               col_names=self.col_names,
                               autoalign=self.autoalign)
 
+    def get_maxsing(self,eigthresh=1.0e-5):
+        sthresh =np.abs((self.s.x / self.s.x[0]) - eigthresh)
+        return np.argmin(sthresh)
+
+    def pseudo_inv_components(self,maxsing=None,eigthresh=1.0e-5):
+        if maxsing is None:
+            maxsing = self.get_maxsing(eigthresh=eigthresh)
+
+        s = self.s[:maxsing,:maxsing]
+        v = self.v[:,:maxsing]
+        u = self.u[:,:maxsing]
+
+        return u,s,v
+
+    def pseudo_inv(self,maxsing=None,eigthresh=1.0e-5):
+        if maxsing is None:
+            maxsing = self.get_maxsing(eigthresh=eigthresh)
+        full_s = self.full_s.T
+        for i in range(self.s.shape[0]):
+            if i <= maxsing:
+                full_s.x[i,i] = 1.0 / full_s.x[i,i]
+            else:
+                full_s.x[i,i] = 0.0
+        return self.v * full_s * self.u.T
+
     @property
     def sqrt(self):
         """square root operation
@@ -633,6 +720,17 @@ class Matrix(object):
             return type(self)(x=la.sqrtm(self.__x), row_names=self.row_names,
                               col_names=self.col_names,
                               autoalign=self.autoalign)
+    @property
+    def full_s(self):
+        x = np.zeros((self.shape),dtype=np.float32)
+
+        x[:self.s.shape[0],:self.s.shape[0]] = self.s.as_2d
+        s = Matrix(x=x, row_names=self.row_names,
+                          col_names=self.col_names, isdiagonal=False,
+                          autoalign=False)
+        return s
+
+
 
 
     @property
@@ -1586,3 +1684,8 @@ class Cov(Matrix):
         f.close()
         return nentries
 
+    @classmethod
+    def identity_like(cls,other):
+        assert other.shape[0] == other.shape[1]
+        x = np.ones((len(other.row_names),1))
+        return cls(x=x,names=other.row_names,isdiagonal=True)

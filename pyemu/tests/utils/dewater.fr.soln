@@ -1,0 +1,11 @@
+#DEWATER Sample Problem, SOLN file
+#May 19, 2011
+ FR                #1-SOLNTYP
+ 1                 #6a-IBASE
+ Q1                1.000000E+03  #6b-FVNAME  FVBASE                         
+ Q2                7.000000E+01                            
+ Q3                0.000000E+00                            
+ Q4                8.000000E+02                            
+ Q5                0.000000E+00                            
+ Q6                0.000000E+00                            
+ Q7                9.000000E+02                            

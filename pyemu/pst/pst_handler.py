@@ -192,7 +192,7 @@ class Pst(object):
         """observation groups
         """
         og = list(self.observation_data.groupby("obgnme").groups.keys())
-        og = map(pst_utils.SFMT, og)
+        #og = map(pst_utils.SFMT, og)
         return og
 
 

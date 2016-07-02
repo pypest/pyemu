@@ -5,7 +5,7 @@ import math
 import numpy as np
 import pandas as pd
 
-from pyemu.mat.mat_handler import get_common_elements
+from pyemu.mat.mat_handler import get_common_elements,Matrix
 from pyemu.pst.pst_utils import write_parfile,read_parfile
 
 class Ensemble(pd.DataFrame):
@@ -26,6 +26,10 @@ class Ensemble(pd.DataFrame):
             raise Exception("Ensemble requires 'mean_values' kwarg")
         self.__mean_values = mean_values
 
+    def as_pyemu_matrix(self):
+        x = self.copy().as_matrix()
+        return Matrix(x=x,row_names=list(self.index),
+                      col_names=list(self.columns))
 
     def draw(self,cov,num_reals=1):
         """ draw random realizations from a multivariate
@@ -78,6 +82,10 @@ class Ensemble(pd.DataFrame):
         else:
             super(self,pd.DataFrame).plot(*args,**kwargs)
 
+
+    def __sub__(self,other):
+        diff = super(Ensemble,self).__sub__(other)
+        return Ensemble.from_dataframe(df=diff)
 
     @classmethod
     def from_dataframe(cls,**kwargs):
@@ -152,7 +160,6 @@ class ParameterEnsemble(Ensemble):
     def __init__(self,pst,istransformed=False,**kwargs):
         kwargs["columns"] = pst.parameter_data.parnme
         kwargs["mean_values"] = pst.parameter_data.parval1
-
 
         super(ParameterEnsemble,self).__init__(**kwargs)
         # a flag for current log transform status
@@ -398,7 +405,7 @@ class ParameterEnsemble(Ensemble):
             if inplace:
                 self.loc[real,common_names] = base + pdiff
             else:
-                new_en.loc[real,common_names] = base +  pdiff
+                new_en.loc[real,common_names] = base + pdiff
 
             if log is not None:
                 log("projecting realization {0}".format(real))

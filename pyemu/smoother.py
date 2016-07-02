@@ -5,11 +5,11 @@ import math
 import numpy as np
 import pandas as pd
 from pyemu.en import ParameterEnsemble,ObservationEnsemble
-from pyemu.mat import Cov
+from pyemu.mat import Cov, Matrix
 from pyemu.pst import Pst
 
 
-class EnsembleSmoother(object):
+class EnsembleSmoother():
 
     def __init__(self,pst,parcov=None,obscov=None):
         assert isinstance(pst,Pst)
@@ -31,6 +31,7 @@ class EnsembleSmoother(object):
         self.half_parcov_diag = None
         self.half_obscov_diag = None
         self.delta_par_prior = None
+        self.iter_num = 0
 
 
     def initialize(self,num_reals):
@@ -46,17 +47,17 @@ class EnsembleSmoother(object):
         self.obsensemble = self.obsensemble_0.copy()
 
         if self.parcov.isdiagonal:
-            self.half_parcov_diag = self.parcov.sqrt
+            self.half_parcov_diag = self.parcov.inv.sqrt
         else:
             self.half_parcov_diag = Cov(x=np.diag(self.parcov.x),
                                         names=self.parcov.col_names,
-                                        isdiagonal=True)
-        if self.obscov.isdiagonal:
-            self.half_obscov_diag = self.obscov.sqrt
-        else:
-            self.half_obscov_diag = Cov(x=np.diag(self.obscov.x),
-                                        names=self.obscov.col_names,
-                                        isdiagonal=True)
+                                        isdiagonal=True).inv.sqrt
+        #if self.obscov.isdiagonal:
+        #self.half_obscov_inv = self.obscov.inv.sqrt
+       # else:
+        #    self.half_obscov_diag = Cov(x=np.diag(self.obscov.x),
+        #                                names=self.obscov.col_names,
+        #                                isdiagonal=True)
 
         self.delta_par_prior = self._calc_delta_par()
 
@@ -67,10 +68,12 @@ class EnsembleSmoother(object):
         calc the scaled parameter ensemble differences from the mean
         '''
         mean = np.array(self.parensemble.mean(axis=0))
-        delta = self.parensemble.as_matrix()
+        delta = self.parensemble.as_pyemu_matrix()
         for i in range(self.num_reals):
-            delta[i,:] -= mean
-        delta = self.half_parcov_diag * delta.transpose()
+            delta.x[i,:] -= mean
+        #delta = Matrix(x=(self.half_parcov_diag * delta.transpose()).x,
+        #               row_names=self.parensemble.columns)
+        delta = self.half_parcov_diag * delta.T
         return delta * (1.0 / np.sqrt(float(self.num_reals - 1.0)))
 
     def _calc_delta_obs(self):
@@ -78,19 +81,59 @@ class EnsembleSmoother(object):
         calc the scaled observation ensemble differences from the mean
         '''
 
-        raise NotImplementedError()
+        mean = np.array(self.obsensemble.mean(axis=0))
+        delta = self.obsensemble.as_pyemu_matrix()
+        for i in range(self.num_reals):
+            delta.x[i,:] -= mean
+        delta = self.obscov.inv.sqrt * delta.T
+        return delta * (1.0 / np.sqrt(float(self.num_reals - 1.0)))
 
 
     def _calc_obs(self):
         '''
         propagate the ensemble forward...
         '''
-        self.parensemble.to_csv("EnsembleSmoother.pars.csv")
-        os.system("sweep ")
+        self.parensemble.to_csv(os.path.join("smoother","sweep_in.csv"))
+        os.chdir("smoother")
+        print(os.listdir('.'))
+        os.system("sweep freyberg.pst")
+        os.chdir('..')
+        obs = ObservationEnsemble.from_csv(os.path.join(\
+                "smoother",'sweep_out.csv'))
+        obs.columns = [item.lower() for item in obs.columns]
+        self.obsensemble = ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],pst=self.pst)
         #todo: modifiy sweep to be interactive...
+        return
 
+    @property
+    def current_lambda(self):
+        return 10.0
 
     def update(self):
         if not self.__initialized:
             raise Exception("must call initialize() before update()")
         self._calc_obs()
+        delta_obs = self._calc_delta_obs()
+        u,s,v = delta_obs.pseudo_inv_components()
+        #print(v)
+        #print(s)
+        #print(v)
+        diff = self.obsensemble.as_pyemu_matrix() - self.obsensemble_0.as_pyemu_matrix()
+        #print(diff)
+        x1 = u.T * self.obscov.inv.sqrt * diff.T
+        x1.autoalign = False
+        #print(x1)
+        x2 = (Cov.identity_like(s) + s**2).inv * x1
+        #print(x2)
+        x3 = v * s * x2
+        #print(x3)
+        upgrade_1 = (self.half_parcov_diag * self._calc_delta_par() * x3).to_dataframe()
+        upgrade_1.index.name = "parnme"
+        print(upgrade_1)
+        self.parensemble += upgrade_1.T
+        print(self.parensemble)
+        if self.iter_num > 0:
+            raise NotImplementedError()
+
+        print(upgrade_1.shape)
+

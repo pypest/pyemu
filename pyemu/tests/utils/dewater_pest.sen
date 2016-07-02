@@ -1,0 +1,14 @@
+                    PARAMETER SENSITIVITIES: CASE dewater_pest
+
+
+NUMERIC PARAMETER SENSITIVITIES FOR OPTIMISATION ITERATION NO. 1   ----->
+ Parameter name   Group        Current Value           CSS w/reg           CSS w/o reg
+   q1              pargp        0.00000000000        0.00000000000        0.00000000000       
+   q2              pargp        0.00000000000        0.00000000000        0.00000000000       
+   q3              pargp        0.00000000000        0.00000000000        0.00000000000       
+   q4              pargp        0.00000000000        0.00000000000        0.00000000000       
+   q5              pargp        0.00000000000        0.00000000000        0.00000000000       
+   q6              pargp        0.00000000000        0.00000000000        0.00000000000       
+   q7              pargp        0.00000000000        0.00000000000        0.00000000000       
+
+

@@ -14,7 +14,7 @@ FFMT = lambda x: "{0:>15.6E}".format(float(x))
 
 CONTROL_DEFAULT_LINES = """restart regularization
      0     0       0    0      0  0
-0  0  single  point  1  0  0 noobsref
+0  0  single  point  1  0  0 noobsreref
 2.000000e+001  -3.000000e+000  3.000000e-001  1.000000e-002 -7 999 lamforgive noderforgive
 1.000000e+001  1.000000e+001  1.000000e-003  0  0
 1.000000e-001 1 1.1 noaui nosenreuse noboundscale
