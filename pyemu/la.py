@@ -483,6 +483,11 @@ class LinearAnalysis(object):
     # unneeded items until they are called
     # returns a reference - cheap, but can be dangerous
 
+    @property
+    def forecast_names(self):
+        if self.forecasts is None:
+            return []
+        return [fore.col_names[0] for fore in self.forecasts]
 
     @property
     def parcov(self):

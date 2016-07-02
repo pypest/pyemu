@@ -616,7 +616,7 @@ pcf
               kr10c59                   log                factor    1.000000E+00    1.100000E-10    1.100000E+10                 pargp    1.000000E+00    0.000000E+00          1
               kr10c60                   log                factor    1.000000E+00    1.100000E-10    1.100000E+10                 pargp    1.000000E+00    0.000000E+00          1
 * observation groups
-obgnme
+              obgnme
                regul
 * observation data
             c_obs01_1    1.000000E+10    1.000000E+00                obgnme

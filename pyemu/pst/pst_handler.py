@@ -192,7 +192,7 @@ class Pst(object):
         """observation groups
         """
         og = list(self.observation_data.groupby("obgnme").groups.keys())
-        #og = map(pst_utils.SFMT, og)
+        #og = list(map(pst_utils.SFMT, og))
         return og
 
 
@@ -209,7 +209,7 @@ class Pst(object):
         """prior info groups
         """
         og = list(self.prior_information.groupby("obgnme").groups.keys())
-        og = map(pst_utils.SFMT, og)
+        #og = list(map(pst_utils.SFMT, og))
         return og
 
     @property
@@ -556,8 +556,8 @@ class Pst(object):
                                             index=False)+'\n')
             #self.tied.loc[:,"parnme"] = self.tied.index
         f_out.write("* observation groups\n")
-        [f_out.write(str(group)+'\n') for group in self.obs_groups]
-        [f_out.write(str(group)+'\n') for group in self.prior_groups]
+        [f_out.write(pst_utils.SFMT(str(group))+'\n') for group in self.obs_groups]
+        [f_out.write(pst_utils.SFMT(str(group))+'\n') for group in self.prior_groups]
 
         f_out.write("* observation data\n")
         #self.observation_data.index = self.observation_data.pop("obsnme")
@@ -923,3 +923,90 @@ class Pst(object):
                 ow = min(wmax, nw)
             new_weights.append(ow)
         self.observation_data.weight = new_weights
+
+    def calculate_pertubations(self):
+
+        self.build_increments()
+        self.parameter_data.loc[:,"pertubation"] = \
+            self.parameter_data.parval1 + \
+            self.parameter_data.increment
+
+        self.parameter_data.loc[:,"out_forward"] = \
+            self.parameter_data.loc[:,"pertubation"] > \
+            self.parameter_data.loc[:,"parubnd"]
+
+        out_forward = self.parameter_data.groupby("out_forward").groups
+        if True in out_forward:
+            self.parameter_data.loc[out_forward[True],"pertubation"] = \
+                    self.parameter_data.loc[out_forward[True],"parval1"] - \
+                    self.parameter_data.loc[out_forward[True],"increment"]
+
+            self.parameter_data.loc[:,"out_back"] = \
+            self.parameter_data.loc[:,"pertubation"] < \
+            self.parameter_data.loc[:,"parlbnd"]
+            out_back = self.parameter_data.groupby("out_back").groups
+            if True in out_back:
+                still_out = out_back[True]
+                print(self.parameter_data.loc[still_out,:],flush=True)
+
+                raise Exception("Pst.calculate_pertubations(): " +\
+                                "can't calc pertubations for the following "+\
+                                "parameters: {0}".format(','.join(still_out)))
+
+    def build_increments(self):
+        self.enforce_bounds()
+
+        par_groups = self.parameter_data.groupby("pargp").groups
+        inctype = self.parameter_groups.groupby("inctyp").groups
+        for itype,inc_groups in inctype.items():
+            pnames = []
+            for group in inc_groups:
+                pnames.extend(par_groups[group])
+                derinc = self.parameter_groups.loc[group,"derinc"]
+                self.parameter_data.loc[par_groups[group],"derinc"] = derinc
+            if itype == "absolute":
+                self.parameter_data.loc[pnames,"increment"] = \
+                    self.parameter_data.loc[pnames,"derinc"]
+            elif itype == "relative":
+                self.parameter_data.loc[pnames,"increment"] = \
+                    self.parameter_data.loc[pnames,"derinc"] * \
+                    self.parameter_data.loc[pnames,"parval1"]
+            elif itype == "rel_to_max":
+                mx = self.parameter_data.loc[pnames,"parval1"].max()
+                self.parameter_data.loc[pnames,"increment"] = \
+                    self.parameter_data.loc[pnames,"derinc"] * mx
+            else:
+                raise Exception('Pst.get_derivative_increments(): '+\
+                                'unrecognized increment type:{0}'.format(itype))
+
+        #account for fixed pars
+        isfixed = self.parameter_data.partrans=="fixed"
+        self.parameter_data.loc[isfixed,"increment"] = \
+            self.parameter_data.loc[isfixed,"parval1"]
+
+    def add_transform_columns(self):
+        for col in ["parval1","parlbnd","parubnd","increment"]:
+            if col not in self.parameter_data.columns:
+                continue
+            self.parameter_data.loc[:,col+"_trans"] = (self.parameter_data.parval1 *
+                                                          self.parameter_data.scale) +\
+                                                         self.parameter_data.offset
+            isfixed = self.parameter_data.partrans == "fixed"
+            self.parameter_data.loc[isfixed,col+"_trans"] = \
+                self.parameter_data.loc[isfixed,col+"_trans"].\
+                    apply(lambda x:np.log10(x))
+
+    def enforce_bounds(self):
+        too_big = self.parameter_data.loc[:,"parval1"] > \
+            self.parameter_data.loc[:,"parubnd"]
+        self.parameter_data.loc[too_big,"parval1"] = \
+            self.parameter_data.loc[too_big,"parubnd"]
+
+        too_small = self.parameter_data.loc[:,"parval1"] < \
+            self.parameter_data.loc[:,"parlbnd"]
+        self.parameter_data.loc[too_small,"parval1"] = \
+            self.parameter_data.loc[too_small,"parlbnd"]
+
+
+
+

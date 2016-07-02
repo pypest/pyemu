@@ -8,9 +8,33 @@ OPERATOR_WORDS = ["l","g","n","e"]
 OPERATOR_SYMBOLS = ["<=",">=","=","="]
 
 
-def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,decision_var_names=None,
-           mps_filename=None,):
+def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
+           decision_var_names=None,mps_filename=None,):
+    """helper utility to write an mps file from pest-style
+    jacobian matrix. Requires corresponding pest control
+    file.
 
+    Parameters:
+        jco : pyemu.Matrix or str (filename of matrix)
+        obj_func : optional.  If None, an obs group must exist
+            named 'n' and must have one one member.  Can be a str, which
+            is the name of an observation to treat as the objective function
+            or can be a dict, which is keyed on decision var names and valued
+            with objective function coeffs.
+        obs_constraint_sense : optional.  If None, obs groups are sought that
+            have names "l","g", or "e" - members of these groups are treated
+            as constraints.  Otherwise, must be a dict keyed on constraint
+             (obs) names with values of "l","g", or "e".
+        pst : optional.  If None, a pest control file is sought with
+            filename <case>.pst.  Otherwise, must be a pyemu.Pst instance or
+            a filename of a pest control file
+        decision_var_names: optional.  If None, all parameters are treated as
+            decision vars. Otherwise, must be a list of str of parameter names
+            to use as decision vars
+        mps_filename : optional.  If None, then <case>.mps is written.
+            Otherwise, must be a str.
+
+    """
     if isinstance(jco,str):
         pst_name = jco.lower().replace('.jcb',".pst").replace(".jco",".pst")
         jco = Matrix.from_binary(jco)
@@ -148,6 +172,26 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,decision_var_nam
     if mps_filename is None:
         mps_filename = pst.filename.replace(".pst",".mps")
 
+    resp_mat = jco.get(row_names=order_obs_constraints,col_names=order_dec_var)
+
+    #curr_dec_vec = Matrix.from_dataframe(
+    #        pst.parameter_data.loc[order_dec_var,["parval1"]])
+
+    pst.calculate_pertubations()
+    curr_dec_vec = Matrix.from_dataframe(
+            pst.parameter_data.loc[order_dec_var,["pertubation"]])
+
+    rhs = np.atleast_2d(
+            np.array(([rhs[name] for name in order_obs_constraints]))).transpose()
+
+    curr_rhs = Matrix(
+            x=rhs,row_names=order_obs_constraints,col_names=["pertubation"])
+
+    mod_rhs = (resp_mat * curr_dec_vec)
+
+    dist_rhs = mod_rhs - curr_rhs
+
+
     with open(mps_filename,'w') as f:
         f.write("NAME {0}\n".format("pest_opt"))
         f.write("ROWS\n")
@@ -167,12 +211,12 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,decision_var_nam
                                jco.x[jco_iidx,jco_jidx]))
             f.write("    {0:8}  {1:8}   {2:10G}\n".\
                     format(new_decision_names[dname],
-                           obj_name,obj[dname]))
+                           obj_name,pst.parameter_data.loc[dname,"pertubation"]))
 
         f.write("RHS\n")
-        for name in order_obs_constraints:
+        for iname,name in enumerate(order_obs_constraints):
             f.write("    {0:8}  {1:8}   {2:10G}\n".
-                    format("rhs",new_constraint_names[name],rhs[name]))
+                    format("rhs",new_constraint_names[name],dist_rhs.x[iname,0]))
         f.write("BOUNDS\n")
         for name in order_dec_var:
             up,lw = pst.parameter_data.loc[name,"parubnd"],\

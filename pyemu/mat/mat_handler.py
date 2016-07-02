@@ -1552,7 +1552,7 @@ class Cov(Matrix):
             ub = row["parubnd"] * row["scale"] + row["offset"]
 
             if t == "log":
-                var = ((np.log10(ub) - np.log10(lb)) / 4.0) ** 2
+                var = ((np.log10(np.abs(ub)) - np.log10(np.abs(lb))) / 4.0) ** 2
             else:
                 var = ((ub - lb) / 4.0) ** 2
             if np.isnan(var):

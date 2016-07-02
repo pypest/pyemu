@@ -131,8 +131,17 @@ def tied_test():
     mc.draw(1)
     mc.write_psts(os.path.join(pst_dir,"tiedtest_"))
 
+def derivative_increment_tests():
+    import os
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst","inctest.pst"))
+    pst.calculate_pertubations()
+
+
 if __name__ == "__main__":
-    tied_test()
+    derivative_increment_tests()
+    #tied_test()
     #smp_test()
     #pst_manip_test()
     #tpl_ins_test()

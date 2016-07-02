@@ -618,9 +618,9 @@ pcf
               kr10c59                   log                factor    2.000000E+02    2.000000E+01    2.000000E+03                     p    1.000000E+00    0.000000E+00          1
               kr10c60                   log                factor    2.000000E+02    2.000000E+01    2.000000E+03                     p    1.000000E+00    0.000000E+00          1
 * observation groups
-pred
-head
-conc
+                pred
+                head
+                conc
 * observation data
             h_obs01_1    5.139620E-02    8.141342E+01                  head
             h_obs01_2    2.215620E-02    0.000000E+00                  head
