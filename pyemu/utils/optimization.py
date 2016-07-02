@@ -27,7 +27,9 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
              (obs) names with values of "l","g", or "e".
         pst : optional.  If None, a pest control file is sought with
             filename <case>.pst.  Otherwise, must be a pyemu.Pst instance or
-            a filename of a pest control file
+            a filename of a pest control file. The control must have an
+            associated .res or .rei file - this is needed for the RHS of the
+            constraints.
         decision_var_names: optional.  If None, all parameters are treated as
             decision vars. Otherwise, must be a list of str of parameter names
             to use as decision vars
@@ -35,11 +37,14 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
             Otherwise, must be a str.
 
     """
+
+    #if jco arg is a string, load a jco from binary
     if isinstance(jco,str):
         pst_name = jco.lower().replace('.jcb',".pst").replace(".jco",".pst")
         jco = Matrix.from_binary(jco)
     assert isinstance(jco,Matrix)
 
+    # try to find a pst
     if pst is None:
         if os.path.exists(pst_name):
             pst = Pst(pst_name)
@@ -50,8 +55,14 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
         assert len(set(jco.row_names).difference(pst.observation_data.index)) == 0
         assert len(set(jco.col_names).difference(pst.parameter_data.index)) == 0
 
+    #make sure the pst has an associate res
+    assert pst.res is not None," could find a residuals file (.res or .rei) for" +\
+                               " for control file {0}".format(pst.filename)
+
+    #if no decision_var_names where passed, use all columns in the jco
     if decision_var_names is None:
         decision_var_names = jco.col_names
+    #otherwise, do some error checking and processing
     else:
         if not isinstance(decision_var_names,list):
             decision_var_names = [decision_var_names]
@@ -61,6 +72,7 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
             assert dv in jco.col_names,"decision var {0} not in jco column names".format(dv)
             assert dv in pst.parameter_data.index,"decision var {0} not in pst parameter names".format(dv)
 
+    #if no obs_constraint_sense, try to build one from the obs group info
     if obs_constraint_sense is None:
         const_groups = [grp for grp in pst.obs_groups if grp.lower() in OPERATOR_WORDS]
         if len(const_groups) == 0:
@@ -76,13 +88,14 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
                     obs_constraint_sense[oname] = og
 
     assert isinstance(obs_constraint_sense,dict)
+    assert len(obs_constraint_sense) > 0,"no obs_constraints..."
 
+    #build up a dict of (in)equality operators for the constraints
     operators = {}
-    rhs = {}
     for obs_name,operator in obs_constraint_sense.items():
         obs_name = obs_name.lower()
         assert obs_name in pst.obs_names,"obs constraint {0} not in pst observation names"
-        rhs[obs_name] = pst.observation_data.loc[obs_name,"obsval"]
+        assert obs_name in pst.res.name," obs constraint {0} not in pst.res names"
         assert obs_name in jco.row_names,"obs constraint {0} not in jco row names".format(obs_name)
         if operator.lower() not in OPERATOR_WORDS:
             if operator not in OPERATOR_SYMBOLS:
@@ -96,7 +109,7 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
         obs_constraint_sense[obs_name.lower()] = obs_constraint_sense.\
                                                  pop(obs_name)
 
-    #build a list of constaints in order WRT jco row order
+    #build a list of constaint names in order WRT jco row order
     order_obs_constraints = [name for name in jco.row_names if name in
                              obs_constraint_sense]
 
@@ -128,7 +141,7 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
         else:
             new_decision_names[name] = name
 
-
+    # if no obj_func, try to make one
     if obj_func is None:
         # look for an obs group named 'n' with a single member
         og = pst.obs_groups
@@ -145,6 +158,7 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
             jco_jidx = jco.col_names.index(name)
             obj[name] = jco.x[obj_iidx,jco_jidx]
 
+    #otherwise, parse what was passed
     elif isinstance(obj_func,str):
         obj_func = obj_func.lower()
         assert obj_func in jco.row_names,\
@@ -162,35 +176,17 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
     elif isinstance(obj_func,dict):
         obj = {}
         for name,value in obj_func.items():
-            assert name in jco.col_names,"to_mps(): obj_func key {0} not ".format(name) +\
-                "in jco col names"
+            assert name in jco.col_names,"to_mps(): obj_func key "+\
+                                         "{0} not ".format(name) +\
+                                         "in jco col names"
             obj[name] = float(value)
         obj_name = "obj_func"
     else:
-        raise NotImplementedError
+        raise NotImplementedError("unsupported obj_func arg type {0}".format(\
+                                  type(obj_func)))
 
     if mps_filename is None:
         mps_filename = pst.filename.replace(".pst",".mps")
-
-    resp_mat = jco.get(row_names=order_obs_constraints,col_names=order_dec_var)
-
-    #curr_dec_vec = Matrix.from_dataframe(
-    #        pst.parameter_data.loc[order_dec_var,["parval1"]])
-
-    pst.calculate_pertubations()
-    curr_dec_vec = Matrix.from_dataframe(
-            pst.parameter_data.loc[order_dec_var,["pertubation"]])
-
-    rhs = np.atleast_2d(
-            np.array(([rhs[name] for name in order_obs_constraints]))).transpose()
-
-    curr_rhs = Matrix(
-            x=rhs,row_names=order_obs_constraints,col_names=["pertubation"])
-
-    mod_rhs = (resp_mat * curr_dec_vec)
-
-    dist_rhs = mod_rhs - curr_rhs
-
 
     with open(mps_filename,'w') as f:
         f.write("NAME {0}\n".format("pest_opt"))
@@ -211,12 +207,13 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
                                jco.x[jco_iidx,jco_jidx]))
             f.write("    {0:8}  {1:8}   {2:10G}\n".\
                     format(new_decision_names[dname],
-                           obj_name,pst.parameter_data.loc[dname,"pertubation"]))
+                           obj_name,pst.parameter_data.loc[dname,"parval1"]))
 
         f.write("RHS\n")
         for iname,name in enumerate(order_obs_constraints):
             f.write("    {0:8}  {1:8}   {2:10G}\n".
-                    format("rhs",new_constraint_names[name],dist_rhs.x[iname,0]))
+                    format("rhs",new_constraint_names[name],
+                           pst.res.loc[name,"residual"]))
         f.write("BOUNDS\n")
         for name in order_dec_var:
             up,lw = pst.parameter_data.loc[name,"parubnd"],\

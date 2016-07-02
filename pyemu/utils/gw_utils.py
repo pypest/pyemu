@@ -178,9 +178,9 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
             if dtype == object:
                 shp.field(name=name,fieldType='C',size=50)
             elif dtype in [int,np.int,np.int64,np.int32]:
-                shp.field(name=name, fieldType='N', size=20, decimal=0)
+                shp.field(name=name, fieldType='N', size=50, decimal=0)
             elif dtype in [float,np.float,np.float32,np.float32]:
-                shp.field(name=name, fieldType='N', size=20, decimal=8)
+                shp.field(name=name, fieldType='N', size=50, decimal=8)
             else:
                 raise Exception("unrecognized field type in par_info:{0}:{1}".format(name,dtype))
 
