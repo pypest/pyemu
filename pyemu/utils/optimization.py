@@ -10,7 +10,7 @@ OPERATOR_SYMBOLS = ["<=",">=","=","="]
 
 def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
            decision_var_names=None,mps_filename=None,
-           risk=0.5):
+           risk=0.5,obj_sense="min"):
     """helper utility to write an mps file from pest-style
     jacobian matrix. Requires corresponding pest control
     file.
@@ -40,6 +40,9 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
             the level of risk tolerance/aversion in the chance constraints.
             Values or then 0.50 require at least one parameter (non decision
             var) in the jco.  Ranges from 0.0,1.0
+        obj_sense : str:
+            the objective function sense of the problem (e.g. "min"
+            of "max")
 
     """
 
@@ -193,9 +196,12 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
         raise NotImplementedError("unsupported obj_func arg type {0}".format(\
                                   type(obj_func)))
 
-    if risk != 0.5:
+    #if risk != 0.5:
+    if True:
+        assert obj_sense.lower()[:3] in ["min","max"]
         try:
             from scipy.special import erfinv
+            from scipy.stats import norm
         except Exception as e:
             raise Exception("to_mps() error importing erfinv from scipy.special: "+\
                             "{0}".format(str(e)))
@@ -207,13 +213,16 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
         unc_jco = jco.get(col_names=par_names)
         unc_pst = pst.get(par_names=par_names)
         sc = Schur(jco=unc_jco,pst=unc_pst,forecasts=order_obs_constraints)
-        constraint_var = sc.get_forecast_summary().loc[:,"post_var"]
+        constraint_std = sc.get_forecast_summary().loc[:,"post_var"].apply(np.sqrt)
         rhs = {}
+
         probit_val = np.sqrt(2.0) * erfinv((2.0 * risk) - 1.0)
+        if obj_sense.lower()[:3] == "max":
+            probit_val *= -1.0
         for name in order_obs_constraints:
             mu = unc_pst.res.loc[name,"residual"]
-            var = constraint_var.loc[name]
-            prob_val = mu + (probit_val * var)
+            std = constraint_std.loc[name]
+            prob_val = mu + (probit_val * std)
             rhs[name] = prob_val
     else:
         rhs = {n:pst.res.loc[n,"residual"] for n in order_obs_constraints}

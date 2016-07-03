@@ -225,7 +225,7 @@ def to_mps_test():
     #pyemu.optimization.to_mps(jco=jco_file,obj_func="h00_00")
     decision_var_names = pst.parameter_data.loc[pst.parameter_data.pargp=="q","parnme"].tolist()
     pyemu.optimization.to_mps(jco=jco_file,obj_func=obj_func,decision_var_names=decision_var_names,
-                              risk=0.05)
+                              risk=0.5,obj_sense='max')
 
 def setup_pp_test():
     import os
