@@ -2,14 +2,15 @@ from __future__ import print_function, division
 import os, sys
 import numpy as np
 import pandas as pd
-from pyemu import Matrix,Pst
+from pyemu import Matrix,Pst,Schur
 
 OPERATOR_WORDS = ["l","g","n","e"]
 OPERATOR_SYMBOLS = ["<=",">=","=","="]
 
 
 def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
-           decision_var_names=None,mps_filename=None,):
+           decision_var_names=None,mps_filename=None,
+           risk=0.5):
     """helper utility to write an mps file from pest-style
     jacobian matrix. Requires corresponding pest control
     file.
@@ -35,6 +36,10 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
             to use as decision vars
         mps_filename : optional.  If None, then <case>.mps is written.
             Otherwise, must be a str.
+        risk : float
+            the level of risk tolerance/aversion in the chance constraints.
+            Values or then 0.50 require at least one parameter (non decision
+            var) in the jco.  Ranges from 0.0,1.0
 
     """
 
@@ -62,6 +67,7 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
     #if no decision_var_names where passed, use all columns in the jco
     if decision_var_names is None:
         decision_var_names = jco.col_names
+
     #otherwise, do some error checking and processing
     else:
         if not isinstance(decision_var_names,list):
@@ -71,6 +77,8 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
             decision_var_names[i] = dv
             assert dv in jco.col_names,"decision var {0} not in jco column names".format(dv)
             assert dv in pst.parameter_data.index,"decision var {0} not in pst parameter names".format(dv)
+
+
 
     #if no obs_constraint_sense, try to build one from the obs group info
     if obs_constraint_sense is None:
@@ -185,6 +193,33 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
         raise NotImplementedError("unsupported obj_func arg type {0}".format(\
                                   type(obj_func)))
 
+    if risk != 0.5:
+        try:
+            from scipy.special import erfinv
+        except Exception as e:
+            raise Exception("to_mps() error importing erfinv from scipy.special: "+\
+                            "{0}".format(str(e)))
+
+        par_names = [name for name in jco.col_names if name not in decision_var_names]
+        if len(par_names) == 0:
+            raise Exception("to_mps() error: risk != 0.5, but no "+\
+                            "non-decision vars parameters ")
+        unc_jco = jco.get(col_names=par_names)
+        unc_pst = pst.get(par_names=par_names)
+        sc = Schur(jco=unc_jco,pst=unc_pst,forecasts=order_obs_constraints)
+        constraint_var = sc.get_forecast_summary().loc[:,"post_var"]
+        rhs = {}
+        probit_val = np.sqrt(2.0) * erfinv((2.0 * risk) - 1.0)
+        for name in order_obs_constraints:
+            mu = unc_pst.res.loc[name,"residual"]
+            var = constraint_var.loc[name]
+            prob_val = mu + (probit_val * var)
+            rhs[name] = prob_val
+    else:
+        rhs = {n:pst.res.loc[n,"residual"] for n in order_obs_constraints}
+
+
+
     if mps_filename is None:
         mps_filename = pst.filename.replace(".pst",".mps")
 
@@ -213,7 +248,7 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
         for iname,name in enumerate(order_obs_constraints):
             f.write("    {0:8}  {1:8}   {2:10G}\n".
                     format("rhs",new_constraint_names[name],
-                           pst.res.loc[name,"residual"]))
+                           rhs[name]))
         f.write("BOUNDS\n")
         for name in order_dec_var:
             up,lw = pst.parameter_data.loc[name,"parubnd"],\
