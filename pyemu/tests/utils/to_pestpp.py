@@ -4,7 +4,8 @@ import flopy
 import pyemu
 
 ml = flopy.modflow.Modflow.load("dewater.nam",check=False,verbose=False)
-
+ml.external_path = "ref"
+ml.model_ws = '.'
 
 decvar_file = "dewater.decvar"
 hedcon_file = "dewater.hedcon"
@@ -50,16 +51,18 @@ print(flopy.modflow.ModflowWel.get_default_dtype())
 wel = flopy.modflow.ModflowWel(ml,stress_period_data=well_data)
 oc = flopy.modflow.ModflowOc(ml,chedfm="(30E15.6)")
 
+ml.bcf6.tran[0].fmtin = '(FREE)'
+ml.bas6.strt[0].fmtin = '(FREE)'
 ml.name = "dewater_pest"
 ml.exe_name = "mf2005"
 ml.write_input()
 ml.run_model()
 
-
-
 # write a template file for the well file
-f_wel = open(ml.name+".wel",'r')
-f_tpl = open(ml.name+".wel.tpl",'w')
+wel_file = os.path.join(ml.external_path,"WEL_0000.dat")
+wtpl_file = os.path.join("WEL_0000.dat.tpl")
+f_wel = open(wel_file,'r')
+f_tpl = open(wtpl_file,'w')
 
 f_tpl.write("ptf ~\n")
 [f_tpl.write(f_wel.readline()) for _ in range(3)]
@@ -67,6 +70,32 @@ for i,line in enumerate(f_wel):
     pname = flow_df.fvname[i]
     tpl_line = line[:33] + "~    {0}    ~\n".format(pname)
     f_tpl.write(tpl_line)
+f_tpl.close()
+
+hktpl_file = os.path.join("transmissivity_layer_1.ref.tpl")
+tr_file = os.path.join(ml.external_path,"transmissivity_layer_1.ref")
+f_tpl = open(hktpl_file,'w')
+f_tpl.write('ptf ~\n')
+for i in range(ml.nrow):
+    for j in range(ml.ncol):
+        f_tpl.write(" ~     hk_{0:02d}_{1:02d}    ~".format(i,j))
+    f_tpl.write('\n')
+f_tpl.close()
+
+
+stpl_file = os.path.join("strt_layer_1.ref.tpl")
+strt_file = os.path.join(ml.external_path,"strt_layer_1.ref")
+f_tpl = open(stpl_file,'w')
+f_tpl.write('ptf ~\n')
+for i in range(ml.nrow):
+    for j in range(ml.ncol):
+        if j == 0:
+            f_tpl.write(" ~     up_grad    ~")
+        elif j == ml.ncol-1:
+            f_tpl.write(" ~     dn_grad    ~")
+        else:
+            f_tpl.write(" {0:19.1f}".format(70.0))
+    f_tpl.write('\n')
 f_tpl.close()
 
 
@@ -90,20 +119,48 @@ with open(ml.name+".hds.ins",'w') as f:
             f.write(" w !{0}!".format(oname))
         f.write("\n")
 
-pst = pyemu.pst_utils.pst_from_io_files(ml.name+".wel.tpl",ml.name+".wel",ml.name+".hds.ins",ml.name+".hds")
-pst.parameter_data.loc[:,"partrans"] = "none"
-pst.parameter_data.loc[:,"parval1"] = 0.0
-pst.parameter_data.loc[:,"parubnd"] = 20000.0
-pst.parameter_data.loc[:,"parlbnd"] = 0.0
-pst.parameter_data.loc[:,"scale"] = -1.0
-pst.parameter_groups.loc[:,"inctyp"] = "absolute"
-pst.parameter_groups.loc[:,"derinc"] = -10000.0
+pst = pyemu.pst_utils.pst_from_io_files([wtpl_file,hktpl_file,stpl_file],[wel_file,tr_file,strt_file],
+    ml.name+".hds.ins",ml.name+".hds")
+pg = pst.parameter_data.groupby(lambda x: x[0]).groups
+print(pg.keys())
+pst.parameter_data.loc[pg['q'],"partrans"] = "none"
+pst.parameter_data.loc[pg['q'],"parval1"] = 0.0
+pst.parameter_data.loc[pg['q'],"parubnd"] = 20000.0
+pst.parameter_data.loc[pg['q'],"parlbnd"] = 0.0
+pst.parameter_data.loc[pg['q'],"scale"] = -1.0
+pst.parameter_data.loc[pg['q'],"pargp"] = 'q'
 
-print(pst.observation_data)
+pst.parameter_data.loc[pg['h'],"partrans"] = "none"
+pst.parameter_data.loc[pg['h'],"parval1"] = 50.0
+pst.parameter_data.loc[pg['h'],"parubnd"] = 500.0
+pst.parameter_data.loc[pg['h'],"parlbnd"] = 5.0
+pst.parameter_data.loc[pg['h'],"pargp"] = 'h'
+
+pst.parameter_data.loc[pg['u'],"partrans"] = "none"
+pst.parameter_data.loc[pg['u'],"parval1"] = 80.0
+pst.parameter_data.loc[pg['u'],"parubnd"] = 90
+pst.parameter_data.loc[pg['u'],"parlbnd"] = 70.0
+pst.parameter_data.loc[pg['u'],"pargp"] = 'u'
+
+pst.parameter_data.loc[pg['d'],"partrans"] = "none"
+pst.parameter_data.loc[pg['d'],"parval1"] = 60.0
+pst.parameter_data.loc[pg['d'],"parubnd"] = 70
+pst.parameter_data.loc[pg['d'],"parlbnd"] = 50.0
+pst.parameter_data.loc[pg['d'],"pargp"] = 'd'
+
+pst._rectify_pgroups()
+pst.parameter_groups.loc['q',"inctyp"] = "absolute"
+pst.parameter_groups.loc['q',"derinc"] = -10000.0
+
+
+
+#rint(pst.observation_data)
 pst.observation_data.loc[:,"obsval"] = 50.0
 pst.observation_data.loc[:,"weight"] = 0.0
 pst.observation_data.loc[nnz_names,"weight"] = 1.0
 pst.observation_data.loc[nnz_names,"obgnme"] = "l"
+
+pst.pestpp_options["forecasts"] = ','.join(nnz_names)
 
 pst.prior_information = pst.null_prior
 pst.control_data.pestmode = "estimation"

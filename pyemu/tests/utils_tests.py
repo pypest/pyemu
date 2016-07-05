@@ -220,10 +220,12 @@ def to_mps_test():
     oc_dict = {oc:"l" for oc in pst.nnz_obs_names}
     obj_func = {name:1.0 for name in pst.par_names}
 
-    pyemu.optimization.to_mps(jco=jco_file)
-    pyemu.optimization.to_mps(jco=jco_file,obs_constraint_sense=oc_dict)
-    pyemu.optimization.to_mps(jco=jco_file,obj_func="h00_00")
-    pyemu.optimization.to_mps(jco=jco_file,obj_func=obj_func)
+    #pyemu.optimization.to_mps(jco=jco_file)
+    #pyemu.optimization.to_mps(jco=jco_file,obs_constraint_sense=oc_dict)
+    #pyemu.optimization.to_mps(jco=jco_file,obj_func="h00_00")
+    decision_var_names = pst.parameter_data.loc[pst.parameter_data.pargp=="q","parnme"].tolist()
+    pyemu.optimization.to_mps(jco=jco_file,obj_func=obj_func,decision_var_names=decision_var_names,
+                              risk=0.5,obj_sense='max')
 
 def setup_pp_test():
     import os
