@@ -259,12 +259,29 @@ def read_pval_test():
     pyemu.gw_utils.modflow_pval_to_template_file(pval_file)
 
 
+def pp_to_shapefile_test():
+    import os
+    import pyemu
+    pp_file = os.path.join("utils","points1.dat")
+    shp_file = pp_file+".shp"
+    pyemu.gw_utils.write_pp_shapfile(pp_file)
+
+def write_tpl_test():
+    import os
+    import pyemu
+    tpl_file = os.path.join("utils","test_write.tpl")
+    in_file = os.path.join("utils","tpl_test.dat")
+    par_vals = {"q{0}".format(i+1):12345678.90123456 for i in range(7)}
+    pyemu.pst_utils.write_to_template(par_vals,tpl_file,in_file)
+
 
 if __name__ == "__main__":
+    write_tpl_test()
+    #pp_to_shapefile_test()
     #read_pval_test()
     #read_hob_test()
     #setup_pp_test()
-    to_mps_test()
+    #to_mps_test()
     #pp_to_tpl_test()
     # setup_ppcov_complex()
     # ppcov_complex_test()

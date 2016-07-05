@@ -193,10 +193,56 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
         assert shp.numRecords == par_info.shape[0]
     return par_info
 
+
+def write_pp_shapfile(pp_df,shapename=None):
+    """write pilot points to a shapefile
+    Parameters
+    ----------
+        pp_df : pandas.DataFrame or str
+            pilot dataframe or a pilot point filename
+        shapename : (optional) str
+            shapefile name.  If None, pp_df must be str
+    Returns
+    -------
+        None
+
+    """
+    try:
+        import shapefile
+    except Exception as e:
+        raise Exception("error importing shapefile: {0}, \ntry pip install pyshp...".format(str(e)))
+
+    if isinstance(pp_df, str):
+        if shapename is None:
+            shapename = pp_df + ".shp"
+        pp_df = pd.read_csv(pp_df, delim_whitespace=True, header=None, names=PP_NAMES)
+
+    if shapename is None:
+        raise Exception("shapename is None")
+
+    shp = shapefile.Writer(shapeType=shapefile.POINT)
+    for name, dtype in pp_df.dtypes.iteritems():
+        if dtype == object:
+            shp.field(name=name, fieldType='C', size=50)
+        elif dtype in [int, np.int, np.int64, np.int32]:
+            shp.field(name=name, fieldType='N', size=50, decimal=0)
+        elif dtype in [float, np.float, np.float32, np.float32]:
+            shp.field(name=name, fieldType='N', size=50, decimal=8)
+        else:
+            raise Exception("unrecognized field type in par_info:{0}:{1}".format(name, dtype))
+
+    # some pandas awesomeness..
+    pp_df.apply(lambda x: shp.poly([[[x.x, x.y]]]), axis=1)
+    pp_df.apply(lambda x: shp.record(*x), axis=1)
+
+    shp.save(shapename)
+
+
+
 def write_pp_file(filename,pp_df):
     with open(filename,'w') as f:
        f.write(pp_df.to_string(col_space=0,
-                                columns=["name", "x", "y", "zone", "parval1"],
+                                columns=PP_NAMES,
                                 formatters=PP_FMT,
                                 justify="right",
                                 header=False,
@@ -232,7 +278,7 @@ def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
         assert tpl_file is not None
     else:
         pp_df = pd.read_csv(pp_file,delim_whitespace=True,header=None,
-                            names=["name","x","y","zone","parval1"])
+                            names=PP_NAMES)
         assert os.path.exists(pp_file)
 
     if tpl_file is None:

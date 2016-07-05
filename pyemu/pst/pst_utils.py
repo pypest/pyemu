@@ -237,6 +237,69 @@ def parse_tpl_file(tpl_file):
     return par_names
 
 
+def write_parvals_in_tplfiles(pst):
+    """this is a simple implementation of what pest does.  It does not
+    handle all the special cases, just a basic function...user beware
+    """
+    for tpl_file,in_file in zip(pst.template_files,pst.input_files):
+        write_to_template(pst.parameter_data.parval1,tpl_file,in_file)
+
+def write_to_template(parvals,tpl_file,in_file):
+    f_in = open(in_file,'w')
+    f_tpl = open(tpl_file,'r')
+    header = f_tpl.readline().strip().split()
+    assert header[0].lower() in ["ptf", "jtf"], \
+        "template file error: must start with [ptf,jtf], not:" + \
+        str(header[0])
+    assert len(header) == 2, \
+        "template file error: header line must have two entries: " + \
+        str(header)
+
+    marker = header[1]
+    assert len(marker) == 1, \
+        "template file error: marker must be a single character, not:" + \
+        str(marker)
+    for line in f_tpl:
+        if marker not in line:
+            f_in.write(line)
+        else:
+            line = line.lower().rstrip()
+            par_names = line.split(marker)[1::2]
+            par_names = [name.strip() for name in par_names]
+            start,end = get_marker_indices(marker,line)
+            assert len(par_names) == len(start)
+            new_line = line[:start[0]]
+            between = [line[e:s] for s,e in zip(start[1:],end[:-1])]
+            for i,name in enumerate(par_names):
+                s,e = start[i],end[i]
+                w = e - s
+                if w > 15:
+                    d = 6
+                else:
+                    d = 3
+                fmt = "{0:" + str(w)+"."+str(d)+"E}"
+                val_str = fmt.format(parvals[name])
+                new_line += val_str
+                if i != len(par_names) - 1:
+                    new_line += between[i]
+            new_line += line[end[-1]:]
+            f_in.write(new_line+'\n')
+    f_tpl.close()
+    f_in.close()
+
+
+def get_marker_indices(marker,line):
+    indices = [i for i, ltr in enumerate(line) if ltr == marker]
+    start = indices[0:-1:2]
+    end = [i+1 for i in indices[1::2]]
+    assert len(start) == len(end)
+    return start,end
+
+
+
+
+
+
 def parse_ins_file(ins_file):
     """parse a pest instruction file to get observation names
     Parameters:
