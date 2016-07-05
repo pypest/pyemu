@@ -240,8 +240,12 @@ def setup_pp_test():
     #pyemu.gw_utils.setup_pilotpoints_grid(ml)
     pp_dir = os.path.join("utils")
     par_info = pyemu.gw_utils.setup_pilotpoints_grid(ml,prefix_dict={0:["hk1_","sy1_","rch_"]},
-                                                     every_n_cell=1,pp_dir=pp_dir,tpl_dir=pp_dir,
+                                                     every_n_cell=10,pp_dir=pp_dir,tpl_dir=pp_dir,
                                                      shapename=os.path.join(pp_dir,"test.shp"))
+
+    par_info = pyemu.gw_utils.setup_pilotpoints_grid(ml,every_n_cell=10, pp_dir=pp_dir, tpl_dir=pp_dir,
+                                                     shapename=os.path.join(pp_dir, "test1.shp"))
+
     print(par_info.head())
 
 
@@ -276,11 +280,11 @@ def write_tpl_test():
 
 
 if __name__ == "__main__":
-    write_tpl_test()
+    #write_tpl_test()
     #pp_to_shapefile_test()
     #read_pval_test()
     #read_hob_test()
-    #setup_pp_test()
+    setup_pp_test()
     #to_mps_test()
     #pp_to_tpl_test()
     # setup_ppcov_complex()
