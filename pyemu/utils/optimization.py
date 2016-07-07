@@ -10,7 +10,7 @@ OPERATOR_SYMBOLS = ["<=",">=","=","="]
 
 def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
            decision_var_names=None,mps_filename=None,
-           risk=0.5,obj_sense="min"):
+           risk=0.5):
     """helper utility to write an mps file from pest-style
     jacobian matrix. Requires corresponding pest control
     file.
@@ -38,12 +38,8 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
             Otherwise, must be a str.
         risk : float
             the level of risk tolerance/aversion in the chance constraints.
-            Values or then 0.50 require at least one parameter (non decision
+            Values other then 0.50 require at least one parameter (non decision
             var) in the jco.  Ranges from 0.0,1.0
-        obj_sense : str:
-            the objective function sense of the problem (e.g. "min"
-            of "max")
-
     """
 
     #if jco arg is a string, load a jco from binary
@@ -80,8 +76,6 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
             decision_var_names[i] = dv
             assert dv in jco.col_names,"decision var {0} not in jco column names".format(dv)
             assert dv in pst.parameter_data.index,"decision var {0} not in pst parameter names".format(dv)
-
-
 
     #if no obs_constraint_sense, try to build one from the obs group info
     if obs_constraint_sense is None:
@@ -161,7 +155,7 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
                             "obs group named 'n'")
         grps = pst.observation_data.groupby(pst.observation_data.obgnme).groups
         assert len(grps["n"]) == 1,"to_mps(): 'n' obj_func group has more " +\
-                                   " one member"
+                                   " than one member, mps only support one obj"
         obj_name = grps['n'][0]
         obj_iidx = jco.row_names.index(obj_name)
         obj = {}
@@ -196,12 +190,9 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
         raise NotImplementedError("unsupported obj_func arg type {0}".format(\
                                   type(obj_func)))
 
-    #if risk != 0.5:
-    if True:
-        assert obj_sense.lower()[:3] in ["min","max"]
+    if risk != 0.5:
         try:
             from scipy.special import erfinv
-            from scipy.stats import norm
         except Exception as e:
             raise Exception("to_mps() error importing erfinv from scipy.special: "+\
                             "{0}".format(str(e)))
@@ -216,18 +207,28 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
         constraint_std = sc.get_forecast_summary().loc[:,"post_var"].apply(np.sqrt)
         rhs = {}
 
+        # the probit value for a given risk...using the inverse
+        # error function
         probit_val = np.sqrt(2.0) * erfinv((2.0 * risk) - 1.0)
-        if obj_sense.lower()[:3] == "max":
-            probit_val *= -1.0
         for name in order_obs_constraints:
             mu = unc_pst.res.loc[name,"residual"]
             std = constraint_std.loc[name]
-            prob_val = mu + (probit_val * std)
+            #if this is a less than constraint, then we want
+            # to subtract
+            if operators[name] == 'l':
+                prob_val = mu - (probit_val * std)
+            #if this is a greater than constraint, then we want
+            # to add
+            elif operators[name] == "g":
+                prob_val = mu + (probit_val * std)
+            else:
+                raise NotImplementedError("chance constraints only " +\
+                                          "implemented for 'l' or 'g' " +\
+                                          "type constraints, not " +\
+                                          "{0}".format(operators[name]))
             rhs[name] = prob_val
     else:
         rhs = {n:pst.res.loc[n,"residual"] for n in order_obs_constraints}
-
-
 
     if mps_filename is None:
         mps_filename = pst.filename.replace(".pst",".mps")

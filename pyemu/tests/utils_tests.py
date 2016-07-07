@@ -237,7 +237,7 @@ def to_mps_test():
     #pyemu.optimization.to_mps(jco=jco_file,obj_func="h00_00")
     decision_var_names = pst.parameter_data.loc[pst.parameter_data.pargp=="q","parnme"].tolist()
     pyemu.optimization.to_mps(jco=jco_file,obj_func=obj_func,decision_var_names=decision_var_names,
-                              risk=0.5,obj_sense='max')
+                              risk=0.975)
 
 def setup_pp_test():
     import os
@@ -297,13 +297,13 @@ if __name__ == "__main__":
     #read_pval_test()
     #read_hob_test()
     #setup_pp_test()
-    #to_mps_test()
+    to_mps_test()
     #pp_to_tpl_test()
     # setup_ppcov_complex()
     # ppcov_complex_test()
     # setup_ppcov_simple()
     # ppcov_simple_test()
-    fac2real_test()
+    # fac2real_test()
     # vario_test()
     # geostruct_test()
     # aniso_test()
