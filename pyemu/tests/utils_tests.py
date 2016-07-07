@@ -1,12 +1,24 @@
 
 def fac2real_test():
     import os
+    import numpy as np
     import pyemu
-    pp_file = os.path.join("utils","points1.dat")
-    factors_file = os.path.join("utils","factors1.dat")
-    pyemu.utils.gw_utils.fac2real(pp_file,factors_file,
-                                  out_file=os.path.join("utils","test.ref"))
+    # pp_file = os.path.join("utils","points1.dat")
+    # factors_file = os.path.join("utils","factors1.dat")
+    # pyemu.utils.gw_utils.fac2real(pp_file,factors_file,
+    #                               out_file=os.path.join("utils","test.ref"))
 
+    pp_file = os.path.join("utils", "points2.dat")
+    factors_file = os.path.join("utils", "factors2.dat")
+    pyemu.utils.gw_utils.fac2real(pp_file, factors_file,
+                                  out_file=os.path.join("utils", "test.ref"))
+    arr1 = np.loadtxt(os.path.join("utils","fac2real_points2.ref"))
+    arr2 = np.loadtxt(os.path.join("utils","test.ref"))
+    arr1[arr1==1.0e+30] = np.NaN
+    arr1[arr2 == 1.0e+30] = np.NaN
+
+    arr2[np.isnan(arr1)] = np.NaN
+    print(np.nansum(arr1-arr2))
 
 def vario_test():
     import numpy as np
@@ -284,14 +296,14 @@ if __name__ == "__main__":
     #pp_to_shapefile_test()
     #read_pval_test()
     #read_hob_test()
-    setup_pp_test()
+    #setup_pp_test()
     #to_mps_test()
     #pp_to_tpl_test()
     # setup_ppcov_complex()
     # ppcov_complex_test()
     # setup_ppcov_simple()
     # ppcov_simple_test()
-    # fac2real_test()
+    fac2real_test()
     # vario_test()
     # geostruct_test()
     # aniso_test()

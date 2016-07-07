@@ -338,32 +338,44 @@ def fac2real(pp_file,factors_file,out_file="test.ref",
                         "between the factors file and the pilot points file " +\
                         ','.join(list(diff)))
 
-    arr = np.zeros((nrow,ncol),dtype=np.float32) - 1.0e+30
-    for i in range(nrow):
-        for j in range(ncol):
-            line = f_fac.readline()
-            if len(line) == 0:
-                raise Exception("unexpected EOF in factors file")
-            try:
-                fac_data = parse_factor_line(line)
-            except Exception as e:
-                raise Exception("error parsing factor line {0}:{1}".format(line,str(e)))
-            fac_prods = [pp_data.loc[pp,"value"]*fac_data[pp] for pp in fac_data]
-            arr[i,j] = np.sum(np.array(fac_prods))
+    arr = np.zeros((nrow,ncol),dtype=np.float32) + 1.0e+30
+    pp_dict = {name:val for name,val in zip(pp_data.index,pp_data.value)}
+    pp_dict_log = {name:np.log10(val) for name,val in zip(pp_data.index,pp_data.value)}
+    #for i in range(nrow):
+    #    for j in range(ncol):
+    while True:
+        line = f_fac.readline()
+        if len(line) == 0:
+            #raise Exception("unexpected EOF in factors file")
+            break
+        try:
+            inode,itrans,fac_data = parse_factor_line(line)
+        except Exception as e:
+            raise Exception("error parsing factor line {0}:{1}".format(line,str(e)))
+        #fac_prods = [pp_data.loc[pp,"value"]*fac_data[pp] for pp in fac_data]
+        if itrans == 0:
+            fac_sum = sum([pp_dict[pp] * fac_data[pp] for pp in fac_data])
+        else:
+            fac_sum = sum([pp_dict_log[pp] * fac_data[pp] for pp in fac_data])
+        if itrans != 0:
+            fac_sum = 10**fac_sum
+        col = ((inode - 1) // nrow) + 1
+        row = inode - ((col - 1) * nrow)
+        #arr[row-1,col-1] = np.sum(np.array(fac_prods))
+        arr[row - 1, col - 1] = fac_sum
     arr[arr<lower_lim] = lower_lim
     arr[arr>upper_lim] = upper_lim
     np.savetxt(out_file,arr,fmt="%15.6E",delimiter='')
 
 def parse_factor_line(line):
     raw = line.strip().split()
-    inode,zone,nfac = [int(i) for i in raw[:3]]
-    offset = float(raw[3])
+    inode,itrans,nfac = [int(i) for i in raw[:3]]
     fac_data = {}
     for ifac in range(4,4+nfac*2,2):
         pnum = int(raw[ifac]) - 1 #zero based to sync with pandas
         fac = float(raw[ifac+1])
         fac_data[pnum] = fac
-    return fac_data
+    return inode,itrans,fac_data
 
 
 
