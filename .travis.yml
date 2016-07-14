@@ -31,3 +31,6 @@ install: "pip install -r requirements.travis.txt"
 script: 
     - export PYTHONPATH=$PYTHONPATH:.
     - nosetests -v -w ./pyemu/tests
+
+after_success:
+    codecov
