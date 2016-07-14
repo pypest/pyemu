@@ -1,3 +1,7 @@
 numpy>=1.9
 pandas>=0.18.1
+scipy>=0.17.1
 pyshp
+codecov
+coverage
+
