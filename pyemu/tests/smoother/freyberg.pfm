@@ -1,17 +1,17 @@
-PEST++ performance logger started at:  2016-06-22 18:10:54
+PEST++ performance logger started at:  2016-07-14 09:32:54
   starting to process control file
-          ( time = 2016-06-22 18:10:54,  elapsed time = 693us )
+          ( time = 2016-07-14 09:32:54,  elapsed time = 644us )
   finished processing control file
-          ( time = 2016-06-22 18:10:54,  elapsed time = 18ms )
+          ( time = 2016-07-14 09:32:54,  elapsed time = 20ms )
     starting basic model IO error checking
-            ( time = 2016-06-22 18:10:54,  elapsed time = 38ms )
+            ( time = 2016-07-14 09:32:54,  elapsed time = 10ms )
     finished basic model IO error checking
-            ( time = 2016-06-22 18:10:54,  elapsed time = 199us )
+            ( time = 2016-07-14 09:32:54,  elapsed time = 283us )
       starting to read parameter csv file
-              ( time = 2016-06-22 18:10:54,  elapsed time = 2ms )
+              ( time = 2016-07-14 09:32:54,  elapsed time = 1ms )
       finished reading parameter csv file
-              ( time = 2016-06-22 18:10:54,  elapsed time = 21ms )
+              ( time = 2016-07-14 09:32:54,  elapsed time = 17ms )
         starting to read parameter csv file
-                ( time = 2016-06-22 18:10:57,  elapsed time = 2sec )
+                ( time = 2016-07-14 09:32:59,  elapsed time = 4sec )
         finished reading parameter csv file
-                ( time = 2016-06-22 18:10:57,  elapsed time = 96us )
+                ( time = 2016-07-14 09:32:59,  elapsed time = 101us )

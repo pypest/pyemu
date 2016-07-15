@@ -1,4 +1,5 @@
 import os
+import copy
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
@@ -105,7 +106,7 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
         raise Exception("error getting model.bas6.ibound:{0}".format(str(e)))
     par_info = []
     pp_files,tpl_files = [],[]
-    pp_names = PP_NAMES.copy()
+    pp_names = copy.copy(PP_NAMES)
     pp_names.extend(["k","i","j"])
     for k in range(ml.nlay):
         pp_df = None
