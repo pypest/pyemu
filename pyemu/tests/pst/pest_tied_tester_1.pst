@@ -3721,15 +3721,15 @@ kpkp10_mc1            kpkp45_mc1
          kzkpz87_ss3          kzkpz105_ss3
           kzkpz9_ss3           kzkpz45_ss3
 * observation groups
-                 ofr
+         2013seepage
+           head_best
+           head_good
           sm_streams
           bad_odanah
-           head_best
+                 ofr
+           head_fair
                wcrs1
           seepagerun
-         2013seepage
-           head_good
-           head_fair
 * observation data
 prenticepark     6.1000000000E+02     6.6666666667E-02             head_good
         minersvillea     8.0000000000E+02     6.6666666667E-02             head_good

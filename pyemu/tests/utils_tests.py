@@ -14,11 +14,17 @@ def fac2real_test():
                                   out_file=os.path.join("utils", "test.ref"))
     arr1 = np.loadtxt(os.path.join("utils","fac2real_points2.ref"))
     arr2 = np.loadtxt(os.path.join("utils","test.ref"))
-    #arr1[arr1==1.0e+30] = np.NaN
-    #arr1[arr2 == 1.0e+30] = np.NaN
 
-    #arr2[np.isnan(arr1)] = np.NaN
-    print(np.nansum(arr1-arr2))
+    #print(np.nansum(np.abs(arr1-arr2)))
+    #print(np.nanmax(np.abs(arr1-arr2)))
+    assert np.nanmax(np.abs(arr1-arr2)) < 0.01
+
+    # import matplotlib.pyplot as plt
+    # diff = (arr1-arr2)/arr1 * 100.0
+    # diff[np.isnan(arr1)] = np.nan
+    # p = plt.imshow(diff,interpolation='n')
+    # plt.colorbar(p)
+    # plt.show()
 
 def vario_test():
     import numpy as np

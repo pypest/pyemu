@@ -155,7 +155,7 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
                             "obs group named 'n'")
         grps = pst.observation_data.groupby(pst.observation_data.obgnme).groups
         assert len(grps["n"]) == 1,"to_mps(): 'n' obj_func group has more " +\
-                                   " than one member, mps only support one obj"
+                                   " than one member, mps only support one objf "
         obj_name = grps['n'][0]
         obj_iidx = jco.row_names.index(obj_name)
         obj = {}
