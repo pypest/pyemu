@@ -368,7 +368,9 @@ def fac2real(pp_file,factors_file,out_file="test.ref",
         arr[row - 1, col - 1] = fac_sum
     arr[arr<lower_lim] = lower_lim
     arr[arr>upper_lim] = upper_lim
-    np.savetxt(out_file,arr,fmt="%15.6E",delimiter='')
+    if out_file is not None:
+        np.savetxt(out_file,arr,fmt="%15.6E",delimiter='')
+    return out_file
 
 def parse_factor_line(line):
     raw = line.strip().split()
