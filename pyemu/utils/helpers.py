@@ -64,7 +64,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         new_slave_dir = os.path.join(slave_root,"slave_{0}".format(i))
         if os.path.exists(new_slave_dir):
             try:
-                shutil.rmtree(new_slave_dir, onerror=del_rw)
+                shutil.rmtree(new_slave_dir)#, onerror=del_rw)
             except Exception as e:
                 raise Exception("unable to remove existing slave dir:" + \
                                 "{0}\n{1}".format(new_slave_dir,str(e)))
