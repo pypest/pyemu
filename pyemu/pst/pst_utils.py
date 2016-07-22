@@ -368,7 +368,7 @@ def populate_dataframe(index,columns, default_dict, dtype):
     return new_df
 
 
-def generic_pst(par_names=["par1"],obs_names=["obs1"]):
+def generic_pst(par_names=["par1"],obs_names=["obs1"],addreg=False):
     """generate a generic pst instance
     Parameters:
     ----------
@@ -408,8 +408,8 @@ def generic_pst(par_names=["par1"],obs_names=["obs1"]):
     new_pst.other_lines = ["* singular value decomposition\n","1\n",
                            "{0:d} {1:15.6E}\n".format(new_pst.npar_adj,1.0E-6),
                            "1 1 1\n"]
-
-    new_pst.zero_order_tikhonov()
+    if addreg:
+        new_pst.zero_order_tikhonov()
 
     return new_pst
 
@@ -441,7 +441,8 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
 
     for tpl_file in tpl_files:
         assert os.path.exists(tpl_file),"template file not found: "+str(tpl_file)
-        par_names.extend(parse_tpl_file(tpl_file))
+        new_names = [name for name in parse_tpl_file(tpl_file) if name not in par_names]
+        par_names.extend(new_names)
     
     if not isinstance(ins_files,list):
         ins_files = [ins_files]
