@@ -115,12 +115,18 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
                                                  pop(obs_name)
 
     #build a list of constaint names in order WRT jco row order
-    order_obs_constraints = [name for name in jco.row_names if name in
-                             obs_constraint_sense]
+    # order_obs_constraints = [name for name in jco.row_names if name in
+    #                          obs_constraint_sense]
+
+    order_obs_constraints = list(obs_constraint_sense.keys())
+    order_obs_constraints.sort()
 
     #build a list of decision var names in order WRT jco col order
-    order_dec_var = [name for name in jco.col_names if name in
-                     decision_var_names]
+    #order_dec_var = [name for name in jco.col_names if name in
+    #                 decision_var_names]
+
+    order_dec_var = list(decision_var_names)
+    order_dec_var.sort()
 
     #shorten constraint names if needed
     new_const_count = 0
@@ -128,7 +134,7 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
     for name in order_obs_constraints:
         if len(name) > 8:
             new_name = name[:7]+"{0}".format(new_const_count)
-            print("to_mps(): shortening constraint name {0} to {1}\n")
+            print("to_mps(): shortening constraint name {0} to {1}\n".format(name,new_name))
             new_constraint_names[name] = new_name
             new_const_count += 1
         else:
@@ -140,7 +146,7 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
     for name in order_dec_var:
         if len(name) > 8:
             new_name = name[:7]+"{0}".format(new_dec_count)
-            print("to_mps(): shortening decision var name {0} to {1}\n")
+            print("to_mps(): shortening decision var name {0} to {1}\n".format(name,new_name))
             new_decision_names[name] = new_name
             new_dec_count += 1
         else:
@@ -246,13 +252,20 @@ def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,
             jco_jidx = jco.col_names.index(dname)
             for cname in order_obs_constraints:
                 jco_iidx = jco.row_names.index(cname)
+                v = jco.x[jco_iidx,jco_jidx]
                 f.write("    {0:8}  {1:8}   {2:10G}\n".\
                         format(new_decision_names[dname],
                                new_constraint_names[cname],
-                               jco.x[jco_iidx,jco_jidx]))
+                               v))
+            # f.write("    {0:8}  {1:8}   {2:10G}\n".\
+            #         format(new_decision_names[dname],
+            #                obj_name,pst.parameter_data.loc[dname,"parval1"]))
             f.write("    {0:8}  {1:8}   {2:10G}\n".\
                     format(new_decision_names[dname],
-                           obj_name,pst.parameter_data.loc[dname,"parval1"]))
+                           obj_name,obj_func[dname]))
+
+
+
 
         f.write("RHS\n")
         for iname,name in enumerate(order_obs_constraints):

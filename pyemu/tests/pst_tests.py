@@ -145,9 +145,9 @@ def derivative_increment_tests():
 
 
 if __name__ == "__main__":
-    derivative_increment_tests()
+    #derivative_increment_tests()
     #tied_test()
-    #smp_test()
+    smp_test()
     #pst_manip_test()
     #tpl_ins_test()
     #load_test()

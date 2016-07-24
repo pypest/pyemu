@@ -556,8 +556,18 @@ class Pst(object):
                                             index=False)+'\n')
             #self.tied.loc[:,"parnme"] = self.tied.index
         f_out.write("* observation groups\n")
-        [f_out.write(pst_utils.SFMT(str(group))+'\n') for group in self.obs_groups]
-        [f_out.write(pst_utils.SFMT(str(group))+'\n') for group in self.prior_groups]
+        for group in self.obs_groups:
+            try:
+                group = group.decode()
+            except:
+                pass
+            f_out.write(pst_utils.SFMT(str(group))+'\n')
+        for group in self.prior_groups:
+            try:
+                group = group.decode()
+            except:
+                pass
+            f_out.write(pst_utils.SFMT(str(group))+'\n')
 
         f_out.write("* observation data\n")
         #self.observation_data.index = self.observation_data.pop("obsnme")

@@ -16,14 +16,14 @@ import pyemu
 #SFMT = lambda x: "{0:>20s}".format(str(x.decode()))
 def SFMT(item):
     try:
-        s = "{0:>20s}".format(item.decode())
+        s = "{0:<20s} ".format(item.decode())
     except:
-        s = "{0:>20s}".format(str(item))
+        s = "{0:<20s} ".format(str(item))
     return s
 
-SFMT_LONG = lambda x: "{0:>50s}".format(str(x))
-IFMT = lambda x: "{0:>10d}".format(int(x))
-FFMT = lambda x: "{0:>20.10E}".format(float(x))
+SFMT_LONG = lambda x: "{0:<50s} ".format(str(x))
+IFMT = lambda x: "{0:<10d} ".format(int(x))
+FFMT = lambda x: "{0:<20.10E} ".format(float(x))
 
 
 def str_con(item):
