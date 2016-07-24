@@ -1,3 +1,7 @@
+import os
+if not os.path.exists("temp"):
+    os.mkdir("temp")
+
 
 def mc_test():
     import os

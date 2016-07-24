@@ -1,3 +1,6 @@
+import os
+if not os.path.exists("temp"):
+    os.mkdir("temp")
 
 def freyberg_smoother_test():
     import os

@@ -9,6 +9,10 @@ post_mat = os.path.join("verf_results","post.cov")
 verf_dir = "verf_results"
 ord_base = os.path.join(verf_dir,"freyberg_ord")
 
+if not os.path.exists("temp"):
+    os.mkdir("temp")
+
+
 def predunc7_test():
     post_pd7 = pyemu.Cov.from_ascii(post_mat)
 

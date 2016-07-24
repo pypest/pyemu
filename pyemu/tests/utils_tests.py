@@ -1,3 +1,7 @@
+import os
+if not os.path.exists("temp"):
+    os.mkdir("temp")
+
 
 def fac2real_test():
     import os

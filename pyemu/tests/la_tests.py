@@ -1,3 +1,8 @@
+import os
+if not os.path.exists("temp"):
+    os.mkdir("temp")
+
+
 def schur_test_nonpest():
     import numpy as np
     from pyemu import Matrix, Cov, Schur, Jco
@@ -199,8 +204,8 @@ if __name__ == "__main__":
     #bayes_linear_estimation_test()
     #par_contrib_test()
     #dataworth_test()
-    dataworth_next_test()
+    #dataworth_next_test()
     #schur_test_nonpest()
-    #schur_test()
+    schur_test()
     #errvar_test_nonpest()
     #errvar_test()

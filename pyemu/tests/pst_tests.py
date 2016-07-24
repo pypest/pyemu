@@ -1,3 +1,8 @@
+import os
+if not os.path.exists("temp"):
+    os.mkdir("temp")
+
+
 def tpl_ins_test():
     import os
     from pyemu import Pst,pst_utils
