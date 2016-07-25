@@ -11,6 +11,19 @@ PP_NAMES = ["name","x","y","zone","parval1"]
 
 
 def modflow_pval_to_template_file(pval_file,tpl_file=None):
+    """write a template file for a modflow parameter value file.
+    Uses names in the first column in the pval file as par names.
+    Parameters
+    ----------
+        pval_file : str
+            parameter value file
+        tpl_file : str (optional)
+            template file to write.  If None, use <pval_file>.tpl
+    Returns
+    -------
+        pandas DataFrame with control file parameter information
+    """
+
     if tpl_file is None:
         tpl_file = pval_file + ".tpl"
     pval_df = pd.read_csv(pval_file,delim_whitespace=True,
@@ -26,8 +39,20 @@ def modflow_pval_to_template_file(pval_file,tpl_file=None):
                                                           index=False,
                                                           header=False,
                                                           justify="left"))
+    return pval_df
 
 def modflow_hob_to_instruction_file(hob_file,ins_file=None):
+    """write an instruction file for a modflow head observation file
+    Parameters
+    ----------
+        hob_file : str
+            modflow hob file
+        ins_file :str (optional)
+            instruction file to write.  If None, use <hob_file>.ins
+    Returns
+    -------
+        pandas DataFrame with control file observation information
+    """
 
     hob_df = pd.read_csv(hob_file,delim_whitespace=True,skiprows=1,
                          header=None,names=["simval","obsval","obsnme"])
@@ -241,6 +266,17 @@ def write_pp_shapfile(pp_df,shapename=None):
 
 
 def write_pp_file(filename,pp_df):
+    """write a pilot points file from a dataframe
+    Parameters
+    ----------
+        filename : str
+            pilot points file to write
+        pp_df : pandas DataFrame
+            must have columns name, x, y, zone and value
+    Returns
+    -------
+        None
+    """
     with open(filename,'w') as f:
        f.write(pp_df.to_string(col_space=0,
                                 columns=PP_NAMES,
@@ -271,8 +307,6 @@ def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
             into the template file.
 
     """
-
-
 
     if isinstance(pp_file,pd.DataFrame):
         pp_df = pp_file
@@ -316,9 +350,22 @@ def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
 
     return pp_df
 
+
 def fac2real(pp_file,factors_file,out_file="test.ref",
              upper_lim=1.0e+30,lower_lim=-1.0e+30):
-    """A python replication of the PEST fac2real utility"""
+    """A python replication of the PEST fac2real utility
+    Parameters
+    ----------
+        pp_file : str
+            existing pilot points file
+        factors_file : str
+            existing factors file from ppk2fac, etc
+        out_file : str
+            filename of array to write
+    Returns
+    -------
+        None
+    """
     assert os.path.exists(pp_file)
     assert os.path.exists(factors_file)
     pp_data = pd.read_csv(pp_file,delim_whitespace=True,header=None,
