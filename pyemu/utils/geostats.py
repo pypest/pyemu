@@ -43,7 +43,7 @@ def read_struct_file(struct_file):
                 name = line.strip().split()[1].lower()
 
 
-                vartype,bearing,a,anisotropy = read_variogram(f)
+                vartype,bearing,a,anisotropy = _read_variogram(f)
                 if name in variogram_info:
                     v = VARTYPE[vartype](variogram_info[name],a,anisotropy=anisotropy,
                                          bearing=bearing,name=name)
@@ -64,17 +64,17 @@ def read_struct_file(struct_file):
     return structures
 
 
-def read_variograms(variogram_info,f):
-    variograms = []
-    while True:
-        line = f.readline()
-        if line == '':
-            raise Exception("EOF while reading variograms")
-        line = line.strip().lower()
-    return variograms
+# def read_variograms(variogram_info,f):
+#     variograms = []
+#     while True:
+#         line = f.readline()
+#         if line == '':
+#             raise Exception("EOF while reading variograms")
+#         line = line.strip().lower()
+#     return variograms
 
 
-def read_variogram(f):
+def _read_variogram(f):
     line = ''
     vartype = None
     bearing = 0.0
