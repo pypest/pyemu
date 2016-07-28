@@ -12,6 +12,8 @@ from pyemu.pst import Pst
 class EnsembleSmoother():
 
     def __init__(self,pst,parcov=None,obscov=None):
+        if isinstance(pst,str):
+            pst = Pst(pst)
         assert isinstance(pst,Pst)
         self.pst = pst
         if parcov is not None:
@@ -93,13 +95,12 @@ class EnsembleSmoother():
         '''
         propagate the ensemble forward...
         '''
-        self.parensemble.to_csv(os.path.join("smoother","sweep_in.csv"))
-        os.chdir("smoother")
+        self.parensemble.to_csv(os.path.join("sweep_in.csv"))
+        #os.chdir("smoother")
         print(os.listdir('.'))
-        os.system("sweep freyberg.pst")
-        os.chdir('..')
-        obs = ObservationEnsemble.from_csv(os.path.join(\
-                "smoother",'sweep_out.csv'))
+        os.system("sweep {0}".format(self.pst.filename))
+        #os.chdir('..')
+        obs = ObservationEnsemble.from_csv(os.path.join('sweep_out.csv'))
         obs.columns = [item.lower() for item in obs.columns]
         self.obsensemble = ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],pst=self.pst)
         #todo: modifiy sweep to be interactive...
@@ -115,25 +116,19 @@ class EnsembleSmoother():
         self._calc_obs()
         delta_obs = self._calc_delta_obs()
         u,s,v = delta_obs.pseudo_inv_components()
-        #print(v)
-        #print(s)
-        #print(v)
-        diff = self.obsensemble.as_pyemu_matrix() - self.obsensemble_0.as_pyemu_matrix()
-        #print(diff)
+
+        diff = self.obsensemble.as_pyemu_matrix() -\
+               self.obsensemble_0.as_pyemu_matrix()
         x1 = u.T * self.obscov.inv.sqrt * diff.T
         x1.autoalign = False
-        #print(x1)
         x2 = (Cov.identity_like(s) + s**2).inv * x1
-        #print(x2)
         x3 = v * s * x2
-        #print(x3)
-        upgrade_1 = (self.half_parcov_diag * self._calc_delta_par() * x3).to_dataframe()
+        upgrade_1 = -1.0 *  (self.half_parcov_diag * self._calc_delta_par() *\
+                             x3).to_dataframe()
         upgrade_1.index.name = "parnme"
-        print(upgrade_1)
         self.parensemble += upgrade_1.T
-        print(self.parensemble)
         if self.iter_num > 0:
             raise NotImplementedError()
+        print(self.parensemble)
 
-        print(upgrade_1.shape)
 
