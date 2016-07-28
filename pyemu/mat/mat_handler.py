@@ -678,7 +678,7 @@ class Matrix(object):
 
     def get_maxsing(self,eigthresh=1.0e-5):
         sthresh =np.abs((self.s.x / self.s.x[0]) - eigthresh)
-        return np.argmin(sthresh)
+        return max(1,np.argmin(sthresh))
 
     def pseudo_inv_components(self,maxsing=None,eigthresh=1.0e-5):
         if maxsing is None:
@@ -687,7 +687,6 @@ class Matrix(object):
         s = self.s[:maxsing,:maxsing]
         v = self.v[:,:maxsing]
         u = self.u[:,:maxsing]
-
         return u,s,v
 
     def pseudo_inv(self,maxsing=None,eigthresh=1.0e-5):
