@@ -41,8 +41,9 @@ class EnsembleSmoother():
         (re)initialize the process
         '''
         self.num_reals = int(num_reals)
-        self.parensemble = ParameterEnsemble(self.pst)
-        self.parensemble.draw(cov=self.parcov,num_reals=num_reals)
+        self.parensemble_0 = ParameterEnsemble(self.pst)
+        self.parensemble_0.draw(cov=self.parcov,num_reals=num_reals)
+        self.parensemble = self.parensemble_0.copy()
 
         self.obsensemble_0 = ObservationEnsemble(self.pst)
         self.obsensemble_0.draw(cov=self.obscov,num_reals=num_reals)
@@ -62,6 +63,9 @@ class EnsembleSmoother():
         #                                isdiagonal=True)
 
         self.delta_par_prior = self._calc_delta_par()
+
+        u,s,v = self.delta_par_prior.pseudo_inv_components()
+        self.Am = u * s.inv
 
         self.__initialized = True
 
@@ -116,19 +120,32 @@ class EnsembleSmoother():
         self._calc_obs()
         delta_obs = self._calc_delta_obs()
         u,s,v = delta_obs.pseudo_inv_components()
-
-        diff = self.obsensemble.as_pyemu_matrix() -\
+        scaled_par_diff = self._calc_delta_par()
+        scaled_obs_diff = self.obsensemble.as_pyemu_matrix() -\
                self.obsensemble_0.as_pyemu_matrix()
-        x1 = u.T * self.obscov.inv.sqrt * diff.T
+        scaled_ident = (Cov.identity_like(s) + s**2).inv
+
+        x1 = u.T * self.obscov.inv.sqrt * scaled_obs_diff.T
         x1.autoalign = False
-        x2 = (Cov.identity_like(s) + s**2).inv * x1
+        x2 = scaled_ident * x1
         x3 = v * s * x2
-        upgrade_1 = -1.0 *  (self.half_parcov_diag * self._calc_delta_par() *\
+        upgrade_1 = -1.0 *  (self.half_parcov_diag * scaled_par_diff *\
                              x3).to_dataframe()
         upgrade_1.index.name = "parnme"
         self.parensemble += upgrade_1.T
         if self.iter_num > 0:
-            raise NotImplementedError()
+            par_diff = (self.parensemble - self.parensemble_0).\
+                as_pyemu_matrix().T
+            x4 = self.Am.T * self.half_parcov_diag * par_diff
+            x5 = self.Am * x4
+            x6 = scaled_par_diff.T * x5
+            x7 = v * scaled_ident * v.T * x6
+            upgrade_2 = -1.0 * (self.half_parcov_diag *
+                                scaled_par_diff * x7).to_dataframe()
+            upgrade_2.index.name = "parnme"
+            self.parensemble += upgrade_2.T
         print(self.parensemble)
+
+        self.iter_num += 1
 
 

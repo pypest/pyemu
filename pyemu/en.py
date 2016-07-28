@@ -96,6 +96,9 @@ class Ensemble(pd.DataFrame):
                 mean_values=mean_values,**kwargs)
         return e
 
+    def copy(self):
+        df = super(Ensemble,self).copy()
+        return type(self).from_dataframe(df=df)
 
 class ObservationEnsemble(Ensemble):
     """ Ensemble derived type observation noise
@@ -116,6 +119,10 @@ class ObservationEnsemble(Ensemble):
         super(ObservationEnsemble,self).__init__(**kwargs)
         self.pst = pst
         self.pst.observation_data.index = self.pst.observation_data.obsnme
+
+    def copy(self):
+        df = super(Ensemble,self).copy()
+        return type(self).from_dataframe(df=df,pst=self.pst.get())
 
     @property
     def names(self):
@@ -170,6 +177,12 @@ class ParameterEnsemble(Ensemble):
                                       "support tied parameters")
         self.pst.parameter_data.index = self.pst.parameter_data.parnme
         self.bound_tol = kwargs.get("bound_tol",0.0)
+
+    def copy(self):
+        df = super(Ensemble,self).copy()
+        pe = ParameterEnsemble.from_dataframe(df=df,pst=self.pst.get())
+        pe.__istransformed = self.istransformed
+        return pe
 
     @property
     def istransformed(self):
@@ -364,9 +377,6 @@ class ParameterEnsemble(Ensemble):
         Returns:
         -------
             if not inplace, ParameterEnsemble, otherwise None
-
-
-
 
         """
 
