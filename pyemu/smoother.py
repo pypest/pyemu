@@ -35,7 +35,6 @@ class EnsembleSmoother():
         self.delta_par_prior = None
         self.iter_num = 0
 
-
     def initialize(self,num_reals):
         '''
         (re)initialize the process
@@ -44,10 +43,13 @@ class EnsembleSmoother():
         self.parensemble_0 = ParameterEnsemble(self.pst)
         self.parensemble_0.draw(cov=self.parcov,num_reals=num_reals)
         self.parensemble = self.parensemble_0.copy()
+        self.parensemble_0.to_csv("parensemble.0.csv")
+
 
         self.obsensemble_0 = ObservationEnsemble(self.pst)
         self.obsensemble_0.draw(cov=self.obscov,num_reals=num_reals)
         self.obsensemble = self.obsensemble_0.copy()
+        self.obsensemble_0.to_csv("obsensemble.0.csv")
 
         if self.parcov.isdiagonal:
             self.half_parcov_diag = self.parcov.inv.sqrt
@@ -66,6 +68,7 @@ class EnsembleSmoother():
 
         u,s,v = self.delta_par_prior.pseudo_inv_components()
         self.Am = u * s.inv
+
 
         self.__initialized = True
 
@@ -112,18 +115,22 @@ class EnsembleSmoother():
 
     @property
     def current_lambda(self):
-        return 10.0
+        return 1.0
 
     def update(self):
         if not self.__initialized:
             raise Exception("must call initialize() before update()")
+
         self._calc_obs()
+        self.iter_num += 1
+        self.obsensemble.to_csv("obsensemble.{0}.csv".format(self.iter_num))
         delta_obs = self._calc_delta_obs()
+
         u,s,v = delta_obs.pseudo_inv_components()
         scaled_par_diff = self._calc_delta_par()
         scaled_obs_diff = self.obsensemble.as_pyemu_matrix() -\
                self.obsensemble_0.as_pyemu_matrix()
-        scaled_ident = (Cov.identity_like(s) + s**2).inv
+        scaled_ident = (self.current_lambda*Cov.identity_like(s) + s**2).inv
 
         x1 = u.T * self.obscov.inv.sqrt * scaled_obs_diff.T
         x1.autoalign = False
@@ -132,8 +139,9 @@ class EnsembleSmoother():
         upgrade_1 = -1.0 *  (self.half_parcov_diag * scaled_par_diff *\
                              x3).to_dataframe()
         upgrade_1.index.name = "parnme"
+        upgrade_1.T.to_csv("upgrade_1.{0}.csv".format(self.iter_num))
         self.parensemble += upgrade_1.T
-        if self.iter_num > 0:
+        if self.iter_num > 1:
             par_diff = (self.parensemble - self.parensemble_0).\
                 as_pyemu_matrix().T
             x4 = self.Am.T * self.half_parcov_diag * par_diff
@@ -143,9 +151,10 @@ class EnsembleSmoother():
             upgrade_2 = -1.0 * (self.half_parcov_diag *
                                 scaled_par_diff * x7).to_dataframe()
             upgrade_2.index.name = "parnme"
+            upgrade_2.T.to_csv("upgrade_2.{0}.csv".format(self.iter_num))
             self.parensemble += upgrade_2.T
-        print(self.parensemble)
+        self.parensemble.to_csv("parensemble.{0}.csv".format(self.iter_num))
 
-        self.iter_num += 1
+
 
 

@@ -7,7 +7,7 @@ def freyberg_smoother_test():
     import os
     import pyemu
 
-    os.chdir("smoother")
+    os.chdir(os.path.join("smoother","freyberg"))
     pst = pyemu.Pst(os.path.join("freyberg.pst"))
     #mc = pyemu.MonteCarlo(pst=pst)
     #mc.draw(2)
@@ -16,12 +16,11 @@ def freyberg_smoother_test():
     es = pyemu.EnsembleSmoother(pst)
     es.initialize(num_reals)
     es.update()
-    os.chdir("..")
-
+    os.chdir(os.path.join("..",".."))
 
 def chenoliver_setup():
     import pyemu
-    os.chdir("smoother")
+    os.chdir(os.path.join("smoother","chenoliver"))
     in_file = os.path.join("par.dat")
     tpl_file = in_file+".tpl"
     out_file = os.path.join("obs.dat")
@@ -40,7 +39,24 @@ def chenoliver_setup():
     pst.pestpp_options["sweep_parameter_csv_file"] = os.path.join("sweep_in.csv")
     pst.write(os.path.join("chenoliver.pst"))
 
-    os.chdir("..")
+    os.chdir(os.path.join("..",".."))
+
+def chenoliver_plot():
+    import os
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    d = os.path.join("smoother","chenoliver")
+    par_files = [os.path.join(d,f) for f in os.listdir(d) if "parensemble." in f
+                 and ".png" not in f]
+    for par_file in par_files:
+        par_df = pd.read_csv(par_file)
+        fig = plt.figure(figsize=(10,10))
+        ax = plt.subplot(111)
+        par_df.loc[:,["par"]].hist(ax=ax)
+        ax.set_xlim(-10,10)
+
+        plt.savefig(par_file+".png")
+        plt.close("all")
 
 
 def chenoliver_test():
@@ -48,17 +64,34 @@ def chenoliver_test():
     import numpy as np
     import pyemu
 
-    os.chdir("smoother")
+    os.chdir(os.path.join("smoother","chenoliver"))
     parcov = pyemu.Cov(x=np.ones((1,1)),names=["par"],isdiagonal=True)
-    es = pyemu.EnsembleSmoother("chenoliver.pst",parcov=parcov)
-    es.initialize(num_reals=10)
-    es.update()
-    os.chdir("..")
+    pst = pyemu.Pst("chenoliver.pst")
+    pst.observation_data.loc[:,"weight"] = 1.0
+    es = pyemu.EnsembleSmoother(pst,parcov=parcov)
+    es.initialize(num_reals=50)
+    for it in range(10):
+        es.update()
+    os.chdir(os.path.join("..",".."))
 
+
+def tenpar_test():
+    import os
+    import numpy as np
+    import pyemu
+
+    os.chdir(os.path.join("smoother","10par_xsec"))
+    es = pyemu.EnsembleSmoother("pest.pst")
+    es.initialize(num_reals=10)
+    for it in range(1):
+        es.update()
+    os.chdir(os.path.join("..",".."))
 
 
 
 if __name__ == "__main__":
     #freyberg_smoother_test()
     #chenoliver_setup()
-    chenoliver_test()
+    #chenoliver_test()
+    #tenpar_test()
+    chenoliver_plot()

@@ -521,6 +521,7 @@ class Matrix(object):
             # just a pointer to x
             x = self.x
         try:
+
             u, s, v = la.svd(x, full_matrices=True)
             v = v.transpose()
         except:
@@ -528,8 +529,10 @@ class Matrix(object):
                 v, s, u = la.svd(x.transpose(), full_matrices=True)
                 u = u.transpose()
             except:
+                np.savetxt("failed_svd.dat",x,fmt="%15.6E")
                 raise Exception("Matrix.__set_svd(): " +
-                                "unable to compute SVD of self.x")
+                                "unable to compute SVD of self.x, " +
+                                "saved matrix to 'failed_svd.dat'")
 
         col_names = ["left_sing_vec_" + str(i + 1) for i in range(u.shape[1])]
         self.__u = Matrix(x=u, row_names=self.row_names,
