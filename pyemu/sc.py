@@ -34,7 +34,6 @@ class Schur(LinearAnalysis):
         return pd.DataFrame({"posterior": posterior, "prior": prior},
                                 index=names)
 
-
     @property
     def posterior_parameter(self):
         """get the posterior parameter covariance matrix
@@ -70,29 +69,36 @@ class Schur(LinearAnalysis):
         bc = Matrix((b * c).x, row_names=b.row_names, col_names=c.col_names)
 
         # calc posterior expectation
-        term2 = bc * res_vec
-        term2.col_names = ["prior_expt"]
-        post_expt = prior_expt + term2
+        upgrade = bc * res_vec
+        upgrade.col_names = ["prior_expt"]
+        post_expt = prior_expt + upgrade
 
         # post processing - back log transform
         post_expt = pd.DataFrame(data=post_expt.x,index=post_expt.row_names,
                                  columns=["post_expt"])
+        post_expt.loc[:,"prior_expt"] = prior_expt.x.flatten()
         post_expt.loc[islog,:] = 10.0**post_expt.loc[islog,:]
+        # unc_sum = self.get_parameter_summary()
+        # post_expt.loc[:,"standard_deviation"] = unc_sum.post_var.apply(np.sqrt)
+        post_expt.sort_index(inplace=True)
         return post_expt
 
     @property
     def map_forecast_estimate(self):
         assert self.forecasts is not None
-        maps = {}
         islog = self.pst.parameter_data.partrans == "log"
         par_map = self.map_parameter_estimate
         par_map.loc[islog,:] = np.log10(par_map.loc[islog,:])
         par_map = Matrix.from_dataframe(par_map)
+        posts,priors = [],[]
         for forecast in self.forecasts:
             fname = forecast.col_names[0]
             pr = self.pst.res.loc[fname,"modelled"]
-            maps[forecast.col_names[0]] = pr + (forecast.T * par_map).x[0, 0]
-        return maps
+            priors.append(pr)
+            posts.append(pr + (forecast.T * par_map).x[0, 0])
+        return pd.DataFrame(data=np.array([priors,posts]).transpose(),
+                            columns=["prior_expt","post_expt"],
+                            index=self.forecast_names)
 
     @property
     def posterior_forecast(self):
@@ -120,11 +126,13 @@ class Schur(LinearAnalysis):
                 self.__posterior_prediction = {}
             return self.__posterior_prediction
 
-    def get_parameter_summary(self):
+    def get_parameter_summary(self,include_map=False):
         """get a summary of the parameter uncertainty
         Parameters:
         ----------
-            None
+            include_map : bool (optional)
+                if True, add the prior and posterior expectations
+                and report standard deviation instead of variance
         Returns:
         -------
             pd.DataFrame() of prior,posterior variances and percent
@@ -132,18 +140,30 @@ class Schur(LinearAnalysis):
         Raises:
             None
         """
-        prior = self.parcov.get(self.posterior_parameter.col_names)
-        if prior.isdiagonal:
-            prior = prior.x.flatten()
+        prior_mat = self.parcov.get(self.posterior_parameter.col_names)
+        if prior_mat.isdiagonal:
+            prior = prior_mat.x.flatten()
         else:
-            prior = np.diag(prior.x)
+            prior = np.diag(prior_mat.x)
         post = np.diag(self.posterior_parameter.x)
-        ureduce = 100.0 * (1.0 - (post / prior))
-        return pd.DataFrame({"prior_var":prior,"post_var":post,
-                                 "percent_reduction":ureduce},
-                                index=self.posterior_parameter.col_names)
+        if include_map:
+            par_data = self.map_parameter_estimate
+            prior = pd.DataFrame(data=prior,index=prior_mat.col_names)
+            islog = self.pst.parameter_data.partrans == "log"
+            par_data.loc[islog,:] = np.log10(par_data.loc[islog,:])
+            par_data.loc[:,"prior_stdev"] = prior
+            post = pd.DataFrame(data=post,index=prior.index)
+            par_data.loc[:,"post_stdev"] = post
+            par_data.loc[:,"is_log"] = islog
+            return par_data
+        else:
+            ureduce = 100.0 * (1.0 - (post / prior))
 
-    def get_forecast_summary(self):
+            return pd.DataFrame({"prior_var":prior,"post_var":post,
+                                     "percent_reduction":ureduce},
+                                    index=self.posterior_parameter.col_names)
+
+    def get_forecast_summary(self, include_map=False):
         """get a summary of the forecast uncertainty
         Parameters:
         ----------
@@ -161,6 +181,16 @@ class Schur(LinearAnalysis):
             sum["prior_var"].append(pr)
             sum["post_var"].append(pt)
             sum["percent_reduction"].append(ur)
+        df = pd.DataFrame(sum,index=self.prior_forecast.keys())
+
+        if include_map:
+            df.loc[:,"prior_stdev"] = df.pop("prior_var").apply(np.sqrt)
+            df.loc[:,"post_stdev"] = df.pop("post_var").apply(np.sqrt)
+            df.pop("percent_reduction")
+            forecast_map = self.map_forecast_estimate
+            df.loc[:,"prior_expt"] = forecast_map.prior_expt
+            df.loc[:,"post_expt"] = forecast_map.post_expt
+            return df
         return pd.DataFrame(sum,index=self.prior_forecast.keys())
 
     def __contribution_from_parameters(self, parameter_names):
