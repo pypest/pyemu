@@ -99,19 +99,32 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         p.wait()
 
 
-def plot_summary_distributions(df,ax=None,**kwargs):
+def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False):
     import matplotlib.pyplot as plt
     if ax is None:
         fig = plt.figure(figsize=(10,10))
         ax = plt.subplot(111)
         ax.grid()
-    for mean,stdev in zip(df.post_expt,df.post_stdev):
+    for name,mean,stdev in zip(df.index,df.post_expt,df.post_stdev):
         x,y = gaussian_distribution(mean,stdev)
         ax.fill_between(x,0,y,facecolor='b',edgecolor="none",alpha=0.25)
+        if label_post:
+            mx_idx = np.argmax(y)
+            xtxt,ytxt = x[mx_idx],y[mx_idx] * 1.001
+            ax.text(xtxt,ytxt,name,ha="center",alpha=0.5)
+
 
     for mean,stdev in zip(df.prior_expt,df.prior_stdev):
         x,y = gaussian_distribution(mean,stdev)
         ax.plot(x,y,color='k',lw=2.0,dashes=(2,1))
+        if label_prior:
+            mx_idx = np.argmax(y)
+            xtxt,ytxt = x[mx_idx],y[mx_idx] * 1.001
+            ax.text(xtxt,ytxt,name,ha="center",alpha=0.5)
+
+    ylim = list(ax.get_ylim())
+    ylim[1] *= 1.2
+    ax.set_ylim(ylim)
     return ax
 
 
