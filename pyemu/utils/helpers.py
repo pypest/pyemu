@@ -97,3 +97,31 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
 
     for p in procs:
         p.wait()
+
+
+def plot_summary_distributions(df,ax=None,**kwargs):
+    import matplotlib.pyplot as plt
+    if ax is None:
+        fig = plt.figure(figsize=(10,10))
+        ax = plt.subplot(111)
+        ax.grid()
+    for mean,stdev in zip(df.post_expt,df.post_stdev):
+        x,y = gaussian_distribution(mean,stdev)
+        ax.fill_between(x,0,y,facecolor='b',edgecolor="none",alpha=0.25)
+
+    for mean,stdev in zip(df.prior_expt,df.prior_stdev):
+        x,y = gaussian_distribution(mean,stdev)
+        ax.plot(x,y,color='k',lw=2.0,dashes=(2,1))
+    return ax
+
+
+def gaussian_distribution(mean,stdev,num_pts=50):
+    """for plotting
+    """
+    xstart = mean - (4.0 * stdev)
+    xend = mean + (4.0 * stdev)
+    x = np.linspace(xstart,xend,num_pts)
+    y = (1.0/np.sqrt(2.0*np.pi*stdev*stdev)) * np.exp(-1.0 * ((x - mean)**2)/(2.0*stdev*stdev))
+    return x,y
+
+
