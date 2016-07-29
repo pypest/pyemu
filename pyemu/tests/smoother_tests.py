@@ -3,7 +3,7 @@ if not os.path.exists("temp"):
     os.mkdir("temp")
 
 
-def freyberg_smoother_test():
+def freyberg():
     import os
     import pyemu
 
@@ -59,7 +59,7 @@ def chenoliver_plot():
         plt.close("all")
 
 
-def chenoliver_test():
+def chenoliver():
     import os
     import numpy as np
     import pyemu
@@ -75,7 +75,7 @@ def chenoliver_test():
     os.chdir(os.path.join("..",".."))
 
 
-def tenpar_test():
+def tenpar():
     import os
     import numpy as np
     import pyemu
