@@ -175,6 +175,8 @@ def par_contrib_test():
     parlist_dict = {}
     print(sc.next_most_par_contribution(forecast="travel_time",
                                         parlist_dict=groups))
+
+
 def map_test():
     import os
     from pyemu import Schur
@@ -200,12 +202,11 @@ def forecast_pestpp_load_test():
 
 if __name__ == "__main__":
     #forecast_pestpp_load_test()
-    #map_test()
-    #bayes_linear_estimation_test()
+    map_test()
     #par_contrib_test()
     #dataworth_test()
     #dataworth_next_test()
     #schur_test_nonpest()
-    schur_test()
+    #schur_test()
     #errvar_test_nonpest()
     #errvar_test()

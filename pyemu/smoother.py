@@ -12,6 +12,8 @@ from pyemu.pst import Pst
 class EnsembleSmoother():
 
     def __init__(self,pst,parcov=None,obscov=None):
+        if isinstance(pst,str):
+            pst = Pst(pst)
         assert isinstance(pst,Pst)
         self.pst = pst
         if parcov is not None:
@@ -33,18 +35,21 @@ class EnsembleSmoother():
         self.delta_par_prior = None
         self.iter_num = 0
 
-
     def initialize(self,num_reals):
         '''
         (re)initialize the process
         '''
         self.num_reals = int(num_reals)
-        self.parensemble = ParameterEnsemble(self.pst)
-        self.parensemble.draw(cov=self.parcov,num_reals=num_reals)
+        self.parensemble_0 = ParameterEnsemble(self.pst)
+        self.parensemble_0.draw(cov=self.parcov,num_reals=num_reals)
+        self.parensemble = self.parensemble_0.copy()
+        self.parensemble_0.to_csv("parensemble.0.csv")
+
 
         self.obsensemble_0 = ObservationEnsemble(self.pst)
         self.obsensemble_0.draw(cov=self.obscov,num_reals=num_reals)
         self.obsensemble = self.obsensemble_0.copy()
+        self.obsensemble_0.to_csv("obsensemble.0.csv")
 
         if self.parcov.isdiagonal:
             self.half_parcov_diag = self.parcov.inv.sqrt
@@ -60,6 +65,10 @@ class EnsembleSmoother():
         #                                isdiagonal=True)
 
         self.delta_par_prior = self._calc_delta_par()
+
+        u,s,v = self.delta_par_prior.pseudo_inv_components()
+        self.Am = u * s.inv
+
 
         self.__initialized = True
 
@@ -93,13 +102,12 @@ class EnsembleSmoother():
         '''
         propagate the ensemble forward...
         '''
-        self.parensemble.to_csv(os.path.join("smoother","sweep_in.csv"))
-        os.chdir("smoother")
+        self.parensemble.to_csv(os.path.join("sweep_in.csv"))
+        #os.chdir("smoother")
         print(os.listdir('.'))
-        os.system("sweep freyberg.pst")
-        os.chdir('..')
-        obs = ObservationEnsemble.from_csv(os.path.join(\
-                "smoother",'sweep_out.csv'))
+        os.system("sweep {0}".format(self.pst.filename))
+        #os.chdir('..')
+        obs = ObservationEnsemble.from_csv(os.path.join('sweep_out.csv'))
         obs.columns = [item.lower() for item in obs.columns]
         self.obsensemble = ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],pst=self.pst)
         #todo: modifiy sweep to be interactive...
@@ -107,33 +115,46 @@ class EnsembleSmoother():
 
     @property
     def current_lambda(self):
-        return 10.0
+        return 1.0
 
     def update(self):
         if not self.__initialized:
             raise Exception("must call initialize() before update()")
-        self._calc_obs()
-        delta_obs = self._calc_delta_obs()
-        u,s,v = delta_obs.pseudo_inv_components()
-        #print(v)
-        #print(s)
-        #print(v)
-        diff = self.obsensemble.as_pyemu_matrix() - self.obsensemble_0.as_pyemu_matrix()
-        #print(diff)
-        x1 = u.T * self.obscov.inv.sqrt * diff.T
-        x1.autoalign = False
-        #print(x1)
-        x2 = (Cov.identity_like(s) + s**2).inv * x1
-        #print(x2)
-        x3 = v * s * x2
-        #print(x3)
-        upgrade_1 = (self.half_parcov_diag * self._calc_delta_par() * x3).to_dataframe()
-        upgrade_1.index.name = "parnme"
-        print(upgrade_1)
-        self.parensemble += upgrade_1.T
-        print(self.parensemble)
-        if self.iter_num > 0:
-            raise NotImplementedError()
 
-        print(upgrade_1.shape)
+        self._calc_obs()
+        self.iter_num += 1
+        self.obsensemble.to_csv("obsensemble.{0}.csv".format(self.iter_num))
+        delta_obs = self._calc_delta_obs()
+
+        u,s,v = delta_obs.pseudo_inv_components()
+        scaled_par_diff = self._calc_delta_par()
+        scaled_obs_diff = self.obsensemble.as_pyemu_matrix() -\
+               self.obsensemble_0.as_pyemu_matrix()
+        scaled_ident = (self.current_lambda*Cov.identity_like(s) + s**2).inv
+
+        x1 = u.T * self.obscov.inv.sqrt * scaled_obs_diff.T
+        x1.autoalign = False
+        x2 = scaled_ident * x1
+        x3 = v * s * x2
+        upgrade_1 = -1.0 *  (self.half_parcov_diag * scaled_par_diff *\
+                             x3).to_dataframe()
+        upgrade_1.index.name = "parnme"
+        upgrade_1.T.to_csv("upgrade_1.{0}.csv".format(self.iter_num))
+        self.parensemble += upgrade_1.T
+        if self.iter_num > 1:
+            par_diff = (self.parensemble - self.parensemble_0).\
+                as_pyemu_matrix().T
+            x4 = self.Am.T * self.half_parcov_diag * par_diff
+            x5 = self.Am * x4
+            x6 = scaled_par_diff.T * x5
+            x7 = v * scaled_ident * v.T * x6
+            upgrade_2 = -1.0 * (self.half_parcov_diag *
+                                scaled_par_diff * x7).to_dataframe()
+            upgrade_2.index.name = "parnme"
+            upgrade_2.T.to_csv("upgrade_2.{0}.csv".format(self.iter_num))
+            self.parensemble += upgrade_2.T
+        self.parensemble.to_csv("parensemble.{0}.csv".format(self.iter_num))
+
+
+
 

@@ -302,7 +302,7 @@ def write_tpl_test():
 
 
 if __name__ == "__main__":
-    #write_tpl_test()
+    write_tpl_test()
     #pp_to_shapefile_test()
     #read_pval_test()
     #read_hob_test()

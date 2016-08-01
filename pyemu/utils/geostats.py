@@ -10,6 +10,16 @@ EPSILON = 1.0e-7
 
 
 def read_struct_file(struct_file):
+    """read an existing structure file into a GeoStruct instance
+    Parameters
+    ----------
+        struct_file : str
+            existing pest-type structure file
+    Returns
+    -------
+        GeoStruct instance
+    """
+
     VARTYPE = {1:SphVario,2:ExpVario,3:GauVario,4:None}
     assert os.path.exists(struct_file)
     structures = []
@@ -33,7 +43,7 @@ def read_struct_file(struct_file):
                 name = line.strip().split()[1].lower()
 
 
-                vartype,bearing,a,anisotropy = read_variogram(f)
+                vartype,bearing,a,anisotropy = _read_variogram(f)
                 if name in variogram_info:
                     v = VARTYPE[vartype](variogram_info[name],a,anisotropy=anisotropy,
                                          bearing=bearing,name=name)
@@ -51,22 +61,20 @@ def read_struct_file(struct_file):
                                 format(vname,s.name))
 
             st.variograms.append(vfound)
-
-
     return structures
 
 
-def read_variograms(variogram_info,f):
-    variograms = []
-    while True:
-        line = f.readline()
-        if line == '':
-            raise Exception("EOF while reading variograms")
-        line = line.strip().lower()
-    return variograms
+# def read_variograms(variogram_info,f):
+#     variograms = []
+#     while True:
+#         line = f.readline()
+#         if line == '':
+#             raise Exception("EOF while reading variograms")
+#         line = line.strip().lower()
+#     return variograms
 
 
-def read_variogram(f):
+def _read_variogram(f):
     line = ''
     vartype = None
     bearing = 0.0
@@ -122,6 +130,17 @@ def _read_structure_attributes(f):
 
 
 class GeoStruct(object):
+    """a geostatistical structure object
+    Parameters
+    ----------
+        nugget : float
+            nugget contribution
+        variograms : list
+            list of Vario2d instances
+        name : str
+            name to assign the structure
+
+    """
     def __init__(self,nugget=0.0,variograms=[],name="struct1",
                  transform="none"):
         self.name = name
@@ -139,6 +158,21 @@ class GeoStruct(object):
         raise NotImplementedError()
 
     def covariance_matrix(self,x,y,names=None,cov=None):
+        """build a pyemu.Cov instance from GeoStruct
+        Parameters
+        ----------
+            x : iterable of floats
+                x locations
+            y : iterable of floats
+                y locations
+            names : iterable of str (optional)
+                names of location. If None, generic names will be used
+            cov : pyemu.Cov instance (optional)
+                an existing Cov instance to add contribution to
+        Returns
+        -------
+            pyemu.Cov
+        """
         if not isinstance(x,np.ndarray):
             x = np.array(x)
         if not isinstance(y,np.ndarray):
@@ -164,6 +198,15 @@ class GeoStruct(object):
         return cov
 
     def covariance(self,pt0,pt1):
+        """get the covariance between two points implied by the GeoStruct
+        Parameters
+        ----------
+            pt0 : iterable length 2 of floats
+            pt1 : iterable length 2 of floats
+        Returns
+            float : covariance
+        """
+
         cov = self.nugget
         for vario in self.variograms:
             cov += vario.covariance(pt0,pt1)
@@ -181,6 +224,27 @@ class GeoStruct(object):
 
 
 class Vario2d(object):
+    """base class for 2-D variograms
+    Parameters
+    ----------
+        contribution : float
+            sill of the variogram
+        a : float
+            (practical) range
+        anisotropy : float (optional)
+            Anisotropy ratio. If None, 1.0 used
+        bearing : float (optional)
+            angle in degrees East of North cooresponding to anisotropy ellipse.
+            If None, 0.0 used
+        name : str (optional)
+            name of the variogram
+    Returns
+    -------
+        Vario2d instance
+    Note
+    ----
+        This base class should not be instantiated directly.
+    """
 
     def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
         self.name = name
@@ -199,6 +263,21 @@ class Vario2d(object):
                                np.cos(self.bearing_rads)]
 
     def covariance_matrix(self,x,y,names=None,cov=None):
+        """build a pyemu.Cov instance from Vario2d
+        Parameters
+        ----------
+            x : iterable of floats
+                x locations
+            y : iterable of floats
+                y locations
+            names : iterable of str (optional)
+                names of location. If None, generic names will be used
+            cov : pyemu.Cov instance (optional)
+                an existing Cov instance to add contribution to
+        Returns
+        -------
+            pyemu.Cov
+        """
         if not isinstance(x,np.ndarray):
             x = np.array(x)
         if not isinstance(y,np.ndarray):
@@ -254,7 +333,24 @@ class Vario2d(object):
 class ExpVario(Vario2d):
 
     def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
-
+        """Exponential 2-D variograms
+    Parameters
+    ----------
+        contribution : float
+            sill of the variogram
+        a : float
+            (practical) range
+        anisotropy : float (optional)
+            Anisotropy ratio. If None, 1.0 used
+        bearing : float (optional)
+            angle in degrees East of North cooresponding to anisotropy ellipse.
+            If None, 0.0 used
+        name : str (optional)
+            name of the variogram
+    Returns
+    -------
+        ExpVario instance
+    """
         super(ExpVario,self).__init__(contribution,a,anisotropy=anisotropy,
                                       bearing=bearing,name=name)
 
@@ -262,6 +358,24 @@ class ExpVario(Vario2d):
         return self.contribution * np.exp(-1.0 * h / self.a)
 
 class GauVario(Vario2d):
+    """Gaussian 2-D variograms
+    Parameters
+    ----------
+        contribution : float
+            sill of the variogram
+        a : float
+            (practical) range
+        anisotropy : float (optional)
+            Anisotropy ratio. If None, 1.0 used
+        bearing : float (optional)
+            angle in degrees East of North cooresponding to anisotropy ellipse.
+            If None, 0.0 used
+        name : str (optional)
+            name of the variogram
+    Returns
+    -------
+        GauVario instance
+    """
 
     def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
         super(GauVario,self).__init__(contribution,a,anisotropy=anisotropy,
@@ -272,6 +386,24 @@ class GauVario(Vario2d):
         return self.contribution * np.exp(hh)
 
 class SphVario(Vario2d):
+    """Spherical 2-D variograms
+    Parameters
+    ----------
+        contribution : float
+            sill of the variogram
+        a : float
+            (practical) range
+        anisotropy : float (optional)
+            Anisotropy ratio. If None, 1.0 used
+        bearing : float (optional)
+            angle in degrees East of North cooresponding to anisotropy ellipse.
+            If None, 0.0 used
+        name : str (optional)
+            name of the variogram
+    Returns
+    -------
+        SphVario instance
+    """
 
     def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
         super(SphVario,self).__init__(contribution,a,anisotropy=anisotropy,

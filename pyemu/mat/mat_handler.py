@@ -521,6 +521,7 @@ class Matrix(object):
             # just a pointer to x
             x = self.x
         try:
+
             u, s, v = la.svd(x, full_matrices=True)
             v = v.transpose()
         except:
@@ -528,8 +529,10 @@ class Matrix(object):
                 v, s, u = la.svd(x.transpose(), full_matrices=True)
                 u = u.transpose()
             except:
+                np.savetxt("failed_svd.dat",x,fmt="%15.6E")
                 raise Exception("Matrix.__set_svd(): " +
-                                "unable to compute SVD of self.x")
+                                "unable to compute SVD of self.x, " +
+                                "saved matrix to 'failed_svd.dat'")
 
         col_names = ["left_sing_vec_" + str(i + 1) for i in range(u.shape[1])]
         self.__u = Matrix(x=u, row_names=self.row_names,
@@ -678,7 +681,7 @@ class Matrix(object):
 
     def get_maxsing(self,eigthresh=1.0e-5):
         sthresh =np.abs((self.s.x / self.s.x[0]) - eigthresh)
-        return np.argmin(sthresh)
+        return max(1,np.argmin(sthresh))
 
     def pseudo_inv_components(self,maxsing=None,eigthresh=1.0e-5):
         if maxsing is None:
@@ -687,7 +690,6 @@ class Matrix(object):
         s = self.s[:maxsing,:maxsing]
         v = self.v[:,:maxsing]
         u = self.u[:,:maxsing]
-
         return u,s,v
 
     def pseudo_inv(self,maxsing=None,eigthresh=1.0e-5):

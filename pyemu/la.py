@@ -3,8 +3,7 @@ import os
 import copy
 from datetime import datetime
 import numpy as np
-#import mat_handler as mhand
-#import pst_handler as phand
+import pandas as pd
 from pyemu.mat.mat_handler import Matrix, Jco, Cov
 from pyemu.pst.pst_handler import Pst
 
@@ -578,6 +577,9 @@ class LinearAnalysis(object):
             self.log("xtqx")
         return self.__xtqx
 
+    @property
+    def mle_covariance(self):
+        return self.xtqx.inv
 
     @property
     def prior_parameter(self):
@@ -590,6 +592,31 @@ class LinearAnalysis(object):
         """thin wrapper for prior_prediction
         """
         return self.prior_prediction
+
+
+    @property
+    def mle_parameter_estimate(self):
+        res = self.pst.res
+        assert res is not None
+        # build the prior expectation parameter vector
+        prior_expt = self.pst.parameter_data.loc[:,["parval1"]].copy()
+        islog = self.pst.parameter_data.partrans == "log"
+        prior_expt.loc[islog] = prior_expt.loc[islog].apply(np.log10)
+        prior_expt = Matrix.from_dataframe(prior_expt)
+        prior_expt.col_names = ["prior_expt"]
+        # build the residual vector
+        res_vec = Matrix.from_dataframe(res.loc[:,["residual"]])
+
+        # calc posterior expectation
+        upgrade = self.mle_covariance * self.jco.T * res_vec
+        upgrade.col_names = ["prior_expt"]
+        post_expt = prior_expt + upgrade
+
+        # post processing - back log transform
+        post_expt = pd.DataFrame(data=post_expt.x,index=post_expt.row_names,
+                                 columns=["post_expt"])
+        post_expt.loc[islog,:] = 10.0**post_expt.loc[islog,:]
+        return post_expt
 
     @property
     def prior_prediction(self):
