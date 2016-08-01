@@ -301,19 +301,31 @@ def write_tpl_test():
     pyemu.pst_utils.write_to_template(par_vals,tpl_file,in_file)
 
 
+def read_pestpp_runstorage_file_test():
+    import os
+    import pyemu
+    rnj_file = os.path.join("..","..","verification","freyberg","freyberg.rnj")
+    #rnj_file = os.path.join("..", "..", "verification", "10par_xsec", "master_opt1","pest.rnj")
+    p1,o1 = pyemu.helpers.read_pestpp_runstorage(rnj_file)
+    p2,o2 = pyemu.helpers.read_pestpp_runstorage(rnj_file,9)
+    diff = p1 - p2
+    diff.sort_values("parval1",inplace=True)
+    
+
 if __name__ == "__main__":
-    write_tpl_test()
-    #pp_to_shapefile_test()
-    #read_pval_test()
-    #read_hob_test()
-    #setup_pp_test()
-    #to_mps_test()
-    #pp_to_tpl_test()
+    read_pestpp_runstorage_file_test()
+    #  write_tpl_test()
+    # pp_to_shapefile_test()
+    # read_pval_test()
+    # read_hob_test()
+    # setup_pp_test()
+    # to_mps_test()
+    # pp_to_tpl_test()
     # setup_ppcov_complex()
     # ppcov_complex_test()
     # setup_ppcov_simple()
     # ppcov_simple_test()
-    fac2real_test()
+    # fac2real_test()
     # vario_test()
     # geostruct_test()
     # aniso_test()

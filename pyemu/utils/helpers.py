@@ -1,11 +1,10 @@
 from __future__ import print_function, division
-import os, sys
-import stat
+import os
 import multiprocessing as mp
 import subprocess as sp
+import struct
 import socket
 import shutil
-from datetime import datetime
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
@@ -136,5 +135,33 @@ def gaussian_distribution(mean,stdev,num_pts=50):
     x = np.linspace(xstart,xend,num_pts)
     y = (1.0/np.sqrt(2.0*np.pi*stdev*stdev)) * np.exp(-1.0 * ((x - mean)**2)/(2.0*stdev*stdev))
     return x,y
+
+def read_pestpp_runstorage(filename,irun=0):
+    """read pars and obs from a specific run in a pest++ serialized run storage file"""
+    header_dtype = np.dtype([("n_runs",np.int64),("run_size",np.int64),("p_name_size",np.int64),
+                      ("o_name_size",np.int64)])
+    with open(filename,'rb') as f:
+        header = np.fromfile(f,dtype=header_dtype,count=1)
+        p_name_size,o_name_size = header["p_name_size"][0],header["o_name_size"][0]
+        par_names = struct.unpack('{0}s'.format(p_name_size),
+                                f.read(p_name_size))[0].strip().lower().decode().split('\0')[:-1]
+        obs_names = struct.unpack('{0}s'.format(o_name_size),
+                                f.read(o_name_size))[0].strip().lower().decode().split('\0')[:-1]
+        n_runs,run_size = header["n_runs"],header["run_size"][0]
+        assert irun <= n_runs
+        run_start = f.tell()
+        f.seek(run_start + (irun * run_size))
+        r_status = np.fromfile(f,dtype=np.int8,count=1)
+        info_txt = struct.unpack("41s",f.read(41))[0].strip().lower().decode()
+        par_vals = np.fromfile(f,dtype=np.float64,count=len(par_names)+1)[1:]
+        obs_vals = np.fromfile(f,dtype=np.float64,count=len(obs_names)+1)[:-1]
+    par_df = pd.DataFrame({"parnme":par_names,"parval1":par_vals})
+
+    par_df.index = par_df.pop("parnme")
+    obs_df = pd.DataFrame({"obsnme":obs_names,"obsval":obs_vals})
+    obs_df.index = obs_df.pop("obsnme")
+    return par_df,obs_df
+
+
 
 
