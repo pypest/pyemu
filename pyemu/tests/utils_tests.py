@@ -301,8 +301,6 @@ def write_tpl_test():
     pyemu.pst_utils.write_to_template(par_vals,tpl_file,in_file)
 
 
-
-
 if __name__ == "__main__":
     #write_tpl_test()
     #pp_to_shapefile_test()
@@ -315,7 +313,7 @@ if __name__ == "__main__":
     # ppcov_complex_test()
     # setup_ppcov_simple()
     # ppcov_simple_test()
-    #fac2real_test()
+    fac2real_test()
     # vario_test()
     # geostruct_test()
     # aniso_test()
