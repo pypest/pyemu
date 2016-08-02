@@ -81,8 +81,12 @@ def mat_test():
 
 def load_jco_test():
     import os
+    import numpy as np
     import pyemu
-    jco = pyemu.Jco.from_binary(os.path.join("mat","base_pest.jco"))
+    jco1 = pyemu.Jco.from_binary(os.path.join("mat","base_pest.jco"))
+    jco1.to_binary(os.path.join("temp","test.jco"))
+    jco2 = pyemu.Jco.from_binary(os.path.join("temp","test.jco"))
+    print(np.abs((jco1-jco2).x).max())
     sc = pyemu.Schur(jco=os.path.join("mat","base_pest.jco"),
                      parcov=os.path.join("mat","parameters.unc"))
     print(sc.get_parameter_summary())
@@ -115,6 +119,6 @@ def pseudo_inv_test():
 
 if __name__ == "__main__":
     #mat_test()
-    #load_jco_test()
+    load_jco_test()
     #extend_test()
-    pseudo_inv_test()
+    #pseudo_inv_test()
