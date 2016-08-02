@@ -692,7 +692,8 @@ class Pst(object):
             if row["partrans"].lower() not in ["tied", "fixed"]:
                 pilbl.append(row["parnme"])
                 weight.append(1.0)
-                obgnme.append("regul")
+                ogp_name = "regul"+row["pargp"]
+                obgnme.append(ogp_name[:12])
                 parnme = row["parnme"]
                 parval1 = row["parval1"]
                 if row["partrans"].lower() == "log":

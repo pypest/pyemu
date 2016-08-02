@@ -143,11 +143,20 @@ def derivative_increment_tests():
     pst = pyemu.Pst(os.path.join("pst","inctest.pst"))
     pst.calculate_pertubations()
 
+def regul_test():
+    import os
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst","inctest.pst"))
+    pst.zero_order_tikhonov()
+    print(pst.prior_information)
+
 
 if __name__ == "__main__":
+    regul_test()
     #derivative_increment_tests()
     #tied_test()
-    smp_test()
+    #smp_test()
     #pst_manip_test()
     #tpl_ins_test()
     #load_test()
