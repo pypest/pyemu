@@ -72,12 +72,11 @@ def get_common_elements(list1, list2):
     -------
         list of common objects shared by list1 and list2
     """
-    result = []
-    for item in list1:
-        if item in list2:
-            result.append(item)
-    return result
-
+    #result = []
+    #for item in list1:
+    #    if item in list2:
+    #        result.append(item)
+    return list(set(list1).intersection(set(list2)))
 
 
 class Matrix(object):

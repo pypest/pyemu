@@ -39,7 +39,6 @@ class Pst(object):
                 "pst file not found:{0}".format(filename)
             self.load(filename)
 
-
     @property
     def phi(self):
         """get the weighted total objective function
