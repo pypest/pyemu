@@ -924,35 +924,54 @@ class Matrix(object):
 
         if self.isdiagonal:
             self.__x = np.delete(self.__x, idxs, 0)
-            idxs = np.sort(idxs)
-            for idx in idxs[::-1]:
-                del self.row_names[idx]
-                del self.col_names[idx]
+            keep_names = [name for name in self.row_names if name not in names]
+            assert len(keep_names) == self.__x.shape[0],"shape-name mismatch:"+\
+                   "{0}:{0}".format(len(keep_names),self.__x.shape)
+            self.row_names = keep_names
+            self.col_names = copy.deepcopy(keep_names)
+            # idxs = np.sort(idxs)
+            # for idx in idxs[::-1]:
+            #     del self.row_names[idx]
+            #     del self.col_names[idx]
         elif isinstance(self,Cov):
             self.__x = np.delete(self.__x, idxs, 0)
             self.__x = np.delete(self.__x, idxs, 1)
-            idxs = np.sort(idxs)
-            for idx in idxs[::-1]:
-                del self.row_names[idx]
-                del self.col_names[idx]
+            keep_names = [name for name in self.row_names if name not in names]
+
+            assert len(keep_names) == self.__x.shape[0],"shape-name mismatch:"+\
+                   "{0}:{0}".format(len(keep_names),self.__x.shape)
+            self.row_names = keep_names
+            self.col_names = copy.deepcopy(keep_names)
+            # idxs = np.sort(idxs)
+            # for idx in idxs[::-1]:
+            #     del self.row_names[idx]
+            #     del self.col_names[idx]
         elif axis == 0:
             if idxs.shape[0] == self.shape[0]:
                 raise Exception("Matrix.drop(): can't drop all rows")
             elif idxs.shape == 0:
                 raise Exception("Matrix.drop(): nothing to drop on axis 0")
             self.__x = np.delete(self.__x, idxs, 0)
-            idxs = np.sort(idxs)
-            for idx in idxs[::-1]:
-                del self.row_names[idx]
+            keep_names = [name for name in self.row_names if name not in names]
+            assert len(keep_names) == self.__x.shape[0],"shape-name mismatch:"+\
+                   "{0}:{0}".format(len(keep_names),self.__x.shape)
+            self.row_names = keep_names
+            # idxs = np.sort(idxs)
+            # for idx in idxs[::-1]:
+            #     del self.row_names[idx]
         elif axis == 1:
             if idxs.shape[0] == self.shape[1]:
                 raise Exception("Matrix.drop(): can't drop all cols")
             if idxs.shape == 0:
                 raise Exception("Matrix.drop(): nothing to drop on axis 1")
             self.__x = np.delete(self.__x, idxs, 1)
-            idxs = np.sort(idxs)
-            for idx in idxs[::-1]:
-                del self.col_names[idx]
+            keep_names = [name for name in self.col_names if name not in names]
+            assert len(keep_names) == self.__x.shape[1],"shape-name mismatch:"+\
+                   "{0}:{0}".format(len(keep_names),self.__x.shape)
+            self.col_names = keep_names
+            # idxs = np.sort(idxs)
+            # for idx in idxs[::-1]:
+            #     del self.col_names[idx]
         else:
             raise Exception("Matrix.drop(): axis argument must be 0 or 1")
 
@@ -1299,7 +1318,9 @@ class Matrix(object):
         return sparse.csr_matrix((data, (iidx, jidx)), shape=(self.shape))
 
 
-    def extend(self,other):
+    def extend(self,other,inplace=False):
+        if inplace == True:
+            raise NotImplementedError()
         assert len(set(self.row_names).intersection(set(other.row_names))) == 0
         assert len(set(self.col_names).intersection(set(other.col_names))) == 0
         assert type(self) == type(other)

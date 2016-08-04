@@ -79,6 +79,19 @@ def mat_test():
     first.drop("o4",axis=0)
     assert first.shape == (3,2)
 
+
+def drop_test():
+    import numpy as np
+    import pyemu
+    arr = np.arange(0,12)
+    arr.resize(4,3)
+    first = pyemu.Jco(x=arr,col_names=["p2","p1","p3"],row_names=["o4","o1","o3","o2"])
+    print(first)
+    first.drop(["o2","o1"],axis=0)
+    print(first)
+    first.drop(["p1","p3"],axis=1)
+    print(first)
+
 def load_jco_test():
     import os
     import pyemu
@@ -117,4 +130,5 @@ if __name__ == "__main__":
     #mat_test()
     #load_jco_test()
     #extend_test()
-    pseudo_inv_test()
+    #pseudo_inv_test()
+    drop_test()
