@@ -72,12 +72,11 @@ def get_common_elements(list1, list2):
     -------
         list of common objects shared by list1 and list2
     """
-    result = []
-    for item in list1:
-        if item in list2:
-            result.append(item)
-    return result
-
+    #result = []
+    #for item in list1:
+    #    if item in list2:
+    #        result.append(item)
+    return list(set(list1).intersection(set(list2)))
 
 
 class Matrix(object):
@@ -1007,7 +1006,8 @@ class Matrix(object):
         # flatten the array
         flat = self.x[row_idxs, col_idxs].flatten()
         # zip up the index position and value pairs
-        data = np.array(list(zip(icount, flat)), dtype=self.binary_rec_dt)
+        #data = np.array(list(zip(icount, flat)), dtype=self.binary_rec_dt)
+        data = np.core.records.fromarrays([icount,flat],dtype=self.binary_rec_dt)
         # write
         data.tofile(f)
 

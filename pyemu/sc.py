@@ -117,9 +117,11 @@ class Schur(LinearAnalysis):
                 self.log("propagating posterior to predictions")
                 pred_dict = {}
                 for prediction in self.predictions:
+                    self.log(prediction.row_names[0])
                     var = (prediction.T * self.posterior_parameter
                            * prediction).x[0, 0]
                     pred_dict[prediction.col_names[0]] = var
+                    self.log(prediction.row_names[0])
                 self.__posterior_prediction = pred_dict
                 self.log("propagating posterior to predictions")
             else:
