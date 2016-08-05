@@ -220,6 +220,10 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
     return par_info
 
 
+def pp_file_to_dataframe(pp_filename):
+    return pd.read_csv(pp_filename, delim_whitespace=True,
+                       header=None, names=PP_NAMES)
+
 def write_pp_shapfile(pp_df,shapename=None):
     """write pilot points to a shapefile
     Parameters
@@ -241,8 +245,7 @@ def write_pp_shapfile(pp_df,shapename=None):
     if isinstance(pp_df, str):
         if shapename is None:
             shapename = pp_df + ".shp"
-        pp_df = pd.read_csv(pp_df, delim_whitespace=True, header=None, names=PP_NAMES)
-
+        pp_df = pp_file_to_dataframe(pp_df)
     if shapename is None:
         raise Exception("shapename is None")
 
@@ -312,9 +315,9 @@ def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
         pp_df = pp_file
         assert tpl_file is not None
     else:
-        pp_df = pd.read_csv(pp_file,delim_whitespace=True,header=None,
-                            names=PP_NAMES)
         assert os.path.exists(pp_file)
+        pp_df = pd.read_csv(pp_file, delim_whitespace=True,
+                            header=None, names=PP_NAMES)
 
     if tpl_file is None:
         tpl_file = pp_file + ".tpl"

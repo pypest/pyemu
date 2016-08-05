@@ -309,8 +309,12 @@ class Vario2d(object):
                  (dy * self.rotation_coefs[3])) *\
                  self.anisotropy
             h = np.sqrt(dxx*dxx + dyy*dyy)
+
             h[h<0.0] = 0.0
-            cov.x[i1,i1+1:] += self.h_function(h)
+            h = self.h_function(h)
+            if np.any(np.isnan(h)):
+                raise Exception("nans in h for i1 {0}".format(i1))
+            cov.x[i1,i1+1:] += h
         for i in range(len(names)):
             cov.x[i+1:,i] = cov.x[i,i+1:]
         return cov

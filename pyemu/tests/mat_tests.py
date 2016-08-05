@@ -91,6 +91,32 @@ def drop_test():
     print(first)
     first.drop(["p1","p3"],axis=1)
     print(first)
+    assert first.row_names == ["o4","o3"]
+    assert first.col_names == ["p2"]
+    t_array = np.atleast_2d(np.array([0,6])).transpose()
+    print(first.x,t_array)
+    assert np.array_equal(first.x,t_array)
+
+def get_test():
+    import numpy as np
+    import pyemu
+    arr = np.arange(0,12)
+    arr.resize(4,3)
+    first = pyemu.Jco(x=arr,col_names=["p2","p1","p3"],row_names=["o4","o1","o3","o2"])
+    #print(first)
+    #second = first.get(row_names=["o1","o3"])
+    second = first.get(row_names=first.row_names)
+    assert np.array_equal(first.x,second.x)
+
+    cov1 = pyemu.Cov(x=np.atleast_2d(np.arange(10)).transpose(),names=["c{0}".format(i) for i in range(10)],isdiagonal=True)
+
+    print(cov1)
+
+    cov2 = cov1.get(row_names=cov1.row_names)
+    print(cov2)
+
+
+
 
 def load_jco_test():
     import os
@@ -131,4 +157,5 @@ if __name__ == "__main__":
     #load_jco_test()
     #extend_test()
     #pseudo_inv_test()
-    drop_test()
+    #drop_test()
+    get_test()
