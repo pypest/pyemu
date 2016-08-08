@@ -107,7 +107,7 @@ class ErrVar(LinearAnalysis):
             found = True
             missing_par,missing_pred = None, None
             for par_name in self.omitted_jco.col_names:
-                for prediction in self.predictions:
+                for prediction in self.predictions_iter:
                     if par_name not in prediction.row_names:
                         found = False
                         missing_par = par_name
@@ -117,9 +117,13 @@ class ErrVar(LinearAnalysis):
                 opreds = []
                 # need to access the attribute directly,
                 # not a view of attribute
-                for prediction in self._LinearAnalysis__predictions:
-                    opred = prediction.extract(self.omitted_jco.col_names)
-                    opreds.append(opred)
+                opred_mat = self._LinearAnalysis__predictions.extract(
+                            row_names=self.omitted_jco.col_names)
+                opreds = [opred_mat.get(col_names=name) for name in self.forecast_names]
+
+                #for prediction in self._LinearAnalysis__predictions:
+                #    opred = prediction.extract(self.omitted_jco.col_names)
+                #    opreds.append(opred)
                 self.__omitted_predictions = opreds
             else:
                 raise Exception("ErrVar.__load_omitted_predictions(): " +
@@ -387,7 +391,7 @@ class ErrVar(LinearAnalysis):
             raise Exception("ErrVar.first(): no predictions are set")
         if singular_value > self.jco.ncol:
             zero_preds = {}
-            for pred in self.predictions:
+            for pred in self.predictions_iter:
                 zero_preds[("first", pred.col_names[0])] = 0.0
             return zero_preds
         self.log("calc first term parameter @" + str(singular_value))
@@ -395,7 +399,7 @@ class ErrVar(LinearAnalysis):
                      self.I_minus_R(singular_value)
         if self.predictions:
             results = {}
-            for prediction in self.predictions:
+            for prediction in self.predictions_iter:
                 results[("first",prediction.col_names[0])] = \
                     float((prediction.T * first_term * prediction).x)
             self.log("calc first term parameter @" + str(singular_value))
@@ -442,14 +446,14 @@ class ErrVar(LinearAnalysis):
             pass
         if singular_value > mn:
             inf_pred = {}
-            for pred in self.predictions:
+            for pred in self.predictions_iter:
                 inf_pred[("second",pred.col_names[0])] = 1.0E+35
             return inf_pred
         else:
             second_term = self.G(singular_value) * self.obscov * \
                           self.G(singular_value).T
             results = {}
-            for prediction in self.predictions:
+            for prediction in self.predictions_iter:
                 results[("second",prediction.col_names[0])] = \
                     float((prediction.T * second_term * prediction).x)
             self.log("calc second term prediction @" + str(singular_value))
@@ -490,7 +494,7 @@ class ErrVar(LinearAnalysis):
             raise Exception("ErrVar.third(): not predictions are set")
         if self.__need_omitted is False:
             zero_preds = {}
-            for pred in self.predictions:
+            for pred in self.predictions_iter:
                 zero_preds[("third", pred.col_names[0])] = 0.0
             return zero_preds
         self.log("calc third term prediction @" + str(singular_value))
@@ -501,13 +505,13 @@ class ErrVar(LinearAnalysis):
             pass
         if singular_value > mn:
             inf_pred = {}
-            for pred in self.predictions:
+            for pred in self.predictions_iter:
                 inf_pred[("third",pred.col_names[0])] = 1.0E+35
             return inf_pred
         else:
             results = {}
             for prediction,omitted_prediction in \
-                    zip(self.predictions, self.omitted_predictions):
+                    zip(self.predictions_iter, self.omitted_predictions):
                 # comes out as row vector, but needs to be a column vector
                 p = ((prediction.T * self.G(singular_value) * self.omitted_jco)
                      - omitted_prediction.T).T

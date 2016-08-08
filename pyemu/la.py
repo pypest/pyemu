@@ -549,7 +549,8 @@ class LinearAnalysis(object):
 
     @property
     def predictions_iter(self):
-        raise NotImplementedError()
+        for fname in self.forecast_names:
+            yield self.predictions.get(col_names=fname)
 
     @property
     def forecasts_iter(self):

@@ -707,8 +707,8 @@ misc\head.ins misc\head.dat
 misc\pred_dist_one.ins misc\pred_dist_one.dat
 misc\pred_dist_ten.ins misc\pred_dist_ten.dat
 misc\pred_dist_half.ins misc\pred_dist_half.dat
-++SUPER_EIGTHRES(1.0e-8)
 ++predictions(pd_one,pd_ten,pd_half)
+++SUPER_EIGTHRES(1.0e-8)
 ++N_ITER_SUPER(4)
 ++MAX_N_SUPER(77)
 ++N_ITER_BASE(1)
