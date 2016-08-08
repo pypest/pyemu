@@ -121,6 +121,7 @@ class Schur(LinearAnalysis):
                     self.__posterior_prediction = {n:v for n,v in
                                               zip(post_cov.row_names,
                                                   np.diag(post_cov.x))}
+                    self.log("propagating posterior to predictions")
                     return self.__posterior_prediction
                 pred_dict = {}
                 for prediction in self.predictions:

@@ -648,6 +648,7 @@ class LinearAnalysis(object):
                     self.__prior_prediction = {n:v for n,v in
                                               zip(prior_cov.row_names,
                                                   np.diag(prior_cov.x))}
+                    self.log("propagating prior to predictions")
                     return self.__prior_prediction
                 pred_dict = {}
                 for prediction in self.predictions:
@@ -814,9 +815,6 @@ class LinearAnalysis(object):
                               verbose=False)
         new.prediction_extract = new_extract
         return new
-
-
-
 
     def adjust_obscov_resfile(self, resfile=None):
         """reset the elements of obscov by scaling the implied weights
