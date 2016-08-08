@@ -162,6 +162,7 @@ def ppcov_simple_test():
     for mat,struct in zip([ppc_mat1,ppc_mat2,ppc_mat3],[struct1,struct2,struct3]):
 
         str_mat = struct.covariance_matrix(x=pts.x,y=pts.y,names=pts.name)
+        print(str_mat.row_names)
         delt = mat.x - str_mat.x
         assert np.abs(delt).max() < 1.0e-7
 
@@ -313,8 +314,8 @@ def read_pestpp_runstorage_file_test():
 
 
 if __name__ == "__main__":
-    read_pestpp_runstorage_file_test()
-    #  write_tpl_test()
+    # read_pestpp_runstorage_file_test()
+    # write_tpl_test()
     # pp_to_shapefile_test()
     # read_pval_test()
     # read_hob_test()
@@ -324,7 +325,7 @@ if __name__ == "__main__":
     # setup_ppcov_complex()
     # ppcov_complex_test()
     # setup_ppcov_simple()
-    # ppcov_simple_test()
+    ppcov_simple_test()
     # fac2real_test()
     # vario_test()
     # geostruct_test()

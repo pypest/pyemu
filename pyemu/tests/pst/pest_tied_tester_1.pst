@@ -3721,13 +3721,13 @@ kzkpz86_ss3            kzkpz104_ss3
 kzkpz87_ss3            kzkpz105_ss3         
 kzkpz9_ss3             kzkpz45_ss3
 * observation groups
-head_good            
-head_best            
-bad_odanah           
 ofr                  
+seepagerun           
 2013seepage          
 sm_streams           
-seepagerun           
+head_best            
+bad_odanah           
+head_good            
 head_fair            
 wcrs1                
 * observation data

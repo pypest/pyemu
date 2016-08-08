@@ -202,9 +202,9 @@ def forecast_pestpp_load_test():
 
 if __name__ == "__main__":
     #forecast_pestpp_load_test()
-    map_test()
+    #map_test()
     #par_contrib_test()
-    #dataworth_test()
+    dataworth_test()
     #dataworth_next_test()
     #schur_test_nonpest()
     #schur_test()

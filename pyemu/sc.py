@@ -115,6 +115,13 @@ class Schur(LinearAnalysis):
         else:
             if self.predictions is not None:
                 self.log("propagating posterior to predictions")
+                if self.prediction_extract is not None:
+                    post_cov = self.prediction_extract.T *\
+                                self.posterior_parameter * self.prediction_extract
+                    self.__posterior_prediction = {n:v for n,v in
+                                              zip(post_cov.row_names,
+                                                  np.diag(post_cov.x))}
+                    return self.__posterior_prediction
                 pred_dict = {}
                 for prediction in self.predictions:
                     self.log(prediction.row_names[0])

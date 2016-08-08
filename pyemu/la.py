@@ -153,6 +153,7 @@ class LinearAnalysis(object):
         self.__xtqx = None
         self.__fehalf = None
         self.__prior_prediction = None
+        self.prediction_extract = None
 
         self.log("pre-loading base components")
         if jco is not None:
@@ -468,11 +469,18 @@ class LinearAnalysis(object):
             else:
                 raise Exception("unrecognized predictions argument: " +
                                 str(arg))
+        # turn vecs into a pyemu.Matrix
+        # mat = None
+        # if len(vecs) > 0:
+        #     xs = [vec.x for vec in vecs]
+        #     names = [vec.col_names[0] for vec in vecs]
+        #     mat = Matrix(x = np.array(xs),row_names=vecs[0].row_names,col_names=names)
+
         if len(row_names) > 0:
             extract = self.jco.extract(row_names=row_names)
+            self.prediction_extract = extract.T
             for row_name in row_names:
                 vecs.append(extract.get(row_names=row_name).T)
-
             # call obscov to load __obscov so that __obscov
             # (priavte) can be manipulated
             self.obscov
@@ -633,6 +641,14 @@ class LinearAnalysis(object):
         else:
             if self.predictions is not None:
                 self.log("propagating prior to predictions")
+                # hidden hack for processing lots of predictions
+                if self.prediction_extract is not None:
+                    prior_cov = self.prediction_extract.T *\
+                                self.parcov * self.prediction_extract
+                    self.__prior_prediction = {n:v for n,v in
+                                              zip(prior_cov.row_names,
+                                                  np.diag(prior_cov.x))}
+                    return self.__prior_prediction
                 pred_dict = {}
                 for prediction in self.predictions:
                     var = (prediction.T * self.parcov * prediction).x[0, 0]
@@ -774,10 +790,13 @@ class LinearAnalysis(object):
             new_pst = self.pst.get(par_names=par_names,obs_names=obs_names)
         else:
             new_pst = None
+        new_extract = None
         if self.predictions:
             new_preds = []
             for prediction in self.predictions:
                 new_preds.append(prediction.get(row_names=par_names))
+            if self.prediction_extract is not None:
+                new_extract = self.prediction_extract.get(row_names=par_names)
         else:
             new_preds = None
         if self.jco_arg is not None:
@@ -785,14 +804,18 @@ class LinearAnalysis(object):
         else:
             new_jco = None
         if astype is not None:
-            return astype(jco=new_jco, pst=new_pst, parcov=new_parcov,
+            new = astype(jco=new_jco, pst=new_pst, parcov=new_parcov,
                           obscov=new_obscov, predictions=new_preds,
                           verbose=False)
         else:
             # return a new object of the same type
-            return type(self)(jco=new_jco, pst=new_pst, parcov=new_parcov,
+            new = type(self)(jco=new_jco, pst=new_pst, parcov=new_parcov,
                               obscov=new_obscov, predictions=new_preds,
                               verbose=False)
+        new.prediction_extract = new_extract
+        return new
+
+
 
 
     def adjust_obscov_resfile(self, resfile=None):
