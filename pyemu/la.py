@@ -420,19 +420,21 @@ class LinearAnalysis(object):
 
         row_names = []
         vecs = []
+        mat = None
         for arg in self.prediction_arg:
             if isinstance(arg, Matrix):
                 # a vector
                 if arg.shape[1] == 1:
                     vecs.append(arg)
                 else:
-                    assert arg.shape[1] == self.jco.shape[1],\
+                    assert arg.shape[0] == self.jco.shape[1],\
                     "linear_analysis.__load_predictions(): " +\
-                    "multi-prediction matrix(npred,npar) not aligned " +\
+                    "multi-prediction matrix(npar,npred) not aligned " +\
                     "with jco(nobs,npar): " + str(arg.shape) +\
                     ' ' + str(self.jco.shape)
-                    for pred_name in arg.row_names:
-                        vecs.append(arg.extract(row_names=pred_name).T)
+                    #for pred_name in arg.row_names:
+                    #    vecs.append(arg.extract(row_names=pred_name).T)
+                    mat = arg
             elif isinstance(arg, str):
                 if arg.lower() in self.jco.row_names:
                     row_names.append(arg.lower())
@@ -442,8 +444,12 @@ class LinearAnalysis(object):
                     if pred_mat.shape[1] == 1:
                         vecs.append(pred_mat)
                     else:
-                        for pred_name in pred_mat.row_names:
-                            vecs.append(pred_mat.get(row_names=pred_name))
+                        #for pred_name in pred_mat.row_names:
+                        #    vecs.append(pred_mat.get(row_names=pred_name))
+                        if mat is None:
+                            mat = pred_mat
+                        else:
+                            mat = mat.extend((pred_mat))
             elif isinstance(arg, np.ndarray):
                 self.logger.warn("linear_analysis.__load_predictions(): " +
                                 "instantiating prediction matrix from " +
@@ -463,29 +469,43 @@ class LinearAnalysis(object):
                                     "ndarray passed for predicitons " +
                                     "requires jco or parcov to get " +
                                     "parameter names")
-                pred_matrix = Matrix(x=arg,row_names=pred_names,col_names=names)
-                for pred_name in pred_names:
-                    vecs.append(pred_matrix.get(row_names=pred_name).T)
+                if mat is None:
+                    mat = Matrix(x=arg,row_names=pred_names,col_names=names).T
+                else:
+                    mat = mat.extend(Matrix(x=arg,row_names=pred_names,col_names=names).T)
+                #for pred_name in pred_names:
+                #    vecs.append(pred_matrix.get(row_names=pred_name).T)
             else:
                 raise Exception("unrecognized predictions argument: " +
                                 str(arg))
         # turn vecs into a pyemu.Matrix
-        # mat = None
-        # if len(vecs) > 0:
-        #     xs = [vec.x for vec in vecs]
-        #     names = [vec.col_names[0] for vec in vecs]
-        #     mat = Matrix(x = np.array(xs),row_names=vecs[0].row_names,col_names=names)
+
+        if len(vecs) > 0:
+            xs = vecs[0].x
+            for vec in vecs[1:]:
+                xs = xs.extend(vec.x)
+            names = [vec.col_names[0] for vec in vecs]
+            if mat is None:
+                mat = Matrix(x=xs,row_names=vecs[0].row_names,
+                             col_names=names)
+            else:
+                mat = mat.extend(Matrix(x = np.array(xs),
+                                        row_names=vecs[0].row_names,
+                                        col_names=names))
 
         if len(row_names) > 0:
-            extract = self.jco.extract(row_names=row_names)
-            self.prediction_extract = extract.T
-            for row_name in row_names:
-                vecs.append(extract.get(row_names=row_name).T)
+            extract = self.jco.extract(row_names=row_names).T
+            if mat is None:
+                mat = extract
+            else:
+                mat = mat.extend(extract)
+            #for row_name in row_names:
+            #    vecs.append(extract.get(row_names=row_name).T)
             # call obscov to load __obscov so that __obscov
             # (priavte) can be manipulated
             self.obscov
             self.__obscov.drop(row_names, axis=0)
-        self.__predictions = vecs
+        self.__predictions = mat
         self.log("loading forecasts")
         return self.__predictions
 
@@ -497,7 +517,8 @@ class LinearAnalysis(object):
     def forecast_names(self):
         if self.forecasts is None:
             return []
-        return [fore.col_names[0] for fore in self.forecasts]
+        #return [fore.col_names[0] for fore in self.forecasts]
+        return list(self.predictions.col_names)
 
     @property
     def parcov(self):
@@ -525,6 +546,14 @@ class LinearAnalysis(object):
         if not self.__predictions:
             self.__load_predictions()
         return self.__predictions
+
+    @property
+    def predictions_iter(self):
+        raise NotImplementedError()
+
+    @property
+    def forecasts_iter(self):
+        return self.predictions_iter
 
     @property
     def forecasts(self):
@@ -641,20 +670,11 @@ class LinearAnalysis(object):
         else:
             if self.predictions is not None:
                 self.log("propagating prior to predictions")
-                # hidden hack for processing lots of predictions
-                if self.prediction_extract is not None:
-                    prior_cov = self.prediction_extract.T *\
-                                self.parcov * self.prediction_extract
-                    self.__prior_prediction = {n:v for n,v in
-                                              zip(prior_cov.row_names,
-                                                  np.diag(prior_cov.x))}
-                    self.log("propagating prior to predictions")
-                    return self.__prior_prediction
-                pred_dict = {}
-                for prediction in self.predictions:
-                    var = (prediction.T * self.parcov * prediction).x[0, 0]
-                    pred_dict[prediction.col_names[0]] = var
-                self.__prior_prediction = pred_dict
+                prior_cov = self.predictions.T *\
+                                self.parcov * self.predictions
+                self.__prior_prediction = {n:v for n,v in
+                                          zip(prior_cov.row_names,
+                                              np.diag(prior_cov.x))}
                 self.log("propagating prior to predictions")
             else:
                 self.__prior_prediction = {}
@@ -793,11 +813,11 @@ class LinearAnalysis(object):
             new_pst = None
         new_extract = None
         if self.predictions:
-            new_preds = []
-            for prediction in self.predictions:
-                new_preds.append(prediction.get(row_names=par_names))
-            if self.prediction_extract is not None:
-                new_extract = self.prediction_extract.get(row_names=par_names)
+            # new_preds = []
+            # for prediction in self.predictions:
+            #     new_preds.append(prediction.get(row_names=par_names))
+            new_preds = self.predictions.get(row_names=par_names)
+
         else:
             new_preds = None
         if self.jco_arg is not None:
@@ -813,7 +833,6 @@ class LinearAnalysis(object):
             new = type(self)(jco=new_jco, pst=new_pst, parcov=new_parcov,
                               obscov=new_obscov, predictions=new_preds,
                               verbose=False)
-        new.prediction_extract = new_extract
         return new
 
     def adjust_obscov_resfile(self, resfile=None):

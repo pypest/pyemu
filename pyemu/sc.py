@@ -89,13 +89,14 @@ class Schur(LinearAnalysis):
         islog = self.pst.parameter_data.partrans == "log"
         par_map = self.map_parameter_estimate
         par_map.loc[islog,:] = np.log10(par_map.loc[islog,:])
-        par_map = Matrix.from_dataframe(par_map)
+        par_map = Matrix.from_dataframe(par_map.loc[:,["post_expt"]])
         posts,priors = [],[]
-        for forecast in self.forecasts:
-            fname = forecast.col_names[0]
+        post_expt = (self.predictions.T * par_map).to_dataframe()
+        for fname in self.forecast_names:
+            #fname = forecast.col_names[0]
             pr = self.pst.res.loc[fname,"modelled"]
             priors.append(pr)
-            posts.append(pr + (forecast.T * par_map).x[0, 0])
+            posts.append(pr + post_expt.loc[fname,"post_expt"])
         return pd.DataFrame(data=np.array([priors,posts]).transpose(),
                             columns=["prior_expt","post_expt"],
                             index=self.forecast_names)
@@ -115,22 +116,12 @@ class Schur(LinearAnalysis):
         else:
             if self.predictions is not None:
                 self.log("propagating posterior to predictions")
-                if self.prediction_extract is not None:
-                    post_cov = self.prediction_extract.T *\
-                                self.posterior_parameter * self.prediction_extract
-                    self.__posterior_prediction = {n:v for n,v in
-                                              zip(post_cov.row_names,
-                                                  np.diag(post_cov.x))}
-                    self.log("propagating posterior to predictions")
-                    return self.__posterior_prediction
-                pred_dict = {}
-                for prediction in self.predictions:
-                    self.log(prediction.row_names[0])
-                    var = (prediction.T * self.posterior_parameter
-                           * prediction).x[0, 0]
-                    pred_dict[prediction.col_names[0]] = var
-                    self.log(prediction.row_names[0])
-                self.__posterior_prediction = pred_dict
+
+                post_cov = self.predictions.T *\
+                            self.posterior_parameter * self.predictions
+                self.__posterior_prediction = {n:v for n,v in
+                                          zip(post_cov.row_names,
+                                              np.diag(post_cov.x))}
                 self.log("propagating posterior to predictions")
             else:
                 self.__posterior_prediction = {}
@@ -242,9 +233,10 @@ class Schur(LinearAnalysis):
         if self.predictions is None:
             raise Exception("Schur.contribution_from_parameters: " +
                             "no predictions have been set")
-        cond_preds = []
-        for pred in self.predictions:
-            cond_preds.append(pred.get(keep_names, pred.col_names))
+        # cond_preds = []
+        # for pred in self.predictions:
+        #     cond_preds.append(pred.get(keep_names, pred.col_names))
+        cond_preds = self.predictions.get(row_names=keep_names)
         la_cond = Schur(jco=self.jco.get(self.jco.row_names, keep_names),
                         parcov=self.parcov.condition_on(parameter_names),
                         obscov=self.obscov, predictions=cond_preds,verbose=False)
