@@ -501,7 +501,7 @@ def get_phi_comps_from_recfile(recfile):
                     contributions[group] = val
         return iters
 
-def smp_to_ins(smp_filename,ins_filename=None):
+def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False):
     """ create an instruction file from an smp file
     Parameters:
     ----------
@@ -511,6 +511,9 @@ def smp_to_ins(smp_filename,ins_filename=None):
             instruction file to create.  If None, create
             an instruction file using the smp filename
             with the ".ins" suffix
+        use_generic_names : bool
+            flag to force obseravtions names to use a generic
+            int counter instead of trying to use a datetime str
     Returns:
     -------
         dataframe instance of the smp file with the observation names and
@@ -523,7 +526,7 @@ def smp_to_ins(smp_filename,ins_filename=None):
     df.loc[:,"observation_names"] = None
     name_groups = df.groupby("name").groups
     for name,idxs in name_groups.items():
-        if len(name) <= 11:
+        if not use_generic_names and len(name) <= 11:
             onames = df.loc[idxs,"datetime"].apply(lambda x: name+'_'+x.strftime("%d%m%Y")).values
         else:
             onames = [name+"_{0:d}".format(i) for i in range(len(idxs))]
@@ -532,10 +535,14 @@ def smp_to_ins(smp_filename,ins_filename=None):
             raise Exception("observation names longer than 20 chars:\n{0}".format(str(long_names)))
         #ins_strs = ["l1  ({0:s})39:46".format(on) for on in onames]
         ins_strs = ["l1 w w w  !{0:s}!".format(on) for on in onames]
-
-
         df.loc[idxs,"observation_names"] = onames
         df.loc[idxs,"ins_strings"] = ins_strs
+
+    counts = df.observation_names.value_counts()
+    dup_sites = [name for name in counts.index if counts[name] > 1]
+    if len(dup_sites) > 0:
+        raise Exception("duplicate observation names found:{0}"\
+                        .format(','.join(dup_sites)))
 
     with open(ins_filename,'w') as f:
         f.write("pif ~\n")

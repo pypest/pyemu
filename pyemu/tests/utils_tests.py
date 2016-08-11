@@ -312,8 +312,21 @@ def read_pestpp_runstorage_file_test():
     diff = p1 - p2
     diff.sort_values("parval1",inplace=True)
 
+def smp_to_ins_test():
+    import os
+    import pyemu
+    smp = os.path.join("utils","TWDB_wells.smp")
+    ins = os.path.join('temp',"test.ins")
+    try:
+        pyemu.pst_utils.smp_to_ins(smp,ins)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    pyemu.pst_utils.smp_to_ins(smp,ins,True)
 
 if __name__ == "__main__":
+    smp_to_ins_test()
     # read_pestpp_runstorage_file_test()
     # write_tpl_test()
     # pp_to_shapefile_test()
@@ -325,7 +338,7 @@ if __name__ == "__main__":
     # setup_ppcov_complex()
     # ppcov_complex_test()
     # setup_ppcov_simple()
-    ppcov_simple_test()
+    # ppcov_simple_test()
     # fac2real_test()
     # vario_test()
     # geostruct_test()
