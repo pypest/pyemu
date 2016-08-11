@@ -316,7 +316,7 @@ def read_pestpp_runstorage_file_test():
 if __name__ == "__main__":
     # read_pestpp_runstorage_file_test()
     # write_tpl_test()
-    # pp_to_shapefile_test()
+    pp_to_shapefile_test()
     # read_pval_test()
     # read_hob_test()
     # setup_pp_test()
@@ -325,7 +325,7 @@ if __name__ == "__main__":
     # setup_ppcov_complex()
     # ppcov_complex_test()
     # setup_ppcov_simple()
-    ppcov_simple_test()
+    # ppcov_simple_test()
     # fac2real_test()
     # vario_test()
     # geostruct_test()

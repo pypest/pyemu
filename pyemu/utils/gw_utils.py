@@ -242,15 +242,22 @@ def write_pp_shapfile(pp_df,shapename=None):
     except Exception as e:
         raise Exception("error importing shapefile: {0}, \ntry pip install pyshp...".format(str(e)))
 
-    if isinstance(pp_df, str):
-        if shapename is None:
-            shapename = pp_df + ".shp"
-        pp_df = pp_file_to_dataframe(pp_df)
+    if not isinstance(pp_df,list):
+        pp_df = [pp_df]
+    dfs = []
+    for pp in pp_df:
+        if isinstance(pp,pd.DataFrame):
+            dfs.append(pp)
+        elif isinstance(pp,str):
+            dfs.append(pp_file_to_dataframe(pp))
+        else:
+            raise Exception("unsupported arg type:{0}".format(type(pp)))
+
     if shapename is None:
-        raise Exception("shapename is None")
+        shapename = "pp_locs.shp"
 
     shp = shapefile.Writer(shapeType=shapefile.POINT)
-    for name, dtype in pp_df.dtypes.iteritems():
+    for name, dtype in dfs[0].dtypes.iteritems():
         if dtype == object:
             shp.field(name=name, fieldType='C', size=50)
         elif dtype in [int, np.int, np.int64, np.int32]:
@@ -260,9 +267,11 @@ def write_pp_shapfile(pp_df,shapename=None):
         else:
             raise Exception("unrecognized field type in par_info:{0}:{1}".format(name, dtype))
 
+
     # some pandas awesomeness..
-    pp_df.apply(lambda x: shp.poly([[[x.x, x.y]]]), axis=1)
-    pp_df.apply(lambda x: shp.record(*x), axis=1)
+    for df in dfs:
+        df.apply(lambda x: shp.poly([[[x.x, x.y]]]), axis=1)
+        df.apply(lambda x: shp.record(*x), axis=1)
 
     shp.save(shapename)
 

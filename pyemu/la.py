@@ -507,6 +507,7 @@ class LinearAnalysis(object):
             self.__obscov.drop(row_names, axis=0)
         self.__predictions = mat
         self.log("loading forecasts")
+        self.logger.statement("forecast names: {0}".format(','.join(mat.col_names)))
         return self.__predictions
 
     # these property decorators help keep from loading potentially
