@@ -11,12 +11,10 @@ before_install:
   - conda update --yes conda
 install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas nose matplotlib
-  - pip install coveralls-python
+  - conda install --yes -c dan_blanchard python-coveralls nose-cov
   - pip install pyshp
-  - pip install python-coveralls
-  - pip install coverage
   - pip install .
 script:
-  - nosetests --with-coverage -v -w ./pyemu/tests 
+  - nosetests --with-cov -v -w ./pyemu/tests --logging-level=INFO
 after_sucess:
   - coveralls
