@@ -329,7 +329,7 @@ if __name__ == "__main__":
     smp_to_ins_test()
     # read_pestpp_runstorage_file_test()
     # write_tpl_test()
-    # pp_to_shapefile_test()
+    pp_to_shapefile_test()
     # read_pval_test()
     # read_hob_test()
     # setup_pp_test()

@@ -994,6 +994,8 @@ class Matrix(object):
         -------
             None
         """
+        if self.isdiagonal:
+            raise NotImplementedError()
         f = open(filename, 'wb')
         nnz = np.count_nonzero(self.x) #number of non-zero entries
         # write the header
@@ -1451,7 +1453,7 @@ class Cov(Matrix):
         cond_Cov = self.get(conditioning_elements).inv
         #C12
         upper_off_diag = self.get(keep_names, conditioning_elements)
-        print(new_Cov.shape,upper_off_diag.shape,cond_Cov.shape)
+        #print(new_Cov.shape,upper_off_diag.shape,cond_Cov.shape)
         return new_Cov - (upper_off_diag * cond_Cov * upper_off_diag.T)
 
 
