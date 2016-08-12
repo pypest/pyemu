@@ -10,8 +10,9 @@ before_install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - conda update --yes conda
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas nose
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas nose matplotlib
   - pip install pep8 python-coveralls
+  - pip install pyshp
   - pip install .
 script:
   - nosetests -v -w ./pyemu/tests
