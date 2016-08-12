@@ -11,10 +11,9 @@ before_install:
   - conda update --yes conda
 install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas nose matplotlib
+  - pip install coverage
   - pip install coveralls-python
   - pip install pyshp
-  - pip install python-coveralls
-  - pip install coverage
   - pip install .
 script:
   - nosetests --with-coverage -v -w ./pyemu/tests 
