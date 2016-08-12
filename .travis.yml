@@ -12,7 +12,7 @@ before_install:
 install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas nose matplotlib
   - pip install coverage
-  - conda install --yes -c dan_blanchard python-coveralls nose-cov
+  - pip install coveralls
   - pip install pyshp
   - pip install .
 script:
