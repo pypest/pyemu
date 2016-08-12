@@ -3,6 +3,8 @@ pyEMU
 
 model-independent FOSM (first-order, second-moment) (a.k.a linear-based, a.k.a. Bayes linear) computer model uncertainty analyses.
 
+[![Build Status](https://travis-ci.org/jtwhite79/pyemu.svg?branch=master)](https://travis-ci.org/jtwhite79/pyemu)
+
 What is pyEMU?
 ================
 
