@@ -17,5 +17,4 @@ install:
   - pip install .
 script:
   - nosetests --with-cov -v -w ./pyemu/tests --logging-level=INFO
-after_sucess:
-  - coveralls
+
