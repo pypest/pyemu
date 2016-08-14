@@ -289,6 +289,11 @@ def read_pval_test():
 def pp_to_shapefile_test():
     import os
     import pyemu
+    try:
+        import shapefile
+    except:
+        print("no pyshp")
+        return
     pp_file = os.path.join("utils","points1.dat")
     shp_file = pp_file+".shp"
     pyemu.gw_utils.write_pp_shapfile(pp_file)
@@ -305,7 +310,7 @@ def write_tpl_test():
 def read_pestpp_runstorage_file_test():
     import os
     import pyemu
-    rnj_file = os.path.join("..","..","verification","freyberg","freyberg.rnj")
+    rnj_file = os.path.join("utils","freyberg.rnj")
     #rnj_file = os.path.join("..", "..", "verification", "10par_xsec", "master_opt1","pest.rnj")
     p1,o1 = pyemu.helpers.read_pestpp_runstorage(rnj_file)
     p2,o2 = pyemu.helpers.read_pestpp_runstorage(rnj_file,9)
@@ -326,10 +331,10 @@ def smp_to_ins_test():
     pyemu.pst_utils.smp_to_ins(smp,ins,True)
 
 if __name__ == "__main__":
-    smp_to_ins_test()
-    # read_pestpp_runstorage_file_test()
+    #smp_to_ins_test()
+    read_pestpp_runstorage_file_test()
     # write_tpl_test()
-    pp_to_shapefile_test()
+    #pp_to_shapefile_test()
     # read_pval_test()
     # read_hob_test()
     # setup_pp_test()
