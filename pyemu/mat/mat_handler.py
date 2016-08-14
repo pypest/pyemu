@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 import copy
 import struct
+from datetime import datetime
 import numpy as np
 import pandas
 import scipy.linalg as la
@@ -76,7 +77,13 @@ def get_common_elements(list1, list2):
     #for item in list1:
     #    if item in list2:
     #        result.append(item)
-    return list(set(list1).intersection(set(list2)))
+    #Return list(set(list1).intersection(set(list2)))
+    print("making set",datetime.now())
+    set2 = set(list2)
+    print("building list",datetime.now())
+    result = [item for item in list1 if item in set2]
+    print("done",datetime.now())
+    return result
 
 
 class Matrix(object):
@@ -394,14 +401,14 @@ class Matrix(object):
             else:
                 return type(self)(x=np.dot(self.__x, other))
         elif isinstance(other, Matrix):
-            if self.autoalign and other.autoalign \
-                    and not self.mult_isaligned(other):
+            if self.autoalign and other.autoalign\
+               and not self.mult_isaligned(other):
                 common = get_common_elements(self.col_names, other.row_names)
                 assert len(common) > 0,"Matrix.__mult__():self.col_names " +\
                                        "and other.row_names" +\
-                                       "don't share any common elements: " +\
-                                       ','.join(self.col_names) + '...and..' +\
-                                       ','.join(other.row_names)
+                                       "don't share any common elements.  first 10: " +\
+                                       ','.join(self.col_names[:9]) + '...and..' +\
+                                       ','.join(other.row_names[:9])
                 # these should be aligned
                 if isinstance(self, Cov):
                     first = self.get(row_names=common, col_names=common)
