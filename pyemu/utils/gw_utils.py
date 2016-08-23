@@ -222,7 +222,8 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
 
 def pp_file_to_dataframe(pp_filename):
     return pd.read_csv(pp_filename, delim_whitespace=True,
-                       header=None, names=PP_NAMES)
+                     header=None, names=PP_NAMES)
+
 
 def write_pp_shapfile(pp_df,shapename=None):
     """write pilot points to a shapefile
@@ -378,12 +379,20 @@ def fac2real(pp_file,factors_file,out_file="test.ref",
     -------
         None
     """
-    assert os.path.exists(pp_file)
-    assert os.path.exists(factors_file)
-    pp_data = pd.read_csv(pp_file,delim_whitespace=True,header=None,
-                          names=["name","value"],usecols=[0,4])
-    pp_data.loc[:,"name"] = pp_data.name.apply(lambda x: x.lower())
+    if isinstance(pp_file,str):
+        assert os.path.exists(pp_file)
 
+        pp_data = pd.read_csv(pp_file,delim_whitespace=True,header=None,
+                              names=["name","parval1"],usecols=[0,4])
+        pp_data.loc[:,"name"] = pp_data.name.apply(lambda x: x.lower())
+    elif isinstance(pp_file,pd.DataFrame):
+        assert "name" in pp_file.columns
+        assert "parval1" in pp_file.columns
+        pp_data = pp_file
+    else:
+        raise Exception("unrecognized pp_file arg: must be str or pandas.DataFrame, not {0}"\
+                        .format(type(pp_file)))
+    assert os.path.exists(factors_file)
     f_fac = open(factors_file,'r')
     fpp_file = f_fac.readline()
     fzone_file = f_fac.readline()
@@ -399,8 +408,8 @@ def fac2real(pp_file,factors_file,out_file="test.ref",
                         ','.join(list(diff)))
 
     arr = np.zeros((nrow,ncol),dtype=np.float32) + 1.0e+30
-    pp_dict = {name:val for name,val in zip(pp_data.index,pp_data.value)}
-    pp_dict_log = {name:np.log10(val) for name,val in zip(pp_data.index,pp_data.value)}
+    pp_dict = {name:val for name,val in zip(pp_data.index,pp_data.parval1)}
+    pp_dict_log = {name:np.log10(val) for name,val in zip(pp_data.index,pp_data.parval1)}
     #for i in range(nrow):
     #    for j in range(ncol):
     while True:
@@ -429,7 +438,8 @@ def fac2real(pp_file,factors_file,out_file="test.ref",
     arr[arr>upper_lim] = upper_lim
     if out_file is not None:
         np.savetxt(out_file,arr,fmt="%15.6E",delimiter='')
-    return out_file
+        return out_file
+    return arr
 
 def parse_factor_line(line):
     raw = line.strip().split()

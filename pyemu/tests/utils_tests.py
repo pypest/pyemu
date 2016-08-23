@@ -332,7 +332,7 @@ def smp_to_ins_test():
 
 if __name__ == "__main__":
     #smp_to_ins_test()
-    read_pestpp_runstorage_file_test()
+    #read_pestpp_runstorage_file_test()
     # write_tpl_test()
     #pp_to_shapefile_test()
     # read_pval_test()
@@ -344,7 +344,7 @@ if __name__ == "__main__":
     # ppcov_complex_test()
     # setup_ppcov_simple()
     # ppcov_simple_test()
-    # fac2real_test()
+    fac2real_test()
     # vario_test()
     # geostruct_test()
     # aniso_test()
