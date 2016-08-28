@@ -61,6 +61,8 @@ def read_struct_file(struct_file):
                                 format(vname,s.name))
 
             st.variograms.append(vfound)
+    if len(structures) == 1:
+        return structures[0]
     return structures
 
 

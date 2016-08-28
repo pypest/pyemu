@@ -9,7 +9,6 @@ from scipy.io import FortranFile
 
 from pyemu.pst.pst_handler import Pst
 
-
 def concat(mats):
     """Concatenate Matrix objects.  Tries either axis.
     Parameters:
@@ -78,11 +77,8 @@ def get_common_elements(list1, list2):
     #    if item in list2:
     #        result.append(item)
     #Return list(set(list1).intersection(set(list2)))
-    print("making set",datetime.now())
     set2 = set(list2)
-    print("building list",datetime.now())
     result = [item for item in list1 if item in set2]
-    print("done",datetime.now())
     return result
 
 
