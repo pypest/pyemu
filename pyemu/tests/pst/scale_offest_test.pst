@@ -19,7 +19,7 @@ beopest_svd_rjh3.jco
 * parameter groups
  pargp absolute    0.015  0.0  switch    2.0 parabolic
 * parameter data
-par1         log  factor   -10.000   -1000  -1  pargp  -1.0  0.000      1
+par1         log  factor   10.000   1000  1  pargp  -1.0  0.000      1
 par2         none  factor   1.000     -10  10.0  pargp  2.0  10.000      1
 par3         log  factor   11.000     10.5  11.5  pargp  2.0  -10.000      1
 par4         log  factor   11.000     10.5  11.5  pargp  100.0  0      1
