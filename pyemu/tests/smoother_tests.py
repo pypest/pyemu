@@ -54,7 +54,7 @@ def chenoliver_plot():
         ax = plt.subplot(111)
         par_df.loc[:,["par"]].hist(ax=ax)
         ax.set_xlim(-10,10)
-
+        ax.set_title("{0}".format(par_file))
         plt.savefig(par_file+".png")
         plt.close("all")
 
@@ -67,7 +67,7 @@ def chenoliver():
     os.chdir(os.path.join("smoother","chenoliver"))
     parcov = pyemu.Cov(x=np.ones((1,1)),names=["par"],isdiagonal=True)
     pst = pyemu.Pst("chenoliver.pst")
-    pst.observation_data.loc[:,"weight"] = 1.0
+    pst.observation_data.loc[:,"weight"] = 0.5
     es = pyemu.EnsembleSmoother(pst,parcov=parcov)
     es.initialize(num_reals=50)
     for it in range(10):
@@ -92,6 +92,6 @@ def tenpar():
 if __name__ == "__main__":
     #freyberg_smoother_test()
     #chenoliver_setup()
-    #chenoliver_test()
+    chenoliver()
     #tenpar_test()
     chenoliver_plot()

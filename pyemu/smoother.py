@@ -97,14 +97,13 @@ class EnsembleSmoother():
         delta = self.obscov.inv.sqrt * delta.T
         return delta * (1.0 / np.sqrt(float(self.num_reals - 1.0)))
 
-
     def _calc_obs(self):
         '''
         propagate the ensemble forward...
         '''
         self.parensemble.to_csv(os.path.join("sweep_in.csv"))
         #os.chdir("smoother")
-        print(os.listdir('.'))
+        #print(os.listdir('.'))
         os.system("sweep {0}".format(self.pst.filename))
         #os.chdir('..')
         obs = ObservationEnsemble.from_csv(os.path.join('sweep_out.csv'))
@@ -121,18 +120,15 @@ class EnsembleSmoother():
         if not self.__initialized:
             raise Exception("must call initialize() before update()")
 
-        self._calc_obs()
-        self.iter_num += 1
-        self.obsensemble.to_csv("obsensemble.{0}.csv".format(self.iter_num))
         delta_obs = self._calc_delta_obs()
 
         u,s,v = delta_obs.pseudo_inv_components()
         scaled_par_diff = self._calc_delta_par()
-        scaled_obs_diff = self.obsensemble.as_pyemu_matrix() -\
+        obs_diff = self.obsensemble.as_pyemu_matrix() -\
                self.obsensemble_0.as_pyemu_matrix()
         scaled_ident = (self.current_lambda*Cov.identity_like(s) + s**2).inv
 
-        x1 = u.T * self.obscov.inv.sqrt * scaled_obs_diff.T
+        x1 = u.T * self.obscov.inv.sqrt * obs_diff.T
         x1.autoalign = False
         x2 = scaled_ident * x1
         x3 = v * s * x2
@@ -154,6 +150,10 @@ class EnsembleSmoother():
             upgrade_2.T.to_csv("upgrade_2.{0}.csv".format(self.iter_num))
             self.parensemble += upgrade_2.T
         self.parensemble.to_csv("parensemble.{0}.csv".format(self.iter_num))
+
+        self._calc_obs()
+        self.obsensemble.to_csv("obsensemble.{0}.csv".format(self.iter_num))
+        self.iter_num += 1
 
 
 

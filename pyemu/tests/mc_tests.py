@@ -115,9 +115,9 @@ def scale_offset_test():
 
 
 if __name__ == "__main__":
-    #scale_offset_test()
-    #mc_test()
-    #fixed_par_test()
+    scale_offset_test()
+    mc_test()
+    fixed_par_test()
     uniform_draw_test()
-    #write_regul_test()
-    #from_dataframe_test()
+    write_regul_test()
+    from_dataframe_test()

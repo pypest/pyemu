@@ -126,6 +126,6 @@ def henry_domain(figsize=(15,10)):
 	#     arrowprops={'arrowstyle': '<->',"linewidth":1.5})
 	#ax2.text(4.25,-1.75,'?',fontsize=50)
 	return fig
-
-fig = henry_domain(figsize=(6,6))
-plt.savefig("domain.eps")
+if __name__ == "__main__":
+	fig = henry_domain(figsize=(6,6))
+	plt.savefig("domain.eps")

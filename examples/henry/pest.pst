@@ -1324,3 +1324,4 @@ kr10c60       1.0 * log(kr10c60) =   0.0     1.0 regul_p
 ++ AUTO_NORM(4)
 ++ OVERDUE_RESCHED_FAC(1.15)
 ++ OVERDUE_GIVEUP_FAC(1.5)
+++ forecasts(pd_ten,c_obs10_2)
