@@ -78,3 +78,9 @@ Then start the ipython notebook from the command prompt:
 
 You should then be able to view the example notebooks.
 
+pyEMU is also available through pyPI:
+
+`>>>pip install pyemu`
+
+
+
