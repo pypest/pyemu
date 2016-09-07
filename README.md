@@ -20,6 +20,10 @@ pyEMU also includes lots of functionality for dealing with PEST(++) datasets, su
 * handling Jacobian and covariance matrices, including functionality to go between binary and ASCII matrices, reading and writing PEST uncertaity files.  Covariance matrices can be instaniated from relevant control file sections, such as parameter bounds or observation weights.  The base Matrix class overloads most common linear algebra operators so that operations are automatically aligned by row and column name.  Builtin SVD is also included in all Matrix instances.
 * geostatistical structure support, including reading and writing PEST structure files and creating covariance matrices implied by nested geostatistical structures
 
+A publication documenting pyEMU and an example application can be found here:
+
+[http://dx.doi.org/10.1016/j.envsoft.2016.08.017](http://dx.doi.org/10.1016/j.envsoft.2016.08.017)
+
 Examples
 ========
 
