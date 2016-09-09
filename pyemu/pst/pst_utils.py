@@ -501,7 +501,8 @@ def get_phi_comps_from_recfile(recfile):
                     contributions[group] = val
         return iters
 
-def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False):
+def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
+               gwutils_compliant=False):
     """ create an instruction file from an smp file
     Parameters:
     ----------
@@ -514,6 +515,10 @@ def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False):
         use_generic_names : bool
             flag to force obseravtions names to use a generic
             int counter instead of trying to use a datetime str
+        gwutils_compliant : bool
+            flag to use instruction set that is compliant with the
+            pest gw utils (fixed format instructions).  If false,
+            use free format (with whitespace) instruction set
     Returns:
     -------
         dataframe instance of the smp file with the observation names and
@@ -533,8 +538,10 @@ def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False):
         if False in (map(lambda x :len(x) <= 20,onames)):
             long_names = [oname for oname in onames if len(oname) > 20]
             raise Exception("observation names longer than 20 chars:\n{0}".format(str(long_names)))
-        #ins_strs = ["l1  ({0:s})39:46".format(on) for on in onames]
-        ins_strs = ["l1 w w w  !{0:s}!".format(on) for on in onames]
+        if gwutils_compliant:
+            ins_strs = ["l1  ({0:s})39:46".format(on) for on in onames]
+        else:
+            ins_strs = ["l1 w w w  !{0:s}!".format(on) for on in onames]
         df.loc[idxs,"observation_names"] = onames
         df.loc[idxs,"ins_strings"] = ins_strs
 
