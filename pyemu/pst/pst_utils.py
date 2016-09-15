@@ -296,10 +296,6 @@ def get_marker_indices(marker,line):
     return start,end
 
 
-
-
-
-
 def parse_ins_file(ins_file):
     """parse a pest instruction file to get observation names
     Parameters:
@@ -502,7 +498,7 @@ def get_phi_comps_from_recfile(recfile):
         return iters
 
 def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
-               gwutils_compliant=False):
+               gwutils_compliant=False, datetime_format=None):
     """ create an instruction file from an smp file
     Parameters:
     ----------
@@ -519,6 +515,8 @@ def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
             flag to use instruction set that is compliant with the
             pest gw utils (fixed format instructions).  If false,
             use free format (with whitespace) instruction set
+        datetime_format : optional str
+            str to pass to datetime.strptime in the smp_to_dataframe() function
     Returns:
     -------
         dataframe instance of the smp file with the observation names and
@@ -526,7 +524,7 @@ def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
     """
     if ins_filename is None:
         ins_filename = smp_filename+".ins"
-    df = smp_to_dataframe(smp_filename)
+    df = smp_to_dataframe(smp_filename,datetime_format=datetime_format)
     df.loc[:,"ins_strings"] = None
     df.loc[:,"observation_names"] = None
     name_groups = df.groupby("name").groups
@@ -625,22 +623,31 @@ def date_parser(items):
     return dt
 
 
-def smp_to_dataframe(smp_filename):
+def smp_to_dataframe(smp_filename,datetime_format=None):
     """ load an smp file into a pandas dataframe
     Parameters:
     ----------
         smp_filename : str
             smp filename to load
+        datetime_format : optional str
+            should be either "%m/%d/%Y %H:%M:%S" or "%d/%m/%Y %H:%M:%S"
+            If None, then we will try to deduce the format for you, which
+            always dangerous
     Returns:
     -------
         a pandas dataframe instance
     """
+
+    if datetime_format is not None:
+        date_func = lambda x: datetime.strptime(x,datetime_format)
+    else:
+        date_func = date_parser
     df = pd.read_csv(smp_filename, delim_whitespace=True,
                      parse_dates={"datetime":["date","time"]},
                      header=None,names=["name","date","time","value"],
                      dtype={"name":object,"value":np.float64},
                      na_values=["dry"],
-                     date_parser=date_parser)
+                     date_parser=date_func)
     return df
 
 def del_rw(action, name, exc):
