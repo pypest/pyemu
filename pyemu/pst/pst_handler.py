@@ -4,7 +4,6 @@ import copy
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
-
 from pyemu.pst.pst_controldata import ControlData
 from pyemu.pst import pst_utils
 
@@ -591,13 +590,23 @@ class Pst(object):
         if self.nprior > 0:
             f_out.write("* prior information\n")
             #self.prior_information.index = self.prior_information.pop("pilbl")
-            f_out.write(self.prior_information.to_string(col_space=0,
-                                              columns=self.prior_fieldnames,
-                                              formatters=self.prior_format,
-                                              justify="right",
-                                              header=False,
-                                              index=False) + '\n')
+            max_eq_len = self.prior_information.equation.apply(lambda x:len(x)).max()
+            eq_fmt_str =  " {0:<" + str(max_eq_len) + "s} "
+            eq_fmt_func = lambda x:eq_fmt_str.format(x)
+            #  17/9/2016 - had to go with a custom writer loop b/c pandas doesn't want to
+            # output strings longer than 100, even with display.max_colwidth
+            #f_out.write(self.prior_information.to_string(col_space=0,
+            #                                  columns=self.prior_fieldnames,
+            #                                  formatters=pi_formatters,
+            #                                  justify="right",
+            #                                  header=False,
+            #                                 index=False) + '\n')
             #self.prior_information["pilbl"] = self.prior_information.index
+            for idx,row in self.prior_information.iterrows():
+                f_out.write(pst_utils.SFMT(row["pilbl"]))
+                f_out.write(eq_fmt_func(row["equation"]))
+                f_out.write(pst_utils.FFMT(row["weight"]))
+                f_out.write(pst_utils.SFMT(row["obgnme"]) + '\n')
         if self.control_data.pestmode.startswith("regul"):
             f_out.write("* regularisation\n")
             if update_regul or len(self.regul_lines) == 0:

@@ -25,7 +25,6 @@ SFMT_LONG = lambda x: "{0:<50s} ".format(str(x))
 IFMT = lambda x: "{0:<10d} ".format(int(x))
 FFMT = lambda x: "{0:<20.10E} ".format(float(x))
 
-
 def str_con(item):
     if len(item) == 0:
         return np.NaN

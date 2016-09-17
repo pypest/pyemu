@@ -2,6 +2,16 @@ import os
 if not os.path.exists("temp"):
     os.mkdir("temp")
 
+def add_pi_obj_func_test():
+    import os
+    import pyemu
+
+    pst = os.path.join("utils","dewater_pest.pst")
+    pst = pyemu.optimization.add_pi_obj_func(pst,out_pst_name=os.path.join("utils","dewater_pest.piobj.pst"))
+    print(pst.prior_information.loc["pi_obj_func","equation"])
+    #pst._update_control_section()
+    assert pst.control_data.nprior == 1
+
 
 def fac2real_test():
     import os
@@ -344,9 +354,10 @@ if __name__ == "__main__":
     # ppcov_complex_test()
     # setup_ppcov_simple()
     # ppcov_simple_test()
-    fac2real_test()
+    # fac2real_test()
     # vario_test()
     # geostruct_test()
     # aniso_test()
     # struct_file_test()
     # covariance_matrix_test()
+    add_pi_obj_func_test()
