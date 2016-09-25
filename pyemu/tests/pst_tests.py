@@ -3,6 +3,26 @@ if not os.path.exists("temp"):
     os.mkdir("temp")
 
 
+def from_io_with_inschek_test():
+    import os
+    from pyemu import Pst,pst_utils
+    # creation functionality
+    dir = os.path.join("..","..","verification","10par_xsec","template_mac")
+    pst = Pst(os.path.join(dir,"pest.pst"))
+
+
+    tpl_files = [os.path.join(dir,f) for f in pst.template_files]
+    out_files = [os.path.join(dir,f) for f in pst.output_files]
+    ins_files = [os.path.join(dir,f) for f in pst.instruction_files]
+    in_files = [os.path.join(dir,f) for f in pst.input_files]
+
+
+    new_pst = pst_utils.pst_from_io_files(tpl_files, in_files,
+                                ins_files, out_files,
+                                pst_filename=os.path.join("pst","test.pst"))
+    print(new_pst.observation_data)
+    return
+
 def tpl_ins_test():
     import os
     from pyemu import Pst,pst_utils
@@ -180,10 +200,10 @@ if __name__ == "__main__":
     #derivative_increment_tests()
     #tied_test()
     #smp_test()
-    smp_dateparser_test()
+    #smp_dateparser_test()
     #pst_manip_test()
     #tpl_ins_test()
     #load_test()
     #res_test()
     #smp_test()
-
+    from_io_with_inschek_test()

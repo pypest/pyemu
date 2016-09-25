@@ -410,7 +410,13 @@ def generic_pst(par_names=["par1"],obs_names=["obs1"],addreg=False):
 
 
 def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
-    """generate a Pst instance from the model io files
+    """generate a Pst instance from the model io files.  If 'inschek'
+    is available (either in the current directory or registered
+    with the system variables) and the model output files are available
+    , then the observation values in the control file will be set to the
+    values of the model-simulated equivalents to observations.  This can be
+    useful for testing
+
     Parameters:
     ----------
         tpl_files : list[str]
@@ -458,9 +464,28 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     new_pst.instruction_files = ins_files
     new_pst.output_files = out_files
 
+    #try to run inschek to find the observtion values
+    try_run_inschek(new_pst)
+
     if pst_filename:
         new_pst.write(pst_filename,update_regul=True)
     return new_pst
+
+
+def try_run_inschek(pst):
+    for ins_file,out_file in zip(pst.instruction_files,pst.output_files):
+        try:
+            os.system("inschek {0} {1}".format(ins_file,out_file))
+            obf_file = ins_file.replace(".ins",".obf")
+            df = pd.read_csv(obf_file,delim_whitespace=True,
+                             skiprows=0,index_col=0,names=["obsval"])
+            pst.observation_data.loc[df.index,"obsval"] = df["obsval"]
+        except Exception as e:
+            print("error using inschek for instruction file {0}:{1}".
+                  format(ins_file,str(e)))
+            print("observations in this instruction file will have"+
+                  "generic values.")
+
 
 
 def get_phi_comps_from_recfile(recfile):
