@@ -672,7 +672,14 @@ class Matrix(object):
             inverse of self
        """
         if self.isdiagonal:
-            return type(self)(x=1.0 / self.__x, isdiagonal=True,
+            inv = 1.0 / self.__x
+            if (np.any(~np.isfinite(inv))):
+                idx = np.isfinite(inv)
+                np.savetxt("testboo.dat",idx)
+                invalid = [self.row_names[i] for i in range(idx.shape[0]) if idx[i] == 0.0]
+                raise Exception("Matrix.inv has produced invalid floating points " +
+                                " for the following elements:" + ','.join(invalid))
+            return type(self)(x=inv, isdiagonal=True,
                               row_names=self.row_names,
                               col_names=self.col_names,
                               autoalign=self.autoalign)
@@ -1576,16 +1583,20 @@ class Cov(Matrix):
             t = row["partrans"]
             if t in ["fixed", "tied"]:
                 continue
-            lb = row["parlbnd"] * row["scale"] + row["offset"]
-            ub = row["parubnd"] * row["scale"] + row["offset"]
+            lb = row.parlbnd * row.scale + row.offset
+            ub = row.parubnd * row.scale + row.offset
 
             if t == "log":
                 var = ((np.log10(np.abs(ub)) - np.log10(np.abs(lb))) / 4.0) ** 2
             else:
                 var = ((ub - lb) / 4.0) ** 2
-            if np.isnan(var):
+            if np.isnan(var) or not np.isfinite(var):
                 raise Exception("Cov.from_parameter_data() error: " +\
                                 "variance for parameter {0} is nan".\
+                                format(row["parnme"]))
+            if (var == 0.0):
+                raise Exception("Cov.from_parameter_data() error: " +\
+                                "variance for parameter {0} is 0.0".\
                                 format(row["parnme"]))
             x[idx] = var
             names.append(row["parnme"].lower())

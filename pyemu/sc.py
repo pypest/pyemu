@@ -43,7 +43,19 @@ class Schur(LinearAnalysis):
         else:
             self.clean()
             self.log("Schur's complement")
-            r = (self.xtqx + self.parcov.inv).inv
+            try:
+                pinv = self.parcov.inv
+                r = self.xtqx + pinv
+                r = r.inv
+            except Exception as e:
+                self.xtqx.to_binary("xtqx.err.jcb")
+                pinv.to_ascii("parcov_inv.err.cov")
+                self.logger.warn("error forming schur's complement: {0}".
+                                format(str(e)))
+                self.logger.warn("problemtic xtqx saved to xtqx.err.jcb")
+                self.logger.warn("problematic inverse parcov saved to parcov_inv.err.cov")
+                raise Exception("error forming schur's complement: {0}".
+                                format(str(e)))
             assert r.row_names == r.col_names
             self.__posterior_parameter = Cov(r.x, row_names=r.row_names,
                                              col_names=r.col_names)
