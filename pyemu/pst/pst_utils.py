@@ -52,7 +52,10 @@ pst_config["par_format"] = {"parnme": SFMT, "partrans": SFMT,
                            "parlbnd": FFMT, "parubnd": FFMT,
                            "pargp": SFMT, "scale": FFMT,
                            "offset": FFMT, "dercom": IFMT}
-pst_config["par_converters"] = {"parnme": str_con, "pargp": str_con}
+pst_config["par_converters"] = {"parnme": str_con, "pargp": str_con,
+                                "parval1":np.float,"parubnd":np.float,
+                                "parlbnd":np.float,"scale":np.float,
+                                "offset":np.float}
 pst_config["par_defaults"] = {"parnme":"dum","partrans":"log","parchglim":"factor",
                              "parval1":1.0,"parlbnd":1.1e-10,"parubnd":1.1e+10,
                              "pargp":"pargp","scale":1.0,"offset":0.0,"dercom":1}
@@ -88,7 +91,8 @@ pst_config["obs_dtype"] = np.dtype([("obsnme","a20"),("obsval",np.float64),
                            ("weight",np.float64),("obgnme","a20")])
 pst_config["obs_format"] = {"obsnme": SFMT, "obsval": FFMT,
                    "weight": FFMT, "obgnme": SFMT}
-pst_config["obs_converters"] = {"obsnme": str_con, "obgnme": str_con}
+pst_config["obs_converters"] = {"obsnme": str_con, "obgnme": str_con,
+                                "weight":np.float,"obsval":np.float}
 pst_config["obs_defaults"] = {"obsnme":"dum","obsval":1.0e+10,
                      "weight":1.0,"obgnme":"obgnme"}
 
