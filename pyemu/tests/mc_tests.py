@@ -57,13 +57,18 @@ def uniform_draw_test():
     mc = MonteCarlo(jco=jco,pst=pst)
     from datetime import datetime
     start = datetime.now()
-    mc.draw(num_reals=100,how="uniform")
+    mc.draw(num_reals=5000,how="uniform")
     print(datetime.now() - start)
+    #print(mc.parensemble)
     #import matplotlib.pyplot as plt
     #ax = mc.parensemble.loc[:,"mult1"].plot(kind="hist",bins=50,alpha=0.5)
     mc.draw(num_reals=100)
     #mc.parensemble.loc[:,"mult1"].plot(kind="hist",bins=50,ax=ax,alpha=0.5)
     #plt.show()
+    start = datetime.now()
+    pe = mc.parensemble.from_uniform_draw(mc.parensemble,5000)
+    print(datetime.now() - start)
+    print(pe)
 
 
 def write_regul_test():
@@ -115,9 +120,9 @@ def scale_offset_test():
 
 
 if __name__ == "__main__":
-    scale_offset_test()
-    mc_test()
-    fixed_par_test()
+    #scale_offset_test()
+    #mc_test()
+    #fixed_par_test()
     uniform_draw_test()
-    write_regul_test()
-    from_dataframe_test()
+    #write_regul_test()
+    #from_dataframe_test()

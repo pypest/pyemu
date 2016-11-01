@@ -290,6 +290,30 @@ class ParameterEnsemble(Ensemble):
                                          loc[pname,"parval1"]
 
 
+    @classmethod
+    def from_uniform_draw(cls,pe,num_reals):
+        """ this is an experiemental method to help speed up uniform draws
+        for a really large (>1E6) ensemble sizes
+        :param pe: ParameterEnsemble instance
+        :param num_reals: number of realizations to generate
+        :return: ParameterEnsemble
+        """
+        if not pe.istransformed:
+            pe._transform()
+        ub = pe.ubnd
+        lb = pe.lbnd
+        arr = np.empty((num_reals,len(pe.names)))
+        for i,pname in enumerate(pe.names):
+            if pname in pe.adj_names:
+                arr[:,i] = np.random.uniform(lb[pname],
+                                                      ub[pname],
+                                                      size=num_reals)
+            else:
+                arr[:,i] = np.zeros((num_reals)) + \
+                                    pe.pst.parameter_data.\
+                                         loc[pname,"parval1"]
+        return ParameterEnsemble.from_dataframe(pst=pe.pst,df=pd.DataFrame(data=arr,columns=pe.names))
+
 
     def _back_transform(self,inplace=True):
         """ remove log10 transformation from ensemble
