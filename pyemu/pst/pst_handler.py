@@ -798,7 +798,7 @@ class Pst(object):
         if last_complete_iter is None:
             raise Exception("Pst.pwtadj2(): no complete phi component" +
                             " records found in recfile")
-        self.adjust_weights_by_phi_components(
+        self._adjust_weights_by_phi_components(
             iter_components[last_complete_iter])
 
     def adjust_weights_resfile(self, resfile=None):
@@ -814,9 +814,9 @@ class Pst(object):
             self.resfile = resfile
             self.__res = None
         phi_comps = self.phi_components
-        self.adjust_weights_by_phi_components(phi_comps)
+        self._adjust_weights_by_phi_components(phi_comps)
 
-    def adjust_weights_by_phi_components(self, components):
+    def _adjust_weights_by_phi_components(self, components):
         """resets the weights of observations to account for
         residual phi components.
         Parameters:
