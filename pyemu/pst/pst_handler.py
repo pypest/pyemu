@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 import os
 import copy
+import warnings
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
@@ -140,12 +141,16 @@ class Pst(object):
     def par_data(self):
         """method to access parameter_data
         """
+        warnings.warn("decorated property 'par_data' is deprecated because "+
+                      "it doesn't propagate changes back 'parameter_data'")
         return self.parameter_data
 
     @property
     def obs_data(self):
         """method to access observation_data
         """
+        warnings.warn("decorated property 'obs_data' is deprecated because "+
+                      "it doesn't propagate changes back 'observation_data'")
         return self.observation_data
 
     @property
