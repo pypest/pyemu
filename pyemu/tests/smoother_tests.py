@@ -43,20 +43,58 @@ def chenoliver_setup():
 
 def chenoliver_plot():
     import os
+    import numpy as np
     import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
     import pandas as pd
     d = os.path.join("smoother","chenoliver")
+    bins = 20
+    plt_dir = os.path.join(d,"plot")
+    if not os.path.exists(plt_dir):
+        os.mkdir(plt_dir)
+    obs_files = [os.path.join(d,f) for f in os.listdir(d) if "obsensemble." in f
+                 and ".png" not in f]
+    obs_dfs = [pd.read_csv(obs_file) for obs_file in obs_files]
+    print(obs_files)
+    mx = max([obs_df.obs.max() for obs_df in obs_dfs])
+    mn = min([obs_df.obs.min() for obs_df in obs_dfs])
+    print(mn,mx)
+    with PdfPages(os.path.join(plt_dir,"obsensemble.pdf")) as pdf:
+        for obs_file,obs_df in zip(obs_files,obs_dfs):
+            #fig = plt.figure(figsize=(10,10))
+            ax = plt.subplot(111)
+            obs_df.loc[:,["obs"]].hist(ax=ax,bins=bins,edgecolor="none")
+            ax.set_xlim(mn,mx)
+            ax.set_title("{0}".format(obs_file))
+            #plt.savefig(os.path.join(plt_dir,os.path.split(obs_file)[-1]+".png"))
+            #plt.close("all")
+            pdf.savefig()
+            plt.close()
+
     par_files = [os.path.join(d,f) for f in os.listdir(d) if "parensemble." in f
                  and ".png" not in f]
-    for par_file in par_files:
-        par_df = pd.read_csv(par_file)
-        fig = plt.figure(figsize=(10,10))
-        ax = plt.subplot(111)
-        par_df.loc[:,["par"]].hist(ax=ax)
-        ax.set_xlim(-10,10)
-        ax.set_title("{0}".format(par_file))
-        plt.savefig(par_file+".png")
-        plt.close("all")
+    par_dfs = [pd.read_csv(par_file) for par_file in par_files]
+    #mx = max([par_df.par.max() for par_df in par_dfs])
+    #mn = min([par_df.par.min() for par_df in par_dfs])
+    mx = 7
+    mn = -5
+
+    with PdfPages(os.path.join(plt_dir,"parensemble.pdf")) as pdf:
+        for par_file in par_files:
+            par_df = pd.read_csv(par_file)
+            fig = plt.figure(figsize=(10,10))
+            ax = plt.subplot(111)
+            par_df.loc[:,["par"]].hist(ax=ax,bins=bins,edgecolor="none")
+            #ax.set_xlim(-10,10)
+            ax.set_xlim(mn,mx)
+
+            ax.set_xticks(np.arange(mn,mx+0.25,0.25))
+            ax.set_xticklabels(["{0:2.2f}".format(x) for x in np.arange(mn,mx+0.25,0.25)], rotation=90)
+            ax.set_title("{0}".format(par_file))
+            #plt.savefig(os.path.join(plt_dir,os.path.split(par_file)[-1]+".png"))
+            #plt.close("all")
+            pdf.savefig()
+            plt.close()
 
 
 def chenoliver():
@@ -67,9 +105,10 @@ def chenoliver():
     os.chdir(os.path.join("smoother","chenoliver"))
     parcov = pyemu.Cov(x=np.ones((1,1)),names=["par"],isdiagonal=True)
     pst = pyemu.Pst("chenoliver.pst")
-    pst.observation_data.loc[:,"weight"] = 0.5
-    es = pyemu.EnsembleSmoother(pst,parcov=parcov)
-    es.initialize(num_reals=50)
+    #pst.observation_data.loc[:,"weight"] = 1.0/8.0
+    obscov = pyemu.Cov(x=np.ones((1,1)),names=["obs"],isdiagonal=True)
+    es = pyemu.EnsembleSmoother(pst,parcov=parcov,num_slaves=10,use_approx=False)
+    es.initialize(num_reals=100)
     for it in range(10):
         es.update()
     os.chdir(os.path.join("..",".."))

@@ -272,12 +272,12 @@ def setup_pp_test():
 
     pp_dir = os.path.join("utils")
     ml.export(os.path.join(pp_dir,"test_unrot_grid.shp"))
-    
+
     par_info_unrot = pyemu.gw_utils.setup_pilotpoints_grid(ml,prefix_dict={0:["hk1_","sy1_","rch_"]},
                                                      every_n_cell=2,pp_dir=pp_dir,tpl_dir=pp_dir,
                                                      shapename=os.path.join(pp_dir,"test_unrot.shp"))
 
-    ml.sr.rotation = 45
+    ml.sr.rotation = 15
     ml.export(os.path.join(pp_dir,"test_rot_grid.shp"))
     #pyemu.gw_utils.setup_pilotpoints_grid(ml)
 

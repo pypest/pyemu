@@ -10,7 +10,7 @@ import pandas as pd
 pd.options.display.max_colwidth = 100
 
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
-                 port=4004,rel_path=None):
+                 port=4004,rel_path=None,local=True,cleanup=True):
     """ start a group of pest(++) slaves on the local machine
 
     Parameters:
@@ -28,7 +28,8 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
 
         rel_path: (str) the relative path to where pest(++) should be run
                   from within the slave_dir, defaults to the uppermost level of the slave dir
-
+        local: (bool) flag for using "localhost" instead of hostname on slave command line
+        cleanup: (bool) flag to remove slave directories once processes exit
     """
 
     assert os.path.isdir(slave_dir)
@@ -52,13 +53,17 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         assert os.path.exists(os.path.join(slave_dir,rel_path,pst_rel_path))
     else:
         assert os.path.exists(os.path.join(slave_dir,pst_rel_path))
-    hostname = socket.gethostname()
+    if local:
+        hostname = "localhost"
+    else:
+        hostname = socket.gethostname()
     port = int(port)
 
     tcp_arg = "{0}:{1}".format(hostname,port)
 
     procs = []
     base_dir = os.getcwd()
+    slave_dirs = []
     for i in range(num_slaves):
         new_slave_dir = os.path.join(slave_root,"slave_{0}".format(i))
         if os.path.exists(new_slave_dir):
@@ -88,14 +93,20 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
                 cwd = new_slave_dir
 
             os.chdir(cwd)
-            p = sp.Popen(args)
+            with open(os.devnull,'w') as f:
+                p = sp.Popen(args,stdout=f)
             procs.append(p)
             os.chdir(base_dir)
         except Exception as e:
             raise Exception("error starting slave: {0}".format(str(e)))
-
+        slave_dirs.append(new_slave_dir)
     for p in procs:
         p.wait()
+    if cleanup:
+        for dir in slave_dirs:
+            shutil.rmtree(dir)
+
+
 
 
 def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False):
