@@ -55,10 +55,10 @@ def chenoliver_plot():
     obs_files = [os.path.join(d,f) for f in os.listdir(d) if "obsensemble." in f
                  and ".png" not in f]
     obs_dfs = [pd.read_csv(obs_file) for obs_file in obs_files]
-    print(obs_files)
+    #print(obs_files)
     mx = max([obs_df.obs.max() for obs_df in obs_dfs])
     mn = min([obs_df.obs.min() for obs_df in obs_dfs])
-    print(mn,mx)
+    #print(mn,mx)
     with PdfPages(os.path.join(plt_dir,"obsensemble.pdf")) as pdf:
         for obs_file,obs_df in zip(obs_files,obs_dfs):
             #fig = plt.figure(figsize=(10,10))
@@ -103,13 +103,17 @@ def chenoliver():
     import pyemu
 
     os.chdir(os.path.join("smoother","chenoliver"))
+    # csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    # [os.remove(csv_file) for csv_file in csv_files]
+
     parcov = pyemu.Cov(x=np.ones((1,1)),names=["par"],isdiagonal=True)
     pst = pyemu.Pst("chenoliver.pst")
     #pst.observation_data.loc[:,"weight"] = 1.0/8.0
-    obscov = pyemu.Cov(x=np.ones((1,1)),names=["obs"],isdiagonal=True)
-    es = pyemu.EnsembleSmoother(pst,parcov=parcov,num_slaves=10,use_approx=False)
-    es.initialize(num_reals=100)
-    for it in range(10):
+    obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
+    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
+                                num_slaves=20,use_approx=True)
+    es.initialize(num_reals=1000)
+    for it in range(20):
         es.update()
     os.chdir(os.path.join("..",".."))
 

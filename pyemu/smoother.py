@@ -13,9 +13,12 @@ from pyemu.pst import Pst
 
 class EnsembleSmoother():
 
-    def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,use_approx=True):
+    def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,use_approx=True,
+                 restart_iter=0):
         self.num_slaves = int(num_slaves)
         self.use_approx = bool(use_approx)
+        self.paren_prefix = ".parensemble.{0:04d}.csv"
+        self.obsen_prefix = ".obsensemble.{0:04d}.csv"
         if isinstance(pst,str):
             pst = Pst(pst)
         assert isinstance(pst,Pst)
@@ -31,6 +34,21 @@ class EnsembleSmoother():
 
         self.parcov = parcov
         self.obscov = obscov
+        self.restart = False
+
+        if restart_iter > 0:
+            self.restart_iter = restart_iter
+            paren = self.pst.filename+self.paren_prefix.format(restart_iter)
+            assert os.path.exists(paren),\
+                "could not find restart par ensemble {0}".format(paren)
+            obsen0 = self.pst.filename+self.obsen_prefix.format(0)
+            assert os.path.exists(obsen0),\
+                "could not find restart obs ensemble 0 {0}".format(obsen0)
+            obsen = self.pst.filename+self.obsen_prefix.format(restart_iter)
+            assert os.path.exists(obsen),\
+                "could not find restart obs ensemble {0}".format(obsen)
+            self.restart = True
+
 
         self.__initialized = False
         self.num_reals = 0
@@ -43,23 +61,35 @@ class EnsembleSmoother():
         '''
         (re)initialize the process
         '''
-        self.num_reals = int(num_reals)
-        self.parensemble_0 = ParameterEnsemble(self.pst)
-        self.parensemble_0.draw(cov=self.parcov,num_reals=num_reals)
-        self.parensemble = self.parensemble_0.copy()
-        self.parensemble_0.to_csv(self.pst.filename+".parensemble.0000.csv")
+        if self.restart:
+            print("restarting...ignoring num_reals")
+        if self.restart:
+            df = pd.read_csv(self.pst.filename+self.paren_prefix.format(self.restart_iter))
+            self.parensemble_0 = ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
+            self.parensemble = self.parensemble_0.copy()
+            df = pd.read_csv(self.pst.filename+self.obsen_prefix.format(0))
+            self.obsensemble_0 = ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
+            df = pd.read_csv(self.pst.filename+self.obsen_prefix.format(self.restart_iter))
+            self.obsensemble = ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
+            assert self.parensemble.shape[0] == self.obsensemble.shape[0]
+            self.num_reals = self.parensemble.shape[0]
 
-
-        self.obsensemble_0 = ObservationEnsemble(self.pst)
-        self.obsensemble_0.draw(cov=self.obscov,num_reals=num_reals)
-        self.obsensemble = self.obsensemble_0.copy()
-        self.obsensemble_0.to_csv(self.pst.filename+".obsensemble.0000.csv")
+        else:
+            self.num_reals = int(num_reals)
+            self.parensemble_0 = ParameterEnsemble(self.pst)
+            self.parensemble_0.draw(cov=self.parcov,num_reals=num_reals)
+            self.parensemble = self.parensemble_0.copy()
+            self.parensemble_0.to_csv(self.pst.filename+".parensemble.0000.csv")
+            self.obsensemble_0 = ObservationEnsemble(self.pst)
+            self.obsensemble_0.draw(cov=self.obscov,num_reals=num_reals)
+            self.obsensemble = self.obsensemble_0.copy()
+            self.obsensemble_0.to_csv(self.pst.filename+".obsensemble.0000.csv")
 
         # if using the approximate form of the algorithm, let
         # the parameter scaling matrix be the identity matrix
         if self.use_approx:
-            self.half_parcov_diag = Cov.identity_like(self.parcov)
-
+            #self.half_parcov_diag = Cov.identity_like(self.parcov)
+            self.half_parcov_diag = 1.0
         else:
             if self.parcov.isdiagonal:
                 self.half_parcov_diag = self.parcov.inv.sqrt
@@ -81,10 +111,9 @@ class EnsembleSmoother():
         delta = self.parensemble.as_pyemu_matrix()
         for i in range(self.num_reals):
             delta.x[i,:] -= mean
-        #delta = Matrix(x=(self.half_parcov_diag * delta.transpose()).x,
-        #               row_names=self.parensemble.columns)
         delta = self.half_parcov_diag * delta.T
-        return delta * (1.0 / np.sqrt(float(self.num_reals - 1.0)))
+        delta *= (1.0 / np.sqrt(float(self.num_reals - 1.0)))
+        return delta
 
     def _calc_delta_obs(self):
         '''
@@ -96,7 +125,8 @@ class EnsembleSmoother():
         for i in range(self.num_reals):
             delta.x[i,:] -= mean
         delta = self.obscov.inv.sqrt * delta.T
-        return delta * (1.0 / np.sqrt(float(self.num_reals - 1.0)))
+        delta *= (1.0 / np.sqrt(float(self.num_reals - 1.0)))
+        return delta
 
     def _calc_obs(self):
         '''
@@ -115,25 +145,29 @@ class EnsembleSmoother():
         else:
             os.system("sweep {0}".format(self.pst.filename))
 
-
         obs = ObservationEnsemble.from_csv(os.path.join('sweep_out.csv'))
         obs.columns = [item.lower() for item in obs.columns]
         self.obsensemble = ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],pst=self.pst)
+        self.obsensemble.to_csv(self.pst.filename+self.obsen_prefix.format(self.iter_num))
+
         return
 
     @property
     def current_lambda(self):
-        return 10.0
+        return 1.0
 
     def update(self):
+        self.iter_num += 1
         if not self.__initialized:
             raise Exception("must call initialize() before update()")
-        self._calc_obs()
-        self.iter_num += 1
-        delta_obs = self._calc_delta_obs()
+        if self.restart and self.iter_num == 1:
+            pass
+        else:
+            self._calc_obs()
+        scaled_delta_obs = self._calc_delta_obs()
 
-        u,s,v = delta_obs.pseudo_inv_components()
-        scaled_par_diff = self._calc_delta_par()
+        u,s,v = scaled_delta_obs.pseudo_inv_components()
+        scaled_delta_par = self._calc_delta_par()
         obs_diff = self.obsensemble.as_pyemu_matrix() -\
                self.obsensemble_0.as_pyemu_matrix()
         #scaled_ident = (self.current_lambda*Cov.identity_like(s) + s**2).inv
@@ -144,27 +178,32 @@ class EnsembleSmoother():
         x1.autoalign = False
         x2 = scaled_ident * x1
         x3 = v * s * x2
-        upgrade_1 = -1.0 *  (self.half_parcov_diag * scaled_par_diff *\
-                             x3).to_dataframe()
+
+        upgrade_1 = -1.0 *  (self.half_parcov_diag * scaled_delta_par)
+        upgrade_1 = upgrade_1 * x3
+        upgrade_1 = upgrade_1.to_dataframe()
         upgrade_1.index.name = "parnme"
-        upgrade_1.T.to_csv(self.pst.filename+".upgrade_1.{0:04d}.csv".format(self.iter_num))
-        self.parensemble += upgrade_1.T
+        upgrade_1 = upgrade_1.T
+        upgrade_1.to_csv(self.pst.filename+".upgrade_1.{0:04d}.csv".\
+                           format(self.iter_num))
+        self.parensemble += upgrade_1
 
         if not self.use_approx and self.iter_num > 1:
             par_diff = (self.parensemble - self.parensemble_0).\
                 as_pyemu_matrix().T
             x4 = self.Am.T * self.half_parcov_diag * par_diff
             x5 = self.Am * x4
-            x6 = scaled_par_diff.T * x5
+            x6 = scaled_delta_par.T * x5
             x7 = v * scaled_ident * v.T * x6
             upgrade_2 = -1.0 * (self.half_parcov_diag *
-                                scaled_par_diff * x7).to_dataframe()
+                                scaled_delta_par * x7).to_dataframe()
             upgrade_2.index.name = "parnme"
-            upgrade_2.T.to_csv(self.pst.filename+".upgrade_2.{0:04d}.csv".format(self.iter_num))
+            upgrade_2.T.to_csv(self.pst.filename+".upgrade_2.{0:04d}.csv".\
+                               format(self.iter_num))
             self.parensemble += upgrade_2.T
 
-        self.parensemble.to_csv(self.pst.filename+".parensemble.{0:04d}.csv".format(self.iter_num))
-        self.obsensemble.to_csv(self.pst.filename+".obsensemble.{0:04d}.csv".format(self.iter_num))
+        self.parensemble.to_csv(self.pst.filename+self.paren_prefix.\
+                                format(self.iter_num))
 
 
 
