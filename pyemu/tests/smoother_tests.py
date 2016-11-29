@@ -126,8 +126,8 @@ def tenpar():
     [os.remove(csv_file) for csv_file in csv_files]
     os.chdir(os.path.join("smoother","10par_xsec"))
     es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=10)
-    es.initialize(num_reals=200)
-    for it in range(20):
+    es.initialize(num_reals=1000)
+    for it in range(10):
         es.update()
     os.chdir(os.path.join("..",".."))
 
@@ -159,6 +159,8 @@ def tenpar_plot():
         for par_file,par_df in zip(par_files,par_dfs):
             print(par_file)
             fig = plt.figure(figsize=(20,10))
+
+            plt.figtext(0.5,0.975,par_file,ha="center")
             axes = [plt.subplot(2,6,i+1) for i in range(len(par_names))]
             for par_name,ax in zip(par_names,axes):
                 par_df.loc[:,par_name].hist(ax=ax,bins=bins,edgecolor="none",
@@ -196,7 +198,7 @@ def tenpar_plot():
     with PdfPages(os.path.join(plt_dir,"obsensemble.pdf")) as pdf:
         for obs_file,obs_df in zip(obs_files,obs_dfs):
             fig = plt.figure(figsize=(10,10))
-            plt.figtext(0.5,0.975,obs_file)
+            plt.figtext(0.5,0.975,obs_file,ha="center")
             print(obs_file)
             axes = [plt.subplot(2,2,i+1) for i in range(len(obs_names))]
             for ax,obs_name in zip(axes,obs_names):

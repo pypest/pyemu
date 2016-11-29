@@ -9,7 +9,10 @@ from pyemu.en import ParameterEnsemble,ObservationEnsemble
 from pyemu.mat import Cov
 from pyemu.pst import Pst
 
-
+"""this is a prototype ensemble smoother based on the LM-EnRML
+algorithm of Chen and Oliver 2013.  It requires the pest++ "sweep" utility
+ to propagate the ensemble forward.
+"""
 
 class EnsembleSmoother():
 
@@ -167,23 +170,28 @@ class EnsembleSmoother():
             self._calc_obs()
         scaled_delta_obs = self._calc_delta_obs()
 
-        u,s,v = scaled_delta_obs.pseudo_inv_components()
+        u,s,v = scaled_delta_obs.pseudo_inv_components(maxsing=self.pst.nobs)
         scaled_delta_par = self._calc_delta_par()
         obs_diff = self.obsensemble.as_pyemu_matrix() -\
                    self.obsensemble_0.as_pyemu_matrix()
-        #scaled_ident = (self.current_lambda*Cov.identity_like(s) + s**2).inv
-        #chen and oliver say (lambda + 1) * I...
+
         scaled_ident = Cov.identity_like(s) * (self.current_lambda+1.0)
         scaled_ident += s**2
         scaled_ident = scaled_ident.inv
 
         x1 = u.T * self.obscov.inv.sqrt * obs_diff.T
         x1.autoalign = False
-        x2 = scaled_ident * x1
-        x3 = v * s * x2
 
-        upgrade_1 = -1.0 *  (self.half_parcov_diag * scaled_delta_par)
-        upgrade_1 = upgrade_1 * x3
+        #build up this matrix as a single element so we can apply
+        #localization
+        upgrade_1 = -1.0 * (self.half_parcov_diag * scaled_delta_par) *\
+                    v * s * scaled_ident
+        #apply localization
+        print(upgrade_1.shape)
+
+        #apply residual information
+        upgrade_1 *= x1
+
         upgrade_1 = upgrade_1.to_dataframe()
         upgrade_1.index.name = "parnme"
         upgrade_1 = upgrade_1.T
