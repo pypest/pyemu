@@ -1726,5 +1726,5 @@ class Cov(Matrix):
     @classmethod
     def identity_like(cls,other):
         assert other.shape[0] == other.shape[1]
-        x = np.ones((len(other.row_names),1))
+        x = np.identity(other.shape[0])
         return cls(x=x,names=other.row_names,isdiagonal=True)

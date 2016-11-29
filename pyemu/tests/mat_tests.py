@@ -152,10 +152,26 @@ def pseudo_inv_test():
     jpi = jco.pseudo_inv(maxsing=1)
     jpi = jco.pseudo_inv(maxsing=19)
 
+def cov_identity_test():
+    import os
+    import numpy as np
+    import pyemu
+    n = 100
+    names = ["name_{0}".format(i) for i in range(n)]
+    arr = np.random.random(n*n)
+    arr.resize((n,n))
+    cov = pyemu.Cov(x=arr*arr.transpose(),names=names)
+    cov *= 2.0
+    cov_i = pyemu.Cov.identity_like(cov)
+    cov_i *= 2.0
+    assert cov_i.x[0,0] == 2.0
+
+
 if __name__ == "__main__":
     #mat_test()
     #load_jco_test()
     #extend_test()
     #pseudo_inv_test()
     #drop_test()
-    get_test()
+    #get_test()
+    cov_identity_test()
