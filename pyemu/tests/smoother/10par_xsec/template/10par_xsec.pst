@@ -52,9 +52,9 @@ h02_10    5.100000E+00 0.0 head
 * model command line
 mf2005 10par_xsec.nam
 * model input/output
-misc/k.tpl hk_Layer_1.ref
-misc/strt_Layer_1.tpl strt_Layer_1.ref
-misc/head.ins 10par_xsec.hds
+k.tpl hk_Layer_1.ref
+strt_Layer_1.tpl strt_Layer_1.ref
+head.ins 10par_xsec.hds
 ++# PEST++ optional input
 ++# SVD_PACK(PROPACK)
 ++ N_ITER_BASE(1)

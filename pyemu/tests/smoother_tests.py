@@ -48,7 +48,7 @@ def chenoliver_plot():
     from matplotlib.backends.backend_pdf import PdfPages
     import pandas as pd
     d = os.path.join("smoother","chenoliver")
-    bins = 20
+    bins = 30
     plt_dir = os.path.join(d,"plot")
     if not os.path.exists(plt_dir):
         os.mkdir(plt_dir)
@@ -103,17 +103,17 @@ def chenoliver():
     import pyemu
 
     os.chdir(os.path.join("smoother","chenoliver"))
-    # csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
-    # [os.remove(csv_file) for csv_file in csv_files]
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
 
     parcov = pyemu.Cov(x=np.ones((1,1)),names=["par"],isdiagonal=True)
     pst = pyemu.Pst("chenoliver.pst")
     #pst.observation_data.loc[:,"weight"] = 1.0/8.0
     obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
-                                num_slaves=20,use_approx=True)
+                                num_slaves=20,use_approx=False)
     es.initialize(num_reals=1000)
-    for it in range(20):
+    for it in range(30):
         es.update()
     os.chdir(os.path.join("..",".."))
 
@@ -122,19 +122,104 @@ def tenpar():
     import os
     import numpy as np
     import pyemu
-
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
     os.chdir(os.path.join("smoother","10par_xsec"))
-    es = pyemu.EnsembleSmoother("pest.pst")
-    es.initialize(num_reals=10)
-    for it in range(1):
+    es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=10)
+    es.initialize(num_reals=200)
+    for it in range(20):
         es.update()
     os.chdir(os.path.join("..",".."))
+
+
+def tenpar_plot():
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+
+    import pandas as pd
+    from pyemu import Pst
+    d = os.path.join("smoother","10par_xsec")
+    pst = Pst(os.path.join(d,"10par_xsec.pst"))
+    bins = 10
+    plt_dir = os.path.join(d,"plot")
+    if not os.path.exists(plt_dir):
+        os.mkdir(plt_dir)
+
+
+    par_files = [os.path.join(d,f) for f in os.listdir(d) if "parensemble." in f
+                 and ".png" not in f]
+    par_dfs = [pd.read_csv(par_file,index_col=0).apply(np.log10) for par_file in par_files]
+    par_names = list(par_dfs[0].columns)
+    mx = (pst.parameter_data.loc[:,"parubnd"] * 1.1).apply(np.log10)
+    mn = (pst.parameter_data.loc[:,"parlbnd"] * 0.9).apply(np.log10)
+
+    with PdfPages(os.path.join(plt_dir,"parensemble.pdf")) as pdf:
+        for par_file,par_df in zip(par_files,par_dfs):
+            print(par_file)
+            fig = plt.figure(figsize=(20,10))
+            axes = [plt.subplot(2,6,i+1) for i in range(len(par_names))]
+            for par_name,ax in zip(par_names,axes):
+                par_df.loc[:,par_name].hist(ax=ax,bins=bins,edgecolor="none",
+                                            alpha=0.5,grid=False)
+                ax.set_yticklabels([])
+                ax.set_title(par_name)
+                ax.set_xlim(mn[par_name],mx[par_name])
+                ylim = ax.get_ylim()
+                if "stage" in par_name:
+                    val = np.log10(1.5)
+                else:
+                    val = np.log10(2.5)
+                ticks = ["{0:2.1f}".format(x) for x in 10.0**ax.get_xticks()]
+                ax.set_xticklabels(ticks,rotation=90)
+                ax.plot([val,val],ylim,"k-",lw=2.0)
+            pdf.savefig()
+            plt.close()
+
+
+
+
+    obs_files = [os.path.join(d,f) for f in os.listdir(d) if "obsensemble." in f
+                 and ".png" not in f]
+    obs_dfs = [pd.read_csv(obs_file) for obs_file in obs_files]
+    #print(obs_files)
+    #mx = max([obs_df.obs.max() for obs_df in obs_dfs])
+    #mn = min([obs_df.obs.min() for obs_df in obs_dfs])
+    #print(mn,mx)
+    obs_names = ["h01_04","h01_06","h01_08","h02_08"]
+    #print(obs_files)
+    obs_dfs = [obs_df.loc[:,obs_names] for obs_df in obs_dfs]
+    mx = {obs_name:max([obs_df.loc[:,obs_name].max() for obs_df in obs_dfs]) for obs_name in obs_names}
+    mn = {obs_name:min([obs_df.loc[:,obs_name].min() for obs_df in obs_dfs]) for obs_name in obs_names}
+
+    with PdfPages(os.path.join(plt_dir,"obsensemble.pdf")) as pdf:
+        for obs_file,obs_df in zip(obs_files,obs_dfs):
+            fig = plt.figure(figsize=(10,10))
+            plt.figtext(0.5,0.975,obs_file)
+            print(obs_file)
+            axes = [plt.subplot(2,2,i+1) for i in range(len(obs_names))]
+            for ax,obs_name in zip(axes,obs_names):
+                obs_df.loc[:,obs_name].hist(ax=ax,bins=bins,edgecolor="none",
+                                            alpha=0.5,grid=False)
+                ax.set_yticklabels([])
+                #print(ax.get_xlim(),mn[obs_name],mx[obs_name])
+                ax.set_title(obs_name)
+                ax.set_xlim(mn[obs_name],mx[obs_name])
+                ylim = ax.get_ylim()
+                oval = pst.observation_data.loc[obs_name,"obsval"]
+                ax.plot([oval,oval],ylim,"k-",lw=2)
+            pdf.savefig()
+            plt.close()
+
+
 
 
 
 if __name__ == "__main__":
     #freyberg_smoother_test()
     #chenoliver_setup()
-    chenoliver()
-    #tenpar_test()
-    chenoliver_plot()
+    #chenoliver()
+    #chenoliver_plot()
+    tenpar()
+    tenpar_plot()

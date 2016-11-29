@@ -78,6 +78,7 @@ class EnsembleSmoother():
             self.num_reals = int(num_reals)
             self.parensemble_0 = ParameterEnsemble(self.pst)
             self.parensemble_0.draw(cov=self.parcov,num_reals=num_reals)
+            self.parensemble_0.enforce()
             self.parensemble = self.parensemble_0.copy()
             self.parensemble_0.to_csv(self.pst.filename+".parensemble.0000.csv")
             self.obsensemble_0 = ObservationEnsemble(self.pst)
@@ -169,10 +170,12 @@ class EnsembleSmoother():
         u,s,v = scaled_delta_obs.pseudo_inv_components()
         scaled_delta_par = self._calc_delta_par()
         obs_diff = self.obsensemble.as_pyemu_matrix() -\
-               self.obsensemble_0.as_pyemu_matrix()
+                   self.obsensemble_0.as_pyemu_matrix()
         #scaled_ident = (self.current_lambda*Cov.identity_like(s) + s**2).inv
         #chen and oliver say (lambda + 1) * I...
-        scaled_ident = ((self.current_lambda+1.0)*Cov.identity_like(s) + s**2).inv
+        scaled_ident = Cov.identity_like(s) * (self.current_lambda+1.0)
+        scaled_ident += s**2
+        scaled_ident = scaled_ident.inv
 
         x1 = u.T * self.obscov.inv.sqrt * obs_diff.T
         x1.autoalign = False
@@ -187,7 +190,7 @@ class EnsembleSmoother():
         upgrade_1.to_csv(self.pst.filename+".upgrade_1.{0:04d}.csv".\
                            format(self.iter_num))
         self.parensemble += upgrade_1
-
+        self.parensemble.enforce()
         if not self.use_approx and self.iter_num > 1:
             par_diff = (self.parensemble - self.parensemble_0).\
                 as_pyemu_matrix().T
