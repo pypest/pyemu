@@ -122,12 +122,12 @@ def tenpar():
     import os
     import numpy as np
     import pyemu
+    os.chdir(os.path.join("smoother","10par_xsec"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
-    os.chdir(os.path.join("smoother","10par_xsec"))
-    es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=10)
+    es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=20)
     es.initialize(num_reals=1000)
-    for it in range(10):
+    for it in range(40):
         es.update()
     os.chdir(os.path.join("..",".."))
 
@@ -163,10 +163,13 @@ def tenpar_plot():
             plt.figtext(0.5,0.975,par_file,ha="center")
             axes = [plt.subplot(2,6,i+1) for i in range(len(par_names))]
             for par_name,ax in zip(par_names,axes):
+                mean = par_df.loc[:,par_name].mean()
+                std = par_df.loc[:,par_name].std()
                 par_df.loc[:,par_name].hist(ax=ax,bins=bins,edgecolor="none",
                                             alpha=0.5,grid=False)
                 ax.set_yticklabels([])
-                ax.set_title(par_name)
+                ax.set_title("{0}, {1:6.2f}:{2:6.2f}".\
+                             format(par_name,mean,std))
                 ax.set_xlim(mn[par_name],mx[par_name])
                 ylim = ax.get_ylim()
                 if "stage" in par_name:
@@ -176,6 +179,10 @@ def tenpar_plot():
                 ticks = ["{0:2.1f}".format(x) for x in 10.0**ax.get_xticks()]
                 ax.set_xticklabels(ticks,rotation=90)
                 ax.plot([val,val],ylim,"k-",lw=2.0)
+
+                ax.plot([mean,mean],ylim,"b-",lw=1.5)
+                ax.plot([mean+(2.0*std),mean+(2.0*std)],ylim,"b--",lw=1.5)
+                ax.plot([mean-(2.0*std),mean-(2.0*std)],ylim,"b--",lw=1.5)
             pdf.savefig()
             plt.close()
 
@@ -202,15 +209,20 @@ def tenpar_plot():
             print(obs_file)
             axes = [plt.subplot(2,2,i+1) for i in range(len(obs_names))]
             for ax,obs_name in zip(axes,obs_names):
+                mean = obs_df.loc[:,obs_name].mean()
+                std = obs_df.loc[:,obs_name].std()
                 obs_df.loc[:,obs_name].hist(ax=ax,bins=bins,edgecolor="none",
                                             alpha=0.5,grid=False)
                 ax.set_yticklabels([])
                 #print(ax.get_xlim(),mn[obs_name],mx[obs_name])
-                ax.set_title(obs_name)
+                ax.set_title("{0}, {1:6.2f}:{2:6.2f}".format(obs_name,mean,std))
                 ax.set_xlim(mn[obs_name],mx[obs_name])
                 ylim = ax.get_ylim()
                 oval = pst.observation_data.loc[obs_name,"obsval"]
                 ax.plot([oval,oval],ylim,"k-",lw=2)
+                ax.plot([mean,mean],ylim,"b-",lw=1.5)
+                ax.plot([mean+(2.0*std),mean+(2.0*std)],ylim,"b--",lw=1.5)
+                ax.plot([mean-(2.0*std),mean-(2.0*std)],ylim,"b--",lw=1.5)
             pdf.savefig()
             plt.close()
 
@@ -223,5 +235,5 @@ if __name__ == "__main__":
     #chenoliver_setup()
     #chenoliver()
     #chenoliver_plot()
-    tenpar()
+    #tenpar()
     tenpar_plot()
