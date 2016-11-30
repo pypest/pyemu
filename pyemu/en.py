@@ -27,7 +27,7 @@ class Ensemble(pd.DataFrame):
         self.__mean_values = mean_values
 
     def as_pyemu_matrix(self):
-        x = self.copy().as_matrix()
+        x = self.copy().as_matrix().astype(np.float)
         return Matrix(x=x,row_names=list(self.index),
                       col_names=list(self.columns))
 

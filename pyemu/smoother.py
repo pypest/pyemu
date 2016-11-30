@@ -92,15 +92,15 @@ class EnsembleSmoother():
         # if using the approximate form of the algorithm, let
         # the parameter scaling matrix be the identity matrix
         if self.use_approx:
-            #self.half_parcov_diag = Cov.identity_like(self.parcov)
             self.half_parcov_diag = 1.0
         else:
-            if self.parcov.isdiagonal:
-                self.half_parcov_diag = self.parcov.inv.sqrt
-            else:
-                self.half_parcov_diag = Cov(x=np.diag(self.parcov.x),
-                                            names=self.parcov.col_names,
-                                            isdiagonal=True).inv.sqrt
+            # if self.parcov.isdiagonal:
+            #     self.half_parcov_diag = self.parcov.sqrt.inv
+            # else:
+            #     self.half_parcov_diag = Cov(x=np.diag(self.parcov.x),
+            #                                 names=self.parcov.col_names,
+            #                                 isdiagonal=True).inv.sqrt
+            self.half_parcov_diag = 1.0
             self.delta_par_prior = self._calc_delta_par()
             u,s,v = self.delta_par_prior.pseudo_inv_components()
             self.Am = u * s.inv
@@ -169,28 +169,28 @@ class EnsembleSmoother():
         else:
             self._calc_obs()
         scaled_delta_obs = self._calc_delta_obs()
-
-        u,s,v = scaled_delta_obs.pseudo_inv_components(maxsing=self.pst.nobs)
         scaled_delta_par = self._calc_delta_par()
+
+        u,s,v = scaled_delta_obs.pseudo_inv_components()
+
         obs_diff = self.obsensemble.as_pyemu_matrix() -\
                    self.obsensemble_0.as_pyemu_matrix()
 
         scaled_ident = Cov.identity_like(s) * (self.current_lambda+1.0)
         scaled_ident += s**2
         scaled_ident = scaled_ident.inv
+        #scaled_ident.autoalign = False
 
-        x1 = u.T * self.obscov.inv.sqrt * obs_diff.T
-        x1.autoalign = False
-
-        #build up this matrix as a single element so we can apply
-        #localization
+        # build up this matrix as a single element so we can apply
+        # localization
         upgrade_1 = -1.0 * (self.half_parcov_diag * scaled_delta_par) *\
-                    v * s * scaled_ident
-        #apply localization
+                    v * s * scaled_ident * u.T
+
+        # apply localization
         print(upgrade_1.shape)
 
-        #apply residual information
-        upgrade_1 *= x1
+        # apply residual information
+        upgrade_1 *= (self.obscov.inv.sqrt * obs_diff.T)
 
         upgrade_1 = upgrade_1.to_dataframe()
         upgrade_1.index.name = "parnme"
@@ -198,7 +198,7 @@ class EnsembleSmoother():
         upgrade_1.to_csv(self.pst.filename+".upgrade_1.{0:04d}.csv".\
                            format(self.iter_num))
         self.parensemble += upgrade_1
-        self.parensemble.enforce()
+
         if not self.use_approx and self.iter_num > 1:
             par_diff = (self.parensemble - self.parensemble_0).\
                 as_pyemu_matrix().T
@@ -207,12 +207,25 @@ class EnsembleSmoother():
             x6 = scaled_delta_par.T * x5
             x7 = v * scaled_ident * v.T * x6
             upgrade_2 = -1.0 * (self.half_parcov_diag *
-                                scaled_delta_par * x7).to_dataframe()
+                               scaled_delta_par * x7).to_dataframe()
+            # upgrade_2 = -1.0 * self.half_parcov_diag * scaled_delta_par
+            # upgrade_2.autoalign = False
+            # upgrade_2 *= v
+            # upgrade_2.autoalign = False
+            # upgrade_2 *= scaled_ident
+            # upgrade_2.autoalign = False
+            # upgrade_2 *= v.T * scaled_delta_par.T
+            # upgrade_2.autoalign = False
+            # upgrade_2 *= self.Am * self.Am.T
+            # upgrade_2.autoalign = False
+            # upgrade_2 *= self.half_parcov_diag * par_diff
+            #upgrade_2 = upgrade_2.to_dataframe()
+
             upgrade_2.index.name = "parnme"
             upgrade_2.T.to_csv(self.pst.filename+".upgrade_2.{0:04d}.csv".\
                                format(self.iter_num))
             self.parensemble += upgrade_2.T
-
+        self.parensemble.enforce()
         self.parensemble.to_csv(self.pst.filename+self.paren_prefix.\
                                 format(self.iter_num))
 

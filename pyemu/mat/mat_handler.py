@@ -452,7 +452,8 @@ class Matrix(object):
 
     def __rmul__(self, other):
         if np.isscalar(other):
-            return type(self)(x=self.__x.copy() * other,row_names=self.row_names,col_names=self.col_names)
+            return type(self)(x=self.__x.copy() * other,row_names=self.row_names,\
+                              col_names=self.col_names,isdiagonal=self.isdiagonal)
         elif isinstance(other, np.ndarray):
             assert self.shape[0] == other.shape[1], \
                 "Matrix.__rmul__(): matrices are not aligned: " +\
@@ -526,15 +527,17 @@ class Matrix(object):
 
             u, s, v = la.svd(x, full_matrices=True)
             v = v.transpose()
-        except:
+        except Exception as e:
+            print("standard SVD failed: {0}".format(str(e)))
             try:
                 v, s, u = la.svd(x.transpose(), full_matrices=True)
                 u = u.transpose()
-            except:
+            except Exception as e:
                 np.savetxt("failed_svd.dat",x,fmt="%15.6E")
                 raise Exception("Matrix.__set_svd(): " +
                                 "unable to compute SVD of self.x, " +
-                                "saved matrix to 'failed_svd.dat'")
+                                "saved matrix to 'failed_svd.dat' -- {0}".\
+                                format(str(e)))
 
         col_names = ["left_sing_vec_" + str(i + 1) for i in range(u.shape[1])]
         self.__u = Matrix(x=u, row_names=self.row_names,
