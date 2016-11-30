@@ -163,7 +163,7 @@ class Matrix(object):
         self.autoalign = bool(autoalign)
 
     def __str__(self):
-        s = "row names: " + str(self.row_names) + \
+        s = "shape:{0}:{1}".format(*self.shape)+" row names: " + str(self.row_names) + \
             '\n' + "col names: " + str(self.col_names) + '\n' + str(self.__x)
         return s
 
