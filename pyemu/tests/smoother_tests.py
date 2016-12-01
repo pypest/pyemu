@@ -9,13 +9,10 @@ def freyberg():
 
     os.chdir(os.path.join("smoother","freyberg"))
     pst = pyemu.Pst(os.path.join("freyberg.pst"))
-    #mc = pyemu.MonteCarlo(pst=pst)
-    #mc.draw(2)
-    #print(mc.parensemble)
-    num_reals = 5
-    es = pyemu.EnsembleSmoother(pst)
-    es.initialize(num_reals)
-    es.update()
+    es = pyemu.EnsembleSmoother(pst,num_slaves=10)
+    es.initialize(100)
+    for i in range(10):
+        es.update()
     os.chdir(os.path.join("..",".."))
 
 def chenoliver_setup():
@@ -125,9 +122,9 @@ def tenpar():
     os.chdir(os.path.join("smoother","10par_xsec"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
-    es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=5,use_approx=False)
-    es.initialize(num_reals=20)
-    for it in range(20):
+    es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=15,use_approx=False)
+    es.initialize(num_reals=300)
+    for it in range(10):
         es.update()
     os.chdir(os.path.join("..",".."))
 
@@ -231,9 +228,9 @@ def tenpar_plot():
 
 
 if __name__ == "__main__":
-    #freyberg_smoother_test()
+    freyberg()
     #chenoliver_setup()
     #chenoliver()
     #chenoliver_plot()
-    tenpar()
-    tenpar_plot()
+    #tenpar()
+    #tenpar_plot()
