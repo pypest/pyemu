@@ -28,6 +28,43 @@ def freyberg_plot():
     if not os.path.exists(plt_dir):
         os.mkdir(plt_dir)
 
+    obs_files = [os.path.join(d,f) for f in os.listdir(d) if "obsensemble." in f
+                 and ".png" not in f]
+    obs_dfs = [pd.read_csv(obs_file) for obs_file in obs_files]
+    obs_names = pst.nnz_obs_names
+    obs_names.extend(pst.pestpp_options["forecasts"].split(',')[:-1])
+    print(obs_names)
+    print(len(obs_names))
+    #print(obs_files)
+    obs_dfs = [obs_df.loc[:,obs_names] for obs_df in obs_dfs]
+    mx = {obs_name:max([obs_df.loc[:,obs_name].max() for obs_df in obs_dfs]) for obs_name in obs_names}
+    mn = {obs_name:min([obs_df.loc[:,obs_name].min() for obs_df in obs_dfs]) for obs_name in obs_names}
+
+    with PdfPages(os.path.join(plt_dir,"obsensemble.pdf")) as pdf:
+        for obs_file,obs_df in zip(obs_files,obs_dfs):
+            fig = plt.figure(figsize=(30,40))
+            plt.figtext(0.5,0.975,obs_file,ha="center")
+            print(obs_file)
+            axes = [plt.subplot(3,4,i+1) for i in range(len(obs_names))]
+            for ax,obs_name in zip(axes,obs_names):
+                mean = obs_df.loc[:,obs_name].mean()
+                std = obs_df.loc[:,obs_name].std()
+                obs_df.loc[:,obs_name].hist(ax=ax,edgecolor="none",
+                                            alpha=0.25,grid=False)
+                ax.set_yticklabels([])
+                #print(ax.get_xlim(),mn[obs_name],mx[obs_name])
+                ax.set_title("{0}, {1:6.2f}:{2:6.2f}".format(obs_name,mean,std))
+                ax.set_xlim(mn[obs_name],mx[obs_name])
+                #ax.set_xlim(0.0,20.0)
+                ylim = ax.get_ylim()
+                oval = pst.observation_data.loc[obs_name,"obsval"]
+                ax.plot([oval,oval],ylim,"k-",lw=2)
+                ax.plot([mean,mean],ylim,"b-",lw=1.5)
+                ax.plot([mean+(2.0*std),mean+(2.0*std)],ylim,"b--",lw=1.5)
+                ax.plot([mean-(2.0*std),mean-(2.0*std)],ylim,"b--",lw=1.5)
+            pdf.savefig()
+            plt.close()
+
     par_files = [os.path.join(d,f) for f in os.listdir(d) if "parensemble." in f
                  and ".png" not in f]
     par_dfs = [pd.read_csv(par_file,index_col=0).apply(np.log10) for par_file in par_files]
@@ -47,7 +84,7 @@ def freyberg_plot():
                 mean = par_df.loc[:,par_name].mean()
                 std = par_df.loc[:,par_name].std()
                 par_df.loc[:,par_name].hist(ax=ax,edgecolor="none",
-                                            alpha=0.5,grid=False)
+                                            alpha=0.25,grid=False)
                 ax.set_yticklabels([])
                 ax.set_title("{0}, {1:6.2f}".\
                              format(par_name,10.0**mean))
@@ -69,46 +106,6 @@ def freyberg_plot():
 
 
 
-
-    obs_files = [os.path.join(d,f) for f in os.listdir(d) if "obsensemble." in f
-                 and ".png" not in f]
-    obs_dfs = [pd.read_csv(obs_file) for obs_file in obs_files]
-    #print(obs_files)
-    #mx = max([obs_df.obs.max() for obs_df in obs_dfs])
-    #mn = min([obs_df.obs.min() for obs_df in obs_dfs])
-    #print(mn,mx)
-    #obs_names = ["h01_04","h01_06","h01_08","h02_08"]
-    obs_names = pst.nnz_obs_names
-    print(obs_names)
-    #print(obs_files)
-    obs_dfs = [obs_df.loc[:,obs_names] for obs_df in obs_dfs]
-    mx = {obs_name:max([obs_df.loc[:,obs_name].max() for obs_df in obs_dfs]) for obs_name in obs_names}
-    mn = {obs_name:min([obs_df.loc[:,obs_name].min() for obs_df in obs_dfs]) for obs_name in obs_names}
-
-    with PdfPages(os.path.join(plt_dir,"obsensemble.pdf")) as pdf:
-        for obs_file,obs_df in zip(obs_files,obs_dfs):
-            fig = plt.figure(figsize=(50,10))
-            plt.figtext(0.5,0.975,obs_file,ha="center")
-            print(obs_file)
-            axes = [plt.subplot(2,5,i+1) for i in range(len(obs_names))]
-            for ax,obs_name in zip(axes,obs_names):
-                mean = obs_df.loc[:,obs_name].mean()
-                std = obs_df.loc[:,obs_name].std()
-                obs_df.loc[:,obs_name].hist(ax=ax,edgecolor="none",
-                                            alpha=0.5,grid=False)
-                ax.set_yticklabels([])
-                #print(ax.get_xlim(),mn[obs_name],mx[obs_name])
-                ax.set_title("{0}, {1:6.2f}:{2:6.2f}".format(obs_name,mean,std))
-                #ax.set_xlim(mn[obs_name],mx[obs_name])
-                ax.set_xlim(0.0,20.0)
-                ylim = ax.get_ylim()
-                oval = pst.observation_data.loc[obs_name,"obsval"]
-                ax.plot([oval,oval],ylim,"k-",lw=2)
-                ax.plot([mean,mean],ylim,"b-",lw=1.5)
-                ax.plot([mean+(2.0*std),mean+(2.0*std)],ylim,"b--",lw=1.5)
-                ax.plot([mean-(2.0*std),mean-(2.0*std)],ylim,"b--",lw=1.5)
-            pdf.savefig()
-            plt.close()
 
 
 
