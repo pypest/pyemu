@@ -96,6 +96,8 @@ class Ensemble(pd.DataFrame):
                 mean_values=mean_values,**kwargs)
         return e
 
+
+
     def copy(self):
         df = super(Ensemble,self).copy()
         return type(self).from_dataframe(df=df)
@@ -293,7 +295,8 @@ class ParameterEnsemble(Ensemble):
     @classmethod
     def from_uniform_draw(cls,pe,num_reals):
         """ this is an experiemental method to help speed up uniform draws
-        for a really large (>1E6) ensemble sizes
+        for a really large (>1E6) ensemble sizes.  WARNING: this constructor
+        transforms the pe argument
         :param pe: ParameterEnsemble instance
         :param num_reals: number of realizations to generate
         :return: ParameterEnsemble
@@ -312,7 +315,51 @@ class ParameterEnsemble(Ensemble):
                 arr[:,i] = np.zeros((num_reals)) + \
                                     pe.pst.parameter_data.\
                                          loc[pname,"parval1"]
-        return ParameterEnsemble.from_dataframe(pst=pe.pst,df=pd.DataFrame(data=arr,columns=pe.names))
+        return cls.from_dataframe(pst=pe.pst,df=pd.DataFrame(data=arr,columns=pe.names))
+
+
+    @classmethod
+    def from_gaussian_draw(cls,pe,cov,num_reals=1):
+        """ this is an experiemental method to help speed up draws
+        for a really large (>1E6) ensemble sizes.  gets around the
+        dataframe expansion-by-loc that is one col at a time.  WARNING:
+        this constructor transforms the pe argument!
+        :param pe: ParameterEnsemble instance
+        "param cov: Covariance instance
+        :param num_reals: number of realizations to generate
+        :return: ParameterEnsemble
+        """
+        # set up some column names
+        real_names = ["{0:d}".format(i)
+                      for i in range(num_reals)]
+
+        if not pe.istransformed:
+            pe._transform()
+        # make sure everything is cool WRT ordering
+        if pe.names != cov.row_names:
+            common_names = get_common_elements(pe.names,
+                                               cov.row_names)
+            vals = pe.mean_values.loc[common_names]
+            cov = cov.get(common_names)
+            pass
+        else:
+            vals = pe.mean_values
+            common_names = pe.names
+
+        vals = pe.mean_values
+        df = pd.DataFrame(data=np.random.multivariate_normal(vals, cov.as_2d,num_reals),
+                          columns = common_names,index=real_names)
+        # replace the realizations for fixed parameters with the original
+        # parval1 in the control file
+
+        pe.pst.parameter_data.index = pe.pst.parameter_data.parnme
+        fixed_vals = pe.pst.parameter_data.loc[pe.fixed_indexer,"parval1"]
+        for fname,fval in zip(fixed_vals.index,fixed_vals.values):
+            df.loc[:,fname] = fval
+        istransformed = pe.pst.parameter_data.loc[:,"partrans"] == "log"
+        df.loc[:,istransformed] = 10.0**df.loc[:,istransformed]
+        return cls.from_dataframe(pst=pe.pst,df=df)
+
 
 
     def _back_transform(self,inplace=True):

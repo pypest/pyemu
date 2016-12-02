@@ -71,6 +71,33 @@ def uniform_draw_test():
     print(pe)
 
 
+def gaussian_draw_test():
+    import os
+    import numpy as np
+    from pyemu import MonteCarlo,Cov,ParameterEnsemble
+    from datetime import datetime
+    jco = os.path.join("pst","pest.jcb")
+    pst = jco.replace(".jcb",".pst")
+
+    mc = MonteCarlo(jco=jco,pst=pst)
+    num_reals = 100
+
+    start = datetime.now()
+    mc.draw(num_reals=num_reals,how="gaussian")
+    print(mc.parensemble.head())
+    print(datetime.now() - start)
+    vals = mc.pst.parameter_data.parval1.values
+    cov = Cov.from_parameter_data(mc.pst)
+    start = datetime.now()
+    val_array = np.random.multivariate_normal(vals, cov.as_2d,num_reals)
+    print(datetime.now() - start)
+
+    start = datetime.now()
+    pe = ParameterEnsemble.from_gaussian_draw(mc.parensemble,cov,num_reals=num_reals)
+    print(datetime.now() - start)
+    print(mc.parensemble.head())
+    print(pe.head())
+
 def write_regul_test():
     import os
     import numpy as np
@@ -123,6 +150,7 @@ if __name__ == "__main__":
     #scale_offset_test()
     #mc_test()
     #fixed_par_test()
-    uniform_draw_test()
+    #uniform_draw_test()
+    gaussian_draw_test()
     #write_regul_test()
     #from_dataframe_test()
