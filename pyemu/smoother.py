@@ -65,9 +65,9 @@ class EnsembleSmoother():
         (re)initialize the process
         '''
         self.phi_csv = open(self.pst.filename+".iobj.csv",'w')
-        self.phi_csv.write("iter_num,min,max,mean,median,")
+        self.phi_csv.write("iter_num,lambda,min,max,mean,median,")
         self.phi_csv.write(','.join(["{0:010d}".\
-                                    format(i) for i in range(num_reals)]))
+                                    format(i+1) for i in range(num_reals)]))
         self.phi_csv.write('\n')
 
         if self.restart:
@@ -107,42 +107,41 @@ class EnsembleSmoother():
             #                                 names=self.parcov.col_names,
             #                                 isdiagonal=True).inv.sqrt
             self.half_parcov_diag = 1.0
-            self.delta_par_prior = self._calc_delta_par()
+            self.delta_par_prior = self._calc_delta_par(self.parensemble_0)
             u,s,v = self.delta_par_prior.pseudo_inv_components()
             self.Am = u * s.inv
 
         self.__initialized = True
 
-    def _calc_delta_par(self):
+    def _calc_delta_par(self,parensemble):
         '''
         calc the scaled parameter ensemble differences from the mean
         '''
-        mean = np.array(self.parensemble.mean(axis=0))
-        delta = self.parensemble.as_pyemu_matrix()
-        for i in range(self.num_reals):
-            delta.x[i,:] -= mean
-        delta = self.half_parcov_diag * delta.T
-        delta *= (1.0 / np.sqrt(float(self.num_reals - 1.0)))
-        return delta
+        return self._calc_delta(parensemble, self.half_parcov_diag)
 
-    def _calc_delta_obs(self):
+    def _calc_delta_obs(self,obsensemble):
         '''
         calc the scaled observation ensemble differences from the mean
         '''
+        return self._calc_delta(obsensemble, self.obscov_inv_sqrt)
 
-        mean = np.array(self.obsensemble.mean(axis=0))
-        delta = self.obsensemble.as_pyemu_matrix()
+    def _calc_delta(self,ensemble,scaling_matrix):
+        '''
+        calc the scaled  ensemble differences from the mean
+        '''
+        mean = np.array(ensemble.mean(axis=0))
+        delta = ensemble.as_pyemu_matrix()
         for i in range(self.num_reals):
             delta.x[i,:] -= mean
-        delta = self.obscov.inv.sqrt * delta.T
+        delta = scaling_matrix * delta.T
         delta *= (1.0 / np.sqrt(float(self.num_reals - 1.0)))
         return delta
 
-    def _calc_obs(self):
+    def _calc_obs(self,parensemble):
         '''
         propagate the ensemble forward...
         '''
-        self.parensemble.to_csv(os.path.join("sweep_in.csv"))
+        parensemble.to_csv(os.path.join("sweep_in.csv"))
         if self.num_slaves > 0:
             port = 4004
             def master():

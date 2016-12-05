@@ -218,7 +218,7 @@ def tenpar():
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
     es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=15,use_approx=False)
-    es.initialize(num_reals=300)
+    es.initialize(num_reals=30)
     for it in range(10):
         es.update()
     os.chdir(os.path.join("..",".."))
