@@ -146,11 +146,32 @@ def scale_offset_test():
     #     plt.show()
 
 
+def ensemble_seed_test():
+    import os
+    import numpy as np
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    cov = pyemu.Cov.from_parameter_data(pst)
+    pe1 = pyemu.ParameterEnsemble(pyemu.Pst(os.path.join("pst","pest.pst")))
+    pe2 = pyemu.ParameterEnsemble(pyemu.Pst(os.path.join("pst","pest.pst")))
+    
+    pe1.draw(cov,num_reals=10)
+    pe2.draw(cov,num_reals=10)
+    assert (pe1-pe2).apply(np.abs).as_matrix().max() == 0.0
+
+    pe1.draw(cov,num_reals=10,how="uniform")
+    pe2.draw(cov,num_reals=10,how="uniform")
+    assert (pe1-pe2).apply(np.abs).as_matrix().max() == 0.0
+
+
+
+
 if __name__ == "__main__":
     #scale_offset_test()
     #mc_test()
     #fixed_par_test()
     #uniform_draw_test()
-    gaussian_draw_test()
+    #gaussian_draw_test()
     #write_regul_test()
     #from_dataframe_test()
+    ensemble_seed_test()

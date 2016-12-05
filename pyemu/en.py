@@ -8,6 +8,9 @@ import pandas as pd
 from pyemu.mat.mat_handler import get_common_elements,Matrix
 from pyemu.pst.pst_utils import write_parfile,read_parfile
 
+SEED = 358183147 #from random.org on 5 Dec 2016
+np.random.seed(SEED)
+
 class Ensemble(pd.DataFrame):
     """ a pandas.DataFrame derived type to store
         ensembles of parameters and/or observations
@@ -61,6 +64,7 @@ class Ensemble(pd.DataFrame):
             common_names = self.names
 
         # generate random numbers
+        np.random.seed(SEED)
         val_array = np.random.multivariate_normal(vals, cov.as_2d,num_reals)
 
         self.loc[:,:] = np.NaN
@@ -275,6 +279,7 @@ class ParameterEnsemble(Ensemble):
         self.__istransformed = False
 
     def _draw_uniform(self,num_reals=1):
+        np.random.seed(SEED)
         if not self.istransformed:
             self._transform()
         self.loc[:,:] = np.NaN
@@ -301,6 +306,7 @@ class ParameterEnsemble(Ensemble):
         :param num_reals: number of realizations to generate
         :return: ParameterEnsemble
         """
+        np.random.seed(SEED)
         if not pe.istransformed:
             pe._transform()
         ub = pe.ubnd
@@ -329,6 +335,7 @@ class ParameterEnsemble(Ensemble):
         :param num_reals: number of realizations to generate
         :return: ParameterEnsemble
         """
+        np.random.seed(SEED)
         # set up some column names
         real_names = ["{0:d}".format(i)
                       for i in range(num_reals)]
