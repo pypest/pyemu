@@ -154,12 +154,17 @@ def ensemble_seed_test():
     cov = pyemu.Cov.from_parameter_data(pst)
     pe1 = pyemu.ParameterEnsemble(pyemu.Pst(os.path.join("pst","pest.pst")))
     pe2 = pyemu.ParameterEnsemble(pyemu.Pst(os.path.join("pst","pest.pst")))
-    
+
+    pe1.reseed()
     pe1.draw(cov,num_reals=10)
+    #np.random.seed(1111)
+    pe2.reseed()
     pe2.draw(cov,num_reals=10)
     assert (pe1-pe2).apply(np.abs).as_matrix().max() == 0.0
 
+    pe1.reseed()
     pe1.draw(cov,num_reals=10,how="uniform")
+    pe2.reseed()
     pe2.draw(cov,num_reals=10,how="uniform")
     assert (pe1-pe2).apply(np.abs).as_matrix().max() == 0.0
 
