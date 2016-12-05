@@ -217,7 +217,7 @@ def tenpar():
     os.chdir(os.path.join("smoother","10par_xsec"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
-    es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=15,use_approx=False)
+    es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=15,use_approx=True)
     es.initialize(num_reals=30)
     for it in range(10):
         es.update()
@@ -324,9 +324,9 @@ def tenpar_plot():
 
 if __name__ == "__main__":
     #freyberg()
-    freyberg_plot()
+    #freyberg_plot()
     #chenoliver_setup()
-    #chenoliver()
-    #chenoliver_plot()
+    chenoliver()
+    chenoliver_plot()
     #tenpar()
     #tenpar_plot()

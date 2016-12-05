@@ -64,11 +64,16 @@ class EnsembleSmoother():
         '''
         (re)initialize the process
         '''
+
+        # initialize the phi report csv
         self.phi_csv = open(self.pst.filename+".iobj.csv",'w')
         self.phi_csv.write("iter_num,lambda,min,max,mean,median,")
         self.phi_csv.write(','.join(["{0:010d}".\
                                     format(i+1) for i in range(num_reals)]))
         self.phi_csv.write('\n')
+
+        # this matrix gets used a lot, so only calc once and store
+        self.obscov_inv_sqrt = self.obscov.inv.sqrt
 
         if self.restart:
             print("restarting...ignoring num_reals")
@@ -78,6 +83,8 @@ class EnsembleSmoother():
             self.parensemble = self.parensemble_0.copy()
             df = pd.read_csv(self.pst.filename+self.obsen_prefix.format(0))
             self.obsensemble_0 = ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
+            # this matrix gets used a lot, so only calc once
+            self.obs0_matrix = self.obsensemble_0.as_pyemu_matrix()
             df = pd.read_csv(self.pst.filename+self.obsen_prefix.format(self.restart_iter))
             self.obsensemble = ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
             assert self.parensemble.shape[0] == self.obsensemble.shape[0]
@@ -89,14 +96,29 @@ class EnsembleSmoother():
             self.parensemble_0.draw(cov=self.parcov,num_reals=num_reals)
             self.parensemble_0.enforce()
             self.parensemble = self.parensemble_0.copy()
-            self.parensemble_0.to_csv(self.pst.filename+".parensemble.0000.csv")
+            self.parensemble_0.to_csv(self.pst.filename +\
+                                      self.paren_prefix.format(0))
             self.obsensemble_0 = ObservationEnsemble(self.pst)
             self.obsensemble_0.draw(cov=self.obscov,num_reals=num_reals)
-            self.obsensemble = self.obsensemble_0.copy()
-            self.obsensemble_0.to_csv(self.pst.filename+".obsensemble.0000.csv")
+            #self.obsensemble = self.obsensemble_0.copy()
+
+            # save the base obsensemble
+            self.obsensemble_0.to_csv(self.pst.filename +\
+                                      self.obsen_prefix.format(-1))
+            self.obs0_matrix = self.obsensemble_0.as_pyemu_matrix()
+
+            # run the initial parameter ensemble
+            self.obsensemble = self._calc_obs(self.parensemble)
+            self._phi_report(self.obsensemble)
+
+
 
         # if using the approximate form of the algorithm, let
         # the parameter scaling matrix be the identity matrix
+        # jwhite - dec 5 2016 - using the actual parcov inv
+        # for upgrades seems to be pushing parameters around
+        # too much.  for now, just not using it, maybe
+        # better choices of lambda will tame it
         if self.use_approx:
             self.half_parcov_diag = 1.0
         else:
@@ -110,7 +132,6 @@ class EnsembleSmoother():
             self.delta_par_prior = self._calc_delta_par(self.parensemble_0)
             u,s,v = self.delta_par_prior.pseudo_inv_components()
             self.Am = u * s.inv
-
         self.__initialized = True
 
     def _calc_delta_par(self,parensemble):
@@ -123,7 +144,7 @@ class EnsembleSmoother():
         '''
         calc the scaled observation ensemble differences from the mean
         '''
-        return self._calc_delta(obsensemble, self.obscov_inv_sqrt)
+        return self._calc_delta(obsensemble, self.obscov.inv.sqrt)
 
     def _calc_delta(self,ensemble,scaling_matrix):
         '''
@@ -149,103 +170,110 @@ class EnsembleSmoother():
             master_thread = threading.Thread(target=master)
             master_thread.start()
             time.sleep(1.5) #just some time for the master to get up and running to take slaves
-            pyemu.utils.start_slaves("template","sweep",self.pst.filename,self.num_slaves,slave_root='.',port=port)
+            pyemu.utils.start_slaves("template","sweep",self.pst.filename,
+                                     self.num_slaves,slave_root='.',port=port)
             master_thread.join()
         else:
             os.system("sweep {0}".format(self.pst.filename))
 
         obs = ObservationEnsemble.from_csv(os.path.join('sweep_out.csv'))
         obs.columns = [item.lower() for item in obs.columns]
-        self.obsensemble = ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],pst=self.pst)
-        self.obsensemble.to_csv(self.pst.filename+self.obsen_prefix.format(self.iter_num))
+        return ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],
+                                                  pst=self.pst)
 
-        return
 
     @property
     def current_lambda(self):
         return 1.0
 
-    def update(self):
-        self.iter_num += 1
-        if not self.__initialized:
-            raise Exception("must call initialize() before update()")
-        if self.restart and self.iter_num == 1:
-            pass
-        else:
-            self._calc_obs()
-        scaled_delta_obs = self._calc_delta_obs()
-        scaled_delta_par = self._calc_delta_par()
-
-        u,s,v = scaled_delta_obs.pseudo_inv_components()
-
-        obs_diff = self.obsensemble.as_pyemu_matrix() -\
-                   self.obsensemble_0.as_pyemu_matrix()
-
+    def _phi_report(self,obsensemble,cur_lam=-1):
         # calc l2 norm
-        phi_vec = np.diagonal((obs_diff * self.obscov * obs_diff.T).x)
+        obs_diff = self._get_obs_diff(obsensemble)
+        phi_vec = np.diagonal((obs_diff * self.obscov_inv_sqrt * obs_diff.T).x)
         self.phi_csv.write("{0},{1},{2},{3},{4},".format(self.iter_num,
-                                                        phi_vec.min(),
-                                                        phi_vec.max(),
-                                                        phi_vec.mean(),
-                                                        np.median(phi_vec)))
+                                                         cur_lam,
+                                                         phi_vec.min(),
+                                                         phi_vec.max(),
+                                                         phi_vec.mean(),
+                                                         np.median(phi_vec)))
         self.phi_csv.write(",".join(["{0:20.8}".format(phi) for phi in phi_vec]))
         self.phi_csv.write("\n")
         self.phi_csv.flush()
 
-        scaled_ident = Cov.identity_like(s) * (self.current_lambda+1.0)
-        scaled_ident += s**2
-        scaled_ident = scaled_ident.inv
-        #scaled_ident.autoalign = False
+    def _get_obs_diff(self, obsensemble):
+        return obsensemble.as_pyemu_matrix() -\
+                   self.obs0_matrix
 
-        # build up this matrix as a single element so we can apply
-        # localization
-        upgrade_1 = -1.0 * (self.half_parcov_diag * scaled_delta_par) *\
-                    v * s * scaled_ident * u.T
+    def update(self):
+        self.iter_num += 1
+        if not self.__initialized:
+            raise Exception("must call initialize() before update()")
+        #if self.restart and self.iter_num == 1:
+        #    pass
+        #else:
+        #    self.obsensemble = self._calc_obs(self.parensemble)
 
-        # apply localization
-        print(upgrade_1.shape)
+        scaled_delta_obs = self._calc_delta_obs(self.obsensemble)
+        scaled_delta_par = self._calc_delta_par(self.parensemble)
 
-        # apply residual information
-        upgrade_1 *= (self.obscov.inv.sqrt * obs_diff.T)
+        u,s,v = scaled_delta_obs.pseudo_inv_components()
 
-        upgrade_1 = upgrade_1.to_dataframe()
-        upgrade_1.index.name = "parnme"
-        upgrade_1 = upgrade_1.T
-        upgrade_1.to_csv(self.pst.filename+".upgrade_1.{0:04d}.csv".\
-                           format(self.iter_num))
-        self.parensemble += upgrade_1
+        obs_diff = self._get_obs_diff(self.obsensemble)
 
-        if not self.use_approx and self.iter_num > 1:
-            par_diff = (self.parensemble - self.parensemble_0).\
-                as_pyemu_matrix().T
-            x4 = self.Am.T * self.half_parcov_diag * par_diff
-            x5 = self.Am * x4
-            x6 = scaled_delta_par.T * x5
-            x7 = v * scaled_ident * v.T * x6
-            upgrade_2 = -1.0 * (self.half_parcov_diag *
-                               scaled_delta_par * x7).to_dataframe()
-            # upgrade_2 = -1.0 * self.half_parcov_diag * scaled_delta_par
-            # upgrade_2.autoalign = False
-            # upgrade_2 *= v
-            # upgrade_2.autoalign = False
-            # upgrade_2 *= scaled_ident
-            # upgrade_2.autoalign = False
-            # upgrade_2 *= v.T * scaled_delta_par.T
-            # upgrade_2.autoalign = False
-            # upgrade_2 *= self.Am * self.Am.T
-            # upgrade_2.autoalign = False
-            # upgrade_2 *= self.half_parcov_diag * par_diff
-            #upgrade_2 = upgrade_2.to_dataframe()
+        for cur_lam in [self.current_lambda]:
 
-            upgrade_2.index.name = "parnme"
-            upgrade_2.T.to_csv(self.pst.filename+".upgrade_2.{0:04d}.csv".\
+            parensemble_cur_lam = self.parensemble.copy()
+
+            scaled_ident = Cov.identity_like(s) * (self.current_lambda+1.0)
+            scaled_ident += s**2
+            scaled_ident = scaled_ident.inv
+
+            # build up this matrix as a single element so we can apply
+            # localization
+            upgrade_1 = -1.0 * (self.half_parcov_diag * scaled_delta_par) *\
+                        v * s * scaled_ident * u.T
+
+            # apply localization
+            print(upgrade_1.shape)
+
+            # apply residual information
+            upgrade_1 *= (self.obscov_inv_sqrt * obs_diff.T)
+
+            upgrade_1 = upgrade_1.to_dataframe()
+            upgrade_1.index.name = "parnme"
+            upgrade_1 = upgrade_1.T
+            upgrade_1.to_csv(self.pst.filename+".upgrade_1.{0:04d}.csv".\
                                format(self.iter_num))
-            self.parensemble += upgrade_2.T
-        self.parensemble.enforce()
+            parensemble_cur_lam += upgrade_1
+
+            # parameter-based upgrade portion
+            if not self.use_approx and self.iter_num > 1:
+                par_diff = (self.parensemble - self.parensemble_0).\
+                    as_pyemu_matrix().T
+                x4 = self.Am.T * self.half_parcov_diag * par_diff
+                x5 = self.Am * x4
+                x6 = scaled_delta_par.T * x5
+                x7 = v * scaled_ident * v.T * x6
+                upgrade_2 = -1.0 * (self.half_parcov_diag *
+                                   scaled_delta_par * x7).to_dataframe()
+
+                upgrade_2.index.name = "parnme"
+                upgrade_2.T.to_csv(self.pst.filename+".upgrade_2.{0:04d}.csv".\
+                                   format(self.iter_num))
+                parensemble_cur_lam += upgrade_2.T
+            parensemble_cur_lam.enforce()
+
+            obsensemble_cur_lam = self._calc_obs(self.parensemble)
+            self._phi_report(obsensemble_cur_lam,cur_lam=cur_lam)
+
+        # here is where we need to select out the "best" lambda par and obs
+        # ensembles
+
+        self.parensemble = parensemble_cur_lam
         self.parensemble.to_csv(self.pst.filename+self.paren_prefix.\
                                 format(self.iter_num))
 
-
-
+        self.obsensemble = obsensemble_cur_lam
+        self.obsensemble.to_csv(self.pst.filename+self.obsen_prefix.format(self.iter_num))
 
 
