@@ -104,12 +104,6 @@ def freyberg_plot():
             pdf.savefig()
             plt.close()
 
-
-
-
-
-
-
 def chenoliver_setup():
     import pyemu
     os.chdir(os.path.join("smoother","chenoliver"))
@@ -200,11 +194,10 @@ def chenoliver():
 
     parcov = pyemu.Cov(x=np.ones((1,1)),names=["par"],isdiagonal=True)
     pst = pyemu.Pst("chenoliver.pst")
-    #pst.observation_data.loc[:,"weight"] = 1.0/8.0
     obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
-                                num_slaves=20,use_approx=False)
-    es.initialize(num_reals=1000)
+                                num_slaves=10,use_approx=False)
+    es.initialize(num_reals=50)
     for it in range(30):
         es.update()
     os.chdir(os.path.join("..",".."))
@@ -217,9 +210,9 @@ def tenpar():
     os.chdir(os.path.join("smoother","10par_xsec"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
-    es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=15,use_approx=True)
-    es.initialize(num_reals=30)
-    for it in range(10):
+    es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=10,use_approx=True)
+    es.initialize(num_reals=50)
+    for it in range(20):
         es.update()
     os.chdir(os.path.join("..",".."))
 
@@ -326,7 +319,7 @@ if __name__ == "__main__":
     #freyberg()
     #freyberg_plot()
     #chenoliver_setup()
-    chenoliver()
-    chenoliver_plot()
-    #tenpar()
-    #tenpar_plot()
+    #chenoliver()
+    #chenoliver_plot()
+    tenpar()
+    tenpar_plot()

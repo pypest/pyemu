@@ -43,11 +43,11 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
 
     if rel_path:
         if not os.path.exists(os.path.join(slave_dir,rel_path,exe_rel_path)):
-            print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
+            #print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
             exe_verf = False
     else:
         if not os.path.exists(os.path.join(slave_dir,exe_rel_path)):
-            print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
+            #print("warning: exe_rel_path not verified...hopefully exe is in the PATH var")
             exe_verf = False
     if rel_path is not None:
         assert os.path.exists(os.path.join(slave_dir,rel_path,pst_rel_path))
@@ -86,7 +86,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
             else:
                 exe_path = exe_rel_path
             args = [exe_path, pst_rel_path, "/h", tcp_arg]
-            print("starting slave in {0} with args: {1}".format(new_slave_dir,args))
+            #print("starting slave in {0} with args: {1}".format(new_slave_dir,args))
             if rel_path is not None:
                 cwd = os.path.join(new_slave_dir,rel_path)
             else:
@@ -94,7 +94,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
 
             os.chdir(cwd)
             with open(os.devnull,'w') as f:
-                p = sp.Popen(args,stdout=f)
+                p = sp.Popen(args,stdout=f,stderr=f)
             procs.append(p)
             os.chdir(base_dir)
         except Exception as e:
