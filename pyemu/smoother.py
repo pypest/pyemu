@@ -64,6 +64,12 @@ class EnsembleSmoother():
         '''
         (re)initialize the process
         '''
+        self.phi_csv = open(self.pst.filename+".iobj.csv",'w')
+        self.phi_csv.write("iter_num,min,max,mean,median,")
+        self.phi_csv.write(','.join(["{0:010d}".\
+                                    format(i) for i in range(num_reals)]))
+        self.phi_csv.write('\n')
+
         if self.restart:
             print("restarting...ignoring num_reals")
         if self.restart:
@@ -175,6 +181,17 @@ class EnsembleSmoother():
 
         obs_diff = self.obsensemble.as_pyemu_matrix() -\
                    self.obsensemble_0.as_pyemu_matrix()
+
+        # calc l2 norm
+        phi_vec = np.diagonal((obs_diff * self.obscov * obs_diff.T).x)
+        self.phi_csv.write("{0},{1},{2},{3},{4},".format(self.iter_num,
+                                                        phi_vec.min(),
+                                                        phi_vec.max(),
+                                                        phi_vec.mean(),
+                                                        np.median(phi_vec)))
+        self.phi_csv.write(",".join(["{0:20.8}".format(phi) for phi in phi_vec]))
+        self.phi_csv.write("\n")
+        self.phi_csv.flush()
 
         scaled_ident = Cov.identity_like(s) * (self.current_lambda+1.0)
         scaled_ident += s**2
