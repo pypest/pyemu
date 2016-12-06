@@ -12,6 +12,12 @@ from pyemu.pst import Pst
 """this is a prototype ensemble smoother based on the LM-EnRML
 algorithm of Chen and Oliver 2013.  It requires the pest++ "sweep" utility
  to propagate the ensemble forward.
+
+ TODO:
+ handle fixed and tied pars
+ handle "bunk" mod-sim equivs, like dry cells
+ handle failed runs
+
 """
 
 class EnsembleSmoother():
@@ -22,6 +28,7 @@ class EnsembleSmoother():
         self.use_approx = bool(use_approx)
         self.paren_prefix = ".parensemble.{0:04d}.csv"
         self.obsen_prefix = ".obsensemble.{0:04d}.csv"
+
         if isinstance(pst,str):
             pst = Pst(pst)
         assert isinstance(pst,Pst)
@@ -60,7 +67,7 @@ class EnsembleSmoother():
         self.delta_par_prior = None
         self.iter_num = 0
 
-    def initialize(self,num_reals):
+    def initialize(self,num_reals,init_lambda=None):
         '''
         (re)initialize the process
         '''
@@ -74,7 +81,6 @@ class EnsembleSmoother():
 
         # this matrix gets used a lot, so only calc once and store
         self.obscov_inv_sqrt = self.obscov.inv.sqrt
-
         if self.restart:
             print("restarting...ignoring num_reals")
         if self.restart:
@@ -87,7 +93,7 @@ class EnsembleSmoother():
             self.obs0_matrix = self.obsensemble_0.as_pyemu_matrix()
             df = pd.read_csv(self.pst.filename+self.obsen_prefix.format(self.restart_iter))
             self.obsensemble = ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
-            assert self.parensemble.shape[0] == self.obsensemble.shape[0]
+            assert self.parensemble.Bshape[0] == self.obsensemble.shape[0]
             self.num_reals = self.parensemble.shape[0]
 
         else:
@@ -109,15 +115,17 @@ class EnsembleSmoother():
 
             # run the initial parameter ensemble
             self.obsensemble = self._calc_obs(self.parensemble)
-
+            self.obsensemble.to_csv(self.pst.filename +\
+                                      self.obsen_prefix.format(0))
         self.last_best_mean, self.last_best_std = self._phi_report(self.obsensemble)
 
-        #following chen and oliver
 
-        x = self.last_best_mean / (2.0 * float(self.obsensemble.shape[1]))
-        self.current_lambda = 10.0**(np.floor(np.log10(x)))
-
-
+        if init_lambda is not None:
+            self.current_lambda = float(init_lambda)
+        else:
+            #following chen and oliver
+            x = self.last_best_mean / (2.0 * float(self.obsensemble.shape[1]))
+            self.current_lambda = 10.0**(np.floor(np.log10(x)))
 
         # if using the approximate form of the algorithm, let
         # the parameter scaling matrix be the identity matrix
@@ -182,14 +190,14 @@ class EnsembleSmoother():
         else:
             os.system("sweep {0}".format(self.pst.filename))
 
-        obs = ObservationEnsemble.from_csv(os.path.join('sweep_out.csv'))
+        obs = pd.read_csv(os.path.join('sweep_out.csv'))
         obs.columns = [item.lower() for item in obs.columns]
         return ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],
                                                   pst=self.pst)
 
     def _phi_report(self,obsensemble,cur_lam=-1):
         # calc l2 norm
-        obs_diff = self._get_obs_diff(obsensemble)
+        obs_diff = self._calc_obs_diff(obsensemble)
         phi_vec = np.diagonal((obs_diff * self.obscov_inv_sqrt * obs_diff.T).x)
         self.phi_csv.write("{0},{1},{2},{3},{4},{5},".format(self.iter_num,
                                                              cur_lam,
@@ -203,11 +211,11 @@ class EnsembleSmoother():
         self.phi_csv.flush()
         return phi_vec.mean(),phi_vec.std()
 
-    def _get_obs_diff(self, obsensemble):
+    def _calc_obs_diff(self, obsensemble):
         return obsensemble.as_pyemu_matrix() -\
                    self.obs0_matrix
 
-    def update(self,lambda_mults=[0.1,1.0,10.0]):
+    def update(self,lambda_mults=[0.1, 1.0, 10.0]):
         self.iter_num += 1
         if not self.__initialized:
             raise Exception("must call initialize() before update()")
@@ -221,7 +229,7 @@ class EnsembleSmoother():
 
         u,s,v = scaled_delta_obs.pseudo_inv_components()
 
-        obs_diff = self._get_obs_diff(self.obsensemble)
+        obs_diff = self._calc_obs_diff(self.obsensemble)
 
         mean_lam,std_lam,paren_lam,obsen_lam = [],[],[],[]
         for ilam,cur_lam_mult in enumerate(lambda_mults):
@@ -280,20 +288,22 @@ class EnsembleSmoother():
 
         # here is where we need to select out the "best" lambda par and obs
         # ensembles
-        print("\n\n\n**************************\n")
+        print("\n**************************")
         print("iteration: {0}".format(self.iter_num))
         print("current lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
                   format(self.current_lambda,
                          self.last_best_mean,self.last_best_std))
         mean_std = [self._phi_report(obsen) for obsen in obsen_lam]
-        update_pars = True
+        update_pars = False
         update_lambda = False
-        best_mean,best_std = self.last_best_mean,self.last_best_std
+        best_mean,best_std = self.last_best_mean * 1.2,self.last_best_std * 1.2
         #best_i = None
         best_i = 0
         for i,(m,s) in enumerate(mean_std):
+            print(" tested lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
+                  format(self.current_lambda * lambda_mults[i],m,s))
             if m < best_mean:
-                #update_pars = True
+                update_pars = True
                 best_mean = m
                 best_i = i
                 if s < best_std:
@@ -301,22 +311,31 @@ class EnsembleSmoother():
                     best_std = s
 
 
-        if update_pars:
-            self.parensemble = paren_lam[best_i]
-            self.parensemble.to_csv(self.pst.filename+self.paren_prefix.\
-                                    format(self.iter_num))
+        if not update_pars:
+            self.current_lambda *= max(lambda_mults) * 2.0
+            print("not accepting iteration, increased lambda:{0}".\
+                  format(self.current_lambda))
 
+        else:
+            self.parensemble = paren_lam[best_i]
             self.obsensemble = obsen_lam[best_i]
-            self.obsensemble.to_csv(self.pst.filename+self.obsen_prefix.\
-                                    format(self.iter_num))
-            print("   best lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}\n".\
+
+            print("\n" + "   best lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
                   format(self.current_lambda*lambda_mults[best_i],
                          best_mean,best_std))
             self.last_best_mean = best_mean
             self.last_best_std = best_std
-        if update_lambda:
-            print("updating lambda: {0:15.6G}".\
-                  format(self.current_lambda * lambda_mults[best_i]))
-            self.current_lambda *= lambda_mults[best_i]
 
-        print("**************************\n\n\n")
+        if update_lambda:
+            self.current_lambda *= (lambda_mults[best_i] / 2.0)
+            print("updating lambda: {0:15.6G}".\
+                  format(self.current_lambda ))
+
+
+        print("**************************\n")
+
+        self.parensemble.to_csv(self.pst.filename+self.paren_prefix.\
+                                    format(self.iter_num))
+
+        self.obsensemble.to_csv(self.pst.filename+self.obsen_prefix.\
+                                    format(self.iter_num))

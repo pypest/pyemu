@@ -8,11 +8,14 @@ def freyberg():
     import pyemu
 
     os.chdir(os.path.join("smoother","freyberg"))
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
+
     pst = pyemu.Pst(os.path.join("freyberg.pst"))
-    es = pyemu.EnsembleSmoother(pst,num_slaves=10)
-    es.initialize(100)
+    es = pyemu.EnsembleSmoother(pst,num_slaves=1)
+    es.initialize(1,init_lambda=1.0)
     for i in range(10):
-        es.update()
+        es.update(lambda_mults=[1.0])
     os.chdir(os.path.join("..",".."))
 
 def freyberg_plot():
@@ -210,9 +213,9 @@ def tenpar():
     os.chdir(os.path.join("smoother","10par_xsec"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
-    es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=10,use_approx=True)
+    es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=10,use_approx=False)
     es.initialize(num_reals=50)
-    for it in range(20):
+    for it in range(40):
         es.update()
     os.chdir(os.path.join("..",".."))
 
