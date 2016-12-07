@@ -147,6 +147,11 @@ class ObservationEnsemble(Ensemble):
         super(ObservationEnsemble,self).draw(cov,num_reals)
         self.loc[:,self.names] += self.pst.observation_data.obsval
 
+    @property
+    def nonzero(self):
+        df = self.loc[:,self.pst.nnz_obs_names]
+        return ObservationEnsemble.from_dataframe(df=df,
+                        pst=self.pst.get(obs_names=self.pst.nnz_obs_names))
 
 class ParameterEnsemble(Ensemble):
     """ Ensemble derived type for parameters
