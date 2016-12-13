@@ -137,7 +137,7 @@ def chenoliver_plot():
     from matplotlib.backends.backend_pdf import PdfPages
     import pandas as pd
     d = os.path.join("smoother","chenoliver")
-    bins = 30
+    bins = 20
     plt_dir = os.path.join(d,"plot")
     if not os.path.exists(plt_dir):
         os.mkdir(plt_dir)
@@ -192,16 +192,16 @@ def chenoliver():
     import pyemu
 
     os.chdir(os.path.join("smoother","chenoliver"))
-    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv") and "bak" not in f]
     [os.remove(csv_file) for csv_file in csv_files]
 
     parcov = pyemu.Cov(x=np.ones((1,1)),names=["par"],isdiagonal=True)
     pst = pyemu.Pst("chenoliver.pst")
     obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
-                                num_slaves=20,use_approx=True)
+                                num_slaves=20,use_approx=False)
     es.initialize(num_reals=100)
-    for it in range(20):
+    for it in range(40):
         es.update()
     os.chdir(os.path.join("..",".."))
 
@@ -213,8 +213,8 @@ def tenpar():
     os.chdir(os.path.join("smoother","10par_xsec"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
-    es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=10,use_approx=False)
-    es.initialize(num_reals=50)
+    es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=10,use_approx=True)
+    es.initialize(num_reals=100)
     for it in range(20):
         es.update()
     os.chdir(os.path.join("..",".."))

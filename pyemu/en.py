@@ -9,6 +9,8 @@ from pyemu.mat.mat_handler import get_common_elements,Matrix
 from pyemu.pst.pst_utils import write_parfile,read_parfile
 
 SEED = 358183147 #from random.org on 5 Dec 2016
+print("setting random seed")
+np.random.seed(SEED)
 
 class Ensemble(pd.DataFrame):
     """ a pandas.DataFrame derived type to store

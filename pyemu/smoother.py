@@ -1,5 +1,6 @@
 from __future__ import print_function, division
 import os
+from datetime import datetime
 import threading
 import time
 import numpy as np
@@ -217,7 +218,7 @@ class EnsembleSmoother():
         return obsensemble.nonzero.as_pyemu_matrix() -\
                    self.obs0_matrix
 
-    def update(self,lambda_mults=[0.01, 1.0, 100.0]):
+    def update(self,lambda_mults=[1.0]):
         self.iter_num += 1
         if not self.__initialized:
             raise Exception("must call initialize() before update()")
@@ -283,6 +284,7 @@ class EnsembleSmoother():
         # here is where we need to select out the "best" lambda par and obs
         # ensembles
         print("\n**************************")
+        print(str(datetime.now())+'\n')
         print("iteration: {0}".format(self.iter_num))
         print("current lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
                   format(self.current_lambda,
