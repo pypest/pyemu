@@ -161,6 +161,11 @@ def ensemble_seed_test():
     pe2.reseed()
     pe2.draw(cov,num_reals=10)
     assert (pe1-pe2).apply(np.abs).as_matrix().max() == 0.0
+    print(pe1.head())
+    print(pe2.head())
+    pe2.draw(cov,num_reals=10)
+    print(pe2.head())
+    assert (pe1-pe2).apply(np.abs).as_matrix().max() != 0.0
 
     pe1.reseed()
     pe1.draw(cov,num_reals=10,how="uniform")

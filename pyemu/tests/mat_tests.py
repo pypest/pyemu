@@ -166,6 +166,29 @@ def cov_identity_test():
     cov_i *= 2.0
     assert cov_i.x[0,0] == 2.0
 
+def hadamard_product_test():
+    import os
+    import numpy as np
+    import pyemu
+    jco = pyemu.Jco.from_binary(os.path.join("mat", "pest.jcb"))
+
+    z = jco.zero2d
+    #print(jco.shape)
+    #print(z.shape)
+
+    hp = jco.hadamard_product(z)
+    assert hp.x.sum() == 0.0
+    hp = z.hadamard_product(hp)
+    assert hp.x.sum() == 0.0
+
+    c = pyemu.Cov(x=np.ones((jco.shape[0],1)),names=jco.row_names,isdiagonal=True)
+    r = pyemu.Matrix(x=np.random.rand(c.shape[0],c.shape[0]),
+                     row_names=c.row_names,col_names=c.col_names)
+    hp = c.hadamard_product(r)
+    assert hp.x.sum() == np.diagonal(r.x).sum()
+    hp = r.hadamard_product(c)
+    assert hp.x.sum() == np.diagonal(r.x).sum()
+
 
 if __name__ == "__main__":
     #mat_test()
@@ -174,4 +197,5 @@ if __name__ == "__main__":
     #pseudo_inv_test()
     #drop_test()
     #get_test()
-    cov_identity_test()
+    #cov_identity_test()
+    hadamard_product_test()

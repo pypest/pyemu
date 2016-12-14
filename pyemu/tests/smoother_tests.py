@@ -12,10 +12,12 @@ def freyberg():
     [os.remove(csv_file) for csv_file in csv_files]
 
     pst = pyemu.Pst(os.path.join("freyberg.pst"))
-    es = pyemu.EnsembleSmoother(pst,num_slaves=15)
-    es.initialize(75,init_lambda=1.0)
-    for i in range(10):
-        es.update()
+
+    es = pyemu.EnsembleSmoother(pst,num_slaves=20,use_approx=True)
+
+    es.initialize(100,init_lambda=5000.0)
+    for i in range(20):
+        es.update(lambda_mults=[1.0])
     os.chdir(os.path.join("..",".."))
 
 def freyberg_plot():
@@ -42,6 +44,27 @@ def freyberg_plot():
     obs_dfs = [obs_df.loc[:,obs_names] for obs_df in obs_dfs]
     mx = {obs_name:max([obs_df.loc[:,obs_name].max() for obs_df in obs_dfs]) for obs_name in obs_names}
     mn = {obs_name:min([obs_df.loc[:,obs_name].min() for obs_df in obs_dfs]) for obs_name in obs_names}
+
+    obj_df = pd.read_csv(os.path.join(d, "freyberg.pst.iobj.csv"), index_col=0)
+    real_cols = [col for col in obj_df.columns if col.startswith("0")]
+    obj_df.loc[:, real_cols] = obj_df.loc[:, real_cols].apply(np.log10)
+    obj_df.loc[:, "mean"] = obj_df.loc[:, "mean"].apply(np.log10)
+    obj_df.loc[:, "std"] = obj_df.loc[:, "std"].apply(np.log10)
+
+    fig = plt.figure(figsize=(20, 10))
+    ax = plt.subplot(111)
+    axt = plt.twinx()
+    obj_df.loc[:, real_cols].plot(ax=ax, lw=0.5, color="0.5", alpha=0.5, legend=False)
+    ax.plot(obj_df.index, obj_df.loc[:, "mean"], 'b', lw=2.5, marker='.', markersize=5)
+    # ax.fill_between(obj_df.index, obj_df.loc[:, "mean"] - (1.96 * obj_df.loc[:, "std"]),
+    #                obj_df.loc[:, "mean"] + (1.96 * obj_df.loc[:, "std"]),
+    #                facecolor="b", edgecolor="none", alpha=0.25)
+    axt.plot(obj_df.index, obj_df.loc[:, "lambda"], "k", dashes=(2, 1), lw=2.5)
+    ax.set_ylabel("log$_10$ phi")
+    axt.set_ylabel("lambda")
+    ax.set_title("total runs:{0}".format(obj_df.total_runs.max()))
+    plt.savefig(os.path.join(plt_dir, "iobj.pdf"))
+    plt.close()
 
     with PdfPages(os.path.join(plt_dir,"obsensemble.pdf")) as pdf:
         for obs_file,obs_df in zip(obs_files,obs_dfs):
@@ -213,12 +236,22 @@ def tenpar():
     os.chdir(os.path.join("smoother","10par_xsec"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
-    es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=10,use_approx=True)
-    es.initialize(num_reals=100)
-    for it in range(20):
-        es.update()
-    os.chdir(os.path.join("..",".."))
+    es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=5,use_approx=True)
+    lz = es.get_localizer().to_dataframe()
+    #the k pars upgrad of h01_04 and h01_06 are localized
+    upgrad_pars = [pname for pname in lz.columns if "_" in pname and\
+                   int(pname.split('_')[1]) > 4]
+    lz.loc["h01_04",upgrad_pars] = 0.0
+    upgrad_pars = [pname for pname in lz.columns if '_' in pname and \
+                   int(pname.split('_')[1]) > 6]
+    lz.loc["h01_06", upgrad_pars] = 0.0
+    lz = pyemu.Matrix.from_dataframe(lz).T
+    print(lz)
+    es.initialize(num_reals=20)
 
+    for it in range(20):
+        es.update(lambda_mults=[1.0],localizer=lz)
+    os.chdir(os.path.join("..",".."))
 
 def tenpar_plot():
     import os
@@ -242,7 +275,29 @@ def tenpar_plot():
     mx = (pst.parameter_data.loc[:,"parubnd"] * 1.1).apply(np.log10)
     mn = (pst.parameter_data.loc[:,"parlbnd"] * 0.9).apply(np.log10)
 
+    obj_df = pd.read_csv(os.path.join(d,"10par_xsec.pst.iobj.csv"),index_col=0)
+    real_cols = [col for col in obj_df.columns if col.startswith("0")]
+    obj_df.loc[:,real_cols] = obj_df.loc[:,real_cols].apply(np.log10)
+    obj_df.loc[:,"mean"] = obj_df.loc[:,"mean"].apply(np.log10)
+    obj_df.loc[:, "std"] = obj_df.loc[:, "std"].apply(np.log10)
+
+    fig = plt.figure(figsize=(20, 10))
+    ax = plt.subplot(111)
+    axt = plt.twinx()
+    obj_df.loc[:, real_cols].plot(ax=ax, lw=0.5, color="0.5", alpha=0.5, legend=False)
+    ax.plot(obj_df.index, obj_df.loc[:, "mean"], 'b', lw=2.5,marker='.',markersize=5)
+    #ax.fill_between(obj_df.index, obj_df.loc[:, "mean"] - (1.96 * obj_df.loc[:, "std"]),
+    #                obj_df.loc[:, "mean"] + (1.96 * obj_df.loc[:, "std"]),
+    #                facecolor="b", edgecolor="none", alpha=0.25)
+    axt.plot(obj_df.index,obj_df.loc[:,"lambda"],"k",dashes=(2,1),lw=2.5)
+    ax.set_ylabel("log$_10$ phi")
+    axt.set_ylabel("lambda")
+    ax.set_title("total runs:{0}".format(obj_df.total_runs.max()))
+    plt.savefig(os.path.join(plt_dir,"iobj.pdf"))
+    plt.close()
+
     with PdfPages(os.path.join(plt_dir,"parensemble.pdf")) as pdf:
+
         for par_file,par_df in zip(par_files,par_dfs):
             print(par_file)
             fig = plt.figure(figsize=(20,10))
@@ -319,10 +374,10 @@ def tenpar_plot():
 
 
 if __name__ == "__main__":
-    #freyberg()
-    #freyberg_plot()
+    freyberg()
+    freyberg_plot()
     #chenoliver_setup()
     #chenoliver()
     #chenoliver_plot()
-    tenpar()
-    tenpar_plot()
+    #tenpar()
+    #tenpar_plot()

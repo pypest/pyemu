@@ -372,6 +372,74 @@ class Matrix(object):
             raise Exception("Matrix.__add__(): unrecognized type for " +
                             "other in __add__: " + str(type(other)))
 
+    def hadamard_product(self, other):
+        """element-wise multiplication.  tries to speedup by checking for
+            scalars of diagonal matrices on either side of operator
+        Parameters:
+        ----------
+            other : [scalar,numpy.ndarray,Matrix object]
+        Returns:
+        -------
+            Matrix
+        """
+        if np.isscalar(other):
+            return type(self)(x=self.x * other)
+        if isinstance(other, np.ndarray):
+            assert self.shape == other.shape, \
+                "Matrix.hadamard_product(): shape mismatch: " + \
+                str(self.shape) + ' ' + str(other.shape)
+            if self.isdiagonal:
+                raise NotImplementedError("Matrix.hadamard_product() not supported for" +
+                                          "diagonal self")
+            else:
+                return type(self)(x=self.x * other, row_names=self.row_names,
+                                  col_names=self.col_names)
+        elif isinstance(other, Matrix):
+            if self.autoalign and other.autoalign \
+                    and not self.element_isaligned(other):
+                common_rows = get_common_elements(self.row_names,
+                                                  other.row_names)
+                common_cols = get_common_elements(self.col_names,
+                                                  other.col_names)
+                if len(common_rows) == 0:
+                    raise Exception("Matrix.hadamard_product error: no common rows")
+
+                if len(common_cols) == 0:
+                    raise Exception("Matrix.hadamard_product error: no common cols")
+
+                first = self.get(row_names=common_rows, col_names=common_cols)
+                second = other.get(row_names=common_rows, col_names=common_cols)
+            else:
+                assert self.shape == other.shape, \
+                    "Matrix.hadamard_product(): shape mismatch: " + \
+                    str(self.shape) + ' ' + str(other.shape)
+                first = self
+                second = other
+
+            if first.isdiagonal and second.isdiagonal:
+                return type(self)(x=first.x * second.x, isdiagonal=True,
+                                  row_names=first.row_names,
+                                  col_names=first.col_names)
+            # elif first.isdiagonal:
+            #     #ox = second.as_2d
+            #     #for j in range(first.shape[0]):
+            #     #    ox[j, j] *= first.__x[j]
+            #     return type(self)(x=first.as_2d * second.as_2d, row_names=first.row_names,
+            #                       col_names=first.col_names)
+            # elif second.isdiagonal:
+            #     #x = first.as_2d
+            #     #for j in range(second.shape[0]):
+            #     #    x[j, j] *= second.x[j]
+            #     return type(self)(x=first.x * second.as_2d, row_names=first.row_names,
+            #                       col_names=first.col_names)
+            else:
+                return type(self)(x=first.as_2d * second.as_2d,
+                                  row_names=first.row_names,
+                                  col_names=first.col_names)
+        else:
+            raise Exception("Matrix.hadamard_product(): unrecognized type for " +
+                            "other: " + str(type(other)))
+
 
     def __mul__(self, other):
         """multiplication overload.  tries to speedup by checking for scalars or
@@ -773,6 +841,14 @@ class Matrix(object):
             self.__set_svd()
         return self.__v
 
+    @property
+    def zero2d(self):
+        """ get an instance of self with all zeros
+        """
+        return type(self)(x=np.atleast_2d(np.zeros((self.shape[0],self.shape[1]))),
+                   row_names=self.row_names,
+                   col_names=self.col_names,
+                   isdiagonal=False)
 
     def indices(self, names, axis=None):
         """get the row and col indices of names
