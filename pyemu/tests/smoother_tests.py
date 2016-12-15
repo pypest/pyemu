@@ -15,9 +15,9 @@ def freyberg():
 
     es = pyemu.EnsembleSmoother(pst,num_slaves=20,use_approx=True)
 
-    es.initialize(100,init_lambda=5000.0)
-    for i in range(20):
-        es.update(lambda_mults=[1.0])
+    es.initialize(300,init_lambda=5000.0)
+    for i in range(10):
+        es.update(lambda_mults=[0.2,5.0])
     os.chdir(os.path.join("..",".."))
 
 def freyberg_plot():
