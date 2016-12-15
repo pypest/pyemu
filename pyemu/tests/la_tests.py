@@ -170,7 +170,7 @@ def par_contrib_test():
     sc = Schur(jco=os.path.join(w_dir,"freyberg.jcb"),forecasts=forecasts,verbose=True)
     par = sc.pst.parameter_data
     par.index = par.parnme
-    groups = par.groupby(par.pargp).groups
+    groups = {name:list(idxs) for name,idxs in par.groupby(par.pargp).groups.items()}
 
     parlist_dict = {}
     print(sc.next_most_par_contribution(forecast="travel_time",
@@ -203,9 +203,9 @@ def forecast_pestpp_load_test():
 if __name__ == "__main__":
     #forecast_pestpp_load_test()
     #map_test()
-    #par_contrib_test()
+    par_contrib_test()
     #dataworth_test()
-    dataworth_next_test()
+    #dataworth_next_test()
     #schur_test_nonpest()
     #schur_test()
     #errvar_test_nonpest()

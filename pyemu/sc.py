@@ -231,8 +231,9 @@ class Schur(LinearAnalysis):
             parameter_names = [parameter_names]
 
         for iname, name in enumerate(parameter_names):
-            parameter_names[iname] = name.lower()
-            assert name.lower() in self.jco.col_names,\
+            name = str(name).lower()
+            parameter_names[iname] = name
+            assert name in self.jco.col_names,\
                 "contribution parameter " + name + " not found jco"
         keep_names = []
         for name in self.jco.col_names:
