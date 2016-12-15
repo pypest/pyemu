@@ -889,7 +889,7 @@ class Pst(object):
         obs = self.observation_data
         if not isinstance(obslist,list):
             obslist = [obslist]
-        obslist = [i.lower() for i in obslist]
+        obslist = [str(i).lower() for i in obslist]
         groups = obs.groupby([lambda x:x in obslist,
                              obs.weight.apply(lambda x:x==0.0)]).groups
         if (True,True) in groups:

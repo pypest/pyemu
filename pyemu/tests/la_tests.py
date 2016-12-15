@@ -146,7 +146,7 @@ def dataworth_next_test():
     for key,idxs in row_groups.items():
         if not key[0] or key[1]:
             continue
-        obslist_dict[key[2]] = idxs
+        obslist_dict[key[2]] = list(idxs)
 
     imp_df = sc.get_added_obs_importance(base_obslist=sc.pst.nnz_obs_names,
                                          obslist_dict=obslist_dict,
@@ -205,8 +205,8 @@ if __name__ == "__main__":
     #map_test()
     #par_contrib_test()
     #dataworth_test()
-    #dataworth_next_test()
+    dataworth_next_test()
     #schur_test_nonpest()
     #schur_test()
-    errvar_test_nonpest()
-    errvar_test()
+    #errvar_test_nonpest()
+    #errvar_test()
