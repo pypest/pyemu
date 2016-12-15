@@ -146,7 +146,7 @@ def dataworth_next_test():
     for key,idxs in row_groups.items():
         if not key[0] or key[1]:
             continue
-        obslist_dict[key[2]] = idxs
+        obslist_dict[key[2]] = list(idxs)
 
     imp_df = sc.get_added_obs_importance(base_obslist=sc.pst.nnz_obs_names,
                                          obslist_dict=obslist_dict,
@@ -170,7 +170,7 @@ def par_contrib_test():
     sc = Schur(jco=os.path.join(w_dir,"freyberg.jcb"),forecasts=forecasts,verbose=True)
     par = sc.pst.parameter_data
     par.index = par.parnme
-    groups = par.groupby(par.pargp).groups
+    groups = {name:list(idxs) for name,idxs in par.groupby(par.pargp).groups.items()}
 
     parlist_dict = {}
     print(sc.next_most_par_contribution(forecast="travel_time",
@@ -203,10 +203,10 @@ def forecast_pestpp_load_test():
 if __name__ == "__main__":
     #forecast_pestpp_load_test()
     #map_test()
-    #par_contrib_test()
+    par_contrib_test()
     #dataworth_test()
     #dataworth_next_test()
     #schur_test_nonpest()
     #schur_test()
-    errvar_test_nonpest()
-    errvar_test()
+    #errvar_test_nonpest()
+    #errvar_test()
