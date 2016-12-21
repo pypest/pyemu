@@ -1,0 +1,27 @@
+
+#---------------------------------------------------
+#--coarse model
+
+#--read the modflow grid file for the coarse grid
+cl_mf_grid_coarse = read_mf_grid_specs(file='misc\grid_henry_coarse.spc')
+
+#--load the pilot points file
+cl_ppts = read_list_file(dimensions=2,id_type="character",file="misc\pp_locs.dat", &
+                            plist='pl_ppts';column=5,slist='sl_ppts';column=4)                           
+
+#--create new plist for the fine mf grid
+pl_kg_grid_coarse = new_plist(reference_clist=cl_mf_grid_coarse,value=-999)                     
+
+#--calculate kriging factors for the fine grid
+#calc_kriging_factors_2d(target_clist=cl_mf_grid_coarse,source_clist=cl_ppts, &
+#                        file='misc\pp_fac_kg_coarse.dat',variogram=exponential,a=0.5, &
+#                        kriging=ordinary,min_points=1,max_points=12, &
+#                        search_radius=5.0)
+
+#--interpolate from pilot points to the fine grid with kriging factors
+pl_kg_grid_coarse = pl_ppts.krige_using_file(file='misc\pp_fac_kg_coarse.dat',transform='log', &
+                                      lower_limit=1.0e-10,upper_limie=1.0e+10)
+
+#--write the kriged array for the fine grid
+write_model_input_file(template_file='misc\hk_krige_coarse.tpl',model_input_file='model\ref_coarse\\hk.ref')                                         
+write_model_input_file(template_file='misc\hk_krige_coarse.tpl',model_input_file='model\ref_coarse\\vk.ref')   
