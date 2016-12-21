@@ -35,6 +35,8 @@ class EnsembleSmoother():
             pst = Pst(pst)
         assert isinstance(pst,Pst)
         self.pst = pst
+        self.sweep_in_csv = pst.pestpp_options.get("sweep_parameter_csv_file","sweep_in.csv")
+        self.sweep_out_csv = pst.pestpp_options.get("sweep_output_csv_file","sweep_out.csv")
         if parcov is not None:
             assert isinstance(parcov,Cov)
         else:
@@ -121,8 +123,10 @@ class EnsembleSmoother():
             self.obsensemble = self._calc_obs(self.parensemble)
             self.obsensemble.to_csv(self.pst.filename +\
                                       self.obsen_prefix.format(0))
-
-        self.last_best_mean, self.last_best_std = self._phi_report(self.obsensemble, cur_lam=0.0)
+        self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
+        self._phi_report(self.current_phi_vec,0.0)
+        self.last_best_mean = self.current_phi_vec.mean()
+        self.last_best_std = self.current_phi_vec.std()
         if init_lambda is not None:
             self.current_lambda = float(init_lambda)
         else:
@@ -183,9 +187,9 @@ class EnsembleSmoother():
 
     def _calc_obs(self,parensemble):
         '''
-        propagate the ensemble forward using sweep
+        propagate the ensemble forward using sweep.
         '''
-        parensemble.to_csv(os.path.join("sweep_in.csv"))
+        parensemble.to_csv(self.sweep_in_csv)
         if self.num_slaves > 0:
             port = 4004
             def master():
@@ -199,35 +203,38 @@ class EnsembleSmoother():
         else:
             os.system("sweep {0}".format(self.pst.filename))
 
-        obs = pd.read_csv(os.path.join('sweep_out.csv'))
+        obs = pd.read_csv(self.sweep_out_csv)
         obs.columns = [item.lower() for item in obs.columns]
-        self.total_runs += self.num_reals
+        self.total_runs += obs.shape[0]
         return ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],
                                                   pst=self.pst)
 
-    def _phi_report(self,obsensemble,cur_lam=-1):
+    def _calc_phi_vec(self,obsensemble):
         obs_diff = self._calc_obs_diff(obsensemble)
-        #print(obs_diff.x.max(),obs_diff.x.min())
-        phi_vec = np.diagonal((obs_diff * self.obscov_inv_sqrt * obs_diff.T).x)
-        if cur_lam >= 0.0:
-            self.phi_csv.write("{0},{1},{2},{3},{4},{5},{6}".format(self.iter_num,
-                                                                 self.total_runs,
-                                                                 cur_lam,
-                                                                 phi_vec.min(),
-                                                                 phi_vec.max(),
-                                                                 phi_vec.mean(),
-                                                                 np.median(phi_vec),
-                                                                 phi_vec.std()))
-            self.phi_csv.write(",".join(["{0:20.8}".format(phi) for phi in phi_vec]))
-            self.phi_csv.write("\n")
-            self.phi_csv.flush()
-        return phi_vec.mean(),phi_vec.std()
+        phi_vec = np.diagonal((obs_diff * self.obscov_inv_sqrt.get(row_names=obs_diff.col_names,
+                                                                   col_names=obs_diff.col_names) * obs_diff.T).x)
+        return phi_vec
+
+    def _phi_report(self,phi_vec,cur_lam):
+        assert phi_vec.shape[0] == self.num_reals
+        self.phi_csv.write("{0},{1},{2},{3},{4},{5},{6}".format(self.iter_num,
+                                                             self.total_runs,
+                                                             cur_lam,
+                                                             phi_vec.min(),
+                                                             phi_vec.max(),
+                                                             phi_vec.mean(),
+                                                             np.median(phi_vec),
+                                                             phi_vec.std()))
+        self.phi_csv.write(",".join(["{0:20.8}".format(phi) for phi in phi_vec]))
+        self.phi_csv.write("\n")
+        self.phi_csv.flush()
 
     def _calc_obs_diff(self, obsensemble):
-        return obsensemble.nonzero.as_pyemu_matrix() -\
-                   self.obs0_matrix
+        obs_matrix = obsensemble.nonzero.as_pyemu_matrix()
+        return  obs_matrix - self.obs0_matrix.get(col_names=obs_matrix.col_names,row_names=obs_matrix.row_names)
 
-    def update(self,lambda_mults=[1.0],localizer=None):
+    def update(self,lambda_mults=[1.0],localizer=None,run_subset=None):
+
         self.iter_num += 1
         if not self.__initialized:
             raise Exception("must call initialize() before update()")
@@ -238,6 +245,10 @@ class EnsembleSmoother():
         u,s,v = scaled_delta_obs.pseudo_inv_components()
 
         obs_diff = self._calc_obs_diff(self.obsensemble)
+
+        if run_subset is not None:
+            subset_idx = ["{0:d}".format(i) for i in np.random.randint(0,self.num_reals-1,run_subset)]
+            print("subset idxs: " + ','.join(subset_idx))
 
         mean_lam,std_lam,paren_lam,obsen_lam = [],[],[],[]
         for ilam,cur_lam_mult in enumerate(lambda_mults):
@@ -287,7 +298,15 @@ class EnsembleSmoother():
                 parensemble_cur_lam += upgrade_2.T
             parensemble_cur_lam.enforce()
             paren_lam.append(parensemble_cur_lam)
-            obsensemble_cur_lam = self._calc_obs(parensemble_cur_lam)
+            if run_subset is not None:
+                #phi_series = pd.Series(data=self.current_phi_vec)
+                #phi_series.sort_values(inplace=True,ascending=False)
+                #subset_idx = ["{0:d}".format(i) for i in phi_series.index.values[:run_subset]]
+
+                parensemble_subset = parensemble_cur_lam.loc[subset_idx,:]
+                obsensemble_cur_lam = self._calc_obs(parensemble_subset)
+            else:
+                obsensemble_cur_lam = self._calc_obs(parensemble_cur_lam)
             #print(obsensemble_cur_lam.head())
             obsen_lam.append(obsensemble_cur_lam)
 
@@ -301,7 +320,8 @@ class EnsembleSmoother():
         print("current lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
                   format(self.current_lambda,
                          self.last_best_mean,self.last_best_std))
-        mean_std = [self._phi_report(obsen) for obsen in obsen_lam]
+        phi_vecs = [self._calc_phi_vec(obsen) for obsen in obsen_lam]
+        mean_std = [(pv.mean(),pv.std()) for pv in phi_vecs]
         update_pars = False
         update_lambda = False
         # accept a new best if its within 10%
@@ -326,10 +346,18 @@ class EnsembleSmoother():
                   format(self.current_lambda))
 
         else:
+
             self.parensemble = paren_lam[best_i]
-            self.obsensemble = obsen_lam[best_i]
-            self._phi_report(obsen_lam[best_i],
-                             cur_lam=self.current_lambda * lambda_mults[best_i])
+            if run_subset is not None:
+                self.obsensemble = self._calc_obs(self.parensemble)
+                self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
+                self._phi_report(self.current_phi_vec,self.current_lambda * lambda_mults[best_i])
+                best_mean = self.current_phi_vec.mean()
+                best_std = self.current_phi_vec.std()
+            else:
+                self.obsensemble = obsen_lam[best_i]
+                self._phi_report(phi_vecs[best_i],self.current_lambda * lambda_mults[best_i])
+                self.current_phi_vec = phi_vecs[best_i]
 
             print("\n" + "   best lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
                   format(self.current_lambda*lambda_mults[best_i],

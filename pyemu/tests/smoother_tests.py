@@ -29,10 +29,10 @@ def henry():
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
     pst = pyemu.Pst(os.path.join("henry.pst"))
-    es = pyemu.EnsembleSmoother(pst, num_slaves=10, use_approx=True)
-    es.initialize(100, init_lambda=1.0)
+    es = pyemu.EnsembleSmoother(pst, num_slaves=15, use_approx=True)
+    es.initialize(210, init_lambda=1.0)
     for i in range(1):
-        es.update(lambda_mults=[0.001,.01,.1,0.2,1.0,5.0,10.0,100.0])
+        es.update(lambda_mults=[0.2,5.0],run_subset=45)
     os.chdir(os.path.join("..", ".."))
 
 
@@ -155,10 +155,6 @@ def henry_plot():
             plt.close()
 
 
-
-
-
-
 def freyberg():
     import os
     import pyemu
@@ -173,7 +169,7 @@ def freyberg():
 
     es.initialize(300,init_lambda=5000.0)
     for i in range(10):
-        es.update(lambda_mults=[0.2,5.0])
+        es.update(lambda_mults=[0.2,5.0],run_subset=40)
     os.chdir(os.path.join("..",".."))
 
 def freyberg_plot():
@@ -404,7 +400,8 @@ def tenpar():
     es.initialize(num_reals=20)
 
     for it in range(20):
-        es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz)
+        es.update(lambda_mults=[0.1,1.0,10.0])#,localizer=lz,run_subset=20)
+        #es.update(lambda_mults=[1.0])
     os.chdir(os.path.join("..",".."))
 
 def tenpar_plot():
@@ -528,8 +525,7 @@ def tenpar_plot():
 if __name__ == "__main__":
     #henry_setup()
     henry()
-
-    #henry_plot()
+    henry_plot()
     #freyberg()
     #freyberg_plot()
     #chenoliver_setup()
