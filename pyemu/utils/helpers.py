@@ -2,6 +2,7 @@ from __future__ import print_function, division
 import os
 import multiprocessing as mp
 import subprocess as sp
+import time
 import struct
 import socket
 import shutil
@@ -10,7 +11,7 @@ import pandas as pd
 pd.options.display.max_colwidth = 100
 
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
-                 port=4004,rel_path=None,local=True,cleanup=True):
+                 port=4004,rel_path=None,local=True,cleanup=True,master_dir=None):
     """ start a group of pest(++) slaves on the local machine
 
     Parameters:
@@ -30,6 +31,9 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
                   from within the slave_dir, defaults to the uppermost level of the slave dir
         local: (bool) flag for using "localhost" instead of hostname on slave command line
         cleanup: (bool) flag to remove slave directories once processes exit
+        master_dir: (str) name of directory for master instance.  If master_dir
+                    exists, then it will be removed.  If master_dir is None,
+                    no master instance will be started
     """
 
     assert os.path.isdir(slave_dir)
@@ -57,12 +61,42 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         hostname = "localhost"
     else:
         hostname = socket.gethostname()
+
+    base_dir = os.getcwd()
     port = int(port)
 
-    tcp_arg = "{0}:{1}".format(hostname,port)
+    if master_dir is not None:
+        if master_dir != '.' and os.path.exists(master_dir):
+            try:
+                shutil.rmtree(master_dir)#, onerror=del_rw)
+            except Exception as e:
+                raise Exception("unable to remove existing master dir:" + \
+                                "{0}\n{1}".format(master_dir,str(e)))
+        if master_dir != '.':
+            try:
+                shutil.copytree(slave_dir,master_dir)
+            except Exception as e:
+                raise Exception("unable to copy files from slave dir: " + \
+                                "{0} to new slave dir: {1}\n{2}".\
+                                format(slave_dir,master_dir,str(e)))
 
+        args = [exe_rel_path, pst_rel_path, "/h", ":{0}".format(port)]
+        if rel_path is not None:
+            cwd = os.path.join(master_dir,rel_path)
+        else:
+            cwd = master_dir
+        try:
+            os.chdir(cwd)
+            master_p = sp.Popen(args)#,stdout=sp.PIPE,stderr=sp.PIPE)
+            os.chdir(base_dir)
+        except Exception as e:
+            raise Exception("error starting master instance: {0}".\
+                            format(str(e)))
+        time.sleep(1.5) # a few cycles to let the master get ready
+
+
+    tcp_arg = "{0}:{1}".format(hostname,port)
     procs = []
-    base_dir = os.getcwd()
     slave_dirs = []
     for i in range(num_slaves):
         new_slave_dir = os.path.join(slave_root,"slave_{0}".format(i))
@@ -100,13 +134,21 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         except Exception as e:
             raise Exception("error starting slave: {0}".format(str(e)))
         slave_dirs.append(new_slave_dir)
+
+    if master_dir is not None:
+        # while True:
+        #     line = master_p.stdout.readline()
+        #     if line != '':
+        #         print(str(line.strip())+'\r',end='')
+        #     if master_p.poll() is not None:
+        #         print(master_p.stdout.readlines())
+        #         break
+        master_p.wait()
     for p in procs:
         p.wait()
     if cleanup:
         for dir in slave_dirs:
             shutil.rmtree(dir)
-
-
 
 
 def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False):

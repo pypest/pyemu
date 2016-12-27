@@ -346,14 +346,32 @@ def smp_to_ins_test():
         raise Exception("should have failed")
     pyemu.pst_utils.smp_to_ins(smp,ins,True)
 
+def master_and_slaves():
+    import shutil
+    import pyemu
+    slave_dir = os.path.join("..","..","verification","10par_xsec","template_mac")
+    master_dir = os.path.join("temp","master")
+    assert os.path.exists(slave_dir)
+    #pyemu.helpers.start_slaves(slave_dir,"pestpp","pest.pst",1,
+    #                           slave_root="temp",master_dir=master_dir)
+
+    #now try it from within the master dir
+    base_cwd = os.getcwd()
+    os.chdir(master_dir)
+    pyemu.helpers.start_slaves(os.path.join("..","..",slave_dir),
+                              "pestpp","pest.pst",3,
+                              master_dir='.')
+    os.chdir(base_cwd)
+
 if __name__ == "__main__":
+    master_and_slaves()
     #smp_to_ins_test()
     #read_pestpp_runstorage_file_test()
     # write_tpl_test()
     #pp_to_shapefile_test()
     # read_pval_test()
     # read_hob_test()
-    setup_pp_test()
+    #setup_pp_test()
     # to_mps_test()
     # pp_to_tpl_test()
     # setup_ppcov_complex()
