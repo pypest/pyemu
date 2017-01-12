@@ -632,7 +632,6 @@ class LinearAnalysis(object):
         """
         return self.prior_prediction
 
-
     @property
     def mle_parameter_estimate(self):
         res = self.pst.res
