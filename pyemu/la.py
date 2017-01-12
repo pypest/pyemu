@@ -439,7 +439,12 @@ class LinearAnalysis(object):
                 if arg.lower() in self.jco.row_names:
                     row_names.append(arg.lower())
                 else:
-                    pred_mat = self.__fromfile(arg)
+                    try:
+                        pred_mat = self.__fromfile(arg)
+                    except Exception as e:
+                        raise Exception("forecast argument: "+arg+" not found in " +\
+                                        "jco row names and could not be " +\
+                                        "loaded from a file.")
                     # vector
                     if pred_mat.shape[1] == 1:
                         vecs.append(pred_mat)

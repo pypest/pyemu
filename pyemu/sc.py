@@ -272,7 +272,7 @@ class Schur(LinearAnalysis):
         """
         self.log("calculating contribution from parameters")
         if parlist_dict is None:
-            parlist_dict = dict(zip(self.pst.parameter_data.parnme,self.pst.parameter_data.parnme))
+            parlist_dict = dict(zip(self.pst.adj_par_names,self.pst.adj_par_names))
         else:
             if type(parlist_dict) == list:
                 parlist_dict = dict(zip(parlist_dict,parlist_dict))

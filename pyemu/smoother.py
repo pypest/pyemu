@@ -25,8 +25,9 @@ algorithm of Chen and Oliver 2013.  It requires the pest++ "sweep" utility
 class EnsembleSmoother():
 
     def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,use_approx=True,
-                 restart_iter=0):
+                 restart_iter=0,submit_file=None):
         self.num_slaves = int(num_slaves)
+        self.submit_file = submit_file
         self.use_approx = bool(use_approx)
         self.paren_prefix = ".parensemble.{0:04d}.csv"
         self.obsen_prefix = ".obsensemble.{0:04d}.csv"
@@ -186,6 +187,26 @@ class EnsembleSmoother():
         return delta
 
     def _calc_obs(self,parensemble):
+        if self.submit_file is None:
+            self._calc_obs_local(parensemble)
+        else:
+            self._calc_obs_condor(parensemble)
+
+    def _calc_obs_condor(self,parensemble):
+        parensemble.to_csv(self.sweep_in_csv)
+        os.system("condor_rm -all")
+        port = 4004
+        def master():
+            os.system("sweep {0} /h :{1} >nul".format(self.pst.filename,port))
+        master_thread = threading.Thread(target=master)
+        master_thread.start()
+        time.sleep(1.5) #just some time for the master to get up and running to take slaves
+        pyemu.utils.start_slaves("template","sweep",self.pst.filename,
+                                 self.num_slaves,slave_root='.',port=port)
+        os.system("condor_submit {0}".format(self.submit_file))
+        master_thread.join()
+
+    def _calc_obs_local(self,parensemble):
         '''
         propagate the ensemble forward using sweep.
         '''
@@ -210,7 +231,7 @@ class EnsembleSmoother():
                                                   pst=self.pst)
 
     def _calc_phi_vec(self,obsensemble):
-        obs_diff = self._calc_obs_diff(obsensemble)
+        obs_diff = self._get_residual_matrix(obsensemble)
         phi_vec = np.diagonal((obs_diff * self.obscov_inv_sqrt.get(row_names=obs_diff.col_names,
                                                                    col_names=obs_diff.col_names) * obs_diff.T).x)
         return phi_vec
@@ -229,7 +250,7 @@ class EnsembleSmoother():
         self.phi_csv.write("\n")
         self.phi_csv.flush()
 
-    def _calc_obs_diff(self, obsensemble):
+    def _get_residual_matrix(self, obsensemble):
         obs_matrix = obsensemble.nonzero.as_pyemu_matrix()
         return  obs_matrix - self.obs0_matrix.get(col_names=obs_matrix.col_names,row_names=obs_matrix.row_names)
 
@@ -244,7 +265,7 @@ class EnsembleSmoother():
 
         u,s,v = scaled_delta_obs.pseudo_inv_components()
 
-        obs_diff = self._calc_obs_diff(self.obsensemble)
+        obs_diff = self._get_residual_matrix(self.obsensemble)
 
         if run_subset is not None:
             subset_idx = ["{0:d}".format(i) for i in np.random.randint(0,self.num_reals-1,run_subset)]
