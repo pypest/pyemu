@@ -14,6 +14,8 @@ class influence(LinearAnalysis):
         self.__estimated_err_var = None
         self.__scaled_res = None
         self.__studentized_res = None
+        self.__cooks_d = None
+        self.__dfbetas = None
 
         super(influence, self).__init__(jco,**kwargs)
 
@@ -25,11 +27,6 @@ class influence(LinearAnalysis):
             hii = self.__hat[iobs,iobs].x[0][0]
             obs_inf.append(hii/(1.0 - hii))
         return pandas.DataFrame({"obs_influence":obs_inf},index=self.__hat.row_names)
-
-    @property
-    def dfbetas(self):
-        return
-
 
     @property
     def scaled_res(self):
@@ -67,8 +64,8 @@ class influence(LinearAnalysis):
         if self.__hat is not None:
             return self.__hat
         try:
-            XtQX=(self.qhalfx.T * self.qhalfx).inv
-            self.__hat = self.qhalfx * XtQX\
+            self.__XtQXinv=(self.qhalfx.T * self.qhalfx).inv
+            self.__hat = self.qhalfx * self.__XtQXinv\
                      * self.qhalfx.T
         except:
             print('Normal Equations results in Singular Matrix')
@@ -99,12 +96,34 @@ class influence(LinearAnalysis):
             if self.__cooks_d is None:
                 self.__cooks_d = []
                 for i in range(self.pst.nobs):
-                    h_ii = self.hat.x[i][i]
+                    h_ii = self.__hat.x[i][i]
                     self.__cooks_d.append((1/self.pst.npar) * self.__studentized_res[i]**2 * (h_ii/(1-h_ii)))
                 return self.__cooks_d
             else:
                 return self.__cooks_d
 
+    @property
+    def dfbetas(self):
+        return
+
+        # NOTE!!!! This needs work. The documentation in PEST is a little incomplete
+        # in that f_i should be f with observation i removed
+        if self.__dfbetas is None:
+            # form up the C matrix
+            self.__C = self.__XtQXinv * self.qhalfx.T
+            self.__dfbetas = np.zeros((self.pst.par, self.pst.nobs))
+            for i in range(self.pst.nobs):
+                h_ii = self.__hat.x[i][i]
+                s_i = np.sqrt((1 / (self.pst.nobs - self.pst.npar - 1)) *
+                              ((self.pst.nobs - self.pst.npar) * self.__estimated_err_var
+                               - (self.__scaled_res[i] ** 2 / (1 - h_ii))))
+
+                for j in range(self.pst.npar):
+                    sumcjk2 = self.__C.x[:,j].T * self.__C[:,j]
+                    self.__dfbetas[i,j] = self.C[i,j]/np.sqrt(sumjk2)
+
+        else:
+            return self.__dfbetas
 
 if __name__ == '__main__':
 
