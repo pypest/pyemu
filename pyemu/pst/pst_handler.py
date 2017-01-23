@@ -445,7 +445,7 @@ class Pst(object):
             [self.regul_lines.append(f.readline()) for _ in range(3)]
 
         for line in f:
-            if line.startswith("++") and '#' not in line:
+            if line.strip().startswith("++") and '#' not in line:
                 args = line.replace('++','').strip().split()
                 #args = ['++'+arg.strip() for arg in args]
                 #self.pestpp_lines.extend(args)

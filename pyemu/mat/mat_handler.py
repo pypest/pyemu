@@ -798,6 +798,11 @@ class Matrix(object):
                               row_names=self.row_names,
                               col_names=self.col_names,
                               autoalign=self.autoalign)
+        elif self.shape[1] == 1: #a vector
+            return type(self)(x=np.sqrt(self.__x), isdiagonal=False,
+                              row_names=self.row_names,
+                              col_names=self.col_names,
+                              autoalign=self.autoalign)
         else:
             return type(self)(x=la.sqrtm(self.__x), row_names=self.row_names,
                               col_names=self.col_names,
@@ -1073,6 +1078,13 @@ class Matrix(object):
         extract = self.get(row_names, col_names, drop=True)
         return extract
 
+    def get_diagonal_vector(self, col_name="diag"):
+        assert self.shape[0] == self.shape[1]
+        assert not self.isdiagonal
+        assert isinstance(col_name,str)
+        return type(self)(x=np.atleast_2d(np.diag(self.x)).transpose(),
+                          row_names=self.row_names,
+                          col_names=[col_name],isdiagonal=False)
 
     def to_binary(self, filename):
         """write a pest-compatible binary file
