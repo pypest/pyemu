@@ -190,6 +190,21 @@ def hadamard_product_test():
     assert hp.x.sum() == np.diagonal(r.x).sum()
 
 
+def get_diag_test():
+    import numpy as np
+    import pyemu
+    n = 100
+    col_names = ["cname_{0}".format(i) for i in range(n)]
+    row_names = ["rname_{0}".format(i) for i in range(n)]
+    arr = np.random.random(n*n)
+    arr.resize((n,n))
+    mat = pyemu.Matrix(x=arr,row_names=row_names,
+                       col_names=col_names)
+    diag_mat = mat.get_diagonal_vector(col_name="test")
+    s1 = np.diag(arr).sum()
+    s2 = diag_mat.x.sum()
+    assert s1 == s2
+
 if __name__ == "__main__":
     #mat_test()
     #load_jco_test()
@@ -198,4 +213,5 @@ if __name__ == "__main__":
     #drop_test()
     #get_test()
     #cov_identity_test()
-    hadamard_product_test()
+    #hadamard_product_test()
+    get_diag_test()

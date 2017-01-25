@@ -1015,9 +1015,9 @@ class Pst(object):
             self.parameter_data.loc[:,col+"_trans"] = (self.parameter_data.parval1 *
                                                           self.parameter_data.scale) +\
                                                          self.parameter_data.offset
-            isfixed = self.parameter_data.partrans == "fixed"
-            self.parameter_data.loc[isfixed,col+"_trans"] = \
-                self.parameter_data.loc[isfixed,col+"_trans"].\
+            isnotfixed = self.parameter_data.partrans != "fixed"
+            self.parameter_data.loc[isnotfixed,col+"_trans"] = \
+                self.parameter_data.loc[isnotfixed,col+"_trans"].\
                     apply(lambda x:np.log10(x))
 
     def enforce_bounds(self):

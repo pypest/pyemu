@@ -848,3 +848,19 @@ class LinearAnalysis(object):
         self.pst.adjust_weights_resfile(resfile)
         self.__obscov.from_observation_data(self.pst)
 
+
+    def get_par_css_dataframe(self):
+        assert self.jco is not None
+        assert self.pst is not None
+        jco = self.jco.to_dataframe()
+        weights = self.pst.observation_data.loc[jco.index,"weight"].copy().values
+        jco = (jco.T * weights).T
+        dss_sum = jco.apply(np.linalg.norm)
+        css = (dss_sum / float(self.pst.nnz_obs)).to_frame()
+        css.columns = ["pest_css"]
+        # log transform stuff
+        self.pst.add_transform_columns()
+        parval1 = self.pst.parameter_data.loc[dss_sum.index,"parval1_trans"].values
+        css.loc[:,"hill_css"] = (dss_sum * parval1) / (float(self.pst.nnz_obs)**2)
+        return css
+

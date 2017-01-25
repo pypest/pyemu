@@ -200,13 +200,28 @@ def forecast_pestpp_load_test():
     print(sc.get_forecast_summary())
 
 
+def css_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    from pyemu import Schur
+    #w_dir = os.path.join("..","..","verification","10par_xsec","master_opt0")
+    w_dir = "la"
+    forecasts = ["h01_08","h02_08"]
+    sc = Schur(jco=os.path.join(w_dir,"pest.jcb"))
+    css = sc.get_par_css_dataframe()
+    css_pestpp = pd.read_csv(os.path.join(w_dir,"pest.isen"))
+    diff = (css_pestpp - css.pest_css).apply(np.abs).sum(axis=1)[0]
+    assert diff < 0.001,diff
+
 if __name__ == "__main__":
     #forecast_pestpp_load_test()
     #map_test()
-    par_contrib_test()
+    #par_contrib_test()
     #dataworth_test()
     #dataworth_next_test()
     #schur_test_nonpest()
     #schur_test()
     #errvar_test_nonpest()
     #errvar_test()
+    css_test()
