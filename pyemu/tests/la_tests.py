@@ -214,6 +214,17 @@ def css_test():
     diff = (css_pestpp - css.pest_css).apply(np.abs).sum(axis=1)[0]
     assert diff < 0.001,diff
 
+def inf_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    from pyemu import influence
+    w_dir = os.path.join("..","..","verification","10par_xsec","master_opt0")
+    inf = influence(jco=os.path.join(w_dir,"pest.jcb"),resfile=os.path.join(w_dir,"pest.rei"))
+    print(inf.cooks_d)
+
+
+
 if __name__ == "__main__":
     #forecast_pestpp_load_test()
     #map_test()
@@ -224,4 +235,5 @@ if __name__ == "__main__":
     #schur_test()
     #errvar_test_nonpest()
     #errvar_test()
-    css_test()
+    #css_test()
+    inf_test()

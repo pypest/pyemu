@@ -10,7 +10,7 @@ class influence(LinearAnalysis):
             raise Exception("influence.__init__(): forecast\\predictions " +
                             "not  allowed in influence analyses")
         self.__hat = None
-        self.__res = None
+        self.__scaled_res = None
         self.__estimated_err_var = None
         self.__scaled_res = None
         self.__studentized_res = None
@@ -31,20 +31,20 @@ class influence(LinearAnalysis):
     @property
     def scaled_res(self):
         # this is f in the equations in the PEST manual
-        if self.__res is None:
-            try:
-                # read in the residuals dataframe
-                self.__res = self.pst.res
-                # drop forecasts from the residuals vector
-                if self.pst.pestpp_options['forecasts'] is not None:
-                    forecasts = self.pst.pestpp_options['forecasts'].split(',')
-                    for cfor in forecasts:
-                        self.__res = self.__res.drop(cfor)
-            except:
-                raise Exception("influence.scaled_res: no residuals loaded and \n"
+        if self.pst.res is None:
+            raise Exception("influence.scaled_res: no residuals loaded and \n"
                                 "load from pst object failed")
 
-        return self.qhalf * np.atleast_2d(self.__res.loc[:,"residual"].values).T
+        # read in the residuals dataframe
+        res = self.pst.res.copy()
+        # drop forecasts from the residuals vector
+        if "forecasts" in self.pst.pestpp_options.keys() and\
+                        self.pst.pestpp_options['forecasts'] is not None:
+            forecasts = self.pst.pestpp_options['forecasts'].split(',')
+            for cfor in forecasts:
+                res = res.drop(cfor)
+
+        return self.qhalf * np.atleast_2d(res.loc[:,"residual"].values).T
 
     @property
     def estimated_err_var(self):
@@ -53,7 +53,8 @@ class influence(LinearAnalysis):
                 print('statistics valid only for overdetermined problems (npar<=nobs)')
                 return None
             else:
-                self.__estimated_err_var = np.squeeze((self.__scaled_res.T * self.__scaled_res).x)/ \
+                self.__estimated_err_var = np.squeeze((self.scaled_res.T *
+                                                       self.scaled_res).x)/ \
                                        (self.pst.nobs-self.pst.npar)
                 return self.__estimated_err_var
         else:
@@ -96,8 +97,8 @@ class influence(LinearAnalysis):
             if self.__cooks_d is None:
                 self.__cooks_d = []
                 for i in range(self.pst.nobs):
-                    h_ii = self.__hat.x[i][i]
-                    self.__cooks_d.append((1/self.pst.npar) * self.__studentized_res[i]**2 * (h_ii/(1-h_ii)))
+                    h_ii = self.hat.x[i][i]
+                    self.__cooks_d.append((1/self.pst.npar) * self.studentized_res[i]**2 * (h_ii/(1-h_ii)))
                 return self.__cooks_d
             else:
                 return self.__cooks_d
