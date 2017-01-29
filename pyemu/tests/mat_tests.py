@@ -205,6 +205,18 @@ def get_diag_test():
     s2 = diag_mat.x.sum()
     assert s1 == s2
 
+def to_pearson_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    from pyemu import Schur
+    #w_dir = os.path.join("..","..","verification","10par_xsec","master_opt0")
+    w_dir = "la"
+    forecasts = ["h01_08","h02_08"]
+    sc = Schur(jco=os.path.join(w_dir,"pest.jcb"))
+    sc.posterior_parameter.to_pearson()
+
+
 if __name__ == "__main__":
     #mat_test()
     #load_jco_test()
@@ -214,4 +226,5 @@ if __name__ == "__main__":
     #get_test()
     #cov_identity_test()
     #hadamard_product_test()
-    get_diag_test()
+    #get_diag_test()
+    to_pearson_test()

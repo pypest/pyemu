@@ -1819,3 +1819,28 @@ class Cov(Matrix):
         assert other.shape[0] == other.shape[1]
         x = np.identity(other.shape[0])
         return cls(x=x,names=other.row_names,isdiagonal=True)
+
+    def to_pearson(self):
+
+        std_dict = self.get_diagonal_vector().to_dataframe()["diag"].\
+            apply(np.sqrt).to_dict()
+        pearson = self.identity.as_2d
+        if self.isdiagonal:
+            return Matrix(x=pearson,row_names=self.row_names,
+                          col_names=self.col_names)
+        df = self.to_dataframe()
+        # fill the lower triangle
+        for i,iname in enumerate(self.row_names):
+            for j,jname in enumerate(self.row_names[i+1:]):
+                # cv = df.loc[iname,jname]
+                # std1,std2 = std_dict[iname],std_dict[jname]
+                # cc = cv / (std1*std2)
+                # v1 = np.sqrt(df.loc[iname,iname])
+                # v2 = np.sqrt(df.loc[jname,jname])
+                pearson[i,j+i+1] = df.loc[iname,jname] / (std_dict[iname] * std_dict[jname])
+
+        # replicate across diagonal
+        for i,iname in enumerate(self.row_names[:-1]):
+             pearson[i+1:,i] = pearson[i,i+1:]
+        return Matrix(x=pearson,row_names=self.row_names,
+                      col_names=self.col_names)
