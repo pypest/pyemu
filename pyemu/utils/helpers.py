@@ -144,6 +144,11 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         #         print(master_p.stdout.readlines())
         #         break
         master_p.wait()
+        time.sleep(1.5) # a few cycles to let the slaves end gracefully
+        # kill any remaining slaves
+        for p in procs:
+            p.kill()
+
     for p in procs:
         p.wait()
     if cleanup:
