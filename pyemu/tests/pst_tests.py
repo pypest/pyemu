@@ -194,6 +194,17 @@ def regul_test():
     pst.zero_order_tikhonov()
     print(pst.prior_information)
 
+def pestpp_args_test():
+    import os
+    import pyemu
+    pst_dir = os.path.join('..','tests',"pst")
+    pst = pyemu.Pst(os.path.join(pst_dir,"br_opt_no_zero_weighted.pst"))
+    pst.pestpp_options["lambdas"] = "0.1,0.2,0.3"
+    pst.write(os.path.join("temp","temp.pst"))
+    pst = pyemu.Pst(os.path.join("temp","temp.pst"))
+    print(pst.pestpp_options)
+
+
 
 if __name__ == "__main__":
     #regul_test()
@@ -206,4 +217,5 @@ if __name__ == "__main__":
     #load_test()
     #res_test()
     #smp_test()
-    from_io_with_inschek_test()
+    #from_io_with_inschek_test()
+    pestpp_args_test()

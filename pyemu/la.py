@@ -804,7 +804,9 @@ class LinearAnalysis(object):
             obs_names = self.jco.row_names
         # if possible, get a new parcov
         if self.parcov:
-            new_parcov = self.parcov.get(col_names=par_names)
+            new_parcov = self.parcov.get(col_names=[pname for pname in\
+                                                    par_names if pname in\
+                                                    self.parcov.col_names])
         else:
             new_parcov = None
         # if possible, get a new obscov
