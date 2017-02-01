@@ -218,11 +218,39 @@ def inf_test():
     import os
     import numpy as np
     import pandas as pd
-    from pyemu import influence
+    from pyemu import Influence
     w_dir = os.path.join("..","..","verification","10par_xsec","master_opt0")
-    inf = influence(jco=os.path.join(w_dir,"pest.jcb"),resfile=os.path.join(w_dir,"pest.rei"))
+    inf = Influence(jco=os.path.join(w_dir,"pest.jcb"),
+                    resfile=os.path.join(w_dir,"pest.rei"))
     print(inf.cooks_d)
 
+
+def inf2_test():
+
+    #non-pest
+    from pyemu.mat import mat_handler as mhand
+    from pyemu.pst import Pst
+    from pyemu import Influence
+    import numpy as np
+
+    inpst = Pst(os.path.join("..","..","verification","Freyberg",
+                             "Freyberg_pp","freyberg_pp.pst"))
+
+    pnames = inpst.par_names
+    onames = inpst.obs_names
+    npar = inpst.npar
+    nobs = inpst.nobs
+    j_arr = np.random.random((nobs,npar))
+    parcov = mhand.Cov(x=np.eye(npar),names=pnames)
+    obscov = mhand.Cov(x=np.eye(nobs),names=onames)
+    jco = mhand.Jco.from_binary(inpst.filename.replace(".pst",".jcb"))
+    resf = inpst.filename.replace(".pst",".rei")
+    s = Influence(jco=jco,obscov=obscov, pst=inpst,resfile=resf)
+    print(s.hat)
+    print(s.observation_influence)
+    #v = s.studentized_res
+    print(s.estimated_err_var)
+    print(s.studentized_res)
 
 
 if __name__ == "__main__":
@@ -237,3 +265,4 @@ if __name__ == "__main__":
     #errvar_test()
     #css_test()
     inf_test()
+    inf2_test()

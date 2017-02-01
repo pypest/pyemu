@@ -3,7 +3,7 @@ from pyemu.la import LinearAnalysis
 import pandas
 import numpy as np
 
-class influence(LinearAnalysis):
+class Influence(LinearAnalysis):
 
     def __init__(self,jco,**kwargs):
         if "forecasts" in kwargs.keys() or "predictions" in kwargs.keys():
@@ -17,16 +17,17 @@ class influence(LinearAnalysis):
         self.__cooks_d = None
         self.__dfbetas = None
 
-        super(influence, self).__init__(jco,**kwargs)
+        super(Influence, self).__init__(jco,**kwargs)
 
     @property
     def observation_influence(self):
 
         obs_inf = []
         for iobs, obs in enumerate(self.__hat.row_names):
-            hii = self.__hat[iobs,iobs].x[0][0]
+            hii = self.hat.x[iobs,iobs]
             obs_inf.append(hii/(1.0 - hii))
-        return pandas.DataFrame({"obs_influence":obs_inf},index=self.__hat.row_names)
+        return pandas.DataFrame({"obs_influence":obs_inf},
+                                index=self.hat.row_names)
 
     @property
     def scaled_res(self):
@@ -51,13 +52,12 @@ class influence(LinearAnalysis):
         if self.__estimated_err_var is None:
             if self.pst.nobs < self.pst.npar:
                 print('statistics valid only for overdetermined problems (npar<=nobs)')
-                return None
+                return np.inf
             else:
                 self.__estimated_err_var = np.squeeze((self.scaled_res.T *
                                                        self.scaled_res).x)/ \
                                        (self.pst.nobs-self.pst.npar)
-                return self.__estimated_err_var
-        else:
+
             return self.__estimated_err_var
 
     @property
@@ -65,12 +65,10 @@ class influence(LinearAnalysis):
         if self.__hat is not None:
             return self.__hat
         try:
-            self.__XtQXinv=(self.qhalfx.T * self.qhalfx).inv
-            self.__hat = self.qhalfx * self.__XtQXinv\
-                     * self.qhalfx.T
+            self.__hat = self.qhalfx * self.xtqx.inv * self.qhalfx.T
         except:
             print('Normal Equations results in Singular Matrix')
-            return
+            return None
         return self.__hat
 
     @property
@@ -80,14 +78,14 @@ class influence(LinearAnalysis):
             return None
         else:
             if self.__studentized_res is None:
+                ev = self.estimated_err_var
                 self.__studentized_res = []
                 for i, scaled_res_i in enumerate(self.scaled_res.x):
-                    h_ii = self.hat.x[i][i]
+                    h_ii = self.hat.x[i,i]
                     print(h_ii)
-                    self.__studentized_res.append(scaled_res_i/(np.sqrt(self.estimated_err_var*(1-h_ii))))
-                return self.__studentized_res
-            else:
-                return self.__studentized_res
+                    self.__studentized_res.append(scaled_res_i/(np.sqrt(ev * (1.0 - h_ii))))
+
+            return self.__studentized_res
     @property
     def cooks_d(self):
         if self.pst.nobs < self.pst.npar:
@@ -99,9 +97,8 @@ class influence(LinearAnalysis):
                 for i in range(self.pst.nobs):
                     h_ii = self.hat.x[i][i]
                     self.__cooks_d.append((1/self.pst.npar) * self.studentized_res[i]**2 * (h_ii/(1-h_ii)))
-                return self.__cooks_d
-            else:
-                return self.__cooks_d
+
+            return self.__cooks_d
 
     @property
     def dfbetas(self):
