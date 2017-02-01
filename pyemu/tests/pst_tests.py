@@ -205,6 +205,24 @@ def pestpp_args_test():
     print(pst.pestpp_options)
 
 
+def reweight_test():
+    import os
+    import numpy as np
+    from pyemu import Pst,pst_utils
+    pst_dir = os.path.join('..','tests',"pst")
+    p = Pst(os.path.join(pst_dir,"pest.pst"))
+    obsgrp_dict = {"pred":1.0,"head":1.0,"conc":1.0}
+    p.adjust_weights(obsgrp_dict=obsgrp_dict)
+    assert np.abs(p.phi - 3.0) < 1.0e-5,p.phi
+
+    obs = p.observation_data
+    obs.loc[obs.obgnme=="pred","weight"] = 0.0
+    assert np.abs(p.phi - 2.0) < 1.0e-5,p.phi
+
+    obs_dict = {"pd_one":1.0,"pd_ten":1.0}
+    p.adjust_weights(obs_dict=obs_dict)
+    assert np.abs(p.phi - 4.0) < 1.0e-5,p.phi
+
 
 if __name__ == "__main__":
     #regul_test()
@@ -218,4 +236,5 @@ if __name__ == "__main__":
     #res_test()
     #smp_test()
     #from_io_with_inschek_test()
-    pestpp_args_test()
+    #pestpp_args_test()
+    reweight_test()

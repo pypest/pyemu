@@ -906,16 +906,33 @@ class Pst(object):
         Returns:
         -------
             None
+        Note:
+        ----
+            if all obs in a named obs group have zero weight, they will be
+            assigned a non-zero weight so that the request phi contribution
+            can be met.  Similarly, any obs listed in obs_dict with zero
+            weight will also be reset
         """
 
         self.observation_data.index = self.observation_data.obsnme
         self.res.index = self.res.name
 
         if obsgrp_dict is not None:
+            # reset groups with all zero weights
+            obs = self.observation_data
+            for grp in obsgrp_dict.keys():
+                if obs.loc[obs.obgnme==grp,"weight"].sum() == 0.0:
+                    obs.loc[obs.obgnme==grp,"weight"] = 1.0
             res_groups = self.res.groupby("group").groups
             obs_groups = self.observation_data.groupby("obgnme").groups
             self.__reset_weights(obsgrp_dict, res_groups, obs_groups)
         if obs_dict is not None:
+            # reset obs with zero weight
+            obs = self.observation_data
+            for oname in obs_dict.keys():
+                if obs.loc[oname,"weight"] == 0.0:
+                    obs.loc[oname,"weight"] = 1.0
+
             res_groups = self.res.groupby("name").groups
             obs_groups = self.observation_data.groupby("obsnme").groups
             self.__reset_weights(obs_dict, res_groups, obs_groups)
