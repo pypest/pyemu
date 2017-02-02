@@ -23,8 +23,8 @@ def run():
 
     if platform.system().lower() == "windows":
         mf_exe = os.path.join("MF_NWT.exe")
-        mp_exe = os.path.join("mp6x64.exe")
-        m2s_exe = os.path.join("exe","mod2smp.exe")
+        mp_exe = os.path.join("mp6.exe")
+        m2s_exe = os.path.join("mod2smp.exe")
     else:
         mf_exe = "mfnwt"
         mp_exe = "mp6"
@@ -38,7 +38,7 @@ def run():
 
 def process():
     if platform.system().lower() == "windows":
-        m2s_exe = os.path.join("exe","mod2smp.exe")
+        m2s_exe = os.path.join("mod2smp.exe")
     else:
         m2s_exe = None
     os.system(m2s_exe + "< "+os.path.join("misc","mod2smp.in"))

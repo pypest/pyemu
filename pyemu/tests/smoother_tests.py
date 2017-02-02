@@ -31,7 +31,7 @@ def henry():
     pst = pyemu.Pst(os.path.join("henry.pst"))
     es = pyemu.EnsembleSmoother(pst, num_slaves=15, use_approx=True)
     es.initialize(210, init_lambda=1.0)
-    for i in range(1):
+    for i in range(10):
         es.update(lambda_mults=[0.2,5.0],run_subset=45)
     os.chdir(os.path.join("..", ".."))
 
