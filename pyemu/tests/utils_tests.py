@@ -363,8 +363,23 @@ def master_and_slaves():
                               master_dir='.')
     os.chdir(base_cwd)
 
+
+def pearson_regul_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    from pyemu import Schur
+    from pyemu.utils.helpers import first_order_pearson_tikhonov
+    #w_dir = os.path.join("..","..","verification","10par_xsec","master_opt0")
+    w_dir = "la"
+    sc = Schur(jco=os.path.join(w_dir,"pest.jcb"))
+    sc.pst.zero_order_tikhonov()
+    first_order_pearson_tikhonov(sc.pst,sc.posterior_parameter,reset=False)
+    print(sc.pst.prior_information)
+
 if __name__ == "__main__":
-    master_and_slaves()
+    pearson_regul_test()
+    #master_and_slaves()
     #smp_to_ins_test()
     #read_pestpp_runstorage_file_test()
     # write_tpl_test()

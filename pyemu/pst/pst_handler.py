@@ -8,7 +8,6 @@ pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_controldata import ControlData
 from pyemu.pst import pst_utils
 
-
 class Pst(object):
     """basic class for handling pest control files to support linear analysis
     as well as replicate some of the functionality of the pest utilities
@@ -688,7 +687,6 @@ class Pst(object):
 
         return new_pst
 
-
     def zero_order_tikhonov(self, parbounds=True):
         """setup preferred-value regularization
         Parameters:
@@ -714,10 +712,11 @@ class Pst(object):
                     parval1 = np.log10(parval1)
                 eq = "1.0 * " + parnme + " ={0:15.6E}".format(parval1)
                 equation.append(eq)
+
         self.prior_information = pd.DataFrame({"pilbl": pilbl,
-                                                   "equation": equation,
-                                                   "obgnme": obgnme,
-                                                   "weight": weight})
+                                               "equation": equation,
+                                               "obgnme": obgnme,
+                                               "weight": weight})
         if parbounds:
             self.regweight_from_parbound()
 
