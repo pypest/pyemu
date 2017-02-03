@@ -10,6 +10,52 @@ import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
 
+import pyemu
+
+def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
+        """setup preferred-difference regularization from a covariance matrix.
+        Parameters:
+        ----------
+            pst (pyemu.Pst) : pst instance
+            cov (pyemu.Cov) : covariance matrix instance
+            reset (bool) : drop all other pi equations.  If False, append to
+                existing pi equations
+            abs_drop_tol (float) : tolerance to control how many pi
+                equations are written.  If the abs of pearson cc is less than
+                abs_drop_tol, it will not be included in the pi equations
+        """
+        assert isinstance(cov,pyemu.Cov)
+        cc_mat = cov.to_pearson()
+        ptrans = pst.parameter_data.partrans.to_dict()
+        pi_num = pst.prior_information.shape[0] + 1
+        pilbl, obgnme, weight, equation = [], [], [], []
+        for i,iname in enumerate(cc_mat.row_names):
+            for j,jname in enumerate(cc_mat.row_names[i+1:]):
+                #print(i,iname,i+j+1,jname)
+                cc = np.abs(cc_mat.x[i,j+i+1])
+                if cc < abs_drop_tol:
+                    continue
+                pilbl.append("pcc_{0}".format(pi_num))
+                iiname = str(iname)
+                if ptrans[iname] == "log":
+                    iiname = "log("+iname+")"
+                jjname = str(jname)
+                if ptrans[jname] == "log":
+                    jjname = "log("+jname+")"
+                equation.append("1.0 * {0} - 1.0 * {1} = 0.0".\
+                                format(iiname,jjname))
+                weight.append(cc)
+                obgnme.append("regul_cc")
+                pi_num += 1
+        df = pd.DataFrame({"pilbl": pilbl,"equation": equation,
+                           "obgnme": obgnme,"weight": weight})
+        df.index = df.pilbl
+        if reset:
+            pst.prior_information = df
+        else:
+            pst.prior_information = pst.prior_information.append(df)
+
+
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
                  port=4004,rel_path=None,local=True,cleanup=True,master_dir=None):
     """ start a group of pest(++) slaves on the local machine
