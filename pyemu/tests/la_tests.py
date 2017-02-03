@@ -247,7 +247,7 @@ def inf2_test():
     resf = inpst.filename.replace(".pst",".rei")
     s = Influence(jco=jco,obscov=obscov, pst=inpst,resfile=resf)
     print(s.hat)
-    print(s.observation_influence)
+    print(s.observation_leverage)
     #v = s.studentized_res
     print(s.estimated_err_var)
     print(s.studentized_res)

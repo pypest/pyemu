@@ -20,7 +20,7 @@ class Influence(LinearAnalysis):
         super(Influence, self).__init__(jco,**kwargs)
 
     @property
-    def observation_influence(self):
+    def observation_leverage(self):
 
         obs_inf = []
         for iobs, obs in enumerate(self.__hat.row_names):
@@ -144,7 +144,7 @@ if __name__ == '__main__':
         resf = '../verification/Freyberg/freyberg_pp/freyberg_pp.rei'
         s = influence(jco=jco,obscov=obscov, pst=inpst,resfile=resf)
         print(s.hat)
-        print(s.observation_influence)
+        print(s.observation_leverage)
         #v = s.studentized_res
         print(s.estimated_err_var)
         print(s.studentized_res)
