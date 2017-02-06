@@ -21,7 +21,7 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
             reset (bool) : drop all other pi equations.  If False, append to
                 existing pi equations
             abs_drop_tol (float) : tolerance to control how many pi
-                equations are written.  If the abs of pearson cc is less than
+                equations are written.  If the pearson cc is less than
                 abs_drop_tol, it will not be included in the pi equations
         """
         assert isinstance(cov,pyemu.Cov)
@@ -32,7 +32,7 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
         for i,iname in enumerate(cc_mat.row_names):
             for j,jname in enumerate(cc_mat.row_names[i+1:]):
                 #print(i,iname,i+j+1,jname)
-                cc = np.abs(cc_mat.x[i,j+i+1])
+                cc = cc_mat.x[i,j+i+1]
                 if cc < abs_drop_tol:
                     continue
                 pilbl.append("pcc_{0}".format(pi_num))

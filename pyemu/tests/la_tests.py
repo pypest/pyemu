@@ -214,7 +214,7 @@ def css_test():
     diff = (css_pestpp - css.pest_css).apply(np.abs).sum(axis=1)[0]
     assert diff < 0.001,diff
 
-def inf_test():
+def inf():
     import os
     import numpy as np
     import pandas as pd
@@ -225,7 +225,7 @@ def inf_test():
     print(inf.cooks_d)
 
 
-def inf2_test():
+def inf2():
 
     #non-pest
     from pyemu.mat import mat_handler as mhand
@@ -247,7 +247,7 @@ def inf2_test():
     resf = inpst.filename.replace(".pst",".rei")
     s = Influence(jco=jco,obscov=obscov, pst=inpst,resfile=resf)
     print(s.hat)
-    print(s.observation_influence)
+    print(s.observation_leverage)
     #v = s.studentized_res
     print(s.estimated_err_var)
     print(s.studentized_res)
@@ -263,6 +263,6 @@ if __name__ == "__main__":
     #schur_test()
     #errvar_test_nonpest()
     #errvar_test()
-    #css_test()
-    inf_test()
-    inf2_test()
+    css_test()
+    #inf_test()
+    #inf2_test()
