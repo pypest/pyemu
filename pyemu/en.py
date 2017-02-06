@@ -492,6 +492,7 @@ class ParameterEnsemble(Ensemble):
                 log("projecting realization {0}".format(real))
 
             # null space projection of difference vector
+            pdiff = self.loc[real,common_names] - base
             pdiff = np.dot(projection_matrix.x,
                            (self.loc[real,common_names] - base)\
                            .as_matrix())

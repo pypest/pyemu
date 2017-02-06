@@ -174,7 +174,35 @@ def ensemble_seed_test():
     assert (pe1-pe2).apply(np.abs).as_matrix().max() == 0.0
 
 
+def pnulpar_test():
+    import os
+    import pyemu
+    dir = "mc"
+    mc = pyemu.MonteCarlo(jco=os.path.join("mc","freyberg_ord.jco"))
+    par_dir = os.path.join("mc","prior_par_draws")
+    par_files = [os.path.join(par_dir,f) for f in os.listdir(par_dir) if f.endswith('.par')]
+    mc.parensemble.read_parfiles(par_files)
+    real_num = [int(os.path.split(f)[-1].split('.')[0].split('_')[1]) for f in par_files]
+    mc.parensemble.index = real_num
+    #print(mc.parensemble)
+    print(mc.parensemble.istransformed)
+    en = mc.project_parensemble(nsing=1,inplace=False)
+    #en.index = [i+1 for i in en.index]
+    print(mc.parensemble.istransformed)
 
+    par_dir = os.path.join("mc", "proj_par_draws")
+    par_files = [os.path.join(par_dir, f) for f in os.listdir(par_dir) if f.endswith('.par')]
+    real_num = [int(os.path.split(f)[-1].split('.')[0].split('_')[1]) for f in par_files]
+
+    en_pnul = pyemu.ParameterEnsemble(mc.pst)
+    en_pnul.read_parfiles(par_files)
+    en_pnul.index = real_num
+    en.sort_index(axis=1, inplace=True)
+    en.sort_index(axis=0, inplace=True)
+    en_pnul.sort_index(axis=1, inplace=True)
+    en_pnul.sort_index(axis=0, inplace=True)
+    diff = 100.0 * ((en - en_pnul) / en)
+    assert max(diff.max()) < 1.0e-4
 
 if __name__ == "__main__":
     #scale_offset_test()
@@ -184,4 +212,5 @@ if __name__ == "__main__":
     #gaussian_draw_test()
     #write_regul_test()
     #from_dataframe_test()
-    ensemble_seed_test()
+    #ensemble_seed_test()
+    pnulpar_test()
