@@ -539,6 +539,18 @@ class LinearAnalysis(object):
             self.__load_obscov()
         return self.__obscov
 
+    @property
+    def nnz_obs_names(self):
+        if self.__pst is not None:
+            return self.pst.nnz_obs_names
+        else:
+            return self.jco.obs_names
+
+    def adj_par_names(self):
+        if self.__pst is not None:
+            return self.pst.adj_par_names
+        else:
+            return self.jco.par_names
 
     @property
     def jco(self):

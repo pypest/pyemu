@@ -547,7 +547,9 @@ class Schur(LinearAnalysis):
                 raise Exception("case {0} has observation names ".format(case_name) + \
                                 "not found: " + ','.join(missing_onames))
             # find the set difference between obslist and jco obs names
-            diff_onames = [oname for oname in self.jco.obs_names if oname not in obslist]
+            #diff_onames = [oname for oname in self.jco.obs_names if oname not in obslist]
+            diff_onames = [oname for oname in self.nnz_obs_names if oname not in obslist]
+
 
             # calculate the increase in forecast variance by not using the obs
             # in obslist
