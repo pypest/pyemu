@@ -53,6 +53,10 @@ def res_test():
     pst_dir = os.path.join('..','tests',"pst")
 
     p = Pst(os.path.join(pst_dir,"pest.pst"))
+    phi_comp = p.phi_components
+    assert "regul_p" in phi_comp
+    assert "regul_m" in phi_comp
+
     p.adjust_weights_resfile()
 
     d = np.abs(p.phi - p.nnz_obs)
@@ -62,6 +66,7 @@ def res_test():
 
     # get()
     new_p = p.get()
+    new_p.prior_information = p.prior_information
     new_file = os.path.join(pst_dir, "new.pst")
     new_p.write(new_file)
 
@@ -235,8 +240,8 @@ if __name__ == "__main__":
     #pst_manip_test()
     #tpl_ins_test()
     #load_test()
-    #res_test()
+    res_test()
     #smp_test()
     #from_io_with_inschek_test()
     #pestpp_args_test()
-    reweight_test()
+    #reweight_test()
