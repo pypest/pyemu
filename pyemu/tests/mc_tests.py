@@ -186,7 +186,7 @@ def pnulpar_test():
     mc.parensemble.index = real_num
     #print(mc.parensemble)
     print(mc.parensemble.istransformed)
-    en = mc.project_parensemble(nsing=1,inplace=False)
+    en = mc.project_parensemble(nsing=1,inplace=False, enforce_bounds='reset')
     #en.index = [i+1 for i in en.index]
     print(mc.parensemble.istransformed)
 
@@ -204,6 +204,22 @@ def pnulpar_test():
     diff = 100.0 * ((en - en_pnul) / en)
     assert max(diff.max()) < 1.0e-4
 
+
+def enforce_test():
+    import os
+    import pyemu
+    dir = "mc"
+
+    mc = pyemu.MonteCarlo(jco=os.path.join("mc","freyberg_ord.jco"))
+    mc.draw(num_reals=100,enforce_bounds='drop')
+    assert mc.parensemble.shape[0] == 0
+
+    cov = pyemu.Cov(x=mc.parcov.x * 0.1,names=mc.parcov.row_names,isdiagonal=True)
+    mc = pyemu.MonteCarlo(jco=os.path.join("mc","freyberg_ord.jco"),
+                          parcov=cov)
+    mc.draw(num_reals=100,enforce_bounds='drop')
+    assert mc.parensemble.shape[0] == 100.0
+
 if __name__ == "__main__":
     #scale_offset_test()
     #mc_test()
@@ -214,3 +230,4 @@ if __name__ == "__main__":
     #from_dataframe_test()
     #ensemble_seed_test()
     pnulpar_test()
+    enforce_test()

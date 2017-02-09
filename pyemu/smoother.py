@@ -188,9 +188,10 @@ class EnsembleSmoother():
 
     def _calc_obs(self,parensemble):
         if self.submit_file is None:
-            self._calc_obs_local(parensemble)
+            return self._calc_obs_local(parensemble)
         else:
-            self._calc_obs_condor(parensemble)
+            return self._calc_obs_condor(parensemble)
+
 
     def _calc_obs_condor(self,parensemble):
         parensemble.to_csv(self.sweep_in_csv)

@@ -106,9 +106,10 @@ class MonteCarlo(LinearAnalysis):
         self.parensemble = ParameterEnsemble(pst=self.pst)
         self.obsensemble = ObservationEnsemble(pst=self.pst)
         self.log("generating {0:d} parameter realizations".format(num_reals))
-        self.parensemble.draw(cov,num_reals=num_reals, how=how)
-        if enforce_bounds:
-            self.parensemble.enforce()
+        self.parensemble.draw(cov,num_reals=num_reals, how=how,
+                              enforce_bounds=enforce_bounds)
+        #if enforce_bounds:
+        #    self.parensemble.enforce()
         self.log("generating {0:d} parameter realizations".format(num_reals))
         if obs:
             self.log("generating {0:d} observation realizations".format(num_reals))
@@ -119,7 +120,7 @@ class MonteCarlo(LinearAnalysis):
 
 
     def project_parensemble(self,par_file=None,nsing=None,
-                            inplace=True):
+                            inplace=True,enforce_bounds='reset'):
         """ perform the null-space projection operations for null-space monte carlo
 
         Parameters:
@@ -130,6 +131,8 @@ class MonteCarlo(LinearAnalysis):
             inplace: bool
                 overwrite the existing parameter ensemble with the
                 projected values
+            enforce_bounds: str
+                how to enforce parameter bounds.  can be None, 'reset', or 'drop'
         Returns:
         -------
             if inplace is False, ParameterEnsemble instance, otherwise None
