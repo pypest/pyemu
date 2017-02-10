@@ -4,6 +4,7 @@ import numpy as np
 from pyemu.la import LinearAnalysis
 from pyemu.en import ObservationEnsemble, ParameterEnsemble
 from pyemu.mat import Cov
+#from pyemu.utils.helpers import zero_order_tikhonov
 
 class MonteCarlo(LinearAnalysis):
     """LinearAnalysis derived type for monte carlo analysis
@@ -195,9 +196,9 @@ class MonteCarlo(LinearAnalysis):
             pst.parameter_data.loc[par_en.columns,"parval1"] = par_en.iloc[i, :].T
 
             # reset the regularization
-            if pst.control_data.pestmode == "regularization":
-                pst.zero_order_tikhonov(parbounds=True)
-
+            #if pst.control_data.pestmode == "regularization":
+                #pst.zero_order_tikhonov(parbounds=True)
+                #zero_order_tikhonov(pst,parbounds=True)
             # add the obs noise realization if needed
             if self.obsensemble.shape[0] == self.num_reals:
                 pst.observation_data.loc[self.obsensemble.columns,"obsval"] = \

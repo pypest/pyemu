@@ -191,13 +191,7 @@ def derivative_increment_tests():
     pst = pyemu.Pst(os.path.join("pst","inctest.pst"))
     pst.calculate_pertubations()
 
-def regul_test():
-    import os
-    import pyemu
 
-    pst = pyemu.Pst(os.path.join("pst","inctest.pst"))
-    pst.zero_order_tikhonov()
-    print(pst.prior_information)
 
 def pestpp_args_test():
     import os
@@ -228,11 +222,23 @@ def reweight_test():
     p.adjust_weights(obs_dict=obs_dict)
     assert np.abs(p.phi - 4.0) < 1.0e-5,p.phi
 
-
-
+def regul_rectify_test():
+    import os
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst","inctest.pst"))
+    pyemu.helpers.zero_order_tikhonov(pst)
+    assert pst.prior_information.shape[0] == pst.npar_adj
+    pst._update_control_section()
+    assert pst.control_data.nprior == pst.prior_information.shape[0]
+    fix_names = pst.adj_par_names[::2]
+    pst.parameter_data.loc[fix_names,"partrans"] = "fixed"
+    pst.rectify_pi()
+    assert pst.prior_information.shape[0] == pst.npar_adj
+    pst._update_control_section()
+    assert pst.control_data.nprior == pst.prior_information.shape[0]
 
 if __name__ == "__main__":
-    #regul_test()
+    regul_rectify_test()
     #derivative_increment_tests()
     #tied_test()
     #smp_test()
@@ -240,7 +246,7 @@ if __name__ == "__main__":
     #pst_manip_test()
     #tpl_ins_test()
     #load_test()
-    res_test()
+    #res_test()
     #smp_test()
     #from_io_with_inschek_test()
     #pestpp_args_test()

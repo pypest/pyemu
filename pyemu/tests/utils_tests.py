@@ -364,21 +364,27 @@ def master_and_slaves():
     os.chdir(base_cwd)
 
 
-def pearson_regul_test():
+def first_order_pearson_regul_test():
     import os
-    import numpy as np
-    import pandas as pd
     from pyemu import Schur
-    from pyemu.utils.helpers import first_order_pearson_tikhonov
-    #w_dir = os.path.join("..","..","verification","10par_xsec","master_opt0")
+    from pyemu.utils.helpers import first_order_pearson_tikhonov,zero_order_tikhonov
     w_dir = "la"
     sc = Schur(jco=os.path.join(w_dir,"pest.jcb"))
-    sc.pst.zero_order_tikhonov()
+    zero_order_tikhonov(sc.pst)
     first_order_pearson_tikhonov(sc.pst,sc.posterior_parameter,reset=False)
     print(sc.pst.prior_information)
+    sc.pst.rectify_pi()
+
+def zero_order_regul_test():
+    import os
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst","inctest.pst"))
+    pyemu.helpers.zero_order_tikhonov(pst)
+    print(pst.prior_information)
 
 if __name__ == "__main__":
-    pearson_regul_test()
+    #zero_order_regul_test()
+    #first_order_pearson_regul_test()
     #master_and_slaves()
     #smp_to_ins_test()
     #read_pestpp_runstorage_file_test()
@@ -399,4 +405,4 @@ if __name__ == "__main__":
     # aniso_test()
     # struct_file_test()
     # covariance_matrix_test()
-    #add_pi_obj_func_test()
+    add_pi_obj_func_test()
