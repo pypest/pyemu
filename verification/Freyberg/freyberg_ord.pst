@@ -7,7 +7,7 @@ pcf
    1.000000E+01   1.000000E+01   1.000000E-03         0         0
    1.000000E-01         1   1.100000E+00               noaui          nosenreuse        noboundscale
         20   1.000000E-02         3         3   1.000000E-02         3   0.000000E+00         1  -1.000000E+00
-         0         0         0         0             jcosave          verboserec          jcosaveitn          reisaveitn          parsaveitn        noparsaverun
+         0         0         0         0             jcosave          verboserec          jcosaveitn          reisaveitn          parsaveitn                    
 * parameter groups
 hk                      relative              1.0000000000E-02       0  switch                2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller              
 rcond                   relative              1.0000000000E-02       0  switch                2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller              
@@ -777,8 +777,8 @@ hkr39c12               none                   factor                5.9475120000
 hkr39c13               none                   factor                5.9475120000E+00      5.9475120000E-01      5.9475120000E+01       hk                    1.0000000000E+00      0.0000000000E+00      1          
 hkr39c14               none                   factor                5.9475120000E+00      5.9475120000E-01      5.9475120000E+01       hk                    1.0000000000E+00      0.0000000000E+00      1
 * observation groups
-head_cal             
 forecast             
+head_cal             
 * observation data
 or00c00_0             2.7324950000E+01      0.0000000000E+00       forecast             
 or00c00_1             2.4525530000E+01      0.0000000000E+00       forecast             
@@ -2909,7 +2909,7 @@ misc\freyberg.wel.tpl extra_crispy\freyberg.wel
 misc\hk_Layer_1.ref.tpl extra_crispy\ref\hk_Layer_1.ref
 misc\freyberg_heads.smp.ins misc\freyberg_heads.smp
 misc\other.obs.ins misc\other.obs
-++forecasts(travel_time,sw_gw_0,sw_gw_1,sw_gw_2)
+++max_reg_iter(5)
 ++n_iter_super(4)
 ++n_iter_base(1)
-++max_reg_iter(5)
+++forecasts(travel_time,sw_gw_0,sw_gw_1,sw_gw_2)
