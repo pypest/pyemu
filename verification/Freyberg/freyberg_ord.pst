@@ -2909,7 +2909,7 @@ misc\freyberg.wel.tpl extra_crispy\freyberg.wel
 misc\hk_Layer_1.ref.tpl extra_crispy\ref\hk_Layer_1.ref
 misc\freyberg_heads.smp.ins misc\freyberg_heads.smp
 misc\other.obs.ins misc\other.obs
-++n_iter_super(4)
 ++max_reg_iter(5)
-++forecasts(travel_time,sw_gw_0,sw_gw_1,sw_gw_2)
+++n_iter_super(4)
 ++n_iter_base(1)
+++forecasts(travel_time,sw_gw_0,sw_gw_1,sw_gw_2)

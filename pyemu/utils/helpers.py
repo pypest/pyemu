@@ -12,6 +12,62 @@ pd.options.display.max_colwidth = 100
 
 import pyemu
 
+def zero_order_tikhonov(pst, parbounds=True):
+        """setup preferred-value regularization
+        Parameters:
+        ----------
+            pst (Pst instance) : the control file instance
+            parbounds (bool) : weight the prior information equations according
+                to parameter bound width - approx the KL transform
+        Returns:
+        -------
+            None
+        """
+        pass
+        pilbl, obgnme, weight, equation = [], [], [], []
+        for idx, row in pst.parameter_data.iterrows():
+            if row["partrans"].lower() not in ["tied", "fixed"]:
+                pilbl.append(row["parnme"])
+                weight.append(1.0)
+                ogp_name = "regul"+row["pargp"]
+                obgnme.append(ogp_name[:12])
+                parnme = row["parnme"]
+                parval1 = row["parval1"]
+                if row["partrans"].lower() == "log":
+                    parnme = "log(" + parnme + ")"
+                    parval1 = np.log10(parval1)
+                eq = "1.0 * " + parnme + " ={0:15.6E}".format(parval1)
+                equation.append(eq)
+
+        pst.prior_information = pd.DataFrame({"pilbl": pilbl,
+                                               "equation": equation,
+                                               "obgnme": obgnme,
+                                               "weight": weight})
+        if parbounds:
+            regweight_from_parbound(pst)
+
+def regweight_from_parbound(pst):
+    """sets regularization weights from parameter bounds
+        which approximates the KL expansion
+    Parameters:
+    ----------
+        pst (Pst) : a control file instance
+    """
+    pst.parameter_data.index = pst.parameter_data.parnme
+    pst.prior_information.index = pst.prior_information.pilbl
+    for idx, parnme in enumerate(pst.prior_information.pilbl):
+        if parnme in pst.parameter_data.index:
+            row = pst.parameter_data.loc[parnme, :]
+            lbnd,ubnd = row["parlbnd"], row["parubnd"]
+            if row["partrans"].lower() == "log":
+                weight = 1.0 / (np.log10(ubnd) - np.log10(lbnd))
+            else:
+                weight = 1.0 / (ubnd - lbnd)
+            pst.prior_information.loc[parnme, "weight"] = weight
+        else:
+            print("prior information name does not correspond" +\
+                  " to a parameter: " + str(parnme))
+
 def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
         """setup preferred-difference regularization from a covariance matrix.
         Parameters:

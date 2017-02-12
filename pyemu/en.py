@@ -266,7 +266,7 @@ class ParameterEnsemble(Ensemble):
     #         self._back_transform(inplace=True)
     #     super(ParameterEnsemble,self).plot(*args,**kwargs)
 
-    def draw(self,cov,num_reals=1,how="normal"):
+    def draw(self,cov,num_reals=1,how="normal",enforce_bounds=None):
         how = how.lower().strip()
         if not self.istransformed:
                 self._transform()
@@ -283,6 +283,7 @@ class ParameterEnsemble(Ensemble):
         istransformed = self.pst.parameter_data.loc[:,"partrans"] == "log"
         self.loc[:,istransformed] = 10.0**self.loc[:,istransformed]
         self.__istransformed = False
+        self.enforce(enforce_bounds)
 
     def _draw_uniform(self,num_reals=1):
         if not self.istransformed:
@@ -450,7 +451,8 @@ class ParameterEnsemble(Ensemble):
 
 
 
-    def project(self,projection_matrix,inplace=True,log=None,enforce=True):
+    def project(self,projection_matrix,inplace=True,log=None,
+                enforce_bounds="reset"):
         """ project the ensemble
         Parameters:
         ----------
@@ -460,7 +462,8 @@ class ParameterEnsemble(Ensemble):
 
             log: (pyemu.la.logger instance) for logging progress
 
-            enforce: (bool) parameter bound enforcement flag (True)
+            enforce_bounds: (str) parameter bound enforcement flag.  'drop' removes
+             offending realizations, 'reset' resets offending values)
 
         Returns:
         -------
@@ -514,31 +517,63 @@ class ParameterEnsemble(Ensemble):
             if log is not None:
                 log("projecting realization {0}".format(real))
         if not inplace:
-            if enforce:
-                new_en.enforce()
+            new_en.enforce(enforce_bounds)
             new_en.loc[:,istransformed] = 10.0**new_en.loc[:,istransformed]
             new_en.__istransformed = False
 
             #new_en._back_transform()
             return new_en
 
-        if enforce:
-            self.enforce()
+        self.enforce(enforce_bounds)
         self.loc[:,istransformed] = 10.0**self.loc[:,istransformed]
         self.__istransformed = False
 
-    def enforce(self):
-        """ enforce parameter bounds on the ensemble
+    def enforce(self,enforce_bounds):
+        if enforce_bounds is None:
+            return
+        if isinstance(enforce_bounds,bool):
+            import warnings
+            warnings.warn("deprecation warning: enforce_bounds should be "+\
+                          "either 'reset' or 'drop', not bool.  resetting"+\
+                          " to 'reset'.")
+            enforce_bounds = "reset"
+        if enforce_bounds.lower() == "reset":
+            self.enforce_reset()
+        elif enforce_bounds.lower() == "drop":
+            self.enforce_drop()
+        else:
+            raise Exception("unrecognized enforce_bounds arg:"+\
+                            "{0}, should be 'reset' or 'drop'".\
+                            format(enforce_bounds))
+
+    def enforce_drop(self):
+        """ enforce parameter bounds on the ensemble by dropping
+        violating realizations
 
         """
         ub = self.ubnd
         lb = self.lbnd
+        drop = []
+        for id in self.index:
+            mx = (ub - self.loc[id,:]).min()
+            mn = (lb - self.loc[id,:]).max()
+            if (ub - self.loc[id,:]).min() < 0.0 or\
+                            (lb - self.loc[id,:]).max() > 0.0:
+                drop.append(id)
+        self.loc[drop,:] = np.NaN
+        self.dropna(inplace=True)
+
+
+    def enforce_reset(self):
+        """enforce parameter bounds on the ensemble by resetting
+        violating vals to bound
+        """
+
+        ub = self.ubnd
+        lb = self.lbnd
         for iname,name in enumerate(self.columns):
             self.loc[self.loc[:,name] > ub[name],name] = ub[name].copy() * (1.0 + self.bound_tol)
-            #print(self.ubnd[name],self.loc[:,name])
             self.loc[self.loc[:,name] < lb[name],name] = lb[name].copy() * (1.0 - self.bound_tol)
-            #print(self.lbnd[name],self.loc[:,name])
-
 
     def read_parfiles_prefix(self,prefix):
         """ thin wrapper around read_parfiles using the pnulpar prefix concept

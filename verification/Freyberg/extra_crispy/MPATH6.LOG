@@ -1,0 +1,127 @@
+ Open sim file; read NAME and LIST file names                                                                                        
+ Open the NAME file and read the number of grids                                                                                     
+ Process the input data for each grid                                                                                                
+ Read MODPATH simulation file and prepare simulation data                                                                            
+ Compute range of time steps. Prepare for time step loop                                                                             
+ Begin time step loop.                                                                                                               
+ Processing Time Step     1 Period     1.  Time =  1.00000E+00                                                                       
+ Read, process, and load the data for this time step                                                                                 
+ Compute TSMAX                                                                                                                       
+ Begin TRACKING_INTERVAL_LOOP                                                                                                        
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Call TRACK                                                                                                                          
+ Exit TRACKING_INTERVAL_LOOP                                                                                                         
+ Processing Time Step     1 Period     2.  Time =  1.82600E+03                                                                       
+ Read, process, and load the data for this time step                                                                                 
+ Compute TSMAX                                                                                                                       
+ Begin TRACKING_INTERVAL_LOOP                                                                                                        
+ Call TRACK                                                                                                                          
+ Exit TRACKING_INTERVAL_LOOP                                                                                                         
+ Processing Time Step     1 Period     3.  Time =  1.82700E+03                                                                       
+ Read, process, and load the data for this time step                                                                                 
+ Compute TSMAX                                                                                                                       
+ Begin TRACKING_INTERVAL_LOOP                                                                                                        
+ Call TRACK                                                                                                                          
+ Exit TRACKING_INTERVAL_LOOP                                                                                                         
+ Exit TIME_STEP_LOOP                                                                                                                 
+ Particle tracking complete. Writing endpoint file ...                                                                               
+ End of MODPATH simulation. Normal termination.

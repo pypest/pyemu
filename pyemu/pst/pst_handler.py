@@ -1,5 +1,6 @@
 from __future__ import print_function, division
 import os
+import re
 import copy
 import warnings
 import numpy as np
@@ -516,6 +517,42 @@ class Pst(object):
         self.parameter_groups = self.parameter_groups.loc[need_groups,:]
 
 
+    def _parse_pi_par_names(self):
+
+        if self.prior_information.shape[0] == 0:
+            return
+        if "names" in self.prior_information.columns:
+            self.prior_information.pop("names")
+        if "rhs" in self.prior_information.columns:
+            self.prior_information.pop("rhs")
+        def parse(eqs):
+            raw = eqs.split('=')
+            rhs = float(raw[1])
+            raw = re.split('[+,-]',raw[0].lower().strip())
+            # in case of a leading '-' or '+'
+            if len(raw[0]) == 0:
+                raw = raw[1:]
+            return [r.split('*')[1].replace("log(",'').replace(')','').strip() for r in raw]
+
+        self.prior_information.loc[:,"names"] =\
+            self.prior_information.equation.apply(lambda x: parse(x))
+
+
+
+    def rectify_pi(self):
+        if self.prior_information.shape[0] == 0:
+            return
+        self._parse_pi_par_names()
+        adj_names = self.adj_par_names
+        def is_good(names):
+            for n in names:
+                if n not in adj_names:
+                    return False
+            return True
+        keep_idx = self.prior_information.names.\
+            apply(lambda x: is_good(x))
+        self.prior_information = self.prior_information.loc[keep_idx,:]
+
     def write(self,new_filename,update_regul=False):
         """write a pest control file
         Parameters:
@@ -528,6 +565,7 @@ class Pst(object):
 
 
         self._rectify_pgroups()
+        self.rectify_pi()
         self._update_control_section()
 
         f_out = open(new_filename, 'w')
@@ -686,7 +724,8 @@ class Pst(object):
         new_pst.observation_data = new_obs
         new_pst.parameter_groups = new_pargp
         new_pst.__res = new_res
-        new_pst.prior_information = self.null_prior
+        new_pst.prior_information = self.prior_information
+        new_pst.rectify_pi()
         new_pst.control_data = self.control_data.copy()
 
         new_pst.model_command = self.model_command
@@ -705,58 +744,8 @@ class Pst(object):
 
         return new_pst
 
-    def zero_order_tikhonov(self, parbounds=True):
-        """setup preferred-value regularization
-        Parameters:
-        ----------
-            parbounds (bool) : weight the prior information equations according
-                to parameter bound width - approx the KL transform
-        Returns:
-        -------
-            None
-        """
-        pass
-        pilbl, obgnme, weight, equation = [], [], [], []
-        for idx, row in self.parameter_data.iterrows():
-            if row["partrans"].lower() not in ["tied", "fixed"]:
-                pilbl.append(row["parnme"])
-                weight.append(1.0)
-                ogp_name = "regul"+row["pargp"]
-                obgnme.append(ogp_name[:12])
-                parnme = row["parnme"]
-                parval1 = row["parval1"]
-                if row["partrans"].lower() == "log":
-                    parnme = "log(" + parnme + ")"
-                    parval1 = np.log10(parval1)
-                eq = "1.0 * " + parnme + " ={0:15.6E}".format(parval1)
-                equation.append(eq)
-
-        self.prior_information = pd.DataFrame({"pilbl": pilbl,
-                                               "equation": equation,
-                                               "obgnme": obgnme,
-                                               "weight": weight})
-        if parbounds:
-            self.regweight_from_parbound()
-
-
-    def regweight_from_parbound(self):
-        """sets regularization weights from parameter bounds
-            which approximates the KL expansion
-        """
-        self.parameter_data.index = self.parameter_data.parnme
-        self.prior_information.index = self.prior_information.pilbl
-        for idx, parnme in enumerate(self.prior_information.pilbl):
-            if parnme in self.parameter_data.index:
-                row =  self.parameter_data.loc[parnme, :]
-                lbnd,ubnd = row["parlbnd"], row["parubnd"]
-                if row["partrans"].lower() == "log":
-                    weight = 1.0 / (np.log10(ubnd) - np.log10(lbnd))
-                else:
-                    weight = 1.0 / (ubnd - lbnd)
-                self.prior_information.loc[parnme, "weight"] = weight
-            else:
-                print("prior information name does not correspond" +\
-                      " to a parameter: " + str(parnme))
+    def zero_order_tikhonov(self,parbounds=True):
+        raise Exception("Pst.zero_oder_tikhonov has moved to utils.helpers")
 
 
     def parrep(self, parfile=None):

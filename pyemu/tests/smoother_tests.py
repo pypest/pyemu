@@ -157,20 +157,67 @@ def henry_plot():
 
 def freyberg():
     import os
+    import pandas as pd
     import pyemu
 
+
+
     os.chdir(os.path.join("smoother","freyberg"))
+
+    if not os.path.exists("freyberg.xy"):
+        import flopy
+
+        ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws="template",
+                                        load_only=[])
+        xy = pd.DataFrame([(x,y) for x,y in zip(ml.sr.xcentergrid.flatten(),ml.sr.ycentergrid.flatten())],
+                          columns=['x','y'])
+        names = []
+        for i in range(ml.nrow):
+            for j in range(ml.ncol ):
+                names.append("hkr{0:02d}c{1:02d}".format(i,j))
+        xy.loc[:,"name"] = names
+        xy.to_csv("freyberg.xy")
+    else:
+        xy = pd.read_csv("freyberg.xy")
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
-
     pst = pyemu.Pst(os.path.join("freyberg.pst"))
-
     es = pyemu.EnsembleSmoother(pst,num_slaves=20,use_approx=True)
 
+    nothk_names = [pname for pname in pst.adj_par_names if "hk" not in pname]
+    parcov_nothk = es.parcov.get(row_names=nothk_names)
+    gs = pyemu.utils.geostats.read_struct_file("structure.dat")
+    cov = gs.covariance_matrix(xy.x,xy.y,xy.name)
+    import matplotlib.pyplot as plt
+    plt.imshow(cov.x,interpolation="nearest")
+    plt.show()
+    return
+    #gs.variograms[0].a=10000
+    #gs.variograms[0].contribution=0.01
+    #gs.variograms[0].anisotropy = 10.0
+    pp_df = pyemu.utils.gw_utils.pp_file_to_dataframe("points1.dat")
+    parcov_hk = gs.covariance_matrix(pp_df.x,pp_df.y,pp_df.name)
+    parcov_full = parcov_hk.extend(parcov_rch)
+
     es.initialize(300,init_lambda=5000.0)
-    for i in range(10):
+    for i in range(3):
         es.update(lambda_mults=[0.2,5.0],run_subset=40)
     os.chdir(os.path.join("..",".."))
+
+def freyberg_pars_to_array(par_df):
+    import numpy as np
+    #print(par_df.index)
+    real_col = par_df.columns[0]
+    hk_names = par_df.index.map(lambda x:x.startswith("hk"))
+    hk_df = par_df.loc[hk_names,:]
+    hk_df.loc[:,"row"] = hk_df.index.map(lambda x: int(x[3:5]))
+    hk_df.loc[:,"column"] = hk_df.index.map(lambda x: int(x[-2:]))
+    nrow,ncol = hk_df.row.max() + 1, hk_df.column.max() + 1
+    arr = np.zeros((nrow,ncol)) - 999.0
+    for r,c,v in zip(hk_df.row,hk_df.column,hk_df.loc[:,real_col]):
+        arr[r-1,c-1] = v
+    arr = np.ma.masked_where(arr==-999.,arr)
+    return arr
 
 def freyberg_plot():
     import os
@@ -184,6 +231,49 @@ def freyberg_plot():
     plt_dir = os.path.join(d,"plot")
     if not os.path.exists(plt_dir):
         os.mkdir(plt_dir)
+
+    par_files = [os.path.join(d,f) for f in os.listdir(d) if "parensemble." in f
+                 and ".png" not in f]
+    par_dfs = [pd.read_csv(par_file,index_col=0).apply(np.log10) for par_file in par_files]
+    #par_names = list(par_dfs[0].columns)
+    par_names = ["rch_1","rch_2"]
+    mx = (pst.parameter_data.loc[:,"parubnd"] * 1.1).apply(np.log10)
+    mn = (pst.parameter_data.loc[:,"parlbnd"] * 0.9).apply(np.log10)
+
+    with PdfPages(os.path.join(plt_dir,"parensemble.pdf")) as pdf:
+        for par_file,par_df in zip(par_files,par_dfs):
+            #print(par_file)
+            fig = plt.figure(figsize=(20,10))
+
+            plt.figtext(0.5,0.975,par_file,ha="center")
+            axes = [plt.subplot(2,6,i+1) for i in range(12)]
+            for ireal in range(10):
+                arr = freyberg_pars_to_array(par_df.iloc[[ireal],:].T)
+                axes[ireal].imshow(arr,interpolation="nearest")
+            for par_name,ax in zip(par_names,axes[-2:]):
+                mean = par_df.loc[:,par_name].mean()
+                std = par_df.loc[:,par_name].std()
+                par_df.loc[:,par_name].hist(ax=ax,edgecolor="none",
+                                            alpha=0.25,grid=False)
+                ax.set_yticklabels([])
+                ax.set_title("{0}, {1:6.2f}".\
+                             format(par_name,10.0**mean))
+                ax.set_xlim(mn[par_name],mx[par_name])
+                ylim = ax.get_ylim()
+                if "stage" in par_name:
+                    val = np.log10(1.5)
+                else:
+                    val = np.log10(2.5)
+                ticks = ["{0:2.1f}".format(x) for x in 10.0**ax.get_xticks()]
+                ax.set_xticklabels(ticks,rotation=90)
+                ax.plot([val,val],ylim,"k-",lw=2.0)
+
+                ax.plot([mean,mean],ylim,"b-",lw=1.5)
+                ax.plot([mean+(2.0*std),mean+(2.0*std)],ylim,"b--",lw=1.5)
+                ax.plot([mean-(2.0*std),mean-(2.0*std)],ylim,"b--",lw=1.5)
+            pdf.savefig()
+            plt.close()
+
 
     obs_files = [os.path.join(d,f) for f in os.listdir(d) if "obsensemble." in f
                  and ".png" not in f]
@@ -243,44 +333,7 @@ def freyberg_plot():
             pdf.savefig()
             plt.close()
 
-    par_files = [os.path.join(d,f) for f in os.listdir(d) if "parensemble." in f
-                 and ".png" not in f]
-    par_dfs = [pd.read_csv(par_file,index_col=0).apply(np.log10) for par_file in par_files]
-    #par_names = list(par_dfs[0].columns)
-    par_names = ["rch_1","rch_2"]
-    mx = (pst.parameter_data.loc[:,"parubnd"] * 1.1).apply(np.log10)
-    mn = (pst.parameter_data.loc[:,"parlbnd"] * 0.9).apply(np.log10)
 
-    with PdfPages(os.path.join(plt_dir,"parensemble.pdf")) as pdf:
-        for par_file,par_df in zip(par_files,par_dfs):
-            print(par_file)
-            fig = plt.figure(figsize=(20,10))
-
-            plt.figtext(0.5,0.975,par_file,ha="center")
-            axes = [plt.subplot(2,6,i+1) for i in range(len(par_names))]
-            for par_name,ax in zip(par_names,axes):
-                mean = par_df.loc[:,par_name].mean()
-                std = par_df.loc[:,par_name].std()
-                par_df.loc[:,par_name].hist(ax=ax,edgecolor="none",
-                                            alpha=0.25,grid=False)
-                ax.set_yticklabels([])
-                ax.set_title("{0}, {1:6.2f}".\
-                             format(par_name,10.0**mean))
-                ax.set_xlim(mn[par_name],mx[par_name])
-                ylim = ax.get_ylim()
-                if "stage" in par_name:
-                    val = np.log10(1.5)
-                else:
-                    val = np.log10(2.5)
-                ticks = ["{0:2.1f}".format(x) for x in 10.0**ax.get_xticks()]
-                ax.set_xticklabels(ticks,rotation=90)
-                ax.plot([val,val],ylim,"k-",lw=2.0)
-
-                ax.plot([mean,mean],ylim,"b-",lw=1.5)
-                ax.plot([mean+(2.0*std),mean+(2.0*std)],ylim,"b--",lw=1.5)
-                ax.plot([mean-(2.0*std),mean-(2.0*std)],ylim,"b--",lw=1.5)
-            pdf.savefig()
-            plt.close()
 
 def chenoliver_setup():
     import pyemu
@@ -524,9 +577,9 @@ def tenpar_plot():
 
 if __name__ == "__main__":
     #henry_setup()
-    henry()
-    henry_plot()
-    #freyberg()
+    #henry()
+    #henry_plot()
+    freyberg()
     #freyberg_plot()
     #chenoliver_setup()
     #chenoliver()

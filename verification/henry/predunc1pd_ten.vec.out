@@ -1,0 +1,37 @@
+
+ PREDUNC1 Version 13.6. Watermark Numerical Computing.
+
+ Enter name of PEST control file:  Enter observation reference variance: 
+ Enter name of parameter uncertainty file:  Enter name of predictive sensitivity matrix file: 
+ Use which version of linear predictive uncertainty equation:-
+     if version optimized for small number of parameters   - enter 1
+     if version optimized for small number of observations - enter 2
+ Enter your choice: 
+ - reading PEST control file pest_ord.pst....
+ - file pest_ord.pst read ok.
+
+ - reading Jacobian matrix file pest_ord.jco....
+ - file pest_ord.jco read ok.
+
+ - reading predictive sensitivity matrix file pd_ten.vec....
+ - file pd_ten.vec read ok.
+
+ - reading parameter uncertainty file pest.unc....
+ - parameter uncertainty file pest.unc read ok.
+
+ - computing pre-calibration predictive uncertainty....
+ - forming XtC-1(e)X matrix....
+ - inverting C(p) matrix....
+ - inverting [XtC-1(e)X + C-1(p)] matrix....
+ - calculating post-calibration predictive uncertainty....
+ 
+ 
+         *************************************************************
+         *                                                           *
+         *                                                           *
+         *    Pre-cal predictive uncertainty  =  0.4716172           *
+         *    Post-cal predictive uncertainty =  0.2267402           *
+         *                                                           *
+         *                                                           *
+         *************************************************************
+ 
