@@ -253,13 +253,82 @@ def inf2():
     print(s.studentized_res)
 
 
+def freyberg_verf_test():
+    import os
+    import pyemu
+    import numpy as np
+    import pandas as pd
+    wdir = os.path.join("..","..","verification","freyberg")
+    post_pd7 = pyemu.Cov.from_ascii(os.path.join(wdir,"post.cov"))
+    sc = pyemu.Schur(os.path.join(wdir,"freyberg.jcb"))
+    post_pyemu = sc.posterior_parameter
+    diff = (post_pd7 - post_pyemu).to_dataframe()
+    diff = (diff / sc.pst.parameter_data.parval1 * 100.0).apply(np.abs)
+    assert diff.max().max() < 1.0
+
+    pd1_file = os.path.join(wdir,"predunc1_textable.dat")
+    names = ["forecasts","pd1_pr","py_pr","pd1_pt","py_pt"]
+    pd1_df = pd.read_csv(pd1_file,sep='&',header=None,names=names)
+    pd1_df.index = pd1_df.forecasts
+    fsum = sc.get_forecast_summary()
+    pd1_cols = ["pd1_pr","pd1_pt"]
+    py_cols = ["prior_var","post_var"]
+    forecasts = ["sw_gw_0","sw_gw_1"]
+    for fname in forecasts:
+        for pd1_col,py_col in zip(pd1_cols,py_cols):
+            pd1_pr = pd1_df.loc[fname,pd1_col]
+            py_pr = np.sqrt(fsum.loc[fname,py_col])
+            assert np.abs(pd1_pr - py_pr) < 1.0e-1,"{0},{1}".format(pd1_pr,py_pr)
+
+    out_files = [os.path.join(wdir,f) for f in os.listdir(wdir)\
+                 if ".predvar1b.out" in f and f.split('.')[0] in forecasts]
+    print(out_files)
+    pv1b_results = {}
+    for out_file in out_files:
+        pred_name = os.path.split(out_file)[-1].split('.')[0]
+        f = open(out_file,'r')
+        for _ in range(3):
+            f.readline()
+        arr = np.loadtxt(f)
+        pv1b_results[pred_name] = arr
+
+    omitted_parameters = [pname for pname in sc.pst.parameter_data.parnme if\
+                          pname.startswith("wf")]
+    obs_names = sc.pst.nnz_obs_names
+    obs_names.extend(forecasts)
+    jco = pyemu.Jco.from_binary(os.path.join(wdir,"freyberg.jcb")).\
+        get(obs_names,sc.pst.adj_par_names)
+    ev = pyemu.ErrVar(jco=jco,pst=sc.pst,forecasts=forecasts,
+                      omitted_parameters=omitted_parameters,verbose=False)
+    #print(ev.jco.shape)
+    df = ev.get_errvar_dataframe(np.arange(36))
+    #print(df)
+    max_idx = 12
+    #print(pv1b_results.keys())
+    for ipred,pred in enumerate(forecasts):
+        arr = pv1b_results[pred][:max_idx,:]
+        first = df[("first", pred)][:max_idx]
+        second = df[("second", pred)][:max_idx]
+        third = df[("third", pred)][:max_idx]
+        #print(arr[:,1])
+        #print(first)
+        diff = np.abs(arr[:,1] - first) / arr[:,1] * 100.0
+        assert diff.max() < 0.01
+        diff = np.abs(arr[:,2] - second) / arr[:,1] * 100.0
+        assert diff.max() < 0.01
+        diff = np.abs(arr[:,3] - third) / arr[:,1] * 100.0
+        assert diff.max() < 0.01
+
+
+
 if __name__ == "__main__":
+    freyberg_verf_test()
     #forecast_pestpp_load_test()
     #map_test()
     #par_contrib_test()
     #dataworth_test()
     #dataworth_next_test()
-    schur_test_nonpest()
+    #schur_test_nonpest()
     #schur_test()
     #errvar_test_nonpest()
     #errvar_test()
