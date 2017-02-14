@@ -258,7 +258,7 @@ def freyberg_verf_test():
     import pyemu
     import numpy as np
     import pandas as pd
-    wdir = os.path.join("..","..","verification","freyberg")
+    wdir = os.path.join("..","..","verification","Freyberg")
     post_pd7 = pyemu.Cov.from_ascii(os.path.join(wdir,"post.cov"))
     sc = pyemu.Schur(os.path.join(wdir,"freyberg.jcb"))
     post_pyemu = sc.posterior_parameter
