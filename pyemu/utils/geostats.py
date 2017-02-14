@@ -361,7 +361,7 @@ class ExpVario(Vario2d):
                                       bearing=bearing,name=name)
 
     def h_function(self,h):
-        return self.contribution * (1.0-np.exp(-h / self.a))
+        return self.contribution * np.exp(-1.0 * h / self.a)
 
 class GauVario(Vario2d):
     """Gaussian 2-D variograms
@@ -389,7 +389,7 @@ class GauVario(Vario2d):
 
     def h_function(self,h):
         hh = -1.0 * (h * h) / (self.a * self.a)
-        return self.contribution * (1.0- np.exp(hh))
+        return self.contribution * np.exp(hh)
 
 class SphVario(Vario2d):
     """Spherical 2-D variograms
