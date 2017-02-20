@@ -380,6 +380,10 @@ def generic_pst(par_names=["par1"],obs_names=["obs1"],addreg=False):
         Pst instance
 
     """
+    if not isinstance(par_names,list):
+        par_names = list(par_names)
+    if not isinstance(obs_names,list):
+        obs_names = list(obs_names)
     new_pst = pyemu.Pst("pest.pst",load=False)
     pargp_data = populate_dataframe(["pargp"], new_pst.pargp_fieldnames,
                                     new_pst.pargp_defaults, new_pst.pargp_dtype)

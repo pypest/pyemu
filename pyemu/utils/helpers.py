@@ -65,6 +65,8 @@ def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
                                names=names)
 
     trunc_basis = cov.u[:,:num_eig].T
+    #for i in range(num_eig):
+    #    trunc_basis.x[i,:] *= cov.s.x[i]
     trunc_basis.to_binary(basis_file)
     #trunc_basis = trunc_basis.T
 
@@ -73,7 +75,9 @@ def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
     f.write("ptf ~\n")
     f.write("name,org_val,new_val\n")
     for name,array in array_dict.items():
-
+        mname = name+"mean"
+        f.write("{0},{1:20.8E},~   {2}    ~\n".format(mname,0.0,mname))
+        #array -= array.mean()
         array_flat = pyemu.Matrix(x=np.atleast_2d(array.flatten()).transpose()
                                   ,col_names=["flat"],row_names=names,
                                   isdiagonal=False)
@@ -113,13 +117,19 @@ def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
             format(prefix)
     basis = pyemu.Matrix.from_binary(basis_file)
     assert basis.shape[1] == arr_shape[0] * arr_shape[1]
+    arr_min = 1.0e-10 # a temp hack
 
+    means = df.loc[df.name.apply(lambda x: x.endswith("mean")),:]
+    print(means)
+    df = df.loc[df.name.apply(lambda x: not x.endswith("mean")),:]
     for prefix,filename in par_to_file_dict.items():
         factors = pyemu.Matrix.from_dataframe(df.loc[df.prefix==prefix,["new_val"]])
         factors.autoalign = False
 
         #assert df_pre.shape[0] == arr_shape[0] * arr_shape[1]
         arr = (factors.T * basis).x.reshape(arr_shape)
+        arr += means.loc[means.prefix==prefix,"new_val"]
+        arr[arr<arr_min] = arr_min
         np.savetxt(filename,arr,fmt="%20.8E")
 
 

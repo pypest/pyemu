@@ -209,7 +209,7 @@ class GeoStruct(object):
         Returns
             float : covariance
         """
-
+        #raise Exception()
         cov = self.nugget
         for vario in self.variograms:
             cov += vario.covariance(pt0,pt1)

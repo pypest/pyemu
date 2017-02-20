@@ -418,9 +418,20 @@ def kl_test():
                         "hk_tru":os.path.join("utils","hk_tru.ref")}
     pyemu.utils.helpers.kl_apply(tpl_file.replace(".tpl",".csv"),basis_file,
                                  par_to_file_dict,(ml.nrow,ml.ncol))
+    #import matplotlib.pyplot as plt
     for par,filename in par_to_file_dict.items():
         arr = np.loadtxt(filename)
-        diff = np.abs((arr - arr_dict[par])).sum()
+        arr1 = arr_dict[par]
+        # mx = max(arr.max(),arr1.max())
+        # mn = min(arr.min(),arr1.min())
+        # fig = plt.figure()
+        # ax1,ax2 = plt.subplot(211),plt.subplot(212)
+        # c1 = ax1.imshow(arr,vmin=mn,vmax=mx)
+        # plt.colorbar(c1,ax=ax1)
+        # c2 = ax2.imshow(arr_dict[par],vmin=mn,vmax=mx)
+        # plt.colorbar(c2,ax=ax2)
+        # plt.show()
+        diff = np.abs((arr - arr1)).sum()
         print(diff)
         assert np.abs(diff) < 1.0e-2
 
