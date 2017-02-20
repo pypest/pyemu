@@ -12,6 +12,122 @@ pd.options.display.max_colwidth = 100
 
 import pyemu
 
+def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
+             tpl_file="kl.tpl"):
+    """setup a karhuenen-Loeve based parameterization for a given
+    geostatistical structure.
+    Parameters:
+        num_eig (int) : number of basis vectors to retain in the reduced basis
+
+        struct_file (str) : a pest-style geostatistical structure file
+
+        array_dict (dict(str:ndarray)): a dict of arrays to setup as KL-based
+                                        parameters.  The key becomes the
+                                        parameter name prefix. The total
+                                        number of parameters is
+                                        len(array_dict) * num_eig
+
+        basis_file (str) : the name of the binary file where the reduced
+                           basis will be saved
+
+        tpl_file (str) : the name of the template file to make.  The template
+                         file is a csv file with the parameter names, the
+                         original factor values,and the template entries.
+                         The original values can be used to set the parval1
+                         entries in the control file
+    Returns:
+        back_array_dict (dict(str:ndarray)) : a dictionary of back transformed
+                                              arrays.  This is useful to see
+                                              how much "smoothing" is taking
+                                              place compared to the original
+                                              arrays.
+    """
+    try:
+        import flopy
+    except Exception as e:
+        raise Exception("error import flopy: {0}".format(str(e)))
+    assert isinstance(sr,flopy.utils.SpatialReference)
+    for name,array in array_dict.items():
+        assert isinstance(array,np.ndarray)
+        assert array.shape[0] == sr.nrow
+        assert array.shape[1] == sr.ncol
+        assert len(name) + len(str(num_eig)) <= 12,"name too long:{0}".\
+            format(name)
+    assert os.path.exists(struct_file)
+
+    gs = pyemu.utils.read_struct_file(struct_file)
+    names = []
+    for i in range(sr.nrow):
+        names.extend(["i{0:04d}j{1:04d}".format(i,j) for j in range(sr.ncol)])
+
+    cov = gs.covariance_matrix(sr.xcentergrid.flatten(),
+                               sr.ycentergrid.flatten(),
+                               names=names)
+
+    trunc_basis = cov.u[:,:num_eig].T
+    trunc_basis.to_binary(basis_file)
+    #trunc_basis = trunc_basis.T
+
+    back_array_dict = {}
+    f = open(tpl_file,'w')
+    f.write("ptf ~\n")
+    f.write("name,org_val,new_val\n")
+    for name,array in array_dict.items():
+
+        array_flat = pyemu.Matrix(x=np.atleast_2d(array.flatten()).transpose()
+                                  ,col_names=["flat"],row_names=names,
+                                  isdiagonal=False)
+        factors = trunc_basis * array_flat
+        enames = ["{0}{1:04d}".format(name,i) for i in range(num_eig)]
+        for n,val in zip(enames,factors.x):
+            f.write("{0},{1:20.8E},~    {0}    ~\n".format(n,val[0]))
+        back_array_dict[name] = (factors.T * trunc_basis).x.reshape(array.shape)
+        #print(array_back)
+        #print(factors.shape)
+
+    return back_array_dict
+
+
+def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
+    """ Applies a KL parameterization transform from basis factors to model
+     input arrays
+     Parameters:
+        par_file (str) : the csv file to get factor values from.  Must contain
+                        the following columns: name, new_val, org_val
+        basis_file (str): the binary file that contains the reduced basis
+
+        par_to_file_dict (dict(str:str)): a mapping from KL parameter prefixes
+                                          to array file names.
+    Returns:
+        None
+
+    """
+    df = pd.read_csv(par_file)
+    assert "name" in df.columns
+    assert "org_val" in df.columns
+    assert "new_val" in df.columns
+
+    df.loc[:,"prefix"] = df.name.apply(lambda x: x[:-4])
+    for prefix in df.prefix.unique():
+        assert prefix in par_to_file_dict.keys(),"missing prefix:{0}".\
+            format(prefix)
+    basis = pyemu.Matrix.from_binary(basis_file)
+    assert basis.shape[1] == arr_shape[0] * arr_shape[1]
+
+    for prefix,filename in par_to_file_dict.items():
+        factors = pyemu.Matrix.from_dataframe(df.loc[df.prefix==prefix,["new_val"]])
+        factors.autoalign = False
+
+        #assert df_pre.shape[0] == arr_shape[0] * arr_shape[1]
+        arr = (factors.T * basis).x.reshape(arr_shape)
+        np.savetxt(filename,arr,fmt="%20.8E")
+
+
+
+
+
+
+
 def zero_order_tikhonov(pst, parbounds=True):
         """setup preferred-value regularization
         Parameters:

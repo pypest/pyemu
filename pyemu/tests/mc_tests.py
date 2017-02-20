@@ -220,14 +220,17 @@ def enforce_test():
     mc.draw(num_reals=100,enforce_bounds='drop')
     assert mc.parensemble.shape[0] == 100.0
 
+
 if __name__ == "__main__":
     #scale_offset_test()
     #mc_test()
     #fixed_par_test()
     #uniform_draw_test()
     #gaussian_draw_test()
-    write_regul_test()
+    #write_regul_test()
     #from_dataframe_test()
     #ensemble_seed_test()
     #pnulpar_test()
     #enforce_test()
+
+    freyberg_verf_test()

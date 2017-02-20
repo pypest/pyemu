@@ -180,6 +180,7 @@ class GeoStruct(object):
         if not isinstance(y,np.ndarray):
             y = np.array(y)
         assert x.shape[0] == y.shape[0]
+
         if names is not None:
             assert x.shape[0] == len(names)
             c = np.zeros((len(names),len(names)))
@@ -193,7 +194,7 @@ class GeoStruct(object):
             cov += cont
 
         else:
-            raise Exception("GeoStruct.covariance_matrix() requires either" +
+            raise Exception("GeoStruct.covariance_matrix() requires either " +
                             "names or cov arg")
         for v in self.variograms:
             v.covariance_matrix(x,y,cov=cov)

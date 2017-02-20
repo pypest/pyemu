@@ -1501,6 +1501,30 @@ class Cov(Matrix):
                                   row_names=row_names,
                                   col_names=col_names,
                                   autoalign=autoalign)
+    #     self.__eigvals = None
+    #     self.__eigvecs = None
+    #
+    # @property
+    # def eigvals(self):
+    #     if self.__eigvals is None:
+    #         self.__eig()
+    #     return self.__eigvals
+    #
+    # @property
+    # def eigvecs(self):
+    #     if self.__eigvecs is None:
+    #         self.__eig()
+    #     return self.__eigvecs
+    #
+    # def __eig(self):
+    #     try:
+    #         vals,vecs = np.linalg.eigh(self.x)
+    #     except Exception as e:
+    #         raise Exception("Cov.__eig() error:{0}".format(str(e)))
+    #     names = ["eig{0}".format(i) for i in range(vals.shape[0])]
+    #     self.__eigvals = Matrix(x=np.atleast_2d(vals),row_names=names,col_names=names,
+    #                             isdiagonal=True)
+
 
     @property
     def identity(self):

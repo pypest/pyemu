@@ -382,7 +382,50 @@ def zero_order_regul_test():
     pyemu.helpers.zero_order_tikhonov(pst)
     print(pst.prior_information)
 
+def kl_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    try:
+        import flopy
+    except:
+        print("flopy not imported...")
+        return
+    model_ws = os.path.join("..","..","verification","Freyberg","extra_crispy")
+    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws)
+    str_file = os.path.join("..","..","verification","Freyberg","structure.dat")
+    arr_dict = {"test":np.ones((ml.nrow,ml.ncol))}
+    arr_dict["hk_tru"] = np.loadtxt(os.path.join("..","..","verification",
+                                                 "Freyberg","extra_crispy",
+                                                 "hk.truth.ref"))
+    basis_file = os.path.join("utils","basis.dat")
+    tpl_file = os.path.join("utils","test.tpl")
+    back_dict = pyemu.utils.helpers.kl_setup(num_eig=800,sr=ml.sr,
+                                             struct_file =str_file,
+                                             array_dict=arr_dict,
+                                             basis_file=basis_file,
+                                             tpl_file=tpl_file)
+    for name in back_dict.keys():
+        diff = np.abs((arr_dict[name] - back_dict[name])).sum()
+        print(diff)
+        assert np.abs(diff) < 1.0e-2
+    df = pd.read_csv(tpl_file,skiprows=1)
+    df.loc[:,"new_val"] = df.org_val
+    df.to_csv(tpl_file.replace(".tpl",".csv"),index=False)
+    #kl_appy(par_file, basis_file,par_to_file_dict)
+    par_to_file_dict = {"test":os.path.join("utils","test.ref"),\
+                        "hk_tru":os.path.join("utils","hk_tru.ref")}
+    pyemu.utils.helpers.kl_apply(tpl_file.replace(".tpl",".csv"),basis_file,
+                                 par_to_file_dict,(ml.nrow,ml.ncol))
+    for par,filename in par_to_file_dict.items():
+        arr = np.loadtxt(filename)
+        diff = np.abs((arr - arr_dict[par])).sum()
+        print(diff)
+        assert np.abs(diff) < 1.0e-2
+
 if __name__ == "__main__":
+    kl_test()
     #zero_order_regul_test()
     #first_order_pearson_regul_test()
     #master_and_slaves()
@@ -395,14 +438,14 @@ if __name__ == "__main__":
     #setup_pp_test()
     # to_mps_test()
     # pp_to_tpl_test()
-    # setup_ppcov_complex()
-    # ppcov_complex_test()
+    #setup_ppcov_complex()
+    #ppcov_complex_test()
     # setup_ppcov_simple()
-    # ppcov_simple_test()
+    #ppcov_simple_test()
     # fac2real_test()
     # vario_test()
     # geostruct_test()
     # aniso_test()
     # struct_file_test()
     # covariance_matrix_test()
-    add_pi_obj_func_test()
+    # add_pi_obj_func_test()
