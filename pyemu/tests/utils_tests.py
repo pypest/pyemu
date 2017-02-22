@@ -49,13 +49,13 @@ def vario_test():
                   pyemu.utils.geostats.SphVario]:
 
         v = const(contribution,a)
-        h = v.h_function(np.array([0.0]))
+        h = v._h_function(np.array([0.0]))
         assert h == contribution
-        h = v.h_function(np.array([a*1000]))
+        h = v._h_function(np.array([a*1000]))
         assert h == 0.0
 
         v2 = const(contribution,a,anisotropy=2.0,bearing=90.0)
-        print(v2.h_function(np.array([a])))
+        print(v2._h_function(np.array([a])))
 
 
 def aniso_test():
@@ -435,8 +435,47 @@ def kl_test():
         print(diff)
         assert np.abs(diff) < 1.0e-2
 
+def ok_test():
+    import os
+    import pandas as pd
+    import pyemu
+    str_file = os.path.join("utils","struct_test.dat")
+    pts_data = pd.DataFrame({"x":[1.0,2.0,3.0],"y":[0.,0.,0.],"name":["p1","p2","p3"]})
+    gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
+    ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
+    interp_points = pd.DataFrame({"x":[1.0,1.0],"y":[0.0,1.0],"name":["ip1","ip2"]})
+    kf = ok.calc_factors(interp_points.x,interp_points.y)
+
+def ok_grid_test():
+
+    try:
+        import flopy
+    except:
+        return
+
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    nrow,ncol = 10,5
+    delr = np.ones((ncol)) * 1.0/float(ncol)
+    delc = np.ones((nrow)) * 1.0/float(nrow)
+
+    num_pts = 10
+    ptx = np.random.random(num_pts)
+    pty = np.random.random(num_pts)
+    ptname = ["p{0}".format(i) for i in range(num_pts)]
+    pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
+
+    sr = flopy.utils.SpatialReference(delr=delr,delc=delc)
+    str_file = os.path.join("utils","struct_test.dat")
+    gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
+    ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
+    kf = ok.calc_factors_grid(sr,verbose=False)
+
+
+
 if __name__ == "__main__":
-    kl_test()
+    #kl_test()
     #zero_order_regul_test()
     #first_order_pearson_regul_test()
     #master_and_slaves()
@@ -454,9 +493,11 @@ if __name__ == "__main__":
     # setup_ppcov_simple()
     #ppcov_simple_test()
     # fac2real_test()
-    # vario_test()
+    vario_test()
     # geostruct_test()
     # aniso_test()
     # struct_file_test()
     # covariance_matrix_test()
     # add_pi_obj_func_test()
+    #ok_test()
+    ok_grid_test()

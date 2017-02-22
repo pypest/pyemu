@@ -1,5 +1,6 @@
 import os
 import copy
+from datetime import datetime
 import numpy as np
 import pandas as pd
 from pyemu import Cov
@@ -9,126 +10,16 @@ from pyemu import Cov
 EPSILON = 1.0e-7
 
 
-def read_struct_file(struct_file):
-    """read an existing structure file into a GeoStruct instance
-    Parameters
-    ----------
-        struct_file : str
-            existing pest-type structure file
-    Returns
-    -------
-        GeoStruct instance
-    """
+class KrigeFactors(pd.DataFrame):
+    def __init__(self,*args,**kwargs):
+        super(KrigeFactors,self).__init__(*args,**kwargs)
 
-    VARTYPE = {1:SphVario,2:ExpVario,3:GauVario,4:None}
-    assert os.path.exists(struct_file)
-    structures = []
-    variograms = []
-    with open(struct_file,'r') as f:
-        while True:
-            line = f.readline()
-            if line == '':
-                break
-            line = line.strip().lower()
-            if line.startswith("structure"):
-                name = line.strip().split()[1]
-                nugget,transform,variogram_info = _read_structure_attributes(f)
-                s = GeoStruct(nugget=nugget,transform=transform,name=name)
-                s.variogram_info = variogram_info
-                # not sure what is going on, but if I don't copy s here,
-                # all the structures end up sharing all the variograms later
-                structures.append(copy.deepcopy(s))
-            elif line.startswith("variogram"):
+    def to_factors(self,filename):
+        pass
 
-                name = line.strip().split()[1].lower()
+    def from_factors(self,filename):
+        raise NotImplementedError()
 
-
-                vartype,bearing,a,anisotropy = _read_variogram(f)
-                if name in variogram_info:
-                    v = VARTYPE[vartype](variogram_info[name],a,anisotropy=anisotropy,
-                                         bearing=bearing,name=name)
-                    variograms.append(v)
-
-    for i,st in enumerate(structures):
-        for vname in st.variogram_info:
-            vfound = None
-            for v in variograms:
-                if v.name == vname:
-                    vfound = v
-                    break
-            if vfound is None:
-                raise Exception("variogram {0} not found for structure {1}".\
-                                format(vname,s.name))
-
-            st.variograms.append(vfound)
-    if len(structures) == 1:
-        return structures[0]
-    return structures
-
-
-# def read_variograms(variogram_info,f):
-#     variograms = []
-#     while True:
-#         line = f.readline()
-#         if line == '':
-#             raise Exception("EOF while reading variograms")
-#         line = line.strip().lower()
-#     return variograms
-
-
-def _read_variogram(f):
-    line = ''
-    vartype = None
-    bearing = 0.0
-    a = None
-    anisotropy = 1.0
-    while "end variogram" not in line:
-        line = f.readline()
-        if line == '':
-            raise Exception("EOF while read variogram")
-        line = line.strip().lower().split()
-        if line[0].startswith('#'):
-            continue
-        if line[0] == "vartype":
-            vartype = int(line[1])
-        elif line[0] == "bearing":
-            bearing = float(line[1])
-        elif line[0] == "a":
-            a = float(line[1])
-        elif line[0] == "anisotropy":
-            anisotropy = float(line[1])
-        elif line[0] == "end":
-            break
-        else:
-            raise Exception("unrecognized arg in variogram:{0}".format(line[0]))
-    return vartype,bearing,a,anisotropy
-
-
-def _read_structure_attributes(f):
-    line = ''
-    variogram_info = {}
-    while "end structure" not in line:
-        line = f.readline()
-        if line == '':
-            raise Exception("EOF while reading structure")
-        line = line.strip().lower().split()
-        if line[0].startswith('#'):
-            continue
-        if line[0] == "nugget":
-            nugget = float(line[1])
-        elif line[0] == "transform":
-            transform = line[1]
-        elif line[0] == "numvariogram":
-            numvariograms = int(line[1])
-        elif line[0] == "variogram":
-            variogram_info[line[1]] = float(line[2])
-        elif line[0] == "end":
-            break
-        else:
-            raise Exception("unrecognized line in structure definition:{0}".\
-                            format(line[0]))
-    assert numvariograms == len(variogram_info)
-    return nugget,transform,variogram_info
 
 
 class GeoStruct(object):
@@ -215,6 +106,13 @@ class GeoStruct(object):
             cov += vario.covariance(pt0,pt1)
         return cov
 
+    def covariance_points(self,x0,y0,xother,yother):
+        cov = np.zeros((len(xother)))
+        for v in self.variograms:
+            cov += v.covariance_points(x0,y0,xother,yother)
+        return cov
+
+
     def plot(self):
         raise NotImplementedError()
 
@@ -224,6 +122,123 @@ class GeoStruct(object):
         for v in self.variograms:
             s += str(v)
         return s
+
+
+class OrdinaryKrige(object):
+
+    def __init__(self,geostruct,point_data):
+        assert isinstance(geostruct,GeoStruct),"need a GeoStruct, not {0}".\
+            format(type(geostruct))
+        self.geostruct = geostruct
+        assert isinstance(point_data,pd.DataFrame)
+        assert 'name' in point_data.columns,"point_data missing 'name'"
+        assert 'x' in point_data.columns, "point_data missing 'x'"
+        assert 'y' in point_data.columns, "point_data missing 'y'"
+        self.point_data = point_data
+        self.point_data.index = self.point_data.name
+        #X, Y = np.meshgrid(point_data.x,point_data.y)
+        #self.point_data_dist = pd.DataFrame(data=np.sqrt((X - X.T) ** 2 + (Y - Y.T) ** 2),
+        #                                    index=point_data.name,columns=point_data.name)
+        self.point_cov_df = self.geostruct.covariance_matrix(point_data.x,
+                                                            point_data.y,
+                                                            point_data.name).to_dataframe()
+
+    def calc_factors_grid(self,spatial_reference,zone_array=None,minpts_interp=1,
+                          maxpts_interp=20,search_radius=1.0e+10,verbose=False):
+        try:
+            import flopy
+        except Exception as e:
+            raise Exception("calc_grid_factors requires flopy...")
+        assert isinstance(spatial_reference,flopy.utils.SpatialReference)
+        x = spatial_reference.xcentergrid
+        y = spatial_reference.ycentergrid
+        if zone_array is not None:
+            assert zone_array.shape == x.shape
+            x[zone_array<=0] = np.NaN
+            y[zone_array<=0] = np.NaN
+            x = x[~np.isnan(x)]
+            y = y[~np.isnan(y)]
+
+        return self.calc_factors(x.ravel(),y.ravel(),
+                                 minpts_interp=minpts_interp,
+                                 maxpts_interp=maxpts_interp,
+                                 search_radius=search_radius,
+                                 verbose=verbose)
+
+    def calc_factors(self,x,y,minpts_interp=1,maxpts_interp=20,
+                     search_radius=1.0e+10,verbose=False):
+        assert len(x) == len(y)
+
+        # find the point data to use for each interp point
+        sqradius = search_radius**2
+        kf = KrigeFactors(data={'x':x,'y':y})
+        inames,idist,ifacts = [],[],[]
+        ptx_array = self.point_data.x.values
+        pty_array = self.point_data.y.values
+        ptnames = self.point_data.name.values
+        if verbose: print("starting interp point loop")
+        for idx,(ix,iy) in enumerate(zip(kf.x,kf.y)):
+            #dist = self.point_data.apply(lambda x: ((x.x-ix)**2)+\
+            #                                         ((x.y-iy)**2),axis=1)
+            if verbose:
+                istart = datetime.now()
+                print("processing interp point:{0}:{1}".format(ix,iy))
+            if verbose == 2:
+                start = datetime.now()
+                print("calc ipoint dist...",end='')
+            dist = pd.Series((ptx_array-ix)**2 + (pty_array-iy)**2,ptnames)
+            dist.sort_values(inplace=True)
+            dist = dist.loc[dist <= sqradius]
+            if len(dist) < minpts_interp:
+                inames.append([])
+                idist.append([])
+                ifacts.append([])
+                continue
+
+            dist = dist.iloc[:maxpts_interp].apply(np.sqrt)
+            pt_names = dist.index.values
+            if verbose == 2:
+                td = (datetime.now()-start).total_seconds()
+                print("...took {0}".format(td))
+                start = datetime.now()
+                print("extracting pt cov...",end='')
+            point_cov = self.point_cov_df.loc[pt_names,pt_names]
+            if verbose == 2:
+                td = (datetime.now()-start).total_seconds()
+                print("...took {0}".format(td))
+                print("forming ipt-to-point cov...",end='')
+            interp_cov = self.geostruct.covariance_points(ix,iy,self.point_data.loc[pt_names,"x"],
+                                                          self.point_data.loc[pt_names,"y"])
+            if verbose == 2:
+                td = (datetime.now()-start).total_seconds()
+                print("...took {0}".format(td))
+                print("forming lin alg components...",end='')
+            d = len(pt_names) + 1
+            A = np.ones((d,d))
+            A[:-1,:-1] = point_cov.values
+            A[-1,-1] = 0.0
+            rhs = np.ones((d,1))
+            rhs[:-1,0] = interp_cov
+            if verbose == 2:
+                td = (datetime.now()-start).total_seconds()
+                print("...took {0}".format(td))
+                print("solving...",end='')
+            facs = np.linalg.solve(A,rhs)
+            assert len(facs) - 1 == len(dist)
+            inames.append(pt_names)
+            idist.append(dist.values)
+            ifacts.append(facs[:-1,0])
+            if verbose == 2:
+                td = (datetime.now()-start).total_seconds()
+                print("...took {0}".format(td))
+            if verbose:
+                td = (datetime.now()-istart).total_seconds()
+                print("point took {0}".format(td))
+        kf["idist"] = idist
+        kf["inames"] = inames
+        kf["ifacts"] = ifacts
+        return kf
+
 
 
 class Vario2d(object):
@@ -259,11 +274,17 @@ class Vario2d(object):
         self.anisotropy = float(anisotropy)
         assert self.anisotropy > 0.0
         self.bearing = float(bearing)
-        self.bearing_rads = (np.pi / 180.0 ) * (90.0 - self.bearing)
-        self.rotation_coefs = [np.cos(self.bearing_rads),
-                               np.sin(self.bearing_rads),
-                               -1.0*np.sin(self.bearing_rads),
-                               np.cos(self.bearing_rads)]
+
+    @property
+    def bearing_rads(self):
+        return (np.pi / 180.0 ) * (90.0 - self.bearing)
+
+    @property
+    def rotation_coefs(self):
+        return [np.cos(self.bearing_rads),
+                np.sin(self.bearing_rads),
+                -1.0*np.sin(self.bearing_rads),
+                np.cos(self.bearing_rads)]
 
     def covariance_matrix(self,x,y,names=None,cov=None):
         """build a pyemu.Cov instance from Vario2d
@@ -302,25 +323,38 @@ class Vario2d(object):
         else:
             raise Exception("Vario2d.covariance_matrix() requires either" +
                             "names or cov arg")
-
+        rc = self.rotation_coefs
         for i1,(n1,x1,y1) in enumerate(zip(names,x,y)):
             dx = x1 - x[i1+1:]
             dy = y1 - y[i1+1:]
-            dxx = (dx * self.rotation_coefs[0]) +\
-                 (dy * self.rotation_coefs[1])
-            dyy = ((dx * self.rotation_coefs[2]) +\
-                 (dy * self.rotation_coefs[3])) *\
-                 self.anisotropy
+            dxx,dyy = self._apply_rotation(dx,dy)
             h = np.sqrt(dxx*dxx + dyy*dyy)
 
             h[h<0.0] = 0.0
-            h = self.h_function(h)
+            h = self._h_function(h)
             if np.any(np.isnan(h)):
                 raise Exception("nans in h for i1 {0}".format(i1))
             cov.x[i1,i1+1:] += h
         for i in range(len(names)):
             cov.x[i+1:,i] = cov.x[i,i+1:]
         return cov
+
+    def _apply_rotation(self,dx,dy):
+        if self.anisotropy == 1.0:
+            return dx,dy
+        dxx = (dx * self.rotation_coefs[0]) +\
+             (dy * self.rotation_coefs[1])
+        dyy = ((dx * self.rotation_coefs[2]) +\
+             (dy * self.rotation_coefs[3])) *\
+             self.anisotropy
+        return dxx,dyy
+
+    def covariance_points(self,x0,y0,xother,yother):
+        dx = x0 - xother
+        dy = y0 - yother
+        dxx,dyy = self._apply_rotation(dx,dy)
+        h = np.sqrt(dxx*dxx + dyy*dyy)
+        return self._h_function(h)
 
     def covariance(self,pt0,pt1):
         x = np.array([pt0[0],pt1[0]])
@@ -361,7 +395,7 @@ class ExpVario(Vario2d):
         super(ExpVario,self).__init__(contribution,a,anisotropy=anisotropy,
                                       bearing=bearing,name=name)
 
-    def h_function(self,h):
+    def _h_function(self,h):
         return self.contribution * np.exp(-1.0 * h / self.a)
 
 class GauVario(Vario2d):
@@ -388,7 +422,7 @@ class GauVario(Vario2d):
         super(GauVario,self).__init__(contribution,a,anisotropy=anisotropy,
                                       bearing=bearing,name=name)
 
-    def h_function(self,h):
+    def _h_function(self,h):
         hh = -1.0 * (h * h) / (self.a * self.a)
         return self.contribution * np.exp(hh)
 
@@ -416,7 +450,7 @@ class SphVario(Vario2d):
         super(SphVario,self).__init__(contribution,a,anisotropy=anisotropy,
                                       bearing=bearing,name=name)
 
-    def h_function(self,h):
+    def _h_function(self,h):
 
         hh = h / self.a
         h = self.contribution * (1.0 - (hh * (1.5 - (0.5 * hh * hh))))
@@ -435,3 +469,111 @@ class SphVario(Vario2d):
         #     return 0.0
 
 
+def read_struct_file(struct_file,return_type=GeoStruct):
+    """read an existing structure file into a GeoStruct instance
+    Parameters
+    ----------
+        struct_file : str
+            existing pest-type structure file
+    Returns
+    -------
+        GeoStruct instance
+    """
+
+    VARTYPE = {1:SphVario,2:ExpVario,3:GauVario,4:None}
+    assert os.path.exists(struct_file)
+    structures = []
+    variograms = []
+    with open(struct_file,'r') as f:
+        while True:
+            line = f.readline()
+            if line == '':
+                break
+            line = line.strip().lower()
+            if line.startswith("structure"):
+                name = line.strip().split()[1]
+                nugget,transform,variogram_info = _read_structure_attributes(f)
+                s = return_type(nugget=nugget,transform=transform,name=name)
+                s.variogram_info = variogram_info
+                # not sure what is going on, but if I don't copy s here,
+                # all the structures end up sharing all the variograms later
+                structures.append(copy.deepcopy(s))
+            elif line.startswith("variogram"):
+                name = line.strip().split()[1].lower()
+                vartype,bearing,a,anisotropy = _read_variogram(f)
+                if name in variogram_info:
+                    v = VARTYPE[vartype](variogram_info[name],a,anisotropy=anisotropy,
+                                         bearing=bearing,name=name)
+                    variograms.append(v)
+
+    for i,st in enumerate(structures):
+        for vname in st.variogram_info:
+            vfound = None
+            for v in variograms:
+                if v.name == vname:
+                    vfound = v
+                    break
+            if vfound is None:
+                raise Exception("variogram {0} not found for structure {1}".\
+                                format(vname,s.name))
+
+            st.variograms.append(vfound)
+    if len(structures) == 1:
+        return structures[0]
+    return structures
+
+
+
+def _read_variogram(f):
+    line = ''
+    vartype = None
+    bearing = 0.0
+    a = None
+    anisotropy = 1.0
+    while "end variogram" not in line:
+        line = f.readline()
+        if line == '':
+            raise Exception("EOF while read variogram")
+        line = line.strip().lower().split()
+        if line[0].startswith('#'):
+            continue
+        if line[0] == "vartype":
+            vartype = int(line[1])
+        elif line[0] == "bearing":
+            bearing = float(line[1])
+        elif line[0] == "a":
+            a = float(line[1])
+        elif line[0] == "anisotropy":
+            anisotropy = float(line[1])
+        elif line[0] == "end":
+            break
+        else:
+            raise Exception("unrecognized arg in variogram:{0}".format(line[0]))
+    return vartype,bearing,a,anisotropy
+
+
+def _read_structure_attributes(f):
+    line = ''
+    variogram_info = {}
+    while "end structure" not in line:
+        line = f.readline()
+        if line == '':
+            raise Exception("EOF while reading structure")
+        line = line.strip().lower().split()
+        if line[0].startswith('#'):
+            continue
+        if line[0] == "nugget":
+            nugget = float(line[1])
+        elif line[0] == "transform":
+            transform = line[1]
+        elif line[0] == "numvariogram":
+            numvariograms = int(line[1])
+        elif line[0] == "variogram":
+            variogram_info[line[1]] = float(line[2])
+        elif line[0] == "end":
+            break
+        else:
+            raise Exception("unrecognized line in structure definition:{0}".\
+                            format(line[0]))
+    assert numvariograms == len(variogram_info)
+    return nugget,transform,variogram_info
