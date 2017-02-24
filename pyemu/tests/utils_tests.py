@@ -443,8 +443,13 @@ def ok_test():
     pts_data = pd.DataFrame({"x":[1.0,2.0,3.0],"y":[0.,0.,0.],"name":["p1","p2","p3"]})
     gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
     ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
-    interp_points = pd.DataFrame({"x":[1.0,1.0],"y":[0.0,1.0],"name":["ip1","ip2"]})
+    interp_points = pts_data.copy()
     kf = ok.calc_factors(interp_points.x,interp_points.y)
+    for ptname in pts_data.name:
+        assert kf.loc[ptname,"inames"][0] == ptname
+        assert kf.loc[ptname,"ifacts"][0] == 1.0
+        assert sum(kf.loc[ptname,"ifacts"]) == 1.0
+    print(kf)
 
 def ok_grid_test():
 
@@ -493,11 +498,11 @@ if __name__ == "__main__":
     # setup_ppcov_simple()
     #ppcov_simple_test()
     # fac2real_test()
-    vario_test()
+    #vario_test()
     # geostruct_test()
     # aniso_test()
     # struct_file_test()
     # covariance_matrix_test()
     # add_pi_obj_func_test()
-    #ok_test()
-    ok_grid_test()
+    ok_test()
+    #ok_grid_test()
