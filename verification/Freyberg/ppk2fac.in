@@ -1,0 +1,15 @@
+grid.spc
+pp_00_pp.dat
+0.0
+zone.dat
+f
+structure.dat
+struct1
+o
+1.0e+10
+1
+10
+ppk2fac_fac.dat
+f
+ppk2fac_stdev.ref
+reg.dat

@@ -4,21 +4,30 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 from pyemu import Cov
+from pyemu.utils.gw_utils import pp_file_to_dataframe
 
 #TODO:  plot variogram elipse
 
 EPSILON = 1.0e-7
 
 
-class KrigeFactors(pd.DataFrame):
-    def __init__(self,*args,**kwargs):
-        super(KrigeFactors,self).__init__(*args,**kwargs)
-
-    def to_factors(self,filename):
-        pass
-
-    def from_factors(self,filename):
-        raise NotImplementedError()
+# class KrigeFactors(pd.DataFrame):
+#     def __init__(self,*args,**kwargs):
+#         super(KrigeFactors,self).__init__(*args,**kwargs)
+#
+#     def to_factors(self,filename,nrow,ncol,
+#                    points_file="points.junk",
+#                    zone_file="zone.junk"):
+#         with open(filename,'w') as f:
+#             f.write(points_file+'\n')
+#             f.write(zone_file+'\n')
+#             f.write("{0} {1}\n".format(ncol,nrow))
+#             f.write("{0}\n".format(self.shape[0]))
+#
+#
+#
+#     def from_factors(self,filename):
+#         raise NotImplementedError()
 
 
 
@@ -60,7 +69,7 @@ class GeoStruct(object):
         for v in self.variograms:
             v.to_struct_file(f)
 
-    def covariance_matrix(self,x,y,names=None,cov=None):
+    def covariance_matrix(self,x,y,names=None,cov=None, nugget=True):
         """build a pyemu.Cov instance from GeoStruct
         Parameters
         ----------
@@ -72,6 +81,7 @@ class GeoStruct(object):
                 names of location. If None, generic names will be used
             cov : pyemu.Cov instance (optional)
                 an existing Cov instance to add contribution to
+            nugget: bool flag to include the nugget on the diagonal
         Returns
         -------
             pyemu.Cov
@@ -85,12 +95,15 @@ class GeoStruct(object):
         if names is not None:
             assert x.shape[0] == len(names)
             c = np.zeros((len(names),len(names)))
-            np.fill_diagonal(c,self.nugget)
+            if nugget:
+                np.fill_diagonal(c,self.nugget)
             cov = Cov(x=c,names=names)
         elif cov is not None:
             assert cov.shape[0] == x.shape[0]
             names = cov.row_names
-            c = np.zeros((len(names),1)) + self.nugget
+            c = np.zeros((len(names),1))
+            if nugget:
+                c += self.nugget
             cont = Cov(x=c,names=names,isdiagonal=True)
             cov += cont
 
@@ -117,7 +130,7 @@ class GeoStruct(object):
         return cov
 
     def covariance_points(self,x0,y0,xother,yother):
-        cov = np.zeros((len(xother)))
+        cov = np.zeros((len(xother))) + self.nugget
         for v in self.variograms:
             cov += v.covariance_points(x0,y0,xother,yother)
         return cov
@@ -137,21 +150,27 @@ class GeoStruct(object):
 class OrdinaryKrige(object):
 
     def __init__(self,geostruct,point_data):
+        if isinstance(geostruct,str):
+            geostruct = read_struct_file(geostruct)
         assert isinstance(geostruct,GeoStruct),"need a GeoStruct, not {0}".\
             format(type(geostruct))
         self.geostruct = geostruct
+        if isinstance(point_data,str):
+            point_data = pp_file_to_dataframe(point_data)
         assert isinstance(point_data,pd.DataFrame)
         assert 'name' in point_data.columns,"point_data missing 'name'"
         assert 'x' in point_data.columns, "point_data missing 'x'"
         assert 'y' in point_data.columns, "point_data missing 'y'"
         self.point_data = point_data
         self.point_data.index = self.point_data.name
+        self.interp_data = None
+        self.spatial_reference = None
         #X, Y = np.meshgrid(point_data.x,point_data.y)
         #self.point_data_dist = pd.DataFrame(data=np.sqrt((X - X.T) ** 2 + (Y - Y.T) ** 2),
         #                                    index=point_data.name,columns=point_data.name)
         self.point_cov_df = self.geostruct.covariance_matrix(point_data.x,
                                                             point_data.y,
-                                                            point_data.name).to_dataframe()
+                                                            point_data.name, nugget=True).to_dataframe()
 
     def calc_factors_grid(self,spatial_reference,zone_array=None,minpts_interp=1,
                           maxpts_interp=20,search_radius=1.0e+10,verbose=False):
@@ -163,12 +182,14 @@ class OrdinaryKrige(object):
         x = spatial_reference.xcentergrid
         y = spatial_reference.ycentergrid
         if zone_array is not None:
+            print("only supporting a single zone via zone array - "+\
+                  "locations cooresponding to values in zone array > 0 are used")
             assert zone_array.shape == x.shape
             x[zone_array<=0] = np.NaN
             y[zone_array<=0] = np.NaN
-            x = x[~np.isnan(x)]
-            y = y[~np.isnan(y)]
-
+            #x = x[~np.isnan(x)]
+            #y = y[~np.isnan(y)]
+        self.spatial_reference = spatial_reference
         return self.calc_factors(x.ravel(),y.ravel(),
                                  minpts_interp=minpts_interp,
                                  maxpts_interp=maxpts_interp,
@@ -181,21 +202,27 @@ class OrdinaryKrige(object):
 
         # find the point data to use for each interp point
         sqradius = search_radius**2
-        kf = KrigeFactors(data={'x':x,'y':y})
+        df = pd.DataFrame(data={'x':x,'y':y})
         inames,idist,ifacts = [],[],[]
         ptx_array = self.point_data.x.values
         pty_array = self.point_data.y.values
         ptnames = self.point_data.name.values
         if verbose: print("starting interp point loop")
-        for idx,(ix,iy) in enumerate(zip(kf.x,kf.y)):
+        for idx,(ix,iy) in enumerate(zip(df.x,df.y)):
             #dist = self.point_data.apply(lambda x: ((x.x-ix)**2)+\
             #                                         ((x.y-iy)**2),axis=1)
+            if np.isnan(ix) or np.isnan(iy):
+                inames.append([])
+                idist.append([])
+                ifacts.append([])
+                continue
             if verbose:
                 istart = datetime.now()
                 print("processing interp point:{0}:{1}".format(ix,iy))
             if verbose == 2:
                 start = datetime.now()
                 print("calc ipoint dist...",end='')
+
             dist = pd.Series((ptx_array-ix)**2 + (pty_array-iy)**2,ptnames)
             dist.sort_values(inplace=True)
             dist = dist.loc[dist <= sqradius]
@@ -244,10 +271,34 @@ class OrdinaryKrige(object):
             if verbose:
                 td = (datetime.now()-istart).total_seconds()
                 print("point took {0}".format(td))
-        kf["idist"] = idist
-        kf["inames"] = inames
-        kf["ifacts"] = ifacts
-        return kf
+        df["idist"] = idist
+        df["inames"] = inames
+        df["ifacts"] = ifacts
+        self.interp_data = df
+        return df
+
+    def to_grid_factors_file(self, filename,points_file="points.junk",
+                             zone_file="zone.junk"):
+        if self.interp_data is None:
+            raise Exception("ok.interp_data is None, must call calc_factors_grid() first")
+        if self.spatial_reference is None:
+            raise Exception("ok.spatial_reference is None, must call calc_factors_grid() first")
+        with open(filename, 'w') as f:
+            f.write(points_file + '\n')
+            f.write(zone_file + '\n')
+            f.write("{0} {1}\n".format(self.spatial_reference.ncol, self.spatial_reference.nrow))
+            f.write("{0}\n".format(self.point_data.shape[0]))
+            [f.write("{0}\n".format(name)) for name in self.point_data.name]
+            t = 0
+            if self.geostruct.transform == "log":
+                t = 1
+            pt_names = list(self.point_data.name)
+            for idx,names,facts in zip(self.interp_data.index,self.interp_data.inames,self.interp_data.ifacts):
+                n_idxs = [pt_names.index(name) for name in names]
+                f.write("{0} {1} {2} {3:8.5e} ".format(idx+1, t, len(names), 0.0))
+                [f.write("{0} {1:12.8g} ".format(i+1, w)) for i, w in zip(n_idxs, np.squeeze(facts))]
+                f.write("\n")
+
 
 
 

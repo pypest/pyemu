@@ -532,7 +532,14 @@ class Pst(object):
             # in case of a leading '-' or '+'
             if len(raw[0]) == 0:
                 raw = raw[1:]
-            return [r.split('*')[1].replace("log(",'').replace(')','').strip() for r in raw]
+            # pnames = []
+            # for r in raw:
+            #     if '*' not in r:
+            #         continue
+            #     pname =  r.split('*')[1].replace("log(", '').replace(')', '').strip()
+            #     pnames.append(pname)
+            # return pnames
+            return [r.split('*')[1].replace("log(",'').replace(')','').strip() for r in raw if '*' in r]
 
         self.prior_information.loc[:,"names"] =\
             self.prior_information.equation.apply(lambda x: parse(x))
