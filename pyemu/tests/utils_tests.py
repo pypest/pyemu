@@ -96,14 +96,22 @@ def geostruct_test():
 def struct_file_test():
     import os
     import pyemu
-    struct = pyemu.utils.geostats.read_struct_file(
-            os.path.join("utils","struct.dat"))[0]
-    print(struct)
+    structs = pyemu.utils.geostats.read_struct_file(
+            os.path.join("utils","struct.dat"))
+    #print(structs[0])
     pt0 = (0,0)
     pt1 = (0,0)
-    assert struct.covariance(pt0,pt1) == struct.nugget + \
-                                         struct.variograms[0].contribution
-
+    for s in structs:
+        assert s.covariance(pt0,pt1) == s.nugget + \
+                                             s.variograms[0].contribution
+    with open(os.path.join("utils","struct_out.dat"),'w') as f:
+        for s in structs:
+            s.to_struct_file(f)
+    structs1 = pyemu.utils.geostats.read_struct_file(
+            os.path.join("utils","struct_out.dat"))
+    for s in structs1:
+        assert s.covariance(pt0,pt1) == s.nugget + \
+                                             s.variograms[0].contribution
 
 def covariance_matrix_test():
     import os
@@ -480,29 +488,29 @@ def ok_grid_test():
 
 
 if __name__ == "__main__":
-    #kl_test()
-    #zero_order_regul_test()
-    #first_order_pearson_regul_test()
-    #master_and_slaves()
-    #smp_to_ins_test()
-    #read_pestpp_runstorage_file_test()
-    # write_tpl_test()
-    #pp_to_shapefile_test()
-    # read_pval_test()
-    # read_hob_test()
-    #setup_pp_test()
-    # to_mps_test()
-    # pp_to_tpl_test()
-    #setup_ppcov_complex()
-    #ppcov_complex_test()
-    # setup_ppcov_simple()
-    #ppcov_simple_test()
-    # fac2real_test()
-    #vario_test()
-    # geostruct_test()
-    # aniso_test()
-    # struct_file_test()
-    # covariance_matrix_test()
-    # add_pi_obj_func_test()
+    kl_test()
+    zero_order_regul_test()
+    first_order_pearson_regul_test()
+    master_and_slaves()
+    smp_to_ins_test()
+    read_pestpp_runstorage_file_test()
+    write_tpl_test()
+    pp_to_shapefile_test()
+    read_pval_test()
+    read_hob_test()
+    setup_pp_test()
+    to_mps_test()
+    pp_to_tpl_test()
+    setup_ppcov_complex()
+    ppcov_complex_test()
+    setup_ppcov_simple()
+    ppcov_simple_test()
+    fac2real_test()
+    vario_test()
+    geostruct_test()
+    aniso_test()
+    struct_file_test()
+    covariance_matrix_test()
+    add_pi_obj_func_test()
     ok_test()
-    #ok_grid_test()
+    ok_grid_test()

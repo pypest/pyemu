@@ -47,8 +47,18 @@ class GeoStruct(object):
         assert transform in ["none","log"]
         self.transform = transform
 
-    def to_struct_file(self):
-        raise NotImplementedError()
+    def to_struct_file(self, f):
+        if isinstance(f, str):
+            f = open(f,'w')
+        f.write("STRUCTURE {0}\n".format(self.name))
+        f.write("  NUGGET {0}\n".format(self.nugget))
+        f.write("  NUMVARIOGRAM {0}\n".format(len(self.variograms)))
+        for v in self.variograms:
+            f.write("  VARIOGRAM {0} {1}\n".format(v.name,v.contribution))
+        f.write("  TRANSFORM {0}\n".format(self.transform))
+        f.write("END STRUCTURE\n\n")
+        for v in self.variograms:
+            v.to_struct_file(f)
 
     def covariance_matrix(self,x,y,names=None,cov=None):
         """build a pyemu.Cov instance from GeoStruct
@@ -275,6 +285,16 @@ class Vario2d(object):
         assert self.anisotropy > 0.0
         self.bearing = float(bearing)
 
+    def to_struct_file(self, f):
+        if isinstance(f, str):
+            f = open(f,'w')
+        f.write("VARIOGRAM {0}\n".format(self.name))
+        f.write("  VARTYPE {0}\n".format(self.vartype))
+        f.write("  A {0}\n".format(self.a))
+        f.write("  ANISOTROPY {0}\n".format(self.anisotropy))
+        f.write("  BEARING {0}\n".format(self.bearing))
+        f.write("END VARIOGRAM\n\n")
+
     @property
     def bearing_rads(self):
         return (np.pi / 180.0 ) * (90.0 - self.bearing)
@@ -394,6 +414,7 @@ class ExpVario(Vario2d):
     """
         super(ExpVario,self).__init__(contribution,a,anisotropy=anisotropy,
                                       bearing=bearing,name=name)
+        self.vartype = 2
 
     def _h_function(self,h):
         return self.contribution * np.exp(-1.0 * h / self.a)
@@ -421,6 +442,7 @@ class GauVario(Vario2d):
     def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
         super(GauVario,self).__init__(contribution,a,anisotropy=anisotropy,
                                       bearing=bearing,name=name)
+        self.vartype = 3
 
     def _h_function(self,h):
         hh = -1.0 * (h * h) / (self.a * self.a)
@@ -449,6 +471,7 @@ class SphVario(Vario2d):
     def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
         super(SphVario,self).__init__(contribution,a,anisotropy=anisotropy,
                                       bearing=bearing,name=name)
+        self.vartype = 1
 
     def _h_function(self,h):
 
