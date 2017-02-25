@@ -170,8 +170,9 @@ class OrdinaryKrige(object):
         #                                    index=point_data.name,columns=point_data.name)
         self.point_cov_df = self.geostruct.covariance_matrix(point_data.x,
                                                             point_data.y,
-                                                            point_data.name, nugget=True).to_dataframe()
-
+                                                            point_data.name).to_dataframe()
+        #for name in self.point_cov_df.index:
+        #    self.point_cov_df.loc[name,name] -= self.geostruct.nugget
     def calc_factors_grid(self,spatial_reference,zone_array=None,minpts_interp=1,
                           maxpts_interp=20,search_radius=1.0e+10,verbose=False):
         try:
@@ -209,9 +210,7 @@ class OrdinaryKrige(object):
         ptnames = self.point_data.name.values
         if verbose: print("starting interp point loop")
         for idx,(ix,iy) in enumerate(zip(df.x,df.y)):
-            #dist = self.point_data.apply(lambda x: ((x.x-ix)**2)+\
-            #                                         ((x.y-iy)**2),axis=1)
-            if np.isnan(ix) or np.isnan(iy):
+            if np.isnan(ix) or np.isnan(iy): #if nans, skip
                 inames.append([])
                 idist.append([])
                 ifacts.append([])
@@ -223,43 +222,61 @@ class OrdinaryKrige(object):
                 start = datetime.now()
                 print("calc ipoint dist...",end='')
 
+            #  calc dist from this interp point to all point data...slow
             dist = pd.Series((ptx_array-ix)**2 + (pty_array-iy)**2,ptnames)
             dist.sort_values(inplace=True)
             dist = dist.loc[dist <= sqradius]
+
+            # if too few points were found, skip
             if len(dist) < minpts_interp:
                 inames.append([])
                 idist.append([])
                 ifacts.append([])
                 continue
 
+            # only the maxpts_interp points
             dist = dist.iloc[:maxpts_interp].apply(np.sqrt)
             pt_names = dist.index.values
+            # if one of the points is super close, just use it and skip
+            if dist.min() <= EPSILON:
+                ifacts.append([1.0])
+                idist.append([EPSILON])
+                inames.append([dist.idxmin()])
+                continue
             if verbose == 2:
                 td = (datetime.now()-start).total_seconds()
                 print("...took {0}".format(td))
                 start = datetime.now()
                 print("extracting pt cov...",end='')
+
+            #vextract the point-to-point covariance matrix
             point_cov = self.point_cov_df.loc[pt_names,pt_names]
             if verbose == 2:
                 td = (datetime.now()-start).total_seconds()
                 print("...took {0}".format(td))
                 print("forming ipt-to-point cov...",end='')
+
+            # calc the interp point to points covariance
             interp_cov = self.geostruct.covariance_points(ix,iy,self.point_data.loc[pt_names,"x"],
                                                           self.point_data.loc[pt_names,"y"])
+
             if verbose == 2:
                 td = (datetime.now()-start).total_seconds()
                 print("...took {0}".format(td))
                 print("forming lin alg components...",end='')
-            d = len(pt_names) + 1
+
+            # form the linear algebra parts and solve
+            d = len(pt_names) + 1 # +1 for lagrange mult
             A = np.ones((d,d))
             A[:-1,:-1] = point_cov.values
-            A[-1,-1] = 0.0
+            A[-1,-1] = 0.0 #unbiaised constraint
             rhs = np.ones((d,1))
             rhs[:-1,0] = interp_cov
             if verbose == 2:
                 td = (datetime.now()-start).total_seconds()
                 print("...took {0}".format(td))
                 print("solving...",end='')
+            # solve
             facs = np.linalg.solve(A,rhs)
             assert len(facs) - 1 == len(dist)
             inames.append(pt_names)
@@ -296,7 +313,7 @@ class OrdinaryKrige(object):
             for idx,names,facts in zip(self.interp_data.index,self.interp_data.inames,self.interp_data.ifacts):
                 n_idxs = [pt_names.index(name) for name in names]
                 f.write("{0} {1} {2} {3:8.5e} ".format(idx+1, t, len(names), 0.0))
-                [f.write("{0} {1:12.8g} ".format(i+1, w)) for i, w in zip(n_idxs, np.squeeze(facts))]
+                [f.write("{0} {1:12.8g} ".format(i+1, w)) for i, w in zip(n_idxs, facts)]
                 f.write("\n")
 
 
