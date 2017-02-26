@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from pyemu import Cov
 from pyemu.utils.gw_utils import pp_file_to_dataframe
+from .reference import SpatialReference
 
 #TODO:  plot variogram elipse
 
@@ -70,7 +71,7 @@ class GeoStruct(object):
         for v in self.variograms:
             v.to_struct_file(f)
 
-    def covariance_matrix(self,x,y,names=None,cov=None, nugget=True):
+    def covariance_matrix(self,x,y,names=None,cov=None):
         """build a pyemu.Cov instance from GeoStruct
         Parameters
         ----------
@@ -82,7 +83,6 @@ class GeoStruct(object):
                 names of location. If None, generic names will be used
             cov : pyemu.Cov instance (optional)
                 an existing Cov instance to add contribution to
-            nugget: bool flag to include the nugget on the diagonal
         Returns
         -------
             pyemu.Cov
@@ -96,15 +96,13 @@ class GeoStruct(object):
         if names is not None:
             assert x.shape[0] == len(names)
             c = np.zeros((len(names),len(names)))
-            if nugget:
-                np.fill_diagonal(c,self.nugget)
+            np.fill_diagonal(c,self.nugget)
             cov = Cov(x=c,names=names)
         elif cov is not None:
             assert cov.shape[0] == x.shape[0]
             names = cov.row_names
             c = np.zeros((len(names),1))
-            if nugget:
-                c += self.nugget
+            c += self.nugget
             cont = Cov(x=c,names=names,isdiagonal=True)
             cov += cont
 
@@ -176,13 +174,15 @@ class OrdinaryKrige(object):
         #    self.point_cov_df.loc[name,name] -= self.geostruct.nugget
     def calc_factors_grid(self,spatial_reference,zone_array=None,minpts_interp=1,
                           maxpts_interp=20,search_radius=1.0e+10,verbose=False):
+
+        #assert isinstance(spatial_reference,SpatialReference)
         try:
-            import flopy
+            x = spatial_reference.xcentergrid
+            y = spatial_reference.ycentergrid
         except Exception as e:
-            raise Exception("calc_grid_factors requires flopy...")
-        assert isinstance(spatial_reference,flopy.utils.SpatialReference)
-        x = spatial_reference.xcentergrid
-        y = spatial_reference.ycentergrid
+            raise Exception("spatial_reference does not have proper attributes:{0}"\
+                            .format(str(e)))
+
         if zone_array is not None:
             print("only supporting a single zone via zone array - "+\
                   "locations cooresponding to values in zone array > 0 are used")

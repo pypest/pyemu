@@ -486,8 +486,27 @@ def ok_grid_test():
     kf = ok.calc_factors_grid(sr,verbose=False)
     ok.to_grid_factors_file(os.path.join("utils","test.fac"))
 
+def ppk2fac_verf_test():
+    import os
+    import numpy as np
+    import pyemu
+    ws = os.path.join("..","..","verification","Freyberg")
+    gspc_file = os.path.join(ws,"grid.spc")
+    pp_file = os.path.join(ws,"pp_00_pp.dat")
+    str_file = os.path.join(ws,"structure.complex.dat")
+    ppk2fac_facfile = os.path.join(ws,"ppk2fac_fac.dat")
+    pyemu_facfile = os.path.join("utils","pyemu_facfile.dat")
+    sr = pyemu.utils.SpatialReference.from_gridspec(gspc_file)
+    ok = pyemu.utils.OrdinaryKrige(str_file,pp_file)
+    ok.calc_factors_grid(sr,maxpts_interp=10)
+    ok.to_grid_factors_file(pyemu_facfile)
 
+    pyemu_arr = pyemu.utils.fac2real(pp_file,pyemu_facfile,out_file=None)
+    ppk2fac_arr = pyemu.utils.fac2real(pp_file,ppk2fac_facfile,out_file=None)
+    diff = np.abs(pyemu_arr - ppk2fac_arr).sum()
+    assert diff < 1.0e-6
 
+    
 if __name__ == "__main__":
     # kl_test()
     # zero_order_regul_test()
@@ -514,4 +533,5 @@ if __name__ == "__main__":
     # covariance_matrix_test()
     # add_pi_obj_func_test()
     # ok_test()
-    ok_grid_test()
+    #ok_grid_test()
+    ppk2fac_verf_test()
