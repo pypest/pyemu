@@ -506,7 +506,7 @@ def ppk2fac_verf_test():
     diff = np.abs(pyemu_arr - ppk2fac_arr).sum()
     assert diff < 1.0e-6
 
-    
+
 if __name__ == "__main__":
     # kl_test()
     # zero_order_regul_test()
