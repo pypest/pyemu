@@ -189,8 +189,8 @@ class OrdinaryKrige(object):
 
         #assert isinstance(spatial_reference,SpatialReference)
         try:
-            x = spatial_reference.xcentergrid
-            y = spatial_reference.ycentergrid
+            x = spatial_reference.xcentergrid.copy()
+            y = spatial_reference.ycentergrid.copy()
         except Exception as e:
             raise Exception("spatial_reference does not have proper attributes:{0}"\
                             .format(str(e)))
@@ -238,6 +238,7 @@ class OrdinaryKrige(object):
                 inames.append([])
                 idist.append([])
                 ifacts.append([])
+                err_var.append(np.NaN)
                 continue
             if verbose:
                 istart = datetime.now()
@@ -256,7 +257,7 @@ class OrdinaryKrige(object):
                 inames.append([])
                 idist.append([])
                 ifacts.append([])
-                err_var.append(np.NaN)
+                err_var.append(sill)
                 continue
 
             # only the maxpts_interp points
@@ -305,8 +306,8 @@ class OrdinaryKrige(object):
             # # solve
             facs = np.linalg.solve(A,rhs)
             assert len(facs) - 1 == len(dist)
-            err_var.append(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)]))
 
+            err_var.append(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)]))
             inames.append(pt_names)
             idist.append(dist.values)
             ifacts.append(facs[:-1,0])

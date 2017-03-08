@@ -618,11 +618,11 @@ kr10c58                log                    factor                2.0000000000
 kr10c59                log                    factor                2.0000000000E+02      2.0000000000E+01      2.0000000000E+03       p                     1.0000000000E+00      0.0000000000E+00      1          
 kr10c60                log                    factor                2.0000000000E+02      2.0000000000E+01      2.0000000000E+03       p                     1.0000000000E+00      0.0000000000E+00      1
 * observation groups
-pred                 
 head                 
+pred                 
 conc                 
-regul_m              
 regul_p              
+regul_m              
 * observation data
 h_obs01_1             5.1396200000E-02      8.1413420768E+01       head                 
 h_obs01_2             2.2156200000E-02      0.0000000000E+00       head                 
@@ -1311,8 +1311,8 @@ kr10c57               1.0 * log(kr10c57) = 2.301030 1.0000000000E+00     regul_p
 kr10c58               1.0 * log(kr10c58) = 2.301030 1.0000000000E+00     regul_p              
 kr10c59               1.0 * log(kr10c59) = 2.301030 1.0000000000E+00     regul_p              
 kr10c60               1.0 * log(kr10c60) = 2.301030 1.0000000000E+00     regul_p              
-++N_ITER_BASE(1)
-++N_ITER_SUPER(4)
 ++MAX_N_SUPER(77)
 ++predictions(pd_one,pd_ten,pd_half)
+++N_ITER_BASE(1)
+++N_ITER_SUPER(4)
 ++SUPER_EIGTHRES(1.0e-8)

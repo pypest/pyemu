@@ -13,8 +13,8 @@ pcf
 1715  5.000000e-007
 1
 * parameter groups
-kp                      relative              1.0000000000E-02       0.0  always_3              2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller              
 kz                      relative              1.0000000000E-02       0.0  always_3              2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller              
+kp                      relative              1.0000000000E-02       0.0  always_3              2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller              
 rech                    relative              1.0000000000E-02       0.0  always_3              2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller              
 cond                    relative              1.0000000000E-02       0.0  always_3              2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller
 * parameter data
@@ -3721,15 +3721,15 @@ kzkpz86_ss3            kzkpz104_ss3
 kzkpz87_ss3            kzkpz105_ss3         
 kzkpz9_ss3             kzkpz45_ss3
 * observation groups
-head_fair            
-head_good            
-ofr                  
 bad_odanah           
-2013seepage          
-head_best            
-wcrs1                
-sm_streams           
 seepagerun           
+wcrs1                
+head_fair            
+head_best            
+ofr                  
+sm_streams           
+head_good            
+2013seepage          
 * observation data
 prenticepark          6.1000000000E+02      6.6666666667E-02       head_good            
 minersvillea          8.0000000000E+02      6.6666666667E-02       head_good            
