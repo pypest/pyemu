@@ -3721,14 +3721,14 @@ kzkpz86_ss3            kzkpz104_ss3
 kzkpz87_ss3            kzkpz105_ss3         
 kzkpz9_ss3             kzkpz45_ss3
 * observation groups
-bad_odanah           
-sm_streams           
 head_fair            
-ofr                  
-wcrs1                
-2013seepage          
 head_good            
+ofr                  
+bad_odanah           
+2013seepage          
 head_best            
+wcrs1                
+sm_streams           
 seepagerun           
 * observation data
 prenticepark          6.1000000000E+02      6.6666666667E-02       head_good            

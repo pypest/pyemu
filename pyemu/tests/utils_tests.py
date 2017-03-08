@@ -473,17 +473,22 @@ def ok_grid_test():
     delr = np.ones((ncol)) * 1.0/float(ncol)
     delc = np.ones((nrow)) * 1.0/float(nrow)
 
-    num_pts = 10
+    num_pts = 0
     ptx = np.random.random(num_pts)
     pty = np.random.random(num_pts)
     ptname = ["p{0}".format(i) for i in range(num_pts)]
     pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
+    pts_data.index = pts_data.name
+    pts_data = pts_data.loc[:,["x","y","name"]]
+
 
     sr = flopy.utils.SpatialReference(delr=delr,delc=delc)
+    pts_data.loc["i0j0", :] = [sr.xcentergrid[0,0],sr.ycentergrid[0,0],"i0j0"]
+    pts_data.loc["imxjmx", :] = [sr.xcentergrid[-1, -1], sr.ycentergrid[-1, -1], "imxjmx"]
     str_file = os.path.join("utils","struct_test.dat")
     gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
     ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
-    kf = ok.calc_factors_grid(sr,verbose=False)
+    kf = ok.calc_factors_grid(sr,verbose=False,var_filename=os.path.join("utils","test_var.ref"),minpts_interp=1)
     ok.to_grid_factors_file(os.path.join("utils","test.fac"))
 
 def ppk2fac_verf_test():
@@ -533,5 +538,5 @@ if __name__ == "__main__":
     # covariance_matrix_test()
     # add_pi_obj_func_test()
     # ok_test()
-    #ok_grid_test()
-    ppk2fac_verf_test()
+    ok_grid_test()
+    #ppk2fac_verf_test()

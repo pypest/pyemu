@@ -134,6 +134,13 @@ class GeoStruct(object):
             cov += v.covariance_points(x0,y0,xother,yother)
         return cov
 
+    @property
+    def sill(self):
+        sill = self.nugget
+        for v in self.variograms:
+            sill += v.contribution
+        return sill
+
 
     def plot(self):
         raise NotImplementedError()
@@ -177,7 +184,8 @@ class OrdinaryKrige(object):
         pass
 
     def calc_factors_grid(self,spatial_reference,zone_array=None,minpts_interp=1,
-                          maxpts_interp=20,search_radius=1.0e+10,verbose=False):
+                          maxpts_interp=20,search_radius=1.0e+10,verbose=False,
+                          var_filename=None):
 
         #assert isinstance(spatial_reference,SpatialReference)
         try:
@@ -196,11 +204,18 @@ class OrdinaryKrige(object):
             #x = x[~np.isnan(x)]
             #y = y[~np.isnan(y)]
         self.spatial_reference = spatial_reference
-        return self.calc_factors(x.ravel(),y.ravel(),
-                                 minpts_interp=minpts_interp,
-                                 maxpts_interp=maxpts_interp,
-                                 search_radius=search_radius,
-                                 verbose=verbose)
+        df = self.calc_factors(x.ravel(),y.ravel(),
+                               minpts_interp=minpts_interp,
+                               maxpts_interp=maxpts_interp,
+                               search_radius=search_radius,
+                               verbose=verbose)
+        if var_filename is not None:
+
+            arr = np.zeros((self.spatial_reference.nrow,self.spatial_reference.ncol)) - 1.0e+30
+            arr = df.err_var.values.reshape(x.shape)
+            # for i,j,var in zip(df.i,df.j,df.err_var):
+            #     arr[i,j] = var
+            np.savetxt(var_filename,arr,fmt="%15.6E")
 
     def calc_factors(self,x,y,minpts_interp=1,maxpts_interp=20,
                      search_radius=1.0e+10,verbose=False):
@@ -209,7 +224,9 @@ class OrdinaryKrige(object):
         # find the point data to use for each interp point
         sqradius = search_radius**2
         df = pd.DataFrame(data={'x':x,'y':y})
-        inames,idist,ifacts = [],[],[]
+        inames,idist,ifacts,err_var = [],[],[],[]
+        sill = self.geostruct.sill
+
         ptx_array = self.point_data.x.values
         pty_array = self.point_data.y.values
         ptnames = self.point_data.name.values
@@ -239,6 +256,7 @@ class OrdinaryKrige(object):
                 inames.append([])
                 idist.append([])
                 ifacts.append([])
+                err_var.append(np.NaN)
                 continue
 
             # only the maxpts_interp points
@@ -249,6 +267,7 @@ class OrdinaryKrige(object):
                 ifacts.append([1.0])
                 idist.append([EPSILON])
                 inames.append([dist.idxmin()])
+                err_var.append(self.geostruct.nugget)
                 continue
             # if verbose == 2:
             #     td = (datetime.now()-start).total_seconds()
@@ -286,6 +305,8 @@ class OrdinaryKrige(object):
             # # solve
             facs = np.linalg.solve(A,rhs)
             assert len(facs) - 1 == len(dist)
+            err_var.append(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)]))
+
             inames.append(pt_names)
             idist.append(dist.values)
             ifacts.append(facs[:-1,0])
@@ -298,10 +319,12 @@ class OrdinaryKrige(object):
         df["idist"] = idist
         df["inames"] = inames
         df["ifacts"] = ifacts
+        df["err_var"] = err_var
         self.interp_data = df
         td = (datetime.now() - start_loop).total_seconds()
         print("took {0}".format(td))
         return df
+
 
     def to_grid_factors_file(self, filename,points_file="points.junk",
                              zone_file="zone.junk"):
