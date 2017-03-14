@@ -1665,11 +1665,13 @@ class Cov(Matrix):
         return cls(x=x,names=onames,isdiagonal=True)
 
     @classmethod
-    def from_parbounds(cls, pst_file):
+    def from_parbounds(cls, pst_file, sigma_range = 4.0):
         """load Covariances from a pest control file parameter data section
         Parameters:
         ----------
             pst_file : [str] pest control file name
+            sigma_range: float defining range of upper bound - lower bound in terms of sigma (stddev).
+                          e.g. if sigma_range = 4, the bounds represent 4 * sigma
         Returns:
         -------
             None
@@ -1677,15 +1679,17 @@ class Cov(Matrix):
         if not pst_file.endswith(".pst"):
             pst_file += ".pst"
         new_pst = Pst(pst_file)
-        return Cov.from_parameter_data(new_pst)
+        return Cov.from_parameter_data(new_pst, sigma_range)
 
     @classmethod
-    def from_parameter_data(cls, pst):
+    def from_parameter_data(cls, pst, sigma_range = 4.0):
         """load Covariances from a pandas dataframe of the
                 pst parameter data section
         Parameters:
         ----------
             pst : [pst object]
+            sigma_range: float defining range of upper bound - lower bound in terms of sigma (stddev).
+                          e.g. if sigma_range = 4, the bounds represent 4 * sigma
         Returns:
         -------
             None
@@ -1702,9 +1706,9 @@ class Cov(Matrix):
             ub = row.parubnd * row.scale + row.offset
 
             if t == "log":
-                var = ((np.log10(np.abs(ub)) - np.log10(np.abs(lb))) / 4.0) ** 2
+                var = ((np.log10(np.abs(ub)) - np.log10(np.abs(lb))) / sigma_range) ** 2
             else:
-                var = ((ub - lb) / 4.0) ** 2
+                var = ((ub - lb) / sigma_range) ** 2
             if np.isnan(var) or not np.isfinite(var):
                 raise Exception("Cov.from_parameter_data() error: " +\
                                 "variance for parameter {0} is nan".\

@@ -216,6 +216,14 @@ def to_pearson_test():
     sc = Schur(jco=os.path.join(w_dir,"pest.jcb"))
     sc.posterior_parameter.to_pearson()
 
+def sigma_range_test():
+    import pyemu
+    cov8 = pyemu.la.Cov.from_parbounds(os.path.join("mat", "base_pest.pst"), sigma_range=8.0)
+    covdefault = pyemu.la.Cov.from_parbounds(os.path.join("mat", "base_pest.pst"))
+    print(cov8.df().iloc[0, 0])
+    print(covdefault.df().iloc[0, 0])
+    assert covdefault.df().iloc[0, 0] > cov8.df().iloc[0, 0]
+
 
 if __name__ == "__main__":
     #mat_test()
@@ -227,4 +235,5 @@ if __name__ == "__main__":
     #cov_identity_test()
     #hadamard_product_test()
     #get_diag_test()
-    to_pearson_test()
+    #to_pearson_test()
+    sigma_range_test()
