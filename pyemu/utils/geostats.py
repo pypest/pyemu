@@ -134,6 +134,13 @@ class GeoStruct(object):
             cov += v.covariance_points(x0,y0,xother,yother)
         return cov
 
+    @property
+    def sill(self):
+        sill = self.nugget
+        for v in self.variograms:
+            sill += v.contribution
+        return sill
+
 
     def plot(self):
         raise NotImplementedError()
@@ -172,13 +179,18 @@ class OrdinaryKrige(object):
                                                             point_data.name).to_dataframe()
         #for name in self.point_cov_df.index:
         #    self.point_cov_df.loc[name,name] -= self.geostruct.nugget
+
+    def prep_for_ppk2fac(self,struct_file="structure.dat",pp_file="points.dat",):
+        pass
+
     def calc_factors_grid(self,spatial_reference,zone_array=None,minpts_interp=1,
-                          maxpts_interp=20,search_radius=1.0e+10,verbose=False):
+                          maxpts_interp=20,search_radius=1.0e+10,verbose=False,
+                          var_filename=None):
 
         #assert isinstance(spatial_reference,SpatialReference)
         try:
-            x = spatial_reference.xcentergrid
-            y = spatial_reference.ycentergrid
+            x = spatial_reference.xcentergrid.copy()
+            y = spatial_reference.ycentergrid.copy()
         except Exception as e:
             raise Exception("spatial_reference does not have proper attributes:{0}"\
                             .format(str(e)))
@@ -192,11 +204,18 @@ class OrdinaryKrige(object):
             #x = x[~np.isnan(x)]
             #y = y[~np.isnan(y)]
         self.spatial_reference = spatial_reference
-        return self.calc_factors(x.ravel(),y.ravel(),
-                                 minpts_interp=minpts_interp,
-                                 maxpts_interp=maxpts_interp,
-                                 search_radius=search_radius,
-                                 verbose=verbose)
+        df = self.calc_factors(x.ravel(),y.ravel(),
+                               minpts_interp=minpts_interp,
+                               maxpts_interp=maxpts_interp,
+                               search_radius=search_radius,
+                               verbose=verbose)
+        if var_filename is not None:
+
+            arr = np.zeros((self.spatial_reference.nrow,self.spatial_reference.ncol)) - 1.0e+30
+            arr = df.err_var.values.reshape(x.shape)
+            # for i,j,var in zip(df.i,df.j,df.err_var):
+            #     arr[i,j] = var
+            np.savetxt(var_filename,arr,fmt="%15.6E")
 
     def calc_factors(self,x,y,minpts_interp=1,maxpts_interp=20,
                      search_radius=1.0e+10,verbose=False):
@@ -205,23 +224,28 @@ class OrdinaryKrige(object):
         # find the point data to use for each interp point
         sqradius = search_radius**2
         df = pd.DataFrame(data={'x':x,'y':y})
-        inames,idist,ifacts = [],[],[]
+        inames,idist,ifacts,err_var = [],[],[],[]
+        sill = self.geostruct.sill
+
         ptx_array = self.point_data.x.values
         pty_array = self.point_data.y.values
         ptnames = self.point_data.name.values
-        if verbose: print("starting interp point loop")
+        #if verbose:
+        print("starting interp point loop for {0} points".format(df.shape[0]))
+        start_loop = datetime.now()
         for idx,(ix,iy) in enumerate(zip(df.x,df.y)):
             if np.isnan(ix) or np.isnan(iy): #if nans, skip
                 inames.append([])
                 idist.append([])
                 ifacts.append([])
+                err_var.append(np.NaN)
                 continue
             if verbose:
                 istart = datetime.now()
-                print("processing interp point:{0}:{1}".format(ix,iy))
-            if verbose == 2:
-                start = datetime.now()
-                print("calc ipoint dist...",end='')
+                print("processing interp point:{0} of {1}".format(idx,df.shape[0]))
+            # if verbose == 2:
+            #     start = datetime.now()
+            #     print("calc ipoint dist...",end='')
 
             #  calc dist from this interp point to all point data...slow
             dist = pd.Series((ptx_array-ix)**2 + (pty_array-iy)**2,ptnames)
@@ -233,6 +257,7 @@ class OrdinaryKrige(object):
                 inames.append([])
                 idist.append([])
                 ifacts.append([])
+                err_var.append(sill)
                 continue
 
             # only the maxpts_interp points
@@ -243,19 +268,20 @@ class OrdinaryKrige(object):
                 ifacts.append([1.0])
                 idist.append([EPSILON])
                 inames.append([dist.idxmin()])
+                err_var.append(self.geostruct.nugget)
                 continue
-            if verbose == 2:
-                td = (datetime.now()-start).total_seconds()
-                print("...took {0}".format(td))
-                start = datetime.now()
-                print("extracting pt cov...",end='')
+            # if verbose == 2:
+            #     td = (datetime.now()-start).total_seconds()
+            #     print("...took {0}".format(td))
+            #     start = datetime.now()
+            #     print("extracting pt cov...",end='')
 
             #vextract the point-to-point covariance matrix
             point_cov = self.point_cov_df.loc[pt_names,pt_names]
-            if verbose == 2:
-                td = (datetime.now()-start).total_seconds()
-                print("...took {0}".format(td))
-                print("forming ipt-to-point cov...",end='')
+            # if verbose == 2:
+            #     td = (datetime.now()-start).total_seconds()
+            #     print("...took {0}".format(td))
+            #     print("forming ipt-to-point cov...",end='')
 
             # calc the interp point to points covariance
             interp_cov = self.geostruct.covariance_points(ix,iy,self.point_data.loc[pt_names,"x"],
@@ -273,27 +299,33 @@ class OrdinaryKrige(object):
             A[-1,-1] = 0.0 #unbiaised constraint
             rhs = np.ones((d,1))
             rhs[:-1,0] = interp_cov
-            if verbose == 2:
-                td = (datetime.now()-start).total_seconds()
-                print("...took {0}".format(td))
-                print("solving...",end='')
-            # solve
+            # if verbose == 2:
+            #     td = (datetime.now()-start).total_seconds()
+            #     print("...took {0}".format(td))
+            #     print("solving...",end='')
+            # # solve
             facs = np.linalg.solve(A,rhs)
             assert len(facs) - 1 == len(dist)
+
+            err_var.append(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)]))
             inames.append(pt_names)
             idist.append(dist.values)
             ifacts.append(facs[:-1,0])
-            if verbose == 2:
-                td = (datetime.now()-start).total_seconds()
-                print("...took {0}".format(td))
+            # if verbose == 2:
+            #     td = (datetime.now()-start).total_seconds()
+            #     print("...took {0}".format(td))
             if verbose:
                 td = (datetime.now()-istart).total_seconds()
                 print("point took {0}".format(td))
         df["idist"] = idist
         df["inames"] = inames
         df["ifacts"] = ifacts
+        df["err_var"] = err_var
         self.interp_data = df
+        td = (datetime.now() - start_loop).total_seconds()
+        print("took {0}".format(td))
         return df
+
 
     def to_grid_factors_file(self, filename,points_file="points.junk",
                              zone_file="zone.junk"):
@@ -312,6 +344,8 @@ class OrdinaryKrige(object):
                 t = 1
             pt_names = list(self.point_data.name)
             for idx,names,facts in zip(self.interp_data.index,self.interp_data.inames,self.interp_data.ifacts):
+                if len(facts) == 0:
+                    continue
                 n_idxs = [pt_names.index(name) for name in names]
                 f.write("{0} {1} {2} {3:8.5e} ".format(idx+1, t, len(names), 0.0))
                 [f.write("{0} {1:12.8g} ".format(i+1, w)) for i, w in zip(n_idxs, facts)]
@@ -431,10 +465,11 @@ class Vario2d(object):
     def _apply_rotation(self,dx,dy):
         if self.anisotropy == 1.0:
             return dx,dy
-        dxx = (dx * self.rotation_coefs[0]) +\
-             (dy * self.rotation_coefs[1])
-        dyy = ((dx * self.rotation_coefs[2]) +\
-             (dy * self.rotation_coefs[3])) *\
+        rcoefs = self.rotation_coefs
+        dxx = (dx * rcoefs[0]) +\
+             (dy * rcoefs[1])
+        dyy = ((dx * rcoefs[2]) +\
+             (dy * rcoefs[3])) *\
              self.anisotropy
         return dxx,dyy
 

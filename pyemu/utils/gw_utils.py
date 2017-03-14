@@ -364,8 +364,8 @@ def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
     return pp_df
 
 
-def fac2real(pp_file,factors_file,out_file="test.ref",
-             upper_lim=1.0e+30,lower_lim=-1.0e+30):
+def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
+             upper_lim=1.0e+30,lower_lim=-1.0e+30,fill_value=1.0e+30):
     """A python replication of the PEST fac2real utility
     Parameters
     ----------
@@ -379,13 +379,13 @@ def fac2real(pp_file,factors_file,out_file="test.ref",
     -------
         None
     """
-    if isinstance(pp_file,str):
+    if pp_file is not None and isinstance(pp_file,str):
         assert os.path.exists(pp_file)
-
-        pp_data = pd.read_csv(pp_file,delim_whitespace=True,header=None,
-                              names=["name","parval1"],usecols=[0,4])
+        # pp_data = pd.read_csv(pp_file,delim_whitespace=True,header=None,
+        #                       names=["name","parval1"],usecols=[0,4])
+        pp_data = pp_file_to_dataframe(pp_file)
         pp_data.loc[:,"name"] = pp_data.name.apply(lambda x: x.lower())
-    elif isinstance(pp_file,pd.DataFrame):
+    elif pp_file is not None and isinstance(pp_file,pd.DataFrame):
         assert "name" in pp_file.columns
         assert "parval1" in pp_file.columns
         pp_data = pp_file
@@ -395,6 +395,10 @@ def fac2real(pp_file,factors_file,out_file="test.ref",
     assert os.path.exists(factors_file)
     f_fac = open(factors_file,'r')
     fpp_file = f_fac.readline()
+    if pp_file is None and pp_data is None:
+        pp_data = pp_file_to_dataframe(fpp_file)
+        pp_data.loc[:, "name"] = pp_data.name.apply(lambda x: x.lower())
+
     fzone_file = f_fac.readline()
     ncol,nrow = [int(i) for i in f_fac.readline().strip().split()]
     npp = int(f_fac.readline().strip())
@@ -407,7 +411,7 @@ def fac2real(pp_file,factors_file,out_file="test.ref",
                         "between the factors file and the pilot points file " +\
                         ','.join(list(diff)))
 
-    arr = np.zeros((nrow,ncol),dtype=np.float32) + 1.0e+30
+    arr = np.zeros((nrow,ncol),dtype=np.float) + fill_value
     pp_dict = {name:val for name,val in zip(pp_data.index,pp_data.parval1)}
     pp_dict_log = {name:np.log10(val) for name,val in zip(pp_data.index,pp_data.parval1)}
     #for i in range(nrow):
