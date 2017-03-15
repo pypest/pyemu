@@ -63,8 +63,6 @@ def schur_test():
     print(sc.get_par_group_contribution())
     print(sc.get_removed_obs_group_importance())
 
-def sigma_range_tests():
-
 
 def errvar_test_nonpest():
     import numpy as np
