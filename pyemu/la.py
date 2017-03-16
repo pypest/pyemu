@@ -212,7 +212,7 @@ class LinearAnalysis(object):
                 self.res = None
             self.log("scaling obscov by residual phi components")
 
-    def __fromfile(self, filename):
+    def __fromfile(self, filename, astype=None):
         """a private method to deduce and load a filename into a matrix object
 
         Parameters:
@@ -227,19 +227,27 @@ class LinearAnalysis(object):
         ext = filename.split('.')[-1].lower()
         if ext in ["jco", "jcb"]:
             self.log("loading jco: "+filename)
-            m = Jco.from_binary(filename)
+            if astype is None:
+                astype = Jco
+            m = astype.from_binary(filename)
             self.log("loading jco: "+filename)
         elif ext in ["mat","vec"]:
             self.log("loading ascii: "+filename)
-            m = Matrix.from_ascii(filename)
+            if astype is None:
+                astype = Matrix
+            m = astype.from_ascii(filename)
             self.log("loading ascii: "+filename)
         elif ext in ["cov"]:
             self.log("loading cov: "+filename)
-            m = Cov.from_ascii(filename)
+            if astype is None:
+                astype = Cov
+            m = astype.from_ascii(filename)
             self.log("loading cov: "+filename)
         elif ext in["unc"]:
             self.log("loading unc: "+filename)
-            m = Cov.from_uncfile(filename)
+            if astype is None:
+                astype = Cov
+            m = astype.from_uncfile(filename)
             self.log("loading unc: "+filename)
         else:
             raise Exception("linear_analysis.__fromfile(): unrecognized" +
@@ -288,7 +296,7 @@ class LinearAnalysis(object):
         if isinstance(self.jco_arg, Matrix):
             self.__jco = self.jco_arg
         elif isinstance(self.jco_arg, str):
-            self.__jco = self.__fromfile(self.jco_arg)
+            self.__jco = self.__fromfile(self.jco_arg,astype=Jco)
         else:
             raise Exception("linear_analysis.__load_jco(): jco_arg must " +
                             "be a matrix object or a file name: " +
@@ -337,7 +345,7 @@ class LinearAnalysis(object):
             if self.parcov_arg.lower().endswith(".pst"):
                 self.__parcov = Cov.from_parbounds(self.parcov_arg)
             else:
-                self.__parcov = self.__fromfile(self.parcov_arg)
+                self.__parcov = self.__fromfile(self.parcov_arg, astype=Cov)
         # if the arg is a pst object
         elif isinstance(self.parcov_arg,Pst):
             self.__parcov = Cov.from_parameter_data(self.parcov_arg)
@@ -390,7 +398,7 @@ class LinearAnalysis(object):
             if self.obscov_arg.lower().endswith(".pst"):
                 self.__obscov = Cov.from_obsweights(self.obscov_arg)
             else:
-                self.__obscov = self.__fromfile(self.obscov_arg)
+                self.__obscov = self.__fromfile(self.obscov_arg, astype=Cov)
         elif isinstance(self.obscov_arg, Pst):
             self.__obscov = Cov.from_observation_data(self.obscov_arg)
         else:
@@ -440,7 +448,7 @@ class LinearAnalysis(object):
                     row_names.append(arg.lower())
                 else:
                     try:
-                        pred_mat = self.__fromfile(arg)
+                        pred_mat = self.__fromfile(arg,astype=Matrix)
                     except Exception as e:
                         raise Exception("forecast argument: "+arg+" not found in " +\
                                         "jco row names and could not be " +\
