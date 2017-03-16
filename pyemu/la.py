@@ -778,7 +778,8 @@ class LinearAnalysis(object):
         self.__pst.prior_information = self.pst.null_prior
         self.__pst.control_data.pestmode = "estimation"
         #self.__obscov.drop(pi_names,axis=0)
-        self.log("removing " + nprior_str + " prior info from jco and pst")
+        self.log("removing " + nprior_str + " prior info from jco, pst, and " +
+                                            "obs cov")
 
 
     def get(self,par_names=None,obs_names=None,astype=None):

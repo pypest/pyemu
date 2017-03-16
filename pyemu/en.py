@@ -529,22 +529,52 @@ class ParameterEnsemble(Ensemble):
         self.__istransformed = False
 
     def enforce(self,enforce_bounds):
-        if enforce_bounds is None:
-            return
         if isinstance(enforce_bounds,bool):
             import warnings
             warnings.warn("deprecation warning: enforce_bounds should be "+\
-                          "either 'reset' or 'drop', not bool.  resetting"+\
-                          " to 'reset'.")
-            enforce_bounds = "reset"
+                          "either 'reset', 'drop', 'scale', or None, not bool"+\
+                          "...resetting to None.")
+            enforce_bounds = None
+        if enforce_bounds is None:
+            return
+
         if enforce_bounds.lower() == "reset":
             self.enforce_reset()
         elif enforce_bounds.lower() == "drop":
             self.enforce_drop()
+        elif enforce_bounds.lower() == "scale":
+            self.enfore_scale()
         else:
             raise Exception("unrecognized enforce_bounds arg:"+\
                             "{0}, should be 'reset' or 'drop'".\
                             format(enforce_bounds))
+
+    def enfore_scale(self):
+        """
+        enforce parameter bounds on the ensemble by finding the
+        scaling factor needed to bring the most violated parameter back in bounds
+
+        """
+        raise NotImplementedError()
+        ub = self.ubnd
+        lb = self.lbnd
+        for id in self.index:
+            mx_diff = (self.loc[id,:] - ub) / ub
+            mn_diff = (lb - self.loc[id,:]) / lb
+
+            # if this real has a violation
+            mx = max(mx_diff.max(),mn_diff.max())
+            if mx > 1.0:
+                scale_factor = 1.0 / mx
+                self.loc[id,:] *= scale_factor
+
+            mx = ub - self.loc[id,:]
+            mn = lb - self.loc[id,:]
+            print(mx.loc[mx<0.0])
+            print(mn.loc[mn>0.0])
+            if (ub - self.loc[id,:]).min() < 0.0 or\
+                            (lb - self.loc[id,:]).max() > 0.0:
+                raise Exception()
 
     def enforce_drop(self):
         """ enforce parameter bounds on the ensemble by dropping
@@ -555,8 +585,8 @@ class ParameterEnsemble(Ensemble):
         lb = self.lbnd
         drop = []
         for id in self.index:
-            mx = (ub - self.loc[id,:]).min()
-            mn = (lb - self.loc[id,:]).max()
+            #mx = (ub - self.loc[id,:]).min()
+            #mn = (lb - self.loc[id,:]).max()
             if (ub - self.loc[id,:]).min() < 0.0 or\
                             (lb - self.loc[id,:]).max() > 0.0:
                 drop.append(id)

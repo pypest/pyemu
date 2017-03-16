@@ -208,17 +208,30 @@ def pnulpar_test():
 def enforce_test():
     import os
     import pyemu
-    dir = "mc"
-
-    mc = pyemu.MonteCarlo(jco=os.path.join("mc","freyberg_ord.jco"))
-    mc.draw(num_reals=100,enforce_bounds='drop')
-    assert mc.parensemble.shape[0] == 0
 
     cov = pyemu.Cov(x=mc.parcov.x * 0.1,names=mc.parcov.row_names,isdiagonal=True)
     mc = pyemu.MonteCarlo(jco=os.path.join("mc","freyberg_ord.jco"),
                           parcov=cov)
     mc.draw(num_reals=100,enforce_bounds='drop')
     assert mc.parensemble.shape[0] == 100.0
+
+    mc = pyemu.MonteCarlo(jco=os.path.join("mc","freyberg_ord.jco"))
+    mc.draw(num_reals=100,enforce_bounds='drop')
+    assert mc.parensemble.shape[0] == 0
+
+def enforce_scale():
+    import os
+    import pyemu
+    from pyemu import MonteCarlo
+    jco = os.path.join("pst","pest.jcb")
+    pst = jco.replace(".jcb",".pst")
+    pst = pyemu.Pst(pst)
+    pst.parameter_data = pst.parameter_data.iloc[:2,:]
+    pst.parameter_data.loc["mult1","partrans"] = "none"
+    pst.parameter_data.loc["mult1","parval1"] = -1.0
+
+    mc = MonteCarlo(pst=pst,verbose=True)
+    mc.draw(1,enforce_bounds="scale")
 
 
 if __name__ == "__main__":
@@ -233,4 +246,5 @@ if __name__ == "__main__":
     #pnulpar_test()
     #enforce_test()
 
-    freyberg_verf_test()
+    #enforce_scale_test()
+    #freyberg_verf_test()
