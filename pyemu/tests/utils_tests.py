@@ -518,14 +518,16 @@ def opt_obs_worth():
     wdir = os.path.join("utils")
     os.chdir(wdir)
     pst = pyemu.Pst(os.path.join("supply2_pest.fosm.pst"))
+    zero_weight_names = [n for n,w in zip(pst.observation_data.obsnme,pst.observation_data.weight) if w == 0.0]
+    #print(zero_weight_names)
     #for attr in ["base_jacobian","hotstart_resfile"]:
     #    pst.pestpp_options[attr] = os.path.join(wdir,pst.pestpp_options[attr])
     #pst.template_files = [os.path.join(wdir,f) for f in pst.template_files]
     #pst.instruction_files = [os.path.join(wdir,f) for f in pst.instruction_files]
     #print(pst.template_files)
-    pyemu.optimization.get_added_obs_importance(pst)
+    df = pyemu.optimization.get_added_obs_importance(pst,obslist_dict={"zeros":zero_weight_names})
     os.chdir("..")
-
+    print(df)
 if __name__ == "__main__":
     # kl_test()
     # zero_order_regul_test()

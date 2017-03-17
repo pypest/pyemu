@@ -41,7 +41,8 @@ def add_pi_obj_func(pst,obj_func_dict=None,out_pst_name=None):
     return pst
 
 
-def get_added_obs_importance(pst,obslist_dict=None,base_obslist=None,reset_zero_weight=False):
+def get_added_obs_importance(pst,obslist_dict=None,base_obslist=None,
+                             reset_zero_weight=1.0):
     """get a dataframe fo the objective function
         as a results of added some observations
         Parameters:
@@ -91,23 +92,20 @@ def get_added_obs_importance(pst,obslist_dict=None,base_obslist=None,reset_zero_
         weight = 1.0
 
     if obslist_dict is None:
-        def not_const(gp):
-            for cgp in ["less","l_","great","g_"]:
-                if gp.strip().lower().startswith(cgp):
-                    return False
-            return True
-        zero_weight_names = pst.observation_data.loc[pst.observation_data.apply(lambda x: x.weight == 0.0 and not_const(x.obgnme),axis=1),"obsnme"]
-        obslist_dict = dict(zip(pst.nnz_obs_names,pst.nnz_obs_names))
 
+        zero_weight_names = [n for n,w in zip(pst.observation_data.obsnme,
+                                              pst.observation_data.weight)
+                             if w == 0.0]
+        obslist_dict = dict(zip(zero_weight_names,zero_weight_names))
     names = ["base"]
 
     results = [get_obj_func(pst)]
-
+    #print(len(pst.nnz_obs_names))
     for case_name,obslist in obslist_dict.items():
         names.append(case_name)
         case_pst = pst.get()
         case_pst.observation_data.loc[obslist,"weight"] = weight
-        print(case_pst.nnz_obs_names)
+        #print(len(case_pst.nnz_obs_names))
         results.append(get_obj_func(case_pst))
 
 
@@ -124,7 +122,7 @@ def get_obj_func(pst):
     with open(rec_file) as f:
         for line in f:
             if "iteration 1 objective function value" in line:
-                val = float(line.strip().split()[2])
+                val = float(line.strip().split()[-2])
                 return val
     raise Exception("unable to find objective function in {0}".\
                     format(rec_file))
