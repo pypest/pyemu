@@ -512,6 +512,20 @@ def ppk2fac_verf_test():
     assert diff < 1.0e-6
 
 
+def opt_obs_worth():
+    import os
+    import pyemu
+    wdir = os.path.join("utils")
+    os.chdir(wdir)
+    pst = pyemu.Pst(os.path.join("supply2_pest.fosm.pst"))
+    #for attr in ["base_jacobian","hotstart_resfile"]:
+    #    pst.pestpp_options[attr] = os.path.join(wdir,pst.pestpp_options[attr])
+    #pst.template_files = [os.path.join(wdir,f) for f in pst.template_files]
+    #pst.instruction_files = [os.path.join(wdir,f) for f in pst.instruction_files]
+    #print(pst.template_files)
+    pyemu.optimization.get_added_obs_importance(pst)
+    os.chdir("..")
+
 if __name__ == "__main__":
     # kl_test()
     # zero_order_regul_test()
@@ -538,5 +552,6 @@ if __name__ == "__main__":
     # covariance_matrix_test()
     # add_pi_obj_func_test()
     # ok_test()
-    ok_grid_test()
+    #ok_grid_test()
+    opt_obs_worth()
     #ppk2fac_verf_test()

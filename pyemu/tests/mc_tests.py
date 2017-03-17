@@ -233,9 +233,8 @@ def enforce_scale():
     mc = MonteCarlo(pst=pst,verbose=True)
     mc.draw(1,enforce_bounds="scale")
 
-
 if __name__ == "__main__":
-    #scale_offset_test()
+    scale_offset_test()
     #mc_test()
     #fixed_par_test()
     #uniform_draw_test()
