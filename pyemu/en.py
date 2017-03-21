@@ -283,7 +283,38 @@ class ParameterEnsemble(Ensemble):
         istransformed = self.pst.parameter_data.loc[:,"partrans"] == "log"
         self.loc[:,istransformed] = 10.0**self.loc[:,istransformed]
         self.__istransformed = False
+
+        self._applied_tied()
+
+
         self.enforce(enforce_bounds)
+
+    def _applied_tied(self):
+        if self.pst is None:
+            return
+        if self.pst.tied is None:
+            return
+        ParameterEnsemble.apply_tied(self)
+
+    @staticmethod
+    def apply_tied(pe):
+        if pe.pst is None:
+            return
+        if pe.pst.tied is None:
+            return
+        par = pe.pst.parameter_data
+        tied =pe.pst.tied
+        for pname,ptied in zip(tied.parnme,tied.partied):
+            pval, tval = par.loc[pname,"parval1"],par.loc[ptied,"parval1"]
+            tied_ratio = pval / tval
+            if tval == 0.0:
+                tied_ratio = pval
+            #rvals = pe.loc[:,ptied]
+            pe.loc[:,pname] = pe.loc[:,ptied] * tied_ratio
+            #tvals = pe.loc[:,pname]
+            #print(rvals/tvals)
+
+
 
     def _draw_uniform(self,num_reals=1):
         if not self.istransformed:
@@ -316,6 +347,9 @@ class ParameterEnsemble(Ensemble):
             pe._transform()
         ub = pe.ubnd
         lb = pe.lbnd
+        # set up some column names
+        real_names = ["{0:d}".format(i)
+                      for i in range(num_reals)]
         arr = np.empty((num_reals,len(pe.names)))
         for i,pname in enumerate(pe.names):
             if pname in pe.adj_names:
@@ -326,8 +360,14 @@ class ParameterEnsemble(Ensemble):
                 arr[:,i] = np.zeros((num_reals)) + \
                                     pe.pst.parameter_data.\
                                          loc[pname,"parval1"]
-        return cls.from_dataframe(pst=pe.pst,df=pd.DataFrame(data=arr,columns=pe.names))
+        print("back transforming")
+        istransformed = pe.pst.parameter_data.loc[:,"partrans"] == "log"
+        df = pd.DataFrame(arr,index=real_names,columns=pe.pst.par_names)
+        df.loc[:,istransformed] = 10.0**df.loc[:,istransformed]
 
+        new_pe = cls.from_dataframe(pst=pe.pst,df=pd.DataFrame(data=arr,columns=pe.names))
+        new_pe._applied_tied()
+        return new_pe
 
     @classmethod
     def from_gaussian_draw(cls,pe,cov,num_reals=1):
@@ -372,8 +412,10 @@ class ParameterEnsemble(Ensemble):
         istransformed = pe.pst.parameter_data.loc[:,"partrans"] == "log"
         print("back transforming")
         df.loc[:,istransformed] = 10.0**df.loc[:,istransformed]
-        print("done")
-        return cls.from_dataframe(pst=pe.pst,df=df)
+        print("apply tied")
+        new_pe = cls.from_dataframe(pst=pe.pst,df=df)
+        new_pe._apply_tied()
+        return new_pe
 
 
 
@@ -400,7 +442,6 @@ class ParameterEnsemble(Ensemble):
             self.loc[:,:] = (self.loc[:,:] -\
                              self.pst.parameter_data.offset)/\
                              self.pst.parameter_data.scale
-
 
             self.__istransformed = False
         else:
