@@ -95,7 +95,7 @@ class Ensemble(pd.DataFrame):
     def from_dataframe(cls,**kwargs):
         df = kwargs.pop("df")
         assert isinstance(df,pd.DataFrame)
-        mean_values = kwargs.pop("mean_values",df.mean(axis=1))
+        mean_values = kwargs.pop("mean_values",df.mean(axis=0))
         e = cls(data=df,index=df.index,columns=df.columns,
                 mean_values=mean_values,**kwargs)
         return e
@@ -184,9 +184,12 @@ class ParameterEnsemble(Ensemble):
         # a flag for current log transform status
         self.__istransformed = bool(istransformed)
         self.pst = pst
-        if "tied" in self.pst.parameter_data.partrans:
-            raise NotImplementedError("ParameterEnsemble does not " +\
-                                      "support tied parameters")
+        if "tied" in list(self.pst.parameter_data.partrans.values):
+            #raise NotImplementedError("ParameterEnsemble does not " +\
+            #                          "support tied parameters")
+            import warnings
+            warnings.warn("tied parameters are treated as fixed in "+\
+                         "ParameterEnsemble")
         self.pst.parameter_data.index = self.pst.parameter_data.parnme
         self.bound_tol = kwargs.get("bound_tol",0.0)
 
@@ -257,7 +260,9 @@ class ParameterEnsemble(Ensemble):
     @property
     def fixed_indexer(self):
         """ indexer for fixed status"""
-        isfixed = self.pst.parameter_data.partrans == "fixed"
+        #isfixed = self.pst.parameter_data.partrans == "fixed"
+        isfixed = self.pst.parameter_data.partrans.\
+            apply(lambda x : x in ["fixed","tied"])
         return isfixed.values
 
 
@@ -279,40 +284,42 @@ class ParameterEnsemble(Ensemble):
             self.pst.parameter_data.index = self.pst.parameter_data.parnme
             fixed_vals = self.pst.parameter_data.loc[self.fixed_indexer,"parval1"]
             for fname,fval in zip(fixed_vals.index,fixed_vals.values):
+                #if fname not in self.columns:
+                #    continue
                 self.loc[:,fname] = fval
         istransformed = self.pst.parameter_data.loc[:,"partrans"] == "log"
         self.loc[:,istransformed] = 10.0**self.loc[:,istransformed]
         self.__istransformed = False
 
-        self._applied_tied()
+        #self._applied_tied()
 
 
         self.enforce(enforce_bounds)
 
-    def _applied_tied(self):
-        if self.pst is None:
-            return
-        if self.pst.tied is None:
-            return
-        ParameterEnsemble.apply_tied(self)
+    # def _applied_tied(self):
+    #     if self.pst is None:
+    #         return
+    #     if self.pst.tied is None:
+    #         return
+    #     ParameterEnsemble.apply_tied(self)
 
-    @staticmethod
-    def apply_tied(pe):
-        if pe.pst is None:
-            return
-        if pe.pst.tied is None:
-            return
-        par = pe.pst.parameter_data
-        tied =pe.pst.tied
-        for pname,ptied in zip(tied.parnme,tied.partied):
-            pval, tval = par.loc[pname,"parval1"],par.loc[ptied,"parval1"]
-            tied_ratio = pval / tval
-            if tval == 0.0:
-                tied_ratio = pval
-            #rvals = pe.loc[:,ptied]
-            pe.loc[:,pname] = pe.loc[:,ptied] * tied_ratio
-            #tvals = pe.loc[:,pname]
-            #print(rvals/tvals)
+    # @staticmethod
+    # def apply_tied(pe):
+    #     if pe.pst is None:
+    #         return
+    #     if pe.pst.tied is None:
+    #         return
+    #     par = pe.pst.parameter_data
+    #     tied =pe.pst.tied
+    #     for pname,ptied in zip(tied.parnme,tied.partied):
+    #         pval, tval = par.loc[pname,"parval1"],par.loc[ptied,"parval1"]
+    #         tied_ratio = pval / tval
+    #         if tval == 0.0:
+    #             tied_ratio = pval
+    #         #rvals = pe.loc[:,ptied]
+    #         pe.loc[:,pname] = pe.loc[:,ptied] * tied_ratio
+    #         #tvals = pe.loc[:,pname]
+    #         #print(rvals/tvals)
 
 
 
@@ -366,7 +373,7 @@ class ParameterEnsemble(Ensemble):
         df.loc[:,istransformed] = 10.0**df.loc[:,istransformed]
 
         new_pe = cls.from_dataframe(pst=pe.pst,df=pd.DataFrame(data=arr,columns=pe.names))
-        new_pe._applied_tied()
+        #new_pe._applied_tied()
         return new_pe
 
     @classmethod
@@ -402,19 +409,25 @@ class ParameterEnsemble(Ensemble):
         print("making draws")
         df = pd.DataFrame(data=np.random.multivariate_normal(vals, cov.as_2d,num_reals),
                           columns = common_names,index=real_names)
+        #print(df.shape,cov.shape)
+        istransformed = pe.pst.parameter_data.loc[common_names,"partrans"] == "log"
+        print("back transforming")
+        df.loc[:,istransformed] = 10.0**df.loc[:,istransformed]
+
         # replace the realizations for fixed parameters with the original
         # parval1 in the control file
         print("handling fixed pars")
         pe.pst.parameter_data.index = pe.pst.parameter_data.parnme
         fixed_vals = pe.pst.parameter_data.loc[pe.fixed_indexer,"parval1"]
         for fname,fval in zip(fixed_vals.index,fixed_vals.values):
+            #if fname not in df.columns:
+            #    continue
+            print(fname)
             df.loc[:,fname] = fval
-        istransformed = pe.pst.parameter_data.loc[:,"partrans"] == "log"
-        print("back transforming")
-        df.loc[:,istransformed] = 10.0**df.loc[:,istransformed]
-        print("apply tied")
+
+        #print("apply tied")
         new_pe = cls.from_dataframe(pst=pe.pst,df=df)
-        new_pe._apply_tied()
+        #ParameterEnsemble.apply_tied(new_pe)
         return new_pe
 
 
