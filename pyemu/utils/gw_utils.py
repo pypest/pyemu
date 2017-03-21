@@ -221,9 +221,10 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
 
 
 def pp_file_to_dataframe(pp_filename):
-    return pd.read_csv(pp_filename, delim_whitespace=True,
-                     header=None, names=PP_NAMES)
-
+    df = pd.read_csv(pp_filename, delim_whitespace=True,
+                     header=None, names=PP_NAMES,usecols=[0,1,2,3,4])
+    df.loc[:,"name"] = df.name.apply(str).apply(str.lower)
+    return df
 
 def write_pp_shapfile(pp_df,shapename=None):
     """write pilot points to a shapefile
