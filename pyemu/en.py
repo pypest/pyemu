@@ -358,18 +358,21 @@ class ParameterEnsemble(Ensemble):
             vals = pe.mean_values
             common_names = pe.names
 
-        vals = pe.mean_values
+        #vals = pe.mean_values
+        print("making draws")
         df = pd.DataFrame(data=np.random.multivariate_normal(vals, cov.as_2d,num_reals),
                           columns = common_names,index=real_names)
         # replace the realizations for fixed parameters with the original
         # parval1 in the control file
-
+        print("handling fixed pars")
         pe.pst.parameter_data.index = pe.pst.parameter_data.parnme
         fixed_vals = pe.pst.parameter_data.loc[pe.fixed_indexer,"parval1"]
         for fname,fval in zip(fixed_vals.index,fixed_vals.values):
             df.loc[:,fname] = fval
         istransformed = pe.pst.parameter_data.loc[:,"partrans"] == "log"
+        print("back transforming")
         df.loc[:,istransformed] = 10.0**df.loc[:,istransformed]
+        print("done")
         return cls.from_dataframe(pst=pe.pst,df=df)
 
 

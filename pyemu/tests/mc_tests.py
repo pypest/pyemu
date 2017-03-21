@@ -209,6 +209,8 @@ def enforce_test():
     import os
     import pyemu
 
+    mc = pyemu.MonteCarlo(jco=os.path.join("mc","freyberg_ord.jco"),verbose=True)
+
     cov = pyemu.Cov(x=mc.parcov.x * 0.1,names=mc.parcov.row_names,isdiagonal=True)
     mc = pyemu.MonteCarlo(jco=os.path.join("mc","freyberg_ord.jco"),
                           parcov=cov)
@@ -234,7 +236,7 @@ def enforce_scale():
     mc.draw(1,enforce_bounds="scale")
 
 if __name__ == "__main__":
-    scale_offset_test()
+    #scale_offset_test()
     #mc_test()
     #fixed_par_test()
     #uniform_draw_test()
@@ -243,7 +245,7 @@ if __name__ == "__main__":
     #from_dataframe_test()
     #ensemble_seed_test()
     #pnulpar_test()
-    #enforce_test()
+    enforce_test()
 
     #enforce_scale_test()
     #freyberg_verf_test()
