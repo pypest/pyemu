@@ -528,7 +528,25 @@ def opt_obs_worth():
     df = pyemu.optimization.get_added_obs_importance(pst,obslist_dict={"zeros":zero_weight_names})
     os.chdir("..")
     print(df)
+
+
+def mflist_budget_test():
+    import pyemu
+
+    try:
+        import flopy
+    except:
+        print("no flopy...")
+        return
+    model_ws = os.path.join("..","..","examples","Freyberg_transient")
+    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False)
+    pyemu.gw_utils.setup_mflist_budget_obs(ml)
+
+
+
+
 if __name__ == "__main__":
+    mflist_budget_test()
     # kl_test()
     # zero_order_regul_test()
     # first_order_pearson_regul_test()
@@ -555,5 +573,5 @@ if __name__ == "__main__":
     # add_pi_obj_func_test()
     # ok_test()
     #ok_grid_test()
-    opt_obs_worth()
+    #opt_obs_worth()
     #ppk2fac_verf_test()
