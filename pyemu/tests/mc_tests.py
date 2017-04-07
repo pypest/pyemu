@@ -254,10 +254,39 @@ def enforce_scale():
 #
 #         assert rats.mean() == rat
 
+def pe_to_csv_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    from pyemu import MonteCarlo
+    jco = os.path.join("pst","pest.jcb")
+    pst = jco.replace(".jcb",".pst")
+    pst = pyemu.Pst(pst)
+    #pst.parameter_data = pst.parameter_data.iloc[:2,:]
+    pst.parameter_data.loc["mult1","partrans"] = "none"
+    pst.parameter_data.loc["mult1","parval1"] = -1.0
+
+    mc = MonteCarlo(pst=pst,verbose=True)
+    mc.draw(1,enforce_bounds="reset")
+    if not mc.parensemble.istransformed:
+        mc.parensemble._transform()
+    fname = os.path.join("mc","test.csv")
+    mc.parensemble.to_csv(fname)
+    df = pd.read_csv(fname)
+    pe = pyemu.ParameterEnsemble.from_dataframe(pst=pst,df=df)
+    pe1 = pe.copy()
+    pe.enforce()
+
+    assert np.allclose(pe1.as_matrix(),pe.as_matrix())
+
+
+
 if __name__ == "__main__":
+    pe_to_csv_test()
     #scale_offset_test()
     #mc_test()
-    fixed_par_test()
+    #fixed_par_test()
     #uniform_draw_test()
     #gaussian_draw_test()
     #write_regul_test()

@@ -706,6 +706,11 @@ class ParameterEnsemble(Ensemble):
         #self._transform(inplace=True)
 
 
+    def to_csv(self,*args,**kwargs):
+        if self.istransformed:
+            self._back_transform(inplace=True)
+        super(ParameterEnsemble,self).to_csv(*args,**kwargs)
+
     def to_parfiles(self,prefix):
         """
             write the parameter ensemble to pest-style parameter files
