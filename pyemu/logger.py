@@ -36,9 +36,9 @@ class Logger(object):
 
     def statement(self,phrase):
         t = datetime.now()
-        s = str(t) + str(phrase)
+        s = str(t) + str(phrase) + '\n'
         if self.echo:
-            print(s,)
+            print(s,end='')
         if self.filename:
             self.f.write(s)
             self.f.flush()
@@ -59,7 +59,7 @@ class Logger(object):
             s = str(t) + ' finished: ' + str(phrase) + " took: " + \
                 str(t - self.items[phrase]) + '\n'
             if self.echo:
-                print(s,)
+                print(s,end='')
             if self.filename:
                 self.f.write(s)
                 self.f.flush()
@@ -67,7 +67,7 @@ class Logger(object):
         else:
             s = str(t) + ' starting: ' + str(phrase) + '\n'
             if self.echo:
-                print(s,)
+                print(s,end='')
             if self.filename:
                 self.f.write(s)
                 self.f.flush()
@@ -84,14 +84,14 @@ class Logger(object):
         """
         s = str(datetime.now()) + " WARNING: " + message + '\n'
         if self.echo:
-            print(s,)
+            print(s,end='')
         if self.filename:
             self.f.write(s)
             self.f.flush
 
     def lraise(self,message):
         s = str(datetime.now()) + " ERROR: " + message + '\n'
-        print(s,)
+        print(s,end='')
         if self.filename:
             self.f.write(s)
             self.f.flush

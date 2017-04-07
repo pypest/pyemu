@@ -212,7 +212,8 @@ class EnsembleSmoother():
 
 
     def _calc_obs_condor(self,parensemble):
-        self.logger.log("evaluating ensemble with htcondor")
+        self.logger.log("evaluating ensemble of size {0} locally with htcondor".\
+                        format(parensemble.shape[0]))
         parensemble.to_csv(self.sweep_in_csv)
         os.system("condor_rm -all")
         port = 4004
@@ -230,7 +231,8 @@ class EnsembleSmoother():
         obs.columns = [item.lower() for item in obs.columns]
         self.total_runs += obs.shape[0]
         self.logger.statement("total runs:{0}".format(self.total_runs))
-        self.logger.log("evaluating ensemble with htcondor")
+        self.logger.log("evaluating ensemble of size {0} locally with htcondor".\
+                        format(parensemble.shape[0]))
         return ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],
                                                   pst=self.pst)
 
@@ -238,7 +240,8 @@ class EnsembleSmoother():
         '''
         propagate the ensemble forward using sweep.
         '''
-        self.logger.log("evaluating ensemble locally with sweep")
+        self.logger.log("evaluating ensemble of size {0} locally with sweep".\
+                        format(parensemble.shape[0]))
         parensemble.to_csv(self.sweep_in_csv)
         if self.num_slaves > 0:
             port = 4004
@@ -256,8 +259,9 @@ class EnsembleSmoother():
         obs = pd.read_csv(self.sweep_out_csv)
         obs.columns = [item.lower() for item in obs.columns]
         self.total_runs += obs.shape[0]
-        self.logger.statement("total runs:{0}".format(self.total_runs))
-        self.logger.log("evaluating ensemble locally with sweep")
+        self.logger.statement("total runs so far :{0}".format(self.total_runs))
+        self.logger.log("evaluating ensemble of size {0} locally with sweep".\
+                        format(parensemble.shape[0]))
         return ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],
                                                   pst=self.pst)
 
@@ -369,7 +373,7 @@ class EnsembleSmoother():
 
             parensemble_cur_lam.enforce(self.enforce_bounds)
             paren_lam.append(parensemble_cur_lam)
-            self.logger.log("evaluating ensemble for current lambda")
+            self.logger.log("evaluating ensemble for lambda {0}".format(cur_lam))
             if run_subset is not None:
                 #phi_series = pd.Series(data=self.current_phi_vec)
                 #phi_series.sort_values(inplace=True,ascending=False)
@@ -379,19 +383,20 @@ class EnsembleSmoother():
                 obsensemble_cur_lam = self._calc_obs(parensemble_subset)
             else:
                 obsensemble_cur_lam = self._calc_obs(parensemble_cur_lam)
-            self.logger.log("evaluating ensemble for current lambda")
+            self.logger.log("evaluating ensemble for lambda {0}".format(cur_lam))
+
             #print(obsensemble_cur_lam.head())
             obsen_lam.append(obsensemble_cur_lam)
             self.logger.log("evaluating lambda {0}".format(cur_lam_mult))
 
         # here is where we need to select out the "best" lambda par and obs
         # ensembles
-        print("\n**************************")
-        print(str(datetime.now()))
-        print("total runs:{0}".format(self.total_runs))
-        print("iteration: {0}".format(self.iter_num))
-        print("current lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
-                  format(self.current_lambda,
+        self.logger.statement("\n**************************")
+        self.logger.statement(str(datetime.now()))
+        self.logger.statement("total runs:{0}".format(self.total_runs))
+        self.logger.statement("iteration: {0}".format(self.iter_num))
+        self.logger.statement("current lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
+                              format(self.current_lambda,
                          self.last_best_mean,self.last_best_std))
         phi_vecs = [self._calc_phi_vec(obsen) for obsen in obsen_lam]
         mean_std = [(pv.mean(),pv.std()) for pv in phi_vecs]
@@ -402,8 +407,8 @@ class EnsembleSmoother():
         best_std = self.last_best_std * 1.1
         best_i = 0
         for i,(m,s) in enumerate(mean_std):
-            print(" tested lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
-                  format(self.current_lambda * lambda_mults[i],m,s))
+            self.logger.statement(" tested lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
+                                 format(self.current_lambda * lambda_mults[i],m,s))
             if m < best_mean:
                 update_pars = True
                 best_mean = m
@@ -417,8 +422,8 @@ class EnsembleSmoother():
             self.current_lambda = min(self.current_lambda,100000)
             self.logger.statement("not accepting iteration, increased lambda:{0}".\
                   format(self.current_lambda))
-            print("not accepting iteration, increased lambda:{0}".\
-                  format(self.current_lambda))
+            #print("not accepting iteration, increased lambda:{0}".\
+            #      format(self.current_lambda))
 
         else:
 
@@ -434,9 +439,9 @@ class EnsembleSmoother():
                 self._phi_report(phi_vecs[best_i],self.current_lambda * lambda_mults[best_i])
                 self.current_phi_vec = phi_vecs[best_i]
 
-            print("\n" + "   best lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
-                  format(self.current_lambda*lambda_mults[best_i],
-                         best_mean,best_std))
+            #print("\n" + "   best lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
+            #      format(self.current_lambda*lambda_mults[best_i],
+            #             best_mean,best_std))
             self.logger.statement("   best lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
                   format(self.current_lambda*lambda_mults[best_i],
                          best_mean,best_std))
@@ -448,13 +453,13 @@ class EnsembleSmoother():
             self.current_lambda *= (lambda_mults[best_i] * 0.75)
             # but don't let lambda get too small
             self.current_lambda = max(self.current_lambda,0.001)
-            print("updating lambda: {0:15.6G}".\
-                  format(self.current_lambda ))
+            #print("updating lambda: {0:15.6G}".\
+            #      format(self.current_lambda ))
             self.logger.statement("updating lambda: {0:15.6G}".\
                   format(self.current_lambda ))
 
 
-        print("**************************\n")
+        self.logger.statement("**************************\n")
 
         self.parensemble.to_csv(self.pst.filename+self.paren_prefix.\
                                     format(self.iter_num))

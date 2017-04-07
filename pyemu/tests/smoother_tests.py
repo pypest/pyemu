@@ -185,26 +185,27 @@ def freyberg():
 
     nothk_names = [pname for pname in pst.adj_par_names if "hk" not in pname]
     parcov_nothk = dia_parcov.get(row_names=nothk_names)
-    gs = pyemu.utils.geostats.read_struct_file("structure.dat")
-    full_parcov = gs.covariance_matrix(xy.x,xy.y,xy.name)
-    parcov = dia_parcov.extend(full_parcov)
-    print(parcov.to_pearson())
-    return
-    es = pyemu.EnsembleSmoother(pst,parcov=parcov,num_slaves=20,use_approx=True)
+    gs = pyemu.utils.geostats.read_struct_file(os.path.join("template","structure.dat"))
+    print(gs.variograms[0].a,gs.variograms[0].contribution)
+    gs.variograms[0].a *= 10.0
 
-    import matplotlib.pyplot as plt
-    plt.imshow(cov.x,interpolation="nearest")
-    plt.show()
-    return
+    print(gs.variograms[0].a,gs.variograms[0].contribution)
+
+    full_parcov = gs.covariance_matrix(xy.x,xy.y,xy.name)
+    parcov = parcov_nothk.extend(full_parcov)
+    #print(parcov.to_pearson().x[-1,:])
+    es = pyemu.EnsembleSmoother(pst,parcov=parcov,num_slaves=20,
+                                use_approx=True,verbose=True)
+
     #gs.variograms[0].a=10000
     #gs.variograms[0].contribution=0.01
     #gs.variograms[0].anisotropy = 10.0
-    pp_df = pyemu.utils.gw_utils.pp_file_to_dataframe("points1.dat")
-    parcov_hk = gs.covariance_matrix(pp_df.x,pp_df.y,pp_df.name)
-    parcov_full = parcov_hk.extend(parcov_rch)
+    # pp_df = pyemu.utils.gw_utils.pp_file_to_dataframe("points1.dat")
+    # parcov_hk = gs.covariance_matrix(pp_df.x,pp_df.y,pp_df.name)
+    # parcov_full = parcov_hk.extend(parcov_rch)
 
-    es.initialize(300,init_lambda=5000.0)
-    for i in range(3):
+    es.initialize(300,init_lambda=10000.0)
+    for i in range(10):
         es.update(lambda_mults=[0.2,5.0],run_subset=40)
     os.chdir(os.path.join("..",".."))
 
@@ -236,6 +237,31 @@ def freyberg_plot():
     if not os.path.exists(plt_dir):
         os.mkdir(plt_dir)
 
+    obj_df = pd.read_csv(os.path.join(d, "freyberg.pst.iobj.csv"), index_col=0)
+    real_cols = [col for col in obj_df.columns if col.startswith("0")]
+    obj_df.loc[:, real_cols] = obj_df.loc[:, real_cols].apply(np.log10)
+    obj_df.loc[:, "mean"] = obj_df.loc[:, "mean"].apply(np.log10)
+    obj_df.loc[:, "std"] = obj_df.loc[:, "std"].apply(np.log10)
+
+    fig = plt.figure(figsize=(20, 10))
+    ax = plt.subplot(111)
+    obj_df.loc[:, real_cols].plot(ax=ax, lw=0.5, color="0.5", alpha=0.5, legend=False)
+    ax.plot(obj_df.index, obj_df.loc[:, "mean"], 'b', lw=2.5, marker='.', markersize=5)
+    ax.set_xticks(obj_df.index.values)
+    ax.set_xticklabels(["{0}".format(tr) for tr in obj_df.total_runs])
+    # ax.fill_between(obj_df.index, obj_df.loc[:, "mean"] - (1.96 * obj_df.loc[:, "std"]),
+    #                obj_df.loc[:, "mean"] + (1.96 * obj_df.loc[:, "std"]),
+    #                facecolor="b", edgecolor="none", alpha=0.25)
+    axt = plt.twinx()
+    axt.plot(obj_df.index, obj_df.loc[:, "lambda"], "k", dashes=(2, 1), lw=2.5)
+    ax.set_ylabel("log$_10$ $\phi$")
+    axt.set_ylabel("lambda")
+    ax.set_xlabel("total runs")
+    ax.set_title("EnsembleSmoother $\phi$ summary; {0} realizations in ensemble".\
+                 format(obj_df.shape[1]-7))
+    plt.savefig(os.path.join(plt_dir, "iobj.pdf"))
+    plt.close()
+
     par_files = [os.path.join(d,f) for f in os.listdir(d) if "parensemble." in f
                  and ".png" not in f]
     par_dfs = [pd.read_csv(par_file,index_col=0).apply(np.log10) for par_file in par_files]
@@ -251,9 +277,13 @@ def freyberg_plot():
 
             plt.figtext(0.5,0.975,par_file,ha="center")
             axes = [plt.subplot(2,6,i+1) for i in range(12)]
+            arrs = []
             for ireal in range(10):
-                arr = freyberg_pars_to_array(par_df.iloc[[ireal],:].T)
-                axes[ireal].imshow(arr,interpolation="nearest")
+                arrs.append(freyberg_pars_to_array(par_df.iloc[[ireal],:].T))
+            amx = max([arr.max() for arr in arrs])
+            amn = max([arr.min() for arr in arrs])
+            for ireal,arr in enumerate(arrs):
+                axes[ireal].imshow(arr,vmax=amx,vmin=amn,interpolation="nearest")
             for par_name,ax in zip(par_names,axes[-2:]):
                 mean = par_df.loc[:,par_name].mean()
                 std = par_df.loc[:,par_name].std()
@@ -291,26 +321,7 @@ def freyberg_plot():
     mx = {obs_name:max([obs_df.loc[:,obs_name].max() for obs_df in obs_dfs]) for obs_name in obs_names}
     mn = {obs_name:min([obs_df.loc[:,obs_name].min() for obs_df in obs_dfs]) for obs_name in obs_names}
 
-    obj_df = pd.read_csv(os.path.join(d, "freyberg.pst.iobj.csv"), index_col=0)
-    real_cols = [col for col in obj_df.columns if col.startswith("0")]
-    obj_df.loc[:, real_cols] = obj_df.loc[:, real_cols].apply(np.log10)
-    obj_df.loc[:, "mean"] = obj_df.loc[:, "mean"].apply(np.log10)
-    obj_df.loc[:, "std"] = obj_df.loc[:, "std"].apply(np.log10)
 
-    fig = plt.figure(figsize=(20, 10))
-    ax = plt.subplot(111)
-    axt = plt.twinx()
-    obj_df.loc[:, real_cols].plot(ax=ax, lw=0.5, color="0.5", alpha=0.5, legend=False)
-    ax.plot(obj_df.index, obj_df.loc[:, "mean"], 'b', lw=2.5, marker='.', markersize=5)
-    # ax.fill_between(obj_df.index, obj_df.loc[:, "mean"] - (1.96 * obj_df.loc[:, "std"]),
-    #                obj_df.loc[:, "mean"] + (1.96 * obj_df.loc[:, "std"]),
-    #                facecolor="b", edgecolor="none", alpha=0.25)
-    axt.plot(obj_df.index, obj_df.loc[:, "lambda"], "k", dashes=(2, 1), lw=2.5)
-    ax.set_ylabel("log$_10$ phi")
-    axt.set_ylabel("lambda")
-    ax.set_title("total runs:{0}".format(obj_df.total_runs.max()))
-    plt.savefig(os.path.join(plt_dir, "iobj.pdf"))
-    plt.close()
 
     with PdfPages(os.path.join(plt_dir,"obsensemble.pdf")) as pdf:
         for obs_file,obs_df in zip(obs_files,obs_dfs):
@@ -473,7 +484,7 @@ def tenpar():
     print(lz)
     es.initialize(num_reals=20,init_lambda=10000.0)
 
-    for it in range(20):
+    for it in range(40):
         #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
         es.update(lambda_mults=[1.0])
     os.chdir(os.path.join("..",".."))
@@ -630,10 +641,10 @@ if __name__ == "__main__":
     #henry_setup()
     #henry()
     #henry_plot()
-    #freyberg()
-    #freyberg_plot()
+    freyberg()
+    freyberg_plot()
     #chenoliver_setup()
     #chenoliver()
     #chenoliver_plot()
-    tenpar()
-    tenpar_plot()
+    #tenpar()
+    #tenpar_plot()
