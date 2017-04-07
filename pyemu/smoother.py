@@ -10,6 +10,7 @@ from pyemu.en import ParameterEnsemble,ObservationEnsemble
 from pyemu.mat import Cov,Matrix
 
 from pyemu.pst import Pst
+from .logger import Logger
 
 """this is a prototype ensemble smoother based on the LM-EnRML
 algorithm of Chen and Oliver 2013.  It requires the pest++ "sweep" utility
@@ -25,7 +26,8 @@ algorithm of Chen and Oliver 2013.  It requires the pest++ "sweep" utility
 class EnsembleSmoother():
 
     def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,use_approx=True,
-                 restart_iter=0,submit_file=None):
+                 restart_iter=0,submit_file=None,verbose=False):
+        self.logger = Logger(verbose)
         self.num_slaves = int(num_slaves)
         self.submit_file = submit_file
         self.use_approx = bool(use_approx)

@@ -585,7 +585,7 @@ class ParameterEnsemble(Ensemble):
         self.loc[:,istransformed] = 10.0**self.loc[:,istransformed]
         self.__istransformed = False
 
-    def enforce(self,enforce_bounds):
+    def enforce(self,enforce_bounds="reset"):
         if isinstance(enforce_bounds,bool):
             import warnings
             warnings.warn("deprecation warning: enforce_bounds should be "+\

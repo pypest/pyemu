@@ -333,8 +333,6 @@ def freyberg_plot():
             pdf.savefig()
             plt.close()
 
-
-
 def chenoliver_setup():
     import pyemu
     os.chdir(os.path.join("smoother","chenoliver"))
@@ -579,10 +577,10 @@ if __name__ == "__main__":
     #henry_setup()
     #henry()
     #henry_plot()
-    freyberg()
+    #freyberg()
     #freyberg_plot()
     #chenoliver_setup()
-    #chenoliver()
-    #chenoliver_plot()
+    chenoliver()
+    chenoliver_plot()
     #tenpar()
     #tenpar_plot()
