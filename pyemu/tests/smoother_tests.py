@@ -187,14 +187,20 @@ def freyberg():
     parcov_nothk = dia_parcov.get(row_names=nothk_names)
     gs = pyemu.utils.geostats.read_struct_file(os.path.join("template","structure.dat"))
     print(gs.variograms[0].a,gs.variograms[0].contribution)
-    gs.variograms[0].a *= 10.0
-
+    #gs.variograms[0].a *= 10.0
+    #gs.variograms[0].contribution *= 10.0
+    gs.nugget = 0.0
     print(gs.variograms[0].a,gs.variograms[0].contribution)
 
     full_parcov = gs.covariance_matrix(xy.x,xy.y,xy.name)
     parcov = parcov_nothk.extend(full_parcov)
     #print(parcov.to_pearson().x[-1,:])
-    es = pyemu.EnsembleSmoother(pst,parcov=parcov,num_slaves=20,
+
+    pst.observation_data.loc[:,"weight"] /= 10.0
+    pst.write("temp.pst")
+    obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
+
+    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=20,
                                 use_approx=True,verbose=True)
 
     #gs.variograms[0].a=10000
@@ -204,7 +210,7 @@ def freyberg():
     # parcov_hk = gs.covariance_matrix(pp_df.x,pp_df.y,pp_df.name)
     # parcov_full = parcov_hk.extend(parcov_rch)
 
-    es.initialize(300,init_lambda=10000.0)
+    es.initialize(300,init_lambda=10000.0,enforce_bounds="reset")
     for i in range(10):
         es.update(lambda_mults=[0.2,5.0],run_subset=40)
     os.chdir(os.path.join("..",".."))
