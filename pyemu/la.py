@@ -211,6 +211,8 @@ class LinearAnalysis(object):
                 self.resfile = None
                 self.res = None
             self.log("scaling obscov by residual phi components")
+        assert type(self.parcov) == Cov
+        assert type(self.obscov) == Cov
 
     def __fromfile(self, filename, astype=None):
         """a private method to deduce and load a filename into a matrix object
