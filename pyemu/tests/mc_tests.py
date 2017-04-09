@@ -208,11 +208,8 @@ def pnulpar_test():
 def enforce_test():
     import os
     import pyemu
-    dir = "mc"
 
-    mc = pyemu.MonteCarlo(jco=os.path.join("mc","freyberg_ord.jco"))
-    mc.draw(num_reals=100,enforce_bounds='drop')
-    assert mc.parensemble.shape[0] == 0
+    mc = pyemu.MonteCarlo(jco=os.path.join("mc","freyberg_ord.jco"),verbose=True)
 
     cov = pyemu.Cov(x=mc.parcov.x * 0.1,names=mc.parcov.row_names,isdiagonal=True)
     mc = pyemu.MonteCarlo(jco=os.path.join("mc","freyberg_ord.jco"),
@@ -220,8 +217,73 @@ def enforce_test():
     mc.draw(num_reals=100,enforce_bounds='drop')
     assert mc.parensemble.shape[0] == 100.0
 
+    mc = pyemu.MonteCarlo(jco=os.path.join("mc","freyberg_ord.jco"))
+    mc.draw(num_reals=100,enforce_bounds='drop')
+    assert mc.parensemble.shape[0] == 0
+
+
+def enforce_scale():
+    import os
+    import pyemu
+    from pyemu import MonteCarlo
+    jco = os.path.join("pst","pest.jcb")
+    pst = jco.replace(".jcb",".pst")
+    pst = pyemu.Pst(pst)
+    pst.parameter_data = pst.parameter_data.iloc[:2,:]
+    pst.parameter_data.loc["mult1","partrans"] = "none"
+    pst.parameter_data.loc["mult1","parval1"] = -1.0
+
+    mc = MonteCarlo(pst=pst,verbose=True)
+    mc.draw(1,enforce_bounds="scale")
+
+
+# def tied_test():
+#     import os
+#     import pyemu
+#     pst_dir = os.path.join('..','tests',"pst")
+#     pst = pyemu.Pst(os.path.join(pst_dir,"br_opt_no_zero_weighted.pst"))
+#     mc = pyemu.MonteCarlo(pst=pst)
+#     mc.draw(num_reals=2)
+#     par = pst.parameter_data
+#     tied = pst.tied
+#     for pname,tname in zip(tied.parnme,tied.partied):
+#         pval = par.loc[pname,"parval1"]
+#         tval = par.loc[tname,"parval1"]
+#         rat = pval / tval
+#         rats = mc.parensemble.loc[:,pname] / mc.parensemble.loc[:,tname]
+#
+#         assert rats.mean() == rat
+
+def pe_to_csv_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    from pyemu import MonteCarlo
+    jco = os.path.join("pst","pest.jcb")
+    pst = jco.replace(".jcb",".pst")
+    pst = pyemu.Pst(pst)
+    #pst.parameter_data = pst.parameter_data.iloc[:2,:]
+    pst.parameter_data.loc["mult1","partrans"] = "none"
+    pst.parameter_data.loc["mult1","parval1"] = -1.0
+
+    mc = MonteCarlo(pst=pst,verbose=True)
+    mc.draw(1,enforce_bounds="reset")
+    if not mc.parensemble.istransformed:
+        mc.parensemble._transform()
+    fname = os.path.join("mc","test.csv")
+    mc.parensemble.to_csv(fname)
+    df = pd.read_csv(fname)
+    pe = pyemu.ParameterEnsemble.from_dataframe(pst=pst,df=df)
+    pe1 = pe.copy()
+    pe.enforce()
+
+    assert np.allclose(pe1.as_matrix(),pe.as_matrix())
+
+
 
 if __name__ == "__main__":
+    pe_to_csv_test()
     #scale_offset_test()
     #mc_test()
     #fixed_par_test()
@@ -232,5 +294,6 @@ if __name__ == "__main__":
     #ensemble_seed_test()
     #pnulpar_test()
     #enforce_test()
-
-    freyberg_verf_test()
+    #tied_test()
+    #enforce_scale_test()
+    #freyberg_verf_test()

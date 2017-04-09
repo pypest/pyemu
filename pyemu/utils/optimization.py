@@ -2,7 +2,7 @@ from __future__ import print_function, division
 import os, sys
 import numpy as np
 import pandas as pd
-from pyemu import Matrix,Pst,Schur
+from pyemu import Matrix,Pst,Schur,Cov
 
 OPERATOR_WORDS = ["l","g","n","e"]
 OPERATOR_SYMBOLS = ["<=",">=","=","="]
@@ -41,8 +41,91 @@ def add_pi_obj_func(pst,obj_func_dict=None,out_pst_name=None):
     return pst
 
 
+def get_added_obs_importance(pst,obslist_dict=None,base_obslist=None,
+                             reset_zero_weight=1.0):
+    """get a dataframe fo the objective function
+        as a results of added some observations
+        Parameters:
+        ----------
+            obslist_dict (dict of list of str) : groups of observations
+                that are to be treated as added the implied calibration.  key values become
+                row labels in result dataframe. If None, then test every obs
+            base_obslist (list of str) : observation names to treat as
+                the "existing" observations.  The values of obslist_dict
+                will be added to this list.  If None, then each list in the
+                values of obslist_dict will be treated as an individual
+                calibration dataset
+            reset_zero_weight : (bool or float) a flag to reset observations
+                with zero weight in either obslist_dict or base_obslist.
+                If the value of reset_zero_weights can be cast to a float,
+                then that value will be assigned to zero weight obs.  Otherwise,
+                zero weight obs will be given a weight of 1.0
+        Returns:
+        -------
+            dataframe[obslist_dict.keys(),(forecast_name,post)
+                multiindex dataframe of Schur's complement results for each
+                group of observations in obslist_dict values.
+        Note:
+        ----
+            all observations listed in obslist_dict and base_obslist with zero
+            weights will be dropped unless reset_zero_weight is set
+        """
+
+    if not isinstance(pst,Pst):
+        pst = Pst(pst)
+    assert "hotstart_resfile" in pst.pestpp_options.keys()
+    assert "opt_skip_final" in pst.pestpp_options.keys()
+    assert "base_jacobian" in pst.pestpp_options.keys()
+    assert "opt_risk" in pst.pestpp_options.keys()
+    assert pst.pestpp_options["opt_risk"] != 0.5
+    assert pst.control_data.noptmax == 1
+
+    obscov = Cov.from_observation_data(pst)
+
+    if obslist_dict is not None:
+        if type(obslist_dict) == list:
+            obslist_dict = dict(zip(obslist_dict,obslist_dict))
+
+    try:
+        weight = float(reset_zero_weight)
+    except:
+        weight = 1.0
+
+    if obslist_dict is None:
+
+        zero_weight_names = [n for n,w in zip(pst.observation_data.obsnme,
+                                              pst.observation_data.weight)
+                             if w == 0.0]
+        obslist_dict = dict(zip(zero_weight_names,zero_weight_names))
+    names = ["base"]
+
+    results = [get_obj_func(pst)]
+    #print(len(pst.nnz_obs_names))
+    for case_name,obslist in obslist_dict.items():
+        names.append(case_name)
+        case_pst = pst.get()
+        case_pst.observation_data.loc[obslist,"weight"] = weight
+        #print(len(case_pst.nnz_obs_names))
+        results.append(get_obj_func(case_pst))
 
 
+    df = pd.DataFrame(results,index=names)
+    return df
+
+
+def get_obj_func(pst):
+    pst_name = "temp_" + pst.filename
+    pst.write(pst_name)
+    print(pst.template_files)
+    os.system("{0} {1}".format("pestpp-opt",pst_name))
+    rec_file = pst_name[:-4]+".rec"
+    with open(rec_file) as f:
+        for line in f:
+            if "iteration 1 objective function value" in line:
+                val = float(line.strip().split()[-2])
+                return val
+    raise Exception("unable to find objective function in {0}".\
+                    format(rec_file))
 
 
 def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,

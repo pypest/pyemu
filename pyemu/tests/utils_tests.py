@@ -512,7 +512,41 @@ def ppk2fac_verf_test():
     assert diff < 1.0e-6
 
 
+def opt_obs_worth():
+    import os
+    import pyemu
+    wdir = os.path.join("utils")
+    os.chdir(wdir)
+    pst = pyemu.Pst(os.path.join("supply2_pest.fosm.pst"))
+    zero_weight_names = [n for n,w in zip(pst.observation_data.obsnme,pst.observation_data.weight) if w == 0.0]
+    #print(zero_weight_names)
+    #for attr in ["base_jacobian","hotstart_resfile"]:
+    #    pst.pestpp_options[attr] = os.path.join(wdir,pst.pestpp_options[attr])
+    #pst.template_files = [os.path.join(wdir,f) for f in pst.template_files]
+    #pst.instruction_files = [os.path.join(wdir,f) for f in pst.instruction_files]
+    #print(pst.template_files)
+    df = pyemu.optimization.get_added_obs_importance(pst,obslist_dict={"zeros":zero_weight_names})
+    os.chdir("..")
+    print(df)
+
+
+def mflist_budget_test():
+    import pyemu
+
+    try:
+        import flopy
+    except:
+        print("no flopy...")
+        return
+    model_ws = os.path.join("..","..","examples","Freyberg_transient")
+    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False)
+    pyemu.gw_utils.setup_mflist_budget_obs(ml)
+
+
+
+
 if __name__ == "__main__":
+    mflist_budget_test()
     # kl_test()
     # zero_order_regul_test()
     # first_order_pearson_regul_test()
@@ -538,5 +572,6 @@ if __name__ == "__main__":
     # covariance_matrix_test()
     # add_pi_obj_func_test()
     # ok_test()
-    ok_grid_test()
+    #ok_grid_test()
+    #opt_obs_worth()
     #ppk2fac_verf_test()

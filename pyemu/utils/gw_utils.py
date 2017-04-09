@@ -221,9 +221,10 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
 
 
 def pp_file_to_dataframe(pp_filename):
-    return pd.read_csv(pp_filename, delim_whitespace=True,
-                     header=None, names=PP_NAMES)
-
+    df = pd.read_csv(pp_filename, delim_whitespace=True,
+                     header=None, names=PP_NAMES,usecols=[0,1,2,3,4])
+    df.loc[:,"name"] = df.name.apply(str).apply(str.lower)
+    return df
 
 def write_pp_shapfile(pp_df,shapename=None):
     """write pilot points to a shapefile
@@ -454,6 +455,48 @@ def parse_factor_line(line):
         fac = float(raw[ifac+1])
         fac_data[pnum] = fac
     return inode,itrans,fac_data
+
+def setup_mflist_budget_obs(model,flx_filename="flux.dat",
+                            vol_filename="vol.dat"):
+    flx,vol = apply_mflist_budget_obs(os.path.join(model.model_ws,
+                                                   model.lst.file_name[0]),
+                                      flx_filename,vol_filename,
+                                      model.start_datetime)
+    _write_mflist_ins(flx_filename+".ins",flx)
+    _write_mflist_ins(vol_filename+".ins",vol)
+
+    try:
+        os.system("inschek {0}.ins {0}".format(flx_filename))
+        os.system("inschek {0}.ins {0}".format(vol_filename))
+    except:
+        print("error running inschek")
+    return flx,vol
+
+def apply_mflist_budget_obs(list_filename,flx_filename="flux.dat",
+                            vol_filename="vol.dat",
+                            start_datetime="1-1-1970"):
+    try:
+        import flopy
+    except Exception as e:
+        raise Exception("error import flopy: {0}".format(str(e)))
+    mlf = flopy.utils.MfListBudget(list_filename)
+    flx,vol = mlf.get_dataframes(start_datetime=start_datetime,diff=True)
+    flx.to_csv(flx_filename,sep=' ')
+    vol.to_csv(vol_filename,sep=' ')
+    return flx,vol
+
+
+def _write_mflist_ins(ins_filename,df):
+    dt_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
+    with open(ins_filename,'w') as f:
+        f.write('pif ~\nl1\n')
+
+        for dt in dt_str:
+            f.write("l1 ")
+            for col in df.columns:
+                obsnme = "{0}_{1}".format(col[:11],dt)
+                f.write(" w !{0}!".format(obsnme))
+            f.write("\n")
 
 
 
