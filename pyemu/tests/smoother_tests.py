@@ -377,6 +377,84 @@ def chenoliver_setup():
 
     os.chdir(os.path.join("..",".."))
 
+def chenoliver_func_plot(ax=None):
+    def func(par):
+        return ((7.0/12.0) * par**3) - ((7.0/2.0) * par**2) + (8.0 * par)
+    import numpy as np
+    import matplotlib.pyplot as plt
+    par = np.arange(-5.0,10.0,0.1)
+    obs = func(par)
+    if ax is None:
+        fig = plt.figure(figsize=(10,5))
+        ax = plt.subplot(111)
+    ax.plot(par,obs,"0.5",dashes=(3,2),lw=4.0)
+
+    ax.scatter(-2.0,func(-2.0),marker='^',s=175,color="b",label="prior mean",zorder=4)
+    ax.scatter(5.9,func(5.9),marker='*',s=175,color="m",label="posterior mean",zorder=4)
+
+    ax.set_xlabel("parameter value")
+    ax.set_ylabel("observation value")
+    ax.grid()
+    plt.savefig(os.path.join("smoother","chenoliver","function.png"))
+
+    #plt.show()
+
+def chenoliver_plot_sidebyside():
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    d = os.path.join("smoother","chenoliver")
+    bins = 20
+    plt_dir = os.path.join(d,"plot")
+    if not os.path.exists(plt_dir):
+        os.mkdir(plt_dir)
+    obs_files = [os.path.join(d,f) for f in os.listdir(d) if "obsensemble." in f
+                 and ".png" not in f]
+    obs_dfs = [pd.read_csv(obs_file) for obs_file in obs_files]
+    #print(obs_files)
+    omx = max([obs_df.obs.max() for obs_df in obs_dfs])
+    omn = min([obs_df.obs.min() for obs_df in obs_dfs])
+
+    par_files = [os.path.join(d,f) for f in os.listdir(d) if "parensemble." in f
+                 and ".png" not in f]
+    par_dfs = [pd.read_csv(par_file) for par_file in par_files]
+    #mx = max([par_df.par.max() for par_df in par_dfs])
+    #mn = min([par_df.par.min() for par_df in par_dfs])
+    pmx = 7
+    pmn = -5
+    figsize = (10,3)
+    fcount = 1
+    for pdf, odf in zip(par_dfs,obs_dfs[1:]):
+        fig = plt.figure(figsize=figsize)
+        #axp = plt.subplot(1,3,1)
+        #axo = plt.subplot(1,3,2)
+        #axf = plt.subplot(1,3,3)
+        axp = plt.axes((0.05,0.075,0.25,0.825))
+        axo = plt.axes((0.375,0.075,0.25,0.825))
+        axf = plt.axes((0.7,0.075,0.25,0.825))
+        chenoliver_func_plot(axf)
+        pdf.par.hist(ax=axp,bins=bins,edgecolor="none",grid=False)
+        odf.obs.hist(ax=axo,bins=bins,edgecolor="none",grid=False)
+        axf.scatter(pdf.par.values,odf.obs.values,marker='.',color="c",s=100)
+        axp.set_yticks([])
+        axo.set_yticks([])
+        axp.set_xlim(pmn,pmx)
+        axo.set_xlim(omn,omx)
+        axp.set_title("parameter")
+        axo.set_title("observation")
+        axf.set_ylabel("")
+        axf.set_xlabel("")
+        axf.set_title("par vs obs")
+        plt.savefig(os.path.join(plt_dir,"sbs_{0:03d}.png".format(fcount)))
+        #plt.tight_layout()
+        plt.close(fig)
+        fcount += 1
+    bdir = os.getcwd()
+    os.chdir(plt_dir)
+    os.system("ffmpeg -r 6 -i sbs_%03d.png -vcodec libx264  -pix_fmt yuv420p chenoliver.mp4")
+    os.chdir(bdir)
+
 def chenoliver_plot():
     import os
     import numpy as np
@@ -647,8 +725,10 @@ if __name__ == "__main__":
     #henry_setup()
     #henry()
     #henry_plot()
-    freyberg()
-    freyberg_plot()
+    #freyberg()
+    #freyberg_plot()
+    #chenoliver_func_plot()
+    chenoliver_plot_sidebyside()
     #chenoliver_setup()
     #chenoliver()
     #chenoliver_plot()
