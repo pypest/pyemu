@@ -230,6 +230,152 @@ def freyberg_pars_to_array(par_df):
     arr = np.ma.masked_where(arr==-999.,arr)
     return arr
 
+def freyberg_plot_par_seq():
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+    import pandas as pd
+    from pyemu import Pst
+    d = os.path.join("smoother","freyberg")
+    pst = Pst(os.path.join(d,"freyberg.pst"))
+    plt_dir = os.path.join(d,"plot")
+    if not os.path.exists(plt_dir):
+        os.mkdir(plt_dir)
+
+    par_files = [os.path.join(d,f) for f in os.listdir(d) if "parensemble." in f
+                 and ".png" not in f]
+    par_dfs = [pd.read_csv(par_file,index_col=0).apply(np.log10) for par_file in par_files]
+    #par_names = list(par_dfs[0].columns)
+    par_names = ["rch_1","rch_2"]
+    mx = (pst.parameter_data.loc[:,"parubnd"] * 1.1).apply(np.log10)
+    mn = (pst.parameter_data.loc[:,"parlbnd"] * 0.9).apply(np.log10)
+    f_count = 0
+    for par_file,par_df in zip(par_files,par_dfs):
+        #print(par_file)
+        fig = plt.figure(figsize=(12,3))
+
+        plt.figtext(0.5,0.95,"iteration {0}".format(f_count+1),ha="center")
+        axes = [plt.subplot(1,6,i+1) for i in range(6)]
+        arrs = []
+        for ireal in range(6):
+            arrs.append(freyberg_pars_to_array(par_df.iloc[[ireal],:].T))
+        amx = max([arr.max() for arr in arrs])
+        amn = max([arr.min() for arr in arrs])
+        for ireal,arr in enumerate(arrs):
+            axes[ireal].imshow(arr,vmax=amx,vmin=amn,interpolation="nearest")
+            axes[ireal].set_xticklabels([])
+            axes[ireal].set_yticklabels([])
+        plt.savefig(os.path.join(plt_dir,"par_{0:03d}.png".format(f_count)))
+        f_count += 1
+        plt.close()
+    bdir = os.getcwd()
+    os.chdir(plt_dir)
+    os.system("ffmpeg -r 1 -i par_%03d.png -vcodec libx264  -pix_fmt yuv420p freyberg_pars.mp4")
+    os.chdir(bdir)
+
+def freyberg_plot_obs_seq():
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+    import pandas as pd
+    from pyemu import Pst
+    d = os.path.join("smoother","freyberg")
+    pst = Pst(os.path.join(d,"freyberg.pst"))
+    plt_dir = os.path.join(d,"plot")
+    if not os.path.exists(plt_dir):
+        os.mkdir(plt_dir)
+    obs_files = [os.path.join(d,f) for f in os.listdir(d) if "obsensemble." in f
+                 and ".png" not in f]
+    obs_dfs = [pd.read_csv(obs_file) for obs_file in obs_files]
+    obs_names = pst.nnz_obs_names
+    obs_names.extend(pst.pestpp_options["forecasts"].split(',')[:-1])
+    print(obs_names)
+    print(len(obs_names))
+    #print(obs_files)
+    obs_dfs = [obs_df.loc[:,obs_names] for obs_df in obs_dfs]
+    mx = {obs_name:max([obs_df.loc[:,obs_name].max() for obs_df in obs_dfs]) for obs_name in obs_names}
+    mn = {obs_name:min([obs_df.loc[:,obs_name].min() for obs_df in obs_dfs]) for obs_name in obs_names}
+
+
+    f_count = 0
+    for obs_df in obs_dfs[1:]:
+        fig = plt.figure(figsize=(12,4))
+        #print(obs_file)
+        axes = [plt.subplot(2,6,i+1) for i in range(len(obs_names))]
+        for ax,obs_name in zip(axes,obs_names):
+            mean = obs_df.loc[:,obs_name].mean()
+            std = obs_df.loc[:,obs_name].std()
+            obs_df.loc[:,obs_name].hist(ax=ax,edgecolor="none",
+                                        alpha=0.25,grid=False)
+            ax.set_yticklabels([])
+            #print(ax.get_xlim(),mn[obs_name],mx[obs_name])
+            ax.set_title(obs_name,fontsize=6)
+            ax.set_xlim(mn[obs_name],mx[obs_name])
+            #ax.set_xlim(0.0,20.0)
+            ylim = ax.get_ylim()
+            oval = pst.observation_data.loc[obs_name,"obsval"]
+            ax.plot([oval,oval],ylim,"k-",lw=1.0)
+            ax.plot([mean,mean],ylim,"b-",lw=0.5)
+            ax.plot([mean+(2.0*std),mean+(2.0*std)],ylim,"b--",lw=0.5)
+            ax.plot([mean-(2.0*std),mean-(2.0*std)],ylim,"b--",lw=0.5)
+            ax.set_xticklabels([])
+            ax.set_yticklabels([])
+        plt.savefig(os.path.join(plt_dir,"obs_{0:03d}.png".format(f_count)))
+        f_count += 1
+        plt.close()
+    bdir = os.getcwd()
+    os.chdir(plt_dir)
+    os.system("ffmpeg -r 1 -i obs_%03d.png -vcodec libx264  -pix_fmt yuv420p freyberg_obs.mp4")
+    os.chdir(bdir)
+
+def freyberg_plot_iobj():
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+    import pandas as pd
+    from pyemu import Pst
+    d = os.path.join("smoother","freyberg")
+    pst = Pst(os.path.join(d,"freyberg.pst"))
+    plt_dir = os.path.join(d,"plot")
+    if not os.path.exists(plt_dir):
+        os.mkdir(plt_dir)
+
+    obj_df = pd.read_csv(os.path.join(d, "freyberg.pst.iobj.csv"), index_col=0)
+    real_cols = [col for col in obj_df.columns if col.startswith("0")]
+    obj_df.loc[:, real_cols] = obj_df.loc[:, real_cols].apply(np.log10)
+    obj_df.loc[:, "mean"] = obj_df.loc[:, "mean"].apply(np.log10)
+    obj_df.loc[:, "std"] = obj_df.loc[:, "std"].apply(np.log10)
+
+    fig = plt.figure(figsize=(10, 5))
+    ax = plt.subplot(111)
+    obj_df.index = obj_df.total_runs
+    obj_df.loc[:, real_cols].plot(ax=ax, lw=0.5, color="0.5", alpha=0.5, legend=False)
+    ax.plot(obj_df.index, obj_df.loc[:, "mean"], 'b', lw=2.5, marker='.', markersize=5)
+    # ax.fill_between(obj_df.index, obj_df.loc[:, "mean"] - (1.96 * obj_df.loc[:, "std"]),
+    #                obj_df.loc[:, "mean"] + (1.96 * obj_df.loc[:, "std"]),
+    #                facecolor="b", edgecolor="none", alpha=0.25)
+    #axt = plt.twinx()
+    #axt.plot(obj_df.index, obj_df.loc[:, "lambda"], "k", dashes=(2, 1), lw=2.5)
+    pobj_df = pd.read_csv(os.path.join(d,"pest_master","freyberg.iobj"),index_col=0)
+    print(pobj_df.total_phi)
+    print(pobj_df.model_runs_completed)
+    ax.plot(pobj_df.model_runs_completed.values,pobj_df.total_phi.apply(np.log10).values,"m",lw=2.5)
+    ax.set_ylabel("log$_10$ $\phi$")
+    #axt.set_ylabel("lambda")
+    ax.set_xlabel("total runs")
+    #ax.set_title("EnsembleSmoother $\phi$ summary; {0} realizations in ensemble".\
+    #             format(obj_df.shape[1]-7))
+    #ax.set_xticks(obj_df.index.values)
+    #ax.set_xticklabels(["{0}".format(tr) for tr in obj_df.total_runs])
+
+    plt.savefig(os.path.join(plt_dir, "iobj.png"))
+    plt.close()
+
+
+
 def freyberg_plot():
     import os
     import numpy as np
@@ -454,6 +600,40 @@ def chenoliver_plot_sidebyside():
     os.chdir(plt_dir)
     os.system("ffmpeg -r 6 -i sbs_%03d.png -vcodec libx264  -pix_fmt yuv420p chenoliver.mp4")
     os.chdir(bdir)
+
+def chenoliver_obj_plot():
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    d = os.path.join("smoother","chenoliver")
+    plt_dir = os.path.join(d,"plot")
+    if not os.path.exists(plt_dir):
+        os.mkdir(plt_dir)
+
+    obj_df = pd.read_csv(os.path.join(d,"chenoliver.pst.iobj.csv"),index_col=0)
+    real_cols = [col for col in obj_df.columns if col.startswith("0")]
+    obj_df.loc[:,real_cols] = obj_df.loc[:,real_cols].apply(np.log10)
+    obj_df.loc[:,"mean"] = obj_df.loc[:,"mean"].apply(np.log10)
+    obj_df.loc[:, "std"] = obj_df.loc[:, "std"].apply(np.log10)
+
+    real_cols = [col for col in obj_df.columns if col.startswith("0")]
+    #obj_df.loc[:, real_cols] = obj_df.loc[:, real_cols].apply(np.log10)
+    #obj_df.loc[:, "mean"] = obj_df.loc[:, "mean"].apply(np.log10)
+    #obj_df.loc[:, "std"] = obj_df.loc[:, "std"].apply(np.log10)
+
+    fig = plt.figure(figsize=(10, 5))
+    ax = plt.subplot(111)
+    obj_df.loc[:, real_cols].plot(ax=ax, lw=0.5, color="0.5", alpha=0.5, legend=False)
+    ax.plot(obj_df.index, obj_df.loc[:, "mean"], 'b', lw=1.5, marker='.', markersize=5,label="ensemble mean")
+    ax.set_ylabel("log$_{10}$ $\phi$")
+    ax.set_xlabel("iteration")
+    pobj_df = pd.read_csv(os.path.join(d,"pest","chenoliver.iobj"),index_col=0)
+    ax.plot(pobj_df.index,pobj_df.total_phi.apply(np.log10),"m",lw=2.5,label="pest++")
+    #ax.legend(loc="upper left")
+    ax.grid()
+    plt.savefig(os.path.join(plt_dir, "iobj.png"))
+    plt.close()
 
 def chenoliver_plot():
     import os
@@ -727,8 +907,12 @@ if __name__ == "__main__":
     #henry_plot()
     #freyberg()
     #freyberg_plot()
+    freyberg_plot_iobj()
+    #freyberg_plot_par_seq()
+    #freyberg_plot_obs_seq()
     #chenoliver_func_plot()
-    chenoliver_plot_sidebyside()
+    #chenoliver_plot_sidebyside()
+    #chenoliver_obj_plot()
     #chenoliver_setup()
     #chenoliver()
     #chenoliver_plot()
