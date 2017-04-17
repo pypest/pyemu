@@ -253,12 +253,12 @@ def freyberg_plot_par_seq():
     f_count = 0
     for par_file,par_df in zip(par_files,par_dfs):
         #print(par_file)
-        fig = plt.figure(figsize=(12,3))
+        fig = plt.figure(figsize=(4.5,3.5))
 
         plt.figtext(0.5,0.95,"iteration {0}".format(f_count+1),ha="center")
-        axes = [plt.subplot(1,6,i+1) for i in range(6)]
+        axes = [plt.subplot(3,4,i+1) for i in range(12)]
         arrs = []
-        for ireal in range(6):
+        for ireal in range(12):
             arrs.append(freyberg_pars_to_array(par_df.iloc[[ireal],:].T))
         amx = max([arr.max() for arr in arrs])
         amn = max([arr.min() for arr in arrs])
@@ -271,7 +271,8 @@ def freyberg_plot_par_seq():
         plt.close()
     bdir = os.getcwd()
     os.chdir(plt_dir)
-    os.system("ffmpeg -r 1 -i par_%03d.png -vcodec libx264  -pix_fmt yuv420p freyberg_pars.mp4")
+    #os.system("ffmpeg -r 1 -i par_%03d.png -vcodec libx264  -pix_fmt yuv420p freyberg_pars.mp4")
+    os.system("ffmpeg -r 2 -i par_%03d.png -loop 0 -final_delay 100 freyberg_pars.gif")
     os.chdir(bdir)
 
 def freyberg_plot_obs_seq():
@@ -301,9 +302,11 @@ def freyberg_plot_obs_seq():
 
     f_count = 0
     for obs_df in obs_dfs[1:]:
-        fig = plt.figure(figsize=(12,4))
+        fig = plt.figure(figsize=(4.5,3.5))
+        plt.figtext(0.5,0.95,"iteration {0}".format(f_count),ha="center",fontsize=8)
+
         #print(obs_file)
-        axes = [plt.subplot(2,6,i+1) for i in range(len(obs_names))]
+        axes = [plt.subplot(3,4,i+1) for i in range(len(obs_names))]
         for ax,obs_name in zip(axes,obs_names):
             mean = obs_df.loc[:,obs_name].mean()
             std = obs_df.loc[:,obs_name].std()
@@ -312,22 +315,25 @@ def freyberg_plot_obs_seq():
             ax.set_yticklabels([])
             #print(ax.get_xlim(),mn[obs_name],mx[obs_name])
             ax.set_title(obs_name,fontsize=6)
+            ttl = ax.title
+            ttl.set_position([.5, 1.00])
             ax.set_xlim(mn[obs_name],mx[obs_name])
             #ax.set_xlim(0.0,20.0)
             ylim = ax.get_ylim()
             oval = pst.observation_data.loc[obs_name,"obsval"]
-            ax.plot([oval,oval],ylim,"k-",lw=1.0)
-            ax.plot([mean,mean],ylim,"b-",lw=0.5)
-            ax.plot([mean+(2.0*std),mean+(2.0*std)],ylim,"b--",lw=0.5)
-            ax.plot([mean-(2.0*std),mean-(2.0*std)],ylim,"b--",lw=0.5)
-            ax.set_xticklabels([])
-            ax.set_yticklabels([])
+            ax.plot([oval,oval],ylim,"k--",lw=0.5)
+            #ax.plot([mean,mean],ylim,"b-",lw=0.5)
+            #ax.plot([mean+(2.0*std),mean+(2.0*std)],ylim,"b--",lw=0.5)
+            #ax.plot([mean-(2.0*std),mean-(2.0*std)],ylim,"b--",lw=0.5)
+            ax.set_xticks([])
+            ax.set_yticks([])
         plt.savefig(os.path.join(plt_dir,"obs_{0:03d}.png".format(f_count)))
         f_count += 1
         plt.close()
     bdir = os.getcwd()
     os.chdir(plt_dir)
-    os.system("ffmpeg -r 1 -i obs_%03d.png -vcodec libx264  -pix_fmt yuv420p freyberg_obs.mp4")
+    #os.system("ffmpeg -r 1 -i obs_%03d.png -vcodec libx264  -pix_fmt yuv420p freyberg_obs.mp4")
+    os.system("ffmpeg -r 2 -i obs_%03d.png -loop 0 -final_delay 100 freyberg_obs.gif")
     os.chdir(bdir)
 
 def freyberg_plot_iobj():
@@ -363,9 +369,10 @@ def freyberg_plot_iobj():
     print(pobj_df.total_phi)
     print(pobj_df.model_runs_completed)
     ax.plot(pobj_df.model_runs_completed.values,pobj_df.total_phi.apply(np.log10).values,"m",lw=2.5)
-    ax.set_ylabel("log$_10$ $\phi$")
+    ax.set_ylabel("log$_{10}$ $\phi$")
     #axt.set_ylabel("lambda")
     ax.set_xlabel("total runs")
+    ax.grid()
     #ax.set_title("EnsembleSmoother $\phi$ summary; {0} realizations in ensemble".\
     #             format(obj_df.shape[1]-7))
     #ax.set_xticks(obj_df.index.values)
@@ -573,6 +580,8 @@ def chenoliver_plot_sidebyside():
     fcount = 1
     for pdf, odf in zip(par_dfs,obs_dfs[1:]):
         fig = plt.figure(figsize=figsize)
+        plt.figtext(0.5,0.95,"iteration {0}".format(fcount),ha="center",fontsize=8)
+
         #axp = plt.subplot(1,3,1)
         #axo = plt.subplot(1,3,2)
         #axf = plt.subplot(1,3,3)
@@ -585,20 +594,26 @@ def chenoliver_plot_sidebyside():
         axf.scatter(pdf.par.values,odf.obs.values,marker='.',color="c",s=100)
         axp.set_yticks([])
         axo.set_yticks([])
+        ylim = axp.get_ylim()
+        axp.plot([5.9,5.9],ylim,"k--")
+        ylim = axo.get_ylim()
+        axo.plot([48,48],ylim,"k--")
         axp.set_xlim(pmn,pmx)
         axo.set_xlim(omn,omx)
-        axp.set_title("parameter")
-        axo.set_title("observation")
+        axp.set_title("parameter",fontsize=6)
+        axo.set_title("observation",fontsize=6)
         axf.set_ylabel("")
         axf.set_xlabel("")
-        axf.set_title("par vs obs")
+        axf.set_title("par vs obs",fontsize=6)
         plt.savefig(os.path.join(plt_dir,"sbs_{0:03d}.png".format(fcount)))
         #plt.tight_layout()
         plt.close(fig)
         fcount += 1
     bdir = os.getcwd()
     os.chdir(plt_dir)
-    os.system("ffmpeg -r 6 -i sbs_%03d.png -vcodec libx264  -pix_fmt yuv420p chenoliver.mp4")
+    #os.system("ffmpeg -r 6 -i sbs_%03d.png -vcodec libx264  -pix_fmt yuv420p chenoliver.mp4")
+    os.system("ffmpeg -r 2 -i sbs_%03d.png -loop 0 -final_delay 100 chenoliver.gif")
+
     os.chdir(bdir)
 
 def chenoliver_obj_plot():
@@ -907,11 +922,11 @@ if __name__ == "__main__":
     #henry_plot()
     #freyberg()
     #freyberg_plot()
-    freyberg_plot_iobj()
+    #freyberg_plot_iobj()
     #freyberg_plot_par_seq()
     #freyberg_plot_obs_seq()
     #chenoliver_func_plot()
-    #chenoliver_plot_sidebyside()
+    chenoliver_plot_sidebyside()
     #chenoliver_obj_plot()
     #chenoliver_setup()
     #chenoliver()

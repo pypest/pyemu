@@ -218,7 +218,11 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
         pi_num = pst.prior_information.shape[0] + 1
         pilbl, obgnme, weight, equation = [], [], [], []
         for i,iname in enumerate(cc_mat.row_names):
+            if iname not in pst.adj_par_names:
+                continue
             for j,jname in enumerate(cc_mat.row_names[i+1:]):
+                if jname not in pst.adj_par_names:
+                    continue
                 #print(i,iname,i+j+1,jname)
                 cc = cc_mat.x[i,j+i+1]
                 if cc < abs_drop_tol:

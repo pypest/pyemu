@@ -218,16 +218,40 @@ class EnsembleSmoother():
         os.system("condor_rm -all")
         port = 4004
         def master():
-            os.system("sweep {0} /h :{1} >nul".format(self.pst.filename,port))
+            try:
+                os.system("sweep {0} /h :{1} >_condor_master_stdout.dat".format(self.pst.filename,port))
+            except Exception as e:
+                self.logger.lraise("error starting condor master: {0}".format(str(e)))
         master_thread = threading.Thread(target=master)
         master_thread.start()
         time.sleep(1.5) #just some time for the master to get up and running to take slaves
-        pyemu.utils.start_slaves("template","sweep",self.pst.filename,
-                                 self.num_slaves,slave_root='.',port=port)
-        os.system("condor_submit {0}".format(self.submit_file))
-        master_thread.join()
+        #pyemu.utils.start_slaves("template","sweep",self.pst.filename,
+        #                         self.num_slaves,slave_root='.',port=port)
+        condor_temp_file = "_condor_submit_stdout.dat"
+        self.logger.log("calling condor_submit with submit file {0}".format(self.submit_file))
+        try:
+            os.system("condor_submit {0} >{1}".format(self.submit_file,condor_temp_file))
+        except Exception as e:
+            self.logger.lraise("error in condor_submit: {0}".format(str(e)))
+        self.logger.log("calling condor submit with submit file {0}".format(self.submit_file))
 
+        condor_submit_string = "submitted to cluster"
+        with open(condor_temp_file,'r') as f:
+            lines = f.readlines()
+        self.logger.statement("condor_submit stdout: {0}".format(','.join([line.strip() for line in lines])))
+        for line in lines:
+            if condor_submit_string in line.lower():
+                cluster_number = int(float(line.split(condor_submit_string)[-1]))
+        self.logger.statement("condor cluster: {0}".format(cluster_number))
+        master_thread.join()
+        self.logger.statement("condor master thread exited")
+        self.logger.log("calling condor_rm on cluster {0}".format(cluster_number))
+        os.system("condor_rm cluster {0}".format(cluster_number))
+        self.logger.log("calling condor_rm on cluster {0}".format(cluster_number))
+
+        self.logger.log("reading sweep out csv {0}".format(self.sweep_out_csv))
         obs = pd.read_csv(self.sweep_out_csv)
+        self.logger.log("reading sweep out csv {0}".format(self.sweep_out_csv))
         obs.columns = [item.lower() for item in obs.columns]
         self.total_runs += obs.shape[0]
         self.logger.statement("total runs:{0}".format(self.total_runs))
