@@ -315,6 +315,9 @@ class EnsembleSmoother():
 
     def update(self,lambda_mults=[1.0],localizer=None,run_subset=None):
 
+        if run_subset is not None:
+            assert run_subset < self.num_reals
+
         self.iter_num += 1
         self.logger.log("iteration {0}".format(self.iter_num))
         if not self.__initialized:
@@ -337,17 +340,16 @@ class EnsembleSmoother():
         self.logger.log("calculate obs diff matrix")
 
 
-        if run_subset is not None:
-            subset_idx = ["{0:d}".format(i) for i in np.random.randint(0,self.num_reals-1,run_subset)]
-            self.logger.statement("subset idxs: " + ','.join(subset_idx))
-
+        # here is the math part...calculate upgrade matrices
         mean_lam,std_lam,paren_lam,obsen_lam = [],[],[],[]
+        lam_vals = []
         for ilam,cur_lam_mult in enumerate(lambda_mults):
 
             parensemble_cur_lam = self.parensemble.copy()
 
             cur_lam = self.current_lambda * cur_lam_mult
-            self.logger.log("evaluating lambda {0}".format(cur_lam_mult))
+            lam_vals.append(cur_lam)
+            self.logger.log("calcs for  lambda {0}".format(cur_lam_mult))
             scaled_ident = Cov.identity_like(s) * (cur_lam+1.0)
             scaled_ident += s**2
             scaled_ident = scaled_ident.inv
@@ -396,22 +398,43 @@ class EnsembleSmoother():
                 self.logger.log("applying parameter prior information")
 
             parensemble_cur_lam.enforce(self.enforce_bounds)
-            paren_lam.append(parensemble_cur_lam)
-            self.logger.log("evaluating ensemble for lambda {0}".format(cur_lam))
-            if run_subset is not None:
-                #phi_series = pd.Series(data=self.current_phi_vec)
-                #phi_series.sort_values(inplace=True,ascending=False)
-                #subset_idx = ["{0:d}".format(i) for i in phi_series.index.values[:run_subset]]
+            paren_lam.append(pd.DataFrame(parensemble_cur_lam.loc[:,:]))
+            self.logger.log("calcs for  lambda {0}".format(cur_lam_mult))
 
-                parensemble_subset = parensemble_cur_lam.loc[subset_idx,:]
-                obsensemble_cur_lam = self._calc_obs(parensemble_subset)
-            else:
-                obsensemble_cur_lam = self._calc_obs(parensemble_cur_lam)
-            self.logger.log("evaluating ensemble for lambda {0}".format(cur_lam))
 
-            #print(obsensemble_cur_lam.head())
-            obsen_lam.append(obsensemble_cur_lam)
-            self.logger.log("evaluating lambda {0}".format(cur_lam_mult))
+        # subset if needed
+        # and combine lambda par ensembles into one par ensemble for evaluation
+        if run_subset is not None:
+            subset_idx = ["{0:d}".format(i) for i in np.random.randint(0,self.num_reals-1,run_subset)]
+            self.logger.statement("subset idxs: " + ','.join(subset_idx))
+            paren_lam_subset = [pe.loc[subset_idx,:] for pe in paren_lam]
+            paren_combine = pd.concat(paren_lam_subset)
+            paren_lam_subset = None
+        else:
+            paren_combine = pd.concat(paren_lam)
+
+
+        self.logger.log("evaluating ensembles for lambdas : {0}".\
+                        format(','.join(["{0:8.3E}".format(l) for l in lam_vals])))
+        obsen_combine = self._calc_obs(paren_combine)
+        self.logger.log("evaluating ensembles for lambdas : {0}".\
+                        format(','.join(["{0:8.3E}".format(l) for l in lam_vals])))
+        paren_combine = None
+
+        # unpack lambda obs ensembles from combined obs ensemble
+        nrun_per_lam = self.num_reals
+        if run_subset is not None:
+            nrun_per_lam = run_subset
+        obsen_lam = []
+        for i in range(len(lam_vals)):
+            sidx = i * nrun_per_lam
+            eidx = sidx + nrun_per_lam
+            oe = ObservationEnsemble.from_dataframe(df=obsen_combine.iloc[sidx:eidx,:].copy(),
+                                                    pst=self.pst)
+            #print(oe.shape)
+            obsen_lam.append(oe)
+        obsen_combine = None
+
 
         # here is where we need to select out the "best" lambda par and obs
         # ensembles
@@ -451,7 +474,7 @@ class EnsembleSmoother():
 
         else:
 
-            self.parensemble = paren_lam[best_i]
+            self.parensemble = ParameterEnsemble.from_dataframe(df=paren_lam[best_i],pst=self.pst)
             if run_subset is not None:
                 self.obsensemble = self._calc_obs(self.parensemble)
                 self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
@@ -463,9 +486,6 @@ class EnsembleSmoother():
                 self._phi_report(phi_vecs[best_i],self.current_lambda * lambda_mults[best_i])
                 self.current_phi_vec = phi_vecs[best_i]
 
-            #print("\n" + "   best lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
-            #      format(self.current_lambda*lambda_mults[best_i],
-            #             best_mean,best_std))
             self.logger.statement("   best lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
                   format(self.current_lambda*lambda_mults[best_i],
                          best_mean,best_std))
@@ -477,8 +497,6 @@ class EnsembleSmoother():
             self.current_lambda *= (lambda_mults[best_i] * 0.75)
             # but don't let lambda get too small
             self.current_lambda = max(self.current_lambda,0.001)
-            #print("updating lambda: {0:15.6G}".\
-            #      format(self.current_lambda ))
             self.logger.statement("updating lambda: {0:15.6G}".\
                   format(self.current_lambda ))
 

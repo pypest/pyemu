@@ -36,7 +36,7 @@ class Logger(object):
 
     def statement(self,phrase):
         t = datetime.now()
-        s = str(t) + str(phrase) + '\n'
+        s = str(t) + ' ' + str(phrase) + '\n'
         if self.echo:
             print(s,end='')
         if self.filename:
