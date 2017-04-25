@@ -26,7 +26,7 @@ algorithm of Chen and Oliver 2013.  It requires the pest++ "sweep" utility
 class EnsembleSmoother():
 
     def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,use_approx=True,
-                 restart_iter=0,submit_file=None,verbose=False):
+                 submit_file=None,verbose=False):
         self.logger = Logger(verbose)
         self.num_slaves = int(num_slaves)
         self.submit_file = submit_file
@@ -51,20 +51,19 @@ class EnsembleSmoother():
 
         self.parcov = parcov
         self.obscov = obscov
-        self.restart = False
 
-        if restart_iter > 0:
-            self.restart_iter = restart_iter
-            paren = self.pst.filename+self.paren_prefix.format(restart_iter)
-            assert os.path.exists(paren),\
-                "could not find restart par ensemble {0}".format(paren)
-            obsen0 = self.pst.filename+self.obsen_prefix.format(0)
-            assert os.path.exists(obsen0),\
-                "could not find restart obs ensemble 0 {0}".format(obsen0)
-            obsen = self.pst.filename+self.obsen_prefix.format(restart_iter)
-            assert os.path.exists(obsen),\
-                "could not find restart obs ensemble {0}".format(obsen)
-            self.restart = True
+        # if restart_iter > 0:
+        #     self.restart_iter = restart_iter
+        #     paren = self.pst.filename+self.paren_prefix.format(restart_iter)
+        #     assert os.path.exists(paren),\
+        #         "could not find restart par ensemble {0}".format(paren)
+        #     obsen0 = self.pst.filename+self.obsen_prefix.format(0)
+        #     assert os.path.exists(obsen0),\
+        #         "could not find restart obs ensemble 0 {0}".format(obsen0)
+        #     obsen = self.pst.filename+self.obsen_prefix.format(restart_iter)
+        #     assert os.path.exists(obsen),\
+        #         "could not find restart obs ensemble {0}".format(obsen)
+        #     self.restart = True
 
 
         self.__initialized = False
@@ -75,13 +74,11 @@ class EnsembleSmoother():
         self.iter_num = 0
         self.enforce_bounds = None
 
-    def initialize(self,num_reals,init_lambda=None,enforce_bounds="reset"):
+    def initialize(self,num_reals=1,init_lambda=None,enforce_bounds="reset",
+                   parensemble=None,obsensemble=None):
         '''
         (re)initialize the process
         '''
-        self.logger.log("initializing smoother with {0} realizations".format(num_reals))
-        assert num_reals > 1
-        self.enforce_bounds = enforce_bounds
         # initialize the phi report csv
         self.phi_csv = open(self.pst.filename+".iobj.csv",'w')
         self.phi_csv.write("iter_num,total_runs,lambda,min,max,mean,median,std,")
@@ -91,25 +88,49 @@ class EnsembleSmoother():
         self.total_runs = 0
         # this matrix gets used a lot, so only calc once and store
         self.obscov_inv_sqrt = self.obscov.get(self.pst.nnz_obs_names).inv.sqrt
-        if self.restart:
-            self.logger.statement("restarting smoother from existing csv files...ignoring num_reals")
-            raise NotImplementedError()
-            df = pd.read_csv(self.pst.filename+self.paren_prefix.format(self.restart_iter))
-            self.parensemble_0 = ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
+
+        if parensemble is not None and obsensemble is not None:
+            self.logger.log("initializing with existing ensembles")
+            if isinstance(parensemble,str):
+                self.logger.log("loading parensemble from file")
+                if not os.path.exists(obsensemble):
+                    self.logger.lraise("can not find parensemble file: {0}".\
+                                       format(parensemble))
+                df = pd.read_csv(parensemble)
+                self.parensemble_0 = ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
+                self.logger.log("loading parensemble from file")
+
+            elif isinstance(parensemble,ParameterEnsemble):
+                self.parensemble_0 = parensemble.copy()
+            else:
+                raise Exception("unrecognized arg type for parensemble, " +\
+                                "should be filename or ParameterEnsemble" +\
+                                ", not {0}".format(type(parensemble)))
             self.parensemble = self.parensemble_0.copy()
-            df = pd.read_csv(self.pst.filename+self.obsen_prefix.format(0))
-            self.obsensemble_0 = ObservationEnsemble.from_dataframe(df=df.loc[:,self.pst.nnz_obs_names],
-                                                                    pst=self.pst)
-            # this matrix gets used a lot, so only calc once
-            self.obs0_matrix = self.obsensemble_0.as_pyemu_matrix()
-            df = pd.read_csv(self.pst.filename+self.obsen_prefix.format(self.restart_iter))
-            self.obsensemble = ObservationEnsemble.from_dataframe(df=df.loc[:,self.pst.nnz_obs_names],
-                                                                  pst=self.pst)
-            assert self.parensemble.shape[0] == self.obsensemble.shape[0]
-            self.num_reals = self.parensemble.shape[0]
+            if isinstance(obsensemble,str):
+                self.logger.log("loading obsensemble from file")
+                if not os.path.exists(obsensemble):
+                    self.logger.lraise("can not find obsensemble file: {0}".\
+                                       format(obsensemble))
+                df = pd.read_csv(obsensemble).loc[:,self.pst.nnz_obs_names]
+                self.obsensemble_0 = ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
+                self.logger.log("loading obsensemble from file")
+
+            elif isinstance(obsensemble,ObservationEnsemble):
+                self.obsensemble_0 = obsensemble.copy()
+            else:
+                raise Exception("unrecognized arg type for obsensemble, " +\
+                                "should be filename or ObservationEnsemble" +\
+                                ", not {0}".format(type(obsensemble)))
+
+            assert self.parensemble_0.shape[0] == self.obsensemble_0.shape[0]
+            self.num_reals = self.parensemble_0.shape[0]
+            self.logger.log("initializing with existing ensembles")
 
         else:
+            self.logger.log("initializing smoother with {0} realizations".format(num_reals))
             self.num_reals = int(num_reals)
+            assert self.num_reals > 1
             self.logger.log("initializing parensemble")
             self.parensemble_0 = ParameterEnsemble(self.pst)
             self.parensemble_0.draw(cov=self.parcov,num_reals=num_reals)
@@ -128,14 +149,18 @@ class EnsembleSmoother():
             self.obsensemble_0.to_csv(self.pst.filename +\
                                       self.obsen_prefix.format(-1))
             self.logger.log("initializing obsensemble")
-            self.obs0_matrix = self.obsensemble_0.nonzero.as_pyemu_matrix()
+            self.logger.log("initializing smoother with {0} realizations".format(num_reals))
 
-            # run the initial parameter ensemble
-            self.logger.log("evaluating initial ensembles")
-            self.obsensemble = self._calc_obs(self.parensemble)
-            self.obsensemble.to_csv(self.pst.filename +\
-                                      self.obsen_prefix.format(0))
-            self.logger.log("evaluating initial ensembles")
+        self.obs0_matrix = self.obsensemble_0.nonzero.as_pyemu_matrix()
+        self.enforce_bounds = enforce_bounds
+
+
+        # run the initial parameter ensemble
+        self.logger.log("evaluating initial ensembles")
+        self.obsensemble = self._calc_obs(self.parensemble)
+        self.obsensemble.to_csv(self.pst.filename +\
+                                  self.obsen_prefix.format(0))
+        self.logger.log("evaluating initial ensembles")
         self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
         self._phi_report(self.current_phi_vec,0.0)
         self.last_best_mean = self.current_phi_vec.mean()
@@ -171,7 +196,6 @@ class EnsembleSmoother():
             u,s,v = self.delta_par_prior.pseudo_inv_components()
             self.Am = u * s.inv
         self.__initialized = True
-        self.logger.log("initializing smoother with {0} realizations".format(num_reals))
 
     def get_localizer(self):
         onames = self.pst.nnz_obs_names

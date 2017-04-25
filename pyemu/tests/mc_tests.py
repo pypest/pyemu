@@ -288,8 +288,9 @@ def diagonal_cov_draw_test():
     pst = Pst(jco.replace(".jcb",".pst"))
 
     mc = MonteCarlo(jco=jco,pst=pst)
-    num_reals = 1
-    mc.draw(num_reals)
+    num_reals = 10
+    mc.draw(num_reals,obs=True)
+    print(mc.obsensemble)
     pe1 = mc.parensemble.copy()
 
     cov = Cov(x=mc.parcov.as_2d,names=mc.parcov.row_names)
@@ -299,7 +300,7 @@ def diagonal_cov_draw_test():
     mc.draw(num_reals,cov=cov)
     pe2 = mc.parensemble
     #print(pe1-pe2)
-    
+
 if __name__ == "__main__":
     diagonal_cov_draw_test()
     #pe_to_csv_test()

@@ -792,6 +792,43 @@ def chenoliver():
     os.chdir(os.path.join("..",".."))
 
 
+def chenoliver_existing():
+    import os
+    import numpy as np
+    import pyemu
+
+    os.chdir(os.path.join("smoother","chenoliver"))
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv") and "bak" not in f]
+    [os.remove(csv_file) for csv_file in csv_files]
+
+    parcov = pyemu.Cov(x=np.ones((1,1)),names=["par"],isdiagonal=True)
+    pst = pyemu.Pst("chenoliver.pst")
+    obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
+    #obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
+
+    num_reals = 100
+    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
+                                num_slaves=10,use_approx=False,verbose=True)
+    es.initialize(num_reals=num_reals,enforce_bounds=None)
+    obs1 = es.obsensemble.copy()
+
+    es.parensemble_0.to_csv("paren.csv")
+    es.obsensemble_0.to_csv("obsen.csv")
+
+    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
+                                num_slaves=10,use_approx=False,verbose=True)
+
+
+    es.initialize(parensemble="paren.csv",obsensemble="obsen.csv")
+    obs2 = es.obsensemble.copy()
+    print(obs1.shape,obs2.shape)
+    print(obs1,obs2)
+    assert (obs1 - obs2).loc[:,"obs"].sum() == 0.0
+
+    for it in range(1):
+        es.update(lambda_mults=[1.0])
+    os.chdir(os.path.join("..",".."))
+
 def chenoliver_condor():
     import os
     import numpy as np
@@ -1017,6 +1054,8 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #chenoliver_setup()
     #chenoliver_condor()
+    #chenoliver()
+    chenoliver_existing()
     #chenoliver_plot()
     #chenoliver_func_plot()
     #chenoliver_plot_sidebyside()
@@ -1024,7 +1063,7 @@ if __name__ == "__main__":
     #tenpar()
     #tenpar_plot()
     #freyberg()
-    freyberg_condor()
+    #freyberg_condor()
     #freyberg_plot()
     #freyberg_plot_iobj()
     #freyberg_plot_par_seq()
