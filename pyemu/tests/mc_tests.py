@@ -280,10 +280,29 @@ def pe_to_csv_test():
 
     assert np.allclose(pe1.as_matrix(),pe.as_matrix())
 
+def diagonal_cov_draw_test():
+    import os
+    import numpy as np
+    from pyemu import MonteCarlo,Cov,Pst
+    jco = os.path.join("pst","pest.jcb")
+    pst = Pst(jco.replace(".jcb",".pst"))
 
+    mc = MonteCarlo(jco=jco,pst=pst)
+    num_reals = 1
+    mc.draw(num_reals)
+    pe1 = mc.parensemble.copy()
 
+    cov = Cov(x=mc.parcov.as_2d,names=mc.parcov.row_names)
+    #print(type(cov))
+    mc = MonteCarlo(jco=jco,pst=pst)
+    mc.parensemble.reseed()
+    mc.draw(num_reals,cov=cov)
+    pe2 = mc.parensemble
+    #print(pe1-pe2)
+    
 if __name__ == "__main__":
-    pe_to_csv_test()
+    diagonal_cov_draw_test()
+    #pe_to_csv_test()
     #scale_offset_test()
     #mc_test()
     #fixed_par_test()
