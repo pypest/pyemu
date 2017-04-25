@@ -211,7 +211,7 @@ class EnsembleSmoother():
             self.logger.warn("error removing existing sweep in file:{0}".format(str(e)))
         try:
             os.remove(self.sweep_out_csv)
-        except:
+        except Exception as e:
             self.logger.warn("error removing existing sweep out file:{0}".format(str(e)))
 
         if self.submit_file is None:

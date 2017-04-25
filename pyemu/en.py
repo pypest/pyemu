@@ -35,7 +35,7 @@ class Ensemble(pd.DataFrame):
         return Matrix(x=x,row_names=list(self.index),
                       col_names=list(self.columns))
 
-    def draw(self,cov,num_reals=1):
+    def draw(self,cov,num_reals=1,names=None):
         """ draw random realizations from a multivariate
             Gaussian distribution
 
@@ -45,6 +45,8 @@ class Ensemble(pd.DataFrame):
                 covariance structure to draw from
             num_reals: int
                 number of realizations to generate
+            names : list of names to draw for.  If None, values all names
+                    are drawn
         Returns:
         -------
             None
@@ -54,15 +56,18 @@ class Ensemble(pd.DataFrame):
                       for i in range(num_reals)]
 
         # make sure everything is cool WRT ordering
-        if self.names != cov.row_names:
-            common_names = get_common_elements(self.names,
-                                               cov.row_names)
-            vals = self.mean_values.loc[common_names]
-            cov = cov.get(common_names)
+        if names is not None:
+            vals = self.mean_values.loc[names]
+            cov = cov.get(names)
+        elif self.names != cov.row_names:
+            names = get_common_elements(self.names,
+                                        cov.row_names)
+            vals = self.mean_values.loc[names]
+            cov = cov.get(names)
             pass
         else:
             vals = self.mean_values
-            common_names = self.names
+            names = self.names
 
         # generate random numbers
         if cov.isdiagonal: #much faster
@@ -79,7 +84,7 @@ class Ensemble(pd.DataFrame):
 
         # this sucks - can only set by enlargement one row at a time
         for rname,vals in zip(real_names,val_array):
-            self.loc[rname,common_names] = vals
+            self.loc[rname, names] = vals
             # set NaNs to mean_values
             idx = pd.isnull(self.loc[rname,:])
             self.loc[rname,idx] = self.mean_values[idx]
@@ -153,7 +158,8 @@ class ObservationEnsemble(Ensemble):
 
 
     def draw(self,cov,num_reals):
-        super(ObservationEnsemble,self).draw(cov,num_reals)
+        super(ObservationEnsemble,self).draw(cov,num_reals,
+                                             names=self.pst.nnz_obs_names)
         self.loc[:,self.names] += self.pst.observation_data.obsval
 
     @property
