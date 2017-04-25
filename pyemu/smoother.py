@@ -204,6 +204,15 @@ class EnsembleSmoother():
         return delta
 
     def _calc_obs(self,parensemble):
+        self.logger.log("removing existing sweep in/out files")
+        try:
+            os.remove(self.sweep_in_csv)
+        except Exception as e:
+            self.logger.warn("error removing existing sweep in file:{0}".format(str(e)))
+        try:
+            os.remove(self.sweep_out_csv)
+        except:
+            self.logger.warn("error removing existing sweep out file:{0}".format(str(e)))
 
         if self.submit_file is None:
             return self._calc_obs_local(parensemble)
@@ -215,16 +224,17 @@ class EnsembleSmoother():
         self.logger.log("evaluating ensemble of size {0} locally with htcondor".\
                         format(parensemble.shape[0]))
         parensemble.to_csv(self.sweep_in_csv)
-        os.system("condor_rm -all")
+        #os.system("condor_rm -all")
         port = 4004
         def master():
             try:
-                os.system("sweep {0} /h :{1} >_condor_master_stdout.dat".format(self.pst.filename,port))
+                #os.system("sweep {0} /h :{1} >_condor_master_stdout.dat".format(self.pst.filename,port))
+                os.system("sweep {0} /h :{1}".format(self.pst.filename,port))
             except Exception as e:
                 self.logger.lraise("error starting condor master: {0}".format(str(e)))
         master_thread = threading.Thread(target=master)
         master_thread.start()
-        time.sleep(1.5) #just some time for the master to get up and running to take slaves
+        time.sleep(2.0) #just some time for the master to get up and running to take slaves
         #pyemu.utils.start_slaves("template","sweep",self.pst.filename,
         #                         self.num_slaves,slave_root='.',port=port)
         condor_temp_file = "_condor_submit_stdout.dat"
@@ -233,8 +243,8 @@ class EnsembleSmoother():
             os.system("condor_submit {0} >{1}".format(self.submit_file,condor_temp_file))
         except Exception as e:
             self.logger.lraise("error in condor_submit: {0}".format(str(e)))
-        self.logger.log("calling condor submit with submit file {0}".format(self.submit_file))
-
+        self.logger.log("calling condor_submit with submit file {0}".format(self.submit_file))
+        time.sleep(2.0) #some time for condor to submit the job and echo to stdout
         condor_submit_string = "submitted to cluster"
         with open(condor_temp_file,'r') as f:
             lines = f.readlines()

@@ -215,6 +215,67 @@ def freyberg():
         es.update(lambda_mults=[0.2,5.0],run_subset=40)
     os.chdir(os.path.join("..",".."))
 
+def freyberg_condor():
+    import os
+    import pandas as pd
+    import pyemu
+
+    os.chdir(os.path.join("smoother","freyberg"))
+
+    if not os.path.exists("freyberg.xy"):
+        import flopy
+
+        ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws="template",
+                                        load_only=[])
+        xy = pd.DataFrame([(x,y) for x,y in zip(ml.sr.xcentergrid.flatten(),ml.sr.ycentergrid.flatten())],
+                          columns=['x','y'])
+        names = []
+        for i in range(ml.nrow):
+            for j in range(ml.ncol ):
+                names.append("hkr{0:02d}c{1:02d}".format(i,j))
+        xy.loc[:,"name"] = names
+        xy.to_csv("freyberg.xy")
+    else:
+        xy = pd.read_csv("freyberg.xy")
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
+
+    pst = pyemu.Pst(os.path.join("freyberg.pst"))
+    dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+
+    nothk_names = [pname for pname in pst.adj_par_names if "hk" not in pname]
+    parcov_nothk = dia_parcov.get(row_names=nothk_names)
+    gs = pyemu.utils.geostats.read_struct_file(os.path.join("template","structure.dat"))
+    print(gs.variograms[0].a,gs.variograms[0].contribution)
+    #gs.variograms[0].a *= 10.0
+    #gs.variograms[0].contribution *= 10.0
+    gs.nugget = 0.0
+    print(gs.variograms[0].a,gs.variograms[0].contribution)
+
+    full_parcov = gs.covariance_matrix(xy.x,xy.y,xy.name)
+    parcov = parcov_nothk.extend(full_parcov)
+    #print(parcov.to_pearson().x[-1,:])
+
+    pst.observation_data.loc[:,"weight"] /= 10.0
+    pst.write("temp.pst")
+    obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
+
+    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=20,
+                                use_approx=True,verbose=True,submit_file="freyberg.sub")
+
+    #gs.variograms[0].a=10000
+    #gs.variograms[0].contribution=0.01
+    #gs.variograms[0].anisotropy = 10.0
+    # pp_df = pyemu.utils.gw_utils.pp_file_to_dataframe("points1.dat")
+    # parcov_hk = gs.covariance_matrix(pp_df.x,pp_df.y,pp_df.name)
+    # parcov_full = parcov_hk.extend(parcov_rch)
+
+    es.initialize(300,init_lambda=10000.0,enforce_bounds="reset")
+    for i in range(10):
+        es.update(lambda_mults=[0.2,5.0],run_subset=40)
+    os.chdir(os.path.join("..",".."))
+
+
 def freyberg_pars_to_array(par_df):
     import numpy as np
     #print(par_df.index)
@@ -730,6 +791,29 @@ def chenoliver():
         es.update(lambda_mults=[1.0])
     os.chdir(os.path.join("..",".."))
 
+
+def chenoliver_condor():
+    import os
+    import numpy as np
+    import pyemu
+
+    os.chdir(os.path.join("smoother","chenoliver"))
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv") and "bak" not in f]
+    [os.remove(csv_file) for csv_file in csv_files]
+
+    parcov = pyemu.Cov(x=np.ones((1,1)),names=["par"],isdiagonal=True)
+    pst = pyemu.Pst("chenoliver.pst")
+    obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
+    
+    num_reals = 100
+    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
+                                num_slaves=10,use_approx=False,verbose=True,
+                                submit_file="chenoliver.sub")
+    es.initialize(num_reals=num_reals,enforce_bounds=None)
+    for it in range(40):
+        es.update(lambda_mults=[1.0])
+    os.chdir(os.path.join("..",".."))
+
 def tenpar():
     import os
 
@@ -932,15 +1016,16 @@ if __name__ == "__main__":
     #chenoliver_plot_sidebyside()
     #chenoliver_obj_plot()
     #chenoliver_setup()
-    chenoliver()
-    chenoliver_plot()
+    #chenoliver_condor()
+    #chenoliver_plot()
     #chenoliver_func_plot()
-    chenoliver_plot_sidebyside()
-    chenoliver_obj_plot()
-    tenpar()
-    tenpar_plot()
-    freyberg()
-    freyberg_plot()
-    freyberg_plot_iobj()
-    freyberg_plot_par_seq()
-    freyberg_plot_obs_seq()
+    #chenoliver_plot_sidebyside()
+    #chenoliver_obj_plot()
+    #tenpar()
+    #tenpar_plot()
+    #freyberg()
+    freyberg_condor()
+    #freyberg_plot()
+    #freyberg_plot_iobj()
+    #freyberg_plot_par_seq()
+    #freyberg_plot_obs_seq()
