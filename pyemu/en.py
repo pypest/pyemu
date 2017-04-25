@@ -66,10 +66,11 @@ class Ensemble(pd.DataFrame):
 
         # generate random numbers
         if cov.isdiagonal: #much faster
-            val_array = []
-            for mu,std in zip(vals,np.sqrt(cov.x)):
-                val_array.append(np.random.normal(mu,std,size=num_reals))
-            val_array = np.array(val_array).transpose()
+            val_array = np.array([np.random.normal(mu,std,size=num_reals) for\
+                                  mu,std in zip(vals,np.sqrt(cov.x))]).transpose()
+            #for mu,std in zip(vals,np.sqrt(cov.x)):
+            #    val_array.append(np.random.normal(mu,std,size=num_reals))
+            #val_array = np.array(val_array).transpose()
         else:
             val_array = np.random.multivariate_normal(vals, cov.as_2d,num_reals)
 
