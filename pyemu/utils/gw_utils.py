@@ -221,9 +221,10 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
 
 
 def pp_file_to_dataframe(pp_filename):
-    return pd.read_csv(pp_filename, delim_whitespace=True,
-                     header=None, names=PP_NAMES)
-
+    df = pd.read_csv(pp_filename, delim_whitespace=True,
+                     header=None, names=PP_NAMES,usecols=[0,1,2,3,4])
+    df.loc[:,"name"] = df.name.apply(str).apply(str.lower)
+    return df
 
 def write_pp_shapfile(pp_df,shapename=None):
     """write pilot points to a shapefile
@@ -364,8 +365,8 @@ def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
     return pp_df
 
 
-def fac2real(pp_file,factors_file,out_file="test.ref",
-             upper_lim=1.0e+30,lower_lim=-1.0e+30):
+def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
+             upper_lim=1.0e+30,lower_lim=-1.0e+30,fill_value=1.0e+30):
     """A python replication of the PEST fac2real utility
     Parameters
     ----------
@@ -379,13 +380,13 @@ def fac2real(pp_file,factors_file,out_file="test.ref",
     -------
         None
     """
-    if isinstance(pp_file,str):
+    if pp_file is not None and isinstance(pp_file,str):
         assert os.path.exists(pp_file)
-
-        pp_data = pd.read_csv(pp_file,delim_whitespace=True,header=None,
-                              names=["name","parval1"],usecols=[0,4])
+        # pp_data = pd.read_csv(pp_file,delim_whitespace=True,header=None,
+        #                       names=["name","parval1"],usecols=[0,4])
+        pp_data = pp_file_to_dataframe(pp_file)
         pp_data.loc[:,"name"] = pp_data.name.apply(lambda x: x.lower())
-    elif isinstance(pp_file,pd.DataFrame):
+    elif pp_file is not None and isinstance(pp_file,pd.DataFrame):
         assert "name" in pp_file.columns
         assert "parval1" in pp_file.columns
         pp_data = pp_file
@@ -395,6 +396,10 @@ def fac2real(pp_file,factors_file,out_file="test.ref",
     assert os.path.exists(factors_file)
     f_fac = open(factors_file,'r')
     fpp_file = f_fac.readline()
+    if pp_file is None and pp_data is None:
+        pp_data = pp_file_to_dataframe(fpp_file)
+        pp_data.loc[:, "name"] = pp_data.name.apply(lambda x: x.lower())
+
     fzone_file = f_fac.readline()
     ncol,nrow = [int(i) for i in f_fac.readline().strip().split()]
     npp = int(f_fac.readline().strip())
@@ -407,7 +412,7 @@ def fac2real(pp_file,factors_file,out_file="test.ref",
                         "between the factors file and the pilot points file " +\
                         ','.join(list(diff)))
 
-    arr = np.zeros((nrow,ncol),dtype=np.float32) + 1.0e+30
+    arr = np.zeros((nrow,ncol),dtype=np.float) + fill_value
     pp_dict = {name:val for name,val in zip(pp_data.index,pp_data.parval1)}
     pp_dict_log = {name:np.log10(val) for name,val in zip(pp_data.index,pp_data.parval1)}
     #for i in range(nrow):
@@ -450,6 +455,48 @@ def parse_factor_line(line):
         fac = float(raw[ifac+1])
         fac_data[pnum] = fac
     return inode,itrans,fac_data
+
+def setup_mflist_budget_obs(model,flx_filename="flux.dat",
+                            vol_filename="vol.dat"):
+    flx,vol = apply_mflist_budget_obs(os.path.join(model.model_ws,
+                                                   model.lst.file_name[0]),
+                                      flx_filename,vol_filename,
+                                      model.start_datetime)
+    _write_mflist_ins(flx_filename+".ins",flx)
+    _write_mflist_ins(vol_filename+".ins",vol)
+
+    try:
+        os.system("inschek {0}.ins {0}".format(flx_filename))
+        os.system("inschek {0}.ins {0}".format(vol_filename))
+    except:
+        print("error running inschek")
+    return flx,vol
+
+def apply_mflist_budget_obs(list_filename,flx_filename="flux.dat",
+                            vol_filename="vol.dat",
+                            start_datetime="1-1-1970"):
+    try:
+        import flopy
+    except Exception as e:
+        raise Exception("error import flopy: {0}".format(str(e)))
+    mlf = flopy.utils.MfListBudget(list_filename)
+    flx,vol = mlf.get_dataframes(start_datetime=start_datetime,diff=True)
+    flx.to_csv(flx_filename,sep=' ')
+    vol.to_csv(vol_filename,sep=' ')
+    return flx,vol
+
+
+def _write_mflist_ins(ins_filename,df):
+    dt_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
+    with open(ins_filename,'w') as f:
+        f.write('pif ~\nl1\n')
+
+        for dt in dt_str:
+            f.write("l1 ")
+            for col in df.columns:
+                obsnme = "{0}_{1}".format(col[:11],dt)
+                f.write(" w !{0}!".format(obsnme))
+            f.write("\n")
 
 
 

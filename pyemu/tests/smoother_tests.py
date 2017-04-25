@@ -160,7 +160,65 @@ def freyberg():
     import pandas as pd
     import pyemu
 
+    os.chdir(os.path.join("smoother","freyberg"))
 
+    if not os.path.exists("freyberg.xy"):
+        import flopy
+
+        ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws="template",
+                                        load_only=[])
+        xy = pd.DataFrame([(x,y) for x,y in zip(ml.sr.xcentergrid.flatten(),ml.sr.ycentergrid.flatten())],
+                          columns=['x','y'])
+        names = []
+        for i in range(ml.nrow):
+            for j in range(ml.ncol ):
+                names.append("hkr{0:02d}c{1:02d}".format(i,j))
+        xy.loc[:,"name"] = names
+        xy.to_csv("freyberg.xy")
+    else:
+        xy = pd.read_csv("freyberg.xy")
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
+
+    pst = pyemu.Pst(os.path.join("freyberg.pst"))
+    dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+
+    nothk_names = [pname for pname in pst.adj_par_names if "hk" not in pname]
+    parcov_nothk = dia_parcov.get(row_names=nothk_names)
+    gs = pyemu.utils.geostats.read_struct_file(os.path.join("template","structure.dat"))
+    print(gs.variograms[0].a,gs.variograms[0].contribution)
+    #gs.variograms[0].a *= 10.0
+    #gs.variograms[0].contribution *= 10.0
+    gs.nugget = 0.0
+    print(gs.variograms[0].a,gs.variograms[0].contribution)
+
+    full_parcov = gs.covariance_matrix(xy.x,xy.y,xy.name)
+    parcov = parcov_nothk.extend(full_parcov)
+    #print(parcov.to_pearson().x[-1,:])
+
+    pst.observation_data.loc[:,"weight"] /= 10.0
+    pst.write("temp.pst")
+    obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
+
+    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=20,
+                                use_approx=True,verbose=True)
+
+    #gs.variograms[0].a=10000
+    #gs.variograms[0].contribution=0.01
+    #gs.variograms[0].anisotropy = 10.0
+    # pp_df = pyemu.utils.gw_utils.pp_file_to_dataframe("points1.dat")
+    # parcov_hk = gs.covariance_matrix(pp_df.x,pp_df.y,pp_df.name)
+    # parcov_full = parcov_hk.extend(parcov_rch)
+
+    es.initialize(300,init_lambda=10000.0,enforce_bounds="reset")
+    for i in range(10):
+        es.update(lambda_mults=[0.2,5.0],run_subset=40)
+    os.chdir(os.path.join("..",".."))
+
+def freyberg_condor():
+    import os
+    import pandas as pd
+    import pyemu
 
     os.chdir(os.path.join("smoother","freyberg"))
 
@@ -181,28 +239,42 @@ def freyberg():
         xy = pd.read_csv("freyberg.xy")
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
+
     pst = pyemu.Pst(os.path.join("freyberg.pst"))
-    es = pyemu.EnsembleSmoother(pst,num_slaves=20,use_approx=True)
+    dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
 
     nothk_names = [pname for pname in pst.adj_par_names if "hk" not in pname]
-    parcov_nothk = es.parcov.get(row_names=nothk_names)
-    gs = pyemu.utils.geostats.read_struct_file("structure.dat")
-    cov = gs.covariance_matrix(xy.x,xy.y,xy.name)
-    import matplotlib.pyplot as plt
-    plt.imshow(cov.x,interpolation="nearest")
-    plt.show()
-    return
+    parcov_nothk = dia_parcov.get(row_names=nothk_names)
+    gs = pyemu.utils.geostats.read_struct_file(os.path.join("template","structure.dat"))
+    print(gs.variograms[0].a,gs.variograms[0].contribution)
+    #gs.variograms[0].a *= 10.0
+    #gs.variograms[0].contribution *= 10.0
+    gs.nugget = 0.0
+    print(gs.variograms[0].a,gs.variograms[0].contribution)
+
+    full_parcov = gs.covariance_matrix(xy.x,xy.y,xy.name)
+    parcov = parcov_nothk.extend(full_parcov)
+    #print(parcov.to_pearson().x[-1,:])
+
+    pst.observation_data.loc[:,"weight"] /= 10.0
+    pst.write("temp.pst")
+    obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
+
+    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=20,
+                                use_approx=True,verbose=True,submit_file="freyberg.sub")
+
     #gs.variograms[0].a=10000
     #gs.variograms[0].contribution=0.01
     #gs.variograms[0].anisotropy = 10.0
-    pp_df = pyemu.utils.gw_utils.pp_file_to_dataframe("points1.dat")
-    parcov_hk = gs.covariance_matrix(pp_df.x,pp_df.y,pp_df.name)
-    parcov_full = parcov_hk.extend(parcov_rch)
+    # pp_df = pyemu.utils.gw_utils.pp_file_to_dataframe("points1.dat")
+    # parcov_hk = gs.covariance_matrix(pp_df.x,pp_df.y,pp_df.name)
+    # parcov_full = parcov_hk.extend(parcov_rch)
 
-    es.initialize(300,init_lambda=5000.0)
-    for i in range(3):
+    es.initialize(300,init_lambda=10000.0,enforce_bounds="reset")
+    for i in range(10):
         es.update(lambda_mults=[0.2,5.0],run_subset=40)
     os.chdir(os.path.join("..",".."))
+
 
 def freyberg_pars_to_array(par_df):
     import numpy as np
@@ -219,7 +291,7 @@ def freyberg_pars_to_array(par_df):
     arr = np.ma.masked_where(arr==-999.,arr)
     return arr
 
-def freyberg_plot():
+def freyberg_plot_par_seq():
     import os
     import numpy as np
     import matplotlib.pyplot as plt
@@ -239,6 +311,187 @@ def freyberg_plot():
     par_names = ["rch_1","rch_2"]
     mx = (pst.parameter_data.loc[:,"parubnd"] * 1.1).apply(np.log10)
     mn = (pst.parameter_data.loc[:,"parlbnd"] * 0.9).apply(np.log10)
+    f_count = 0
+    for par_file,par_df in zip(par_files,par_dfs):
+        #print(par_file)
+        fig = plt.figure(figsize=(4.5,3.5))
+
+        plt.figtext(0.5,0.95,"iteration {0}".format(f_count+1),ha="center")
+        axes = [plt.subplot(3,4,i+1) for i in range(12)]
+        arrs = []
+        for ireal in range(12):
+            arrs.append(freyberg_pars_to_array(par_df.iloc[[ireal],:].T))
+        amx = max([arr.max() for arr in arrs])
+        amn = max([arr.min() for arr in arrs])
+        for ireal,arr in enumerate(arrs):
+            axes[ireal].imshow(arr,vmax=amx,vmin=amn,interpolation="nearest")
+            axes[ireal].set_xticklabels([])
+            axes[ireal].set_yticklabels([])
+        plt.savefig(os.path.join(plt_dir,"par_{0:03d}.png".format(f_count)))
+        f_count += 1
+        plt.close()
+    bdir = os.getcwd()
+    os.chdir(plt_dir)
+    #os.system("ffmpeg -r 1 -i par_%03d.png -vcodec libx264  -pix_fmt yuv420p freyberg_pars.mp4")
+    os.system("ffmpeg -r 2 -i par_%03d.png -loop 0 -final_delay 100 freyberg_pars.gif")
+    os.chdir(bdir)
+
+def freyberg_plot_obs_seq():
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+    import pandas as pd
+    from pyemu import Pst
+    d = os.path.join("smoother","freyberg")
+    pst = Pst(os.path.join(d,"freyberg.pst"))
+    plt_dir = os.path.join(d,"plot")
+    if not os.path.exists(plt_dir):
+        os.mkdir(plt_dir)
+    obs_files = [os.path.join(d,f) for f in os.listdir(d) if "obsensemble." in f
+                 and ".png" not in f]
+    obs_dfs = [pd.read_csv(obs_file) for obs_file in obs_files]
+    obs_names = pst.nnz_obs_names
+    obs_names.extend(pst.pestpp_options["forecasts"].split(',')[:-1])
+    print(obs_names)
+    print(len(obs_names))
+    #print(obs_files)
+    obs_dfs = [obs_df.loc[:,obs_names] for obs_df in obs_dfs]
+    mx = {obs_name:max([obs_df.loc[:,obs_name].max() for obs_df in obs_dfs]) for obs_name in obs_names}
+    mn = {obs_name:min([obs_df.loc[:,obs_name].min() for obs_df in obs_dfs]) for obs_name in obs_names}
+
+
+    f_count = 0
+    for obs_df in obs_dfs[1:]:
+        fig = plt.figure(figsize=(4.5,3.5))
+        plt.figtext(0.5,0.95,"iteration {0}".format(f_count),ha="center",fontsize=8)
+
+        #print(obs_file)
+        axes = [plt.subplot(3,4,i+1) for i in range(len(obs_names))]
+        for ax,obs_name in zip(axes,obs_names):
+            mean = obs_df.loc[:,obs_name].mean()
+            std = obs_df.loc[:,obs_name].std()
+            obs_df.loc[:,obs_name].hist(ax=ax,edgecolor="none",
+                                        alpha=0.25,grid=False)
+            ax.set_yticklabels([])
+            #print(ax.get_xlim(),mn[obs_name],mx[obs_name])
+            ax.set_title(obs_name,fontsize=6)
+            ttl = ax.title
+            ttl.set_position([.5, 1.00])
+            ax.set_xlim(mn[obs_name],mx[obs_name])
+            #ax.set_xlim(0.0,20.0)
+            ylim = ax.get_ylim()
+            oval = pst.observation_data.loc[obs_name,"obsval"]
+            ax.plot([oval,oval],ylim,"k--",lw=0.5)
+            #ax.plot([mean,mean],ylim,"b-",lw=0.5)
+            #ax.plot([mean+(2.0*std),mean+(2.0*std)],ylim,"b--",lw=0.5)
+            #ax.plot([mean-(2.0*std),mean-(2.0*std)],ylim,"b--",lw=0.5)
+            ax.set_xticks([])
+            ax.set_yticks([])
+        plt.savefig(os.path.join(plt_dir,"obs_{0:03d}.png".format(f_count)))
+        f_count += 1
+        plt.close()
+    bdir = os.getcwd()
+    os.chdir(plt_dir)
+    #os.system("ffmpeg -r 1 -i obs_%03d.png -vcodec libx264  -pix_fmt yuv420p freyberg_obs.mp4")
+    os.system("ffmpeg -r 2 -i obs_%03d.png -loop 0 -final_delay 100 freyberg_obs.gif")
+    os.chdir(bdir)
+
+def freyberg_plot_iobj():
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+    import pandas as pd
+    from pyemu import Pst
+    d = os.path.join("smoother","freyberg")
+    pst = Pst(os.path.join(d,"freyberg.pst"))
+    plt_dir = os.path.join(d,"plot")
+    if not os.path.exists(plt_dir):
+        os.mkdir(plt_dir)
+
+    obj_df = pd.read_csv(os.path.join(d, "freyberg.pst.iobj.csv"), index_col=0)
+    real_cols = [col for col in obj_df.columns if col.startswith("0")]
+    obj_df.loc[:, real_cols] = obj_df.loc[:, real_cols].apply(np.log10)
+    obj_df.loc[:, "mean"] = obj_df.loc[:, "mean"].apply(np.log10)
+    obj_df.loc[:, "std"] = obj_df.loc[:, "std"].apply(np.log10)
+
+    fig = plt.figure(figsize=(10, 5))
+    ax = plt.subplot(111)
+    obj_df.index = obj_df.total_runs
+    obj_df.loc[:, real_cols].plot(ax=ax, lw=0.5, color="0.5", alpha=0.5, legend=False)
+    ax.plot(obj_df.index, obj_df.loc[:, "mean"], 'b', lw=2.5, marker='.', markersize=5)
+    # ax.fill_between(obj_df.index, obj_df.loc[:, "mean"] - (1.96 * obj_df.loc[:, "std"]),
+    #                obj_df.loc[:, "mean"] + (1.96 * obj_df.loc[:, "std"]),
+    #                facecolor="b", edgecolor="none", alpha=0.25)
+    #axt = plt.twinx()
+    #axt.plot(obj_df.index, obj_df.loc[:, "lambda"], "k", dashes=(2, 1), lw=2.5)
+    pobj_df = pd.read_csv(os.path.join(d,"pest_master","freyberg.iobj"),index_col=0)
+    #print(pobj_df.total_phi)
+    #print(pobj_df.model_runs_completed)
+    ax.plot(pobj_df.model_runs_completed.values,pobj_df.total_phi.apply(np.log10).values,"m",lw=2.5)
+    #pobj_reg_df = pd.read_csv(os.path.join(d,"pest_master_reg","freyberg_reg.iobj"),index_col=0)
+    #ax.plot(pobj_reg_df.model_runs_completed.values,pobj_reg_df.measurement_phi.apply(np.log10).values,"m",lw=2.5)
+
+    ax.set_ylabel("log$_{10}$ $\phi$")
+    #axt.set_ylabel("lambda")
+    ax.set_xlabel("total runs")
+    ax.grid()
+    #ax.set_title("EnsembleSmoother $\phi$ summary; {0} realizations in ensemble".\
+    #             format(obj_df.shape[1]-7))
+    #ax.set_xticks(obj_df.index.values)
+    #ax.set_xticklabels(["{0}".format(tr) for tr in obj_df.total_runs])
+
+    plt.savefig(os.path.join(plt_dir, "iobj.png"))
+    plt.close()
+
+
+
+def freyberg_plot():
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+    import pandas as pd
+    from pyemu import Pst
+    d = os.path.join("smoother","freyberg")
+    pst = Pst(os.path.join(d,"freyberg.pst"))
+    plt_dir = os.path.join(d,"plot")
+    if not os.path.exists(plt_dir):
+        os.mkdir(plt_dir)
+
+    obj_df = pd.read_csv(os.path.join(d, "freyberg.pst.iobj.csv"), index_col=0)
+    real_cols = [col for col in obj_df.columns if col.startswith("0")]
+    obj_df.loc[:, real_cols] = obj_df.loc[:, real_cols].apply(np.log10)
+    obj_df.loc[:, "mean"] = obj_df.loc[:, "mean"].apply(np.log10)
+    obj_df.loc[:, "std"] = obj_df.loc[:, "std"].apply(np.log10)
+
+    fig = plt.figure(figsize=(20, 10))
+    ax = plt.subplot(111)
+    obj_df.loc[:, real_cols].plot(ax=ax, lw=0.5, color="0.5", alpha=0.5, legend=False)
+    ax.plot(obj_df.index, obj_df.loc[:, "mean"], 'b', lw=2.5, marker='.', markersize=5)
+    ax.set_xticks(obj_df.index.values)
+    ax.set_xticklabels(["{0}".format(tr) for tr in obj_df.total_runs])
+    # ax.fill_between(obj_df.index, obj_df.loc[:, "mean"] - (1.96 * obj_df.loc[:, "std"]),
+    #                obj_df.loc[:, "mean"] + (1.96 * obj_df.loc[:, "std"]),
+    #                facecolor="b", edgecolor="none", alpha=0.25)
+    axt = plt.twinx()
+    axt.plot(obj_df.index, obj_df.loc[:, "lambda"], "k", dashes=(2, 1), lw=2.5)
+    ax.set_ylabel("log$_10$ $\phi$")
+    axt.set_ylabel("lambda")
+    ax.set_xlabel("total runs")
+    ax.set_title("EnsembleSmoother $\phi$ summary; {0} realizations in ensemble".\
+                 format(obj_df.shape[1]-7))
+    plt.savefig(os.path.join(plt_dir, "iobj.pdf"))
+    plt.close()
+
+    par_files = [os.path.join(d,f) for f in os.listdir(d) if "parensemble." in f
+                 and ".png" not in f]
+    par_dfs = [pd.read_csv(par_file,index_col=0).apply(np.log10) for par_file in par_files]
+    #par_names = list(par_dfs[0].columns)
+    par_names = ["rch_1","rch_2"]
+    mx = (pst.parameter_data.loc[:,"parubnd"] * 1.1).apply(np.log10)
+    mn = (pst.parameter_data.loc[:,"parlbnd"] * 0.9).apply(np.log10)
 
     with PdfPages(os.path.join(plt_dir,"parensemble.pdf")) as pdf:
         for par_file,par_df in zip(par_files,par_dfs):
@@ -247,9 +500,13 @@ def freyberg_plot():
 
             plt.figtext(0.5,0.975,par_file,ha="center")
             axes = [plt.subplot(2,6,i+1) for i in range(12)]
+            arrs = []
             for ireal in range(10):
-                arr = freyberg_pars_to_array(par_df.iloc[[ireal],:].T)
-                axes[ireal].imshow(arr,interpolation="nearest")
+                arrs.append(freyberg_pars_to_array(par_df.iloc[[ireal],:].T))
+            amx = max([arr.max() for arr in arrs])
+            amn = max([arr.min() for arr in arrs])
+            for ireal,arr in enumerate(arrs):
+                axes[ireal].imshow(arr,vmax=amx,vmin=amn,interpolation="nearest")
             for par_name,ax in zip(par_names,axes[-2:]):
                 mean = par_df.loc[:,par_name].mean()
                 std = par_df.loc[:,par_name].std()
@@ -287,26 +544,7 @@ def freyberg_plot():
     mx = {obs_name:max([obs_df.loc[:,obs_name].max() for obs_df in obs_dfs]) for obs_name in obs_names}
     mn = {obs_name:min([obs_df.loc[:,obs_name].min() for obs_df in obs_dfs]) for obs_name in obs_names}
 
-    obj_df = pd.read_csv(os.path.join(d, "freyberg.pst.iobj.csv"), index_col=0)
-    real_cols = [col for col in obj_df.columns if col.startswith("0")]
-    obj_df.loc[:, real_cols] = obj_df.loc[:, real_cols].apply(np.log10)
-    obj_df.loc[:, "mean"] = obj_df.loc[:, "mean"].apply(np.log10)
-    obj_df.loc[:, "std"] = obj_df.loc[:, "std"].apply(np.log10)
 
-    fig = plt.figure(figsize=(20, 10))
-    ax = plt.subplot(111)
-    axt = plt.twinx()
-    obj_df.loc[:, real_cols].plot(ax=ax, lw=0.5, color="0.5", alpha=0.5, legend=False)
-    ax.plot(obj_df.index, obj_df.loc[:, "mean"], 'b', lw=2.5, marker='.', markersize=5)
-    # ax.fill_between(obj_df.index, obj_df.loc[:, "mean"] - (1.96 * obj_df.loc[:, "std"]),
-    #                obj_df.loc[:, "mean"] + (1.96 * obj_df.loc[:, "std"]),
-    #                facecolor="b", edgecolor="none", alpha=0.25)
-    axt.plot(obj_df.index, obj_df.loc[:, "lambda"], "k", dashes=(2, 1), lw=2.5)
-    ax.set_ylabel("log$_10$ phi")
-    axt.set_ylabel("lambda")
-    ax.set_title("total runs:{0}".format(obj_df.total_runs.max()))
-    plt.savefig(os.path.join(plt_dir, "iobj.pdf"))
-    plt.close()
 
     with PdfPages(os.path.join(plt_dir,"obsensemble.pdf")) as pdf:
         for obs_file,obs_df in zip(obs_files,obs_dfs):
@@ -333,8 +571,6 @@ def freyberg_plot():
             pdf.savefig()
             plt.close()
 
-
-
 def chenoliver_setup():
     import pyemu
     os.chdir(os.path.join("smoother","chenoliver"))
@@ -345,9 +581,9 @@ def chenoliver_setup():
     pst = pyemu.pst_utils.pst_from_io_files(tpl_file,in_file,ins_file,out_file)
     par = pst.parameter_data
     par.loc[:,"partrans"] = "none"
-    par.loc[:,"parval1"] = 10.0
-    par.loc[:,"parubnd"] = -1.0
-    par.loc[:,"parlbnd"] = -10.0
+    par.loc[:,"parval1"] = -2.0
+    par.loc[:,"parubnd"] = 20.0
+    par.loc[:,"parlbnd"] = -20.0
     obs = pst.observation_data
     obs.loc[:,"obsval"] = 48.0
     obs.loc[:,"weight"] = 1.0
@@ -357,6 +593,126 @@ def chenoliver_setup():
     pst.write(os.path.join("chenoliver.pst"))
 
     os.chdir(os.path.join("..",".."))
+
+def chenoliver_func_plot(ax=None):
+    def func(par):
+        return ((7.0/12.0) * par**3) - ((7.0/2.0) * par**2) + (8.0 * par)
+    import numpy as np
+    import matplotlib.pyplot as plt
+    par = np.arange(-5.0,10.0,0.1)
+    obs = func(par)
+    if ax is None:
+        fig = plt.figure(figsize=(10,5))
+        ax = plt.subplot(111)
+    ax.plot(par,obs,"0.5",dashes=(3,2),lw=4.0)
+
+    ax.scatter(-2.0,func(-2.0),marker='^',s=175,color="b",label="prior mean",zorder=4)
+    ax.scatter(5.9,func(5.9),marker='*',s=175,color="m",label="posterior mean",zorder=4)
+
+    ax.set_xlabel("parameter value")
+    ax.set_ylabel("observation value")
+    ax.grid()
+    plt.savefig(os.path.join("smoother","chenoliver","function.png"))
+
+    #plt.show()
+
+def chenoliver_plot_sidebyside():
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    d = os.path.join("smoother","chenoliver")
+    bins = 20
+    plt_dir = os.path.join(d,"plot")
+    if not os.path.exists(plt_dir):
+        os.mkdir(plt_dir)
+    obs_files = [os.path.join(d,f) for f in os.listdir(d) if "obsensemble." in f
+                 and ".png" not in f]
+    obs_dfs = [pd.read_csv(obs_file) for obs_file in obs_files]
+    #print(obs_files)
+    omx = max([obs_df.obs.max() for obs_df in obs_dfs])
+    omn = min([obs_df.obs.min() for obs_df in obs_dfs])
+
+    par_files = [os.path.join(d,f) for f in os.listdir(d) if "parensemble." in f
+                 and ".png" not in f]
+    par_dfs = [pd.read_csv(par_file) for par_file in par_files]
+    #mx = max([par_df.par.max() for par_df in par_dfs])
+    #mn = min([par_df.par.min() for par_df in par_dfs])
+    pmx = 7
+    pmn = -5
+    figsize = (10,3)
+    fcount = 1
+    for pdf, odf in zip(par_dfs,obs_dfs[1:]):
+        fig = plt.figure(figsize=figsize)
+        plt.figtext(0.5,0.95,"iteration {0}".format(fcount),ha="center",fontsize=8)
+
+        #axp = plt.subplot(1,3,1)
+        #axo = plt.subplot(1,3,2)
+        #axf = plt.subplot(1,3,3)
+        axp = plt.axes((0.05,0.075,0.25,0.825))
+        axo = plt.axes((0.375,0.075,0.25,0.825))
+        axf = plt.axes((0.7,0.075,0.25,0.825))
+        chenoliver_func_plot(axf)
+        pdf.par.hist(ax=axp,bins=bins,edgecolor="none",grid=False)
+        odf.obs.hist(ax=axo,bins=bins,edgecolor="none",grid=False)
+        axf.scatter(pdf.par.values,odf.obs.values,marker='.',color="c",s=100)
+        axp.set_yticks([])
+        axo.set_yticks([])
+        ylim = axp.get_ylim()
+        axp.plot([5.9,5.9],ylim,"k--")
+        ylim = axo.get_ylim()
+        axo.plot([48,48],ylim,"k--")
+        axp.set_xlim(pmn,pmx)
+        axo.set_xlim(omn,omx)
+        axp.set_title("parameter",fontsize=6)
+        axo.set_title("observation",fontsize=6)
+        axf.set_ylabel("")
+        axf.set_xlabel("")
+        axf.set_title("par vs obs",fontsize=6)
+        plt.savefig(os.path.join(plt_dir,"sbs_{0:03d}.png".format(fcount)))
+        #plt.tight_layout()
+        plt.close(fig)
+        fcount += 1
+    bdir = os.getcwd()
+    os.chdir(plt_dir)
+    #os.system("ffmpeg -r 6 -i sbs_%03d.png -vcodec libx264  -pix_fmt yuv420p chenoliver.mp4")
+    os.system("ffmpeg -r 2 -i sbs_%03d.png -loop 0 -final_delay 100 chenoliver.gif")
+
+    os.chdir(bdir)
+
+def chenoliver_obj_plot():
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    d = os.path.join("smoother","chenoliver")
+    plt_dir = os.path.join(d,"plot")
+    if not os.path.exists(plt_dir):
+        os.mkdir(plt_dir)
+
+    obj_df = pd.read_csv(os.path.join(d,"chenoliver.pst.iobj.csv"),index_col=0)
+    real_cols = [col for col in obj_df.columns if col.startswith("0")]
+    obj_df.loc[:,real_cols] = obj_df.loc[:,real_cols].apply(np.log10)
+    obj_df.loc[:,"mean"] = obj_df.loc[:,"mean"].apply(np.log10)
+    obj_df.loc[:, "std"] = obj_df.loc[:, "std"].apply(np.log10)
+
+    real_cols = [col for col in obj_df.columns if col.startswith("0")]
+    #obj_df.loc[:, real_cols] = obj_df.loc[:, real_cols].apply(np.log10)
+    #obj_df.loc[:, "mean"] = obj_df.loc[:, "mean"].apply(np.log10)
+    #obj_df.loc[:, "std"] = obj_df.loc[:, "std"].apply(np.log10)
+
+    fig = plt.figure(figsize=(10, 5))
+    ax = plt.subplot(111)
+    obj_df.loc[:, real_cols].plot(ax=ax, lw=0.5, color="0.5", alpha=0.5, legend=False)
+    ax.plot(obj_df.index, obj_df.loc[:, "mean"], 'b', lw=1.5, marker='.', markersize=5,label="ensemble mean")
+    ax.set_ylabel("log$_{10}$ $\phi$")
+    ax.set_xlabel("iteration")
+    pobj_df = pd.read_csv(os.path.join(d,"pest","chenoliver.iobj"),index_col=0)
+    ax.plot(pobj_df.index,pobj_df.total_phi.apply(np.log10),"m",lw=2.5,label="pest++")
+    #ax.legend(loc="upper left")
+    ax.grid()
+    plt.savefig(os.path.join(plt_dir, "iobj.png"))
+    plt.close()
 
 def chenoliver_plot():
     import os
@@ -425,21 +781,100 @@ def chenoliver():
     parcov = pyemu.Cov(x=np.ones((1,1)),names=["par"],isdiagonal=True)
     pst = pyemu.Pst("chenoliver.pst")
     obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
+    #obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
+
+    num_reals = 100
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
-                                num_slaves=20,use_approx=False)
-    es.initialize(num_reals=100)
+                                num_slaves=10,use_approx=False,verbose=True)
+    es.initialize(num_reals=num_reals,enforce_bounds=None)
     for it in range(40):
-        es.update()
+        es.update(lambda_mults=[1.0])
+    os.chdir(os.path.join("..",".."))
+
+
+def chenoliver_existing():
+    import os
+    import numpy as np
+    import pyemu
+
+    os.chdir(os.path.join("smoother","chenoliver"))
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv") and "bak" not in f]
+    [os.remove(csv_file) for csv_file in csv_files]
+
+    parcov = pyemu.Cov(x=np.ones((1,1)),names=["par"],isdiagonal=True)
+    pst = pyemu.Pst("chenoliver.pst")
+    obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
+    #obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
+
+    num_reals = 100
+    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
+                                num_slaves=10,use_approx=False,verbose=True)
+    es.initialize(num_reals=num_reals,enforce_bounds=None)
+    obs1 = es.obsensemble.copy()
+
+    es.parensemble_0.to_csv("paren.csv")
+    es.obsensemble_0.to_csv("obsen.csv")
+
+    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
+                                num_slaves=10,use_approx=False,verbose=True)
+
+
+    es.initialize(parensemble="paren.csv",obsensemble="obsen.csv")
+    obs2 = es.obsensemble.copy()
+    print(obs1.shape,obs2.shape)
+    print(obs1,obs2)
+    assert (obs1 - obs2).loc[:,"obs"].sum() == 0.0
+
+    for it in range(1):
+        es.update(lambda_mults=[1.0])
+    os.chdir(os.path.join("..",".."))
+
+def chenoliver_condor():
+    import os
+    import numpy as np
+    import pyemu
+
+    os.chdir(os.path.join("smoother","chenoliver"))
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv") and "bak" not in f]
+    [os.remove(csv_file) for csv_file in csv_files]
+
+    parcov = pyemu.Cov(x=np.ones((1,1)),names=["par"],isdiagonal=True)
+    pst = pyemu.Pst("chenoliver.pst")
+    obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
+    
+    num_reals = 100
+    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
+                                num_slaves=10,use_approx=False,verbose=True,
+                                submit_file="chenoliver.sub")
+    es.initialize(num_reals=num_reals,enforce_bounds=None)
+    for it in range(40):
+        es.update(lambda_mults=[1.0])
     os.chdir(os.path.join("..",".."))
 
 def tenpar():
     import os
+
     import numpy as np
     import pyemu
+
     os.chdir(os.path.join("smoother","10par_xsec"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
-    es = pyemu.EnsembleSmoother("10par_xsec.pst",num_slaves=5,use_approx=True)
+    pst = pyemu.Pst("10par_xsec.pst")
+    dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+
+    v = pyemu.utils.ExpVario(contribution=0.25,a=60.0)
+    gs = pyemu.utils.GeoStruct(variograms=[v],transform="log")
+    par = pst.parameter_data
+    k_names = par.loc[par.parnme.apply(lambda x: x.startswith('k')),"parnme"]
+    sr = pyemu.utils.SpatialReference(delc=[10],delr=np.zeros((10))+10.0)
+
+    full_cov = gs.covariance_matrix(sr.xcentergrid[0,:],sr.ycentergrid[0,:],k_names)
+    dia_parcov.drop(list(k_names),axis=1)
+    cov = dia_parcov.extend(full_cov)
+
+    es = pyemu.EnsembleSmoother("10par_xsec.pst",parcov=cov,
+                                num_slaves=5,use_approx=True)
     lz = es.get_localizer().to_dataframe()
     #the k pars upgrad of h01_04 and h01_06 are localized
     upgrad_pars = [pname for pname in lz.columns if "_" in pname and\
@@ -450,11 +885,11 @@ def tenpar():
     lz.loc["h01_06", upgrad_pars] = 0.0
     lz = pyemu.Matrix.from_dataframe(lz).T
     print(lz)
-    es.initialize(num_reals=20)
+    es.initialize(num_reals=20,init_lambda=10000.0)
 
-    for it in range(20):
-        es.update(lambda_mults=[0.1,1.0,10.0])#,localizer=lz,run_subset=20)
-        #es.update(lambda_mults=[1.0])
+    for it in range(40):
+        #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
+        es.update(lambda_mults=[1.0])
     os.chdir(os.path.join("..",".."))
 
 def tenpar_plot():
@@ -471,13 +906,40 @@ def tenpar_plot():
     if not os.path.exists(plt_dir):
         os.mkdir(plt_dir)
 
-
     par_files = [os.path.join(d,f) for f in os.listdir(d) if "parensemble." in f
                  and ".png" not in f]
-    par_dfs = [pd.read_csv(par_file,index_col=0).apply(np.log10) for par_file in par_files]
+
+    par_dfs = [pd.read_csv(par_file,index_col=0) for par_file in par_files]
+
     par_names = list(par_dfs[0].columns)
-    mx = (pst.parameter_data.loc[:,"parubnd"] * 1.1).apply(np.log10)
-    mn = (pst.parameter_data.loc[:,"parlbnd"] * 0.9).apply(np.log10)
+    #mx = (pst.parameter_data.loc[:,"parubnd"] * 1.1)
+    #mn = (pst.parameter_data.loc[:,"parlbnd"] * 0.9)
+
+    mx = max([pdf.max().max() for pdf in par_dfs])
+
+
+    num_reals_plot = 12
+    plot_rows = 2
+    plot_cols = 6
+    assert plot_rows * plot_cols == num_reals_plot
+    figsize = (20,10)
+    with PdfPages(os.path.join(plt_dir,"parensemble_reals.pdf")) as pdf:
+
+        for par_file,par_df in zip(par_files,par_dfs):
+            #print(par_file)
+            fig = plt.figure(figsize=figsize)
+
+            plt.figtext(0.5,0.975,par_file,ha="center")
+            axes = [plt.subplot(plot_rows,plot_cols,i+1) for i in range(num_reals_plot)]
+            for ireal in range(num_reals_plot):
+                real_df = par_df.iloc[ireal,:]
+                #print(real_df)
+
+                real_df.plot(kind="bar",ax=axes[ireal])
+                axes[ireal].set_ylim(0,mx.max())
+            pdf.savefig()
+            plt.close()
+
 
     obj_df = pd.read_csv(os.path.join(d,"10par_xsec.pst.iobj.csv"),index_col=0)
     real_cols = [col for col in obj_df.columns if col.startswith("0")]
@@ -500,6 +962,9 @@ def tenpar_plot():
     plt.savefig(os.path.join(plt_dir,"iobj.pdf"))
     plt.close()
 
+    mx = (pst.parameter_data.loc[:,"parubnd"] * 1.1)
+    mn = (pst.parameter_data.loc[:,"parlbnd"] * 0.9)
+
     with PdfPages(os.path.join(plt_dir,"parensemble.pdf")) as pdf:
 
         for par_file,par_df in zip(par_files,par_dfs):
@@ -519,10 +984,10 @@ def tenpar_plot():
                 ax.set_xlim(mn[par_name],mx[par_name])
                 ylim = ax.get_ylim()
                 if "stage" in par_name:
-                    val = np.log10(1.5)
+                    val = 1.5
                 else:
-                    val = np.log10(2.5)
-                ticks = ["{0:2.1f}".format(x) for x in 10.0**ax.get_xticks()]
+                    val = 2.5
+                ticks = ["{0:2.1f}".format(x) for x in ax.get_xticks()]
                 ax.set_xticklabels(ticks,rotation=90)
                 ax.plot([val,val],ylim,"k-",lw=2.0)
 
@@ -579,10 +1044,27 @@ if __name__ == "__main__":
     #henry_setup()
     #henry()
     #henry_plot()
-    freyberg()
+    #freyberg()
     #freyberg_plot()
+    #freyberg_plot_iobj()
+    #freyberg_plot_par_seq()
+    #freyberg_plot_obs_seq()
+    #chenoliver_func_plot()
+    #chenoliver_plot_sidebyside()
+    #chenoliver_obj_plot()
     #chenoliver_setup()
+    #chenoliver_condor()
     #chenoliver()
+    chenoliver_existing()
     #chenoliver_plot()
+    #chenoliver_func_plot()
+    #chenoliver_plot_sidebyside()
+    #chenoliver_obj_plot()
     #tenpar()
     #tenpar_plot()
+    #freyberg()
+    #freyberg_condor()
+    #freyberg_plot()
+    #freyberg_plot_iobj()
+    #freyberg_plot_par_seq()
+    #freyberg_plot_obs_seq()

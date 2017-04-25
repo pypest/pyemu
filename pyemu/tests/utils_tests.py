@@ -473,17 +473,22 @@ def ok_grid_test():
     delr = np.ones((ncol)) * 1.0/float(ncol)
     delc = np.ones((nrow)) * 1.0/float(nrow)
 
-    num_pts = 10
+    num_pts = 0
     ptx = np.random.random(num_pts)
     pty = np.random.random(num_pts)
     ptname = ["p{0}".format(i) for i in range(num_pts)]
     pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
+    pts_data.index = pts_data.name
+    pts_data = pts_data.loc[:,["x","y","name"]]
+
 
     sr = flopy.utils.SpatialReference(delr=delr,delc=delc)
+    pts_data.loc["i0j0", :] = [sr.xcentergrid[0,0],sr.ycentergrid[0,0],"i0j0"]
+    pts_data.loc["imxjmx", :] = [sr.xcentergrid[-1, -1], sr.ycentergrid[-1, -1], "imxjmx"]
     str_file = os.path.join("utils","struct_test.dat")
     gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
     ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
-    kf = ok.calc_factors_grid(sr,verbose=False)
+    kf = ok.calc_factors_grid(sr,verbose=False,var_filename=os.path.join("utils","test_var.ref"),minpts_interp=1)
     ok.to_grid_factors_file(os.path.join("utils","test.fac"))
 
 def ppk2fac_verf_test():
@@ -506,8 +511,42 @@ def ppk2fac_verf_test():
     diff = np.abs(pyemu_arr - ppk2fac_arr).sum()
     assert diff < 1.0e-6
 
-    
+
+def opt_obs_worth():
+    import os
+    import pyemu
+    wdir = os.path.join("utils")
+    os.chdir(wdir)
+    pst = pyemu.Pst(os.path.join("supply2_pest.fosm.pst"))
+    zero_weight_names = [n for n,w in zip(pst.observation_data.obsnme,pst.observation_data.weight) if w == 0.0]
+    #print(zero_weight_names)
+    #for attr in ["base_jacobian","hotstart_resfile"]:
+    #    pst.pestpp_options[attr] = os.path.join(wdir,pst.pestpp_options[attr])
+    #pst.template_files = [os.path.join(wdir,f) for f in pst.template_files]
+    #pst.instruction_files = [os.path.join(wdir,f) for f in pst.instruction_files]
+    #print(pst.template_files)
+    df = pyemu.optimization.get_added_obs_importance(pst,obslist_dict={"zeros":zero_weight_names})
+    os.chdir("..")
+    print(df)
+
+
+def mflist_budget_test():
+    import pyemu
+
+    try:
+        import flopy
+    except:
+        print("no flopy...")
+        return
+    model_ws = os.path.join("..","..","examples","Freyberg_transient")
+    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False)
+    pyemu.gw_utils.setup_mflist_budget_obs(ml)
+
+
+
+
 if __name__ == "__main__":
+    mflist_budget_test()
     # kl_test()
     # zero_order_regul_test()
     # first_order_pearson_regul_test()
@@ -534,4 +573,5 @@ if __name__ == "__main__":
     # add_pi_obj_func_test()
     # ok_test()
     #ok_grid_test()
-    ppk2fac_verf_test()
+    #opt_obs_worth()
+    #ppk2fac_verf_test()

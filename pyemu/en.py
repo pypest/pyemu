@@ -35,7 +35,7 @@ class Ensemble(pd.DataFrame):
         return Matrix(x=x,row_names=list(self.index),
                       col_names=list(self.columns))
 
-    def draw(self,cov,num_reals=1):
+    def draw(self,cov,num_reals=1,names=None):
         """ draw random realizations from a multivariate
             Gaussian distribution
 
@@ -45,6 +45,8 @@ class Ensemble(pd.DataFrame):
                 covariance structure to draw from
             num_reals: int
                 number of realizations to generate
+            names : list of names to draw for.  If None, values all names
+                    are drawn
         Returns:
         -------
             None
@@ -54,25 +56,35 @@ class Ensemble(pd.DataFrame):
                       for i in range(num_reals)]
 
         # make sure everything is cool WRT ordering
-        if self.names != cov.row_names:
-            common_names = get_common_elements(self.names,
-                                               cov.row_names)
-            vals = self.mean_values.loc[common_names]
-            cov = cov.get(common_names)
+        if names is not None:
+            vals = self.mean_values.loc[names]
+            cov = cov.get(names)
+        elif self.names != cov.row_names:
+            names = get_common_elements(self.names,
+                                        cov.row_names)
+            vals = self.mean_values.loc[names]
+            cov = cov.get(names)
             pass
         else:
             vals = self.mean_values
-            common_names = self.names
+            names = self.names
 
         # generate random numbers
-        val_array = np.random.multivariate_normal(vals, cov.as_2d,num_reals)
+        if cov.isdiagonal: #much faster
+            val_array = np.array([np.random.normal(mu,std,size=num_reals) for\
+                                  mu,std in zip(vals,np.sqrt(cov.x))]).transpose()
+            #for mu,std in zip(vals,np.sqrt(cov.x)):
+            #    val_array.append(np.random.normal(mu,std,size=num_reals))
+            #val_array = np.array(val_array).transpose()
+        else:
+            val_array = np.random.multivariate_normal(vals, cov.as_2d,num_reals)
 
         self.loc[:,:] = np.NaN
         self.dropna(inplace=True)
 
         # this sucks - can only set by enlargement one row at a time
         for rname,vals in zip(real_names,val_array):
-            self.loc[rname,common_names] = vals
+            self.loc[rname, names] = vals
             # set NaNs to mean_values
             idx = pd.isnull(self.loc[rname,:])
             self.loc[rname,idx] = self.mean_values[idx]
@@ -95,7 +107,7 @@ class Ensemble(pd.DataFrame):
     def from_dataframe(cls,**kwargs):
         df = kwargs.pop("df")
         assert isinstance(df,pd.DataFrame)
-        mean_values = kwargs.pop("mean_values",df.mean(axis=1))
+        mean_values = kwargs.pop("mean_values",df.mean(axis=0))
         e = cls(data=df,index=df.index,columns=df.columns,
                 mean_values=mean_values,**kwargs)
         return e
@@ -146,7 +158,8 @@ class ObservationEnsemble(Ensemble):
 
 
     def draw(self,cov,num_reals):
-        super(ObservationEnsemble,self).draw(cov,num_reals)
+        super(ObservationEnsemble,self).draw(cov,num_reals,
+                                             names=self.pst.nnz_obs_names)
         self.loc[:,self.names] += self.pst.observation_data.obsval
 
     @property
@@ -184,9 +197,12 @@ class ParameterEnsemble(Ensemble):
         # a flag for current log transform status
         self.__istransformed = bool(istransformed)
         self.pst = pst
-        if "tied" in self.pst.parameter_data.partrans:
-            raise NotImplementedError("ParameterEnsemble does not " +\
-                                      "support tied parameters")
+        if "tied" in list(self.pst.parameter_data.partrans.values):
+            #raise NotImplementedError("ParameterEnsemble does not " +\
+            #                          "support tied parameters")
+            import warnings
+            warnings.warn("tied parameters are treated as fixed in "+\
+                         "ParameterEnsemble")
         self.pst.parameter_data.index = self.pst.parameter_data.parnme
         self.bound_tol = kwargs.get("bound_tol",0.0)
 
@@ -257,7 +273,9 @@ class ParameterEnsemble(Ensemble):
     @property
     def fixed_indexer(self):
         """ indexer for fixed status"""
-        isfixed = self.pst.parameter_data.partrans == "fixed"
+        #isfixed = self.pst.parameter_data.partrans == "fixed"
+        isfixed = self.pst.parameter_data.partrans.\
+            apply(lambda x : x in ["fixed","tied"])
         return isfixed.values
 
 
@@ -279,11 +297,44 @@ class ParameterEnsemble(Ensemble):
             self.pst.parameter_data.index = self.pst.parameter_data.parnme
             fixed_vals = self.pst.parameter_data.loc[self.fixed_indexer,"parval1"]
             for fname,fval in zip(fixed_vals.index,fixed_vals.values):
+                #if fname not in self.columns:
+                #    continue
                 self.loc[:,fname] = fval
         istransformed = self.pst.parameter_data.loc[:,"partrans"] == "log"
         self.loc[:,istransformed] = 10.0**self.loc[:,istransformed]
         self.__istransformed = False
+
+        #self._applied_tied()
+
+
         self.enforce(enforce_bounds)
+
+    # def _applied_tied(self):
+    #     if self.pst is None:
+    #         return
+    #     if self.pst.tied is None:
+    #         return
+    #     ParameterEnsemble.apply_tied(self)
+
+    # @staticmethod
+    # def apply_tied(pe):
+    #     if pe.pst is None:
+    #         return
+    #     if pe.pst.tied is None:
+    #         return
+    #     par = pe.pst.parameter_data
+    #     tied =pe.pst.tied
+    #     for pname,ptied in zip(tied.parnme,tied.partied):
+    #         pval, tval = par.loc[pname,"parval1"],par.loc[ptied,"parval1"]
+    #         tied_ratio = pval / tval
+    #         if tval == 0.0:
+    #             tied_ratio = pval
+    #         #rvals = pe.loc[:,ptied]
+    #         pe.loc[:,pname] = pe.loc[:,ptied] * tied_ratio
+    #         #tvals = pe.loc[:,pname]
+    #         #print(rvals/tvals)
+
+
 
     def _draw_uniform(self,num_reals=1):
         if not self.istransformed:
@@ -316,6 +367,9 @@ class ParameterEnsemble(Ensemble):
             pe._transform()
         ub = pe.ubnd
         lb = pe.lbnd
+        # set up some column names
+        real_names = ["{0:d}".format(i)
+                      for i in range(num_reals)]
         arr = np.empty((num_reals,len(pe.names)))
         for i,pname in enumerate(pe.names):
             if pname in pe.adj_names:
@@ -326,8 +380,14 @@ class ParameterEnsemble(Ensemble):
                 arr[:,i] = np.zeros((num_reals)) + \
                                     pe.pst.parameter_data.\
                                          loc[pname,"parval1"]
-        return cls.from_dataframe(pst=pe.pst,df=pd.DataFrame(data=arr,columns=pe.names))
+        print("back transforming")
+        istransformed = pe.pst.parameter_data.loc[:,"partrans"] == "log"
+        df = pd.DataFrame(arr,index=real_names,columns=pe.pst.par_names)
+        df.loc[:,istransformed] = 10.0**df.loc[:,istransformed]
 
+        new_pe = cls.from_dataframe(pst=pe.pst,df=pd.DataFrame(data=arr,columns=pe.names))
+        #new_pe._applied_tied()
+        return new_pe
 
     @classmethod
     def from_gaussian_draw(cls,pe,cov,num_reals=1):
@@ -358,19 +418,30 @@ class ParameterEnsemble(Ensemble):
             vals = pe.mean_values
             common_names = pe.names
 
-        vals = pe.mean_values
+        #vals = pe.mean_values
+        print("making draws")
         df = pd.DataFrame(data=np.random.multivariate_normal(vals, cov.as_2d,num_reals),
                           columns = common_names,index=real_names)
+        #print(df.shape,cov.shape)
+        istransformed = pe.pst.parameter_data.loc[common_names,"partrans"] == "log"
+        print("back transforming")
+        df.loc[:,istransformed] = 10.0**df.loc[:,istransformed]
+
         # replace the realizations for fixed parameters with the original
         # parval1 in the control file
-
+        print("handling fixed pars")
         pe.pst.parameter_data.index = pe.pst.parameter_data.parnme
         fixed_vals = pe.pst.parameter_data.loc[pe.fixed_indexer,"parval1"]
         for fname,fval in zip(fixed_vals.index,fixed_vals.values):
+            #if fname not in df.columns:
+            #    continue
+            print(fname)
             df.loc[:,fname] = fval
-        istransformed = pe.pst.parameter_data.loc[:,"partrans"] == "log"
-        df.loc[:,istransformed] = 10.0**df.loc[:,istransformed]
-        return cls.from_dataframe(pst=pe.pst,df=df)
+
+        #print("apply tied")
+        new_pe = cls.from_dataframe(pst=pe.pst,df=df)
+        #ParameterEnsemble.apply_tied(new_pe)
+        return new_pe
 
 
 
@@ -397,7 +468,6 @@ class ParameterEnsemble(Ensemble):
             self.loc[:,:] = (self.loc[:,:] -\
                              self.pst.parameter_data.offset)/\
                              self.pst.parameter_data.scale
-
 
             self.__istransformed = False
         else:
@@ -528,23 +598,53 @@ class ParameterEnsemble(Ensemble):
         self.loc[:,istransformed] = 10.0**self.loc[:,istransformed]
         self.__istransformed = False
 
-    def enforce(self,enforce_bounds):
-        if enforce_bounds is None:
-            return
+    def enforce(self,enforce_bounds="reset"):
         if isinstance(enforce_bounds,bool):
             import warnings
             warnings.warn("deprecation warning: enforce_bounds should be "+\
-                          "either 'reset' or 'drop', not bool.  resetting"+\
-                          " to 'reset'.")
-            enforce_bounds = "reset"
+                          "either 'reset', 'drop', 'scale', or None, not bool"+\
+                          "...resetting to None.")
+            enforce_bounds = None
+        if enforce_bounds is None:
+            return
+
         if enforce_bounds.lower() == "reset":
             self.enforce_reset()
         elif enforce_bounds.lower() == "drop":
             self.enforce_drop()
+        elif enforce_bounds.lower() == "scale":
+            self.enfore_scale()
         else:
             raise Exception("unrecognized enforce_bounds arg:"+\
                             "{0}, should be 'reset' or 'drop'".\
                             format(enforce_bounds))
+
+    def enfore_scale(self):
+        """
+        enforce parameter bounds on the ensemble by finding the
+        scaling factor needed to bring the most violated parameter back in bounds
+
+        """
+        raise NotImplementedError()
+        ub = self.ubnd
+        lb = self.lbnd
+        for id in self.index:
+            mx_diff = (self.loc[id,:] - ub) / ub
+            mn_diff = (lb - self.loc[id,:]) / lb
+
+            # if this real has a violation
+            mx = max(mx_diff.max(),mn_diff.max())
+            if mx > 1.0:
+                scale_factor = 1.0 / mx
+                self.loc[id,:] *= scale_factor
+
+            mx = ub - self.loc[id,:]
+            mn = lb - self.loc[id,:]
+            print(mx.loc[mx<0.0])
+            print(mn.loc[mn>0.0])
+            if (ub - self.loc[id,:]).min() < 0.0 or\
+                            (lb - self.loc[id,:]).max() > 0.0:
+                raise Exception()
 
     def enforce_drop(self):
         """ enforce parameter bounds on the ensemble by dropping
@@ -555,8 +655,8 @@ class ParameterEnsemble(Ensemble):
         lb = self.lbnd
         drop = []
         for id in self.index:
-            mx = (ub - self.loc[id,:]).min()
-            mn = (lb - self.loc[id,:]).max()
+            #mx = (ub - self.loc[id,:]).min()
+            #mn = (lb - self.loc[id,:]).max()
             if (ub - self.loc[id,:]).min() < 0.0 or\
                             (lb - self.loc[id,:]).max() > 0.0:
                 drop.append(id)
@@ -618,6 +718,11 @@ class ParameterEnsemble(Ensemble):
         #    self.__istransformed = False
         #self._transform(inplace=True)
 
+
+    def to_csv(self,*args,**kwargs):
+        if self.istransformed:
+            self._back_transform(inplace=True)
+        super(ParameterEnsemble,self).to_csv(*args,**kwargs)
 
     def to_parfiles(self,prefix):
         """

@@ -696,9 +696,9 @@ pd_ten                1.0000000000E+10      1.0000000000E+00       obgnme
 * model command line
 model.bat
 * model input/output
-..\..\verification\henry\misc\pp_locs.tpl ..\..\verification\henry\misc\pp_locs.junk
-..\..\verification\henry\misc\conc.ins ..\..\verification\henry\misc\conc.junk
-..\..\verification\henry\misc\head.ins ..\..\verification\henry\misc\head.junk
-..\..\verification\henry\misc\pred_dist_half.ins ..\..\verification\henry\misc\pred_dist_half.junk
-..\..\verification\henry\misc\pred_dist_one.ins ..\..\verification\henry\misc\pred_dist_one.junk
-..\..\verification\henry\misc\pred_dist_ten.ins ..\..\verification\henry\misc\pred_dist_ten.junk
+../../verification/henry/misc/pp_locs.tpl ../../verification/henry/misc/pp_locs.junk
+../../verification/henry/misc/conc.ins ../../verification/henry/misc/conc.junk
+../../verification/henry/misc/head.ins ../../verification/henry/misc/head.junk
+../../verification/henry/misc/pred_dist_half.ins ../../verification/henry/misc/pred_dist_half.junk
+../../verification/henry/misc/pred_dist_one.ins ../../verification/henry/misc/pred_dist_one.junk
+../../verification/henry/misc/pred_dist_ten.ins ../../verification/henry/misc/pred_dist_ten.junk

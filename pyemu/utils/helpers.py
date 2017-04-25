@@ -138,21 +138,27 @@ def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
 
 
 
-def zero_order_tikhonov(pst, parbounds=True):
+def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
         """setup preferred-value regularization
         Parameters:
         ----------
             pst (Pst instance) : the control file instance
             parbounds (bool) : weight the prior information equations according
                 to parameter bound width - approx the KL transform
+            par_groups (list(str)) : parameter groups to build PI equations
+               for.  If None, all adjustable parameters are used
         Returns:
         -------
             None
         """
-        pass
+
+        if par_groups is None:
+            par_groups = pst.par_groups
+
         pilbl, obgnme, weight, equation = [], [], [], []
         for idx, row in pst.parameter_data.iterrows():
-            if row["partrans"].lower() not in ["tied", "fixed"]:
+            if row["partrans"].lower() not in ["tied", "fixed"] and\
+                row["pargp"] in par_groups:
                 pilbl.append(row["parnme"])
                 weight.append(1.0)
                 ogp_name = "regul"+row["pargp"]
@@ -212,7 +218,11 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
         pi_num = pst.prior_information.shape[0] + 1
         pilbl, obgnme, weight, equation = [], [], [], []
         for i,iname in enumerate(cc_mat.row_names):
+            if iname not in pst.adj_par_names:
+                continue
             for j,jname in enumerate(cc_mat.row_names[i+1:]):
+                if jname not in pst.adj_par_names:
+                    continue
                 #print(i,iname,i+j+1,jname)
                 cc = cc_mat.x[i,j+i+1]
                 if cc < abs_drop_tol:

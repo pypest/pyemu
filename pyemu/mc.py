@@ -71,7 +71,7 @@ class MonteCarlo(LinearAnalysis):
         return v2_proj
 
     def draw(self, num_reals=1, par_file = None, obs=False,
-             enforce_bounds=False,cov=None, how="gaussian"):
+             enforce_bounds=None,cov=None, how="gaussian"):
         """draw stochastic realizations of parameters and
            optionally observations
 

@@ -237,7 +237,7 @@ class Schur(LinearAnalysis):
                 "contribution parameter " + name + " not found jco"
         keep_names = []
         for name in self.jco.col_names:
-            if name not in keep_names:
+            if name not in parameter_names:
                 keep_names.append(name)
         if len(keep_names) == 0:
             raise Exception("Schur.contribution_from_parameters: " +
@@ -272,7 +272,11 @@ class Schur(LinearAnalysis):
         """
         self.log("calculating contribution from parameters")
         if parlist_dict is None:
-            parlist_dict = dict(zip(self.pst.adj_par_names,self.pst.adj_par_names))
+            parlist_dict = {}#dict(zip(self.pst.adj_par_names,self.pst.adj_par_names))
+            # make sure all of the adjustable pars are in the jco
+            for pname in self.pst.adj_par_names:
+                if pname in self.jco.col_names:
+                    parlist_dict[pname] = pname
         else:
             if type(parlist_dict) == list:
                 parlist_dict = dict(zip(parlist_dict,parlist_dict))
@@ -287,6 +291,8 @@ class Schur(LinearAnalysis):
             results[(forecast,"post")] = [pt]
             results[(forecast,"percent_reduce")] = [reduce]
         for case_name,par_list in parlist_dict.items():
+            if len(par_list) == 0:
+                continue
             names.append(case_name)
             self.log("calculating contribution from: " + str(par_list) + '\n')
             case_prior,case_post = self.__contribution_from_parameters(par_list)
@@ -311,7 +317,9 @@ class Schur(LinearAnalysis):
         par = self.pst.parameter_data
         groups = par.groupby("pargp").groups
         for grp,idxs in groups.items():
-            pargrp_dict[grp] = list(par.loc[idxs,"parnme"])
+            #pargrp_dict[grp] = list(par.loc[idxs,"parnme"])
+            pargrp_dict[grp] = [pname for pname in list(par.loc[idxs,"parnme"])
+                                if pname in self.jco.col_names]
         return self.get_par_contribution(pargrp_dict)
 
     def get_added_obs_importance(self,obslist_dict=None,base_obslist=None,
