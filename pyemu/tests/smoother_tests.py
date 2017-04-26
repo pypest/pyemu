@@ -810,22 +810,22 @@ def chenoliver_existing():
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
                                 num_slaves=10,use_approx=False,verbose=True)
     es.initialize(num_reals=num_reals,enforce_bounds=None)
-    obs1 = es.obsensemble.copy()
 
+    obs1 = es.obsensemble.copy()
     es.parensemble_0.to_csv("paren.csv")
     es.obsensemble_0.to_csv("obsen.csv")
 
-    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
-                                num_slaves=10,use_approx=False,verbose=True)
-
-
+    #es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
+    #                            num_slaves=1,use_approx=False,verbose=True)
     es.initialize(parensemble="paren.csv",obsensemble="obsen.csv")
+
     obs2 = es.obsensemble.copy()
     print(obs1.shape,obs2.shape)
-    print(obs1,obs2)
+    print(obs1)
+    print(obs2)
     assert (obs1 - obs2).loc[:,"obs"].sum() == 0.0
 
-    for it in range(1):
+    for it in range(40):
         es.update(lambda_mults=[1.0])
     os.chdir(os.path.join("..",".."))
 

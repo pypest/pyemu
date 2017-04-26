@@ -96,7 +96,9 @@ class EnsembleSmoother():
                 if not os.path.exists(obsensemble):
                     self.logger.lraise("can not find parensemble file: {0}".\
                                        format(parensemble))
-                df = pd.read_csv(parensemble)
+                df = pd.read_csv(parensemble,index_col=0)
+                df.index = [str(i) for i in df.index]
+
                 self.parensemble_0 = ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
                 self.logger.log("loading parensemble from file")
 
@@ -112,7 +114,8 @@ class EnsembleSmoother():
                 if not os.path.exists(obsensemble):
                     self.logger.lraise("can not find obsensemble file: {0}".\
                                        format(obsensemble))
-                df = pd.read_csv(obsensemble).loc[:,self.pst.nnz_obs_names]
+                df = pd.read_csv(obsensemble,index_col=0).loc[:,self.pst.nnz_obs_names]
+                df.index = [str(i) for i in df.index]
                 self.obsensemble_0 = ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
                 self.logger.log("loading obsensemble from file")
 
@@ -237,6 +240,7 @@ class EnsembleSmoother():
             os.remove(self.sweep_out_csv)
         except Exception as e:
             self.logger.warn("error removing existing sweep out file:{0}".format(str(e)))
+        self.logger.log("removing existing sweep in/out files")
 
         if self.submit_file is None:
             return self._calc_obs_local(parensemble)
