@@ -302,10 +302,10 @@ def diagonal_cov_draw_test():
     #print(pe1-pe2)
 
 if __name__ == "__main__":
-    diagonal_cov_draw_test()
+    #diagonal_cov_draw_test()
     #pe_to_csv_test()
     #scale_offset_test()
-    #mc_test()
+    mc_test()
     #fixed_par_test()
     #uniform_draw_test()
     #gaussian_draw_test()

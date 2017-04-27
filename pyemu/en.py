@@ -51,9 +51,10 @@ class Ensemble(pd.DataFrame):
         -------
             None
         """
-        # set up some column names
-        real_names = ["{0:d}".format(i)
-                      for i in range(num_reals)]
+        # set up some realization names
+        #real_names = ["{0:d}".format(i)
+        #              for i in range(num_reals)]
+        real_names = np.arange(num_reals,dtype=np.int64)
 
         # make sure everything is cool WRT ordering
         if names is not None:
@@ -368,8 +369,9 @@ class ParameterEnsemble(Ensemble):
         ub = pe.ubnd
         lb = pe.lbnd
         # set up some column names
-        real_names = ["{0:d}".format(i)
-                      for i in range(num_reals)]
+        #real_names = ["{0:d}".format(i)
+        #              for i in range(num_reals)]
+        real_names = np.arange(num_reals,dtype=np.int64)
         arr = np.empty((num_reals,len(pe.names)))
         for i,pname in enumerate(pe.names):
             if pname in pe.adj_names:
@@ -402,8 +404,9 @@ class ParameterEnsemble(Ensemble):
         """
 
         # set up some column names
-        real_names = ["{0:d}".format(i)
-                      for i in range(num_reals)]
+        #real_names = ["{0:d}".format(i)
+        #              for i in range(num_reals)]
+        real_names = np.arange(num_reals,dtype=np.int64)
 
         if not pe.istransformed:
             pe._transform()
@@ -745,6 +748,6 @@ class ParameterEnsemble(Ensemble):
                  ["parnme","parval1","scale","offset"]].copy()
 
         for real in self.index:
-            par_file = prefix+real+".par"
+            par_file = "{0}{1}.par".format(prefix,real)
             par_df.loc[:,"parval1"] =self.loc[real,:]
             write_parfile(par_df,par_file)

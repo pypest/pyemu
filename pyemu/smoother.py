@@ -97,8 +97,7 @@ class EnsembleSmoother():
                     self.logger.lraise("can not find parensemble file: {0}".\
                                        format(parensemble))
                 df = pd.read_csv(parensemble,index_col=0)
-                df.index = [str(i) for i in df.index]
-
+                #df.index = [str(i) for i in df.index]
                 self.parensemble_0 = ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
                 self.logger.log("loading parensemble from file")
 
@@ -115,7 +114,7 @@ class EnsembleSmoother():
                     self.logger.lraise("can not find obsensemble file: {0}".\
                                        format(obsensemble))
                 df = pd.read_csv(obsensemble,index_col=0).loc[:,self.pst.nnz_obs_names]
-                df.index = [str(i) for i in df.index]
+                #df.index = [str(i) for i in df.index]
                 self.obsensemble_0 = ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
                 self.logger.log("loading obsensemble from file")
 
@@ -166,9 +165,9 @@ class EnsembleSmoother():
 
         if failed_runs is not None:
             self.logger.warn("dropping failed realizations")
-            failed_runs_str = [str(f) for f in failed_runs]
+            #failed_runs_str = [str(f) for f in failed_runs]
             self.parensemble = ParameterEnsemble.from_dataframe(\
-                    df=self.parensemble.drop(failed_runs_str),pst=self.pst)
+                    df=self.parensemble.drop(failed_runs),pst=self.pst)
             self.obsensemble = ObservationEnsemble.from_dataframe(\
                     df=self.obsensemble.drop(failed_runs),pst=self.pst)
         self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
@@ -197,7 +196,7 @@ class EnsembleSmoother():
             self.logger.statement("using approximate parcov in solution")
             self.half_parcov_diag = 1.0
         else:
-            self.logger.statement("using full parcov in solution")
+            #self.logger.statement("using full parcov in solution")
             # if self.parcov.isdiagonal:
             #     self.half_parcov_diag = self.parcov.sqrt.inv
             # else:
@@ -437,14 +436,15 @@ class EnsembleSmoother():
             upgrade_1 = upgrade_1.to_dataframe()
             upgrade_1.index.name = "parnme"
             upgrade_1 = upgrade_1.T
+            upgrade_1.index = [int(i) for i in upgrade_1.index]
             upgrade_1.to_csv(self.pst.filename+".upgrade_1.{0:04d}.csv".\
                                format(self.iter_num))
             if upgrade_1.isnull().values.any():
                     self.logger.lraise("NaNs in upgrade_1")
 
             #print(upgrade_1.isnull().values.any())
-            #print(parensemble_cur_lam.index)
-            #print(upgrade_1.index)
+            print(parensemble_cur_lam.index)
+            print(upgrade_1.index)
             parensemble_cur_lam += upgrade_1
 
             # parameter-based upgrade portion
@@ -459,12 +459,15 @@ class EnsembleSmoother():
                 upgrade_2 = -1.0 * (self.half_parcov_diag *
                                    scaled_delta_par * x7).to_dataframe()
                 upgrade_2.index.name = "parnme"
-                upgrade_2.T.to_csv(self.pst.filename+".upgrade_2.{0:04d}.csv".\
+                upgrade_2 = upgrade_2.T
+                upgrade_2.to_csv(self.pst.filename+".upgrade_2.{0:04d}.csv".\
                                    format(self.iter_num))
+                upgrade_2.index = [int(i) for i in upgrade_2.index]
+
                 if upgrade_2.isnull().values.any():
                     self.logger.lraise("NaNs in upgrade_2")
 
-                parensemble_cur_lam += upgrade_2.T
+                parensemble_cur_lam += upgrade_2
                 self.logger.log("building upgrade_2 matrix")
             parensemble_cur_lam.enforce(self.enforce_bounds)
 
@@ -554,9 +557,8 @@ class EnsembleSmoother():
                 failed_runs, self.obsensemble = self._calc_obs(self.parensemble)
                 if failed_runs is not None:
                     self.logger.warn("dropping failed realizations")
-                    failed_runs_str = [str(f) for f in failed_runs]
                     self.parensemble = ParameterEnsemble.from_dataframe(\
-                            df=self.parensemble.drop(failed_runs_str),pst=self.pst)
+                            df=self.parensemble.drop(failed_runs),pst=self.pst)
                     self.obsensemble = ObservationEnsemble.from_dataframe(\
                             df=self.obsensemble.drop(failed_runs),pst=self.pst)
                 self.current_phi_vec = self._calc_phi_vec(self.obsensemble)

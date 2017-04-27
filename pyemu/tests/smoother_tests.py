@@ -1106,7 +1106,7 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #tenpar()
     #tenpar_plot()
-    #tenpar_failed_runs()
+    tenpar_failed_runs()
     #freyberg()
     #freyberg_condor()
     #freyberg_plot()
