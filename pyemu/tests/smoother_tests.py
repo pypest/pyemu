@@ -29,7 +29,7 @@ def henry():
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
     pst = pyemu.Pst(os.path.join("henry.pst"))
-    es = pyemu.EnsembleSmoother(pst, num_slaves=15, use_approx=True)
+    es = pyemu.EnsembleSmoother(pst, num_slaves=15)
     es.initialize(210, init_lambda=1.0)
     for i in range(10):
         es.update(lambda_mults=[0.2,5.0],run_subset=45)
@@ -201,7 +201,7 @@ def freyberg():
     obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
 
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=20,
-                                use_approx=True,verbose=True)
+                                verbose=True)
 
     #gs.variograms[0].a=10000
     #gs.variograms[0].contribution=0.01
@@ -261,7 +261,7 @@ def freyberg_condor():
     obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
 
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=20,
-                                use_approx=True,verbose=True,submit_file="freyberg.sub")
+                                verbose=True,submit_file="freyberg.sub")
 
     #gs.variograms[0].a=10000
     #gs.variograms[0].contribution=0.01
@@ -785,10 +785,10 @@ def chenoliver():
 
     num_reals = 100
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
-                                num_slaves=10,use_approx=False,verbose=True)
+                                num_slaves=10,verbose=True)
     es.initialize(num_reals=num_reals,enforce_bounds=None)
     for it in range(40):
-        es.update(lambda_mults=[1.0])
+        es.update(lambda_mults=[1.0],use_approx=False)
     os.chdir(os.path.join("..",".."))
 
 
@@ -808,7 +808,7 @@ def chenoliver_existing():
 
     num_reals = 100
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
-                                num_slaves=10,use_approx=False,verbose=True)
+                                num_slaves=10,verbose=True)
     es.initialize(num_reals=num_reals,enforce_bounds=None)
 
     obs1 = es.obsensemble.copy()
@@ -816,7 +816,7 @@ def chenoliver_existing():
     es.obsensemble_0.to_csv("obsen.csv")
 
     #es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
-    #                            num_slaves=1,use_approx=False,verbose=True)
+    #                            num_slaves=1,verbose=True)
     es.initialize(parensemble="paren.csv",obsensemble="obsen.csv")
 
     obs2 = es.obsensemble.copy()
@@ -826,7 +826,7 @@ def chenoliver_existing():
     assert (obs1 - obs2).loc[:,"obs"].sum() == 0.0
 
     for it in range(40):
-        es.update(lambda_mults=[1.0])
+        es.update(lambda_mults=[1.0],use_approx=False)
     os.chdir(os.path.join("..",".."))
 
 def chenoliver_condor():
@@ -844,11 +844,11 @@ def chenoliver_condor():
     
     num_reals = 100
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
-                                num_slaves=10,use_approx=False,verbose=True,
+                                num_slaves=10,verbose=True,
                                 submit_file="chenoliver.sub")
     es.initialize(num_reals=num_reals,enforce_bounds=None)
     for it in range(40):
-        es.update(lambda_mults=[1.0])
+        es.update(lambda_mults=[1.0],use_approx=True)
     os.chdir(os.path.join("..",".."))
 
 def tenpar():
@@ -874,7 +874,7 @@ def tenpar():
     cov = dia_parcov.extend(full_cov)
 
     es = pyemu.EnsembleSmoother("10par_xsec.pst",parcov=cov,
-                                num_slaves=5,use_approx=True)
+                                num_slaves=5)
     lz = es.get_localizer().to_dataframe()
     #the k pars upgrad of h01_04 and h01_06 are localized
     upgrad_pars = [pname for pname in lz.columns if "_" in pname and\
@@ -891,6 +891,50 @@ def tenpar():
         #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
         es.update(lambda_mults=[1.0])
     os.chdir(os.path.join("..",".."))
+
+def tenpar_failed_runs():
+    import os
+    import numpy as np
+    import pyemu
+
+    os.chdir(os.path.join("smoother","10par_xsec"))
+    #csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    #[os.remove(csv_file) for csv_file in csv_files]
+    pst = pyemu.Pst("10par_xsec.pst")
+    dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+
+    v = pyemu.utils.ExpVario(contribution=0.25,a=60.0)
+    gs = pyemu.utils.GeoStruct(variograms=[v],transform="log")
+    par = pst.parameter_data
+    k_names = par.loc[par.parnme.apply(lambda x: x.startswith('k')),"parnme"]
+    sr = pyemu.utils.SpatialReference(delc=[10],delr=np.zeros((10))+10.0)
+
+    full_cov = gs.covariance_matrix(sr.xcentergrid[0,:],sr.ycentergrid[0,:],k_names)
+    dia_parcov.drop(list(k_names),axis=1)
+    cov = dia_parcov.extend(full_cov)
+
+    es = pyemu.EnsembleSmoother("10par_xsec.pst",parcov=cov,
+                                num_slaves=2,
+                                verbose=True)
+    lz = es.get_localizer().to_dataframe()
+    #the k pars upgrad of h01_04 and h01_06 are localized
+    upgrad_pars = [pname for pname in lz.columns if "_" in pname and\
+                   int(pname.split('_')[1]) > 4]
+    lz.loc["h01_04",upgrad_pars] = 0.0
+    upgrad_pars = [pname for pname in lz.columns if '_' in pname and \
+                   int(pname.split('_')[1]) > 6]
+    lz.loc["h01_06", upgrad_pars] = 0.0
+    lz = pyemu.Matrix.from_dataframe(lz).T
+    print(lz)
+    #es.initialize(num_reals=10,init_lambda=10000.0)
+    es.initialize(parensemble="par_start.csv",obsensemble="obs_start.csv")
+
+    for it in range(10):
+        #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
+        #es.update(lambda_mults=[0.1,1.0,10.0],run_subset=7)
+        es.update(use_approx=False)
+    os.chdir(os.path.join("..",".."))
+
 
 def tenpar_plot():
     import os
@@ -1055,16 +1099,18 @@ if __name__ == "__main__":
     #chenoliver_setup()
     #chenoliver_condor()
     #chenoliver()
-    chenoliver_existing()
+    #chenoliver_existing()
     #chenoliver_plot()
     #chenoliver_func_plot()
     #chenoliver_plot_sidebyside()
     #chenoliver_obj_plot()
     #tenpar()
     #tenpar_plot()
+    #tenpar_failed_runs()
     #freyberg()
     #freyberg_condor()
     #freyberg_plot()
     #freyberg_plot_iobj()
+    #freyberg_plotuse_iobj()
     #freyberg_plot_par_seq()
     #freyberg_plot_obs_seq()

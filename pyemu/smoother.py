@@ -25,12 +25,12 @@ algorithm of Chen and Oliver 2013.  It requires the pest++ "sweep" utility
 
 class EnsembleSmoother():
 
-    def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,use_approx=True,
+    def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,use_approx_prior=True,
                  submit_file=None,verbose=False):
         self.logger = Logger(verbose)
         self.num_slaves = int(num_slaves)
         self.submit_file = submit_file
-        self.use_approx = bool(use_approx)
+        self.use_approx_prior = bool(use_approx_prior)
         self.paren_prefix = ".parensemble.{0:04d}.csv"
         self.obsen_prefix = ".obsensemble.{0:04d}.csv"
 
@@ -157,17 +157,27 @@ class EnsembleSmoother():
         self.obs0_matrix = self.obsensemble_0.nonzero.as_pyemu_matrix()
         self.enforce_bounds = enforce_bounds
 
-
         # run the initial parameter ensemble
         self.logger.log("evaluating initial ensembles")
-        self.obsensemble = self._calc_obs(self.parensemble)
+        failed_runs, self.obsensemble = self._calc_obs(self.parensemble)
         self.obsensemble.to_csv(self.pst.filename +\
                                   self.obsen_prefix.format(0))
         self.logger.log("evaluating initial ensembles")
+
+        if failed_runs is not None:
+            self.logger.warn("dropping failed realizations")
+            failed_runs_str = [str(f) for f in failed_runs]
+            self.parensemble = ParameterEnsemble.from_dataframe(\
+                    df=self.parensemble.drop(failed_runs_str),pst=self.pst)
+            self.obsensemble = ObservationEnsemble.from_dataframe(\
+                    df=self.obsensemble.drop(failed_runs),pst=self.pst)
         self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
         self._phi_report(self.current_phi_vec,0.0)
+
         self.last_best_mean = self.current_phi_vec.mean()
         self.last_best_std = self.current_phi_vec.std()
+        self.logger.statement("initial phi (mean, std): {0:15.6G},{1:15.6G}".\
+                              format(self.last_best_mean,self.last_best_std))
         if init_lambda is not None:
             self.current_lambda = float(init_lambda)
         else:
@@ -183,7 +193,7 @@ class EnsembleSmoother():
         # better choices of lambda will tame it
         self.logger.statement("current lambda:{0:15.6g}".format(self.current_lambda))
 
-        if self.use_approx:
+        if self.use_approx_prior:
             self.logger.statement("using approximate parcov in solution")
             self.half_parcov_diag = 1.0
         else:
@@ -195,9 +205,10 @@ class EnsembleSmoother():
             #                                 names=self.parcov.col_names,
             #                                 isdiagonal=True).inv.sqrt
             self.half_parcov_diag = 1.0
-            self.delta_par_prior = self._calc_delta_par(self.parensemble_0)
-            u,s,v = self.delta_par_prior.pseudo_inv_components()
-            self.Am = u * s.inv
+        self.delta_par_prior = self._calc_delta_par(self.parensemble_0)
+        u,s,v = self.delta_par_prior.pseudo_inv_components()
+        self.Am = u * s.inv
+
         self.__initialized = True
 
     def get_localizer(self):
@@ -224,10 +235,10 @@ class EnsembleSmoother():
         '''
         mean = np.array(ensemble.mean(axis=0))
         delta = ensemble.as_pyemu_matrix()
-        for i in range(self.num_reals):
+        for i in range(ensemble.shape[0]):
             delta.x[i,:] -= mean
         delta = scaling_matrix * delta.T
-        delta *= (1.0 / np.sqrt(float(self.num_reals - 1.0)))
+        delta *= (1.0 / np.sqrt(float(ensemble.shape[0] - 1.0)))
         return delta
 
     def _calc_obs(self,parensemble):
@@ -242,15 +253,39 @@ class EnsembleSmoother():
             self.logger.warn("error removing existing sweep out file:{0}".format(str(e)))
         self.logger.log("removing existing sweep in/out files")
 
-        if self.submit_file is None:
-            return self._calc_obs_local(parensemble)
-        else:
-            return self._calc_obs_condor(parensemble)
+        if parensemble.isnull().values.any():
+            parensemble.to_csv("_nan.csv")
+            self.logger.lraise("_calc_obs() error: NaNs in parensemble (written to '_nan.csv')")
 
+        if self.submit_file is None:
+            self._calc_obs_local(parensemble)
+        else:
+            self._calc_obs_condor(parensemble)
+        self.logger.log("reading sweep out csv {0}".format(self.sweep_out_csv))
+        obs = pd.read_csv(self.sweep_out_csv)
+        self.logger.log("reading sweep out csv {0}".format(self.sweep_out_csv))
+        obs.columns = [item.lower() for item in obs.columns]
+        assert "input_run_id" in obs.columns,\
+            "'input_run_id' col missing...need newer version of sweep"
+        obs.index = obs.input_run_id
+        failed_runs = None
+        if 1 in obs.failed_flag.values:
+            failed_runs = obs.loc[obs.failed_flag == 1].index.values
+            self.logger.warn("{0} runs (indices: {1}) failed".\
+                             format(len(failed_runs),','.join([str(f) for f in failed_runs])))
+        self.total_runs += obs.shape[0]
+        self.logger.statement("total runs:{0}".format(self.total_runs))
+        obs = ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],
+                                                               pst=self.pst)
+        if obs.isnull().values.any():
+            self.logger.lraise("_calc_obs() error: NaNs in obsensemble")
+
+        return failed_runs,obs
 
     def _calc_obs_condor(self,parensemble):
-        self.logger.log("evaluating ensemble of size {0} locally with htcondor".\
+        self.logger.log("evaluating ensemble of size {0} with htcondor".\
                         format(parensemble.shape[0]))
+
         parensemble.to_csv(self.sweep_in_csv)
         #os.system("condor_rm -all")
         port = 4004
@@ -286,17 +321,9 @@ class EnsembleSmoother():
         self.logger.log("calling condor_rm on cluster {0}".format(cluster_number))
         os.system("condor_rm cluster {0}".format(cluster_number))
         self.logger.log("calling condor_rm on cluster {0}".format(cluster_number))
-
-        self.logger.log("reading sweep out csv {0}".format(self.sweep_out_csv))
-        obs = pd.read_csv(self.sweep_out_csv)
-        self.logger.log("reading sweep out csv {0}".format(self.sweep_out_csv))
-        obs.columns = [item.lower() for item in obs.columns]
-        self.total_runs += obs.shape[0]
-        self.logger.statement("total runs:{0}".format(self.total_runs))
-        self.logger.log("evaluating ensemble of size {0} locally with htcondor".\
+        self.logger.log("evaluating ensemble of size {0} with htcondor".\
                         format(parensemble.shape[0]))
-        return ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],
-                                                  pst=self.pst)
+
 
     def _calc_obs_local(self,parensemble):
         '''
@@ -318,14 +345,10 @@ class EnsembleSmoother():
         else:
             os.system("sweep {0}".format(self.pst.filename))
 
-        obs = pd.read_csv(self.sweep_out_csv)
-        obs.columns = [item.lower() for item in obs.columns]
-        self.total_runs += obs.shape[0]
-        self.logger.statement("total runs so far :{0}".format(self.total_runs))
         self.logger.log("evaluating ensemble of size {0} locally with sweep".\
                         format(parensemble.shape[0]))
-        return ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],
-                                                  pst=self.pst)
+        #return ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],
+        #                                          pst=self.pst)
 
     def _calc_phi_vec(self,obsensemble):
         obs_diff = self._get_residual_matrix(obsensemble)
@@ -334,7 +357,7 @@ class EnsembleSmoother():
         return phi_vec
 
     def _phi_report(self,phi_vec,cur_lam):
-        assert phi_vec.shape[0] == self.num_reals
+        #assert phi_vec.shape[0] == self.num_reals
         self.phi_csv.write("{0},{1},{2},{3},{4},{5},{6}".format(self.iter_num,
                                                              self.total_runs,
                                                              cur_lam,
@@ -351,7 +374,7 @@ class EnsembleSmoother():
         obs_matrix = obsensemble.nonzero.as_pyemu_matrix()
         return  obs_matrix - self.obs0_matrix.get(col_names=obs_matrix.col_names,row_names=obs_matrix.row_names)
 
-    def update(self,lambda_mults=[1.0],localizer=None,run_subset=None):
+    def update(self,lambda_mults=[1.0],localizer=None,run_subset=None,use_approx=True):
 
         if run_subset is not None:
             assert run_subset < self.num_reals
@@ -384,6 +407,7 @@ class EnsembleSmoother():
         for ilam,cur_lam_mult in enumerate(lambda_mults):
 
             parensemble_cur_lam = self.parensemble.copy()
+            #print(parensemble_cur_lam.isnull().values.any())
 
             cur_lam = self.current_lambda * cur_lam_mult
             lam_vals.append(cur_lam)
@@ -394,12 +418,12 @@ class EnsembleSmoother():
 
             # build up this matrix as a single element so we can apply
             # localization
-            self.logger.log("building upgrade matrix")
+            self.logger.log("building upgrade_1 matrix")
             upgrade_1 = -1.0 * (self.half_parcov_diag * scaled_delta_par) *\
                         v * s * scaled_ident * u.T
-            self.logger.log("building upgrade matrix")
+            self.logger.log("building upgrade_1 matrix")
+
             # apply localization
-            #print(cur_lam,upgrade_1)
             if localizer is not None:
                 self.logger.log("applying localization")
                 upgrade_1.hadamard_product(localizer)
@@ -415,12 +439,18 @@ class EnsembleSmoother():
             upgrade_1 = upgrade_1.T
             upgrade_1.to_csv(self.pst.filename+".upgrade_1.{0:04d}.csv".\
                                format(self.iter_num))
+            if upgrade_1.isnull().values.any():
+                    self.logger.lraise("NaNs in upgrade_1")
+
+            #print(upgrade_1.isnull().values.any())
+            #print(parensemble_cur_lam.index)
+            #print(upgrade_1.index)
             parensemble_cur_lam += upgrade_1
 
             # parameter-based upgrade portion
-            if not self.use_approx and self.iter_num > 1:
-                self.logger.log("applying parameter prior information")
-                par_diff = (self.parensemble - self.parensemble_0).\
+            if not use_approx and self.iter_num > 1:
+                self.logger.log("building upgrade_2 matrix")
+                par_diff = (self.parensemble - self.parensemble_0.loc[self.parensemble.index,:]).\
                     as_pyemu_matrix().T
                 x4 = self.Am.T * self.half_parcov_diag * par_diff
                 x5 = self.Am * x4
@@ -428,39 +458,43 @@ class EnsembleSmoother():
                 x7 = v * scaled_ident * v.T * x6
                 upgrade_2 = -1.0 * (self.half_parcov_diag *
                                    scaled_delta_par * x7).to_dataframe()
-
                 upgrade_2.index.name = "parnme"
                 upgrade_2.T.to_csv(self.pst.filename+".upgrade_2.{0:04d}.csv".\
                                    format(self.iter_num))
-                parensemble_cur_lam += upgrade_2.T
-                self.logger.log("applying parameter prior information")
+                if upgrade_2.isnull().values.any():
+                    self.logger.lraise("NaNs in upgrade_2")
 
+                parensemble_cur_lam += upgrade_2.T
+                self.logger.log("building upgrade_2 matrix")
             parensemble_cur_lam.enforce(self.enforce_bounds)
+
             paren_lam.append(pd.DataFrame(parensemble_cur_lam.loc[:,:]))
             self.logger.log("calcs for  lambda {0}".format(cur_lam_mult))
 
 
         # subset if needed
         # and combine lambda par ensembles into one par ensemble for evaluation
-        if run_subset is not None:
-            subset_idx = ["{0:d}".format(i) for i in np.random.randint(0,self.num_reals-1,run_subset)]
-            self.logger.statement("subset idxs: " + ','.join(subset_idx))
+        if run_subset is not None and run_subset < self.parensemble.shape[0]:
+            #subset_idx = ["{0:d}".format(i) for i in np.random.randint(0,self.parensemble.shape[0]-1,run_subset)]
+            subset_idx = self.parensemble.iloc[:run_subset,:].index.values
+            self.logger.statement("subset idxs: " + ','.join([str(s) for s in subset_idx]))
             paren_lam_subset = [pe.loc[subset_idx,:] for pe in paren_lam]
-            paren_combine = pd.concat(paren_lam_subset)
+            paren_combine = pd.concat(paren_lam_subset,ignore_index=True)
             paren_lam_subset = None
         else:
-            paren_combine = pd.concat(paren_lam)
+            subset_idx = self.parensemble.index.values
+            paren_combine = pd.concat(paren_lam,ignore_index=True)
 
 
         self.logger.log("evaluating ensembles for lambdas : {0}".\
                         format(','.join(["{0:8.3E}".format(l) for l in lam_vals])))
-        obsen_combine = self._calc_obs(paren_combine)
+        failed_runs, obsen_combine = self._calc_obs(paren_combine)
         self.logger.log("evaluating ensembles for lambdas : {0}".\
                         format(','.join(["{0:8.3E}".format(l) for l in lam_vals])))
         paren_combine = None
 
         # unpack lambda obs ensembles from combined obs ensemble
-        nrun_per_lam = self.num_reals
+        nrun_per_lam = self.obsensemble.shape[0]
         if run_subset is not None:
             nrun_per_lam = run_subset
         obsen_lam = []
@@ -469,6 +503,13 @@ class EnsembleSmoother():
             eidx = sidx + nrun_per_lam
             oe = ObservationEnsemble.from_dataframe(df=obsen_combine.iloc[sidx:eidx,:].copy(),
                                                     pst=self.pst)
+            oe.index = subset_idx
+            # check for failed runs in this set
+            if failed_runs is not None:
+                failed_runs_this = [f for f in failed_runs if f >= sidx and f < eidx]
+                if len(failed_runs_this) > 0:
+                    raise NotImplementedError()
+
             #print(oe.shape)
             obsen_lam.append(oe)
         obsen_combine = None
@@ -507,14 +548,17 @@ class EnsembleSmoother():
             self.current_lambda = min(self.current_lambda,100000)
             self.logger.statement("not accepting iteration, increased lambda:{0}".\
                   format(self.current_lambda))
-            #print("not accepting iteration, increased lambda:{0}".\
-            #      format(self.current_lambda))
-
         else:
-
             self.parensemble = ParameterEnsemble.from_dataframe(df=paren_lam[best_i],pst=self.pst)
             if run_subset is not None:
-                self.obsensemble = self._calc_obs(self.parensemble)
+                failed_runs, self.obsensemble = self._calc_obs(self.parensemble)
+                if failed_runs is not None:
+                    self.logger.warn("dropping failed realizations")
+                    failed_runs_str = [str(f) for f in failed_runs]
+                    self.parensemble = ParameterEnsemble.from_dataframe(\
+                            df=self.parensemble.drop(failed_runs_str),pst=self.pst)
+                    self.obsensemble = ObservationEnsemble.from_dataframe(\
+                            df=self.obsensemble.drop(failed_runs),pst=self.pst)
                 self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
                 self._phi_report(self.current_phi_vec,self.current_lambda * lambda_mults[best_i])
                 best_mean = self.current_phi_vec.mean()
