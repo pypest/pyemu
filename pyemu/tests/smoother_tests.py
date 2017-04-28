@@ -932,7 +932,7 @@ def tenpar_failed_runs():
     for it in range(10):
         #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
         #es.update(lambda_mults=[0.1,1.0,10.0],run_subset=7)
-        es.update(use_approx=False)
+        es.update(use_approx=False,lambda_mults=[0.1,1.0,10.0])
     os.chdir(os.path.join("..",".."))
 
 
@@ -1106,8 +1106,8 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #tenpar()
     #tenpar_plot()
-    tenpar_failed_runs()
-    #freyberg()
+    #tenpar_failed_runs()
+    freyberg()
     #freyberg_condor()
     #freyberg_plot()
     #freyberg_plot_iobj()

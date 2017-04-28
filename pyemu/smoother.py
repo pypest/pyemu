@@ -19,7 +19,6 @@ algorithm of Chen and Oliver 2013.  It requires the pest++ "sweep" utility
  TODO:
  handle fixed and tied pars
  handle "bunk" mod-sim equivs, like dry cells
- handle failed runs
 
 """
 
@@ -67,7 +66,7 @@ class EnsembleSmoother():
 
 
         self.__initialized = False
-        self.num_reals = 0
+        #self.num_reals = 0
         self.half_parcov_diag = None
         self.half_obscov_diag = None
         self.delta_par_prior = None
@@ -126,13 +125,13 @@ class EnsembleSmoother():
                                 ", not {0}".format(type(obsensemble)))
 
             assert self.parensemble_0.shape[0] == self.obsensemble_0.shape[0]
-            self.num_reals = self.parensemble_0.shape[0]
+            #self.num_reals = self.parensemble_0.shape[0]
             self.logger.log("initializing with existing ensembles")
 
         else:
             self.logger.log("initializing smoother with {0} realizations".format(num_reals))
-            self.num_reals = int(num_reals)
-            assert self.num_reals > 1
+            #self.num_reals = int(num_reals)
+            #assert self.num_reals > 1
             self.logger.log("initializing parensemble")
             self.parensemble_0 = ParameterEnsemble(self.pst)
             self.parensemble_0.draw(cov=self.parcov,num_reals=num_reals)
@@ -166,10 +165,8 @@ class EnsembleSmoother():
         if failed_runs is not None:
             self.logger.warn("dropping failed realizations")
             #failed_runs_str = [str(f) for f in failed_runs]
-            self.parensemble = ParameterEnsemble.from_dataframe(\
-                    df=self.parensemble.drop(failed_runs),pst=self.pst)
-            self.obsensemble = ObservationEnsemble.from_dataframe(\
-                    df=self.obsensemble.drop(failed_runs),pst=self.pst)
+            self.parensemble = self.parensemble.drop(failed_runs)
+            self.obsensemble = self.obsensemble.drop(failed_runs)
         self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
         self._phi_report(self.current_phi_vec,0.0)
 
@@ -356,7 +353,6 @@ class EnsembleSmoother():
         return phi_vec
 
     def _phi_report(self,phi_vec,cur_lam):
-        #assert phi_vec.shape[0] == self.num_reals
         self.phi_csv.write("{0},{1},{2},{3},{4},{5},{6}".format(self.iter_num,
                                                              self.total_runs,
                                                              cur_lam,
@@ -376,10 +372,16 @@ class EnsembleSmoother():
     def update(self,lambda_mults=[1.0],localizer=None,run_subset=None,use_approx=True):
 
         if run_subset is not None:
-            assert run_subset < self.num_reals
+            if run_subset >= self.obsensemble.shape[0]:
+                self.logger.warn("run_subset ({0}) >= num of active reals ({1})...ignoring ".\
+                                 format(run_subset,self.obsensemble.shape[0]))
+                run_subset = None
 
         self.iter_num += 1
         self.logger.log("iteration {0}".format(self.iter_num))
+        self.logger.statement("{0} active realizations".format(self.obsensemble.shape[0]))
+        if self.obsensemble.shape[0] < 2:
+            self.logger.lraise("at least active 2 realizations (really like 300) are needed to update")
         if not self.__initialized:
             #raise Exception("must call initialize() before update()")
             self.logger.lraise("must call initialize() before update()")
@@ -443,8 +445,8 @@ class EnsembleSmoother():
                     self.logger.lraise("NaNs in upgrade_1")
 
             #print(upgrade_1.isnull().values.any())
-            print(parensemble_cur_lam.index)
-            print(upgrade_1.index)
+            #print(parensemble_cur_lam.index)
+            #print(upgrade_1.index)
             parensemble_cur_lam += upgrade_1
 
             # parameter-based upgrade portion
@@ -471,6 +473,10 @@ class EnsembleSmoother():
                 self.logger.log("building upgrade_2 matrix")
             parensemble_cur_lam.enforce(self.enforce_bounds)
 
+            # this is for testing failed runs on upgrade testing
+            # works with the 10par_xsec smoother test
+            #parensemble_cur_lam.iloc[:,:] = -1000000.0
+
             paren_lam.append(pd.DataFrame(parensemble_cur_lam.loc[:,:]))
             self.logger.log("calcs for  lambda {0}".format(cur_lam_mult))
 
@@ -492,9 +498,15 @@ class EnsembleSmoother():
         self.logger.log("evaluating ensembles for lambdas : {0}".\
                         format(','.join(["{0:8.3E}".format(l) for l in lam_vals])))
         failed_runs, obsen_combine = self._calc_obs(paren_combine)
+        #if failed_runs is not None:
+        #    obsen_combine.loc[failed_runs,:] = np.NaN
         self.logger.log("evaluating ensembles for lambdas : {0}".\
                         format(','.join(["{0:8.3E}".format(l) for l in lam_vals])))
         paren_combine = None
+
+        if failed_runs is not None and len(failed_runs) == obsen_combine.shape[0]:
+                self.logger.lraise("all runs failed - cannot continue")
+
 
         # unpack lambda obs ensembles from combined obs ensemble
         nrun_per_lam = self.obsensemble.shape[0]
@@ -507,16 +519,16 @@ class EnsembleSmoother():
             oe = ObservationEnsemble.from_dataframe(df=obsen_combine.iloc[sidx:eidx,:].copy(),
                                                     pst=self.pst)
             oe.index = subset_idx
-            # check for failed runs in this set
+            # check for failed runs in this set - drop failed runs from obs ensembles
             if failed_runs is not None:
-                failed_runs_this = [f for f in failed_runs if f >= sidx and f < eidx]
+                failed_runs_this = np.array([f for f in failed_runs if f >= sidx and f < eidx]) - sidx
                 if len(failed_runs_this) > 0:
-                    raise NotImplementedError()
-
-            #print(oe.shape)
+                    if len(failed_runs_this) == oe.shape[0]:
+                        self.logger.warn("all runs failed for lambda {0}".format(lam_vals[i]))
+                    oe.iloc[failed_runs_this,:] = np.NaN
+                    oe = oe.dropna()
             obsen_lam.append(oe)
         obsen_combine = None
-
 
         # here is where we need to select out the "best" lambda par and obs
         # ensembles
@@ -545,6 +557,10 @@ class EnsembleSmoother():
                 if s < best_std:
                     update_lambda = True
                     best_std = s
+        if np.isnan(best_mean):
+            self.logger.lraise("best mean = NaN")
+        if np.isnan(best_std):
+            self.logger.lraise("best std = NaN")
 
         if not update_pars:
             self.current_lambda *= max(lambda_mults) * 10.0
@@ -557,16 +573,16 @@ class EnsembleSmoother():
                 failed_runs, self.obsensemble = self._calc_obs(self.parensemble)
                 if failed_runs is not None:
                     self.logger.warn("dropping failed realizations")
-                    self.parensemble = ParameterEnsemble.from_dataframe(\
-                            df=self.parensemble.drop(failed_runs),pst=self.pst)
-                    self.obsensemble = ObservationEnsemble.from_dataframe(\
-                            df=self.obsensemble.drop(failed_runs),pst=self.pst)
+                    self.parensemble = self.parensemble.drop(failed_runs)
+                    self.obsensemble = self.obsensemble.drop(failed_runs)
                 self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
                 self._phi_report(self.current_phi_vec,self.current_lambda * lambda_mults[best_i])
                 best_mean = self.current_phi_vec.mean()
                 best_std = self.current_phi_vec.std()
             else:
                 self.obsensemble = obsen_lam[best_i]
+                # reindex parensemble in case failed runs
+                self.parensemble = ParameterEnsemble.from_dataframe(df=self.parensemble.loc[self.obsensemble.index],pst=self.pst)
                 self._phi_report(phi_vecs[best_i],self.current_lambda * lambda_mults[best_i])
                 self.current_phi_vec = phi_vecs[best_i]
 
@@ -584,12 +600,9 @@ class EnsembleSmoother():
             self.logger.statement("updating lambda: {0:15.6G}".\
                   format(self.current_lambda ))
 
-
         self.logger.statement("**************************\n")
-
         self.parensemble.to_csv(self.pst.filename+self.paren_prefix.\
                                     format(self.iter_num))
-
         self.obsensemble.to_csv(self.pst.filename+self.obsen_prefix.\
                                     format(self.iter_num))
         self.logger.log("iteration {0}".format(self.iter_num))

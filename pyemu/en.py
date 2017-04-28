@@ -35,6 +35,14 @@ class Ensemble(pd.DataFrame):
         return Matrix(x=x,row_names=list(self.index),
                       col_names=list(self.columns))
 
+    def drop(self,arg):
+        df = super(Ensemble,self).drop(arg)
+        return type(self)(data=df,pst=self.pst)
+
+    def dropna(self,*args,**kwargs):
+        df = super(Ensemble,self).dropna(*args,**kwargs)
+        return type(self)(data=df,pst=self.pst)
+
     def draw(self,cov,num_reals=1,names=None):
         """ draw random realizations from a multivariate
             Gaussian distribution
