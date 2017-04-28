@@ -721,7 +721,7 @@ class Schur(LinearAnalysis):
                 la_cond = self.get_conditional_instance(parlist)
                 iter_contrib[forecast].append(la_cond.posterior_forecast[forecast])
             df = pd.DataFrame(iter_contrib,index=iter_case_names)
-            df.sort_values(columns=forecast,inplace=True)
+            df.sort_values(by=forecast,inplace=True)
             iter_best = df.index[0]
             self.logger.statement("next best iter {0}: {1}".format(iiter+1,iter_best))
             self.log("next most par iteration {0}".format(iiter+1))
