@@ -18,7 +18,17 @@ pyEMU also includes lots of functionality for dealing with PEST(++) datasets, su
 * going between site sample files and pandas dataframes - really cool for observation processing
 * easy-to-use observation (re)weigthing via residuals or user-defined functions
 * handling Jacobian and covariance matrices, including functionality to go between binary and ASCII matrices, reading and writing PEST uncertaity files.  Covariance matrices can be instaniated from relevant control file sections, such as parameter bounds or observation weights.  The base Matrix class overloads most common linear algebra operators so that operations are automatically aligned by row and column name.  Builtin SVD is also included in all Matrix instances.
-* geostatistical structure support, including reading and writing PEST structure files and creating covariance matrices implied by nested geostatistical structures
+* geostatistics including geostatistical structure support, reading and writing PEST structure files and creating covariance matrices implied by nested geostatistical structures, and ordinary kriging (in the utils.geostats.OrdrinaryKrige object), which replicates the functionality of pest utility ``ppk2fac``. See test/utils.py for an example of how the OrdinaryKrige class functions.
+
+Version 0.2 of pyemu now includes
+* a prototype, model-independent iterative ensemble smoother, based on the Levenburg-Marquardt algorithm of Chen and Oliver (2013).  See tests/smoother.py for examples of how this prototype works.
+* composite scaled sensitivity calculations
+* calculation of correlation coefficient matrix from a given covariance matrix
+* prototype Karhunen-Loeve-based parameterization as an alternative to pilot points for spatially-distributed parameter fields
+* a helper function to start a group of tcp/ip workers on a local machine for parallel PEST++/BeoPEST runs
+* full support for prior information equations in control files
+* preferred differencing prior information equations where the weights are based on the Pearson correlation coefficient
+* verification-based tests based on results from several PEST utilities
 
 A publication documenting pyEMU and an example application can be found here:
 

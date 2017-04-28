@@ -626,8 +626,8 @@ class Schur(LinearAnalysis):
         else:
             forecast = forecast.lower()
             found = False
-            for fore in self.forecasts:
-                if fore.col_names[0] == forecast:
+            for fore in self.forecasts.col_names:
+                if fore == forecast:
                     found = True
                     break
             if not found:
@@ -652,7 +652,7 @@ class Schur(LinearAnalysis):
                 init_base = df.loc["base",forecast].copy()
             fore_df = df.loc[:,forecast]
             fore_diff_df = fore_df - fore_df.loc["base"]
-            fore_diff_df.sort(inplace=True)
+            fore_diff_df.sort_values(inplace=True)
             iter_best_name = fore_diff_df.index[0]
             iter_best_result = df.loc[iter_best_name,forecast]
             iter_base_result = df.loc["base",forecast]
@@ -721,7 +721,7 @@ class Schur(LinearAnalysis):
                 la_cond = self.get_conditional_instance(parlist)
                 iter_contrib[forecast].append(la_cond.posterior_forecast[forecast])
             df = pd.DataFrame(iter_contrib,index=iter_case_names)
-            df.sort(columns=forecast,inplace=True)
+            df.sort_values(columns=forecast,inplace=True)
             iter_best = df.index[0]
             self.logger.statement("next best iter {0}: {1}".format(iiter+1,iter_best))
             self.log("next most par iteration {0}".format(iiter+1))
