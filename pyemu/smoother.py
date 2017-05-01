@@ -525,6 +525,9 @@ class EnsembleSmoother():
                 if len(failed_runs_this) > 0:
                     if len(failed_runs_this) == oe.shape[0]:
                         self.logger.warn("all runs failed for lambda {0}".format(lam_vals[i]))
+                    else:
+                        self.logger.warn("{0} run failed for lambda {1}".\
+                                         format(len(failed_runs_this,lam_vals[i])))
                     oe.iloc[failed_runs_this,:] = np.NaN
                     oe = oe.dropna()
             obsen_lam.append(oe)
