@@ -177,6 +177,32 @@ class ObservationEnsemble(Ensemble):
         return ObservationEnsemble.from_dataframe(df=df,
                         pst=self.pst.get(obs_names=self.pst.nnz_obs_names))
 
+    @classmethod
+    def from_id_gaussian_draw(cls,oe,num_reals):
+        """ this is an experiemental method to help speed up independent draws
+        for a really large (>1E6) ensemble sizes.  WARNING: this constructor
+        transforms the oe argument
+        :param oe: ObservationEnsemble instance
+        "param pst: Pst instance
+        :param num_reals: number of realizations to generate
+        :return: ObservationEnsemble
+        """        # set up some column names
+        real_names = np.arange(num_reals,dtype=np.int64)
+        arr = np.empty((num_reals,len(oe.pst.obs_names)))
+        obs = oe.pst.observation_data
+        stds = {name:1.0/obs.loc[name,"weight"] for name in oe.pst.nnz_obs_names}
+        for i,oname in enumerate(oe.pst.obs_names):
+            if oname in oe.pst.nnz_obs_names:
+                arr[:,i] = np.random.normal(0.0,stds[oname],size=num_reals)
+            else:
+                arr[:,i] = 0.0
+        df = pd.DataFrame(arr,index=real_names,columns=oe.pst.obs_names)
+        df.loc[:,oe.pst.obs_names] += oe.pst.observation_data.obsval
+        new_oe = cls.from_dataframe(pst=oe.pst,df=df)
+        return new_oe
+
+
+
 class ParameterEnsemble(Ensemble):
     """ Ensemble derived type for parameters
         implements bounds enforcement, log10 transformation,

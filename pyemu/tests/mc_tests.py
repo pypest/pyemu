@@ -301,11 +301,26 @@ def diagonal_cov_draw_test():
     pe2 = mc.parensemble
     #print(pe1-pe2)
 
+def obs_id_draw_test():
+    import os
+    import numpy as np
+    from pyemu import MonteCarlo,ObservationEnsemble
+    from datetime import datetime
+    jco = os.path.join("pst","pest.jcb")
+    pst = jco.replace(".jcb",".pst")
+
+    mc = MonteCarlo(jco=jco,pst=pst)
+    num_reals = 100
+    oe = ObservationEnsemble.from_id_gaussian_draw(mc.obsensemble,num_reals=num_reals)
+    print(oe.shape)
+    print(oe.head())
+
 if __name__ == "__main__":
+    obs_id_draw_test()
     #diagonal_cov_draw_test()
     #pe_to_csv_test()
     #scale_offset_test()
-    mc_test()
+    #mc_test()
     #fixed_par_test()
     #uniform_draw_test()
     #gaussian_draw_test()
