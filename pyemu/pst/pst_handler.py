@@ -216,6 +216,16 @@ class Pst(object):
         #og = list(map(pst_utils.SFMT, og))
         return og
 
+    @property
+    def nnz_obs_groups(self):
+
+        og = []
+        obs = self.observation_data
+        for g in self.obs_groups:
+            if obs.loc[obs.obgnme==g,"weight"].sum() > 0.0:
+                og.append(g)
+        return og
+
 
     @property
     def par_groups(self):

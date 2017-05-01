@@ -237,8 +237,24 @@ def regul_rectify_test():
     pst._update_control_section()
     assert pst.control_data.nprior == pst.prior_information.shape[0]
 
+
+def nnz_groups_test():
+    import os
+    import pyemu
+    pst_dir = os.path.join('..','tests',"pst")
+    pst = pyemu.Pst(os.path.join(pst_dir,"br_opt_no_zero_weighted.pst"))
+    org_og = pst.obs_groups
+    org_nnz_og = pst.nnz_obs_groups
+    obs = pst.observation_data
+    obs.loc[obs.obgnme==org_og[0],"weight"] = 0.0
+    new_og = pst.obs_groups
+    new_nnz_og = pst.nnz_obs_groups
+    assert org_og[0] not in new_nnz_og
+
+
 if __name__ == "__main__":
-    regul_rectify_test()
+    nnz_groups_test()
+    #regul_rectify_test()
     #derivative_increment_tests()
     #tied_test()
     #smp_test()
