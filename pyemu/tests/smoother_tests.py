@@ -386,7 +386,7 @@ def freyberg_plot_par_seq():
     bdir = os.getcwd()
     os.chdir(plt_dir)
     #os.system("ffmpeg -r 1 -i par_%03d.png -vcodec libx264  -pix_fmt yuv420p freyberg_pars.mp4")
-    os.system("ffmpeg -r 2 -i par_%03d.png -loop 0 -final_delay 100 freyberg_pars.gif")
+    os.system("ffmpeg -r 2 -i par_%03d.png -loop 0 -final_delay 100 -y freyberg_pars.gif")
     os.chdir(bdir)
 
 def freyberg_plot_obs_seq():
@@ -447,7 +447,7 @@ def freyberg_plot_obs_seq():
     bdir = os.getcwd()
     os.chdir(plt_dir)
     #os.system("ffmpeg -r 1 -i obs_%03d.png -vcodec libx264  -pix_fmt yuv420p freyberg_obs.mp4")
-    os.system("ffmpeg -r 2 -i obs_%03d.png -loop 0 -final_delay 100 freyberg_obs.gif")
+    os.system("ffmpeg -r 2 -i obs_%03d.png -loop 0 -final_delay 100 -y freyberg_obs.gif")
     os.chdir(bdir)
 
 def freyberg_plot_iobj():
@@ -729,7 +729,7 @@ def chenoliver_plot_sidebyside():
     bdir = os.getcwd()
     os.chdir(plt_dir)
     #os.system("ffmpeg -r 6 -i sbs_%03d.png -vcodec libx264  -pix_fmt yuv420p chenoliver.mp4")
-    os.system("ffmpeg -r 2 -i sbs_%03d.png -loop 0 -final_delay 100 chenoliver.gif")
+    os.system("ffmpeg -r 2 -i sbs_%03d.png -loop 0 -final_delay 100 -y chenoliver.gif")
 
     os.chdir(bdir)
 
@@ -836,12 +836,12 @@ def chenoliver():
     obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
     #obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
 
-    num_reals = 100
+    num_reals = 300
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
-                                num_slaves=10,verbose=True)
+                                num_slaves=15,verbose=True)
     es.initialize(num_reals=num_reals,enforce_bounds=None)
     for it in range(40):
-        es.update(lambda_mults=[1.0],use_approx=False)
+        es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30,use_approx=False)
     os.chdir(os.path.join("..",".."))
 
 
@@ -879,7 +879,7 @@ def chenoliver_existing():
     assert (obs1 - obs2).loc[:,"obs"].sum() == 0.0
 
     for it in range(40):
-        es.update(lambda_mults=[1.0],use_approx=False)
+        es.update(lambda_mults=[0.1,1.0,10.0],use_approx=False,run_subset=30)
     os.chdir(os.path.join("..",".."))
 
 def chenoliver_condor():
@@ -927,7 +927,7 @@ def tenpar():
     cov = dia_parcov.extend(full_cov)
 
     es = pyemu.EnsembleSmoother("10par_xsec.pst",parcov=cov,
-                                num_slaves=5)
+                                num_slaves=10)
     lz = es.get_localizer().to_dataframe()
     #the k pars upgrad of h01_04 and h01_06 are localized
     upgrad_pars = [pname for pname in lz.columns if "_" in pname and\
@@ -938,11 +938,11 @@ def tenpar():
     lz.loc["h01_06", upgrad_pars] = 0.0
     lz = pyemu.Matrix.from_dataframe(lz).T
     print(lz)
-    es.initialize(num_reals=20,init_lambda=10000.0)
+    es.initialize(num_reals=300,init_lambda=10000.0)
 
-    for it in range(40):
+    for it in range(20):
         #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
-        es.update(lambda_mults=[1.0])
+        es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
     os.chdir(os.path.join("..",".."))
 
 def tenpar_failed_runs():
@@ -1151,20 +1151,20 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #chenoliver_setup()
     #chenoliver_condor()
-    #chenoliver()
+    chenoliver()
     #chenoliver_existing()
     #chenoliver_plot()
     #chenoliver_func_plot()
-    #chenoliver_plot_sidebyside()
-    #chenoliver_obj_plot()
-    #tenpar()
-    #tenpar_plot()
+    chenoliver_plot_sidebyside()
+    chenoliver_obj_plot()
+    tenpar()
+    tenpar_plot()
     #tenpar_failed_runs()
-    #freyberg()
-    freyberg_check_phi_calc()
+    freyberg()
+    #freyberg_check_phi_calc()
     #freyberg_condor()
     #freyberg_plot()
-    #freyberg_plot_iobj()
+    freyberg_plot_iobj()
     #freyberg_plotuse_iobj()
-    #freyberg_plot_par_seq()
-    #freyberg_plot_obs_seq()
+    freyberg_plot_par_seq()
+    freyberg_plot_obs_seq()
