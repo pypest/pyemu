@@ -71,7 +71,7 @@ class EnsembleSmoother():
         self.half_obscov_diag = None
         self.delta_par_prior = None
         self.iter_num = 0
-        self.enforce_bounds = None
+        #self.enforce_bounds = None
 
     def initialize(self,num_reals=1,init_lambda=None,enforce_bounds="reset",
                    parensemble=None,obsensemble=None):
@@ -79,6 +79,7 @@ class EnsembleSmoother():
         (re)initialize the process
         '''
         # initialize the phi report csv
+        self.enforce_bounds = enforce_bounds
         self.phi_csv = open(self.pst.filename+".iobj.csv",'w')
         self.phi_csv.write("iter_num,total_runs,lambda,min,max,mean,median,std,")
         self.phi_csv.write(','.join(["{0:010d}".\
