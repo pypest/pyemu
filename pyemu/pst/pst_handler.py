@@ -602,6 +602,8 @@ class Pst(object):
 
         #self.parameter_groups.index = self.parameter_groups.pop("pargpnme")
         #gp_fieldnames = [name for name in self.pargp_fieldnames if name in self.parameter_groups.columns]
+        if self.parameter_groups.isnull().values.any():
+            warnings.warn("WARNING: NaNs in parameter_groups dataframe")
         f_out.write(self.parameter_groups.to_string(col_space=0,
                                                   formatters=self.pargp_format,
                                                   columns=self.pargp_fieldnames,
@@ -610,6 +612,9 @@ class Pst(object):
                                                   index=False) + '\n')
         self.parameter_groups.loc[:,"pargpnme"] = pargpnme.values
         #self.parameter_groups.index = pargpnme
+
+        if self.parameter_data.isnull().values.any():
+            warnings.warn("WARNING: NaNs in parameter_data dataframe")
 
         f_out.write("* parameter data\n")
         #self.parameter_data.index = self.parameter_data.pop("parnme")
@@ -622,6 +627,8 @@ class Pst(object):
         #self.parameter_data.loc[:,"parnme"] = self.parameter_data.index
 
         if self.tied is not None:
+            if self.tied.isnull().values.any():
+                warnings.warn("WARNING: NaNs in tied dataframe")
             #self.tied.index = self.tied.pop("parnme")
             f_out.write(self.tied.to_string(col_space=0,
                                             columns=self.tied_fieldnames,
@@ -643,7 +650,8 @@ class Pst(object):
             except:
                 pass
             f_out.write(pst_utils.SFMT(str(group))+'\n')
-
+        if self.observation_data.isnull().values.any():
+            warnings.warn("WARNING: NaNs in observation_data dataframe")
         f_out.write("* observation data\n")
         #self.observation_data.index = self.observation_data.pop("obsnme")
         f_out.write(self.observation_data.to_string(col_space=0,
@@ -665,6 +673,8 @@ class Pst(object):
             f_out.write(insfle+' '+outfle+'\n')
 
         if self.nprior > 0:
+            if self.prior_information.isnull().values.any():
+                print("WARNING: NaNs in prior_information dataframe")
             f_out.write("* prior information\n")
             #self.prior_information.index = self.prior_information.pop("pilbl")
             max_eq_len = self.prior_information.equation.apply(lambda x:len(x)).max()

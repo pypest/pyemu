@@ -135,7 +135,7 @@ class EnsembleSmoother():
             self.logger.log("initializing parensemble")
             self.parensemble_0 = ParameterEnsemble(self.pst)
             self.parensemble_0.draw(cov=self.parcov,num_reals=num_reals)
-            self.parensemble_0.enforce(enforce_bounds=self.enforce_bounds)
+            self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
             self.logger.log("initializing parensemble")
             self.parensemble = self.parensemble_0.copy()
             self.parensemble_0.to_csv(self.pst.filename +\
@@ -348,9 +348,14 @@ class EnsembleSmoother():
 
     def _calc_phi_vec(self,obsensemble):
         obs_diff = self._get_residual_matrix(obsensemble)
-        phi_vec = np.diagonal((obs_diff * self.obscov_inv_sqrt.get(row_names=obs_diff.col_names,
-                                                                   col_names=obs_diff.col_names) * obs_diff.T).x)
-        return phi_vec
+        #phi_vec = np.diagonal((obs_diff * self.obscov_inv_sqrt.get(row_names=obs_diff.col_names,
+        #                                                           col_names=obs_diff.col_names) * obs_diff.T).x)
+        q = np.diagonal(self.obscov_inv_sqrt.get(row_names=obs_diff.col_names,col_names=obs_diff.col_names).x)
+        phi_vec = []
+        for i in range(obs_diff.shape[0]):
+            o = obs_diff.x[i,:]
+            phi_vec.append(((obs_diff.x[i,:] * q)**2).sum())
+        return np.array(phi_vec)
 
     def _phi_report(self,phi_vec,cur_lam):
         self.phi_csv.write("{0},{1},{2},{3},{4},{5},{6}".format(self.iter_num,

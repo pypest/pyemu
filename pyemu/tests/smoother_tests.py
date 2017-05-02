@@ -155,6 +155,59 @@ def henry_plot():
             plt.close()
 
 
+def freyberg_check_phi_calc():
+    import os
+    import pandas as pd
+    import pyemu
+    import shutil
+    os.chdir(os.path.join("smoother","freyberg"))
+    xy = pd.read_csv("freyberg.xy")
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
+
+    pst = pyemu.Pst(os.path.join("freyberg.pst"))
+    dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+
+    nothk_names = [pname for pname in pst.adj_par_names if "hk" not in pname]
+    parcov_nothk = dia_parcov.get(row_names=nothk_names)
+    gs = pyemu.utils.geostats.read_struct_file(os.path.join("template","structure.dat"))
+    print(gs.variograms[0].a,gs.variograms[0].contribution)
+    #gs.variograms[0].a *= 10.0
+    #gs.variograms[0].contribution *= 10.0
+    gs.nugget = 0.0
+    print(gs.variograms[0].a,gs.variograms[0].contribution)
+
+    full_parcov = gs.covariance_matrix(xy.x,xy.y,xy.name)
+    parcov = parcov_nothk.extend(full_parcov)
+    #print(parcov.to_pearson().x[-1,:])
+
+    pst.observation_data.loc[:,"weight"] /= 10.0
+    #pst.write("temp.pst")
+    obscov = pyemu.Cov.from_observation_data(pst)
+
+    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=1,
+                                verbose=True)
+
+    es.initialize(num_reals=3)
+    print(es.parensemble.loc[:,"hkr00c07"])
+    pst.parameter_data.loc[:,"parval1"] = es.parensemble.iloc[0,:]
+
+    pst.observation_data.loc[pst.nnz_obs_names,"obsval"] = es.obsensemble_0.loc[0,pst.nnz_obs_names]
+    pst.control_data.noptmax = 0
+    if os.path.exists("temp"):
+        shutil.rmtree("temp")
+    shutil.copytree("template","temp")
+    pst.write(os.path.join("temp","temp.pst"))
+
+    os.chdir("temp")
+    os.system("pestpp temp.pst")
+    os.chdir("..")
+
+    p = pyemu.Pst(os.path.join("temp","temp.pst"))
+    print(p.phi)
+
+    os.chdir(os.path.join("..",".."))
+
 def freyberg():
     import os
     import pandas as pd
@@ -1107,7 +1160,8 @@ if __name__ == "__main__":
     #tenpar()
     #tenpar_plot()
     #tenpar_failed_runs()
-    freyberg()
+    #freyberg()
+    freyberg_check_phi_calc()
     #freyberg_condor()
     #freyberg_plot()
     #freyberg_plot_iobj()
