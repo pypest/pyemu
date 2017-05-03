@@ -1,6 +1,7 @@
 from __future__ import print_function, division
 import os
 from datetime import datetime
+import shutil
 import threading
 import time
 import numpy as np
@@ -268,6 +269,13 @@ class EnsembleSmoother():
             self._calc_obs_local(parensemble)
         else:
             self._calc_obs_condor(parensemble)
+
+        # make a copy of sweep out for restart purposes
+        sweep_out = str(self.iter_num)+"_raw_"+self.sweep_out_csv
+        if os.path.exists(sweep_out):
+            os.remove(sweep_out)
+        shutil.copy2(self.sweep_out_csv,sweep_out)
+        
         self.logger.log("reading sweep out csv {0}".format(self.sweep_out_csv))
         failed_runs,obs = self._load_obs_ensemble(self.sweep_out_csv)
         self.logger.log("reading sweep out csv {0}".format(self.sweep_out_csv))
@@ -300,12 +308,20 @@ class EnsembleSmoother():
 
         parensemble.to_csv(self.sweep_in_csv)
         #os.system("condor_rm -all")
+        master_stdout = "_master_stdout.dat"
+        master_stderr = "_master_stderr.dat"
         def master():
             try:
                 #os.system("sweep {0} /h :{1} >_condor_master_stdout.dat".format(self.pst.filename,port))
-                os.system("sweep {0} /h :{1}".format(self.pst.filename,self.port))
+                os.system("sweep {0} /h :{1} 1>{2} 2>{3}".\
+                          format(self.pst.filename,self.port,master_stdout,master_stderr))
             except Exception as e:
                 self.logger.lraise("error starting condor master: {0}".format(str(e)))
+            with open(master_stderr,'r') as f:
+                err_lines = f.readlines()
+            if len(err_lines) > 0:
+                self.logger.warn("master stderr lines: {0}".
+                                 format(','.join([l.strip() for l in err_lines])))
         master_thread = threading.Thread(target=master)
         master_thread.start()
         time.sleep(2.0) #just some time for the master to get up and running to take slaves
