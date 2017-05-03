@@ -76,7 +76,7 @@ class EnsembleSmoother():
         #self.enforce_bounds = None
 
     def initialize(self,num_reals=1,init_lambda=None,enforce_bounds="reset",
-                   parensemble=None,obsensemble=None):
+                   parensemble=None,obsensemble=None,restart_obsensemble=None):
         '''
         (re)initialize the process
         '''
@@ -158,12 +158,20 @@ class EnsembleSmoother():
         self.obs0_matrix = self.obsensemble_0.nonzero.as_pyemu_matrix()
         self.enforce_bounds = enforce_bounds
 
-        # run the initial parameter ensemble
-        self.logger.log("evaluating initial ensembles")
-        failed_runs, self.obsensemble = self._calc_obs(self.parensemble)
-        self.obsensemble.to_csv(self.pst.filename +\
-                                  self.obsen_prefix.format(0))
-        self.logger.log("evaluating initial ensembles")
+        if restart_obsensemble is not None:
+            self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
+            failed_run,self.obsensemble = self._load_obs_ensemble(restart_obsensemble)
+            assert self.obsensemble.shape == self.obsensemble_0.shape
+            assert self.obsensemble.columns == self.obsensemble_0.columns
+            self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
+
+        else:
+            # run the initial parameter ensemble
+            self.logger.log("evaluating initial ensembles")
+            failed_runs, self.obsensemble = self._calc_obs(self.parensemble)
+            self.obsensemble.to_csv(self.pst.filename +\
+                                      self.obsen_prefix.format(0))
+            self.logger.log("evaluating initial ensembles")
 
         if failed_runs is not None:
             self.logger.warn("dropping failed realizations")
@@ -261,25 +269,30 @@ class EnsembleSmoother():
         else:
             self._calc_obs_condor(parensemble)
         self.logger.log("reading sweep out csv {0}".format(self.sweep_out_csv))
-        obs = pd.read_csv(self.sweep_out_csv)
+        failed_runs,obs = self._load_obs_ensemble(self.sweep_out_csv)
         self.logger.log("reading sweep out csv {0}".format(self.sweep_out_csv))
+        self.total_runs += obs.shape[0]
+        self.logger.statement("total runs:{0}".format(self.total_runs))
+        return failed_runs,obs
+
+    def _load_obs_ensemble(self,filename):
+        if not os.path.exists(filename):
+            self.logger.lraise("obsensemble file {0} does not exists".format(filename))
+        obs = pd.read_csv(filename)
         obs.columns = [item.lower() for item in obs.columns]
         assert "input_run_id" in obs.columns,\
             "'input_run_id' col missing...need newer version of sweep"
         obs.index = obs.input_run_id
         failed_runs = None
         if 1 in obs.failed_flag.values:
-            failed_runs = obs.loc[obs.failed_flag == 1].index.values
-            self.logger.warn("{0} runs (indices: {1}) failed".\
-                             format(len(failed_runs),','.join([str(f) for f in failed_runs])))
-        self.total_runs += obs.shape[0]
-        self.logger.statement("total runs:{0}".format(self.total_runs))
+            failed_runs = [str(f) for f in obs.loc[obs.failed_flag == 1].index.values]
+            self.logger.warn("{0} runs failed (indices: {1})".\
+                             format(len(failed_runs),failed_runs))
         obs = ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],
                                                                pst=self.pst)
         if obs.isnull().values.any():
             self.logger.lraise("_calc_obs() error: NaNs in obsensemble")
-
-        return failed_runs,obs
+        return failed_runs, obs
 
     def _calc_obs_condor(self,parensemble):
         self.logger.log("evaluating ensemble of size {0} with htcondor".\
@@ -299,9 +312,11 @@ class EnsembleSmoother():
         #pyemu.utils.start_slaves("template","sweep",self.pst.filename,
         #                         self.num_slaves,slave_root='.',port=port)
         condor_temp_file = "_condor_submit_stdout.dat"
+        condor_err_file = "_condor_submit_stderr.dat"
         self.logger.log("calling condor_submit with submit file {0}".format(self.submit_file))
         try:
-            os.system("condor_submit {0} >{1}".format(self.submit_file,condor_temp_file))
+            os.system("condor_submit {0} 1>{1} 2>{2}".\
+                      format(self.submit_file,condor_temp_file,condor_err_file))
         except Exception as e:
             self.logger.lraise("error in condor_submit: {0}".format(str(e)))
         self.logger.log("calling condor_submit with submit file {0}".format(self.submit_file))
@@ -309,10 +324,19 @@ class EnsembleSmoother():
         condor_submit_string = "submitted to cluster"
         with open(condor_temp_file,'r') as f:
             lines = f.readlines()
-        self.logger.statement("condor_submit stdout: {0}".format(','.join([line.strip() for line in lines])))
+        self.logger.statement("condor_submit stdout: {0}".\
+                              format(','.join([l.strip() for l in lines])))
+        with open(condor_err_file,'r') as f:
+            err_lines = f.readlines()
+        if len(err_lines) > 0:
+            self.logger.warn("stderr from condor_submit:{0}".\
+                             format([l.strip() for l in err_lines]))
+        cluster_number = None
         for line in lines:
             if condor_submit_string in line.lower():
                 cluster_number = int(float(line.split(condor_submit_string)[-1]))
+        if cluster_number is None:
+            self.logger.lraise("couldn't find cluster number...")
         self.logger.statement("condor cluster: {0}".format(cluster_number))
         master_thread.join()
         self.logger.statement("condor master thread exited")
