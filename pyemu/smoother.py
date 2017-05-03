@@ -25,13 +25,15 @@ algorithm of Chen and Oliver 2013.  It requires the pest++ "sweep" utility
 class EnsembleSmoother():
 
     def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,use_approx_prior=True,
-                 submit_file=None,verbose=False):
+                 submit_file=None,verbose=False,port=4004):
         self.logger = Logger(verbose)
         self.num_slaves = int(num_slaves)
         self.submit_file = submit_file
+        self.port = int(port)
         self.use_approx_prior = bool(use_approx_prior)
         self.paren_prefix = ".parensemble.{0:04d}.csv"
         self.obsen_prefix = ".obsensemble.{0:04d}.csv"
+
 
         if isinstance(pst,str):
             pst = Pst(pst)
@@ -285,11 +287,10 @@ class EnsembleSmoother():
 
         parensemble.to_csv(self.sweep_in_csv)
         #os.system("condor_rm -all")
-        port = 4004
         def master():
             try:
                 #os.system("sweep {0} /h :{1} >_condor_master_stdout.dat".format(self.pst.filename,port))
-                os.system("sweep {0} /h :{1}".format(self.pst.filename,port))
+                os.system("sweep {0} /h :{1}".format(self.pst.filename,self.port))
             except Exception as e:
                 self.logger.lraise("error starting condor master: {0}".format(str(e)))
         master_thread = threading.Thread(target=master)
@@ -330,14 +331,13 @@ class EnsembleSmoother():
                         format(parensemble.shape[0]))
         parensemble.to_csv(self.sweep_in_csv)
         if self.num_slaves > 0:
-            port = 4004
             def master():
-                os.system("sweep {0} /h :{1} >nul".format(self.pst.filename,port))
+                os.system("sweep {0} /h :{1} >nul".format(self.pst.filename,self.port))
             master_thread = threading.Thread(target=master)
             master_thread.start()
             time.sleep(1.5) #just some time for the master to get up and running to take slaves
             pyemu.utils.start_slaves("template","sweep",self.pst.filename,
-                                     self.num_slaves,slave_root='.',port=port)
+                                     self.num_slaves,slave_root='.',port=self.port)
             master_thread.join()
         else:
             os.system("sweep {0}".format(self.pst.filename))
