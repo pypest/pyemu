@@ -160,9 +160,9 @@ class EnsembleSmoother():
 
         if restart_obsensemble is not None:
             self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
-            failed_run,self.obsensemble = self._load_obs_ensemble(restart_obsensemble)
-            assert self.obsensemble.shape == self.obsensemble_0.shape
-            assert self.obsensemble.columns == self.obsensemble_0.columns
+            failed_runs,self.obsensemble = self._load_obs_ensemble(restart_obsensemble)
+            assert self.obsensemble.shape[0] == self.obsensemble_0.shape[0]
+            assert list(self.obsensemble.columns) == list(self.obsensemble_0.columns)
             self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
 
         else:

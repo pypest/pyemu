@@ -940,10 +940,52 @@ def tenpar():
     print(lz)
     es.initialize(num_reals=300,init_lambda=10000.0)
 
-    for it in range(20):
+    #for it in range(20):
+    #    #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
+    #    es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
+    #os.chdir(os.path.join("..",".."))
+
+def tenpar_restart():
+    import os
+
+    import numpy as np
+    import pyemu
+
+    os.chdir(os.path.join("smoother","10par_xsec"))
+
+    pst = pyemu.Pst("10par_xsec.pst")
+    dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+
+    v = pyemu.utils.ExpVario(contribution=0.25,a=60.0)
+    gs = pyemu.utils.GeoStruct(variograms=[v],transform="log")
+    par = pst.parameter_data
+    k_names = par.loc[par.parnme.apply(lambda x: x.startswith('k')),"parnme"]
+    sr = pyemu.utils.SpatialReference(delc=[10],delr=np.zeros((10))+10.0)
+
+    full_cov = gs.covariance_matrix(sr.xcentergrid[0,:],sr.ycentergrid[0,:],k_names)
+    dia_parcov.drop(list(k_names),axis=1)
+    cov = dia_parcov.extend(full_cov)
+
+    es = pyemu.EnsembleSmoother("10par_xsec.pst",parcov=cov,
+                                num_slaves=10,port=4005,verbose=True)
+    lz = es.get_localizer().to_dataframe()
+    #the k pars upgrad of h01_04 and h01_06 are localized
+    upgrad_pars = [pname for pname in lz.columns if "_" in pname and\
+                   int(pname.split('_')[1]) > 4]
+    lz.loc["h01_04",upgrad_pars] = 0.0
+    upgrad_pars = [pname for pname in lz.columns if '_' in pname and \
+                   int(pname.split('_')[1]) > 6]
+    lz.loc["h01_06", upgrad_pars] = 0.0
+    lz = pyemu.Matrix.from_dataframe(lz).T
+    print(lz)
+    es.initialize(parensemble="par_start.csv",obsensemble="obs_start.csv",
+                  restart_obsensemble="obs_restart.csv",init_lambda=10000.0)
+
+    for it in range(1):
         #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
         es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
     os.chdir(os.path.join("..",".."))
+
 
 def tenpar_failed_runs():
     import os
@@ -1157,8 +1199,9 @@ if __name__ == "__main__":
     #chenoliver_func_plot()
     #chenoliver_plot_sidebyside()
     #chenoliver_obj_plot()
-    tenpar()
-    tenpar_plot()
+    #tenpar()
+    tenpar_restart()
+    #tenpar_plot()
     #tenpar_failed_runs()
     #freyberg()
     #freyberg_check_phi_calc()
