@@ -84,6 +84,7 @@ class EnsembleSmoother():
         self.delta_par_prior = None
         self.iter_num = 0
         #self.enforce_bounds = None
+        self.raw_sweep_out = None
 
     def initialize(self,num_reals=1,init_lambda=None,enforce_bounds="reset",
                    parensemble=None,obsensemble=None,restart_obsensemble=None):
@@ -280,10 +281,10 @@ class EnsembleSmoother():
             self._calc_obs_condor(parensemble)
 
         # make a copy of sweep out for restart purposes
-        sweep_out = str(self.iter_num)+"_raw_"+self.sweep_out_csv
-        if os.path.exists(sweep_out):
-            os.remove(sweep_out)
-        shutil.copy2(self.sweep_out_csv,sweep_out)
+        # sweep_out = str(self.iter_num)+"_raw_"+self.sweep_out_csv
+        # if os.path.exists(sweep_out):
+        #     os.remove(sweep_out)
+        # shutil.copy2(self.sweep_out_csv,sweep_out)
 
         self.logger.log("reading sweep out csv {0}".format(self.sweep_out_csv))
         failed_runs,obs = self._load_obs_ensemble(self.sweep_out_csv)
@@ -297,6 +298,7 @@ class EnsembleSmoother():
             self.logger.lraise("obsensemble file {0} does not exists".format(filename))
         obs = pd.read_csv(filename)
         obs.columns = [item.lower() for item in obs.columns]
+        self.raw_sweep_out = obs.copy() # save this for later to support restart
         assert "input_run_id" in obs.columns,\
             "'input_run_id' col missing...need newer version of sweep"
         obs.index = obs.input_run_id
@@ -314,17 +316,17 @@ class EnsembleSmoother():
     def _get_master_thread(self):
         master_stdout = "_master_stdout.dat"
         master_stderr = "_master_stderr.dat"
-        try:
-            # os.system("sweep {0} /h :{1} >_condor_master_stdout.dat".format(self.pst.filename,port))
-            os.system("sweep {0} /h :{1} 1>{2} 2>{3}". \
-                      format(self.pst.filename, self.port, master_stdout, master_stderr))
-        except Exception as e:
-            self.logger.lraise("error starting condor master: {0}".format(str(e)))
-        with open(master_stderr, 'r') as f:
-            err_lines = f.readlines()
-        if len(err_lines) > 0:
-            self.logger.warn("master stderr lines: {0}".
-                             format(','.join([l.strip() for l in err_lines])))
+        def master():
+            try:
+                os.system("sweep {0} /h :{1} 1>{2} 2>{3}". \
+                          format(self.pst.filename, self.port, master_stdout, master_stderr))
+            except Exception as e:
+                self.logger.lraise("error starting condor master: {0}".format(str(e)))
+            with open(master_stderr, 'r') as f:
+                err_lines = f.readlines()
+            if len(err_lines) > 0:
+                self.logger.warn("master stderr lines: {0}".
+                                 format(','.join([l.strip() for l in err_lines])))
 
         master_thread = threading.Thread(target=master)
         master_thread.start()
@@ -337,10 +339,6 @@ class EnsembleSmoother():
 
         parensemble.to_csv(self.sweep_in_csv)
         master_thread = self._get_master_thread()
-        master_thread.start()
-        time.sleep(2.0) #just some time for the master to get up and running to take slaves
-        #pyemu.utils.start_slaves("template","sweep",self.pst.filename,
-        #                         self.num_slaves,slave_root='.',port=port)
         condor_temp_file = "_condor_submit_stdout.dat"
         condor_err_file = "_condor_submit_stderr.dat"
         self.logger.log("calling condor_submit with submit file {0}".format(self.submit_file))
@@ -386,7 +384,6 @@ class EnsembleSmoother():
         parensemble.to_csv(self.sweep_in_csv)
         if self.num_slaves > 0:
             master_thread = self._get_master_thread()
-            master_thread.start()
             pyemu.utils.start_slaves(self.slave_dir,"sweep",self.pst.filename,
                                      self.num_slaves,slave_root='.',port=self.port)
             master_thread.join()
@@ -665,4 +662,7 @@ class EnsembleSmoother():
                                     format(self.iter_num))
         self.obsensemble.to_csv(self.pst.filename+self.obsen_prefix.\
                                     format(self.iter_num))
+        if self.raw_sweep_out is not None:
+            self.raw_sweep_out.to_csv(self.pst.filename+"_raw{0}".\
+                                        format(self.iter_num))
         self.logger.log("iteration {0}".format(self.iter_num))

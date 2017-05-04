@@ -833,15 +833,15 @@ def chenoliver():
 
     parcov = pyemu.Cov(x=np.ones((1,1)),names=["par"],isdiagonal=True)
     pst = pyemu.Pst("chenoliver.pst")
-    obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
     #obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
+    obscov = pyemu.Cov(x=np.ones((1,1)),names=["obs"],isdiagonal=True)
 
     num_reals = 300
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
                                 num_slaves=15,verbose=True)
-    es.initialize(num_reals=num_reals,enforce_bounds=None)
-    for it in range(40):
-        es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30,use_approx=False)
+    es.initialize(num_reals=num_reals,enforce_bounds=None,init_lambda=1.0)
+    for it in range(18):
+        es.update(use_approx=False)
     os.chdir(os.path.join("..",".."))
 
 
@@ -1193,14 +1193,14 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #chenoliver_setup()
     #chenoliver_condor()
-    #chenoliver()
+    chenoliver()
     #chenoliver_existing()
     #chenoliver_plot()
     #chenoliver_func_plot()
     #chenoliver_plot_sidebyside()
     #chenoliver_obj_plot()
     #tenpar()
-    tenpar_restart()
+    #tenpar_restart()
     #tenpar_plot()
     #tenpar_failed_runs()
     #freyberg()
