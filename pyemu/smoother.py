@@ -26,15 +26,24 @@ algorithm of Chen and Oliver 2013.  It requires the pest++ "sweep" utility
 class EnsembleSmoother():
 
     def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,use_approx_prior=True,
-                 submit_file=None,verbose=False,port=4004):
+                 submit_file=None,verbose=False,port=4004,slave_dir="template"):
         self.logger = Logger(verbose)
+        if verbose is not False:
+            self.logger.echo = True
         self.num_slaves = int(num_slaves)
+        if submit_file is not None:
+            if not os.path.exists(submit_file):
+                self.logger.lraise("submit_file {0} not found".format(submit_file))
+        elif num_slaves > 0:
+            if not os.path.exists(slave_dir):
+                self.logger.lraise("template dir {0} not found".format(slave_dir))
+
+        self.slave_dir = slave_dir
         self.submit_file = submit_file
         self.port = int(port)
         self.use_approx_prior = bool(use_approx_prior)
         self.paren_prefix = ".parensemble.{0:04d}.csv"
         self.obsen_prefix = ".obsensemble.{0:04d}.csv"
-
 
         if isinstance(pst,str):
             pst = Pst(pst)
@@ -293,36 +302,41 @@ class EnsembleSmoother():
         obs.index = obs.input_run_id
         failed_runs = None
         if 1 in obs.failed_flag.values:
-            failed_runs = [str(f) for f in obs.loc[obs.failed_flag == 1].index.values]
+            failed_runs = obs.loc[obs.failed_flag == 1].index.values
             self.logger.warn("{0} runs failed (indices: {1})".\
-                             format(len(failed_runs),failed_runs))
+                             format(len(failed_runs),','.join([str(f) for f in failed_runs])))
         obs = ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],
                                                                pst=self.pst)
         if obs.isnull().values.any():
             self.logger.lraise("_calc_obs() error: NaNs in obsensemble")
         return failed_runs, obs
 
+    def _get_master_thread(self):
+        master_stdout = "_master_stdout.dat"
+        master_stderr = "_master_stderr.dat"
+        try:
+            # os.system("sweep {0} /h :{1} >_condor_master_stdout.dat".format(self.pst.filename,port))
+            os.system("sweep {0} /h :{1} 1>{2} 2>{3}". \
+                      format(self.pst.filename, self.port, master_stdout, master_stderr))
+        except Exception as e:
+            self.logger.lraise("error starting condor master: {0}".format(str(e)))
+        with open(master_stderr, 'r') as f:
+            err_lines = f.readlines()
+        if len(err_lines) > 0:
+            self.logger.warn("master stderr lines: {0}".
+                             format(','.join([l.strip() for l in err_lines])))
+
+        master_thread = threading.Thread(target=master)
+        master_thread.start()
+        time.sleep(2.0)
+        return master_thread
+
     def _calc_obs_condor(self,parensemble):
         self.logger.log("evaluating ensemble of size {0} with htcondor".\
                         format(parensemble.shape[0]))
 
         parensemble.to_csv(self.sweep_in_csv)
-        #os.system("condor_rm -all")
-        master_stdout = "_master_stdout.dat"
-        master_stderr = "_master_stderr.dat"
-        def master():
-            try:
-                #os.system("sweep {0} /h :{1} >_condor_master_stdout.dat".format(self.pst.filename,port))
-                os.system("sweep {0} /h :{1} 1>{2} 2>{3}".\
-                          format(self.pst.filename,self.port,master_stdout,master_stderr))
-            except Exception as e:
-                self.logger.lraise("error starting condor master: {0}".format(str(e)))
-            with open(master_stderr,'r') as f:
-                err_lines = f.readlines()
-            if len(err_lines) > 0:
-                self.logger.warn("master stderr lines: {0}".
-                                 format(','.join([l.strip() for l in err_lines])))
-        master_thread = threading.Thread(target=master)
+        master_thread = self._get_master_thread()
         master_thread.start()
         time.sleep(2.0) #just some time for the master to get up and running to take slaves
         #pyemu.utils.start_slaves("template","sweep",self.pst.filename,
@@ -371,12 +385,9 @@ class EnsembleSmoother():
                         format(parensemble.shape[0]))
         parensemble.to_csv(self.sweep_in_csv)
         if self.num_slaves > 0:
-            def master():
-                os.system("sweep {0} /h :{1} >nul".format(self.pst.filename,self.port))
-            master_thread = threading.Thread(target=master)
+            master_thread = self._get_master_thread()
             master_thread.start()
-            time.sleep(1.5) #just some time for the master to get up and running to take slaves
-            pyemu.utils.start_slaves("template","sweep",self.pst.filename,
+            pyemu.utils.start_slaves(self.slave_dir,"sweep",self.pst.filename,
                                      self.num_slaves,slave_root='.',port=self.port)
             master_thread.join()
         else:
@@ -384,8 +395,6 @@ class EnsembleSmoother():
 
         self.logger.log("evaluating ensemble of size {0} locally with sweep".\
                         format(parensemble.shape[0]))
-        #return ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],
-        #                                          pst=self.pst)
 
     def _calc_phi_vec(self,obsensemble):
         obs_diff = self._get_residual_matrix(obsensemble)
@@ -481,6 +490,7 @@ class EnsembleSmoother():
             upgrade_1 *= (self.obscov_inv_sqrt * obs_diff.T)
             self.logger.log("applying residuals")
 
+            self.logger.log("processing upgrade_1")
             upgrade_1 = upgrade_1.to_dataframe()
             upgrade_1.index.name = "parnme"
             upgrade_1 = upgrade_1.T
@@ -489,6 +499,7 @@ class EnsembleSmoother():
                                format(self.iter_num))
             if upgrade_1.isnull().values.any():
                     self.logger.lraise("NaNs in upgrade_1")
+            self.logger.log("processing upgrade_1")
 
             #print(upgrade_1.isnull().values.any())
             #print(parensemble_cur_lam.index)
