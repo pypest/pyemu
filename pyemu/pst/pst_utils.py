@@ -1,10 +1,6 @@
 from __future__ import print_function, division
 import os, sys
 import stat
-import multiprocessing as mp
-import subprocess as sp
-import socket
-import shutil
 from datetime import datetime
 import numpy as np
 import pandas as pd

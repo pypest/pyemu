@@ -275,7 +275,7 @@ class EnsembleSmoother():
         if os.path.exists(sweep_out):
             os.remove(sweep_out)
         shutil.copy2(self.sweep_out_csv,sweep_out)
-        
+
         self.logger.log("reading sweep out csv {0}".format(self.sweep_out_csv))
         failed_runs,obs = self._load_obs_ensemble(self.sweep_out_csv)
         self.logger.log("reading sweep out csv {0}".format(self.sweep_out_csv))
