@@ -408,11 +408,12 @@ class Schur(LinearAnalysis):
             obs = self.pst.observation_data
             obs.index = obs.obsnme
             onames = [name for name in self.pst.zero_weight_obs_names
-                      if name in self.jco.obs_names]
+                      if name in self.jco.obs_names and name in self.obscov.row_names]
             obs.loc[onames,"weight"] = weight
 
         if obslist_dict is None:
-            obslist_dict = dict(zip(self.pst.nnz_obs_names,self.pst.nnz_obs_names))
+            obslist_dict = {name:name for name in self.pst.nnz_obs_names if name\
+                            in self.jco.obs_names and name in self.obscov.row_names}
 
         # reset the obs cov from the newly adjusted weights
         if reset:
@@ -617,7 +618,7 @@ class Schur(LinearAnalysis):
         """
 
         if forecast is None:
-            assert len(self.forecasts) == 1,"forecast arg list one and only one" +\
+            assert self.forecasts.shape[1] == 1,"forecast arg list one and only one" +\
                                             " forecast"
             forecast = self.forecasts[0].col_names[0]
         #elif forecast not in self.prediction_arg:
