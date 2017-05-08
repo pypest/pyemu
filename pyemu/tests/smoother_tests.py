@@ -263,9 +263,9 @@ def freyberg():
     # parcov_hk = gs.covariance_matrix(pp_df.x,pp_df.y,pp_df.name)
     # parcov_full = parcov_hk.extend(parcov_rch)
 
-    es.initialize(300,init_lambda=10000.0,enforce_bounds="reset")
+    es.initialize(100,init_lambda=100.0,enforce_bounds="reset")
     for i in range(10):
-        es.update(lambda_mults=[0.2,5.0],run_subset=40)
+        es.update(lambda_mults=[0.01,0.2,5.0,100.0],run_subset=20)
     os.chdir(os.path.join("..",".."))
 
 def freyberg_condor():
@@ -940,10 +940,10 @@ def tenpar():
     print(lz)
     es.initialize(num_reals=300,init_lambda=10000.0)
 
-    #for it in range(20):
-    #    #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
-    #    es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
-    #os.chdir(os.path.join("..",".."))
+    for it in range(20):
+        #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
+        es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
+    os.chdir(os.path.join("..",".."))
 
 def tenpar_restart():
     import os
@@ -1193,7 +1193,7 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #chenoliver_setup()
     #chenoliver_condor()
-    chenoliver()
+    #chenoliver()
     #chenoliver_existing()
     #chenoliver_plot()
     #chenoliver_func_plot()
@@ -1207,7 +1207,7 @@ if __name__ == "__main__":
     #freyberg_check_phi_calc()
     #freyberg_condor()
     #freyberg_plot()
-    #freyberg_plot_iobj()
+    freyberg_plot_iobj()
     #freyberg_plotuse_iobj()
     #freyberg_plot_par_seq()
     #freyberg_plot_obs_seq()
