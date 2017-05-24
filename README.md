@@ -34,6 +34,10 @@ A publication documenting pyEMU and an example application can be found here:
 
 [http://dx.doi.org/10.1016/j.envsoft.2016.08.017](http://dx.doi.org/10.1016/j.envsoft.2016.08.017)
 
+A powerpoint presentation describing the iterative Ensemble Smoother implemented in pyEMU can be downloaded here:
+
+[https://github.com/jtwhite79/pyemu/blob/develop/misc/TheEnsembleSmoother.pptx](https://github.com/jtwhite79/pyemu/blob/develop/misc/TheEnsembleSmoother.pptx)
+
 Examples
 ========
 
