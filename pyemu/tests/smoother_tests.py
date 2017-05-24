@@ -369,7 +369,7 @@ def freyberg_plot_par_seq():
         #print(par_file)
         fig = plt.figure(figsize=(4.5,3.5))
 
-        plt.figtext(0.5,0.95,"iteration {0}".format(f_count+1),ha="center")
+        plt.figtext(0.5,0.95,"iteration {0}".format(f_count),ha="center")
         axes = [plt.subplot(3,4,i+1) for i in range(12)]
         arrs = []
         for ireal in range(12):
@@ -673,6 +673,7 @@ def chenoliver_plot_sidebyside():
     import os
     import numpy as np
     import matplotlib.pyplot as plt
+    from matplotlib.patches import Rectangle as rect
     import pandas as pd
     d = os.path.join("smoother","chenoliver")
     bins = 20
@@ -709,10 +710,15 @@ def chenoliver_plot_sidebyside():
         pdf.par.hist(ax=axp,bins=bins,edgecolor="none",grid=False)
         odf.obs.hist(ax=axo,bins=bins,edgecolor="none",grid=False)
         axf.scatter(pdf.par.values,odf.obs.values,marker='.',color="c",s=100)
+        ylim = axf.get_ylim()
+        r = rect((0.0,ylim[0]),4,ylim[1]-ylim[0],facecolor='0.5',alpha=0.25)
+        axf.add_patch(r)
         axp.set_yticks([])
         axo.set_yticks([])
         ylim = axp.get_ylim()
         axp.plot([5.9,5.9],ylim,"k--")
+        r = rect((0.0,ylim[0]),4,ylim[1]-ylim[0],facecolor='0.5',alpha=0.25)
+        axp.add_patch(r)
         ylim = axo.get_ylim()
         axo.plot([48,48],ylim,"k--")
         axp.set_xlim(pmn,pmx)
@@ -726,6 +732,8 @@ def chenoliver_plot_sidebyside():
         #plt.tight_layout()
         plt.close(fig)
         fcount += 1
+        #if fcount > 15:
+        #    break
     bdir = os.getcwd()
     os.chdir(plt_dir)
     #os.system("ffmpeg -r 6 -i sbs_%03d.png -vcodec libx264  -pix_fmt yuv420p chenoliver.mp4")
@@ -836,11 +844,11 @@ def chenoliver():
     #obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
     obscov = pyemu.Cov(x=np.ones((1,1)),names=["obs"],isdiagonal=True)
 
-    num_reals = 300
+    num_reals = 100
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
                                 num_slaves=15,verbose=True)
-    es.initialize(num_reals=num_reals,enforce_bounds=None,init_lambda=1.0)
-    for it in range(18):
+    es.initialize(num_reals=num_reals,enforce_bounds=None,init_lambda=10.0)
+    for it in range(25):
         es.update(use_approx=False)
     os.chdir(os.path.join("..",".."))
 
@@ -1193,12 +1201,12 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #chenoliver_setup()
     #chenoliver_condor()
-    #chenoliver()
+    chenoliver()
     #chenoliver_existing()
     #chenoliver_plot()
     #chenoliver_func_plot()
     #chenoliver_plot_sidebyside()
-    #chenoliver_obj_plot()
+    chenoliver_obj_plot()
     #tenpar()
     #tenpar_restart()
     #tenpar_plot()
@@ -1207,7 +1215,7 @@ if __name__ == "__main__":
     #freyberg_check_phi_calc()
     #freyberg_condor()
     #freyberg_plot()
-    freyberg_plot_iobj()
+    #freyberg_plot_iobj()
     #freyberg_plotuse_iobj()
     #freyberg_plot_par_seq()
     #freyberg_plot_obs_seq()
