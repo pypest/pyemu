@@ -315,8 +315,37 @@ def obs_id_draw_test():
     print(oe.shape)
     print(oe.head())
 
+def par_diagonal_draw_test():
+    import os
+    import numpy as np
+    from pyemu import MonteCarlo,Cov,ParameterEnsemble
+    from datetime import datetime
+    jco = os.path.join("pst","pest.jcb")
+    pst = jco.replace(".jcb",".pst")
+
+    mc = MonteCarlo(jco=jco,pst=pst)
+    num_reals = 100
+
+    start = datetime.now()
+    mc.draw(num_reals=num_reals,how="gaussian")
+    print(mc.parensemble.head())
+    print(datetime.now() - start)
+    vals = mc.pst.parameter_data.parval1.values
+    cov = Cov.from_parameter_data(mc.pst)
+    start = datetime.now()
+    val_array = np.random.multivariate_normal(vals, cov.as_2d,num_reals)
+    print(datetime.now() - start)
+
+    start = datetime.now()
+    pe = ParameterEnsemble.from_gaussian_draw(mc.parensemble,cov,num_reals=num_reals)
+    mc.parensemble._back_transform()
+    print(datetime.now() - start)
+    print(mc.parensemble.head())
+    print(pe.head())
+
 if __name__ == "__main__":
-    obs_id_draw_test()
+    par_diagonal_draw_test()
+    #obs_id_draw_test()
     #diagonal_cov_draw_test()
     #pe_to_csv_test()
     #scale_offset_test()

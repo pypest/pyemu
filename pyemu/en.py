@@ -455,11 +455,29 @@ class ParameterEnsemble(Ensemble):
             vals = pe.mean_values
             common_names = pe.names
 
-        #vals = pe.mean_values
-        print("making draws")
-        df = pd.DataFrame(data=np.random.multivariate_normal(vals, cov.as_2d,num_reals),
-                          columns = common_names,index=real_names)
-        #print(df.shape,cov.shape)
+        if cov.isdiagonal:
+            print("making diagonal cov draws")
+            arr = np.zeros((num_reals,len(pe.names)))
+            stds = {pname:std for pname,std in zip(common_names,np.sqrt(cov.x.flatten()))}
+            means = {pname:val for pname,val in zip(common_names,vals)}
+            for i,pname in enumerate(pe.names):
+                if pname in pe.pst.adj_par_names:
+                    s = stds[pname]
+                    v = means[pname]
+                    arr[:,i] = np.random.normal(means[pname],stds[pname],
+                                                size=num_reals)
+                else:
+                    arr[:,i] = means[pname]
+
+            df = pd.DataFrame(data=arr,columns=common_names,index=real_names)
+        else:
+
+            #vals = pe.mean_values
+            print("making full cov draws")
+            df = pd.DataFrame(data=np.random.multivariate_normal(vals, cov.as_2d,num_reals),
+                              columns = common_names,index=real_names)
+            #print(df.shape,cov.shape)
+
         istransformed = pe.pst.parameter_data.loc[common_names,"partrans"] == "log"
         print("back transforming")
         df.loc[:,istransformed] = 10.0**df.loc[:,istransformed]
@@ -479,8 +497,6 @@ class ParameterEnsemble(Ensemble):
         new_pe = cls.from_dataframe(pst=pe.pst,df=df)
         #ParameterEnsemble.apply_tied(new_pe)
         return new_pe
-
-
 
     def _back_transform(self,inplace=True):
         """ remove log10 transformation from ensemble
