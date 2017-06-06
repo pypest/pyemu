@@ -1444,6 +1444,38 @@ class Matrix(object):
                            col_names=new_col_names,isdiagonal=isdiagonal)
 
 
+    def replace_cols(self, other, parnames=None):
+        """
+        Replaces columns in one Matrix with columns from another. Intended for Jacobian matrices replacing parameters.
+        Args:
+            other: Matrix to pull columns from
+            parnames: parameter (column) names to pull from
+
+        Returns:
+            nothing: operates on self
+        """
+        assert len(set(self.col_names).intersection(set(other.col_names))) > 0
+        if not parnames:
+            parnames = other.col_names
+        assert len(set(self.col_names).intersection(set(other.col_names))) == len(parnames)
+
+        assert len(set(self.row_names).intersection(set(other.row_names))) == len(self.row_names)
+        assert type(self) == type(other)
+
+        # re-sort other by rows to be sure they line up with self
+        try:
+            other = other.get(row_names=self.row_names)
+        except:
+            raise Exception('could not align rows of the two matrices')
+
+        # replace the columns in self with those from other
+        selfobs = np.array(self.col_names)
+        otherobs = np.array(other.col_names)
+        selfidx = [np.where(np.array(selfobs) == i)[0][0] for i in parnames]
+        otheridx = [np.where(np.array(otherobs) == i)[0][0] for i in parnames]
+        self.x[:,selfidx] = other.x[:,otheridx]
+
+
 class Jco(Matrix):
     """a thin wrapper class to get more intuitive attribute names
     """
