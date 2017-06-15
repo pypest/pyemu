@@ -356,8 +356,6 @@ class Schur(LinearAnalysis):
             if type(obslist_dict) == list:
                 obslist_dict = dict(zip(obslist_dict,obslist_dict))
 
-
-
         reset = False
         if reset_zero_weight is not False:
             if not self.obscov.isdiagonal:
@@ -378,7 +376,9 @@ class Schur(LinearAnalysis):
 
         # if we don't care about grouping obs, then just reset all weights at once
         if base_obslist is None and obslist_dict is None and reset:
-            obs.loc[obs.weight==0.0,"weight"] = weight
+            onames = [name for name in self.pst.zero_weight_obs_names
+                      if name in self.jco.obs_names and name in self.obscov.row_names]
+            obs.loc[onames,"weight"] = weight
 
         # if needed reset the zero-weight obs in base_obslist
         if base_obslist is not None and reset:
@@ -492,10 +492,13 @@ class Schur(LinearAnalysis):
             weights will be dropped unless reset_zero_weight is set
         """
 
+
         if obslist_dict is not None:
             if type(obslist_dict) == list:
                 obslist_dict = dict(zip(obslist_dict,obslist_dict))
 
+        elif reset_zero_weight is False and self.pst.nnz_obs == 0:
+            raise Exception("not resetting weights and there are no non-zero weight obs to remove")
 
         reset = False
         if reset_zero_weight is not False:
@@ -515,7 +518,9 @@ class Schur(LinearAnalysis):
         self.log("calculating importance of observations")
         if reset and obslist_dict is None:
             obs = self.pst.observation_data
-            obs.loc[obs.weight==0.0,"weight"] = weight
+            onames = [name for name in self.pst.zero_weight_obs_names
+                      if name in self.jco.obs_names and name in self.obscov.row_names]
+            obs.loc[onames,"weight"] = weight
 
         if obslist_dict is None:
             obslist_dict = dict(zip(self.pst.nnz_obs_names,
