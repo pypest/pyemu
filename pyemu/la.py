@@ -435,6 +435,9 @@ class LinearAnalysis(object):
             self.obscov
             self.__obscov.drop(row_names, axis=0)
         self.__predictions = mat
+        fnames = [fname for fname in self.forecast_names if fname in self.pst.nnz_obs_names]
+        if len(fnames) > 0:
+            raise Exception("forecasts with non-zero weight in pst: {0}".format(','.join(fnames)))
         self.log("loading forecasts")
         self.logger.statement("forecast names: {0}".format(','.join(mat.col_names)))
         return self.__predictions

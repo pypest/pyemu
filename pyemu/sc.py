@@ -319,7 +319,7 @@ class Schur(LinearAnalysis):
         for grp,idxs in groups.items():
             #pargrp_dict[grp] = list(par.loc[idxs,"parnme"])
             pargrp_dict[grp] = [pname for pname in list(par.loc[idxs,"parnme"])
-                                if pname in self.jco.col_names]
+                                if pname in self.jco.col_names and pname in self.parcov.row_names]
         return self.get_par_contribution(pargrp_dict)
 
     def get_added_obs_importance(self,obslist_dict=None,base_obslist=None,
@@ -562,7 +562,7 @@ class Schur(LinearAnalysis):
                                 "not found: " + ','.join(missing_onames))
             # find the set difference between obslist and jco obs names
             #diff_onames = [oname for oname in self.jco.obs_names if oname not in obslist]
-            diff_onames = [oname for oname in self.nnz_obs_names if oname not in obslist]
+            diff_onames = [oname for oname in self.nnz_obs_names if oname not in obslist and oname not in self.forecast_names]
 
 
             # calculate the increase in forecast variance by not using the obs
