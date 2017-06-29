@@ -4,6 +4,17 @@ pp_00_pp.dat
 zone.dat
 f
 structure.complex.dat
+
+struct1
+o
+1.0e+10
+1
+10
+struct1
+o
+1.0e+10
+1
+10
 struct1
 o
 1.0e+10

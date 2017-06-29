@@ -453,7 +453,6 @@ class EnsembleSmoother():
         obs_diff = self.obscov_inv_sqrt * self._get_residual_matrix(self.obsensemble).T
         self.logger.log("calculate obs diff matrix")
 
-
         # here is the math part...calculate upgrade matrices
         mean_lam,std_lam,paren_lam,obsen_lam = [],[],[],[]
         lam_vals = []

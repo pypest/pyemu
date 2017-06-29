@@ -208,7 +208,7 @@ class OrdinaryKrige(object):
                                minpts_interp=minpts_interp,
                                maxpts_interp=maxpts_interp,
                                search_radius=search_radius,
-                               verbose=verbose,append_interp=False)
+                               verbose=verbose)
             if var_filename is not None:
                 arr = df.err_var.values.reshape(x.shape)
                 np.savetxt(var_filename,arr,fmt="%15.6E")
@@ -387,8 +387,6 @@ class OrdinaryKrige(object):
                 f.write("{0} {1} {2} {3:8.5e} ".format(idx+1, t, len(names), 0.0))
                 [f.write("{0} {1:12.8g} ".format(i+1, w)) for i, w in zip(n_idxs, facts)]
                 f.write("\n")
-
-
 
 
 class Vario2d(object):
