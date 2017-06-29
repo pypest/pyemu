@@ -226,6 +226,19 @@ def pp_file_to_dataframe(pp_filename):
     df.loc[:,"name"] = df.name.apply(str).apply(str.lower)
     return df
 
+def pp_tpl_to_dataframe(tpl_filename):
+    with open(tpl_filename,'r') as f:
+        header = f.readline()
+        marker = header.strip().split()[1]
+        assert len(marker) == 1
+        df = pd.read_csv(f, delim_whitespace=True,
+                         header=None, names=PP_NAMES,usecols=[0,1,2,3,4])
+    df.loc[:,"name"] = df.name.apply(str).apply(str.lower)
+    df.loc[:,"tpl_str"] = df.pop("parval1").apply(str.lower)
+    df.loc[:,"parnme"] = df.tpl_str.apply(lambda x: x.replace(marker,''))
+
+    return df
+
 def write_pp_shapfile(pp_df,shapename=None):
     """write pilot points to a shapefile
     Parameters
