@@ -231,7 +231,7 @@ class OrdinaryKrige(object):
                                        minpts_interp=minpts_interp,
                                        maxpts_interp=maxpts_interp,
                                        search_radius=search_radius,
-                                       verbose=verbose,append_interp=True)
+                                       verbose=verbose,pt_zone=pt_data_zone)
                 if var_filename is not None:
                     a = df.err_var.values.reshape(x.shape)
                     na_idx = np.isfinite(a)
@@ -243,7 +243,7 @@ class OrdinaryKrige(object):
 
     def calc_factors(self,x,y,minpts_interp=1,maxpts_interp=20,
                      search_radius=1.0e+10,verbose=False,
-                     append_interp=False):
+                     pt_zone=None):
         assert len(x) == len(y)
 
         # find the point data to use for each interp point
@@ -251,10 +251,15 @@ class OrdinaryKrige(object):
         df = pd.DataFrame(data={'x':x,'y':y})
         inames,idist,ifacts,err_var = [],[],[],[]
         sill = self.geostruct.sill
-
-        ptx_array = self.point_data.x.values
-        pty_array = self.point_data.y.values
-        ptnames = self.point_data.name.values
+        if pt_zone is None:
+            ptx_array = self.point_data.x.values
+            pty_array = self.point_data.y.values
+            ptnames = self.point_data.name.values
+        else:
+            pt_data = self.point_data
+            ptx_array = pt_data.loc[pt_data.zone==pt_zone,"x"].values
+            pty_array = pt_data.loc[pt_data.zone==pt_zone,"y"].values
+            ptnames = pt_data.loc[pt_data.zone==pt_zone,"name"].values
         #if verbose:
         print("starting interp point loop for {0} points".format(df.shape[0]))
         start_loop = datetime.now()
@@ -347,7 +352,7 @@ class OrdinaryKrige(object):
         df["inames"] = inames
         df["ifacts"] = ifacts
         df["err_var"] = err_var
-        if not append_interp:
+        if pt_zone is None:
             self.interp_data = df
         else:
             if self.interp_data is None:

@@ -528,13 +528,13 @@ def ok_grid_zone_test():
     pts_data.loc["i0j0", :] = [sr.xcentergrid[0,0],sr.ycentergrid[0,0],"i0j0"]
     pts_data.loc["imxjmx", :] = [sr.xcentergrid[-1, -1], sr.ycentergrid[-1, -1], "imxjmx"]
     pts_data.loc[:,"zone"] = 1
-    pts_data.zone.iloc[0] = 2
+    pts_data.zone.iloc[1] = 2
     print(pts_data.zone.unique())
     str_file = os.path.join("utils","struct_test.dat")
     gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
     ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
     zone_array = np.ones((nrow,ncol))
-    zone_array[:5,:] = 2
+    zone_array[0,0] = 2
     kf = ok.calc_factors_grid(sr,verbose=False,
                               var_filename=os.path.join("utils","test_var.ref"),
                               minpts_interp=1,zone_array=zone_array)
