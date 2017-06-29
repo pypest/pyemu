@@ -7,7 +7,7 @@ for PEST(++) datasets
 
 using control file: "henry.pst"
 
-    sweep parameter csv file = SWEEP_IN.CSV                                      
+    sweep parameter csv file = sweep_in.csv                                      
     sweep output csv file = sweep_out.csv                                     
     sweep chunk size = 500       
     sweep base run = 0         
@@ -46,8 +46,14 @@ PEST++ Options
     mat inv = 1                   
     max run fail = 3                   
     max reg iter = 20                  
+    use jacobian scaling a la PEST? =  yes
     lambdas = 
               1
+    lambda scaling factors = 
+            0.9
+            0.8
+            0.7
+            0.5
     using FOSM-based uncertainty estimation for parameters
     parameter covariance file =                     
     derivative run failure forgive = 1              

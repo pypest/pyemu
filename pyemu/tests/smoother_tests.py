@@ -29,7 +29,7 @@ def henry():
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
     pst = pyemu.Pst(os.path.join("henry.pst"))
-    es = pyemu.EnsembleSmoother(pst, num_slaves=15)
+    es = pyemu.EnsembleSmoother(pst, num_slaves=15,verbose="ies.log")
     es.initialize(210, init_lambda=1.0)
     for i in range(10):
         es.update(lambda_mults=[0.2,5.0],run_subset=45)
@@ -1189,7 +1189,7 @@ def tenpar_plot():
 
 if __name__ == "__main__":
     #henry_setup()
-    #henry()
+    henry()
     #henry_plot()
     #freyberg()
     #freyberg_plot()
@@ -1201,12 +1201,12 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #chenoliver_setup()
     #chenoliver_condor()
-    chenoliver()
+    #chenoliver()
     #chenoliver_existing()
     #chenoliver_plot()
     #chenoliver_func_plot()
     #chenoliver_plot_sidebyside()
-    chenoliver_obj_plot()
+    #chenoliver_obj_plot()
     #tenpar()
     #tenpar_restart()
     #tenpar_plot()

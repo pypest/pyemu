@@ -450,7 +450,7 @@ class EnsembleSmoother():
         self.logger.log("calculate pseudo inv comps")
 
         self.logger.log("calculate obs diff matrix")
-        obs_diff = self._get_residual_matrix(self.obsensemble)
+        obs_diff = self.obscov_inv_sqrt * self._get_residual_matrix(self.obsensemble).T
         self.logger.log("calculate obs diff matrix")
 
 
@@ -484,7 +484,7 @@ class EnsembleSmoother():
 
             # apply residual information
             self.logger.log("applying residuals")
-            upgrade_1 *= (self.obscov_inv_sqrt * obs_diff.T)
+            upgrade_1 *= obs_diff
             self.logger.log("applying residuals")
 
             self.logger.log("processing upgrade_1")
