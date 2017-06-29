@@ -231,8 +231,13 @@ def pp_tpl_to_dataframe(tpl_filename):
         header = f.readline()
         marker = header.strip().split()[1]
         assert len(marker) == 1
-        df = pd.read_csv(f, delim_whitespace=True,
-                         header=None, names=PP_NAMES,usecols=[0,1,2,3,4])
+        first = f.readline().strip().split()
+        if len(first) == 5:
+            usecols = [0,1,2,3,4]
+        else:
+            usecols = [0,1,2,3,5]
+    df = pd.read_csv(tpl_filename, delim_whitespace=True,skiprows=1,
+                     header=None, names=PP_NAMES,usecols=usecols)
     df.loc[:,"name"] = df.name.apply(str).apply(str.lower)
     df.loc[:,"tpl_str"] = df.pop("parval1").apply(str.lower)
     df.loc[:,"parnme"] = df.tpl_str.apply(lambda x: x.replace(marker,''))

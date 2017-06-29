@@ -501,6 +501,46 @@ def ok_grid_test():
     kf = ok.calc_factors_grid(sr,verbose=False,var_filename=os.path.join("utils","test_var.ref"),minpts_interp=1)
     ok.to_grid_factors_file(os.path.join("utils","test.fac"))
 
+def ok_grid_zone_test():
+
+    try:
+        import flopy
+    except:
+        return
+
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    nrow,ncol = 10,5
+    delr = np.ones((ncol)) * 1.0/float(ncol)
+    delc = np.ones((nrow)) * 1.0/float(nrow)
+
+    num_pts = 0
+    ptx = np.random.random(num_pts)
+    pty = np.random.random(num_pts)
+    ptname = ["p{0}".format(i) for i in range(num_pts)]
+    pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
+    pts_data.index = pts_data.name
+    pts_data = pts_data.loc[:,["x","y","name"]]
+
+
+    sr = flopy.utils.SpatialReference(delr=delr,delc=delc)
+    pts_data.loc["i0j0", :] = [sr.xcentergrid[0,0],sr.ycentergrid[0,0],"i0j0"]
+    pts_data.loc["imxjmx", :] = [sr.xcentergrid[-1, -1], sr.ycentergrid[-1, -1], "imxjmx"]
+    pts_data.loc[:,"zone"] = 1
+    pts_data.zone.iloc[0] = 2
+    print(pts_data.zone.unique())
+    str_file = os.path.join("utils","struct_test.dat")
+    gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
+    ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
+    zone_array = np.ones((nrow,ncol))
+    zone_array[:5,:] = 2
+    kf = ok.calc_factors_grid(sr,verbose=False,
+                              var_filename=os.path.join("utils","test_var.ref"),
+                              minpts_interp=1,zone_array=zone_array)
+    ok.to_grid_factors_file(os.path.join("utils","test.fac"))
+
+
 def ppk2fac_verf_test():
     import os
     import numpy as np
@@ -553,11 +593,18 @@ def mflist_budget_test():
     pyemu.gw_utils.setup_mflist_budget_obs(ml)
 
 
-
+def pp_prior_builder_test():
+    import os
+    import pyemu
+    pst = os.path.join("pst","pest.pst")
+    tpl_file = os.path.join("utils","pp_locs.tpl")
+    str_file = os.path.join("utils","structure.dat")
+    pyemu.helpers.pilotpoint_prior_builder(pst,{str_file:tpl_file})
 
 if __name__ == "__main__":
+    #pp_prior_builder_test()
     #mflist_budget_test()
-    tpl_to_dataframe_test()
+    #tpl_to_dataframe_test()
     # kl_test()
     # zero_order_regul_test()
     # first_order_pearson_regul_test()
@@ -584,5 +631,6 @@ if __name__ == "__main__":
     # add_pi_obj_func_test()
     # ok_test()
     #ok_grid_test()
+    ok_grid_zone_test()
     #opt_obs_worth()
     #ppk2fac_verf_test()
