@@ -555,11 +555,20 @@ def ppk2fac_verf_test():
     ok = pyemu.utils.OrdinaryKrige(str_file,pp_file)
     ok.calc_factors_grid(sr,maxpts_interp=10)
     ok.to_grid_factors_file(pyemu_facfile)
+    zone_arr = np.loadtxt(os.path.join(ws,"extra_crispy","ref","ibound.ref"))
 
     pyemu_arr = pyemu.utils.fac2real(pp_file,pyemu_facfile,out_file=None)
     ppk2fac_arr = pyemu.utils.fac2real(pp_file,ppk2fac_facfile,out_file=None)
-    diff = np.abs(pyemu_arr - ppk2fac_arr).sum()
-    assert diff < 1.0e-6
+    pyemu_arr[zone_arr == 0] = np.NaN
+    pyemu_arr[zone_arr == -1] = np.NaN
+    ppk2fac_arr[zone_arr == 0] = np.NaN
+    ppk2fac_arr[zone_arr == -1] = np.NaN
+
+    diff = np.abs(pyemu_arr - ppk2fac_arr)
+    print(diff)
+
+    assert np.nansum(diff) < 1.0e-6,np.nansum(diff)
+    
 
 
 def opt_obs_worth():
@@ -631,6 +640,6 @@ if __name__ == "__main__":
     # add_pi_obj_func_test()
     # ok_test()
     #ok_grid_test()
-    ok_grid_zone_test()
+    #ok_grid_zone_test()
     #opt_obs_worth()
-    #ppk2fac_verf_test()
+    ppk2fac_verf_test()
