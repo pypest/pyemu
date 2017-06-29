@@ -2,6 +2,7 @@ from __future__ import print_function
 import os
 import copy
 from datetime import datetime
+import warnings
 import numpy as np
 import pandas as pd
 from pyemu import Cov
@@ -187,38 +188,62 @@ class OrdinaryKrige(object):
                           maxpts_interp=20,search_radius=1.0e+10,verbose=False,
                           var_filename=None):
 
+        self.spatial_reference = spatial_reference
+        self.interp_data = None
         #assert isinstance(spatial_reference,SpatialReference)
         try:
-            x = spatial_reference.xcentergrid.copy()
-            y = spatial_reference.ycentergrid.copy()
+            x = self.spatial_reference.xcentergrid.copy()
+            y = self.spatial_reference.ycentergrid.copy()
         except Exception as e:
             raise Exception("spatial_reference does not have proper attributes:{0}"\
                             .format(str(e)))
 
-        if zone_array is not None:
-            print("only supporting a single zone via zone array - "+\
-                  "locations cooresponding to values in zone array > 0 are used")
-            assert zone_array.shape == x.shape
-            x[zone_array<=0] = np.NaN
-            y[zone_array<=0] = np.NaN
-            #x = x[~np.isnan(x)]
-            #y = y[~np.isnan(y)]
-        self.spatial_reference = spatial_reference
-        df = self.calc_factors(x.ravel(),y.ravel(),
+        if var_filename is not None:
+                arr = np.zeros((self.spatial_reference.nrow,
+                                self.spatial_reference.ncol)) - 1.0e+30
+
+        # the simple case of no zone array: ignore point_data zones
+        if zone_array is None:
+            df = self.calc_factors(x.ravel(),y.ravel(),
                                minpts_interp=minpts_interp,
                                maxpts_interp=maxpts_interp,
                                search_radius=search_radius,
-                               verbose=verbose)
-        if var_filename is not None:
+                               verbose=verbose,append_interp=False)
+            if var_filename is not None:
+                arr = df.err_var.values.reshape(x.shape)
+                np.savetxt(var_filename,arr,fmt="%15.6E")
 
-            arr = np.zeros((self.spatial_reference.nrow,self.spatial_reference.ncol)) - 1.0e+30
-            arr = df.err_var.values.reshape(x.shape)
-            # for i,j,var in zip(df.i,df.j,df.err_var):
-            #     arr[i,j] = var
+        if zone_array is not None:
+            assert zone_array.shape == x.shape
+            if "zone" not in self.point_data.columns:
+                warnings.warn("'zone' columns not in point_data, assigning generic zone")
+                self.point_data.loc[:,"zone"] = 1
+            pt_data_zones = self.point_data.zone.unique()
+            for pt_data_zone in pt_data_zones:
+                if pt_data_zone not in zone_array:
+                    warnings.warn("pt zone {0} not in zone array, skipping".\
+                                  format(pt_data_zone))
+                    continue
+                xzone,yzone = x.copy(),y.copy()
+                xzone[zone_array==pt_data_zone] = np.NaN
+                yzone[zone_array==pt_data_zone] = np.NaN
+                df = self.calc_factors(xzone.ravel(),yzone.ravel(),
+                                       minpts_interp=minpts_interp,
+                                       maxpts_interp=maxpts_interp,
+                                       search_radius=search_radius,
+                                       verbose=verbose,pt_zone=pt_data_zone)
+                if var_filename is not None:
+                    a = df.err_var.values.reshape(x.shape)
+                    na_idx = np.isfinite(a)
+                    arr[na_idx] = a[na_idx]
+            if self.interp_data.dropna().shape[0] == 0:
+                raise Exception("no interpolation took place...something is wrong")
+        if var_filename is not None:
             np.savetxt(var_filename,arr,fmt="%15.6E")
 
     def calc_factors(self,x,y,minpts_interp=1,maxpts_interp=20,
-                     search_radius=1.0e+10,verbose=False):
+                     search_radius=1.0e+10,verbose=False,
+                     pt_zone=None):
         assert len(x) == len(y)
 
         # find the point data to use for each interp point
@@ -226,10 +251,15 @@ class OrdinaryKrige(object):
         df = pd.DataFrame(data={'x':x,'y':y})
         inames,idist,ifacts,err_var = [],[],[],[]
         sill = self.geostruct.sill
-
-        ptx_array = self.point_data.x.values
-        pty_array = self.point_data.y.values
-        ptnames = self.point_data.name.values
+        if pt_zone is None:
+            ptx_array = self.point_data.x.values
+            pty_array = self.point_data.y.values
+            ptnames = self.point_data.name.values
+        else:
+            pt_data = self.point_data
+            ptx_array = pt_data.loc[pt_data.zone==pt_zone,"x"].values
+            pty_array = pt_data.loc[pt_data.zone==pt_zone,"y"].values
+            ptnames = pt_data.loc[pt_data.zone==pt_zone,"name"].values
         #if verbose:
         print("starting interp point loop for {0} points".format(df.shape[0]))
         start_loop = datetime.now()
@@ -307,8 +337,9 @@ class OrdinaryKrige(object):
             facs = np.linalg.solve(A,rhs)
             assert len(facs) - 1 == len(dist)
 
-            err_var.append(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)]))
+            err_var.append(float(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)])))
             inames.append(pt_names)
+
             idist.append(dist.values)
             ifacts.append(facs[:-1,0])
             # if verbose == 2:
@@ -321,7 +352,13 @@ class OrdinaryKrige(object):
         df["inames"] = inames
         df["ifacts"] = ifacts
         df["err_var"] = err_var
-        self.interp_data = df
+        if pt_zone is None:
+            self.interp_data = df
+        else:
+            if self.interp_data is None:
+                self.interp_data = df
+            else:
+                self.interp_data = self.interp_data.append(df)
         td = (datetime.now() - start_loop).total_seconds()
         print("took {0}".format(td))
         return df

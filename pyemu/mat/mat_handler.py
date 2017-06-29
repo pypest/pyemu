@@ -162,6 +162,10 @@ class Matrix(object):
         self.isdiagonal = bool(isdiagonal)
         self.autoalign = bool(autoalign)
 
+    def reset_x(self,x):
+        assert x.shape == self.shape
+        self.__x = x.copy()
+
     def __str__(self):
         s = "shape:{0}:{1}".format(*self.shape)+" row names: " + str(self.row_names) + \
             '\n' + "col names: " + str(self.col_names) + '\n' + str(self.__x)
@@ -454,7 +458,8 @@ class Matrix(object):
         if np.isscalar(other):
             return type(self)(x=self.__x.copy() * other,
                               row_names=self.row_names,
-                              col_names=self.col_names)
+                              col_names=self.col_names,
+                              isdiagonal=self.isdiagonal)
         elif isinstance(other, np.ndarray):
             assert self.shape[1] == other.shape[0], \
                 "Matrix.__mul__(): matrices are not aligned: " +\
@@ -1444,6 +1449,35 @@ class Matrix(object):
                            col_names=new_col_names,isdiagonal=isdiagonal)
 
 
+
+
+
+class Jco(Matrix):
+    """a thin wrapper class to get more intuitive attribute names
+    """
+    def __init(self, **kwargs):
+        super(Jco, self).__init__(kwargs)
+
+
+    @property
+    def par_names(self):
+        return self.col_names
+
+
+    @property
+    def obs_names(self):
+        return self.row_names
+
+
+    @property
+    def npar(self):
+        return self.shape[1]
+
+
+    @property
+    def nobs(self):
+        return self.shape[0]
+
     def replace_cols(self, other, parnames=None):
         """
         Replaces columns in one Matrix with columns from another. Intended for Jacobian matrices replacing parameters.
@@ -1474,34 +1508,6 @@ class Matrix(object):
         selfidx = [np.where(np.array(selfobs) == i)[0][0] for i in parnames]
         otheridx = [np.where(np.array(otherobs) == i)[0][0] for i in parnames]
         self.x[:,selfidx] = other.x[:,otheridx]
-
-
-class Jco(Matrix):
-    """a thin wrapper class to get more intuitive attribute names
-    """
-    def __init(self, **kwargs):
-        super(Jco, self).__init__(kwargs)
-
-
-    @property
-    def par_names(self):
-        return self.col_names
-
-
-    @property
-    def obs_names(self):
-        return self.row_names
-
-
-    @property
-    def npar(self):
-        return self.shape[1]
-
-
-    @property
-    def nobs(self):
-        return self.shape[0]
-
 
 
 class Cov(Matrix):
@@ -1613,6 +1619,35 @@ class Cov(Matrix):
         #print(new_Cov.shape,upper_off_diag.shape,cond_Cov.shape)
         return new_Cov - (upper_off_diag * cond_Cov * upper_off_diag.T)
 
+
+    @property
+    def names(self):
+        return self.row_names
+
+
+    def replace(self,other):
+        """replace elements in the covariance matrix with elements from other.
+        if other is not diagonal, then self becomes non diagonal
+        """
+        assert isinstance(other,Cov),"Cov.replace() other must be Cov, not {0}".\
+            format(type(other))
+        # make sure the names of other are in self
+        missing = [n for n in other.names if n not in self.names]
+        if len(missing) > 0:
+            raise Exception("Cov.replace(): the following other names are not" +\
+                            " in self names: {0}".format(','.join(missing)))
+        self_idxs = self.indices(other.names,0)
+        other_idxs = other.indices(other.names,0)
+
+        if self.isdiagonal and other.isdiagonal:
+            self.x[self_idxs] = other.x[other_idxs]
+        else:
+            self_x = self.as_2d
+            other_x = other.as_2d
+            for i,ii in zip(self_idxs,other_idxs):
+                self_x[i,self_idxs] = other_x[ii,other_idxs]
+            self.reset_x(self_x)
+            self.isdiagonal = False
 
     def to_uncfile(self, unc_file, covmat_file="Cov.mat", var_mult=1.0):
         """write a pest-compatible uncertainty file

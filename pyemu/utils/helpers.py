@@ -3,6 +3,7 @@ import os
 import multiprocessing as mp
 import subprocess as sp
 import time
+import warnings
 import struct
 import socket
 import shutil
@@ -11,6 +12,52 @@ import pandas as pd
 pd.options.display.max_colwidth = 100
 
 import pyemu
+
+def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
+    if isinstance(pst,str):
+        pst = pyemu.Pst(pst)
+    assert isinstance(pst,pyemu.Pst),"pst arg must be a Pst instance, not {0}".\
+        format(type(pst))
+    full_cov = pyemu.Cov.from_parameter_data(pst,sigma_range=sigma_range)
+    par = pst.parameter_data
+    for gs,tpl_files in struct_dict.items():
+        if isinstance(gs,str):
+            gss = pyemu.geostats.read_struct_file(gs)
+            if isinstance(gss,list):
+                warnings.warn("using first geostat structure in file {0}".\
+                              format(gs))
+                gs = gss[0]
+            else:
+                gs = gss
+        if not isinstance(tpl_files,list):
+            tpl_files = [tpl_files]
+        for tpl_file in tpl_files:
+            assert os.path.exists(tpl_file),"pp template file {0} not found".\
+                format(tpl_file)
+            pp_df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
+            missing = pp_df.loc[pp_df.parnme.apply(
+                    lambda x : x not in par.parnme),"parnme"]
+            if len(missing) > 0:
+                warnings.warn("the following parameters in tpl {0} are not " + \
+                              "in the control file: {1}".\
+                              format(tpl_file,','.join(missing)))
+                pp_df = pp_df.loc[pp_df.parnme.apply(lambda x: x not in missing)]
+            zones = pp_df.zone.unique()
+            for zone in zones:
+                pp_zone = pp_df.loc[pp_df.zone==zone,:]
+                cov = gs.covariance_matrix(pp_zone.x,pp_zone.y,pp_zone.parnme)
+                # find the variance in the diagonal cov
+                tpl_var = np.diag(full_cov.get(list(pp_zone.parnme),
+                                               list(pp_zone.parnme)).x)
+                if np.std(tpl_var) > 1.0e-6:
+                    warnings.warn("pilot points pars have different ranges" +\
+                                  " , using max range as variance for all pars")
+                tpl_var = tpl_var.max()
+                cov *= tpl_var
+                ci = cov.inv
+                full_cov.replace(cov)
+    return full_cov
+
 
 def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
              tpl_file="kl.tpl"):

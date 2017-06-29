@@ -77,6 +77,7 @@ def aniso_test():
         pt1 = (0,1)
         assert v.covariance(pt0,pt1) == v3.covariance(pt0,pt1)
 
+
 def geostruct_test():
     import pyemu
     v1 = pyemu.utils.geostats.ExpVario(0.1,2.0)
@@ -92,6 +93,7 @@ def geostruct_test():
     pt0 = (0,0)
     pt1 = (1.0e+10,0)
     assert g.covariance(pt0,pt1) == 0.2
+
 
 def struct_file_test():
     import os
@@ -112,6 +114,7 @@ def struct_file_test():
     for s in structs1:
         assert s.covariance(pt0,pt1) == s.nugget + \
                                              s.variograms[0].contribution
+
 
 def covariance_matrix_test():
     import os
@@ -151,7 +154,6 @@ def setup_ppcov_simple():
         os.system(exe_file + '<' + in_file)
 
 
-
 def ppcov_simple_test():
     import os
     import numpy as np
@@ -184,6 +186,7 @@ def ppcov_simple_test():
         delt = mat.x - str_mat.x
         assert np.abs(delt).max() < 1.0e-7
 
+
 def setup_ppcov_complex():
     import os
     import platform
@@ -204,7 +207,6 @@ def setup_ppcov_complex():
         with open(in_file,'w') as f:
             f.write('\n'.join(args))
         os.system(exe_file + '<' + in_file)
-
 
 
 def ppcov_complex_test():
@@ -250,23 +252,31 @@ def pp_to_tpl_test():
     print(pp_df.columns)
 
 
-def to_mps_test():
+def tpl_to_dataframe_test():
     import os
     import pyemu
-    jco_file = os.path.join("utils","dewater_pest.jcb")
-    jco = pyemu.Jco.from_binary(jco_file)
-    #print(jco.x)
-    pst = pyemu.Pst(jco_file.replace(".jcb",".pst"))
-    #print(pst.nnz_obs_names)
-    oc_dict = {oc:"l" for oc in pst.nnz_obs_names}
-    obj_func = {name:1.0 for name in pst.par_names}
+    pp_file = os.path.join("utils","points1.dat")
+    pp_df = pyemu.gw_utils.pilot_points_to_tpl(pp_file,name_prefix="test_")
+    df_tpl = pyemu.gw_utils.pp_tpl_to_dataframe(pp_file+".tpl")
+    assert df_tpl.shape[0] == pp_df.shape[0]
 
-    #pyemu.optimization.to_mps(jco=jco_file)
-    #pyemu.optimization.to_mps(jco=jco_file,obs_constraint_sense=oc_dict)
-    #pyemu.optimization.to_mps(jco=jco_file,obj_func="h00_00")
-    decision_var_names = pst.parameter_data.loc[pst.parameter_data.pargp=="q","parnme"].tolist()
-    pyemu.optimization.to_mps(jco=jco_file,obj_func=obj_func,decision_var_names=decision_var_names,
-                              risk=0.975)
+# def to_mps_test():
+#     import os
+#     import pyemu
+#     jco_file = os.path.join("utils","dewater_pest.jcb")
+#     jco = pyemu.Jco.from_binary(jco_file)
+#     #print(jco.x)
+#     pst = pyemu.Pst(jco_file.replace(".jcb",".pst"))
+#     #print(pst.nnz_obs_names)
+#     oc_dict = {oc:"l" for oc in pst.nnz_obs_names}
+#     obj_func = {name:1.0 for name in pst.par_names}
+#
+#     #pyemu.optimization.to_mps(jco=jco_file)
+#     #pyemu.optimization.to_mps(jco=jco_file,obs_constraint_sense=oc_dict)
+#     #pyemu.optimization.to_mps(jco=jco_file,obj_func="h00_00")
+#     decision_var_names = pst.parameter_data.loc[pst.parameter_data.pargp=="q","parnme"].tolist()
+#     pyemu.optimization.to_mps(jco=jco_file,obj_func=obj_func,decision_var_names=decision_var_names,
+#                               risk=0.975)
 
 def setup_pp_test():
     import os
@@ -491,6 +501,46 @@ def ok_grid_test():
     kf = ok.calc_factors_grid(sr,verbose=False,var_filename=os.path.join("utils","test_var.ref"),minpts_interp=1)
     ok.to_grid_factors_file(os.path.join("utils","test.fac"))
 
+def ok_grid_zone_test():
+
+    try:
+        import flopy
+    except:
+        return
+
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    nrow,ncol = 10,5
+    delr = np.ones((ncol)) * 1.0/float(ncol)
+    delc = np.ones((nrow)) * 1.0/float(nrow)
+
+    num_pts = 0
+    ptx = np.random.random(num_pts)
+    pty = np.random.random(num_pts)
+    ptname = ["p{0}".format(i) for i in range(num_pts)]
+    pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
+    pts_data.index = pts_data.name
+    pts_data = pts_data.loc[:,["x","y","name"]]
+
+
+    sr = flopy.utils.SpatialReference(delr=delr,delc=delc)
+    pts_data.loc["i0j0", :] = [sr.xcentergrid[0,0],sr.ycentergrid[0,0],"i0j0"]
+    pts_data.loc["imxjmx", :] = [sr.xcentergrid[-1, -1], sr.ycentergrid[-1, -1], "imxjmx"]
+    pts_data.loc[:,"zone"] = 1
+    pts_data.zone.iloc[1] = 2
+    print(pts_data.zone.unique())
+    str_file = os.path.join("utils","struct_test.dat")
+    gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
+    ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
+    zone_array = np.ones((nrow,ncol))
+    zone_array[0,0] = 2
+    kf = ok.calc_factors_grid(sr,verbose=False,
+                              var_filename=os.path.join("utils","test_var.ref"),
+                              minpts_interp=1,zone_array=zone_array)
+    ok.to_grid_factors_file(os.path.join("utils","test.fac"))
+
+
 def ppk2fac_verf_test():
     import os
     import numpy as np
@@ -543,10 +593,18 @@ def mflist_budget_test():
     pyemu.gw_utils.setup_mflist_budget_obs(ml)
 
 
-
+def pp_prior_builder_test():
+    import os
+    import pyemu
+    pst = os.path.join("pst","pest.pst")
+    tpl_file = os.path.join("utils","pp_locs.tpl")
+    str_file = os.path.join("utils","structure.dat")
+    pyemu.helpers.pilotpoint_prior_builder(pst,{str_file:tpl_file})
 
 if __name__ == "__main__":
-    mflist_budget_test()
+    #pp_prior_builder_test()
+    #mflist_budget_test()
+    #tpl_to_dataframe_test()
     # kl_test()
     # zero_order_regul_test()
     # first_order_pearson_regul_test()
@@ -573,5 +631,6 @@ if __name__ == "__main__":
     # add_pi_obj_func_test()
     # ok_test()
     #ok_grid_test()
+    ok_grid_zone_test()
     #opt_obs_worth()
     #ppk2fac_verf_test()

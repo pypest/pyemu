@@ -225,6 +225,22 @@ def sigma_range_test():
     assert covdefault.df().iloc[0, 0] > cov8.df().iloc[0, 0]
 
 
+def cov_replace_test():
+    import os
+    import numpy as np
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    cov1 = pyemu.Cov.from_parameter_data(pst)
+    cov2 = pyemu.Cov(x=cov1.x[:3],names=cov1.names[:3],isdiagonal=True) * 3
+    cov1.replace(cov2)
+    assert cov1.x[0] == cov2.x[0]
+
+    cov2 = pyemu.Cov(x=np.ones(cov1.shape) * 2,names=cov1.names[::-1])
+    cov2 = cov2.get(row_names=cov2.names[:3],col_names=cov2.names[:3])
+    cov1.replace(cov2)
+    assert cov1.x[-1,-1] == 2.0
+
 if __name__ == "__main__":
     #mat_test()
     #load_jco_test()
@@ -236,4 +252,5 @@ if __name__ == "__main__":
     #hadamard_product_test()
     #get_diag_test()
     #to_pearson_test()
-    sigma_range_test()
+    #sigma_range_test()
+    cov_replace_test()
