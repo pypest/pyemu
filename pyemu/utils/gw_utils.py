@@ -75,7 +75,7 @@ def modflow_hob_to_instruction_file(hob_file,ins_file=None):
     return hob_df
 
 
-def setup_pilotpoints_grid(ml,prefix_dict=None,
+def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
                            every_n_cell=4,
                            use_ibound_zones=False,
                            pp_dir='.',tpl_dir='.',
@@ -113,7 +113,21 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
 
     """
     import flopy
-    assert isinstance(ml,flopy.modflow.Modflow)
+    if ml is not None:
+        assert isinstance(ml,flopy.modflow.Modflow)
+        sr = ml.sr
+        ibound = ml.bas6.ibound.array
+    else:
+        assert sr is not None,"if 'ml' is not passed, 'sr' must be passed"
+        assert ibound is not None,"if 'ml' is not pass, 'ibound' must be passed"
+
+    try:
+        xcentergrid = sr.xcentergrid
+        ycentergrid = sr.ycentergrid
+    except Exception as e:
+        raise Exception("error getting xcentergrid and/or ycentergrid from 'sr':{0}".\
+                        format(str(e)))
+
 
     #build a generic prefix_dict
     if prefix_dict is None:
@@ -121,35 +135,37 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
 
     #check prefix_dict
     for k, prefix in prefix_dict.items():
-        assert k < ml.nlay,"layer index {0} > nlay {1}".format(k,ml.nlay)
+        assert k < len(ibound),"layer index {0} > nlay {1}".format(k,len(ibound))
         if not isinstance(prefix,list):
             prefix_dict[k] = [prefix]
 
-    try:
-        ibound = ml.bas6.ibound.array
-    except Exception as e:
-        raise Exception("error getting model.bas6.ibound:{0}".format(str(e)))
+    #try:
+        #ibound = ml.bas6.ibound.array
+    #except Exception as e:
+    #    raise Exception("error getting model.bas6.ibound:{0}".format(str(e)))
     par_info = []
     pp_files,tpl_files = [],[]
     pp_names = copy.copy(PP_NAMES)
     pp_names.extend(["k","i","j"])
-    for k in range(ml.nlay):
+    for k in range(len(ibound)):
         pp_df = None
         ib = ibound[k]
+        assert ib.shape == xcentergrid.shape,"ib.shape != xcentergrid.shape for k {0}".\
+            format(k)
         pp_count = 0
         #skip this layer if not in prefix_dict
         if k not in prefix_dict.keys():
             continue
         #cycle through rows and cols
-        for i in range(0,ml.nrow,every_n_cell):
-            for j in range(0,ml.ncol,every_n_cell):
+        for i in range(0,ib.shape[0],every_n_cell):
+            for j in range(0,ib.shape[1],every_n_cell):
                 # skip if this is an inactive cell
                 if ib[i,j] < 1:
                     continue
 
                 # get the attributes we need
-                x = ml.sr.xcentergrid[i,j]
-                y = ml.sr.ycentergrid[i,j]
+                x = xcentergrid[i,j]
+                y = ycentergrid[i,j]
                 name = "pp_{0:04d}".format(pp_count)
                 parval1 = 1.0
 
@@ -196,8 +212,9 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
     if shapename is not None:
         try:
             import shapefile
-        except:
-            print("error importing shapefile, try pip install pyshp...")
+        except Exception as e:
+            print("error importing shapefile, try pip install pyshp...{0}"\
+                  .format(str(e)))
             return par_info
         shp = shapefile.Writer(shapeType=shapefile.POINT)
         for name,dtype in par_info.dtypes.iteritems():
