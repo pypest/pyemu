@@ -491,12 +491,10 @@ def parse_factor_line(line):
         fac_data[pnum] = fac
     return inode,itrans,fac_data
 
-def setup_mflist_budget_obs(model,flx_filename="flux.dat",
-                            vol_filename="vol.dat"):
-    flx,vol = apply_mflist_budget_obs(os.path.join(model.model_ws,
-                                                   model.lst.file_name[0]),
-                                      flx_filename,vol_filename,
-                                      model.start_datetime)
+def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
+                            vol_filename="vol.dat",start_datetime="1-1'1970"):
+    flx,vol = apply_mflist_budget_obs(list_filename,flx_filename,vol_filename,
+                                      start_datetime)
     _write_mflist_ins(flx_filename+".ins",flx)
     _write_mflist_ins(vol_filename+".ins",vol)
 

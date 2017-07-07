@@ -591,7 +591,7 @@ def opt_obs_worth():
 
 def mflist_budget_test():
     import pyemu
-
+    import os
     try:
         import flopy
     except:
@@ -599,7 +599,9 @@ def mflist_budget_test():
         return
     model_ws = os.path.join("..","..","examples","Freyberg_transient")
     ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False)
-    pyemu.gw_utils.setup_mflist_budget_obs(ml)
+    list_filename = os.path.join(model_ws,"freyberg.list")
+    assert os.path.exists(list_filename)
+    pyemu.gw_utils.setup_mflist_budget_obs(list_filename,start_datetime=ml.start_datetime)
 
 
 def pp_prior_builder_test():
@@ -612,7 +614,7 @@ def pp_prior_builder_test():
 
 if __name__ == "__main__":
     #pp_prior_builder_test()
-    #mflist_budget_test()
+    mflist_budget_test()
     #tpl_to_dataframe_test()
     # kl_test()
     # zero_order_regul_test()
@@ -642,4 +644,4 @@ if __name__ == "__main__":
     #ok_grid_test()
     #ok_grid_zone_test()
     #opt_obs_worth()
-    ppk2fac_verf_test()
+    #ppk2fac_verf_test()
