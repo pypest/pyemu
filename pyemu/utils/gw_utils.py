@@ -492,18 +492,29 @@ def parse_factor_line(line):
     return inode,itrans,fac_data
 
 def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
-                            vol_filename="vol.dat",start_datetime="1-1'1970"):
+                            vol_filename="vol.dat",start_datetime="1-1'1970",prefix=''):
     flx,vol = apply_mflist_budget_obs(list_filename,flx_filename,vol_filename,
                                       start_datetime)
-    _write_mflist_ins(flx_filename+".ins",flx)
-    _write_mflist_ins(vol_filename+".ins",vol)
+    _write_mflist_ins(flx_filename+".ins",flx,prefix+"flx")
+    _write_mflist_ins(vol_filename+".ins",vol, prefix+"vol")
 
     try:
         os.system("inschek {0}.ins {0}".format(flx_filename))
         os.system("inschek {0}.ins {0}".format(vol_filename))
     except:
         print("error running inschek")
-    return flx,vol
+
+    flx_obf = flx_filename+".obf"
+    vol_obf = vol_filename + ".obf"
+    if os.path.exists(flx_obf) and os.path.exists(vol_obf):
+        df = pd.read_csv(flx_obf,delim_whitespace=True,header=None,names=["obsnme","obsval"])
+        df.loc[:,"obgnme"] = df.obsnme.apply(lambda x: x[:-9])
+        df2 = pd.read_csv(vol_obf, delim_whitespace=True, header=None, names=["obsnme", "obsval"])
+        df2.loc[:, "obgnme"] = df2.obsnme.apply(lambda x: x[:-9])
+        df = df.append(df2)
+        df.to_csv("_setup_"+list_filename+'.csv',index=False)
+        df.index = df.obsnme
+        return df
 
 def apply_mflist_budget_obs(list_filename,flx_filename="flux.dat",
                             vol_filename="vol.dat",
@@ -519,15 +530,16 @@ def apply_mflist_budget_obs(list_filename,flx_filename="flux.dat",
     return flx,vol
 
 
-def _write_mflist_ins(ins_filename,df):
+def _write_mflist_ins(ins_filename,df,prefix):
     dt_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
+    name_len = 11 - (len(prefix)+1)
     with open(ins_filename,'w') as f:
         f.write('pif ~\nl1\n')
 
         for dt in dt_str:
             f.write("l1 ")
             for col in df.columns:
-                obsnme = "{0}_{1}".format(col[:11],dt)
+                obsnme = "{0}_{1}_{2}".format(prefix,col[:name_len],dt)
                 f.write(" w !{0}!".format(obsnme))
             f.write("\n")
 
