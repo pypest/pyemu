@@ -227,8 +227,8 @@ class OrdinaryKrige(object):
                                   format(pt_data_zone,np.unique(zone_array)))
                     continue
                 xzone,yzone = x.copy(),y.copy()
-                xzone[zone_array==pt_data_zone] = np.NaN
-                yzone[zone_array==pt_data_zone] = np.NaN
+                xzone[zone_array!=pt_data_zone] = np.NaN
+                yzone[zone_array!=pt_data_zone] = np.NaN
                 df = self.calc_factors(xzone.ravel(),yzone.ravel(),
                                        minpts_interp=minpts_interp,
                                        maxpts_interp=maxpts_interp,

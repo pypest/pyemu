@@ -484,11 +484,15 @@ def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
 def parse_factor_line(line):
     raw = line.strip().split()
     inode,itrans,nfac = [int(i) for i in raw[:3]]
-    fac_data = {}
-    for ifac in range(4,4+nfac*2,2):
-        pnum = int(raw[ifac]) - 1 #zero based to sync with pandas
-        fac = float(raw[ifac+1])
-        fac_data[pnum] = fac
+    #pnums = [int(raw[i])-1 for i in range(4,4+nfac*2,2)]
+    #facs = [float(raw[i+1]) for i in range(4,4+nfac*2,2)]
+    #fac_data = dict(zip(pnums,facs))
+    fac_data = {int(raw[ifac])-1:float(raw[ifac+1]) for ifac in range(4,4+nfac*2,2)}
+    # fac_data = {}
+    # for ifac in range(4,4+nfac*2,2):
+    #     pnum = int(raw[ifac]) - 1 #zero based to sync with pandas
+    #     fac = float(raw[ifac+1])
+    #     fac_data[pnum] = fac
     return inode,itrans,fac_data
 
 def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
