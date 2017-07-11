@@ -484,9 +484,6 @@ def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
 def parse_factor_line(line):
     raw = line.strip().split()
     inode,itrans,nfac = [int(i) for i in raw[:3]]
-    #pnums = [int(raw[i])-1 for i in range(4,4+nfac*2,2)]
-    #facs = [float(raw[i+1]) for i in range(4,4+nfac*2,2)]
-    #fac_data = dict(zip(pnums,facs))
     fac_data = {int(raw[ifac])-1:float(raw[ifac+1]) for ifac in range(4,4+nfac*2,2)}
     # fac_data = {}
     # for ifac in range(4,4+nfac*2,2):
@@ -529,8 +526,8 @@ def apply_mflist_budget_obs(list_filename,flx_filename="flux.dat",
         raise Exception("error import flopy: {0}".format(str(e)))
     mlf = flopy.utils.MfListBudget(list_filename)
     flx,vol = mlf.get_dataframes(start_datetime=start_datetime,diff=True)
-    flx.to_csv(flx_filename,sep=' ')
-    vol.to_csv(vol_filename,sep=' ')
+    flx.to_csv(flx_filename,sep=' ',index_label="datetime")
+    vol.to_csv(vol_filename,sep=' ',index_label="datetime")
     return flx,vol
 
 
