@@ -320,9 +320,34 @@ def freyberg_verf_test():
         assert diff.max() < 0.01
 
 
+def alternative_dw():
+    import os
+    import pyemu
+    import numpy as np
+    import pandas as pd
+    wdir = os.path.join("..","..","verification","Freyberg")
+    sc = pyemu.Schur(os.path.join(wdir,"freyberg.jcb"))
+    print(sc.pst.nnz_obs)
+
+    obs = sc.pst.observation_data
+    zw_obs = obs.loc[obs.weight==0,"obsnme"].iloc[:5].values
+    test_obs = {o:o for o in zw_obs}
+    base = sc.get_added_obs_importance(obslist_dict=test_obs)
+    zw_pst = pyemu.Pst(os.path.join(wdir,"freyberg.pst"))
+    zw_pst.observation_data.loc[:,"weight"] = 0.0
+    for o in zw_obs:
+        ojcb = sc.jco.get(row_names=[o])
+        zw_pst.observation_data.loc[:,"weight"] = 0.0
+        zw_pst.observation_data.loc[o,"weight"] = 1.0
+        sc_o = pyemu.Schur(jco=ojcb,pst=zw_pst,parcov=sc.posterior_parameter,forecasts=sc.forecasts)
+        print(sc_o.get_forecast_summary())
+        
+
+
 
 if __name__ == "__main__":
-    freyberg_verf_test()
+    alternative_dw()
+    #freyberg_verf_test()
     #forecast_pestpp_load_test()
     #map_test()
     #par_contrib_test()
