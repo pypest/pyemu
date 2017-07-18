@@ -202,6 +202,15 @@ class ObservationEnsemble(Ensemble):
         return new_oe
 
 
+    @property
+    def phi_vector(self):
+        weights = self.pst.observation_data.loc[self.names,"weight"]
+        obsval = self.pst.observation_data.loc[self.names,"obsval"]
+        phi_vec = []
+        for idx in self.index.values:
+            phi = ((self.loc[idx,self.names] - obsval)**2 * weights).sum()
+            phi_vec.append(phi)
+        return pd.DataFrame({"phi":phi_vec},index=self.index)
 
 class ParameterEnsemble(Ensemble):
     """ Ensemble derived type for parameters

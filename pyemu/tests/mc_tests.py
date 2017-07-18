@@ -343,8 +343,21 @@ def par_diagonal_draw_test():
     print(mc.parensemble.head())
     print(pe.head())
 
+
+def phi_vector_test():
+    import os
+    import pyemu
+    jco = os.path.join("pst","pest.jcb")
+    pst = pyemu.Pst(jco.replace(".jcb",".pst"))
+
+    mc = pyemu.MonteCarlo(pst=pst)
+    num_reals = 10
+    mc.draw(num_reals,obs=True)
+    print(mc.obsensemble.phi_vector)
+
 if __name__ == "__main__":
-    par_diagonal_draw_test()
+    phi_vector_test()
+    #par_diagonal_draw_test()
     #obs_id_draw_test()
     #diagonal_cov_draw_test()
     #pe_to_csv_test()
