@@ -1913,7 +1913,7 @@ class Cov(Matrix):
     def identity_like(cls,other):
         assert other.shape[0] == other.shape[1]
         x = np.identity(other.shape[0])
-        return cls(x=x,names=other.row_names,isdiagonal=True)
+        return cls(x=x,names=other.row_names,isdiagonal=False)
 
     def to_pearson(self):
 

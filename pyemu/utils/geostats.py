@@ -2,6 +2,7 @@ from __future__ import print_function
 import os
 import copy
 from datetime import datetime
+import multiprocessing as mp
 import warnings
 import numpy as np
 import pandas as pd
@@ -219,14 +220,15 @@ class OrdinaryKrige(object):
                 warnings.warn("'zone' columns not in point_data, assigning generic zone")
                 self.point_data.loc[:,"zone"] = 1
             pt_data_zones = self.point_data.zone.unique()
+
             for pt_data_zone in pt_data_zones:
                 if pt_data_zone not in zone_array:
-                    warnings.warn("pt zone {0} not in zone array, skipping".\
-                                  format(pt_data_zone))
+                    warnings.warn("pt zone {0} not in zone array {1}, skipping".\
+                                  format(pt_data_zone,np.unique(zone_array)))
                     continue
                 xzone,yzone = x.copy(),y.copy()
-                xzone[zone_array==pt_data_zone] = np.NaN
-                yzone[zone_array==pt_data_zone] = np.NaN
+                xzone[zone_array!=pt_data_zone] = np.NaN
+                yzone[zone_array!=pt_data_zone] = np.NaN
                 df = self.calc_factors(xzone.ravel(),yzone.ravel(),
                                        minpts_interp=minpts_interp,
                                        maxpts_interp=maxpts_interp,
@@ -236,7 +238,7 @@ class OrdinaryKrige(object):
                     a = df.err_var.values.reshape(x.shape)
                     na_idx = np.isfinite(a)
                     arr[na_idx] = a[na_idx]
-            if self.interp_data.dropna().shape[0] == 0:
+            if self.interp_data is None or self.interp_data.dropna().shape[0] == 0:
                 raise Exception("no interpolation took place...something is wrong")
         if var_filename is not None:
             np.savetxt(var_filename,arr,fmt="%15.6E")
