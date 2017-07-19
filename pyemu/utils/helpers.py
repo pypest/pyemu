@@ -14,6 +14,15 @@ pd.options.display.max_colwidth = 100
 import pyemu
 
 def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
+    """ a helper function to construct a full prior covariance matrix.
+    Parameters:
+        pst : pyemu.Pst instance
+        struct_dict : a python dict of geostat structure file : list of pp tpl files
+        sigma_range : float representing the number of standard deviations implied by parameter bounds
+    Returns:
+        Cov : pyemu.Cov instance
+
+    """
     if isinstance(pst,str):
         pst = pyemu.Pst(pst)
     assert isinstance(pst,pyemu.Pst),"pst arg must be a Pst instance, not {0}".\
