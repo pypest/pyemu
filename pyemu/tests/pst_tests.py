@@ -85,10 +85,8 @@ def pst_manip_test():
     pst.control_data.pestmode = "regularisation"
     pst.write(new_path)
     pst = Pst(new_path)
-
+    pst.svd_data.maxsing = 1
     pst.write(new_path,update_regul=True)
-
-
 
 
 def load_test():
@@ -253,10 +251,10 @@ def nnz_groups_test():
 
 
 if __name__ == "__main__":
-    nnz_groups_test()
+    #nnz_groups_test()
     #regul_rectify_test()
     #derivative_increment_tests()
-    #tied_test()
+    tied_test()
     #smp_test()
     #smp_dateparser_test()
     #pst_manip_test()

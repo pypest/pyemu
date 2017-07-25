@@ -6,7 +6,7 @@ import warnings
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
-from pyemu.pst.pst_controldata import ControlData
+from pyemu.pst.pst_controldata import ControlData, SvdData
 from pyemu.pst import pst_utils
 
 class Pst(object):
@@ -33,6 +33,7 @@ class Pst(object):
             self.__setattr__(key,copy.copy(value))
         self.tied = None
         self.control_data = ControlData()
+        self.svd_data = SvdData()
 
         if load:
             assert os.path.exists(filename),\
@@ -356,7 +357,26 @@ class Pst(object):
             control_lines.append(line)
         self.control_data.parse_values_from_lines(control_lines)
 
-        #anything between control data and parameter groups
+
+        #anything between control data and SVD
+        while True:
+            if line == '':
+                raise Exception("EOF before parameter groups section found")
+            if "* singular value decomposition" in line.lower() or\
+                "* parameter groups" in line.lower():
+                break
+            self.other_lines.append(line)
+            line = f.readline()
+
+        if "* singular value decomposition" in line.lower():
+            svd_lines = []
+            for _ in range(3):
+                line = f.readline()
+                if line == '':
+                    raise Exception("EOF while reading SVD section")
+                svd_lines.append(line)
+            self.svd_data.parse_values_from_lines(svd_lines)
+            line = f.readline()
         while True:
             if line == '':
                 raise Exception("EOF before parameter groups section found")
@@ -364,6 +384,11 @@ class Pst(object):
                 break
             self.other_lines.append(line)
             line = f.readline()
+
+        #parameter data
+        assert "* parameter groups" in line.lower(),\
+            "Pst.load() error: looking for parameter" +\
+            " group section, found:" + line
         try:
             self.parameter_groups = self._read_df(f,self.control_data.npargp,
                                                   self.pargp_fieldnames,
@@ -500,7 +525,6 @@ class Pst(object):
         self.control_data.ntplfle = len(self.template_files)
         self.control_data.ninsfle = len(self.instruction_files)
 
-
     def _rectify_pgroups(self):
         # add any parameters groups
         pdata_groups = list(self.parameter_data.loc[:,"pargp"].\
@@ -592,8 +616,9 @@ class Pst(object):
         for line in self.other_lines:
             f_out.write(line)
 
-        f_out.write("* parameter groups\n")
+        self.svd_data.write(f_out)
 
+        f_out.write("* parameter groups\n")
 
         # to catch the byte code ugliness in python 3
         pargpnme = self.parameter_groups.loc[:,"pargpnme"].copy()

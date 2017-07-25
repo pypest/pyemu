@@ -341,7 +341,7 @@ def alternative_dw():
         zw_pst.observation_data.loc[o,"weight"] = 1.0
         sc_o = pyemu.Schur(jco=ojcb,pst=zw_pst,parcov=sc.posterior_parameter,forecasts=sc.forecasts)
         print(sc_o.get_forecast_summary())
-        
+
 
 
 
