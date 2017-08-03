@@ -248,7 +248,9 @@ def freyberg():
     full_parcov = gs.covariance_matrix(xy.x,xy.y,xy.name)
     parcov = parcov_nothk.extend(full_parcov)
     #print(parcov.to_pearson().x[-1,:])
-
+    parcov.to_binary("freyberg_prior.jcb")
+    parcov.to_ascii("freyberg_prior.cov")
+    return
     pst.observation_data.loc[:,"weight"] /= 10.0
     pst.write("temp.pst")
     obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
@@ -1189,9 +1191,9 @@ def tenpar_plot():
 
 if __name__ == "__main__":
     #henry_setup()
-    henry()
+    #henry()
     #henry_plot()
-    #freyberg()
+    freyberg()
     #freyberg_plot()
     #freyberg_plot_iobj()
     #freyberg_plot_par_seq()
