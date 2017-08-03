@@ -651,8 +651,15 @@ def gslib_2_dataframe_test():
     df = pyemu.gw_utils.gslib_2_dataframe(gslib_file)
     print(df)
 
+def sgems_to_geostruct_test():
+    import os
+    import pyemu
+    xml_file = os.path.join("utils", "ch00")
+    gs = pyemu.geostats.read_sgems_variogram_xml(xml_file)
+
 if __name__ == "__main__":
-    gslib_2_dataframe_test()
+    #gslib_2_dataframe_test()
+    sgems_to_geostruct_test()
     #linearuniversal_krige_test()
     #pp_prior_builder_test()
     #mflist_budget_test()

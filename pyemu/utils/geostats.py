@@ -14,7 +14,6 @@ from .reference import SpatialReference
 
 EPSILON = 1.0e-7
 
-
 # class KrigeFactors(pd.DataFrame):
 #     def __init__(self,*args,**kwargs):
 #         super(KrigeFactors,self).__init__(*args,**kwargs)
@@ -809,6 +808,9 @@ class SphVario(Vario2d):
         #     return 0.0
 
 
+
+
+
 def read_struct_file(struct_file,return_type=GeoStruct):
     """read an existing structure file into a GeoStruct instance
     Parameters
@@ -917,3 +919,67 @@ def _read_structure_attributes(f):
                             format(line[0]))
     assert numvariograms == len(variogram_info)
     return nugget,transform,variogram_info
+
+
+def read_sgems_variogram_xml(xml_file,return_type=GeoStruct):
+    try:
+        import xml.etree.ElementTree as ET
+
+    except Exception as e:
+        print("error import elementtree, skipping...")
+    VARTYPE = {1: SphVario, 2: ExpVario, 3: GauVario, 4: None}
+    assert os.path.exists(xml_file)
+    tree = ET.parse(xml_file)
+    gs_model = tree.getroot()
+    structures = []
+    variograms = []
+    nugget = 0.0
+    num_struct = 0
+    for key,val in gs_model.items():
+        #print(key,val)
+        if str(key).lower() == "nugget":
+            nugget = float(val)
+        if str(key).lower() == "structures_count":
+            num_struct = int(val)
+    if num_struct == 0:
+        raise Exception("no structures found")
+    if num_struct != 1:
+        raise NotImplementedError()
+    for structure in gs_model:
+        vtype, contribution = None, None
+        mx_range,mn_range = None, None
+        x_angle,y_angle = None,None
+        #struct_name = structure.tag
+        for key,val in structure.items():
+            key = str(key).lower()
+            if key == "type":
+                vtype = str(val).lower()
+                if vtype.startswith("sph"):
+                    vtype = SphVario
+                elif vtype.startswith("exp"):
+                    vtype = ExpVario
+                elif vtype.startswith("gau"):
+                    vtype = GauVario
+                else:
+                    raise Exception("unrecognized variogram type:{0}".format(vtype))
+
+            elif key == "contribution":
+                contribution = float(val)
+            for item in structure:
+                if item.tag.lower() == "ranges":
+                    mx_range = float(item.attrib["max"])
+                    mn_range = float(item.attrib["min"])
+                elif item.tag.lower() == "angles":
+                    x_angle = float(item.attrib["x"])
+                    y_angle = float(item.attrib["y"])
+
+        assert contribution is not None
+        assert mn_range is not None
+        assert mx_range is not None
+        assert x_angle is not None
+        assert y_angle is not None
+        assert vtype is not None
+        v = vtype(contribution=contribution,a=mx_range,
+                  anisotropy=mx_range/mn_range,bearing=(180.0/np.pi)*np.arctan2(x_angle,y_angle),
+                  name=structure.tag)
+        return GeoStruct(nugget=nugget,variograms=[v])
