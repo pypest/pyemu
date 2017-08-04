@@ -647,9 +647,23 @@ def linearuniversal_krige_test():
                                var_filename=os.path.join("utils","test_var.ref"),
                                minpts_interp=1)
 
+def gslib_2_dataframe_test():
+    import os
+    import pyemu
+    gslib_file = os.path.join("utils","ch91pt.shp.gslib")
+    df = pyemu.gw_utils.gslib_2_dataframe(gslib_file)
+    print(df)
+
+def sgems_to_geostruct_test():
+    import os
+    import pyemu
+    xml_file = os.path.join("utils", "ch00")
+    gs = pyemu.geostats.read_sgems_variogram_xml(xml_file)
 
 if __name__ == "__main__":
-    linearuniversal_krige_test()
+    #gslib_2_dataframe_test()
+    sgems_to_geostruct_test()
+    #linearuniversal_krige_test()
     #pp_prior_builder_test()
     #mflist_budget_test()
     #tpl_to_dataframe_test()
