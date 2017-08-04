@@ -167,6 +167,7 @@ class LinearUniversalKrige(object):
         assert 'name' in point_data.columns,"point_data missing 'name'"
         assert 'x' in point_data.columns, "point_data missing 'x'"
         assert 'y' in point_data.columns, "point_data missing 'y'"
+        assert "value" in point_data.columns,"point_data missing 'value'"
         self.point_data = point_data
         self.point_data.index = self.point_data.name
         self.interp_data = None
@@ -207,7 +208,8 @@ class LinearUniversalKrige(object):
         if var_filename is not None:
             arr = df.err_var.values.reshape(x.shape)
             np.savetxt(var_filename,arr,fmt="%15.6E")
-
+        arr = df.estimate.values.reshape(x.shape)
+        return arr
 
 
     def estimate(self,x,y,minpts_interp=1,maxpts_interp=20,
@@ -218,6 +220,7 @@ class LinearUniversalKrige(object):
         sqradius = search_radius**2
         df = pd.DataFrame(data={'x':x,'y':y})
         inames,idist,ifacts,err_var = [],[],[],[]
+        estimates = []
         sill = self.geostruct.sill
         pt_data = self.point_data
         ptx_array = pt_data.x.values
@@ -251,6 +254,7 @@ class LinearUniversalKrige(object):
                 idist.append([])
                 ifacts.append([])
                 err_var.append(sill)
+                estimates.append(np.NaN)
                 continue
 
             # only the maxpts_interp points
@@ -262,6 +266,7 @@ class LinearUniversalKrige(object):
                 idist.append([EPSILON])
                 inames.append([dist.idxmin()])
                 err_var.append(self.geostruct.nugget)
+                estimates.append(self.point_data.loc[dist.idxmin(),"value"])
                 continue
             # if verbose == 2:
             #     td = (datetime.now()-start).total_seconds()
@@ -291,12 +296,13 @@ class LinearUniversalKrige(object):
             npts = len(pt_names)
             A = np.ones((d,d))
             A[:npts,:npts] = point_cov.values
-            A[-3,-3] = 0.0 #unbiaised constraint
+            A[npts,npts] = 0.0 #unbiaised constraint
             A[-2,:npts] = ptx #x coords for linear trend
             A[:npts,-2] = ptx
             A[-1,:npts] = pty #y coords for linear trend
             A[:npts,-1] = pty
             A[npts:,npts:] = 0
+            print(A)
             rhs = np.ones((d,1))
             rhs[:npts,0] = interp_cov
             rhs[-2,0] = ix
@@ -308,7 +314,8 @@ class LinearUniversalKrige(object):
             # # solve
             facs = np.linalg.solve(A,rhs)
             assert len(facs) - 3 == len(dist)
-
+            estimate = facs[-3] + (ix * facs[-2]) + (iy * facs[-1])
+            estimates.append(estimate[0])
             err_var.append(float(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)])))
             inames.append(pt_names)
 
@@ -324,6 +331,7 @@ class LinearUniversalKrige(object):
         df["inames"] = inames
         df["ifacts"] = ifacts
         df["err_var"] = err_var
+        df["estimate"] = estimates
         self.interp_data = df
         td = (datetime.now() - start_loop).total_seconds()
         print("took {0}".format(td))
