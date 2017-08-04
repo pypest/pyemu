@@ -938,7 +938,8 @@ def read_sgems_variogram_xml(xml_file,return_type=GeoStruct):
     for key,val in gs_model.items():
         #print(key,val)
         if str(key).lower() == "nugget":
-            nugget = float(val)
+            if len(val) > 0:
+                nugget = float(val)
         if str(key).lower() == "structures_count":
             num_struct = int(val)
     if num_struct == 0:
