@@ -675,7 +675,7 @@ def load_sgems_expvar_test():
     v = gs.variograms[0]
 
     x = np.linspace(xmn,xmx,100)
-    y = v._h_function(x)
+    y = v.inv_h(x)
 
     import matplotlib.pyplot as plt
     plt.plot(x,y)

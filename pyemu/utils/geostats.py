@@ -629,6 +629,9 @@ class Vario2d(object):
                 -1.0*np.sin(self.bearing_rads),
                 np.cos(self.bearing_rads)]
 
+    def inv_h(self,h):
+        return self.contribution - self._h_function(h)
+
     def covariance_matrix(self,x,y,names=None,cov=None):
         """build a pyemu.Cov instance from Vario2d
         Parameters
