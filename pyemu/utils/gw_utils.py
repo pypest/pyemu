@@ -312,36 +312,6 @@ def write_pp_shapfile(pp_df,shapename=None):
 
     shp.save(shapename)
 
-def gslib_2_dataframe(filename,attr_name=None,x_idx=0,y_idx=1):
-
-    with open(filename,'r') as f:
-        title = f.readline().strip()
-        num_attrs = int(f.readline().strip())
-        attrs = [f.readline().strip() for _ in range(num_attrs)]
-        if attr_name is not None:
-            assert attr_name in attrs,"{0} not in attrs:{1}".format(attr_name,','.join(attrs))
-        else:
-            assert len(attrs) == 3,"propname is None but more than 3 attrs in gslib file"
-            attr_name = attrs[2]
-        assert len(attrs) > x_idx
-        assert len(attrs) > y_idx
-        a_idx = attrs.index(attr_name)
-        x,y,a = [],[],[]
-        while True:
-            line = f.readline()
-            if line == '':
-                break
-            raw = line.strip().split()
-            try:
-                x.append(float(raw[x_idx]))
-                y.append(float(raw[y_idx]))
-                a.append(float(raw[a_idx]))
-            except Exception as e:
-                raise Exception("error paring line {0}: {1}".format(line,str(e)))
-    df = pd.DataFrame({"x":x,"y":y,"value":a})
-    df.loc[:,"name"] = ["pt{0}".format(i) for i in range(df.shape[0])]
-    df.index = df.name
-    return df
 
 
 def write_pp_file(filename,pp_df):

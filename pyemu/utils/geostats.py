@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from pyemu import Cov
 from pyemu.utils.gw_utils import pp_file_to_dataframe
-from .reference import SpatialReference
+#from pyemu.utils.reference import SpatialReference
 
 #TODO:  plot variogram elipse
 
@@ -991,3 +991,65 @@ def read_sgems_variogram_xml(xml_file,return_type=GeoStruct):
                   anisotropy=mx_range/mn_range,bearing=(180.0/np.pi)*np.arctan2(x_angle,y_angle),
                   name=structure.tag)
         return GeoStruct(nugget=nugget,variograms=[v])
+
+
+def gslib_2_dataframe(filename,attr_name=None,x_idx=0,y_idx=1):
+
+    with open(filename,'r') as f:
+        title = f.readline().strip()
+        num_attrs = int(f.readline().strip())
+        attrs = [f.readline().strip() for _ in range(num_attrs)]
+        if attr_name is not None:
+            assert attr_name in attrs,"{0} not in attrs:{1}".format(attr_name,','.join(attrs))
+        else:
+            assert len(attrs) == 3,"propname is None but more than 3 attrs in gslib file"
+            attr_name = attrs[2]
+        assert len(attrs) > x_idx
+        assert len(attrs) > y_idx
+        a_idx = attrs.index(attr_name)
+        x,y,a = [],[],[]
+        while True:
+            line = f.readline()
+            if line == '':
+                break
+            raw = line.strip().split()
+            try:
+                x.append(float(raw[x_idx]))
+                y.append(float(raw[y_idx]))
+                a.append(float(raw[a_idx]))
+            except Exception as e:
+                raise Exception("error paring line {0}: {1}".format(line,str(e)))
+    df = pd.DataFrame({"x":x,"y":y,"value":a})
+    df.loc[:,"name"] = ["pt{0}".format(i) for i in range(df.shape[0])]
+    df.index = df.name
+    return df
+
+
+#class ExperimentalVariogram(object):
+#    def __init__(self,na)
+
+def load_sgems_exp_var(filename):
+    assert os.path.exists(filename)
+    import xml.etree.ElementTree as etree
+    tree = etree.parse(filename)
+    root = tree.getroot()
+    dfs = {}
+    for variogram in root:
+        #print(variogram.tag)
+        for attrib in variogram:
+
+            #print(attrib.tag,attrib.text)
+            if attrib.tag == "title":
+                title = attrib.text.split(',')[0].split('=')[-1]
+            elif attrib.tag == "x":
+                x = [float(i) for i in attrib.text.split()]
+            elif attrib.tag == "y":
+                y = [float(i) for i in attrib.text.split()]
+            elif attrib.tag == "pairs":
+                pairs = [int(i) for i in attrib.text.split()]
+
+            for item in attrib:
+                print(item,item.tag)
+        df = pd.DataFrame({"x":x,"y":y,"pairs":pairs})
+        dfs[title] = df
+    return dfs
