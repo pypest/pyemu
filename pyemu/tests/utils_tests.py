@@ -663,6 +663,7 @@ def sgems_to_geostruct_test():
 def load_sgems_expvar_test():
     import os
     import numpy as np
+    import matplotlib.pyplot as plt
     import pyemu
     dfs = pyemu.geostats.load_sgems_exp_var(os.path.join("utils","ch00_expvar"))
     xmn,xmx = 1.0e+10,-1.0e+10
@@ -673,13 +674,14 @@ def load_sgems_expvar_test():
     xml_file = os.path.join("utils", "ch00")
     gs = pyemu.geostats.read_sgems_variogram_xml(xml_file)
     v = gs.variograms[0]
-
-    x = np.linspace(xmn,xmx,100)
-    y = v.inv_h(x)
-
-    import matplotlib.pyplot as plt
-    plt.plot(x,y)
+    ax = gs.plot(ls="--")
     plt.show()
+    #x = np.linspace(xmn,xmx,100)
+    #y = v.inv_h(x)
+
+    #
+    #plt.plot(x,y)
+    #plt.show()
 
 if __name__ == "__main__":
     load_sgems_expvar_test()

@@ -143,8 +143,22 @@ class GeoStruct(object):
         return sill
 
 
-    def plot(self):
-        raise NotImplementedError()
+    def plot(self,**kwargs):
+        import matplotlib.pyplot as plt
+        ax = kwargs.pop("ax",plt.subplot(111))
+        xmx = max([v.a*3.0 for v in self.variograms])
+        x = np.linspace(0,xmx,100)
+        y = np.zeros_like(x)
+        for v in self.variograms:
+            yv = v.inv_h(x)
+            ax.plot(x,yv,**kwargs,label=v.name)
+            y += yv
+        y += self.nugget
+        ax.plot(x,y,**kwargs,label="total")
+        ax.legend()
+        ax.set_xlabel("distance")
+        ax.set_ylabel("$\gamma$")
+        return ax
 
     def __str__(self):
         s = ''
@@ -548,7 +562,6 @@ class OrdinaryKrige(object):
         print("took {0}".format(td))
         return df
 
-
     def to_grid_factors_file(self, filename,points_file="points.junk",
                              zone_file="zone.junk"):
         if self.interp_data is None:
@@ -632,6 +645,16 @@ class Vario2d(object):
     def inv_h(self,h):
         return self.contribution - self._h_function(h)
 
+    def plot(self,ax=None,**kwargs):
+        import matplotlib.pyplot as plt
+        ax = kwargs.pop("ax",plt.subplot(111))
+        x = np.linspace(0,self.a*3,100)
+        y = self.inv_h(x)
+        ax.set_xlabel("distance")
+        ax.set_ylabel("$\gamma$")
+        ax.plot(x,y,**kwargs)
+        return ax
+
     def covariance_matrix(self,x,y,names=None,cov=None):
         """build a pyemu.Cov instance from Vario2d
         Parameters
@@ -709,8 +732,6 @@ class Vario2d(object):
         names = ["n1","n2"]
         return self.covariance_matrix(x,y,names=names).x[0,1]
 
-    def plot(self):
-        raise NotImplementedError()
 
     def __str__(self):
         s = "name:{0},contribution:{1},a:{2},anisotropy:{3},bearing:{4}\n".\
