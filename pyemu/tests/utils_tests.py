@@ -637,6 +637,9 @@ def linearuniversal_krige_test():
     sr = flopy.utils.SpatialReference(delr=delr,delc=delc)
     pts_data.loc["i0j0", :] = [sr.xcentergrid[0,0],sr.ycentergrid[0,0],"i0j0"]
     pts_data.loc["imxjmx", :] = [sr.xcentergrid[-1, -1], sr.ycentergrid[-1, -1], "imxjmx"]
+    pts_data.loc["i0j0","value"] = 1.0
+    pts_data.loc["imxjmx","value"] = 0.0
+
     str_file = os.path.join("utils","struct_test.dat")
     gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
     luk = pyemu.utils.geostats.LinearUniversalKrige(gs,pts_data)
