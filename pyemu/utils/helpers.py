@@ -205,11 +205,6 @@ def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
         np.savetxt(filename,arr,fmt="%20.8E")
 
 
-
-
-
-
-
 def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
         """setup preferred-value regularization
         Parameters:
@@ -286,7 +281,11 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
         """
         assert isinstance(cov,pyemu.Cov)
         cc_mat = cov.to_pearson()
-        ptrans = pst.parameter_data.partrans.to_dict()
+        print(pst.parameter_data.dtypes)
+        try:
+            ptrans = pst.parameter_data.partrans.apply(lambda x:x.decode()).to_dict()
+        except:
+            ptrans = pst.parameter_data.partrans.to_dict()
         pi_num = pst.prior_information.shape[0] + 1
         pilbl, obgnme, weight, equation = [], [], [], []
         for i,iname in enumerate(cc_mat.row_names):
@@ -301,10 +300,10 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
                     continue
                 pilbl.append("pcc_{0}".format(pi_num))
                 iiname = str(iname)
-                if ptrans[iname] == "log":
+                if str(ptrans[iname]) == "log":
                     iiname = "log("+iname+")"
                 jjname = str(jname)
-                if ptrans[jname] == "log":
+                if str(ptrans[jname]) == "log":
                     jjname = "log("+jname+")"
                 equation.append("1.0 * {0} - 1.0 * {1} = 0.0".\
                                 format(iiname,jjname))
