@@ -686,6 +686,7 @@ def load_sgems_expvar_test():
 def read_hydmod_test():
     import os
     import numpy as np
+    import pyemu
     df, outfile = pyemu.gw_utils.modflow_read_hydmod_file(os.path.join('utils','freyberg.hyd.bin'),
                                                           os.path.join('utils','freyberg.hyd.bin.dat'))
     df = np.read_csv(os.path.join('utils', 'freyberg.hyd.bin.dat'), delim_whitespace=True)
@@ -695,6 +696,7 @@ def read_hydmod_test():
 
 def make_hydmod_insfile_test():
     import os
+    import pyemu
     pyemu.gw_utils.modflow_hydmod_to_instruction_file(os.path.join('utils','freyberg.hyd.bin'))
 
     assert open(os.path.join('utils','freyberg.hyd.bin.dat.ins'),'r').read() == open('freyberg.hyd.dat.ins', 'r').read()
