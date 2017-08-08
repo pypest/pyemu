@@ -2,6 +2,7 @@ from __future__ import print_function, division
 import os
 import multiprocessing as mp
 import subprocess as sp
+import platform
 import time
 import warnings
 import struct
@@ -12,6 +13,21 @@ import pandas as pd
 pd.options.display.max_colwidth = 100
 
 import pyemu
+
+
+def run(cmd_str):
+    exe_name = cmd_str.split()[0]
+    if "window" in platform.platform().lower():
+        if not exe_name.lower().endswith("exe"):
+            cmd_str += '.exe'
+    else:
+        if os.path.exists(exe_name) and not exe_name.startswith('./'):
+            cmd_str = "./" + cmd_str
+    ret_val = os.system(cmd_str)
+    if "window" in platform.platform().lower():
+        if ret_val != 0:
+            raise Exception("run() returned non-zero")
+
 
 def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
     """ a helper function to construct a full prior covariance matrix.
@@ -189,11 +205,6 @@ def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
         np.savetxt(filename,arr,fmt="%20.8E")
 
 
-
-
-
-
-
 def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
         """setup preferred-value regularization
         Parameters:
@@ -213,7 +224,12 @@ def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
 
         pilbl, obgnme, weight, equation = [], [], [], []
         for idx, row in pst.parameter_data.iterrows():
-            if row["partrans"].lower() not in ["tied", "fixed"] and\
+            pt = row["partrans"].lower()
+            try:
+                pt = pt.decode()
+            except:
+                pass
+            if pt not in ["tied", "fixed"] and\
                 row["pargp"] in par_groups:
                 pilbl.append(row["parnme"])
                 weight.append(1.0)
@@ -221,7 +237,7 @@ def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
                 obgnme.append(ogp_name[:12])
                 parnme = row["parnme"]
                 parval1 = row["parval1"]
-                if row["partrans"].lower() == "log":
+                if pt == "log":
                     parnme = "log(" + parnme + ")"
                     parval1 = np.log10(parval1)
                 eq = "1.0 * " + parnme + " ={0:15.6E}".format(parval1)
@@ -270,7 +286,11 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
         """
         assert isinstance(cov,pyemu.Cov)
         cc_mat = cov.to_pearson()
-        ptrans = pst.parameter_data.partrans.to_dict()
+        #print(pst.parameter_data.dtypes)
+        try:
+            ptrans = pst.parameter_data.partrans.apply(lambda x:x.decode()).to_dict()
+        except:
+            ptrans = pst.parameter_data.partrans.to_dict()
         pi_num = pst.prior_information.shape[0] + 1
         pilbl, obgnme, weight, equation = [], [], [], []
         for i,iname in enumerate(cc_mat.row_names):
@@ -285,10 +305,10 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
                     continue
                 pilbl.append("pcc_{0}".format(pi_num))
                 iiname = str(iname)
-                if ptrans[iname] == "log":
+                if str(ptrans[iname]) == "log":
                     iiname = "log("+iname+")"
                 jjname = str(jname)
-                if ptrans[jname] == "log":
+                if str(ptrans[jname]) == "log":
                     jjname = "log("+jname+")"
                 equation.append("1.0 * {0} - 1.0 * {1} = 0.0".\
                                 format(iiname,jjname))

@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from pyemu import Cov
 from pyemu.utils.gw_utils import pp_file_to_dataframe
-from .reference import SpatialReference
+#from pyemu.utils.reference import SpatialReference
 
 #TODO:  plot variogram elipse
 
@@ -143,8 +143,30 @@ class GeoStruct(object):
         return sill
 
 
-    def plot(self):
-        raise NotImplementedError()
+    def plot(self,**kwargs):
+        #
+        if "ax" in kwargs:
+            ax = kwargs.pop("ax")
+        else:
+            import matplotlib.pyplot as plt
+            ax = plt.subplot(111)
+        legend = kwargs.pop("legend",False)
+        individuals = kwargs.pop("individuals",False)
+        xmx = max([v.a*3.0 for v in self.variograms])
+        x = np.linspace(0,xmx,100)
+        y = np.zeros_like(x)
+        for v in self.variograms:
+            yv = v.inv_h(x)
+            if individuals:
+                ax.plot(x,yv,label=v.name,**kwargs)
+            y += yv
+        y += self.nugget
+        ax.plot(x,y,label=self.name,**kwargs)
+        if legend:
+            ax.legend()
+        ax.set_xlabel("distance")
+        ax.set_ylabel("$\gamma$")
+        return ax
 
     def __str__(self):
         s = ''
@@ -548,7 +570,6 @@ class OrdinaryKrige(object):
         print("took {0}".format(td))
         return df
 
-
     def to_grid_factors_file(self, filename,points_file="points.junk",
                              zone_file="zone.junk"):
         if self.interp_data is None:
@@ -629,6 +650,19 @@ class Vario2d(object):
                 -1.0*np.sin(self.bearing_rads),
                 np.cos(self.bearing_rads)]
 
+    def inv_h(self,h):
+        return self.contribution - self._h_function(h)
+
+    def plot(self,ax=None,**kwargs):
+        import matplotlib.pyplot as plt
+        ax = kwargs.pop("ax",plt.subplot(111))
+        x = np.linspace(0,self.a*3,100)
+        y = self.inv_h(x)
+        ax.set_xlabel("distance")
+        ax.set_ylabel("$\gamma$")
+        ax.plot(x,y,**kwargs)
+        return ax
+
     def covariance_matrix(self,x,y,names=None,cov=None):
         """build a pyemu.Cov instance from Vario2d
         Parameters
@@ -706,8 +740,6 @@ class Vario2d(object):
         names = ["n1","n2"]
         return self.covariance_matrix(x,y,names=names).x[0,1]
 
-    def plot(self):
-        raise NotImplementedError()
 
     def __str__(self):
         s = "name:{0},contribution:{1},a:{2},anisotropy:{3},bearing:{4}\n".\
@@ -992,3 +1024,65 @@ def read_sgems_variogram_xml(xml_file,return_type=GeoStruct):
                   anisotropy=mx_range/mn_range,bearing=(180.0/np.pi)*np.arctan2(x_angle,y_angle),
                   name=structure.tag)
         return GeoStruct(nugget=nugget,variograms=[v])
+
+
+def gslib_2_dataframe(filename,attr_name=None,x_idx=0,y_idx=1):
+
+    with open(filename,'r') as f:
+        title = f.readline().strip()
+        num_attrs = int(f.readline().strip())
+        attrs = [f.readline().strip() for _ in range(num_attrs)]
+        if attr_name is not None:
+            assert attr_name in attrs,"{0} not in attrs:{1}".format(attr_name,','.join(attrs))
+        else:
+            assert len(attrs) == 3,"propname is None but more than 3 attrs in gslib file"
+            attr_name = attrs[2]
+        assert len(attrs) > x_idx
+        assert len(attrs) > y_idx
+        a_idx = attrs.index(attr_name)
+        x,y,a = [],[],[]
+        while True:
+            line = f.readline()
+            if line == '':
+                break
+            raw = line.strip().split()
+            try:
+                x.append(float(raw[x_idx]))
+                y.append(float(raw[y_idx]))
+                a.append(float(raw[a_idx]))
+            except Exception as e:
+                raise Exception("error paring line {0}: {1}".format(line,str(e)))
+    df = pd.DataFrame({"x":x,"y":y,"value":a})
+    df.loc[:,"name"] = ["pt{0}".format(i) for i in range(df.shape[0])]
+    df.index = df.name
+    return df
+
+
+#class ExperimentalVariogram(object):
+#    def __init__(self,na)
+
+def load_sgems_exp_var(filename):
+    assert os.path.exists(filename)
+    import xml.etree.ElementTree as etree
+    tree = etree.parse(filename)
+    root = tree.getroot()
+    dfs = {}
+    for variogram in root:
+        #print(variogram.tag)
+        for attrib in variogram:
+
+            #print(attrib.tag,attrib.text)
+            if attrib.tag == "title":
+                title = attrib.text.split(',')[0].split('=')[-1]
+            elif attrib.tag == "x":
+                x = [float(i) for i in attrib.text.split()]
+            elif attrib.tag == "y":
+                y = [float(i) for i in attrib.text.split()]
+            elif attrib.tag == "pairs":
+                pairs = [int(i) for i in attrib.text.split()]
+
+            for item in attrib:
+                print(item,item.tag)
+        df = pd.DataFrame({"x":x,"y":y,"pairs":pairs})
+        dfs[title] = df
+    return dfs

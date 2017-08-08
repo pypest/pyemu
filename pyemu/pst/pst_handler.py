@@ -536,7 +536,7 @@ class Pst(object):
             if pg not in existing_groups:
                 need_groups.append(pg)
         if len(need_groups) > 0:
-            print(need_groups)
+            #print(need_groups)
             defaults = copy.copy(pst_utils.pst_config["pargp_defaults"])
             for grp in need_groups:
                 defaults["pargpnme"] = grp

@@ -404,9 +404,9 @@ def generic_pst(par_names=["par1"],obs_names=["obs1"],addreg=False):
 
     new_pst.prior_information = new_pst.null_prior
 
-    new_pst.other_lines = ["* singular value decomposition\n","1\n",
-                           "{0:d} {1:15.6E}\n".format(new_pst.npar_adj,1.0E-6),
-                           "1 1 1\n"]
+    #new_pst.other_lines = ["* singular value decomposition\n","1\n",
+    #                       "{0:d} {1:15.6E}\n".format(new_pst.npar_adj,1.0E-6),
+    #                       "1 1 1\n"]
     if addreg:
         new_pst.zero_order_tikhonov()
 
@@ -479,7 +479,8 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
 def try_run_inschek(pst):
     for ins_file,out_file in zip(pst.instruction_files,pst.output_files):
         try:
-            os.system("inschek {0} {1}".format(ins_file,out_file))
+            #os.system("inschek {0} {1}".format(ins_file,out_file))
+            pyemu.helpers.run("inschek {0} {1}".format(ins_file,out_file))
             obf_file = ins_file.replace(".ins",".obf")
             df = pd.read_csv(obf_file,delim_whitespace=True,
                              skiprows=0,index_col=0,names=["obsval"])

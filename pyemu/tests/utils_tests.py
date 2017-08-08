@@ -651,7 +651,7 @@ def gslib_2_dataframe_test():
     import os
     import pyemu
     gslib_file = os.path.join("utils","ch91pt.shp.gslib")
-    df = pyemu.gw_utils.gslib_2_dataframe(gslib_file)
+    df = pyemu.geostats.gslib_2_dataframe(gslib_file)
     print(df)
 
 def sgems_to_geostruct_test():
@@ -660,9 +660,62 @@ def sgems_to_geostruct_test():
     xml_file = os.path.join("utils", "ch00")
     gs = pyemu.geostats.read_sgems_variogram_xml(xml_file)
 
+def load_sgems_expvar_test():
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import pyemu
+    dfs = pyemu.geostats.load_sgems_exp_var(os.path.join("utils","ch00_expvar"))
+    xmn,xmx = 1.0e+10,-1.0e+10
+    for d,df in dfs.items():
+        xmn = min(xmn,df.x.min())
+        xmx = max(xmx,df.x.max())
+
+    xml_file = os.path.join("utils", "ch00")
+    gs = pyemu.geostats.read_sgems_variogram_xml(xml_file)
+    v = gs.variograms[0]
+    #ax = gs.plot(ls="--")
+    #plt.show()
+    #x = np.linspace(xmn,xmx,100)
+    #y = v.inv_h(x)
+
+    #
+    #plt.plot(x,y)
+    #plt.show()
+
+def read_hydmod_test():
+    import os
+    import numpy as np
+    import pyemu
+    try:
+        import flopy
+    except:
+        return
+    df, outfile = pyemu.gw_utils.modflow_read_hydmod_file(os.path.join('utils','freyberg.hyd.bin'),
+                                                          os.path.join('utils','freyberg.hyd.bin.dat'))
+    df = np.read_csv(os.path.join('utils', 'freyberg.hyd.bin.dat'), delim_whitespace=True)
+    dftrue = np.read_csv(os.path.join('utils', 'freyberg.hyd.bin.dat.true'), delim_whitespace=True)
+
+    assert np.allclose(df.obsval.as_matrix(), dftrue.obsval.as_matrix())
+
+def make_hydmod_insfile_test():
+    import os
+    import pyemu
+    try:
+        import flopy
+    except:
+        return
+    pyemu.gw_utils.modflow_hydmod_to_instruction_file(os.path.join('utils','freyberg.hyd.bin'))
+
+    assert open(os.path.join('utils','freyberg.hyd.bin.dat.ins'),'r').read() == open('freyberg.hyd.dat.ins', 'r').read()
+
+
 if __name__ == "__main__":
+    load_sgems_expvar_test()
+    #read_hydmod_test()
+    #make_hydmod_insfile_test()
     #gslib_2_dataframe_test()
-    sgems_to_geostruct_test()
+    #sgems_to_geostruct_test()
     #linearuniversal_krige_test()
     #pp_prior_builder_test()
     #mflist_budget_test()
