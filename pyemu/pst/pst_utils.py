@@ -404,9 +404,9 @@ def generic_pst(par_names=["par1"],obs_names=["obs1"],addreg=False):
 
     new_pst.prior_information = new_pst.null_prior
 
-    new_pst.other_lines = ["* singular value decomposition\n","1\n",
-                           "{0:d} {1:15.6E}\n".format(new_pst.npar_adj,1.0E-6),
-                           "1 1 1\n"]
+    #new_pst.other_lines = ["* singular value decomposition\n","1\n",
+    #                       "{0:d} {1:15.6E}\n".format(new_pst.npar_adj,1.0E-6),
+    #                       "1 1 1\n"]
     if addreg:
         new_pst.zero_order_tikhonov()
 

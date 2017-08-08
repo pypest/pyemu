@@ -144,18 +144,26 @@ class GeoStruct(object):
 
 
     def plot(self,**kwargs):
-        import matplotlib.pyplot as plt
-        ax = kwargs.pop("ax",plt.subplot(111))
+        #
+        if "ax" in kwargs:
+            ax = kwargs.pop("ax")
+        else:
+            import matplotlib.pyplot as plt
+            ax = plt.subplot(111)
+        legend = kwargs.pop("legend",False)
+        individuals = kwargs.pop("individuals",False)
         xmx = max([v.a*3.0 for v in self.variograms])
         x = np.linspace(0,xmx,100)
         y = np.zeros_like(x)
         for v in self.variograms:
             yv = v.inv_h(x)
-            ax.plot(x,yv,**kwargs,label=v.name)
+            if individuals:
+                ax.plot(x,yv,**kwargs,label=v.name)
             y += yv
         y += self.nugget
-        ax.plot(x,y,**kwargs,label="total")
-        ax.legend()
+        ax.plot(x,y,**kwargs,label=self.name)
+        if legend:
+            ax.legend()
         ax.set_xlabel("distance")
         ax.set_ylabel("$\gamma$")
         return ax
