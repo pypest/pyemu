@@ -74,6 +74,96 @@ def modflow_hob_to_instruction_file(hob_file,ins_file=None):
     f_ins.close()
     return hob_df
 
+def modflow_hydmod_to_instruction_file(hydmod_file):
+    """write an instruction file for a modflow hydmod file
+    Parameters
+    ----------
+        hydmod_file : str
+            modflow hydmod file
+    Returns
+    -------
+        pandas DataFrame with control file observation information
+    """
+
+    hydmod_df, hydmod_outfile = modflow_read_hydmod_file(hydmod_file)
+
+
+    hydmod_df.loc[:,"ins_line"] = hydmod_df.obsnme.apply(lambda x:"l1 w !{0:s}!".format(x))
+
+    ins_file = hydmod_outfile + ".ins"
+
+    with open(ins_file, 'w') as f_ins:
+        f_ins.write("pif ~\nl1\n")
+        f_ins.write(hydmod_df.loc[:,["ins_line"]].to_string(col_space=0,
+                                                     columns=["ins_line"],
+                                                     header=False,
+                                                     index=False,
+                                                     formatters=[SFMT]) + '\n')
+    hydmod_df.loc[:,"weight"] = 1.0
+    hydmod_df.loc[:,"obgnme"] = "obgnme"
+
+    try:
+        os.system("inschek {0}.ins {0}".format(hydmod_outfile))
+    except:
+        print("error running inschek")
+
+    obs_obf = hydmod_outfile + ".obf"
+    if os.path.exists(obs_obf):
+        df = pd.read_csv(obs_obf,delim_whitespace=True,header=None,names=["obsnme","obsval"])
+        df.loc[:,"obgnme"] = df.obsnme.apply(lambda x: x[:-9])
+        df.to_csv("_setup_"+os.path.split(hydmod_outfile)[-1]+'.csv',index=False)
+        df.index = df.obsnme
+
+
+    return hydmod_df
+
+def modflow_read_hydmod_file(hydmod_file, hydmod_outfile=None):
+    """ read in a binary hydmod file and return a dataframe of the results
+    Parameters
+    ----------
+        hydmod_file : str
+            modflow hydmod binary file
+        hydmod_outfile :str (optional)
+            output file to write.  If None, use <hydmod_file>.dat
+    Returns
+    -------
+        pandas DataFrame with control file observation information
+    """
+    try:
+        import flopy.utils as fu
+    except Exception as e:
+        print('flopy is not installed - cannot read {0}\n{1}'.format(hydmod_file, e))
+
+    print('Starting to read HYDMOD data from {0}'.format(hydmod_file))
+    obs = fu.HydmodObs(hydmod_file)
+    hyd_df = obs.get_dataframe()
+
+    hyd_df.columns = [i[6:] if i.lower() != 'totim' else i for i in hyd_df.columns]
+
+    hyd_df['totim'] = hyd_df.index.map(lambda x: x.strftime("%Y%m%d"))
+
+    hyd_df.rename(columns={'totim': 'datestamp'}, inplace=True)
+
+
+    # reshape into a single column
+    hyd_df = pd.melt(hyd_df, id_vars='datestamp')
+
+    hyd_df.rename(columns={'value': 'obsval'}, inplace=True)
+
+    hyd_df['obsnme'] = [i + '_' + j for i, j in zip(hyd_df.variable, hyd_df.datestamp)]
+
+
+
+
+    if not hydmod_outfile:
+        hydmod_outfile = hydmod_file + '.dat'
+    hyd_df.to_csv(hydmod_outfile, columns=['obsnme','obsval'], sep=' ',index=False)
+    #hyd_df = hyd_df[['obsnme','obsval']]
+    return hyd_df[['obsnme','obsval']], hydmod_outfile
+
+
+
+
 
 def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
                            every_n_cell=4,
@@ -543,6 +633,4 @@ def _write_mflist_ins(ins_filename,df,prefix):
                 obsnme = "{0}_{1}_{2}".format(prefix,col[:name_len],dt)
                 f.write(" w !{0}!".format(obsnme))
             f.write("\n")
-
-
 
