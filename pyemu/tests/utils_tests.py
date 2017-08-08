@@ -687,6 +687,10 @@ def read_hydmod_test():
     import os
     import numpy as np
     import pyemu
+    try:
+        import flopy
+    except:
+        return
     df, outfile = pyemu.gw_utils.modflow_read_hydmod_file(os.path.join('utils','freyberg.hyd.bin'),
                                                           os.path.join('utils','freyberg.hyd.bin.dat'))
     df = np.read_csv(os.path.join('utils', 'freyberg.hyd.bin.dat'), delim_whitespace=True)
@@ -697,6 +701,10 @@ def read_hydmod_test():
 def make_hydmod_insfile_test():
     import os
     import pyemu
+    try:
+        import flopy
+    except:
+        return
     pyemu.gw_utils.modflow_hydmod_to_instruction_file(os.path.join('utils','freyberg.hyd.bin'))
 
     assert open(os.path.join('utils','freyberg.hyd.bin.dat.ins'),'r').read() == open('freyberg.hyd.dat.ins', 'r').read()
@@ -704,8 +712,8 @@ def make_hydmod_insfile_test():
 
 if __name__ == "__main__":
     load_sgems_expvar_test()
-    read_hydmod_test()
-    make_hydmod_insfile_test()
+    #read_hydmod_test()
+    #make_hydmod_insfile_test()
     #gslib_2_dataframe_test()
     #sgems_to_geostruct_test()
     #linearuniversal_krige_test()
