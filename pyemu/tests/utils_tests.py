@@ -703,6 +703,7 @@ def make_hydmod_insfile_test():
 if __name__ == "__main__":
     load_sgems_expvar_test()
     read_hydmod_test()
+    make_hydmod_insfile_test()
     #gslib_2_dataframe_test()
     #sgems_to_geostruct_test()
     #linearuniversal_krige_test()
