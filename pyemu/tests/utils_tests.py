@@ -683,8 +683,26 @@ def load_sgems_expvar_test():
     #plt.plot(x,y)
     #plt.show()
 
+def read_hydmod_test():
+    import os
+    import numpy as np
+    df, outfile = pyemu.gw_utils.modflow_read_hydmod_file(os.path.join('utils','freyberg.hyd.bin'),
+                                                          os.path.join('utils','freyberg.hyd.bin.dat'))
+    df = np.read_csv(os.path.join('utils', 'freyberg.hyd.bin.dat'), delim_whitespace=True)
+    dftrue = np.read_csv(os.path.join('utils', 'freyberg.hyd.bin.dat.true'), delim_whitespace=True)
+
+    assert np.allclose(df.obsval.as_matrix(), dftrue.obsval.as_matrix())
+
+def make_hydmod_insfile_test():
+    import os
+    pyemu.gw_utils.modflow_hydmod_to_instruction_file(os.path.join('utils','freyberg.hyd.bin'))
+
+    assert open(os.path.join('utils','freyberg.hyd.bin.dat.ins'),'r').read() == open('freyberg.hyd.dat.ins', 'r').read()
+
+
 if __name__ == "__main__":
     load_sgems_expvar_test()
+    read_hydmod_test()
     #gslib_2_dataframe_test()
     #sgems_to_geostruct_test()
     #linearuniversal_krige_test()
