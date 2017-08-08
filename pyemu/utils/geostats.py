@@ -158,10 +158,10 @@ class GeoStruct(object):
         for v in self.variograms:
             yv = v.inv_h(x)
             if individuals:
-                ax.plot(x,yv,**kwargs,label=v.name)
+                ax.plot(x,yv,label=v.name,**kwargs)
             y += yv
         y += self.nugget
-        ax.plot(x,y,**kwargs,label=self.name)
+        ax.plot(x,y,label=self.name,**kwargs)
         if legend:
             ax.legend()
         ax.set_xlabel("distance")

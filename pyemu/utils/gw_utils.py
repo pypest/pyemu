@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config
-
+from pyemu.utils.helpers import run
 PP_FMT = {"name": SFMT, "x": FFMT, "y": FFMT, "zone": IFMT, "tpl": SFMT,
           "parval1": FFMT}
 PP_NAMES = ["name","x","y","zone","parval1"]
@@ -41,14 +41,12 @@ def modflow_pval_to_template_file(pval_file,tpl_file=None):
                                                           justify="left"))
     return pval_df
 
-def modflow_hob_to_instruction_file(hob_file,ins_file=None):
+def modflow_hob_to_instruction_file(hob_file):
     """write an instruction file for a modflow head observation file
     Parameters
     ----------
         hob_file : str
             modflow hob file
-        ins_file :str (optional)
-            instruction file to write.  If None, use <hob_file>.ins
     Returns
     -------
         pandas DataFrame with control file observation information
@@ -60,8 +58,7 @@ def modflow_hob_to_instruction_file(hob_file,ins_file=None):
     hob_df.loc[:,"ins_line"] = hob_df.obsnme.apply(lambda x:"l1 w w !{0:s}!".format(x))
     hob_df.loc[0,"ins_line"] = hob_df.loc[0,"ins_line"].replace('l1','l2')
 
-    if ins_file is None:
-        ins_file = hob_file + ".ins"
+    ins_file = hob_file + ".ins"
     f_ins = open(ins_file, 'w')
     f_ins.write("pif ~\n")
     f_ins.write(hob_df.loc[:,["ins_line"]].to_string(col_space=0,
@@ -499,12 +496,18 @@ def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
     _write_mflist_ins(flx_filename+".ins",flx,prefix+"flx")
     _write_mflist_ins(vol_filename+".ins",vol, prefix+"vol")
 
+    run("inschek {0}.ins {0}".format(flx_filename))
+    run("inschek {0}.ins {0}".format(vol_filename))
+
     try:
-        os.system("inschek {0}.ins {0}".format(flx_filename))
-        os.system("inschek {0}.ins {0}".format(vol_filename))
+        #os.system("inschek {0}.ins {0}".format(flx_filename))
+        #os.system("inschek {0}.ins {0}".format(vol_filename))
+        run("inschek {0}.ins {0}".format(flx_filename))
+        run("inschek {0}.ins {0}".format(vol_filename))
+
     except:
         print("error running inschek")
-
+        return None
     flx_obf = flx_filename+".obf"
     vol_obf = vol_filename + ".obf"
     if os.path.exists(flx_obf) and os.path.exists(vol_obf):

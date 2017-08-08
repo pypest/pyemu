@@ -2,6 +2,7 @@ from __future__ import print_function, division
 import os
 import multiprocessing as mp
 import subprocess as sp
+import platform
 import time
 import warnings
 import struct
@@ -12,6 +13,21 @@ import pandas as pd
 pd.options.display.max_colwidth = 100
 
 import pyemu
+
+
+def run(cmd_str):
+    exe_name = cmd_str.split()[0]
+    if "window" in platform.platform().lower():
+        if not exe_name.lower().endswith("exe"):
+            cmd_str += '.exe'
+    else:
+        if os.path.exists(exe_name) and not exe_name.startswith('./'):
+            cmd_str = "./" + cmd_str
+    ret_val = os.system(cmd_str)
+    if "window" in platform.platform().lower():
+        if ret_val != 0:
+            raise Exception("run() returned non-zero")
+
 
 def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
     """ a helper function to construct a full prior covariance matrix.
