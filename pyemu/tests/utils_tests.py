@@ -674,7 +674,7 @@ def load_sgems_expvar_test():
     xml_file = os.path.join("utils", "ch00")
     gs = pyemu.geostats.read_sgems_variogram_xml(xml_file)
     v = gs.variograms[0]
-    ax = gs.plot(ls="--")
+    #ax = gs.plot(ls="--")
     #plt.show()
     #x = np.linspace(xmn,xmx,100)
     #y = v.inv_h(x)
