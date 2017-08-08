@@ -224,7 +224,12 @@ def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
 
         pilbl, obgnme, weight, equation = [], [], [], []
         for idx, row in pst.parameter_data.iterrows():
-            if row["partrans"].lower() not in ["tied", "fixed"] and\
+            pt = row["partrans"].lower()
+            try:
+                pt = pt.decode()
+            except:
+                pass
+            if pt not in ["tied", "fixed"] and\
                 row["pargp"] in par_groups:
                 pilbl.append(row["parnme"])
                 weight.append(1.0)
@@ -232,7 +237,7 @@ def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
                 obgnme.append(ogp_name[:12])
                 parnme = row["parnme"]
                 parval1 = row["parval1"]
-                if row["partrans"].lower() == "log":
+                if pt == "log":
                     parnme = "log(" + parnme + ")"
                     parval1 = np.log10(parval1)
                 eq = "1.0 * " + parnme + " ={0:15.6E}".format(parval1)
@@ -281,7 +286,7 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
         """
         assert isinstance(cov,pyemu.Cov)
         cc_mat = cov.to_pearson()
-        print(pst.parameter_data.dtypes)
+        #print(pst.parameter_data.dtypes)
         try:
             ptrans = pst.parameter_data.partrans.apply(lambda x:x.decode()).to_dict()
         except:
