@@ -250,11 +250,24 @@ def nnz_groups_test():
     assert org_og[0] not in new_nnz_og
 
 
+def regdata_test():
+    import os
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    phimlim = 10.0
+    pst.reg_data.phimlim = phimlim
+    pst.control_data.pestmode = "regularization"
+    pst.write(os.path.join("pst","pest_regultest.pst"))
+    pst_new = pyemu.Pst(os.path.join("pst","pest_regultest.pst"))
+    assert pst_new.reg_data.phimlim == phimlim
+
 if __name__ == "__main__":
+    regdata_test()
     #nnz_groups_test()
     #regul_rectify_test()
     #derivative_increment_tests()
-    tied_test()
+    #tied_test()
     #smp_test()
     #smp_dateparser_test()
     #pst_manip_test()

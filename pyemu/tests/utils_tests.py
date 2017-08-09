@@ -686,6 +686,7 @@ def load_sgems_expvar_test():
 def read_hydmod_test():
     import os
     import numpy as np
+    import pandas as pd
     import pyemu
     try:
         import flopy
@@ -693,8 +694,8 @@ def read_hydmod_test():
         return
     df, outfile = pyemu.gw_utils.modflow_read_hydmod_file(os.path.join('utils','freyberg.hyd.bin'),
                                                           os.path.join('utils','freyberg.hyd.bin.dat'))
-    df = np.read_csv(os.path.join('utils', 'freyberg.hyd.bin.dat'), delim_whitespace=True)
-    dftrue = np.read_csv(os.path.join('utils', 'freyberg.hyd.bin.dat.true'), delim_whitespace=True)
+    df = pd.read_csv(os.path.join('utils', 'freyberg.hyd.bin.dat'), delim_whitespace=True)
+    dftrue = pd.read_csv(os.path.join('utils', 'freyberg.hyd.bin.dat.true'), delim_whitespace=True)
 
     assert np.allclose(df.obsval.as_matrix(), dftrue.obsval.as_matrix())
 
@@ -711,16 +712,16 @@ def make_hydmod_insfile_test():
 
 
 if __name__ == "__main__":
-    load_sgems_expvar_test()
-    #read_hydmod_test()
-    #make_hydmod_insfile_test()
+    #load_sgems_expvar_test()
+    read_hydmod_test()
+    make_hydmod_insfile_test()
     #gslib_2_dataframe_test()
     #sgems_to_geostruct_test()
     #linearuniversal_krige_test()
     #pp_prior_builder_test()
     #mflist_budget_test()
     #tpl_to_dataframe_test()
-    # kl_test()
+    #kl_test()
     # zero_order_regul_test()
     # first_order_pearson_regul_test()
     # master_and_slaves()

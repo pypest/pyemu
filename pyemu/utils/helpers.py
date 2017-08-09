@@ -200,7 +200,7 @@ def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
 
         #assert df_pre.shape[0] == arr_shape[0] * arr_shape[1]
         arr = (factors.T * basis).x.reshape(arr_shape)
-        arr += means.loc[means.prefix==prefix,"new_val"]
+        arr += means.loc[means.prefix==prefix,"new_val"].values
         arr[arr<arr_min] = arr_min
         np.savetxt(filename,arr,fmt="%20.8E")
 

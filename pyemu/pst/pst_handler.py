@@ -210,6 +210,15 @@ class Pst(object):
 
 
     @property
+    def forecast_names(self):
+        if "forecasts" in self.pestpp_options.keys():
+            return self.pestpp_options["forecasts"].lower().split(',')
+        elif "predictions" in self.pestpp_options.keys():
+            return self.pestpp_options["predictions"].lower().split(',')
+        else:
+            return None
+
+    @property
     def obs_groups(self):
         """observation groups
         """
@@ -516,6 +525,7 @@ class Pst(object):
                         print("Pst.load() warning: duplicate pest++ option found:" + str(key))
                     self.pestpp_options[key] = value
         f.close()
+
         return
 
 

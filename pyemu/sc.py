@@ -286,10 +286,10 @@ class Schur(LinearAnalysis):
         for forecast in self.prior_forecast.keys():
             pr = self.prior_forecast[forecast]
             pt = self.posterior_forecast[forecast]
-            reduce = 100.0 * ((pr - pt) / pr)
+            #reduce = 100.0 * ((pr - pt) / pr)
             results[(forecast,"prior")] = [pr]
             results[(forecast,"post")] = [pt]
-            results[(forecast,"percent_reduce")] = [reduce]
+            #results[(forecast,"percent_reduce")] = [reduce]
         for case_name,par_list in parlist_dict.items():
             if len(par_list) == 0:
                 continue
@@ -300,10 +300,10 @@ class Schur(LinearAnalysis):
             for forecast in case_prior.keys():
                 pr = case_prior[forecast]
                 pt = case_post[forecast]
-                reduce = 100.0 * ((pr - pt) / pr)
+                #reduce = 100.0 * ((pr - pt) / pr)
                 results[(forecast, "prior")].append(pr)
                 results[(forecast, "post")].append(pt)
-                results[(forecast, "percent_reduce")].append(reduce)
+                #results[(forecast, "percent_reduce")].append(reduce)
 
         df = pd.DataFrame(results,index=names)
         self.log("calculating contribution from parameters")
