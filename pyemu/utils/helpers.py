@@ -476,6 +476,11 @@ def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False):
         fig = plt.figure(figsize=(10,10))
         ax = plt.subplot(111)
         ax.grid()
+    if "post_stdev" not in df.columns and "post_var" in df.columns:
+        df.loc[:,"post_stdev"] = df.post_var.apply(np.sqrt)
+    if "prior_stdev" not in df.columns and "prior_var" in df.columns:
+        df.loc[:,"prior_stdev"] = df.prior_var.apply(np.sqrt)
+
     for name,mean,stdev in zip(df.index,df.post_expt,df.post_stdev):
         x,y = gaussian_distribution(mean,stdev)
         ax.fill_between(x,0,y,facecolor='b',edgecolor="none",alpha=0.25)
