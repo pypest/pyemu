@@ -32,6 +32,39 @@ NOPTMAX PHIREDSTP NPHISTP NPHINORED RELPARSTP NRELPAR [PHISTOPTHRESH] [LASTRUN] 
 ICOV ICOR IEIG [IRES] [JCOSAVE] [VERBOSEREC] [JCOSAVEITN] [REISAVEITN] [PARSAVEITN] [PARSAVERUN]"""\
     .lower().split('\n')
 
+REG_VARIABLE_LINES = """PHIMLIM PHIMACCEPT [FRACPHIM] [MEMSAVE]
+WFINIT WFMIN WFMAX [LINREG] [REGCONTINUE]
+WFFAC WFTOL IREGADJ [NOPTREGADJ REGWEIGHTRAT [REGSINGTHRESH]]""".lower().split('\n')
+
+REG_DEFAULT_LINES = """   1.0e-10    1.05e-10  0.1  nomemsave
+1.0 1.0e-10 1.0e10 linreg continue
+1.3  1.0e-2  1 1.5 1.5 0.5""".lower().split('\n')
+
+class RegData(object):
+    def __init__(self):
+        self.optional_dict = {}
+        for vline,dline in zip(REG_VARIABLE_LINES,REG_DEFAULT_LINES):
+            vraw = vline.split()
+            draw = dline.split()
+            for v,d in zip(vraw,draw):
+                o = False
+                if '[' in v:
+                    o = True
+                v = v.replace('[','').replace(']','')
+                super(RegData,self).__setattr__(v,d)
+                self.optional_dict[v] = o
+    def write(self,f):
+        f.write("* regularization\n")
+        for vline in REG_VARIABLE_LINES:
+            vraw = vline.strip().split()
+            for v in vraw:
+                v = v.replace("[",'').replace("]",'')
+                if v not in self.optional_dict.keys():
+                    raise Exception("RegData missing attribute {0}".format(v))
+                f.write("{0} ".format(self.__getattribute__(v)))
+            f.write("\n")
+
+
 class SvdData(object):
     def __init__(self,**kwargs):
         self.svdmode = kwargs.pop("svdmode",1)
