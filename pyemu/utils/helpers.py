@@ -400,7 +400,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
             cwd = os.path.join(master_dir,rel_path)
         else:
             cwd = master_dir
-        print("master:{0}".format(' '.join(args)))
+        print("master:{0} in {1}".format(' '.join(args),cwd))
         try:
             os.chdir(cwd)
             master_p = sp.Popen(args)#,stdout=sp.PIPE,stderr=sp.PIPE)
@@ -443,7 +443,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
                 cwd = new_slave_dir
 
             os.chdir(cwd)
-            print("slave:{0}".format(' '.join(args)))
+            print("slave:{0} in {1}".format(' '.join(args),cwd))
             with open(os.devnull,'w') as f:
                 p = sp.Popen(args,stdout=f,stderr=f)
             procs.append(p)
