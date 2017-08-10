@@ -306,6 +306,9 @@ class Schur(LinearAnalysis):
                 #results[(forecast, "percent_reduce")].append(reduce)
 
         df = pd.DataFrame(results,index=names)
+        #base = df.loc["base",df.columns.get_level_values(1)=="post"]
+        #df = 1.0 - (df.loc[:,df.columns.get_level_values(1)=="post"] / base)
+        df = df.xs("post",level=1,drop_level=True,axis=1)
         self.log("calculating contribution from parameters")
         return df
 

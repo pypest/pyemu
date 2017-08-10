@@ -255,7 +255,8 @@ class Pst(object):
 
     @property
     def prior_names(self):
-        return list(self.prior_information.groupby("pilbl").groups.keys())
+        return list(self.prior_information.groupby(
+                self.prior_information.index).groups.keys())
 
     @property
     def par_names(self):

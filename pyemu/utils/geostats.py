@@ -425,7 +425,7 @@ class OrdinaryKrige(object):
                 warnings.warn("'zone' columns not in point_data, assigning generic zone")
                 self.point_data.loc[:,"zone"] = 1
             pt_data_zones = self.point_data.zone.unique()
-
+            dfs = []
             for pt_data_zone in pt_data_zones:
                 if pt_data_zone not in zone_array:
                     warnings.warn("pt zone {0} not in zone array {1}, skipping".\
@@ -439,14 +439,17 @@ class OrdinaryKrige(object):
                                        maxpts_interp=maxpts_interp,
                                        search_radius=search_radius,
                                        verbose=verbose,pt_zone=pt_data_zone)
+                dfs.append(df)
                 if var_filename is not None:
                     a = df.err_var.values.reshape(x.shape)
                     na_idx = np.isfinite(a)
                     arr[na_idx] = a[na_idx]
             if self.interp_data is None or self.interp_data.dropna().shape[0] == 0:
                 raise Exception("no interpolation took place...something is wrong")
+            df = pd.concat(dfs)
         if var_filename is not None:
             np.savetxt(var_filename,arr,fmt="%15.6E")
+        return df
 
     def calc_factors(self,x,y,minpts_interp=1,maxpts_interp=20,
                      search_radius=1.0e+10,verbose=False,
