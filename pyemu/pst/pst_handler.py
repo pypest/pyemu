@@ -6,7 +6,7 @@ import warnings
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
-from pyemu.pst.pst_controldata import ControlData, SvdData
+from pyemu.pst.pst_controldata import ControlData, SvdData, RegData
 from pyemu.pst import pst_utils
 
 class Pst(object):
@@ -34,7 +34,7 @@ class Pst(object):
         self.tied = None
         self.control_data = ControlData()
         self.svd_data = SvdData()
-
+        self.reg_data = RegData()
         if load:
             assert os.path.exists(filename),\
                 "pst file not found:{0}".format(filename)
@@ -210,6 +210,15 @@ class Pst(object):
 
 
     @property
+    def forecast_names(self):
+        if "forecasts" in self.pestpp_options.keys():
+            return self.pestpp_options["forecasts"].lower().split(',')
+        elif "predictions" in self.pestpp_options.keys():
+            return self.pestpp_options["predictions"].lower().split(',')
+        else:
+            return None
+
+    @property
     def obs_groups(self):
         """observation groups
         """
@@ -246,7 +255,8 @@ class Pst(object):
 
     @property
     def prior_names(self):
-        return list(self.prior_information.groupby("pilbl").groups.keys())
+        return list(self.prior_information.groupby(
+                self.prior_information.index).groups.keys())
 
     @property
     def par_names(self):
@@ -291,14 +301,14 @@ class Pst(object):
         else:
             return []
 
-    @property
-    def regul_section(self):
-        phimlim = float(self.nnz_obs)
-        #sect = "* regularisation\n"
-        sect = "{0:15.6E} {1:15.6E}\n".format(phimlim, phimlim*1.15)
-        sect += "1.0 1.0e-10 1.0e10 linreg continue\n"
-        sect += "1.3  1.0e-2  1\n"
-        return sect
+    # @property
+    # def regul_section(self):
+    #     phimlim = float(self.nnz_obs)
+    #     #sect = "* regularisation\n"
+    #     sect = "{0:15.6E} {1:15.6E}\n".format(phimlim, phimlim*1.15)
+    #     sect += "1.0 1.0e-10 1.0e10 linreg continue\n"
+    #     sect += "1.3  1.0e-2  1\n"
+    #     return sect
 
     @property
     def estimation(self):
@@ -495,7 +505,14 @@ class Pst(object):
             assert "* regul" in line.lower(), \
                 "Pst.load() error; looking for regul " +\
                 " section, found:" + line
-            [self.regul_lines.append(f.readline()) for _ in range(3)]
+            #[self.regul_lines.append(f.readline()) for _ in range(3)]
+            regul_lines = [f.readline() for _ in range(3)]
+            raw = regul_lines[0].strip().split()
+            self.reg_data.phimlim = float(raw[0])
+            self.reg_data.phimaccept = float(raw[1])
+            raw = regul_lines[1].strip().split()
+            self.wfinit = float(raw[0])
+
 
         for line in f:
             if line.strip().startswith("++") and '#' not in line:
@@ -509,6 +526,7 @@ class Pst(object):
                         print("Pst.load() warning: duplicate pest++ option found:" + str(key))
                     self.pestpp_options[key] = value
         f.close()
+
         return
 
 
@@ -720,12 +738,12 @@ class Pst(object):
                 f_out.write(pst_utils.FFMT(row["weight"]))
                 f_out.write(pst_utils.SFMT(row["obgnme"]) + '\n')
         if self.control_data.pestmode.startswith("regul"):
-            f_out.write("* regularisation\n")
-            if update_regul or len(self.regul_lines) == 0:
-                f_out.write(self.regul_section)
-            else:
-                [f_out.write(line) for line in self.regul_lines]
-
+            #f_out.write("* regularisation\n")
+            #if update_regul or len(self.regul_lines) == 0:
+            #    f_out.write(self.regul_section)
+            #else:
+            #    [f_out.write(line) for line in self.regul_lines]
+            self.reg_data.write(f_out)
 
         for key,value in self.pestpp_options.items():
             f_out.write("++{0}({1})\n".format(str(key),str(value)))

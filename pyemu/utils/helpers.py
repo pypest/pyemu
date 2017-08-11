@@ -25,6 +25,7 @@ def run(cmd_str):
     else:
         if os.path.exists(exe_name) and not exe_name.startswith('./'):
             cmd_str = "./" + cmd_str
+    print("run():{0}".format(cmd_str))
     ret_val = os.system(cmd_str)
     if "window" in platform.platform().lower():
         if ret_val != 0:
@@ -202,7 +203,7 @@ def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
 
         #assert df_pre.shape[0] == arr_shape[0] * arr_shape[1]
         arr = (factors.T * basis).x.reshape(arr_shape)
-        arr += means.loc[means.prefix==prefix,"new_val"]
+        arr += means.loc[means.prefix==prefix,"new_val"].values
         arr[arr<arr_min] = arr_min
         np.savetxt(filename,arr,fmt="%20.8E")
 
@@ -401,6 +402,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
             cwd = os.path.join(master_dir,rel_path)
         else:
             cwd = master_dir
+        print("master:{0} in {1}".format(' '.join(args),cwd))
         try:
             os.chdir(cwd)
             master_p = sp.Popen(args)#,stdout=sp.PIPE,stderr=sp.PIPE)
@@ -443,6 +445,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
                 cwd = new_slave_dir
 
             os.chdir(cwd)
+            print("slave:{0} in {1}".format(' '.join(args),cwd))
             with open(os.devnull,'w') as f:
                 p = sp.Popen(args,stdout=f,stderr=f)
             procs.append(p)
@@ -478,6 +481,11 @@ def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False):
         fig = plt.figure(figsize=(10,10))
         ax = plt.subplot(111)
         ax.grid()
+    if "post_stdev" not in df.columns and "post_var" in df.columns:
+        df.loc[:,"post_stdev"] = df.post_var.apply(np.sqrt)
+    if "prior_stdev" not in df.columns and "prior_var" in df.columns:
+        df.loc[:,"prior_stdev"] = df.prior_var.apply(np.sqrt)
+
     for name,mean,stdev in zip(df.index,df.post_expt,df.post_stdev):
         x,y = gaussian_distribution(mean,stdev)
         ax.fill_between(x,0,y,facecolor='b',edgecolor="none",alpha=0.25)
