@@ -19,7 +19,9 @@ def run(cmd_str):
     exe_name = cmd_str.split()[0]
     if "window" in platform.platform().lower():
         if not exe_name.lower().endswith("exe"):
-            cmd_str += '.exe'
+            raw = cmd_str.split()
+            raw[0] = exe_name + ".exe"
+            cmd_str = ' '.join(raw)
     else:
         if os.path.exists(exe_name) and not exe_name.startswith('./'):
             cmd_str = "./" + cmd_str
