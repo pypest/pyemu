@@ -60,9 +60,12 @@ def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
         if not isinstance(tpl_files,list):
             tpl_files = [tpl_files]
         for tpl_file in tpl_files:
-            assert os.path.exists(tpl_file),"pp template file {0} not found".\
-                format(tpl_file)
-            pp_df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
+            if isinstance(tpl_file,str):
+                assert os.path.exists(tpl_file),"pp template file {0} not found".\
+                    format(tpl_file)
+                pp_df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
+            else:
+                pp_df = tpl_file
             missing = pp_df.loc[pp_df.parnme.apply(
                     lambda x : x not in par.parnme),"parnme"]
             if len(missing) > 0:
@@ -70,6 +73,8 @@ def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
                               "in the control file: {1}".\
                               format(tpl_file,','.join(missing)))
                 pp_df = pp_df.loc[pp_df.parnme.apply(lambda x: x not in missing)]
+            if "zone" not in pp_df.columns:
+                pp_df.loc[:,"zone"] = 1
             zones = pp_df.zone.unique()
             for zone in zones:
                 pp_zone = pp_df.loc[pp_df.zone==zone,:]

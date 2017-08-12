@@ -86,6 +86,11 @@ class EnsembleSmoother():
         #self.enforce_bounds = None
         self.raw_sweep_out = None
 
+    @property
+    def current_phi(self):
+        return pd.DataFrame(data={"phi":self._calc_phi_vec(self.obsensemble)},\
+                            index=self.obsensemble.index)
+
     def initialize(self,num_reals=1,init_lambda=None,enforce_bounds="reset",
                    parensemble=None,obsensemble=None,restart_obsensemble=None):
         '''
@@ -318,8 +323,11 @@ class EnsembleSmoother():
         master_stderr = "_master_stderr.dat"
         def master():
             try:
-                os.system("sweep {0} /h :{1} 1>{2} 2>{3}". \
+                #os.system("sweep {0} /h :{1} 1>{2} 2>{3}". \
+                #          format(self.pst.filename, self.port, master_stdout, master_stderr))
+                pyemu.helpers.run("sweep {0} /h :{1} 1>{2} 2>{3}". \
                           format(self.pst.filename, self.port, master_stdout, master_stderr))
+
             except Exception as e:
                 self.logger.lraise("error starting condor master: {0}".format(str(e)))
             with open(master_stderr, 'r') as f:
@@ -385,7 +393,7 @@ class EnsembleSmoother():
         if self.num_slaves > 0:
             master_thread = self._get_master_thread()
             pyemu.utils.start_slaves(self.slave_dir,"sweep",self.pst.filename,
-                                     self.num_slaves,slave_root='.',port=self.port)
+                                     self.num_slaves,slave_root='..',port=self.port)
             master_thread.join()
         else:
             os.system("sweep {0}".format(self.pst.filename))
