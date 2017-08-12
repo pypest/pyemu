@@ -1126,5 +1126,21 @@ class Pst(object):
             self.parameter_data.loc[too_small,"parlbnd"]
 
 
+    @classmethod
+    def from_io_files(cls,tpl_files,in_files,ins_files,out_files):
+        from pyemu import helpers
+        return helpers.pst_utils.pst_from_io_files(tpl_files=tpl_files,in_files=in_files,
+                                           ins_files=ins_files,out_files=out_files)
 
+    # eventually move this to pst_utils
+    @classmethod
+    def from_flopy_model(cls,m,pp_pakattr_list=None,const_pakattr_list=None,bc_pakattr_list=None,
+                         pp_space=None,pp_bounds=None,pp_geostruct=None,bc_geostruct=None,
+                         remove_existing=False):
+        from pyemu import helpers
+        return helpers.pst_from_flopy_model(m,pp_pakattr_list=pp_pakattr_list,
+                                            const_pakattr_list=const_pakattr_list,
+                                            bc_pakattr_list=bc_pakattr_list,
+                                            pp_space=None,pp_bounds=None,pp_geostruct=None,
+                                            bc_geostruct=None,remove_existing=remove_existing)
 

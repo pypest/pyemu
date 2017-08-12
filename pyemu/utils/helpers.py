@@ -551,4 +551,175 @@ def read_pestpp_runstorage(filename,irun=0):
 
 
 
+def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
+    """generate a Pst instance from the model io files.  If 'inschek'
+    is available (either in the current directory or registered
+    with the system variables) and the model output files are available
+    , then the observation values in the control file will be set to the
+    values of the model-simulated equivalents to observations.  This can be
+    useful for testing
+
+    Parameters:
+    ----------
+        tpl_files : list[str]
+            list of pest template files
+        in_files : list[str]
+            list of corresponding model input files
+        ins_files : list[str]
+            list of pest instruction files
+        out_files: list[str]
+            list of corresponding model output files
+        pst_filename : str (optional)
+            name of file to write the control file to
+    Returns:
+    -------
+        Pst instance
+    """
+    par_names = []
+    if not isinstance(tpl_files,list):
+        tpl_files = [tpl_files]
+    if not isinstance(in_files,list):
+        in_files = [in_files]
+    assert len(in_files) == len(tpl_files),"len(in_files) != len(tpl_files)"
+
+    for tpl_file in tpl_files:
+        assert os.path.exists(tpl_file),"template file not found: "+str(tpl_file)
+        new_names = [name for name in parse_tpl_file(tpl_file) if name not in par_names]
+        par_names.extend(new_names)
+
+    if not isinstance(ins_files,list):
+        ins_files = [ins_files]
+    if not isinstance(out_files,list):
+        out_files = [out_files]
+    assert len(ins_files) == len(out_files),"len(out_files) != len(out_files)"
+
+
+    obs_names = []
+    for ins_file in ins_files:
+        assert os.path.exists(ins_file),"instruction file not found: "+str(ins_file)
+        obs_names.extend(pyemu.pst_utils.parse_ins_file(ins_file))
+
+    new_pst = pyemu.pst_utils.generic_pst(par_names,obs_names)
+
+    new_pst.template_files = tpl_files
+    new_pst.input_files = in_files
+    new_pst.instruction_files = ins_files
+    new_pst.output_files = out_files
+
+    #try to run inschek to find the observtion values
+    pyemu.pst_utils.try_run_inschek(new_pst)
+
+    if pst_filename:
+        new_pst.write(pst_filename,update_regul=True)
+    return new_pst
+
+
+
+def pst_from_flopy_model(m,pp_pakattr_list=None,const_pakattr_list=None,bc_pakattr_list=None,
+                         pp_space=None,pp_bounds=None,pp_geostruct=None,bc_geostruct=None,
+                         remove_existing=False):
+    try:
+        import flopy
+    except:
+        raise Exception("from_flopy_model() requires flopy")
+
+    assert m.array_free_format == True
+    assert m.free_format_input == True
+    assert m.external_path is not None
+    f_frun = open(os.path.join(m.model_ws,"forward_run.py"),'w')
+    f_frun.write("import os\nimport numpy as np\nimport pandas as pd\nimport flopy\n")
+    f_frun.write("import pyemu\n")
+
+    def flopy_pp_helper(pakattr):
+        tpl_names = []
+        if isinstance(pakattr,flopy.utils.Util2d):
+            tpl_names.append(flopy_pp_util2d_helper(pakattr))
+        elif isinstance(pakattr,flopy.utils.Util3d):
+            for u2d in pakattr.util_2ds:
+                tpl_names.append(flopy_pp_util2d_helper(u2d))
+        elif isinstance(pakattr,flopy.utils.Transient2d):
+            print("WARNING: only setting up one set of pilot points for all "+\
+                  "stress periods for pakattr:{0}".format(pakattr.name_base))
+
+            #for u2d in pakattr:
+            #    tpl_names.append(flopy_pp_util2d_helper(u2d))
+        elif isinstance(pakattr,flopy.utils.MfList):
+            raise Exception('MfList support not implemented for pilot points')
+        else:
+            raise Exception("unrecognized pakattr:{0}".format(str(pakattr)))
+        return tpl_names
+
+    def flopy_pp_util2d_helper(u2d):
+        name = u2d.name
+        filename = os.path.join(m.model_ws,"arr_org",name+".dat")
+        print(name,filename,u2d.how)
+        assert u2d.how == "openclose","u2d '{0}' must use openclose format".format(name)
+        # write original array into arr_org
+
+        np.savetxt(filename,u2d.array)
+
+        #setup pilot points
+        # need to find what the external filename that flopy writes
+        return "test"
+
+
+
+    # def parse_pakattr(pakattr):
+    #     if isinstance(pakattr,list) or isinstance(pakattr,tuple):
+    #         assert len(pakattr) == 2,"pakattr: '{0}' must be iterable of len 2".\
+    #             format(str(pakattr))
+    #         pakname = pakattr[0].lower()
+    #         attrname = pakattr[1].lower()
+    #         pak = m.get_package(pakname)
+    #         if pak is None:
+    #             raise Exception("pak {0} not found".format(pakname))
+    #         if hasattr(pak,attrname):
+    #             pakattr = getattr(pak,attrname)
+    #         elif hasattr(pak,"stress_period_data"):
+    #             dtype = pak.stress_period_data.dtype
+    #             if attrname not in dtype.names:
+    #                 raise Exception("attr {0} not found in dtype.names for {1}.stress_period_data".\
+    #                                 format(attrname,pakname))
+    #             pakattr = pak.stress_period_data
+    #         else:
+    #             raise Exception("unrecognized attr:{1}".format(attrname))
+    #     return pakattr
+    #
+
+    tpl_names = []
+    # handle pilot point parameters
+    if pp_pakattr_list is not None:
+        if pp_space is None:
+            print("WARNING: pp_space is None, using 10...\n")
+            pp_space=10
+        if pp_geostruct is None:
+            print("WARNING: pp_geostruct is None,"\
+                  " using ExpVario with contribution=1 and a=(pp_space*3")
+            pp_dist = pp_space * float(max(m.dis.delr.array.max(),
+                                           m.dis.delc.array.max()))
+            v = pyemu.geostats.ExpVario(contribution=1.0,a=pp_dist)
+            pp_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+
+        # make arr_org and arr_mult dirs for storage
+        for d in [os.path.join(m.model_ws,"arr_org"),
+                  os.path.join(m.model_ws,"arr_mlt")]:
+            if os.path.exists(d):
+                if remove_existing:
+                    shutil.rmtree(d)
+                else:
+                    raise Exception("pilot point dir '{0}' already exists".format(d))
+            os.mkdir(d)
+        if not isinstance(pp_pakattr_list,list):
+            pp_pakattr_list = list(pp_pakattr_list)
+
+        for pakattr in pp_pakattr_list:
+            tpl_names.extend(flopy_pp_helper(pakattr))
+
+
+
+
+
+
+
+
 
