@@ -8,6 +8,7 @@ import warnings
 import struct
 import socket
 import shutil
+import copy
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
@@ -620,7 +621,6 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
 
 #TODO write runtime helpers to apply pilot points, array mults and bc_mults
 #TODO write a file mapping multiplier bc and array parameters to mlt arrays and org arrays
-#TODO make util2d cnstnt a class with support for tpl_str
 #TODO download binaries from pestpp github based on platform
 
 # def pst_from_flopy_model(nam_file,org_model_ws,new_model_ws,pp_pakattr_list=None,const_pakattr_list=None,bc_pakattr_list=None,
@@ -635,16 +635,22 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
 
 class PstFromFlopyModel(object):
 
-    def __init__(self,nam_file,org_model_ws,new_model_ws,pp_pakattr_list=None,const_pakattr_list=None,
-                 bc_pakattr_list=None,grid_pakattr_list=None,grid_geostruct=None,pp_space=None,
+    def __init__(self,nam_file,org_model_ws,new_model_ws,pp_prop_dict={},const_prop_dict={},
+                 bc_prop_dict={},grid_prop_dict={},grid_geostruct=None,pp_space=None,
+                 zone_prop_dict={},
                  pp_bounds=None,pp_geostruct=None,bc_geostruct=None,remove_existing=False,
                  mflist_waterbudget=True):
         self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
         self.log = self.logger.log
         self.logger.echo = True
+
         self.arr_org = "arr_org"
         self.arr_mlt = "arr_mlt"
         self.bc_org = "bc_org"
+        self.forward_run_file = "forward_run.py"
+
+
+
         split_new_mws = [i for i in os.path.split(new_model_ws) if len(i) > 0]
         if len(split_new_mws) != 1:
             self.logger.lraise("new_model_ws can only be 1 folder-level deep:{0}".
@@ -660,7 +666,6 @@ class PstFromFlopyModel(object):
         self.m.free_format_input = True
         self.m.external_path = '.'
         self.log("loading flopy model")
-        self.log("changing model ws and writing new modflow input files")
         if os.path.exists(new_model_ws):
             if not remove_existing:
                 self.logger.lraise("'new_model_ws' already exists")
@@ -668,7 +673,32 @@ class PstFromFlopyModel(object):
                 self.logger.warn("removing existing 'new_model_ws")
                 shutil.rmtree(new_model_ws)
         self.m.change_model_ws(new_model_ws,reset_external=True)
+
+        self.log("writing new modflow input files")
         self.m.write_input()
+        self.log("writing new modflow input files")
+
+
+        set_dirs = []
+        if len(pp_prop_dict) > 0 or len(zone_prop_dict) > 0 or len(grid_prop_dict) > 0:
+            set_dirs.append(self.arr_org)
+            set_dirs.append(self.arr_mlt)
+
+        if len(bc_prop_dict) > 0:
+            set_dirs.append(self.bc_org)
+        for d in set_dirs:
+            d = os.path.join(self.m.model_ws,d)
+            self.log("setting up '{0}' dir".format(d))
+            if os.path.exists(d):
+                if self.remove_existing:
+                    shutil.rmtree(d)
+                else:
+                    raise Exception("dir '{0}' already exists".
+                                    format(d))
+            os.mkdir(d)
+            self.log("setting up '{0}' dir".format(d))
+
+
         self.mflist_waterbudget = mflist_waterbudget
         if self.mflist_waterbudget:
             org_listfile = os.path.join(org_model_ws,self.m.name+".list")
@@ -678,36 +708,49 @@ class PstFromFlopyModel(object):
             else:
                 self.logger.lraise("can't find existing list file:{0}".
                                    format(org_listfile))
-        self.log("changing model ws and writing new modflow input files")
 
-        self.frun_lines = []
+        self.frun_pre_lines = []
+        self.frun_model_lines = []
+        self.frun_post_lines = []
+
         self.tpl_files,self.in_files = [],[]
         self.ins_files,self.out_files = [],[]
 
-        self.pp_pakattr_list = pp_pakattr_list
+        self.pp_prop_dict = pp_prop_dict
         self.pp_space = pp_space
         self.pp_bounds = pp_bounds
         self.pp_geostruct = pp_geostruct
 
-        self.const_pakattr_list = const_pakattr_list
-        self.bc_pakattr_list = bc_pakattr_list
+        self.const_prop_dict = const_prop_dict
+        self.bc_prop_dict = bc_prop_dict
         self.bc_geostruct = bc_geostruct
 
-        self.grid_pakattr_list = grid_pakattr_list
+        self.grid_prop_dict = grid_prop_dict
         self.grid_geostruct = grid_geostruct
 
-        par_lists = [pp_pakattr_list,bc_pakattr_list,const_pakattr_list,grid_pakattr_list]
-        par_methods = [self.setup_pp,self.setup_bc,self.setup_const,self.setup_grid]
-        par_types = ["pilot points","boundary conditions","constants","grid"]
-        for par_list,par_method,par_type in zip(par_lists,par_methods,par_types):
+        self.zone_prop_dict = zone_prop_dict
+
+        par_dicts = [self.pp_prop_dict,self.bc_prop_dict,
+                     self.const_prop_dict,self.grid_prop_dict,
+                     self.zone_prop_dict]
+        par_methods = [self.setup_pp,self.setup_bc,self.setup_const,
+                       self.setup_grid,self.setup_zone]
+        par_types = ["pilot points","boundary conditions","constants",
+                     "grid","zones"]
+
+        #TODO: check for dups by tracking k:prop pairs
+        self.k_prop_list = []
+        for par_dict,par_method,par_type in zip(par_dicts,par_methods,par_types):
             self.log("processing {0} parameters".format(par_type))
             par_method()
             self.log("processing {0} parameters".format(par_type))
 
+        #write the model input in case arrays or bc entries have been changed
+
         # add the model call
         line = "pyemu.helpers.run('{0} {1} 1>{1}.stdout 2>{1}.stderr')".format(self.m.exe_name,self.m.namefile)
         self.logger.statement("forward_run line:{0}".format(line))
-        self.frun_lines.append(line)
+        self.frun_model_lines.append(line)
 
         obs_lists = [None]
         obs_methods = [self.setup_water_budget_obs]
@@ -725,10 +768,19 @@ class PstFromFlopyModel(object):
             in_files = [f.replace(".tpl",'') for f in tpl_files]
             ins_files = [f for f in files if f.endswith(".ins")]
             out_files = [f.replace(".ins",'') for f in ins_files]
-            pst = pyemu.Pst.from_io_files(tpl_files=tpl_files,
-                                          in_files=in_files,
-                                          ins_files=ins_files,
-                                          out_files=out_files)
+            for tpl_file,in_file in zip(tpl_files,in_files):
+                if tpl_file not in self.tpl_files:
+                    self.tpl_files.append(tpl_file)
+                    self.in_files.append(in_file)
+
+            for ins_file,out_file in zip(ins_files,out_files):
+                if ins_file not in self.ins_files:
+                    self.ins_files.append(ins_file)
+                    self.out_files.append(out_file)
+            pst = pyemu.Pst.from_io_files(tpl_files=self.tpl_files,
+                                          in_files=self.in_files,
+                                          ins_files=self.ins_files,
+                                          out_files=self.out_files)
 
         except Exception as e:
             os.chdir("..")
@@ -736,13 +788,22 @@ class PstFromFlopyModel(object):
         os.chdir('..')
         # more customization here
         par = pst.parameter_data
-        self.pp_df.index = self.pp_df.parnme
-        par.loc[self.pp_df.parnme,"pargp"] = self.pp_df.pargp
-        par.loc[self.pp_df.parnme,"parubnd"] = 1.5
-        par.loc[self.pp_df.parnme,"parlbnd"] = 0.5
+        if len(self.pp_prop_dict) > 0:
+            self.pp_df.index = self.pp_df.parnme
+            par.loc[self.pp_df.parnme,"pargp"] = self.pp_df.pargp
+            par.loc[self.pp_df.parnme,"parubnd"] = 1.5
+            par.loc[self.pp_df.parnme,"parlbnd"] = 0.5
+
         self.pst_name = self.m.name+"_pest.pst"
+        pst.model_command = ["python forward_run.py"]
+
         pst.write(os.path.join(self.m.model_ws,self.pst_name))
         self.log("running pestchek on {0}".format(self.pst_name))
+
+        self.log("writing forward_run.py")
+        self.write_forward_run()
+        self.log("writing forward_run.py")
+
         os.chdir(self.m.model_ws)
         try:
 
@@ -756,29 +817,47 @@ class PstFromFlopyModel(object):
 
 
     def write_forward_run(self):
-        with open(self.forward_run_file,'w') as f:
+        with open(os.path.join(self.m.model_ws,self.forward_run_file),'w') as f:
             f.write("import os\nimport numpy as np\nimport pandas as pd\nimport flopy\n")
             f.write("import pyemu\n")
-            for line in self.frun_lines:
+            for line in self.frun_pre_lines:
+                f.write(line+'\n')
+            for line in self.frun_model_lines:
+                f.write(line+'\n')
+            for line in self.frun_post_lines:
                 f.write(line+'\n')
 
+    def parse_k(self,k,vals):
+        try:
+            k = int(k)
+        except:
+            pass
+        else:
+            assert k in vals,"k {0} not in vals".format(k)
+            return [k]
+        if k == ':':
+            return vals
+        else:
+            try:
+                k_vals = vals[k]
+            except Exception as e:
+                raise Exception("error slicing vals with {0}:{1}".
+                                format(k,str(e)))
+
     def parse_pakattr(self,pakattr):
+
         if isinstance(pakattr,list) or isinstance(pakattr,tuple):
-            if len(pakattr) != 3:
+            if len(pakattr) != 2:
                 self.logger.lraise("pakattr: '{0}' must be iterable of len 2".\
                 format(str(pakattr)))
             pakname = pakattr[0].lower()
             attrname = pakattr[1].lower()
-            k = int(pakattr[2])
-            if k >= self.m.nlay:
-                self.logger.lraise("'k' of {0} >= model.nlay".
-                                   format(str(pakattr)))
             pak = self.m.get_package(pakname)
             if pak is None:
                 self.logger.lraise("pak {0} not found".format(pakname))
             if hasattr(pak,attrname):
                 attr = getattr(pak,attrname)
-                return pak,attr,k
+                return pak,attr
             elif hasattr(pak,"stress_period_data"):
                 dtype = pak.stress_period_data.dtype
                 if attrname not in dtype.names:
@@ -792,78 +871,134 @@ class PstFromFlopyModel(object):
             self.logger.lraise("pakattr must be type list or tuple, not {0}".\
                                format(str(type(pakattr))))
 
+    def setup_other_pars(self):
+        pass
 
-    def pp_helper(self,pakattr):
-        pak,attr,k = self.parse_pakattr(pakattr)
+    def setup_bc(self):
+        if len(self.bc_prop_dict) == 0:
+            return
+
+        self.log("processing bc_prop_dict")
+        if not isinstance(self.bc_prop_dict,dict):
+            self.logger.lraise("bc_prop_dict must be 'dict', not {0}".
+                               format(str(type(self.bc_prop_dict))))
+
+        for k_org,pakattr_list in self.bc_prop_dict.items():
+
+            if len(pakattr_list) == 2:
+                try:
+                    self.parse_pakattr(pakattr_list)
+                except:
+                    pass
+                else:
+                    pakattr_list = [pakattr_list]
+            try:
+                k_parse = self.parse_k(k_org,np.arange(self.m.nper))
+            except Exception as e:
+                self.logger.lraise("error parsing k {0}:{1}".format(k_org,str(e)))
+            pakattr_list = [self.parse_pakattr(pa) for pa in pakattr_list]
+            for pak,attr,col in pakattr_list:
+                for k in k_parse:
+                    self.bc_helper(k,pak,attr,col)
+        self.log("processing bc_prop_dict")
+
+
+
+    def bc_helper(self,k,pak,attr,col):
+        pass
+
+    def setup_const(self):
+        if len(self.const_prop_dict) == 0:
+            return
+
+        self.log("processing const_prop_dict")
+        if not isinstance(self.const_prop_dict,dict):
+            self.logger.lraise("const_prop_dict must be 'dict', not {0}".
+                               format(str(type(self.const_prop_dict))))
+        self.const_paks = {}
+        for k_org,pakattr_list in self.const_prop_dict.items():
+
+            if len(pakattr_list) == 2:
+                try:
+                    self.parse_pakattr(pakattr_list)
+                except:
+                    pass
+                else:
+                    pakattr_list = [pakattr_list]
+            pakattr_list = [self.parse_pakattr(pa) for pa in pakattr_list]
+            for pak,attr in pakattr_list:
+                if isinstance(attr,flopy.utils.Transient2d):
+                    try:
+                        k_parse = self.parse_k(k_org,np.arange(self.m.nper))
+                    except Exception as e:
+                        self.logger.lraise("error parsing k {0}:{1}".format(k_org,str(e)))
+                else:
+                    try:
+                        k_parse = self.parse_k(k_org,np.arange(self.m.nlay))
+                    except Exception as e:
+                        self.logger.lraise("error parsing k {0}:{1}".format(k_org,str(e)))
+                for k in k_parse:
+                    self.const_helper(k,pak,attr)
+        self.log("processing const_prop_dict")
+
+
+        for panme,pak in self.const_paks.items():
+            with open(pak.fn_path+".tpl",'w') as f:
+                f.write("ptf ~\n")
+                pak.write_file(f=f)
+
+    def const_helper(self,k,pak,attr):
+        if pak.name[0] not in self.const_paks:
+            self.const_paks[pak.name[0]] = copy.copy(pak)
+
         if isinstance(attr,flopy.utils.Util2d):
-            self.pp_util2d_helper(attr,k)
+            self.const_util2d_helper(attr,k)
         elif isinstance(attr,flopy.utils.Util3d):
-            self.pp_util2d_helper(attr.util_2ds[k],k)
+            self.const_util2d_helper(attr.util_2ds[k],k)
         elif isinstance(attr,flopy.utils.Transient2d):
-            self.logger.warn("only setting up one set of pilot points for all "+\
-                  "stress periods for pakattr:{0}".format(attr.name_base))
-            kper = list(attr.transient_2ds.keys())[0]
-            self.pp_util2d_helper(attr.transient_2ds[kper],k)
+            self.const_util2d_helper(attr.transient_2ds[k],k)
 
-        elif isinstance(pakattr,flopy.utils.MfList):
-            #this will require some thought about how to generalize the
-            # bc par apply function since there might be kper mults and
-            # array mults for the same input list file
-            self.logger.lraise('MfList support not implemented for pilot points')
+        elif isinstance(attr,flopy.utils.MfList):
+            self.logger.lraise('MfList support not implemented for const')
         else:
-            self.logger.lraise("unrecognized pakattr:{0}".format(str(pakattr)))
+            self.logger.lraise("unrecognized pakattr:{0},{1}".format(str(pak),str(attr)))
 
-    def pp_util2d_helper(self,u2d,k):
-        #TODO build up the args needed for setup grid pilot points
-        #TODO and setup multiplier array filenames
-        #TODO add to self.frun
-        name = u2d.name.split('_')[0]+"{0:02d}".format(k)
-        filename = u2d.filename
-        if filename is None:
-            self.logger.lraise("filename is None for {0}".format(u2d.name))
-        filename = os.path.join(self.m.model_ws,"arr_org",filename)
-        self.logger.statement("resetting 'how' to openclose for {0}".format(name))
-        self.logger.statement("{0} being written to array file {1}".format(name,filename))
-        u2d.how = "openclose"
-        # write original array into arr_org
-        self.logger.statement("saving array:{0}".format(filename))
-        np.savetxt(filename,u2d.array)
-        # need to find what the external filename that flopy writes
-        if k not in self.pp_dict.keys():
-            self.pp_dict[k] = []
-        self.pp_dict[k].append(name)
-        self.pp_array_file[name] = filename
+
+    def const_util2d_helper(self,attr,k):
+
+        pname = os.path.split(attr.filename)[-1].split('.')[0].lower()
+        attr.cnstnt = "~   {0}   ~".format(pname)
 
     def setup_pp(self):
 
-        if len(self.pp_pakattr_list) == 0:
+        if len(self.pp_prop_dict) == 0:
             return
 
-        self.log("setting up '{0} and '{1}' dirs".
-                 format(self.arr_org,self.arr_mlt))
-        # make arr_org and arr_mult dirs for storage
-        for d in [os.path.join(self.m.model_ws,self.arr_org),
-                  os.path.join(self.m.model_ws,self.arr_mlt)]:
-            if os.path.exists(d):
-                if self.remove_existing:
-                    shutil.rmtree(d)
-                else:
-                    raise Exception("pilot point dir '{0}' already exists".
-                                    format(d))
-            os.mkdir(d)
-
-        self.log("setting up '{0} and '{1}' dirs".
-                 format(self.arr_org,self.arr_mlt))
-
-        self.log("processing pp_pakattr_list")
-        if not isinstance(self.pp_pakattr_list,list):
-            self.pp_pakattr_list = list(self.pp_pakattr_list)
-
+        self.log("processing pp_prop_dict")
+        if not isinstance(self.pp_prop_dict,dict):
+            self.logger.lraise("pp_prop_dict must be 'dict', not {0}".
+                               format(str(type(self.pp_prop_dict))))
         self.pp_dict = {}
         self.pp_array_file = {}
-        for pakattr in self.pp_pakattr_list:
-            self.pp_helper(pakattr)
-        self.log("processing pp_pakattr_list")
+
+        for k_org,pakattr_list in self.pp_prop_dict.items():
+            if len(pakattr_list) == 2:
+                try:
+                    self.parse_pakattr(pakattr_list)
+                except:
+                    pass
+                else:
+                    pakattr_list = [pakattr_list]
+            pakattr_list = [self.parse_pakattr(pa) for pa in pakattr_list]
+            try:
+                k_parse = self.parse_k(k_org,np.arange(self.m.nlay))
+            except Exception as e:
+                self.logger.lraise("error parsing k {0}:{1}".format(k_org,str(e)))
+
+            for k in k_parse:
+                for pak,attr in pakattr_list:
+                    self.pp_helper(k,pak,attr)
+        self.log("processing pp_prop_dict")
 
         self.log("calling setup_pilot_point_grid()")
         if self.pp_space is None:
@@ -899,7 +1034,7 @@ class PstFromFlopyModel(object):
         for pg in pargp:
             ks = self.pp_df.loc[self.pp_df.pargp==pg,"k"].unique()
             if len(ks) != 1:
-                self.logger.lraise("something is wrong in frac calcs")
+                self.logger.lraise("something is wrong in fac calcs")
             k = int(ks[0])
             if k not in pp_dfs_k.keys():
                 self.log("calculating factors for k={0}".format(k))
@@ -929,31 +1064,260 @@ class PstFromFlopyModel(object):
                     self.logger.lraise("{0} not in self.pp_array_file.keys()".
                                        format(pp_prefix,','.
                                               join(self.pp_array_file.keys())))
-                out_file = os.path.join(self.arr_mlt,self.pp_array_file[pp_prefix])
+                out_file = os.path.join(self.arr_mlt,os.path.split(self.pp_array_file[pp_prefix])[-1])
                 pp_files = self.pp_df.loc[self.pp_df.pp_filename.apply(lambda x: pp_prefix in x),"pp_filename"]
                 if pp_files.unique().shape[0] != 1:
                     self.logger.lraise("wrong number of pp_files found:{0}".format(','.join(pp_files)))
                 pp_file = os.path.split(pp_files[0])[-1]
+
+                line = "try:\n    os.remove('{0}')\nexcept:\n    pass".format(os.path.join(self.m.external_path,os.path.split(out_file)[-1]))
+                self.logger.statement("forward_run line:{0}".format(line))
+                self.frun_pre_lines.append(line)
+
                 line = "pyemu.gw_utils.fac2real('{0}',factors_file='{1}',out_file='{2}')".\
                     format(pp_file,fac_file,out_file)
                 self.logger.statement("forward_run line:{0}".format(line))
+                self.frun_pre_lines.append(line)
 
-                self.frun_lines.append("line")
+                line = "org_arr = np.loadtxt('{0}')".\
+                    format(os.path.join(self.arr_org,os.path.split(out_file)[-1]))
+                self.logger.statement("forward_run line:{0}".format(line))
+                self.frun_pre_lines.append(line)
 
+                line = "mlt_arr = np.loadtxt('{0}')".format(out_file)
+                self.logger.statement("forward_run line:{0}".format(line))
+                self.frun_pre_lines.append(line)
+
+                line = "np.savetxt('{0}',org_arr * mlt_arr,fmt='%15.6E')".\
+                    format(os.path.join(self.m.external_path,os.path.split(out_file)[-1]))
+                self.logger.statement("forward_run line:{0}".format(line))
+                self.frun_pre_lines.append(line)
                 self.log("processing pp_prefix:{0}".format(pp_prefix))
 
+    def pp_helper(self,k,pak,attr):
 
-    def setup_other_pars(self):
-        pass
+        if isinstance(attr,flopy.utils.Util2d):
+            self.pp_util2d_helper(attr,k)
+        elif isinstance(attr,flopy.utils.Util3d):
+            self.pp_util2d_helper(attr.util_2ds[k],k)
+        elif isinstance(attr,flopy.utils.Transient2d):
+            self.logger.warn("only setting up one set of pilot points for all "+\
+                  "stress periods for pakattr:{0}".format(attr.name_base))
+            kper = list(attr.transient_2ds.keys())[0]
+            self.pp_util2d_helper(attr.transient_2ds[kper],k)
 
-    def setup_bc(self):
-        pass
+        elif isinstance(attr,flopy.utils.MfList):
+            self.logger.lraise('MfList support not implemented for pilot points')
+        else:
+            self.logger.lraise("unrecognized pak,attr:{0},{1}".
+                               format(str(pak),str(attr)))
 
-    def setup_const(self):
-        pass
+    def pp_util2d_helper(self,u2d,k):
+        name = u2d.name.split('_')[0]+"{0:02d}".format(k)
+        filename = u2d.filename
+        if filename is None:
+            self.logger.lraise("filename is None for {0}".format(u2d.name))
+        filename = os.path.join(self.m.model_ws,self.arr_org,filename)
+        self.logger.statement("resetting 'how' to openclose for {0}".format(name))
+        self.logger.statement("{0} being written to array file {1}".format(name,filename))
+        u2d.how = "openclose"
+        # write original array into arr_org
+        self.logger.statement("saving array:{0}".format(filename))
+        np.savetxt(filename,u2d.array)
+        # need to find what the external filename that flopy writes
+        if k not in self.pp_dict.keys():
+            self.pp_dict[k] = []
+        self.pp_dict[k].append(name)
+        self.pp_array_file[name] = filename
+        self.k_prop_list.append((k,filename))
+
+
 
     def setup_grid(self):
-        pass
+        if len(self.grid_prop_dict) == 0:
+            return
+
+        self.log("processing grid_prop_dict")
+        if not isinstance(self.grid_prop_dict,dict):
+            self.logger.lraise("grid_prop_dict must be 'dict', not {0}".
+                               format(str(type(self.grid_prop_dict))))
+
+        for k_org,pakattr_list in self.grid_prop_dict.items():
+            if len(pakattr_list) == 2:
+                try:
+                    self.parse_pakattr(pakattr_list)
+                except:
+                    pass
+                else:
+                    pakattr_list = [pakattr_list]
+            pakattr_list = [self.parse_pakattr(pa) for pa in pakattr_list]
+            try:
+                k_parse = self.parse_k(k_org,np.arange(self.m.nlay))
+            except Exception as e:
+                self.logger.lraise("error parsing k {0}:{1}".format(k_org,str(e)))
+
+            for k in k_parse:
+                for pak,attr in pakattr_list:
+                    self.grid_helper(k,pak,attr)
+        self.log("processing grid_prop_dict")
+
+        if self.grid_geostruct is None:
+            self.logger.warn("grid_geostruct is None,"\
+                  " using ExpVario with contribution=1 and a=(max(delc,delr)*10")
+            dist = 10 * float(max(self.m.dis.delr.array.max(),
+                                           self.m.dis.delc.array.max()))
+            v = pyemu.geostats.ExpVario(contribution=1.0,a=dist)
+            self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+
+
+    def grid_helper(self,k,pak,attr):
+        if isinstance(attr,flopy.utils.Util2d):
+            self.grid_util2d_helper(attr,k)
+        elif isinstance(attr,flopy.utils.Util3d):
+            self.grid_util2d_helper(attr.util_2ds[k],k)
+        elif isinstance(attr,flopy.utils.Transient2d):
+            self.logger.warn("only setting up one set of grid pars for all "+\
+                  "stress periods for pakattr:{0}".format(attr.name_base))
+            kper = list(attr.transient_2ds.keys())[0]
+            self.grid_util2d_helper(attr.transient_2ds[kper],k)
+
+        elif isinstance(attr,flopy.utils.MfList):
+            self.logger.lraise('MfList support not implemented for grid pars')
+        else:
+            self.logger.lraise("unrecognized pak,attr:{0},{1}".
+                               format(str(pak),str(attr)))
+
+    def grid_util2d_helper(self,u2d,k):
+        name = u2d.name.split('_')[0]+"{0:02d}".format(k)
+        filename = u2d.filename
+        if filename is None:
+            self.logger.lraise("filename is None for {0}".format(u2d.name))
+        filename = os.path.join(self.m.model_ws,self.arr_org,filename)
+        self.logger.statement("resetting 'how' to openclose for {0}".format(name))
+        self.logger.statement("{0} being written to array file {1}".format(name,filename))
+        u2d.how = "openclose"
+        # write original array into arr_org
+        self.logger.statement("saving array:{0}".format(filename))
+        np.savetxt(filename,u2d.array)
+        # write the template file
+        tpl_file = os.path.join(self.m.model_ws,os.path.split(filename)[-1]+".tpl")
+        with open(tpl_file,'w') as f:
+            f.write("ptf ~\n")
+            for i in range(self.m.nrow):
+                for j in range(self.m.ncol):
+                    pname = "{0}_{2:03d}{3:03d}".format(name,k,i,j)
+                    if len(pname) > 12:
+                        self.logger.lraise("grid pname too long:{0}".\
+                                           format(pname))
+                    f.write(" ~  {0}  ~".format(pname))
+                f.write("\n")
+        line = "try:\n    os.remove('{0}')\nexcept:\n    pass".\
+            format(os.path.join(self.m.external_path,os.path.split(filename)[-1]))
+        self.log("forward_run line:{0}".format(line))
+        self.frun_pre_lines.append(line)
+        line = "arr_org = np.loadtxt('{0}')".\
+            format(os.path.join(self.arr_org,os.path.split(filename)[-1]))
+        self.log("forward_run line:{0}".format(line))
+        self.frun_pre_lines.append(line)
+        line = "arr_mlt = np.loadtxt('{0}')".\
+            format(os.path.join(self.arr_mlt,os.path.split(filename)[-1]))
+        self.log("forward_run line:{0}".format(line))
+        self.frun_pre_lines.append(line)
+
+        # track these tpl-in pairs because they don't follow the standard spec
+        self.tpl_files.append(os.path.split(tpl_file)[-1])
+        self.in_files.append(os.path.join(self.arr_mlt,os.path.split(filename)[-1]))
+        self.k_prop_list.append((k,filename))
+
+    def setup_zone(self):
+        if len(self.zone_prop_dict) == 0:
+            return
+
+        self.log("processing zone_prop_dict")
+        if not isinstance(self.zone_prop_dict,dict):
+            self.logger.lraise("zone_prop_dict must be 'dict', not {0}".
+                               format(str(type(self.zone_prop_dict))))
+
+        for k_org,pakattr_list in self.zone_prop_dict.items():
+            if len(pakattr_list) == 2:
+                try:
+                    self.parse_pakattr(pakattr_list)
+                except:
+                    pass
+                else:
+                    pakattr_list = [pakattr_list]
+            pakattr_list = [self.parse_pakattr(pa) for pa in pakattr_list]
+            try:
+                k_parse = self.parse_k(k_org,np.arange(self.m.nlay))
+            except Exception as e:
+                self.logger.lraise("error parsing k {0}:{1}".format(k_org,str(e)))
+
+            for k in k_parse:
+                for pak,attr in pakattr_list:
+                    self.zone_helper(k,pak,attr)
+        self.log("processing zone_prop_dict")
+
+
+    def zone_helper(self,k,pak,attr):
+
+        if isinstance(attr,flopy.utils.Util2d):
+            self.zone_util2d_helper(attr,k)
+        elif isinstance(attr,flopy.utils.Util3d):
+            self.zone_util2d_helper(attr.util_2ds[k],k)
+        elif isinstance(attr,flopy.utils.Transient2d):
+            self.logger.warn("only setting up one set of zone pars for all "+\
+                  "stress periods for pakattr:{0}".format(attr.name_base))
+            kper = list(attr.transient_2ds.keys())[0]
+            self.zone_util2d_helper(attr.transient_2ds[kper],k)
+
+        elif isinstance(attr,flopy.utils.MfList):
+            self.logger.lraise('MfList support not implemented for zone pars')
+        else:
+            self.logger.lraise("unrecognized pak,attr:{0},{1}".
+                               format(str(pak),str(attr)))
+
+    def zone_util2d_helper(self,u2d,k):
+        name = u2d.name.split('_')[0]+"{0:02d}".format(k)
+        filename = u2d.filename
+        if filename is None:
+            self.logger.lraise("filename is None for {0}".format(u2d.name))
+        filename = os.path.join(self.m.model_ws,self.arr_org,filename)
+        self.logger.statement("resetting 'how' to openclose for {0}".format(name))
+        self.logger.statement("{0} being written to array file {1}".format(name,filename))
+        u2d.how = "openclose"
+        # write original array into arr_org
+        self.logger.statement("saving array:{0}".format(filename))
+        np.savetxt(filename,u2d.array)
+        # write the template file
+        tpl_file = os.path.join(self.m.model_ws,os.path.split(filename)[-1]+".tpl")
+        ib = self.m.bas6.ibound[k].array
+        with open(tpl_file,'w') as f:
+            f.write("ptf ~\n")
+            for i in range(self.m.nrow):
+                for j in range(self.m.ncol):
+                    pname = "{0}_zn{1}".format(name,k,ib[i,j])
+                    if len(pname) > 12:
+                        self.logger.lraise("zone pname too long:{0}".\
+                                           format(pname))
+                    f.write(" ~  {0}  ~".format(pname))
+                f.write("\n")
+        line = "try:\n    os.remove('{0}')\nexcept:\n    pass".\
+            format(os.path.join(self.m.external_path,os.path.split(filename)[-1]))
+        self.log("forward_run line:{0}".format(line))
+        self.frun_pre_lines.append(line)
+        line = "arr_org = np.loadtxt('{0}')".\
+            format(os.path.join(self.arr_org,os.path.split(filename)[-1]))
+        self.log("forward_run line:{0}".format(line))
+        self.frun_pre_lines.append(line)
+        line = "arr_mlt = np.loadtxt('{0}')".\
+            format(os.path.join(self.arr_mlt,os.path.split(filename)[-1]))
+        self.log("forward_run line:{0}".format(line))
+        self.frun_pre_lines.append(line)
+
+        # track these tpl-in pairs because they don't follow the standard spec
+        self.tpl_files.append(os.path.split(tpl_file)[-1])
+        self.in_files.append(os.path.join(self.arr_mlt,os.path.split(filename)[-1]))
+        self.k_prop_list.append((k,filename))
 
     def setup_smp(self):
         pass
@@ -972,12 +1336,15 @@ class PstFromFlopyModel(object):
                                                             flx_filename=flx_file,
                                                             vol_filename=vol_file,
                                                             start_datetime=self.m.start_datetime)
+        line = "try:\n    os.remove('{0}')\nexcept:\n    pass".format(os.path.split(list_file)[-1])
+        self.logger.statement("forward_run line:{0}".format(line))
+        self.frun_pre_lines.append(line)
         line = "pyemu.gw_utils.apply_mflist_budget_obs('{0}',flx_filename='{1}',vol_filename='{2}',start_datetime='{3}')".\
                 format(os.path.split(list_file)[-1],
                        os.path.split(flx_file)[-1],
                        os.path.split(vol_file)[-1],
                        self.m.start_datetime)
         self.logger.statement("forward_run line:{0}".format(line))
-        self.frun_lines.append(line)
+        self.frun_post_lines.append(line)
 
 

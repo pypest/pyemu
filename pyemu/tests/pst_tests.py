@@ -273,28 +273,24 @@ def from_flopy_test():
     #m = flopy.modflow.Modflow.load("freyberg.nam",model_ws=os.path.join("..","..","verification","Freyberg","extra_crispy"))
     #pp_list = [m.upw.hk[0],m.upw.vka,m.upw.ss,m.rch.rech]
     #bc_list = [m.wel.stress_period_data,("riv","cond")]
-    pp_list = [("upw","hk",0),["upw","vka",0],["rch","rech",0]]
-    bc_list = [("wel","flux"),("riv","cond")]
-    # m.change_model_ws("temp",reset_external=True)
-    # m.external_path = ''
-    # m.upw.hk.how = "openclose"
-    # m.upw.ss.how = "openclose"
-    # m.upw.vka.how = 'openclose'
-    # m.rch.rech.how = "openclose"
-    # print(m.upw.ss[0].how)
-    # m.write_input()
-    # m = flopy.modflow.Modflow.load("freyberg.nam",model_ws="temp")
-    # m.external_path = ''
+    pp_prop_dict = {':':[("upw","hk"),["rch","rech"]]}
+    const_prop_dict = {':':[("upw","hk"),["upw","vka"],["rch","rech"]]}
+    grid_prop_dict = {0:("upw","sy")}
+    zone_prop_dict = {0:("upw","vka")}
+    bc_prop_dict = {':':[("wel","flux"),("riv","cond")]}
     org_model_ws = os.path.join("..","..","verification","Freyberg","extra_crispy")
     new_model_ws = "temp_pst_from_flopy"
     nam_file = "freyberg.nam"
-    pyemu.helpers.PstFromFlopyModel(nam_file,org_model_ws,new_model_ws
-                               ,pp_pakattr_list=pp_list,
-                               bc_pakattr_list=bc_list,
-                               remove_existing=True,
+    pyemu.helpers.PstFromFlopyModel(nam_file,org_model_ws,new_model_ws,
+                                    pp_prop_dict=pp_prop_dict,
+                                    const_prop_dict=const_prop_dict,
+                                    grid_prop_dict=grid_prop_dict,
+                                    zone_prop_dict=zone_prop_dict,
+                                    bc_prop_dict=bc_prop_dict,
+                                    remove_existing=True,
                                     pp_space=5)
 if __name__ == "__main__":
-    #from_flopy_test()
+    from_flopy_test()
     #regdata_test()
     #nnz_groups_test()
     #regul_rectify_test()
@@ -307,6 +303,6 @@ if __name__ == "__main__":
     #load_test()
     #res_test()
     #smp_test()
-    from_io_with_inschek_test()
+    #from_io_with_inschek_test()
     #pestpp_args_test()
     #reweight_test()
