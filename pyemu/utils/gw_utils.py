@@ -130,7 +130,7 @@ def modflow_read_hydmod_file(hydmod_file, hydmod_outfile=None):
         import flopy.utils as fu
     except Exception as e:
         print('flopy is not installed - cannot read {0}\n{1}'.format(hydmod_file, e))
-
+        return
     print('Starting to read HYDMOD data from {0}'.format(hydmod_file))
     obs = fu.HydmodObs(hydmod_file)
     hyd_df = obs.get_dataframe()

@@ -264,24 +264,43 @@ def regdata_test():
 
 
 def from_flopy_test():
+    import shutil
+    import numpy as np
     try:
         import flopy
     except:
         pass
     import pyemu
 
-    #m = flopy.modflow.Modflow.load("freyberg.nam",model_ws=os.path.join("..","..","verification","Freyberg","extra_crispy"))
-    #pp_list = [m.upw.hk[0],m.upw.vka,m.upw.ss,m.rch.rech]
-    #bc_list = [m.wel.stress_period_data,("riv","cond")]
-    pp_prop_dict = {':':[("upw","hk"),["rch","rech"]]}
-    const_prop_dict = {':':[("upw","hk"),["upw","vka"],["rch","rech"]]}
-    grid_prop_dict = {0:("upw","sy")}
-    zone_prop_dict = {0:("upw","vka")}
+    # pilot points
+    pp_prop_dict = {':':[["rch","rech"]]}
+    # constants
+    const_prop_dict = {':':[("lpf","hk"),["lpf","vka"],["rch","rech"]]}
+    # grid scale - every active model cell
+    grid_prop_dict = {0:[("lpf","sy"),["lpf","hk"]]}
+
+    # zones using ibound values
+    zone_prop_dict = {0:("lpf","vka")}
+
+    # kper-level multipliers for boundary conditions
     bc_prop_dict = {':':[("wel","flux"),("riv","cond")]}
-    org_model_ws = os.path.join("..","..","verification","Freyberg","extra_crispy")
+
+    org_model_ws = os.path.join("..","..","examples","Freyberg_Truth")
+    nam_file = "freyberg.truth.nam"
+
+    # load the model and reset somethings and write new input
+    m = flopy.modflow.Modflow.load(nam_file,model_ws=org_model_ws)
+    ib = m.bas6.ibound[0].array
+    zn_arr = np.loadtxt(os.path.join(org_model_ws,"hk.zones"),dtype=int)
+    zn_arr[ib<1] = 0
+    m.bas6.ibound[0] = zn_arr
+    m.change_model_ws("temp",reset_external=True)
+    m.name = "freyberg"
+    m.write_input()
+    m.run_model()
+
     new_model_ws = "temp_pst_from_flopy"
-    nam_file = "freyberg.nam"
-    pyemu.helpers.PstFromFlopyModel(nam_file,org_model_ws,new_model_ws,
+    pyemu.helpers.PstFromFlopyModel(m.namefile,"temp",new_model_ws,
                                     pp_prop_dict=pp_prop_dict,
                                     const_prop_dict=const_prop_dict,
                                     grid_prop_dict=grid_prop_dict,

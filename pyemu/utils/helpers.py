@@ -639,9 +639,10 @@ class PstFromFlopyModel(object):
                  bc_prop_dict={},grid_prop_dict={},grid_geostruct=None,pp_space=None,
                  zone_prop_dict={},
                  pp_bounds=None,pp_geostruct=None,bc_geostruct=None,remove_existing=False,
-                 mflist_waterbudget=True):
+                 mflist_waterbudget=True,mfhyd=True):
         self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
         self.log = self.logger.log
+
         self.logger.echo = True
 
         self.arr_org = "arr_org"
@@ -661,6 +662,8 @@ class PstFromFlopyModel(object):
         except:
             raise Exception("from_flopy_model() requires flopy")
         # prepare the flopy model
+        self.org_model_ws = org_model_ws
+        self.new_model_ws = new_model_ws
         self.m = flopy.modflow.Modflow.load(nam_file,model_ws=org_model_ws)
         self.m.array_free_format = True
         self.m.free_format_input = True
@@ -698,16 +701,6 @@ class PstFromFlopyModel(object):
             os.mkdir(d)
             self.log("setting up '{0}' dir".format(d))
 
-
-        self.mflist_waterbudget = mflist_waterbudget
-        if self.mflist_waterbudget:
-            org_listfile = os.path.join(org_model_ws,self.m.name+".list")
-            if os.path.exists(org_listfile):
-                shutil.copy2(org_listfile,os.path.join(new_model_ws,
-                                                       self.m.name+".list"))
-            else:
-                self.logger.lraise("can't find existing list file:{0}".
-                                   format(org_listfile))
 
         self.frun_pre_lines = []
         self.frun_model_lines = []
@@ -753,8 +746,8 @@ class PstFromFlopyModel(object):
         self.frun_model_lines.append(line)
 
         obs_lists = [None]
-        obs_methods = [self.setup_water_budget_obs]
-        obs_types = ["mflist water budget obs"]
+        obs_methods = [self.setup_water_budget_obs,self.setup_hyd()]
+        obs_types = ["mflist water budget obs","hyd file"]
         for obs_list,obs_method, obs_type in zip(obs_lists,obs_methods,obs_types):
             self.log("processing obs type {0}".format(obs_type))
             obs_method()
@@ -1335,11 +1328,15 @@ class PstFromFlopyModel(object):
             f.write("ptf ~\n")
             for i in range(self.m.nrow):
                 for j in range(self.m.ncol):
-                    pname = "{0}_zn{1}".format(name,k,ib[i,j])
-                    if len(pname) > 12:
-                        self.logger.lraise("zone pname too long:{0}".\
-                                           format(pname))
-                    f.write(" ~  {0}  ~".format(pname))
+                    if ib[i,j] < 1:
+                        pname = " 1.0  "
+                    else:
+                        pname = "{0}_zn{1}".format(name,ib[i,j])
+                        if len(pname) > 12:
+                            self.logger.lraise("zone pname too long:{0}".\
+                                               format(pname))
+                        pname = " ~   {0}    ~".format(pname)
+                    f.write(pname)
                 f.write("\n")
         line = "try:\n    os.remove('{0}')\nexcept:\n    pass".\
             format(os.path.join(self.m.external_path,os.path.split(filename)[-1]))
@@ -1368,9 +1365,24 @@ class PstFromFlopyModel(object):
     def setup_hyd(self):
         if self.m.hyd is None:
             return
-        pyemu.gw_utils.modflow_hydmod_to_instruction_file(self.m.hyd.fn_path)
+        org_hyd_out = os.path.join(self.org_model_ws,self.m.name+".hyd.bin")
+        if not os.path.exists(org_hyd_out):
+            self.logger.warn("can't find existing hyd out file:{0}...skipping".
+                               format(org_hyd_out))
+            return
+        new_hyd_out = os.path.join(self.m.model_ws,os.path.split(org_hyd_out)[-1])
+        shutil.copy2(org_hyd_out,new_hyd_out)
+        pyemu.gw_utils.modflow_hydmod_to_instruction_file(new_hyd_out)
 
     def setup_water_budget_obs(self):
+        org_listfile = os.path.join(self.org_model_ws,self.m.lst.file_name[0])
+        if os.path.exists(org_listfile):
+            shutil.copy2(org_listfile,os.path.join(self.new_model_ws,
+                                                   self.m.name+".list"))
+        else:
+            self.logger.warn("can't find existing list file:{0}...skipping".
+                               format(org_listfile))
+            return
         list_file = os.path.join(self.m.model_ws,self.m.name+".list")
         flx_file = os.path.join(self.m.model_ws,"flux.dat")
         vol_file = os.path.join(self.m.model_ws,"vol.dat")
