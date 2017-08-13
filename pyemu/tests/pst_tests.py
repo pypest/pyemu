@@ -17,7 +17,7 @@ def from_io_with_inschek_test():
     in_files = [os.path.join(dir,f) for f in pst.input_files]
 
 
-    new_pst = pst_utils.pst_from_io_files(tpl_files, in_files,
+    new_pst = Pst.from_io_files(tpl_files, in_files,
                                 ins_files, out_files,
                                 pst_filename=os.path.join("pst","test.pst"))
     print(new_pst.observation_data)
@@ -294,7 +294,7 @@ def from_flopy_test():
                                remove_existing=True,
                                     pp_space=5)
 if __name__ == "__main__":
-    from_flopy_test()
+    #from_flopy_test()
     #regdata_test()
     #nnz_groups_test()
     #regul_rectify_test()
@@ -307,6 +307,6 @@ if __name__ == "__main__":
     #load_test()
     #res_test()
     #smp_test()
-    #from_io_with_inschek_test()
+    from_io_with_inschek_test()
     #pestpp_args_test()
     #reweight_test()

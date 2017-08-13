@@ -1127,10 +1127,11 @@ class Pst(object):
 
 
     @classmethod
-    def from_io_files(cls,tpl_files,in_files,ins_files,out_files):
+    def from_io_files(cls,tpl_files,in_files,ins_files,out_files,pst_filename=None):
         from pyemu import helpers
-        return helpers.pst_utils.pst_from_io_files(tpl_files=tpl_files,in_files=in_files,
-                                           ins_files=ins_files,out_files=out_files)
+        return helpers.pst_from_io_files(tpl_files=tpl_files,in_files=in_files,
+                                           ins_files=ins_files,out_files=out_files,
+                                         pst_filename=pst_filename)
 
     # eventually move this to pst_utils
     # @classmethod

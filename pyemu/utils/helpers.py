@@ -589,7 +589,7 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
 
     for tpl_file in tpl_files:
         assert os.path.exists(tpl_file),"template file not found: "+str(tpl_file)
-        new_names = [name for name in parse_tpl_file(tpl_file) if name not in par_names]
+        new_names = [name for name in pyemu.pst_utils.parse_tpl_file(tpl_file) if name not in par_names]
         par_names.extend(new_names)
 
     if not isinstance(ins_files,list):
@@ -621,7 +621,7 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
 #TODO write runtime helpers to apply pilot points, array mults and bc_mults
 #TODO write a file mapping multiplier bc and array parameters to mlt arrays and org arrays
 #TODO make util2d cnstnt a class with support for tpl_str
-
+#TODO download binaries from pestpp github based on platform
 
 # def pst_from_flopy_model(nam_file,org_model_ws,new_model_ws,pp_pakattr_list=None,const_pakattr_list=None,bc_pakattr_list=None,
 #                          grid_pakattr_list=None,grid_geostruct=None,pp_space=None,pp_bounds=None,
@@ -637,10 +637,18 @@ class PstFromFlopyModel(object):
 
     def __init__(self,nam_file,org_model_ws,new_model_ws,pp_pakattr_list=None,const_pakattr_list=None,
                  bc_pakattr_list=None,grid_pakattr_list=None,grid_geostruct=None,pp_space=None,
-                 pp_bounds=None,pp_geostruct=None,bc_geostruct=None,remove_existing=False):
+                 pp_bounds=None,pp_geostruct=None,bc_geostruct=None,remove_existing=False,
+                 mflist_waterbudget=True):
         self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
         self.log = self.logger.log
         self.logger.echo = True
+        self.arr_org = "arr_org"
+        self.arr_mlt = "arr_mlt"
+        self.bc_org = "bc_org"
+        split_new_mws = [i for i in os.path.split(new_model_ws) if len(i) > 0]
+        if len(split_new_mws) != 1:
+            self.logger.lraise("new_model_ws can only be 1 folder-level deep:{0}".
+                               format(str(os.path.split(split_new_mws))))
         self.log("loading flopy model")
         try:
             import flopy
@@ -661,7 +669,15 @@ class PstFromFlopyModel(object):
                 shutil.rmtree(new_model_ws)
         self.m.change_model_ws(new_model_ws,reset_external=True)
         self.m.write_input()
-
+        self.mflist_waterbudget = mflist_waterbudget
+        if self.mflist_waterbudget:
+            org_listfile = os.path.join(org_model_ws,self.m.name+".list")
+            if os.path.exists(org_listfile):
+                shutil.copy2(org_listfile,os.path.join(new_model_ws,
+                                                       self.m.name+".list"))
+            else:
+                self.logger.lraise("can't find existing list file:{0}".
+                                   format(org_listfile))
         self.log("changing model ws and writing new modflow input files")
 
         self.frun_lines = []
@@ -688,9 +704,55 @@ class PstFromFlopyModel(object):
             par_method()
             self.log("processing {0} parameters".format(par_type))
 
+        # add the model call
+        line = "pyemu.helpers.run('{0} {1} 1>{1}.stdout 2>{1}.stderr')".format(self.m.exe_name,self.m.namefile)
+        self.logger.statement("forward_run line:{0}".format(line))
+        self.frun_lines.append(line)
 
+        obs_lists = [None]
+        obs_methods = [self.setup_water_budget_obs]
+        obs_types = ["mflist water budget obs"]
+        for obs_list,obs_method, obs_type in zip(obs_lists,obs_methods,obs_types):
+            self.log("processing obs type {0}".format(obs_type))
+            obs_method()
+            self.log("processing obs type {0}".format(obs_type))
 
+        self.log("changing dir in to {0}".format(self.m.model_ws))
+        os.chdir(self.m.model_ws)
+        try:
+            files = os.listdir('.')
+            tpl_files = [f for f in files if f.endswith(".tpl")]
+            in_files = [f.replace(".tpl",'') for f in tpl_files]
+            ins_files = [f for f in files if f.endswith(".ins")]
+            out_files = [f.replace(".ins",'') for f in ins_files]
+            pst = pyemu.Pst.from_io_files(tpl_files=tpl_files,
+                                          in_files=in_files,
+                                          ins_files=ins_files,
+                                          out_files=out_files)
 
+        except Exception as e:
+            os.chdir("..")
+            self.logger.lraise("error build Pst:{0}".format(str(e)))
+        os.chdir('..')
+        # more customization here
+        par = pst.parameter_data
+        self.pp_df.index = self.pp_df.parnme
+        par.loc[self.pp_df.parnme,"pargp"] = self.pp_df.pargp
+        par.loc[self.pp_df.parnme,"parubnd"] = 1.5
+        par.loc[self.pp_df.parnme,"parlbnd"] = 0.5
+        self.pst_name = self.m.name+"_pest.pst"
+        pst.write(os.path.join(self.m.model_ws,self.pst_name))
+        self.log("running pestchek on {0}".format(self.pst_name))
+        os.chdir(self.m.model_ws)
+        try:
+
+            run("pestchek {0} >pestchek.stdout".format(self.pst_name))
+        except Exception as e:
+            self.logger.warn("error running pestchek:{0}".format(str(e)))
+        for line in open("pestchek.stdout"):
+            self.logger.statement("pestcheck:{0}".format(line.strip()))
+        os.chdir("..")
+        self.log("running pestchek on {0}".format(self.pst_name))
 
 
     def write_forward_run(self):
@@ -756,8 +818,12 @@ class PstFromFlopyModel(object):
         #TODO and setup multiplier array filenames
         #TODO add to self.frun
         name = u2d.name.split('_')[0]+"{0:02d}".format(k)
-        filename = os.path.join(self.m.model_ws,"arr_org",name+".dat")
+        filename = u2d.filename
+        if filename is None:
+            self.logger.lraise("filename is None for {0}".format(u2d.name))
+        filename = os.path.join(self.m.model_ws,"arr_org",filename)
         self.logger.statement("resetting 'how' to openclose for {0}".format(name))
+        self.logger.statement("{0} being written to array file {1}".format(name,filename))
         u2d.how = "openclose"
         # write original array into arr_org
         self.logger.statement("saving array:{0}".format(filename))
@@ -766,33 +832,35 @@ class PstFromFlopyModel(object):
         if k not in self.pp_dict.keys():
             self.pp_dict[k] = []
         self.pp_dict[k].append(name)
-
-
-
-
+        self.pp_array_file[name] = filename
 
     def setup_pp(self):
 
         if len(self.pp_pakattr_list) == 0:
             return
 
-        self.log("setting up 'arr_org' and 'arr_mlt' dirs")
+        self.log("setting up '{0} and '{1}' dirs".
+                 format(self.arr_org,self.arr_mlt))
         # make arr_org and arr_mult dirs for storage
-        for d in [os.path.join(self.m.model_ws,"arr_org"),
-                  os.path.join(self.m.model_ws,"arr_mlt")]:
+        for d in [os.path.join(self.m.model_ws,self.arr_org),
+                  os.path.join(self.m.model_ws,self.arr_mlt)]:
             if os.path.exists(d):
                 if self.remove_existing:
                     shutil.rmtree(d)
                 else:
-                    raise Exception("pilot point dir '{0}' already exists".format(d))
+                    raise Exception("pilot point dir '{0}' already exists".
+                                    format(d))
             os.mkdir(d)
 
-        self.log("setting up 'arr_org' and 'arr_mlt' dirs")
+        self.log("setting up '{0} and '{1}' dirs".
+                 format(self.arr_org,self.arr_mlt))
 
         self.log("processing pp_pakattr_list")
         if not isinstance(self.pp_pakattr_list,list):
             self.pp_pakattr_list = list(self.pp_pakattr_list)
+
         self.pp_dict = {}
+        self.pp_array_file = {}
         for pakattr in self.pp_pakattr_list:
             self.pp_helper(pakattr)
         self.log("processing pp_pakattr_list")
@@ -802,15 +870,19 @@ class PstFromFlopyModel(object):
             self.logger.warn("pp_space is None, using 10...\n")
             self.pp_space=10
 
-        self.pp_df = pyemu.gw_utils.setup_pilotpoints_grid(self.m,prefix_dict=self.pp_dict,
+        self.pp_df = pyemu.gw_utils.setup_pilotpoints_grid(self.m,
+                                         prefix_dict=self.pp_dict,
                                          every_n_cell=self.pp_space,
-                                         pp_dir=self.m.model_ws,tpl_dir=self.m.model_ws,
-                                         shapename=os.path.join(self.m.model_ws,"pp.shp"))
+                                         pp_dir=self.m.model_ws,
+                                         tpl_dir=self.m.model_ws,
+                                         shapename=os.path.join(
+                                                 self.m.model_ws,"pp.shp"))
 
-        self.logger.statement("{0} pilot point parameters created".format(self.pp_df.shape[0]))
-        self.logger.statement("pilot point 'pargp':{0}".format(','.join(self.pp_df.pargp.unique())))
+        self.logger.statement("{0} pilot point parameters created".
+                              format(self.pp_df.shape[0]))
+        self.logger.statement("pilot point 'pargp':{0}".
+                              format(','.join(self.pp_df.pargp.unique())))
         self.log("calling setup_pilot_point_grid()")
-
 
         if self.pp_geostruct is None:
             self.logger.warn("pp_geostruct is None,"\
@@ -828,11 +900,12 @@ class PstFromFlopyModel(object):
             ks = self.pp_df.loc[self.pp_df.pargp==pg,"k"].unique()
             if len(ks) != 1:
                 self.logger.lraise("something is wrong in frac calcs")
-            k = ks[0]
+            k = int(ks[0])
             if k not in pp_dfs_k.keys():
                 self.log("calculating factors for k={0}".format(k))
-                var_file = os.path.join(self.m.model_ws,"pp_k{0}.var.dat".format(k))
-                fac_file = os.path.join(self.m.model_ws,"pp_k{0}.fac")
+
+                fac_file = os.path.join(self.m.model_ws,"pp_k{0}.fac".format(k))
+                var_file = fac_file.replace(".fac",".var.dat")
                 self.logger.statement("saving krige variance file:{0}"
                                       .format(var_file))
                 self.logger.statement("saving krige factors file:{0}"\
@@ -846,7 +919,28 @@ class PstFromFlopyModel(object):
                 pp_dfs_k[k] = pp_df_k
 
         # add lines to the forward run script
+        for k,fac_file in fac_files.items():
+            #pp_files = self.pp_df.pp_filename.unique()
+            fac_file = os.path.split(fac_file)[-1]
+            pp_prefixes = self.pp_dict[k]
+            for pp_prefix in pp_prefixes:
+                self.log("proecssing pp_prefix:{0}".format(pp_prefix))
+                if pp_prefix not in self.pp_array_file.keys():
+                    self.logger.lraise("{0} not in self.pp_array_file.keys()".
+                                       format(pp_prefix,','.
+                                              join(self.pp_array_file.keys())))
+                out_file = os.path.join(self.arr_mlt,self.pp_array_file[pp_prefix])
+                pp_files = self.pp_df.loc[self.pp_df.pp_filename.apply(lambda x: pp_prefix in x),"pp_filename"]
+                if pp_files.unique().shape[0] != 1:
+                    self.logger.lraise("wrong number of pp_files found:{0}".format(','.join(pp_files)))
+                pp_file = os.path.split(pp_files[0])[-1]
+                line = "pyemu.gw_utils.fac2real('{0}',factors_file='{1}',out_file='{2}')".\
+                    format(pp_file,fac_file,out_file)
+                self.logger.statement("forward_run line:{0}".format(line))
 
+                self.frun_lines.append("line")
+
+                self.log("processing pp_prefix:{0}".format(pp_prefix))
 
 
     def setup_other_pars(self):
@@ -870,7 +964,20 @@ class PstFromFlopyModel(object):
     def setup_hyd(self):
         pass
 
-
-
+    def setup_water_budget_obs(self):
+        list_file = os.path.join(self.m.model_ws,self.m.name+".list")
+        flx_file = os.path.join(self.m.model_ws,"flux.dat")
+        vol_file = os.path.join(self.m.model_ws,"vol.dat")
+        self.wb_df = pyemu.gw_utils.setup_mflist_budget_obs(list_file,
+                                                            flx_filename=flx_file,
+                                                            vol_filename=vol_file,
+                                                            start_datetime=self.m.start_datetime)
+        line = "pyemu.gw_utils.apply_mflist_budget_obs('{0}',flx_filename='{1}',vol_filename='{2}',start_datetime='{3}')".\
+                format(os.path.split(list_file)[-1],
+                       os.path.split(flx_file)[-1],
+                       os.path.split(vol_file)[-1],
+                       self.m.start_datetime)
+        self.logger.statement("forward_run line:{0}".format(line))
+        self.frun_lines.append(line)
 
 
