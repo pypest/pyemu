@@ -882,7 +882,11 @@ class PstFromFlopyModel(object):
         if not isinstance(self.bc_prop_dict,dict):
             self.logger.lraise("bc_prop_dict must be 'dict', not {0}".
                                format(str(type(self.bc_prop_dict))))
-
+        bc_filenames = []
+        bc_cols = []
+        bc_pak = []
+        bc_k = []
+        bc_dtype_names = []
         for k_org,pakattr_list in self.bc_prop_dict.items():
 
             if len(pakattr_list) == 2:
@@ -899,13 +903,46 @@ class PstFromFlopyModel(object):
             pakattr_list = [self.parse_pakattr(pa) for pa in pakattr_list]
             for pak,attr,col in pakattr_list:
                 for k in k_parse:
-                    self.bc_helper(k,pak,attr,col)
+                    bc_filenames.append(self.bc_helper(k,pak,attr,col))
+                    bc_cols.append(col)
+                    bc_pak.append(pak.name[0].lower())
+                    bc_k.append(k)
+                    bc_dtype_names.append(','.join(attr.dtype.names))
         self.log("processing bc_prop_dict")
+        df = pd.DataFrame({"filename":bc_filenames,"col":bc_cols,
+                           "kper":bc_k,"pak":bc_pak,"dtype_names":bc_dtype_names})
+        df.loc[:,"val"] = 1.0
+        #df.loc[:,"kper"] = df.kper.apply(np.int)
+        df.loc[:,"parnme"] = df.apply(lambda x: "{0}{1}_{2:03d}".format(x.pak,x.col,x.kper),axis=1)
+        df.loc[:,"tpl_str"] = df.parnme.apply(lambda x: "~   {0}   ~".format(x))
+        df.loc[:,"bc_org"] = self.bc_org
+        df.loc[:,"model_ext_path"] = self.m.external_path
 
+        names = ["filename","dtype_names","bc_org","model_ext_path","col","kper","pak","val"]
+        df.loc[:,names].\
+            to_csv(os.path.join(self.m.model_ws,"bc_pars.dat"),sep=' ')
+        f_tpl =  open(os.path.join(self.m.model_ws,'bc_pars.dat.tpl'),'w')
+        f_tpl.write("ptf ~\n")
+        names[-1] = "tpl_str"
+        df.loc[:,names].to_csv(os.path.join(self.m.model_ws,"bc_pars.dat.tpl"),sep=' ')
 
+        os.chdir(self.m.model_ws)
+        try:
+            apply_bc_pars()
+        except Exception as e:
+            os.chdir("..")
+            self.logger.lraise("error test running apply_bc_pars():{0}".format(str(e)))
+        os.chdir('..')
+        line = "pyemu.helpers.apply_bc_pars()\n"
+        self.logger.statement("forward_run line:{0}".format(line))
+        self.frun_pre_lines.append(line)
 
     def bc_helper(self,k,pak,attr,col):
-        pass
+        filename = attr.get_filename(k)
+        filename_model = os.path.join(self.m.external_path,filename)
+        shutil.copy2(os.path.join(self.m.model_ws,filename_model),
+                     os.path.join(self.m.model_ws,self.bc_org,filename))
+        return filename_model
 
     def setup_const(self):
         if len(self.const_prop_dict) == 0:
@@ -962,7 +999,6 @@ class PstFromFlopyModel(object):
             self.logger.lraise('MfList support not implemented for const')
         else:
             self.logger.lraise("unrecognized pakattr:{0},{1}".format(str(pak),str(attr)))
-
 
     def const_util2d_helper(self,attr,k):
 
@@ -1201,15 +1237,20 @@ class PstFromFlopyModel(object):
         np.savetxt(filename,u2d.array)
         # write the template file
         tpl_file = os.path.join(self.m.model_ws,os.path.split(filename)[-1]+".tpl")
+        ib = self.m.bas6.ibound[k].array
         with open(tpl_file,'w') as f:
             f.write("ptf ~\n")
             for i in range(self.m.nrow):
                 for j in range(self.m.ncol):
-                    pname = "{0}_{2:03d}{3:03d}".format(name,k,i,j)
-                    if len(pname) > 12:
-                        self.logger.lraise("grid pname too long:{0}".\
-                                           format(pname))
-                    f.write(" ~  {0}  ~".format(pname))
+                    if ib[i,j] < 1:
+                        pname = ' 1.0 '
+                    else:
+                        pname = "{0}_{2:03d}{3:03d}".format(name,k,i,j)
+                        if len(pname) > 12:
+                            self.logger.lraise("grid pname too long:{0}".\
+                                               format(pname))
+                        pname = ' ~     {0}   ~ '.format(pname)
+                    f.write(pname)
                 f.write("\n")
         line = "try:\n    os.remove('{0}')\nexcept:\n    pass".\
             format(os.path.join(self.m.external_path,os.path.split(filename)[-1]))
@@ -1256,7 +1297,6 @@ class PstFromFlopyModel(object):
                 for pak,attr in pakattr_list:
                     self.zone_helper(k,pak,attr)
         self.log("processing zone_prop_dict")
-
 
     def zone_helper(self,k,pak,attr):
 
@@ -1326,7 +1366,9 @@ class PstFromFlopyModel(object):
         pass
 
     def setup_hyd(self):
-        pass
+        if self.m.hyd is None:
+            return
+        pyemu.gw_utils.modflow_hydmod_to_instruction_file(self.m.hyd.fn_path)
 
     def setup_water_budget_obs(self):
         list_file = os.path.join(self.m.model_ws,self.m.name+".list")
@@ -1347,4 +1389,24 @@ class PstFromFlopyModel(object):
         self.logger.statement("forward_run line:{0}".format(line))
         self.frun_post_lines.append(line)
 
+def apply_bc_pars():
+    df = pd.read_csv("bc_pars.dat",delim_whitespace=True)
+    for fname in df.filename.unique():
+        df_fname = df.loc[df.filename==fname,:]
+        names = df_fname.dtype_names.iloc[0].split(',')
+        bc_org = df_fname.bc_org.iloc[0]
+        model_ext_path = df_fname.model_ext_path.iloc[0]
+        df_list = pd.read_csv(os.path.join(bc_org,fname),
+                              delim_whitespace=True,header=None,names=names)
+        for col,val in zip(df_fname.col,df_fname.val):
+            df_list.loc[:,col] *= val
+        fmts = {}
+        for name in names:
+            if name in ["i","j","k","inode"]:
+                fmts[name] = pyemu.pst_utils.IFMT
+            else:
+                fmts[name] = pyemu.pst_utils.FFMT
+        with open(os.path.join(model_ext_path,fname),'w') as f:
+            f.write(df_list.to_string(header=False,index=False,formatters=fmts)+'\n')
+            #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
 
