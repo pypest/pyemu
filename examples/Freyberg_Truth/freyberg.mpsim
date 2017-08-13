@@ -1,0 +1,10 @@
+#type dir sink src time stop pOpt tPt bud zne tard adv
+freyberg.mpnam
+freyberg.mplist
+    2   1    2   1    1    2    2   2   1   1    1   1
+freyberg.mpenpt
+freyberg.mppthln
+0.00
+freyberg.locations
+100
+0.001
