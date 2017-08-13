@@ -262,8 +262,40 @@ def regdata_test():
     pst_new = pyemu.Pst(os.path.join("pst","pest_regultest.pst"))
     assert pst_new.reg_data.phimlim == phimlim
 
+
+def from_flopy_test():
+    try:
+        import flopy
+    except:
+        pass
+    import pyemu
+
+    #m = flopy.modflow.Modflow.load("freyberg.nam",model_ws=os.path.join("..","..","verification","Freyberg","extra_crispy"))
+    #pp_list = [m.upw.hk[0],m.upw.vka,m.upw.ss,m.rch.rech]
+    #bc_list = [m.wel.stress_period_data,("riv","cond")]
+    pp_list = [("upw","hk",0),["upw","vka",0],["rch","rech",0]]
+    bc_list = [("wel","flux"),("riv","cond")]
+    # m.change_model_ws("temp",reset_external=True)
+    # m.external_path = ''
+    # m.upw.hk.how = "openclose"
+    # m.upw.ss.how = "openclose"
+    # m.upw.vka.how = 'openclose'
+    # m.rch.rech.how = "openclose"
+    # print(m.upw.ss[0].how)
+    # m.write_input()
+    # m = flopy.modflow.Modflow.load("freyberg.nam",model_ws="temp")
+    # m.external_path = ''
+    org_model_ws = os.path.join("..","..","verification","Freyberg","extra_crispy")
+    new_model_ws = "temp_pst_from_flopy"
+    nam_file = "freyberg.nam"
+    pyemu.helpers.PstFromFlopyModel(nam_file,org_model_ws,new_model_ws
+                               ,pp_pakattr_list=pp_list,
+                               bc_pakattr_list=bc_list,
+                               remove_existing=True,
+                                    pp_space=5)
 if __name__ == "__main__":
-    regdata_test()
+    from_flopy_test()
+    #regdata_test()
     #nnz_groups_test()
     #regul_rectify_test()
     #derivative_increment_tests()

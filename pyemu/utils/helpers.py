@@ -12,6 +12,11 @@ import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
 
+try:
+    import flopy
+except:
+    pass
+
 import pyemu
 
 
@@ -613,111 +618,257 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
         new_pst.write(pst_filename,update_regul=True)
     return new_pst
 
+#TODO write runtime helpers to apply pilot points, array mults and bc_mults
+#TODO write a file mapping multiplier bc and array parameters to mlt arrays and org arrays
+#TODO make util2d cnstnt a class with support for tpl_str
 
 
-def pst_from_flopy_model(m,pp_pakattr_list=None,const_pakattr_list=None,bc_pakattr_list=None,
-                         pp_space=None,pp_bounds=None,pp_geostruct=None,bc_geostruct=None,
-                         remove_existing=False):
-    try:
-        import flopy
-    except:
-        raise Exception("from_flopy_model() requires flopy")
+# def pst_from_flopy_model(nam_file,org_model_ws,new_model_ws,pp_pakattr_list=None,const_pakattr_list=None,bc_pakattr_list=None,
+#                          grid_pakattr_list=None,grid_geostruct=None,pp_space=None,pp_bounds=None,
+#                          pp_geostruct=None,bc_geostruct=None,remove_existing=False):
+#
+#     return PstFromFlopyModel(nam_file=nam_file,org_model_ws=org_model_ws,new_model_ws=new_model_ws,
+#                              pp_pakattr_list=pp_pakattr_list,const_pakattr_list=const_pakattr_list,
+#                              bc_pakattr_list=bc_pakattr_list,grid_pakattr_list=grid_pakattr_list,
+#                              grid_geostruct=None,pp_space=None,pp_bounds=None,
+#                              pp_geostruct=None,bc_geostruct=None,remove_existing=False)
 
-    assert m.array_free_format == True
-    assert m.free_format_input == True
-    assert m.external_path is not None
-    f_frun = open(os.path.join(m.model_ws,"forward_run.py"),'w')
-    f_frun.write("import os\nimport numpy as np\nimport pandas as pd\nimport flopy\n")
-    f_frun.write("import pyemu\n")
+class PstFromFlopyModel(object):
 
-    def flopy_pp_helper(pakattr):
-        tpl_names = []
-        if isinstance(pakattr,flopy.utils.Util2d):
-            tpl_names.append(flopy_pp_util2d_helper(pakattr))
-        elif isinstance(pakattr,flopy.utils.Util3d):
-            for u2d in pakattr.util_2ds:
-                tpl_names.append(flopy_pp_util2d_helper(u2d))
-        elif isinstance(pakattr,flopy.utils.Transient2d):
-            print("WARNING: only setting up one set of pilot points for all "+\
-                  "stress periods for pakattr:{0}".format(pakattr.name_base))
+    def __init__(self,nam_file,org_model_ws,new_model_ws,pp_pakattr_list=None,const_pakattr_list=None,
+                 bc_pakattr_list=None,grid_pakattr_list=None,grid_geostruct=None,pp_space=None,
+                 pp_bounds=None,pp_geostruct=None,bc_geostruct=None,remove_existing=False):
+        self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
+        self.log = self.logger.log
+        self.logger.echo = True
+        self.log("loading flopy model")
+        try:
+            import flopy
+        except:
+            raise Exception("from_flopy_model() requires flopy")
+        # prepare the flopy model
+        self.m = flopy.modflow.Modflow.load(nam_file,model_ws=org_model_ws)
+        self.m.array_free_format = True
+        self.m.free_format_input = True
+        self.m.external_path = '.'
+        self.log("loading flopy model")
+        self.log("changing model ws and writing new modflow input files")
+        if os.path.exists(new_model_ws):
+            if not remove_existing:
+                self.logger.lraise("'new_model_ws' already exists")
+            else:
+                self.logger.warn("removing existing 'new_model_ws")
+                shutil.rmtree(new_model_ws)
+        self.m.change_model_ws(new_model_ws,reset_external=True)
+        self.m.write_input()
 
-            #for u2d in pakattr:
-            #    tpl_names.append(flopy_pp_util2d_helper(u2d))
-        elif isinstance(pakattr,flopy.utils.MfList):
-            raise Exception('MfList support not implemented for pilot points')
+        self.log("changing model ws and writing new modflow input files")
+
+        self.frun_lines = []
+        self.tpl_files,self.in_files = [],[]
+        self.ins_files,self.out_files = [],[]
+
+        self.pp_pakattr_list = pp_pakattr_list
+        self.pp_space = pp_space
+        self.pp_bounds = pp_bounds
+        self.pp_geostruct = pp_geostruct
+
+        self.const_pakattr_list = const_pakattr_list
+        self.bc_pakattr_list = bc_pakattr_list
+        self.bc_geostruct = bc_geostruct
+
+        self.grid_pakattr_list = grid_pakattr_list
+        self.grid_geostruct = grid_geostruct
+
+        par_lists = [pp_pakattr_list,bc_pakattr_list,const_pakattr_list,grid_pakattr_list]
+        par_methods = [self.setup_pp,self.setup_bc,self.setup_const,self.setup_grid]
+        par_types = ["pilot points","boundary conditions","constants","grid"]
+        for par_list,par_method,par_type in zip(par_lists,par_methods,par_types):
+            self.log("processing {0} parameters".format(par_type))
+            par_method()
+            self.log("processing {0} parameters".format(par_type))
+
+
+
+
+
+
+    def write_forward_run(self):
+        with open(self.forward_run_file,'w') as f:
+            f.write("import os\nimport numpy as np\nimport pandas as pd\nimport flopy\n")
+            f.write("import pyemu\n")
+            for line in self.frun_lines:
+                f.write(line+'\n')
+
+    def parse_pakattr(self,pakattr):
+        if isinstance(pakattr,list) or isinstance(pakattr,tuple):
+            if len(pakattr) != 3:
+                self.logger.lraise("pakattr: '{0}' must be iterable of len 2".\
+                format(str(pakattr)))
+            pakname = pakattr[0].lower()
+            attrname = pakattr[1].lower()
+            k = int(pakattr[2])
+            if k >= self.m.nlay:
+                self.logger.lraise("'k' of {0} >= model.nlay".
+                                   format(str(pakattr)))
+            pak = self.m.get_package(pakname)
+            if pak is None:
+                self.logger.lraise("pak {0} not found".format(pakname))
+            if hasattr(pak,attrname):
+                attr = getattr(pak,attrname)
+                return pak,attr,k
+            elif hasattr(pak,"stress_period_data"):
+                dtype = pak.stress_period_data.dtype
+                if attrname not in dtype.names:
+                    self.logger.lraise("attr {0} not found in dtype.names for {1}.stress_period_data".\
+                                      format(attrname,pakname))
+                attr = pak.stress_period_data
+                return pak,attr,attrname
+            else:
+                self.logger.lraise("unrecognized attr:{1}".format(attrname))
         else:
-            raise Exception("unrecognized pakattr:{0}".format(str(pakattr)))
-        return tpl_names
+            self.logger.lraise("pakattr must be type list or tuple, not {0}".\
+                               format(str(type(pakattr))))
 
-    def flopy_pp_util2d_helper(u2d):
-        name = u2d.name
-        filename = os.path.join(m.model_ws,"arr_org",name+".dat")
-        print(name,filename,u2d.how)
-        assert u2d.how == "openclose","u2d '{0}' must use openclose format".format(name)
+
+    def pp_helper(self,pakattr):
+        pak,attr,k = self.parse_pakattr(pakattr)
+        if isinstance(attr,flopy.utils.Util2d):
+            self.pp_util2d_helper(attr,k)
+        elif isinstance(attr,flopy.utils.Util3d):
+            self.pp_util2d_helper(attr.util_2ds[k],k)
+        elif isinstance(attr,flopy.utils.Transient2d):
+            self.logger.warn("only setting up one set of pilot points for all "+\
+                  "stress periods for pakattr:{0}".format(attr.name_base))
+            kper = list(attr.transient_2ds.keys())[0]
+            self.pp_util2d_helper(attr.transient_2ds[kper],k)
+
+        elif isinstance(pakattr,flopy.utils.MfList):
+            #this will require some thought about how to generalize the
+            # bc par apply function since there might be kper mults and
+            # array mults for the same input list file
+            self.logger.lraise('MfList support not implemented for pilot points')
+        else:
+            self.logger.lraise("unrecognized pakattr:{0}".format(str(pakattr)))
+
+    def pp_util2d_helper(self,u2d,k):
+        #TODO build up the args needed for setup grid pilot points
+        #TODO and setup multiplier array filenames
+        #TODO add to self.frun
+        name = u2d.name.split('_')[0]+"{0:02d}".format(k)
+        filename = os.path.join(self.m.model_ws,"arr_org",name+".dat")
+        self.logger.statement("resetting 'how' to openclose for {0}".format(name))
+        u2d.how = "openclose"
         # write original array into arr_org
-
+        self.logger.statement("saving array:{0}".format(filename))
         np.savetxt(filename,u2d.array)
-
-        #setup pilot points
         # need to find what the external filename that flopy writes
-        return "test"
+        if k not in self.pp_dict.keys():
+            self.pp_dict[k] = []
+        self.pp_dict[k].append(name)
 
 
 
-    # def parse_pakattr(pakattr):
-    #     if isinstance(pakattr,list) or isinstance(pakattr,tuple):
-    #         assert len(pakattr) == 2,"pakattr: '{0}' must be iterable of len 2".\
-    #             format(str(pakattr))
-    #         pakname = pakattr[0].lower()
-    #         attrname = pakattr[1].lower()
-    #         pak = m.get_package(pakname)
-    #         if pak is None:
-    #             raise Exception("pak {0} not found".format(pakname))
-    #         if hasattr(pak,attrname):
-    #             pakattr = getattr(pak,attrname)
-    #         elif hasattr(pak,"stress_period_data"):
-    #             dtype = pak.stress_period_data.dtype
-    #             if attrname not in dtype.names:
-    #                 raise Exception("attr {0} not found in dtype.names for {1}.stress_period_data".\
-    #                                 format(attrname,pakname))
-    #             pakattr = pak.stress_period_data
-    #         else:
-    #             raise Exception("unrecognized attr:{1}".format(attrname))
-    #     return pakattr
-    #
 
-    tpl_names = []
-    # handle pilot point parameters
-    if pp_pakattr_list is not None:
-        if pp_space is None:
-            print("WARNING: pp_space is None, using 10...\n")
-            pp_space=10
-        if pp_geostruct is None:
-            print("WARNING: pp_geostruct is None,"\
-                  " using ExpVario with contribution=1 and a=(pp_space*3")
-            pp_dist = pp_space * float(max(m.dis.delr.array.max(),
-                                           m.dis.delc.array.max()))
-            v = pyemu.geostats.ExpVario(contribution=1.0,a=pp_dist)
-            pp_geostruct = pyemu.geostats.GeoStruct(variograms=v)
 
+    def setup_pp(self):
+
+        if len(self.pp_pakattr_list) == 0:
+            return
+
+        self.log("setting up 'arr_org' and 'arr_mlt' dirs")
         # make arr_org and arr_mult dirs for storage
-        for d in [os.path.join(m.model_ws,"arr_org"),
-                  os.path.join(m.model_ws,"arr_mlt")]:
+        for d in [os.path.join(self.m.model_ws,"arr_org"),
+                  os.path.join(self.m.model_ws,"arr_mlt")]:
             if os.path.exists(d):
-                if remove_existing:
+                if self.remove_existing:
                     shutil.rmtree(d)
                 else:
                     raise Exception("pilot point dir '{0}' already exists".format(d))
             os.mkdir(d)
-        if not isinstance(pp_pakattr_list,list):
-            pp_pakattr_list = list(pp_pakattr_list)
 
-        for pakattr in pp_pakattr_list:
-            tpl_names.extend(flopy_pp_helper(pakattr))
+        self.log("setting up 'arr_org' and 'arr_mlt' dirs")
+
+        self.log("processing pp_pakattr_list")
+        if not isinstance(self.pp_pakattr_list,list):
+            self.pp_pakattr_list = list(self.pp_pakattr_list)
+        self.pp_dict = {}
+        for pakattr in self.pp_pakattr_list:
+            self.pp_helper(pakattr)
+        self.log("processing pp_pakattr_list")
+
+        self.log("calling setup_pilot_point_grid()")
+        if self.pp_space is None:
+            self.logger.warn("pp_space is None, using 10...\n")
+            self.pp_space=10
+
+        self.pp_df = pyemu.gw_utils.setup_pilotpoints_grid(self.m,prefix_dict=self.pp_dict,
+                                         every_n_cell=self.pp_space,
+                                         pp_dir=self.m.model_ws,tpl_dir=self.m.model_ws,
+                                         shapename=os.path.join(self.m.model_ws,"pp.shp"))
+
+        self.logger.statement("{0} pilot point parameters created".format(self.pp_df.shape[0]))
+        self.logger.statement("pilot point 'pargp':{0}".format(','.join(self.pp_df.pargp.unique())))
+        self.log("calling setup_pilot_point_grid()")
+
+
+        if self.pp_geostruct is None:
+            self.logger.warn("pp_geostruct is None,"\
+                  " using ExpVario with contribution=1 and a=(pp_space*3")
+            pp_dist = self.pp_space * float(max(self.m.dis.delr.array.max(),
+                                           self.m.dis.delc.array.max()))
+            v = pyemu.geostats.ExpVario(contribution=1.0,a=pp_dist)
+            self.pp_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+
+        # calc factors for each layer
+        pargp = self.pp_df.pargp.unique()
+        pp_dfs_k = {}
+        fac_files = {}
+        for pg in pargp:
+            ks = self.pp_df.loc[self.pp_df.pargp==pg,"k"].unique()
+            if len(ks) != 1:
+                self.logger.lraise("something is wrong in frac calcs")
+            k = ks[0]
+            if k not in pp_dfs_k.keys():
+                self.log("calculating factors for k={0}".format(k))
+                var_file = os.path.join(self.m.model_ws,"pp_k{0}.var.dat".format(k))
+                fac_file = os.path.join(self.m.model_ws,"pp_k{0}.fac")
+                self.logger.statement("saving krige variance file:{0}"
+                                      .format(var_file))
+                self.logger.statement("saving krige factors file:{0}"\
+                                      .format(fac_file))
+                pp_df_k = self.pp_df.loc[self.pp_df.pargp==pg]
+                ok_pp = pyemu.geostats.OrdinaryKrige(self.pp_geostruct,pp_df_k)
+                ok_pp.calc_factors_grid(self.m.sr,var_filename=var_file)
+                ok_pp.to_grid_factors_file(fac_file)
+                fac_files[k] = fac_file
+                self.log("calculating factors for k={0}".format(k))
+                pp_dfs_k[k] = pp_df_k
+
+        # add lines to the forward run script
 
 
 
+    def setup_other_pars(self):
+        pass
 
+    def setup_bc(self):
+        pass
+
+    def setup_const(self):
+        pass
+
+    def setup_grid(self):
+        pass
+
+    def setup_smp(self):
+        pass
+
+    def setup_hob(self):
+        pass
+
+    def setup_hyd(self):
+        pass
 
 
 
