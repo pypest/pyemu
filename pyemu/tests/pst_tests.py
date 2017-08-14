@@ -272,20 +272,26 @@ def from_flopy_test():
         pass
     import pyemu
 
-    # pilot points
-    pp_prop_dict = {':':[["rch","rech"]]}
+    new_model_ws = "temp_pst_from_flopy"
 
-    #pp_prop_dict = {}
+    # os.chdir(new_model_ws)
+    # pyemu.helpers.apply_bc_pars()
+    # os.chdir('..')
+    # return
+    # pilot points
+    #pp_prop_dict = {':':["rch","rech"]}
+    pp_prop_dict = {}
+
     # constants
-    const_prop_dict = {':':[("lpf","hk"),["lpf","vka"],["rch","rech"]]}
+    const_prop_dict = {'0':[("lpf","hk")]}
     # grid scale - every active model cell
-    grid_prop_dict = {0:[("lpf","sy"),["lpf","hk"]]}
+    grid_prop_dict = {0:["lpf","hk"]}
 
     # zones using ibound values
-    zone_prop_dict = {0:("lpf","vka")}
+    zone_prop_dict = {0:[("lpf","ss"),("lpf","sy")]}
 
     # kper-level multipliers for boundary conditions
-    bc_prop_dict = {':':[("wel","flux"),("riv","cond")]}
+    bc_prop_dict = {':':[("wel","flux"),("riv","cond"),("riv","stage")]}
 
     org_model_ws = os.path.join("..","..","examples","Freyberg_Truth")
     nam_file = "freyberg.truth.nam"
@@ -301,10 +307,11 @@ def from_flopy_test():
     m.write_input()
     #m.run_model()
 
-    new_model_ws = "temp_pst_from_flopy"
-    smp_sim = os.path.join("utils","TWDB_wells.sim.smp")
-    smp_obs = smp_sim.replace("sim","obs")
-    obssim_smp_pairs = [[smp_obs,smp_sim]]
+
+    #smp_sim = os.path.join("utils","TWDB_wells.sim.smp")
+    #smp_obs = smp_sim.replace("sim","obs")
+    #obssim_smp_pairs = [[smp_obs,smp_sim]]
+    obssim_smp_pairs = None
     pyemu.helpers.PstFromFlopyModel(m.namefile,"temp",new_model_ws,
                                     pp_prop_dict=pp_prop_dict,
                                     const_prop_dict=const_prop_dict,
