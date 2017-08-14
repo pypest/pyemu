@@ -136,7 +136,7 @@ def modflow_read_hydmod_file(hydmod_file, hydmod_outfile=None):
     hyd_df = obs.get_dataframe()
 
     hyd_df.columns = [i[6:] if i.lower() != 'totim' else i for i in hyd_df.columns]
-
+    #hyd_df.loc[:,"datetime"] = hyd_df.index
     hyd_df['totim'] = hyd_df.index.map(lambda x: x.strftime("%Y%m%d"))
 
     hyd_df.rename(columns={'totim': 'datestamp'}, inplace=True)

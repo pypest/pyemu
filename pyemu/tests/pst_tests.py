@@ -274,6 +274,8 @@ def from_flopy_test():
 
     # pilot points
     pp_prop_dict = {':':[["rch","rech"]]}
+
+    #pp_prop_dict = {}
     # constants
     const_prop_dict = {':':[("lpf","hk"),["lpf","vka"],["rch","rech"]]}
     # grid scale - every active model cell
@@ -297,9 +299,12 @@ def from_flopy_test():
     m.change_model_ws("temp",reset_external=True)
     m.name = "freyberg"
     m.write_input()
-    m.run_model()
+    #m.run_model()
 
     new_model_ws = "temp_pst_from_flopy"
+    smp_sim = os.path.join("utils","TWDB_wells.sim.smp")
+    smp_obs = smp_sim.replace("sim","obs")
+    obssim_smp_pairs = [[smp_obs,smp_sim]]
     pyemu.helpers.PstFromFlopyModel(m.namefile,"temp",new_model_ws,
                                     pp_prop_dict=pp_prop_dict,
                                     const_prop_dict=const_prop_dict,
@@ -307,7 +312,9 @@ def from_flopy_test():
                                     zone_prop_dict=zone_prop_dict,
                                     bc_prop_dict=bc_prop_dict,
                                     remove_existing=True,
+                                    obssim_smp_pairs=obssim_smp_pairs,
                                     pp_space=5)
+
 if __name__ == "__main__":
     from_flopy_test()
     #regdata_test()
