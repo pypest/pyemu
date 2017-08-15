@@ -280,18 +280,23 @@ def from_flopy_test():
     # return
     # pilot points
     #pp_prop_dict = {':':["rch","rech"]}
-    pp_prop_dict = {}
+    pp_prop_dict = {"rch.rech":None}
+    #pp_prop_dict = {}
 
     # constants
-    const_prop_dict = {'0':[("lpf","hk")]}
+    #const_prop_dict = {'0':[("lpf","hk")],':':("rch","rech")}
+    const_prop_dict = {"lpf.hk":0,"rch.rech":None}
     # grid scale - every active model cell
-    grid_prop_dict = {0:["lpf","hk"]}
+    #grid_prop_dict = {0:["lpf","hk"]}
+    grid_prop_dict = {"lpf.hk":None}
 
     # zones using ibound values
-    zone_prop_dict = {0:[("lpf","ss"),("lpf","sy")]}
+    #zone_prop_dict = {0:[("lpf","ss"),("lpf","sy")]}
+    zone_prop_dict = {"lpf.ss":None,"lpf.sy":0}
 
     # kper-level multipliers for boundary conditions
-    bc_prop_dict = {':':[("wel","flux"),("riv","cond"),("riv","stage")]}
+    #bc_prop_dict = {':':[("wel","flux"),("riv","cond"),("riv","stage")]}
+    bc_prop_dict = {"wel.flux":None,"riv.cond":None,"riv.stage":0}
 
     org_model_ws = os.path.join("..","..","examples","Freyberg_Truth")
     nam_file = "freyberg.truth.nam"

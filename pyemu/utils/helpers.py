@@ -641,9 +641,9 @@ wildass_guess_par_bounds_dict = {"hk":[0.01,100.0],"vka":[0.01,100.0],
 
 class PstFromFlopyModel(object):
 
-    def __init__(self,nam_file,org_model_ws,new_model_ws,pp_prop_dict={},const_prop_dict={},
-                 bc_prop_dict={},grid_prop_dict={},grid_geostruct=None,pp_space=None,
-                 zone_prop_dict={},pp_geostruct=None,par_bounds_dict=None,
+    def __init__(self,nam_file,org_model_ws,new_model_ws,pp_prop_dict=None,const_prop_dict=None,
+                 bc_prop_dict=None,grid_prop_dict=None,grid_geostruct=None,pp_space=None,
+                 zone_prop_dict=None,pp_geostruct=None,par_bounds_dict=None,
                  bc_geostruct=None,remove_existing=False,
                  mflist_waterbudget=True,mfhyd=True,
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
@@ -765,10 +765,8 @@ class PstFromFlopyModel(object):
         if len(pp_prop_dict) > 0 or len(zone_prop_dict) > 0 or len(grid_prop_dict) > 0:
             set_dirs.append(self.arr_org)
             set_dirs.append(self.arr_mlt)
-
         if len(bc_prop_dict) > 0:
             set_dirs.append(self.bc_org)
-
         for d in set_dirs:
             d = os.path.join(self.m.model_ws,d)
             self.log("setting up '{0}' dir".format(d))
@@ -780,7 +778,6 @@ class PstFromFlopyModel(object):
                                     format(d))
             os.mkdir(d)
             self.log("setting up '{0}' dir".format(d))
-
 
         # add any extra commands to the forward run lines
         self.frun_pre_lines = []
@@ -797,44 +794,21 @@ class PstFromFlopyModel(object):
                 self.logger.statement("forward_run line:{0}".format(cmd))
                 alist.append("pyemu.run('{0}')\n".format(cmd))
 
+        # add the model call
+        line = "pyemu.helpers.run('{0} {1} 1>{1}.stdout 2>{1}.stderr')".format(self.m.exe_name,self.m.namefile)
+        self.logger.statement("forward_run line:{0}".format(line))
+        self.frun_model_lines.append(line)
+
+
         self.tpl_files,self.in_files = [],[]
         self.ins_files,self.out_files = [],[]
 
-        if external_tpl_in_pairs is not None:
-            if not isinstance(external_tpl_in_pairs,list):
-                external_tpl_in_pairs = [external_tpl_in_pairs]
-            for tpl_file,in_file in external_tpl_in_pairs:
-                if not os.path.exists(tpl_file):
-                    self.logger.lraise("couldn't find external tpl file:{0}".\
-                                       format(tpl_file))
-                self.logger.statement("external tpl:{0}".format(tpl_file))
-                shutil.copy2(tpl_file,os.path.join(self.m.model_ws,
-                                                   os.path.split(tpl_file)))
-                if os.path.exists(in_file):
-                    shutil.copy2(in_file,os.path.join(self.m.model_ws,
-                                                   os.path.split(in_file)))
-
-        if external_ins_out_pairs is not None:
-            if not isinstance(external_ins_out_pairs,list):
-                external_ins_out_pairs = [external_ins_out_pairs]
-            for ins_file,out_file in external_ins_out_pairs:
-                if not os.path.exists(ins_file):
-                    self.logger.lraise("couldn't find external ins file:{0}".\
-                                       format(ins_file))
-                self.logger.statement("external ins:{0}".format(ins_file))
-                shutil.copy2(ins_file,os.path.join(self.m.model_ws,
-                                                   os.path.split(ins_file)))
-                if os.path.exists(out_file):
-                    shutil.copy2(out_file,os.path.join(self.m.model_ws,
-                                                   os.path.split(out_file)))
-                    self.logger.warn("obs listed in {0} will have values listed in {1}"
-                                     .format(ins_file,out_file))
-                else:
-                    self.logger.warn("obs listed in {0} will have generic values")
-
+        self.external_tpl_in_pairs = external_tpl_in_pairs
+        self.external_ins_out_pairs = external_ins_out_pairs
+        self.add_external()
 
         self.arr_mult_dfs = []
-
+        self.par_bounds_dict = par_bounds_dict
         self.pp_prop_dict = pp_prop_dict
         self.pp_space = pp_space
         self.pp_geostruct = pp_geostruct
@@ -848,6 +822,31 @@ class PstFromFlopyModel(object):
 
         self.zone_prop_dict = zone_prop_dict
 
+        self.obssim_smp_pairs = obssim_smp_pairs
+
+        self.process_parameters()
+
+        self.process_observations()
+
+        self.build_pst()
+
+        self.build_prior()
+
+        self.log("saving intermediate _setup_<> dfs into {0}".
+                 format(self.m.model_ws))
+        for tag,df in self.par_dfs.items():
+            df.to_csv(os.path.join(self.m.model_ws,"_setup_par_{0}_{1}.csv".
+                                   format(tag.replace(" ",'_'),self.pst_name)))
+        for tag,df in self.obs_dfs.items():
+            df.to_csv(os.path.join(self.m.model_ws,"_setup_obs_{0}_{1}.csv".
+                                   format(tag.replace(" ",'_'),self.pst_name)))
+        self.log("saving intermediate _setup_<> dfs into {0}".
+                 format(self.m.model_ws))
+
+        self.logger.statement("all done")
+
+
+    def process_parameters(self):
         par_dicts = [self.pp_prop_dict,self.bc_prop_dict,
                      self.const_prop_dict,self.grid_prop_dict,
                      self.zone_prop_dict]
@@ -864,15 +863,8 @@ class PstFromFlopyModel(object):
             par_method()
             self.log("processing {0} parameters".format(par_type))
 
-        #write the model input in case arrays or bc entries have been changed
 
-        # add the model call
-        line = "pyemu.helpers.run('{0} {1} 1>{1}.stdout 2>{1}.stderr')".format(self.m.exe_name,self.m.namefile)
-        self.logger.statement("forward_run line:{0}".format(line))
-        self.frun_model_lines.append(line)
-
-        self.obssim_smp_pairs = obssim_smp_pairs
-
+    def process_observations(self):
         obs_methods = [self.setup_water_budget_obs,self.setup_hyd,self.setup_smp]
         obs_types = ["mflist water budget obs","hyd file","external obs-sim smp files"]
         self.obs_dfs = {}
@@ -881,6 +873,28 @@ class PstFromFlopyModel(object):
             obs_method()
             self.log("processing obs type {0}".format(obs_type))
 
+
+    def build_prior(self):
+        self.log("building prior covariance matrix")
+        struct_dict = {}
+        if "pp" in self.par_dfs.keys():
+            pp_df = self.par_dfs["pp"]
+            pp_dfs = [pp_df.loc[pp_df.pargp==pargp,:].copy() for pargp in pp_df.pargp.unique()]
+            struct_dict[self.pp_geostruct] = pp_dfs
+        if "grid" in self.par_dfs.keys():
+            gr_df = self.par_dfs["grid"]
+            gr_dfs = [gr_df.loc[gr_df.pargp==pargp,:].copy() for pargp in gr_df.pargp.unique()]
+            struct_dict[self.grid_geostruct] = gr_dfs
+        if len(struct_dict) > 0:
+            cov = pyemu.helpers.pilotpoint_prior_builder(self.pst,
+                                                         struct_dict=struct_dict,
+                                                         sigma_range=6)
+        else:
+            cov = pyemu.Cov.from_parameter_data(self.pst,sigma_range=6)
+        cov.to_ascii(os.path.join(self.m.model_ws,self.pst_name+".prior.cov"))
+        self.log("building prior covariance matrix")
+
+    def build_pst(self):
         self.log("changing dir in to {0}".format(self.m.model_ws))
         os.chdir(self.m.model_ws)
         try:
@@ -922,8 +936,8 @@ class PstFromFlopyModel(object):
             par.loc[par.parnme.apply(lambda x: x.startswith(tag)),"parubnd"] = up
             par.loc[par.parnme.apply(lambda x: x.startswith(tag)),"parlbnd"] = lw
 
-        if par_bounds_dict is not None:
-            for tag,[lw,up] in par_bounds_dict.items():
+        if self.par_bounds_dict is not None:
+            for tag,[lw,up] in self.par_bounds_dict.items():
                 par.loc[par.parnme.apply(lambda x: x.startswith(tag)),"parubnd"] = up
                 par.loc[par.parnme.apply(lambda x: x.startswith(tag)),"parlbnd"] = lw
 
@@ -961,37 +975,42 @@ class PstFromFlopyModel(object):
         os.chdir("..")
         self.log("running pestchek on {0}".format(self.pst_name))
 
-        self.log("saving intermediate _setup_<> dfs into {0}".
-                 format(self.m.model_ws))
-        for tag,df in self.par_dfs.items():
-            df.to_csv(os.path.join(self.m.model_ws,"_setup_par_{0}_{1}.csv".
-                                   format(tag.replace(" ",'_'),self.pst_name)))
-        for tag,df in self.obs_dfs.items():
-            df.to_csv(os.path.join(self.m.model_ws,"_setup_obs_{0}_{1}.csv".
-                                   format(tag.replace(" ",'_'),self.pst_name)))
-        self.log("saving intermediate _setup_<> dfs into {0}".
-                 format(self.m.model_ws))
 
-        self.log("building prior covariance matrix")
-        struct_dict = {}
-        if "pp" in self.par_dfs.keys():
-            pp_df = self.par_dfs["pp"]
-            pp_dfs = [pp_df.loc[pp_df.pargp==pargp,:].copy() for pargp in pp_df.pargp.unique()]
-            struct_dict[self.pp_geostruct] = pp_dfs
-        if "grid" in self.par_dfs.keys():
-            gr_df = self.par_dfs["grid"]
-            gr_dfs = [gr_df.loc[gr_df.pargp==pargp,:].copy() for pargp in gr_df.pargp.unique()]
-            struct_dict[self.grid_geostruct] = gr_dfs
-        if len(struct_dict) > 0:
-            cov = pyemu.helpers.pilotpoint_prior_builder(pst,
-                                                         struct_dict=struct_dict,
-                                                         sigma_range=6)
-        else:
-            cov = pyemu.Cov.from_parameter_data(pst,sigma_range=6)
-        cov.to_ascii(os.path.join(self.m.model_ws,self.pst_name+".prior.cov"))
-        self.log("building prior covariance matrix")
 
-        self.logger.statement("all done")
+    def add_external(self):
+        if self.external_tpl_in_pairs is not None:
+            if not isinstance(self.external_tpl_in_pairs,list):
+                external_tpl_in_pairs = [self.external_tpl_in_pairs]
+            for tpl_file,in_file in self.external_tpl_in_pairs:
+                if not os.path.exists(tpl_file):
+                    self.logger.lraise("couldn't find external tpl file:{0}".\
+                                       format(tpl_file))
+                self.logger.statement("external tpl:{0}".format(tpl_file))
+                shutil.copy2(tpl_file,os.path.join(self.m.model_ws,
+                                                   os.path.split(tpl_file)))
+                if os.path.exists(in_file):
+                    shutil.copy2(in_file,os.path.join(self.m.model_ws,
+                                                   os.path.split(in_file)))
+
+        if self.external_ins_out_pairs is not None:
+            if not isinstance(self.external_ins_out_pairs,list):
+                external_ins_out_pairs = [self.external_ins_out_pairs]
+            for ins_file,out_file in self.external_ins_out_pairs:
+                if not os.path.exists(ins_file):
+                    self.logger.lraise("couldn't find external ins file:{0}".\
+                                       format(ins_file))
+                self.logger.statement("external ins:{0}".format(ins_file))
+                shutil.copy2(ins_file,os.path.join(self.m.model_ws,
+                                                   os.path.split(ins_file)))
+                if os.path.exists(out_file):
+                    shutil.copy2(out_file,os.path.join(self.m.model_ws,
+                                                   os.path.split(out_file)))
+                    self.logger.warn("obs listed in {0} will have values listed in {1}"
+                                     .format(ins_file,out_file))
+                else:
+                    self.logger.warn("obs listed in {0} will have generic values")
+
+
 
     def write_forward_run(self):
         with open(os.path.join(self.m.model_ws,self.forward_run_file),'w') as f:
@@ -1012,7 +1031,7 @@ class PstFromFlopyModel(object):
         else:
             assert k in vals,"k {0} not in vals".format(k)
             return [k]
-        if k == ':':
+        if k is None:
             return vals
         else:
             try:
@@ -1020,33 +1039,29 @@ class PstFromFlopyModel(object):
             except Exception as e:
                 raise Exception("error slicing vals with {0}:{1}".
                                 format(k,str(e)))
+            return k_vals
 
     def parse_pakattr(self,pakattr):
-
-        if isinstance(pakattr,list) or isinstance(pakattr,tuple):
-            if len(pakattr) != 2:
-                self.logger.lraise("pakattr: '{0}' must be iterable of len 2".\
-                format(str(pakattr)))
-            pakname = pakattr[0].lower()
-            attrname = pakattr[1].lower()
-            pak = self.m.get_package(pakname)
-            if pak is None:
-                self.logger.lraise("pak {0} not found".format(pakname))
-            if hasattr(pak,attrname):
-                attr = getattr(pak,attrname)
-                return pak,attr
-            elif hasattr(pak,"stress_period_data"):
-                dtype = pak.stress_period_data.dtype
-                if attrname not in dtype.names:
-                    self.logger.lraise("attr {0} not found in dtype.names for {1}.stress_period_data".\
-                                      format(attrname,pakname))
-                attr = pak.stress_period_data
-                return pak,attr,attrname
-            else:
-                self.logger.lraise("unrecognized attr:{1}".format(attrname))
+        raw = pakattr.lower().split('.')
+        if len(raw) != 2:
+            self.logger.lraise("pakattr is wrong:{0}".format(pakattr))
+        pakname = raw[0]
+        attrname = raw[1]
+        pak = self.m.get_package(pakname)
+        if pak is None:
+            self.logger.lraise("pak {0} not found".format(pakname))
+        if hasattr(pak,attrname):
+            attr = getattr(pak,attrname)
+            return pak,attr
+        elif hasattr(pak,"stress_period_data"):
+            dtype = pak.stress_period_data.dtype
+            if attrname not in dtype.names:
+                self.logger.lraise("attr {0} not found in dtype.names for {1}.stress_period_data".\
+                                  format(attrname,pakname))
+            attr = pak.stress_period_data
+            return pak,attr,attrname
         else:
-            self.logger.lraise("pakattr must be type list or tuple, not {0}".\
-                               format(str(type(pakattr))))
+            self.logger.lraise("unrecognized attr:{1}".format(attrname))
 
     def setup_bc(self):
         if len(self.bc_prop_dict) == 0:
@@ -1061,27 +1076,15 @@ class PstFromFlopyModel(object):
         bc_pak = []
         bc_k = []
         bc_dtype_names = []
-        for k_org,pakattr_list in self.bc_prop_dict.items():
-
-            if len(pakattr_list) == 2:
-                try:
-                    self.parse_pakattr(pakattr_list)
-                except:
-                    pass
-                else:
-                    pakattr_list = [pakattr_list]
-            try:
-                k_parse = self.parse_k(k_org,np.arange(self.m.nper))
-            except Exception as e:
-                self.logger.lraise("error parsing k {0}:{1}".format(k_org,str(e)))
-            pakattr_list = [self.parse_pakattr(pa) for pa in pakattr_list]
-            for pak,attr,col in pakattr_list:
-                for k in k_parse:
-                    bc_filenames.append(self.bc_helper(k,pak,attr,col))
-                    bc_cols.append(col)
-                    bc_pak.append(pak.name[0].lower())
-                    bc_k.append(k)
-                    bc_dtype_names.append(','.join(attr.dtype.names))
+        for pakattr,k_org in self.bc_prop_dict.items():
+            pak,attr,col = self.parse_pakattr(pakattr)
+            k_parse = self.parse_k(k_org,np.arange(self.m.nper))
+            for k in k_parse:
+                bc_filenames.append(self.bc_helper(k,pak,attr,col))
+                bc_cols.append(col)
+                bc_pak.append(pak.name[0].lower())
+                bc_k.append(k)
+                bc_dtype_names.append(','.join(attr.dtype.names))
         self.log("processing bc_prop_dict")
         df = pd.DataFrame({"filename":bc_filenames,"col":bc_cols,
                            "kper":bc_k,"pak":bc_pak,"dtype_names":bc_dtype_names})
@@ -1124,6 +1127,7 @@ class PstFromFlopyModel(object):
                      os.path.join(self.m.model_ws,self.bc_org,filename))
         return filename_model
 
+
     def setup_const(self):
         if len(self.const_prop_dict) == 0:
             return
@@ -1133,30 +1137,22 @@ class PstFromFlopyModel(object):
             self.logger.lraise("const_prop_dict must be 'dict', not {0}".
                                format(str(type(self.const_prop_dict))))
         self.const_paks = {}
-        for k_org,pakattr_list in self.const_prop_dict.items():
+        parnme = []
+        for pakattr,k_org in self.const_prop_dict.items():
+            pak,attr = self.parse_pakattr(pakattr)
 
-            if len(pakattr_list) == 2:
+            if isinstance(attr,flopy.utils.Transient2d):
                 try:
-                    self.parse_pakattr(pakattr_list)
-                except:
-                    pass
-                else:
-                    pakattr_list = [pakattr_list]
-            pakattr_list = [self.parse_pakattr(pa) for pa in pakattr_list]
-            parnme = []
-            for pak,attr in pakattr_list:
-                if isinstance(attr,flopy.utils.Transient2d):
-                    try:
-                        k_parse = self.parse_k(k_org,np.arange(self.m.nper))
-                    except Exception as e:
-                        self.logger.lraise("error parsing k {0}:{1}".format(k_org,str(e)))
-                else:
-                    try:
-                        k_parse = self.parse_k(k_org,np.arange(self.m.nlay))
-                    except Exception as e:
-                        self.logger.lraise("error parsing k {0}:{1}".format(k_org,str(e)))
-                for k in k_parse:
-                    parnme.append(self.const_helper(k,pak,attr))
+                    k_parse = self.parse_k(k_org,np.arange(self.m.nper))
+                except Exception as e:
+                    self.logger.lraise("error parsing k {0}:{1}".format(k_org,str(e)))
+            else:
+                try:
+                    k_parse = self.parse_k(k_org,np.arange(self.m.nlay))
+                except Exception as e:
+                    self.logger.lraise("error parsing k {0}:{1}".format(k_org,str(e)))
+            for k in k_parse:
+                parnme.append(self.const_helper(k,pak,attr))
         self.log("processing const_prop_dict")
         df = pd.DataFrame({"parnme":parnme},index=parnme)
         df.loc[:,"pargp"] = "const"
@@ -1176,7 +1172,6 @@ class PstFromFlopyModel(object):
             return self.const_util2d_helper(attr.util_2ds[k],k)
         elif isinstance(attr,flopy.utils.Transient2d):
             return self.const_util2d_helper(attr.transient_2ds[k],k)
-
         elif isinstance(attr,flopy.utils.MfList):
             self.logger.lraise('MfList support not implemented for const')
         else:
@@ -1186,6 +1181,9 @@ class PstFromFlopyModel(object):
         pname = os.path.split(attr.filename)[-1].split('.')[0].lower()
         attr.cnstnt = "~   {0}   ~".format(pname)
         return pname
+
+
+
 
     def setup_pp(self):
         if len(self.pp_prop_dict) == 0:
@@ -1197,30 +1195,18 @@ class PstFromFlopyModel(object):
                                format(str(type(self.pp_prop_dict))))
         self.pp_dict = {}
         self.pp_array_file = {}
-        for k_org,pakattr_list in self.pp_prop_dict.items():
-            if len(pakattr_list) == 2:
-                try:
-                    self.parse_pakattr(pakattr_list)
-                except:
-                    pass
-                else:
-                    pakattr_list = [pakattr_list]
-            pakattr_list = [self.parse_pakattr(pa) for pa in pakattr_list]
-            for pak,attr in pakattr_list:
-                ks = np.arange(self.m.nlay)
-                islayered = True
-                if isinstance(attr,flopy.utils.Transient2d):
-                    ks = np.arange(self.m.nper)
-                    islayered = False
-                try:
-                    k_parse = self.parse_k(k_org,ks)
-                except Exception as e:
-                    self.logger.lraise("error parsing k {0}:{1}".format(k_org,str(e)))
-                for k in k_parse:
-                    self.pp_helper(k,pak,attr)
-
+        for pakattr,k_org in self.pp_prop_dict.items():
+            pak,attr = self.parse_pakattr(pakattr)
+            ks = np.arange(self.m.nlay)
+            if isinstance(attr,flopy.utils.Transient2d):
+                ks = np.arange(self.m.nper)
+            try:
+                k_parse = self.parse_k(k_org,ks)
+            except Exception as e:
+                self.logger.lraise("error parsing k {0}:{1}".format(k_org,str(e)))
+            for k in k_parse:
+                self.pp_helper(k,pak,attr)
         self.log("processing pp_prop_dict")
-
         self.log("calling setup_pilot_point_grid()")
         if self.pp_space is None:
             self.logger.warn("pp_space is None, using 10...\n")
@@ -1375,24 +1361,19 @@ class PstFromFlopyModel(object):
         if not isinstance(self.grid_prop_dict,dict):
             self.logger.lraise("grid_prop_dict must be 'dict', not {0}".
                                format(str(type(self.grid_prop_dict))))
+        dfs = []
+        for pakattr,k_org in self.grid_prop_dict.items():
 
-        for k_org,pakattr_list in self.grid_prop_dict.items():
-            if len(pakattr_list) == 2:
-                try:
-                    self.parse_pakattr(pakattr_list)
-                except:
-                    pass
-                else:
-                    pakattr_list = [pakattr_list]
-            pakattr_list = [self.parse_pakattr(pa) for pa in pakattr_list]
+            pak,attr = self.parse_pakattr(pakattr)
+            ks = np.arange(self.m.nlay)
+            if isinstance(attr,flopy.utils.Transient2d):
+                ks = np.arange(self.m.nper)
             try:
-                k_parse = self.parse_k(k_org,np.arange(self.m.nlay))
+                k_parse = self.parse_k(k_org,ks)
             except Exception as e:
                 self.logger.lraise("error parsing k {0}:{1}".format(k_org,str(e)))
-            dfs = []
             for k in k_parse:
-                for pak,attr in pakattr_list:
-                    dfs.append(self.grid_helper(k,pak,attr))
+                dfs.append(self.grid_helper(k,pak,attr))
         self.log("processing grid_prop_dict")
 
         if self.grid_geostruct is None:
@@ -1490,23 +1471,17 @@ class PstFromFlopyModel(object):
             self.logger.lraise("zone_prop_dict must be 'dict', not {0}".
                                format(str(type(self.zone_prop_dict))))
         dfs = []
-        for k_org,pakattr_list in self.zone_prop_dict.items():
-            if len(pakattr_list) == 2:
-                try:
-                    self.parse_pakattr(pakattr_list)
-                except:
-                    pass
-                else:
-                    pakattr_list = [pakattr_list]
-            pakattr_list = [self.parse_pakattr(pa) for pa in pakattr_list]
+        for pakattr,k_org in self.grid_prop_dict.items():
+            pak,attr = self.parse_pakattr(pakattr)
+            ks = np.arange(self.m.nlay)
+            if isinstance(attr,flopy.utils.Transient2d):
+                ks = np.arange(self.m.nper)
             try:
-                k_parse = self.parse_k(k_org,np.arange(self.m.nlay))
+                k_parse = self.parse_k(k_org,ks)
             except Exception as e:
                 self.logger.lraise("error parsing k {0}:{1}".format(k_org,str(e)))
-
             for k in k_parse:
-                for pak,attr in pakattr_list:
-                    dfs.append(self.zone_helper(k,pak,attr))
+                dfs.append(self.grid_helper(k,pak,attr))
         self.log("processing zone_prop_dict")
         self.par_dfs["zone"] = pd.concat(dfs)
 
