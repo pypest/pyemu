@@ -1188,7 +1188,7 @@ class PstFromFlopyModel(object):
             #      "stress periods for pakattr:{0}".format(attr.name_base))
             pak.attr = attr.from_4d(self.m,pak.name[0],{attr.name_base.replace("_",''):attr.array})
             #kper = list(attr.transient_2ds.keys())[0]
-            return u2d_helper(attr.transient_2ds[k],k)
+            return u2d_helper(attr.transient_2ds[k],k,0)
 
         elif isinstance(attr,flopy.utils.MfList):
             self.logger.lraise('MfList support not implemented array-type pars')
@@ -1387,7 +1387,7 @@ class PstFromFlopyModel(object):
         self.pp_dict[k].append(name)
         return name,filename
 
-    def pp_util2d_helper(self,u2d,k):
+    def pp_util2d_helper(self,u2d,k,layer_idx=None):
         return self._prep_mult_array(u2d,k,suffix=self.pp_suffix)
 
     def setup_grid(self):
@@ -1422,11 +1422,13 @@ class PstFromFlopyModel(object):
             self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v)
         self.par_dfs["grid"] = pd.concat(dfs)
 
-    def grid_util2d_helper(self,u2d,k):
+    def grid_util2d_helper(self,u2d,k,layer_idx=None):
+        if layer_idx is None:
+            layer_idx=k
         name,filename = self._prep_mult_array(u2d,k,suffix=self.gr_suffix)
         # write the template file
         tpl_file = os.path.join(self.m.model_ws,os.path.split(filename)[-1]+".tpl")
-        ib = self.m.bas6.ibound[k].array
+        ib = self.m.bas6.ibound[layer_idx].array
         parnme,x,y = [],[],[]
         with open(tpl_file,'w') as f:
             f.write("ptf ~\n")
@@ -1435,7 +1437,7 @@ class PstFromFlopyModel(object):
                     if ib[i,j] < 1:
                         pname = ' 1.0 '
                     else:
-                        pname = "{0}_{2:03d}{3:03d}".format(name,k,i,j)
+                        pname = "{0}{2:03d}{3:03d}".format(name,k,i,j)
                         if len(pname) > 12:
                             self.logger.lraise("grid pname too long:{0}".\
                                                format(pname))
@@ -1477,11 +1479,13 @@ class PstFromFlopyModel(object):
         self.log("processing zone_prop_dict")
         self.par_dfs["zone"] = pd.concat(dfs)
 
-    def zone_util2d_helper(self,u2d,k):
+    def zone_util2d_helper(self,u2d,k,layer_idx=None):
+        if layer_idx is None:
+            layer_idx = k
         name,filename = self._prep_mult_array(u2d,k,suffix=self.zn_suffix)
         # write the template file
         tpl_file = os.path.join(self.m.model_ws,os.path.split(filename)[-1]+".tpl")
-        ib = self.m.bas6.ibound[k].array
+        ib = self.m.bas6.ibound[layer_idx].array
         parnme = []
         with open(tpl_file,'w') as f:
             f.write("ptf ~\n")

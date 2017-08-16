@@ -280,10 +280,10 @@ def from_flopy_test():
     # constants
     const_prop_dict = {"rch.rech":None,"lpf.hk":None,"lpf.ss":None,"lpf.sy":None}
     # grid scale - every active model cell
-    grid_prop_dict = {"lpf.hk":None}
+    grid_prop_dict = {"lpf.hk":None,"rch.rech":None}
 
     # zones using ibound values
-    zone_prop_dict = {"lpf.ss":None,"lpf.sy":0}
+    zone_prop_dict = {"lpf.ss":None,"lpf.sy":0,"rch.rech":None}
 
     # kper-level multipliers for boundary conditions
     bc_prop_dict = {"wel.flux":None,"riv.cond":None,"riv.stage":0}
