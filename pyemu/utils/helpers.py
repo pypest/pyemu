@@ -940,6 +940,12 @@ class PstFromFlopyModel(object):
             gr_df = self.par_dfs["grid"]
             gr_dfs = [gr_df.loc[gr_df.pargp==pargp,:].copy() for pargp in gr_df.pargp.unique()]
             struct_dict[self.grid_geostruct] = gr_dfs
+        if "bc" in self.par_dfs.keys():
+            bc_df = self.par_dfs["bc"]
+            bc_df.loc[:,"y"] = 0
+            bc_df.loc[:,"x"] = bc_df.timedelta.apply(lambda x: x.days)
+            bc_dfs = [bc_df.loc[bc_df.pargp==pargp,:].copy() for pargp in bc_df.pargp.unique()]
+            struct_dict[self.bc_geostruct] = bc_dfs
         if len(struct_dict) > 0:
             cov = pyemu.helpers.pilotpoint_prior_builder(self.pst,
                                                          struct_dict=struct_dict,
@@ -1139,6 +1145,10 @@ class PstFromFlopyModel(object):
         self.log("processing bc_prop_dict")
         df = pd.DataFrame({"filename":bc_filenames,"col":bc_cols,
                            "kper":bc_k,"pak":bc_pak,"dtype_names":bc_dtype_names})
+        tds = pd.to_timedelta(np.cumsum(self.m.dis.perlen.array),unit='d')
+        dts = pd.to_datetime(self.m._start_datetime) + tds
+        df.loc[:,"datetime"] = df.kper.apply(lambda x: dts[x])
+        df.loc[:,"timedelta"] = df.kper.apply(lambda x: tds[x])
         df.loc[:,"val"] = 1.0
         #df.loc[:,"kper"] = df.kper.apply(np.int)
         df.loc[:,"parnme"] = df.apply(lambda x: "{0}{1}_{2:03d}".format(x.pak,x.col,x.kper),axis=1)
@@ -1154,9 +1164,6 @@ class PstFromFlopyModel(object):
         f_tpl =  open(tpl_name,'w')
         f_tpl.write("ptf ~\n")
         f_tpl.flush()
-        #f_tpl.close()
-        #f_tpl = open(tpl_name,'a')
-        #names[-1] = "tpl_str"
         df.loc[:,names].to_csv(f_tpl,sep=' ')
 
         self.par_dfs["bc"] = df
@@ -1170,6 +1177,10 @@ class PstFromFlopyModel(object):
         line = "pyemu.helpers.apply_bc_pars()\n"
         self.logger.statement("forward_run line:{0}".format(line))
         self.frun_pre_lines.append(line)
+
+        if self.bc_geostruct is None:
+            v = pyemu.geostats.ExpVario(contribution=1.0,a=180.0) # 180 correlation length
+            self.bc_geostruct = pyemu.geostats.GeoStruct(variograms=v)
 
     def bc_helper(self,k,pak,attr,col):
         filename = attr.get_filename(k)
@@ -1607,10 +1618,6 @@ def apply_array_pars():
         for mlt in df_mf.mlt_file:
             org_arr *= np.loadtxt(mlt)
         np.savetxt(model_file,org_arr,fmt="%15.6E")
-
-
-
-
 
 def apply_bc_pars():
     df = pd.read_csv("bc_pars.dat",delim_whitespace=True)

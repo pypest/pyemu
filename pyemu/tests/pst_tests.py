@@ -274,31 +274,35 @@ def from_flopy_test():
 
     new_model_ws = "temp_pst_from_flopy"
 
-    pp_prop_dict = {"rch.rech":None}
-    pp_prop_dict = {}
+    pp_prop_dict = {"upw.ss":0}
+    #pp_prop_dict = {}
 
     # constants
-    const_prop_dict = {"rch.rech":None,"lpf.hk":None,"lpf.ss":None,"lpf.sy":None}
+    const_prop_dict = {"rch.rech":None,"upw.hk":None,"upw.ss":None,"upw.sy":None}
     # grid scale - every active model cell
-    grid_prop_dict = {"lpf.hk":None,"rch.rech":None}
+    grid_prop_dict = {"upw.hk":None}
 
     # zones using ibound values
-    zone_prop_dict = {"lpf.ss":None,"lpf.sy":0,"rch.rech":None}
+    zone_prop_dict = {"upw.ss":[1,2],"upw.sy":0}
 
     # kper-level multipliers for boundary conditions
-    bc_prop_dict = {"wel.flux":None,"riv.cond":None,"riv.stage":0}
+    bc_prop_dict = {"wel.flux":None,"drn.cond":None,"drn.elev":None}
 
-    org_model_ws = os.path.join("..","..","examples","Freyberg_Truth")
-    nam_file = "freyberg.truth.nam"
+    #org_model_ws = os.path.join("..","..","examples","Freyberg_Truth")
+    #nam_file = "freyberg.truth.nam"
+
+    org_model_ws = os.path.join("..","..","examples","Freyberg_transient")
+    nam_file = "freyberg.nam"
 
     # load the model and reset somethings and write new input
     m = flopy.modflow.Modflow.load(nam_file,model_ws=org_model_ws)
     ib = m.bas6.ibound[0].array
-    zn_arr = np.loadtxt(os.path.join(org_model_ws,"hk.zones"),dtype=int)
+    zn_arr = np.loadtxt(os.path.join("..","..","examples","Freyberg_Truth","hk.zones"),dtype=int)
     zn_arr[ib<1] = 0
-    m.bas6.ibound[0] = zn_arr
+    m.bas6.ibound = zn_arr
+
     m.change_model_ws("temp",reset_external=True)
-    m.name = "freyberg"
+    #m.name = "freyberg"
     m.write_input()
     #m.run_model()
 
@@ -307,7 +311,7 @@ def from_flopy_test():
     #smp_obs = smp_sim.replace("sim","obs")
     #obssim_smp_pairs = [[smp_obs,smp_sim]]
     obssim_smp_pairs = None
-    pyemu.helpers.PstFromFlopyModel(m.namefile,"temp",new_model_ws,
+    helper = pyemu.helpers.PstFromFlopyModel(m.namefile,"temp",new_model_ws,
                                     pp_prop_dict=pp_prop_dict,
                                     const_prop_dict=const_prop_dict,
                                     grid_prop_dict=grid_prop_dict,
@@ -315,9 +319,25 @@ def from_flopy_test():
                                     bc_prop_dict=bc_prop_dict,
                                     remove_existing=True,
                                     obssim_smp_pairs=obssim_smp_pairs,
-                                    pp_space=3)
+                                    pp_space=4)
+    pst = helper.pst
+    obs = pst.observation_data
+    obs.loc[:,"weight"] = 0.0
+    obs.loc[obs.obsnme.apply(lambda x: x.startswith("cr")),"weight"] = 1.0
+    obs.loc[obs.weight>0.0,"obsval"] += np.random.normal(0.0,2.0,pst.nnz_obs)
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join(new_model_ws,"freyberg_pest.pst"))
 
+
+def run_array_pars():
+    import os
+    import pyemu
+    new_model_ws = "temp_pst_from_flopy"
+    os.chdir(new_model_ws)
+    pyemu.helpers.apply_array_pars()
+    os.chdir('..')
 if __name__ == "__main__":
+    #run_array_pars()
     from_flopy_test()
     #regdata_test()
     #nnz_groups_test()
