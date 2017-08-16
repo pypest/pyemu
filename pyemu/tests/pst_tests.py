@@ -274,28 +274,18 @@ def from_flopy_test():
 
     new_model_ws = "temp_pst_from_flopy"
 
-    # os.chdir(new_model_ws)
-    # pyemu.helpers.apply_bc_pars()
-    # os.chdir('..')
-    # return
-    # pilot points
-    #pp_prop_dict = {':':["rch","rech"]}
     pp_prop_dict = {"rch.rech":None}
-    #pp_prop_dict = {}
+    pp_prop_dict = {}
 
     # constants
-    #const_prop_dict = {'0':[("lpf","hk")],':':("rch","rech")}
-    const_prop_dict = {"lpf.hk":0,"rch.rech":None}
+    const_prop_dict = {"rch.rech":None,"lpf.hk":None,"lpf.ss":None,"lpf.sy":None}
     # grid scale - every active model cell
-    #grid_prop_dict = {0:["lpf","hk"]}
     grid_prop_dict = {"lpf.hk":None}
 
     # zones using ibound values
-    #zone_prop_dict = {0:[("lpf","ss"),("lpf","sy")]}
     zone_prop_dict = {"lpf.ss":None,"lpf.sy":0}
 
     # kper-level multipliers for boundary conditions
-    #bc_prop_dict = {':':[("wel","flux"),("riv","cond"),("riv","stage")]}
     bc_prop_dict = {"wel.flux":None,"riv.cond":None,"riv.stage":0}
 
     org_model_ws = os.path.join("..","..","examples","Freyberg_Truth")
@@ -325,7 +315,7 @@ def from_flopy_test():
                                     bc_prop_dict=bc_prop_dict,
                                     remove_existing=True,
                                     obssim_smp_pairs=obssim_smp_pairs,
-                                    pp_space=5)
+                                    pp_space=3)
 
 if __name__ == "__main__":
     from_flopy_test()
