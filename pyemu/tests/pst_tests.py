@@ -273,20 +273,28 @@ def from_flopy_test():
     import pyemu
 
     new_model_ws = "temp_pst_from_flopy"
-
-    pp_props = [["upw.ss",0],["upw.ss",1],["upw.ss",2]]
-    const_props = [["rch.rech",[0,1,2,3,4]],["rch.rech",[-3,-2,-1]]]
+    # pilot points for ss in all 3 layers
+    # and one set of rch pilot points for the first half of the sim and
+    # and one set for the second half of the sim
+    pp_props = [["upw.ss",0],["upw.ss",1],["upw.ss",2],\
+                ["rch.rech",np.arange(182)],["rch.rech",np.arange(183,365)]]
+    #const_props = [["rch.rech",[0,1,2,3,4]],["rch.rech",[-3,-2,-1]]]
+    #a single rch const mlt for each stress period
+    const_props = [["rch.rech",i] for i in range(365)]
     grid_props = []
     for k in range(3):
+        #grid scale pars for hk in all layers
         grid_props.append(["upw.hk",k])
+        # const par for hk, ss, sy in all layers
         const_props.append(["upw.hk",k])
         const_props.append(["upw.ss",k])
         const_props.append(["upw.sy",k])
 
-    # zones using ibound values
+    # zones using ibound values - vka in layer 2
     zone_props = [["upw.vka",1]]
 
     # kper-level multipliers for boundary conditions
+
     bc_props = [["wel.flux",None],["drn.cond",None],["drn.elev",None]]
 
     #org_model_ws = os.path.join("..","..","examples","Freyberg_Truth")

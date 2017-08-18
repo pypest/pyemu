@@ -854,6 +854,7 @@ class PstFromFlopyModel(object):
                 df.loc[:,"suffix"] = suffix
                 df.loc[:,"prefix"] = mlt_prefix
                 mlt_dfs.append(df)
+        mlt_df = pd.concat(mlt_dfs,ignore_index=True)
         return pd.concat(mlt_dfs)
 
     def write_u2d(self, u2d):
@@ -880,7 +881,8 @@ class PstFromFlopyModel(object):
                     f.write(pname)
                 f.write("\n")
         df = pd.DataFrame({"parnme":parnme},index=parnme)
-        df.loc[:,"pargp"] = "cn_{0}".format(name)
+        #df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
+        df.loc[:,"pargp"] = self.cn_suffix
         df.loc[:,"tpl"] = tpl_file
         return df
 
@@ -904,7 +906,7 @@ class PstFromFlopyModel(object):
                     f.write(pname)
                 f.write("\n")
         df = pd.DataFrame({"parnme":parnme,"x":x,"y":y},index=parnme)
-        df.loc[:,"pargp"] = "gr_{0}".format(name)
+        df.loc[:,"pargp"] = "{0}{1}".format(self.gr_suffix,name)
         df.loc[:,"tpl"] = tpl_file
         return df
 
@@ -926,7 +928,7 @@ class PstFromFlopyModel(object):
                     f.write(pname)
                 f.write("\n")
         df = pd.DataFrame({"parnme":parnme},index=parnme)
-        df.loc[:,"pargp"] = "zn_{0}".format(name)
+        df.loc[:,"pargp"] = "{0}{1}".format(self.zn_suffix,name)
         return df
 
     def grid_prep(self):
@@ -1016,7 +1018,7 @@ class PstFromFlopyModel(object):
                 pp_files = pp_df.loc[pp_df.pp_filename.apply(lambda x: pp_prefix in x),"pp_filename"]
                 if pp_files.unique().shape[0] != 1:
                     self.logger.lraise("wrong number of pp_files found:{0}".format(','.join(pp_files)))
-                pp_file = os.path.split(pp_files[0])[-1]
+                pp_file = os.path.split(pp_files.iloc[0])[-1]
                 pp_df.loc[pp_df.pargp==pp_prefix,"fac_file"] = fac_file
                 pp_df.loc[pp_df.pargp==pp_prefix,"pp_file"] = pp_file
                 pp_df.loc[pp_df.pargp==pp_prefix,"out_file"] = out_file
@@ -1024,16 +1026,19 @@ class PstFromFlopyModel(object):
         pp_df.loc[:,"pargp"] = pp_df.pargp.apply(lambda x: "pp_{0}".format(x))
         out_files = mlt_df.loc[mlt_df.mlt_file.
                     apply(lambda x: x.endswith(self.pp_suffix)),"mlt_file"]
+        mlt_df.loc[:,"fac_file"] = np.NaN
+        mlt_df.loc[:,"pp_file"] = np.NaN
         for out_file in out_files:
             pp_df_pf = pp_df.loc[pp_df.out_file==out_file,:]
             fac_files = pp_df_pf.fac_file
             if fac_files.unique().shape[0] != 1:
                 self.logger.lraise("wrong number of fac files:{0}".format(str(fac_files.unique())))
-            fac_file = fac_files[0]
+            fac_file = fac_files.iloc[0]
             pp_files = pp_df_pf.pp_file
             if pp_files.unique().shape[0] != 1:
                 self.logger.lraise("wrong number of pp files:{0}".format(str(pp_files.unique())))
-            pp_file = pp_files[0]
+            pp_file = pp_files.iloc[0]
+            print(out_file)
             mlt_df.loc[mlt_df.mlt_file==out_file,"fac_file"] = fac_file
             mlt_df.loc[mlt_df.mlt_file==out_file,"pp_file"] = pp_file
         self.par_dfs[self.pp_suffix] = pp_df
@@ -1041,17 +1046,16 @@ class PstFromFlopyModel(object):
     def setup_array_pars(self):
         mlt_df = self.prep_mlt_arrays()
         mlt_df.loc[:,"tpl_file"] = mlt_df.mlt_file.apply(lambda x: os.path.split(x)[-1]+".tpl")
-
         mlt_files = mlt_df.mlt_file.unique()
         #for suffix,tpl_file,layer,name in zip(self.mlt_df.suffix,
         #                                 self.mlt_df.tpl,self.mlt_df.layer,
         #                                     self.mlt_df.prefix):
         par_dfs = {}
         for mlt_file in mlt_files:
-            suffix = mlt_df.loc[mlt_df.mlt_file==mlt_file,"suffix"][0]
-            tpl_file = mlt_df.loc[mlt_df.mlt_file==mlt_file,"tpl_file"][0]
-            layer = mlt_df.loc[mlt_df.mlt_file==mlt_file,"layer"][0]
-            name = mlt_df.loc[mlt_df.mlt_file==mlt_file,"prefix"][0]
+            suffix = mlt_df.loc[mlt_df.mlt_file==mlt_file,"suffix"].iloc[0]
+            tpl_file = mlt_df.loc[mlt_df.mlt_file==mlt_file,"tpl_file"].iloc[0]
+            layer = mlt_df.loc[mlt_df.mlt_file==mlt_file,"layer"].iloc[0]
+            name = mlt_df.loc[mlt_df.mlt_file==mlt_file,"prefix"].iloc[0]
 
             ib = self.m.bas6.ibound[layer].array
             df = None
