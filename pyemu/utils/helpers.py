@@ -84,6 +84,7 @@ def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
             zones = pp_df.zone.unique()
             for zone in zones:
                 pp_zone = pp_df.loc[pp_df.zone==zone,:]
+                pp_zone.sort_values(by="parnme",inplace=True)
                 cov = gs.covariance_matrix(pp_zone.x,pp_zone.y,pp_zone.parnme)
                 # find the variance in the diagonal cov
                 tpl_var = np.diag(full_cov.get(list(pp_zone.parnme),
@@ -93,7 +94,11 @@ def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
                                   " , using max range as variance for all pars")
                 tpl_var = tpl_var.max()
                 cov *= tpl_var
-                ci = cov.inv
+                try:
+                    ci = cov.inv
+                except:
+                    pp_zone.to_csv("prior_builder_crash.csv")
+                    raise Exception("error inverting cov {0}".format(cov.row_names[:3]))
                 full_cov.replace(cov)
     return full_cov
 
@@ -940,6 +945,9 @@ class PstFromFlopyModel(object):
             self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v)
 
     def pp_prep(self,mlt_df):
+        if self.pp_space is None:
+            self.logger.warn("pp_space is None, using 10...\n")
+            self.pp_space=10
         if self.pp_geostruct is None:
             self.logger.warn("pp_geostruct is None,"\
                   " using ExpVario with contribution=1 and a=(pp_space*max(delr,delc))")
@@ -947,9 +955,7 @@ class PstFromFlopyModel(object):
                                            self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0,a=pp_dist)
             self.pp_geostruct = pyemu.geostats.GeoStruct(variograms=v)
-        if self.pp_space is None:
-            self.logger.warn("pp_space is None, using 10...\n")
-            self.pp_space=10
+
 
         pp_df = mlt_df.loc[mlt_df.suffix==self.pp_suffix,:]
         layers = pp_df.layer.unique()
@@ -1141,19 +1147,35 @@ class PstFromFlopyModel(object):
     def build_prior(self):
         self.log("building prior covariance matrix")
         struct_dict = {}
-        if "pp" in self.par_dfs.keys():
-            pp_df = self.par_dfs["pp"]
-            pp_dfs = [pp_df.loc[pp_df.pargp==pargp,:].copy() for pargp in pp_df.pargp.unique()]
+        if self.pp_suffix in self.par_dfs.keys():
+            pp_df = self.par_dfs[self.pp_suffix]
+            pp_dfs = []
+            for pargp in pp_df.pargp.unique():
+                gp_df = pp_df.loc[pp_df.pargp==pargp,:]
+                p_df = gp_df.drop_duplicates(subset="parnme")
+                pp_dfs.append(p_df)
+            #pp_dfs = [pp_df.loc[pp_df.pargp==pargp,:].copy() for pargp in pp_df.pargp.unique()]
             struct_dict[self.pp_geostruct] = pp_dfs
-        if "grid" in self.par_dfs.keys():
-            gr_df = self.par_dfs["grid"]
-            gr_dfs = [gr_df.loc[gr_df.pargp==pargp,:].copy() for pargp in gr_df.pargp.unique()]
+        if self.gr_suffix in self.par_dfs.keys():
+            gr_df = self.par_dfs[self.gr_suffix]
+            gr_dfs = []
+            for pargp in gr_df.pargp.unique():
+                gp_df = gr_df.loc[gr_df.pargp==pargp,:]
+                p_df = gp_df.drop_duplicates(subset="parnme")
+                gr_dfs.append(p_df)
+            #gr_dfs = [gr_df.loc[gr_df.pargp==pargp,:].copy() for pargp in gr_df.pargp.unique()]
             struct_dict[self.grid_geostruct] = gr_dfs
         if "bc" in self.par_dfs.keys():
             bc_df = self.par_dfs["bc"]
             bc_df.loc[:,"y"] = 0
             bc_df.loc[:,"x"] = bc_df.timedelta.apply(lambda x: x.days)
-            bc_dfs = [bc_df.loc[bc_df.pargp==pargp,:].copy() for pargp in bc_df.pargp.unique()]
+            bc_dfs = []
+            for pargp in bc_df.pargp.unique():
+                gp_df = bc_df.loc[bc_df.pargp==pargp,:]
+                p_df = gp_df.drop_duplicates(subset="parnme")
+                print(p_df)
+                bc_dfs.append(p_df)
+            #bc_dfs = [bc_df.loc[bc_df.pargp==pargp,:].copy() for pargp in bc_df.pargp.unique()]
             struct_dict[self.bc_geostruct] = bc_dfs
         if len(struct_dict) > 0:
             cov = pyemu.helpers.pilotpoint_prior_builder(self.pst,
