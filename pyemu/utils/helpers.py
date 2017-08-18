@@ -264,6 +264,7 @@ def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
         if parbounds:
             regweight_from_parbound(pst)
 
+
 def regweight_from_parbound(pst):
     """sets regularization weights from parameter bounds
         which approximates the KL expansion
@@ -285,6 +286,7 @@ def regweight_from_parbound(pst):
         else:
             print("prior information name does not correspond" +\
                   " to a parameter: " + str(parnme))
+
 
 def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
         """setup preferred-difference regularization from a covariance matrix.
@@ -529,6 +531,7 @@ def gaussian_distribution(mean,stdev,num_pts=50):
     y = (1.0/np.sqrt(2.0*np.pi*stdev*stdev)) * np.exp(-1.0 * ((x - mean)**2)/(2.0*stdev*stdev))
     return x,y
 
+
 def read_pestpp_runstorage(filename,irun=0):
     """read pars and obs from a specific run in a pest++ serialized run storage file"""
     header_dtype = np.dtype([("n_runs",np.int64),("run_size",np.int64),("p_name_size",np.int64),
@@ -554,7 +557,6 @@ def read_pestpp_runstorage(filename,irun=0):
     obs_df = pd.DataFrame({"obsnme":obs_names,"obsval":obs_vals})
     obs_df.index = obs_df.pop("obsnme")
     return par_df,obs_df
-
 
 
 def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
@@ -619,19 +621,6 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
         new_pst.write(pst_filename,update_regul=True)
     return new_pst
 
-#TODO write runtime helpers to apply pilot points, array mults and bc_mults
-#TODO write a file mapping multiplier bc and array parameters to mlt arrays and org arrays
-#TODO download binaries from pestpp github based on platform
-
-# def pst_from_flopy_model(nam_file,org_model_ws,new_model_ws,pp_pakattr_list=None,const_pakattr_list=None,bc_pakattr_list=None,
-#                          grid_pakattr_list=None,grid_geostruct=None,pp_space=None,pp_bounds=None,
-#                          pp_geostruct=None,bc_geostruct=None,remove_existing=False):
-#
-#     return PstFromFlopyModel(nam_file=nam_file,org_model_ws=org_model_ws,new_model_ws=new_model_ws,
-#                              pp_pakattr_list=pp_pakattr_list,const_pakattr_list=const_pakattr_list,
-#                              bc_pakattr_list=bc_pakattr_list,grid_pakattr_list=grid_pakattr_list,
-#                              grid_geostruct=None,pp_space=None,pp_bounds=None,
-#                              pp_geostruct=None,bc_geostruct=None,remove_existing=False)
 
 wildass_guess_par_bounds_dict = {"hk":[0.01,100.0],"vka":[0.01,100.0],
                                    "sy":[0.25,1.75],"ss":[0.01,100.0],
@@ -644,8 +633,8 @@ class PstFromFlopyModel(object):
     def __init__(self,nam_file,org_model_ws,new_model_ws,pp_props=None,const_props=None,
                  bc_props=None,grid_props=None,grid_geostruct=None,pp_space=None,
                  zone_props=None,pp_geostruct=None,par_bounds_dict=None,
-                 bc_geostruct=None,remove_existing=False,
-                 mflist_waterbudget=True,mfhyd=True,
+                 bc_geostruct=None,remove_existing=False,k_zone_dict=None,
+                 mflist_waterbudget=True,mfhyd=True,use_pp_zones=False,
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
                  external_ins_out_pairs=None,extra_pre_cmds=None,
                  extra_model_cmds=None,extra_post_cmds=None):
@@ -680,6 +669,7 @@ class PstFromFlopyModel(object):
         self.pp_props = pp_props
         self.pp_space = pp_space
         self.pp_geostruct = pp_geostruct
+        self.use_pp_zones = use_pp_zones
 
         self.const_props = const_props
         self.bc_props = bc_props
@@ -696,6 +686,18 @@ class PstFromFlopyModel(object):
         self.frun_post_lines = []
 
         self.setup_model(nam_file,org_model_ws,new_model_ws)
+
+        if k_zone_dict is None:
+            self.k_zone_dict = {k:self.m.bas6.ibound[k].array for k in np.arange(self.m.nlay)}
+        else:
+            for k,arr in k_zone_dict.items():
+                if k not in np.arange(self.m.nlay):
+                    self.logger.lraise("k_zone_dict layer index not in nlay:{0}".
+                                       format(k))
+                if arr.shape != (self.m.nrow,self.m.ncol):
+                    self.logger.lraise("k_zone_dict arr for k {0} has wrong shape:{1}".
+                                       format(k,arr.shape))
+            self.k_zone_dict = k_zone_dict
 
         # add any extra commands to the forward run lines
 
@@ -953,18 +955,18 @@ class PstFromFlopyModel(object):
         layers = pp_df.layer.unique()
         pp_dict = {l:list(pp_df.loc[pp_df.layer==l,"prefix"]) for l in layers}
         pp_array_file = {p:m for p,m in zip(pp_df.prefix,pp_df.mlt_file)}
-        print(pp_array_file)
         self.logger.statement("pp_dict: {0}".format(str(pp_dict)))
 
         self.log("calling setup_pilot_point_grid()")
         pp_df = pyemu.gw_utils.setup_pilotpoints_grid(self.m,
+                                         ibound=self.k_zone_dict,
+                                         use_ibound_zones=self.use_pp_zones,
                                          prefix_dict=pp_dict,
                                          every_n_cell=self.pp_space,
                                          pp_dir=self.m.model_ws,
                                          tpl_dir=self.m.model_ws,
                                          shapename=os.path.join(
                                                  self.m.model_ws,"pp.shp"))
-
         self.logger.statement("{0} pilot point parameters created".
                               format(pp_df.shape[0]))
         self.logger.statement("pilot point 'pargp':{0}".
@@ -992,7 +994,8 @@ class PstFromFlopyModel(object):
                                       .format(fac_file))
                 pp_df_k = pp_df.loc[pp_df.pargp==pg]
                 ok_pp = pyemu.geostats.OrdinaryKrige(self.pp_geostruct,pp_df_k)
-                ok_pp.calc_factors_grid(self.m.sr,var_filename=var_file)
+                ok_pp.calc_factors_grid(self.m.sr,var_filename=var_file,
+                                        zone_array=self.k_zone_dict[k])
                 ok_pp.to_grid_factors_file(fac_file)
                 fac_files[k] = fac_file
                 self.log("calculating factors for k={0}".format(k))
@@ -1035,7 +1038,6 @@ class PstFromFlopyModel(object):
             if pp_files.unique().shape[0] != 1:
                 self.logger.lraise("wrong number of pp files:{0}".format(str(pp_files.unique())))
             pp_file = pp_files.iloc[0]
-            print(out_file)
             mlt_df.loc[mlt_df.mlt_file==out_file,"fac_file"] = fac_file
             mlt_df.loc[mlt_df.mlt_file==out_file,"pp_file"] = pp_file
         self.par_dfs[self.pp_suffix] = pp_df
@@ -1070,7 +1072,7 @@ class PstFromFlopyModel(object):
                 self.logger.lraise("wrong number of names for {0}"\
                                    .format(mlt_file))
             name = names.iloc[0]
-            ib = self.m.bas6.ibound[layer].array
+            ib = self.k_zone_dict[layer]
             df = None
             if suffix == self.cn_suffix:
                 self.log("writing const tpl:{0}".format(tpl_file))
@@ -1107,7 +1109,7 @@ class PstFromFlopyModel(object):
 
         mlt_df.to_csv(os.path.join(self.m.model_ws,"arr_pars.csv"))
         ones = np.ones((self.m.nrow,self.m.ncol))
-        for mlt_file in mlt_df.mlt_file:
+        for mlt_file in mlt_df.mlt_file.unique():
             self.log("save test mlt array {0}".format(mlt_file))
             np.savetxt(os.path.join(self.m.model_ws,mlt_file),
                        ones,fmt="%15.6E")
@@ -1126,8 +1128,10 @@ class PstFromFlopyModel(object):
         self.frun_pre_lines.append(line)
 
     def setup_observations(self):
-        obs_methods = [self.setup_water_budget_obs,self.setup_hyd,self.setup_smp]
-        obs_types = ["mflist water budget obs","hyd file","external obs-sim smp files"]
+        obs_methods = [self.setup_water_budget_obs,self.setup_hyd,
+                       self.setup_smp,self.setup_hob]
+        obs_types = ["mflist water budget obs","hyd file",
+                     "external obs-sim smp files","hob"]
         self.obs_dfs = {}
         for obs_method, obs_type in zip(obs_methods,obs_types):
             self.log("processing obs type {0}".format(obs_type))
@@ -1425,7 +1429,15 @@ class PstFromFlopyModel(object):
             pyemu.pst_utils.smp_to_ins(new_sim_smp)
 
     def setup_hob(self):
-        pass
+        if self.m.hob is None:
+            return
+        hob_out_unit = self.m.hob.iuhobsv
+        hob_out_fname = os.path.join(self.m.model_ws,self.m.get_output_attribute(unit=hob_out_unit))
+        if not os.path.exists(hob_out_fname):
+            self.logger.warn("could not find hob out file: {0}...skipping".format(hob_out_fname))
+            return
+        hob_df = pyemu.gw_utils.modflow_hob_to_instruction_file(hob_out_fname)
+        self.obs_dfs["hob"] = hob_df
 
     def setup_hyd(self):
         if self.m.hyd is None:

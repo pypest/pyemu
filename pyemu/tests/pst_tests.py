@@ -307,23 +307,24 @@ def from_flopy_test():
     nam_file = "freyberg.nam"
 
     # load the model and reset somethings and write new input
-    m = flopy.modflow.Modflow.load(nam_file,model_ws=org_model_ws)
-    ib = m.bas6.ibound[0].array
-    zn_arr = np.loadtxt(os.path.join("..","..","examples","Freyberg_Truth","hk.zones"),dtype=int)
-    zn_arr[ib<1] = 0
-    m.bas6.ibound = zn_arr
+    #m = flopy.modflow.Modflow.load(nam_file,model_ws=org_model_ws)
+    #ib = m.bas6.ibound[0].array
+    #zn_arr = np.loadtxt(os.path.join("..","..","examples","Freyberg_Truth","hk.zones"),dtype=int)
+    #zn_arr[ib<1] = 0
+    #m.bas6.ibound = zn_arr
 
-    m.change_model_ws("temp",reset_external=True)
+    #m.change_model_ws("temp",reset_external=True)
     #m.name = "freyberg"
-    m.write_input()
+    #m.write_input()
     #m.run_model()
 
-
+    zn_arr = np.loadtxt(os.path.join("..","..","examples","Freyberg_Truth","hk.zones"),dtype=int)
+    k_zone_dict = {k:zn_arr for k in range(3)}
     #smp_sim = os.path.join("utils","TWDB_wells.sim.smp")
     #smp_obs = smp_sim.replace("sim","obs")
     #obssim_smp_pairs = [[smp_obs,smp_sim]]
     obssim_smp_pairs = None
-    helper = pyemu.helpers.PstFromFlopyModel(m.namefile,"temp",new_model_ws,
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file,org_model_ws,new_model_ws,
                                     pp_props=pp_props,
                                     const_props=const_props,
                                     grid_props=grid_props,
@@ -331,7 +332,9 @@ def from_flopy_test():
                                     bc_props=bc_props,
                                     remove_existing=True,
                                     obssim_smp_pairs=obssim_smp_pairs,
-                                    pp_space=4)
+                                    pp_space=4,
+                                    use_pp_zones=True,
+                                    k_zone_dict=k_zone_dict)
     pst = helper.pst
     obs = pst.observation_data
     obs.loc[:,"weight"] = 0.0

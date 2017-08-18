@@ -200,10 +200,12 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
 
     """
     import flopy
+
     if ml is not None:
         assert isinstance(ml,flopy.modflow.Modflow)
         sr = ml.sr
-        ibound = ml.bas6.ibound.array
+        if ibound is None:
+            ibound = ml.bas6.ibound.array
     else:
         assert sr is not None,"if 'ml' is not passed, 'sr' must be passed"
         assert ibound is not None,"if 'ml' is not pass, 'ibound' must be passed"
@@ -261,6 +263,7 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
                 if use_ibound_zones:
                     zone = ib[i,j]
                 #stick this pilot point into a dataframe container
+
                 if pp_df is None:
                     data = {"name": name, "x": x, "y": y, "zone": zone,
                             "parval1": parval1, "k":k, "i":i, "j":j}
@@ -580,7 +583,8 @@ def parse_factor_line(line):
     return inode,itrans,fac_data
 
 def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
-                            vol_filename="vol.dat",start_datetime="1-1'1970",prefix=''):
+                            vol_filename="vol.dat",start_datetime="1-1'1970",prefix='',
+                            save_setup_file=False):
     flx,vol = apply_mflist_budget_obs(list_filename,flx_filename,vol_filename,
                                       start_datetime)
     _write_mflist_ins(flx_filename+".ins",flx,prefix+"flx")
@@ -606,7 +610,8 @@ def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
         df2 = pd.read_csv(vol_obf, delim_whitespace=True, header=None, names=["obsnme", "obsval"])
         df2.loc[:, "obgnme"] = df2.obsnme.apply(lambda x: x[:-9])
         df = df.append(df2)
-        df.to_csv("_setup_"+os.path.split(list_filename)[-1]+'.csv',index=False)
+        if setup_file is not None:
+            df.to_csv("_setup_"+os.path.split(list_filename)[-1]+'.csv',index=False)
         df.index = df.obsnme
         return df
 
