@@ -274,19 +274,20 @@ def from_flopy_test():
 
     new_model_ws = "temp_pst_from_flopy"
 
-    pp_prop_dict = {"upw.ss":0}
-    #pp_prop_dict = {}
-
-    # constants
-    const_prop_dict = {"rch.rech":None,"upw.hk":None,"upw.ss":None,"upw.sy":None}
-    # grid scale - every active model cell
-    grid_prop_dict = {"upw.hk":None}
+    pp_props = [["upw.ss",0],["upw.ss",1],["upw.ss",2]]
+    const_props = [["rch.rech",[0,1,2,3,4]],["rch.rech",[-3,-2,-1]]]
+    grid_props = []
+    for k in range(3):
+        grid_props.append(["upw.hk",k])
+        const_props.append(["upw.hk",k])
+        const_props.append(["upw.ss",k])
+        const_props.append(["upw.sy",k])
 
     # zones using ibound values
-    zone_prop_dict = {"upw.ss":[1,2],"upw.sy":0}
+    zone_props = [["upw.vka",1]]
 
     # kper-level multipliers for boundary conditions
-    bc_prop_dict = {"wel.flux":None,"drn.cond":None,"drn.elev":None}
+    bc_props = [["wel.flux",None],["drn.cond",None],["drn.elev",None]]
 
     #org_model_ws = os.path.join("..","..","examples","Freyberg_Truth")
     #nam_file = "freyberg.truth.nam"
@@ -312,11 +313,11 @@ def from_flopy_test():
     #obssim_smp_pairs = [[smp_obs,smp_sim]]
     obssim_smp_pairs = None
     helper = pyemu.helpers.PstFromFlopyModel(m.namefile,"temp",new_model_ws,
-                                    pp_prop_dict=pp_prop_dict,
-                                    const_prop_dict=const_prop_dict,
-                                    grid_prop_dict=grid_prop_dict,
-                                    zone_prop_dict=zone_prop_dict,
-                                    bc_prop_dict=bc_prop_dict,
+                                    pp_props=pp_props,
+                                    const_props=const_props,
+                                    grid_props=grid_props,
+                                    zone_props=zone_props,
+                                    bc_props=bc_props,
                                     remove_existing=True,
                                     obssim_smp_pairs=obssim_smp_pairs,
                                     pp_space=4)
