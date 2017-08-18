@@ -800,9 +800,10 @@ class PstFromFlopyModel(object):
         if name not in self.mlt_counter:
             self.mlt_counter[name] = 1
             c = 0
-        c = self.mlt_counter[name]
-        self.mlt_counter[name] += 1
-        print(name,c)
+        else:
+            c = self.mlt_counter[name]
+            self.mlt_counter[name] += 1
+            #print(name,c)
         return c
 
     def prep_mlt_arrays(self):
@@ -813,13 +814,9 @@ class PstFromFlopyModel(object):
         mlt_dfs = []
         for par_props,suffix in zip(par_props,par_suffixs):
             if len(par_props) == 2:
-                try:
-                    pak,attr = self.parse_pakattr(par_props)
-                except:
-                    pass
-                else:
+                if not isinstance(par_props[0],list):
                     par_props = [par_props]
-            print(par_props)
+
             for pakattr,k_org in par_props:
                 attr_name = pakattr.split('.')[1]
                 pak,attr = self.parse_pakattr(pakattr)
@@ -1052,11 +1049,27 @@ class PstFromFlopyModel(object):
         #                                     self.mlt_df.prefix):
         par_dfs = {}
         for mlt_file in mlt_files:
-            suffix = mlt_df.loc[mlt_df.mlt_file==mlt_file,"suffix"].iloc[0]
-            tpl_file = mlt_df.loc[mlt_df.mlt_file==mlt_file,"tpl_file"].iloc[0]
-            layer = mlt_df.loc[mlt_df.mlt_file==mlt_file,"layer"].iloc[0]
-            name = mlt_df.loc[mlt_df.mlt_file==mlt_file,"prefix"].iloc[0]
+            suffixes = mlt_df.loc[mlt_df.mlt_file==mlt_file,"suffix"]
+            if suffixes.unique().shape[0] != 1:
+                self.logger.lraise("wrong number of suffixes for {0}"\
+                                   .format(mlt_file))
+            suffix = suffixes.iloc[0]
 
+            tpl_files = mlt_df.loc[mlt_df.mlt_file==mlt_file,"tpl_file"]
+            if tpl_files.unique().shape[0] != 1:
+                self.logger.lraise("wrong number of tpl_files for {0}"\
+                                   .format(mlt_file))
+            tpl_file = tpl_files.iloc[0]
+            layers = mlt_df.loc[mlt_df.mlt_file==mlt_file,"layer"]
+            if layers.unique().shape[0] != 1:
+                self.logger.lraise("wrong number of layers for {0}"\
+                                   .format(mlt_file))
+            layer = layers.iloc[0]
+            names = mlt_df.loc[mlt_df.mlt_file==mlt_file,"prefix"]
+            if names.unique().shape[0] != 1:
+                self.logger.lraise("wrong number of names for {0}"\
+                                   .format(mlt_file))
+            name = names.iloc[0]
             ib = self.m.bas6.ibound[layer].array
             df = None
             if suffix == self.cn_suffix:
@@ -1325,32 +1338,35 @@ class PstFromFlopyModel(object):
         bc_pak = []
         bc_k = []
         bc_dtype_names = []
+        bc_parnme = []
         if len(self.bc_props) == 2:
-                try:
-                    pak,attr = self.parse_pakattr(self.bc_props)
-                except:
-                    pass
-                else:
-                    self.bc_props = [self.bc_props]
+            if not isinstance(self.bc_props[0],list):
+                self.bc_props = [self.bc_props]
         for pakattr,k_org in self.bc_props:
             pak,attr,col = self.parse_pakattr(pakattr)
             k_parse = self.parse_k(k_org,np.arange(self.m.nper))
+            c = self.get_count(pakattr)
             for k in k_parse:
                 bc_filenames.append(self.bc_helper(k,pak,attr,col))
                 bc_cols.append(col)
-                bc_pak.append(pak.name[0].lower())
+                pak_name = pak.name[0].lower()
+                bc_pak.append(pak_name)
                 bc_k.append(k)
                 bc_dtype_names.append(','.join(attr.dtype.names))
+
+                bc_parnme.append("{0}{1}_{2:03d}".format(pak_name,col,c))
         self.log("processing bc_prop_dict")
         df = pd.DataFrame({"filename":bc_filenames,"col":bc_cols,
-                           "kper":bc_k,"pak":bc_pak,"dtype_names":bc_dtype_names})
+                           "kper":bc_k,"pak":bc_pak,
+                           "dtype_names":bc_dtype_names,
+                          "parnme":bc_parnme})
         tds = pd.to_timedelta(np.cumsum(self.m.dis.perlen.array),unit='d')
         dts = pd.to_datetime(self.m._start_datetime) + tds
         df.loc[:,"datetime"] = df.kper.apply(lambda x: dts[x])
         df.loc[:,"timedelta"] = df.kper.apply(lambda x: tds[x])
         df.loc[:,"val"] = 1.0
         #df.loc[:,"kper"] = df.kper.apply(np.int)
-        df.loc[:,"parnme"] = df.apply(lambda x: "{0}{1}_{2:03d}".format(x.pak,x.col,x.kper),axis=1)
+        #df.loc[:,"parnme"] = df.apply(lambda x: "{0}{1}_{2:03d}".format(x.pak,x.col,x.kper),axis=1)
         df.loc[:,"tpl_str"] = df.parnme.apply(lambda x: "~   {0}   ~".format(x))
         df.loc[:,"bc_org"] = self.bc_org
         df.loc[:,"model_ext_path"] = self.m.external_path

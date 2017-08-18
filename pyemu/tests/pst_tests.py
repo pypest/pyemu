@@ -291,11 +291,14 @@ def from_flopy_test():
         const_props.append(["upw.sy",k])
 
     # zones using ibound values - vka in layer 2
-    zone_props = [["upw.vka",1]]
+    zone_props = ["upw.vka",1]
 
     # kper-level multipliers for boundary conditions
-
-    bc_props = [["wel.flux",None],["drn.cond",None],["drn.elev",None]]
+    bc_props = [["drn.cond",None]]
+    for iper in range(365):
+        bc_props.append(["wel.flux",iper])
+        bc_props.append(["drn.elev",iper])
+    #bc_props = [["wel.flux",None],["drn.cond",None],["drn.elev",None]]
 
     #org_model_ws = os.path.join("..","..","examples","Freyberg_Truth")
     #nam_file = "freyberg.truth.nam"
