@@ -610,7 +610,7 @@ def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
         df2 = pd.read_csv(vol_obf, delim_whitespace=True, header=None, names=["obsnme", "obsval"])
         df2.loc[:, "obgnme"] = df2.obsnme.apply(lambda x: x[:-9])
         df = df.append(df2)
-        if setup_file is not None:
+        if save_setup_file:
             df.to_csv("_setup_"+os.path.split(list_filename)[-1]+'.csv',index=False)
         df.index = df.obsnme
         return df
