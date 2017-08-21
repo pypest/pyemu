@@ -964,8 +964,12 @@ class PstFromFlopyModel(object):
         self.logger.statement("pp_dict: {0}".format(str(pp_dict)))
 
         self.log("calling setup_pilot_point_grid()")
+        if self.use_pp_zones:
+            ib = self.k_zone_dict
+        else:
+            ib = {k:self.m.bas6.ibound[k].array for k in range(self.m.nlay)}
         pp_df = pyemu.gw_utils.setup_pilotpoints_grid(self.m,
-                                         ibound=self.k_zone_dict,
+                                         ibound=ib,
                                          use_ibound_zones=self.use_pp_zones,
                                          prefix_dict=pp_dict,
                                          every_n_cell=self.pp_space,
@@ -1092,7 +1096,7 @@ class PstFromFlopyModel(object):
 
             elif suffix == self.zn_suffix:
                 self.log("writing zone tpl:{0}".format(tpl_file))
-                df = self.write_grid_tpl(name,tpl_file,ib)
+                df = self.write_zone_tpl(name,tpl_file,ib)
                 self.log("writing zone tpl:{0}".format(tpl_file))
             if df is None:
                 continue
@@ -1173,7 +1177,7 @@ class PstFromFlopyModel(object):
             for pargp in bc_df.pargp.unique():
                 gp_df = bc_df.loc[bc_df.pargp==pargp,:]
                 p_df = gp_df.drop_duplicates(subset="parnme")
-                print(p_df)
+                #print(p_df)
                 bc_dfs.append(p_df)
             #bc_dfs = [bc_df.loc[bc_df.pargp==pargp,:].copy() for pargp in bc_df.pargp.unique()]
             struct_dict[self.bc_geostruct] = bc_dfs

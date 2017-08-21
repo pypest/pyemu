@@ -333,7 +333,7 @@ def from_flopy_test():
                                     remove_existing=True,
                                     obssim_smp_pairs=obssim_smp_pairs,
                                     pp_space=4,
-                                    use_pp_zones=True,
+                                    use_pp_zones=False,
                                     k_zone_dict=k_zone_dict)
     pst = helper.pst
     obs = pst.observation_data
