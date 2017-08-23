@@ -539,7 +539,10 @@ def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
 
     arr = np.zeros((nrow,ncol),dtype=np.float) + fill_value
     pp_dict = {name:val for name,val in zip(pp_data.index,pp_data.parval1)}
-    pp_dict_log = {name:np.log10(val) for name,val in zip(pp_data.index,pp_data.parval1)}
+    try:
+        pp_dict_log = {name:np.log10(val) for name,val in zip(pp_data.index,pp_data.parval1)}
+    except:
+        pp_dict_log = {}
     #for i in range(nrow):
     #    for j in range(ncol):
     while True:
