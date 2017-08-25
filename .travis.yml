@@ -14,6 +14,7 @@ install:
   - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas nose matplotlib
   - pip install coveralls
   - pip install pyshp
+  - pip install git+https://github.com/modflowpy/flopy.git@develop
 script:
   - export PYTHONPATH=$PYTHONPATH:.
   - nosetests -v --with-id -w ./autotest --with-coverage --cover-package=pyemu
