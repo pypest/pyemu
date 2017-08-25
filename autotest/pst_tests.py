@@ -194,7 +194,7 @@ def derivative_increment_tests():
 def pestpp_args_test():
     import os
     import pyemu
-    pst_dir = os.path.join('..','tests',"pst")
+    pst_dir = os.path.join("pst")
     pst = pyemu.Pst(os.path.join(pst_dir,"br_opt_no_zero_weighted.pst"))
     pst.pestpp_options["lambdas"] = "0.1,0.2,0.3"
     pst.write(os.path.join("temp","temp.pst"))
@@ -206,7 +206,7 @@ def reweight_test():
     import os
     import numpy as np
     from pyemu import Pst,pst_utils
-    pst_dir = os.path.join('..','tests',"pst")
+    pst_dir = os.path.join("pst")
     p = Pst(os.path.join(pst_dir,"pest.pst"))
     obsgrp_dict = {"pred":1.0,"head":1.0,"conc":1.0}
     p.adjust_weights(obsgrp_dict=obsgrp_dict)
@@ -239,7 +239,7 @@ def regul_rectify_test():
 def nnz_groups_test():
     import os
     import pyemu
-    pst_dir = os.path.join('..','tests',"pst")
+    pst_dir = os.path.join("pst")
     pst = pyemu.Pst(os.path.join(pst_dir,"br_opt_no_zero_weighted.pst"))
     org_og = pst.obs_groups
     org_nnz_og = pst.nnz_obs_groups
