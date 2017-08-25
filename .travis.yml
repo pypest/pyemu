@@ -16,5 +16,8 @@ install:
   - pip install pyshp
   - pip install .
 script:
-  - nosetests -v -w ./pyemu/tests
+  - nosetests -v -w ./pyemu/tests --with-coverage --cover-package=pyemu
+after_success:
+  - coveralls
+
 
