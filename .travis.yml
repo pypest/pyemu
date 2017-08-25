@@ -18,6 +18,7 @@ install:
 script:
   - nosetests -v -w ./pyemu/tests --with-coverage --cover-package=pyemu
 after_success:
+  - cp ./pyemu/tests/.coverage .coverage
   - coveralls
 
 
