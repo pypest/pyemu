@@ -14,7 +14,7 @@ install:
   - pip install coveralls
   - pip install pyshp
 script:
-  - EXPORT PYTHONPATH=$PYTHONPATH:.
+  - export PYTHONPATH=$PYTHONPATH:.
   - nosetests -v --with-id -w ./autotest --with-coverage --cover-package=pyemu
 after_success:
   - coveralls
