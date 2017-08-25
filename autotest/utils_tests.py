@@ -545,13 +545,17 @@ def ppk2fac_verf_test():
     import os
     import numpy as np
     import pyemu
+    try:
+        import flopy
+    except:
+        return
     ws = os.path.join("..","verification","Freyberg")
     gspc_file = os.path.join(ws,"grid.spc")
     pp_file = os.path.join(ws,"pp_00_pp.dat")
     str_file = os.path.join(ws,"structure.complex.dat")
     ppk2fac_facfile = os.path.join(ws,"ppk2fac_fac.dat")
     pyemu_facfile = os.path.join("utils","pyemu_facfile.dat")
-    sr = pyemu.utils.SpatialReference.from_gridspec(gspc_file)
+    sr = flopy.utils.SpatialReference.from_gridspec(gspc_file)
     ok = pyemu.utils.OrdinaryKrige(str_file,pp_file)
     ok.calc_factors_grid(sr,maxpts_interp=10)
     ok.to_grid_factors_file(pyemu_facfile)
