@@ -50,7 +50,7 @@ def res_test():
     import numpy as np
     from pyemu import Pst,pst_utils
     # residual functionality testing
-    pst_dir = os.path.join('..','tests',"pst")
+    pst_dir = os.path.join("pst")
 
     p = Pst(os.path.join(pst_dir,"pest.pst"))
     phi_comp = p.phi_components
@@ -78,7 +78,7 @@ def res_test():
 def pst_manip_test():
     import os
     from pyemu import Pst
-    pst_dir = os.path.join('..','tests',"pst")
+    pst_dir = os.path.join("pst")
     org_path = os.path.join(pst_dir,"pest.pst")
     new_path = os.path.join(pst_dir,"pest1.pst")
     pst = Pst(org_path)
@@ -92,7 +92,7 @@ def pst_manip_test():
 def load_test():
     import os
     from pyemu import Pst,pst_utils
-    pst_dir = os.path.join('..','tests',"pst")
+    pst_dir = os.path.join("pst")
     temp_dir = "temp"
     if not os.path.exists(temp_dir):
         os.mkdir(temp_dir)
@@ -174,7 +174,7 @@ def smp_dateparser_test():
 def tied_test():
     import os
     import pyemu
-    pst_dir = os.path.join('..','tests',"pst")
+    pst_dir = os.path.join("pst")
     pst = pyemu.Pst(os.path.join(pst_dir,"br_opt_no_zero_weighted.pst"))
     print(pst.tied_lines)
     pst.write(os.path.join(pst_dir,"pest_tied_tester_1.pst"))
@@ -352,20 +352,20 @@ def run_array_pars():
     pyemu.helpers.apply_array_pars()
     os.chdir('..')
 if __name__ == "__main__":
-    run_array_pars()
-    from_flopy_test()
-    regdata_test()
-    nnz_groups_test()
-    regul_rectify_test()
-    derivative_increment_tests()
-    tied_test()
-    smp_test()
-    smp_dateparser_test()
-    pst_manip_test()
-    tpl_ins_test()
-    load_test()
+    # run_array_pars()
+    # from_flopy_test()
+    # regdata_test()
+    # nnz_groups_test()
+    # regul_rectify_test()
+    # derivative_increment_tests()
+    #tied_test()
+    # smp_test()
+    # smp_dateparser_test()
+    #pst_manip_test()
+    # tpl_ins_test()
+    #load_test()
     res_test()
-    smp_test()
-    from_io_with_inschek_test()
-    pestpp_args_test()
-    reweight_test()
+    #smp_test()
+    #from_io_with_inschek_test()
+    #pestpp_args_test()
+    #reweight_test()
