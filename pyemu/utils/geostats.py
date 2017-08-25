@@ -176,188 +176,188 @@ class GeoStruct(object):
         return s
 
 
-class LinearUniversalKrige(object):
-    def __init__(self,geostruct,point_data):
-        if isinstance(geostruct,str):
-            geostruct = read_struct_file(geostruct)
-        assert isinstance(geostruct,GeoStruct),"need a GeoStruct, not {0}".\
-            format(type(geostruct))
-        self.geostruct = geostruct
-        if isinstance(point_data,str):
-            point_data = pp_file_to_dataframe(point_data)
-        assert isinstance(point_data,pd.DataFrame)
-        assert 'name' in point_data.columns,"point_data missing 'name'"
-        assert 'x' in point_data.columns, "point_data missing 'x'"
-        assert 'y' in point_data.columns, "point_data missing 'y'"
-        assert "value" in point_data.columns,"point_data missing 'value'"
-        self.point_data = point_data
-        self.point_data.index = self.point_data.name
-        self.interp_data = None
-        self.spatial_reference = None
-        #X, Y = np.meshgrid(point_data.x,point_data.y)
-        #self.point_data_dist = pd.DataFrame(data=np.sqrt((X - X.T) ** 2 + (Y - Y.T) ** 2),
-        #                                    index=point_data.name,columns=point_data.name)
-        self.point_cov_df = self.geostruct.covariance_matrix(point_data.x,
-                                                            point_data.y,
-                                                            point_data.name).to_dataframe()
-        #for name in self.point_cov_df.index:
-        #    self.point_cov_df.loc[name,name] -= self.geostruct.nugget
-
-
-    def estimate_grid(self,spatial_reference,zone_array=None,minpts_interp=1,
-                          maxpts_interp=20,search_radius=1.0e+10,verbose=False,
-                          var_filename=None):
-
-        self.spatial_reference = spatial_reference
-        self.interp_data = None
-        #assert isinstance(spatial_reference,SpatialReference)
-        try:
-            x = self.spatial_reference.xcentergrid.copy()
-            y = self.spatial_reference.ycentergrid.copy()
-        except Exception as e:
-            raise Exception("spatial_reference does not have proper attributes:{0}"\
-                            .format(str(e)))
-
-        if var_filename is not None:
-            arr = np.zeros((self.spatial_reference.nrow,
-                            self.spatial_reference.ncol)) - 1.0e+30
-
-        df = self.estimate(x.ravel(),y.ravel(),
-                           minpts_interp=minpts_interp,
-                           maxpts_interp=maxpts_interp,
-                           search_radius=search_radius,
-                           verbose=verbose)
-        if var_filename is not None:
-            arr = df.err_var.values.reshape(x.shape)
-            np.savetxt(var_filename,arr,fmt="%15.6E")
-        arr = df.estimate.values.reshape(x.shape)
-        return arr
-
-
-    def estimate(self,x,y,minpts_interp=1,maxpts_interp=20,
-                     search_radius=1.0e+10,verbose=False):
-        assert len(x) == len(y)
-
-        # find the point data to use for each interp point
-        sqradius = search_radius**2
-        df = pd.DataFrame(data={'x':x,'y':y})
-        inames,idist,ifacts,err_var = [],[],[],[]
-        estimates = []
-        sill = self.geostruct.sill
-        pt_data = self.point_data
-        ptx_array = pt_data.x.values
-        pty_array = pt_data.y.values
-        ptnames = pt_data.name.values
-        #if verbose:
-        print("starting interp point loop for {0} points".format(df.shape[0]))
-        start_loop = datetime.now()
-        for idx,(ix,iy) in enumerate(zip(df.x,df.y)):
-            if np.isnan(ix) or np.isnan(iy): #if nans, skip
-                inames.append([])
-                idist.append([])
-                ifacts.append([])
-                err_var.append(np.NaN)
-                continue
-            if verbose:
-                istart = datetime.now()
-                print("processing interp point:{0} of {1}".format(idx,df.shape[0]))
-            # if verbose == 2:
-            #     start = datetime.now()
-            #     print("calc ipoint dist...",end='')
-
-            #  calc dist from this interp point to all point data...slow
-            dist = pd.Series((ptx_array-ix)**2 + (pty_array-iy)**2,ptnames)
-            dist.sort_values(inplace=True)
-            dist = dist.loc[dist <= sqradius]
-
-            # if too few points were found, skip
-            if len(dist) < minpts_interp:
-                inames.append([])
-                idist.append([])
-                ifacts.append([])
-                err_var.append(sill)
-                estimates.append(np.NaN)
-                continue
-
-            # only the maxpts_interp points
-            dist = dist.iloc[:maxpts_interp].apply(np.sqrt)
-            pt_names = dist.index.values
-            # if one of the points is super close, just use it and skip
-            if dist.min() <= EPSILON:
-                ifacts.append([1.0])
-                idist.append([EPSILON])
-                inames.append([dist.idxmin()])
-                err_var.append(self.geostruct.nugget)
-                estimates.append(self.point_data.loc[dist.idxmin(),"value"])
-                continue
-            # if verbose == 2:
-            #     td = (datetime.now()-start).total_seconds()
-            #     print("...took {0}".format(td))
-            #     start = datetime.now()
-            #     print("extracting pt cov...",end='')
-
-            #vextract the point-to-point covariance matrix
-            point_cov = self.point_cov_df.loc[pt_names,pt_names]
-            # if verbose == 2:
-            #     td = (datetime.now()-start).total_seconds()
-            #     print("...took {0}".format(td))
-            #     print("forming ipt-to-point cov...",end='')
-
-            # calc the interp point to points covariance
-            ptx = self.point_data.loc[pt_names,"x"]
-            pty = self.point_data.loc[pt_names,"y"]
-            interp_cov = self.geostruct.covariance_points(ix,iy,ptx,pty)
-
-            if verbose == 2:
-                td = (datetime.now()-start).total_seconds()
-                print("...took {0}".format(td))
-                print("forming lin alg components...",end='')
-
-            # form the linear algebra parts and solve
-            d = len(pt_names) + 3 # +1 for lagrange mult + 2 for x and y coords
-            npts = len(pt_names)
-            A = np.ones((d,d))
-            A[:npts,:npts] = point_cov.values
-            A[npts,npts] = 0.0 #unbiaised constraint
-            A[-2,:npts] = ptx #x coords for linear trend
-            A[:npts,-2] = ptx
-            A[-1,:npts] = pty #y coords for linear trend
-            A[:npts,-1] = pty
-            A[npts:,npts:] = 0
-            print(A)
-            rhs = np.ones((d,1))
-            rhs[:npts,0] = interp_cov
-            rhs[-2,0] = ix
-            rhs[-1,0] = iy
-            # if verbose == 2:
-            #     td = (datetime.now()-start).total_seconds()
-            #     print("...took {0}".format(td))
-            #     print("solving...",end='')
-            # # solve
-            facs = np.linalg.solve(A,rhs)
-            assert len(facs) - 3 == len(dist)
-            estimate = facs[-3] + (ix * facs[-2]) + (iy * facs[-1])
-            estimates.append(estimate[0])
-            err_var.append(float(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)])))
-            inames.append(pt_names)
-
-            idist.append(dist.values)
-            ifacts.append(facs[:-1,0])
-            # if verbose == 2:
-            #     td = (datetime.now()-start).total_seconds()
-            #     print("...took {0}".format(td))
-            if verbose:
-                td = (datetime.now()-istart).total_seconds()
-                print("point took {0}".format(td))
-        df["idist"] = idist
-        df["inames"] = inames
-        df["ifacts"] = ifacts
-        df["err_var"] = err_var
-        df["estimate"] = estimates
-        self.interp_data = df
-        td = (datetime.now() - start_loop).total_seconds()
-        print("took {0}".format(td))
-        return df
+# class LinearUniversalKrige(object):
+#     def __init__(self,geostruct,point_data):
+#         if isinstance(geostruct,str):
+#             geostruct = read_struct_file(geostruct)
+#         assert isinstance(geostruct,GeoStruct),"need a GeoStruct, not {0}".\
+#             format(type(geostruct))
+#         self.geostruct = geostruct
+#         if isinstance(point_data,str):
+#             point_data = pp_file_to_dataframe(point_data)
+#         assert isinstance(point_data,pd.DataFrame)
+#         assert 'name' in point_data.columns,"point_data missing 'name'"
+#         assert 'x' in point_data.columns, "point_data missing 'x'"
+#         assert 'y' in point_data.columns, "point_data missing 'y'"
+#         assert "value" in point_data.columns,"point_data missing 'value'"
+#         self.point_data = point_data
+#         self.point_data.index = self.point_data.name
+#         self.interp_data = None
+#         self.spatial_reference = None
+#         #X, Y = np.meshgrid(point_data.x,point_data.y)
+#         #self.point_data_dist = pd.DataFrame(data=np.sqrt((X - X.T) ** 2 + (Y - Y.T) ** 2),
+#         #                                    index=point_data.name,columns=point_data.name)
+#         self.point_cov_df = self.geostruct.covariance_matrix(point_data.x,
+#                                                             point_data.y,
+#                                                             point_data.name).to_dataframe()
+#         #for name in self.point_cov_df.index:
+#         #    self.point_cov_df.loc[name,name] -= self.geostruct.nugget
+#
+#
+#     def estimate_grid(self,spatial_reference,zone_array=None,minpts_interp=1,
+#                           maxpts_interp=20,search_radius=1.0e+10,verbose=False,
+#                           var_filename=None):
+#
+#         self.spatial_reference = spatial_reference
+#         self.interp_data = None
+#         #assert isinstance(spatial_reference,SpatialReference)
+#         try:
+#             x = self.spatial_reference.xcentergrid.copy()
+#             y = self.spatial_reference.ycentergrid.copy()
+#         except Exception as e:
+#             raise Exception("spatial_reference does not have proper attributes:{0}"\
+#                             .format(str(e)))
+#
+#         if var_filename is not None:
+#             arr = np.zeros((self.spatial_reference.nrow,
+#                             self.spatial_reference.ncol)) - 1.0e+30
+#
+#         df = self.estimate(x.ravel(),y.ravel(),
+#                            minpts_interp=minpts_interp,
+#                            maxpts_interp=maxpts_interp,
+#                            search_radius=search_radius,
+#                            verbose=verbose)
+#         if var_filename is not None:
+#             arr = df.err_var.values.reshape(x.shape)
+#             np.savetxt(var_filename,arr,fmt="%15.6E")
+#         arr = df.estimate.values.reshape(x.shape)
+#         return arr
+#
+#
+#     def estimate(self,x,y,minpts_interp=1,maxpts_interp=20,
+#                      search_radius=1.0e+10,verbose=False):
+#         assert len(x) == len(y)
+#
+#         # find the point data to use for each interp point
+#         sqradius = search_radius**2
+#         df = pd.DataFrame(data={'x':x,'y':y})
+#         inames,idist,ifacts,err_var = [],[],[],[]
+#         estimates = []
+#         sill = self.geostruct.sill
+#         pt_data = self.point_data
+#         ptx_array = pt_data.x.values
+#         pty_array = pt_data.y.values
+#         ptnames = pt_data.name.values
+#         #if verbose:
+#         print("starting interp point loop for {0} points".format(df.shape[0]))
+#         start_loop = datetime.now()
+#         for idx,(ix,iy) in enumerate(zip(df.x,df.y)):
+#             if np.isnan(ix) or np.isnan(iy): #if nans, skip
+#                 inames.append([])
+#                 idist.append([])
+#                 ifacts.append([])
+#                 err_var.append(np.NaN)
+#                 continue
+#             if verbose:
+#                 istart = datetime.now()
+#                 print("processing interp point:{0} of {1}".format(idx,df.shape[0]))
+#             # if verbose == 2:
+#             #     start = datetime.now()
+#             #     print("calc ipoint dist...",end='')
+#
+#             #  calc dist from this interp point to all point data...slow
+#             dist = pd.Series((ptx_array-ix)**2 + (pty_array-iy)**2,ptnames)
+#             dist.sort_values(inplace=True)
+#             dist = dist.loc[dist <= sqradius]
+#
+#             # if too few points were found, skip
+#             if len(dist) < minpts_interp:
+#                 inames.append([])
+#                 idist.append([])
+#                 ifacts.append([])
+#                 err_var.append(sill)
+#                 estimates.append(np.NaN)
+#                 continue
+#
+#             # only the maxpts_interp points
+#             dist = dist.iloc[:maxpts_interp].apply(np.sqrt)
+#             pt_names = dist.index.values
+#             # if one of the points is super close, just use it and skip
+#             if dist.min() <= EPSILON:
+#                 ifacts.append([1.0])
+#                 idist.append([EPSILON])
+#                 inames.append([dist.idxmin()])
+#                 err_var.append(self.geostruct.nugget)
+#                 estimates.append(self.point_data.loc[dist.idxmin(),"value"])
+#                 continue
+#             # if verbose == 2:
+#             #     td = (datetime.now()-start).total_seconds()
+#             #     print("...took {0}".format(td))
+#             #     start = datetime.now()
+#             #     print("extracting pt cov...",end='')
+#
+#             #vextract the point-to-point covariance matrix
+#             point_cov = self.point_cov_df.loc[pt_names,pt_names]
+#             # if verbose == 2:
+#             #     td = (datetime.now()-start).total_seconds()
+#             #     print("...took {0}".format(td))
+#             #     print("forming ipt-to-point cov...",end='')
+#
+#             # calc the interp point to points covariance
+#             ptx = self.point_data.loc[pt_names,"x"]
+#             pty = self.point_data.loc[pt_names,"y"]
+#             interp_cov = self.geostruct.covariance_points(ix,iy,ptx,pty)
+#
+#             if verbose == 2:
+#                 td = (datetime.now()-start).total_seconds()
+#                 print("...took {0}".format(td))
+#                 print("forming lin alg components...",end='')
+#
+#             # form the linear algebra parts and solve
+#             d = len(pt_names) + 3 # +1 for lagrange mult + 2 for x and y coords
+#             npts = len(pt_names)
+#             A = np.ones((d,d))
+#             A[:npts,:npts] = point_cov.values
+#             A[npts,npts] = 0.0 #unbiaised constraint
+#             A[-2,:npts] = ptx #x coords for linear trend
+#             A[:npts,-2] = ptx
+#             A[-1,:npts] = pty #y coords for linear trend
+#             A[:npts,-1] = pty
+#             A[npts:,npts:] = 0
+#             print(A)
+#             rhs = np.ones((d,1))
+#             rhs[:npts,0] = interp_cov
+#             rhs[-2,0] = ix
+#             rhs[-1,0] = iy
+#             # if verbose == 2:
+#             #     td = (datetime.now()-start).total_seconds()
+#             #     print("...took {0}".format(td))
+#             #     print("solving...",end='')
+#             # # solve
+#             facs = np.linalg.solve(A,rhs)
+#             assert len(facs) - 3 == len(dist)
+#             estimate = facs[-3] + (ix * facs[-2]) + (iy * facs[-1])
+#             estimates.append(estimate[0])
+#             err_var.append(float(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)])))
+#             inames.append(pt_names)
+#
+#             idist.append(dist.values)
+#             ifacts.append(facs[:-1,0])
+#             # if verbose == 2:
+#             #     td = (datetime.now()-start).total_seconds()
+#             #     print("...took {0}".format(td))
+#             if verbose:
+#                 td = (datetime.now()-istart).total_seconds()
+#                 print("point took {0}".format(td))
+#         df["idist"] = idist
+#         df["inames"] = inames
+#         df["ifacts"] = ifacts
+#         df["err_var"] = err_var
+#         df["estimate"] = estimates
+#         self.interp_data = df
+#         td = (datetime.now() - start_loop).total_seconds()
+#         print("took {0}".format(td))
+#         return df
 
 
 class OrdinaryKrige(object):

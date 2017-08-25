@@ -1499,7 +1499,8 @@ class PstFromFlopyModel(object):
                                                             flx_filename=flx_file,
                                                             vol_filename=vol_file,
                                                             start_datetime=self.m.start_datetime)
-        self.obs_dfs["wb"] = df
+        if df is not None:
+            self.obs_dfs["wb"] = df
         line = "try:\n    os.remove('{0}')\nexcept:\n    pass".format(os.path.split(list_file)[-1])
         self.logger.statement("forward_run line:{0}".format(line))
         self.frun_pre_lines.append(line)

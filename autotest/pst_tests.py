@@ -353,7 +353,7 @@ def run_array_pars():
     os.chdir('..')
 if __name__ == "__main__":
     # run_array_pars()
-    # from_flopy_test()
+    from_flopy_test()
     # regdata_test()
     # nnz_groups_test()
     # regul_rectify_test()
@@ -364,7 +364,7 @@ if __name__ == "__main__":
     #pst_manip_test()
     # tpl_ins_test()
     #load_test()
-    res_test()
+    #res_test()
     #smp_test()
     #from_io_with_inschek_test()
     #pestpp_args_test()

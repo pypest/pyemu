@@ -616,40 +616,40 @@ def pp_prior_builder_test():
     str_file = os.path.join("utils","structure.dat")
     pyemu.helpers.pilotpoint_prior_builder(pst,{str_file:tpl_file})
 
-def linearuniversal_krige_test():
-    try:
-        import flopy
-    except:
-        return
-
-    import numpy as np
-    import pandas as pd
-    import pyemu
-    nrow,ncol = 10,5
-    delr = np.ones((ncol)) * 1.0/float(ncol)
-    delc = np.ones((nrow)) * 1.0/float(nrow)
-
-    num_pts = 0
-    ptx = np.random.random(num_pts)
-    pty = np.random.random(num_pts)
-    ptname = ["p{0}".format(i) for i in range(num_pts)]
-    pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
-    pts_data.index = pts_data.name
-    pts_data = pts_data.loc[:,["x","y","name"]]
-
-
-    sr = flopy.utils.SpatialReference(delr=delr,delc=delc)
-    pts_data.loc["i0j0", :] = [sr.xcentergrid[0,0],sr.ycentergrid[0,0],"i0j0"]
-    pts_data.loc["imxjmx", :] = [sr.xcentergrid[-1, -1], sr.ycentergrid[-1, -1], "imxjmx"]
-    pts_data.loc["i0j0","value"] = 1.0
-    pts_data.loc["imxjmx","value"] = 0.0
-
-    str_file = os.path.join("utils","struct_test.dat")
-    gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
-    luk = pyemu.utils.geostats.LinearUniversalKrige(gs,pts_data)
-    df = luk.estimate_grid(sr,verbose=True,
-                               var_filename=os.path.join("utils","test_var.ref"),
-                               minpts_interp=1)
+# def linearuniversal_krige_test():
+#     try:
+#         import flopy
+#     except:
+#         return
+#
+#     import numpy as np
+#     import pandas as pd
+#     import pyemu
+#     nrow,ncol = 10,5
+#     delr = np.ones((ncol)) * 1.0/float(ncol)
+#     delc = np.ones((nrow)) * 1.0/float(nrow)
+#
+#     num_pts = 0
+#     ptx = np.random.random(num_pts)
+#     pty = np.random.random(num_pts)
+#     ptname = ["p{0}".format(i) for i in range(num_pts)]
+#     pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
+#     pts_data.index = pts_data.name
+#     pts_data = pts_data.loc[:,["x","y","name"]]
+#
+#
+#     sr = flopy.utils.SpatialReference(delr=delr,delc=delc)
+#     pts_data.loc["i0j0", :] = [sr.xcentergrid[0,0],sr.ycentergrid[0,0],"i0j0"]
+#     pts_data.loc["imxjmx", :] = [sr.xcentergrid[-1, -1], sr.ycentergrid[-1, -1], "imxjmx"]
+#     pts_data.loc["i0j0","value"] = 1.0
+#     pts_data.loc["imxjmx","value"] = 0.0
+#
+#     str_file = os.path.join("utils","struct_test.dat")
+#     gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
+#     luk = pyemu.utils.geostats.LinearUniversalKrige(gs,pts_data)
+#     df = luk.estimate_grid(sr,verbose=True,
+#                                var_filename=os.path.join("utils","test_var.ref"),
+#                                minpts_interp=1)
 
 def gslib_2_dataframe_test():
     import os
@@ -716,9 +716,9 @@ def make_hydmod_insfile_test():
     assert os.path.exists(os.path.join('utils','freyberg.hyd.bin.dat.ins'))
 
 if __name__ == "__main__":
-    #load_sgems_expvar_test()
-    read_hydmod_test()
-    make_hydmod_insfile_test()
+    load_sgems_expvar_test()
+    #read_hydmod_test()
+    #make_hydmod_insfile_test()
     #gslib_2_dataframe_test()
     #sgems_to_geostruct_test()
     #linearuniversal_krige_test()

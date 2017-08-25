@@ -110,6 +110,7 @@ def modflow_hydmod_to_instruction_file(hydmod_file):
         df.loc[:,"obgnme"] = df.obsnme.apply(lambda x: x[:-9])
         df.to_csv("_setup_"+os.path.split(hydmod_outfile)[-1]+'.csv',index=False)
         df.index = df.obsnme
+        return df
 
 
     return hydmod_df
