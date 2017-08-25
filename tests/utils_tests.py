@@ -285,7 +285,7 @@ def setup_pp_test():
         import flopy
     except:
         return
-    model_ws = os.path.join("..","..","examples","Freyberg","extra_crispy")
+    model_ws = os.path.join("..","examples","Freyberg","extra_crispy")
     ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws)
 
     pp_dir = os.path.join("utils")
@@ -367,7 +367,7 @@ def smp_to_ins_test():
 def master_and_slaves():
     import shutil
     import pyemu
-    slave_dir = os.path.join("..","..","verification","10par_xsec","template_mac")
+    slave_dir = os.path.join("..","verification","10par_xsec","template_mac")
     master_dir = os.path.join("temp","master")
     assert os.path.exists(slave_dir)
     #pyemu.helpers.start_slaves(slave_dir,"pestpp","pest.pst",1,
@@ -410,11 +410,11 @@ def kl_test():
     except:
         print("flopy not imported...")
         return
-    model_ws = os.path.join("..","..","verification","Freyberg","extra_crispy")
+    model_ws = os.path.join("..","verification","Freyberg","extra_crispy")
     ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws)
-    str_file = os.path.join("..","..","verification","Freyberg","structure.dat")
+    str_file = os.path.join("..","verification","Freyberg","structure.dat")
     arr_dict = {"test":np.ones((ml.nrow,ml.ncol))}
-    arr_dict["hk_tru"] = np.loadtxt(os.path.join("..","..","verification",
+    arr_dict["hk_tru"] = np.loadtxt(os.path.join("..","verification",
                                                  "Freyberg","extra_crispy",
                                                  "hk.truth.ref"))
     basis_file = os.path.join("utils","basis.dat")
@@ -545,7 +545,7 @@ def ppk2fac_verf_test():
     import os
     import numpy as np
     import pyemu
-    ws = os.path.join("..","..","verification","Freyberg")
+    ws = os.path.join("..","verification","Freyberg")
     gspc_file = os.path.join(ws,"grid.spc")
     pp_file = os.path.join(ws,"pp_00_pp.dat")
     str_file = os.path.join(ws,"structure.complex.dat")
@@ -597,7 +597,7 @@ def mflist_budget_test():
     except:
         print("no flopy...")
         return
-    model_ws = os.path.join("..","..","examples","Freyberg_transient")
+    model_ws = os.path.join("..","examples","Freyberg_transient")
     ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False)
     list_filename = os.path.join(model_ws,"freyberg.list")
     assert os.path.exists(list_filename)
