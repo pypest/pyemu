@@ -663,7 +663,7 @@ def sgems_to_geostruct_test():
 def load_sgems_expvar_test():
     import os
     import numpy as np
-    import matplotlib.pyplot as plt
+    #import matplotlib.pyplot as plt
     import pyemu
     dfs = pyemu.geostats.load_sgems_exp_var(os.path.join("utils","ch00_expvar"))
     xmn,xmx = 1.0e+10,-1.0e+10
