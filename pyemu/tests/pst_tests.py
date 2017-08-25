@@ -269,7 +269,7 @@ def from_flopy_test():
     try:
         import flopy
     except:
-        pass
+        return
     import pyemu
 
     new_model_ws = "temp_pst_from_flopy"
