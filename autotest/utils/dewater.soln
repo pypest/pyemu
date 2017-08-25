@@ -1,0 +1,10 @@
+#DEWATER Sample Problem, SOLN file
+#June 15, 2009
+ LP                #1-SOLNTYP
+3                  #4a-IRM
+ 1000  2000        #4b-LPITMAX  BBITMAX
+ 0.5               #4c-DELTA
+ 1  10  0.5  0.0   #4d-NSIGDIG  NPGNMX  PGFACT  CRITMFC
+ 1  1              #4e-BBITPRT  RANGE
+rmout
+ 0                 #6a-IBASE

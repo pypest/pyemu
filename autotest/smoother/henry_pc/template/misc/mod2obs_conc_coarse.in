@@ -1,0 +1,15 @@
+misc\grid_henry_coarse_actual.spc
+misc\bore_coords_henry_coarse_conc.dat
+misc\bore_coords_henry_coarse_conc.dat
+misc\bore_samp_conc.dat
+model\MT3D001.ucn
+t
+999
+d
+01/01/2011
+00:00:00
+100
+0.1
+misc\conc.dat
+
+

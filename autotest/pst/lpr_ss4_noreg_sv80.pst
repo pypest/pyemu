@@ -1,0 +1,221 @@
+pcf
+* control data
+restart estimation
+     80    100      1      0     12  
+    1    2 double point  1    0  0
+   20.000       -3.0000      0.3  0.03  -7     999  lamforgive
+      0.100  10.0  0.001
+ 0.1      1
+    50  0.005  4  4  0.005  4
+1  1  1  1 nojcosaveitn reisaveitn
+* singular value decomposition
+     1
+    80  5.0000000E-07
+     1
+* svd assist
+lpr_ss4_noreg.pst
+lpr_ss4_noreg.jco
+    1    2    0    1    0
+* parameter groups
+ pargp absolute    0.015  0.0  switch    2.0 parabolic
+* parameter data
+par1         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par2         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par3         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par4         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par5         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par6         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par7         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par8         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par9         none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par10        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par11        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par12        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par13        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par14        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par15        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par16        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par17        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par18        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par19        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par20        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par21        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par22        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par23        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par24        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par25        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par26        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par27        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par28        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par29        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par30        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par31        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par32        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par33        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par34        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par35        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par36        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par37        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par38        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par39        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par40        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par41        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par42        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par43        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par44        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par45        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par46        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par47        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par48        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par49        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par50        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par51        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par52        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par53        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par54        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par55        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par56        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par57        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par58        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par59        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par60        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par61        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par62        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par63        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par64        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par65        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par66        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par67        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par68        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par69        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par70        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par71        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par72        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par73        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par74        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par75        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par76        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par77        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par78        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par79        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+par80        none  relative   10.000     1.0e-20  1.0e20  pargp  1.0  -10.000      1
+* observation groups
+WISA_H
+DM_H
+PRF_H
+RI_H
+VP_H
+USGS_H
+WGNHS_H
+LAKE_H
+Flux
+flux_lpr
+regul_kp2
+regul_kz2
+* observation data
+wisa_1	1.09059000E+03	0.00000000E+00	wisa_h
+wisa_2	1.08770000E+03	0.00000000E+00	wisa_h
+wisa_3	1.08820000E+03	0.00000000E+00	wisa_h
+wisa_4	1.09040000E+03	0.00000000E+00	wisa_h
+wisa_5	1.09030000E+03	0.00000000E+00	wisa_h
+wisa_6	1.08910000E+03	0.00000000E+00	wisa_h
+dm_7	1.07744000E+03	2.00000000E+00	dm_h
+dm_8	1.07699000E+03	2.00000000E+00	dm_h
+dm_9	1.07679000E+03	2.00000000E+00	dm_h
+dm_10	1.07961000E+03	2.00000000E+00	dm_h
+dm_11	1.07939000E+03	2.00000000E+00	dm_h
+dm_12	1.07919000E+03	2.00000000E+00	dm_h
+dm_13	1.08075000E+03	2.00000000E+00	dm_h
+dm_14	1.07624000E+03	2.00000000E+00	dm_h
+dm_15	1.08077000E+03	2.00000000E+00	dm_h
+dm_16	1.07748000E+03	2.00000000E+00	dm_h
+dm_17	1.07731000E+03	2.00000000E+00	dm_h
+dm_18	1.07722000E+03	2.00000000E+00	dm_h
+prf_19	1.12954000E+03	1.00000000E+00	prf_h
+prf_20	1.12809000E+03	1.00000000E+00	prf_h
+prf_21	1.13295000E+03	1.00000000E+00	prf_h
+prf_22	1.13855000E+03	1.00000000E+00	prf_h
+prf_23	1.14081000E+03	1.00000000E+00	prf_h
+prf_24	1.14362000E+03	1.00000000E+00	prf_h
+prf_25	1.13721000E+03	1.00000000E+00	prf_h
+prf_26	1.08449000E+03	1.00000000E+00	prf_h
+prf_27	1.08442000E+03	1.00000000E+00	prf_h
+prf_28	1.12576000E+03	1.00000000E+00	prf_h
+prf_29	1.12279000E+03	1.00000000E+00	prf_h
+prf_30	1.12475000E+03	1.00000000E+00	prf_h
+prf_31	1.12010000E+03	1.00000000E+00	prf_h
+prf_32	1.12038000E+03	1.00000000E+00	prf_h
+prf_33	1.11579000E+03	1.00000000E+00	prf_h
+prf_34	1.12633000E+03	1.00000000E+00	prf_h
+prf_35	1.13840000E+03	1.00000000E+00	prf_h
+ri_36	1.01509000E+03	6.66666667E-01	ri_h
+ri_37	1.13368000E+03	6.66666667E-01	ri_h
+ri_38	1.13483000E+03	6.66666667E-01	ri_h
+ri_39	1.04870000E+03	6.66666667E-01	ri_h
+ri_40	1.16542000E+03	6.66666667E-01	ri_h
+ri_41	1.11802000E+03	6.66666667E-01	ri_h
+ri_42	1.05701000E+03	6.66666667E-01	ri_h
+ri_43	1.09200000E+03	6.66666667E-01	ri_h
+ri_44	1.11797000E+03	6.66666667E-01	ri_h
+ri_45	1.08044000E+03	6.66666667E-01	ri_h
+ri_46	1.10351000E+03	6.66666667E-01	ri_h
+ri_47	1.05497000E+03	6.66666667E-01	ri_h
+ri_48	1.06696000E+03	6.66666667E-01	ri_h
+ri_49	1.05646000E+03	6.66666667E-01	ri_h
+ri_50	1.10427000E+03	6.66666667E-01	ri_h
+ri_51	1.12726000E+03	6.66666667E-01	ri_h
+ri_52	1.09721000E+03	6.66666667E-01	ri_h
+ri_53	1.15602000E+03	6.66666667E-01	ri_h
+ri_54	1.04256000E+03	6.66666667E-01	ri_h
+ri_55	1.14232000E+03	6.66666667E-01	ri_h
+ri_56	1.11935000E+03	6.66666667E-01	ri_h
+ri_57	1.05393000E+03	6.66666667E-01	ri_h
+ri_58	1.10505000E+03	6.66666667E-01	ri_h
+ri_59	1.08115000E+03	6.66666667E-01	ri_h
+ri_60	1.08692000E+03	6.66666667E-01	ri_h
+usgs_61	1.08779000E+03	2.00000000E+00	usgs_h
+usgs_62	1.08127000E+03	2.00000000E+00	usgs_h
+usgs_63	1.09480000E+03	2.00000000E+00	usgs_h
+vp_64	1.07597000E+03	5.00000000E+00	vp_h
+vp_65	1.07663000E+03	5.00000000E+00	vp_h
+vp_66	1.08974000E+03	5.00000000E+00	vp_h
+vp_67	1.08930000E+03	5.00000000E+00	vp_h
+vp_68	1.07089000E+03	5.00000000E+00	vp_h
+vp_69	1.07296000E+03	5.00000000E+00	vp_h
+wgnhs_70	1.07373000E+03	2.00000000E+00	wgnhs_h
+wgnhs_71	1.08518000E+03	2.00000000E+00	wgnhs_h
+wgnhs_72	1.08507000E+03	2.00000000E+00	wgnhs_h
+wgnhs_73	1.09055000E+03	2.00000000E+00	wgnhs_h
+wgnhs_74	1.09070000E+03	2.00000000E+00	wgnhs_h
+wgnhs_75	1.10265000E+03	2.00000000E+00	wgnhs_h
+wgnhs_76	1.10324000E+03	2.00000000E+00	wgnhs_h
+wgnhs_77	1.09792000E+03	2.00000000E+00	wgnhs_h
+wgnhs_78	1.09792000E+03	2.00000000E+00	wgnhs_h
+wgnhs_79	1.08237000E+03	2.00000000E+00	wgnhs_h
+wgnhs_80	1.06820000E+03	2.00000000E+00	wgnhs_h
+wgnhs_81	1.10795000E+03	2.00000000E+00	wgnhs_h
+lake_82	1.10675000E+03	1.00000000E+00	lake_h
+lake_83	1.08870000E+03	1.00000000E+00	lake_h
+lake_84	1.02520000E+03	1.00000000E+00	lake_h
+lake_85	1.07420000E+03	1.00000000E+00	lake_h
+lake_86	1.07250000E+03	1.00000000E+00	lake_h
+lake_87	1.06660000E+03	1.00000000E+00	lake_h
+lake_88	1.07610000E+03	1.00000000E+00	lake_h
+lake_89	1.11460000E+03	1.00000000E+00	lake_h
+lpri39	4.84400500E+00	6.19322234E+00	flux_lpr
+lprhoov	6.31700200E+00	4.74908825E+00	flux_lpr
+lpreis	2.35700200E+00	1.27280333E+01	flux_lpr
+bearq	1.03440000E+01	2.90023202E+00	flux
+springq	4.43700200E+00	6.76132217E+00	flux
+ditch2	5.85500000E+00	5.12382579E+00	flux
+noname	1.47099500E+00	2.03943589E+01	flux
+swcan3	1.92700000E+01	1.55682408E+00	flux
+swcan2	1.48380000E+01	2.02183583E+00	flux
+swcan1	9.09599500E+00	3.29815485E+00	flux
+lprken	1.10000000E+00	2.72727273E+01	flux_lpr
+* model command line
+svdabatch.bat
+* model input/output
+parcalc.tpl   parcalc.in
+SFRData_LPR_Q.out.ins SFRData_LPR_Q.out
+LPR_SS_mod.smp.ins LPR_SS_mod.smp

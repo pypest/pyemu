@@ -1,0 +1,495 @@
+pcf
+* control data
+restart estimation
+    304    100     33    0     1          
+  8        1  single  point  1  0  0
+25.000       -3.0000      0.3  0.03  -25     999  LAMFORGIVE
+0.0050  1.5  0.001
+0.1
+ 50   0.005  4  4  0.004  4
+1  1  1  1 nojcosaveitn reisaveitn PARSAVEITN
+* singular value decomposition
+1
+201  5.0000000E-07
+0
+* parameter groups
+kh1mult      relative     1.0000E-02   0.000      switch      2.000      parabolic
+kv1mult      relative     1.0000E-02   0.000      switch      2.000      parabolic
+ss           relative     1.0000E-02   0.000      switch      2.000      parabolic
+sy           relative     1.0000E-02   0.000      switch      2.000      parabolic
+kh2mult      relative     1.0000E-02   0.000      switch      2.000      parabolic
+kv2mult      relative     1.0000E-02   0.000      switch      2.000      parabolic
+kh3mult      relative     1.0000E-02   0.000      switch      2.000      parabolic
+kv3mult      relative     1.0000E-02   0.000      switch      2.000      parabolic
+kh4mult      relative     1.0000E-02   0.000      switch      2.000      parabolic
+kv4mult      relative     1.0000E-02   0.000      switch      2.000      parabolic
+kh5mult      relative     1.0000E-02   0.000      switch      2.000      parabolic
+kv5mult      relative     1.0000E-02   0.000      switch      2.000      parabolic
+kh6mult      relative     1.0000E-02   0.000      switch      2.000      parabolic
+kv6mult      relative     1.0000E-02   0.000      switch      2.000      parabolic
+surfdep      relative     1.0000E-02   0.000      switch      2.000      parabolic
+vksat        relative     1.0000E-02   0.000      switch      2.000      parabolic
+bc-eps       relative     1.0000E-02   0.000      switch      2.000      parabolic
+thetasfac    relative     1.0000E-02   0.000      switch      2.000      parabolic
+lake         relative     1.0000E-02   0.000      switch      2.000      parabolic
+sfres        relative     1.0000E-02   0.000      switch      2.000      parabolic
+sandy_strkv  relative     1.0000E-02   0.000      switch      2.000      parabolic
+alwetstrmkv  relative     1.0000E-02   0.000      switch      2.000      parabolic
+stwet1strmkv relative     1.0000E-02   0.000      switch      2.000      parabolic
+stwet2strmkv relative     1.0000E-02   0.000      switch      2.000      parabolic
+norwetstrmkv relative     1.0000E-02   0.000      switch      2.000      parabolic
+manwetstrmkv relative     1.0000E-02   0.000      switch      2.000      parabolic
+runoff       relative     1.0000E-02   0.000      switch      2.000      parabolic
+precip       relative     1.0000E-02   0.000      switch      2.000      parabolic
+solrad       relative     1.0000E-02   0.000      switch      2.000      parabolic
+prms         relative     1.0000E-02   0.000      switch      2.000      parabolic
+snow         relative     1.0000E-02   0.000      switch      2.000      parabolic
+evap         relative     1.0000E-02   0.000      switch      2.000      parabolic
+szone        relative     1.0000E-02   0.000      switch      2.000      parabolic
+* parameter data
+alwetstrmkv  log    factor   1.0350381E-02  1.00000e-10    1.00000e+10 alwetstrmkv    1.000       0.000        1
+bc-eps       fixed  factor    3.200000      3.2000         3.4000      bc-eps         1.000       0.000        1
+al_evap_ad01 log    factor   0.6374672      0.50000        0.8558      evap           1.000       0.000        1
+al_evap_ad02 log    factor   0.6070588      0.50000        0.7162      evap           1.000       0.000        1
+al_evap_ad03 log    factor   0.5500000      0.50000        0.5500      evap           1.000       0.000        1
+al_evap_ad04 log    factor   0.5500000      0.50000        0.5500      evap           1.000       0.000        1
+al_evap_ad05 log    factor   0.5500000      0.50000        0.5500      evap           1.000       0.000        1
+al_evap_ad06 log    factor   0.5906000      0.50000        0.5906      evap           1.000       0.000        1
+al_evap_ad07 log    factor    1.010400      0.50000        1.0104      evap           1.000       0.000        1
+al_evap_ad08 log    factor    1.184400      0.50000        1.1844      evap           1.000       0.000        1
+al_evap_ad09 log    factor    1.281100      0.50000        1.2811      evap           1.000       0.000        1
+al_evap_ad10 log    factor   0.7207915      0.50000        0.7708      evap           1.000       0.000        1
+al_evap_ad11 log    factor   0.5500000      0.50000        0.5500      evap           1.000       0.000        1
+al_evap_ad12 log    factor   0.7874060      0.50000        0.9947      evap           1.000       0.000        1
+bm_evap_ad01 log    factor   0.7535477      0.50000        0.8558      evap           1.000       0.000        1
+bm_evap_ad02 log    factor   0.5520322      0.50000        0.7162      evap           1.000       0.000        1
+bm_evap_ad03 log    factor   0.5009197      0.50000        0.5500      evap           1.000       0.000        1
+bm_evap_ad04 log    factor   0.5000000      0.50000        0.5500      evap           1.000       0.000        1
+bm_evap_ad05 log    factor   0.5000000      0.50000        0.5500      evap           1.000       0.000        1
+bm_evap_ad06 log    factor   0.5906000      0.50000        0.5906      evap           1.000       0.000        1
+bm_evap_ad07 log    factor   0.8611127      0.50000        1.0104      evap           1.000       0.000        1
+bm_evap_ad08 log    factor    1.153435      0.50000        1.1844      evap           1.000       0.000        1
+bm_evap_ad09 log    factor    1.235309      0.50000        1.2811      evap           1.000       0.000        1
+bm_evap_ad10 log    factor   0.7527611      0.50000        0.7708      evap           1.000       0.000        1
+bm_evap_ad11 log    factor   0.5257889      0.50000        0.5500      evap           1.000       0.000        1
+bm_evap_ad12 log    factor   0.5000000      0.50000        0.9947      evap           1.000       0.000        1
+cr_evap_ad01 log    factor   0.6782227      0.50000       0.7318453    evap           1.000       0.000        1
+cr_evap_ad02 log    factor   0.5520959      0.50000       0.7508388    evap           1.000       0.000        1
+cr_evap_ad03 log    factor   0.5000000      0.50000       0.6817179    evap           1.000       0.000        1
+cr_evap_ad04 log    factor   0.5000000      0.50000       0.6873338    evap           1.000       0.000        1
+cr_evap_ad05 log    factor   0.6501670      0.50000       0.6740209    evap           1.000       0.000        1
+cr_evap_ad06 log    factor   0.9364488      0.50000       0.9364488    evap           1.000       0.000        1
+cr_evap_ad07 log    factor   0.7899640      0.50000        1.021577    evap           1.000       0.000        1
+cr_evap_ad08 log    factor    1.077695      0.50000        1.077695    evap           1.000       0.000        1
+cr_evap_ad09 log    factor   0.9648776      0.50000       0.9648776    evap           1.000       0.000        1
+cr_evap_ad10 log    factor    1.319681      0.50000        1.319681    evap           1.000       0.000        1
+cr_evap_ad11 log    factor   0.5000000      0.50000        1.133078    evap           1.000       0.000        1
+cr_evap_ad12 log    factor   0.7247674      0.50000       0.7917623    evap           1.000       0.000        1
+jh_coef_hru  log    factor    7.784290      5.0000        20.000       evap           1.000       0.000        1
+jh_coef01    fixed  factor   1.6650311E-02  5.00000e-03   0.60000      evap           1.000       0.000        1
+jh_coef02    fixed  factor   5.0538085E-03  5.00000e-03   0.60000      evap           1.000       0.000        1
+jh_coef03    fixed  factor   1.7993841E-02  5.00000e-03   0.60000      evap           1.000       0.000        1
+jh_coef04    fixed  factor   9.9096789E-03  5.00000e-03   0.60000      evap           1.000       0.000        1
+jh_coef05    fixed  factor   9.5277041E-03  5.00000e-03   0.60000      evap           1.000       0.000        1
+jh_coef06    fixed  factor   9.9293123E-03  5.00000e-03   0.60000      evap           1.000       0.000        1
+jh_coef07    fixed  factor   1.0527311E-02  5.00000e-03   0.60000      evap           1.000       0.000        1
+jh_coef08    fixed  factor   9.3499612E-03  5.00000e-03   0.60000      evap           1.000       0.000        1
+jh_coef09    fixed  factor   9.7682998E-03  5.00000e-03   0.60000      evap           1.000       0.000        1
+jh_coef10    fixed  factor   1.3712177E-02  5.00000e-03   0.60000      evap           1.000       0.000        1
+jh_coef11    fixed  factor   2.3755321E-02  5.00000e-03   0.60000      evap           1.000       0.000        1
+jh_coef12    fixed  factor   5.0315182E-03  5.00000e-03   0.60000      evap           1.000       0.000        1
+lk_evap_ad01 log    factor    1.292097      0.50000        1.5000      evap           1.000       0.000        1
+lk_evap_ad02 log    factor    1.151530      0.50000        1.5000      evap           1.000       0.000        1
+lk_evap_ad03 log    factor   0.5000000      0.50000        1.5000      evap           1.000       0.000        1
+lk_evap_ad04 log    factor   0.5000000      0.50000        1.5000      evap           1.000       0.000        1
+lk_evap_ad05 log    factor   0.6651656      0.50000        1.5000      evap           1.000       0.000        1
+lk_evap_ad06 log    factor   0.5661725      0.50000        1.5000      evap           1.000       0.000        1
+lk_evap_ad07 log    factor   0.6684181      0.50000        1.5000      evap           1.000       0.000        1
+lk_evap_ad08 log    factor   0.7645037      0.50000        1.5000      evap           1.000       0.000        1
+lk_evap_ad09 log    factor    1.173754      0.50000        1.5000      evap           1.000       0.000        1
+lk_evap_ad10 log    factor    1.352113      0.50000        1.5000      evap           1.000       0.000        1
+lk_evap_ad11 log    factor   0.9837854      0.50000        1.5000      evap           1.000       0.000        1
+lk_evap_ad12 log    factor    1.444418      0.50000        1.5000      evap           1.000       0.000        1
+tr_evap_ad01 log    factor   0.5000000      0.50000        0.7101      evap           1.000       0.000        1
+tr_evap_ad02 log    factor   0.5250000      0.50000        0.5250      evap           1.000       0.000        1
+tr_evap_ad03 log    factor   0.5000000      0.50000        0.5250      evap           1.000       0.000        1
+tr_evap_ad04 log    factor   0.5000000      0.50000        0.5250      evap           1.000       0.000        1
+tr_evap_ad05 log    factor   0.7177814      0.50000        0.7673      evap           1.000       0.000        1
+tr_evap_ad06 log    factor    1.062900      0.50000        1.0629      evap           1.000       0.000        1
+tr_evap_ad07 log    factor   0.6315202      0.50000        0.6474      evap           1.000       0.000        1
+tr_evap_ad08 log    factor    1.306112      0.50000        1.3641      evap           1.000       0.000        1
+tr_evap_ad09 log    factor    1.575000      0.50000        1.5750      evap           1.000       0.000        1
+tr_evap_ad10 log    factor    1.500879      0.50000        1.5750      evap           1.000       0.000        1
+tr_evap_ad11 log    factor   0.9643575      0.50000        1.1271      evap           1.000       0.000        1
+tr_evap_ad12 log    factor   0.9080000      0.50000        0.9080      evap           1.000       0.000        1
+kh1mult      fixed  factor    1.000000      8.00000e-01   1.20000e+10  kh1mult        1.000       0.000        1
+kh2mult      fixed  factor    1.000000      8.00000e-01   1.20000e+10  kh2mult        1.000       0.000        1
+kh3mult      fixed  factor    1.000000      8.00000e-01   1.20000e+10  kh3mult        1.000       0.000        1
+kh4mult      fixed  factor    1.000000      8.00000e-01   1.20000e+10  kh4mult        1.000       0.000        1
+kh5mult      log    factor    1.033593      8.00000e-01   1.20000e+10  kh5mult        1.000       0.000        1
+kh6mult      log    factor   0.8080883      8.00000e-01   1.20000e+10  kh6mult        1.000       0.000        1
+kv1mult      fixed  factor    1.000000      8.00000e-01   1.20000e+10  kv1mult        1.000       0.000        1
+kv2mult      fixed  factor    1.000000      8.00000e-01   1.20000e+10  kv2mult        1.000       0.000        1
+kv3mult      fixed  factor    1.000000      8.00000e-01   1.20000e+10  kv3mult        1.000       0.000        1
+kv4mult      fixed  factor    1.000000      8.00000e-01   1.20000e+10  kv4mult        1.000       0.000        1
+kv5mult      fixed  factor    1.000000      8.00000e-01   1.20000e+10  kv5mult        1.000       0.000        1
+kv6mult      fixed  factor    1.000000      8.00000e-01   1.20000e+10  kv6mult        1.000       0.000        1
+lake01lay1   log    factor   5.4852866E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake02lay1   log    factor   2.3663869E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake03lay1   log    factor   1.0563429E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake04lay1   log    factor   1.3919944E-02  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake05lay1   log    factor   1.3974023E-02  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake06lay1   log    factor   5.7949403E-04  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake07lay1   log    factor   3.3844201E-02  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake07lay2   tied   factor   3.3844201E-02  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake08lay1   log    factor   1.1183400E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake08lay2   tied   factor   1.1183400E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake09lay1   log    factor   9.4705511E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake10lay1   log    factor   4.0774733E-02  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake11lay1   log    factor   4.0157739E-02  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake12lay1   log    factor   3.5015426E-02  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake12lay2   tied   factor   3.5015426E-02  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake12lay3   tied   factor   3.5015427E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake13lay1   log    factor   1.9380207E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake14lay1   log    factor   7.5547278E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake15lay1   log    factor   5.3753884E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake15lay2   tied   factor   5.3753884E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake16lay1   log    factor   4.7579626E-02  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake17lay1   log    factor   1.0252078E-02  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake18lay1   log    factor   1.0399178E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake18lay2   tied   factor   1.0399178E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake18lay3   tied   factor   1.0399178E-04  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake19lay1   log    factor   1.8734627E-02  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake19lay2   tied   factor   1.8734627E-02  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake20lay1   log    factor   4.9871716E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake21lay1   log    factor   5.5917399E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake22lay1   log    factor   7.2854929E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake22lay2   tied   factor   7.2854929E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake22lay3   tied   factor   7.2854929E-04  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake23lay1   log    factor   5.0768962E-04  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake23lay2   tied   factor   5.0768962E-04  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake24lay1   log    factor   2.0637453E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake24lay2   tied   factor   2.0637453E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake24lay3   tied   factor   2.0637453E-04  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake25lay1   log    factor   0.1384904      1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake26lay1   log    factor   9.0846942E-04  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake27lay1   log    factor   0.1423615      1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake28lay1   log    factor   0.5000000      1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake28lay2   tied   factor   0.5000000      1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake29lay1   log    factor   1.9966321E-02  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake29lay2   tied   factor   1.9966321E-02  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake30lay1   log    factor   2.2082895E-02  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake30lay2   tied   factor   2.2082895E-02  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+lake30lay3   tied   factor   2.2082895E-03  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+profund      log    factor   3.6857000E-04  1.00000e-05   5.00000e-01  lake           1.000       0.000        1
+manwetstrmkv log    factor   3.0514599E-03  1.00000e-10   1.00000e+10  manwetstrmkv   1.000       0.000        1
+norwetstrmkv log    factor   1.9337041E-02  1.00000e-10   1.00000e+10  norwetstrmkv   1.000       0.000        1
+adjmix_rain  fixed  factor   0.2963927      0.10000        3.1000      precip         1.000      -.1000        1
+ppt_rad_adj  fixed  factor   0.2109670      0.20000       0.60000      precip         1.000      -.1000        1
+rain_adj01   log    factor   0.8618756      0.7500        1.5000       precip         1.000       0.000        1
+rain_adj02   log    factor    1.477293      0.7500        1.5000       precip         1.000       0.000        1
+rain_adj03   log    factor   0.7527089      0.7500        1.5000       precip         1.000       0.000        1
+rain_adj04   log    factor   0.9355300      0.7500        1.5000       precip         1.000       0.000        1
+rain_adj05   log    factor    1.480083      0.7500        1.5000       precip         1.000       0.000        1
+rain_adj06   log    factor    1.500000      0.7500        1.5000       precip         1.000       0.000        1
+rain_adj07   log    factor   0.9352303      0.7500        1.5000       precip         1.000       0.000        1
+rain_adj08   log    factor    1.363619      0.7500        1.5000       precip         1.000       0.000        1
+rain_adj09   log    factor   0.9912861      0.7500        1.5000       precip         1.000       0.000        1
+rain_adj10   log    factor   0.9781375      0.7500        1.5000       precip         1.000       0.000        1
+rain_adj11   log    factor   0.7777630      0.7500        1.5000       precip         1.000       0.000        1
+rain_adj12   log    factor    1.408113      0.7500        1.5000       precip         1.000       0.000        1
+sat_threshol fixed  factor    6.000000      1.0000        999.00       precip         1.000       0.000        1
+snow_adj01   log    factor    1.272137      0.7500        1.5000       precip         1.000       0.000        1
+snow_adj02   log    factor   0.7500000      0.7500        1.5000       precip         1.000       0.000        1
+snow_adj03   log    factor    1.440873      0.7500        1.5000       precip         1.000       0.000        1
+snow_adj04   log    factor    1.500000      0.7500        1.5000       precip         1.000       0.000        1
+snow_adj05   log    factor    1.493001      0.7500        1.5000       precip         1.000       0.000        1
+snow_adj06   fixed  factor    1.000000      0.7500        1.5000       precip         1.000       0.000        1
+snow_adj07   fixed  factor    1.000000      0.7500        1.5000       precip         1.000       0.000        1
+snow_adj08   fixed  factor    1.000000      0.7500        1.5000       precip         1.000       0.000        1
+snow_adj09   fixed  factor    1.000000      0.7500        1.5000       precip         1.000       0.000        1
+snow_adj10   log    factor    1.260124      0.7500        1.5000       precip         1.000       0.000        1
+snow_adj11   log    factor    1.348288      0.7500        1.5000       precip         1.000       0.000        1
+snow_adj12   log    factor   0.7500000      0.7500        1.5000       precip         1.000       0.000        1
+tmax_adj     fixed  factor    10.10000      0.10000        20.100      precip         1.000      -10.10        1
+tmax_allsnow log    factor    41.20650      0.10000        50.100      precip         1.000      -10.10        1
+scsc_107_115 log    factor   1.5931520E-02  1.00000e-10   0.02000      prms           1.000       0.000        1
+scsc_107_122 log    factor   0.1237625      1.00000e-10   0.20000      prms           1.000       0.000        1
+scsc_118_121 log    factor   6.2729447E-02  1.00000e-10   0.70000      prms           1.000       0.000        1
+scsc_123_121 log    factor   6.5537431E-02  1.00000e-10   0.70000      prms           1.000       0.000        1
+scsc_023_s17 log    factor    1.000000      1.00000e-10    1.0000      prms           1.000       0.000        1
+scsc_037_s10 log    factor   0.2494659      1.00000e-10   0.70000      prms           1.000       0.000        1
+scsc_038_s13 log    factor   0.1673494      1.00000e-10    1.0000      prms           1.000       0.000        1
+scsc_044_s15 log    factor   5.3178550E-02  1.00000e-10    1.0000      prms           1.000       0.000        1
+scsc_073_s20 log    factor   0.1071960      1.00000e-10   0.70000      prms           1.000       0.000        1
+scsc_075_092 log    factor   0.1100000      1.00000e-10    0.1100      prms           1.000       0.000        1
+scsc_075_144 log    factor   1.5052334E-02  1.00000e-10    0.9000      prms           1.000       0.000        1
+scsc_084_094 log    factor   4.6453213E-03  1.00000e-10    1.0000      prms           1.000       0.000        1
+scsc_086_s12 log    factor    1.000000      1.00000e-10    1.0000      prms           1.000       0.000        1
+scsc_104_108 log    factor   0.2876031      1.00000e-10   0.70000      prms           1.000       0.000        1
+scsc_110_095 log    factor   7.8648378E-03  1.00000e-10   0.70000      prms           1.000       0.000        1
+scsc_112_113 log    factor   1.3929604E-10  1.00000e-10   0.70000      prms           1.000       0.000        1
+scsc_140_s14 log    factor    1.000000      1.00000e-10    1.0000      prms           1.000       0.000        1
+scsc_142_s02 log    factor   0.1066471      1.00000e-10   0.70000      prms           1.000       0.000        1
+carea_max0   log    factor   0.1349935      0.10000        1.1000      runoff         1.000      -.1000        1
+carea_max1   log    factor   0.2651404      0.10000        1.1000      runoff         1.000      -.1000        1
+carea_max2   log    factor   0.1252133      0.10000        1.1000      runoff         1.000      -.1000        1
+carea_max3   log    factor   0.1319362      0.10000        1.1000      runoff         1.000      -.1000        1
+carea_max4   log    factor   0.3975814      0.10000        1.1000      runoff         1.000      -.1000        1
+carea_max5   log    factor   0.3603672      0.10000        1.1000      runoff         1.000      -.1000        1
+carea_max6   log    factor   0.1000000      0.10000        1.1000      runoff         1.000      -.1000        1
+carea_max7   log    factor   0.1076810      0.10000        1.1000      runoff         1.000      -.1000        1
+carea_max8   log    factor   0.1000000      0.10000        1.1000      runoff         1.000      -.1000        1
+smidx_coef   log    factor   4.2711488E-02  1.00000e-04    1.0000      runoff         1.000       0.000        1
+smidx_exp    log    factor   0.2000000      0.20000       0.80000      runoff         1.000       0.000        1
+snowinfil_ma fixed  factor    1.100000      0.10000        20.100      runoff         1.000      -.1000        1
+sandy_strkv  log    factor    2.682755      1.00000e-10   1.00000e+10  sandy_strkv    1.000       0.000        1
+alleqlowflw1 log    factor    9897.846      1000.          12500.      sfres         1.000        0.000         1
+alleqlowflw2 log    factor    17027.56      12500.         20000.      sfres         1.000        0.000         1
+ljohnoutmult log    factor    1.674770      0.10000        100.00      sfres         0.1000        0.000        1
+mannoutmult  log    factor    17.40751      0.10000        200.00      sfres         0.1000        0.000        1
+troutlowflw1  log    factor    4000.000      500.0          4000.      sfres         0.1000       0.000         1	
+troutlowflw2  log    factor    4286.022      4000.0        10000.      sfres         0.1000       0.000         1	
+troutoutmult log    factor    2.815759      0.10000        100.00      sfres         0.1000        0.000        1
+alleqlowflw3 log    factor    19000.00      19000         26000        sfres 	     1.000       0.000         1
+alleqlowflw4 log    factor    27108.78      26000         39999        sfres	     1.000       0.000         1
+alleqlowflw5 log    factor    58280.60      40000	       61999       sfres	     1.000       0.000         1
+alleqlowflw6 log    factor    62000.00      62000          90000       sfres	     1.000       0.000         1
+albset_rna   fixed  factor   0.1000000      0.10000        1.1000      snow           1.000      -.1000        1
+albset_rnm   fixed  factor   0.1776388      0.10000        1.1000      snow           1.000      -.1000        1
+albset_sna   fixed  factor   3.5148200E-03  1.00000e-03    1.0000      snow           1.000       0.000        1
+albset_snm   fixed  factor   6.6071500E-02  1.00000e-03    1.0000      snow           1.000       0.000        1
+cecn_coef    fixed  factor    20.10000      0.10000        20.100      snow           1.000      -.1000        1
+den_init     fixed  factor   8.5195510E-02  1.00000e-02   0.50000      snow           1.000       0.000        1
+den_max      fixed  factor   0.2447282      0.10000       0.80000      snow           1.000       0.000        1
+emis_noppt   fixed  factor   0.9110770      0.75000        1.0000      snow           1.000       0.000        1
+freeh2o_cap  fixed  factor   0.2000000      1.00000e-02   0.20000      snow           1.000       0.000        1
+potet_sublim fixed  factor   0.7500000      0.10000       0.75000      snow           1.000       0.000        1
+settle_const fixed  factor   0.1242420      1.00000e-02   0.50000      snow           1.000       0.000        1
+crad_coef    fixed  factor   0.4609141      0.10000       0.70000      solrad         1.000       0.000        1
+crad_exp     fixed  factor   0.8000000      0.20000       0.80000      solrad         1.000       0.000        1
+radj_sppt    fixed  factor    1.100000      0.10000        1.1000      solrad         1.000      -.1000        1
+radj_wppt    fixed  factor   0.1133348      0.10000        1.1000      solrad         1.000      -.1000        1
+storage      log    factor   8.9131000E-04  1.00000e-05   1.00000e-02  ss             1.000       0.000        1
+stwetstrmkv1 log    factor   1.9860322E-02  1.00000e-10   1.00000e+10  stwet1strmkv   1.000       0.000        1
+stwetstrmkv2 log    factor   1.6543165E-02  1.00000e-10   1.00000e+10  stwet2strmkv   1.000       0.000        1
+surfdep      log    factor   0.4960492      3.00000e-01   2.00000e+00  surfdep        1.000       0.000        1
+sy           fixed   factor   0.2700000      0.10000       0.30000     sy             1.000       0.000        1
+fastcoef_li0 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+fastcoef_li1 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+fastcoef_li2 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+fastcoef_li3 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+fastcoef_li4 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+fastcoef_li5 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+fastcoef_li6 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+fastcoef_li7 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+fastcoef_li8 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+fastcoef_sq0 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+fastcoef_sq1 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+fastcoef_sq2 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+fastcoef_sq3 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+fastcoef_sq4 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+fastcoef_sq5 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+fastcoef_sq6 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+fastcoef_sq7 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+fastcoef_sq8 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+pref_flow_de fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+slowcoef_li0 log    factor   0.4413070      0.10001        1.1000      szone          1.000      -.1000        1
+slowcoef_li1 log    factor   0.1277131      0.10001        1.1000      szone          1.000      -.1000        1
+slowcoef_li2 log    factor   0.2268994      0.10001        1.1000      szone          1.000      -.1000        1
+slowcoef_li3 log    factor   0.2505469      0.10001        1.1000      szone          1.000      -.1000        1
+slowcoef_li4 log    factor   0.1000100      0.10001        1.1000      szone          1.000      -.1000        1
+slowcoef_li5 log    factor   0.1265890      0.10001        1.1000      szone          1.000      -.1000        1
+slowcoef_li6 log    factor   0.2918838      0.10001        1.1000      szone          1.000      -.1000        1
+slowcoef_li7 log    factor   0.1000100      0.10001        1.1000      szone          1.000      -.1000        1
+slowcoef_li8 log    factor   0.1000100      0.10001        1.1000      szone          1.000      -.1000        1
+slowcoef_sq0 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+slowcoef_sq1 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+slowcoef_sq2 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+slowcoef_sq3 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+slowcoef_sq4 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+slowcoef_sq5 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+slowcoef_sq6 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+slowcoef_sq7 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+slowcoef_sq8 fixed  factor   0.1000000      0.10000        1.1000      szone          1.000      -.1000        1
+soil_moist_0 log    factor    2.777172      0.50000        20.100      szone          1.000      -.1000        1
+soil_moist_1 log    factor   0.5000000      0.50000        20.100      szone          1.000      -.1000        1
+soil_moist_2 log    factor    4.967820      0.50000        20.100      szone          1.000      -.1000        1
+soil_moist_3 log    factor    1.138980      0.50000        20.100      szone          1.000      -.1000        1
+soil_moist_4 log    factor   0.5000000      0.50000        20.100      szone          1.000      -.1000        1
+soil_moist_5 log    factor   0.6312881      0.50000        20.100      szone          1.000      -.1000        1
+soil_moist_6 log    factor    15.90515      0.50000        20.100      szone          1.000      -.1000        1
+soil_moist_7 log    factor    2.598720      0.50000        20.100      szone          1.000      -.1000        1
+soil_moist_8 log    factor    12.18446      0.50000        20.100      szone          1.000      -.1000        1
+soil_rechr_0 tied   factor   0.8331497      0.10000        10.100      szone          1.000      -.1000        1
+soil_rechr_1 tied   factor   0.1500007      0.10000        10.100      szone          1.000      -.1000        1
+soil_rechr_2 tied   factor    1.490354      0.10000        10.100      szone          1.000      -.1000        1
+soil_rechr_3 tied   factor   0.3416905      0.10000        10.100      szone          1.000      -.1000        1
+soil_rechr_4 tied   factor   0.1499987      0.10000        10.100      szone          1.000      -.1000        1
+soil_rechr_5 tied   factor   0.3289289      0.10000        10.100      szone          1.000      -.1000        1
+soil_rechr_6 tied   factor    4.771524      0.10000        10.100      szone          1.000      -.1000        1
+soil_rechr_7 tied   factor   0.7796140      0.10000        10.100      szone          1.000      -.1000        1
+soil_rechr_8 tied   factor    3.655331      0.10000        10.100      szone          1.000      -.1000        1
+soil2gw_max0 log    factor   0.1238379      0.10000        5.1000      szone          1.000      -.1000        1
+soil2gw_max1 log    factor   0.1456239      0.10000        5.1000      szone          1.000      -.1000        1
+soil2gw_max2 log    factor   0.1277615      0.10000        5.1000      szone          1.000      -.1000        1
+soil2gw_max3 log    factor   0.1088778      0.10000        5.1000      szone          1.000      -.1000        1
+soil2gw_max4 log    factor   0.1636221      0.10000        5.1000      szone          1.000      -.1000        1
+soil2gw_max5 log    factor   0.2904290      0.10000        5.1000      szone          1.000      -.1000        1
+soil2gw_max6 log    factor   0.1000000      0.10000        5.1000      szone          1.000      -.1000        1
+soil2gw_max7 log    factor   0.1192469      0.10000        5.1000      szone          1.000      -.1000        1
+soil2gw_max8 log    factor   0.2585296      0.10000        5.1000      szone          1.000      -.1000        1
+ssr2gw_exp   log    factor   0.2537498      0.10000        3.1000      szone          1.000      -.1000        1
+ssr2gw_rate0 log    factor    1.022848      0.10000        1.1100      szone          1.000      -.1000        1
+ssr2gw_rate1 log    factor   0.5285167      0.10000        1.1100      szone          1.000      -.1000        1
+ssr2gw_rate2 log    factor    1.110000      0.10000        1.1100      szone          1.000      -.1000        1
+ssr2gw_rate3 log    factor    1.110000      0.10000        1.1100      szone          1.000      -.1000        1
+ssr2gw_rate4 log    factor   0.4599523      0.10000        1.1100      szone          1.000      -.1000        1
+ssr2gw_rate5 log    factor   0.7482138      0.10000        1.1100      szone          1.000      -.1000        1
+ssr2gw_rate6 log    factor   0.4150734      0.10000        1.1100      szone          1.000      -.1000        1
+ssr2gw_rate7 log    factor    1.064659      0.10000        1.1100      szone          1.000      -.1000        1
+ssr2gw_rate8 log    factor    1.110000      0.10000        1.1100      szone          1.000      -.1000        1
+thetas       fixed  factor   0.2800000      1.00000e-02   0.50000      thetasfac      1.000       0.000        1
+vksat        log    factor    2.396447      8.00000e-01   4.00000e+00  vksat          1.000       0.000        1
+lake07lay2   lake07lay1
+lake08lay2   lake08lay1
+lake12lay2   lake12lay1
+lake23lay2   lake23lay1
+lake30lay2   lake30lay1
+lake24lay2   lake24lay1
+lake18lay2   lake18lay1
+lake19lay2   lake19lay1
+lake28lay2   lake28lay1
+lake29lay2   lake29lay1
+lake22lay2   lake22lay1
+lake15lay2   lake15lay1
+lake12lay3   lake12lay1
+lake30lay3   lake30lay1
+lake24lay3   lake24lay1
+lake18lay3   lake18lay1
+lake22lay3   lake22lay1
+soil_rechr_0 soil_moist_0
+soil_rechr_1 soil_moist_1
+soil_rechr_2 soil_moist_2
+soil_rechr_3 soil_moist_3
+soil_rechr_4 soil_moist_4
+soil_rechr_5 soil_moist_5
+soil_rechr_6 soil_moist_6
+soil_rechr_7 soil_moist_7
+soil_rechr_8 soil_moist_8
+* observation groups
+super_obs
+* observation data
+obs1                    0.000000      169.7583       super_obs
+obs2                    0.000000      98.55811       super_obs
+obs3                    0.000000      38.84557       super_obs
+obs4                    0.000000      30.87144       super_obs
+obs5                    0.000000      26.96127       super_obs
+obs6                    0.000000      25.26667       super_obs
+obs7                    0.000000      23.52466       super_obs
+obs8                    0.000000      20.12379       super_obs
+obs9                    0.000000      18.90168       super_obs
+obs10                   0.000000      17.69416       super_obs
+obs11                   0.000000      16.42866       super_obs
+obs12                   0.000000      15.73159       super_obs
+obs13                   0.000000      14.70944       super_obs
+obs14                   0.000000      12.82027       super_obs
+obs15                   0.000000      12.35701       super_obs
+obs16                   0.000000      11.49709       super_obs
+obs17                   0.000000      10.32708       super_obs
+obs18                   0.000000      9.788206       super_obs
+obs19                   0.000000      9.450906       super_obs
+obs20                   0.000000      8.902853       super_obs
+obs21                   0.000000      8.543614       super_obs
+obs22                   0.000000      8.383072       super_obs
+obs23                   0.000000      7.547048       super_obs
+obs24                   0.000000      7.492670       super_obs
+obs25                   0.000000      7.114920       super_obs
+obs26                   0.000000      6.930050       super_obs
+obs27                   0.000000      6.768726       super_obs
+obs28                   0.000000      6.685599       super_obs
+obs29                   0.000000      6.560442       super_obs
+obs30                   0.000000      6.333911       super_obs
+obs31                   0.000000      6.159714       super_obs
+obs32                   0.000000      5.936723       super_obs
+obs33                   0.000000      5.811618       super_obs
+obs34                   0.000000      5.498476       super_obs
+obs35                   0.000000      5.253735       super_obs
+obs36                   0.000000      5.138175       super_obs
+obs37                   0.000000      5.065457       super_obs
+obs38                   0.000000      4.935890       super_obs
+obs39                   0.000000      4.688118       super_obs
+obs40                   0.000000      4.460322       super_obs
+obs41                   0.000000      4.400734       super_obs
+obs42                   0.000000      4.249160       super_obs
+obs43                   0.000000      4.048926       super_obs
+obs44                   0.000000      3.926457       super_obs
+obs45                   0.000000      3.815420       super_obs
+obs46                   0.000000      3.539757       super_obs
+obs47                   0.000000      3.395330       super_obs
+obs48                   0.000000      3.328016       super_obs
+obs49                   0.000000      3.161894       super_obs
+obs50                   0.000000      3.055735       super_obs
+obs51                   0.000000      2.955031       super_obs
+obs52                   0.000000      2.886085       super_obs
+obs53                   0.000000      2.832538       super_obs
+obs54                   0.000000      2.670431       super_obs
+obs55                   0.000000      2.571001       super_obs
+obs56                   0.000000      2.499265       super_obs
+obs57                   0.000000      2.434430       super_obs
+obs58                   0.000000      2.336464       super_obs
+obs59                   0.000000      2.294580       super_obs
+obs60                   0.000000      2.170066       super_obs
+obs61                   0.000000      2.155520       super_obs
+obs62                   0.000000      2.136214       super_obs
+obs63                   0.000000      2.077262       super_obs
+obs64                   0.000000      1.987281       super_obs
+obs65                   0.000000      1.966596       super_obs
+obs66                   0.000000      1.935667       super_obs
+obs67                   0.000000      1.882361       super_obs
+obs68                   0.000000      1.819553       super_obs
+obs69                   0.000000      1.789462       super_obs
+obs70                   0.000000      1.770362       super_obs
+obs71                   0.000000      1.755235       super_obs
+obs72                   0.000000      1.693067       super_obs
+obs73                   0.000000      1.676110       super_obs
+obs74                   0.000000      1.639859       super_obs
+obs75                   0.000000      1.628069       super_obs
+obs76                   0.000000      1.582133       super_obs
+obs77                   0.000000      1.560994       super_obs
+obs78                   0.000000      1.528957       super_obs
+obs79                   0.000000      1.500483       super_obs
+obs80                   0.000000      1.438948       super_obs
+obs81                   0.000000      1.419994       super_obs
+obs82                   0.000000      1.413676       super_obs
+obs83                   0.000000      1.382229       super_obs
+obs84                   0.000000      1.367199       super_obs
+obs85                   0.000000      1.332481       super_obs
+obs86                   0.000000      1.310221       super_obs
+obs87                   0.000000      1.260873       super_obs
+obs88                   0.000000      1.240986       super_obs
+obs89                   0.000000      1.220549       super_obs
+obs90                   0.000000      1.200883       super_obs
+obs91                   0.000000      1.176488       super_obs
+obs92                   0.000000      1.161457       super_obs
+obs93                   0.000000      1.147171       super_obs
+obs94                   0.000000      1.109522       super_obs
+obs95                   0.000000      1.084543       super_obs
+obs96                   0.000000      1.077662       super_obs
+obs97                   0.000000      1.057814       super_obs
+obs98                   0.000000      1.033179       super_obs
+obs99                   0.000000      1.013332       super_obs
+obs100                  0.000000      1.000000       super_obs
+* model command line
+supobsbatch.bat
+* model input/output
+TL2007_upw.tpl   TL2007_rjh_trans.upw
+gsflow_uzf.tpl   TL2007_rjh_trans.uzf
+TL2008_Lake_leakance1.tpl   LakeLeakanceL1.dat
+TL2008_Lake_leakance2.tpl   LakeLeakanceL2.dat
+TL2008_Lake_leakance3.tpl   LakeLeakanceL3.dat
+TL2009_LAK_78cm_CDP_LAK.tpl   TL2009.lak
+par2par_LAK_SFR_trout.tpl   par2par_LAK_SFR.dat
+par2par_troutlake42d_prms_gsflow.tpl   par2par_troutlake42d_prms_gsflow.dat
+ obscalc.ins   obscalc.out
+

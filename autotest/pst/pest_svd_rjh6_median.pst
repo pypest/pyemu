@@ -1,0 +1,469 @@
+pcf
+* control data
+restart  estimation
+34   367     5     0     4
+1    1    single    point    1    0    0
+20    -3.0    0.3    0.001   -7    999 lamforgive
+0.05  1.1   0.001
+0.1
+50  .005  4   4  .005   4
+ 1    1    1  REISAVEITN PARSAVEITN
+* singular value decomposition
+1
+26  5.0E-7
+1
+* parameter groups
+lg          relative    0.01     0.000      always_3      2.000      parabolic  1.0e-4    0.5    smaller
+llg         relative    0.01     0.000      always_3      2.000      parabolic  1.0e-4    0.5    smaller
+lllg        relative    0.01     0.000      always_3      2.000      parabolic  1.0e-4    0.5    smaller
+ssm         relative    0.01     0.000      always_3      2.000      parabolic  1.0e-4    0.5    smaller
+sssm        relative    0.01     0.000      always_3      2.000      parabolic  1.0e-4    0.5    smaller
+* parameter data
+s21     log    factor  1.79000      1     5      llg      1      0       1 
+s22     log    factor  1.79000      1     6      llg      1      0       1
+s24     log    factor  1.79000      1     5      llg      1      0       1
+s26     log    factor  1.79000      1     6      llg      1      0       1
+a21     log    factor  0.069              0.05    .1     lg      1      0       1 
+a22     log    factor  0.069              0.05    .08     lg      1      0       1 
+a24     log    factor  0.069              0.05    0.12  lg      1      0       1 
+a26     log    factor  0.069              0.05    0.1   lg      1      0       1 
+c11     log    factor  3.3               1     12      llg      1      0       1
+c12     log    factor  3.3               1     12      llg      1      0       1
+c14     log    factor  3.3               1     12      llg      1      0       1
+c16     log    factor  3.3               1     12       llg      1      0       1
+p1     log    factor       1.000000      0.8   1.2      llg      1      0      1
+p2     log    factor       1.000000      0.8   1.2      llg      1      0      1
+p3     log    factor       1.000000      0.9   1.1      llg      1      0      1
+p4     log    factor       1.000000      0.9   1.1      llg      1      0      1
+p5     log    factor       1.300000      1.2   1.6      llg      1      0      1
+p6     log    factor       1.300000      1.1   1.5      llg      1      0      1
+lhg     log      factor   3.0255112E-05  1e-6 4e-5      ssm      1      0      1
+chc     log      factor   0.0800000      .01    .1      lg       1      0      1
+nmac    log      factor   1.3292058E-02  .005    .06    lg       1      0      1
+mac_r   log      factor   0.100000      .03    .15      lg       1      0      1
+lks     log      factor    15.00000      5      20      llg      1      0      1
+koc     log      factor    187.0000      170    250     llg      1      0      1
+half    log      factor    58.98945      30    80       llg      1      0      1
+h2      fixed    factor    1.000000      0.99    3      llg      1      0      1
+expr    log      factor   2.0000000E-02  0.01  0.03     lg       1      0      1
+est     fixed    factor   0.6000000      0.5    1.0     lg       1      0      1
+rsw     fixed    factor   0.3354100      0.25   0.35    lg       1      0      1
+rst     fixed    factor    20.07780      15     25      llg      1      0      1
+ea      fixed    factor    50367.60      50000  60000   lg       1      0      1
+wsm     fixed    factor   0.7354860      0.6    0.99    lg       1      0      1
+mrad    fixed    factor    1.000000      0.99    20     llg      1      0      1
+h_3     fixed    factor    15.00000      1      30      llg      1      0      1
+* observation groups
+water_conc
+soil_conc
+prof_conc
+tile_flow 
+* observation data
+c1	0	80	water_conc
+c2	0.001	80	water_conc
+c3	0.001	80	water_conc
+c4	0.001	80	water_conc
+c5	0.001	80	water_conc
+c6	0.001	80	water_conc
+c7	0.001	80	water_conc
+c8	0.001	80	water_conc
+c9	0.002	80	water_conc
+c10	0.003	40	water_conc
+c11	0.002	80	water_conc
+c12	0.003	80	water_conc
+c13	0.003	80	water_conc
+c14	0.002	80	water_conc
+c15	0	80	water_conc
+c16	0.001	80	water_conc
+c17	0.001	80	water_conc
+c18	0.001	80	water_conc
+c19	0	80	water_conc
+c20	0	80	water_conc
+c21	0	80	water_conc
+c22	0	80	water_conc
+c23	0	80	water_conc
+c24	0	80	water_conc
+c25	0	80	water_conc
+c26	0	80	water_conc
+c27	0	80	water_conc
+c28	0	80	water_conc
+c29	0.0005	80	water_conc
+c30	0.0009	260	water_conc
+c31	0.0008	260	water_conc
+c32	0.0053	80	water_conc
+c33	0.0013	80	water_conc
+c34	0.0026	80	water_conc
+c35	0.004	80	water_conc
+c36	-99	0	water_conc
+c37	0.0014	80	water_conc
+c38	-99	0	water_conc
+c39	-99	0	water_conc
+c40	0	80	water_conc
+c41	0.0005	80	water_conc
+c42	0.0005	80	water_conc
+c43	0.0003	80	water_conc
+c44	0.0006	80	water_conc
+c45	0.0006	80	water_conc
+c46	0	80	water_conc
+c47	0.0009	80	water_conc
+c48	0.0005	80	water_conc
+c49	0.0006	80	water_conc
+c50	-99	0	water_conc
+c51	0.0007	80	water_conc
+c52	0.0005	80	water_conc
+c53	0	80	water_conc
+c54	0.0004	80	water_conc
+c55	0.0006	80	water_conc
+c56	0.0006	80	water_conc
+c57	-99	0	water_conc
+c58	-99	0	water_conc
+c59	0.0003	80	water_conc
+c60	0	80	water_conc
+c61	0.0004	80	water_conc
+c62	0	80	water_conc
+c63	0.0007	80	water_conc
+c64	0.0009	80	water_conc
+c65	0.0006	80	water_conc
+c66	0.0005	80	water_conc
+c67	0.0006	80	water_conc
+c68	0.0018	80	water_conc
+c69	0.001 	80	water_conc
+c70	0.0012	80	water_conc
+c71	0	80	water_conc
+c72	0.0009	80	water_conc
+c73	0.0005	80	water_conc
+c74	-99	0	water_conc
+c75	0.0005	80	water_conc
+c76	0.0013	80	water_conc
+c77	0.0005	80	water_conc
+c78	0.0006	80	water_conc
+c79	0.0005	80	water_conc
+c80	0.0007	80	water_conc
+c81	0.0006	80	water_conc
+c82	0.0004	80	water_conc
+c83	0.0004	80	water_conc
+c84	0.0004	80	water_conc
+c85	0	80	water_conc
+c86	-99	0	water_conc
+c87	0.0004	80	water_conc
+c88	0.0003	80	water_conc
+c89	0	80	water_conc
+c90	0	80	water_conc
+c91	0	80	water_conc
+c92	0.0003	80	water_conc
+c93	0.0003	80	water_conc
+c94	0.0003	80	water_conc
+c95	0.0006	80	water_conc
+c96	0.0006	80	water_conc
+c97	0.0003	80	water_conc
+c98	0.0004	80	water_conc
+c99	0.0006	80	water_conc
+c100	0.0011	80	water_conc
+c101	0	80	water_conc
+c102	-99	0	water_conc
+c103	0	80	water_conc
+t1	0	0.8	tile_flow
+t2	0.039	0.8	tile_flow
+t3	0.03	0.8	tile_flow
+t4	0.013	0.8	tile_flow
+t5	0.063	0.8	tile_flow
+t6	0.096	0.8	tile_flow
+t7	0.031	0.8	tile_flow
+t8	0.014	0.8	tile_flow
+t9	0.033	0.8	tile_flow
+t10	0.226	0.8	tile_flow
+t11	0.424	0.8	tile_flow
+t12	0.06	0.8	tile_flow
+t13	0.01	0.8	tile_flow
+t14	0.069	0.8	tile_flow
+t15	0.256	0.8	tile_flow
+t16	0.094	0.8	tile_flow
+t17	0.029	0.8	tile_flow
+t18	0.009	0.8	tile_flow
+t19	0.011	0.8	tile_flow
+t20	0.038	0.8	tile_flow
+t21	0.033	0.8	tile_flow
+t22	0.02	0.8	tile_flow
+t23	0.016	0.8	tile_flow
+t24	0.006	0.8	tile_flow
+t25	0.004	0.8	tile_flow
+t26	0.001	0.8	tile_flow
+t27	0	0.8	tile_flow
+t28	0	0.8	tile_flow
+t29	0.009	0.8	tile_flow
+t30	0.246	0.8	tile_flow
+t31	0.236	0.8	tile_flow
+t32	0.218	0.8	tile_flow
+t33	0.194	0.8	tile_flow
+t34	0.164	0.8	tile_flow
+t35	0.247	0.8	tile_flow
+t36	0.09	0.8	tile_flow
+t37	0.029	0.8	tile_flow
+t38	0.003	0.8	tile_flow
+t39	0.016	0.8	tile_flow
+t40	0.128	0.8	tile_flow
+t41	0.1	0.8	tile_flow
+t42	0.063	0.8	tile_flow
+t43	0.043	0.8	tile_flow
+t44	0.047	0.8	tile_flow
+t45	0.031	0.8	tile_flow
+t46	0.017	0.8	tile_flow
+t47	0.02	0.8	tile_flow
+t48	0.021	0.8	tile_flow
+t49	0.004	0.8	tile_flow
+t50	0	0.8	tile_flow
+t51	0.051	0.8	tile_flow
+t52	0.041	0.8	tile_flow
+t53	0.049	0.8	tile_flow
+t54	0.037	0.8	tile_flow
+t55	0.046	0.8	tile_flow
+t56	0.006	0.8	tile_flow
+t57	0	0.8	tile_flow
+t58	0.035	0.8	tile_flow
+t59	0.352	0.8	tile_flow
+t60	0.224	0.8	tile_flow
+t61	0.104	0.8	tile_flow
+t62	0.059	0.8	tile_flow
+t63	0.077	0.8	tile_flow
+t64	0.339	0.8	tile_flow
+t65	0.177	0.8	tile_flow
+t66	0.23	0.8	tile_flow
+t67	0.191	0.8	tile_flow
+t68	0.261	0.8	tile_flow
+t69	0.627	0.8	tile_flow
+t70	0.737	0.8	tile_flow
+t71	0.246	0.8	tile_flow
+t72	0.082	0.8	tile_flow
+t73	0.009	0.8	tile_flow
+t74	0	0.8	tile_flow
+t75	0.002	0.8	tile_flow
+t76	0.003	0.8	tile_flow
+t77	0.023	0.8	tile_flow
+t78	0.227	0.8	tile_flow
+t79	0.18	0.8	tile_flow
+t80	0.046	0.8	tile_flow
+t81	0.087	0.8	tile_flow
+t82	0.216	0.8	tile_flow
+t83	0.101	0.8	tile_flow
+t84	0.009	0.8	tile_flow
+t85	0.014	0.8	tile_flow
+t86	0.006	0.8	tile_flow
+t87	0.061	0.8	tile_flow
+t88	0.108	0.8	tile_flow
+t89	0.029	0.8	tile_flow
+t90	0.017	0.8	tile_flow
+t91	0.044	0.8	tile_flow
+t92	0.133	0.8	tile_flow
+t93	0.09	0.8	tile_flow
+t94	0.039	0.8	tile_flow
+t95	0.414	0.8	tile_flow
+t96	0.33	0.8	tile_flow
+t97	0.157	0.8	tile_flow
+t98	0.025	0.8	tile_flow
+t99	0.003	0.8	tile_flow
+t100	0.001	0.8	tile_flow
+t101	0	0.8	tile_flow
+t102	0	0.8	tile_flow
+t103	0.011	0.8	tile_flow
+sc1	1.568	1	soil_conc
+sc2	0.179	1	soil_conc
+sc3	0.189	1	soil_conc
+sc4	0.025	1	soil_conc
+sc5	0.007	1	soil_conc
+sc6	0	1	soil_conc
+sc7	0.012	1	soil_conc
+sc8	0.009	1	soil_conc
+sc9	0	1	soil_conc
+sc12	0	1	soil_conc
+sc13	0.14	1	soil_conc
+sc14	0.021	1	soil_conc
+sc15	0.022	1	soil_conc
+sc16	0.03	1	soil_conc
+sc17	0	1	soil_conc
+sc18	0	1	soil_conc
+sc19	0	1	soil_conc
+sc20	0	1	soil_conc
+sc23	0.39	1	soil_conc
+sc24	0.139	1	soil_conc
+sc25	0.08	1	soil_conc
+sc26	0.028	1	soil_conc
+sc27	0.011	1	soil_conc
+sc28	0.003	1	soil_conc
+sc29	0.001	1	soil_conc
+sc30	0.001	1	soil_conc
+sc31	0.001	1	soil_conc
+sc34	0.18	1	soil_conc
+sc35	0.061	1	soil_conc
+sc36	0.046	1	soil_conc
+sc37	0.011	1	soil_conc
+sc38	0.012	1	soil_conc
+sc39	0	1	soil_conc
+sc42	0.098	1	soil_conc
+sc43	0.079	1	soil_conc
+sc44	0.044	1	soil_conc
+sc45	0.024	1	soil_conc
+sc46	0.008	1	soil_conc
+sc47	0	1	soil_conc
+sc50	0.056	1	soil_conc
+sc51	0.075	1	soil_conc
+sc52	0.037	1	soil_conc
+sc53	0.008	1	soil_conc
+sc54	0	1	soil_conc
+sc55	0	1	soil_conc
+sc56	0	1	soil_conc
+sc59	0.976	1	soil_conc
+sc60	0.056	1	soil_conc
+sc61	0.013	1	soil_conc
+sc62	0.008	1	soil_conc
+sc63	0	1	soil_conc
+sc64	0	1	soil_conc
+sc65	0	1	soil_conc
+sc68	0.121	1	soil_conc
+sc69	0.052	1	soil_conc
+sc70	0.02	1	soil_conc
+sc71	0.006	1	soil_conc
+sc72	0	1	soil_conc
+sc73	0	1	soil_conc
+sc74	0	1	soil_conc
+sc77	0.104	1	soil_conc
+sc78	0.056	1	soil_conc
+sc79	0.013	1	soil_conc
+sc80	0	1	soil_conc
+sc81	0	1	soil_conc
+sc82	0	1	soil_conc
+sc83	0	1	soil_conc
+sc86	0.156	1	soil_conc
+sc87	0.115	1	soil_conc
+sc88	0.078	1	soil_conc
+sc89	0.062	1	soil_conc
+sc90	0.014	1	soil_conc
+sc91	0	1	soil_conc
+sc92	0	1	soil_conc
+sc95	0.427	1	soil_conc
+sc96	0.062	1	soil_conc
+sc97	0.03	1	soil_conc
+sc100	0.19	1	soil_conc
+sc101	0.04	1	soil_conc
+sc102	0.013	1	soil_conc
+sc103	0	1	soil_conc
+sc104	0.01	1	soil_conc
+sc105	0	1	soil_conc
+sc106	0	1	soil_conc
+sc109	0.108	1	soil_conc
+sc110	0.071	1	soil_conc
+sc111	0	1	soil_conc
+sc112	0	1	soil_conc
+sc113	0	1	soil_conc
+sc114	0	1	soil_conc
+sc115	0	1	soil_conc
+sc118	0.056	1	soil_conc
+sc119	0.032	1	soil_conc
+sc120	0.019	1	soil_conc
+sc121	0	1	soil_conc
+sc122	0	1	soil_conc
+sc123	0	1	soil_conc
+sc124	0	1	soil_conc
+sc127	-99	0	soil_conc
+sc128	-99	0	soil_conc
+sc129	-99	0	soil_conc
+sc130	-99	0	soil_conc
+sc131	-99	0	soil_conc
+sc132	-99	0	soil_conc
+sc133	-99	0	soil_conc
+sc136	0.048	1	soil_conc
+sc139	0.192	1	soil_conc
+sc140	0.039	1	soil_conc
+sc141	0.019	1	soil_conc
+sc142	-99	0	soil_conc
+sc143	-99	0	soil_conc
+sc144	-99	0	soil_conc
+sc147	0.143	1	soil_conc
+sc148	0.052	1	soil_conc
+sc149	0.021	1	soil_conc
+sc150	-99	0	soil_conc
+sc151	-99	0	soil_conc
+sc152	-99	0	soil_conc
+sc155	0.058	1	soil_conc
+sc156	0.037	1	soil_conc
+sc157	0.021	1	soil_conc
+sc158	-99	0	soil_conc
+sc159	-99	0	soil_conc
+sc160	-99	0	soil_conc
+sc163	-99	0	soil_conc
+sc164	-99	0	soil_conc
+sc165	-99	0	soil_conc
+sc166	-99	0	soil_conc
+sc167	-99	0	soil_conc
+sc168	-99	0	soil_conc
+sc171	0.168	1	soil_conc
+sc172	0.022	1	soil_conc
+sc173	0.006	1	soil_conc
+sc176	0.157	1	soil_conc
+sc177	0.05	1	soil_conc
+sc178	0.013	1	soil_conc
+sc179	0.005	1	soil_conc
+sc180	-99	0	soil_conc
+sc181	-99	0	soil_conc
+spc1	3.0036	0.5	prof_conc
+spc2	0.35519	0.5	prof_conc
+spc3	1.00768	0.5	prof_conc
+spc4	0.47208	0.5	prof_conc
+spc5	0.39629	0.5	prof_conc
+spc6	0.26394	0.5	prof_conc
+spc7	1.53415	0.5	prof_conc
+spc8	0.29464	0.5	prof_conc
+spc9	0.25163	0.5	prof_conc
+spc10	0.68413	0.5	prof_conc
+spc11	0.75435	0.5	prof_conc
+spc12	0.37668	0.5	prof_conc
+spc13	0.25955	0.5	prof_conc
+spc14	0.15629	0.5	prof_conc
+spc15	0	0.5	prof_conc
+spc16	0.1044	0.5	prof_conc
+spc17	0.36364	0.5	prof_conc
+spc18	0.31446	0.5	prof_conc
+spc19	0.16946	0.5	prof_conc
+spc20	0	0.5	prof_conc
+spc21	0.28456	0.5	prof_conc
+spc22	0.34288	0.5	prof_conc
+* model command line
+rzwqmb.bat
+* model input/output
+par2par_rzdat.tpl   par2par_rzdat.in
+conc1.ins    comp2exp.OUT
+* prior information
+                           
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
