@@ -1,0 +1,14 @@
+#DEWATER Sample Problem, SUMCON file
+#February 20, 2005
+ 1                            #1-IPRN
+ 1                            #2-SMCNUM
+ Binlower  7 ge 3.0           #3a-SMCNAME NTERMS TYPE RHS 
+ bv-1 1                       #3b-GVNAME  GVCOEFF
+ bv-2 1
+ bv-3 1
+ bv-4 1 
+ bv-5 1 
+ bv-6 1 
+ bv-7 1 
+
+

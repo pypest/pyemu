@@ -1,0 +1,11 @@
+# MODFLOW2000 Layer Property Flow (LPF) Package
+ 53  -1.000000e+030 0
+  1
+  0
+  1.000000e+000
+ 0
+ 0
+OPEN/CLOSE     'hk.truth.ref'               1.0   (FREE)   -1      HYDRAULIC CONDUCTIVITY Layer   1
+CONSTANT        1.00000                           VERTICAL HYDRAULIC CONDUCTIVITY Layer   1
+CONSTANT        1e-4                           STORAGE Layer   1
+CONSTANT        0.25                           SPECIFIC YIELD Layer   1

@@ -1,0 +1,64 @@
+PEST++ performance logger started at:  2017-03-16 22:12:41
+        ( time = 2017-03-16 22:12:41,  elapsed time = 614us )
+  starting to process control file
+          ( time = 2017-03-16 22:12:41,  elapsed time = 10ms )
+  finished processing control file
+          ( time = 2017-03-16 22:12:41,  elapsed time = 5ms )
+    starting basic model IO error checking
+            ( time = 2017-03-16 22:12:41,  elapsed time = 171us )
+    finished basic model IO error checking
+2017-03-16 22:12:41-> starting set_predictions
+2017-03-16 22:12:41->-> starting extracting prediction S1R14_09 from jacobian
+2017-03-16 22:12:41->-> finished extracting prediction S1R14_09 from jacobian, elapsed time = 18ms
+2017-03-16 22:12:41->-> starting extracting prediction S1R14_10 from jacobian
+2017-03-16 22:12:41->-> finished extracting prediction S1R14_10 from jacobian, elapsed time = 18ms
+2017-03-16 22:12:41->-> starting extracting prediction S1R14_11 from jacobian
+2017-03-16 22:12:41->-> finished extracting prediction S1R14_11 from jacobian, elapsed time = 16ms
+2017-03-16 22:12:41->-> starting extracting prediction S1R14_12 from jacobian
+2017-03-16 22:12:41->-> finished extracting prediction S1R14_12 from jacobian, elapsed time = 18ms
+2017-03-16 22:12:41->-> starting extracting prediction S1R21_11 from jacobian
+2017-03-16 22:12:41->-> finished extracting prediction S1R21_11 from jacobian, elapsed time = 17ms
+2017-03-16 22:12:41->-> starting extracting prediction S1R21_12 from jacobian
+2017-03-16 22:12:41->-> finished extracting prediction S1R21_12 from jacobian, elapsed time = 18ms
+2017-03-16 22:12:41->-> starting extracting prediction S2R08_09 from jacobian
+2017-03-16 22:12:41->-> finished extracting prediction S2R08_09 from jacobian, elapsed time = 17ms
+2017-03-16 22:12:41->-> starting extracting prediction S2R08_10 from jacobian
+2017-03-16 22:12:41->-> finished extracting prediction S2R08_10 from jacobian, elapsed time = 19ms
+2017-03-16 22:12:41->-> starting extracting prediction S2R08_11 from jacobian
+2017-03-16 22:12:41->-> finished extracting prediction S2R08_11 from jacobian, elapsed time = 16ms
+2017-03-16 22:12:41->-> starting extracting prediction S2R08_12 from jacobian
+2017-03-16 22:12:41->-> finished extracting prediction S2R08_12 from jacobian, elapsed time = 17ms
+2017-03-16 22:12:41->-> starting extracting prediction S3R05_11 from jacobian
+2017-03-16 22:12:41->-> finished extracting prediction S3R05_11 from jacobian, elapsed time = 18ms
+2017-03-16 22:12:41->-> starting extracting prediction S3R05_12 from jacobian
+2017-03-16 22:12:41->-> finished extracting prediction S3R05_12 from jacobian, elapsed time = 16ms
+2017-03-16 22:12:41-> finished set_predictions, elapsed time = 216ms
+2017-03-16 22:12:41-> starting prior_prediction_variance
+2017-03-16 22:12:41-> finished prior_prediction_variance, elapsed time = 360us
+2017-03-16 22:12:41-> starting posterior_prediction_variance
+2017-03-16 22:12:41->-> starting calc_posterior
+2017-03-16 22:12:41->->-> starting align
+2017-03-16 22:12:41->->-> finished align, elapsed time = 74us
+2017-03-16 22:12:41->->-> starting invert obscov
+2017-03-16 22:12:41->->->-> starting inverting diagonal matrix in place
+2017-03-16 22:12:41->->->->-> starting extracting diagonal
+2017-03-16 22:12:41->->->->->-> starting inverting diagonal
+2017-03-16 22:12:41->->->->->->-> starting buidling triplets
+2017-03-16 22:12:41->->->->->->->-> starting :get() error: the following row names were not found:
+2017-03-16 22:12:41->->->->->->->->-> starting setting matrix from triplets
+2017-03-16 22:12:41->->->->->->->->-> finished invert obscov, elapsed time = 43us
+2017-03-16 22:12:41->->->->->->->->-> starting form JtQJ
+2017-03-16 22:12:41->->->->->->->->-> finished form JtQJ, elapsed time = 68ms
+2017-03-16 22:12:41->->->->->->->->-> starting invert parcov
+2017-03-16 22:12:41->->->->->->->->-> finished invert parcov, elapsed time = 89us
+2017-03-16 22:12:41->->->->->->->->-> starting form posterior
+2017-03-16 22:12:41->->->->->->->->-> finished form posterior, elapsed time = 9ms
+2017-03-16 22:12:41->->->->->->->->-> starting invert posterior
+2017-03-16 22:12:41->->->->->->->->->-> starting inverting non-diagonal matrix in place
+2017-03-16 22:12:41->->->->->->->->->->-> starting instantiate solver
+2017-03-16 22:12:41->->->->->->->->->->->-> starting computing inverse
+2017-03-16 22:12:41->->->->->->->->->->->->-> starting getting identity instance for solution
+2017-03-16 22:12:41->->->->->->->->->->->->->-> starting solving
+2017-03-16 22:12:41->->->->->->->->->->->->->-> finished invert posterior, elapsed time = 273ms
+2017-03-16 22:12:41->->->->->->->->->->->->-> finished calc_posterior, elapsed time = 352ms
+2017-03-16 22:12:41->->->->->->->->->->->-> finished posterior_prediction_variance, elapsed time = 372ms

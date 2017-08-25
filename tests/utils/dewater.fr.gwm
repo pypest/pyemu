@@ -1,0 +1,8 @@
+#DEWATER Sample Problem, GWM file
+#May 19, 2011
+OUT     dewater.fr.gwmout
+DECVAR  dewater.decvar
+OBJFNC  dewater.objfnc
+VARCON  dewater.varcon
+HEDCON  dewater.hedcon
+SOLN    dewater.fr.soln

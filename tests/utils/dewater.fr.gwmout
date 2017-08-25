@@ -1,0 +1,185 @@
+
+                                  MODFLOW-LGR2     
+    U.S. GEOLOGICAL SURVEY MODULAR FINITE-DIFFERENCE GROUNDWATER FLOW MODEL
+                 Version GWM-2005 1.5.2 091115,FROM MF-LGR V2.0  
+
+
+
+
+ OPENING GWM FILE FOR GWM1 -- GROUNDWATER MANAGEMENT PROCESS
+ INPUT READ FROM UNIT  15
+
+ #DEWATER Sample Problem, GWM file                                                                                                                                                                       
+ #May 19, 2011                                                                                                                                                                                           
+
+ OPENING DECISION-VARIABLE FILE ON UNIT   16:
+ ..\data\DEWATER\dewater.decvar                                                                                                                                                                          
+ #DEWATER Sample Problem, DECVAR file
+ #August 14, 2006
+
+ NO. OF FLOW-RATE DECISION VARIABLES (NFVAR)       7
+ NO. OF EXTERNAL DECISION VARIABLES (NEVAR):       0
+ BINARY VARIABLES ARE NOT ACTIVE.
+
+ FLOW-RATE VARIABLES: WEL-TYPE
+                                                   FRACTION
+  NUMBER     NAME       TYPE      LAY   ROW   COL   OF FLOW
+ ----------------------------------------------------------
+    1      Q1         WITHDRAWAL     1    7   14    1.0000
+   AVAILABLE IN STRESS PERIODS: 1
+
+    2      Q2         WITHDRAWAL     1    7   16    1.0000
+   AVAILABLE IN STRESS PERIODS: 1
+
+    3      Q3         WITHDRAWAL     1    8   15    1.0000
+   AVAILABLE IN STRESS PERIODS: 1
+
+    4      Q4         WITHDRAWAL     1    9   14    1.0000
+   AVAILABLE IN STRESS PERIODS: 1
+
+    5      Q5         WITHDRAWAL     1    9   16    1.0000
+   AVAILABLE IN STRESS PERIODS: 1
+
+    6      Q6         WITHDRAWAL     1   11   17    1.0000
+   AVAILABLE IN STRESS PERIODS: 1
+
+    7      Q7         WITHDRAWAL     1   13   16    1.0000
+   AVAILABLE IN STRESS PERIODS: 1
+
+
+      606 BYTES OF MEMORY ALLOCATED TO STORE DATA FOR DECISION VARIABLES
+
+ CLOSING DECISION-VARIABLE FILE
+
+
+ OPENING OBJECTIVE-FUNCTION FILE ON UNIT   16:
+ ..\data\DEWATER\dewater.objfnc                                                                                                                                                                          
+ #DEWATER Sample Problem, OBJFNC file
+ #February 20, 2005
+
+ OBJECTIVE TYPE: MIN   FUNCTION TYPE: WSDV
+
+ NO. OF FLOW-RATE DECISION VARIABLES IN OBJECTIVE FUNCTION (NFVOBJ):    7
+ NO. OF EXTERNAL DECISION VARIABLES IN OBJECTIVE FUNCTION (NEVOBJ):     0
+ NO. OF BINARY DECISION VARIABLES IN OBJECTIVE FUNCTION (NBVOBJ):       0
+ NO. OF STATE VARIABLES IN OBJECTIVE FUNCTION (NSVOBJ):                 0
+
+ OBJECTIVE FUNCTION: (excluding flow duration terms)
+
+ MIN    +  1.00E+00 Q1         +  1.00E+00 Q2         +  1.00E+00 Q3        
+        +  1.00E+00 Q4         +  1.00E+00 Q5         +  1.00E+00 Q6        
+        +  1.00E+00 Q7        
+
+       28 BYTES OF MEMORY ALLOCATED TO STORE DATA FOR OBJECTIVE-FUNCTION
+
+ CLOSING OBJECTIVE-FUNCTION FILE
+
+
+ OPENING DECISION-VARIABLE CONSTRAINTS FILE ON UNIT   16:
+ ..\data\DEWATER\dewater.varcon                                                                                                                                                                          
+ #DEWATER Sample Problem, VARCON file
+ #February 20, 2005
+
+ FLOW RATE VARIABLES:
+                        MINIMUM        MAXIMUM        REFERENCE
+  NUMBER   NAME         FLOW RATE      FLOW RATE      FLOW RATE
+----------------------------------------------------------------
+    1      Q1           0.000E+00      2.000E+04      0.000E+00
+    2      Q2           0.000E+00      2.000E+04      0.000E+00
+    3      Q3           0.000E+00      2.000E+04      0.000E+00
+    4      Q4           0.000E+00      2.000E+04      0.000E+00
+    5      Q5           0.000E+00      2.000E+04      0.000E+00
+    6      Q6           0.000E+00      2.000E+04      0.000E+00
+    7      Q7           0.000E+00      2.000E+04      0.000E+00
+
+ CLOSING DECISION-VARIABLE CONSTRAINTS FILE
+
+
+ OPENING HEAD CONSTRAINTS FILE ON UNIT   16:
+ ..\data\DEWATER\dewater.hedcon                                                                                                                                                                          
+ #DEWATER Sample Problem, HEDCON file
+ #February 20, 2005
+
+ HEAD CONSTRAINTS:
+                     MNW WELLID or         RIGHT-HAND    STRESS
+ NUMBER  NAME        LAY  ROW  COL  TYPE      SIDE       PERIOD
+ ---------------------------------------------------------------
+     1   b-01          1    6   13   <    5.0000E+01         1
+     2   b-02          1    6   15   <    5.0000E+01         1
+     3   b-03          1    6   17   <    5.0000E+01         1
+     4   b-04          1    8   13   <    5.0000E+01         1
+     5   b-05          1    8   17   <    5.0000E+01         1
+     6   b-06          1   10   13   <    5.0000E+01         1
+     7   b-07          1   10   15   <    5.0000E+01         1
+     8   b-08          1   11   16   <    5.0000E+01         1
+     9   b-09          1   14   16   <    5.0000E+01         1
+    10   b-10          1   14   17   <    5.0000E+01         1
+
+      700 BYTES OF MEMORY ALLOCATED TO STORE DATA FOR HEAD CONSTRAINTS
+
+ CLOSING HEAD CONSTRAINTS FILE
+
+
+ OPENING SOLUTION FILE ON UNIT   16:
+ ..\data\DEWATER\dewater.fr.soln                                                                                                                                                                         
+ #DEWATER Sample Problem, SOLN file
+ #May 19, 2011
+
+ NO RESPONSE MATRIX OR SOLUTION WILL BE COMPUTED. GWM WILL
+ CALCULATE A FORWARD RUN, EVALUATE THE CONSTRAINTS AND
+ OBJECTIVE FUNCTION AND THEN STOP.
+
+ CRITMFC SET TO                               0.000D+00
+ GWM WILL ACCEPT FLOW PROCESS RESULTS THAT MEET GWF
+ CONVERGENCE CRITERIA
+
+ BASE PUMPING RATES:
+ VARIABLE VARIABLE       BASE
+  NUMBER    NAME      PUMPING RATE
+ ---------------------------------
+    1      Q1           0.100D+04
+    2      Q2           0.700D+02
+    3      Q3           0.000D+00
+    4      Q4           0.800D+03
+    5      Q5           0.000D+00
+    6      Q6           0.000D+00
+    7      Q7           0.900D+03
+ 
+     PROBLEM SIZE
+ 
+  NUMBER OF VARIABLES (INCLUDING SLACKS)          17
+  NUMBER OF CONSTRAINT EQUATIONS                  10
+ 
+
+     6439 BYTES OF MEMORY ALLOCATED FOR RESPONSE MATRIX ALGORITHM
+
+ CLOSING SOLUTION AND OUTPUT FILE
+
+---------------------------------------------------------------
+   Running SOLNTYP=FR option (Groundwater Flow Process only):
+  All External and Binary Variables are assigned a value of zero
+---------------------------------------------------------------
+    Running Base Flow Process Simulation
+      Status of Simulation-Based Constraints 
+      Constraint Type        Name       Status   Distance To RHS
+      ---------------        ----       ------   ---------------
+      Head Bound             b-01       Not Met       8.1044E-01
+      Head Bound             b-02       Satisfied     1.2249E+00
+      Head Bound             b-03       Not Met       6.8625E-01
+      Head Bound             b-04       Satisfied     1.3059E+00
+      Head Bound             b-05       Satisfied     4.3910E-01
+      Head Bound             b-06       Not Met       5.8013E-01
+      Head Bound             b-07       Satisfied     1.9826E+00
+      Head Bound             b-08       Satisfied     1.1871E+00
+      Head Bound             b-09       Satisfied     3.1173E-01
+      Head Bound             b-10       Not Met       6.4204E-01
+
+  Distance to RHS is the absolute value of the difference between the
+    the right hand side of the constraint and the left side of the
+    constraint evaluated using the current set of decision variable values.
+
+    Value of Flow Variable and State Variable 
+      parts of objective function =               2.770000E+06
+
+    
+    SOLNTYP is FR - GWM Run is Terminated
