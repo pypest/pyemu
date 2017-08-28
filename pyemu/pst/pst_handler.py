@@ -28,7 +28,7 @@ class Pst(object):
         self.filename = filename
         self.resfile = resfile
         self.__res = None
-
+        self.__pi_count = 0
         for key,value in pst_utils.pst_config.items():
             self.__setattr__(key,copy.copy(value))
         self.tied = None
@@ -596,6 +596,52 @@ class Pst(object):
         self.prior_information.loc[:,"names"] =\
             self.prior_information.equation.apply(lambda x: parse(x))
 
+
+    def add_pi_equation(self,par_names,pilbl=None,rhs=0.0,weight=1.0,
+                        obs_group="pi_obgnme",coef_dict={}):
+        """ a helper to construct prior information equations
+        :param par_names: list of parameter names
+        :param pilbl: the "obsnme" to use for the prior information equation
+        :param rhs: the right hand side value of the equation
+        :param weight: the weight for the equation
+        :param obs_group: the observation group to assign
+        :param coef_dict: a dictionary of {par_name: coefficients} to
+        use in constructing the equation. If a parameter is not listed in
+        the coef_dict, it gets a coefficient of 1.0
+        :return: None
+        """
+        if pilbl is None:
+            pilbl = "pilbl_{0}".format(self.__pi_count)
+            self.__pi_count += 1
+        missing,fixed = [],[]
+
+        for par_name in par_names:
+            if par_name not in self.parameter_data.parnme:
+                missing.append(par_name)
+            elif self.parameter_data.loc[par_name,"partrans"] in ["fixed","tied"]:
+                fixed.append(par_name)
+        if len(missing) > 0:
+            raise Exception("Pst.add_pi_equation(): the following pars "+\
+                            " were not found: {0}".format(','.join(missing)))
+        if len(fixed) > 0:
+            raise Exception("Pst.add_pi_equation(): the following pars "+\
+                            " were are fixed/tied: {0}".format(','.join(missing)))
+        eqs_str = ''
+        sign = ''
+        for i,par_name in enumerate(par_names):
+            coef = coef_dict.get(par_name,1.0)
+            if coef < 0.0:
+                sign = '-'
+                coef = np.abs(coef)
+            elif i > 0: sign = '+'
+            if self.parameter_data.loc[par_name,"partrans"] == "log":
+                par_name = "log({})".format(par_name)
+            eqs_str += " {0} {1} * {2} ".format(sign,coef,par_name)
+        eqs_str += " = {0}".format(rhs)
+        self.prior_information.loc[pilbl,"pilbl"] = pilbl
+        self.prior_information.loc[pilbl,"equation"] = eqs_str
+        self.prior_information.loc[pilbl,"weight"] = weight
+        self.prior_information.loc[pilbl,"obgnme"] = obs_group
 
 
     def rectify_pi(self):

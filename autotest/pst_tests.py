@@ -351,9 +351,26 @@ def run_array_pars():
     os.chdir(new_model_ws)
     pyemu.helpers.apply_array_pars()
     os.chdir('..')
+
+def add_pi_test():
+    import os
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    pst.prior_information = pst.null_prior
+    par_names = pst.parameter_data.parnme[:10]
+    pst.add_pi_equation(par_names,coef_dict={par_names[1]:-1.0})
+    pst.write(os.path.join("temp","test.pst"))
+
+    pst = pyemu.Pst(os.path.join("temp","test.pst"))
+    print(pst.prior_information)
+
+
+
+
 if __name__ == "__main__":
     # run_array_pars()
-    from_flopy_test()
+    #from_flopy_test()
+    add_pi_test()
     # regdata_test()
     # nnz_groups_test()
     # regul_rectify_test()
