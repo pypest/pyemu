@@ -39,10 +39,20 @@ def run(cmd_str):
 
 
 def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
-    """ a helper function to construct a full prior covariance matrix.
+    warnings.warn("'pilotpoint_prior_builder' has been renamed to "+\
+                  "'geostatistical_prior_builder'")
+    return geostatistical_prior_builder(pst=pst,struct_dict=struct_dict,
+                                        sigma_range=sigma_range)
+
+def geostatistical_prior_builder(pst, struct_dict,sigma_range=4):
+    """ a helper function to construct a full prior covariance matrix using
+    a mixture of geostastical structures an parameter bounds information.
     Parameters:
-        pst : pyemu.Pst instance
+        pst : pyemu.Pst instance (or the name of a pst file)
         struct_dict : a python dict of geostat structure file : list of pp tpl files
+            if the values in the dict are pd.DataFrames, then they must have an
+            'x','y', and 'parnme' column.  If the filename ends in '.csv',
+            then a pd.DataFrame is loaded.
         sigma_range : float representing the number of standard deviations implied by parameter bounds
     Returns:
         Cov : pyemu.Cov instance
@@ -54,7 +64,7 @@ def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
         format(type(pst))
     full_cov = pyemu.Cov.from_parameter_data(pst,sigma_range=sigma_range)
     par = pst.parameter_data
-    for gs,tpl_files in struct_dict.items():
+    for gs,items in struct_dict.items():
         if isinstance(gs,str):
             gss = pyemu.geostats.read_struct_file(gs)
             if isinstance(gss,list):
@@ -63,32 +73,38 @@ def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
                 gs = gss[0]
             else:
                 gs = gss
-        if not isinstance(tpl_files,list):
-            tpl_files = [tpl_files]
-        for tpl_file in tpl_files:
-            if isinstance(tpl_file,str):
-                assert os.path.exists(tpl_file),"pp template file {0} not found".\
-                    format(tpl_file)
-                pp_df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
+        if not isinstance(items,list):
+            items = [items]
+        for item in items:
+            if isinstance(item,str):
+                assert os.path.exists(item),"file {0} not found".\
+                    format(item)
+                if item.lower().endswith(".tpl"):
+                    df = pyemu.gw_utils.pp_tpl_to_dataframe(item)
+                elif item.lower.endswith(".csv"):
+                    df = pd.read_csv(item)
             else:
-                pp_df = tpl_file
-            missing = pp_df.loc[pp_df.parnme.apply(
+                df = item
+            for req in ['x','y','parnme']:
+                if req not in df.columns:
+                    raise Exception("{0} is not in the columns".format(req))
+            missing = df.loc[df.parnme.apply(
                     lambda x : x not in par.parnme),"parnme"]
             if len(missing) > 0:
-                warnings.warn("the following parameters in tpl {0} are not " + \
-                              "in the control file: {1}".\
-                              format(tpl_file,','.join(missing)))
-                pp_df = pp_df.loc[pp_df.parnme.apply(lambda x: x not in missing)]
-            if "zone" not in pp_df.columns:
-                pp_df.loc[:,"zone"] = 1
-            zones = pp_df.zone.unique()
+                warnings.warn("the following parameters are not " + \
+                              "in the control file: {0}".\
+                              format(','.join(missing)))
+                df = df.loc[df.parnme.apply(lambda x: x not in missing)]
+            if "zone" not in df.columns:
+                df.loc[:,"zone"] = 1
+            zones = df.zone.unique()
             for zone in zones:
-                pp_zone = pp_df.loc[pp_df.zone==zone,:]
-                pp_zone.sort_values(by="parnme",inplace=True)
-                cov = gs.covariance_matrix(pp_zone.x,pp_zone.y,pp_zone.parnme)
+                df_zone = df.loc[df.zone==zone,:].copy()
+                df_zone.sort_values(by="parnme",inplace=True)
+                cov = gs.covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)
                 # find the variance in the diagonal cov
-                tpl_var = np.diag(full_cov.get(list(pp_zone.parnme),
-                                               list(pp_zone.parnme)).x)
+                tpl_var = np.diag(full_cov.get(list(df_zone.parnme),
+                                               list(df_zone.parnme)).x)
                 if np.std(tpl_var) > 1.0e-6:
                     warnings.warn("pilot points pars have different ranges" +\
                                   " , using max range as variance for all pars")
@@ -97,7 +113,7 @@ def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
                 try:
                     ci = cov.inv
                 except:
-                    pp_zone.to_csv("prior_builder_crash.csv")
+                    df_zone.to_csv("prior_builder_crash.csv")
                     raise Exception("error inverting cov {0}".format(cov.row_names[:3]))
                 full_cov.replace(cov)
     return full_cov

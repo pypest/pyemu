@@ -608,13 +608,28 @@ def mflist_budget_test():
     pyemu.gw_utils.setup_mflist_budget_obs(list_filename,start_datetime=ml.start_datetime)
 
 
-def pp_prior_builder_test():
+def geostat_prior_builder_test():
     import os
+    import numpy as np
     import pyemu
-    pst = os.path.join("pst","pest.pst")
+    pst_file = os.path.join("pst","pest.pst")
+    pst = pyemu.Pst(pst_file)
+
     tpl_file = os.path.join("utils","pp_locs.tpl")
     str_file = os.path.join("utils","structure.dat")
-    pyemu.helpers.pilotpoint_prior_builder(pst,{str_file:tpl_file})
+    cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{str_file:tpl_file})
+    d1 = np.diag(cov.x)
+
+
+    df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
+    df.loc[:,"zone"] = np.arange(df.shape[0])
+    gs = pyemu.geostats.read_struct_file(str_file)
+    cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{gs:df},
+                                               sigma_range=4)
+    nnz = np.count_nonzero(cov.x)
+    assert nnz == pst.npar
+    d2 = np.diag(cov.x)
+    assert np.array_equiv(d1, d2)
 
 # def linearuniversal_krige_test():
 #     try:
@@ -716,13 +731,13 @@ def make_hydmod_insfile_test():
     assert os.path.exists(os.path.join('utils','freyberg.hyd.bin.dat.ins'))
 
 if __name__ == "__main__":
-    load_sgems_expvar_test()
+    #load_sgems_expvar_test()
     #read_hydmod_test()
     #make_hydmod_insfile_test()
     #gslib_2_dataframe_test()
     #sgems_to_geostruct_test()
     #linearuniversal_krige_test()
-    #pp_prior_builder_test()
+    geostat_prior_builder_test()
     #mflist_budget_test()
     #tpl_to_dataframe_test()
     #kl_test()
