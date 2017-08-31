@@ -1,10 +1,10 @@
 pyEMU
 =====
 
-python modules for model-independent FOSM (first-order, second-moment) (a.k.a linear-based, a.k.a. Bayes linear) uncertainty analyses and data-worth analyses, non-linear uncertainty analyses and interfacing with PEST and PEST++.
+python modules for model-independent FOSM (first-order, second-moment) (a.k.a linear-based, a.k.a. Bayes linear) uncertainty analyses and data-worth analyses, non-linear uncertainty analyses and interfacing with PEST and PEST++.  pyEMU now also has a pure python (pandas and numpy) implementation of ordinary kriging for geostatistical interpolation.   
 
 [![Build Status](https://travis-ci.org/jtwhite79/pyemu.svg?branch=master)](https://travis-ci.org/jtwhite79/pyemu)
-[![Coverage Status](https://coveralls.io/repos/github/jtwhite79/pyemu/badge.svg?branch=develop)](https://coveralls.io/github/jtwhite79/pyemu?branch=develop)
+[![Coverage Status](https://coveralls.io/repos/github/jtwhite79/pyemu/badge.svg?branch=develop)](https://coveralls.io/github/jtwhite79/pyemu?branch=master)
 
 What is pyEMU?
 ================
@@ -20,8 +20,6 @@ pyEMU also includes lots of functionality for dealing with PEST(++) datasets, su
 * easy-to-use observation (re)weigthing via residuals or user-defined functions
 * handling Jacobian and covariance matrices, including functionality to go between binary and ASCII matrices, reading and writing PEST uncertaity files.  Covariance matrices can be instaniated from relevant control file sections, such as parameter bounds or observation weights.  The base Matrix class overloads most common linear algebra operators so that operations are automatically aligned by row and column name.  Builtin SVD is also included in all Matrix instances.
 * geostatistics including geostatistical structure support, reading and writing PEST structure files and creating covariance matrices implied by nested geostatistical structures, and ordinary kriging (in the utils.geostats.OrdrinaryKrige object), which replicates the functionality of pest utility ``ppk2fac``. See test/utils.py for an example of how the OrdinaryKrige class functions.
-
-Version 0.2 of pyemu now includes
 * a prototype, model-independent iterative ensemble smoother, based on the Levenburg-Marquardt algorithm of Chen and Oliver (2013).  See tests/smoother.py for examples of how this prototype works.
 * composite scaled sensitivity calculations
 * calculation of correlation coefficient matrix from a given covariance matrix
@@ -30,6 +28,11 @@ Version 0.2 of pyemu now includes
 * full support for prior information equations in control files
 * preferred differencing prior information equations where the weights are based on the Pearson correlation coefficient
 * verification-based tests based on results from several PEST utilities
+
+Version 0.3 of pyemu now includes
+
+* pure python geostatistics, including ordinary kriging and support for reading and writing gslib files and sgems variogram files.
+* routines to setup a pest interface any MODFLOW model that can be loaded with flopy (https://github.com/modflowpy/flopy) using combinations of uniform, zone, pilot points, and grid-scale array multiplier parameters, as well as time-varying boundary condition multipliers. 
 
 A publication documenting pyEMU and an example application can be found here:
 
