@@ -19,7 +19,7 @@ def from_io_with_inschek_test():
 
     new_pst = Pst.from_io_files(tpl_files, in_files,
                                 ins_files, out_files,
-                                pst_filename=os.path.join("pst","test.pst"))
+                                pst_filename=os.path.join("temp","test.pst"))
     print(new_pst.observation_data)
     return
 
@@ -41,7 +41,7 @@ def tpl_ins_test():
 
     pst_utils.pst_from_io_files(tpl_files, in_files,
                                 ins_files, out_files,
-                                pst_filename=os.path.join("pst","test.pst"))
+                                pst_filename=os.path.join("temp","test.pst"))
     return
 
 
@@ -67,7 +67,7 @@ def res_test():
     # get()
     new_p = p.get()
     new_p.prior_information = p.prior_information
-    new_file = os.path.join(pst_dir, "new.pst")
+    new_file = os.path.join("temp", "new.pst")
     new_p.write(new_file)
 
     p_load = Pst(new_file,resfile=p.resfile)
@@ -80,7 +80,7 @@ def pst_manip_test():
     from pyemu import Pst
     pst_dir = os.path.join("pst")
     org_path = os.path.join(pst_dir,"pest.pst")
-    new_path = os.path.join(pst_dir,"pest1.pst")
+    new_path = os.path.join("temp","pest1.pst")
     pst = Pst(org_path)
     pst.control_data.pestmode = "regularisation"
     pst.write(new_path)
@@ -177,10 +177,10 @@ def tied_test():
     pst_dir = os.path.join("pst")
     pst = pyemu.Pst(os.path.join(pst_dir,"br_opt_no_zero_weighted.pst"))
     print(pst.tied_lines)
-    pst.write(os.path.join(pst_dir,"pest_tied_tester_1.pst"))
+    pst.write(os.path.join("temp","pest_tied_tester_1.pst"))
     mc = pyemu.MonteCarlo(pst=pst)
     mc.draw(1)
-    mc.write_psts(os.path.join(pst_dir,"tiedtest_"))
+    mc.write_psts(os.path.join("temp","tiedtest_"))
 
 def derivative_increment_tests():
     import os
@@ -258,8 +258,8 @@ def regdata_test():
     phimlim = 10.0
     pst.reg_data.phimlim = phimlim
     pst.control_data.pestmode = "regularization"
-    pst.write(os.path.join("pst","pest_regultest.pst"))
-    pst_new = pyemu.Pst(os.path.join("pst","pest_regultest.pst"))
+    pst.write(os.path.join("temp","pest_regultest.pst"))
+    pst_new = pyemu.Pst(os.path.join("temp","pest_regultest.pst"))
     assert pst_new.reg_data.phimlim == phimlim
 
 

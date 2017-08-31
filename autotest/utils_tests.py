@@ -7,7 +7,7 @@ def add_pi_obj_func_test():
     import pyemu
 
     pst = os.path.join("utils","dewater_pest.pst")
-    pst = pyemu.optimization.add_pi_obj_func(pst,out_pst_name=os.path.join("utils","dewater_pest.piobj.pst"))
+    pst = pyemu.optimization.add_pi_obj_func(pst,out_pst_name=os.path.join("temp","dewater_pest.piobj.pst"))
     print(pst.prior_information.loc["pi_obj_func","equation"])
     #pst._update_control_section()
     assert pst.control_data.nprior == 1
@@ -25,9 +25,9 @@ def fac2real_test():
     pp_file = os.path.join("utils", "points2.dat")
     factors_file = os.path.join("utils", "factors2.dat")
     pyemu.utils.gw_utils.fac2real(pp_file, factors_file,
-                                  out_file=os.path.join("utils", "test.ref"))
+                                  out_file=os.path.join("temp", "test.ref"))
     arr1 = np.loadtxt(os.path.join("utils","fac2real_points2.ref"))
-    arr2 = np.loadtxt(os.path.join("utils","test.ref"))
+    arr2 = np.loadtxt(os.path.join("temp","test.ref"))
 
     #print(np.nansum(np.abs(arr1-arr2)))
     #print(np.nanmax(np.abs(arr1-arr2)))
@@ -289,18 +289,18 @@ def setup_pp_test():
     ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws)
 
     pp_dir = os.path.join("utils")
-    ml.export(os.path.join(pp_dir,"test_unrot_grid.shp"))
+    ml.export(os.path.join("temp","test_unrot_grid.shp"))
 
     par_info_unrot = pyemu.gw_utils.setup_pilotpoints_grid(ml,prefix_dict={0:["hk1_","sy1_","rch_"]},
                                                      every_n_cell=2,pp_dir=pp_dir,tpl_dir=pp_dir,
-                                                     shapename=os.path.join(pp_dir,"test_unrot.shp"))
+                                                     shapename=os.path.join("temp","test_unrot.shp"))
 
     ml.sr.rotation = 15
     ml.export(os.path.join(pp_dir,"test_rot_grid.shp"))
     #pyemu.gw_utils.setup_pilotpoints_grid(ml)
 
     par_info_rot = pyemu.gw_utils.setup_pilotpoints_grid(ml,every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
-                                                     shapename=os.path.join(pp_dir, "test_rot.shp"))
+                                                     shapename=os.path.join("temp", "test_rot.shp"))
 
     print(par_info_unrot.x)
     print(par_info_rot.x)
@@ -329,14 +329,14 @@ def pp_to_shapefile_test():
         print("no pyshp")
         return
     pp_file = os.path.join("utils","points1.dat")
-    shp_file = pp_file+".shp"
+    shp_file = os.path.join("temp","points1.dat.shp")
     pyemu.gw_utils.write_pp_shapfile(pp_file)
 
 def write_tpl_test():
     import os
     import pyemu
     tpl_file = os.path.join("utils","test_write.tpl")
-    in_file = os.path.join("utils","tpl_test.dat")
+    in_file = os.path.join("temp","tpl_test.dat")
     par_vals = {"q{0}".format(i+1):12345678.90123456 for i in range(7)}
     pyemu.pst_utils.write_to_template(par_vals,tpl_file,in_file)
 
@@ -369,6 +369,8 @@ def master_and_slaves():
     import pyemu
     slave_dir = os.path.join("..","verification","10par_xsec","template_mac")
     master_dir = os.path.join("temp","master")
+    if not os.path.exists(master_dir):
+        os.mkdir(master_dir)
     assert os.path.exists(slave_dir)
     #pyemu.helpers.start_slaves(slave_dir,"pestpp","pest.pst",1,
     #                           slave_root="temp",master_dir=master_dir)
@@ -432,8 +434,8 @@ def kl_test():
     df.loc[:,"new_val"] = df.org_val
     df.to_csv(tpl_file.replace(".tpl",".csv"),index=False)
     #kl_appy(par_file, basis_file,par_to_file_dict)
-    par_to_file_dict = {"test":os.path.join("utils","test.ref"),\
-                        "hk_tru":os.path.join("utils","hk_tru.ref")}
+    par_to_file_dict = {"test":os.path.join("temp","test.ref"),\
+                        "hk_tru":os.path.join("temp","hk_tru.ref")}
     pyemu.utils.helpers.kl_apply(tpl_file.replace(".tpl",".csv"),basis_file,
                                  par_to_file_dict,(ml.nrow,ml.ncol))
     #import matplotlib.pyplot as plt
@@ -498,8 +500,8 @@ def ok_grid_test():
     str_file = os.path.join("utils","struct_test.dat")
     gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
     ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
-    kf = ok.calc_factors_grid(sr,verbose=False,var_filename=os.path.join("utils","test_var.ref"),minpts_interp=1)
-    ok.to_grid_factors_file(os.path.join("utils","test.fac"))
+    kf = ok.calc_factors_grid(sr,verbose=False,var_filename=os.path.join("temp","test_var.ref"),minpts_interp=1)
+    ok.to_grid_factors_file(os.path.join("temp","test.fac"))
 
 def ok_grid_zone_test():
 
@@ -536,9 +538,9 @@ def ok_grid_zone_test():
     zone_array = np.ones((nrow,ncol))
     zone_array[0,0] = 2
     kf = ok.calc_factors_grid(sr,verbose=False,
-                              var_filename=os.path.join("utils","test_var.ref"),
+                              var_filename=os.path.join("temp","test_var.ref"),
                               minpts_interp=1,zone_array=zone_array)
-    ok.to_grid_factors_file(os.path.join("utils","test.fac"))
+    ok.to_grid_factors_file(os.path.join("temp","test.fac"))
 
 
 def ppk2fac_verf_test():
@@ -554,7 +556,7 @@ def ppk2fac_verf_test():
     pp_file = os.path.join(ws,"pp_00_pp.dat")
     str_file = os.path.join(ws,"structure.complex.dat")
     ppk2fac_facfile = os.path.join(ws,"ppk2fac_fac.dat")
-    pyemu_facfile = os.path.join("utils","pyemu_facfile.dat")
+    pyemu_facfile = os.path.join("temp","pyemu_facfile.dat")
     sr = flopy.utils.SpatialReference.from_gridspec(gspc_file)
     ok = pyemu.utils.OrdinaryKrige(str_file,pp_file)
     ok.calc_factors_grid(sr,maxpts_interp=10)
@@ -575,22 +577,22 @@ def ppk2fac_verf_test():
     
 
 
-def opt_obs_worth():
-    import os
-    import pyemu
-    wdir = os.path.join("utils")
-    os.chdir(wdir)
-    pst = pyemu.Pst(os.path.join("supply2_pest.fosm.pst"))
-    zero_weight_names = [n for n,w in zip(pst.observation_data.obsnme,pst.observation_data.weight) if w == 0.0]
-    #print(zero_weight_names)
-    #for attr in ["base_jacobian","hotstart_resfile"]:
-    #    pst.pestpp_options[attr] = os.path.join(wdir,pst.pestpp_options[attr])
-    #pst.template_files = [os.path.join(wdir,f) for f in pst.template_files]
-    #pst.instruction_files = [os.path.join(wdir,f) for f in pst.instruction_files]
-    #print(pst.template_files)
-    df = pyemu.optimization.get_added_obs_importance(pst,obslist_dict={"zeros":zero_weight_names})
-    os.chdir("..")
-    print(df)
+# def opt_obs_worth():
+#     import os
+#     import pyemu
+#     wdir = os.path.join("utils")
+#     os.chdir(wdir)
+#     pst = pyemu.Pst(os.path.join("supply2_pest.fosm.pst"))
+#     zero_weight_names = [n for n,w in zip(pst.observation_data.obsnme,pst.observation_data.weight) if w == 0.0]
+#     #print(zero_weight_names)
+#     #for attr in ["base_jacobian","hotstart_resfile"]:
+#     #    pst.pestpp_options[attr] = os.path.join(wdir,pst.pestpp_options[attr])
+#     #pst.template_files = [os.path.join(wdir,f) for f in pst.template_files]
+#     #pst.instruction_files = [os.path.join(wdir,f) for f in pst.instruction_files]
+#     #print(pst.template_files)
+#     df = pyemu.optimization.get_added_obs_importance(pst,obslist_dict={"zeros":zero_weight_names})
+#     os.chdir("..")
+#     print(df)
 
 
 def mflist_budget_test():
@@ -712,23 +714,25 @@ def read_hydmod_test():
     except:
         return
     df, outfile = pyemu.gw_utils.modflow_read_hydmod_file(os.path.join('utils','freyberg.hyd.bin'),
-                                                          os.path.join('utils','freyberg.hyd.bin.dat'))
-    df = pd.read_csv(os.path.join('utils', 'freyberg.hyd.bin.dat'), delim_whitespace=True)
+                                                          os.path.join('temp','freyberg.hyd.bin.dat'))
+    df = pd.read_csv(os.path.join('temp', 'freyberg.hyd.bin.dat'), delim_whitespace=True)
     dftrue = pd.read_csv(os.path.join('utils', 'freyberg.hyd.bin.dat.true'), delim_whitespace=True)
 
     assert np.allclose(df.obsval.as_matrix(), dftrue.obsval.as_matrix())
 
 def make_hydmod_insfile_test():
     import os
+    import shutil
     import pyemu
     try:
         import flopy
     except:
         return
-    pyemu.gw_utils.modflow_hydmod_to_instruction_file(os.path.join('utils','freyberg.hyd.bin'))
+    shutil.copy2(os.path.join('utils','freyberg.hyd.bin'),os.path.join('temp','freyberg.hyd.bin'))
+    pyemu.gw_utils.modflow_hydmod_to_instruction_file(os.path.join('temp','freyberg.hyd.bin'))
 
     #assert open(os.path.join('utils','freyberg.hyd.bin.dat.ins'),'r').read() == open('freyberg.hyd.dat.ins', 'r').read()
-    assert os.path.exists(os.path.join('utils','freyberg.hyd.bin.dat.ins'))
+    assert os.path.exists(os.path.join('temp','freyberg.hyd.bin.dat.ins'))
 
 def plot_summary_test():
     import os
@@ -765,41 +769,39 @@ def plot_summary_test():
 
 if __name__ == "__main__":
     plot_summary_test()
-    #load_sgems_expvar_test()
-    #read_hydmod_test()
-    #make_hydmod_insfile_test()
-    #gslib_2_dataframe_test()
-    #sgems_to_geostruct_test()
+    load_sgems_expvar_test()
+    read_hydmod_test()
+    make_hydmod_insfile_test()
+    gslib_2_dataframe_test()
+    sgems_to_geostruct_test()
     #linearuniversal_krige_test()
-    #geostat_prior_builder_test()
-    #mflist_budget_test()
-    #tpl_to_dataframe_test()
-    #kl_test()
-    # zero_order_regul_test()
-    # first_order_pearson_regul_test()
-    # master_and_slaves()
-    # smp_to_ins_test()
-    # read_pestpp_runstorage_file_test()
-    # write_tpl_test()
-    # pp_to_shapefile_test()
-    # read_pval_test()
-    # read_hob_test()
-    # setup_pp_test()
-    # to_mps_test()
-    # pp_to_tpl_test()
-    # setup_ppcov_complex()
-    # ppcov_complex_test()
-    # setup_ppcov_simple()
-    # ppcov_simple_test()
-    # fac2real_test()
-    # vario_test()
-    # geostruct_test()
-    # aniso_test()
-    # struct_file_test()
-    # covariance_matrix_test()
-    # add_pi_obj_func_test()
-    # ok_test()
-    #ok_grid_test()
-    #ok_grid_zone_test()
-    #opt_obs_worth()
-    #ppk2fac_verf_test()
+    geostat_prior_builder_test()
+    mflist_budget_test()
+    tpl_to_dataframe_test()
+    kl_test()
+    zero_order_regul_test()
+    first_order_pearson_regul_test()
+    master_and_slaves()
+    smp_to_ins_test()
+    read_pestpp_runstorage_file_test()
+    write_tpl_test()
+    pp_to_shapefile_test()
+    read_pval_test()
+    read_hob_test()
+    setup_pp_test()
+    pp_to_tpl_test()
+    setup_ppcov_complex()
+    ppcov_complex_test()
+    setup_ppcov_simple()
+    ppcov_simple_test()
+    fac2real_test()
+    vario_test()
+    geostruct_test()
+    aniso_test()
+    struct_file_test()
+    covariance_matrix_test()
+    add_pi_obj_func_test()
+    ok_test()
+    ok_grid_test()
+    ok_grid_zone_test()
+    ppk2fac_verf_test()

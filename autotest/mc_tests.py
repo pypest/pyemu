@@ -17,7 +17,7 @@ def mc_test():
     #write testing
     mc = MonteCarlo(jco=jco,verbose=True)
     mc.draw(10,obs=True)
-    mc.write_psts(os.path.join("mc","real_"))
+    mc.write_psts(os.path.join("temp","real_"))
     mc.parensemble.to_parfiles(os.path.join("mc","real_"))
     mc = MonteCarlo(jco=jco,verbose=True)
     mc.draw(10,obs=True)
@@ -271,7 +271,7 @@ def pe_to_csv_test():
     mc.draw(1,enforce_bounds="reset")
     if not mc.parensemble.istransformed:
         mc.parensemble._transform()
-    fname = os.path.join("mc","test.csv")
+    fname = os.path.join("temp","test.csv")
     mc.parensemble.to_csv(fname)
     df = pd.read_csv(fname)
     pe = pyemu.ParameterEnsemble.from_dataframe(pst=pst,df=df)
