@@ -1619,6 +1619,25 @@ class Cov(Matrix):
         #print(new_Cov.shape,upper_off_diag.shape,cond_Cov.shape)
         return new_Cov - (upper_off_diag * cond_Cov * upper_off_diag.T)
 
+    def draw(self, mean=1.0):
+        """
+        Obtain a random draw from a covariance matrix either with mean==1 or with specified mean vector
+        Args:
+            mean: mean values. either a scalar applied to to the entire vector of length N or an N-length vector
+
+        Returns:
+            A vector of conditioned values, sampled using the covariance matrix and applied to the mean
+
+        """
+        if np.isscalar(mean):
+            mean = np.ones(self.ncol) * mean
+        else:
+            assert len(mean) == self.ncol, "mean vector must be {0} elements. {1} were provided".\
+                format(self.ncol, len(mean))
+
+        return(np.random.multivariate_normal(mean, self.as_2d))
+
+
 
     @property
     def names(self):
