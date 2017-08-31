@@ -1,10 +1,6 @@
 from __future__ import print_function, division
 import os, sys
 import stat
-import multiprocessing as mp
-import subprocess as sp
-import socket
-import shutil
 from datetime import datetime
 import numpy as np
 import pandas as pd
@@ -408,9 +404,9 @@ def generic_pst(par_names=["par1"],obs_names=["obs1"],addreg=False):
 
     new_pst.prior_information = new_pst.null_prior
 
-    new_pst.other_lines = ["* singular value decomposition\n","1\n",
-                           "{0:d} {1:15.6E}\n".format(new_pst.npar_adj,1.0E-6),
-                           "1 1 1\n"]
+    #new_pst.other_lines = ["* singular value decomposition\n","1\n",
+    #                       "{0:d} {1:15.6E}\n".format(new_pst.npar_adj,1.0E-6),
+    #                       "1 1 1\n"]
     if addreg:
         new_pst.zero_order_tikhonov()
 
@@ -418,72 +414,20 @@ def generic_pst(par_names=["par1"],obs_names=["obs1"],addreg=False):
 
 
 def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
-    """generate a Pst instance from the model io files.  If 'inschek'
-    is available (either in the current directory or registered
-    with the system variables) and the model output files are available
-    , then the observation values in the control file will be set to the
-    values of the model-simulated equivalents to observations.  This can be
-    useful for testing
-
-    Parameters:
-    ----------
-        tpl_files : list[str]
-            list of pest template files
-        in_files : list[str]
-            list of corresponding model input files
-        ins_files : list[str]
-            list of pest instruction files
-        out_files: list[str]
-            list of corresponding model output files
-        pst_filename : str (optional)
-            name of file to write the control file to
-    Returns:
-    -------
-        Pst instance
-    """
-    par_names = []
-    if not isinstance(tpl_files,list):
-        tpl_files = [tpl_files]
-    if not isinstance(in_files,list):
-        in_files = [in_files]
-    assert len(in_files) == len(tpl_files),"len(in_files) != len(tpl_files)"
-
-    for tpl_file in tpl_files:
-        assert os.path.exists(tpl_file),"template file not found: "+str(tpl_file)
-        new_names = [name for name in parse_tpl_file(tpl_file) if name not in par_names]
-        par_names.extend(new_names)
-    
-    if not isinstance(ins_files,list):
-        ins_files = [ins_files]
-    if not isinstance(out_files,list):
-        out_files = [out_files]
-    assert len(ins_files) == len(out_files),"len(out_files) != len(out_files)"
-
-
-    obs_names = []
-    for ins_file in ins_files:
-        assert os.path.exists(ins_file),"instruction file not found: "+str(ins_file)
-        obs_names.extend(parse_ins_file(ins_file))
-
-    new_pst = generic_pst(par_names,obs_names)
-
-    new_pst.template_files = tpl_files
-    new_pst.input_files = in_files
-    new_pst.instruction_files = ins_files
-    new_pst.output_files = out_files
-
-    #try to run inschek to find the observtion values
-    try_run_inschek(new_pst)
-
-    if pst_filename:
-        new_pst.write(pst_filename,update_regul=True)
-    return new_pst
+    import warnings
+    warnings.warn("pst_from_io_files has moved to pyemu.helpers and is also "+\
+                  "now avaiable as a Pst class method (Pst.from_io_files())")
+    from pyemu import helpers
+    return helpers.pst_from_io_files(tpl_files=tpl_files,in_files=in_files,
+                              ins_files=ins_files,out_files=out_files,
+                              pst_filename=pst_filename)
 
 
 def try_run_inschek(pst):
     for ins_file,out_file in zip(pst.instruction_files,pst.output_files):
         try:
-            os.system("inschek {0} {1}".format(ins_file,out_file))
+            #os.system("inschek {0} {1}".format(ins_file,out_file))
+            pyemu.helpers.run("inschek {0} {1}".format(ins_file,out_file))
             obf_file = ins_file.replace(".ins",".obf")
             df = pd.read_csv(obf_file,delim_whitespace=True,
                              skiprows=0,index_col=0,names=["obsval"])

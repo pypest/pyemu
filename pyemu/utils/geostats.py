@@ -2,16 +2,17 @@ from __future__ import print_function
 import os
 import copy
 from datetime import datetime
+import multiprocessing as mp
+import warnings
 import numpy as np
 import pandas as pd
 from pyemu import Cov
 from pyemu.utils.gw_utils import pp_file_to_dataframe
-from .reference import SpatialReference
+#from pyemu.utils.reference import SpatialReference
 
 #TODO:  plot variogram elipse
 
 EPSILON = 1.0e-7
-
 
 # class KrigeFactors(pd.DataFrame):
 #     def __init__(self,*args,**kwargs):
@@ -134,9 +135,38 @@ class GeoStruct(object):
             cov += v.covariance_points(x0,y0,xother,yother)
         return cov
 
+    @property
+    def sill(self):
+        sill = self.nugget
+        for v in self.variograms:
+            sill += v.contribution
+        return sill
 
-    def plot(self):
-        raise NotImplementedError()
+
+    def plot(self,**kwargs):
+        #
+        if "ax" in kwargs:
+            ax = kwargs.pop("ax")
+        else:
+            import matplotlib.pyplot as plt
+            ax = plt.subplot(111)
+        legend = kwargs.pop("legend",False)
+        individuals = kwargs.pop("individuals",False)
+        xmx = max([v.a*3.0 for v in self.variograms])
+        x = np.linspace(0,xmx,100)
+        y = np.zeros_like(x)
+        for v in self.variograms:
+            yv = v.inv_h(x)
+            if individuals:
+                ax.plot(x,yv,label=v.name,**kwargs)
+            y += yv
+        y += self.nugget
+        ax.plot(x,y,label=self.name,**kwargs)
+        if legend:
+            ax.legend()
+        ax.set_xlabel("distance")
+        ax.set_ylabel("$\gamma$")
+        return ax
 
     def __str__(self):
         s = ''
@@ -144,6 +174,190 @@ class GeoStruct(object):
         for v in self.variograms:
             s += str(v)
         return s
+
+
+# class LinearUniversalKrige(object):
+#     def __init__(self,geostruct,point_data):
+#         if isinstance(geostruct,str):
+#             geostruct = read_struct_file(geostruct)
+#         assert isinstance(geostruct,GeoStruct),"need a GeoStruct, not {0}".\
+#             format(type(geostruct))
+#         self.geostruct = geostruct
+#         if isinstance(point_data,str):
+#             point_data = pp_file_to_dataframe(point_data)
+#         assert isinstance(point_data,pd.DataFrame)
+#         assert 'name' in point_data.columns,"point_data missing 'name'"
+#         assert 'x' in point_data.columns, "point_data missing 'x'"
+#         assert 'y' in point_data.columns, "point_data missing 'y'"
+#         assert "value" in point_data.columns,"point_data missing 'value'"
+#         self.point_data = point_data
+#         self.point_data.index = self.point_data.name
+#         self.interp_data = None
+#         self.spatial_reference = None
+#         #X, Y = np.meshgrid(point_data.x,point_data.y)
+#         #self.point_data_dist = pd.DataFrame(data=np.sqrt((X - X.T) ** 2 + (Y - Y.T) ** 2),
+#         #                                    index=point_data.name,columns=point_data.name)
+#         self.point_cov_df = self.geostruct.covariance_matrix(point_data.x,
+#                                                             point_data.y,
+#                                                             point_data.name).to_dataframe()
+#         #for name in self.point_cov_df.index:
+#         #    self.point_cov_df.loc[name,name] -= self.geostruct.nugget
+#
+#
+#     def estimate_grid(self,spatial_reference,zone_array=None,minpts_interp=1,
+#                           maxpts_interp=20,search_radius=1.0e+10,verbose=False,
+#                           var_filename=None):
+#
+#         self.spatial_reference = spatial_reference
+#         self.interp_data = None
+#         #assert isinstance(spatial_reference,SpatialReference)
+#         try:
+#             x = self.spatial_reference.xcentergrid.copy()
+#             y = self.spatial_reference.ycentergrid.copy()
+#         except Exception as e:
+#             raise Exception("spatial_reference does not have proper attributes:{0}"\
+#                             .format(str(e)))
+#
+#         if var_filename is not None:
+#             arr = np.zeros((self.spatial_reference.nrow,
+#                             self.spatial_reference.ncol)) - 1.0e+30
+#
+#         df = self.estimate(x.ravel(),y.ravel(),
+#                            minpts_interp=minpts_interp,
+#                            maxpts_interp=maxpts_interp,
+#                            search_radius=search_radius,
+#                            verbose=verbose)
+#         if var_filename is not None:
+#             arr = df.err_var.values.reshape(x.shape)
+#             np.savetxt(var_filename,arr,fmt="%15.6E")
+#         arr = df.estimate.values.reshape(x.shape)
+#         return arr
+#
+#
+#     def estimate(self,x,y,minpts_interp=1,maxpts_interp=20,
+#                      search_radius=1.0e+10,verbose=False):
+#         assert len(x) == len(y)
+#
+#         # find the point data to use for each interp point
+#         sqradius = search_radius**2
+#         df = pd.DataFrame(data={'x':x,'y':y})
+#         inames,idist,ifacts,err_var = [],[],[],[]
+#         estimates = []
+#         sill = self.geostruct.sill
+#         pt_data = self.point_data
+#         ptx_array = pt_data.x.values
+#         pty_array = pt_data.y.values
+#         ptnames = pt_data.name.values
+#         #if verbose:
+#         print("starting interp point loop for {0} points".format(df.shape[0]))
+#         start_loop = datetime.now()
+#         for idx,(ix,iy) in enumerate(zip(df.x,df.y)):
+#             if np.isnan(ix) or np.isnan(iy): #if nans, skip
+#                 inames.append([])
+#                 idist.append([])
+#                 ifacts.append([])
+#                 err_var.append(np.NaN)
+#                 continue
+#             if verbose:
+#                 istart = datetime.now()
+#                 print("processing interp point:{0} of {1}".format(idx,df.shape[0]))
+#             # if verbose == 2:
+#             #     start = datetime.now()
+#             #     print("calc ipoint dist...",end='')
+#
+#             #  calc dist from this interp point to all point data...slow
+#             dist = pd.Series((ptx_array-ix)**2 + (pty_array-iy)**2,ptnames)
+#             dist.sort_values(inplace=True)
+#             dist = dist.loc[dist <= sqradius]
+#
+#             # if too few points were found, skip
+#             if len(dist) < minpts_interp:
+#                 inames.append([])
+#                 idist.append([])
+#                 ifacts.append([])
+#                 err_var.append(sill)
+#                 estimates.append(np.NaN)
+#                 continue
+#
+#             # only the maxpts_interp points
+#             dist = dist.iloc[:maxpts_interp].apply(np.sqrt)
+#             pt_names = dist.index.values
+#             # if one of the points is super close, just use it and skip
+#             if dist.min() <= EPSILON:
+#                 ifacts.append([1.0])
+#                 idist.append([EPSILON])
+#                 inames.append([dist.idxmin()])
+#                 err_var.append(self.geostruct.nugget)
+#                 estimates.append(self.point_data.loc[dist.idxmin(),"value"])
+#                 continue
+#             # if verbose == 2:
+#             #     td = (datetime.now()-start).total_seconds()
+#             #     print("...took {0}".format(td))
+#             #     start = datetime.now()
+#             #     print("extracting pt cov...",end='')
+#
+#             #vextract the point-to-point covariance matrix
+#             point_cov = self.point_cov_df.loc[pt_names,pt_names]
+#             # if verbose == 2:
+#             #     td = (datetime.now()-start).total_seconds()
+#             #     print("...took {0}".format(td))
+#             #     print("forming ipt-to-point cov...",end='')
+#
+#             # calc the interp point to points covariance
+#             ptx = self.point_data.loc[pt_names,"x"]
+#             pty = self.point_data.loc[pt_names,"y"]
+#             interp_cov = self.geostruct.covariance_points(ix,iy,ptx,pty)
+#
+#             if verbose == 2:
+#                 td = (datetime.now()-start).total_seconds()
+#                 print("...took {0}".format(td))
+#                 print("forming lin alg components...",end='')
+#
+#             # form the linear algebra parts and solve
+#             d = len(pt_names) + 3 # +1 for lagrange mult + 2 for x and y coords
+#             npts = len(pt_names)
+#             A = np.ones((d,d))
+#             A[:npts,:npts] = point_cov.values
+#             A[npts,npts] = 0.0 #unbiaised constraint
+#             A[-2,:npts] = ptx #x coords for linear trend
+#             A[:npts,-2] = ptx
+#             A[-1,:npts] = pty #y coords for linear trend
+#             A[:npts,-1] = pty
+#             A[npts:,npts:] = 0
+#             print(A)
+#             rhs = np.ones((d,1))
+#             rhs[:npts,0] = interp_cov
+#             rhs[-2,0] = ix
+#             rhs[-1,0] = iy
+#             # if verbose == 2:
+#             #     td = (datetime.now()-start).total_seconds()
+#             #     print("...took {0}".format(td))
+#             #     print("solving...",end='')
+#             # # solve
+#             facs = np.linalg.solve(A,rhs)
+#             assert len(facs) - 3 == len(dist)
+#             estimate = facs[-3] + (ix * facs[-2]) + (iy * facs[-1])
+#             estimates.append(estimate[0])
+#             err_var.append(float(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)])))
+#             inames.append(pt_names)
+#
+#             idist.append(dist.values)
+#             ifacts.append(facs[:-1,0])
+#             # if verbose == 2:
+#             #     td = (datetime.now()-start).total_seconds()
+#             #     print("...took {0}".format(td))
+#             if verbose:
+#                 td = (datetime.now()-istart).total_seconds()
+#                 print("point took {0}".format(td))
+#         df["idist"] = idist
+#         df["inames"] = inames
+#         df["ifacts"] = ifacts
+#         df["err_var"] = err_var
+#         df["estimate"] = estimates
+#         self.interp_data = df
+#         td = (datetime.now() - start_loop).total_seconds()
+#         print("took {0}".format(td))
+#         return df
 
 
 class OrdinaryKrige(object):
@@ -172,56 +386,106 @@ class OrdinaryKrige(object):
                                                             point_data.name).to_dataframe()
         #for name in self.point_cov_df.index:
         #    self.point_cov_df.loc[name,name] -= self.geostruct.nugget
-    def calc_factors_grid(self,spatial_reference,zone_array=None,minpts_interp=1,
-                          maxpts_interp=20,search_radius=1.0e+10,verbose=False):
 
+    def prep_for_ppk2fac(self,struct_file="structure.dat",pp_file="points.dat",):
+        pass
+
+    def calc_factors_grid(self,spatial_reference,zone_array=None,minpts_interp=1,
+                          maxpts_interp=20,search_radius=1.0e+10,verbose=False,
+                          var_filename=None):
+
+        self.spatial_reference = spatial_reference
+        self.interp_data = None
         #assert isinstance(spatial_reference,SpatialReference)
         try:
-            x = spatial_reference.xcentergrid
-            y = spatial_reference.ycentergrid
+            x = self.spatial_reference.xcentergrid.copy()
+            y = self.spatial_reference.ycentergrid.copy()
         except Exception as e:
             raise Exception("spatial_reference does not have proper attributes:{0}"\
                             .format(str(e)))
 
+        if var_filename is not None:
+                arr = np.zeros((self.spatial_reference.nrow,
+                                self.spatial_reference.ncol)) - 1.0e+30
+
+        # the simple case of no zone array: ignore point_data zones
+        if zone_array is None:
+            df = self.calc_factors(x.ravel(),y.ravel(),
+                               minpts_interp=minpts_interp,
+                               maxpts_interp=maxpts_interp,
+                               search_radius=search_radius,
+                               verbose=verbose)
+            if var_filename is not None:
+                arr = df.err_var.values.reshape(x.shape)
+                np.savetxt(var_filename,arr,fmt="%15.6E")
+
         if zone_array is not None:
-            print("only supporting a single zone via zone array - "+\
-                  "locations cooresponding to values in zone array > 0 are used")
             assert zone_array.shape == x.shape
-            x[zone_array<=0] = np.NaN
-            y[zone_array<=0] = np.NaN
-            #x = x[~np.isnan(x)]
-            #y = y[~np.isnan(y)]
-        self.spatial_reference = spatial_reference
-        return self.calc_factors(x.ravel(),y.ravel(),
-                                 minpts_interp=minpts_interp,
-                                 maxpts_interp=maxpts_interp,
-                                 search_radius=search_radius,
-                                 verbose=verbose)
+            if "zone" not in self.point_data.columns:
+                warnings.warn("'zone' columns not in point_data, assigning generic zone")
+                self.point_data.loc[:,"zone"] = 1
+            pt_data_zones = self.point_data.zone.unique()
+            dfs = []
+            for pt_data_zone in pt_data_zones:
+                if pt_data_zone not in zone_array:
+                    warnings.warn("pt zone {0} not in zone array {1}, skipping".\
+                                  format(pt_data_zone,np.unique(zone_array)))
+                    continue
+                xzone,yzone = x.copy(),y.copy()
+                xzone[zone_array!=pt_data_zone] = np.NaN
+                yzone[zone_array!=pt_data_zone] = np.NaN
+                df = self.calc_factors(xzone.ravel(),yzone.ravel(),
+                                       minpts_interp=minpts_interp,
+                                       maxpts_interp=maxpts_interp,
+                                       search_radius=search_radius,
+                                       verbose=verbose,pt_zone=pt_data_zone)
+                dfs.append(df)
+                if var_filename is not None:
+                    a = df.err_var.values.reshape(x.shape)
+                    na_idx = np.isfinite(a)
+                    arr[na_idx] = a[na_idx]
+            if self.interp_data is None or self.interp_data.dropna().shape[0] == 0:
+                raise Exception("no interpolation took place...something is wrong")
+            df = pd.concat(dfs)
+        if var_filename is not None:
+            np.savetxt(var_filename,arr,fmt="%15.6E")
+        return df
 
     def calc_factors(self,x,y,minpts_interp=1,maxpts_interp=20,
-                     search_radius=1.0e+10,verbose=False):
+                     search_radius=1.0e+10,verbose=False,
+                     pt_zone=None):
         assert len(x) == len(y)
 
         # find the point data to use for each interp point
         sqradius = search_radius**2
         df = pd.DataFrame(data={'x':x,'y':y})
-        inames,idist,ifacts = [],[],[]
-        ptx_array = self.point_data.x.values
-        pty_array = self.point_data.y.values
-        ptnames = self.point_data.name.values
-        if verbose: print("starting interp point loop")
+        inames,idist,ifacts,err_var = [],[],[],[]
+        sill = self.geostruct.sill
+        if pt_zone is None:
+            ptx_array = self.point_data.x.values
+            pty_array = self.point_data.y.values
+            ptnames = self.point_data.name.values
+        else:
+            pt_data = self.point_data
+            ptx_array = pt_data.loc[pt_data.zone==pt_zone,"x"].values
+            pty_array = pt_data.loc[pt_data.zone==pt_zone,"y"].values
+            ptnames = pt_data.loc[pt_data.zone==pt_zone,"name"].values
+        #if verbose:
+        print("starting interp point loop for {0} points".format(df.shape[0]))
+        start_loop = datetime.now()
         for idx,(ix,iy) in enumerate(zip(df.x,df.y)):
             if np.isnan(ix) or np.isnan(iy): #if nans, skip
                 inames.append([])
                 idist.append([])
                 ifacts.append([])
+                err_var.append(np.NaN)
                 continue
             if verbose:
                 istart = datetime.now()
-                print("processing interp point:{0}:{1}".format(ix,iy))
-            if verbose == 2:
-                start = datetime.now()
-                print("calc ipoint dist...",end='')
+                print("processing interp point:{0} of {1}".format(idx,df.shape[0]))
+            # if verbose == 2:
+            #     start = datetime.now()
+            #     print("calc ipoint dist...",end='')
 
             #  calc dist from this interp point to all point data...slow
             dist = pd.Series((ptx_array-ix)**2 + (pty_array-iy)**2,ptnames)
@@ -233,6 +497,7 @@ class OrdinaryKrige(object):
                 inames.append([])
                 idist.append([])
                 ifacts.append([])
+                err_var.append(sill)
                 continue
 
             # only the maxpts_interp points
@@ -243,19 +508,20 @@ class OrdinaryKrige(object):
                 ifacts.append([1.0])
                 idist.append([EPSILON])
                 inames.append([dist.idxmin()])
+                err_var.append(self.geostruct.nugget)
                 continue
-            if verbose == 2:
-                td = (datetime.now()-start).total_seconds()
-                print("...took {0}".format(td))
-                start = datetime.now()
-                print("extracting pt cov...",end='')
+            # if verbose == 2:
+            #     td = (datetime.now()-start).total_seconds()
+            #     print("...took {0}".format(td))
+            #     start = datetime.now()
+            #     print("extracting pt cov...",end='')
 
             #vextract the point-to-point covariance matrix
             point_cov = self.point_cov_df.loc[pt_names,pt_names]
-            if verbose == 2:
-                td = (datetime.now()-start).total_seconds()
-                print("...took {0}".format(td))
-                print("forming ipt-to-point cov...",end='')
+            # if verbose == 2:
+            #     td = (datetime.now()-start).total_seconds()
+            #     print("...took {0}".format(td))
+            #     print("forming ipt-to-point cov...",end='')
 
             # calc the interp point to points covariance
             interp_cov = self.geostruct.covariance_points(ix,iy,self.point_data.loc[pt_names,"x"],
@@ -273,26 +539,38 @@ class OrdinaryKrige(object):
             A[-1,-1] = 0.0 #unbiaised constraint
             rhs = np.ones((d,1))
             rhs[:-1,0] = interp_cov
-            if verbose == 2:
-                td = (datetime.now()-start).total_seconds()
-                print("...took {0}".format(td))
-                print("solving...",end='')
-            # solve
+            # if verbose == 2:
+            #     td = (datetime.now()-start).total_seconds()
+            #     print("...took {0}".format(td))
+            #     print("solving...",end='')
+            # # solve
             facs = np.linalg.solve(A,rhs)
             assert len(facs) - 1 == len(dist)
+
+            err_var.append(float(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)])))
             inames.append(pt_names)
+
             idist.append(dist.values)
             ifacts.append(facs[:-1,0])
-            if verbose == 2:
-                td = (datetime.now()-start).total_seconds()
-                print("...took {0}".format(td))
+            # if verbose == 2:
+            #     td = (datetime.now()-start).total_seconds()
+            #     print("...took {0}".format(td))
             if verbose:
                 td = (datetime.now()-istart).total_seconds()
                 print("point took {0}".format(td))
         df["idist"] = idist
         df["inames"] = inames
         df["ifacts"] = ifacts
-        self.interp_data = df
+        df["err_var"] = err_var
+        if pt_zone is None:
+            self.interp_data = df
+        else:
+            if self.interp_data is None:
+                self.interp_data = df
+            else:
+                self.interp_data = self.interp_data.append(df)
+        td = (datetime.now() - start_loop).total_seconds()
+        print("took {0}".format(td))
         return df
 
     def to_grid_factors_file(self, filename,points_file="points.junk",
@@ -312,12 +590,12 @@ class OrdinaryKrige(object):
                 t = 1
             pt_names = list(self.point_data.name)
             for idx,names,facts in zip(self.interp_data.index,self.interp_data.inames,self.interp_data.ifacts):
+                if len(facts) == 0:
+                    continue
                 n_idxs = [pt_names.index(name) for name in names]
                 f.write("{0} {1} {2} {3:8.5e} ".format(idx+1, t, len(names), 0.0))
                 [f.write("{0} {1:12.8g} ".format(i+1, w)) for i, w in zip(n_idxs, facts)]
                 f.write("\n")
-
-
 
 
 class Vario2d(object):
@@ -375,6 +653,19 @@ class Vario2d(object):
                 -1.0*np.sin(self.bearing_rads),
                 np.cos(self.bearing_rads)]
 
+    def inv_h(self,h):
+        return self.contribution - self._h_function(h)
+
+    def plot(self,ax=None,**kwargs):
+        import matplotlib.pyplot as plt
+        ax = kwargs.pop("ax",plt.subplot(111))
+        x = np.linspace(0,self.a*3,100)
+        y = self.inv_h(x)
+        ax.set_xlabel("distance")
+        ax.set_ylabel("$\gamma$")
+        ax.plot(x,y,**kwargs)
+        return ax
+
     def covariance_matrix(self,x,y,names=None,cov=None):
         """build a pyemu.Cov instance from Vario2d
         Parameters
@@ -431,10 +722,11 @@ class Vario2d(object):
     def _apply_rotation(self,dx,dy):
         if self.anisotropy == 1.0:
             return dx,dy
-        dxx = (dx * self.rotation_coefs[0]) +\
-             (dy * self.rotation_coefs[1])
-        dyy = ((dx * self.rotation_coefs[2]) +\
-             (dy * self.rotation_coefs[3])) *\
+        rcoefs = self.rotation_coefs
+        dxx = (dx * rcoefs[0]) +\
+             (dy * rcoefs[1])
+        dyy = ((dx * rcoefs[2]) +\
+             (dy * rcoefs[3])) *\
              self.anisotropy
         return dxx,dyy
 
@@ -451,8 +743,6 @@ class Vario2d(object):
         names = ["n1","n2"]
         return self.covariance_matrix(x,y,names=names).x[0,1]
 
-    def plot(self):
-        raise NotImplementedError()
 
     def __str__(self):
         s = "name:{0},contribution:{1},a:{2},anisotropy:{3},bearing:{4}\n".\
@@ -559,6 +849,9 @@ class SphVario(Vario2d):
         #     return self.contribution * (1.0 - (hh * (1.5 - (0.5 * hh * hh))))
         # else:
         #     return 0.0
+
+
+
 
 
 def read_struct_file(struct_file,return_type=GeoStruct):
@@ -669,3 +962,130 @@ def _read_structure_attributes(f):
                             format(line[0]))
     assert numvariograms == len(variogram_info)
     return nugget,transform,variogram_info
+
+
+def read_sgems_variogram_xml(xml_file,return_type=GeoStruct):
+    try:
+        import xml.etree.ElementTree as ET
+
+    except Exception as e:
+        print("error import elementtree, skipping...")
+    VARTYPE = {1: SphVario, 2: ExpVario, 3: GauVario, 4: None}
+    assert os.path.exists(xml_file)
+    tree = ET.parse(xml_file)
+    gs_model = tree.getroot()
+    structures = []
+    variograms = []
+    nugget = 0.0
+    num_struct = 0
+    for key,val in gs_model.items():
+        #print(key,val)
+        if str(key).lower() == "nugget":
+            if len(val) > 0:
+                nugget = float(val)
+        if str(key).lower() == "structures_count":
+            num_struct = int(val)
+    if num_struct == 0:
+        raise Exception("no structures found")
+    if num_struct != 1:
+        raise NotImplementedError()
+    for structure in gs_model:
+        vtype, contribution = None, None
+        mx_range,mn_range = None, None
+        x_angle,y_angle = None,None
+        #struct_name = structure.tag
+        for key,val in structure.items():
+            key = str(key).lower()
+            if key == "type":
+                vtype = str(val).lower()
+                if vtype.startswith("sph"):
+                    vtype = SphVario
+                elif vtype.startswith("exp"):
+                    vtype = ExpVario
+                elif vtype.startswith("gau"):
+                    vtype = GauVario
+                else:
+                    raise Exception("unrecognized variogram type:{0}".format(vtype))
+
+            elif key == "contribution":
+                contribution = float(val)
+            for item in structure:
+                if item.tag.lower() == "ranges":
+                    mx_range = float(item.attrib["max"])
+                    mn_range = float(item.attrib["min"])
+                elif item.tag.lower() == "angles":
+                    x_angle = float(item.attrib["x"])
+                    y_angle = float(item.attrib["y"])
+
+        assert contribution is not None
+        assert mn_range is not None
+        assert mx_range is not None
+        assert x_angle is not None
+        assert y_angle is not None
+        assert vtype is not None
+        v = vtype(contribution=contribution,a=mx_range,
+                  anisotropy=mx_range/mn_range,bearing=(180.0/np.pi)*np.arctan2(x_angle,y_angle),
+                  name=structure.tag)
+        return GeoStruct(nugget=nugget,variograms=[v])
+
+
+def gslib_2_dataframe(filename,attr_name=None,x_idx=0,y_idx=1):
+
+    with open(filename,'r') as f:
+        title = f.readline().strip()
+        num_attrs = int(f.readline().strip())
+        attrs = [f.readline().strip() for _ in range(num_attrs)]
+        if attr_name is not None:
+            assert attr_name in attrs,"{0} not in attrs:{1}".format(attr_name,','.join(attrs))
+        else:
+            assert len(attrs) == 3,"propname is None but more than 3 attrs in gslib file"
+            attr_name = attrs[2]
+        assert len(attrs) > x_idx
+        assert len(attrs) > y_idx
+        a_idx = attrs.index(attr_name)
+        x,y,a = [],[],[]
+        while True:
+            line = f.readline()
+            if line == '':
+                break
+            raw = line.strip().split()
+            try:
+                x.append(float(raw[x_idx]))
+                y.append(float(raw[y_idx]))
+                a.append(float(raw[a_idx]))
+            except Exception as e:
+                raise Exception("error paring line {0}: {1}".format(line,str(e)))
+    df = pd.DataFrame({"x":x,"y":y,"value":a})
+    df.loc[:,"name"] = ["pt{0}".format(i) for i in range(df.shape[0])]
+    df.index = df.name
+    return df
+
+
+#class ExperimentalVariogram(object):
+#    def __init__(self,na)
+
+def load_sgems_exp_var(filename):
+    assert os.path.exists(filename)
+    import xml.etree.ElementTree as etree
+    tree = etree.parse(filename)
+    root = tree.getroot()
+    dfs = {}
+    for variogram in root:
+        #print(variogram.tag)
+        for attrib in variogram:
+
+            #print(attrib.tag,attrib.text)
+            if attrib.tag == "title":
+                title = attrib.text.split(',')[0].split('=')[-1]
+            elif attrib.tag == "x":
+                x = [float(i) for i in attrib.text.split()]
+            elif attrib.tag == "y":
+                y = [float(i) for i in attrib.text.split()]
+            elif attrib.tag == "pairs":
+                pairs = [int(i) for i in attrib.text.split()]
+
+            for item in attrib:
+                print(item,item.tag)
+        df = pd.DataFrame({"x":x,"y":y,"pairs":pairs})
+        dfs[title] = df
+    return dfs

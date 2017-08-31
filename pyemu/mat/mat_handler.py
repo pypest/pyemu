@@ -162,6 +162,10 @@ class Matrix(object):
         self.isdiagonal = bool(isdiagonal)
         self.autoalign = bool(autoalign)
 
+    def reset_x(self,x):
+        assert x.shape == self.shape
+        self.__x = x.copy()
+
     def __str__(self):
         s = "shape:{0}:{1}".format(*self.shape)+" row names: " + str(self.row_names) + \
             '\n' + "col names: " + str(self.col_names) + '\n' + str(self.__x)
@@ -454,7 +458,8 @@ class Matrix(object):
         if np.isscalar(other):
             return type(self)(x=self.__x.copy() * other,
                               row_names=self.row_names,
-                              col_names=self.col_names)
+                              col_names=self.col_names,
+                              isdiagonal=self.isdiagonal)
         elif isinstance(other, np.ndarray):
             assert self.shape[1] == other.shape[0], \
                 "Matrix.__mul__(): matrices are not aligned: " +\
@@ -1444,6 +1449,9 @@ class Matrix(object):
                            col_names=new_col_names,isdiagonal=isdiagonal)
 
 
+
+
+
 class Jco(Matrix):
     """a thin wrapper class to get more intuitive attribute names
     """
@@ -1470,6 +1478,36 @@ class Jco(Matrix):
     def nobs(self):
         return self.shape[0]
 
+    def replace_cols(self, other, parnames=None):
+        """
+        Replaces columns in one Matrix with columns from another. Intended for Jacobian matrices replacing parameters.
+        Args:
+            other: Matrix to pull columns from
+            parnames: parameter (column) names to pull from
+
+        Returns:
+            nothing: operates on self
+        """
+        assert len(set(self.col_names).intersection(set(other.col_names))) > 0
+        if not parnames:
+            parnames = other.col_names
+        assert len(set(self.col_names).intersection(set(other.col_names))) == len(parnames)
+
+        assert len(set(self.row_names).intersection(set(other.row_names))) == len(self.row_names)
+        assert type(self) == type(other)
+
+        # re-sort other by rows to be sure they line up with self
+        try:
+            other = other.get(row_names=self.row_names)
+        except:
+            raise Exception('could not align rows of the two matrices')
+
+        # replace the columns in self with those from other
+        selfobs = np.array(self.col_names)
+        otherobs = np.array(other.col_names)
+        selfidx = [np.where(np.array(selfobs) == i)[0][0] for i in parnames]
+        otheridx = [np.where(np.array(otherobs) == i)[0][0] for i in parnames]
+        self.x[:,selfidx] = other.x[:,otheridx]
 
 
 class Cov(Matrix):
@@ -1582,6 +1620,35 @@ class Cov(Matrix):
         return new_Cov - (upper_off_diag * cond_Cov * upper_off_diag.T)
 
 
+    @property
+    def names(self):
+        return self.row_names
+
+
+    def replace(self,other):
+        """replace elements in the covariance matrix with elements from other.
+        if other is not diagonal, then self becomes non diagonal
+        """
+        assert isinstance(other,Cov),"Cov.replace() other must be Cov, not {0}".\
+            format(type(other))
+        # make sure the names of other are in self
+        missing = [n for n in other.names if n not in self.names]
+        if len(missing) > 0:
+            raise Exception("Cov.replace(): the following other names are not" +\
+                            " in self names: {0}".format(','.join(missing)))
+        self_idxs = self.indices(other.names,0)
+        other_idxs = other.indices(other.names,0)
+
+        if self.isdiagonal and other.isdiagonal:
+            self.x[self_idxs] = other.x[other_idxs]
+        else:
+            self_x = self.as_2d
+            other_x = other.as_2d
+            for i,ii in zip(self_idxs,other_idxs):
+                self_x[i,self_idxs] = other_x[ii,other_idxs]
+            self.reset_x(self_x)
+            self.isdiagonal = False
+
     def to_uncfile(self, unc_file, covmat_file="Cov.mat", var_mult=1.0):
         """write a pest-compatible uncertainty file
         Parameters:
@@ -1665,11 +1732,13 @@ class Cov(Matrix):
         return cls(x=x,names=onames,isdiagonal=True)
 
     @classmethod
-    def from_parbounds(cls, pst_file):
+    def from_parbounds(cls, pst_file, sigma_range = 4.0):
         """load Covariances from a pest control file parameter data section
         Parameters:
         ----------
             pst_file : [str] pest control file name
+            sigma_range: float defining range of upper bound - lower bound in terms of sigma (stddev).
+                          e.g. if sigma_range = 4, the bounds represent 4 * sigma
         Returns:
         -------
             None
@@ -1677,15 +1746,17 @@ class Cov(Matrix):
         if not pst_file.endswith(".pst"):
             pst_file += ".pst"
         new_pst = Pst(pst_file)
-        return Cov.from_parameter_data(new_pst)
+        return Cov.from_parameter_data(new_pst, sigma_range)
 
     @classmethod
-    def from_parameter_data(cls, pst):
+    def from_parameter_data(cls, pst, sigma_range = 4.0):
         """load Covariances from a pandas dataframe of the
                 pst parameter data section
         Parameters:
         ----------
             pst : [pst object]
+            sigma_range: float defining range of upper bound - lower bound in terms of sigma (stddev).
+                          e.g. if sigma_range = 4, the bounds represent 4 * sigma
         Returns:
         -------
             None
@@ -1702,9 +1773,9 @@ class Cov(Matrix):
             ub = row.parubnd * row.scale + row.offset
 
             if t == "log":
-                var = ((np.log10(np.abs(ub)) - np.log10(np.abs(lb))) / 4.0) ** 2
+                var = ((np.log10(np.abs(ub)) - np.log10(np.abs(lb))) / sigma_range) ** 2
             else:
-                var = ((ub - lb) / 4.0) ** 2
+                var = ((ub - lb) / sigma_range) ** 2
             if np.isnan(var) or not np.isfinite(var):
                 raise Exception("Cov.from_parameter_data() error: " +\
                                 "variance for parameter {0} is nan".\
@@ -1842,7 +1913,7 @@ class Cov(Matrix):
     def identity_like(cls,other):
         assert other.shape[0] == other.shape[1]
         x = np.identity(other.shape[0])
-        return cls(x=x,names=other.row_names,isdiagonal=True)
+        return cls(x=x,names=other.row_names,isdiagonal=False)
 
     def to_pearson(self):
 

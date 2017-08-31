@@ -6,7 +6,7 @@ import warnings
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
-from pyemu.pst.pst_controldata import ControlData
+from pyemu.pst.pst_controldata import ControlData, SvdData, RegData
 from pyemu.pst import pst_utils
 
 class Pst(object):
@@ -28,12 +28,13 @@ class Pst(object):
         self.filename = filename
         self.resfile = resfile
         self.__res = None
-
+        self.__pi_count = 0
         for key,value in pst_utils.pst_config.items():
             self.__setattr__(key,copy.copy(value))
         self.tied = None
         self.control_data = ControlData()
-
+        self.svd_data = SvdData()
+        self.reg_data = RegData()
         if load:
             assert os.path.exists(filename),\
                 "pst file not found:{0}".format(filename)
@@ -209,11 +210,30 @@ class Pst(object):
 
 
     @property
+    def forecast_names(self):
+        if "forecasts" in self.pestpp_options.keys():
+            return self.pestpp_options["forecasts"].lower().split(',')
+        elif "predictions" in self.pestpp_options.keys():
+            return self.pestpp_options["predictions"].lower().split(',')
+        else:
+            return None
+
+    @property
     def obs_groups(self):
         """observation groups
         """
         og = list(self.observation_data.groupby("obgnme").groups.keys())
         #og = list(map(pst_utils.SFMT, og))
+        return og
+
+    @property
+    def nnz_obs_groups(self):
+
+        og = []
+        obs = self.observation_data
+        for g in self.obs_groups:
+            if obs.loc[obs.obgnme==g,"weight"].sum() > 0.0:
+                og.append(g)
         return og
 
 
@@ -235,7 +255,8 @@ class Pst(object):
 
     @property
     def prior_names(self):
-        return list(self.prior_information.groupby("pilbl").groups.keys())
+        return list(self.prior_information.groupby(
+                self.prior_information.index).groups.keys())
 
     @property
     def par_names(self):
@@ -280,14 +301,14 @@ class Pst(object):
         else:
             return []
 
-    @property
-    def regul_section(self):
-        phimlim = float(self.nnz_obs)
-        #sect = "* regularisation\n"
-        sect = "{0:15.6E} {1:15.6E}\n".format(phimlim, phimlim*1.15)
-        sect += "1.0 1.0e-10 1.0e10 linreg continue\n"
-        sect += "1.3  1.0e-2  1\n"
-        return sect
+    # @property
+    # def regul_section(self):
+    #     phimlim = float(self.nnz_obs)
+    #     #sect = "* regularisation\n"
+    #     sect = "{0:15.6E} {1:15.6E}\n".format(phimlim, phimlim*1.15)
+    #     sect += "1.0 1.0e-10 1.0e10 linreg continue\n"
+    #     sect += "1.3  1.0e-2  1\n"
+    #     return sect
 
     @property
     def estimation(self):
@@ -346,7 +367,26 @@ class Pst(object):
             control_lines.append(line)
         self.control_data.parse_values_from_lines(control_lines)
 
-        #anything between control data and parameter groups
+
+        #anything between control data and SVD
+        while True:
+            if line == '':
+                raise Exception("EOF before parameter groups section found")
+            if "* singular value decomposition" in line.lower() or\
+                "* parameter groups" in line.lower():
+                break
+            self.other_lines.append(line)
+            line = f.readline()
+
+        if "* singular value decomposition" in line.lower():
+            svd_lines = []
+            for _ in range(3):
+                line = f.readline()
+                if line == '':
+                    raise Exception("EOF while reading SVD section")
+                svd_lines.append(line)
+            self.svd_data.parse_values_from_lines(svd_lines)
+            line = f.readline()
         while True:
             if line == '':
                 raise Exception("EOF before parameter groups section found")
@@ -354,6 +394,11 @@ class Pst(object):
                 break
             self.other_lines.append(line)
             line = f.readline()
+
+        #parameter data
+        assert "* parameter groups" in line.lower(),\
+            "Pst.load() error: looking for parameter" +\
+            " group section, found:" + line
         try:
             self.parameter_groups = self._read_df(f,self.control_data.npargp,
                                                   self.pargp_fieldnames,
@@ -460,7 +505,14 @@ class Pst(object):
             assert "* regul" in line.lower(), \
                 "Pst.load() error; looking for regul " +\
                 " section, found:" + line
-            [self.regul_lines.append(f.readline()) for _ in range(3)]
+            #[self.regul_lines.append(f.readline()) for _ in range(3)]
+            regul_lines = [f.readline() for _ in range(3)]
+            raw = regul_lines[0].strip().split()
+            self.reg_data.phimlim = float(raw[0])
+            self.reg_data.phimaccept = float(raw[1])
+            raw = regul_lines[1].strip().split()
+            self.wfinit = float(raw[0])
+
 
         for line in f:
             if line.strip().startswith("++") and '#' not in line:
@@ -474,6 +526,7 @@ class Pst(object):
                         print("Pst.load() warning: duplicate pest++ option found:" + str(key))
                     self.pestpp_options[key] = value
         f.close()
+
         return
 
 
@@ -490,7 +543,6 @@ class Pst(object):
         self.control_data.ntplfle = len(self.template_files)
         self.control_data.ninsfle = len(self.instruction_files)
 
-
     def _rectify_pgroups(self):
         # add any parameters groups
         pdata_groups = list(self.parameter_data.loc[:,"pargp"].\
@@ -502,7 +554,7 @@ class Pst(object):
             if pg not in existing_groups:
                 need_groups.append(pg)
         if len(need_groups) > 0:
-            print(need_groups)
+            #print(need_groups)
             defaults = copy.copy(pst_utils.pst_config["pargp_defaults"])
             for grp in need_groups:
                 defaults["pargpnme"] = grp
@@ -545,6 +597,52 @@ class Pst(object):
             self.prior_information.equation.apply(lambda x: parse(x))
 
 
+    def add_pi_equation(self,par_names,pilbl=None,rhs=0.0,weight=1.0,
+                        obs_group="pi_obgnme",coef_dict={}):
+        """ a helper to construct prior information equations
+        :param par_names: list of parameter names
+        :param pilbl: the "obsnme" to use for the prior information equation
+        :param rhs: the right hand side value of the equation
+        :param weight: the weight for the equation
+        :param obs_group: the observation group to assign
+        :param coef_dict: a dictionary of {par_name: coefficients} to
+        use in constructing the equation. If a parameter is not listed in
+        the coef_dict, it gets a coefficient of 1.0
+        :return: None
+        """
+        if pilbl is None:
+            pilbl = "pilbl_{0}".format(self.__pi_count)
+            self.__pi_count += 1
+        missing,fixed = [],[]
+
+        for par_name in par_names:
+            if par_name not in self.parameter_data.parnme:
+                missing.append(par_name)
+            elif self.parameter_data.loc[par_name,"partrans"] in ["fixed","tied"]:
+                fixed.append(par_name)
+        if len(missing) > 0:
+            raise Exception("Pst.add_pi_equation(): the following pars "+\
+                            " were not found: {0}".format(','.join(missing)))
+        if len(fixed) > 0:
+            raise Exception("Pst.add_pi_equation(): the following pars "+\
+                            " were are fixed/tied: {0}".format(','.join(missing)))
+        eqs_str = ''
+        sign = ''
+        for i,par_name in enumerate(par_names):
+            coef = coef_dict.get(par_name,1.0)
+            if coef < 0.0:
+                sign = '-'
+                coef = np.abs(coef)
+            elif i > 0: sign = '+'
+            if self.parameter_data.loc[par_name,"partrans"] == "log":
+                par_name = "log({})".format(par_name)
+            eqs_str += " {0} {1} * {2} ".format(sign,coef,par_name)
+        eqs_str += " = {0}".format(rhs)
+        self.prior_information.loc[pilbl,"pilbl"] = pilbl
+        self.prior_information.loc[pilbl,"equation"] = eqs_str
+        self.prior_information.loc[pilbl,"weight"] = weight
+        self.prior_information.loc[pilbl,"obgnme"] = obs_group
+
 
     def rectify_pi(self):
         if self.prior_information.shape[0] == 0:
@@ -582,8 +680,9 @@ class Pst(object):
         for line in self.other_lines:
             f_out.write(line)
 
-        f_out.write("* parameter groups\n")
+        self.svd_data.write(f_out)
 
+        f_out.write("* parameter groups\n")
 
         # to catch the byte code ugliness in python 3
         pargpnme = self.parameter_groups.loc[:,"pargpnme"].copy()
@@ -592,6 +691,8 @@ class Pst(object):
 
         #self.parameter_groups.index = self.parameter_groups.pop("pargpnme")
         #gp_fieldnames = [name for name in self.pargp_fieldnames if name in self.parameter_groups.columns]
+        if self.parameter_groups.isnull().values.any():
+            warnings.warn("WARNING: NaNs in parameter_groups dataframe")
         f_out.write(self.parameter_groups.to_string(col_space=0,
                                                   formatters=self.pargp_format,
                                                   columns=self.pargp_fieldnames,
@@ -600,6 +701,9 @@ class Pst(object):
                                                   index=False) + '\n')
         self.parameter_groups.loc[:,"pargpnme"] = pargpnme.values
         #self.parameter_groups.index = pargpnme
+
+        if self.parameter_data.isnull().values.any():
+            warnings.warn("WARNING: NaNs in parameter_data dataframe")
 
         f_out.write("* parameter data\n")
         #self.parameter_data.index = self.parameter_data.pop("parnme")
@@ -612,6 +716,8 @@ class Pst(object):
         #self.parameter_data.loc[:,"parnme"] = self.parameter_data.index
 
         if self.tied is not None:
+            if self.tied.isnull().values.any():
+                warnings.warn("WARNING: NaNs in tied dataframe")
             #self.tied.index = self.tied.pop("parnme")
             f_out.write(self.tied.to_string(col_space=0,
                                             columns=self.tied_fieldnames,
@@ -633,7 +739,8 @@ class Pst(object):
             except:
                 pass
             f_out.write(pst_utils.SFMT(str(group))+'\n')
-
+        if self.observation_data.isnull().values.any():
+            warnings.warn("WARNING: NaNs in observation_data dataframe")
         f_out.write("* observation data\n")
         #self.observation_data.index = self.observation_data.pop("obsnme")
         f_out.write(self.observation_data.to_string(col_space=0,
@@ -655,6 +762,8 @@ class Pst(object):
             f_out.write(insfle+' '+outfle+'\n')
 
         if self.nprior > 0:
+            if self.prior_information.isnull().values.any():
+                print("WARNING: NaNs in prior_information dataframe")
             f_out.write("* prior information\n")
             #self.prior_information.index = self.prior_information.pop("pilbl")
             max_eq_len = self.prior_information.equation.apply(lambda x:len(x)).max()
@@ -675,12 +784,12 @@ class Pst(object):
                 f_out.write(pst_utils.FFMT(row["weight"]))
                 f_out.write(pst_utils.SFMT(row["obgnme"]) + '\n')
         if self.control_data.pestmode.startswith("regul"):
-            f_out.write("* regularisation\n")
-            if update_regul or len(self.regul_lines) == 0:
-                f_out.write(self.regul_section)
-            else:
-                [f_out.write(line) for line in self.regul_lines]
-
+            #f_out.write("* regularisation\n")
+            #if update_regul or len(self.regul_lines) == 0:
+            #    f_out.write(self.regul_section)
+            #else:
+            #    [f_out.write(line) for line in self.regul_lines]
+            self.reg_data.write(f_out)
 
         for key,value in self.pestpp_options.items():
             f_out.write("++{0}({1})\n".format(str(key),str(value)))
@@ -1045,9 +1154,10 @@ class Pst(object):
             self.parameter_data.loc[:,col+"_trans"] = (self.parameter_data.parval1 *
                                                           self.parameter_data.scale) +\
                                                          self.parameter_data.offset
-            isnotfixed = self.parameter_data.partrans != "fixed"
-            self.parameter_data.loc[isnotfixed,col+"_trans"] = \
-                self.parameter_data.loc[isnotfixed,col+"_trans"].\
+            #isnotfixed = self.parameter_data.partrans != "fixed"
+            islog = self.parameter_data.partrans == "log"
+            self.parameter_data.loc[islog,col+"_trans"] = \
+                self.parameter_data.loc[islog,col+"_trans"].\
                     apply(lambda x:np.log10(x))
 
     def enforce_bounds(self):
@@ -1062,5 +1172,22 @@ class Pst(object):
             self.parameter_data.loc[too_small,"parlbnd"]
 
 
+    @classmethod
+    def from_io_files(cls,tpl_files,in_files,ins_files,out_files,pst_filename=None):
+        from pyemu import helpers
+        return helpers.pst_from_io_files(tpl_files=tpl_files,in_files=in_files,
+                                           ins_files=ins_files,out_files=out_files,
+                                         pst_filename=pst_filename)
 
-
+    # eventually move this to pst_utils
+    # @classmethod
+    # def from_flopy_model(cls,m,pp_pakattr_list=None,const_pakattr_list=None,bc_pakattr_list=None,
+    #                      pp_space=None,pp_bounds=None,pp_geostruct=None,bc_geostruct=None,
+    #                      remove_existing=False):
+    #     from pyemu import helpers
+    #     return helpers.pst_from_flopy_model(m,pp_pakattr_list=pp_pakattr_list,
+    #                                         const_pakattr_list=const_pakattr_list,
+    #                                         bc_pakattr_list=bc_pakattr_list,
+    #                                         pp_space=None,pp_bounds=None,pp_geostruct=None,
+    #                                         bc_geostruct=None,remove_existing=remove_existing)
+    #

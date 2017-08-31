@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config
-
+from pyemu.utils.helpers import run
 PP_FMT = {"name": SFMT, "x": FFMT, "y": FFMT, "zone": IFMT, "tpl": SFMT,
           "parval1": FFMT}
 PP_NAMES = ["name","x","y","zone","parval1"]
@@ -41,14 +41,12 @@ def modflow_pval_to_template_file(pval_file,tpl_file=None):
                                                           justify="left"))
     return pval_df
 
-def modflow_hob_to_instruction_file(hob_file,ins_file=None):
+def modflow_hob_to_instruction_file(hob_file):
     """write an instruction file for a modflow head observation file
     Parameters
     ----------
         hob_file : str
             modflow hob file
-        ins_file :str (optional)
-            instruction file to write.  If None, use <hob_file>.ins
     Returns
     -------
         pandas DataFrame with control file observation information
@@ -60,8 +58,7 @@ def modflow_hob_to_instruction_file(hob_file,ins_file=None):
     hob_df.loc[:,"ins_line"] = hob_df.obsnme.apply(lambda x:"l1 w w !{0:s}!".format(x))
     hob_df.loc[0,"ins_line"] = hob_df.loc[0,"ins_line"].replace('l1','l2')
 
-    if ins_file is None:
-        ins_file = hob_file + ".ins"
+    ins_file = hob_file + ".ins"
     f_ins = open(ins_file, 'w')
     f_ins.write("pif ~\n")
     f_ins.write(hob_df.loc[:,["ins_line"]].to_string(col_space=0,
@@ -74,8 +71,99 @@ def modflow_hob_to_instruction_file(hob_file,ins_file=None):
     f_ins.close()
     return hob_df
 
+def modflow_hydmod_to_instruction_file(hydmod_file):
+    """write an instruction file for a modflow hydmod file
+    Parameters
+    ----------
+        hydmod_file : str
+            modflow hydmod file
+    Returns
+    -------
+        pandas DataFrame with control file observation information
+    """
 
-def setup_pilotpoints_grid(ml,prefix_dict=None,
+    hydmod_df, hydmod_outfile = modflow_read_hydmod_file(hydmod_file)
+
+
+    hydmod_df.loc[:,"ins_line"] = hydmod_df.obsnme.apply(lambda x:"l1 w !{0:s}!".format(x))
+
+    ins_file = hydmod_outfile + ".ins"
+
+    with open(ins_file, 'w') as f_ins:
+        f_ins.write("pif ~\nl1\n")
+        f_ins.write(hydmod_df.loc[:,["ins_line"]].to_string(col_space=0,
+                                                     columns=["ins_line"],
+                                                     header=False,
+                                                     index=False,
+                                                     formatters=[SFMT]) + '\n')
+    hydmod_df.loc[:,"weight"] = 1.0
+    hydmod_df.loc[:,"obgnme"] = "obgnme"
+
+    try:
+        os.system("inschek {0}.ins {0}".format(hydmod_outfile))
+    except:
+        print("error running inschek")
+
+    obs_obf = hydmod_outfile + ".obf"
+    if os.path.exists(obs_obf):
+        df = pd.read_csv(obs_obf,delim_whitespace=True,header=None,names=["obsnme","obsval"])
+        df.loc[:,"obgnme"] = df.obsnme.apply(lambda x: x[:-9])
+        df.to_csv("_setup_"+os.path.split(hydmod_outfile)[-1]+'.csv',index=False)
+        df.index = df.obsnme
+        return df
+
+
+    return hydmod_df
+
+def modflow_read_hydmod_file(hydmod_file, hydmod_outfile=None):
+    """ read in a binary hydmod file and return a dataframe of the results
+    Parameters
+    ----------
+        hydmod_file : str
+            modflow hydmod binary file
+        hydmod_outfile :str (optional)
+            output file to write.  If None, use <hydmod_file>.dat
+    Returns
+    -------
+        pandas DataFrame with control file observation information
+    """
+    try:
+        import flopy.utils as fu
+    except Exception as e:
+        print('flopy is not installed - cannot read {0}\n{1}'.format(hydmod_file, e))
+        return
+    print('Starting to read HYDMOD data from {0}'.format(hydmod_file))
+    obs = fu.HydmodObs(hydmod_file)
+    hyd_df = obs.get_dataframe()
+
+    hyd_df.columns = [i[6:] if i.lower() != 'totim' else i for i in hyd_df.columns]
+    #hyd_df.loc[:,"datetime"] = hyd_df.index
+    hyd_df['totim'] = hyd_df.index.map(lambda x: x.strftime("%Y%m%d"))
+
+    hyd_df.rename(columns={'totim': 'datestamp'}, inplace=True)
+
+
+    # reshape into a single column
+    hyd_df = pd.melt(hyd_df, id_vars='datestamp')
+
+    hyd_df.rename(columns={'value': 'obsval'}, inplace=True)
+
+    hyd_df['obsnme'] = [i + '_' + j for i, j in zip(hyd_df.variable, hyd_df.datestamp)]
+
+
+
+
+    if not hydmod_outfile:
+        hydmod_outfile = hydmod_file + '.dat'
+    hyd_df.to_csv(hydmod_outfile, columns=['obsnme','obsval'], sep=' ',index=False)
+    #hyd_df = hyd_df[['obsnme','obsval']]
+    return hyd_df[['obsnme','obsval']], hydmod_outfile
+
+
+
+
+
+def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
                            every_n_cell=4,
                            use_ibound_zones=False,
                            pp_dir='.',tpl_dir='.',
@@ -113,7 +201,23 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
 
     """
     import flopy
-    assert isinstance(ml,flopy.modflow.Modflow)
+
+    if ml is not None:
+        assert isinstance(ml,flopy.modflow.Modflow)
+        sr = ml.sr
+        if ibound is None:
+            ibound = ml.bas6.ibound.array
+    else:
+        assert sr is not None,"if 'ml' is not passed, 'sr' must be passed"
+        assert ibound is not None,"if 'ml' is not pass, 'ibound' must be passed"
+
+    try:
+        xcentergrid = sr.xcentergrid
+        ycentergrid = sr.ycentergrid
+    except Exception as e:
+        raise Exception("error getting xcentergrid and/or ycentergrid from 'sr':{0}".\
+                        format(str(e)))
+
 
     #build a generic prefix_dict
     if prefix_dict is None:
@@ -121,35 +225,37 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
 
     #check prefix_dict
     for k, prefix in prefix_dict.items():
-        assert k < ml.nlay,"layer index {0} > nlay {1}".format(k,ml.nlay)
+        assert k < len(ibound),"layer index {0} > nlay {1}".format(k,len(ibound))
         if not isinstance(prefix,list):
             prefix_dict[k] = [prefix]
 
-    try:
-        ibound = ml.bas6.ibound.array
-    except Exception as e:
-        raise Exception("error getting model.bas6.ibound:{0}".format(str(e)))
+    #try:
+        #ibound = ml.bas6.ibound.array
+    #except Exception as e:
+    #    raise Exception("error getting model.bas6.ibound:{0}".format(str(e)))
     par_info = []
     pp_files,tpl_files = [],[]
     pp_names = copy.copy(PP_NAMES)
     pp_names.extend(["k","i","j"])
-    for k in range(ml.nlay):
+    for k in range(len(ibound)):
         pp_df = None
         ib = ibound[k]
+        assert ib.shape == xcentergrid.shape,"ib.shape != xcentergrid.shape for k {0}".\
+            format(k)
         pp_count = 0
         #skip this layer if not in prefix_dict
         if k not in prefix_dict.keys():
             continue
         #cycle through rows and cols
-        for i in range(0,ml.nrow,every_n_cell):
-            for j in range(0,ml.ncol,every_n_cell):
+        for i in range(0,ib.shape[0],every_n_cell):
+            for j in range(0,ib.shape[1],every_n_cell):
                 # skip if this is an inactive cell
                 if ib[i,j] < 1:
                     continue
 
                 # get the attributes we need
-                x = ml.sr.xcentergrid[i,j]
-                y = ml.sr.ycentergrid[i,j]
+                x = xcentergrid[i,j]
+                y = ycentergrid[i,j]
                 name = "pp_{0:04d}".format(pp_count)
                 parval1 = 1.0
 
@@ -158,6 +264,7 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
                 if use_ibound_zones:
                     zone = ib[i,j]
                 #stick this pilot point into a dataframe container
+
                 if pp_df is None:
                     data = {"name": name, "x": x, "y": y, "zone": zone,
                             "parval1": parval1, "k":k, "i":i, "j":j}
@@ -196,8 +303,9 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
     if shapename is not None:
         try:
             import shapefile
-        except:
-            print("error importing shapefile, try pip install pyshp...")
+        except Exception as e:
+            print("error importing shapefile, try pip install pyshp...{0}"\
+                  .format(str(e)))
             return par_info
         shp = shapefile.Writer(shapeType=shapefile.POINT)
         for name,dtype in par_info.dtypes.iteritems():
@@ -221,9 +329,28 @@ def setup_pilotpoints_grid(ml,prefix_dict=None,
 
 
 def pp_file_to_dataframe(pp_filename):
-    return pd.read_csv(pp_filename, delim_whitespace=True,
-                     header=None, names=PP_NAMES)
+    df = pd.read_csv(pp_filename, delim_whitespace=True,
+                     header=None, names=PP_NAMES,usecols=[0,1,2,3,4])
+    df.loc[:,"name"] = df.name.apply(str).apply(str.lower)
+    return df
 
+def pp_tpl_to_dataframe(tpl_filename):
+    with open(tpl_filename,'r') as f:
+        header = f.readline()
+        marker = header.strip().split()[1]
+        assert len(marker) == 1
+        first = f.readline().strip().split()
+        if len(first) == 5:
+            usecols = [0,1,2,3,4]
+        else:
+            usecols = [0,1,2,3,5]
+    df = pd.read_csv(tpl_filename, delim_whitespace=True,skiprows=1,
+                     header=None, names=PP_NAMES,usecols=usecols)
+    df.loc[:,"name"] = df.name.apply(str).apply(str.lower)
+    df.loc[:,"tpl_str"] = df.pop("parval1").apply(str.lower)
+    df.loc[:,"parnme"] = df.tpl_str.apply(lambda x: x.replace(marker,''))
+
+    return df
 
 def write_pp_shapfile(pp_df,shapename=None):
     """write pilot points to a shapefile
@@ -364,8 +491,8 @@ def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
     return pp_df
 
 
-def fac2real(pp_file,factors_file,out_file="test.ref",
-             upper_lim=1.0e+30,lower_lim=-1.0e+30):
+def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
+             upper_lim=1.0e+30,lower_lim=-1.0e+30,fill_value=1.0e+30):
     """A python replication of the PEST fac2real utility
     Parameters
     ----------
@@ -379,13 +506,13 @@ def fac2real(pp_file,factors_file,out_file="test.ref",
     -------
         None
     """
-    if isinstance(pp_file,str):
+    if pp_file is not None and isinstance(pp_file,str):
         assert os.path.exists(pp_file)
-
-        pp_data = pd.read_csv(pp_file,delim_whitespace=True,header=None,
-                              names=["name","parval1"],usecols=[0,4])
+        # pp_data = pd.read_csv(pp_file,delim_whitespace=True,header=None,
+        #                       names=["name","parval1"],usecols=[0,4])
+        pp_data = pp_file_to_dataframe(pp_file)
         pp_data.loc[:,"name"] = pp_data.name.apply(lambda x: x.lower())
-    elif isinstance(pp_file,pd.DataFrame):
+    elif pp_file is not None and isinstance(pp_file,pd.DataFrame):
         assert "name" in pp_file.columns
         assert "parval1" in pp_file.columns
         pp_data = pp_file
@@ -395,6 +522,10 @@ def fac2real(pp_file,factors_file,out_file="test.ref",
     assert os.path.exists(factors_file)
     f_fac = open(factors_file,'r')
     fpp_file = f_fac.readline()
+    if pp_file is None and pp_data is None:
+        pp_data = pp_file_to_dataframe(fpp_file)
+        pp_data.loc[:, "name"] = pp_data.name.apply(lambda x: x.lower())
+
     fzone_file = f_fac.readline()
     ncol,nrow = [int(i) for i in f_fac.readline().strip().split()]
     npp = int(f_fac.readline().strip())
@@ -407,9 +538,12 @@ def fac2real(pp_file,factors_file,out_file="test.ref",
                         "between the factors file and the pilot points file " +\
                         ','.join(list(diff)))
 
-    arr = np.zeros((nrow,ncol),dtype=np.float32) + 1.0e+30
+    arr = np.zeros((nrow,ncol),dtype=np.float) + fill_value
     pp_dict = {name:val for name,val in zip(pp_data.index,pp_data.parval1)}
-    pp_dict_log = {name:np.log10(val) for name,val in zip(pp_data.index,pp_data.parval1)}
+    try:
+        pp_dict_log = {name:np.log10(val) for name,val in zip(pp_data.index,pp_data.parval1)}
+    except:
+        pp_dict_log = {}
     #for i in range(nrow):
     #    for j in range(ncol):
     while True:
@@ -444,12 +578,71 @@ def fac2real(pp_file,factors_file,out_file="test.ref",
 def parse_factor_line(line):
     raw = line.strip().split()
     inode,itrans,nfac = [int(i) for i in raw[:3]]
-    fac_data = {}
-    for ifac in range(4,4+nfac*2,2):
-        pnum = int(raw[ifac]) - 1 #zero based to sync with pandas
-        fac = float(raw[ifac+1])
-        fac_data[pnum] = fac
+    fac_data = {int(raw[ifac])-1:float(raw[ifac+1]) for ifac in range(4,4+nfac*2,2)}
+    # fac_data = {}
+    # for ifac in range(4,4+nfac*2,2):
+    #     pnum = int(raw[ifac]) - 1 #zero based to sync with pandas
+    #     fac = float(raw[ifac+1])
+    #     fac_data[pnum] = fac
     return inode,itrans,fac_data
 
+def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
+                            vol_filename="vol.dat",start_datetime="1-1'1970",prefix='',
+                            save_setup_file=False):
+    flx,vol = apply_mflist_budget_obs(list_filename,flx_filename,vol_filename,
+                                      start_datetime)
+    _write_mflist_ins(flx_filename+".ins",flx,prefix+"flx")
+    _write_mflist_ins(vol_filename+".ins",vol, prefix+"vol")
 
+    run("inschek {0}.ins {0}".format(flx_filename))
+    run("inschek {0}.ins {0}".format(vol_filename))
+
+    try:
+        #os.system("inschek {0}.ins {0}".format(flx_filename))
+        #os.system("inschek {0}.ins {0}".format(vol_filename))
+        run("inschek {0}.ins {0}".format(flx_filename))
+        run("inschek {0}.ins {0}".format(vol_filename))
+
+    except:
+        print("error running inschek")
+        return None
+    flx_obf = flx_filename+".obf"
+    vol_obf = vol_filename + ".obf"
+    if os.path.exists(flx_obf) and os.path.exists(vol_obf):
+        df = pd.read_csv(flx_obf,delim_whitespace=True,header=None,names=["obsnme","obsval"])
+        df.loc[:,"obgnme"] = df.obsnme.apply(lambda x: x[:-9])
+        df2 = pd.read_csv(vol_obf, delim_whitespace=True, header=None, names=["obsnme", "obsval"])
+        df2.loc[:, "obgnme"] = df2.obsnme.apply(lambda x: x[:-9])
+        df = df.append(df2)
+        if save_setup_file:
+            df.to_csv("_setup_"+os.path.split(list_filename)[-1]+'.csv',index=False)
+        df.index = df.obsnme
+        return df
+
+def apply_mflist_budget_obs(list_filename,flx_filename="flux.dat",
+                            vol_filename="vol.dat",
+                            start_datetime="1-1-1970"):
+    try:
+        import flopy
+    except Exception as e:
+        raise Exception("error import flopy: {0}".format(str(e)))
+    mlf = flopy.utils.MfListBudget(list_filename)
+    flx,vol = mlf.get_dataframes(start_datetime=start_datetime,diff=True)
+    flx.to_csv(flx_filename,sep=' ',index_label="datetime")
+    vol.to_csv(vol_filename,sep=' ',index_label="datetime")
+    return flx,vol
+
+
+def _write_mflist_ins(ins_filename,df,prefix):
+    dt_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
+    name_len = 11 - (len(prefix)+1)
+    with open(ins_filename,'w') as f:
+        f.write('pif ~\nl1\n')
+
+        for dt in dt_str:
+            f.write("l1 ")
+            for col in df.columns:
+                obsnme = "{0}_{1}_{2}".format(prefix,col[:name_len],dt)
+                f.write(" w !{0}!".format(obsnme))
+            f.write("\n")
 

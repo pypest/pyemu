@@ -4,6 +4,7 @@ pyEMU
 python modules for model-independent FOSM (first-order, second-moment) (a.k.a linear-based, a.k.a. Bayes linear) uncertainty analyses and data-worth analyses, non-linear uncertainty analyses and interfacing with PEST and PEST++.
 
 [![Build Status](https://travis-ci.org/jtwhite79/pyemu.svg?branch=master)](https://travis-ci.org/jtwhite79/pyemu)
+[![Coverage Status](https://coveralls.io/repos/github/jtwhite79/pyemu/badge.svg?branch=develop)](https://coveralls.io/github/jtwhite79/pyemu?branch=develop)
 
 What is pyEMU?
 ================
@@ -33,6 +34,10 @@ Version 0.2 of pyemu now includes
 A publication documenting pyEMU and an example application can be found here:
 
 [http://dx.doi.org/10.1016/j.envsoft.2016.08.017](http://dx.doi.org/10.1016/j.envsoft.2016.08.017)
+
+A powerpoint presentation describing the iterative Ensemble Smoother implemented in pyEMU can be downloaded here:
+
+[https://github.com/jtwhite79/pyemu/blob/develop/misc/TheEnsembleSmoother.pptx](https://github.com/jtwhite79/pyemu/blob/develop/misc/TheEnsembleSmoother.pptx)
 
 Examples
 ========

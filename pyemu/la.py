@@ -6,94 +6,8 @@ import numpy as np
 import pandas as pd
 from pyemu.mat.mat_handler import Matrix, Jco, Cov
 from pyemu.pst.pst_handler import Pst
+from .logger import Logger
 
-
-class logger(object):
-    """ a basic class for logging events during the linear analysis calculations
-        if filename is passed, then an file handle is opened
-    Parameters:
-    ----------
-        filename (bool or string): if string, it is the log file to write
-            if a bool, then log is written to the screen
-        echo (bool): a flag to force screen output
-    Attributes:
-    ----------
-        items (dict) : tracks when something is started.  If a log entry is
-            not in items, then it is treated as a new entry with the string
-            being the key and the datetime as the value.  If a log entry is
-            in items, then the end time and delta time are written and
-            the item is popped from the keys
-
-    """
-    def __init__(self,filename, echo=False):
-        self.items = {}
-        self.echo = bool(echo)
-        if filename == True:
-            self.echo = True
-            self.filename = None
-        elif filename:
-            self.filename = filename
-            self.f = open(filename, 'w')
-            self.t = datetime.now()
-            self.log("opening " + str(filename) + " for logging")
-        else:
-            self.filename = None
-
-
-    def statement(self,phrase):
-        t = datetime.now()
-        s = str(t) + str(phrase)
-        if self.echo:
-            print(s,)
-        if self.filename:
-            self.f.write(s)
-            self.f.flush()
-
-
-    def log(self,phrase):
-        """log something that happened
-        Parameters:
-        ----------
-            phrase (str) : the thing that happened
-        Returns:
-        -------
-            None
-        """
-        pass
-        t = datetime.now()
-        if phrase in self.items.keys():
-            s = str(t) + ' finished: ' + str(phrase) + " took: " + \
-                str(t - self.items[phrase]) + '\n'
-            if self.echo:
-                print(s,)
-            if self.filename:
-                self.f.write(s)
-                self.f.flush()
-            self.items.pop(phrase)
-        else:
-            s = str(t) + ' starting: ' + str(phrase) + '\n'
-            if self.echo:
-                print(s,)
-            if self.filename:
-                self.f.write(s)
-                self.f.flush()
-            self.items[phrase] = copy.deepcopy(t)
-
-    def warn(self,message):
-        """write a warning to the log file
-        Parameters:
-        ----------
-            message (str) : the warning text
-        Returns:
-        -------
-            None
-        """
-        s = str(datetime.now()) + " WARNING: " + message + '\n'
-        if self.echo:
-            print(s,)
-        if self.filename:
-            self.f.write(s)
-            self.f.flush
 
 
 class LinearAnalysis(object):
@@ -121,7 +35,7 @@ class LinearAnalysis(object):
     def __init__(self, jco=None, pst=None, parcov=None, obscov=None,
                  predictions=None, ref_var=1.0, verbose=False,
                  resfile=False, forecasts=None,**kwargs):
-        self.logger = logger(verbose)
+        self.logger = Logger(verbose)
         self.log = self.logger.log
         self.jco_arg = jco
         #if jco is None:
@@ -171,12 +85,8 @@ class LinearAnalysis(object):
         elif forecasts is not None:
             self.prediction_arg = forecasts
         elif self.pst is not None and self.jco is not None:
-            if "forecasts" in self.pst.pestpp_options:
-                self.prediction_arg = [i.strip() for i in self.pst.pestpp_options["forecasts"].\
-                    lower().split(',')]
-            elif "predictions" in self.pst.pestpp_options:
-                self.prediction_arg = [i.strip() for i in self.pst.pestpp_options["predictions"].\
-                    lower().split(',')]
+            if self.pst.forecast_names is not None:
+                self.prediction_arg = self.pst.forecast_names
         if self.prediction_arg:
             self.__load_predictions()
 
@@ -211,8 +121,10 @@ class LinearAnalysis(object):
                 self.resfile = None
                 self.res = None
             self.log("scaling obscov by residual phi components")
+        assert type(self.parcov) == Cov
+        assert type(self.obscov) == Cov
 
-    def __fromfile(self, filename):
+    def __fromfile(self, filename, astype=None):
         """a private method to deduce and load a filename into a matrix object
 
         Parameters:
@@ -227,19 +139,27 @@ class LinearAnalysis(object):
         ext = filename.split('.')[-1].lower()
         if ext in ["jco", "jcb"]:
             self.log("loading jco: "+filename)
-            m = Jco.from_binary(filename)
+            if astype is None:
+                astype = Jco
+            m = astype.from_binary(filename)
             self.log("loading jco: "+filename)
         elif ext in ["mat","vec"]:
             self.log("loading ascii: "+filename)
-            m = Matrix.from_ascii(filename)
+            if astype is None:
+                astype = Matrix
+            m = astype.from_ascii(filename)
             self.log("loading ascii: "+filename)
         elif ext in ["cov"]:
             self.log("loading cov: "+filename)
-            m = Cov.from_ascii(filename)
+            if astype is None:
+                astype = Cov
+            m = astype.from_ascii(filename)
             self.log("loading cov: "+filename)
         elif ext in["unc"]:
             self.log("loading unc: "+filename)
-            m = Cov.from_uncfile(filename)
+            if astype is None:
+                astype = Cov
+            m = astype.from_uncfile(filename)
             self.log("loading unc: "+filename)
         else:
             raise Exception("linear_analysis.__fromfile(): unrecognized" +
@@ -288,7 +208,7 @@ class LinearAnalysis(object):
         if isinstance(self.jco_arg, Matrix):
             self.__jco = self.jco_arg
         elif isinstance(self.jco_arg, str):
-            self.__jco = self.__fromfile(self.jco_arg)
+            self.__jco = self.__fromfile(self.jco_arg,astype=Jco)
         else:
             raise Exception("linear_analysis.__load_jco(): jco_arg must " +
                             "be a matrix object or a file name: " +
@@ -337,7 +257,7 @@ class LinearAnalysis(object):
             if self.parcov_arg.lower().endswith(".pst"):
                 self.__parcov = Cov.from_parbounds(self.parcov_arg)
             else:
-                self.__parcov = self.__fromfile(self.parcov_arg)
+                self.__parcov = self.__fromfile(self.parcov_arg, astype=Cov)
         # if the arg is a pst object
         elif isinstance(self.parcov_arg,Pst):
             self.__parcov = Cov.from_parameter_data(self.parcov_arg)
@@ -390,7 +310,7 @@ class LinearAnalysis(object):
             if self.obscov_arg.lower().endswith(".pst"):
                 self.__obscov = Cov.from_obsweights(self.obscov_arg)
             else:
-                self.__obscov = self.__fromfile(self.obscov_arg)
+                self.__obscov = self.__fromfile(self.obscov_arg, astype=Cov)
         elif isinstance(self.obscov_arg, Pst):
             self.__obscov = Cov.from_observation_data(self.obscov_arg)
         else:
@@ -440,7 +360,7 @@ class LinearAnalysis(object):
                     row_names.append(arg.lower())
                 else:
                     try:
-                        pred_mat = self.__fromfile(arg)
+                        pred_mat = self.__fromfile(arg,astype=Matrix)
                     except Exception as e:
                         raise Exception("forecast argument: "+arg+" not found in " +\
                                         "jco row names and could not be " +\
@@ -511,6 +431,12 @@ class LinearAnalysis(object):
             self.obscov
             self.__obscov.drop(row_names, axis=0)
         self.__predictions = mat
+        try:
+            fnames = [fname for fname in self.forecast_names if fname in self.pst.nnz_obs_names]
+        except:
+            fnames = []
+        if len(fnames) > 0:
+            raise Exception("forecasts with non-zero weight in pst: {0}".format(','.join(fnames)))
         self.log("loading forecasts")
         self.logger.statement("forecast names: {0}".format(','.join(mat.col_names)))
         return self.__predictions
@@ -778,7 +704,8 @@ class LinearAnalysis(object):
         self.__pst.prior_information = self.pst.null_prior
         self.__pst.control_data.pestmode = "estimation"
         #self.__obscov.drop(pi_names,axis=0)
-        self.log("removing " + nprior_str + " prior info from jco and pst")
+        self.log("removing " + nprior_str + " prior info from jco, pst, and " +
+                                            "obs cov")
 
 
     def get(self,par_names=None,obs_names=None,astype=None):

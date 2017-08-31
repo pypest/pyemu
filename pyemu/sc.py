@@ -237,7 +237,7 @@ class Schur(LinearAnalysis):
                 "contribution parameter " + name + " not found jco"
         keep_names = []
         for name in self.jco.col_names:
-            if name not in keep_names:
+            if name not in parameter_names:
                 keep_names.append(name)
         if len(keep_names) == 0:
             raise Exception("Schur.contribution_from_parameters: " +
@@ -272,7 +272,11 @@ class Schur(LinearAnalysis):
         """
         self.log("calculating contribution from parameters")
         if parlist_dict is None:
-            parlist_dict = dict(zip(self.pst.adj_par_names,self.pst.adj_par_names))
+            parlist_dict = {}#dict(zip(self.pst.adj_par_names,self.pst.adj_par_names))
+            # make sure all of the adjustable pars are in the jco
+            for pname in self.pst.adj_par_names:
+                if pname in self.jco.col_names:
+                    parlist_dict[pname] = pname
         else:
             if type(parlist_dict) == list:
                 parlist_dict = dict(zip(parlist_dict,parlist_dict))
@@ -282,11 +286,13 @@ class Schur(LinearAnalysis):
         for forecast in self.prior_forecast.keys():
             pr = self.prior_forecast[forecast]
             pt = self.posterior_forecast[forecast]
-            reduce = 100.0 * ((pr - pt) / pr)
+            #reduce = 100.0 * ((pr - pt) / pr)
             results[(forecast,"prior")] = [pr]
             results[(forecast,"post")] = [pt]
-            results[(forecast,"percent_reduce")] = [reduce]
+            #results[(forecast,"percent_reduce")] = [reduce]
         for case_name,par_list in parlist_dict.items():
+            if len(par_list) == 0:
+                continue
             names.append(case_name)
             self.log("calculating contribution from: " + str(par_list) + '\n')
             case_prior,case_post = self.__contribution_from_parameters(par_list)
@@ -294,12 +300,15 @@ class Schur(LinearAnalysis):
             for forecast in case_prior.keys():
                 pr = case_prior[forecast]
                 pt = case_post[forecast]
-                reduce = 100.0 * ((pr - pt) / pr)
+                #reduce = 100.0 * ((pr - pt) / pr)
                 results[(forecast, "prior")].append(pr)
                 results[(forecast, "post")].append(pt)
-                results[(forecast, "percent_reduce")].append(reduce)
+                #results[(forecast, "percent_reduce")].append(reduce)
 
         df = pd.DataFrame(results,index=names)
+        #base = df.loc["base",df.columns.get_level_values(1)=="post"]
+        #df = 1.0 - (df.loc[:,df.columns.get_level_values(1)=="post"] / base)
+        df = df.xs("post",level=1,drop_level=True,axis=1)
         self.log("calculating contribution from parameters")
         return df
 
@@ -311,7 +320,9 @@ class Schur(LinearAnalysis):
         par = self.pst.parameter_data
         groups = par.groupby("pargp").groups
         for grp,idxs in groups.items():
-            pargrp_dict[grp] = list(par.loc[idxs,"parnme"])
+            #pargrp_dict[grp] = list(par.loc[idxs,"parnme"])
+            pargrp_dict[grp] = [pname for pname in list(par.loc[idxs,"parnme"])
+                                if pname in self.jco.col_names and pname in self.parcov.row_names]
         return self.get_par_contribution(pargrp_dict)
 
     def get_added_obs_importance(self,obslist_dict=None,base_obslist=None,
@@ -348,8 +359,6 @@ class Schur(LinearAnalysis):
             if type(obslist_dict) == list:
                 obslist_dict = dict(zip(obslist_dict,obslist_dict))
 
-
-
         reset = False
         if reset_zero_weight is not False:
             if not self.obscov.isdiagonal:
@@ -370,7 +379,9 @@ class Schur(LinearAnalysis):
 
         # if we don't care about grouping obs, then just reset all weights at once
         if base_obslist is None and obslist_dict is None and reset:
-            obs.loc[obs.weight==0.0,"weight"] = weight
+            onames = [name for name in self.pst.zero_weight_obs_names
+                      if name in self.jco.obs_names and name in self.obscov.row_names]
+            obs.loc[onames,"weight"] = weight
 
         # if needed reset the zero-weight obs in base_obslist
         if base_obslist is not None and reset:
@@ -400,11 +411,12 @@ class Schur(LinearAnalysis):
             obs = self.pst.observation_data
             obs.index = obs.obsnme
             onames = [name for name in self.pst.zero_weight_obs_names
-                      if name in self.jco.obs_names]
+                      if name in self.jco.obs_names and name in self.obscov.row_names]
             obs.loc[onames,"weight"] = weight
 
         if obslist_dict is None:
-            obslist_dict = dict(zip(self.pst.nnz_obs_names,self.pst.nnz_obs_names))
+            obslist_dict = {name:name for name in self.pst.nnz_obs_names if name\
+                            in self.jco.obs_names and name in self.obscov.row_names}
 
         # reset the obs cov from the newly adjusted weights
         if reset:
@@ -483,10 +495,13 @@ class Schur(LinearAnalysis):
             weights will be dropped unless reset_zero_weight is set
         """
 
+
         if obslist_dict is not None:
             if type(obslist_dict) == list:
                 obslist_dict = dict(zip(obslist_dict,obslist_dict))
 
+        elif reset_zero_weight is False and self.pst.nnz_obs == 0:
+            raise Exception("not resetting weights and there are no non-zero weight obs to remove")
 
         reset = False
         if reset_zero_weight is not False:
@@ -506,7 +521,9 @@ class Schur(LinearAnalysis):
         self.log("calculating importance of observations")
         if reset and obslist_dict is None:
             obs = self.pst.observation_data
-            obs.loc[obs.weight==0.0,"weight"] = weight
+            onames = [name for name in self.pst.zero_weight_obs_names
+                      if name in self.jco.obs_names and name in self.obscov.row_names]
+            obs.loc[onames,"weight"] = weight
 
         if obslist_dict is None:
             obslist_dict = dict(zip(self.pst.nnz_obs_names,
@@ -548,7 +565,7 @@ class Schur(LinearAnalysis):
                                 "not found: " + ','.join(missing_onames))
             # find the set difference between obslist and jco obs names
             #diff_onames = [oname for oname in self.jco.obs_names if oname not in obslist]
-            diff_onames = [oname for oname in self.nnz_obs_names if oname not in obslist]
+            diff_onames = [oname for oname in self.nnz_obs_names if oname not in obslist and oname not in self.forecast_names]
 
 
             # calculate the increase in forecast variance by not using the obs
@@ -609,7 +626,7 @@ class Schur(LinearAnalysis):
         """
 
         if forecast is None:
-            assert len(self.forecasts) == 1,"forecast arg list one and only one" +\
+            assert self.forecasts.shape[1] == 1,"forecast arg list one and only one" +\
                                             " forecast"
             forecast = self.forecasts[0].col_names[0]
         #elif forecast not in self.prediction_arg:
@@ -618,8 +635,8 @@ class Schur(LinearAnalysis):
         else:
             forecast = forecast.lower()
             found = False
-            for fore in self.forecasts:
-                if fore.col_names[0] == forecast:
+            for fore in self.forecasts.col_names:
+                if fore == forecast:
                     found = True
                     break
             if not found:
@@ -644,7 +661,7 @@ class Schur(LinearAnalysis):
                 init_base = df.loc["base",forecast].copy()
             fore_df = df.loc[:,forecast]
             fore_diff_df = fore_df - fore_df.loc["base"]
-            fore_diff_df.sort(inplace=True)
+            fore_diff_df.sort_values(inplace=True)
             iter_best_name = fore_diff_df.index[0]
             iter_best_result = df.loc[iter_best_name,forecast]
             iter_base_result = df.loc["base",forecast]
@@ -713,7 +730,7 @@ class Schur(LinearAnalysis):
                 la_cond = self.get_conditional_instance(parlist)
                 iter_contrib[forecast].append(la_cond.posterior_forecast[forecast])
             df = pd.DataFrame(iter_contrib,index=iter_case_names)
-            df.sort(columns=forecast,inplace=True)
+            df.sort_values(by=forecast,inplace=True)
             iter_best = df.index[0]
             self.logger.statement("next best iter {0}: {1}".format(iiter+1,iter_best))
             self.log("next most par iteration {0}".format(iiter+1))

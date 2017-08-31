@@ -32,6 +32,76 @@ NOPTMAX PHIREDSTP NPHISTP NPHINORED RELPARSTP NRELPAR [PHISTOPTHRESH] [LASTRUN] 
 ICOV ICOR IEIG [IRES] [JCOSAVE] [VERBOSEREC] [JCOSAVEITN] [REISAVEITN] [PARSAVEITN] [PARSAVERUN]"""\
     .lower().split('\n')
 
+REG_VARIABLE_LINES = """PHIMLIM PHIMACCEPT [FRACPHIM] [MEMSAVE]
+WFINIT WFMIN WFMAX [LINREG] [REGCONTINUE]
+WFFAC WFTOL IREGADJ [NOPTREGADJ REGWEIGHTRAT [REGSINGTHRESH]]""".lower().split('\n')
+
+REG_DEFAULT_LINES = """   1.0e-10    1.05e-10  0.1  nomemsave
+1.0 1.0e-10 1.0e10 linreg continue
+1.3  1.0e-2  1 1.5 1.5 0.5""".lower().split('\n')
+
+class RegData(object):
+    def __init__(self):
+        self.optional_dict = {}
+        for vline,dline in zip(REG_VARIABLE_LINES,REG_DEFAULT_LINES):
+            vraw = vline.split()
+            draw = dline.split()
+            for v,d in zip(vraw,draw):
+                o = False
+                if '[' in v:
+                    o = True
+                v = v.replace('[','').replace(']','')
+                super(RegData,self).__setattr__(v,d)
+                self.optional_dict[v] = o
+    def write(self,f):
+        f.write("* regularization\n")
+        for vline in REG_VARIABLE_LINES:
+            vraw = vline.strip().split()
+            for v in vraw:
+                v = v.replace("[",'').replace("]",'')
+                if v not in self.optional_dict.keys():
+                    raise Exception("RegData missing attribute {0}".format(v))
+                f.write("{0} ".format(self.__getattribute__(v)))
+            f.write("\n")
+
+
+class SvdData(object):
+    def __init__(self,**kwargs):
+        self.svdmode = kwargs.pop("svdmode",1)
+        self.maxsing = kwargs.pop("maxsing",10000000)
+        self.eigthresh = kwargs.pop("eigthresh",1.0e-6)
+        self.eigwrite = kwargs.pop("eigwrite",1)
+
+    def write(self,f):
+        f.write("* singular value decomposition\n")
+        f.write(IFMT(self.svdmode)+'\n')
+        f.write(IFMT(self.maxsing)+' '+FFMT(self.eigthresh)+"\n")
+        f.write('{0}\n'.format(self.eigwrite))
+
+    def parse_values_from_lines(self,lines):
+        assert len(lines) == 3,"SvdData.parse_values_from_lines: expected " + \
+                               "3 lines, not {0}".format(len(lines))
+        try:
+            self.svdmode = int(lines[0].strip().split()[0])
+        except Exception as e:
+            raise Exception("SvdData.parse_values_from_lines: error parsing" + \
+                            " svdmode from line {0}: {1} \n".format(lines[0],str(e)))
+        try:
+            raw = lines[1].strip().split()
+            self.maxsing = int(raw[0])
+            self.eigthresh = float(raw[1])
+        except Exception as e:
+            raise Exception("SvdData.parse_values_from_lines: error parsing" + \
+                            " maxsing and eigthresh from line {0}: {1} \n"\
+                            .format(lines[1],str(e)))
+        # try:
+        #     self.eigwrite = int(lines[2].strip())
+        # except Exception as e:
+        #     raise Exception("SvdData.parse_values_from_lines: error parsing" + \
+        #                     " eigwrite from line {0}: {1} \n".format(lines[2],str(e)))
+        self.eigwrite = lines[2].strip()
+
+
 class ControlData(object):
     def __init__(self):
 
