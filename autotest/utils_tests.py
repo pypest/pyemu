@@ -730,14 +730,48 @@ def make_hydmod_insfile_test():
     #assert open(os.path.join('utils','freyberg.hyd.bin.dat.ins'),'r').read() == open('freyberg.hyd.dat.ins', 'r').read()
     assert os.path.exists(os.path.join('utils','freyberg.hyd.bin.dat.ins'))
 
+def plot_summary_test():
+    import os
+    import pandas as pd
+
+    import pyemu
+    try:
+        import matplotlib.pyplot as plt
+    except:
+        return
+
+    par_df = pd.read_csv(os.path.join("utils","freyberg_pp.par.usum.csv"),
+                         index_col=0)
+    idx = list(par_df.index.map(lambda x: x.startswith("HK")))
+    par_df = par_df.loc[idx,:]
+    ax = pyemu.helpers.plot_summary_distributions(par_df,label_post=True)
+    plt.savefig(os.path.join("temp","hk_par.png"))
+    plt.close()
+
+    df = os.path.join("utils","freyberg_pp.pred.usum.csv")
+    figs,axes = pyemu.helpers.plot_summary_distributions(df,subplots=True)
+    #plt.show()
+    for i,fig in enumerate(figs):
+        plt.figure(fig.number)
+        plt.savefig(os.path.join("temp","test_pred_{0}.png".format(i)))
+        plt.close(fig)
+    df = os.path.join("utils","freyberg_pp.par.usum.csv")
+    figs, axes = pyemu.helpers.plot_summary_distributions(df,subplots=True)
+    for i,fig in enumerate(figs):
+        plt.figure(fig.number)
+        plt.savefig(os.path.join("temp","test_par_{0}.png".format(i)))
+        plt.close(fig)
+
+
 if __name__ == "__main__":
+    plot_summary_test()
     #load_sgems_expvar_test()
     #read_hydmod_test()
     #make_hydmod_insfile_test()
     #gslib_2_dataframe_test()
     #sgems_to_geostruct_test()
     #linearuniversal_krige_test()
-    geostat_prior_builder_test()
+    #geostat_prior_builder_test()
     #mflist_budget_test()
     #tpl_to_dataframe_test()
     #kl_test()

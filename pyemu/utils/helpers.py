@@ -21,7 +21,7 @@ except:
 import pyemu
 
 
-def run(cmd_str):
+def run(cmd_str,cwd='.'):
     exe_name = cmd_str.split()[0]
     if "window" in platform.platform().lower():
         if not exe_name.lower().endswith("exe"):
@@ -32,7 +32,14 @@ def run(cmd_str):
         if os.path.exists(exe_name) and not exe_name.startswith('./'):
             cmd_str = "./" + cmd_str
     print("run():{0}".format(cmd_str))
-    ret_val = os.system(cmd_str)
+    bwd = os.getcwd()
+    os.chdir(cwd)
+    try:
+        ret_val = os.system(cmd_str)
+    except Exception as e:
+        os.chdir(bwd)
+        raise Exception("run() raise :{0}".format(str(e)))
+    os.chdir(bwd)
     if "window" in platform.platform().lower():
         if ret_val != 0:
             raise Exception("run() returned non-zero")
@@ -509,37 +516,87 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
             shutil.rmtree(dir)
 
 
-def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False):
+def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
+                               subplots=False,figsize=(11,8.5)):
+    """ helper function to plot gaussian distrbutions from prior and posterior
+    means and standard deviations
+    :param df: a dataframe and csv file.  Must have columns named:
+    'prior_mean','prior_stdev','post_mean','post_stdev'.  If loaded
+    from a csv file, column 0 is assumed to tbe the index
+    :param ax: matplotlib axis.  If None, and not subplots, then one is created
+    and all distributions are plotted on a single plot
+    :param label_post: flag to add text labels to the peak of the posterior
+    :param label_prior: flag to add text labels to the peak of the prior
+    :param subplots: flag to use subplots.  If True, then 6 axes per page
+    are used and a single prior and posterior is plotted on each
+    :param figsize: matplotlib figure size
+    :return: if subplots, list of figs, list of axes, else, a single axis
+    """
     import matplotlib.pyplot as plt
-    if ax is None:
-        fig = plt.figure(figsize=(10,10))
+    if isinstance(df,str):
+        df = pd.read_csv(df,index_col=0)
+    if ax is None and not subplots:
+        fig = plt.figure(figsize=figsize)
         ax = plt.subplot(111)
         ax.grid()
+
+
     if "post_stdev" not in df.columns and "post_var" in df.columns:
         df.loc[:,"post_stdev"] = df.post_var.apply(np.sqrt)
     if "prior_stdev" not in df.columns and "prior_var" in df.columns:
         df.loc[:,"prior_stdev"] = df.prior_var.apply(np.sqrt)
+    if "prior_expt" not in df.columns and "prior_mean" in df.columns:
+        df.loc[:,"prior_expt"] = df.prior_mean
+    if "post_expt" not in df.columns and "post_mean" in df.columns:
+        df.loc[:,"post_expt"] = df.post_mean
 
-    for name,mean,stdev in zip(df.index,df.post_expt,df.post_stdev):
-        x,y = gaussian_distribution(mean,stdev)
+    if subplots:
+        fig = plt.figure(figsize=figsize)
+        ax = plt.subplot(2,3,1)
+        ax_per_page = 6
+        ax_count = 0
+        axes = []
+        figs = []
+    for name in df.index:
+        x,y = gaussian_distribution(df.loc[name,"post_expt"],
+                                    df.loc[name,"post_stdev"])
         ax.fill_between(x,0,y,facecolor='b',edgecolor="none",alpha=0.25)
         if label_post:
             mx_idx = np.argmax(y)
             xtxt,ytxt = x[mx_idx],y[mx_idx] * 1.001
             ax.text(xtxt,ytxt,name,ha="center",alpha=0.5)
 
-
-    for mean,stdev in zip(df.prior_expt,df.prior_stdev):
-        x,y = gaussian_distribution(mean,stdev)
+        x,y = gaussian_distribution(df.loc[name,"prior_expt"],
+                                    df.loc[name,"prior_stdev"])
         ax.plot(x,y,color='k',lw=2.0,dashes=(2,1))
         if label_prior:
             mx_idx = np.argmax(y)
             xtxt,ytxt = x[mx_idx],y[mx_idx] * 1.001
             ax.text(xtxt,ytxt,name,ha="center",alpha=0.5)
-
+        #ylim = list(ax.get_ylim())
+        #ylim[1] *= 1.2
+        #ylim[0] = 0.0
+        #ax.set_ylim(ylim)
+        if subplots:
+            ax.set_title(name)
+            ax_count += 1
+            ax.set_yticklabels([])
+            axes.append(ax)
+            if name == df.index[-1]:
+                break
+            if ax_count >= ax_per_page:
+                figs.append(fig)
+                fig = plt.figure(figsize=figsize)
+                ax_count = 0
+            ax = plt.subplot(2,3,ax_count+1)
+    if subplots:
+        figs.append(fig)
+        return figs, axes
     ylim = list(ax.get_ylim())
     ylim[1] *= 1.2
+    ylim[0] = 0.0
     ax.set_ylim(ylim)
+    ax.set_yticklabels([])
     return ax
 
 
@@ -578,6 +635,15 @@ def read_pestpp_runstorage(filename,irun=0):
     obs_df = pd.DataFrame({"obsnme":obs_names,"obsval":obs_vals})
     obs_df.index = obs_df.pop("obsnme")
     return par_df,obs_df
+
+
+def parse_dir_for_io_files(d):
+    files = os.listdir(d)
+    tpl_files = [f for f in files if f.endswith(".tpl")]
+    in_files = [f.replace(".tpl","") for f in tpl_files]
+    ins_files = [f for f in files if f.endswith(".ins")]
+    out_files = [f.replace(".ins","") for f in ins_files]
+    return tpl_files,in_files,ins_files,out_files
 
 
 def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
@@ -659,7 +725,7 @@ class PstFromFlopyModel(object):
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
                  external_ins_out_pairs=None,extra_pre_cmds=None,
                  extra_model_cmds=None,extra_post_cmds=None):
-        """ a monster helper function to setup multiplier parameters for an
+        """ a monster helper class to setup multiplier parameters for an
         existing MODFLOW model.  does all kinds of coolness like building a
         meaningful prior, assigning somewhat meaningful parameter groups and
         bounds, writes a forward_run.py script with all the calls need to
