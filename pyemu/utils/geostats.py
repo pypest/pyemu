@@ -529,7 +529,7 @@ class OrdinaryKrige(object):
 
             if verbose == 2:
                 td = (datetime.now()-start).total_seconds()
-                print("...took {0}".format(td))
+                print("...took {0} seconds".format(td))
                 print("forming lin alg components...",end='')
 
             # form the linear algebra parts and solve
@@ -570,7 +570,7 @@ class OrdinaryKrige(object):
             else:
                 self.interp_data = self.interp_data.append(df)
         td = (datetime.now() - start_loop).total_seconds()
-        print("took {0}".format(td))
+        print("took {0} seconds".format(td))
         return df
 
     def to_grid_factors_file(self, filename,points_file="points.junk",
