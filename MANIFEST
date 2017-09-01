@@ -6,6 +6,7 @@ pyemu/en.py
 pyemu/ev.py
 pyemu/inf.py
 pyemu/la.py
+pyemu/logger.py
 pyemu/mc.py
 pyemu/sc.py
 pyemu/smoother.py
@@ -20,4 +21,3 @@ pyemu/utils/geostats.py
 pyemu/utils/gw_utils.py
 pyemu/utils/helpers.py
 pyemu/utils/optimization.py
-pyemu/utils/reference.py

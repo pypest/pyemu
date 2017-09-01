@@ -29,16 +29,16 @@ def str_con(item):
 pst_config = {}
 
 # parameter stuff
-pst_config["tied_dtype"] = np.dtype([("parnme", "a20"), ("partied","a20")])
+pst_config["tied_dtype"] = np.dtype([("parnme", "U20"), ("partied","U20")])
 pst_config["tied_fieldnames"] = ["parnme","partied"]
 pst_config["tied_format"] = {"parnme":SFMT,"partied":SFMT}
 pst_config["tied_converters"] = {"parnme":str_con,"partied":str_con}
 pst_config["tied_defaults"] = {"parnme":"dum","partied":"dum"}
 
-pst_config["par_dtype"] = np.dtype([("parnme", "a20"), ("partrans","a20"),
-                                   ("parchglim","a20"),("parval1", np.float64),
+pst_config["par_dtype"] = np.dtype([("parnme", "U20"), ("partrans","U20"),
+                                   ("parchglim","U20"),("parval1", np.float64),
                                    ("parlbnd",np.float64),("parubnd",np.float64),
-                                   ("pargp","a20"),("scale", np.float64),
+                                   ("pargp","U20"),("scale", np.float64),
                                    ("offset", np.float64),("dercom",np.int)])
 pst_config["par_fieldnames"] = "PARNME PARTRANS PARCHGLIM PARVAL1 PARLBND PARUBND " +\
                               "PARGP SCALE OFFSET DERCOM"
@@ -58,12 +58,12 @@ pst_config["par_defaults"] = {"parnme":"dum","partrans":"log","parchglim":"facto
 
 
 # parameter group stuff
-pst_config["pargp_dtype"] = np.dtype([("pargpnme", "a20"), ("inctyp","a20"),
+pst_config["pargp_dtype"] = np.dtype([("pargpnme", "U20"), ("inctyp","U20"),
                                    ("derinc", np.float64),
-                                   ("derinclb",np.float64),("forcen","a20"),
-                                   ("derincmul",np.float64),("dermthd", "a20"),
+                                   ("derinclb",np.float64),("forcen","U20"),
+                                   ("derincmul",np.float64),("dermthd", "U20"),
                                    ("splitthresh", np.float64),("splitreldiff",np.float64),
-                                      ("splitaction","a20")])
+                                      ("splitaction","U20")])
 pst_config["pargp_fieldnames"] = "PARGPNME INCTYP DERINC DERINCLB FORCEN DERINCMUL " +\
                         "DERMTHD SPLITTHRESH SPLITRELDIFF SPLITACTION"
 pst_config["pargp_fieldnames"] = pst_config["pargp_fieldnames"].lower().strip().split()
@@ -83,8 +83,8 @@ pst_config["pargp_defaults"] = {"pargpnme":"pargp","inctyp":"relative","derinc":
 
 # observation stuff
 pst_config["obs_fieldnames"] = "OBSNME OBSVAL WEIGHT OBGNME".lower().split()
-pst_config["obs_dtype"] = np.dtype([("obsnme","a20"),("obsval",np.float64),
-                           ("weight",np.float64),("obgnme","a20")])
+pst_config["obs_dtype"] = np.dtype([("obsnme","U20"),("obsval",np.float64),
+                           ("weight",np.float64),("obgnme","U20")])
 pst_config["obs_format"] = {"obsnme": SFMT, "obsval": FFMT,
                    "weight": FFMT, "obgnme": SFMT}
 pst_config["obs_converters"] = {"obsnme": str_con, "obgnme": str_con,
