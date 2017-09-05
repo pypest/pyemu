@@ -517,7 +517,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
 
 
 def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
-                               subplots=False,figsize=(11,8.5)):
+                               subplots=False,figsize=(11,8.5),pt_color='b'):
     """ helper function to plot gaussian distrbutions from prior and posterior
     means and standard deviations
     :param df: a dataframe and csv file.  Must have columns named:
@@ -560,7 +560,7 @@ def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
     for name in df.index:
         x,y = gaussian_distribution(df.loc[name,"post_expt"],
                                     df.loc[name,"post_stdev"])
-        ax.fill_between(x,0,y,facecolor='b',edgecolor="none",alpha=0.25)
+        ax.fill_between(x,0,y,facecolor=pt_color,edgecolor="none",alpha=0.25)
         if label_post:
             mx_idx = np.argmax(y)
             xtxt,ytxt = x[mx_idx],y[mx_idx] * 1.001
@@ -568,7 +568,7 @@ def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
 
         x,y = gaussian_distribution(df.loc[name,"prior_expt"],
                                     df.loc[name,"prior_stdev"])
-        ax.plot(x,y,color='k',lw=2.0,dashes=(2,1))
+        ax.plot(x,y,color='0.5',lw=3.0,dashes=(2,1))
         if label_prior:
             mx_idx = np.argmax(y)
             xtxt,ytxt = x[mx_idx],y[mx_idx] * 1.001

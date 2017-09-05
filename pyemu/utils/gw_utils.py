@@ -150,9 +150,6 @@ def modflow_read_hydmod_file(hydmod_file, hydmod_outfile=None):
 
     hyd_df['obsnme'] = [i + '_' + j for i, j in zip(hyd_df.variable, hyd_df.datestamp)]
 
-
-
-
     if not hydmod_outfile:
         hydmod_outfile = hydmod_file + '.dat'
     hyd_df.to_csv(hydmod_outfile, columns=['obsnme','obsval'], sep=' ',index=False)

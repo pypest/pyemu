@@ -220,6 +220,19 @@ def reweight_test():
     p.adjust_weights(obs_dict=obs_dict)
     assert np.abs(p.phi - 4.0) < 1.0e-5,p.phi
 
+
+def reweight_res_test():
+    import os
+    import numpy as np
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    print(pst.res.loc[pst.nnz_obs_names,:])
+    print(pst.phi,pst.nnz_obs)
+    pst.adjust_weights_resfile()
+    print(pst.phi,pst.nnz_obs)
+    assert np.abs(pst.phi - pst.nnz_obs) < 1.0e-6
+
+
 def regul_rectify_test():
     import os
     import pyemu
@@ -370,7 +383,7 @@ def add_pi_test():
 if __name__ == "__main__":
     # run_array_pars()
     #from_flopy_test()
-    add_pi_test()
+    #add_pi_test()
     # regdata_test()
     # nnz_groups_test()
     # regul_rectify_test()
@@ -386,3 +399,4 @@ if __name__ == "__main__":
     #from_io_with_inschek_test()
     #pestpp_args_test()
     #reweight_test()
+    reweight_res_test()
