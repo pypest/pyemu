@@ -22,18 +22,23 @@ import pyemu
 
 
 def run(cmd_str,cwd='.'):
-    exe_name = cmd_str.split()[0]
-    if "window" in platform.platform().lower():
-        if not exe_name.lower().endswith("exe"):
-            raw = cmd_str.split()
-            raw[0] = exe_name + ".exe"
-            cmd_str = ' '.join(raw)
-    else:
-        if os.path.exists(exe_name) and not exe_name.startswith('./'):
-            cmd_str = "./" + cmd_str
-    print("run():{0}".format(cmd_str))
     bwd = os.getcwd()
     os.chdir(cwd)
+    try:
+        exe_name = cmd_str.split()[0]
+        if "window" in platform.platform().lower():
+            if not exe_name.lower().endswith("exe"):
+                raw = cmd_str.split()
+                raw[0] = exe_name + ".exe"
+                cmd_str = ' '.join(raw)
+        else:
+            if os.path.exists(exe_name) and not exe_name.startswith('./'):
+                cmd_str = "./" + cmd_str
+    except Exception as e:
+        os.chdir(bwd)
+        raise Exception("run() raise :{0}".format(str(e)))
+    print("run():{0}".format(cmd_str))
+
     try:
         ret_val = os.system(cmd_str)
     except Exception as e:
@@ -422,6 +427,14 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
 
     base_dir = os.getcwd()
     port = int(port)
+
+    if os.path.exists(os.path.join(slave_dir,exe_rel_path)):
+        if "window" in platform.platform().lower():
+            if not exe_rel_path.lower().endswith("exe"):
+                exe_rel_path = exe_rel_path + ".exe"
+        else:
+            if not exe_rel_path.startswith('./'):
+                exe_rel_path = "./" + exe_rel_path
 
     if master_dir is not None:
         if master_dir != '.' and os.path.exists(master_dir):
