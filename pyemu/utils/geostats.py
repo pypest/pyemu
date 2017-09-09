@@ -1089,3 +1089,100 @@ def load_sgems_exp_var(filename):
         df = pd.DataFrame({"x":x,"y":y,"pairs":pairs})
         dfs[title] = df
     return dfs
+
+
+
+def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
+             upper_lim=1.0e+30,lower_lim=-1.0e+30,fill_value=1.0e+30):
+    """A python replication of the PEST fac2real utility
+    Parameters
+    ----------
+        pp_file : str
+            existing pilot points file
+        factors_file : str
+            existing factors file from ppk2fac, etc
+        out_file : str
+            filename of array to write
+    Returns
+    -------
+        None
+    """
+    if pp_file is not None and isinstance(pp_file,str):
+        assert os.path.exists(pp_file)
+        # pp_data = pd.read_csv(pp_file,delim_whitespace=True,header=None,
+        #                       names=["name","parval1"],usecols=[0,4])
+        pp_data = pp_file_to_dataframe(pp_file)
+        pp_data.loc[:,"name"] = pp_data.name.apply(lambda x: x.lower())
+    elif pp_file is not None and isinstance(pp_file,pd.DataFrame):
+        assert "name" in pp_file.columns
+        assert "parval1" in pp_file.columns
+        pp_data = pp_file
+    else:
+        raise Exception("unrecognized pp_file arg: must be str or pandas.DataFrame, not {0}"\
+                        .format(type(pp_file)))
+    assert os.path.exists(factors_file)
+    f_fac = open(factors_file,'r')
+    fpp_file = f_fac.readline()
+    if pp_file is None and pp_data is None:
+        pp_data = pp_file_to_dataframe(fpp_file)
+        pp_data.loc[:, "name"] = pp_data.name.apply(lambda x: x.lower())
+
+    fzone_file = f_fac.readline()
+    ncol,nrow = [int(i) for i in f_fac.readline().strip().split()]
+    npp = int(f_fac.readline().strip())
+    pp_names = [f_fac.readline().strip().lower() for _ in range(npp)]
+
+    # check that pp_names is sync'd with pp_data
+    diff = set(list(pp_data.name)).symmetric_difference(set(pp_names))
+    if len(diff) > 0:
+        raise Exception("the following pilot point names are not common " +\
+                        "between the factors file and the pilot points file " +\
+                        ','.join(list(diff)))
+
+    arr = np.zeros((nrow,ncol),dtype=np.float) + fill_value
+    pp_dict = {name:val for name,val in zip(pp_data.index,pp_data.parval1)}
+    try:
+        pp_dict_log = {name:np.log10(val) for name,val in zip(pp_data.index,pp_data.parval1)}
+    except:
+        pp_dict_log = {}
+    #for i in range(nrow):
+    #    for j in range(ncol):
+    while True:
+        line = f_fac.readline()
+        if len(line) == 0:
+            #raise Exception("unexpected EOF in factors file")
+            break
+        try:
+            inode,itrans,fac_data = parse_factor_line(line)
+        except Exception as e:
+            raise Exception("error parsing factor line {0}:{1}".format(line,str(e)))
+        #fac_prods = [pp_data.loc[pp,"value"]*fac_data[pp] for pp in fac_data]
+        if itrans == 0:
+            fac_sum = sum([pp_dict[pp] * fac_data[pp] for pp in fac_data])
+        else:
+            fac_sum = sum([pp_dict_log[pp] * fac_data[pp] for pp in fac_data])
+        if itrans != 0:
+            fac_sum = 10**fac_sum
+        #col = ((inode - 1) // nrow) + 1
+        #row = inode - ((col - 1) * nrow)
+        row = ((inode-1) // ncol) + 1
+        col = inode - ((row - 1) * ncol)
+        #arr[row-1,col-1] = np.sum(np.array(fac_prods))
+        arr[row - 1, col - 1] = fac_sum
+    arr[arr<lower_lim] = lower_lim
+    arr[arr>upper_lim] = upper_lim
+    if out_file is not None:
+        np.savetxt(out_file,arr,fmt="%15.6E",delimiter='')
+        return out_file
+    return arr
+
+def parse_factor_line(line):
+    raw = line.strip().split()
+    inode,itrans,nfac = [int(i) for i in raw[:3]]
+    fac_data = {int(raw[ifac])-1:float(raw[ifac+1]) for ifac in range(4,4+nfac*2,2)}
+    # fac_data = {}
+    # for ifac in range(4,4+nfac*2,2):
+    #     pnum = int(raw[ifac]) - 1 #zero based to sync with pandas
+    #     fac = float(raw[ifac+1])
+    #     fac_data[pnum] = fac
+    return inode,itrans,fac_data
