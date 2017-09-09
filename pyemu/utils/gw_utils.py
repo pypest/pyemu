@@ -261,3 +261,71 @@ def _write_mflist_ins(ins_filename,df,prefix):
                 f.write(" w !{0}!".format(obsnme))
             f.write("\n")
 
+def setup_hds_obs(hds_file,kperk_pairs=None,skip=None):
+    """a function to setup using all values from a
+        layer-stress period pair for observations.
+    hds_file : str
+        a MODFLOW head-save file
+    kperk_pairs: iterable
+        an iterable of pairs of kper (zero-based stress
+        period index) and k (zero-based layer index) to
+        setup observations for.  If None, then a shit-ton
+        of observations may be produced!
+    skip : variable
+        a value or function used to determine which values
+        to skip when setting up observations.  If np.scalar(skip)
+        is True, then values equal to skip will not be used.  If not
+        np.scalar(skip), then skip will be treated as a function that
+        returns True if the value should be skipped.
+
+    """
+    try:
+        import flopy
+    except Exception as e:
+        print("error importing flopy, returning {0}".format(str(e)))
+        return
+
+    assert os.path.exists(hds_file),"head save file not found"
+    try:
+        hds = flopy.utils.HeadFile(hds_file)
+    except Exception as e:
+        raise Exception("error instantiating HeadFile:{0}".format(str(e)))
+    if kperk_pairs is None:
+        kperk_pairs = []
+        for kstp,kper in hds.kstpkper:
+            kperk_pairs.extend([(kper-1,k) for k in range(hds.nlay)])
+    if len(kperk_pairs) == 2:
+        try:
+            if len(kperk_pairs[0]) == 2:
+                pass
+        except:
+            kperk_pairs = [kperk_pairs]
+    data = {}
+    kpers = [kper-1 for kstp,kper in hds.kstpkper]
+    for kperk_pair in kperk_pairs:
+        kper,k = kperk_pair
+        assert kper in kpers, "kper not in hds:{0}".format(kper)
+        assert k in range(hds.nlay), "k not in hds:{0}".format(k)
+        #find the last kstp with this kper
+        kstp = -1
+        for kkstp,kkper in hds.kstpkper:
+            if kkper == kper+1 and kkstp > kstp:
+                kstp = kkstp
+        if kstp == -1:
+            raise Exception("kstp not found for kper {0}".format(kper))
+        kstp -= 1
+        d = hds.get_data(kstpkper=(kstp,kper))[k,:,:]
+        if skip is None:
+            pass
+        elif np.isscalar(skip):
+            d[d==skip] = np.NaN
+        else:
+            try:
+                d[skip(d)] = np.NaN
+            except Exception as e:
+                raise Exception("error applying skip function to kperk_pair {0}: {1}"
+                                .format(kperk_pair,str(e)))
+
+        data[tuple(kperk_pair)] = d
+
+

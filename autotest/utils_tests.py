@@ -768,7 +768,19 @@ def plot_summary_test():
         plt.close(fig)
 
 
+def grid_obs_test():
+    import os
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+
+    hds_file = os.path.join("..","examples","Freyberg_Truth","freyberg.hds")
+    pyemu.gw_utils.setup_hds_obs(hds_file)
+
 if __name__ == "__main__":
+    grid_obs_test()
     # plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
@@ -795,7 +807,7 @@ if __name__ == "__main__":
     # ppcov_complex_test()
     # setup_ppcov_simple()
     # ppcov_simple_test()
-    fac2real_test()
+    # fac2real_test()
     # vario_test()
     # geostruct_test()
     # aniso_test()
