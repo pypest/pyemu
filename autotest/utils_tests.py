@@ -770,14 +770,50 @@ def plot_summary_test():
 
 def grid_obs_test():
     import os
+    import shutil
+    import numpy as np
+    import pandas as pd
     try:
         import flopy
     except:
         return
     import pyemu
 
-    hds_file = os.path.join("..","examples","Freyberg_Truth","freyberg.hds")
+    org_hds_file = os.path.join("..","examples","Freyberg_Truth","freyberg.hds")
+    hds_file = os.path.join("temp","freyberg.hds")
+    out_file = hds_file+".dat"
+    shutil.copy2(org_hds_file,hds_file)
     pyemu.gw_utils.setup_hds_obs(hds_file)
+    df1 = pd.read_csv(out_file,delim_whitespace=True)
+    pyemu.gw_utils.apply_hds_obs(hds_file)
+    df2 = pd.read_csv(out_file,delim_whitespace=True)
+    diff = df1.obsval - df2.obsval
+    assert diff.max() < 1.0e-6
+
+    pyemu.gw_utils.setup_hds_obs(hds_file,skip=-999)
+    df1 = pd.read_csv(out_file,delim_whitespace=True)
+    pyemu.gw_utils.apply_hds_obs(hds_file)
+    df2 = pd.read_csv(out_file,delim_whitespace=True)
+    diff = df1.obsval - df2.obsval
+    assert diff.max() < 1.0e-6
+
+    skip = lambda x : x < -888.0
+    skip = lambda x: x if x > -888.0 else np.NaN
+    pyemu.gw_utils.setup_hds_obs(hds_file,skip=skip)
+    df1 = pd.read_csv(out_file,delim_whitespace=True)
+    pyemu.gw_utils.apply_hds_obs(hds_file)
+    df2 = pd.read_csv(out_file,delim_whitespace=True)
+    diff = df1.obsval - df2.obsval
+    assert diff.max() < 1.0e-6
+
+    kperk_pairs = (0,0)
+    pyemu.gw_utils.setup_hds_obs(hds_file,kperk_pairs=kperk_pairs,
+                                 skip=skip)
+    df1 = pd.read_csv(out_file,delim_whitespace=True)
+    pyemu.gw_utils.apply_hds_obs(hds_file)
+    df2 = pd.read_csv(out_file,delim_whitespace=True)
+    diff = df1.obsval - df2.obsval
+    assert diff.max() < 1.0e-6
 
 if __name__ == "__main__":
     grid_obs_test()

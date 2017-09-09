@@ -275,8 +275,8 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None):
         a value or function used to determine which values
         to skip when setting up observations.  If np.scalar(skip)
         is True, then values equal to skip will not be used.  If not
-        np.scalar(skip), then skip will be treated as a function that
-        returns True if the value should be skipped.
+        np.scalar(skip), then skip will be treated as a lambda function that
+        returns np.NaN if the value should be skipped.
 
     """
     try:
@@ -290,6 +290,7 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None):
         hds = flopy.utils.HeadFile(hds_file)
     except Exception as e:
         raise Exception("error instantiating HeadFile:{0}".format(str(e)))
+
     if kperk_pairs is None:
         kperk_pairs = []
         for kstp,kper in hds.kstpkper:
@@ -300,32 +301,116 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None):
                 pass
         except:
             kperk_pairs = [kperk_pairs]
+
+    #if start_datetime is not None:
+    #    start_datetime = pd.to_datetime(start_datetime)
+    #    dts = start_datetime + pd.to_timedelta(hds.times,unit='d')
     data = {}
     kpers = [kper-1 for kstp,kper in hds.kstpkper]
     for kperk_pair in kperk_pairs:
         kper,k = kperk_pair
         assert kper in kpers, "kper not in hds:{0}".format(kper)
         assert k in range(hds.nlay), "k not in hds:{0}".format(k)
-        #find the last kstp with this kper
-        kstp = -1
-        for kkstp,kkper in hds.kstpkper:
-            if kkper == kper+1 and kkstp > kstp:
-                kstp = kkstp
-        if kstp == -1:
-            raise Exception("kstp not found for kper {0}".format(kper))
-        kstp -= 1
+        kstp = last_kstp_from_kper(hds,kper)
         d = hds.get_data(kstpkper=(kstp,kper))[k,:,:]
-        if skip is None:
-            pass
-        elif np.isscalar(skip):
-            d[d==skip] = np.NaN
-        else:
-            try:
-                d[skip(d)] = np.NaN
-            except Exception as e:
-                raise Exception("error applying skip function to kperk_pair {0}: {1}"
-                                .format(kperk_pair,str(e)))
 
-        data[tuple(kperk_pair)] = d
+        data["{0}_{1}".format(kper,k)] = d.flatten()
+        #data[(kper,k)] = d.flatten()
+    idx,iidx,jidx = [],[],[]
+    for _ in range(len(data)):
+        for i in range(hds.nrow):
+            iidx.extend([i for _ in range(hds.ncol)])
+            jidx.extend([j for j in range(hds.ncol)])
+            idx.extend(["i{0:04d}_j{1:04d}".format(i,j) for j in range(hds.ncol)])
+    idx = idx[:hds.nrow*hds.ncol]
+    df = pd.DataFrame(data,index=idx)
+    data_cols = list(df.columns)
+    data_cols.sort()
+    #df.loc[:,"iidx"] = iidx
+    #df.loc[:,"jidx"] = jidx
+    if skip is not None:
+        for col in data_cols:
+            if np.isscalar(skip):
+                df.loc[df.loc[:,col]==skip,col] = np.NaN
+            else:
+                df.loc[:,col] = df.loc[:,col].apply(skip)
 
+    # melt to long form
+    df = df.melt(var_name="kperk",value_name="obsval")
+    # set row and col identifies
+    df.loc[:,"iidx"] = iidx
+    df.loc[:,"jidx"] = jidx
+    #drop nans from skip
+    df = df.dropna()
+    #set some additional identifiers
+    df.loc[:,"kper"] = df.kperk.apply(lambda x: int(x.split('_')[0]))
+    df.loc[:,"kidx"] = df.pop("kperk").apply(lambda x: int(x.split('_')[1]))
 
+    # form obs names
+    #def get_kper_str(kper):
+    #    if start_datetime is not None:
+    #        return  dts[int(kper)].strftime("%Y%m%d")
+    #    else:
+    #        return "kper{0:04.0f}".format(kper)
+    fmt = "hds_{0:02.0f}_{1:03.0f}_{2:03.0f}_{3:03.0f}"
+    # df.loc[:,"obsnme"] = df.apply(lambda x: fmt.format(x.kidx,x.iidx,x.jidx,
+    #                                                   get_kper_str(x.kper)),axis=1)
+    df.loc[:,"obsnme"] = df.apply(lambda x: fmt.format(x.kidx,x.iidx,x.jidx,
+                                                      x.kper),axis=1)
+
+    df.loc[:,"ins_str"] = df.obsnme.apply(lambda x: "l1 w !{0}!".format(x))
+
+    #write the instruction file
+    with open(hds_file+".dat.ins","w") as f:
+        f.write("pif ~\nl1\n")
+        df.ins_str.to_string(f,index=False,header=False)
+
+    #write the corresponding output file
+    df.loc[:,["obsnme","obsval"]].to_csv(hds_file+".dat",sep=' ',index=False)
+
+    hds_path = os.path.dirname(hds_file)
+    setup_file = os.path.join(hds_path,"_setup_{0}.csv".format(os.path.split(hds_file)[-1]))
+    df.to_csv(setup_file)
+    fwd_run_line = "pyemu.gw_utils.apply_hds_obs('{0}')\n".format(hds_file)
+    return fwd_run_line
+
+def last_kstp_from_kper(hds,kper):
+    #find the last kstp with this kper
+    kstp = -1
+    for kkstp,kkper in hds.kstpkper:
+        if kkper == kper+1 and kkstp > kstp:
+            kstp = kkstp
+    if kstp == -1:
+        raise Exception("kstp not found for kper {0}".format(kper))
+    kstp -= 1
+    return kstp
+
+def apply_hds_obs(hds_file):
+    try:
+        import flopy
+    except Exception as e:
+        raise Exception("apply_hds_obs(): error importing flopy: {0}".\
+                        format(str(e)))
+    from .. import pst_utils
+    assert os.path.exists(hds_file)
+    out_file = hds_file+".dat"
+    ins_file = out_file + ".ins"
+    assert os.path.exists(ins_file)
+    df = pd.DataFrame({"obsnme":pst_utils.parse_ins_file(ins_file)})
+    df.index = df.obsnme
+
+    # populate metdata
+    items = ["k","i","j","kper"]
+    for i,item in enumerate(items):
+        df.loc[:,item] = df.obsnme.apply(lambda x: int(x.split('_')[i+1]))
+
+    hds = flopy.utils.HeadFile(hds_file)
+    kpers = df.kper.unique()
+    df.loc[:,"obsval"] = np.NaN
+    for kper in kpers:
+        kstp = last_kstp_from_kper(hds,kper)
+        data = hds.get_data(kstpkper=(kstp,kper))
+        df_kper = df.loc[df.kper==kper,:]
+        df.loc[df_kper.index,"obsval"] = data[df_kper.k,df_kper.i,df_kper.j]
+    assert df.dropna().shape[0] == df.shape[0]
+    df.loc[:,["obsnme","obsval"]].to_csv(out_file,index=False,sep=" ")
