@@ -7,5 +7,5 @@ from .inf import Influence
 from .smoother import EnsembleSmoother
 from .mat import Matrix, Jco, Cov, concat
 from .pst import Pst, pst_utils
-from.utils import helpers, gw_utils, optimization,geostats
+from.utils import helpers, gw_utils, optimization,geostats, pp_utils
 
