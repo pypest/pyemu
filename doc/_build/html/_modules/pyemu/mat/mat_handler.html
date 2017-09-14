@@ -56,10 +56,10 @@
 
 <div class="viewcode-block" id="concat"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.concat">[docs]</a><span class="k">def</span> <span class="nf">concat</span><span class="p">(</span><span class="n">mats</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Concatenate Matrix objects.  Tries either axis.</span>
-<span class="sd">    Parameters:</span>
+<span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        mats: an enumerable of Matrix objects</span>
-<span class="sd">    Returns:</span>
+<span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">        Matrix</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -109,11 +109,11 @@
 <div class="viewcode-block" id="get_common_elements"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.get_common_elements">[docs]</a><span class="k">def</span> <span class="nf">get_common_elements</span><span class="p">(</span><span class="n">list1</span><span class="p">,</span> <span class="n">list2</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;find the common elements in two lists.  used to support auto align</span>
 <span class="sd">        might be faster with sets</span>
-<span class="sd">    Parameters:</span>
+<span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        list1 : a list of objects</span>
 <span class="sd">        list2 : a list of objects</span>
-<span class="sd">    Returns:</span>
+<span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">        list of common objects shared by list1 and list2</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -129,7 +129,7 @@
 
 <div class="viewcode-block" id="Matrix"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Matrix">[docs]</a><span class="k">class</span> <span class="nc">Matrix</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;a class for easy linear algebra</span>
-<span class="sd">    Attributes:</span>
+<span class="sd">    Attributes</span>
 <span class="sd">        x : ndarray</span>
 <span class="sd">            numpy ndarray</span>
 <span class="sd">        row_names : list(str)</span>
@@ -169,7 +169,7 @@
 <span class="sd">            isdigonal : bool to determine if the Matrix is diagonal</span>
 <span class="sd">            autoalign: bool used to control the autoalignment of Matrix objects</span>
 <span class="sd">                during linear algebra operations</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">col_names</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">row_names</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
@@ -219,10 +219,10 @@
     <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;a very crude overload of getitem - not trying to parse item,</span>
 <span class="sd">            instead relying on shape of submat</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            item : an enumerable that can be used as an index</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            a Matrix object that is a subMatrix of self</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -245,14 +245,14 @@
 
     <span class="k">def</span> <span class="nf">__pow__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">power</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;overload of __pow__ operator</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            power: int or float.  interpreted as follows:</span>
 <span class="sd">                -1 = inverse of self</span>
 <span class="sd">                -0.5 = sqrt of inverse of self</span>
 <span class="sd">                0.5 = sqrt of self</span>
 <span class="sd">                all other positive ints = elementwise self raised to power</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            a new Matrix object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -281,10 +281,10 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            subtraction overload.  tries to speedup by checking for scalars of</span>
 <span class="sd">            diagonal matrices on either side of operator</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            other : [scalar,numpy.ndarray,Matrix object]</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            Matrix object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -357,10 +357,10 @@
     <span class="k">def</span> <span class="nf">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;addition overload.  tries to speedup by checking for</span>
 <span class="sd">            scalars of diagonal matrices on either side of operator</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            other : [scalar,numpy.ndarray,Matrix object]</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            Matrix</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -424,10 +424,10 @@
 <div class="viewcode-block" id="Matrix.hadamard_product"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Matrix.hadamard_product">[docs]</a>    <span class="k">def</span> <span class="nf">hadamard_product</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;element-wise multiplication.  tries to speedup by checking for</span>
 <span class="sd">            scalars of diagonal matrices on either side of operator</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            other : [scalar,numpy.ndarray,Matrix object]</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            Matrix</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -493,10 +493,10 @@
     <span class="k">def</span> <span class="nf">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;multiplication overload.  tries to speedup by checking for scalars or</span>
 <span class="sd">            diagonal matrices on either side of operator</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            other : [scalar,numpy.ndarray,Matrix object]</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            Matrix object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -672,10 +672,10 @@
 
 <div class="viewcode-block" id="Matrix.mult_isaligned"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Matrix.mult_isaligned">[docs]</a>    <span class="k">def</span> <span class="nf">mult_isaligned</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;check if matrices are aligned for multiplication</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            other : Matrix</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            True if aligned</span>
 <span class="sd">            False if not aligned</span>
@@ -691,10 +691,10 @@
 
 <div class="viewcode-block" id="Matrix.element_isaligned"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Matrix.element_isaligned">[docs]</a>    <span class="k">def</span> <span class="nf">element_isaligned</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;check if matrices are aligned for element-wise operations</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            other : Matrix</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            True if aligned</span>
 <span class="sd">            False if not aligned</span>
@@ -731,10 +731,10 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get the shape of x</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            None</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            tuple of ndims</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -764,10 +764,10 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">transpose</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;transpose operation</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            None</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            transpose of self</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -785,10 +785,10 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">inv</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;inversion operation</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            None</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            inverse of self</span>
 <span class="sd">       &quot;&quot;&quot;</span>
@@ -836,10 +836,10 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">sqrt</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;square root operation</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            None</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            square root of self</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -907,11 +907,11 @@
 
 <div class="viewcode-block" id="Matrix.indices"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Matrix.indices">[docs]</a>    <span class="k">def</span> <span class="nf">indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get the row and col indices of names</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            names : [enumerable] column and/or row names</span>
 <span class="sd">            axis : [int] the axis to search.</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            numpy.ndarray : indices of names.  if axis is None, two ndarrays</span>
 <span class="sd">                are returned, corresponding the indices of names for each axis</span>
@@ -945,11 +945,11 @@
 
 <div class="viewcode-block" id="Matrix.align"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Matrix.align">[docs]</a>    <span class="k">def</span> <span class="nf">align</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;reorder self by names</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            names : [enumerable] names in row and\or column names</span>
 <span class="sd">            axis : [int] the axis to reorder. if None, reorder both axes</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -993,12 +993,12 @@
 
 <div class="viewcode-block" id="Matrix.get"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Matrix.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">drop</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get a (sub)Matrix ordered on row_names or col_names</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            row_names : [enumerable] row_names for new Matrix</span>
 <span class="sd">            col_names : [enumerable] col_names for new Matrix</span>
 <span class="sd">            drop : [bool] flag to remove row_names and/or col_names</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            Matrix</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1051,11 +1051,11 @@
 
 <div class="viewcode-block" id="Matrix.drop"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Matrix.drop">[docs]</a>    <span class="k">def</span> <span class="nf">drop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">names</span><span class="p">,</span> <span class="n">axis</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; drop elements from self</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            names : [enumerable] names to drop</span>
 <span class="sd">            axis : [int] the axis to drop from. must be in [0,1]</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1138,10 +1138,10 @@
 
 <div class="viewcode-block" id="Matrix.to_binary"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Matrix.to_binary">[docs]</a>    <span class="k">def</span> <span class="nf">to_binary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;write a pest-compatible binary file</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            filename : [str] filename to save binary file</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1183,10 +1183,10 @@
     <span class="nd">@classmethod</span>
 <div class="viewcode-block" id="Matrix.from_binary"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Matrix.from_binary">[docs]</a>    <span class="k">def</span> <span class="nf">from_binary</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;load from pest-compatible binary file</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            filename : [str] filename to save binary file</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1242,11 +1242,11 @@
 <div class="viewcode-block" id="Matrix.from_fortranfile"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Matrix.from_fortranfile">[docs]</a>    <span class="k">def</span> <span class="nf">from_fortranfile</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; a binary load method to accommodate one of the many</span>
 <span class="sd">            bizzare fortran binary writing formats</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            filename : str</span>
 <span class="sd">                name of the binary matrix file</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1288,11 +1288,11 @@
 
 <div class="viewcode-block" id="Matrix.to_ascii"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Matrix.to_ascii">[docs]</a>    <span class="k">def</span> <span class="nf">to_ascii</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">out_filename</span><span class="p">,</span> <span class="n">icode</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;write a pest-compatible ASCII Matrix/vector file</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            out_filename : [str] output filename</span>
 <span class="sd">            icode : [int] pest-style info code for Matrix style</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1325,11 +1325,11 @@
     <span class="nd">@classmethod</span>
 <div class="viewcode-block" id="Matrix.from_ascii"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Matrix.from_ascii">[docs]</a>    <span class="k">def</span> <span class="nf">from_ascii</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;load a pest-compatible ASCII Matrix/vector file</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            filename : str</span>
 <span class="sd">                name of the file to read</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1414,11 +1414,11 @@
     <span class="nd">@classmethod</span>
 <div class="viewcode-block" id="Matrix.from_dataframe"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Matrix.from_dataframe">[docs]</a>    <span class="k">def</span> <span class="nf">from_dataframe</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; populate self with dataframe information</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            df : pandas dataframe</span>
 
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 
@@ -1430,10 +1430,10 @@
 
 <div class="viewcode-block" id="Matrix.to_dataframe"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Matrix.to_dataframe">[docs]</a>    <span class="k">def</span> <span class="nf">to_dataframe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;return a pandas dataframe of the Matrix object</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            None</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            pandas dataframe</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1446,10 +1446,10 @@
 
 <div class="viewcode-block" id="Matrix.to_sparse"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Matrix.to_sparse">[docs]</a>    <span class="k">def</span> <span class="nf">to_sparse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trunc</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get the CSR sparse Matrix representation of Matrix</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            None</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            scipy sparse Matrix object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1530,7 +1530,7 @@
 <span class="sd">            other: Matrix to pull columns from</span>
 <span class="sd">            parnames: parameter (column) names to pull from</span>
 
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">            nothing: operates on self</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">col_names</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">col_names</span><span class="p">)))</span> <span class="o">&gt;</span> <span class="mi">0</span>
@@ -1562,14 +1562,14 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">[],</span> <span class="n">row_names</span><span class="o">=</span><span class="p">[],</span> <span class="n">col_names</span><span class="o">=</span><span class="p">[],</span>
                  <span class="n">isdiagonal</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">autoalign</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">            x : numpy.ndarray</span>
 <span class="sd">            names : [enumerable] names for both columns and rows</span>
 <span class="sd">            row_names : [enumerable] names for rows</span>
 <span class="sd">            col_names : [enumerable] names for columns</span>
 <span class="sd">            isdiagonal : [bool] diagonal Matrix flag</span>
 <span class="sd">            autoalign : [bool] autoalignment flag</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__identity</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1635,11 +1635,11 @@
         <span class="sd">&quot;&quot;&quot;get a new Covariance object that is conditional on knowing some</span>
 <span class="sd">            elements.  uses Schur&#39;s complement for conditional Covariance</span>
 <span class="sd">            propagation</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            conditioning_elements : [enumerable] names of elements to</span>
 <span class="sd">                                    condition on</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            Cov object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1670,7 +1670,7 @@
 <span class="sd">        Args:</span>
 <span class="sd">            mean: mean values. either a scalar applied to to the entire vector of length N or an N-length vector</span>
 
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">            A vector of conditioned values, sampled using the covariance matrix and applied to the mean</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1715,12 +1715,12 @@
 
 <div class="viewcode-block" id="Cov.to_uncfile"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Cov.to_uncfile">[docs]</a>    <span class="k">def</span> <span class="nf">to_uncfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">unc_file</span><span class="p">,</span> <span class="n">covmat_file</span><span class="o">=</span><span class="s2">&quot;Cov.mat&quot;</span><span class="p">,</span> <span class="n">var_mult</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;write a pest-compatible uncertainty file</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            unc_file : [str] filename</span>
 <span class="sd">            Covmat : [str] Covariance Matrix filename</span>
 <span class="sd">            var_mult : [float] variance multiplier</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1750,10 +1750,10 @@
     <span class="nd">@classmethod</span>
 <div class="viewcode-block" id="Cov.from_obsweights"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Cov.from_obsweights">[docs]</a>    <span class="k">def</span> <span class="nf">from_obsweights</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">pst_file</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;load Covariance from observation weights</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            pst_file : [str] pest control file name</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1765,10 +1765,10 @@
 <div class="viewcode-block" id="Cov.from_observation_data"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Cov.from_observation_data">[docs]</a>    <span class="k">def</span> <span class="nf">from_observation_data</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">pst</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;load Covariances from a pandas dataframe</span>
 <span class="sd">                of the pst observation data section</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            pst : [pst object]</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1798,12 +1798,12 @@
     <span class="nd">@classmethod</span>
 <div class="viewcode-block" id="Cov.from_parbounds"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Cov.from_parbounds">[docs]</a>    <span class="k">def</span> <span class="nf">from_parbounds</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">pst_file</span><span class="p">,</span> <span class="n">sigma_range</span> <span class="o">=</span> <span class="mf">4.0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;load Covariances from a pest control file parameter data section</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            pst_file : [str] pest control file name</span>
 <span class="sd">            sigma_range: float defining range of upper bound - lower bound in terms of sigma (stddev).</span>
 <span class="sd">                          e.g. if sigma_range = 4, the bounds represent 4 * sigma</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1816,12 +1816,12 @@
 <div class="viewcode-block" id="Cov.from_parameter_data"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Cov.from_parameter_data">[docs]</a>    <span class="k">def</span> <span class="nf">from_parameter_data</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">pst</span><span class="p">,</span> <span class="n">sigma_range</span> <span class="o">=</span> <span class="mf">4.0</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;load Covariances from a pandas dataframe of the</span>
 <span class="sd">                pst parameter data section</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            pst : [pst object]</span>
 <span class="sd">            sigma_range: float defining range of upper bound - lower bound in terms of sigma (stddev).</span>
 <span class="sd">                          e.g. if sigma_range = 4, the bounds represent 4 * sigma</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1857,10 +1857,10 @@
     <span class="nd">@classmethod</span>
 <div class="viewcode-block" id="Cov.from_uncfile"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Cov.from_uncfile">[docs]</a>    <span class="k">def</span> <span class="nf">from_uncfile</span><span class="p">(</span><span class="n">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;load Covariances from a pest-compatible uncertainty file</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            filename : [str] uncertainty file name</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">       &quot;&quot;&quot;</span>
@@ -1931,10 +1931,10 @@
     <span class="nd">@staticmethod</span>
 <div class="viewcode-block" id="Cov.get_uncfile_dimensions"><a class="viewcode-back" href="../../../_static/pyemu.mat.html#pyemu.mat.mat_handler.Cov.get_uncfile_dimensions">[docs]</a>    <span class="k">def</span> <span class="nf">get_uncfile_dimensions</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;quickly read an uncertainty file to find the dimensions</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            filename : [str] uncertainty filename</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            nentries : [int] number of elements in file</span>
 <span class="sd">        &quot;&quot;&quot;</span>

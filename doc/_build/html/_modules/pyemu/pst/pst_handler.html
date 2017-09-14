@@ -60,12 +60,12 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">load</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">resfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;constructor of pst object</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            filename : [str] pest control file name</span>
 <span class="sd">            load : [bool] flag for loading</span>
 <span class="sd">            resfile : [str] residual filename</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -97,10 +97,10 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">phi_components</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; get the individual components of the total objective function</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            None</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            Dict{observation group : contribution}</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -149,9 +149,9 @@
 <span class="sd">            normalized to the total PHI being 1.0</span>
 <span class="sd">        Args:</span>
 <span class="sd">            None</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">            Dict{observation group : normalized contribution}</span>
-<span class="sd">        Raises:</span>
+<span class="sd">        Raises</span>
 <span class="sd">            Assertion error if self.observation_data groups don&#39;t match</span>
 <span class="sd">            self.res groups</span>
 
@@ -384,11 +384,11 @@
 
 <div class="viewcode-block" id="Pst.load"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_handler.Pst.load">[docs]</a>    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;load the pest control file</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            filename : str</span>
 <span class="sd">                pst filename</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -705,10 +705,10 @@
 
 <div class="viewcode-block" id="Pst.write"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_handler.Pst.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">new_filename</span><span class="p">,</span><span class="n">update_regul</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;write a pest control file</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            new_filename (str) : name of the new pest control file</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -847,9 +847,9 @@
 <span class="sd">        Args:</span>
 <span class="sd">            par_names (list of str) : parameter names</span>
 <span class="sd">            obs_names (list of str) : observation names</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">            new pst instance</span>
-<span class="sd">        Raises:</span>
+<span class="sd">        Raises</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
@@ -912,11 +912,11 @@
 <div class="viewcode-block" id="Pst.parrep"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_handler.Pst.parrep">[docs]</a>    <span class="k">def</span> <span class="nf">parrep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;replicates the pest parrep util. replaces the parval1 field in the</span>
 <span class="sd">            parameter data section dataframe</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            parfile (str) : parameter file to use.  If None, try to use</span>
 <span class="sd">                            a parameter file that corresponds to the case name</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -934,11 +934,11 @@
 <div class="viewcode-block" id="Pst.adjust_weights_recfile"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_handler.Pst.adjust_weights_recfile">[docs]</a>    <span class="k">def</span> <span class="nf">adjust_weights_recfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">recfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;adjusts the weights of the observations based on the phi components</span>
 <span class="sd">        in a recfile</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            recfile (str) : record file name.  If None, try to use a record file</span>
 <span class="sd">                            with the case name</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -970,10 +970,10 @@
 
 <div class="viewcode-block" id="Pst.adjust_weights_resfile"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_handler.Pst.adjust_weights_resfile">[docs]</a>    <span class="k">def</span> <span class="nf">adjust_weights_resfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;adjust the weights by phi components in a residual file</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            resfile (str) : residual filename.  If None, use self.resfile</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -986,11 +986,11 @@
     <span class="k">def</span> <span class="nf">_adjust_weights_by_phi_components</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">components</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;resets the weights of observations to account for</span>
 <span class="sd">        residual phi components.</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            components (dict{obs group:phi contribution}): group specific phi</span>
 <span class="sd">                contributions</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1018,7 +1018,7 @@
 
     <span class="k">def</span> <span class="nf">__reset_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_phis</span><span class="p">,</span> <span class="n">res_idxs</span><span class="p">,</span> <span class="n">obs_idxs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;reset weights based on target phi vals for each group</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            target_phis (dict) : target phi contribution for groups to reweight</span>
 <span class="sd">            res_idxs (dict) : the index positions of each group of interest</span>
@@ -1046,7 +1046,7 @@
 <div class="viewcode-block" id="Pst.adjust_weights_by_list"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_handler.Pst.adjust_weights_by_list">[docs]</a>    <span class="k">def</span> <span class="nf">adjust_weights_by_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">obslist</span><span class="p">,</span><span class="n">weight</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;apply a single weight to a list of obsevation names.  supports that</span>
 <span class="sd">        data worth analyses in Schur</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            obslist : list of obseravtion names</span>
 <span class="sd">            weight : (flaot) new weight to assign</span>
@@ -1066,11 +1066,11 @@
                               <span class="n">obsgrp_dict</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;reset the weights of observation groups to contribute a specified</span>
 <span class="sd">        amount to the composite objective function</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            obs_dict (dict{obs name:new contribution})</span>
 <span class="sd">            obsgrp_dict (dict{obs group name:contribution})</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        Note:</span>
@@ -1108,14 +1108,14 @@
 <div class="viewcode-block" id="Pst.proportional_weights"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_handler.Pst.proportional_weights">[docs]</a>    <span class="k">def</span> <span class="nf">proportional_weights</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fraction_stdev</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">wmax</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span>
                              <span class="n">leave_zero</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;setup inversely proportional weights</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            fraction_stdev (float) : the fraction portion of the observation</span>
 <span class="sd">                val to treat as the standard deviation.  set to 1.0 for</span>
 <span class="sd">                inversely proportional</span>
 <span class="sd">            wmax (float) : maximum weight to allow</span>
 <span class="sd">            leave_zero (bool) : flag to leave existing zero weights</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1159,7 +1159,7 @@
 
                 <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Pst.calculate_pertubations(): &quot;</span> <span class="o">+</span>\
                                 <span class="s2">&quot;can&#39;t calc pertubations for the following &quot;</span><span class="o">+</span>\
-                                <span class="s2">&quot;parameters: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">still_out</span><span class="p">)))</span></div>
+                                <span class="s2">&quot;Parameters </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">still_out</span><span class="p">)))</span></div>
 
 <div class="viewcode-block" id="Pst.build_increments"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_handler.Pst.build_increments">[docs]</a>    <span class="k">def</span> <span class="nf">build_increments</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">enforce_bounds</span><span class="p">()</span>

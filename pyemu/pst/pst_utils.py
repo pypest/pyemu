@@ -116,11 +116,11 @@ pst_config["pestpp_options"] = {}
 def read_resfile(resfile):
         """load a residual file into a pandas dataframe
 
-        Parameters:
+        Parameters
         ----------
             resfile : str
                 residual file
-        Returns:
+        Returns
         -------
             pandas DataFrame
         """
@@ -146,11 +146,11 @@ def read_resfile(resfile):
 def read_parfile(parfile):
     """load a pest-compatible .par file into a pandas dataframe
 
-    Parameters:
+    Parameters
     ----------
         parfile : str
             pest parameter file
-    Returns:
+    Returns
     -------
         pandas DataFrame
     """
@@ -167,14 +167,14 @@ def read_parfile(parfile):
 def write_parfile(df,parfile):
     """ write a pest parameter file from a dataframe
 
-    Parameters:
+    Parameters
     ----------
         df : pandas DataFrame
             with column names that correspond to the entries
             in the parameter data section of a pest control file
         parfile : str
             name of the parameter file to write
-    Returns:
+    Returns
     -------
         None
 
@@ -201,11 +201,11 @@ def write_parfile(df,parfile):
 def parse_tpl_file(tpl_file):
     """ parse a pest template file to get the parameter names
 
-    Parameters:
+    Parameters
     ----------
         tpl_file : str
             template file name
-    Returns:
+    Returns
     -------
         list of parameter names
     """
@@ -297,11 +297,11 @@ def get_marker_indices(marker,line):
 
 def parse_ins_file(ins_file):
     """parse a pest instruction file to get observation names
-    Parameters:
+    Parameters
     ----------
         ins_file : str
             instruction file name
-    Returns:
+    Returns
         list of observation names
     """
 
@@ -365,13 +365,13 @@ def populate_dataframe(index,columns, default_dict, dtype):
 
 def generic_pst(par_names=["par1"],obs_names=["obs1"],addreg=False):
     """generate a generic pst instance
-    Parameters:
+    Parameters
     ----------
         par_names : list(str)
             parameter names to setup
         obs_names : list(str)
             observation names to setup
-    Returns:
+    Returns
     -------
         Pst instance
 
@@ -442,10 +442,10 @@ def try_run_inschek(pst):
 
 def get_phi_comps_from_recfile(recfile):
         """read the phi components from a record file
-        Parameters:
+        Parameters
         ----------
             recfile (str) : record file
-        Returns:
+        Returns
         -------
             dict{iteration number:{group,contribution}}
         """
@@ -476,7 +476,7 @@ def get_phi_comps_from_recfile(recfile):
 def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
                gwutils_compliant=False, datetime_format=None):
     """ create an instruction file from an smp file
-    Parameters:
+    Parameters
     ----------
         smp_filename : str
             existing smp file
@@ -493,7 +493,7 @@ def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
             use free format (with whitespace) instruction set
         datetime_format : optional str
             str to pass to datetime.strptime in the smp_to_dataframe() function
-    Returns:
+    Returns
     -------
         dataframe instance of the smp file with the observation names and
         instruction lines as additional columns
@@ -538,7 +538,7 @@ def dataframe_to_smp(dataframe,smp_filename,name_col="name",
                      max_name_len=12):
     """ write a dataframe as an smp file
 
-    Parameters:
+    Parameters
     ----------
         dataframe : a pandas dataframe
         smp_filename : str
@@ -552,7 +552,7 @@ def dataframe_to_smp(dataframe,smp_filename,name_col="name",
         datetime_format: str
             either 'dd/mm/yyyy' or 'mm/dd/yyy'
         value_format: a python float-compatible format
-    Returns:
+    Returns
     -------
         None
     """
@@ -601,7 +601,7 @@ def date_parser(items):
 
 def smp_to_dataframe(smp_filename,datetime_format=None):
     """ load an smp file into a pandas dataframe
-    Parameters:
+    Parameters
     ----------
         smp_filename : str
             smp filename to load
@@ -609,7 +609,7 @@ def smp_to_dataframe(smp_filename,datetime_format=None):
             should be either "%m/%d/%Y %H:%M:%S" or "%d/%m/%Y %H:%M:%S"
             If None, then we will try to deduce the format for you, which
             always dangerous
-    Returns:
+    Returns
     -------
         a pandas dataframe instance
     """

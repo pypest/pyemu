@@ -47,7 +47,7 @@ class Ensemble(pd.DataFrame):
         """ draw random realizations from a multivariate
             Gaussian distribution
 
-        Parameters:
+        Parameters
         ----------
             cov: a Cov instance
                 covariance structure to draw from
@@ -55,7 +55,7 @@ class Ensemble(pd.DataFrame):
                 number of realizations to generate
             names : list of names to draw for.  If None, values all names
                     are drawn
-        Returns:
+        Returns
         -------
             None
         """
@@ -131,7 +131,7 @@ class Ensemble(pd.DataFrame):
 class ObservationEnsemble(Ensemble):
     """ Ensemble derived type observation noise
 
-        Parameters:
+        Parameters
         ----------
             pst : Pst instance
 
@@ -217,7 +217,7 @@ class ParameterEnsemble(Ensemble):
         implements bounds enforcement, log10 transformation,
         fixed parameters and null-space projection
 
-    Parameters:
+    Parameters
     ----------
         pst : pyemu.Pst instance
         bound_tol : float
@@ -509,10 +509,10 @@ class ParameterEnsemble(Ensemble):
 
     def _back_transform(self,inplace=True):
         """ remove log10 transformation from ensemble
-        Parameters:
+        Parameters
         ----------
             inplace: (boolean) back transform self in place
-        Returns:
+        Returns
         -------
             if not inplace, ParameterEnsemble, otherwise None
 
@@ -548,10 +548,10 @@ class ParameterEnsemble(Ensemble):
 
     def _transform(self,inplace=True):
         """ perform log10 transformation for ensemble
-        Parameters:
+        Parameters
         ----------
             inplace: (boolean) transform self in place
-        Returns:
+        Returns
         -------
             if not inplace, ParameterEnsemble, otherwise None
 
@@ -586,7 +586,7 @@ class ParameterEnsemble(Ensemble):
     def project(self,projection_matrix,inplace=True,log=None,
                 enforce_bounds="reset"):
         """ project the ensemble
-        Parameters:
+        Parameters
         ----------
             projection_matrix: (pyemu.Matrix) projection operator - must already respect log transform
 
@@ -597,7 +597,7 @@ class ParameterEnsemble(Ensemble):
             enforce_bounds: (str) parameter bound enforcement flag.  'drop' removes
              offending realizations, 'reset' resets offending values)
 
-        Returns:
+        Returns
         -------
             if not inplace, ParameterEnsemble, otherwise None
 
@@ -760,7 +760,7 @@ class ParameterEnsemble(Ensemble):
     def read_parfiles(self,parfile_names):
         """ read the ensemble from par files
 
-        Parameters:
+        Parameters
         ----------
             parfile_names: (list[str]) list of par files to load
 
@@ -790,7 +790,7 @@ class ParameterEnsemble(Ensemble):
         """
             write the parameter ensemble to pest-style parameter files
 
-        Parameters:
+        Parameters
         ----------
             prefix: (str) file prefix for par files
 

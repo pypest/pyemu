@@ -81,22 +81,36 @@
 <dt id="pyemu.pst.pst_controldata.ControlData.parse_values_from_lines">
 <code class="descname">parse_values_from_lines</code><span class="sig-paren">(</span><em>lines</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_controldata.html#ControlData.parse_values_from_lines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_controldata.ControlData.parse_values_from_lines" title="Permalink to this definition">¶</a></dt>
 <dd><p>cast the string lines for a pest control file into actual inputs
-Parameters:
-&#8212;&#8212;&#8212;-</p>
-<blockquote>
-<div>lines: strings from pest control file</div></blockquote>
-<blockquote>
-<div>None</div></blockquote>
+:param lines:
+:type lines: strings from pest control file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyemu.pst.pst_controldata.ControlData.write">
 <code class="descname">write</code><span class="sig-paren">(</span><em>f</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_controldata.html#ControlData.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_controldata.ControlData.write" title="Permalink to this definition">¶</a></dt>
 <dd><p>write control data section to a file</p>
-<blockquote>
-<div>f: file handle or string filename</div></blockquote>
-<blockquote>
-<div>None</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>f</strong> (<em>file handle</em><em> or </em><em>string filename</em>) &#8211; </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </dd></dl>
@@ -187,13 +201,20 @@ the coef_dict, it gets a coefficient of 1.0
 <code class="descname">adjust_weights</code><span class="sig-paren">(</span><em>obs_dict=None</em>, <em>obsgrp_dict=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_handler.html#Pst.adjust_weights"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_handler.Pst.adjust_weights" title="Permalink to this definition">¶</a></dt>
 <dd><p>reset the weights of observation groups to contribute a specified
 amount to the composite objective function
-Parameters:
-&#8212;&#8212;&#8212;-</p>
-<blockquote>
-<div>obs_dict (dict{obs name:new contribution})
-obsgrp_dict (dict{obs group name:contribution})</div></blockquote>
-<blockquote>
-<div>None</div></blockquote>
+:param obs_dict (dict{obs name:
+:type obs_dict (dict{obs name: new contribution})
+:param obsgrp_dict (dict{obs group name:
+:type obsgrp_dict (dict{obs group name: contribution})</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
 <blockquote>
 <div>if all obs in a named obs group have zero weight, they will be
 assigned a non-zero weight so that the request phi contribution
@@ -206,11 +227,10 @@ weight will also be reset</div></blockquote>
 <code class="descname">adjust_weights_by_list</code><span class="sig-paren">(</span><em>obslist</em>, <em>weight</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_handler.html#Pst.adjust_weights_by_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_handler.Pst.adjust_weights_by_list" title="Permalink to this definition">¶</a></dt>
 <dd><p>apply a single weight to a list of obsevation names.  supports that
 data worth analyses in Schur
-Parameters:
-&#8212;&#8212;&#8212;-</p>
-<blockquote>
-<div>obslist : list of obseravtion names
-weight : (flaot) new weight to assign</div></blockquote>
+:param obslist:
+:type obslist: list of obseravtion names
+:param weight:
+:type weight: (flaot) new weight to assign</p>
 </dd></dl>
 
 <dl class="method">
@@ -218,28 +238,36 @@ weight : (flaot) new weight to assign</div></blockquote>
 <code class="descname">adjust_weights_recfile</code><span class="sig-paren">(</span><em>recfile=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_handler.html#Pst.adjust_weights_recfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_handler.Pst.adjust_weights_recfile" title="Permalink to this definition">¶</a></dt>
 <dd><p>adjusts the weights of the observations based on the phi components
 in a recfile
-Parameters:
-&#8212;&#8212;&#8212;-</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>recfile (str)</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">record file name.  If None, try to use a record file</span><dd>with the case name</dd>
-</dl>
-</div></blockquote>
-<blockquote>
-<div>None</div></blockquote>
+:param recfile (str): with the case name
+:type recfile (str): record file name.  If None, try to use a record file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyemu.pst.pst_handler.Pst.adjust_weights_resfile">
 <code class="descname">adjust_weights_resfile</code><span class="sig-paren">(</span><em>resfile=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_handler.html#Pst.adjust_weights_resfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_handler.Pst.adjust_weights_resfile" title="Permalink to this definition">¶</a></dt>
 <dd><p>adjust the weights by phi components in a residual file
-Parameters:
-&#8212;&#8212;&#8212;-</p>
-<blockquote>
-<div>resfile (str) : residual filename.  If None, use self.resfile</div></blockquote>
-<blockquote>
-<div>None</div></blockquote>
+:param resfile (str):
+:type resfile (str): residual filename.  If None, use self.resfile</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -280,32 +308,30 @@ Parameters:
 :type par_names: list of str
 :param obs_names: observation names
 :type obs_names: list of str</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">new pst instance</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">None</span></code></td>
-</tr>
-</tbody>
-</table>
+<dl class="docutils">
+<dt>Returns</dt>
+<dd>new pst instance</dd>
+<dt>Raises</dt>
+<dd>None</dd>
+</dl>
 </dd></dl>
 
 <dl class="method">
 <dt id="pyemu.pst.pst_handler.Pst.load">
 <code class="descname">load</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_handler.html#Pst.load"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_handler.Pst.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>load the pest control file
-Parameters:
-&#8212;&#8212;&#8212;-</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>filename</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">str</span><dd>pst filename</dd>
-</dl>
-</div></blockquote>
-<blockquote>
-<div>None</div></blockquote>
+:param filename: pst filename
+:type filename: str</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
@@ -391,14 +417,18 @@ Parameters:
 <dt>replicates the pest parrep util. replaces the parval1 field in the</dt>
 <dd>parameter data section dataframe</dd>
 </dl>
-<blockquote>
-<div><dl class="docutils">
-<dt>parfile (str)</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">parameter file to use.  If None, try to use</span><dd>a parameter file that corresponds to the case name</dd>
-</dl>
-</div></blockquote>
-<blockquote>
-<div>None</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong></strong><strong>(</strong><strong>str</strong><strong>)</strong><strong></strong> (<em>parfile</em>) &#8211; a parameter file that corresponds to the case name</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
@@ -411,12 +441,17 @@ Parameters:
 <dt id="pyemu.pst.pst_handler.Pst.phi_components">
 <code class="descname">phi_components</code><a class="headerlink" href="#pyemu.pst.pst_handler.Pst.phi_components" title="Permalink to this definition">¶</a></dt>
 <dd><p>get the individual components of the total objective function
-Parameters:
-&#8212;&#8212;&#8212;-</p>
-<blockquote>
-<div>None</div></blockquote>
-<blockquote>
-<div>Dict{observation group : contribution}</div></blockquote>
+:param None:</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>Dict{observation group</strong></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">contribution}</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="attribute">
@@ -430,23 +465,17 @@ Parameters:
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>None</strong> &#8211; </p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">normalized contribution}</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">Dict{observation group</p>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
-<li>Assertion error if self.observation_data groups don&#8217;t match</li>
-<li>self.res groups</li>
-</ul>
-</td>
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>None</strong> &#8211; </td>
 </tr>
 </tbody>
 </table>
+<dl class="docutils">
+<dt>Returns</dt>
+<dd>Dict{observation group : normalized contribution}</dd>
+<dt>Raises</dt>
+<dd>Assertion error if self.observation_data groups don&#8217;t match
+self.res groups</dd>
+</dl>
 </dd></dl>
 
 <dl class="attribute">
@@ -464,19 +493,27 @@ Parameters:
 <dt id="pyemu.pst.pst_handler.Pst.proportional_weights">
 <code class="descname">proportional_weights</code><span class="sig-paren">(</span><em>fraction_stdev=1.0</em>, <em>wmax=100.0</em>, <em>leave_zero=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_handler.html#Pst.proportional_weights"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_handler.Pst.proportional_weights" title="Permalink to this definition">¶</a></dt>
 <dd><p>setup inversely proportional weights
-Parameters:
-&#8212;&#8212;&#8212;-</p>
+:param fraction_stdev (float): val to treat as the standard deviation.  set to 1.0 for</p>
 <blockquote>
-<div><dl class="docutils">
-<dt>fraction_stdev (float)</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">the fraction portion of the observation</span><dd>val to treat as the standard deviation.  set to 1.0 for
-inversely proportional</dd>
-</dl>
-<p>wmax (float) : maximum weight to allow
-leave_zero (bool) : flag to leave existing zero weights</p>
-</div></blockquote>
-<blockquote>
-<div>None</div></blockquote>
+<div>inversely proportional</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong></strong><strong>(</strong><strong>float</strong><strong>)</strong><strong></strong> (<em>wmax</em>) &#8211; </li>
+<li><strong></strong><strong>(</strong><strong>bool</strong><strong>)</strong><strong></strong> (<em>leave_zero</em>) &#8211; </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -499,12 +536,18 @@ leave_zero (bool) : flag to leave existing zero weights</p>
 <dt id="pyemu.pst.pst_handler.Pst.write">
 <code class="descname">write</code><span class="sig-paren">(</span><em>new_filename</em>, <em>update_regul=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_handler.html#Pst.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_handler.Pst.write" title="Permalink to this definition">¶</a></dt>
 <dd><p>write a pest control file
-Parameters:
-&#8212;&#8212;&#8212;-</p>
-<blockquote>
-<div>new_filename (str) : name of the new pest control file</div></blockquote>
-<blockquote>
-<div>None</div></blockquote>
+:param new_filename (str):
+:type new_filename (str): name of the new pest control file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="method">
@@ -546,25 +589,29 @@ Parameters:
 <dt id="pyemu.pst.pst_utils.dataframe_to_smp">
 <code class="descclassname">pyemu.pst.pst_utils.</code><code class="descname">dataframe_to_smp</code><span class="sig-paren">(</span><em>dataframe</em>, <em>smp_filename</em>, <em>name_col='name'</em>, <em>datetime_col='datetime'</em>, <em>value_col='value'</em>, <em>datetime_format='dd/mm/yyyy'</em>, <em>value_format='{0:15.6E}'</em>, <em>max_name_len=12</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_utils.html#dataframe_to_smp"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_utils.dataframe_to_smp" title="Permalink to this definition">¶</a></dt>
 <dd><p>write a dataframe as an smp file</p>
-<blockquote>
-<div><p>dataframe : a pandas dataframe
-smp_filename : str</p>
-<blockquote>
-<div>smp file to write</div></blockquote>
-<dl class="docutils">
-<dt>name_col: str</dt>
-<dd>the column in the dataframe the marks the site namne</dd>
-<dt>datetime_col: str</dt>
-<dd>the column in the dataframe that is a datetime instance</dd>
-<dt>value_col: str</dt>
-<dd>the column in the dataframe that is the values</dd>
-<dt>datetime_format: str</dt>
-<dd>either &#8216;dd/mm/yyyy&#8217; or &#8216;mm/dd/yyy&#8217;</dd>
-</dl>
-<p>value_format: a python float-compatible format</p>
-</div></blockquote>
-<blockquote>
-<div>None</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>dataframe</strong> (<em>a pandas dataframe</em>) &#8211; </li>
+<li><strong>smp_filename</strong> (<em>str</em>) &#8211; smp file to write</li>
+<li><strong>name_col</strong> (<em>str</em>) &#8211; the column in the dataframe the marks the site namne</li>
+<li><strong>datetime_col</strong> (<em>str</em>) &#8211; the column in the dataframe that is a datetime instance</li>
+<li><strong>value_col</strong> (<em>str</em>) &#8211; the column in the dataframe that is the values</li>
+<li><strong>datetime_format</strong> (<em>str</em>) &#8211; either &#8216;dd/mm/yyyy&#8217; or &#8216;mm/dd/yyy&#8217;</li>
+<li><strong>value_format</strong> (<em>a python float-compatible format</em>) &#8211; </li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -582,18 +629,20 @@ smp_filename : str</p>
 <dt id="pyemu.pst.pst_utils.generic_pst">
 <code class="descclassname">pyemu.pst.pst_utils.</code><code class="descname">generic_pst</code><span class="sig-paren">(</span><em>par_names=['par1'], obs_names=['obs1'], addreg=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_utils.html#generic_pst"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_utils.generic_pst" title="Permalink to this definition">¶</a></dt>
 <dd><p>generate a generic pst instance
-Parameters:
-&#8212;&#8212;&#8212;-</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>par_names</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">list(str)</span><dd>parameter names to setup</dd>
-<dt>obs_names</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">list(str)</span><dd>observation names to setup</dd>
-</dl>
-</div></blockquote>
-<blockquote>
-<div>Pst instance</div></blockquote>
+:param par_names: parameter names to setup
+:type par_names: list(str)
+:param obs_names: observation names to setup
+:type obs_names: list(str)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Pst instance</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -605,34 +654,30 @@ Parameters:
 <dt id="pyemu.pst.pst_utils.get_phi_comps_from_recfile">
 <code class="descclassname">pyemu.pst.pst_utils.</code><code class="descname">get_phi_comps_from_recfile</code><span class="sig-paren">(</span><em>recfile</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_utils.html#get_phi_comps_from_recfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_utils.get_phi_comps_from_recfile" title="Permalink to this definition">¶</a></dt>
 <dd><p>read the phi components from a record file
-Parameters:
-&#8212;&#8212;&#8212;-</p>
-<blockquote>
-<div>recfile (str) : record file</div></blockquote>
-<blockquote>
-<div>dict{iteration number:{group,contribution}}</div></blockquote>
+:param recfile (str):
+:type recfile (str): record file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>dict{iteration number</strong></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">{group,contribution}}</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
 <dt id="pyemu.pst.pst_utils.parse_ins_file">
 <code class="descclassname">pyemu.pst.pst_utils.</code><code class="descname">parse_ins_file</code><span class="sig-paren">(</span><em>ins_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_utils.html#parse_ins_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_utils.parse_ins_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse a pest instruction file to get observation names
-Parameters:
-&#8212;&#8212;&#8212;-</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>ins_file</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">str</span><dd>instruction file name</dd>
+:param ins_file: instruction file name
+:type ins_file: str</p>
+<dl class="docutils">
+<dt>Returns</dt>
+<dd>list of observation names</dd>
 </dl>
-</div></blockquote>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">list of observation names</td>
-</tr>
-</tbody>
-</table>
 </dd></dl>
 
 <dl class="function">
@@ -644,14 +689,18 @@ Parameters:
 <dt id="pyemu.pst.pst_utils.parse_tpl_file">
 <code class="descclassname">pyemu.pst.pst_utils.</code><code class="descname">parse_tpl_file</code><span class="sig-paren">(</span><em>tpl_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_utils.html#parse_tpl_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_utils.parse_tpl_file" title="Permalink to this definition">¶</a></dt>
 <dd><p>parse a pest template file to get the parameter names</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>tpl_file</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">str</span><dd>template file name</dd>
-</dl>
-</div></blockquote>
-<blockquote>
-<div>list of parameter names</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>tpl_file</strong> (<em>str</em>) &#8211; template file name</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">list of parameter names</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -668,28 +717,36 @@ Parameters:
 <dt id="pyemu.pst.pst_utils.read_parfile">
 <code class="descclassname">pyemu.pst.pst_utils.</code><code class="descname">read_parfile</code><span class="sig-paren">(</span><em>parfile</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_utils.html#read_parfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_utils.read_parfile" title="Permalink to this definition">¶</a></dt>
 <dd><p>load a pest-compatible .par file into a pandas dataframe</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>parfile</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">str</span><dd>pest parameter file</dd>
-</dl>
-</div></blockquote>
-<blockquote>
-<div>pandas DataFrame</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>parfile</strong> (<em>str</em>) &#8211; pest parameter file</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">pandas DataFrame</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
 <dt id="pyemu.pst.pst_utils.read_resfile">
 <code class="descclassname">pyemu.pst.pst_utils.</code><code class="descname">read_resfile</code><span class="sig-paren">(</span><em>resfile</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_utils.html#read_resfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_utils.read_resfile" title="Permalink to this definition">¶</a></dt>
 <dd><p>load a residual file into a pandas dataframe</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>resfile</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">str</span><dd>residual file</dd>
-</dl>
-</div></blockquote>
-<blockquote>
-<div>pandas DataFrame</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>resfile</strong> (<em>str</em>) &#8211; residual file</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">pandas DataFrame</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -701,50 +758,57 @@ Parameters:
 <dt id="pyemu.pst.pst_utils.smp_to_dataframe">
 <code class="descclassname">pyemu.pst.pst_utils.</code><code class="descname">smp_to_dataframe</code><span class="sig-paren">(</span><em>smp_filename</em>, <em>datetime_format=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_utils.html#smp_to_dataframe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_utils.smp_to_dataframe" title="Permalink to this definition">¶</a></dt>
 <dd><p>load an smp file into a pandas dataframe
-Parameters:
-&#8212;&#8212;&#8212;-</p>
+:param smp_filename: smp filename to load
+:type smp_filename: str
+:param datetime_format: should be either &#8220;%m/%d/%Y %H:%M:%S&#8221; or &#8220;%d/%m/%Y %H:%M:%S&#8221;</p>
 <blockquote>
-<div><dl class="docutils">
-<dt>smp_filename</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">str</span><dd>smp filename to load</dd>
-<dt>datetime_format</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">optional str</span><dd>should be either &#8220;%m/%d/%Y %H:%M:%S&#8221; or &#8220;%d/%m/%Y %H:%M:%S&#8221;
-If None, then we will try to deduce the format for you, which
-always dangerous</dd>
-</dl>
-</div></blockquote>
-<blockquote>
-<div>a pandas dataframe instance</div></blockquote>
+<div>If None, then we will try to deduce the format for you, which
+always dangerous</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">a pandas dataframe instance</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
 <dt id="pyemu.pst.pst_utils.smp_to_ins">
 <code class="descclassname">pyemu.pst.pst_utils.</code><code class="descname">smp_to_ins</code><span class="sig-paren">(</span><em>smp_filename</em>, <em>ins_filename=None</em>, <em>use_generic_names=False</em>, <em>gwutils_compliant=False</em>, <em>datetime_format=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_utils.html#smp_to_ins"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_utils.smp_to_ins" title="Permalink to this definition">¶</a></dt>
 <dd><p>create an instruction file from an smp file
-Parameters:
-&#8212;&#8212;&#8212;-</p>
+:param smp_filename: existing smp file
+:type smp_filename: str
+:param ins_filename: instruction file to create.  If None, create</p>
 <blockquote>
-<div><dl class="docutils">
-<dt>smp_filename</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">str</span><dd>existing smp file</dd>
-<dt>ins_filename: str:</dt>
-<dd>instruction file to create.  If None, create
-an instruction file using the smp filename
-with the &#8221;.ins&#8221; suffix</dd>
-<dt>use_generic_names</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">bool</span><dd>flag to force obseravtions names to use a generic
-int counter instead of trying to use a datetime str</dd>
-<dt>gwutils_compliant</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">bool</span><dd>flag to use instruction set that is compliant with the
+<div>an instruction file using the smp filename
+with the &#8221;.ins&#8221; suffix</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>use_generic_names</strong> (<em>bool</em>) &#8211; flag to force obseravtions names to use a generic
+int counter instead of trying to use a datetime str</li>
+<li><strong>gwutils_compliant</strong> (<em>bool</em>) &#8211; flag to use instruction set that is compliant with the
 pest gw utils (fixed format instructions).  If false,
-use free format (with whitespace) instruction set</dd>
-<dt>datetime_format</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">optional str</span><dd>str to pass to datetime.strptime in the smp_to_dataframe() function</dd>
-</dl>
-</div></blockquote>
-<blockquote>
-<div>dataframe instance of the smp file with the observation names and
-instruction lines as additional columns</div></blockquote>
+use free format (with whitespace) instruction set</li>
+<li><strong>datetime_format</strong> (<em>optional str</em>) &#8211; str to pass to datetime.strptime in the smp_to_dataframe() function</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><em>dataframe instance of the smp file with the observation names and</em></li>
+<li><em>instruction lines as additional columns</em></li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -766,17 +830,25 @@ instruction lines as additional columns</div></blockquote>
 <dt id="pyemu.pst.pst_utils.write_parfile">
 <code class="descclassname">pyemu.pst.pst_utils.</code><code class="descname">write_parfile</code><span class="sig-paren">(</span><em>df</em>, <em>parfile</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_utils.html#write_parfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_utils.write_parfile" title="Permalink to this definition">¶</a></dt>
 <dd><p>write a pest parameter file from a dataframe</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>df</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">pandas DataFrame</span><dd>with column names that correspond to the entries
-in the parameter data section of a pest control file</dd>
-<dt>parfile</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">str</span><dd>name of the parameter file to write</dd>
-</dl>
-</div></blockquote>
-<blockquote>
-<div>None</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>df</strong> (<em>pandas DataFrame</em>) &#8211; with column names that correspond to the entries
+in the parameter data section of a pest control file</li>
+<li><strong>parfile</strong> (<em>str</em>) &#8211; name of the parameter file to write</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">

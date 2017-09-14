@@ -92,7 +92,7 @@
         <span class="sd">&quot;&quot;&quot; draw random realizations from a multivariate</span>
 <span class="sd">            Gaussian distribution</span>
 
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            cov: a Cov instance</span>
 <span class="sd">                covariance structure to draw from</span>
@@ -100,7 +100,7 @@
 <span class="sd">                number of realizations to generate</span>
 <span class="sd">            names : list of names to draw for.  If None, values all names</span>
 <span class="sd">                    are drawn</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -176,7 +176,7 @@
 <div class="viewcode-block" id="ObservationEnsemble"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.en.ObservationEnsemble">[docs]</a><span class="k">class</span> <span class="nc">ObservationEnsemble</span><span class="p">(</span><span class="n">Ensemble</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Ensemble derived type observation noise</span>
 
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            pst : Pst instance</span>
 
@@ -262,7 +262,7 @@
 <span class="sd">        implements bounds enforcement, log10 transformation,</span>
 <span class="sd">        fixed parameters and null-space projection</span>
 
-<span class="sd">    Parameters:</span>
+<span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        pst : pyemu.Pst instance</span>
 <span class="sd">        bound_tol : float</span>
@@ -554,10 +554,10 @@
 
     <span class="k">def</span> <span class="nf">_back_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; remove log10 transformation from ensemble</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            inplace: (boolean) back transform self in place</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            if not inplace, ParameterEnsemble, otherwise None</span>
 
@@ -593,10 +593,10 @@
 
     <span class="k">def</span> <span class="nf">_transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; perform log10 transformation for ensemble</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            inplace: (boolean) transform self in place</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            if not inplace, ParameterEnsemble, otherwise None</span>
 
@@ -631,7 +631,7 @@
 <div class="viewcode-block" id="ParameterEnsemble.project"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.en.ParameterEnsemble.project">[docs]</a>    <span class="k">def</span> <span class="nf">project</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">projection_matrix</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">log</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                 <span class="n">enforce_bounds</span><span class="o">=</span><span class="s2">&quot;reset&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; project the ensemble</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            projection_matrix: (pyemu.Matrix) projection operator - must already respect log transform</span>
 
@@ -642,7 +642,7 @@
 <span class="sd">            enforce_bounds: (str) parameter bound enforcement flag.  &#39;drop&#39; removes</span>
 <span class="sd">             offending realizations, &#39;reset&#39; resets offending values)</span>
 
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            if not inplace, ParameterEnsemble, otherwise None</span>
 
@@ -805,7 +805,7 @@
 <div class="viewcode-block" id="ParameterEnsemble.read_parfiles"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.en.ParameterEnsemble.read_parfiles">[docs]</a>    <span class="k">def</span> <span class="nf">read_parfiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">parfile_names</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; read the ensemble from par files</span>
 
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            parfile_names: (list[str]) list of par files to load</span>
 
@@ -835,7 +835,7 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            write the parameter ensemble to pest-style parameter files</span>
 
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            prefix: (str) file prefix for par files</span>
 

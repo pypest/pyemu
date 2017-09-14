@@ -55,7 +55,7 @@
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">jco</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;there are some additional keyword args that can be passed to active</span>
 <span class="sd">            the 3-term error variance calculation</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            omitted_parameters (list of str): argument that identifies</span>
 <span class="sd">                parameters that will be treated as omitted</span>
@@ -276,11 +276,11 @@
 <div class="viewcode-block" id="ErrVar.get_errvar_dataframe"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.ev.ErrVar.get_errvar_dataframe">[docs]</a>    <span class="k">def</span> <span class="nf">get_errvar_dataframe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">singular_values</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get a pandas dataframe of error variance results indexed</span>
 <span class="sd">            on singular value and (prediction name,&lt;term&gt;)</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            singular_values (list of int) : singular values to test.  defaults</span>
 <span class="sd">            to range(0,min(nnz_obs,nadj_par) + 1)</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            multi-indexed pandas dataframe</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -301,10 +301,10 @@
 
 <div class="viewcode-block" id="ErrVar.get_identifiability_dataframe"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.ev.ErrVar.get_identifiability_dataframe">[docs]</a>    <span class="k">def</span> <span class="nf">get_identifiability_dataframe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">singular_value</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get the parameter identifiability as a pandas dataframe</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            singular_value (int) : the truncation point</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            A pandas dataframe of the V_1**2 Matrix with the</span>
 <span class="sd">             identifiability in the column labeled &quot;ident&quot;</span>
@@ -316,10 +316,10 @@
 
 <div class="viewcode-block" id="ErrVar.variance_at"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.ev.ErrVar.variance_at">[docs]</a>    <span class="k">def</span> <span class="nf">variance_at</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">singular_value</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get the error variance of all three terms</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            singular_value (int) : singular value to test</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            dict{[&lt;term&gt;,prediction_name]:standard_deviation}</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -332,10 +332,10 @@
 <div class="viewcode-block" id="ErrVar.R"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.ev.ErrVar.R">[docs]</a>    <span class="k">def</span> <span class="nf">R</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">singular_value</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get resolution Matrix at a singular value</span>
 <span class="sd">             V_1 * V_1^T</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            singular_value (int) : singular value to calc R at</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            R at singular_value</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -357,10 +357,10 @@
 <div class="viewcode-block" id="ErrVar.I_minus_R"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.ev.ErrVar.I_minus_R">[docs]</a>    <span class="k">def</span> <span class="nf">I_minus_R</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">singular_value</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get I - R at singular value</span>
 <span class="sd">             V_2 * V_2^T</span>
-<span class="sd">         Parameters:</span>
+<span class="sd">         Parameters</span>
 <span class="sd">         ----------</span>
 <span class="sd">            singular_value (int) : singular value to calc I - R at</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            I - R at singular_value</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -379,10 +379,10 @@
 <div class="viewcode-block" id="ErrVar.G"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.ev.ErrVar.G">[docs]</a>    <span class="k">def</span> <span class="nf">G</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">singular_value</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get the parameter solution Matrix at a singular value</span>
 <span class="sd">            V_1 * S_1^(_1) * U_1^T</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            singular_value (int) : singular value to calc G at</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            G at singular_value</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -425,10 +425,10 @@
 <div class="viewcode-block" id="ErrVar.first_prediction"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.ev.ErrVar.first_prediction">[docs]</a>    <span class="k">def</span> <span class="nf">first_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">singular_value</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get the null space term contribution to prediction error variance</span>
 <span class="sd">            at a singular value</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            singular_value (int) : singular value to calc first term at</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            dict{[&quot;first&quot;,prediction_names]:error variance} at singular_value</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -453,10 +453,10 @@
 <div class="viewcode-block" id="ErrVar.first_parameter"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.ev.ErrVar.first_parameter">[docs]</a>    <span class="k">def</span> <span class="nf">first_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">singular_value</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get the null space term contribution to parameter error variance</span>
 <span class="sd">            at a singular value</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            singular_value (int) : singular value to calc first term at</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            Cov object of first term error variance</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -473,10 +473,10 @@
         <span class="sd">&quot;&quot;&quot;get the solution space contribution to predictive error variance</span>
 <span class="sd">            at a singular value</span>
 <span class="sd">            y^t * G * obscov * G^T * y</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            singular_value (int) : singular value to calc second term at</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">             dict{[&quot;second&quot;,prediction_names]:error variance} at singular_value</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -508,10 +508,10 @@
         <span class="sd">&quot;&quot;&quot;get the solution space contribution to parameter error variance</span>
 <span class="sd">             at a singular value</span>
 <span class="sd">            G * obscov * G^T</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            singular_value (int) : singular value to calc second term at</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            Cov object of second term error variance</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -528,10 +528,10 @@
 <span class="sd">            predictions:</span>
 <span class="sd">                p * Simga_(omitted_pars) * p^T</span>
 <span class="sd">                p = prediction^T * G * omitted_jco - omitted_prediction^T</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            singular_value (int) : singular value to calc third term at</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            dict{[&quot;third&quot;,prediction_names]:error variance} at singular_value</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -569,10 +569,10 @@
         <span class="sd">&quot;&quot;&quot;get the omitted parameter contribution to parameter error variance</span>
 <span class="sd">             at a singular value</span>
 <span class="sd">                G * omitted_jco * Sigma_(omitted_pars) * omitted_jco^T * G^T</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            singular_value (int) : singular value to calc third term at</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            0.0 if need_omitted is False</span>
 <span class="sd">            Cov object of third term error variance</span>
