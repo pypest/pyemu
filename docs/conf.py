@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # pyEMU documentation build configuration file, created by
-# sphinx-quickstart on Wed Sep 13 20:57:22 2017.
+# sphinx-quickstart on Thu Sep 14 07:46:08 2017.
 #
 # This file is execfile()d with the current directory set to its
 # containing dir.
@@ -19,12 +19,10 @@
 #
 import os
 import sys
-import scipy.linalg
-import scipy.io
-
-# ensure Sphinx can access source code
 sys.path.insert(0, os.path.abspath('.'))
-sys.path.insert(0, os.path.abspath('../../pyemu'))
+sys.path.insert(0, os.path.abspath('../'))
+#sys.path.insert(0, os.path.abspath('../pyemu/'))
+
 
 # -- General configuration ------------------------------------------------
 
@@ -39,8 +37,8 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.doctest',
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
-    'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
+    'sphinx.ext.githubpages',
     'sphinx.ext.napoleon']
 
 # Napoleon settings
@@ -93,7 +91,7 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = []
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
