@@ -19,6 +19,11 @@
 #
 import os
 import sys
+#import scipy.linalg
+#import scipy.io
+from unittest.mock import MagicMock
+
+# ensure Sphinx can access source code
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../../pyemu'))
 
@@ -27,6 +32,15 @@ sys.path.insert(0, os.path.abspath('../../pyemu'))
 # If your documentation needs a minimal Sphinx version, state it here.
 #
 # needs_sphinx = '1.0'
+
+# copied from readthedocs.io FAQ
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+            return MagicMock()
+
+MOCK_MODULES = ['numpy', 'pandas', 'scipy', 'scipy.io', 'scipy.linalg']
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
