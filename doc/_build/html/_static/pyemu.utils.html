@@ -664,20 +664,21 @@ returns np.NaN if the value should be skipped.</dd>
 <dt id="pyemu.utils.helpers.first_order_pearson_tikhonov">
 <code class="descclassname">pyemu.utils.helpers.</code><code class="descname">first_order_pearson_tikhonov</code><span class="sig-paren">(</span><em>pst</em>, <em>cov</em>, <em>reset=True</em>, <em>abs_drop_tol=0.001</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/utils/helpers.html#first_order_pearson_tikhonov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.utils.helpers.first_order_pearson_tikhonov" title="Permalink to this definition">¶</a></dt>
 <dd><p>setup preferred-difference regularization from a covariance matrix.
-Parameters:
-&#8212;&#8212;&#8212;-</p>
+:param pst (pyemu.Pst):
+:type pst (pyemu.Pst): pst instance
+:param cov (pyemu.Cov):
+:type cov (pyemu.Cov): covariance matrix instance
+:param reset (bool): existing pi equations
+:type reset (bool): drop all other pi equations.  If False, append to
+:param abs_drop_tol (float): equations are written.  If the pearson cc is less than</p>
 <blockquote>
-<div><p>pst (pyemu.Pst) : pst instance
-cov (pyemu.Cov) : covariance matrix instance
-reset (bool) : drop all other pi equations.  If False, append to</p>
-<blockquote>
-<div>existing pi equations</div></blockquote>
-<dl class="docutils">
-<dt>abs_drop_tol (float)</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">tolerance to control how many pi</span><dd>equations are written.  If the pearson cc is less than
-abs_drop_tol, it will not be included in the pi equations</dd>
-</dl>
-</div></blockquote>
+<div>abs_drop_tol, it will not be included in the pi equations</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -691,24 +692,20 @@ abs_drop_tol, it will not be included in the pi equations</dd>
 <code class="descclassname">pyemu.utils.helpers.</code><code class="descname">geostatistical_prior_builder</code><span class="sig-paren">(</span><em>pst</em>, <em>struct_dict</em>, <em>sigma_range=4</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/utils/helpers.html#geostatistical_prior_builder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.utils.helpers.geostatistical_prior_builder" title="Permalink to this definition">¶</a></dt>
 <dd><p>a helper function to construct a full prior covariance matrix using
 a mixture of geostastical structures an parameter bounds information.
-:param pst: pyemu.Pst instance (or the name of a pst file)
-:param struct_dict: a python dict of geostat structure file : list of pp tpl files</p>
+Parameters</p>
+<blockquote>
+<div><p>pst : pyemu.Pst instance (or the name of a pst file)
+struct_dict : a python dict of geostat structure file : list of pp tpl files</p>
 <blockquote>
 <div>if the values in the dict are pd.DataFrames, then they must have an
 &#8216;x&#8217;,&#8217;y&#8217;, and &#8216;parnme&#8217; column.  If the filename ends in &#8216;.csv&#8217;,
 then a pd.DataFrame is loaded.</div></blockquote>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>sigma_range</strong> &#8211; float representing the number of standard deviations implied by parameter bounds</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">pyemu.Cov instance</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="pyemu.mat.html#pyemu.mat.mat_handler.Cov" title="pyemu.mat.mat_handler.Cov">Cov</a></td>
-</tr>
-</tbody>
-</table>
+<p>sigma_range : float representing the number of standard deviations implied by parameter bounds</p>
+</div></blockquote>
+<dl class="docutils">
+<dt>Returns</dt>
+<dd>Cov : pyemu.Cov instance</dd>
+</dl>
 </dd></dl>
 
 <dl class="function">
@@ -717,7 +714,7 @@ then a pd.DataFrame is loaded.</div></blockquote>
 <dd><dl class="docutils">
 <dt>Applies a KL parameterization transform from basis factors to model</dt>
 <dd><p class="first">input arrays
-Parameters:</p>
+Parameters</p>
 <blockquote class="last">
 <div><dl class="docutils">
 <dt>par_file (str)</dt>
@@ -730,15 +727,9 @@ Parameters:</p>
 </dl>
 </div></blockquote>
 </dd>
+<dt>Returns</dt>
+<dd>None</dd>
 </dl>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">None</td>
-</tr>
-</tbody>
-</table>
 </dd></dl>
 
 <dl class="function">
@@ -746,47 +737,36 @@ Parameters:</p>
 <code class="descclassname">pyemu.utils.helpers.</code><code class="descname">kl_setup</code><span class="sig-paren">(</span><em>num_eig</em>, <em>sr</em>, <em>struct_file</em>, <em>array_dict</em>, <em>basis_file='basis.dat'</em>, <em>tpl_file='kl.tpl'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/utils/helpers.html#kl_setup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.utils.helpers.kl_setup" title="Permalink to this definition">¶</a></dt>
 <dd><p>setup a karhuenen-Loeve based parameterization for a given
 geostatistical structure.
-:param num_eig: number of basis vectors to retain in the reduced basis
-:type num_eig: int
-:param struct_file: a pest-style geostatistical structure file
-:type struct_file: str
-:param array_dict (dict(str: ndarray)): a dict of arrays to setup as KL-based</p>
+Parameters</p>
 <blockquote>
-<div>parameters.  The key becomes the
+<div><p>num_eig (int) : number of basis vectors to retain in the reduced basis</p>
+<p>struct_file (str) : a pest-style geostatistical structure file</p>
+<dl class="docutils">
+<dt>array_dict (dict(str:ndarray)): a dict of arrays to setup as KL-based</dt>
+<dd>parameters.  The key becomes the
 parameter name prefix. The total
 number of parameters is
-len(array_dict) * num_eig</div></blockquote>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
-<li><strong>basis_file</strong> (<em>str</em>) &#8211; the name of the binary file where the reduced
-basis will be saved</li>
-<li><strong>tpl_file</strong> (<em>str</em>) &#8211; the name of the template file to make.  The template
-file is a csv file with the parameter names, the
+len(array_dict) * num_eig</dd>
+<dt>basis_file (str)</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">the name of the binary file where the reduced</span><dd>basis will be saved</dd>
+<dt>tpl_file (str)</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">the name of the template file to make.  The template</span><dd>file is a csv file with the parameter names, the
 original factor values,and the template entries.
 The original values can be used to set the parval1
-entries in the control file</li>
-</ul>
-</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
-<dt>ndarray))</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">a dictionary of back transformed</span><dd><p class="first last">arrays.  This is useful to see
+entries in the control file</dd>
+</dl>
+</div></blockquote>
+<dl class="docutils">
+<dt>Returns</dt>
+<dd><dl class="first last docutils">
+<dt>back_array_dict (dict(str:ndarray))</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">a dictionary of back transformed</span><dd>arrays.  This is useful to see
 how much &#8220;smoothing&#8221; is taking
 place compared to the original
-arrays.</p>
+arrays.</dd>
+</dl>
 </dd>
 </dl>
-</p>
-</td>
-</tr>
-<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">back_array_dict (dict(str</p>
-</td>
-</tr>
-</tbody>
-</table>
 </dd></dl>
 
 <dl class="function">
@@ -826,22 +806,27 @@ with the system variables) and the model output files are available
 , then the observation values in the control file will be set to the
 values of the model-simulated equivalents to observations.  This can be
 useful for testing</p>
-<blockquote>
-<div><dl class="docutils">
-<dt>tpl_files</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">list[str]</span><dd>list of pest template files</dd>
-<dt>in_files</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">list[str]</span><dd>list of corresponding model input files</dd>
-<dt>ins_files</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">list[str]</span><dd>list of pest instruction files</dd>
-<dt>out_files: list[str]</dt>
-<dd>list of corresponding model output files</dd>
-<dt>pst_filename</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">str (optional)</span><dd>name of file to write the control file to</dd>
-</dl>
-</div></blockquote>
-<blockquote>
-<div>Pst instance</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>tpl_files</strong> (<em>list</em><em>[</em><em>str</em><em>]</em><em></em>) &#8211; list of pest template files</li>
+<li><strong>in_files</strong> (<em>list</em><em>[</em><em>str</em><em>]</em><em></em>) &#8211; list of corresponding model input files</li>
+<li><strong>ins_files</strong> (<em>list</em><em>[</em><em>str</em><em>]</em><em></em>) &#8211; list of pest instruction files</li>
+<li><strong>out_files</strong> (<em>list</em><em>[</em><em>str</em><em>]</em><em></em>) &#8211; list of corresponding model output files</li>
+<li><strong>pst_filename</strong> (<em>str</em><em> (</em><em>optional</em><em>)</em><em></em>) &#8211; name of file to write the control file to</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Pst instance</p>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -857,8 +842,14 @@ useful for testing</p>
 <dt>sets regularization weights from parameter bounds</dt>
 <dd>which approximates the KL expansion</dd>
 </dl>
-<blockquote>
-<div>pst (Pst) : a control file instance</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong></strong><strong>(</strong><strong>Pst</strong><strong>)</strong><strong></strong> (<a class="reference internal" href="pyemu.pst.html#module-pyemu.pst" title="pyemu.pst"><em>pst</em></a>) &#8211; </td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
@@ -870,47 +861,48 @@ useful for testing</p>
 <dt id="pyemu.utils.helpers.start_slaves">
 <code class="descclassname">pyemu.utils.helpers.</code><code class="descname">start_slaves</code><span class="sig-paren">(</span><em>slave_dir</em>, <em>exe_rel_path</em>, <em>pst_rel_path</em>, <em>num_slaves=None</em>, <em>slave_root='..'</em>, <em>port=4004</em>, <em>rel_path=None</em>, <em>local=True</em>, <em>cleanup=True</em>, <em>master_dir=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/utils/helpers.html#start_slaves"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.utils.helpers.start_slaves" title="Permalink to this definition">¶</a></dt>
 <dd><p>start a group of pest(++) slaves on the local machine</p>
-<blockquote>
-<div><p>slave_dir : (str) the path to a complete set of input files</p>
-<dl class="docutils">
-<dt>exe_rel_path</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">(str) the relative path to the pest(++)</span><dd>executable from within the slave_dir</dd>
-<dt>pst_rel_path</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">(str) the relative path to the pst file</span><dd>from within the slave_dir</dd>
-</dl>
-<p>num_slaves : (int) number of slaves to start. defaults to number of cores</p>
-<p>slave_root : (str) the root to make the new slave directories in</p>
-<dl class="docutils">
-<dt>rel_path: (str) the relative path to where pest(++) should be run</dt>
-<dd>from within the slave_dir, defaults to the uppermost level of the slave dir</dd>
-</dl>
-<p>local: (bool) flag for using &#8220;localhost&#8221; instead of hostname on slave command line
-cleanup: (bool) flag to remove slave directories once processes exit
-master_dir: (str) name of directory for master instance.  If master_dir</p>
-<blockquote>
-<div>exists, then it will be removed.  If master_dir is None,
-no master instance will be started</div></blockquote>
-</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>slave_dir</strong> (<em></em><em>(</em><em>str</em><em>) </em><em>the path to a complete set of input files</em>) &#8211; </li>
+<li><strong>exe_rel_path</strong> (<em></em><em>(</em><em>str</em><em>) </em><em>the relative path to the pest</em><em>(</em><em>++</em><em>)</em><em></em>) &#8211; executable from within the slave_dir</li>
+<li><strong>pst_rel_path</strong> (<em></em><em>(</em><em>str</em><em>) </em><em>the relative path to the pst file</em>) &#8211; from within the slave_dir</li>
+<li><strong>num_slaves</strong> (<em></em><em>(</em><em>int</em><em>) </em><em>number of slaves to start. defaults to number of cores</em>) &#8211; </li>
+<li><strong>slave_root</strong> (<em></em><em>(</em><em>str</em><em>) </em><em>the root to make the new slave directories in</em>) &#8211; </li>
+<li><strong>rel_path</strong> (<em></em><em>(</em><em>str</em><em>) </em><em>the relative path to where pest</em><em>(</em><em>++</em><em>) </em><em>should be run</em>) &#8211; from within the slave_dir, defaults to the uppermost level of the slave dir</li>
+<li><strong>local</strong> (<em></em><em>(</em><em>bool</em><em>) </em><em>flag for using &quot;localhost&quot; instead of hostname on slave command line</em>) &#8211; </li>
+<li><strong>cleanup</strong> (<em></em><em>(</em><em>bool</em><em>) </em><em>flag to remove slave directories once processes exit</em>) &#8211; </li>
+<li><strong>master_dir</strong> (<em></em><em>(</em><em>str</em><em>) </em><em>name of directory for master instance.  If master_dir</em>) &#8211; exists, then it will be removed.  If master_dir is None,
+no master instance will be started</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 <dl class="function">
 <dt id="pyemu.utils.helpers.zero_order_tikhonov">
 <code class="descclassname">pyemu.utils.helpers.</code><code class="descname">zero_order_tikhonov</code><span class="sig-paren">(</span><em>pst</em>, <em>parbounds=True</em>, <em>par_groups=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/utils/helpers.html#zero_order_tikhonov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.utils.helpers.zero_order_tikhonov" title="Permalink to this definition">¶</a></dt>
 <dd><p>setup preferred-value regularization
-Parameters:
-&#8212;&#8212;&#8212;-</p>
-<blockquote>
-<div><p>pst (Pst instance) : the control file instance
-parbounds (bool) : weight the prior information equations according</p>
-<blockquote>
-<div>to parameter bound width - approx the KL transform</div></blockquote>
-<dl class="docutils">
-<dt>par_groups (list(str))</dt>
- <span class="classifier-delimiter">:</span> <span class="classifier">parameter groups to build PI equations</span><dd>for.  If None, all adjustable parameters are used</dd>
-</dl>
-</div></blockquote>
-<blockquote>
-<div>None</div></blockquote>
+:param pst (Pst instance):
+:type pst (Pst instance): the control file instance
+:param parbounds (bool): to parameter bound width - approx the KL transform
+:type parbounds (bool): weight the prior information equations according
+:param par_groups (list(str)): for.  If None, all adjustable parameters are used
+:type par_groups (list(str)): parameter groups to build PI equations</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">None</td>
+</tr>
+</tbody>
+</table>
 </dd></dl>
 
 </div>

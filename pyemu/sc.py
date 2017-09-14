@@ -141,16 +141,16 @@ class Schur(LinearAnalysis):
 
     def get_parameter_summary(self,include_map=False):
         """get a summary of the parameter uncertainty
-        Parameters:
+        Parameters
         ----------
             include_map : bool (optional)
                 if True, add the prior and posterior expectations
                 and report standard deviation instead of variance
-        Returns:
+        Returns
         -------
             pd.DataFrame() of prior,posterior variances and percent
             uncertainty reduction of each parameter
-        Raises:
+        Raises
             None
         """
         prior_mat = self.parcov.get(self.posterior_parameter.col_names)
@@ -178,10 +178,10 @@ class Schur(LinearAnalysis):
 
     def get_forecast_summary(self, include_map=False):
         """get a summary of the forecast uncertainty
-        Parameters:
+        Parameters
         ----------
             None
-        Returns:
+        Returns
         -------
             pd.DataFrame() of prior,posterior variances and percent
             uncertainty reduction of each forecast
@@ -209,10 +209,10 @@ class Schur(LinearAnalysis):
     def __contribution_from_parameters(self, parameter_names):
         """get the prior and posterior uncertainty reduction as a result of
         some parameter becoming perfectly known
-        Parameters:
+        Parameters
         ----------
             parameter_names (list of str) : parameter that are perfectly known
-        Returns:
+        Returns
         -------
             dict{prediction name : [prior uncertainty w/o parameter_names,
                 % posterior uncertainty w/o parameter names]}
@@ -240,11 +240,11 @@ class Schur(LinearAnalysis):
             if name not in parameter_names:
                 keep_names.append(name)
         if len(keep_names) == 0:
-            raise Exception("Schur.contribution_from_parameters: " +
+            raise Exception("Schur.contribution_from_Parameters " +
                             "atleast one parameter must remain uncertain")
         #get the reduced predictions
         if self.predictions is None:
-            raise Exception("Schur.contribution_from_parameters: " +
+            raise Exception("Schur.contribution_from_Parameters " +
                             "no predictions have been set")
         # cond_preds = []
         # for pred in self.predictions:
@@ -259,12 +259,12 @@ class Schur(LinearAnalysis):
         """get a dataframe the prior and posterior uncertainty
         reduction as a result of
         some parameter becoming perfectly known
-        Parameters:
+        Parameters
         ----------
             parlist_dict (dict of list of str) : groups of parameters
                 that are to be treated as perfectly known.  key values become
                 row labels in dataframe
-        Returns:
+        Returns
         -------
             dataframe[parlist_dict.keys(),(forecast_name,<prior,post>)
                 multiindex dataframe of Schur's complement results for each
@@ -329,7 +329,7 @@ class Schur(LinearAnalysis):
                                  reset_zero_weight=False):
         """get a dataframe fo the posterior uncertainty
         as a results of added some observations
-        Parameters:
+        Parameters
         ----------
             obslist_dict (dict of list of str) : groups of observations
                 that are to be treated as lost.  key values become
@@ -344,7 +344,7 @@ class Schur(LinearAnalysis):
                 If the value of reset_zero_weights can be cast to a float,
                 then that value will be assigned to zero weight obs.  Otherwise,
                 zero weight obs will be given a weight of 1.0
-        Returns:
+        Returns
         -------
             dataframe[obslist_dict.keys(),(forecast_name,post)
                 multiindex dataframe of Schur's complement results for each
@@ -471,7 +471,7 @@ class Schur(LinearAnalysis):
                                    reset_zero_weight=False):
         """get a dataframe the posterior uncertainty
         as a result of losing some observations
-        Parameters:
+        Parameters
         ----------
             obslist_dict (dict of list of str, or just list of str) : groups of observations
                 that are to be treated as lost.  key values become
@@ -483,7 +483,7 @@ class Schur(LinearAnalysis):
                 then that value will be assigned to zero weight obs.  Otherwise,
                 zero weight obs will be given a weight of 1.0
 
-        Returns:
+        Returns
         -------
             dataframe[obslist_dict.keys(),(forecast_name,post)
                 multiindex dataframe of Schur's complement results for each
@@ -600,7 +600,7 @@ class Schur(LinearAnalysis):
                                       reset_zero_weight=False):
         """find the most important observation(s) by sequentailly evaluating
         the importance of the observations in obslist_dict.
-        Parameters:
+        Parameters
         ----------
             forecast : name of the forecast to use in the ranking process.  If
                 more than one forecast has been listed, this argument is required
@@ -618,7 +618,7 @@ class Schur(LinearAnalysis):
                 If the value of reset_zero_weights can be cast to a float,
                 then that value will be assigned to zero weight obs.  Otherwise,
                 zero weight obs will be given a weight of 1.0
-        Returns:
+        Returns
         -------
             DataFrame with columns = [best obslist_dict key, forecast variance,
                 percent reduction for this iteration, percent reduction
@@ -695,14 +695,14 @@ class Schur(LinearAnalysis):
         forecast  by sequentailly evaluating the contribution of parameters in
         parlist_dict
 
-        Parameters:
+        Parameters
         ----------
             forecast : name of the forecast to use in the ranking process.  If
                 more than one forecast has been listed, this argument is required
             parlist_dict (dict of list of str) : groups of parameters
                 that are to be treated as perfectly known.  key values become
                 row labels in dataframe
-        Returns:
+        Returns
         -------
             dataframe[parlist_dict.keys(),(forecast_name,<prior,post>)
                 multiindex dataframe of Schur's complement results for each

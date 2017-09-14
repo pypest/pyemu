@@ -182,10 +182,10 @@ class ControlData(object):
 
     def parse_values_from_lines(self,lines):
         """ cast the string lines for a pest control file into actual inputs
-        Parameters:
+        Parameters
         ----------
             lines: strings from pest control file
-        Returns:
+        Returns
         -------
             None
         """
@@ -243,10 +243,10 @@ class ControlData(object):
     def write(self,f):
         """ write control data section to a file
         
-        Parameters:
+        Parameters
         ----------
             f: file handle or string filename
-        Returns:
+        Returns
         -------
             None
         """

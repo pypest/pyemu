@@ -51,10 +51,10 @@ class Logger(object):
 
     def log(self,phrase):
         """log something that happened
-        Parameters:
+        Parameters
         ----------
             phrase (str) : the thing that happened
-        Returns:
+        Returns
         -------
             None
         """
@@ -80,10 +80,10 @@ class Logger(object):
 
     def warn(self,message):
         """write a warning to the log file
-        Parameters:
+        Parameters
         ----------
             message (str) : the warning text
-        Returns:
+        Returns
         -------
             None
         """

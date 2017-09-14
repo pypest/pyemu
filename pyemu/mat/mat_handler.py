@@ -11,10 +11,10 @@ from pyemu.pst.pst_handler import Pst
 
 def concat(mats):
     """Concatenate Matrix objects.  Tries either axis.
-    Parameters:
+    Parameters
     ----------
         mats: an enumerable of Matrix objects
-    Returns:
+    Returns
     -------
         Matrix
     """
@@ -64,11 +64,11 @@ def concat(mats):
 def get_common_elements(list1, list2):
     """find the common elements in two lists.  used to support auto align
         might be faster with sets
-    Parameters:
+    Parameters
     ----------
         list1 : a list of objects
         list2 : a list of objects
-    Returns:
+    Returns
     -------
         list of common objects shared by list1 and list2
     """
@@ -84,7 +84,7 @@ def get_common_elements(list1, list2):
 
 class Matrix(object):
     """a class for easy linear algebra
-    Attributes:
+    Attributes
         x : ndarray
             numpy ndarray
         row_names : list(str)
@@ -124,7 +124,7 @@ class Matrix(object):
             isdigonal : bool to determine if the Matrix is diagonal
             autoalign: bool used to control the autoalignment of Matrix objects
                 during linear algebra operations
-        Returns:
+        Returns
             None
         """
         self.col_names, self.row_names = [], []
@@ -174,10 +174,10 @@ class Matrix(object):
     def __getitem__(self, item):
         """a very crude overload of getitem - not trying to parse item,
             instead relying on shape of submat
-        Parameters:
+        Parameters
         ----------
             item : an enumerable that can be used as an index
-        Returns:
+        Returns
         -------
             a Matrix object that is a subMatrix of self
         """
@@ -200,14 +200,14 @@ class Matrix(object):
 
     def __pow__(self, power):
         """overload of __pow__ operator
-        Parameters:
+        Parameters
         ----------
             power: int or float.  interpreted as follows:
                 -1 = inverse of self
                 -0.5 = sqrt of inverse of self
                 0.5 = sqrt of self
                 all other positive ints = elementwise self raised to power
-        Returns:
+        Returns
         -------
             a new Matrix object
         """
@@ -236,10 +236,10 @@ class Matrix(object):
         """
             subtraction overload.  tries to speedup by checking for scalars of
             diagonal matrices on either side of operator
-        Parameters:
+        Parameters
         ----------
             other : [scalar,numpy.ndarray,Matrix object]
-        Returns:
+        Returns
         -------
             Matrix object
         """
@@ -312,10 +312,10 @@ class Matrix(object):
     def __add__(self, other):
         """addition overload.  tries to speedup by checking for
             scalars of diagonal matrices on either side of operator
-        Parameters:
+        Parameters
         ----------
             other : [scalar,numpy.ndarray,Matrix object]
-        Returns:
+        Returns
         -------
             Matrix
         """
@@ -379,10 +379,10 @@ class Matrix(object):
     def hadamard_product(self, other):
         """element-wise multiplication.  tries to speedup by checking for
             scalars of diagonal matrices on either side of operator
-        Parameters:
+        Parameters
         ----------
             other : [scalar,numpy.ndarray,Matrix object]
-        Returns:
+        Returns
         -------
             Matrix
         """
@@ -448,10 +448,10 @@ class Matrix(object):
     def __mul__(self, other):
         """multiplication overload.  tries to speedup by checking for scalars or
             diagonal matrices on either side of operator
-        Parameters:
+        Parameters
         ----------
             other : [scalar,numpy.ndarray,Matrix object]
-        Returns:
+        Returns
         -------
             Matrix object
         """
@@ -627,10 +627,10 @@ class Matrix(object):
 
     def mult_isaligned(self, other):
         """check if matrices are aligned for multiplication
-        Parameters:
+        Parameters
         ----------
             other : Matrix
-        Returns:
+        Returns
         -------
             True if aligned
             False if not aligned
@@ -646,10 +646,10 @@ class Matrix(object):
 
     def element_isaligned(self, other):
         """check if matrices are aligned for element-wise operations
-        Parameters:
+        Parameters
         ----------
             other : Matrix
-        Returns:
+        Returns
         -------
             True if aligned
             False if not aligned
@@ -686,10 +686,10 @@ class Matrix(object):
     @property
     def shape(self):
         """get the shape of x
-        Parameters:
+        Parameters
         ----------
             None
-        Returns:
+        Returns
         -------
             tuple of ndims
         """
@@ -719,10 +719,10 @@ class Matrix(object):
     @property
     def transpose(self):
         """transpose operation
-        Parameters:
+        Parameters
         ----------
             None
-        Returns:
+        Returns
         -------
             transpose of self
         """
@@ -740,10 +740,10 @@ class Matrix(object):
     @property
     def inv(self):
         """inversion operation
-        Parameters:
+        Parameters
         ----------
             None
-        Returns:
+        Returns
         -------
             inverse of self
        """
@@ -791,10 +791,10 @@ class Matrix(object):
     @property
     def sqrt(self):
         """square root operation
-        Parameters:
+        Parameters
         ----------
             None
-        Returns:
+        Returns
         -------
             square root of self
         """
@@ -862,11 +862,11 @@ class Matrix(object):
 
     def indices(self, names, axis=None):
         """get the row and col indices of names
-        Parameters:
+        Parameters
         ----------
             names : [enumerable] column and/or row names
             axis : [int] the axis to search.
-        Returns:
+        Returns
         -------
             numpy.ndarray : indices of names.  if axis is None, two ndarrays
                 are returned, corresponding the indices of names for each axis
@@ -900,11 +900,11 @@ class Matrix(object):
 
     def align(self, names, axis=None):
         """reorder self by names
-        Parameters:
+        Parameters
         ----------
             names : [enumerable] names in row and\or column names
             axis : [int] the axis to reorder. if None, reorder both axes
-        Returns:
+        Returns
         -------
             None
         """
@@ -948,12 +948,12 @@ class Matrix(object):
 
     def get(self, row_names=None, col_names=None, drop=False):
         """get a (sub)Matrix ordered on row_names or col_names
-        Parameters:
+        Parameters
         ----------
             row_names : [enumerable] row_names for new Matrix
             col_names : [enumerable] col_names for new Matrix
             drop : [bool] flag to remove row_names and/or col_names
-        Returns:
+        Returns
         -------
             Matrix
         """
@@ -1006,11 +1006,11 @@ class Matrix(object):
 
     def drop(self, names, axis):
         """ drop elements from self
-        Parameters:
+        Parameters
         ----------
             names : [enumerable] names to drop
             axis : [int] the axis to drop from. must be in [0,1]
-        Returns:
+        Returns
         -------
             None
         """
@@ -1093,10 +1093,10 @@ class Matrix(object):
 
     def to_binary(self, filename):
         """write a pest-compatible binary file
-        Parameters:
+        Parameters
         ----------
             filename : [str] filename to save binary file
-        Returns:
+        Returns
         -------
             None
         """
@@ -1138,10 +1138,10 @@ class Matrix(object):
     @classmethod
     def from_binary(cls, filename):
         """load from pest-compatible binary file
-        Parameters:
+        Parameters
         ----------
             filename : [str] filename to save binary file
-        Returns:
+        Returns
         -------
             None
         """
@@ -1197,11 +1197,11 @@ class Matrix(object):
     def from_fortranfile(cls, filename):
         """ a binary load method to accommodate one of the many
             bizzare fortran binary writing formats
-        Parameters:
+        Parameters
         ----------
             filename : str
                 name of the binary matrix file
-        Returns:
+        Returns
         -------
             None
         """
@@ -1243,11 +1243,11 @@ class Matrix(object):
 
     def to_ascii(self, out_filename, icode=2):
         """write a pest-compatible ASCII Matrix/vector file
-        Parameters:
+        Parameters
         ----------
             out_filename : [str] output filename
             icode : [int] pest-style info code for Matrix style
-        Returns:
+        Returns
         -------
             None
         """
@@ -1280,11 +1280,11 @@ class Matrix(object):
     @classmethod
     def from_ascii(cls, filename):
         """load a pest-compatible ASCII Matrix/vector file
-        Parameters:
+        Parameters
         ----------
             filename : str
                 name of the file to read
-        Returns:
+        Returns
         -------
             None
         """
@@ -1369,11 +1369,11 @@ class Matrix(object):
     @classmethod
     def from_dataframe(cls, df):
         """ populate self with dataframe information
-        Parameters:
+        Parameters
         ----------
             df : pandas dataframe
 
-        Returns:
+        Returns
         -------
             None
 
@@ -1385,10 +1385,10 @@ class Matrix(object):
 
     def to_dataframe(self):
         """return a pandas dataframe of the Matrix object
-        Parameters:
+        Parameters
         ----------
             None
-        Returns:
+        Returns
         -------
             pandas dataframe
         """
@@ -1401,10 +1401,10 @@ class Matrix(object):
 
     def to_sparse(self, trunc=0.0):
         """get the CSR sparse Matrix representation of Matrix
-        Parameters:
+        Parameters
         ----------
             None
-        Returns:
+        Returns
         -------
             scipy sparse Matrix object
         """
@@ -1485,7 +1485,7 @@ class Jco(Matrix):
             other: Matrix to pull columns from
             parnames: parameter (column) names to pull from
 
-        Returns:
+        Returns
             nothing: operates on self
         """
         assert len(set(self.col_names).intersection(set(other.col_names))) > 0
@@ -1517,14 +1517,14 @@ class Cov(Matrix):
     def __init__(self, x=None, names=[], row_names=[], col_names=[],
                  isdiagonal=False, autoalign=True):
         """
-        Parameters:
+        Parameters
             x : numpy.ndarray
             names : [enumerable] names for both columns and rows
             row_names : [enumerable] names for rows
             col_names : [enumerable] names for columns
             isdiagonal : [bool] diagonal Matrix flag
             autoalign : [bool] autoalignment flag
-        Returns:
+        Returns
             None
         """
         self.__identity = None
@@ -1590,11 +1590,11 @@ class Cov(Matrix):
         """get a new Covariance object that is conditional on knowing some
             elements.  uses Schur's complement for conditional Covariance
             propagation
-        Parameters:
+        Parameters
         ----------
             conditioning_elements : [enumerable] names of elements to
                                     condition on
-        Returns:
+        Returns
         -------
             Cov object
         """
@@ -1625,7 +1625,7 @@ class Cov(Matrix):
         Args:
             mean: mean values. either a scalar applied to to the entire vector of length N or an N-length vector
 
-        Returns:
+        Returns
             A vector of conditioned values, sampled using the covariance matrix and applied to the mean
 
         """
@@ -1670,12 +1670,12 @@ class Cov(Matrix):
 
     def to_uncfile(self, unc_file, covmat_file="Cov.mat", var_mult=1.0):
         """write a pest-compatible uncertainty file
-        Parameters:
+        Parameters
         ----------
             unc_file : [str] filename
             Covmat : [str] Covariance Matrix filename
             var_mult : [float] variance multiplier
-        Returns:
+        Returns
         -------
             None
         """
@@ -1705,10 +1705,10 @@ class Cov(Matrix):
     @classmethod
     def from_obsweights(cls, pst_file):
         """load Covariance from observation weights
-        Parameters:
+        Parameters
         ----------
             pst_file : [str] pest control file name
-        Returns:
+        Returns
         -------
             None
         """
@@ -1720,10 +1720,10 @@ class Cov(Matrix):
     def from_observation_data(cls, pst):
         """load Covariances from a pandas dataframe
                 of the pst observation data section
-        Parameters:
+        Parameters
         ----------
             pst : [pst object]
-        Returns:
+        Returns
         -------
             None
         """
@@ -1753,12 +1753,12 @@ class Cov(Matrix):
     @classmethod
     def from_parbounds(cls, pst_file, sigma_range = 4.0):
         """load Covariances from a pest control file parameter data section
-        Parameters:
+        Parameters
         ----------
             pst_file : [str] pest control file name
             sigma_range: float defining range of upper bound - lower bound in terms of sigma (stddev).
                           e.g. if sigma_range = 4, the bounds represent 4 * sigma
-        Returns:
+        Returns
         -------
             None
         """
@@ -1771,12 +1771,12 @@ class Cov(Matrix):
     def from_parameter_data(cls, pst, sigma_range = 4.0):
         """load Covariances from a pandas dataframe of the
                 pst parameter data section
-        Parameters:
+        Parameters
         ----------
             pst : [pst object]
             sigma_range: float defining range of upper bound - lower bound in terms of sigma (stddev).
                           e.g. if sigma_range = 4, the bounds represent 4 * sigma
-        Returns:
+        Returns
         -------
             None
         """
@@ -1812,10 +1812,10 @@ class Cov(Matrix):
     @classmethod
     def from_uncfile(cls, filename):
         """load Covariances from a pest-compatible uncertainty file
-        Parameters:
+        Parameters
         ----------
             filename : [str] uncertainty file name
-        Returns:
+        Returns
         -------
             None
        """
@@ -1886,10 +1886,10 @@ class Cov(Matrix):
     @staticmethod
     def get_uncfile_dimensions(filename):
         """quickly read an uncertainty file to find the dimensions
-        Parameters:
+        Parameters
         ----------
             filename : [str] uncertainty filename
-        Returns:
+        Returns
         -------
             nentries : [int] number of elements in file
         """

@@ -61,7 +61,7 @@
 <span class="sd">        this class tries hard to not load items until they are needed</span>
 <span class="sd">        all arguments are optional</span>
 
-<span class="sd">    Parameters:</span>
+<span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        jco ([enumerable of] [string,ndarray,matrix objects]) : jacobian</span>
 <span class="sd">        pst (pst object) : the pest control file object</span>
@@ -172,10 +172,10 @@
     <span class="k">def</span> <span class="nf">__fromfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">astype</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;a private method to deduce and load a filename into a matrix object</span>
 
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            filename (str) : the name of the file</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            mat (or cov) object</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -214,10 +214,10 @@
 
     <span class="k">def</span> <span class="nf">__load_pst</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;private: set the pst attribute</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            None</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -240,10 +240,10 @@
 
     <span class="k">def</span> <span class="nf">__load_jco</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;private :set the jco attribute from a file or a matrix object</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            None</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -647,10 +647,10 @@
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">prior_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get a dict of prior prediction variances</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            None</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            dict{prediction name(str):prior variance(float)}</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -701,10 +701,10 @@
 
 <div class="viewcode-block" id="LinearAnalysis.reset_parcov"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.la.LinearAnalysis.reset_parcov">[docs]</a>    <span class="k">def</span> <span class="nf">reset_parcov</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">arg</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;reset the parcov attribute to None</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            arg (str or matrix) : the value to assign to the parcov_arg attrib</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -716,10 +716,10 @@
 
 <div class="viewcode-block" id="LinearAnalysis.reset_obscov"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.la.LinearAnalysis.reset_obscov">[docs]</a>    <span class="k">def</span> <span class="nf">reset_obscov</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">arg</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;reset the obscov attribute to None</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            arg (str or matrix) : the value to assign to the obscov_arg attrib</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -756,12 +756,12 @@
 <div class="viewcode-block" id="LinearAnalysis.get"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.la.LinearAnalysis.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">par_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">obs_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">astype</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;method to get a new LinearAnalysis class using a</span>
 <span class="sd">             subset of parameters and/or observations</span>
-<span class="sd">         Parameters:</span>
+<span class="sd">         Parameters</span>
 <span class="sd">         ----------</span>
 <span class="sd">            par_names (enumerable of str) : par names for new object</span>
 <span class="sd">            obs_names (enumerable of str) : obs names for new object</span>
 <span class="sd">            astype (either schur or errvar type) : type to cast the new object</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            LinearAnalysis object</span>
 <span class="sd">        &quot;&quot;&quot;</span>

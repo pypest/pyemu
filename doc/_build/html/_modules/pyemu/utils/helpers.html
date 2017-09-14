@@ -104,14 +104,14 @@
 <div class="viewcode-block" id="geostatistical_prior_builder"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.helpers.geostatistical_prior_builder">[docs]</a><span class="k">def</span> <span class="nf">geostatistical_prior_builder</span><span class="p">(</span><span class="n">pst</span><span class="p">,</span> <span class="n">struct_dict</span><span class="p">,</span><span class="n">sigma_range</span><span class="o">=</span><span class="mi">4</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; a helper function to construct a full prior covariance matrix using</span>
 <span class="sd">    a mixture of geostastical structures an parameter bounds information.</span>
-<span class="sd">    Parameters:</span>
+<span class="sd">    Parameters</span>
 <span class="sd">        pst : pyemu.Pst instance (or the name of a pst file)</span>
 <span class="sd">        struct_dict : a python dict of geostat structure file : list of pp tpl files</span>
 <span class="sd">            if the values in the dict are pd.DataFrames, then they must have an</span>
 <span class="sd">            &#39;x&#39;,&#39;y&#39;, and &#39;parnme&#39; column.  If the filename ends in &#39;.csv&#39;,</span>
 <span class="sd">            then a pd.DataFrame is loaded.</span>
 <span class="sd">        sigma_range : float representing the number of standard deviations implied by parameter bounds</span>
-<span class="sd">    Returns:</span>
+<span class="sd">    Returns</span>
 <span class="sd">        Cov : pyemu.Cov instance</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -180,7 +180,7 @@
              <span class="n">tpl_file</span><span class="o">=</span><span class="s2">&quot;kl.tpl&quot;</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;setup a karhuenen-Loeve based parameterization for a given</span>
 <span class="sd">    geostatistical structure.</span>
-<span class="sd">    Parameters:</span>
+<span class="sd">    Parameters</span>
 <span class="sd">        num_eig (int) : number of basis vectors to retain in the reduced basis</span>
 
 <span class="sd">        struct_file (str) : a pest-style geostatistical structure file</span>
@@ -199,7 +199,7 @@
 <span class="sd">                         original factor values,and the template entries.</span>
 <span class="sd">                         The original values can be used to set the parval1</span>
 <span class="sd">                         entries in the control file</span>
-<span class="sd">    Returns:</span>
+<span class="sd">    Returns</span>
 <span class="sd">        back_array_dict (dict(str:ndarray)) : a dictionary of back transformed</span>
 <span class="sd">                                              arrays.  This is useful to see</span>
 <span class="sd">                                              how much &quot;smoothing&quot; is taking</span>
@@ -259,14 +259,14 @@
 <div class="viewcode-block" id="kl_apply"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.helpers.kl_apply">[docs]</a><span class="k">def</span> <span class="nf">kl_apply</span><span class="p">(</span><span class="n">par_file</span><span class="p">,</span> <span class="n">basis_file</span><span class="p">,</span><span class="n">par_to_file_dict</span><span class="p">,</span><span class="n">arr_shape</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Applies a KL parameterization transform from basis factors to model</span>
 <span class="sd">     input arrays</span>
-<span class="sd">     Parameters:</span>
+<span class="sd">     Parameters</span>
 <span class="sd">        par_file (str) : the csv file to get factor values from.  Must contain</span>
 <span class="sd">                        the following columns: name, new_val, org_val</span>
 <span class="sd">        basis_file (str): the binary file that contains the reduced basis</span>
 
 <span class="sd">        par_to_file_dict (dict(str:str)): a mapping from KL parameter prefixes</span>
 <span class="sd">                                          to array file names.</span>
-<span class="sd">    Returns:</span>
+<span class="sd">    Returns</span>
 <span class="sd">        None</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -299,14 +299,14 @@
 
 <div class="viewcode-block" id="zero_order_tikhonov"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.helpers.zero_order_tikhonov">[docs]</a><span class="k">def</span> <span class="nf">zero_order_tikhonov</span><span class="p">(</span><span class="n">pst</span><span class="p">,</span> <span class="n">parbounds</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">par_groups</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;setup preferred-value regularization</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            pst (Pst instance) : the control file instance</span>
 <span class="sd">            parbounds (bool) : weight the prior information equations according</span>
 <span class="sd">                to parameter bound width - approx the KL transform</span>
 <span class="sd">            par_groups (list(str)) : parameter groups to build PI equations</span>
 <span class="sd">               for.  If None, all adjustable parameters are used</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -346,7 +346,7 @@
 <div class="viewcode-block" id="regweight_from_parbound"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.helpers.regweight_from_parbound">[docs]</a><span class="k">def</span> <span class="nf">regweight_from_parbound</span><span class="p">(</span><span class="n">pst</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;sets regularization weights from parameter bounds</span>
 <span class="sd">        which approximates the KL expansion</span>
-<span class="sd">    Parameters:</span>
+<span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        pst (Pst) : a control file instance</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -368,7 +368,7 @@
 
 <div class="viewcode-block" id="first_order_pearson_tikhonov"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.helpers.first_order_pearson_tikhonov">[docs]</a><span class="k">def</span> <span class="nf">first_order_pearson_tikhonov</span><span class="p">(</span><span class="n">pst</span><span class="p">,</span><span class="n">cov</span><span class="p">,</span><span class="n">reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">abs_drop_tol</span><span class="o">=</span><span class="mf">1.0e-3</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;setup preferred-difference regularization from a covariance matrix.</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            pst (pyemu.Pst) : pst instance</span>
 <span class="sd">            cov (pyemu.Cov) : covariance matrix instance</span>
@@ -422,7 +422,7 @@
                  <span class="n">port</span><span class="o">=</span><span class="mi">4004</span><span class="p">,</span><span class="n">rel_path</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">local</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">cleanup</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">master_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; start a group of pest(++) slaves on the local machine</span>
 
-<span class="sd">    Parameters:</span>
+<span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        slave_dir : (str) the path to a complete set of input files</span>
 
@@ -712,7 +712,7 @@
 <span class="sd">    values of the model-simulated equivalents to observations.  This can be</span>
 <span class="sd">    useful for testing</span>
 
-<span class="sd">    Parameters:</span>
+<span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        tpl_files : list[str]</span>
 <span class="sd">            list of pest template files</span>
@@ -724,7 +724,7 @@
 <span class="sd">            list of corresponding model output files</span>
 <span class="sd">        pst_filename : str (optional)</span>
 <span class="sd">            name of file to write the control file to</span>
-<span class="sd">    Returns:</span>
+<span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">        Pst instance</span>
 <span class="sd">    &quot;&quot;&quot;</span>

@@ -186,16 +186,16 @@
 
 <div class="viewcode-block" id="Schur.get_parameter_summary"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.sc.Schur.get_parameter_summary">[docs]</a>    <span class="k">def</span> <span class="nf">get_parameter_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">include_map</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get a summary of the parameter uncertainty</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            include_map : bool (optional)</span>
 <span class="sd">                if True, add the prior and posterior expectations</span>
 <span class="sd">                and report standard deviation instead of variance</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            pd.DataFrame() of prior,posterior variances and percent</span>
 <span class="sd">            uncertainty reduction of each parameter</span>
-<span class="sd">        Raises:</span>
+<span class="sd">        Raises</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">prior_mat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">posterior_parameter</span><span class="o">.</span><span class="n">col_names</span><span class="p">)</span>
@@ -223,10 +223,10 @@
 
 <div class="viewcode-block" id="Schur.get_forecast_summary"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.sc.Schur.get_forecast_summary">[docs]</a>    <span class="k">def</span> <span class="nf">get_forecast_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">include_map</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get a summary of the forecast uncertainty</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            None</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            pd.DataFrame() of prior,posterior variances and percent</span>
 <span class="sd">            uncertainty reduction of each forecast</span>
@@ -254,10 +254,10 @@
     <span class="k">def</span> <span class="nf">__contribution_from_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter_names</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get the prior and posterior uncertainty reduction as a result of</span>
 <span class="sd">        some parameter becoming perfectly known</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            parameter_names (list of str) : parameter that are perfectly known</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            dict{prediction name : [prior uncertainty w/o parameter_names,</span>
 <span class="sd">                % posterior uncertainty w/o parameter names]}</span>
@@ -285,11 +285,11 @@
             <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
                 <span class="n">keep_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">keep_names</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Schur.contribution_from_parameters: &quot;</span> <span class="o">+</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Schur.contribution_from_Parameters &quot;</span> <span class="o">+</span>
                             <span class="s2">&quot;atleast one parameter must remain uncertain&quot;</span><span class="p">)</span>
         <span class="c1">#get the reduced predictions</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Schur.contribution_from_parameters: &quot;</span> <span class="o">+</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Schur.contribution_from_Parameters &quot;</span> <span class="o">+</span>
                             <span class="s2">&quot;no predictions have been set&quot;</span><span class="p">)</span>
         <span class="c1"># cond_preds = []</span>
         <span class="c1"># for pred in self.predictions:</span>
@@ -304,12 +304,12 @@
         <span class="sd">&quot;&quot;&quot;get a dataframe the prior and posterior uncertainty</span>
 <span class="sd">        reduction as a result of</span>
 <span class="sd">        some parameter becoming perfectly known</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            parlist_dict (dict of list of str) : groups of parameters</span>
 <span class="sd">                that are to be treated as perfectly known.  key values become</span>
 <span class="sd">                row labels in dataframe</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            dataframe[parlist_dict.keys(),(forecast_name,&lt;prior,post&gt;)</span>
 <span class="sd">                multiindex dataframe of Schur&#39;s complement results for each</span>
@@ -374,7 +374,7 @@
                                  <span class="n">reset_zero_weight</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get a dataframe fo the posterior uncertainty</span>
 <span class="sd">        as a results of added some observations</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            obslist_dict (dict of list of str) : groups of observations</span>
 <span class="sd">                that are to be treated as lost.  key values become</span>
@@ -389,7 +389,7 @@
 <span class="sd">                If the value of reset_zero_weights can be cast to a float,</span>
 <span class="sd">                then that value will be assigned to zero weight obs.  Otherwise,</span>
 <span class="sd">                zero weight obs will be given a weight of 1.0</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            dataframe[obslist_dict.keys(),(forecast_name,post)</span>
 <span class="sd">                multiindex dataframe of Schur&#39;s complement results for each</span>
@@ -516,7 +516,7 @@
                                    <span class="n">reset_zero_weight</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;get a dataframe the posterior uncertainty</span>
 <span class="sd">        as a result of losing some observations</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            obslist_dict (dict of list of str, or just list of str) : groups of observations</span>
 <span class="sd">                that are to be treated as lost.  key values become</span>
@@ -528,7 +528,7 @@
 <span class="sd">                then that value will be assigned to zero weight obs.  Otherwise,</span>
 <span class="sd">                zero weight obs will be given a weight of 1.0</span>
 
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            dataframe[obslist_dict.keys(),(forecast_name,post)</span>
 <span class="sd">                multiindex dataframe of Schur&#39;s complement results for each</span>
@@ -645,7 +645,7 @@
                                       <span class="n">reset_zero_weight</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;find the most important observation(s) by sequentailly evaluating</span>
 <span class="sd">        the importance of the observations in obslist_dict.</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            forecast : name of the forecast to use in the ranking process.  If</span>
 <span class="sd">                more than one forecast has been listed, this argument is required</span>
@@ -663,7 +663,7 @@
 <span class="sd">                If the value of reset_zero_weights can be cast to a float,</span>
 <span class="sd">                then that value will be assigned to zero weight obs.  Otherwise,</span>
 <span class="sd">                zero weight obs will be given a weight of 1.0</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            DataFrame with columns = [best obslist_dict key, forecast variance,</span>
 <span class="sd">                percent reduction for this iteration, percent reduction</span>
@@ -740,14 +740,14 @@
 <span class="sd">        forecast  by sequentailly evaluating the contribution of parameters in</span>
 <span class="sd">        parlist_dict</span>
 
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            forecast : name of the forecast to use in the ranking process.  If</span>
 <span class="sd">                more than one forecast has been listed, this argument is required</span>
 <span class="sd">            parlist_dict (dict of list of str) : groups of parameters</span>
 <span class="sd">                that are to be treated as perfectly known.  key values become</span>
 <span class="sd">                row labels in dataframe</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            dataframe[parlist_dict.keys(),(forecast_name,&lt;prior,post&gt;)</span>
 <span class="sd">                multiindex dataframe of Schur&#39;s complement results for each</span>

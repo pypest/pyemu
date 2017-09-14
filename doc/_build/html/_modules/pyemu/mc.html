@@ -54,10 +54,10 @@
 <div class="viewcode-block" id="MonteCarlo"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.mc.MonteCarlo">[docs]</a><span class="k">class</span> <span class="nc">MonteCarlo</span><span class="p">(</span><span class="n">LinearAnalysis</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;LinearAnalysis derived type for monte carlo analysis</span>
 
-<span class="sd">       Note: requires a pest control file, which can be</span>
-<span class="sd">             derived from a jco argument</span>
-<span class="sd">             MonteCarlo.project_parsensemble also</span>
-<span class="sd">             requires a jacobian</span>
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">            Requires a pest control file, which can be derived from a jco argument</span>
+<span class="sd">            `MonteCarlo.project_parsensemble` also requires a Jacobian.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -76,7 +76,7 @@
 <span class="sd">            a ratio between the largest and smallest singular</span>
 <span class="sd">            values</span>
 
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">            epsilon: ratio</span>
 <span class="sd">        Returns : integer (or None)</span>
 <span class="sd">            number of singular components above the epsilon ratio threshold</span>
@@ -93,11 +93,11 @@
 <div class="viewcode-block" id="MonteCarlo.get_null_proj"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.mc.MonteCarlo.get_null_proj">[docs]</a>    <span class="k">def</span> <span class="nf">get_null_proj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">nsing</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; get a null-space projection matrix of XTQX</span>
 
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            nsing: optional number of singular components to use</span>
 <span class="sd">                      if none, call self.get_nsing()</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            Matrix instance : V2V2^T</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -120,20 +120,23 @@
         <span class="sd">&quot;&quot;&quot;draw stochastic realizations of parameters and</span>
 <span class="sd">           optionally observations</span>
 
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">            num_reals (int): number of realization to generate</span>
-
-<span class="sd">            par_file (str): parameter file to use as mean values</span>
-
-<span class="sd">            obs (bool): add a realization of measurement noise to obs</span>
-
-<span class="sd">            enforce_bounds (bool): enforce parameter bounds in control file</span>
-
-<span class="sd">            how (str): type of distribution.  Must be in [&quot;gaussian&quot;,&quot;uniform&quot;]</span>
-<span class="sd">        Returns:</span>
+<span class="sd">            num_reals : int</span>
+<span class="sd">                number of realization to generate</span>
+<span class="sd">            par_file : str</span>
+<span class="sd">                parameter file to use as mean values</span>
+<span class="sd">            obs : bool</span>
+<span class="sd">                add a realization of measurement noise to obs</span>
+<span class="sd">            enforce_bounds : bool</span>
+<span class="sd">                enforce parameter bounds in control file</span>
+<span class="sd">            how : str</span>
+<span class="sd">                type of distribution: must be in [&quot;gaussian&quot;,&quot;uniform&quot;]</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
 <span class="sd">            None</span>
-<span class="sd">        Raises:</span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">par_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -169,7 +172,7 @@
                             <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">enforce_bounds</span><span class="o">=</span><span class="s1">&#39;reset&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; perform the null-space projection operations for null-space monte carlo</span>
 
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">            par_file: str</span>
 <span class="sd">                an optional file of parameter values to use</span>
 <span class="sd">            nsing: int</span>
@@ -179,7 +182,7 @@
 <span class="sd">                projected values</span>
 <span class="sd">            enforce_bounds: str</span>
 <span class="sd">                how to enforce parameter bounds.  can be None, &#39;reset&#39;, or &#39;drop&#39;</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            if inplace is False, ParameterEnsemble instance, otherwise None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -199,7 +202,7 @@
 <div class="viewcode-block" id="MonteCarlo.write_psts"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.mc.MonteCarlo.write_psts">[docs]</a>    <span class="k">def</span> <span class="nf">write_psts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">prefix</span><span class="p">,</span><span class="n">existing_jco</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">noptmax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; write parameter and optionally observation realizations</span>
 <span class="sd">            to pest control files</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            prefix: str</span>
 <span class="sd">                pest control file prefix</span>
@@ -211,7 +214,7 @@
 <span class="sd">                file as seen from the location where pest++ will be run</span>
 <span class="sd">            noptmax: int</span>
 <span class="sd">                value of NOPTMAX to set in new pest control files</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            None</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -253,8 +256,6 @@
             <span class="n">pst</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">pst_name</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;writing realized pest control file &quot;</span> <span class="o">+</span> <span class="n">pst_name</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;writing realized pest control files&quot;</span><span class="p">)</span></div></div>
-
-
 </pre></div>
 
           </div>

@@ -15,12 +15,12 @@ class Pst(object):
     """
     def __init__(self, filename, load=True, resfile=None):
         """constructor of pst object
-        Parameters:
+        Parameters
         ----------
             filename : [str] pest control file name
             load : [bool] flag for loading
             resfile : [str] residual filename
-        Returns:
+        Returns
         -------
             None
         """
@@ -52,10 +52,10 @@ class Pst(object):
     @property
     def phi_components(self):
         """ get the individual components of the total objective function
-        Parameters:
+        Parameters
         ----------
             None
-        Returns:
+        Returns
         -------
             Dict{observation group : contribution}
         """
@@ -104,9 +104,9 @@ class Pst(object):
             normalized to the total PHI being 1.0
         Args:
             None
-        Returns:
+        Returns
             Dict{observation group : normalized contribution}
-        Raises:
+        Raises
             Assertion error if self.observation_data groups don't match
             self.res groups
 
@@ -339,11 +339,11 @@ class Pst(object):
 
     def load(self, filename):
         """load the pest control file
-        Parameters:
+        Parameters
         ----------
             filename : str
                 pst filename
-        Returns:
+        Returns
         -------
             None
         """
@@ -660,10 +660,10 @@ class Pst(object):
 
     def write(self,new_filename,update_regul=False):
         """write a pest control file
-        Parameters:
+        Parameters
         ----------
             new_filename (str) : name of the new pest control file
-        Returns:
+        Returns
         -------
             None
         """
@@ -802,9 +802,9 @@ class Pst(object):
         Args:
             par_names (list of str) : parameter names
             obs_names (list of str) : observation names
-        Returns:
+        Returns
             new pst instance
-        Raises:
+        Raises
             None
         """
         pass
@@ -867,11 +867,11 @@ class Pst(object):
     def parrep(self, parfile=None):
         """replicates the pest parrep util. replaces the parval1 field in the
             parameter data section dataframe
-        Parameters:
+        Parameters
         ----------
             parfile (str) : parameter file to use.  If None, try to use
                             a parameter file that corresponds to the case name
-        Returns:
+        Returns
         -------
             None
         """
@@ -889,11 +889,11 @@ class Pst(object):
     def adjust_weights_recfile(self, recfile=None):
         """adjusts the weights of the observations based on the phi components
         in a recfile
-        Parameters:
+        Parameters
         ----------
             recfile (str) : record file name.  If None, try to use a record file
                             with the case name
-        Returns:
+        Returns
         -------
             None
         """
@@ -925,10 +925,10 @@ class Pst(object):
 
     def adjust_weights_resfile(self, resfile=None):
         """adjust the weights by phi components in a residual file
-        Parameters:
+        Parameters
         ----------
             resfile (str) : residual filename.  If None, use self.resfile
-        Returns:
+        Returns
         -------
             None
         """
@@ -941,11 +941,11 @@ class Pst(object):
     def _adjust_weights_by_phi_components(self, components):
         """resets the weights of observations to account for
         residual phi components.
-        Parameters:
+        Parameters
         ----------
             components (dict{obs group:phi contribution}): group specific phi
                 contributions
-        Returns:
+        Returns
         -------
             None
         """
@@ -973,7 +973,7 @@ class Pst(object):
 
     def __reset_weights(self, target_phis, res_idxs, obs_idxs):
         """reset weights based on target phi vals for each group
-        Parameters:
+        Parameters
         ----------
             target_phis (dict) : target phi contribution for groups to reweight
             res_idxs (dict) : the index positions of each group of interest
@@ -1001,7 +1001,7 @@ class Pst(object):
     def adjust_weights_by_list(self,obslist,weight):
         """apply a single weight to a list of obsevation names.  supports that
         data worth analyses in Schur
-        Parameters:
+        Parameters
         ----------
             obslist : list of obseravtion names
             weight : (flaot) new weight to assign
@@ -1021,11 +1021,11 @@ class Pst(object):
                               obsgrp_dict=None):
         """reset the weights of observation groups to contribute a specified
         amount to the composite objective function
-        Parameters:
+        Parameters
         ----------
             obs_dict (dict{obs name:new contribution})
             obsgrp_dict (dict{obs group name:contribution})
-        Returns:
+        Returns
         -------
             None
         Note:
@@ -1063,14 +1063,14 @@ class Pst(object):
     def proportional_weights(self, fraction_stdev=1.0, wmax=100.0,
                              leave_zero=True):
         """setup inversely proportional weights
-        Parameters:
+        Parameters
         ----------
             fraction_stdev (float) : the fraction portion of the observation
                 val to treat as the standard deviation.  set to 1.0 for
                 inversely proportional
             wmax (float) : maximum weight to allow
             leave_zero (bool) : flag to leave existing zero weights
-        Returns:
+        Returns
         -------
             None
         """
@@ -1114,7 +1114,7 @@ class Pst(object):
 
                 raise Exception("Pst.calculate_pertubations(): " +\
                                 "can't calc pertubations for the following "+\
-                                "parameters: {0}".format(','.join(still_out)))
+                                "Parameters {0}".format(','.join(still_out)))
 
     def build_increments(self):
         self.enforce_bounds()

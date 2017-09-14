@@ -161,11 +161,11 @@
 <div class="viewcode-block" id="read_resfile"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.read_resfile">[docs]</a><span class="k">def</span> <span class="nf">read_resfile</span><span class="p">(</span><span class="n">resfile</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;load a residual file into a pandas dataframe</span>
 
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            resfile : str</span>
 <span class="sd">                residual file</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            pandas DataFrame</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -191,11 +191,11 @@
 <div class="viewcode-block" id="read_parfile"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.read_parfile">[docs]</a><span class="k">def</span> <span class="nf">read_parfile</span><span class="p">(</span><span class="n">parfile</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;load a pest-compatible .par file into a pandas dataframe</span>
 
-<span class="sd">    Parameters:</span>
+<span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        parfile : str</span>
 <span class="sd">            pest parameter file</span>
-<span class="sd">    Returns:</span>
+<span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">        pandas DataFrame</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -212,14 +212,14 @@
 <div class="viewcode-block" id="write_parfile"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.write_parfile">[docs]</a><span class="k">def</span> <span class="nf">write_parfile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">parfile</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; write a pest parameter file from a dataframe</span>
 
-<span class="sd">    Parameters:</span>
+<span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        df : pandas DataFrame</span>
 <span class="sd">            with column names that correspond to the entries</span>
 <span class="sd">            in the parameter data section of a pest control file</span>
 <span class="sd">        parfile : str</span>
 <span class="sd">            name of the parameter file to write</span>
-<span class="sd">    Returns:</span>
+<span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">        None</span>
 
@@ -246,11 +246,11 @@
 <div class="viewcode-block" id="parse_tpl_file"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.parse_tpl_file">[docs]</a><span class="k">def</span> <span class="nf">parse_tpl_file</span><span class="p">(</span><span class="n">tpl_file</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; parse a pest template file to get the parameter names</span>
 
-<span class="sd">    Parameters:</span>
+<span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        tpl_file : str</span>
 <span class="sd">            template file name</span>
-<span class="sd">    Returns:</span>
+<span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">        list of parameter names</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -342,11 +342,11 @@
 
 <div class="viewcode-block" id="parse_ins_file"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.parse_ins_file">[docs]</a><span class="k">def</span> <span class="nf">parse_ins_file</span><span class="p">(</span><span class="n">ins_file</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;parse a pest instruction file to get observation names</span>
-<span class="sd">    Parameters:</span>
+<span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        ins_file : str</span>
 <span class="sd">            instruction file name</span>
-<span class="sd">    Returns:</span>
+<span class="sd">    Returns</span>
 <span class="sd">        list of observation names</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -410,13 +410,13 @@
 
 <div class="viewcode-block" id="generic_pst"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.generic_pst">[docs]</a><span class="k">def</span> <span class="nf">generic_pst</span><span class="p">(</span><span class="n">par_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;par1&quot;</span><span class="p">],</span><span class="n">obs_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;obs1&quot;</span><span class="p">],</span><span class="n">addreg</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;generate a generic pst instance</span>
-<span class="sd">    Parameters:</span>
+<span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        par_names : list(str)</span>
 <span class="sd">            parameter names to setup</span>
 <span class="sd">        obs_names : list(str)</span>
 <span class="sd">            observation names to setup</span>
-<span class="sd">    Returns:</span>
+<span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">        Pst instance</span>
 
@@ -487,10 +487,10 @@
 
 <div class="viewcode-block" id="get_phi_comps_from_recfile"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.get_phi_comps_from_recfile">[docs]</a><span class="k">def</span> <span class="nf">get_phi_comps_from_recfile</span><span class="p">(</span><span class="n">recfile</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;read the phi components from a record file</span>
-<span class="sd">        Parameters:</span>
+<span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">            recfile (str) : record file</span>
-<span class="sd">        Returns:</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">            dict{iteration number:{group,contribution}}</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -521,7 +521,7 @@
 <div class="viewcode-block" id="smp_to_ins"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.smp_to_ins">[docs]</a><span class="k">def</span> <span class="nf">smp_to_ins</span><span class="p">(</span><span class="n">smp_filename</span><span class="p">,</span><span class="n">ins_filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">use_generic_names</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                <span class="n">gwutils_compliant</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">datetime_format</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; create an instruction file from an smp file</span>
-<span class="sd">    Parameters:</span>
+<span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        smp_filename : str</span>
 <span class="sd">            existing smp file</span>
@@ -538,7 +538,7 @@
 <span class="sd">            use free format (with whitespace) instruction set</span>
 <span class="sd">        datetime_format : optional str</span>
 <span class="sd">            str to pass to datetime.strptime in the smp_to_dataframe() function</span>
-<span class="sd">    Returns:</span>
+<span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">        dataframe instance of the smp file with the observation names and</span>
 <span class="sd">        instruction lines as additional columns</span>
@@ -583,7 +583,7 @@
                      <span class="n">max_name_len</span><span class="o">=</span><span class="mi">12</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; write a dataframe as an smp file</span>
 
-<span class="sd">    Parameters:</span>
+<span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        dataframe : a pandas dataframe</span>
 <span class="sd">        smp_filename : str</span>
@@ -597,7 +597,7 @@
 <span class="sd">        datetime_format: str</span>
 <span class="sd">            either &#39;dd/mm/yyyy&#39; or &#39;mm/dd/yyy&#39;</span>
 <span class="sd">        value_format: a python float-compatible format</span>
-<span class="sd">    Returns:</span>
+<span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">        None</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -646,7 +646,7 @@
 
 <div class="viewcode-block" id="smp_to_dataframe"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.smp_to_dataframe">[docs]</a><span class="k">def</span> <span class="nf">smp_to_dataframe</span><span class="p">(</span><span class="n">smp_filename</span><span class="p">,</span><span class="n">datetime_format</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; load an smp file into a pandas dataframe</span>
-<span class="sd">    Parameters:</span>
+<span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">        smp_filename : str</span>
 <span class="sd">            smp filename to load</span>
@@ -654,7 +654,7 @@
 <span class="sd">            should be either &quot;%m/%d/%Y %H:%M:%S&quot; or &quot;%d/%m/%Y %H:%M:%S&quot;</span>
 <span class="sd">            If None, then we will try to deduce the format for you, which</span>
 <span class="sd">            always dangerous</span>
-<span class="sd">    Returns:</span>
+<span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">        a pandas dataframe instance</span>
 <span class="sd">    &quot;&quot;&quot;</span>

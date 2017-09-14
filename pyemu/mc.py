@@ -9,10 +9,10 @@ from pyemu.mat import Cov
 class MonteCarlo(LinearAnalysis):
     """LinearAnalysis derived type for monte carlo analysis
 
-       Note: requires a pest control file, which can be
-             derived from a jco argument
-             MonteCarlo.project_parsensemble also
-             requires a jacobian
+        Note
+        ----
+            Requires a pest control file, which can be derived from a jco argument
+            `MonteCarlo.project_parsensemble` also requires a Jacobian.
 
     """
     def __init__(self,**kwargs):
@@ -31,7 +31,7 @@ class MonteCarlo(LinearAnalysis):
             a ratio between the largest and smallest singular
             values
 
-        Parameters:
+        Parameters
             epsilon: ratio
         Returns : integer (or None)
             number of singular components above the epsilon ratio threshold
@@ -48,11 +48,11 @@ class MonteCarlo(LinearAnalysis):
     def get_null_proj(self,nsing=None):
         """ get a null-space projection matrix of XTQX
 
-        Parameters:
+        Parameters
         ----------
             nsing: optional number of singular components to use
                       if none, call self.get_nsing()
-        Returns:
+        Returns
         -------
             Matrix instance : V2V2^T
         """
@@ -75,20 +75,23 @@ class MonteCarlo(LinearAnalysis):
         """draw stochastic realizations of parameters and
            optionally observations
 
-        Parameters:
+        Parameters
         ----------
-            num_reals (int): number of realization to generate
-
-            par_file (str): parameter file to use as mean values
-
-            obs (bool): add a realization of measurement noise to obs
-
-            enforce_bounds (bool): enforce parameter bounds in control file
-
-            how (str): type of distribution.  Must be in ["gaussian","uniform"]
-        Returns:
+            num_reals : int
+                number of realization to generate
+            par_file : str
+                parameter file to use as mean values
+            obs : bool
+                add a realization of measurement noise to obs
+            enforce_bounds : bool
+                enforce parameter bounds in control file
+            how : str
+                type of distribution: must be in ["gaussian","uniform"]
+        Returns
+        -------
             None
-        Raises:
+        Raises
+        ------
             None
         """
         if par_file is not None:
@@ -124,7 +127,7 @@ class MonteCarlo(LinearAnalysis):
                             inplace=True,enforce_bounds='reset'):
         """ perform the null-space projection operations for null-space monte carlo
 
-        Parameters:
+        Parameters
             par_file: str
                 an optional file of parameter values to use
             nsing: int
@@ -134,7 +137,7 @@ class MonteCarlo(LinearAnalysis):
                 projected values
             enforce_bounds: str
                 how to enforce parameter bounds.  can be None, 'reset', or 'drop'
-        Returns:
+        Returns
         -------
             if inplace is False, ParameterEnsemble instance, otherwise None
         """
@@ -154,7 +157,7 @@ class MonteCarlo(LinearAnalysis):
     def write_psts(self,prefix,existing_jco=None,noptmax=None):
         """ write parameter and optionally observation realizations
             to pest control files
-        Parameters:
+        Parameters
         ----------
             prefix: str
                 pest control file prefix
@@ -166,7 +169,7 @@ class MonteCarlo(LinearAnalysis):
                 file as seen from the location where pest++ will be run
             noptmax: int
                 value of NOPTMAX to set in new pest control files
-        Returns:
+        Returns
         -------
             None
         """
@@ -208,5 +211,3 @@ class MonteCarlo(LinearAnalysis):
             pst.write(pst_name)
             self.log("writing realized pest control file " + pst_name)
         self.log("writing realized pest control files")
-
-
