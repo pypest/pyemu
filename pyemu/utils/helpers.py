@@ -296,6 +296,8 @@ def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
                                                "weight": weight})
         if parbounds:
             regweight_from_parbound(pst)
+        if pst.control_data.pestmode == "estimation":
+            pst.control_data.pestmode = "regularization"
 
 
 def regweight_from_parbound(pst):
@@ -371,6 +373,10 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
             pst.prior_information = df
         else:
             pst.prior_information = pst.prior_information.append(df)
+
+        if pst.control_data.pestmode == "estimation":
+            pst.control_data.pestmode = "regularization"
+
 
 
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
@@ -894,7 +900,8 @@ class PstFromFlopyModel(object):
                 self.logger.warn("removing existing 'new_model_ws")
                 shutil.rmtree(new_model_ws)
         self.m.change_model_ws(new_model_ws,reset_external=True)
-
+        self.m.exe_name = self.m.exe_name.replace(".exe",'')
+        self.m.exe = self.m.version
         self.log("writing new modflow input files")
         self.m.write_input()
         self.log("writing new modflow input files")
