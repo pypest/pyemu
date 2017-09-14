@@ -1,0 +1,895 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyemu.la &#8212; pyEMU 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pyemu.la</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">division</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">pyemu.mat.mat_handler</span> <span class="k">import</span> <span class="n">Matrix</span><span class="p">,</span> <span class="n">Jco</span><span class="p">,</span> <span class="n">Cov</span>
+<span class="kn">from</span> <span class="nn">pyemu.pst.pst_handler</span> <span class="k">import</span> <span class="n">Pst</span>
+<span class="kn">from</span> <span class="nn">.logger</span> <span class="k">import</span> <span class="n">Logger</span>
+
+
+
+<div class="viewcode-block" id="LinearAnalysis"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.la.LinearAnalysis">[docs]</a><span class="k">class</span> <span class="nc">LinearAnalysis</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; the super class for linear analysis.  Can be used for prior analyses</span>
+<span class="sd">        only.  The derived types (schur and errvar) are for posterior analyses</span>
+<span class="sd">        this class tries hard to not load items until they are needed</span>
+<span class="sd">        all arguments are optional</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    ----------</span>
+<span class="sd">        jco ([enumerable of] [string,ndarray,matrix objects]) : jacobian</span>
+<span class="sd">        pst (pst object) : the pest control file object</span>
+<span class="sd">        parcov ([enumerable of] [string,ndarray,matrix objects]) :</span>
+<span class="sd">            parameter covariance matrix</span>
+<span class="sd">        obscov ([enumerable of] [string,ndarray,matrix objects]):</span>
+<span class="sd">            observation noise covariance matrix</span>
+<span class="sd">        predictions ([enumerable of] [string,ndarray,matrix objects]) :</span>
+<span class="sd">            prediction sensitivity vectors</span>
+<span class="sd">        ref_var (float) : reference variance</span>
+<span class="sd">        verbose (either bool or string) : controls log file / screen output</span>
+<span class="sd">    Notes:</span>
+<span class="sd">        the class makes heavy use of property decorator to encapsulate</span>
+<span class="sd">        private attributes</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">jco</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pst</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">parcov</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">obscov</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">predictions</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ref_var</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">resfile</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">forecasts</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">Logger</span><span class="p">(</span><span class="n">verbose</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">log</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">jco_arg</span> <span class="o">=</span> <span class="n">jco</span>
+        <span class="c1">#if jco is None:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__jco</span> <span class="o">=</span> <span class="n">jco</span>
+        <span class="k">if</span> <span class="n">pst</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">jco</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">pst_case</span> <span class="o">=</span> <span class="n">jco</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.jco&quot;</span><span class="p">,</span> <span class="s2">&quot;.pst&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.jcb&quot;</span><span class="p">,</span><span class="s2">&quot;.pst&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">pst_case</span><span class="p">):</span>
+                    <span class="n">pst</span> <span class="o">=</span> <span class="n">pst_case</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pst_arg</span> <span class="o">=</span> <span class="n">pst</span>
+        <span class="k">if</span> <span class="n">parcov</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">pst</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">parcov</span> <span class="o">=</span> <span class="n">pst</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span> <span class="o">=</span> <span class="n">parcov</span>
+        <span class="k">if</span> <span class="n">obscov</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">pst</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">obscov</span> <span class="o">=</span> <span class="n">pst</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span> <span class="o">=</span> <span class="n">obscov</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ref_var</span> <span class="o">=</span> <span class="n">ref_var</span>
+        <span class="k">if</span> <span class="n">forecasts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">predictions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;can&#39;t pass both forecasts and predictions&quot;</span><span class="p">)</span>
+
+
+        <span class="c1">#private attributes - access is through @decorated functions</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__pst</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__parcov</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__obscov</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__predictions</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__qhalf</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__qhalfx</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__xtqx</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__fehalf</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__prior_prediction</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prediction_extract</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;pre-loading base components&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">jco</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__load_jco</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">pst</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__load_pst</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">parcov</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__load_parcov</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">obscov</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__load_obscov</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">prediction_arg</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">predictions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prediction_arg</span> <span class="o">=</span> <span class="n">predictions</span>
+        <span class="k">elif</span> <span class="n">forecasts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prediction_arg</span> <span class="o">=</span> <span class="n">forecasts</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">forecast_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">prediction_arg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">forecast_names</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">prediction_arg</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__load_predictions</span><span class="p">()</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;pre-loading base components&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;unused kwargs in type &quot;</span> <span class="o">+</span>
+                             <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span> <span class="o">+</span>
+                             <span class="s2">&quot; : &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;unused kwargs&quot;</span> <span class="o">+</span>
+                             <span class="s2">&quot; : &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
+        <span class="c1"># automatically do some things that should be done</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;dropping prior information&quot;</span><span class="p">)</span>
+        <span class="n">pi</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">pi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">prior_information</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;unable to access self.pst: can&#39;t tell if &quot;</span> <span class="o">+</span>
+                             <span class="s2">&quot; any prior information needs to be dropped.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pi</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">drop_prior_information</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;dropping prior information&quot;</span><span class="p">)</span>
+
+
+        <span class="k">if</span> <span class="n">resfile</span> <span class="o">!=</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;scaling obscov by residual phi components&quot;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">adjust_obscov_resfile</span><span class="p">(</span><span class="n">resfile</span><span class="o">=</span><span class="n">resfile</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;unable to a find a residuals file for &quot;</span> <span class="o">+</span>\
+                                <span class="s2">&quot; scaling obscov&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">resfile</span> <span class="o">=</span> <span class="kc">None</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">res</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;scaling obscov by residual phi components&quot;</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="p">)</span> <span class="o">==</span> <span class="n">Cov</span>
+        <span class="k">assert</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obscov</span><span class="p">)</span> <span class="o">==</span> <span class="n">Cov</span>
+
+    <span class="k">def</span> <span class="nf">__fromfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">astype</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;a private method to deduce and load a filename into a matrix object</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">        ----------</span>
+<span class="sd">            filename (str) : the name of the file</span>
+<span class="sd">        Returns:</span>
+<span class="sd">        -------</span>
+<span class="sd">            mat (or cov) object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span><span class="s2">&quot;LinearAnalysis.__fromfile(): &quot;</span> <span class="o">+</span>\
+                                        <span class="s2">&quot;file not found:&quot;</span> <span class="o">+</span> <span class="n">filename</span>
+        <span class="n">ext</span> <span class="o">=</span> <span class="n">filename</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">ext</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;jco&quot;</span><span class="p">,</span> <span class="s2">&quot;jcb&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;loading jco: &quot;</span><span class="o">+</span><span class="n">filename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">astype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">astype</span> <span class="o">=</span> <span class="n">Jco</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">astype</span><span class="o">.</span><span class="n">from_binary</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;loading jco: &quot;</span><span class="o">+</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ext</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;mat&quot;</span><span class="p">,</span><span class="s2">&quot;vec&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;loading ascii: &quot;</span><span class="o">+</span><span class="n">filename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">astype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">astype</span> <span class="o">=</span> <span class="n">Matrix</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">astype</span><span class="o">.</span><span class="n">from_ascii</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;loading ascii: &quot;</span><span class="o">+</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ext</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;cov&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;loading cov: &quot;</span><span class="o">+</span><span class="n">filename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">astype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">astype</span> <span class="o">=</span> <span class="n">Cov</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">astype</span><span class="o">.</span><span class="n">from_ascii</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;loading cov: &quot;</span><span class="o">+</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">ext</span> <span class="ow">in</span><span class="p">[</span><span class="s2">&quot;unc&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;loading unc: &quot;</span><span class="o">+</span><span class="n">filename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">astype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">astype</span> <span class="o">=</span> <span class="n">Cov</span>
+            <span class="n">m</span> <span class="o">=</span> <span class="n">astype</span><span class="o">.</span><span class="n">from_uncfile</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;loading unc: &quot;</span><span class="o">+</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;linear_analysis.__fromfile(): unrecognized&quot;</span> <span class="o">+</span>
+                            <span class="s2">&quot; filename extension:&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">ext</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">m</span>
+
+
+    <span class="k">def</span> <span class="nf">__load_pst</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;private: set the pst attribute</span>
+<span class="sd">        Parameters:</span>
+<span class="sd">        ----------</span>
+<span class="sd">            None</span>
+<span class="sd">        Returns:</span>
+<span class="sd">        -------</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst_arg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pst_arg</span><span class="p">,</span> <span class="n">Pst</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__pst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst_arg</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;loading pst: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pst_arg</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__pst</span> <span class="o">=</span> <span class="n">Pst</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pst_arg</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;loading pst: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pst_arg</span><span class="p">))</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;linear_analysis.__load_pst(): error loading&quot;</span><span class="o">+</span>\
+                                <span class="s2">&quot; pest control from argument: &quot;</span> <span class="o">+</span>
+                                <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pst_arg</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">-&gt;&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+
+    <span class="k">def</span> <span class="nf">__load_jco</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;private :set the jco attribute from a file or a matrix object</span>
+<span class="sd">        Parameters:</span>
+<span class="sd">        ----------</span>
+<span class="sd">            None</span>
+<span class="sd">        Returns:</span>
+<span class="sd">        -------</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco_arg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+            <span class="c1">#raise Exception(&quot;linear_analysis.__load_jco(): jco_arg is None&quot;)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jco_arg</span><span class="p">,</span> <span class="n">Matrix</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__jco</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco_arg</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jco_arg</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__jco</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__fromfile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jco_arg</span><span class="p">,</span><span class="n">astype</span><span class="o">=</span><span class="n">Jco</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;linear_analysis.__load_jco(): jco_arg must &quot;</span> <span class="o">+</span>
+                            <span class="s2">&quot;be a matrix object or a file name: &quot;</span> <span class="o">+</span>
+                            <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jco_arg</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__load_parcov</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;private: set the parcov attribute from:</span>
+<span class="sd">                a pest control file (parameter bounds)</span>
+<span class="sd">                a pst object</span>
+<span class="sd">                a matrix object</span>
+<span class="sd">                an uncert file</span>
+<span class="sd">                an ascii matrix file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># if the parcov arg was not passed but the pst arg was,</span>
+        <span class="c1"># reset and use parbounds to build parcov</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst_arg</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst_arg</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;linear_analysis.__load_parcov(): &quot;</span> <span class="o">+</span>
+                                <span class="s2">&quot;parcov_arg is None&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span><span class="p">,</span> <span class="n">Matrix</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__parcov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="c1"># if the passed array is a vector,</span>
+            <span class="c1"># then assume it is the diagonal of the parcov matrix</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">isdiagonal</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">isdiagonal</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;linear_analysis.__load_parcov(): &quot;</span> <span class="o">+</span>
+                             <span class="s2">&quot;instantiating parcov from ndarray, can&#39;t &quot;</span> <span class="o">+</span>
+                             <span class="s2">&quot;verify parameters alignment with jco&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__parcov</span> <span class="o">=</span> <span class="n">Matrix</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span><span class="p">,</span>
+                                         <span class="n">isdiagonal</span><span class="o">=</span><span class="n">isdiagonal</span><span class="p">,</span>
+                                         <span class="n">row_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">col_names</span><span class="p">,</span>
+                                         <span class="n">col_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">col_names</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;loading parcov&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
+            <span class="c1"># if the arg is a string ending with &quot;pst&quot;</span>
+            <span class="c1"># then load parcov from parbounds</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.pst&quot;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__parcov</span> <span class="o">=</span> <span class="n">Cov</span><span class="o">.</span><span class="n">from_parbounds</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__parcov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__fromfile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span><span class="p">,</span> <span class="n">astype</span><span class="o">=</span><span class="n">Cov</span><span class="p">)</span>
+        <span class="c1"># if the arg is a pst object</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span><span class="p">,</span><span class="n">Pst</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__parcov</span> <span class="o">=</span> <span class="n">Cov</span><span class="o">.</span><span class="n">from_parameter_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;linear_analysis.__load_parcov(): &quot;</span> <span class="o">+</span>
+                            <span class="s2">&quot;parcov_arg must be a &quot;</span> <span class="o">+</span>
+                            <span class="s2">&quot;matrix object or a file name: &quot;</span> <span class="o">+</span>
+                            <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;loading parcov&quot;</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">__load_obscov</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;private: method to set the obscov attribute from:</span>
+<span class="sd">                a pest control file (observation weights)</span>
+<span class="sd">                a pst object</span>
+<span class="sd">                a matrix object</span>
+<span class="sd">                an uncert file</span>
+<span class="sd">                an ascii matrix file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># if the obscov arg is None, but the pst arg is not None,</span>
+        <span class="c1"># reset and load from obs weights</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst_arg</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst_arg</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;linear_analysis.__load_obscov(): &quot;</span> <span class="o">+</span>
+                                <span class="s2">&quot;obscov_arg is None&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span><span class="p">,</span> <span class="n">Matrix</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__obscov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="c1"># if the ndarray arg is a vector,</span>
+            <span class="c1"># assume it is the diagonal of the obscov matrix</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">isdiagonal</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">isdiagonal</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;linear_analysis.__load_obscov(): &quot;</span> <span class="o">+</span>
+                             <span class="s2">&quot;instantiating obscov from ndarray,  &quot;</span> <span class="o">+</span>
+                             <span class="s2">&quot;can&#39;t verify observation alignment with jco&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__obscov</span> <span class="o">=</span> <span class="n">Matrix</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span><span class="p">,</span>
+                                         <span class="n">isdiagonal</span><span class="o">=</span><span class="n">isdiagonal</span><span class="p">,</span>
+                                         <span class="n">row_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">row_names</span><span class="p">,</span>
+                                         <span class="n">col_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">row_names</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;loading obscov&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.pst&quot;</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__obscov</span> <span class="o">=</span> <span class="n">Cov</span><span class="o">.</span><span class="n">from_obsweights</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__obscov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__fromfile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span><span class="p">,</span> <span class="n">astype</span><span class="o">=</span><span class="n">Cov</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span><span class="p">,</span> <span class="n">Pst</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__obscov</span> <span class="o">=</span> <span class="n">Cov</span><span class="o">.</span><span class="n">from_observation_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;linear_analysis.__load_obscov(): &quot;</span> <span class="o">+</span>
+                            <span class="s2">&quot;obscov_arg must be a &quot;</span> <span class="o">+</span>
+                            <span class="s2">&quot;matrix object or a file name: &quot;</span> <span class="o">+</span>
+                            <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;loading obscov&quot;</span><span class="p">)</span>
+
+
+    <span class="k">def</span> <span class="nf">__load_predictions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;private: set the predictions attribute from:</span>
+<span class="sd">                mixed list of row names, matrix files and ndarrays</span>
+<span class="sd">                a single row name</span>
+<span class="sd">                an ascii file</span>
+<span class="sd">            can be none if only interested in parameters.</span>
+
+<span class="sd">            linear_analysis.__predictions is stored as a list of column vectors</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">prediction_arg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__predictions</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;loading forecasts&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prediction_arg</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">prediction_arg</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">prediction_arg</span><span class="p">]</span>
+
+        <span class="n">row_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">vecs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">mat</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">prediction_arg</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">Matrix</span><span class="p">):</span>
+                <span class="c1"># a vector</span>
+                <span class="k">if</span> <span class="n">arg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">vecs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">assert</span> <span class="n">arg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>\
+                    <span class="s2">&quot;linear_analysis.__load_predictions(): &quot;</span> <span class="o">+</span>\
+                    <span class="s2">&quot;multi-prediction matrix(npar,npred) not aligned &quot;</span> <span class="o">+</span>\
+                    <span class="s2">&quot;with jco(nobs,npar): &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">+</span>\
+                    <span class="s1">&#39; &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+                    <span class="c1">#for pred_name in arg.row_names:</span>
+                    <span class="c1">#    vecs.append(arg.extract(row_names=pred_name).T)</span>
+                    <span class="n">mat</span> <span class="o">=</span> <span class="n">arg</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">arg</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">row_names</span><span class="p">:</span>
+                    <span class="n">row_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">pred_mat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__fromfile</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span><span class="n">astype</span><span class="o">=</span><span class="n">Matrix</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;forecast argument: &quot;</span><span class="o">+</span><span class="n">arg</span><span class="o">+</span><span class="s2">&quot; not found in &quot;</span> <span class="o">+</span>\
+                                        <span class="s2">&quot;jco row names and could not be &quot;</span> <span class="o">+</span>\
+                                        <span class="s2">&quot;loaded from a file.&quot;</span><span class="p">)</span>
+                    <span class="c1"># vector</span>
+                    <span class="k">if</span> <span class="n">pred_mat</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                        <span class="n">vecs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred_mat</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1">#for pred_name in pred_mat.row_names:</span>
+                        <span class="c1">#    vecs.append(pred_mat.get(row_names=pred_name))</span>
+                        <span class="k">if</span> <span class="n">mat</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="n">mat</span> <span class="o">=</span> <span class="n">pred_mat</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">mat</span> <span class="o">=</span> <span class="n">mat</span><span class="o">.</span><span class="n">extend</span><span class="p">((</span><span class="n">pred_mat</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;linear_analysis.__load_predictions(): &quot;</span> <span class="o">+</span>
+                                <span class="s2">&quot;instantiating prediction matrix from &quot;</span> <span class="o">+</span>
+                                <span class="s2">&quot;ndarray, can&#39;t verify alignment&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;linear_analysis.__load_predictions(): &quot;</span> <span class="o">+</span>
+                                 <span class="s2">&quot;instantiating prediction matrix from &quot;</span> <span class="o">+</span>
+                                 <span class="s2">&quot;ndarray, generating generic prediction names&quot;</span><span class="p">)</span>
+
+                <span class="n">pred_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;pred_</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">arg</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="p">:</span>
+                    <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">col_names</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="p">:</span>
+                    <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="o">.</span><span class="n">col_names</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;linear_analysis.__load_predictions(): &quot;</span> <span class="o">+</span>
+                                    <span class="s2">&quot;ndarray passed for predicitons &quot;</span> <span class="o">+</span>
+                                    <span class="s2">&quot;requires jco or parcov to get &quot;</span> <span class="o">+</span>
+                                    <span class="s2">&quot;parameter names&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">mat</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">mat</span> <span class="o">=</span> <span class="n">Matrix</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">arg</span><span class="p">,</span><span class="n">row_names</span><span class="o">=</span><span class="n">pred_names</span><span class="p">,</span><span class="n">col_names</span><span class="o">=</span><span class="n">names</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">mat</span> <span class="o">=</span> <span class="n">mat</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">Matrix</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">arg</span><span class="p">,</span><span class="n">row_names</span><span class="o">=</span><span class="n">pred_names</span><span class="p">,</span><span class="n">col_names</span><span class="o">=</span><span class="n">names</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+                <span class="c1">#for pred_name in pred_names:</span>
+                <span class="c1">#    vecs.append(pred_matrix.get(row_names=pred_name).T)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;unrecognized predictions argument: &quot;</span> <span class="o">+</span>
+                                <span class="nb">str</span><span class="p">(</span><span class="n">arg</span><span class="p">))</span>
+        <span class="c1"># turn vecs into a pyemu.Matrix</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vecs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">xs</span> <span class="o">=</span> <span class="n">vecs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">x</span>
+            <span class="k">for</span> <span class="n">vec</span> <span class="ow">in</span> <span class="n">vecs</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+                <span class="n">xs</span> <span class="o">=</span> <span class="n">xs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">vec</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">vec</span><span class="o">.</span><span class="n">col_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">vec</span> <span class="ow">in</span> <span class="n">vecs</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">mat</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">mat</span> <span class="o">=</span> <span class="n">Matrix</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">xs</span><span class="p">,</span><span class="n">row_names</span><span class="o">=</span><span class="n">vecs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">row_names</span><span class="p">,</span>
+                             <span class="n">col_names</span><span class="o">=</span><span class="n">names</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">mat</span> <span class="o">=</span> <span class="n">mat</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">Matrix</span><span class="p">(</span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">xs</span><span class="p">),</span>
+                                        <span class="n">row_names</span><span class="o">=</span><span class="n">vecs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">row_names</span><span class="p">,</span>
+                                        <span class="n">col_names</span><span class="o">=</span><span class="n">names</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">row_names</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">extract</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">row_names</span><span class="o">=</span><span class="n">row_names</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+            <span class="k">if</span> <span class="n">mat</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">mat</span> <span class="o">=</span> <span class="n">extract</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">mat</span> <span class="o">=</span> <span class="n">mat</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">extract</span><span class="p">)</span>
+            <span class="c1">#for row_name in row_names:</span>
+            <span class="c1">#    vecs.append(extract.get(row_names=row_name).T)</span>
+            <span class="c1"># call obscov to load __obscov so that __obscov</span>
+            <span class="c1"># (priavte) can be manipulated</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">obscov</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__obscov</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">row_names</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__predictions</span> <span class="o">=</span> <span class="n">mat</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">fnames</span> <span class="o">=</span> <span class="p">[</span><span class="n">fname</span> <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecast_names</span> <span class="k">if</span> <span class="n">fname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">nnz_obs_names</span><span class="p">]</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">fnames</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">fnames</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;forecasts with non-zero weight in pst: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fnames</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;loading forecasts&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">statement</span><span class="p">(</span><span class="s2">&quot;forecast names: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">mat</span><span class="o">.</span><span class="n">col_names</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__predictions</span>
+
+    <span class="c1"># these property decorators help keep from loading potentially</span>
+    <span class="c1"># unneeded items until they are called</span>
+    <span class="c1"># returns a reference - cheap, but can be dangerous</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">forecast_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[]</span>
+        <span class="c1">#return [fore.col_names[0] for fore in self.forecasts]</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="o">.</span><span class="n">col_names</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">parcov</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__parcov</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__load_parcov</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__parcov</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">obscov</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__obscov</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__load_obscov</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__obscov</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">nnz_obs_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__pst</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">nnz_obs_names</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">obs_names</span>
+
+<div class="viewcode-block" id="LinearAnalysis.adj_par_names"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.la.LinearAnalysis.adj_par_names">[docs]</a>    <span class="k">def</span> <span class="nf">adj_par_names</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__pst</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">adj_par_names</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">par_names</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">jco</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__jco</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__load_jco</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__jco</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">predictions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">__predictions</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__load_predictions</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__predictions</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">predictions_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecast_names</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">col_names</span><span class="o">=</span><span class="n">fname</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">forecasts_iter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions_iter</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">forecasts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">pst</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__pst</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst_arg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;linear_analysis.pst: can&#39;t access self.pst:&quot;</span> <span class="o">+</span>
+                            <span class="s2">&quot;no pest control argument passed&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">__pst</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__pst</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__load_pst</span><span class="p">()</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__pst</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">fehalf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;set the KL parcov scaling matrix attribute</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__fehalf</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__fehalf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;fehalf&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__fehalf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="o">.</span><span class="n">u</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="o">.</span><span class="n">s</span> <span class="o">**</span> <span class="p">(</span><span class="mf">0.5</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;fehalf&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__fehalf</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">qhalf</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;set the square root of the cofactor matrix attribute</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__qhalf</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__qhalf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;qhalf&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__qhalf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov</span> <span class="o">**</span> <span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;qhalf&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__qhalf</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">qhalfx</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;set the half normal matrix attribute</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__qhalfx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;qhalfx&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__qhalfx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">qhalf</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;qhalfx&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__qhalfx</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">xtqx</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;set the normal matrix attribute</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__xtqx</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;xtqx&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__xtqx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obscov</span> <span class="o">**</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;xtqx&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__xtqx</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">mle_covariance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">xtqx</span><span class="o">.</span><span class="n">inv</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">prior_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;the prior parameter covariance matrix</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">prior_forecast</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;thin wrapper for prior_prediction</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_prediction</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">mle_parameter_estimate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">res</span>
+        <span class="k">assert</span> <span class="n">res</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="c1"># build the prior expectation parameter vector</span>
+        <span class="n">prior_expt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,[</span><span class="s2">&quot;parval1&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">islog</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span><span class="n">partrans</span> <span class="o">==</span> <span class="s2">&quot;log&quot;</span>
+        <span class="n">prior_expt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">islog</span><span class="p">]</span> <span class="o">=</span> <span class="n">prior_expt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">islog</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">)</span>
+        <span class="n">prior_expt</span> <span class="o">=</span> <span class="n">Matrix</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">prior_expt</span><span class="p">)</span>
+        <span class="n">prior_expt</span><span class="o">.</span><span class="n">col_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;prior_expt&quot;</span><span class="p">]</span>
+        <span class="c1"># build the residual vector</span>
+        <span class="n">res_vec</span> <span class="o">=</span> <span class="n">Matrix</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,[</span><span class="s2">&quot;residual&quot;</span><span class="p">]])</span>
+
+        <span class="c1"># calc posterior expectation</span>
+        <span class="n">upgrade</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mle_covariance</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">res_vec</span>
+        <span class="n">upgrade</span><span class="o">.</span><span class="n">col_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;prior_expt&quot;</span><span class="p">]</span>
+        <span class="n">post_expt</span> <span class="o">=</span> <span class="n">prior_expt</span> <span class="o">+</span> <span class="n">upgrade</span>
+
+        <span class="c1"># post processing - back log transform</span>
+        <span class="n">post_expt</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">post_expt</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="n">post_expt</span><span class="o">.</span><span class="n">row_names</span><span class="p">,</span>
+                                 <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;post_expt&quot;</span><span class="p">])</span>
+        <span class="n">post_expt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">islog</span><span class="p">,:]</span> <span class="o">=</span> <span class="mf">10.0</span><span class="o">**</span><span class="n">post_expt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">islog</span><span class="p">,:]</span>
+        <span class="k">return</span> <span class="n">post_expt</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">prior_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get a dict of prior prediction variances</span>
+<span class="sd">        Parameters:</span>
+<span class="sd">        ----------</span>
+<span class="sd">            None</span>
+<span class="sd">        Returns:</span>
+<span class="sd">        -------</span>
+<span class="sd">            dict{prediction name(str):prior variance(float)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__prior_prediction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__prior_prediction</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;propagating prior to predictions&quot;</span><span class="p">)</span>
+                <span class="n">prior_cov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span>\
+                                <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__prior_prediction</span> <span class="o">=</span> <span class="p">{</span><span class="n">n</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">n</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span>
+                                          <span class="nb">zip</span><span class="p">(</span><span class="n">prior_cov</span><span class="o">.</span><span class="n">row_names</span><span class="p">,</span>
+                                              <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">prior_cov</span><span class="o">.</span><span class="n">x</span><span class="p">))}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;propagating prior to predictions&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__prior_prediction</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__prior_prediction</span>
+
+
+<div class="viewcode-block" id="LinearAnalysis.apply_karhunen_loeve_scaling"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.la.LinearAnalysis.apply_karhunen_loeve_scaling">[docs]</a>    <span class="k">def</span> <span class="nf">apply_karhunen_loeve_scaling</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;apply karhuene-loeve scaling to the jacobian matrix.</span>
+
+<span class="sd">            This scaling is not necessary for analyses using Schur&#39;s</span>
+<span class="sd">            complement, but can be very important for error variance</span>
+<span class="sd">            analyses.  This operation effectively transfers prior knowledge</span>
+<span class="sd">            specified in the parcov to the jacobian and reset parcov to the</span>
+<span class="sd">            identity matrix.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cnames</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">col_names</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__jco</span> <span class="o">*=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fehalf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__jco</span><span class="o">.</span><span class="n">col_names</span> <span class="o">=</span> <span class="n">cnames</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__parcov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="o">.</span><span class="n">identity</span></div>
+
+
+<div class="viewcode-block" id="LinearAnalysis.clean"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.la.LinearAnalysis.clean">[docs]</a>    <span class="k">def</span> <span class="nf">clean</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;drop regularization and prior information observation from the jco</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst_arg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;linear_analysis.clean(): not pst object&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">estimation</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">nprior</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">drop_prior_information</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="LinearAnalysis.reset_pst"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.la.LinearAnalysis.reset_pst">[docs]</a>    <span class="k">def</span> <span class="nf">reset_pst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">arg</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;resetting pst&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__pst</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pst_arg</span> <span class="o">=</span> <span class="n">arg</span></div>
+
+<div class="viewcode-block" id="LinearAnalysis.reset_parcov"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.la.LinearAnalysis.reset_parcov">[docs]</a>    <span class="k">def</span> <span class="nf">reset_parcov</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">arg</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;reset the parcov attribute to None</span>
+<span class="sd">        Parameters:</span>
+<span class="sd">        ----------</span>
+<span class="sd">            arg (str or matrix) : the value to assign to the parcov_arg attrib</span>
+<span class="sd">        Returns:</span>
+<span class="sd">        -------</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;resetting parcov&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__parcov</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">arg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parcov_arg</span> <span class="o">=</span> <span class="n">arg</span></div>
+
+
+<div class="viewcode-block" id="LinearAnalysis.reset_obscov"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.la.LinearAnalysis.reset_obscov">[docs]</a>    <span class="k">def</span> <span class="nf">reset_obscov</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">arg</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;reset the obscov attribute to None</span>
+<span class="sd">        Parameters:</span>
+<span class="sd">        ----------</span>
+<span class="sd">            arg (str or matrix) : the value to assign to the obscov_arg attrib</span>
+<span class="sd">        Returns:</span>
+<span class="sd">        -------</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;resetting obscov&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__obscov</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">arg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span> <span class="o">=</span> <span class="n">arg</span></div>
+
+
+<div class="viewcode-block" id="LinearAnalysis.drop_prior_information"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.la.LinearAnalysis.drop_prior_information">[docs]</a>    <span class="k">def</span> <span class="nf">drop_prior_information</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;drop the prior information from the jco and pst attributes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;can&#39;t drop prior info, LinearAnalysis.jco is None&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="n">nprior_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">nprior</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;removing &quot;</span> <span class="o">+</span> <span class="n">nprior_str</span> <span class="o">+</span> <span class="s2">&quot; prior info from jco, pst, and &quot;</span> <span class="o">+</span>
+                                            <span class="s2">&quot;obs cov&quot;</span><span class="p">)</span>
+        <span class="c1">#pi_names = list(self.pst.prior_information.pilbl.values)</span>
+        <span class="n">pi_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">prior_names</span><span class="p">)</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">pi_names</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">obs_names</span><span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;LinearAnalysis.drop_prior_information(): &quot;</span><span class="o">+</span>
+                            <span class="s2">&quot; prior info not found: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">missing</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__jco</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">pi_names</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__pst</span><span class="o">.</span><span class="n">prior_information</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">null_prior</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__pst</span><span class="o">.</span><span class="n">control_data</span><span class="o">.</span><span class="n">pestmode</span> <span class="o">=</span> <span class="s2">&quot;estimation&quot;</span>
+        <span class="c1">#self.__obscov.drop(pi_names,axis=0)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;removing &quot;</span> <span class="o">+</span> <span class="n">nprior_str</span> <span class="o">+</span> <span class="s2">&quot; prior info from jco, pst, and &quot;</span> <span class="o">+</span>
+                                            <span class="s2">&quot;obs cov&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LinearAnalysis.get"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.la.LinearAnalysis.get">[docs]</a>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">par_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">obs_names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">astype</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;method to get a new LinearAnalysis class using a</span>
+<span class="sd">             subset of parameters and/or observations</span>
+<span class="sd">         Parameters:</span>
+<span class="sd">         ----------</span>
+<span class="sd">            par_names (enumerable of str) : par names for new object</span>
+<span class="sd">            obs_names (enumerable of str) : obs names for new object</span>
+<span class="sd">            astype (either schur or errvar type) : type to cast the new object</span>
+<span class="sd">        Returns:</span>
+<span class="sd">        -------</span>
+<span class="sd">            LinearAnalysis object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># make sure we aren&#39;t fooling with unwanted prior information</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clean</span><span class="p">()</span>
+        <span class="c1"># if there is nothing to do but copy</span>
+        <span class="k">if</span> <span class="n">par_names</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">obs_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">astype</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;LinearAnalysis.get(): astype is not None, &quot;</span> <span class="o">+</span>
+                                 <span class="s2">&quot;but par_names and obs_names are None so&quot;</span> <span class="o">+</span>
+                                 <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">  -&gt;Omitted attributes will not be &quot;</span> <span class="o">+</span>
+                                 <span class="s2">&quot;propagated to new instance&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="c1"># make sure the args are lists</span>
+        <span class="k">if</span> <span class="n">par_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">par_names</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">par_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">par_names</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">obs_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obs_names</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">obs_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">obs_names</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">par_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">par_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">col_names</span>
+        <span class="k">if</span> <span class="n">obs_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">obs_names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">row_names</span>
+        <span class="c1"># if possible, get a new parcov</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="p">:</span>
+            <span class="n">new_parcov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">col_names</span><span class="o">=</span><span class="p">[</span><span class="n">pname</span> <span class="k">for</span> <span class="n">pname</span> <span class="ow">in</span>\
+                                                    <span class="n">par_names</span> <span class="k">if</span> <span class="n">pname</span> <span class="ow">in</span>\
+                                                    <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="o">.</span><span class="n">col_names</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_parcov</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># if possible, get a new obscov</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov_arg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">new_obscov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">row_names</span><span class="o">=</span><span class="n">obs_names</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_obscov</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># if possible, get a new pst</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst_arg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">new_pst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">par_names</span><span class="o">=</span><span class="n">par_names</span><span class="p">,</span><span class="n">obs_names</span><span class="o">=</span><span class="n">obs_names</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_pst</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">new_extract</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="p">:</span>
+            <span class="c1"># new_preds = []</span>
+            <span class="c1"># for prediction in self.predictions:</span>
+            <span class="c1">#     new_preds.append(prediction.get(row_names=par_names))</span>
+            <span class="n">new_preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">row_names</span><span class="o">=</span><span class="n">par_names</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_preds</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco_arg</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">new_jco</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">row_names</span><span class="o">=</span><span class="n">obs_names</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="n">par_names</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_jco</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">astype</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">new</span> <span class="o">=</span> <span class="n">astype</span><span class="p">(</span><span class="n">jco</span><span class="o">=</span><span class="n">new_jco</span><span class="p">,</span> <span class="n">pst</span><span class="o">=</span><span class="n">new_pst</span><span class="p">,</span> <span class="n">parcov</span><span class="o">=</span><span class="n">new_parcov</span><span class="p">,</span>
+                          <span class="n">obscov</span><span class="o">=</span><span class="n">new_obscov</span><span class="p">,</span> <span class="n">predictions</span><span class="o">=</span><span class="n">new_preds</span><span class="p">,</span>
+                          <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># return a new object of the same type</span>
+            <span class="n">new</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span><span class="n">jco</span><span class="o">=</span><span class="n">new_jco</span><span class="p">,</span> <span class="n">pst</span><span class="o">=</span><span class="n">new_pst</span><span class="p">,</span> <span class="n">parcov</span><span class="o">=</span><span class="n">new_parcov</span><span class="p">,</span>
+                              <span class="n">obscov</span><span class="o">=</span><span class="n">new_obscov</span><span class="p">,</span> <span class="n">predictions</span><span class="o">=</span><span class="n">new_preds</span><span class="p">,</span>
+                              <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new</span></div>
+
+<div class="viewcode-block" id="LinearAnalysis.adjust_obscov_resfile"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.la.LinearAnalysis.adjust_obscov_resfile">[docs]</a>    <span class="k">def</span> <span class="nf">adjust_obscov_resfile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;reset the elements of obscov by scaling the implied weights</span>
+<span class="sd">        based on the phi components in res_file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">adjust_weights_resfile</span><span class="p">(</span><span class="n">resfile</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__obscov</span><span class="o">.</span><span class="n">from_observation_data</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="LinearAnalysis.get_par_css_dataframe"><a class="viewcode-back" href="../../_static/pyemu.html#pyemu.la.LinearAnalysis.get_par_css_dataframe">[docs]</a>    <span class="k">def</span> <span class="nf">get_par_css_dataframe</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="n">jco</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">jco</span><span class="o">.</span><span class="n">index</span><span class="p">,</span><span class="s2">&quot;weight&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">jco</span> <span class="o">=</span> <span class="p">(</span><span class="n">jco</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">weights</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">dss_sum</span> <span class="o">=</span> <span class="n">jco</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">)</span>
+        <span class="n">css</span> <span class="o">=</span> <span class="p">(</span><span class="n">dss_sum</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">nnz_obs</span><span class="p">))</span><span class="o">.</span><span class="n">to_frame</span><span class="p">()</span>
+        <span class="n">css</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;pest_css&quot;</span><span class="p">]</span>
+        <span class="c1"># log transform stuff</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">add_transform_columns</span><span class="p">()</span>
+        <span class="n">parval1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">dss_sum</span><span class="o">.</span><span class="n">index</span><span class="p">,</span><span class="s2">&quot;parval1_trans&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+        <span class="n">css</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;hill_css&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">dss_sum</span> <span class="o">*</span> <span class="n">parval1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">nnz_obs</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">css</span></div></div>
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Jeremy White.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

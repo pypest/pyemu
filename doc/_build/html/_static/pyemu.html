@@ -1,0 +1,1444 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyemu package &#8212; pyEMU 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="jquery.js"></script>
+    <script type="text/javascript" src="underscore.js"></script>
+    <script type="text/javascript" src="doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="pyemu-package">
+<h1>pyemu package<a class="headerlink" href="#pyemu-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyemu.mat.html">pyemu.mat package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.mat.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.mat.html#module-pyemu.mat.mat_handler">pyemu.mat.mat_handler module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.mat.html#module-pyemu.mat">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pyemu.pst.html">pyemu.pst package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.pst.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.pst.html#module-pyemu.pst.pst_controldata">pyemu.pst.pst_controldata module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.pst.html#module-pyemu.pst.pst_handler">pyemu.pst.pst_handler module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.pst.html#module-pyemu.pst.pst_utils">pyemu.pst.pst_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.pst.html#module-pyemu.pst">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pyemu.utils.html">pyemu.utils package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.utils.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.utils.html#module-pyemu.utils.geostats">pyemu.utils.geostats module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.utils.html#module-pyemu.utils.gw_utils">pyemu.utils.gw_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.utils.html#module-pyemu.utils.helpers">pyemu.utils.helpers module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.utils.html#module-pyemu.utils.optimization">pyemu.utils.optimization module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.utils.html#module-pyemu.utils.pp_utils">pyemu.utils.pp_utils module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyemu.utils.html#module-pyemu.utils">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pyemu.en">
+<span id="pyemu-en-module"></span><h2>pyemu.en module<a class="headerlink" href="#module-pyemu.en" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pyemu.en.Ensemble">
+<em class="property">class </em><code class="descclassname">pyemu.en.</code><code class="descname">Ensemble</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#Ensemble"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.Ensemble" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">pandas.core.frame.DataFrame</span></code></p>
+<p>a pandas.DataFrame derived type to store
+ensembles of parameters and/or observations</p>
+<p>requires: columns and mean_values kwargs</p>
+<dl class="method">
+<dt id="pyemu.en.Ensemble.as_pyemu_matrix">
+<code class="descname">as_pyemu_matrix</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#Ensemble.as_pyemu_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.Ensemble.as_pyemu_matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.Ensemble.copy">
+<code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#Ensemble.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.Ensemble.copy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.Ensemble.draw">
+<code class="descname">draw</code><span class="sig-paren">(</span><em>cov</em>, <em>num_reals=1</em>, <em>names=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#Ensemble.draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.Ensemble.draw" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>draw random realizations from a multivariate</dt>
+<dd>Gaussian distribution</dd>
+</dl>
+<blockquote>
+<div><dl class="docutils">
+<dt>cov: a Cov instance</dt>
+<dd>covariance structure to draw from</dd>
+<dt>num_reals: int</dt>
+<dd>number of realizations to generate</dd>
+<dt>names</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">list of names to draw for.  If None, values all names</span><dd>are drawn</dd>
+</dl>
+</div></blockquote>
+<blockquote>
+<div>None</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.Ensemble.drop">
+<code class="descname">drop</code><span class="sig-paren">(</span><em>arg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#Ensemble.drop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.Ensemble.drop" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.Ensemble.dropna">
+<code class="descname">dropna</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#Ensemble.dropna"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.Ensemble.dropna" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.Ensemble.enforce">
+<code class="descname">enforce</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#Ensemble.enforce"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.Ensemble.enforce" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.en.Ensemble.from_dataframe">
+<em class="property">classmethod </em><code class="descname">from_dataframe</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#Ensemble.from_dataframe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.Ensemble.from_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.Ensemble.plot">
+<code class="descname">plot</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#Ensemble.plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.Ensemble.plot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.Ensemble.reseed">
+<code class="descname">reseed</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#Ensemble.reseed"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.Ensemble.reseed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyemu.en.ObservationEnsemble">
+<em class="property">class </em><code class="descclassname">pyemu.en.</code><code class="descname">ObservationEnsemble</code><span class="sig-paren">(</span><em>pst</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ObservationEnsemble"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ObservationEnsemble" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyemu.en.Ensemble" title="pyemu.en.Ensemble"><code class="xref py py-class docutils literal"><span class="pre">pyemu.en.Ensemble</span></code></a></p>
+<p>Ensemble derived type observation noise</p>
+<blockquote>
+<div>pst : Pst instance</div></blockquote>
+<blockquote>
+<div>Does not generate realizations for observations with zero weight
+uses the obsnme attribute of Pst.observation_data from column names</div></blockquote>
+<dl class="method">
+<dt id="pyemu.en.ObservationEnsemble.copy">
+<code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ObservationEnsemble.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ObservationEnsemble.copy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.ObservationEnsemble.draw">
+<code class="descname">draw</code><span class="sig-paren">(</span><em>cov</em>, <em>num_reals</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ObservationEnsemble.draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ObservationEnsemble.draw" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.en.ObservationEnsemble.from_id_gaussian_draw">
+<em class="property">classmethod </em><code class="descname">from_id_gaussian_draw</code><span class="sig-paren">(</span><em>oe</em>, <em>num_reals</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ObservationEnsemble.from_id_gaussian_draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ObservationEnsemble.from_id_gaussian_draw" title="Permalink to this definition">¶</a></dt>
+<dd><p>this is an experiemental method to help speed up independent draws
+for a really large (&gt;1E6) ensemble sizes.  WARNING: this constructor
+transforms the oe argument
+:param oe: ObservationEnsemble instance
+&#8220;param pst: Pst instance
+:param num_reals: number of realizations to generate
+:return: ObservationEnsemble</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.en.ObservationEnsemble.mean_values">
+<code class="descname">mean_values</code><a class="headerlink" href="#pyemu.en.ObservationEnsemble.mean_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>zeros</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.en.ObservationEnsemble.names">
+<code class="descname">names</code><a class="headerlink" href="#pyemu.en.ObservationEnsemble.names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.en.ObservationEnsemble.nonzero">
+<code class="descname">nonzero</code><a class="headerlink" href="#pyemu.en.ObservationEnsemble.nonzero" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.en.ObservationEnsemble.phi_vector">
+<code class="descname">phi_vector</code><a class="headerlink" href="#pyemu.en.ObservationEnsemble.phi_vector" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyemu.en.ParameterEnsemble">
+<em class="property">class </em><code class="descclassname">pyemu.en.</code><code class="descname">ParameterEnsemble</code><span class="sig-paren">(</span><em>pst</em>, <em>istransformed=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ParameterEnsemble"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ParameterEnsemble" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyemu.en.Ensemble" title="pyemu.en.Ensemble"><code class="xref py py-class docutils literal"><span class="pre">pyemu.en.Ensemble</span></code></a></p>
+<dl class="docutils">
+<dt>Ensemble derived type for parameters</dt>
+<dd>implements bounds enforcement, log10 transformation,
+fixed parameters and null-space projection</dd>
+</dl>
+<blockquote>
+<div><p>pst : pyemu.Pst instance
+bound_tol : float</p>
+<blockquote>
+<div>fractional amount to reset bounds transgression within the bound.
+This has been shown to be very useful for the subsequent recalibration
+because it moves parameters off of their bounds, so they are not treated as frozen in
+the upgrade calculations. defaults to 0.0</div></blockquote>
+</div></blockquote>
+<blockquote>
+<div>uses the parnme attribute of Pst.parameter_data from column names
+and uses the parval1 attribute of Pst.parameter_data as mean values</div></blockquote>
+<dl class="attribute">
+<dt id="pyemu.en.ParameterEnsemble.adj_names">
+<code class="descname">adj_names</code><a class="headerlink" href="#pyemu.en.ParameterEnsemble.adj_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.ParameterEnsemble.copy">
+<code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ParameterEnsemble.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ParameterEnsemble.copy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.ParameterEnsemble.draw">
+<code class="descname">draw</code><span class="sig-paren">(</span><em>cov</em>, <em>num_reals=1</em>, <em>how='normal'</em>, <em>enforce_bounds=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ParameterEnsemble.draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ParameterEnsemble.draw" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.ParameterEnsemble.enforce">
+<code class="descname">enforce</code><span class="sig-paren">(</span><em>enforce_bounds='reset'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ParameterEnsemble.enforce"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ParameterEnsemble.enforce" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.ParameterEnsemble.enforce_drop">
+<code class="descname">enforce_drop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ParameterEnsemble.enforce_drop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ParameterEnsemble.enforce_drop" title="Permalink to this definition">¶</a></dt>
+<dd><p>enforce parameter bounds on the ensemble by dropping
+violating realizations</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.ParameterEnsemble.enforce_reset">
+<code class="descname">enforce_reset</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ParameterEnsemble.enforce_reset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ParameterEnsemble.enforce_reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>enforce parameter bounds on the ensemble by resetting
+violating vals to bound</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.ParameterEnsemble.enfore_scale">
+<code class="descname">enfore_scale</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ParameterEnsemble.enfore_scale"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ParameterEnsemble.enfore_scale" title="Permalink to this definition">¶</a></dt>
+<dd><p>enforce parameter bounds on the ensemble by finding the
+scaling factor needed to bring the most violated parameter back in bounds</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.en.ParameterEnsemble.fixed_indexer">
+<code class="descname">fixed_indexer</code><a class="headerlink" href="#pyemu.en.ParameterEnsemble.fixed_indexer" title="Permalink to this definition">¶</a></dt>
+<dd><p>indexer for fixed status</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.en.ParameterEnsemble.from_gaussian_draw">
+<em class="property">classmethod </em><code class="descname">from_gaussian_draw</code><span class="sig-paren">(</span><em>pe</em>, <em>cov</em>, <em>num_reals=1</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ParameterEnsemble.from_gaussian_draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ParameterEnsemble.from_gaussian_draw" title="Permalink to this definition">¶</a></dt>
+<dd><p>this is an experiemental method to help speed up draws
+for a really large (&gt;1E6) ensemble sizes.  gets around the
+dataframe expansion-by-loc that is one col at a time.  WARNING:
+this constructor transforms the pe argument!
+:param pe: ParameterEnsemble instance
+&#8220;param cov: Covariance instance
+:param num_reals: number of realizations to generate
+:return: ParameterEnsemble</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.en.ParameterEnsemble.from_uniform_draw">
+<em class="property">classmethod </em><code class="descname">from_uniform_draw</code><span class="sig-paren">(</span><em>pe</em>, <em>num_reals</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ParameterEnsemble.from_uniform_draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ParameterEnsemble.from_uniform_draw" title="Permalink to this definition">¶</a></dt>
+<dd><p>this is an experiemental method to help speed up uniform draws
+for a really large (&gt;1E6) ensemble sizes.  WARNING: this constructor
+transforms the pe argument
+:param pe: ParameterEnsemble instance
+:param num_reals: number of realizations to generate
+:return: ParameterEnsemble</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.en.ParameterEnsemble.istransformed">
+<code class="descname">istransformed</code><a class="headerlink" href="#pyemu.en.ParameterEnsemble.istransformed" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.en.ParameterEnsemble.lbnd">
+<code class="descname">lbnd</code><a class="headerlink" href="#pyemu.en.ParameterEnsemble.lbnd" title="Permalink to this definition">¶</a></dt>
+<dd><p>the lower bound vector while respecting log transform</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.en.ParameterEnsemble.log_indexer">
+<code class="descname">log_indexer</code><a class="headerlink" href="#pyemu.en.ParameterEnsemble.log_indexer" title="Permalink to this definition">¶</a></dt>
+<dd><p>indexer for log transform</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.en.ParameterEnsemble.mean_values">
+<code class="descname">mean_values</code><a class="headerlink" href="#pyemu.en.ParameterEnsemble.mean_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>the mean value vector while respecting log transform</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.en.ParameterEnsemble.names">
+<code class="descname">names</code><a class="headerlink" href="#pyemu.en.ParameterEnsemble.names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.ParameterEnsemble.project">
+<code class="descname">project</code><span class="sig-paren">(</span><em>projection_matrix</em>, <em>inplace=True</em>, <em>log=None</em>, <em>enforce_bounds='reset'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ParameterEnsemble.project"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ParameterEnsemble.project" title="Permalink to this definition">¶</a></dt>
+<dd><p>project the ensemble
+Parameters:
+&#8212;&#8212;&#8212;-</p>
+<blockquote>
+<div><p>projection_matrix: (pyemu.Matrix) projection operator - must already respect log transform</p>
+<p>inplace: (boolean) project self or return a new ParameterEnsemble instance</p>
+<p>log: (pyemu.la.logger instance) for logging progress</p>
+<dl class="docutils">
+<dt>enforce_bounds: (str) parameter bound enforcement flag.  &#8216;drop&#8217; removes</dt>
+<dd>offending realizations, &#8216;reset&#8217; resets offending values)</dd>
+</dl>
+</div></blockquote>
+<blockquote>
+<div>if not inplace, ParameterEnsemble, otherwise None</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.ParameterEnsemble.read_parfiles">
+<code class="descname">read_parfiles</code><span class="sig-paren">(</span><em>parfile_names</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ParameterEnsemble.read_parfiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ParameterEnsemble.read_parfiles" title="Permalink to this definition">¶</a></dt>
+<dd><p>read the ensemble from par files</p>
+<blockquote>
+<div>parfile_names: (list[str]) list of par files to load</div></blockquote>
+<blockquote>
+<div>log transforms after loading according and possibly resets self.__istransformed</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.ParameterEnsemble.read_parfiles_prefix">
+<code class="descname">read_parfiles_prefix</code><span class="sig-paren">(</span><em>prefix</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ParameterEnsemble.read_parfiles_prefix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ParameterEnsemble.read_parfiles_prefix" title="Permalink to this definition">¶</a></dt>
+<dd><p>thin wrapper around read_parfiles using the pnulpar prefix concept</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.ParameterEnsemble.to_csv">
+<code class="descname">to_csv</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ParameterEnsemble.to_csv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ParameterEnsemble.to_csv" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.en.ParameterEnsemble.to_parfiles">
+<code class="descname">to_parfiles</code><span class="sig-paren">(</span><em>prefix</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/en.html#ParameterEnsemble.to_parfiles"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.en.ParameterEnsemble.to_parfiles" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>write the parameter ensemble to pest-style parameter files</div></blockquote>
+<blockquote>
+<div>prefix: (str) file prefix for par files</div></blockquote>
+<blockquote>
+<div>this function back-transforms before writing</div></blockquote>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.en.ParameterEnsemble.ubnd">
+<code class="descname">ubnd</code><a class="headerlink" href="#pyemu.en.ParameterEnsemble.ubnd" title="Permalink to this definition">¶</a></dt>
+<dd><p>the upper bound vector while respecting log transform</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-pyemu.ev">
+<span id="pyemu-ev-module"></span><h2>pyemu.ev module<a class="headerlink" href="#module-pyemu.ev" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pyemu.ev.ErrVar">
+<em class="property">class </em><code class="descclassname">pyemu.ev.</code><code class="descname">ErrVar</code><span class="sig-paren">(</span><em>jco</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/ev.html#ErrVar"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.ev.ErrVar" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyemu.la.LinearAnalysis" title="pyemu.la.LinearAnalysis"><code class="xref py py-class docutils literal"><span class="pre">pyemu.la.LinearAnalysis</span></code></a></p>
+<p>child class for error variance analysis</p>
+<dl class="method">
+<dt id="pyemu.ev.ErrVar.G">
+<code class="descname">G</code><span class="sig-paren">(</span><em>singular_value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/ev.html#ErrVar.G"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.ev.ErrVar.G" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>get the parameter solution Matrix at a singular value</dt>
+<dd>V_1 * S_1^(_1) * U_1^T</dd>
+</dl>
+<blockquote>
+<div>singular_value (int) : singular value to calc G at</div></blockquote>
+<blockquote>
+<div>G at singular_value</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.ev.ErrVar.I_minus_R">
+<code class="descname">I_minus_R</code><span class="sig-paren">(</span><em>singular_value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/ev.html#ErrVar.I_minus_R"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.ev.ErrVar.I_minus_R" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>get I - R at singular value</dt>
+<dd><blockquote class="first">
+<div>V_2 * V_2^T</div></blockquote>
+<blockquote class="last">
+<div>singular_value (int) : singular value to calc I - R at</div></blockquote>
+</dd>
+</dl>
+<blockquote>
+<div>I - R at singular_value</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.ev.ErrVar.R">
+<code class="descname">R</code><span class="sig-paren">(</span><em>singular_value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/ev.html#ErrVar.R"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.ev.ErrVar.R" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>get resolution Matrix at a singular value</dt>
+<dd>V_1 * V_1^T</dd>
+</dl>
+<blockquote>
+<div>singular_value (int) : singular value to calc R at</div></blockquote>
+<blockquote>
+<div>R at singular_value</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.ev.ErrVar.first_forecast">
+<code class="descname">first_forecast</code><span class="sig-paren">(</span><em>singular_value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/ev.html#ErrVar.first_forecast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.ev.ErrVar.first_forecast" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.ev.ErrVar.first_parameter">
+<code class="descname">first_parameter</code><span class="sig-paren">(</span><em>singular_value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/ev.html#ErrVar.first_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.ev.ErrVar.first_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>get the null space term contribution to parameter error variance</dt>
+<dd>at a singular value</dd>
+</dl>
+<blockquote>
+<div>singular_value (int) : singular value to calc first term at</div></blockquote>
+<blockquote>
+<div>Cov object of first term error variance</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.ev.ErrVar.first_prediction">
+<code class="descname">first_prediction</code><span class="sig-paren">(</span><em>singular_value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/ev.html#ErrVar.first_prediction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.ev.ErrVar.first_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>get the null space term contribution to prediction error variance</dt>
+<dd>at a singular value</dd>
+</dl>
+<blockquote>
+<div>singular_value (int) : singular value to calc first term at</div></blockquote>
+<blockquote>
+<div>dict{[&#8220;first&#8221;,prediction_names]:error variance} at singular_value</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.ev.ErrVar.get_errvar_dataframe">
+<code class="descname">get_errvar_dataframe</code><span class="sig-paren">(</span><em>singular_values=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/ev.html#ErrVar.get_errvar_dataframe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.ev.ErrVar.get_errvar_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>get a pandas dataframe of error variance results indexed</dt>
+<dd>on singular value and (prediction name,&lt;term&gt;)</dd>
+</dl>
+<blockquote>
+<div>singular_values (list of int) : singular values to test.  defaults
+to range(0,min(nnz_obs,nadj_par) + 1)</div></blockquote>
+<blockquote>
+<div>multi-indexed pandas dataframe</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.ev.ErrVar.get_identifiability_dataframe">
+<code class="descname">get_identifiability_dataframe</code><span class="sig-paren">(</span><em>singular_value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/ev.html#ErrVar.get_identifiability_dataframe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.ev.ErrVar.get_identifiability_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the parameter identifiability as a pandas dataframe
+Parameters:
+&#8212;&#8212;&#8212;-</p>
+<blockquote>
+<div>singular_value (int) : the truncation point</div></blockquote>
+<blockquote>
+<div><dl class="docutils">
+<dt>A pandas dataframe of the V_1**2 Matrix with the</dt>
+<dd>identifiability in the column labeled &#8220;ident&#8221;</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.ev.ErrVar.omitted_jco">
+<code class="descname">omitted_jco</code><a class="headerlink" href="#pyemu.ev.ErrVar.omitted_jco" title="Permalink to this definition">¶</a></dt>
+<dd><p>set the omitted jco</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.ev.ErrVar.omitted_parcov">
+<code class="descname">omitted_parcov</code><a class="headerlink" href="#pyemu.ev.ErrVar.omitted_parcov" title="Permalink to this definition">¶</a></dt>
+<dd><p>set the ommitted prior parameter covariance matrix</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.ev.ErrVar.omitted_predictions">
+<code class="descname">omitted_predictions</code><a class="headerlink" href="#pyemu.ev.ErrVar.omitted_predictions" title="Permalink to this definition">¶</a></dt>
+<dd><p>set the omitted prediction sensitivity vectors</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.ev.ErrVar.second_forecast">
+<code class="descname">second_forecast</code><span class="sig-paren">(</span><em>singular_value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/ev.html#ErrVar.second_forecast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.ev.ErrVar.second_forecast" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.ev.ErrVar.second_parameter">
+<code class="descname">second_parameter</code><span class="sig-paren">(</span><em>singular_value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/ev.html#ErrVar.second_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.ev.ErrVar.second_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>get the solution space contribution to parameter error variance</dt>
+<dd><blockquote class="first">
+<div>at a singular value</div></blockquote>
+<p class="last">G * obscov * G^T</p>
+</dd>
+</dl>
+<blockquote>
+<div>singular_value (int) : singular value to calc second term at</div></blockquote>
+<blockquote>
+<div>Cov object of second term error variance</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.ev.ErrVar.second_prediction">
+<code class="descname">second_prediction</code><span class="sig-paren">(</span><em>singular_value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/ev.html#ErrVar.second_prediction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.ev.ErrVar.second_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>get the solution space contribution to predictive error variance</dt>
+<dd>at a singular value
+y^t * G * obscov * G^T * y</dd>
+</dl>
+<blockquote>
+<div>singular_value (int) : singular value to calc second term at</div></blockquote>
+<blockquote>
+<div>dict{[&#8220;second&#8221;,prediction_names]:error variance} at singular_value</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.ev.ErrVar.third_forecast">
+<code class="descname">third_forecast</code><span class="sig-paren">(</span><em>singular_value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/ev.html#ErrVar.third_forecast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.ev.ErrVar.third_forecast" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.ev.ErrVar.third_parameter">
+<code class="descname">third_parameter</code><span class="sig-paren">(</span><em>singular_value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/ev.html#ErrVar.third_parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.ev.ErrVar.third_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>get the omitted parameter contribution to parameter error variance</dt>
+<dd><dl class="first last docutils">
+<dt>at a singular value</dt>
+<dd>G * omitted_jco * Sigma_(omitted_pars) * omitted_jco^T * G^T</dd>
+</dl>
+</dd>
+</dl>
+<blockquote>
+<div>singular_value (int) : singular value to calc third term at</div></blockquote>
+<blockquote>
+<div>0.0 if need_omitted is False
+Cov object of third term error variance</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.ev.ErrVar.third_prediction">
+<code class="descname">third_prediction</code><span class="sig-paren">(</span><em>singular_value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/ev.html#ErrVar.third_prediction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.ev.ErrVar.third_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>get the omitted parameter contribution to error variance at a singular value</dt>
+<dd><dl class="first last docutils">
+<dt>predictions:</dt>
+<dd>p * Simga_(omitted_pars) * p^T
+p = prediction^T * G * omitted_jco - omitted_prediction^T</dd>
+</dl>
+</dd>
+</dl>
+<blockquote>
+<div>singular_value (int) : singular value to calc third term at</div></blockquote>
+<blockquote>
+<div>dict{[&#8220;third&#8221;,prediction_names]:error variance} at singular_value</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.ev.ErrVar.variance_at">
+<code class="descname">variance_at</code><span class="sig-paren">(</span><em>singular_value</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/ev.html#ErrVar.variance_at"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.ev.ErrVar.variance_at" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the error variance of all three terms
+Parameters:
+&#8212;&#8212;&#8212;-</p>
+<blockquote>
+<div>singular_value (int) : singular value to test</div></blockquote>
+<blockquote>
+<div>dict{[&lt;term&gt;,prediction_name]:standard_deviation}</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-pyemu.inf">
+<span id="pyemu-inf-module"></span><h2>pyemu.inf module<a class="headerlink" href="#module-pyemu.inf" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pyemu.inf.Influence">
+<em class="property">class </em><code class="descclassname">pyemu.inf.</code><code class="descname">Influence</code><span class="sig-paren">(</span><em>jco</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/inf.html#Influence"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.inf.Influence" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyemu.la.LinearAnalysis" title="pyemu.la.LinearAnalysis"><code class="xref py py-class docutils literal"><span class="pre">pyemu.la.LinearAnalysis</span></code></a></p>
+<dl class="attribute">
+<dt id="pyemu.inf.Influence.cooks_d">
+<code class="descname">cooks_d</code><a class="headerlink" href="#pyemu.inf.Influence.cooks_d" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.inf.Influence.dfbetas">
+<code class="descname">dfbetas</code><a class="headerlink" href="#pyemu.inf.Influence.dfbetas" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.inf.Influence.estimated_err_var">
+<code class="descname">estimated_err_var</code><a class="headerlink" href="#pyemu.inf.Influence.estimated_err_var" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.inf.Influence.hat">
+<code class="descname">hat</code><a class="headerlink" href="#pyemu.inf.Influence.hat" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.inf.Influence.observation_leverage">
+<code class="descname">observation_leverage</code><a class="headerlink" href="#pyemu.inf.Influence.observation_leverage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.inf.Influence.scaled_res">
+<code class="descname">scaled_res</code><a class="headerlink" href="#pyemu.inf.Influence.scaled_res" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.inf.Influence.studentized_res">
+<code class="descname">studentized_res</code><a class="headerlink" href="#pyemu.inf.Influence.studentized_res" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-pyemu.la">
+<span id="pyemu-la-module"></span><h2>pyemu.la module<a class="headerlink" href="#module-pyemu.la" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pyemu.la.LinearAnalysis">
+<em class="property">class </em><code class="descclassname">pyemu.la.</code><code class="descname">LinearAnalysis</code><span class="sig-paren">(</span><em>jco=None</em>, <em>pst=None</em>, <em>parcov=None</em>, <em>obscov=None</em>, <em>predictions=None</em>, <em>ref_var=1.0</em>, <em>verbose=False</em>, <em>resfile=False</em>, <em>forecasts=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/la.html#LinearAnalysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.la.LinearAnalysis" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="docutils">
+<dt>the super class for linear analysis.  Can be used for prior analyses</dt>
+<dd>only.  The derived types (schur and errvar) are for posterior analyses
+this class tries hard to not load items until they are needed
+all arguments are optional</dd>
+</dl>
+<blockquote>
+<div><p>jco ([enumerable of] [string,ndarray,matrix objects]) : jacobian
+pst (pst object) : the pest control file object
+parcov ([enumerable of] [string,ndarray,matrix objects]) :</p>
+<blockquote>
+<div>parameter covariance matrix</div></blockquote>
+<dl class="docutils">
+<dt>obscov ([enumerable of] [string,ndarray,matrix objects]):</dt>
+<dd>observation noise covariance matrix</dd>
+<dt>predictions ([enumerable of] [string,ndarray,matrix objects]) :</dt>
+<dd>prediction sensitivity vectors</dd>
+</dl>
+<p>ref_var (float) : reference variance
+verbose (either bool or string) : controls log file / screen output</p>
+</div></blockquote>
+<p class="rubric">Notes</p>
+<p>the class makes heavy use of property decorator to encapsulate
+private attributes</p>
+<dl class="method">
+<dt id="pyemu.la.LinearAnalysis.adj_par_names">
+<code class="descname">adj_par_names</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/la.html#LinearAnalysis.adj_par_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.la.LinearAnalysis.adj_par_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.la.LinearAnalysis.adjust_obscov_resfile">
+<code class="descname">adjust_obscov_resfile</code><span class="sig-paren">(</span><em>resfile=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/la.html#LinearAnalysis.adjust_obscov_resfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.la.LinearAnalysis.adjust_obscov_resfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>reset the elements of obscov by scaling the implied weights
+based on the phi components in res_file</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.la.LinearAnalysis.apply_karhunen_loeve_scaling">
+<code class="descname">apply_karhunen_loeve_scaling</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/la.html#LinearAnalysis.apply_karhunen_loeve_scaling"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.la.LinearAnalysis.apply_karhunen_loeve_scaling" title="Permalink to this definition">¶</a></dt>
+<dd><p>apply karhuene-loeve scaling to the jacobian matrix.</p>
+<p>This scaling is not necessary for analyses using Schur&#8217;s
+complement, but can be very important for error variance
+analyses.  This operation effectively transfers prior knowledge
+specified in the parcov to the jacobian and reset parcov to the
+identity matrix.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.la.LinearAnalysis.clean">
+<code class="descname">clean</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/la.html#LinearAnalysis.clean"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.la.LinearAnalysis.clean" title="Permalink to this definition">¶</a></dt>
+<dd><p>drop regularization and prior information observation from the jco</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.la.LinearAnalysis.drop_prior_information">
+<code class="descname">drop_prior_information</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/la.html#LinearAnalysis.drop_prior_information"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.la.LinearAnalysis.drop_prior_information" title="Permalink to this definition">¶</a></dt>
+<dd><p>drop the prior information from the jco and pst attributes</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.fehalf">
+<code class="descname">fehalf</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.fehalf" title="Permalink to this definition">¶</a></dt>
+<dd><p>set the KL parcov scaling matrix attribute</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.forecast_names">
+<code class="descname">forecast_names</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.forecast_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.forecasts">
+<code class="descname">forecasts</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.forecasts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.forecasts_iter">
+<code class="descname">forecasts_iter</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.forecasts_iter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.la.LinearAnalysis.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>par_names=None</em>, <em>obs_names=None</em>, <em>astype=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/la.html#LinearAnalysis.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.la.LinearAnalysis.get" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>method to get a new LinearAnalysis class using a</dt>
+<dd><blockquote class="first">
+<div>subset of parameters and/or observations</div></blockquote>
+<blockquote class="last">
+<div>par_names (enumerable of str) : par names for new object
+obs_names (enumerable of str) : obs names for new object
+astype (either schur or errvar type) : type to cast the new object</div></blockquote>
+</dd>
+</dl>
+<blockquote>
+<div>LinearAnalysis object</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.la.LinearAnalysis.get_par_css_dataframe">
+<code class="descname">get_par_css_dataframe</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/la.html#LinearAnalysis.get_par_css_dataframe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.la.LinearAnalysis.get_par_css_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.jco">
+<code class="descname">jco</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.jco" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.mle_covariance">
+<code class="descname">mle_covariance</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.mle_covariance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.mle_parameter_estimate">
+<code class="descname">mle_parameter_estimate</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.mle_parameter_estimate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.nnz_obs_names">
+<code class="descname">nnz_obs_names</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.nnz_obs_names" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.obscov">
+<code class="descname">obscov</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.obscov" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.parcov">
+<code class="descname">parcov</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.parcov" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.predictions">
+<code class="descname">predictions</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.predictions" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.predictions_iter">
+<code class="descname">predictions_iter</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.predictions_iter" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.prior_forecast">
+<code class="descname">prior_forecast</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.prior_forecast" title="Permalink to this definition">¶</a></dt>
+<dd><p>thin wrapper for prior_prediction</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.prior_parameter">
+<code class="descname">prior_parameter</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.prior_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>the prior parameter covariance matrix</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.prior_prediction">
+<code class="descname">prior_prediction</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.prior_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a dict of prior prediction variances
+Parameters:
+&#8212;&#8212;&#8212;-</p>
+<blockquote>
+<div>None</div></blockquote>
+<blockquote>
+<div>dict{prediction name(str):prior variance(float)}</div></blockquote>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.pst">
+<code class="descname">pst</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.pst" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.qhalf">
+<code class="descname">qhalf</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.qhalf" title="Permalink to this definition">¶</a></dt>
+<dd><p>set the square root of the cofactor matrix attribute</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.qhalfx">
+<code class="descname">qhalfx</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.qhalfx" title="Permalink to this definition">¶</a></dt>
+<dd><p>set the half normal matrix attribute</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.la.LinearAnalysis.reset_obscov">
+<code class="descname">reset_obscov</code><span class="sig-paren">(</span><em>arg=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/la.html#LinearAnalysis.reset_obscov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.la.LinearAnalysis.reset_obscov" title="Permalink to this definition">¶</a></dt>
+<dd><p>reset the obscov attribute to None
+Parameters:
+&#8212;&#8212;&#8212;-</p>
+<blockquote>
+<div>arg (str or matrix) : the value to assign to the obscov_arg attrib</div></blockquote>
+<blockquote>
+<div>None</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.la.LinearAnalysis.reset_parcov">
+<code class="descname">reset_parcov</code><span class="sig-paren">(</span><em>arg=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/la.html#LinearAnalysis.reset_parcov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.la.LinearAnalysis.reset_parcov" title="Permalink to this definition">¶</a></dt>
+<dd><p>reset the parcov attribute to None
+Parameters:
+&#8212;&#8212;&#8212;-</p>
+<blockquote>
+<div>arg (str or matrix) : the value to assign to the parcov_arg attrib</div></blockquote>
+<blockquote>
+<div>None</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.la.LinearAnalysis.reset_pst">
+<code class="descname">reset_pst</code><span class="sig-paren">(</span><em>arg</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/la.html#LinearAnalysis.reset_pst"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.la.LinearAnalysis.reset_pst" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.la.LinearAnalysis.xtqx">
+<code class="descname">xtqx</code><a class="headerlink" href="#pyemu.la.LinearAnalysis.xtqx" title="Permalink to this definition">¶</a></dt>
+<dd><p>set the normal matrix attribute</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-pyemu.logger">
+<span id="pyemu-logger-module"></span><h2>pyemu.logger module<a class="headerlink" href="#module-pyemu.logger" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pyemu.logger.Logger">
+<em class="property">class </em><code class="descclassname">pyemu.logger.</code><code class="descname">Logger</code><span class="sig-paren">(</span><em>filename</em>, <em>echo=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/logger.html#Logger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.logger.Logger" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="docutils">
+<dt>a basic class for logging events during the linear analysis calculations</dt>
+<dd>if filename is passed, then a file handle is opened.</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>filename</strong> (<em>string</em><em>, </em><em>bool</em>) &#8211; Filename to write logged events to. If False, no file will be created,
+and logged events will be displayed on standard out.</li>
+<li><strong>echo</strong> (<em>bool</em><em>, </em><em>optional</em>) &#8211; Flag to cause logged events to be echoed to the screen.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="pyemu.logger.Logger.items">
+<code class="descname">items</code><a class="headerlink" href="#pyemu.logger.Logger.items" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>dict</em> &#8211; Dictionary holding events to be logged.  If a log entry is
+not in <cite>items</cite>, then it is treated as a new entry with the string
+being the key and the datetime as the value.  If a log entry is
+in <cite>items</cite>, then the end time and delta time are written and
+the item is popped from the keys.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.logger.Logger.log">
+<code class="descname">log</code><span class="sig-paren">(</span><em>phrase</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/logger.html#Logger.log"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.logger.Logger.log" title="Permalink to this definition">¶</a></dt>
+<dd><p>log something that happened
+Parameters:
+&#8212;&#8212;&#8212;-</p>
+<blockquote>
+<div>phrase (str) : the thing that happened</div></blockquote>
+<blockquote>
+<div>None</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.logger.Logger.lraise">
+<code class="descname">lraise</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/logger.html#Logger.lraise"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.logger.Logger.lraise" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.logger.Logger.statement">
+<code class="descname">statement</code><span class="sig-paren">(</span><em>phrase</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/logger.html#Logger.statement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.logger.Logger.statement" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.logger.Logger.warn">
+<code class="descname">warn</code><span class="sig-paren">(</span><em>message</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/logger.html#Logger.warn"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.logger.Logger.warn" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a warning to the log file
+Parameters:
+&#8212;&#8212;&#8212;-</p>
+<blockquote>
+<div>message (str) : the warning text</div></blockquote>
+<blockquote>
+<div>None</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-pyemu.mc">
+<span id="pyemu-mc-module"></span><h2>pyemu.mc module<a class="headerlink" href="#module-pyemu.mc" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pyemu.mc.MonteCarlo">
+<em class="property">class </em><code class="descclassname">pyemu.mc.</code><code class="descname">MonteCarlo</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mc.html#MonteCarlo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mc.MonteCarlo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyemu.la.LinearAnalysis" title="pyemu.la.LinearAnalysis"><code class="xref py py-class docutils literal"><span class="pre">pyemu.la.LinearAnalysis</span></code></a></p>
+<p>LinearAnalysis derived type for monte carlo analysis</p>
+<dl class="docutils">
+<dt>Note: requires a pest control file, which can be</dt>
+<dd>derived from a jco argument
+MonteCarlo.project_parsensemble also
+requires a jacobian</dd>
+</dl>
+<dl class="method">
+<dt id="pyemu.mc.MonteCarlo.draw">
+<code class="descname">draw</code><span class="sig-paren">(</span><em>num_reals=1</em>, <em>par_file=None</em>, <em>obs=False</em>, <em>enforce_bounds=None</em>, <em>cov=None</em>, <em>how='gaussian'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mc.html#MonteCarlo.draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mc.MonteCarlo.draw" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>draw stochastic realizations of parameters and</dt>
+<dd>optionally observations</dd>
+</dl>
+<blockquote>
+<div><p>num_reals (int): number of realization to generate</p>
+<p>par_file (str): parameter file to use as mean values</p>
+<p>obs (bool): add a realization of measurement noise to obs</p>
+<p>enforce_bounds (bool): enforce parameter bounds in control file</p>
+<p>how (str): type of distribution.  Must be in [&#8220;gaussian&#8221;,&#8221;uniform&#8221;]</p>
+</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">None</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mc.MonteCarlo.get_nsing">
+<code class="descname">get_nsing</code><span class="sig-paren">(</span><em>epsilon=0.0001</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mc.html#MonteCarlo.get_nsing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mc.MonteCarlo.get_nsing" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>get the number of solution space dimensions given</dt>
+<dd>a ratio between the largest and smallest singular
+values</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>epsilon</strong> &#8211; ratio</td>
+</tr>
+</tbody>
+</table>
+<dl class="docutils">
+<dt>Returns</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">integer (or None)</span><dd>number of singular components above the epsilon ratio threshold
+If nsing == nadj_par, then None is returned</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mc.MonteCarlo.get_null_proj">
+<code class="descname">get_null_proj</code><span class="sig-paren">(</span><em>nsing=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mc.html#MonteCarlo.get_null_proj"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mc.MonteCarlo.get_null_proj" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a null-space projection matrix of XTQX</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>nsing: optional number of singular components to use</dt>
+<dd>if none, call self.get_nsing()</dd>
+</dl>
+</div></blockquote>
+<blockquote>
+<div>Matrix instance : V2V2^T</div></blockquote>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mc.MonteCarlo.num_reals">
+<code class="descname">num_reals</code><a class="headerlink" href="#pyemu.mc.MonteCarlo.num_reals" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mc.MonteCarlo.project_parensemble">
+<code class="descname">project_parensemble</code><span class="sig-paren">(</span><em>par_file=None</em>, <em>nsing=None</em>, <em>inplace=True</em>, <em>enforce_bounds='reset'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mc.html#MonteCarlo.project_parensemble"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mc.MonteCarlo.project_parensemble" title="Permalink to this definition">¶</a></dt>
+<dd><p>perform the null-space projection operations for null-space monte carlo</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>par_file</strong> &#8211; str
+an optional file of parameter values to use</li>
+<li><strong>nsing</strong> &#8211; int
+number of singular values to in forming null subspace matrix</li>
+<li><strong>inplace</strong> &#8211; bool
+overwrite the existing parameter ensemble with the
+projected values</li>
+<li><strong>enforce_bounds</strong> &#8211; str
+how to enforce parameter bounds.  can be None, &#8216;reset&#8217;, or &#8216;drop&#8217;</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<div>if inplace is False, ParameterEnsemble instance, otherwise None</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mc.MonteCarlo.write_psts">
+<code class="descname">write_psts</code><span class="sig-paren">(</span><em>prefix</em>, <em>existing_jco=None</em>, <em>noptmax=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mc.html#MonteCarlo.write_psts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mc.MonteCarlo.write_psts" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>write parameter and optionally observation realizations</dt>
+<dd>to pest control files</dd>
+</dl>
+<blockquote>
+<div><dl class="docutils">
+<dt>prefix: str</dt>
+<dd>pest control file prefix</dd>
+<dt>existing_jco: str</dt>
+<dd>filename of an existing jacobian matrix to add to the
+pest++ options in the control file.  This is useful for
+NSMC since this jco can be used to get the first set of
+parameter upgrades for free!  Needs to be the path the jco
+file as seen from the location where pest++ will be run</dd>
+<dt>noptmax: int</dt>
+<dd>value of NOPTMAX to set in new pest control files</dd>
+</dl>
+</div></blockquote>
+<blockquote>
+<div>None</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-pyemu.sc">
+<span id="pyemu-sc-module"></span><h2>pyemu.sc module<a class="headerlink" href="#module-pyemu.sc" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pyemu.sc.Schur">
+<em class="property">class </em><code class="descclassname">pyemu.sc.</code><code class="descname">Schur</code><span class="sig-paren">(</span><em>jco</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/sc.html#Schur"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.sc.Schur" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyemu.la.LinearAnalysis" title="pyemu.la.LinearAnalysis"><code class="xref py py-class docutils literal"><span class="pre">pyemu.la.LinearAnalysis</span></code></a></p>
+<p>derived type for posterior covariance analysis using Schur&#8217;s complement</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Same call signature as the base LinearAnalysis class</p>
+</div>
+<dl class="method">
+<dt id="pyemu.sc.Schur.get_added_obs_importance">
+<code class="descname">get_added_obs_importance</code><span class="sig-paren">(</span><em>obslist_dict=None</em>, <em>base_obslist=None</em>, <em>reset_zero_weight=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/sc.html#Schur.get_added_obs_importance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.sc.Schur.get_added_obs_importance" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a dataframe fo the posterior uncertainty
+as a results of added some observations
+Parameters:
+&#8212;&#8212;&#8212;-</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>obslist_dict (dict of list of str)</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">groups of observations</span><dd>that are to be treated as lost.  key values become
+row labels in result dataframe. If None, then test every obs</dd>
+<dt>base_obslist (list of str)</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">observation names to treat as</span><dd>the &#8220;existing&#8221; observations.  The values of obslist_dict
+will be added to this list.  If None, then each list in the
+values of obslist_dict will be treated as an individual
+calibration dataset</dd>
+<dt>reset_zero_weight</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">(bool or float) a flag to reset observations</span><dd>with zero weight in either obslist_dict or base_obslist.
+If the value of reset_zero_weights can be cast to a float,
+then that value will be assigned to zero weight obs.  Otherwise,
+zero weight obs will be given a weight of 1.0</dd>
+</dl>
+</div></blockquote>
+<blockquote>
+<div><dl class="docutils">
+<dt>dataframe[obslist_dict.keys(),(forecast_name,post)</dt>
+<dd>multiindex dataframe of Schur&#8217;s complement results for each
+group of observations in obslist_dict values.</dd>
+</dl>
+</div></blockquote>
+<blockquote>
+<div>all observations listed in obslist_dict and base_obslist with zero
+weights will be dropped unless reset_zero_weight is set</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.sc.Schur.get_conditional_instance">
+<code class="descname">get_conditional_instance</code><span class="sig-paren">(</span><em>parameter_names</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/sc.html#Schur.get_conditional_instance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.sc.Schur.get_conditional_instance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.sc.Schur.get_forecast_summary">
+<code class="descname">get_forecast_summary</code><span class="sig-paren">(</span><em>include_map=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/sc.html#Schur.get_forecast_summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.sc.Schur.get_forecast_summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a summary of the forecast uncertainty
+Parameters:
+&#8212;&#8212;&#8212;-</p>
+<blockquote>
+<div>None</div></blockquote>
+<blockquote>
+<div>pd.DataFrame() of prior,posterior variances and percent
+uncertainty reduction of each forecast</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.sc.Schur.get_par_contribution">
+<code class="descname">get_par_contribution</code><span class="sig-paren">(</span><em>parlist_dict=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/sc.html#Schur.get_par_contribution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.sc.Schur.get_par_contribution" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a dataframe the prior and posterior uncertainty
+reduction as a result of
+some parameter becoming perfectly known
+Parameters:
+&#8212;&#8212;&#8212;-</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>parlist_dict (dict of list of str)</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">groups of parameters</span><dd>that are to be treated as perfectly known.  key values become
+row labels in dataframe</dd>
+</dl>
+</div></blockquote>
+<blockquote>
+<div><dl class="docutils">
+<dt>dataframe[parlist_dict.keys(),(forecast_name,&lt;prior,post&gt;)</dt>
+<dd>multiindex dataframe of Schur&#8217;s complement results for each
+group of parameters in parlist_dict values.</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.sc.Schur.get_par_group_contribution">
+<code class="descname">get_par_group_contribution</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/sc.html#Schur.get_par_group_contribution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.sc.Schur.get_par_group_contribution" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the forecast uncertainty contribution from each parameter
+group.  Just some sugar for get_contribution_dataframe()</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.sc.Schur.get_parameter_summary">
+<code class="descname">get_parameter_summary</code><span class="sig-paren">(</span><em>include_map=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/sc.html#Schur.get_parameter_summary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.sc.Schur.get_parameter_summary" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a summary of the parameter uncertainty
+Parameters:
+&#8212;&#8212;&#8212;-</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>include_map</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">bool (optional)</span><dd>if True, add the prior and posterior expectations
+and report standard deviation instead of variance</dd>
+</dl>
+</div></blockquote>
+<blockquote>
+<div>pd.DataFrame() of prior,posterior variances and percent
+uncertainty reduction of each parameter</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><code class="xref py py-exc docutils literal"><span class="pre">None</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.sc.Schur.get_removed_obs_group_importance">
+<code class="descname">get_removed_obs_group_importance</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/sc.html#Schur.get_removed_obs_group_importance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.sc.Schur.get_removed_obs_group_importance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.sc.Schur.get_removed_obs_importance">
+<code class="descname">get_removed_obs_importance</code><span class="sig-paren">(</span><em>obslist_dict=None</em>, <em>reset_zero_weight=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/sc.html#Schur.get_removed_obs_importance"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.sc.Schur.get_removed_obs_importance" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a dataframe the posterior uncertainty
+as a result of losing some observations
+Parameters:
+&#8212;&#8212;&#8212;-</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>obslist_dict (dict of list of str, or just list of str)</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">groups of observations</span><dd>that are to be treated as lost.  key values become
+row labels in result dataframe. If None, then test every
+(nonzero weight - see reset_zero_weight) observation</dd>
+<dt>reset_zero_weight</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">(bool or float) a flag to reset observations</span><dd>with zero weight in obslist_dict.
+If the value of reset_zero_weights can be cast to a float,
+then that value will be assigned to zero weight obs.  Otherwise,
+zero weight obs will be given a weight of 1.0</dd>
+</dl>
+</div></blockquote>
+<blockquote>
+<div><dl class="docutils">
+<dt>dataframe[obslist_dict.keys(),(forecast_name,post)</dt>
+<dd>multiindex dataframe of Schur&#8217;s complement results for each
+group of observations in obslist_dict values.</dd>
+</dl>
+</div></blockquote>
+<blockquote>
+<div>all observations listed in obslist_dict with zero
+weights will be dropped unless reset_zero_weight is set</div></blockquote>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.sc.Schur.map_forecast_estimate">
+<code class="descname">map_forecast_estimate</code><a class="headerlink" href="#pyemu.sc.Schur.map_forecast_estimate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.sc.Schur.map_parameter_estimate">
+<code class="descname">map_parameter_estimate</code><a class="headerlink" href="#pyemu.sc.Schur.map_parameter_estimate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.sc.Schur.next_most_important_added_obs">
+<code class="descname">next_most_important_added_obs</code><span class="sig-paren">(</span><em>forecast=None</em>, <em>niter=3</em>, <em>obslist_dict=None</em>, <em>base_obslist=None</em>, <em>reset_zero_weight=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/sc.html#Schur.next_most_important_added_obs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.sc.Schur.next_most_important_added_obs" title="Permalink to this definition">¶</a></dt>
+<dd><p>find the most important observation(s) by sequentailly evaluating
+the importance of the observations in obslist_dict.
+Parameters:
+&#8212;&#8212;&#8212;-</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>forecast</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">name of the forecast to use in the ranking process.  If</span><dd>more than one forecast has been listed, this argument is required</dd>
+</dl>
+<p>niter : number of sequential iterations
+obslist_dict (dict of list of str) : groups of observations</p>
+<blockquote>
+<div>that are to be treated as lost.  key values become
+row labels in result dataframe. If None, then test every obs</div></blockquote>
+<dl class="docutils">
+<dt>base_obslist (list of str)</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">observation names to treat as</span><dd>the &#8220;existing&#8221; observations.  The values of obslist_dict
+will be added to this list.  If None, then each list in the
+values of obslist_dict will be treated as an individual
+calibration dataset</dd>
+<dt>reset_zero_weight</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">(bool or float) a flag to reset observations</span><dd>with zero weight in either obslist_dict or base_obslist.
+If the value of reset_zero_weights can be cast to a float,
+then that value will be assigned to zero weight obs.  Otherwise,
+zero weight obs will be given a weight of 1.0</dd>
+</dl>
+</div></blockquote>
+<blockquote>
+<div><dl class="docutils">
+<dt>DataFrame with columns = [best obslist_dict key, forecast variance,</dt>
+<dd>percent reduction for this iteration, percent reduction
+compared to initial base case]</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.sc.Schur.next_most_par_contribution">
+<code class="descname">next_most_par_contribution</code><span class="sig-paren">(</span><em>niter=3</em>, <em>forecast=None</em>, <em>parlist_dict=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/sc.html#Schur.next_most_par_contribution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.sc.Schur.next_most_par_contribution" title="Permalink to this definition">¶</a></dt>
+<dd><p>find the largest parameter(s) contribution for prior and posterior
+forecast  by sequentailly evaluating the contribution of parameters in
+parlist_dict</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>forecast</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">name of the forecast to use in the ranking process.  If</span><dd>more than one forecast has been listed, this argument is required</dd>
+<dt>parlist_dict (dict of list of str)</dt>
+ <span class="classifier-delimiter">:</span> <span class="classifier">groups of parameters</span><dd>that are to be treated as perfectly known.  key values become
+row labels in dataframe</dd>
+</dl>
+</div></blockquote>
+<blockquote>
+<div><dl class="docutils">
+<dt>dataframe[parlist_dict.keys(),(forecast_name,&lt;prior,post&gt;)</dt>
+<dd>multiindex dataframe of Schur&#8217;s complement results for each
+group of parameters in parlist_dict values.</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.sc.Schur.pandas">
+<code class="descname">pandas</code><a class="headerlink" href="#pyemu.sc.Schur.pandas" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a pandas dataframe of prior and posterior for all predictions</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.sc.Schur.posterior_forecast">
+<code class="descname">posterior_forecast</code><a class="headerlink" href="#pyemu.sc.Schur.posterior_forecast" title="Permalink to this definition">¶</a></dt>
+<dd><p>thin wrapper around posterior_prediction</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.sc.Schur.posterior_parameter">
+<code class="descname">posterior_parameter</code><a class="headerlink" href="#pyemu.sc.Schur.posterior_parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the posterior parameter covariance matrix</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.sc.Schur.posterior_prediction">
+<code class="descname">posterior_prediction</code><a class="headerlink" href="#pyemu.sc.Schur.posterior_prediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a dict of posterior prediction variances</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-pyemu.smoother">
+<span id="pyemu-smoother-module"></span><h2>pyemu.smoother module<a class="headerlink" href="#module-pyemu.smoother" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="pyemu.smoother.EnsembleSmoother">
+<em class="property">class </em><code class="descclassname">pyemu.smoother.</code><code class="descname">EnsembleSmoother</code><span class="sig-paren">(</span><em>pst</em>, <em>parcov=None</em>, <em>obscov=None</em>, <em>num_slaves=0</em>, <em>use_approx_prior=True</em>, <em>submit_file=None</em>, <em>verbose=False</em>, <em>port=4004</em>, <em>slave_dir='template'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/smoother.html#EnsembleSmoother"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.smoother.EnsembleSmoother" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
+<dl class="attribute">
+<dt id="pyemu.smoother.EnsembleSmoother.current_phi">
+<code class="descname">current_phi</code><a class="headerlink" href="#pyemu.smoother.EnsembleSmoother.current_phi" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.smoother.EnsembleSmoother.get_localizer">
+<code class="descname">get_localizer</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/smoother.html#EnsembleSmoother.get_localizer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.smoother.EnsembleSmoother.get_localizer" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.smoother.EnsembleSmoother.initialize">
+<code class="descname">initialize</code><span class="sig-paren">(</span><em>num_reals=1</em>, <em>init_lambda=None</em>, <em>enforce_bounds='reset'</em>, <em>parensemble=None</em>, <em>obsensemble=None</em>, <em>restart_obsensemble=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/smoother.html#EnsembleSmoother.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.smoother.EnsembleSmoother.initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>(re)initialize the process</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.smoother.EnsembleSmoother.update">
+<code class="descname">update</code><span class="sig-paren">(</span><em>lambda_mults=[1.0], localizer=None, run_subset=None, use_approx=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/smoother.html#EnsembleSmoother.update"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.smoother.EnsembleSmoother.update" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-pyemu">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pyemu" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">pyemu package</a><ul>
+<li><a class="reference internal" href="#subpackages">Subpackages</a></li>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-pyemu.en">pyemu.en module</a></li>
+<li><a class="reference internal" href="#module-pyemu.ev">pyemu.ev module</a></li>
+<li><a class="reference internal" href="#module-pyemu.inf">pyemu.inf module</a></li>
+<li><a class="reference internal" href="#module-pyemu.la">pyemu.la module</a></li>
+<li><a class="reference internal" href="#module-pyemu.logger">pyemu.logger module</a></li>
+<li><a class="reference internal" href="#module-pyemu.mc">pyemu.mc module</a></li>
+<li><a class="reference internal" href="#module-pyemu.sc">pyemu.sc module</a></li>
+<li><a class="reference internal" href="#module-pyemu.smoother">pyemu.smoother module</a></li>
+<li><a class="reference internal" href="#module-pyemu">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/_static/pyemu.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Jeremy White.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/_static/pyemu.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
