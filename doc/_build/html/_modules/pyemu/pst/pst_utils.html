@@ -1,0 +1,749 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyemu.pst.pst_utils &#8212; pyEMU 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pyemu.pst.pst_utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">division</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">stat</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="k">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">max_colwidth</span> <span class="o">=</span> <span class="mi">100</span>
+
+<span class="kn">import</span> <span class="nn">pyemu</span>
+
+<span class="c1">#formatters</span>
+<span class="c1">#SFMT = lambda x: &quot;{0:&gt;20s}&quot;.format(str(x.decode()))</span>
+<div class="viewcode-block" id="SFMT"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.SFMT">[docs]</a><span class="k">def</span> <span class="nf">SFMT</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0:&lt;20s}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0:&lt;20s}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">s</span></div>
+
+<span class="n">SFMT_LONG</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{0:&lt;50s}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+<span class="n">IFMT</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{0:&lt;10d}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+<span class="n">FFMT</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s2">&quot;</span><span class="si">{0:&lt;20.10E}</span><span class="s2"> &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+<div class="viewcode-block" id="str_con"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.str_con">[docs]</a><span class="k">def</span> <span class="nf">str_con</span><span class="p">(</span><span class="n">item</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span>
+    <span class="k">return</span> <span class="n">item</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span></div>
+
+<span class="n">pst_config</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="c1"># parameter stuff</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;tied_dtype&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">([(</span><span class="s2">&quot;parnme&quot;</span><span class="p">,</span> <span class="s2">&quot;U20&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;partied&quot;</span><span class="p">,</span><span class="s2">&quot;U20&quot;</span><span class="p">)])</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;tied_fieldnames&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;parnme&quot;</span><span class="p">,</span><span class="s2">&quot;partied&quot;</span><span class="p">]</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;tied_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;parnme&quot;</span><span class="p">:</span><span class="n">SFMT</span><span class="p">,</span><span class="s2">&quot;partied&quot;</span><span class="p">:</span><span class="n">SFMT</span><span class="p">}</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;tied_converters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;parnme&quot;</span><span class="p">:</span><span class="n">str_con</span><span class="p">,</span><span class="s2">&quot;partied&quot;</span><span class="p">:</span><span class="n">str_con</span><span class="p">}</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;tied_defaults&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;parnme&quot;</span><span class="p">:</span><span class="s2">&quot;dum&quot;</span><span class="p">,</span><span class="s2">&quot;partied&quot;</span><span class="p">:</span><span class="s2">&quot;dum&quot;</span><span class="p">}</span>
+
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;par_dtype&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">([(</span><span class="s2">&quot;parnme&quot;</span><span class="p">,</span> <span class="s2">&quot;U20&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;partrans&quot;</span><span class="p">,</span><span class="s2">&quot;U20&quot;</span><span class="p">),</span>
+                                   <span class="p">(</span><span class="s2">&quot;parchglim&quot;</span><span class="p">,</span><span class="s2">&quot;U20&quot;</span><span class="p">),(</span><span class="s2">&quot;parval1&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                                   <span class="p">(</span><span class="s2">&quot;parlbnd&quot;</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),(</span><span class="s2">&quot;parubnd&quot;</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                                   <span class="p">(</span><span class="s2">&quot;pargp&quot;</span><span class="p">,</span><span class="s2">&quot;U20&quot;</span><span class="p">),(</span><span class="s2">&quot;scale&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                                   <span class="p">(</span><span class="s2">&quot;offset&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),(</span><span class="s2">&quot;dercom&quot;</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)])</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;par_fieldnames&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;PARNME PARTRANS PARCHGLIM PARVAL1 PARLBND PARUBND &quot;</span> <span class="o">+</span>\
+                              <span class="s2">&quot;PARGP SCALE OFFSET DERCOM&quot;</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;par_fieldnames&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;par_fieldnames&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;par_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;parnme&quot;</span><span class="p">:</span> <span class="n">SFMT</span><span class="p">,</span> <span class="s2">&quot;partrans&quot;</span><span class="p">:</span> <span class="n">SFMT</span><span class="p">,</span>
+                           <span class="s2">&quot;parchglim&quot;</span><span class="p">:</span> <span class="n">SFMT</span><span class="p">,</span> <span class="s2">&quot;parval1&quot;</span><span class="p">:</span> <span class="n">FFMT</span><span class="p">,</span>
+                           <span class="s2">&quot;parlbnd&quot;</span><span class="p">:</span> <span class="n">FFMT</span><span class="p">,</span> <span class="s2">&quot;parubnd&quot;</span><span class="p">:</span> <span class="n">FFMT</span><span class="p">,</span>
+                           <span class="s2">&quot;pargp&quot;</span><span class="p">:</span> <span class="n">SFMT</span><span class="p">,</span> <span class="s2">&quot;scale&quot;</span><span class="p">:</span> <span class="n">FFMT</span><span class="p">,</span>
+                           <span class="s2">&quot;offset&quot;</span><span class="p">:</span> <span class="n">FFMT</span><span class="p">,</span> <span class="s2">&quot;dercom&quot;</span><span class="p">:</span> <span class="n">IFMT</span><span class="p">}</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;par_converters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;parnme&quot;</span><span class="p">:</span> <span class="n">str_con</span><span class="p">,</span> <span class="s2">&quot;pargp&quot;</span><span class="p">:</span> <span class="n">str_con</span><span class="p">,</span>
+                                <span class="s2">&quot;parval1&quot;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span><span class="s2">&quot;parubnd&quot;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span>
+                                <span class="s2">&quot;parlbnd&quot;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span><span class="s2">&quot;scale&quot;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span>
+                                <span class="s2">&quot;offset&quot;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">}</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;par_defaults&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;parnme&quot;</span><span class="p">:</span><span class="s2">&quot;dum&quot;</span><span class="p">,</span><span class="s2">&quot;partrans&quot;</span><span class="p">:</span><span class="s2">&quot;log&quot;</span><span class="p">,</span><span class="s2">&quot;parchglim&quot;</span><span class="p">:</span><span class="s2">&quot;factor&quot;</span><span class="p">,</span>
+                             <span class="s2">&quot;parval1&quot;</span><span class="p">:</span><span class="mf">1.0</span><span class="p">,</span><span class="s2">&quot;parlbnd&quot;</span><span class="p">:</span><span class="mf">1.1e-10</span><span class="p">,</span><span class="s2">&quot;parubnd&quot;</span><span class="p">:</span><span class="mf">1.1e+10</span><span class="p">,</span>
+                             <span class="s2">&quot;pargp&quot;</span><span class="p">:</span><span class="s2">&quot;pargp&quot;</span><span class="p">,</span><span class="s2">&quot;scale&quot;</span><span class="p">:</span><span class="mf">1.0</span><span class="p">,</span><span class="s2">&quot;offset&quot;</span><span class="p">:</span><span class="mf">0.0</span><span class="p">,</span><span class="s2">&quot;dercom&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">}</span>
+
+
+<span class="c1"># parameter group stuff</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;pargp_dtype&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">([(</span><span class="s2">&quot;pargpnme&quot;</span><span class="p">,</span> <span class="s2">&quot;U20&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;inctyp&quot;</span><span class="p">,</span><span class="s2">&quot;U20&quot;</span><span class="p">),</span>
+                                   <span class="p">(</span><span class="s2">&quot;derinc&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                                   <span class="p">(</span><span class="s2">&quot;derinclb&quot;</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),(</span><span class="s2">&quot;forcen&quot;</span><span class="p">,</span><span class="s2">&quot;U20&quot;</span><span class="p">),</span>
+                                   <span class="p">(</span><span class="s2">&quot;derincmul&quot;</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),(</span><span class="s2">&quot;dermthd&quot;</span><span class="p">,</span> <span class="s2">&quot;U20&quot;</span><span class="p">),</span>
+                                   <span class="p">(</span><span class="s2">&quot;splitthresh&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),(</span><span class="s2">&quot;splitreldiff&quot;</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                                      <span class="p">(</span><span class="s2">&quot;splitaction&quot;</span><span class="p">,</span><span class="s2">&quot;U20&quot;</span><span class="p">)])</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;pargp_fieldnames&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;PARGPNME INCTYP DERINC DERINCLB FORCEN DERINCMUL &quot;</span> <span class="o">+</span>\
+                        <span class="s2">&quot;DERMTHD SPLITTHRESH SPLITRELDIFF SPLITACTION&quot;</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;pargp_fieldnames&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;pargp_fieldnames&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;pargp_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;pargpnme&quot;</span><span class="p">:</span><span class="n">SFMT</span><span class="p">,</span><span class="s2">&quot;inctyp&quot;</span><span class="p">:</span><span class="n">SFMT</span><span class="p">,</span><span class="s2">&quot;derinc&quot;</span><span class="p">:</span><span class="n">FFMT</span><span class="p">,</span><span class="s2">&quot;forcen&quot;</span><span class="p">:</span><span class="n">SFMT</span><span class="p">,</span>
+                      <span class="s2">&quot;derincmul&quot;</span><span class="p">:</span><span class="n">FFMT</span><span class="p">,</span><span class="s2">&quot;dermthd&quot;</span><span class="p">:</span><span class="n">SFMT</span><span class="p">,</span><span class="s2">&quot;splitthresh&quot;</span><span class="p">:</span><span class="n">FFMT</span><span class="p">,</span>
+                      <span class="s2">&quot;splitreldiff&quot;</span><span class="p">:</span><span class="n">FFMT</span><span class="p">,</span><span class="s2">&quot;splitaction&quot;</span><span class="p">:</span><span class="n">SFMT</span><span class="p">}</span>
+
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;pargp_converters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;pargpnme&quot;</span><span class="p">:</span><span class="n">str_con</span><span class="p">,</span><span class="s2">&quot;inctype&quot;</span><span class="p">:</span><span class="n">str_con</span><span class="p">,</span>
+                         <span class="s2">&quot;dermethd&quot;</span><span class="p">:</span><span class="n">str_con</span><span class="p">,</span>
+                         <span class="s2">&quot;splitaction&quot;</span><span class="p">:</span><span class="n">str_con</span><span class="p">}</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;pargp_defaults&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;pargpnme&quot;</span><span class="p">:</span><span class="s2">&quot;pargp&quot;</span><span class="p">,</span><span class="s2">&quot;inctyp&quot;</span><span class="p">:</span><span class="s2">&quot;relative&quot;</span><span class="p">,</span><span class="s2">&quot;derinc&quot;</span><span class="p">:</span><span class="mf">0.01</span><span class="p">,</span>
+                       <span class="s2">&quot;derinclb&quot;</span><span class="p">:</span><span class="mf">0.0</span><span class="p">,</span><span class="s2">&quot;forcen&quot;</span><span class="p">:</span><span class="s2">&quot;switch&quot;</span><span class="p">,</span><span class="s2">&quot;derincmul&quot;</span><span class="p">:</span><span class="mf">2.0</span><span class="p">,</span>
+                     <span class="s2">&quot;dermthd&quot;</span><span class="p">:</span><span class="s2">&quot;parabolic&quot;</span><span class="p">,</span><span class="s2">&quot;splitthresh&quot;</span><span class="p">:</span><span class="mf">1.0e-5</span><span class="p">,</span>
+                       <span class="s2">&quot;splitreldiff&quot;</span><span class="p">:</span><span class="mf">0.5</span><span class="p">,</span><span class="s2">&quot;splitaction&quot;</span><span class="p">:</span><span class="s2">&quot;smaller&quot;</span><span class="p">}</span>
+
+
+<span class="c1"># observation stuff</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;obs_fieldnames&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;OBSNME OBSVAL WEIGHT OBGNME&quot;</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;obs_dtype&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">([(</span><span class="s2">&quot;obsnme&quot;</span><span class="p">,</span><span class="s2">&quot;U20&quot;</span><span class="p">),(</span><span class="s2">&quot;obsval&quot;</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),</span>
+                           <span class="p">(</span><span class="s2">&quot;weight&quot;</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">),(</span><span class="s2">&quot;obgnme&quot;</span><span class="p">,</span><span class="s2">&quot;U20&quot;</span><span class="p">)])</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;obs_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;obsnme&quot;</span><span class="p">:</span> <span class="n">SFMT</span><span class="p">,</span> <span class="s2">&quot;obsval&quot;</span><span class="p">:</span> <span class="n">FFMT</span><span class="p">,</span>
+                   <span class="s2">&quot;weight&quot;</span><span class="p">:</span> <span class="n">FFMT</span><span class="p">,</span> <span class="s2">&quot;obgnme&quot;</span><span class="p">:</span> <span class="n">SFMT</span><span class="p">}</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;obs_converters&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;obsnme&quot;</span><span class="p">:</span> <span class="n">str_con</span><span class="p">,</span> <span class="s2">&quot;obgnme&quot;</span><span class="p">:</span> <span class="n">str_con</span><span class="p">,</span>
+                                <span class="s2">&quot;weight&quot;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span><span class="s2">&quot;obsval&quot;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">}</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;obs_defaults&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;obsnme&quot;</span><span class="p">:</span><span class="s2">&quot;dum&quot;</span><span class="p">,</span><span class="s2">&quot;obsval&quot;</span><span class="p">:</span><span class="mf">1.0e+10</span><span class="p">,</span>
+                     <span class="s2">&quot;weight&quot;</span><span class="p">:</span><span class="mf">1.0</span><span class="p">,</span><span class="s2">&quot;obgnme&quot;</span><span class="p">:</span><span class="s2">&quot;obgnme&quot;</span><span class="p">}</span>
+
+
+<span class="c1"># prior info stuff</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;null_prior&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;pilbl&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                                    <span class="s2">&quot;obgnme&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span> <span class="n">index</span><span class="o">=</span><span class="p">[])</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;prior_format&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;pilbl&quot;</span><span class="p">:</span> <span class="n">SFMT</span><span class="p">,</span> <span class="s2">&quot;equation&quot;</span><span class="p">:</span> <span class="n">SFMT_LONG</span><span class="p">,</span>
+                     <span class="s2">&quot;weight&quot;</span><span class="p">:</span> <span class="n">FFMT</span><span class="p">,</span> <span class="s2">&quot;obgnme&quot;</span><span class="p">:</span> <span class="n">SFMT</span><span class="p">}</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;prior_fieldnames&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;pilbl&quot;</span><span class="p">,</span><span class="s2">&quot;equation&quot;</span><span class="p">,</span> <span class="s2">&quot;weight&quot;</span><span class="p">,</span> <span class="s2">&quot;obgnme&quot;</span><span class="p">]</span>
+
+
+<span class="c1"># other containers</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;model_command&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;template_files&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;input_files&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;instruction_files&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;output_files&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;other_lines&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;tied_lines&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;regul_lines&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;pestpp_options&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+<div class="viewcode-block" id="read_resfile"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.read_resfile">[docs]</a><span class="k">def</span> <span class="nf">read_resfile</span><span class="p">(</span><span class="n">resfile</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;load a residual file into a pandas dataframe</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">        ----------</span>
+<span class="sd">            resfile : str</span>
+<span class="sd">                residual file</span>
+<span class="sd">        Returns:</span>
+<span class="sd">        -------</span>
+<span class="sd">            pandas DataFrame</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">resfile</span><span class="p">),</span><span class="s2">&quot;read_resfile() error: resfile &quot;</span> <span class="o">+</span>\
+                                       <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> not found&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">resfile</span><span class="p">)</span>
+        <span class="n">converters</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">str_con</span><span class="p">,</span> <span class="s2">&quot;group&quot;</span><span class="p">:</span> <span class="n">str_con</span><span class="p">}</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">resfile</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">line</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Pst.get_residuals: EOF before finding &quot;</span><span class="o">+</span>
+                                <span class="s2">&quot;header in resfile: &quot;</span> <span class="o">+</span> <span class="n">resfile</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">&quot;name&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="n">header</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                <span class="k">break</span>
+        <span class="n">res_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">header</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;\s+&quot;</span><span class="p">,</span>
+                                 <span class="n">converters</span><span class="o">=</span><span class="n">converters</span><span class="p">)</span>
+        <span class="n">res_df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">res_df</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">res_df</span></div>
+
+
+<div class="viewcode-block" id="read_parfile"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.read_parfile">[docs]</a><span class="k">def</span> <span class="nf">read_parfile</span><span class="p">(</span><span class="n">parfile</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;load a pest-compatible .par file into a pandas dataframe</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    ----------</span>
+<span class="sd">        parfile : str</span>
+<span class="sd">            pest parameter file</span>
+<span class="sd">    Returns:</span>
+<span class="sd">    -------</span>
+<span class="sd">        pandas DataFrame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">parfile</span><span class="p">),</span> <span class="s2">&quot;Pst.parrep(): parfile not found: &quot;</span> <span class="o">+</span>\
+                                    <span class="nb">str</span><span class="p">(</span><span class="n">parfile</span><span class="p">)</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">parfile</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+    <span class="n">par_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                             <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;parnme&quot;</span><span class="p">,</span> <span class="s2">&quot;parval1&quot;</span><span class="p">,</span> <span class="s2">&quot;scale&quot;</span><span class="p">,</span> <span class="s2">&quot;offset&quot;</span><span class="p">],</span>
+                             <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;\s+&quot;</span><span class="p">)</span>
+    <span class="n">par_df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">par_df</span><span class="o">.</span><span class="n">parnme</span>
+    <span class="k">return</span> <span class="n">par_df</span></div>
+
+<div class="viewcode-block" id="write_parfile"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.write_parfile">[docs]</a><span class="k">def</span> <span class="nf">write_parfile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span><span class="n">parfile</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; write a pest parameter file from a dataframe</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    ----------</span>
+<span class="sd">        df : pandas DataFrame</span>
+<span class="sd">            with column names that correspond to the entries</span>
+<span class="sd">            in the parameter data section of a pest control file</span>
+<span class="sd">        parfile : str</span>
+<span class="sd">            name of the parameter file to write</span>
+<span class="sd">    Returns:</span>
+<span class="sd">    -------</span>
+<span class="sd">        None</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;parnme&quot;</span><span class="p">,</span><span class="s2">&quot;parval1&quot;</span><span class="p">,</span><span class="s2">&quot;scale&quot;</span><span class="p">,</span><span class="s2">&quot;offset&quot;</span><span class="p">]</span>
+    <span class="n">formatters</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;parnme&quot;</span><span class="p">:</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="s2">&quot;</span><span class="si">{0:20s}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">),</span>
+                  <span class="s2">&quot;parval1&quot;</span><span class="p">:</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="s2">&quot;</span><span class="si">{0:20.7E}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">),</span>
+                  <span class="s2">&quot;scale&quot;</span><span class="p">:</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="s2">&quot;</span><span class="si">{0:20.7E}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">),</span>
+                  <span class="s2">&quot;offset&quot;</span><span class="p">:</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="s2">&quot;</span><span class="si">{0:20.7E}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">)}</span>
+
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span><span class="s2">&quot;write_parfile() error: &quot;</span> <span class="o">+</span>\
+                                 <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> not found in df&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">parfile</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;single point</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">col_space</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                      <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">,</span>
+                      <span class="n">formatters</span><span class="o">=</span><span class="n">formatters</span><span class="p">,</span>
+                      <span class="n">justify</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">,</span>
+                      <span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="n">index_names</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="parse_tpl_file"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.parse_tpl_file">[docs]</a><span class="k">def</span> <span class="nf">parse_tpl_file</span><span class="p">(</span><span class="n">tpl_file</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; parse a pest template file to get the parameter names</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    ----------</span>
+<span class="sd">        tpl_file : str</span>
+<span class="sd">            template file name</span>
+<span class="sd">    Returns:</span>
+<span class="sd">    -------</span>
+<span class="sd">        list of parameter names</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">par_names</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">tpl_file</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">header</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+            <span class="k">assert</span> <span class="n">header</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ptf&quot;</span><span class="p">,</span><span class="s2">&quot;jtf&quot;</span><span class="p">],</span>\
+                <span class="s2">&quot;template file error: must start with [ptf,jtf], not:&quot;</span> <span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">header</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span>\
+                <span class="s2">&quot;template file error: header line must have two entries: &quot;</span> <span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+
+            <span class="n">marker</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span>\
+                <span class="s2">&quot;template file error: marker must be a single character, not:&quot;</span> <span class="o">+</span>\
+                <span class="nb">str</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">par_line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">marker</span><span class="p">)[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">par_line</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">p</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">par_names</span><span class="p">:</span>
+                        <span class="n">par_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;error processing template file &quot;</span> <span class="o">+</span>\
+                            <span class="n">tpl_file</span><span class="o">+</span><span class="s2">&quot; :</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+    <span class="n">par_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">pn</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">pn</span> <span class="ow">in</span> <span class="n">par_names</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">par_names</span></div>
+
+
+<div class="viewcode-block" id="write_parvals_in_tplfiles"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.write_parvals_in_tplfiles">[docs]</a><span class="k">def</span> <span class="nf">write_parvals_in_tplfiles</span><span class="p">(</span><span class="n">pst</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;this is a simple implementation of what pest does.  It does not</span>
+<span class="sd">    handle all the special cases, just a basic function...user beware</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">tpl_file</span><span class="p">,</span><span class="n">in_file</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pst</span><span class="o">.</span><span class="n">template_files</span><span class="p">,</span><span class="n">pst</span><span class="o">.</span><span class="n">input_files</span><span class="p">):</span>
+        <span class="n">write_to_template</span><span class="p">(</span><span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span><span class="n">parval1</span><span class="p">,</span><span class="n">tpl_file</span><span class="p">,</span><span class="n">in_file</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="write_to_template"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.write_to_template">[docs]</a><span class="k">def</span> <span class="nf">write_to_template</span><span class="p">(</span><span class="n">parvals</span><span class="p">,</span><span class="n">tpl_file</span><span class="p">,</span><span class="n">in_file</span><span class="p">):</span>
+    <span class="n">f_in</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">in_file</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+    <span class="n">f_tpl</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">tpl_file</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="n">f_tpl</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="n">header</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;ptf&quot;</span><span class="p">,</span> <span class="s2">&quot;jtf&quot;</span><span class="p">],</span> \
+        <span class="s2">&quot;template file error: must start with [ptf,jtf], not:&quot;</span> <span class="o">+</span> \
+        <span class="nb">str</span><span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">header</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> \
+        <span class="s2">&quot;template file error: header line must have two entries: &quot;</span> <span class="o">+</span> \
+        <span class="nb">str</span><span class="p">(</span><span class="n">header</span><span class="p">)</span>
+
+    <span class="n">marker</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> \
+        <span class="s2">&quot;template file error: marker must be a single character, not:&quot;</span> <span class="o">+</span> \
+        <span class="nb">str</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f_tpl</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">marker</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="n">f_in</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">()</span>
+            <span class="n">par_names</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">marker</span><span class="p">)[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">par_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">par_names</span><span class="p">]</span>
+            <span class="n">start</span><span class="p">,</span><span class="n">end</span> <span class="o">=</span> <span class="n">get_marker_indices</span><span class="p">(</span><span class="n">marker</span><span class="p">,</span><span class="n">line</span><span class="p">)</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">par_names</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+            <span class="n">new_line</span> <span class="o">=</span> <span class="n">line</span><span class="p">[:</span><span class="n">start</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="n">between</span> <span class="o">=</span> <span class="p">[</span><span class="n">line</span><span class="p">[</span><span class="n">e</span><span class="p">:</span><span class="n">s</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span><span class="p">,</span><span class="n">e</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">start</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span><span class="n">end</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])]</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">par_names</span><span class="p">):</span>
+                <span class="n">s</span><span class="p">,</span><span class="n">e</span> <span class="o">=</span> <span class="n">start</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">end</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">w</span> <span class="o">=</span> <span class="n">e</span> <span class="o">-</span> <span class="n">s</span>
+                <span class="k">if</span> <span class="n">w</span> <span class="o">&gt;</span> <span class="mi">15</span><span class="p">:</span>
+                    <span class="n">d</span> <span class="o">=</span> <span class="mi">6</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">d</span> <span class="o">=</span> <span class="mi">3</span>
+                <span class="n">fmt</span> <span class="o">=</span> <span class="s2">&quot;{0:&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">w</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;.&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">d</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;E}&quot;</span>
+                <span class="n">val_str</span> <span class="o">=</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">parvals</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
+                <span class="n">new_line</span> <span class="o">+=</span> <span class="n">val_str</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">par_names</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">new_line</span> <span class="o">+=</span> <span class="n">between</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">new_line</span> <span class="o">+=</span> <span class="n">line</span><span class="p">[</span><span class="n">end</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:]</span>
+            <span class="n">f_in</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">new_line</span><span class="o">+</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">f_tpl</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">f_in</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="get_marker_indices"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.get_marker_indices">[docs]</a><span class="k">def</span> <span class="nf">get_marker_indices</span><span class="p">(</span><span class="n">marker</span><span class="p">,</span><span class="n">line</span><span class="p">):</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ltr</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="k">if</span> <span class="n">ltr</span> <span class="o">==</span> <span class="n">marker</span><span class="p">]</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">indices</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">[</span><span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]]</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">start</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">end</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">start</span><span class="p">,</span><span class="n">end</span></div>
+
+
+<div class="viewcode-block" id="parse_ins_file"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.parse_ins_file">[docs]</a><span class="k">def</span> <span class="nf">parse_ins_file</span><span class="p">(</span><span class="n">ins_file</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;parse a pest instruction file to get observation names</span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    ----------</span>
+<span class="sd">        ins_file : str</span>
+<span class="sd">            instruction file name</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        list of observation names</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">obs_names</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">ins_file</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">header</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="n">header</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;pif&quot;</span><span class="p">,</span><span class="s2">&quot;jif&quot;</span><span class="p">],</span>\
+            <span class="s2">&quot;instruction file error: must start with [pif,jif], not:&quot;</span> <span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">marker</span> <span class="o">=</span> <span class="n">header</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span>\
+            <span class="s2">&quot;instruction file error: marker must be a single character, not:&quot;</span> <span class="o">+</span>\
+            <span class="nb">str</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">marker</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                <span class="n">raw</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">raw</span><span class="p">[::</span><span class="mi">2</span><span class="p">]:</span>
+                    <span class="n">obs_names</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">parse_ins_string</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">obs_names</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">parse_ins_string</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span>
+    <span class="n">obs_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">on</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">on</span> <span class="ow">in</span> <span class="n">obs_names</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">obs_names</span></div>
+
+
+<div class="viewcode-block" id="parse_ins_string"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.parse_ins_string">[docs]</a><span class="k">def</span> <span class="nf">parse_ins_string</span><span class="p">(</span><span class="n">string</span><span class="p">):</span>
+    <span class="n">istart_markers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;[&quot;</span><span class="p">,</span><span class="s2">&quot;(&quot;</span><span class="p">,</span><span class="s2">&quot;!&quot;</span><span class="p">]</span>
+    <span class="n">iend_markers</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;]&quot;</span><span class="p">,</span><span class="s2">&quot;)&quot;</span><span class="p">,</span><span class="s2">&quot;!&quot;</span><span class="p">]</span>
+
+    <span class="n">obs_names</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">idx</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">string</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="n">char</span> <span class="o">=</span> <span class="n">string</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">istart_markers</span><span class="p">:</span>
+            <span class="n">em</span> <span class="o">=</span> <span class="n">iend_markers</span><span class="p">[</span><span class="n">istart_markers</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">char</span><span class="p">)]</span>
+            <span class="c1"># print(&quot;\n&quot;,idx)</span>
+            <span class="c1"># print(string)</span>
+            <span class="c1"># print(string[idx+1:])</span>
+            <span class="c1"># print(string[idx+1:].index(em))</span>
+            <span class="c1"># print(string[idx+1:].index(em)+idx+1)</span>
+            <span class="n">eidx</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">string</span><span class="p">),</span><span class="n">string</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">em</span><span class="p">)</span><span class="o">+</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">obs_name</span> <span class="o">=</span> <span class="n">string</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">eidx</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">obs_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;dum&quot;</span><span class="p">:</span>
+                <span class="n">obs_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obs_name</span><span class="p">)</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">eidx</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">obs_names</span></div>
+
+
+<div class="viewcode-block" id="populate_dataframe"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.populate_dataframe">[docs]</a><span class="k">def</span> <span class="nf">populate_dataframe</span><span class="p">(</span><span class="n">index</span><span class="p">,</span><span class="n">columns</span><span class="p">,</span> <span class="n">default_dict</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+    <span class="n">new_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">fieldname</span><span class="p">,</span><span class="n">dt</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">columns</span><span class="p">,</span><span class="n">dtype</span><span class="o">.</span><span class="n">descr</span><span class="p">):</span>
+        <span class="n">default</span> <span class="o">=</span> <span class="n">default_dict</span><span class="p">[</span><span class="n">fieldname</span><span class="p">]</span>
+        <span class="n">new_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="n">fieldname</span><span class="p">]</span> <span class="o">=</span> <span class="n">default</span>
+        <span class="n">new_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="n">fieldname</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="n">fieldname</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dt</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">new_df</span></div>
+
+
+<div class="viewcode-block" id="generic_pst"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.generic_pst">[docs]</a><span class="k">def</span> <span class="nf">generic_pst</span><span class="p">(</span><span class="n">par_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;par1&quot;</span><span class="p">],</span><span class="n">obs_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;obs1&quot;</span><span class="p">],</span><span class="n">addreg</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;generate a generic pst instance</span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    ----------</span>
+<span class="sd">        par_names : list(str)</span>
+<span class="sd">            parameter names to setup</span>
+<span class="sd">        obs_names : list(str)</span>
+<span class="sd">            observation names to setup</span>
+<span class="sd">    Returns:</span>
+<span class="sd">    -------</span>
+<span class="sd">        Pst instance</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">par_names</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+        <span class="n">par_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">par_names</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obs_names</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+        <span class="n">obs_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">obs_names</span><span class="p">)</span>
+    <span class="n">new_pst</span> <span class="o">=</span> <span class="n">pyemu</span><span class="o">.</span><span class="n">Pst</span><span class="p">(</span><span class="s2">&quot;pest.pst&quot;</span><span class="p">,</span><span class="n">load</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">pargp_data</span> <span class="o">=</span> <span class="n">populate_dataframe</span><span class="p">([</span><span class="s2">&quot;pargp&quot;</span><span class="p">],</span> <span class="n">new_pst</span><span class="o">.</span><span class="n">pargp_fieldnames</span><span class="p">,</span>
+                                    <span class="n">new_pst</span><span class="o">.</span><span class="n">pargp_defaults</span><span class="p">,</span> <span class="n">new_pst</span><span class="o">.</span><span class="n">pargp_dtype</span><span class="p">)</span>
+    <span class="n">new_pst</span><span class="o">.</span><span class="n">parameter_groups</span> <span class="o">=</span> <span class="n">pargp_data</span>
+
+    <span class="n">par_data</span> <span class="o">=</span> <span class="n">populate_dataframe</span><span class="p">(</span><span class="n">par_names</span><span class="p">,</span><span class="n">new_pst</span><span class="o">.</span><span class="n">par_fieldnames</span><span class="p">,</span>
+                                  <span class="n">new_pst</span><span class="o">.</span><span class="n">par_defaults</span><span class="p">,</span><span class="n">new_pst</span><span class="o">.</span><span class="n">par_dtype</span><span class="p">)</span>
+    <span class="n">par_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;parnme&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">par_names</span>
+    <span class="n">par_data</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">par_names</span>
+    <span class="n">new_pst</span><span class="o">.</span><span class="n">parameter_data</span> <span class="o">=</span> <span class="n">par_data</span>
+    <span class="n">obs_data</span> <span class="o">=</span> <span class="n">populate_dataframe</span><span class="p">(</span><span class="n">obs_names</span><span class="p">,</span><span class="n">new_pst</span><span class="o">.</span><span class="n">obs_fieldnames</span><span class="p">,</span>
+                                  <span class="n">new_pst</span><span class="o">.</span><span class="n">obs_defaults</span><span class="p">,</span><span class="n">new_pst</span><span class="o">.</span><span class="n">obs_dtype</span><span class="p">)</span>
+    <span class="n">obs_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;obsnme&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obs_names</span>
+    <span class="n">obs_data</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">obs_names</span>
+    <span class="n">new_pst</span><span class="o">.</span><span class="n">observation_data</span> <span class="o">=</span> <span class="n">obs_data</span>
+
+    <span class="n">new_pst</span><span class="o">.</span><span class="n">template_files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;file.tpl&quot;</span><span class="p">]</span>
+    <span class="n">new_pst</span><span class="o">.</span><span class="n">input_files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;file.in&quot;</span><span class="p">]</span>
+    <span class="n">new_pst</span><span class="o">.</span><span class="n">instruction_files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;file.ins&quot;</span><span class="p">]</span>
+    <span class="n">new_pst</span><span class="o">.</span><span class="n">output_files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;file.out&quot;</span><span class="p">]</span>
+    <span class="n">new_pst</span><span class="o">.</span><span class="n">model_command</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;model.bat&quot;</span><span class="p">]</span>
+
+    <span class="n">new_pst</span><span class="o">.</span><span class="n">prior_information</span> <span class="o">=</span> <span class="n">new_pst</span><span class="o">.</span><span class="n">null_prior</span>
+
+    <span class="c1">#new_pst.other_lines = [&quot;* singular value decomposition\n&quot;,&quot;1\n&quot;,</span>
+    <span class="c1">#                       &quot;{0:d} {1:15.6E}\n&quot;.format(new_pst.npar_adj,1.0E-6),</span>
+    <span class="c1">#                       &quot;1 1 1\n&quot;]</span>
+    <span class="k">if</span> <span class="n">addreg</span><span class="p">:</span>
+        <span class="n">new_pst</span><span class="o">.</span><span class="n">zero_order_tikhonov</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">new_pst</span></div>
+
+
+<div class="viewcode-block" id="pst_from_io_files"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.pst_from_io_files">[docs]</a><span class="k">def</span> <span class="nf">pst_from_io_files</span><span class="p">(</span><span class="n">tpl_files</span><span class="p">,</span><span class="n">in_files</span><span class="p">,</span><span class="n">ins_files</span><span class="p">,</span><span class="n">out_files</span><span class="p">,</span><span class="n">pst_filename</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">warnings</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;pst_from_io_files has moved to pyemu.helpers and is also &quot;</span><span class="o">+</span>\
+                  <span class="s2">&quot;now avaiable as a Pst class method (Pst.from_io_files())&quot;</span><span class="p">)</span>
+    <span class="kn">from</span> <span class="nn">pyemu</span> <span class="k">import</span> <span class="n">helpers</span>
+    <span class="k">return</span> <span class="n">helpers</span><span class="o">.</span><span class="n">pst_from_io_files</span><span class="p">(</span><span class="n">tpl_files</span><span class="o">=</span><span class="n">tpl_files</span><span class="p">,</span><span class="n">in_files</span><span class="o">=</span><span class="n">in_files</span><span class="p">,</span>
+                              <span class="n">ins_files</span><span class="o">=</span><span class="n">ins_files</span><span class="p">,</span><span class="n">out_files</span><span class="o">=</span><span class="n">out_files</span><span class="p">,</span>
+                              <span class="n">pst_filename</span><span class="o">=</span><span class="n">pst_filename</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="try_run_inschek"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.try_run_inschek">[docs]</a><span class="k">def</span> <span class="nf">try_run_inschek</span><span class="p">(</span><span class="n">pst</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">ins_file</span><span class="p">,</span><span class="n">out_file</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pst</span><span class="o">.</span><span class="n">instruction_files</span><span class="p">,</span><span class="n">pst</span><span class="o">.</span><span class="n">output_files</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1">#os.system(&quot;inschek {0} {1}&quot;.format(ins_file,out_file))</span>
+            <span class="n">pyemu</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">&quot;inschek </span><span class="si">{0}</span><span class="s2"> </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ins_file</span><span class="p">,</span><span class="n">out_file</span><span class="p">))</span>
+            <span class="n">obf_file</span> <span class="o">=</span> <span class="n">ins_file</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.ins&quot;</span><span class="p">,</span><span class="s2">&quot;.obf&quot;</span><span class="p">)</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">obf_file</span><span class="p">,</span><span class="n">delim_whitespace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                             <span class="n">skiprows</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span><span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;obsval&quot;</span><span class="p">])</span>
+            <span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">,</span><span class="s2">&quot;obsval&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;obsval&quot;</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;error using inschek for instruction file </span><span class="si">{0}</span><span class="s2">:</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span>
+                  <span class="nb">format</span><span class="p">(</span><span class="n">ins_file</span><span class="p">,</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;observations in this instruction file will have&quot;</span><span class="o">+</span>
+                  <span class="s2">&quot;generic values.&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_phi_comps_from_recfile"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.get_phi_comps_from_recfile">[docs]</a><span class="k">def</span> <span class="nf">get_phi_comps_from_recfile</span><span class="p">(</span><span class="n">recfile</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;read the phi components from a record file</span>
+<span class="sd">        Parameters:</span>
+<span class="sd">        ----------</span>
+<span class="sd">            recfile (str) : record file</span>
+<span class="sd">        Returns:</span>
+<span class="sd">        -------</span>
+<span class="sd">            dict{iteration number:{group,contribution}}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">iiter</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">iters</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">recfile</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">line</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">if</span> <span class="s2">&quot;starting phi for this iteration&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">or</span> \
+                <span class="s2">&quot;final phi&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                <span class="n">contributions</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                    <span class="n">line</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">line</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="k">if</span> <span class="s2">&quot;contribution to phi&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                        <span class="n">iters</span><span class="p">[</span><span class="n">iiter</span><span class="p">]</span> <span class="o">=</span> <span class="n">contributions</span>
+                        <span class="n">iiter</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="k">break</span>
+                    <span class="n">raw</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">raw</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                    <span class="n">group</span> <span class="o">=</span> <span class="n">raw</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\&quot;</span><span class="s1">&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
+                    <span class="n">contributions</span><span class="p">[</span><span class="n">group</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="k">return</span> <span class="n">iters</span></div>
+
+<div class="viewcode-block" id="smp_to_ins"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.smp_to_ins">[docs]</a><span class="k">def</span> <span class="nf">smp_to_ins</span><span class="p">(</span><span class="n">smp_filename</span><span class="p">,</span><span class="n">ins_filename</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">use_generic_names</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+               <span class="n">gwutils_compliant</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">datetime_format</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; create an instruction file from an smp file</span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    ----------</span>
+<span class="sd">        smp_filename : str</span>
+<span class="sd">            existing smp file</span>
+<span class="sd">        ins_filename: str:</span>
+<span class="sd">            instruction file to create.  If None, create</span>
+<span class="sd">            an instruction file using the smp filename</span>
+<span class="sd">            with the &quot;.ins&quot; suffix</span>
+<span class="sd">        use_generic_names : bool</span>
+<span class="sd">            flag to force obseravtions names to use a generic</span>
+<span class="sd">            int counter instead of trying to use a datetime str</span>
+<span class="sd">        gwutils_compliant : bool</span>
+<span class="sd">            flag to use instruction set that is compliant with the</span>
+<span class="sd">            pest gw utils (fixed format instructions).  If false,</span>
+<span class="sd">            use free format (with whitespace) instruction set</span>
+<span class="sd">        datetime_format : optional str</span>
+<span class="sd">            str to pass to datetime.strptime in the smp_to_dataframe() function</span>
+<span class="sd">    Returns:</span>
+<span class="sd">    -------</span>
+<span class="sd">        dataframe instance of the smp file with the observation names and</span>
+<span class="sd">        instruction lines as additional columns</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">ins_filename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ins_filename</span> <span class="o">=</span> <span class="n">smp_filename</span><span class="o">+</span><span class="s2">&quot;.ins&quot;</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">smp_to_dataframe</span><span class="p">(</span><span class="n">smp_filename</span><span class="p">,</span><span class="n">datetime_format</span><span class="o">=</span><span class="n">datetime_format</span><span class="p">)</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;ins_strings&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;observation_names&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">name_groups</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">groups</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span><span class="n">idxs</span> <span class="ow">in</span> <span class="n">name_groups</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">use_generic_names</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">11</span><span class="p">:</span>
+            <span class="n">onames</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idxs</span><span class="p">,</span><span class="s2">&quot;datetime&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">name</span><span class="o">+</span><span class="s1">&#39;_&#39;</span><span class="o">+</span><span class="n">x</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2">%m%Y&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">values</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">onames</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span><span class="o">+</span><span class="s2">&quot;_</span><span class="si">{0:d}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">idxs</span><span class="p">))]</span>
+        <span class="k">if</span> <span class="kc">False</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span> <span class="p">:</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">20</span><span class="p">,</span><span class="n">onames</span><span class="p">)):</span>
+            <span class="n">long_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">oname</span> <span class="k">for</span> <span class="n">oname</span> <span class="ow">in</span> <span class="n">onames</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">oname</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">20</span><span class="p">]</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;observation names longer than 20 chars:</span><span class="se">\n</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">long_names</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="n">gwutils_compliant</span><span class="p">:</span>
+            <span class="n">ins_strs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;l1  (</span><span class="si">{0:s}</span><span class="s2">)39:46&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">on</span><span class="p">)</span> <span class="k">for</span> <span class="n">on</span> <span class="ow">in</span> <span class="n">onames</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ins_strs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;l1 w w w  !</span><span class="si">{0:s}</span><span class="s2">!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">on</span><span class="p">)</span> <span class="k">for</span> <span class="n">on</span> <span class="ow">in</span> <span class="n">onames</span><span class="p">]</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idxs</span><span class="p">,</span><span class="s2">&quot;observation_names&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">onames</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idxs</span><span class="p">,</span><span class="s2">&quot;ins_strings&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ins_strs</span>
+
+    <span class="n">counts</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">observation_names</span><span class="o">.</span><span class="n">value_counts</span><span class="p">()</span>
+    <span class="n">dup_sites</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">counts</span><span class="o">.</span><span class="n">index</span> <span class="k">if</span> <span class="n">counts</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dup_sites</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;duplicate observation names found:</span><span class="si">{0}</span><span class="s2">&quot;</span>\
+                        <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dup_sites</span><span class="p">)))</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">ins_filename</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;pif ~</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">ins_str</span><span class="o">+</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">ins_str</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;ins_strings&quot;</span><span class="p">]]</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+<div class="viewcode-block" id="dataframe_to_smp"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.dataframe_to_smp">[docs]</a><span class="k">def</span> <span class="nf">dataframe_to_smp</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span><span class="n">smp_filename</span><span class="p">,</span><span class="n">name_col</span><span class="o">=</span><span class="s2">&quot;name&quot;</span><span class="p">,</span>
+                     <span class="n">datetime_col</span><span class="o">=</span><span class="s2">&quot;datetime&quot;</span><span class="p">,</span><span class="n">value_col</span><span class="o">=</span><span class="s2">&quot;value&quot;</span><span class="p">,</span>
+                     <span class="n">datetime_format</span><span class="o">=</span><span class="s2">&quot;dd/mm/yyyy&quot;</span><span class="p">,</span>
+                     <span class="n">value_format</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{0:15.6E}</span><span class="s2">&quot;</span><span class="p">,</span>
+                     <span class="n">max_name_len</span><span class="o">=</span><span class="mi">12</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; write a dataframe as an smp file</span>
+
+<span class="sd">    Parameters:</span>
+<span class="sd">    ----------</span>
+<span class="sd">        dataframe : a pandas dataframe</span>
+<span class="sd">        smp_filename : str</span>
+<span class="sd">            smp file to write</span>
+<span class="sd">        name_col: str</span>
+<span class="sd">            the column in the dataframe the marks the site namne</span>
+<span class="sd">        datetime_col: str</span>
+<span class="sd">            the column in the dataframe that is a datetime instance</span>
+<span class="sd">        value_col: str</span>
+<span class="sd">            the column in the dataframe that is the values</span>
+<span class="sd">        datetime_format: str</span>
+<span class="sd">            either &#39;dd/mm/yyyy&#39; or &#39;mm/dd/yyy&#39;</span>
+<span class="sd">        value_format: a python float-compatible format</span>
+<span class="sd">    Returns:</span>
+<span class="sd">    -------</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">formatters</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="s2">&quot;</span><span class="si">{0:&lt;20s}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)[:</span><span class="n">max_name_len</span><span class="p">]),</span>
+                  <span class="s2">&quot;value&quot;</span><span class="p">:</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">value_format</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">)}</span>
+    <span class="k">if</span> <span class="n">datetime_format</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;d&quot;</span><span class="p">):</span>
+        <span class="n">dt_fmt</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%d</span><span class="s2">/%m/%Y    %H:%M:%S&quot;</span>
+    <span class="k">elif</span> <span class="n">datetime_format</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;m&quot;</span><span class="p">):</span>
+        <span class="n">dt_fmt</span> <span class="o">=</span> <span class="s2">&quot;%m/</span><span class="si">%d</span><span class="s2">/%Y    %H:%M:%S&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;unrecognized datetime_format: &quot;</span> <span class="o">+</span>\
+                        <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">datetime_format</span><span class="p">)))</span>
+
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="p">[</span><span class="n">name_col</span><span class="p">,</span><span class="n">datetime_col</span><span class="p">,</span><span class="n">value_col</span><span class="p">]:</span>
+        <span class="k">assert</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">columns</span>
+
+    <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;datetime_str&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;datetime&quot;</span><span class="p">]</span><span class="o">.</span>\
+        <span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">x</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="n">dt_fmt</span><span class="p">))</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">smp_filename</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
+        <span class="n">smp_filename</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">smp_filename</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+        <span class="c1"># need this to remove the leading space that pandas puts in front</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">dataframe</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,[</span><span class="n">name_col</span><span class="p">,</span><span class="s2">&quot;datetime_str&quot;</span><span class="p">,</span><span class="n">value_col</span><span class="p">]]</span><span class="o">.</span>\
+                <span class="n">to_string</span><span class="p">(</span><span class="n">col_space</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                          <span class="n">formatters</span><span class="o">=</span><span class="n">formatters</span><span class="p">,</span>
+                          <span class="n">justify</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                          <span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                          <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ss</span> <span class="ow">in</span> <span class="n">s</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+            <span class="n">smp_filename</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0:&lt;s}</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ss</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span>
+    <span class="n">dataframe</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;datetime_str&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="date_parser"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.date_parser">[docs]</a><span class="k">def</span> <span class="nf">date_parser</span><span class="p">(</span><span class="n">items</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; datetime parser to help load smp files</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">items</span><span class="p">,</span><span class="s2">&quot;</span><span class="si">%d</span><span class="s2">/%m/%Y %H:%M:%S&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dt</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">items</span><span class="p">,</span><span class="s2">&quot;%m/</span><span class="si">%d</span><span class="s2">/%Y %H:%M:%S&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">ee</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;error parsing datetime string&quot;</span> <span class="o">+</span>\
+                            <span class="s2">&quot; </span><span class="si">{0}</span><span class="s2">: </span><span class="se">\n</span><span class="si">{1}</span><span class="se">\n</span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">items</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span><span class="nb">str</span><span class="p">(</span><span class="n">ee</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">dt</span></div>
+
+
+<div class="viewcode-block" id="smp_to_dataframe"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.smp_to_dataframe">[docs]</a><span class="k">def</span> <span class="nf">smp_to_dataframe</span><span class="p">(</span><span class="n">smp_filename</span><span class="p">,</span><span class="n">datetime_format</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; load an smp file into a pandas dataframe</span>
+<span class="sd">    Parameters:</span>
+<span class="sd">    ----------</span>
+<span class="sd">        smp_filename : str</span>
+<span class="sd">            smp filename to load</span>
+<span class="sd">        datetime_format : optional str</span>
+<span class="sd">            should be either &quot;%m/%d/%Y %H:%M:%S&quot; or &quot;%d/%m/%Y %H:%M:%S&quot;</span>
+<span class="sd">            If None, then we will try to deduce the format for you, which</span>
+<span class="sd">            always dangerous</span>
+<span class="sd">    Returns:</span>
+<span class="sd">    -------</span>
+<span class="sd">        a pandas dataframe instance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">datetime_format</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">date_func</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">datetime_format</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">date_func</span> <span class="o">=</span> <span class="n">date_parser</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">smp_filename</span><span class="p">,</span> <span class="n">delim_whitespace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                     <span class="n">parse_dates</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;datetime&quot;</span><span class="p">:[</span><span class="s2">&quot;date&quot;</span><span class="p">,</span><span class="s2">&quot;time&quot;</span><span class="p">]},</span>
+                     <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">,</span><span class="s2">&quot;date&quot;</span><span class="p">,</span><span class="s2">&quot;time&quot;</span><span class="p">,</span><span class="s2">&quot;value&quot;</span><span class="p">],</span>
+                     <span class="n">dtype</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span><span class="nb">object</span><span class="p">,</span><span class="s2">&quot;value&quot;</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">},</span>
+                     <span class="n">na_values</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;dry&quot;</span><span class="p">],</span>
+                     <span class="n">date_parser</span><span class="o">=</span><span class="n">date_func</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="del_rw"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.del_rw">[docs]</a><span class="k">def</span> <span class="nf">del_rw</span><span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">exc</span><span class="p">):</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_IWRITE</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="start_slaves"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.start_slaves">[docs]</a><span class="k">def</span> <span class="nf">start_slaves</span><span class="p">(</span><span class="n">slave_dir</span><span class="p">,</span><span class="n">exe_rel_path</span><span class="p">,</span><span class="n">pst_rel_path</span><span class="p">,</span><span class="n">num_slaves</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">slave_root</span><span class="o">=</span><span class="s2">&quot;..&quot;</span><span class="p">,</span>
+                 <span class="n">port</span><span class="o">=</span><span class="mi">4004</span><span class="p">,</span><span class="n">rel_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="kn">import</span> <span class="nn">warnings</span>
+    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;deprecation warning:start_slaves() has moved to the utils.helpers module&quot;</span><span class="p">)</span>
+    <span class="kn">from</span> <span class="nn">pyemu.utils</span> <span class="k">import</span> <span class="n">start_slaves</span>
+    <span class="n">start_slaves</span><span class="p">(</span><span class="n">slave_dir</span><span class="p">,</span><span class="n">exe_rel_path</span><span class="p">,</span><span class="n">pst_rel_path</span><span class="p">,</span><span class="n">num_slaves</span><span class="o">=</span><span class="n">num_slaves</span><span class="p">,</span><span class="n">slave_root</span><span class="o">=</span><span class="n">slave_root</span><span class="p">,</span>
+                 <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span><span class="n">rel_path</span><span class="o">=</span><span class="n">rel_path</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="res_from_obseravtion_data"><a class="viewcode-back" href="../../../_static/pyemu.pst.html#pyemu.pst.pst_utils.res_from_obseravtion_data">[docs]</a><span class="k">def</span> <span class="nf">res_from_obseravtion_data</span><span class="p">(</span><span class="n">observation_data</span><span class="p">):</span>
+    <span class="n">res_df</span> <span class="o">=</span> <span class="n">observation_data</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">res_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">res_df</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;obsnme&quot;</span><span class="p">)</span>
+    <span class="n">res_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s2">&quot;measured&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">res_df</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;obsval&quot;</span><span class="p">)</span>
+    <span class="n">res_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s2">&quot;group&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">res_df</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;obgnme&quot;</span><span class="p">)</span>
+    <span class="n">res_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s2">&quot;modelled&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span>
+    <span class="n">res_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s2">&quot;residual&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span>
+    <span class="k">return</span> <span class="n">res_df</span></div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Jeremy White.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

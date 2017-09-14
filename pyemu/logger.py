@@ -4,19 +4,24 @@ import copy
 
 class Logger(object):
     """ a basic class for logging events during the linear analysis calculations
-        if filename is passed, then an file handle is opened
-    Parameters:
+        if filename is passed, then a file handle is opened.
+
+    Parameters
     ----------
-        filename (bool or string): if string, it is the log file to write
-            if a bool, then log is written to the screen
-        echo (bool): a flag to force screen output
-    Attributes:
+    filename : string, bool
+        Filename to write logged events to. If False, no file will be created,
+        and logged events will be displayed on standard out.
+    echo : bool, optional
+        Flag to cause logged events to be echoed to the screen.
+
+    Attributes
     ----------
-        items (dict) : tracks when something is started.  If a log entry is
-            not in items, then it is treated as a new entry with the string
-            being the key and the datetime as the value.  If a log entry is
-            in items, then the end time and delta time are written and
-            the item is popped from the keys
+    items : dict
+        Dictionary holding events to be logged.  If a log entry is
+        not in `items`, then it is treated as a new entry with the string
+        being the key and the datetime as the value.  If a log entry is
+        in `items`, then the end time and delta time are written and
+        the item is popped from the keys.
 
     """
     def __init__(self,filename, echo=False):
@@ -97,5 +102,3 @@ class Logger(object):
             self.f.flush
             self.f.close()
         raise Exception(message)
-
-

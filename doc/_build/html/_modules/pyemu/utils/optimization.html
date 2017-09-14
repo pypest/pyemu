@@ -1,0 +1,494 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyemu.utils.optimization &#8212; pyEMU 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pyemu.utils.optimization</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">division</span>
+<span class="kn">import</span> <span class="nn">os</span><span class="o">,</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">pyemu</span> <span class="k">import</span> <span class="n">Matrix</span><span class="p">,</span><span class="n">Pst</span><span class="p">,</span><span class="n">Schur</span><span class="p">,</span><span class="n">Cov</span>
+
+<span class="n">OPERATOR_WORDS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;l&quot;</span><span class="p">,</span><span class="s2">&quot;g&quot;</span><span class="p">,</span><span class="s2">&quot;n&quot;</span><span class="p">,</span><span class="s2">&quot;e&quot;</span><span class="p">]</span>
+<span class="n">OPERATOR_SYMBOLS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;&lt;=&quot;</span><span class="p">,</span><span class="s2">&quot;&gt;=&quot;</span><span class="p">,</span><span class="s2">&quot;=&quot;</span><span class="p">,</span><span class="s2">&quot;=&quot;</span><span class="p">]</span>
+
+<span class="c1"># self.prior_information = pd.DataFrame({&quot;pilbl&quot;: pilbl,</span>
+<span class="c1">#                                        &quot;equation&quot;: equation,</span>
+<span class="c1">#                                        &quot;weight&quot;: weight,</span>
+<span class="c1">#                                        &quot;obgnme&quot;: obgnme})</span>
+
+<div class="viewcode-block" id="add_pi_obj_func"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.optimization.add_pi_obj_func">[docs]</a><span class="k">def</span> <span class="nf">add_pi_obj_func</span><span class="p">(</span><span class="n">pst</span><span class="p">,</span><span class="n">obj_func_dict</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">out_pst_name</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pst</span><span class="p">,</span><span class="n">Pst</span><span class="p">):</span>
+        <span class="n">pst</span> <span class="o">=</span> <span class="n">Pst</span><span class="p">(</span><span class="n">pst</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">obj_func_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">obj_func_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span><span class="mf">1.0</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">pst</span><span class="o">.</span><span class="n">adj_par_names</span><span class="p">}</span>
+    <span class="n">pi_equation</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span><span class="n">coef</span> <span class="ow">in</span> <span class="n">obj_func_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">assert</span><span class="p">(</span><span class="n">name</span> <span class="ow">in</span> <span class="n">pst</span><span class="o">.</span><span class="n">adj_par_names</span><span class="p">),</span><span class="s2">&quot;obj func component not in adjustable pars:&quot;</span><span class="o">+</span><span class="n">name</span>
+        <span class="k">if</span> <span class="n">coef</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">pi_equation</span> <span class="o">+=</span> <span class="s1">&#39; - </span><span class="si">{0}</span><span class="s1">*</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">coef</span><span class="p">,</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pi_equation</span> <span class="o">+=</span> <span class="s1">&#39; + </span><span class="si">{0}</span><span class="s1">*</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">coef</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="n">pi_equation</span> <span class="o">+=</span> <span class="s1">&#39; = 0.0&#39;</span>
+    <span class="n">pilbl</span> <span class="o">=</span> <span class="s2">&quot;pi_obj_func&quot;</span>
+    <span class="n">pi_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;pilbl&quot;</span><span class="p">:</span><span class="n">pilbl</span><span class="p">,</span><span class="s2">&quot;equation&quot;</span><span class="p">:</span><span class="n">pi_equation</span><span class="p">,</span><span class="s2">&quot;weight&quot;</span><span class="p">:</span><span class="mf">0.0</span><span class="p">,</span><span class="s2">&quot;obgnme&quot;</span><span class="p">:</span><span class="n">pilbl</span><span class="p">},</span><span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="n">pilbl</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">pst</span><span class="o">.</span><span class="n">prior_information</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">pst</span><span class="o">.</span><span class="n">prior_information</span> <span class="o">=</span> <span class="n">pi_df</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">pilbl</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">pst</span><span class="o">.</span><span class="n">prior_information</span><span class="o">.</span><span class="n">index</span>
+        <span class="c1"># append by enlargement</span>
+        <span class="n">pst</span><span class="o">.</span><span class="n">prior_information</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">pilbl</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">pi_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">pilbl</span><span class="p">,:]</span>
+
+    <span class="k">if</span> <span class="n">out_pst_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">pst</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">out_pst_name</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">pst</span></div>
+
+
+<span class="c1"># def get_added_obs_importance(pst,obslist_dict=None,base_obslist=None,</span>
+<span class="c1">#                              reset_zero_weight=1.0):</span>
+<span class="c1">#     &quot;&quot;&quot;get a dataframe fo the objective function</span>
+<span class="c1">#         as a results of added some observations</span>
+<span class="c1">#         Parameters:</span>
+<span class="c1">#         ----------</span>
+<span class="c1">#             obslist_dict (dict of list of str) : groups of observations</span>
+<span class="c1">#                 that are to be treated as added the implied calibration.  key values become</span>
+<span class="c1">#                 row labels in result dataframe. If None, then test every obs</span>
+<span class="c1">#             base_obslist (list of str) : observation names to treat as</span>
+<span class="c1">#                 the &quot;existing&quot; observations.  The values of obslist_dict</span>
+<span class="c1">#                 will be added to this list.  If None, then each list in the</span>
+<span class="c1">#                 values of obslist_dict will be treated as an individual</span>
+<span class="c1">#                 calibration dataset</span>
+<span class="c1">#             reset_zero_weight : (bool or float) a flag to reset observations</span>
+<span class="c1">#                 with zero weight in either obslist_dict or base_obslist.</span>
+<span class="c1">#                 If the value of reset_zero_weights can be cast to a float,</span>
+<span class="c1">#                 then that value will be assigned to zero weight obs.  Otherwise,</span>
+<span class="c1">#                 zero weight obs will be given a weight of 1.0</span>
+<span class="c1">#         Returns:</span>
+<span class="c1">#         -------</span>
+<span class="c1">#             dataframe[obslist_dict.keys(),(forecast_name,post)</span>
+<span class="c1">#                 multiindex dataframe of Schur&#39;s complement results for each</span>
+<span class="c1">#                 group of observations in obslist_dict values.</span>
+<span class="c1">#         Note:</span>
+<span class="c1">#         ----</span>
+<span class="c1">#             all observations listed in obslist_dict and base_obslist with zero</span>
+<span class="c1">#             weights will be dropped unless reset_zero_weight is set</span>
+<span class="c1">#         &quot;&quot;&quot;</span>
+<span class="c1">#</span>
+<span class="c1">#     if not isinstance(pst,Pst):</span>
+<span class="c1">#         pst = Pst(pst)</span>
+<span class="c1">#     assert &quot;hotstart_resfile&quot; in pst.pestpp_options.keys()</span>
+<span class="c1">#     assert &quot;opt_skip_final&quot; in pst.pestpp_options.keys()</span>
+<span class="c1">#     assert &quot;base_jacobian&quot; in pst.pestpp_options.keys()</span>
+<span class="c1">#     assert &quot;opt_risk&quot; in pst.pestpp_options.keys()</span>
+<span class="c1">#     assert pst.pestpp_options[&quot;opt_risk&quot;] != 0.5</span>
+<span class="c1">#     assert pst.control_data.noptmax == 1</span>
+<span class="c1">#</span>
+<span class="c1">#     obscov = Cov.from_observation_data(pst)</span>
+<span class="c1">#</span>
+<span class="c1">#     if obslist_dict is not None:</span>
+<span class="c1">#         if type(obslist_dict) == list:</span>
+<span class="c1">#             obslist_dict = dict(zip(obslist_dict,obslist_dict))</span>
+<span class="c1">#</span>
+<span class="c1">#     try:</span>
+<span class="c1">#         weight = float(reset_zero_weight)</span>
+<span class="c1">#     except:</span>
+<span class="c1">#         weight = 1.0</span>
+<span class="c1">#</span>
+<span class="c1">#     if obslist_dict is None:</span>
+<span class="c1">#</span>
+<span class="c1">#         zero_weight_names = [n for n,w in zip(pst.observation_data.obsnme,</span>
+<span class="c1">#                                               pst.observation_data.weight)</span>
+<span class="c1">#                              if w == 0.0]</span>
+<span class="c1">#         obslist_dict = dict(zip(zero_weight_names,zero_weight_names))</span>
+<span class="c1">#     names = [&quot;base&quot;]</span>
+<span class="c1">#</span>
+<span class="c1">#     results = [get_obj_func(pst)]</span>
+<span class="c1">#     #print(len(pst.nnz_obs_names))</span>
+<span class="c1">#     for case_name,obslist in obslist_dict.items():</span>
+<span class="c1">#         names.append(case_name)</span>
+<span class="c1">#         case_pst = pst.get()</span>
+<span class="c1">#         case_pst.observation_data.loc[obslist,&quot;weight&quot;] = weight</span>
+<span class="c1">#         #print(len(case_pst.nnz_obs_names))</span>
+<span class="c1">#         results.append(get_obj_func(case_pst))</span>
+<span class="c1">#</span>
+<span class="c1">#</span>
+<span class="c1">#     df = pd.DataFrame(results,index=names)</span>
+<span class="c1">#     return df</span>
+<span class="c1">#</span>
+<span class="c1">#</span>
+<span class="c1"># def get_obj_func(pst):</span>
+<span class="c1">#     pst_name = &quot;temp_&quot; + pst.filename</span>
+<span class="c1">#     pst.write(pst_name)</span>
+<span class="c1">#     print(pst.template_files)</span>
+<span class="c1">#     os.system(&quot;{0} {1}&quot;.format(&quot;pestpp-opt&quot;,pst_name))</span>
+<span class="c1">#     rec_file = pst_name[:-4]+&quot;.rec&quot;</span>
+<span class="c1">#     with open(rec_file) as f:</span>
+<span class="c1">#         for line in f:</span>
+<span class="c1">#             if &quot;iteration 1 objective function value&quot; in line:</span>
+<span class="c1">#                 val = float(line.strip().split()[-2])</span>
+<span class="c1">#                 return val</span>
+<span class="c1">#     raise Exception(&quot;unable to find objective function in {0}&quot;.\</span>
+<span class="c1">#                     format(rec_file))</span>
+<span class="c1">#</span>
+<span class="c1">#</span>
+<span class="c1"># def to_mps(jco,obj_func=None,obs_constraint_sense=None,pst=None,</span>
+<span class="c1">#            decision_var_names=None,mps_filename=None,</span>
+<span class="c1">#            risk=0.5):</span>
+<span class="c1">#     &quot;&quot;&quot;helper utility to write an mps file from pest-style</span>
+<span class="c1">#     jacobian matrix. Requires corresponding pest control</span>
+<span class="c1">#     file.</span>
+<span class="c1">#</span>
+<span class="c1">#     Parameters:</span>
+<span class="c1">#         jco : pyemu.Matrix or str (filename of matrix)</span>
+<span class="c1">#         obj_func : optional.  If None, an obs group must exist</span>
+<span class="c1">#             named &#39;n&#39; and must have one one member.  Can be a str, which</span>
+<span class="c1">#             is the name of an observation to treat as the objective function</span>
+<span class="c1">#             or can be a dict, which is keyed on decision var names and valued</span>
+<span class="c1">#             with objective function coeffs.</span>
+<span class="c1">#         obs_constraint_sense : optional.  If None, obs groups are sought that</span>
+<span class="c1">#             have names &quot;l&quot;,&quot;g&quot;, or &quot;e&quot; - members of these groups are treated</span>
+<span class="c1">#             as constraints.  Otherwise, must be a dict keyed on constraint</span>
+<span class="c1">#              (obs) names with values of &quot;l&quot;,&quot;g&quot;, or &quot;e&quot;.</span>
+<span class="c1">#         pst : optional.  If None, a pest control file is sought with</span>
+<span class="c1">#             filename &lt;case&gt;.pst.  Otherwise, must be a pyemu.Pst instance or</span>
+<span class="c1">#             a filename of a pest control file. The control must have an</span>
+<span class="c1">#             associated .res or .rei file - this is needed for the RHS of the</span>
+<span class="c1">#             constraints.</span>
+<span class="c1">#         decision_var_names: optional.  If None, all parameters are treated as</span>
+<span class="c1">#             decision vars. Otherwise, must be a list of str of parameter names</span>
+<span class="c1">#             to use as decision vars</span>
+<span class="c1">#         mps_filename : optional.  If None, then &lt;case&gt;.mps is written.</span>
+<span class="c1">#             Otherwise, must be a str.</span>
+<span class="c1">#         risk : float</span>
+<span class="c1">#             the level of risk tolerance/aversion in the chance constraints.</span>
+<span class="c1">#             Values other then 0.50 require at least one parameter (non decision</span>
+<span class="c1">#             var) in the jco.  Ranges from 0.0,1.0</span>
+<span class="c1">#     &quot;&quot;&quot;</span>
+<span class="c1">#</span>
+<span class="c1">#     #if jco arg is a string, load a jco from binary</span>
+<span class="c1">#     if isinstance(jco,str):</span>
+<span class="c1">#         pst_name = jco.lower().replace(&#39;.jcb&#39;,&quot;.pst&quot;).replace(&quot;.jco&quot;,&quot;.pst&quot;)</span>
+<span class="c1">#         jco = Matrix.from_binary(jco)</span>
+<span class="c1">#     assert isinstance(jco,Matrix)</span>
+<span class="c1">#</span>
+<span class="c1">#     # try to find a pst</span>
+<span class="c1">#     if pst is None:</span>
+<span class="c1">#         if os.path.exists(pst_name):</span>
+<span class="c1">#             pst = Pst(pst_name)</span>
+<span class="c1">#         else:</span>
+<span class="c1">#             raise Exception(&quot;could not find pst file {0} and pst argument is None, a &quot;.format(pst_name) +\</span>
+<span class="c1">#                             &quot;pst instance is required for setting decision variable bound constraints&quot;)</span>
+<span class="c1">#     else:</span>
+<span class="c1">#         assert len(set(jco.row_names).difference(pst.observation_data.index)) == 0</span>
+<span class="c1">#         assert len(set(jco.col_names).difference(pst.parameter_data.index)) == 0</span>
+<span class="c1">#</span>
+<span class="c1">#     #make sure the pst has an associate res</span>
+<span class="c1">#     assert pst.res is not None,&quot; could find a residuals file (.res or .rei) for&quot; +\</span>
+<span class="c1">#                                &quot; for control file {0}&quot;.format(pst.filename)</span>
+<span class="c1">#</span>
+<span class="c1">#     #if no decision_var_names where passed, use all columns in the jco</span>
+<span class="c1">#     if decision_var_names is None:</span>
+<span class="c1">#         decision_var_names = jco.col_names</span>
+<span class="c1">#</span>
+<span class="c1">#     #otherwise, do some error checking and processing</span>
+<span class="c1">#     else:</span>
+<span class="c1">#         if not isinstance(decision_var_names,list):</span>
+<span class="c1">#             decision_var_names = [decision_var_names]</span>
+<span class="c1">#         for i,dv in enumerate(decision_var_names):</span>
+<span class="c1">#             dv = dv.lower()</span>
+<span class="c1">#             decision_var_names[i] = dv</span>
+<span class="c1">#             assert dv in jco.col_names,&quot;decision var {0} not in jco column names&quot;.format(dv)</span>
+<span class="c1">#             assert dv in pst.parameter_data.index,&quot;decision var {0} not in pst parameter names&quot;.format(dv)</span>
+<span class="c1">#</span>
+<span class="c1">#     #if no obs_constraint_sense, try to build one from the obs group info</span>
+<span class="c1">#     if obs_constraint_sense is None:</span>
+<span class="c1">#         const_groups = [grp for grp in pst.obs_groups if grp.lower() in OPERATOR_WORDS]</span>
+<span class="c1">#         if len(const_groups) == 0:</span>
+<span class="c1">#             raise Exception(&quot;to_mps(): obs_constraint_sense is None and no &quot;+\</span>
+<span class="c1">#                             &quot;obseravtion groups in {0}&quot;.format(&#39;,&#39;.join(pst.obs_groups)))</span>
+<span class="c1">#         obs_constraint_sense = {}</span>
+<span class="c1">#         obs_groups = pst.observation_data.groupby(pst.observation_data.obgnme).groups</span>
+<span class="c1">#         for og,obs_names in obs_groups.items():</span>
+<span class="c1">#             if og == &#39;n&#39;:</span>
+<span class="c1">#                 continue</span>
+<span class="c1">#             if og in const_groups:</span>
+<span class="c1">#                 for oname in obs_names:</span>
+<span class="c1">#                     obs_constraint_sense[oname] = og</span>
+<span class="c1">#</span>
+<span class="c1">#     assert isinstance(obs_constraint_sense,dict)</span>
+<span class="c1">#     assert len(obs_constraint_sense) &gt; 0,&quot;no obs_constraints...&quot;</span>
+<span class="c1">#</span>
+<span class="c1">#     #build up a dict of (in)equality operators for the constraints</span>
+<span class="c1">#     operators = {}</span>
+<span class="c1">#     for obs_name,operator in obs_constraint_sense.items():</span>
+<span class="c1">#         obs_name = obs_name.lower()</span>
+<span class="c1">#         assert obs_name in pst.obs_names,&quot;obs constraint {0} not in pst observation names&quot;</span>
+<span class="c1">#         assert obs_name in pst.res.name,&quot; obs constraint {0} not in pst.res names&quot;</span>
+<span class="c1">#         assert obs_name in jco.row_names,&quot;obs constraint {0} not in jco row names&quot;.format(obs_name)</span>
+<span class="c1">#         if operator.lower() not in OPERATOR_WORDS:</span>
+<span class="c1">#             if operator not in OPERATOR_SYMBOLS:</span>
+<span class="c1">#                 raise Exception(&quot;operator {0} not in [{1}] or [{2}]&quot;.\</span>
+<span class="c1">#                     format(operator,&#39;,&#39;.join(OPERATOR_WORDS),&#39;,&#39;\</span>
+<span class="c1">#                            .join(OPERATOR_SYMBOLS)))</span>
+<span class="c1">#             op = OPERATOR_WORDS[OPERATOR_SYMBOLS.index(operator)]</span>
+<span class="c1">#         else:</span>
+<span class="c1">#             op = operator.lower()</span>
+<span class="c1">#         operators[obs_name] = op</span>
+<span class="c1">#         obs_constraint_sense[obs_name.lower()] = obs_constraint_sense.\</span>
+<span class="c1">#                                                  pop(obs_name)</span>
+<span class="c1">#</span>
+<span class="c1">#     #build a list of constaint names in order WRT jco row order</span>
+<span class="c1">#     # order_obs_constraints = [name for name in jco.row_names if name in</span>
+<span class="c1">#     #                          obs_constraint_sense]</span>
+<span class="c1">#</span>
+<span class="c1">#     order_obs_constraints = list(obs_constraint_sense.keys())</span>
+<span class="c1">#     order_obs_constraints.sort()</span>
+<span class="c1">#</span>
+<span class="c1">#     #build a list of decision var names in order WRT jco col order</span>
+<span class="c1">#     #order_dec_var = [name for name in jco.col_names if name in</span>
+<span class="c1">#     #                 decision_var_names]</span>
+<span class="c1">#</span>
+<span class="c1">#     order_dec_var = list(decision_var_names)</span>
+<span class="c1">#     order_dec_var.sort()</span>
+<span class="c1">#</span>
+<span class="c1">#     #shorten constraint names if needed</span>
+<span class="c1">#     new_const_count = 0</span>
+<span class="c1">#     new_constraint_names = {}</span>
+<span class="c1">#     for name in order_obs_constraints:</span>
+<span class="c1">#         if len(name) &gt; 8:</span>
+<span class="c1">#             new_name = name[:7]+&quot;{0}&quot;.format(new_const_count)</span>
+<span class="c1">#             print(&quot;to_mps(): shortening constraint name {0} to {1}\n&quot;.format(name,new_name))</span>
+<span class="c1">#             new_constraint_names[name] = new_name</span>
+<span class="c1">#             new_const_count += 1</span>
+<span class="c1">#         else:</span>
+<span class="c1">#             new_constraint_names[name] = name</span>
+<span class="c1">#</span>
+<span class="c1">#     #shorten decision var names if needed</span>
+<span class="c1">#     new_dec_count = 0</span>
+<span class="c1">#     new_decision_names = {}</span>
+<span class="c1">#     for name in order_dec_var:</span>
+<span class="c1">#         if len(name) &gt; 8:</span>
+<span class="c1">#             new_name = name[:7]+&quot;{0}&quot;.format(new_dec_count)</span>
+<span class="c1">#             print(&quot;to_mps(): shortening decision var name {0} to {1}\n&quot;.format(name,new_name))</span>
+<span class="c1">#             new_decision_names[name] = new_name</span>
+<span class="c1">#             new_dec_count += 1</span>
+<span class="c1">#         else:</span>
+<span class="c1">#             new_decision_names[name] = name</span>
+<span class="c1">#</span>
+<span class="c1">#     # if no obj_func, try to make one</span>
+<span class="c1">#     if obj_func is None:</span>
+<span class="c1">#         # look for an obs group named &#39;n&#39; with a single member</span>
+<span class="c1">#         og = pst.obs_groups</span>
+<span class="c1">#         if &#39;n&#39; not in pst.obs_groups:</span>
+<span class="c1">#             raise Exception(&quot;to_mps(): obj_func is None but no &quot;+\</span>
+<span class="c1">#                             &quot;obs group named &#39;n&#39;&quot;)</span>
+<span class="c1">#         grps = pst.observation_data.groupby(pst.observation_data.obgnme).groups</span>
+<span class="c1">#         assert len(grps[&quot;n&quot;]) == 1,&quot;to_mps(): &#39;n&#39; obj_func group has more &quot; +\</span>
+<span class="c1">#                                    &quot; than one member, mps only support one objf &quot;</span>
+<span class="c1">#         obj_name = grps[&#39;n&#39;][0]</span>
+<span class="c1">#         obj_iidx = jco.row_names.index(obj_name)</span>
+<span class="c1">#         obj = {}</span>
+<span class="c1">#         for name in order_dec_var:</span>
+<span class="c1">#             jco_jidx = jco.col_names.index(name)</span>
+<span class="c1">#             obj[name] = jco.x[obj_iidx,jco_jidx]</span>
+<span class="c1">#</span>
+<span class="c1">#     #otherwise, parse what was passed</span>
+<span class="c1">#     elif isinstance(obj_func,str):</span>
+<span class="c1">#         obj_func = obj_func.lower()</span>
+<span class="c1">#         assert obj_func in jco.row_names,\</span>
+<span class="c1">#             &quot;obj_func {0} not in jco.row_names&quot;.format(obj_func)</span>
+<span class="c1">#         assert obj_func in pst.observation_data.obsnme,\</span>
+<span class="c1">#             &quot;obj_func {0} not in pst observations&quot;.format(obj_func)</span>
+<span class="c1">#</span>
+<span class="c1">#         obj_iidx = jco.row_names.index(obj_func)</span>
+<span class="c1">#         obj = {}</span>
+<span class="c1">#         for name in order_dec_var:</span>
+<span class="c1">#             jco_jidx = jco.col_names.index(name)</span>
+<span class="c1">#             obj[name] = jco.x[obj_iidx,jco_jidx]</span>
+<span class="c1">#         obj_name = str(obj_func)</span>
+<span class="c1">#</span>
+<span class="c1">#     elif isinstance(obj_func,dict):</span>
+<span class="c1">#         obj = {}</span>
+<span class="c1">#         for name,value in obj_func.items():</span>
+<span class="c1">#             assert name in jco.col_names,&quot;to_mps(): obj_func key &quot;+\</span>
+<span class="c1">#                                          &quot;{0} not &quot;.format(name) +\</span>
+<span class="c1">#                                          &quot;in jco col names&quot;</span>
+<span class="c1">#             obj[name] = float(value)</span>
+<span class="c1">#         obj_name = &quot;obj_func&quot;</span>
+<span class="c1">#     else:</span>
+<span class="c1">#         raise NotImplementedError(&quot;unsupported obj_func arg type {0}&quot;.format(\</span>
+<span class="c1">#                                   type(obj_func)))</span>
+<span class="c1">#</span>
+<span class="c1">#     if risk != 0.5:</span>
+<span class="c1">#         try:</span>
+<span class="c1">#             from scipy.special import erfinv</span>
+<span class="c1">#         except Exception as e:</span>
+<span class="c1">#             raise Exception(&quot;to_mps() error importing erfinv from scipy.special: &quot;+\</span>
+<span class="c1">#                             &quot;{0}&quot;.format(str(e)))</span>
+<span class="c1">#</span>
+<span class="c1">#         par_names = [name for name in jco.col_names if name not in decision_var_names]</span>
+<span class="c1">#         if len(par_names) == 0:</span>
+<span class="c1">#             raise Exception(&quot;to_mps() error: risk != 0.5, but no &quot;+\</span>
+<span class="c1">#                             &quot;non-decision vars parameters &quot;)</span>
+<span class="c1">#         unc_jco = jco.get(col_names=par_names)</span>
+<span class="c1">#         unc_pst = pst.get(par_names=par_names)</span>
+<span class="c1">#         sc = Schur(jco=unc_jco,pst=unc_pst,forecasts=order_obs_constraints)</span>
+<span class="c1">#         constraint_std = sc.get_forecast_summary().loc[:,&quot;post_var&quot;].apply(np.sqrt)</span>
+<span class="c1">#         rhs = {}</span>
+<span class="c1">#</span>
+<span class="c1">#         # the probit value for a given risk...using the inverse</span>
+<span class="c1">#         # error function</span>
+<span class="c1">#         probit_val = np.sqrt(2.0) * erfinv((2.0 * risk) - 1.0)</span>
+<span class="c1">#         for name in order_obs_constraints:</span>
+<span class="c1">#             mu = unc_pst.res.loc[name,&quot;residual&quot;]</span>
+<span class="c1">#             std = constraint_std.loc[name]</span>
+<span class="c1">#             #if this is a less than constraint, then we want</span>
+<span class="c1">#             # to subtract</span>
+<span class="c1">#             if operators[name] == &#39;l&#39;:</span>
+<span class="c1">#                 prob_val = mu - (probit_val * std)</span>
+<span class="c1">#             #if this is a greater than constraint, then we want</span>
+<span class="c1">#             # to add</span>
+<span class="c1">#             elif operators[name] == &quot;g&quot;:</span>
+<span class="c1">#                 prob_val = mu + (probit_val * std)</span>
+<span class="c1">#             else:</span>
+<span class="c1">#                 raise NotImplementedError(&quot;chance constraints only &quot; +\</span>
+<span class="c1">#                                           &quot;implemented for &#39;l&#39; or &#39;g&#39; &quot; +\</span>
+<span class="c1">#                                           &quot;type constraints, not &quot; +\</span>
+<span class="c1">#                                           &quot;{0}&quot;.format(operators[name]))</span>
+<span class="c1">#             rhs[name] = prob_val</span>
+<span class="c1">#     else:</span>
+<span class="c1">#         rhs = {n:pst.res.loc[n,&quot;residual&quot;] for n in order_obs_constraints}</span>
+<span class="c1">#</span>
+<span class="c1">#     if mps_filename is None:</span>
+<span class="c1">#         mps_filename = pst.filename.replace(&quot;.pst&quot;,&quot;.mps&quot;)</span>
+<span class="c1">#</span>
+<span class="c1">#     with open(mps_filename,&#39;w&#39;) as f:</span>
+<span class="c1">#         f.write(&quot;NAME {0}\n&quot;.format(&quot;pest_opt&quot;))</span>
+<span class="c1">#         f.write(&quot;ROWS\n&quot;)</span>
+<span class="c1">#         for name in order_obs_constraints:</span>
+<span class="c1">#             f.write(&quot; {0}  {1}\n&quot;.format(operators[name],</span>
+<span class="c1">#                                          new_constraint_names[name]))</span>
+<span class="c1">#         f.write(&quot; {0}  {1}\n&quot;.format(&#39;n&#39;,obj_name))</span>
+<span class="c1">#</span>
+<span class="c1">#         f.write(&quot;COLUMNS\n&quot;)</span>
+<span class="c1">#         for dname in order_dec_var:</span>
+<span class="c1">#             jco_jidx = jco.col_names.index(dname)</span>
+<span class="c1">#             for cname in order_obs_constraints:</span>
+<span class="c1">#                 jco_iidx = jco.row_names.index(cname)</span>
+<span class="c1">#                 v = jco.x[jco_iidx,jco_jidx]</span>
+<span class="c1">#                 f.write(&quot;    {0:8}  {1:8}   {2:10G}\n&quot;.\</span>
+<span class="c1">#                         format(new_decision_names[dname],</span>
+<span class="c1">#                                new_constraint_names[cname],</span>
+<span class="c1">#                                v))</span>
+<span class="c1">#             # f.write(&quot;    {0:8}  {1:8}   {2:10G}\n&quot;.\</span>
+<span class="c1">#             #         format(new_decision_names[dname],</span>
+<span class="c1">#             #                obj_name,pst.parameter_data.loc[dname,&quot;parval1&quot;]))</span>
+<span class="c1">#             f.write(&quot;    {0:8}  {1:8}   {2:10G}\n&quot;.\</span>
+<span class="c1">#                     format(new_decision_names[dname],</span>
+<span class="c1">#                            obj_name,obj_func[dname]))</span>
+<span class="c1">#</span>
+<span class="c1">#</span>
+<span class="c1">#</span>
+<span class="c1">#</span>
+<span class="c1">#         f.write(&quot;RHS\n&quot;)</span>
+<span class="c1">#         for iname,name in enumerate(order_obs_constraints):</span>
+<span class="c1">#             f.write(&quot;    {0:8}  {1:8}   {2:10G}\n&quot;.</span>
+<span class="c1">#                     format(&quot;rhs&quot;,new_constraint_names[name],</span>
+<span class="c1">#                            rhs[name]))</span>
+<span class="c1">#         f.write(&quot;BOUNDS\n&quot;)</span>
+<span class="c1">#         for name in order_dec_var:</span>
+<span class="c1">#             up,lw = pst.parameter_data.loc[name,&quot;parubnd&quot;],\</span>
+<span class="c1">#                     pst.parameter_data.loc[name,&quot;parlbnd&quot;]</span>
+<span class="c1">#             f.write(&quot; {0:2} {1:8}  {2:8}  {3:10G}\n&quot;.\</span>
+<span class="c1">#                     format(&quot;UP&quot;,&quot;BOUND&quot;,name,up))</span>
+<span class="c1">#             f.write(&quot; {0:2} {1:8}  {2:8}  {3:10G}\n&quot;.\</span>
+<span class="c1">#                     format(&quot;LO&quot;,&quot;BOUND&quot;,name,lw))</span>
+<span class="c1">#         f.write(&quot;ENDATA\n&quot;)</span>
+
+
+
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Jeremy White.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

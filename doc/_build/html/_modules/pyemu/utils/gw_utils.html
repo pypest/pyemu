@@ -1,0 +1,504 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>pyemu.utils.gw_utils &#8212; pyEMU 1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../',
+        VERSION:     '1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for pyemu.utils.gw_utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">max_colwidth</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="kn">from</span> <span class="nn">pyemu.pst.pst_utils</span> <span class="k">import</span> <span class="n">SFMT</span><span class="p">,</span><span class="n">IFMT</span><span class="p">,</span><span class="n">FFMT</span><span class="p">,</span><span class="n">pst_config</span>
+<span class="kn">from</span> <span class="nn">pyemu.utils.helpers</span> <span class="k">import</span> <span class="n">run</span>
+<span class="n">PP_FMT</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">SFMT</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="n">FFMT</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="n">FFMT</span><span class="p">,</span> <span class="s2">&quot;zone&quot;</span><span class="p">:</span> <span class="n">IFMT</span><span class="p">,</span> <span class="s2">&quot;tpl&quot;</span><span class="p">:</span> <span class="n">SFMT</span><span class="p">,</span>
+          <span class="s2">&quot;parval1&quot;</span><span class="p">:</span> <span class="n">FFMT</span><span class="p">}</span>
+<span class="n">PP_NAMES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">,</span><span class="s2">&quot;x&quot;</span><span class="p">,</span><span class="s2">&quot;y&quot;</span><span class="p">,</span><span class="s2">&quot;zone&quot;</span><span class="p">,</span><span class="s2">&quot;parval1&quot;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="modflow_pval_to_template_file"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.gw_utils.modflow_pval_to_template_file">[docs]</a><span class="k">def</span> <span class="nf">modflow_pval_to_template_file</span><span class="p">(</span><span class="n">pval_file</span><span class="p">,</span><span class="n">tpl_file</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;write a template file for a modflow parameter value file.</span>
+<span class="sd">    Uses names in the first column in the pval file as par names.</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        pval_file : str</span>
+<span class="sd">            parameter value file</span>
+<span class="sd">        tpl_file : str (optional)</span>
+<span class="sd">            template file to write.  If None, use &lt;pval_file&gt;.tpl</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">        pandas DataFrame with control file parameter information</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">tpl_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">tpl_file</span> <span class="o">=</span> <span class="n">pval_file</span> <span class="o">+</span> <span class="s2">&quot;.tpl&quot;</span>
+    <span class="n">pval_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">pval_file</span><span class="p">,</span><span class="n">delim_whitespace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                          <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">skiprows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                          <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;parnme&quot;</span><span class="p">,</span><span class="s2">&quot;parval1&quot;</span><span class="p">])</span>
+    <span class="n">pval_df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pval_df</span><span class="o">.</span><span class="n">parnme</span>
+    <span class="n">pval_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;tpl&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pval_df</span><span class="o">.</span><span class="n">parnme</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s2">&quot; ~   </span><span class="si">{0:15s}</span><span class="s2">   ~&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">tpl_file</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;ptf ~</span><span class="se">\n</span><span class="s2">#pval template file from pyemu</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0:10d}</span><span class="s2"> #NP</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pval_df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">pval_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,[</span><span class="s2">&quot;parnme&quot;</span><span class="p">,</span><span class="s2">&quot;tpl&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">col_space</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                                          <span class="n">formatters</span><span class="o">=</span><span class="p">[</span><span class="n">SFMT</span><span class="p">,</span><span class="n">SFMT</span><span class="p">],</span>
+                                                          <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                          <span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                          <span class="n">justify</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">pval_df</span></div>
+
+<div class="viewcode-block" id="modflow_hob_to_instruction_file"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.gw_utils.modflow_hob_to_instruction_file">[docs]</a><span class="k">def</span> <span class="nf">modflow_hob_to_instruction_file</span><span class="p">(</span><span class="n">hob_file</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;write an instruction file for a modflow head observation file</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        hob_file : str</span>
+<span class="sd">            modflow hob file</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">        pandas DataFrame with control file observation information</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">hob_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">hob_file</span><span class="p">,</span><span class="n">delim_whitespace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">skiprows</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                         <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;simval&quot;</span><span class="p">,</span><span class="s2">&quot;obsval&quot;</span><span class="p">,</span><span class="s2">&quot;obsnme&quot;</span><span class="p">])</span>
+
+    <span class="n">hob_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;ins_line&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hob_df</span><span class="o">.</span><span class="n">obsnme</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="s2">&quot;l1 w w !</span><span class="si">{0:s}</span><span class="s2">!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+    <span class="n">hob_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="s2">&quot;ins_line&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hob_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="s2">&quot;ins_line&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;l1&#39;</span><span class="p">,</span><span class="s1">&#39;l2&#39;</span><span class="p">)</span>
+
+    <span class="n">ins_file</span> <span class="o">=</span> <span class="n">hob_file</span> <span class="o">+</span> <span class="s2">&quot;.ins&quot;</span>
+    <span class="n">f_ins</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">ins_file</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
+    <span class="n">f_ins</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;pif ~</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">f_ins</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">hob_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,[</span><span class="s2">&quot;ins_line&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">col_space</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                                     <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ins_line&quot;</span><span class="p">],</span>
+                                                     <span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                     <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                     <span class="n">formatters</span><span class="o">=</span><span class="p">[</span><span class="n">SFMT</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">hob_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;weight&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">hob_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;obgnme&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;obgnme&quot;</span>
+    <span class="n">f_ins</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">hob_df</span></div>
+
+<div class="viewcode-block" id="modflow_hydmod_to_instruction_file"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.gw_utils.modflow_hydmod_to_instruction_file">[docs]</a><span class="k">def</span> <span class="nf">modflow_hydmod_to_instruction_file</span><span class="p">(</span><span class="n">hydmod_file</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;write an instruction file for a modflow hydmod file</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        hydmod_file : str</span>
+<span class="sd">            modflow hydmod file</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">        pandas DataFrame with control file observation information</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">hydmod_df</span><span class="p">,</span> <span class="n">hydmod_outfile</span> <span class="o">=</span> <span class="n">modflow_read_hydmod_file</span><span class="p">(</span><span class="n">hydmod_file</span><span class="p">)</span>
+
+
+    <span class="n">hydmod_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;ins_line&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hydmod_df</span><span class="o">.</span><span class="n">obsnme</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="s2">&quot;l1 w !</span><span class="si">{0:s}</span><span class="s2">!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+    <span class="n">ins_file</span> <span class="o">=</span> <span class="n">hydmod_outfile</span> <span class="o">+</span> <span class="s2">&quot;.ins&quot;</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">ins_file</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f_ins</span><span class="p">:</span>
+        <span class="n">f_ins</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;pif ~</span><span class="se">\n</span><span class="s2">l1</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">f_ins</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">hydmod_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,[</span><span class="s2">&quot;ins_line&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">col_space</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                                     <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;ins_line&quot;</span><span class="p">],</span>
+                                                     <span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                     <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                     <span class="n">formatters</span><span class="o">=</span><span class="p">[</span><span class="n">SFMT</span><span class="p">])</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">hydmod_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;weight&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">hydmod_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;obgnme&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;obgnme&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">system</span><span class="p">(</span><span class="s2">&quot;inschek </span><span class="si">{0}</span><span class="s2">.ins </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hydmod_outfile</span><span class="p">))</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;error running inschek&quot;</span><span class="p">)</span>
+
+    <span class="n">obs_obf</span> <span class="o">=</span> <span class="n">hydmod_outfile</span> <span class="o">+</span> <span class="s2">&quot;.obf&quot;</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">obs_obf</span><span class="p">):</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">obs_obf</span><span class="p">,</span><span class="n">delim_whitespace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;obsnme&quot;</span><span class="p">,</span><span class="s2">&quot;obsval&quot;</span><span class="p">])</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;obgnme&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">obsnme</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">9</span><span class="p">])</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;_setup_&quot;</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">hydmod_outfile</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;.csv&#39;</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">obsnme</span>
+        <span class="k">return</span> <span class="n">df</span>
+
+
+    <span class="k">return</span> <span class="n">hydmod_df</span></div>
+
+<div class="viewcode-block" id="modflow_read_hydmod_file"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.gw_utils.modflow_read_hydmod_file">[docs]</a><span class="k">def</span> <span class="nf">modflow_read_hydmod_file</span><span class="p">(</span><span class="n">hydmod_file</span><span class="p">,</span> <span class="n">hydmod_outfile</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; read in a binary hydmod file and return a dataframe of the results</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">        hydmod_file : str</span>
+<span class="sd">            modflow hydmod binary file</span>
+<span class="sd">        hydmod_outfile :str (optional)</span>
+<span class="sd">            output file to write.  If None, use &lt;hydmod_file&gt;.dat</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">        pandas DataFrame with control file observation information</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">flopy.utils</span> <span class="k">as</span> <span class="nn">fu</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;flopy is not installed - cannot read </span><span class="si">{0}</span><span class="se">\n</span><span class="si">{1}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hydmod_file</span><span class="p">,</span> <span class="n">e</span><span class="p">))</span>
+        <span class="k">return</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Starting to read HYDMOD data from </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hydmod_file</span><span class="p">))</span>
+    <span class="n">obs</span> <span class="o">=</span> <span class="n">fu</span><span class="o">.</span><span class="n">HydmodObs</span><span class="p">(</span><span class="n">hydmod_file</span><span class="p">)</span>
+    <span class="n">hyd_df</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">get_dataframe</span><span class="p">()</span>
+
+    <span class="n">hyd_df</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">[</span><span class="mi">6</span><span class="p">:]</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">!=</span> <span class="s1">&#39;totim&#39;</span> <span class="k">else</span> <span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">hyd_df</span><span class="o">.</span><span class="n">columns</span><span class="p">]</span>
+    <span class="c1">#hyd_df.loc[:,&quot;datetime&quot;] = hyd_df.index</span>
+    <span class="n">hyd_df</span><span class="p">[</span><span class="s1">&#39;totim&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">hyd_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">))</span>
+
+    <span class="n">hyd_df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;totim&#39;</span><span class="p">:</span> <span class="s1">&#39;datestamp&#39;</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+    <span class="c1"># reshape into a single column</span>
+    <span class="n">hyd_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span><span class="n">hyd_df</span><span class="p">,</span> <span class="n">id_vars</span><span class="o">=</span><span class="s1">&#39;datestamp&#39;</span><span class="p">)</span>
+
+    <span class="n">hyd_df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;value&#39;</span><span class="p">:</span> <span class="s1">&#39;obsval&#39;</span><span class="p">},</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">hyd_df</span><span class="p">[</span><span class="s1">&#39;obsnme&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span> <span class="o">+</span> <span class="n">j</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">hyd_df</span><span class="o">.</span><span class="n">variable</span><span class="p">,</span> <span class="n">hyd_df</span><span class="o">.</span><span class="n">datestamp</span><span class="p">)]</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">hydmod_outfile</span><span class="p">:</span>
+        <span class="n">hydmod_outfile</span> <span class="o">=</span> <span class="n">hydmod_file</span> <span class="o">+</span> <span class="s1">&#39;.dat&#39;</span>
+    <span class="n">hyd_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">hydmod_outfile</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;obsnme&#39;</span><span class="p">,</span><span class="s1">&#39;obsval&#39;</span><span class="p">],</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="c1">#hyd_df = hyd_df[[&#39;obsnme&#39;,&#39;obsval&#39;]]</span>
+    <span class="k">return</span> <span class="n">hyd_df</span><span class="p">[[</span><span class="s1">&#39;obsnme&#39;</span><span class="p">,</span><span class="s1">&#39;obsval&#39;</span><span class="p">]],</span> <span class="n">hydmod_outfile</span></div>
+
+
+<div class="viewcode-block" id="setup_pilotpoints_grid"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.gw_utils.setup_pilotpoints_grid">[docs]</a><span class="k">def</span> <span class="nf">setup_pilotpoints_grid</span><span class="p">(</span><span class="n">ml</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">sr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">ibound</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">prefix_dict</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">every_n_cell</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                           <span class="n">use_ibound_zones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">pp_dir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="n">tpl_dir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span>
+                           <span class="n">shapename</span><span class="o">=</span><span class="s2">&quot;pp.shp&quot;</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">pp_utils</span>
+    <span class="k">return</span> <span class="n">pp_utils</span><span class="o">.</span><span class="n">setup_pilotpoints_grid</span><span class="p">(</span><span class="n">ml</span><span class="o">=</span><span class="n">ml</span><span class="p">,</span><span class="n">sr</span><span class="o">=</span><span class="n">sr</span><span class="p">,</span><span class="n">ibound</span><span class="o">=</span><span class="n">ibound</span><span class="p">,</span>
+                                           <span class="n">prefix_dict</span><span class="o">=</span><span class="n">prefix_dict</span><span class="p">,</span>
+                                           <span class="n">every_n_cell</span><span class="o">=</span><span class="n">every_n_cell</span><span class="p">,</span>
+                                           <span class="n">use_ibound_zones</span><span class="o">=</span><span class="n">use_ibound_zones</span><span class="p">,</span>
+                                           <span class="n">pp_dir</span><span class="o">=</span><span class="n">pp_dir</span><span class="p">,</span><span class="n">tpl_dir</span><span class="o">=</span><span class="n">tpl_dir</span><span class="p">,</span>
+                                           <span class="n">shapename</span><span class="o">=</span><span class="n">shapename</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="pp_file_to_dataframe"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.gw_utils.pp_file_to_dataframe">[docs]</a><span class="k">def</span> <span class="nf">pp_file_to_dataframe</span><span class="p">(</span><span class="n">pp_filename</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">pp_utils</span>
+    <span class="k">return</span> <span class="n">pp_utils</span><span class="o">.</span><span class="n">pp_file_to_dataframe</span><span class="p">(</span><span class="n">pp_filename</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="pp_tpl_to_dataframe"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.gw_utils.pp_tpl_to_dataframe">[docs]</a><span class="k">def</span> <span class="nf">pp_tpl_to_dataframe</span><span class="p">(</span><span class="n">tpl_filename</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">pp_utils</span>
+    <span class="k">return</span> <span class="n">pp_utils</span><span class="o">.</span><span class="n">pp_tpl_to_dataframe</span><span class="p">(</span><span class="n">tpl_filename</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="write_pp_shapfile"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.gw_utils.write_pp_shapfile">[docs]</a><span class="k">def</span> <span class="nf">write_pp_shapfile</span><span class="p">(</span><span class="n">pp_df</span><span class="p">,</span><span class="n">shapename</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">pp_utils</span>
+    <span class="n">pp_utils</span><span class="o">.</span><span class="n">write_pp_shapfile</span><span class="p">(</span><span class="n">pp_df</span><span class="p">,</span><span class="n">shapename</span><span class="o">=</span><span class="n">shapename</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="write_pp_file"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.gw_utils.write_pp_file">[docs]</a><span class="k">def</span> <span class="nf">write_pp_file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">pp_df</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">pp_utils</span>
+    <span class="k">return</span> <span class="n">pp_utils</span><span class="o">.</span><span class="n">write_pp_file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">pp_df</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="pilot_points_to_tpl"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.gw_utils.pilot_points_to_tpl">[docs]</a><span class="k">def</span> <span class="nf">pilot_points_to_tpl</span><span class="p">(</span><span class="n">pp_file</span><span class="p">,</span><span class="n">tpl_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">name_prefix</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">pp_utils</span>
+    <span class="k">return</span> <span class="n">pp_utils</span><span class="o">.</span><span class="n">pilot_points_to_tpl</span><span class="p">(</span><span class="n">pp_file</span><span class="p">,</span><span class="n">tpl_file</span><span class="o">=</span><span class="n">tpl_file</span><span class="p">,</span>
+                                        <span class="n">name_prefix</span><span class="o">=</span><span class="n">name_prefix</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="fac2real"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.gw_utils.fac2real">[docs]</a><span class="k">def</span> <span class="nf">fac2real</span><span class="p">(</span><span class="n">pp_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">factors_file</span><span class="o">=</span><span class="s2">&quot;factors.dat&quot;</span><span class="p">,</span><span class="n">out_file</span><span class="o">=</span><span class="s2">&quot;test.ref&quot;</span><span class="p">,</span>
+             <span class="n">upper_lim</span><span class="o">=</span><span class="mf">1.0e+30</span><span class="p">,</span><span class="n">lower_lim</span><span class="o">=-</span><span class="mf">1.0e+30</span><span class="p">,</span><span class="n">fill_value</span><span class="o">=</span><span class="mf">1.0e+30</span><span class="p">):</span>
+    <span class="kn">from</span> <span class="nn">.</span> <span class="k">import</span> <span class="n">geostats</span> <span class="k">as</span> <span class="n">gs</span>
+    <span class="k">return</span> <span class="n">gs</span><span class="o">.</span><span class="n">fac2real</span><span class="p">(</span><span class="n">pp_file</span><span class="o">=</span><span class="n">pp_file</span><span class="p">,</span><span class="n">factors_file</span><span class="o">=</span><span class="n">factors_file</span><span class="p">,</span>
+                       <span class="n">out_file</span><span class="o">=</span><span class="n">out_file</span><span class="p">,</span><span class="n">upper_lim</span><span class="o">=</span><span class="n">upper_lim</span><span class="p">,</span>
+                       <span class="n">lower_lim</span><span class="o">=</span><span class="n">lower_lim</span><span class="p">,</span><span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="setup_mflist_budget_obs"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.gw_utils.setup_mflist_budget_obs">[docs]</a><span class="k">def</span> <span class="nf">setup_mflist_budget_obs</span><span class="p">(</span><span class="n">list_filename</span><span class="p">,</span><span class="n">flx_filename</span><span class="o">=</span><span class="s2">&quot;flux.dat&quot;</span><span class="p">,</span>
+                            <span class="n">vol_filename</span><span class="o">=</span><span class="s2">&quot;vol.dat&quot;</span><span class="p">,</span><span class="n">start_datetime</span><span class="o">=</span><span class="s2">&quot;1-1&#39;1970&quot;</span><span class="p">,</span><span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">,</span>
+                            <span class="n">save_setup_file</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">flx</span><span class="p">,</span><span class="n">vol</span> <span class="o">=</span> <span class="n">apply_mflist_budget_obs</span><span class="p">(</span><span class="n">list_filename</span><span class="p">,</span><span class="n">flx_filename</span><span class="p">,</span><span class="n">vol_filename</span><span class="p">,</span>
+                                      <span class="n">start_datetime</span><span class="p">)</span>
+    <span class="n">_write_mflist_ins</span><span class="p">(</span><span class="n">flx_filename</span><span class="o">+</span><span class="s2">&quot;.ins&quot;</span><span class="p">,</span><span class="n">flx</span><span class="p">,</span><span class="n">prefix</span><span class="o">+</span><span class="s2">&quot;flx&quot;</span><span class="p">)</span>
+    <span class="n">_write_mflist_ins</span><span class="p">(</span><span class="n">vol_filename</span><span class="o">+</span><span class="s2">&quot;.ins&quot;</span><span class="p">,</span><span class="n">vol</span><span class="p">,</span> <span class="n">prefix</span><span class="o">+</span><span class="s2">&quot;vol&quot;</span><span class="p">)</span>
+
+    <span class="n">run</span><span class="p">(</span><span class="s2">&quot;inschek </span><span class="si">{0}</span><span class="s2">.ins </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">flx_filename</span><span class="p">))</span>
+    <span class="n">run</span><span class="p">(</span><span class="s2">&quot;inschek </span><span class="si">{0}</span><span class="s2">.ins </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vol_filename</span><span class="p">))</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1">#os.system(&quot;inschek {0}.ins {0}&quot;.format(flx_filename))</span>
+        <span class="c1">#os.system(&quot;inschek {0}.ins {0}&quot;.format(vol_filename))</span>
+        <span class="n">run</span><span class="p">(</span><span class="s2">&quot;inschek </span><span class="si">{0}</span><span class="s2">.ins </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">flx_filename</span><span class="p">))</span>
+        <span class="n">run</span><span class="p">(</span><span class="s2">&quot;inschek </span><span class="si">{0}</span><span class="s2">.ins </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">vol_filename</span><span class="p">))</span>
+
+    <span class="k">except</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;error running inschek&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">flx_obf</span> <span class="o">=</span> <span class="n">flx_filename</span><span class="o">+</span><span class="s2">&quot;.obf&quot;</span>
+    <span class="n">vol_obf</span> <span class="o">=</span> <span class="n">vol_filename</span> <span class="o">+</span> <span class="s2">&quot;.obf&quot;</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">flx_obf</span><span class="p">)</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">vol_obf</span><span class="p">):</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">flx_obf</span><span class="p">,</span><span class="n">delim_whitespace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;obsnme&quot;</span><span class="p">,</span><span class="s2">&quot;obsval&quot;</span><span class="p">])</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;obgnme&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">obsnme</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">9</span><span class="p">])</span>
+        <span class="n">df2</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">vol_obf</span><span class="p">,</span> <span class="n">delim_whitespace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;obsnme&quot;</span><span class="p">,</span> <span class="s2">&quot;obsval&quot;</span><span class="p">])</span>
+        <span class="n">df2</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="s2">&quot;obgnme&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df2</span><span class="o">.</span><span class="n">obsnme</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[:</span><span class="o">-</span><span class="mi">9</span><span class="p">])</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">save_setup_file</span><span class="p">:</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;_setup_&quot;</span><span class="o">+</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">list_filename</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;.csv&#39;</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">obsnme</span>
+        <span class="k">return</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="apply_mflist_budget_obs"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.gw_utils.apply_mflist_budget_obs">[docs]</a><span class="k">def</span> <span class="nf">apply_mflist_budget_obs</span><span class="p">(</span><span class="n">list_filename</span><span class="p">,</span><span class="n">flx_filename</span><span class="o">=</span><span class="s2">&quot;flux.dat&quot;</span><span class="p">,</span>
+                            <span class="n">vol_filename</span><span class="o">=</span><span class="s2">&quot;vol.dat&quot;</span><span class="p">,</span>
+                            <span class="n">start_datetime</span><span class="o">=</span><span class="s2">&quot;1-1-1970&quot;</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">flopy</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;error import flopy: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+    <span class="n">mlf</span> <span class="o">=</span> <span class="n">flopy</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">MfListBudget</span><span class="p">(</span><span class="n">list_filename</span><span class="p">)</span>
+    <span class="n">flx</span><span class="p">,</span><span class="n">vol</span> <span class="o">=</span> <span class="n">mlf</span><span class="o">.</span><span class="n">get_dataframes</span><span class="p">(</span><span class="n">start_datetime</span><span class="o">=</span><span class="n">start_datetime</span><span class="p">,</span><span class="n">diff</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">flx</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">flx_filename</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="n">index_label</span><span class="o">=</span><span class="s2">&quot;datetime&quot;</span><span class="p">)</span>
+    <span class="n">vol</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">vol_filename</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="n">index_label</span><span class="o">=</span><span class="s2">&quot;datetime&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">flx</span><span class="p">,</span><span class="n">vol</span></div>
+
+
+<span class="k">def</span> <span class="nf">_write_mflist_ins</span><span class="p">(</span><span class="n">ins_filename</span><span class="p">,</span><span class="n">df</span><span class="p">,</span><span class="n">prefix</span><span class="p">):</span>
+    <span class="n">dt_str</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y%m</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">))</span>
+    <span class="n">name_len</span> <span class="o">=</span> <span class="mi">11</span> <span class="o">-</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">ins_filename</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;pif ~</span><span class="se">\n</span><span class="s1">l1</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">dt</span> <span class="ow">in</span> <span class="n">dt_str</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;l1 &quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="n">obsnme</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_</span><span class="si">{1}</span><span class="s2">_</span><span class="si">{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span><span class="n">col</span><span class="p">[:</span><span class="n">name_len</span><span class="p">],</span><span class="n">dt</span><span class="p">)</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot; w !</span><span class="si">{0}</span><span class="s2">!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">obsnme</span><span class="p">))</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="setup_hds_obs"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.gw_utils.setup_hds_obs">[docs]</a><span class="k">def</span> <span class="nf">setup_hds_obs</span><span class="p">(</span><span class="n">hds_file</span><span class="p">,</span><span class="n">kperk_pairs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">skip</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;a function to setup using all values from a</span>
+<span class="sd">        layer-stress period pair for observations.</span>
+<span class="sd">    hds_file : str</span>
+<span class="sd">        a MODFLOW head-save file</span>
+<span class="sd">    kperk_pairs: iterable</span>
+<span class="sd">        an iterable of pairs of kper (zero-based stress</span>
+<span class="sd">        period index) and k (zero-based layer index) to</span>
+<span class="sd">        setup observations for.  If None, then a shit-ton</span>
+<span class="sd">        of observations may be produced!</span>
+<span class="sd">    skip : variable</span>
+<span class="sd">        a value or function used to determine which values</span>
+<span class="sd">        to skip when setting up observations.  If np.scalar(skip)</span>
+<span class="sd">        is True, then values equal to skip will not be used.  If not</span>
+<span class="sd">        np.scalar(skip), then skip will be treated as a lambda function that</span>
+<span class="sd">        returns np.NaN if the value should be skipped.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">flopy</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;error importing flopy, returning </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+        <span class="k">return</span>
+
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">hds_file</span><span class="p">),</span><span class="s2">&quot;head save file not found&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">hds</span> <span class="o">=</span> <span class="n">flopy</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">HeadFile</span><span class="p">(</span><span class="n">hds_file</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;error instantiating HeadFile:</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+
+    <span class="k">if</span> <span class="n">kperk_pairs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">kperk_pairs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">kstp</span><span class="p">,</span><span class="n">kper</span> <span class="ow">in</span> <span class="n">hds</span><span class="o">.</span><span class="n">kstpkper</span><span class="p">:</span>
+            <span class="n">kperk_pairs</span><span class="o">.</span><span class="n">extend</span><span class="p">([(</span><span class="n">kper</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">hds</span><span class="o">.</span><span class="n">nlay</span><span class="p">)])</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kperk_pairs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kperk_pairs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+                <span class="k">pass</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">kperk_pairs</span> <span class="o">=</span> <span class="p">[</span><span class="n">kperk_pairs</span><span class="p">]</span>
+
+    <span class="c1">#if start_datetime is not None:</span>
+    <span class="c1">#    start_datetime = pd.to_datetime(start_datetime)</span>
+    <span class="c1">#    dts = start_datetime + pd.to_timedelta(hds.times,unit=&#39;d&#39;)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">kpers</span> <span class="o">=</span> <span class="p">[</span><span class="n">kper</span><span class="o">-</span><span class="mi">1</span> <span class="k">for</span> <span class="n">kstp</span><span class="p">,</span><span class="n">kper</span> <span class="ow">in</span> <span class="n">hds</span><span class="o">.</span><span class="n">kstpkper</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">kperk_pair</span> <span class="ow">in</span> <span class="n">kperk_pairs</span><span class="p">:</span>
+        <span class="n">kper</span><span class="p">,</span><span class="n">k</span> <span class="o">=</span> <span class="n">kperk_pair</span>
+        <span class="k">assert</span> <span class="n">kper</span> <span class="ow">in</span> <span class="n">kpers</span><span class="p">,</span> <span class="s2">&quot;kper not in hds:</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">kper</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">hds</span><span class="o">.</span><span class="n">nlay</span><span class="p">),</span> <span class="s2">&quot;k not in hds:</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+        <span class="n">kstp</span> <span class="o">=</span> <span class="n">last_kstp_from_kper</span><span class="p">(</span><span class="n">hds</span><span class="p">,</span><span class="n">kper</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">hds</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="n">kstpkper</span><span class="o">=</span><span class="p">(</span><span class="n">kstp</span><span class="p">,</span><span class="n">kper</span><span class="p">))[</span><span class="n">k</span><span class="p">,:,:]</span>
+
+        <span class="n">data</span><span class="p">[</span><span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">_</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">kper</span><span class="p">,</span><span class="n">k</span><span class="p">)]</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="c1">#data[(kper,k)] = d.flatten()</span>
+    <span class="n">idx</span><span class="p">,</span><span class="n">iidx</span><span class="p">,</span><span class="n">jidx</span> <span class="o">=</span> <span class="p">[],[],[]</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">hds</span><span class="o">.</span><span class="n">nrow</span><span class="p">):</span>
+            <span class="n">iidx</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">i</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">hds</span><span class="o">.</span><span class="n">ncol</span><span class="p">)])</span>
+            <span class="n">jidx</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">j</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">hds</span><span class="o">.</span><span class="n">ncol</span><span class="p">)])</span>
+            <span class="n">idx</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;i</span><span class="si">{0:04d}</span><span class="s2">_j</span><span class="si">{1:04d}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">)</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">hds</span><span class="o">.</span><span class="n">ncol</span><span class="p">)])</span>
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">idx</span><span class="p">[:</span><span class="n">hds</span><span class="o">.</span><span class="n">nrow</span><span class="o">*</span><span class="n">hds</span><span class="o">.</span><span class="n">ncol</span><span class="p">]</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="n">idx</span><span class="p">)</span>
+    <span class="n">data_cols</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">data_cols</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+    <span class="c1">#df.loc[:,&quot;iidx&quot;] = iidx</span>
+    <span class="c1">#df.loc[:,&quot;jidx&quot;] = jidx</span>
+    <span class="k">if</span> <span class="n">skip</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">data_cols</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">skip</span><span class="p">):</span>
+                <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="n">col</span><span class="p">]</span><span class="o">==</span><span class="n">skip</span><span class="p">,</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">skip</span><span class="p">)</span>
+
+    <span class="c1"># melt to long form</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">melt</span><span class="p">(</span><span class="n">var_name</span><span class="o">=</span><span class="s2">&quot;kperk&quot;</span><span class="p">,</span><span class="n">value_name</span><span class="o">=</span><span class="s2">&quot;obsval&quot;</span><span class="p">)</span>
+    <span class="c1"># set row and col identifies</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;iidx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">iidx</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;jidx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">jidx</span>
+    <span class="c1">#drop nans from skip</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+    <span class="c1">#set some additional identifiers</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;kper&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">kperk</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;kidx&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;kperk&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]))</span>
+
+    <span class="c1"># form obs names</span>
+    <span class="c1">#def get_kper_str(kper):</span>
+    <span class="c1">#    if start_datetime is not None:</span>
+    <span class="c1">#        return  dts[int(kper)].strftime(&quot;%Y%m%d&quot;)</span>
+    <span class="c1">#    else:</span>
+    <span class="c1">#        return &quot;kper{0:04.0f}&quot;.format(kper)</span>
+    <span class="n">fmt</span> <span class="o">=</span> <span class="s2">&quot;hds_</span><span class="si">{0:02.0f}</span><span class="s2">_</span><span class="si">{1:03.0f}</span><span class="s2">_</span><span class="si">{2:03.0f}</span><span class="s2">_</span><span class="si">{3:03.0f}</span><span class="s2">&quot;</span>
+    <span class="c1"># df.loc[:,&quot;obsnme&quot;] = df.apply(lambda x: fmt.format(x.kidx,x.iidx,x.jidx,</span>
+    <span class="c1">#                                                   get_kper_str(x.kper)),axis=1)</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;obsnme&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">kidx</span><span class="p">,</span><span class="n">x</span><span class="o">.</span><span class="n">iidx</span><span class="p">,</span><span class="n">x</span><span class="o">.</span><span class="n">jidx</span><span class="p">,</span>
+                                                      <span class="n">x</span><span class="o">.</span><span class="n">kper</span><span class="p">),</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;ins_str&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">obsnme</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s2">&quot;l1 w !</span><span class="si">{0}</span><span class="s2">!&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+    <span class="c1">#write the instruction file</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">hds_file</span><span class="o">+</span><span class="s2">&quot;.dat.ins&quot;</span><span class="p">,</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;pif ~</span><span class="se">\n</span><span class="s2">l1</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">ins_str</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1">#write the corresponding output file</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,[</span><span class="s2">&quot;obsnme&quot;</span><span class="p">,</span><span class="s2">&quot;obsval&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">hds_file</span><span class="o">+</span><span class="s2">&quot;.dat&quot;</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">hds_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">hds_file</span><span class="p">)</span>
+    <span class="n">setup_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">hds_path</span><span class="p">,</span><span class="s2">&quot;_setup_</span><span class="si">{0}</span><span class="s2">.csv&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">hds_file</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">setup_file</span><span class="p">)</span>
+    <span class="n">fwd_run_line</span> <span class="o">=</span> <span class="s2">&quot;pyemu.gw_utils.apply_hds_obs(&#39;</span><span class="si">{0}</span><span class="s2">&#39;)</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">hds_file</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fwd_run_line</span></div>
+
+<div class="viewcode-block" id="last_kstp_from_kper"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.gw_utils.last_kstp_from_kper">[docs]</a><span class="k">def</span> <span class="nf">last_kstp_from_kper</span><span class="p">(</span><span class="n">hds</span><span class="p">,</span><span class="n">kper</span><span class="p">):</span>
+    <span class="c1">#find the last kstp with this kper</span>
+    <span class="n">kstp</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+    <span class="k">for</span> <span class="n">kkstp</span><span class="p">,</span><span class="n">kkper</span> <span class="ow">in</span> <span class="n">hds</span><span class="o">.</span><span class="n">kstpkper</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">kkper</span> <span class="o">==</span> <span class="n">kper</span><span class="o">+</span><span class="mi">1</span> <span class="ow">and</span> <span class="n">kkstp</span> <span class="o">&gt;</span> <span class="n">kstp</span><span class="p">:</span>
+            <span class="n">kstp</span> <span class="o">=</span> <span class="n">kkstp</span>
+    <span class="k">if</span> <span class="n">kstp</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;kstp not found for kper </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">kper</span><span class="p">))</span>
+    <span class="n">kstp</span> <span class="o">-=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">kstp</span></div>
+
+<div class="viewcode-block" id="apply_hds_obs"><a class="viewcode-back" href="../../../_static/pyemu.utils.html#pyemu.utils.gw_utils.apply_hds_obs">[docs]</a><span class="k">def</span> <span class="nf">apply_hds_obs</span><span class="p">(</span><span class="n">hds_file</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">flopy</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;apply_hds_obs(): error importing flopy: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span>\
+                        <span class="nb">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+    <span class="kn">from</span> <span class="nn">..</span> <span class="k">import</span> <span class="n">pst_utils</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">hds_file</span><span class="p">)</span>
+    <span class="n">out_file</span> <span class="o">=</span> <span class="n">hds_file</span><span class="o">+</span><span class="s2">&quot;.dat&quot;</span>
+    <span class="n">ins_file</span> <span class="o">=</span> <span class="n">out_file</span> <span class="o">+</span> <span class="s2">&quot;.ins&quot;</span>
+    <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">ins_file</span><span class="p">)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;obsnme&quot;</span><span class="p">:</span><span class="n">pst_utils</span><span class="o">.</span><span class="n">parse_ins_file</span><span class="p">(</span><span class="n">ins_file</span><span class="p">)})</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">obsnme</span>
+
+    <span class="c1"># populate metdata</span>
+    <span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;k&quot;</span><span class="p">,</span><span class="s2">&quot;i&quot;</span><span class="p">,</span><span class="s2">&quot;j&quot;</span><span class="p">,</span><span class="s2">&quot;kper&quot;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">items</span><span class="p">):</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="n">item</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">obsnme</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]))</span>
+
+    <span class="n">hds</span> <span class="o">=</span> <span class="n">flopy</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">HeadFile</span><span class="p">(</span><span class="n">hds_file</span><span class="p">)</span>
+    <span class="n">kpers</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">kper</span><span class="o">.</span><span class="n">unique</span><span class="p">()</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;obsval&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">NaN</span>
+    <span class="k">for</span> <span class="n">kper</span> <span class="ow">in</span> <span class="n">kpers</span><span class="p">:</span>
+        <span class="n">kstp</span> <span class="o">=</span> <span class="n">last_kstp_from_kper</span><span class="p">(</span><span class="n">hds</span><span class="p">,</span><span class="n">kper</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">hds</span><span class="o">.</span><span class="n">get_data</span><span class="p">(</span><span class="n">kstpkper</span><span class="o">=</span><span class="p">(</span><span class="n">kstp</span><span class="p">,</span><span class="n">kper</span><span class="p">))</span>
+        <span class="n">df_kper</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="o">.</span><span class="n">kper</span><span class="o">==</span><span class="n">kper</span><span class="p">,:]</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df_kper</span><span class="o">.</span><span class="n">index</span><span class="p">,</span><span class="s2">&quot;obsval&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="n">df_kper</span><span class="o">.</span><span class="n">k</span><span class="p">,</span><span class="n">df_kper</span><span class="o">.</span><span class="n">i</span><span class="p">,</span><span class="n">df_kper</span><span class="o">.</span><span class="n">j</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">df</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,[</span><span class="s2">&quot;obsnme&quot;</span><span class="p">,</span><span class="s2">&quot;obsval&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">out_file</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s2">&quot; &quot;</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Jeremy White.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
