@@ -64,7 +64,7 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
     except Exception as e:
         raise Exception("error getting xcentergrid and/or ycentergrid from 'sr':{0}".\
                         format(str(e)))
-
+    start = int(float(every_n_cell) / 2.0)
 
     #build a generic prefix_dict
     if prefix_dict is None:
@@ -94,8 +94,8 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
         if k not in prefix_dict.keys():
             continue
         #cycle through rows and cols
-        for i in range(0,ib.shape[0],every_n_cell):
-            for j in range(0,ib.shape[1],every_n_cell):
+        for i in range(start,ib.shape[0],every_n_cell):
+            for j in range(start,ib.shape[1],every_n_cell):
                 # skip if this is an inactive cell
                 if ib[i,j] < 1:
                     continue
