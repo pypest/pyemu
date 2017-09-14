@@ -9,7 +9,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=.
 set BUILDDIR=_build
-set SPHINXPROJ=pyEMU
+set SPHINXPROJ=pyemu
 
 if "%1" == "" goto help
 
