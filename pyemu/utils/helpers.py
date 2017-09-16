@@ -919,7 +919,14 @@ class PstFromFlopyModel(object):
         par_suffixs = [self.pp_suffix,self.gr_suffix,
                        self.zn_suffix,self.cn_suffix]
 
-        
+        # Need to remove props and suffixes for which no info was provided (e.g. still None)
+        del_idx = []
+        for i,cp in enumerate(par_props):
+            if cp is None:
+                del_idx.append(i)
+        for i in del_idx[::-1]:
+            del(par_props[i])
+            del(par_suffixs[i])
 
         mlt_dfs = []
         for par_props,suffix in zip(par_props,par_suffixs):
