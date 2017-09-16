@@ -32,8 +32,15 @@ def run(cmd_str,cwd='.'):
                 raw[0] = exe_name + ".exe"
                 cmd_str = ' '.join(raw)
         else:
+            if exe_name.lower().endswith('exe'):
+                raw = cmd_str.split()
+                exe_name = exe_name.replace('.exe','')
+                raw[0] = exe_name
+                cmd_str = '{0} {1} '.format(*raw)
             if os.path.exists(exe_name) and not exe_name.startswith('./'):
                 cmd_str = "./" + cmd_str
+
+
     except Exception as e:
         os.chdir(bwd)
         raise Exception("run() raise :{0}".format(str(e)))
@@ -854,7 +861,8 @@ class PstFromFlopyModel(object):
 #                        len(self.grid_props) > 0:
         if self.pp_props is not None or \
                         self.zone_props is not None or \
-                        self.grid_props is not None:
+                        self.grid_props is not None or\
+                        self.const_props is not None:
             set_dirs.append(self.arr_org)
             set_dirs.append(self.arr_mlt)
  #       if len(self.bc_props) > 0:
@@ -933,7 +941,6 @@ class PstFromFlopyModel(object):
             if len(par_props) == 2:
                 if not isinstance(par_props[0],list):
                     par_props = [par_props]
-
             for pakattr,k_org in par_props:
                 attr_name = pakattr.split('.')[1]
                 pak,attr = self.parse_pakattr(pakattr)
@@ -1187,9 +1194,9 @@ class PstFromFlopyModel(object):
                                    .format(mlt_file))
             tpl_file = tpl_files.iloc[0]
             layers = mlt_df.loc[mlt_df.mlt_file==mlt_file,"layer"]
-            if layers.unique().shape[0] != 1:
-                self.logger.lraise("wrong number of layers for {0}"\
-                                   .format(mlt_file))
+            #if layers.unique().shape[0] != 1:
+            #    self.logger.lraise("wrong number of layers for {0}"\
+            #                       .format(mlt_file))
             layer = layers.iloc[0]
             names = mlt_df.loc[mlt_df.mlt_file==mlt_file,"prefix"]
             if names.unique().shape[0] != 1:
@@ -1635,11 +1642,12 @@ def apply_array_pars():
     #         os.remove(fname)
     #     except:
     #         print("error removing mult array:{0}".format(fname))
-    for pp_file,fac_file,mlt_file in zip(df.pp_file,df.fac_file,df.mlt_file):
-        if pd.isnull(pp_file):
-            continue
-        pyemu.gw_utils.fac2real(pp_file=pp_file,factors_file=fac_file,
-                                out_file=mlt_file)
+    if 'pp_file' in df.columns:
+        for pp_file,fac_file,mlt_file in zip(df.pp_file,df.fac_file,df.mlt_file):
+            if pd.isnull(pp_file):
+                continue
+            pyemu.gw_utils.fac2real(pp_file=pp_file,factors_file=fac_file,
+                                    out_file=mlt_file)
 
     for model_file in df.model_file.unique():
         # find all mults that need to be applied to this array
