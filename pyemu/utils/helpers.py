@@ -951,6 +951,10 @@ class PstFromFlopyModel(object):
                 mlt_name = os.path.join(self.arr_mlt,"{0}.dat{1}"
                                         .format(mlt_prefix,suffix))
                 for k in k_parse:
+                    # horrible kludge to avoid passing int64 to flopy
+                    # this gift may give again...
+                    if type(k) is np.int64:
+                        k = int(k)
                     if isinstance(attr,flopy.utils.Util2d):
                         fname = self.write_u2d(attr)
 
