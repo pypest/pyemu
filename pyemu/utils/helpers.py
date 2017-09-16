@@ -820,6 +820,7 @@ class PstFromFlopyModel(object):
         self.tpl_files,self.in_files = [],[]
         self.ins_files,self.out_files = [],[]
 
+
         self.setup_mult_dirs()
 
         self.mlt_files = []
@@ -849,11 +850,15 @@ class PstFromFlopyModel(object):
     def setup_mult_dirs(self):
         # setup dirs to hold the original and multiplier model input quantities
         set_dirs = []
-        if len(self.pp_props) > 0 or len(self.zone_props) > 0 or \
-                        len(self.grid_props) > 0:
+#        if len(self.pp_props) > 0 or len(self.zone_props) > 0 or \
+#                        len(self.grid_props) > 0:
+        if self.pp_props is not None or \
+                        self.zone_props is not None or \
+                        self.grid_props is not None:
             set_dirs.append(self.arr_org)
             set_dirs.append(self.arr_mlt)
-        if len(self.bc_props) > 0:
+ #       if len(self.bc_props) > 0:
+        if self.bc_props is not None:
             set_dirs.append(self.bc_org)
         for d in set_dirs:
             d = os.path.join(self.m.model_ws,d)
@@ -913,6 +918,9 @@ class PstFromFlopyModel(object):
                          self.zone_props,self.const_props]
         par_suffixs = [self.pp_suffix,self.gr_suffix,
                        self.zn_suffix,self.cn_suffix]
+
+        
+
         mlt_dfs = []
         for par_props,suffix in zip(par_props,par_suffixs):
             if len(par_props) == 2:
@@ -1451,7 +1459,8 @@ class PstFromFlopyModel(object):
             self.logger.lraise("unrecognized attr:{1}".format(attrname))
 
     def setup_bc_pars(self):
-        if len(self.bc_props) == 0:
+        #if len(self.bc_props) == 0:
+        if self.bc_props is None:
             return
 
         self.log("processing bc_props")
