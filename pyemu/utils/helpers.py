@@ -743,15 +743,10 @@ wildass_guess_par_bounds_dict = {"hk":[0.01,100.0],"vka":[0.01,100.0],
 
 class PstFromFlopyModel(object):
 
-<<<<<<< HEAD
     def __init__(self,nam_file,org_model_ws,new_model_ws,org_model_exe_name=None,pp_props=None,const_props=None,
                  bc_props=None,grid_props=None,grid_geostruct=None,pp_space=None,
                  zone_props=None,pp_geostruct=None,par_bounds_dict=None,
-=======
-    def __init__(self,nam_file,org_model_ws,new_model_ws,pp_props=[],const_props=[],
-                 bc_props=[],grid_props=[],grid_geostruct=None,pp_space=None,
-                 zone_props=[],pp_geostruct=None,par_bounds_dict=None,
->>>>>>> c017c36d1d7410845b3f8ad32caa5b5fa33b3fcb
+
                  bc_geostruct=None,remove_existing=False,k_zone_dict=None,
                  mflist_waterbudget=True,mfhyd=True,hds_kperk=[],use_pp_zones=False,
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
@@ -870,7 +865,6 @@ class PstFromFlopyModel(object):
     def setup_mult_dirs(self):
         # setup dirs to hold the original and multiplier model input quantities
         set_dirs = []
-<<<<<<< HEAD
 #        if len(self.pp_props) > 0 or len(self.zone_props) > 0 or \
 #                        len(self.grid_props) > 0:
         if self.pp_props is not None or \
@@ -881,13 +875,6 @@ class PstFromFlopyModel(object):
             set_dirs.append(self.arr_mlt)
  #       if len(self.bc_props) > 0:
         if self.bc_props is not None:
-=======
-        #if len(self.pp_props) > 0 or len(self.zone_props) > 0 or \
-        #                len(self.grid_props) > 0:
-        set_dirs.append(self.arr_org)
-        set_dirs.append(self.arr_mlt)
-        if len(self.bc_props) > 0:
->>>>>>> c017c36d1d7410845b3f8ad32caa5b5fa33b3fcb
             set_dirs.append(self.bc_org)
         for d in set_dirs:
             d = os.path.join(self.m.model_ws,d)
@@ -961,20 +948,11 @@ class PstFromFlopyModel(object):
             del(par_suffixs[i])
 
         mlt_dfs = []
-<<<<<<< HEAD
         for par_props,suffix in zip(par_props,par_suffixs):
             if len(par_props) == 2:
                 if not isinstance(par_props[0],list):
                     par_props = [par_props]
             for pakattr,k_org in par_props:
-=======
-        for par_prop,suffix in zip(par_props,par_suffixs):
-            if len(par_prop) == 2:
-                if not isinstance(par_prop[0],list):
-                    par_prop = [par_prop]
-
-            for pakattr,k_org in par_prop:
->>>>>>> c017c36d1d7410845b3f8ad32caa5b5fa33b3fcb
                 attr_name = pakattr.split('.')[1]
                 pak,attr = self.parse_pakattr(pakattr)
                 ks = np.arange(self.m.nlay)
@@ -1713,11 +1691,8 @@ def apply_array_pars():
     #         os.remove(fname)
     #     except:
     #         print("error removing mult array:{0}".format(fname))
-<<<<<<< HEAD
+
     if 'pp_file' in df.columns:
-=======
-    if "pp_file" in df.columns:
->>>>>>> c017c36d1d7410845b3f8ad32caa5b5fa33b3fcb
         for pp_file,fac_file,mlt_file in zip(df.pp_file,df.fac_file,df.mlt_file):
             if pd.isnull(pp_file):
                 continue
