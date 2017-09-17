@@ -391,10 +391,14 @@ def first_order_pearson_regul_test():
     from pyemu.utils.helpers import first_order_pearson_tikhonov,zero_order_tikhonov
     w_dir = "la"
     sc = Schur(jco=os.path.join(w_dir,"pest.jcb"))
+    pt = sc.posterior_parameter
     zero_order_tikhonov(sc.pst)
-    first_order_pearson_tikhonov(sc.pst,sc.posterior_parameter,reset=False)
+    first_order_pearson_tikhonov(sc.pst,pt,reset=False)
+
     print(sc.pst.prior_information)
     sc.pst.rectify_pi()
+    assert sc.pst.control_data.pestmode == "regularization"
+    sc.pst.write(os.path.join('temp','test.pst'))
 
 def zero_order_regul_test():
     import os
@@ -402,6 +406,9 @@ def zero_order_regul_test():
     pst = pyemu.Pst(os.path.join("pst","inctest.pst"))
     pyemu.helpers.zero_order_tikhonov(pst)
     print(pst.prior_information)
+    assert pst.control_data.pestmode == "regularization"
+    pst.write(os.path.join('temp','test.pst'))
+
 
 def kl_test():
     import os
@@ -816,7 +823,7 @@ def grid_obs_test():
     assert diff.max() < 1.0e-6
 
 if __name__ == "__main__":
-    grid_obs_test()
+    # grid_obs_test()
     # plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
@@ -828,8 +835,8 @@ if __name__ == "__main__":
     # mflist_budget_test()
     # tpl_to_dataframe_test()
     # kl_test()
-    # zero_order_regul_test()
-    # first_order_pearson_regul_test()
+    zero_order_regul_test()
+    first_order_pearson_regul_test()
     # master_and_slaves()
     # smp_to_ins_test()
     # read_pestpp_runstorage_file_test()

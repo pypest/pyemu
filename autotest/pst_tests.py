@@ -284,6 +284,8 @@ def from_flopy_test():
     except:
         return
     import pyemu
+    org_model_ws = os.path.join("..","examples","Freyberg_transient")
+    nam_file = "freyberg.nam"
 
     new_model_ws = "temp_pst_from_flopy"
     # pilot points for ss in all 3 layers
@@ -291,9 +293,13 @@ def from_flopy_test():
     # and one set for the second half of the sim
     pp_props = [["upw.ss",0],["upw.ss",1],["upw.ss",2],\
                 ["rch.rech",np.arange(182)],["rch.rech",np.arange(183,365)]]
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file,org_model_ws,new_model_ws,
+                                    pp_props=pp_props,hds_kperk=[0,0],remove_existing=True)
     #const_props = [["rch.rech",[0,1,2,3,4]],["rch.rech",[-3,-2,-1]]]
     #a single rch const mlt for each stress period
     const_props = [["rch.rech",i] for i in range(365)]
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file,org_model_ws,new_model_ws,
+                                    const_props=const_props,hds_kperk=[0,0],remove_existing=True)
     grid_props = []
     for k in range(3):
         #grid scale pars for hk in all layers
@@ -302,22 +308,24 @@ def from_flopy_test():
         const_props.append(["upw.hk",k])
         const_props.append(["upw.ss",k])
         const_props.append(["upw.sy",k])
-
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file,org_model_ws,new_model_ws,
+                                    grid_props=grid_props,hds_kperk=[0,0],remove_existing=True)
     # zones using ibound values - vka in layer 2
     zone_props = ["upw.vka",1]
-
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file,org_model_ws,new_model_ws,
+                                    zone_props=zone_props,hds_kperk=[0,0],remove_existing=True)
     # kper-level multipliers for boundary conditions
     bc_props = [["drn.cond",None]]
     for iper in range(365):
         bc_props.append(["wel.flux",iper])
         bc_props.append(["drn.elev",iper])
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file,org_model_ws,new_model_ws,
+                                    bc_props=bc_props,hds_kperk=[0,0],remove_existing=True)
     #bc_props = [["wel.flux",None],["drn.cond",None],["drn.elev",None]]
 
     #org_model_ws = os.path.join("..","..","examples","Freyberg_Truth")
     #nam_file = "freyberg.truth.nam"
 
-    org_model_ws = os.path.join("..","examples","Freyberg_transient")
-    nam_file = "freyberg.nam"
 
     # load the model and reset somethings and write new input
     #m = flopy.modflow.Modflow.load(nam_file,model_ws=org_model_ws)
@@ -347,7 +355,8 @@ def from_flopy_test():
                                     obssim_smp_pairs=obssim_smp_pairs,
                                     pp_space=4,
                                     use_pp_zones=False,
-                                    k_zone_dict=k_zone_dict)
+                                    k_zone_dict=k_zone_dict,
+                                    hds_kperk=[0,0])
     pst = helper.pst
     obs = pst.observation_data
     obs.loc[:,"weight"] = 0.0
@@ -382,7 +391,7 @@ def add_pi_test():
 
 if __name__ == "__main__":
     # run_array_pars()
-    #from_flopy_test()
+    from_flopy_test()
     #add_pi_test()
     # regdata_test()
     # nnz_groups_test()
@@ -399,4 +408,4 @@ if __name__ == "__main__":
     #from_io_with_inschek_test()
     #pestpp_args_test()
     #reweight_test()
-    reweight_res_test()
+    #reweight_res_test()

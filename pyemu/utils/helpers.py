@@ -303,6 +303,8 @@ def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
                                                "weight": weight})
         if parbounds:
             regweight_from_parbound(pst)
+        if pst.control_data.pestmode == "estimation":
+            pst.control_data.pestmode = "regularization"
 
 
 def regweight_from_parbound(pst):
@@ -378,6 +380,10 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
             pst.prior_information = df
         else:
             pst.prior_information = pst.prior_information.append(df)
+
+        if pst.control_data.pestmode == "estimation":
+            pst.control_data.pestmode = "regularization"
+
 
 
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
@@ -737,11 +743,17 @@ wildass_guess_par_bounds_dict = {"hk":[0.01,100.0],"vka":[0.01,100.0],
 
 class PstFromFlopyModel(object):
 
+<<<<<<< HEAD
     def __init__(self,nam_file,org_model_ws,new_model_ws,org_model_exe_name=None,pp_props=None,const_props=None,
                  bc_props=None,grid_props=None,grid_geostruct=None,pp_space=None,
                  zone_props=None,pp_geostruct=None,par_bounds_dict=None,
+=======
+    def __init__(self,nam_file,org_model_ws,new_model_ws,pp_props=[],const_props=[],
+                 bc_props=[],grid_props=[],grid_geostruct=None,pp_space=None,
+                 zone_props=[],pp_geostruct=None,par_bounds_dict=None,
+>>>>>>> c017c36d1d7410845b3f8ad32caa5b5fa33b3fcb
                  bc_geostruct=None,remove_existing=False,k_zone_dict=None,
-                 mflist_waterbudget=True,mfhyd=True,use_pp_zones=False,
+                 mflist_waterbudget=True,mfhyd=True,hds_kperk=[],use_pp_zones=False,
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
                  external_ins_out_pairs=None,extra_pre_cmds=None,
                  extra_model_cmds=None,extra_post_cmds=None):
@@ -788,6 +800,7 @@ class PstFromFlopyModel(object):
         self.zone_props = zone_props
 
         self.obssim_smp_pairs = obssim_smp_pairs
+        self.hds_kperk = hds_kperk
         self.frun_pre_lines = []
         self.frun_model_lines = []
         self.frun_post_lines = []
@@ -857,6 +870,7 @@ class PstFromFlopyModel(object):
     def setup_mult_dirs(self):
         # setup dirs to hold the original and multiplier model input quantities
         set_dirs = []
+<<<<<<< HEAD
 #        if len(self.pp_props) > 0 or len(self.zone_props) > 0 or \
 #                        len(self.grid_props) > 0:
         if self.pp_props is not None or \
@@ -867,6 +881,13 @@ class PstFromFlopyModel(object):
             set_dirs.append(self.arr_mlt)
  #       if len(self.bc_props) > 0:
         if self.bc_props is not None:
+=======
+        #if len(self.pp_props) > 0 or len(self.zone_props) > 0 or \
+        #                len(self.grid_props) > 0:
+        set_dirs.append(self.arr_org)
+        set_dirs.append(self.arr_mlt)
+        if len(self.bc_props) > 0:
+>>>>>>> c017c36d1d7410845b3f8ad32caa5b5fa33b3fcb
             set_dirs.append(self.bc_org)
         for d in set_dirs:
             d = os.path.join(self.m.model_ws,d)
@@ -908,7 +929,8 @@ class PstFromFlopyModel(object):
                 self.logger.warn("removing existing 'new_model_ws")
                 shutil.rmtree(new_model_ws)
         self.m.change_model_ws(new_model_ws,reset_external=True)
-
+        self.m.exe_name = self.m.exe_name.replace(".exe",'')
+        self.m.exe = self.m.version
         self.log("writing new modflow input files")
         self.m.write_input()
         self.log("writing new modflow input files")
@@ -939,11 +961,20 @@ class PstFromFlopyModel(object):
             del(par_suffixs[i])
 
         mlt_dfs = []
+<<<<<<< HEAD
         for par_props,suffix in zip(par_props,par_suffixs):
             if len(par_props) == 2:
                 if not isinstance(par_props[0],list):
                     par_props = [par_props]
             for pakattr,k_org in par_props:
+=======
+        for par_prop,suffix in zip(par_props,par_suffixs):
+            if len(par_prop) == 2:
+                if not isinstance(par_prop[0],list):
+                    par_prop = [par_prop]
+
+            for pakattr,k_org in par_prop:
+>>>>>>> c017c36d1d7410845b3f8ad32caa5b5fa33b3fcb
                 attr_name = pakattr.split('.')[1]
                 pak,attr = self.parse_pakattr(pakattr)
                 ks = np.arange(self.m.nlay)
@@ -981,8 +1012,9 @@ class PstFromFlopyModel(object):
                 df.loc[:,"suffix"] = suffix
                 df.loc[:,"prefix"] = mlt_prefix
                 mlt_dfs.append(df)
-        mlt_df = pd.concat(mlt_dfs,ignore_index=True)
-        return pd.concat(mlt_dfs)
+        if len(mlt_dfs) > 0:
+            mlt_df = pd.concat(mlt_dfs,ignore_index=True)
+            return mlt_df
 
     def write_u2d(self, u2d):
         filename = os.path.split(u2d.filename)[-1]
@@ -1177,6 +1209,8 @@ class PstFromFlopyModel(object):
 
     def setup_array_pars(self):
         mlt_df = self.prep_mlt_arrays()
+        if mlt_df is None:
+            return
         mlt_df.loc[:,"tpl_file"] = mlt_df.mlt_file.apply(lambda x: os.path.split(x)[-1]+".tpl")
         mlt_files = mlt_df.mlt_file.unique()
         #for suffix,tpl_file,layer,name in zip(self.mlt_df.suffix,
@@ -1262,14 +1296,15 @@ class PstFromFlopyModel(object):
 
     def setup_observations(self):
         obs_methods = [self.setup_water_budget_obs,self.setup_hyd,
-                       self.setup_smp,self.setup_hob]
+                       self.setup_smp,self.setup_hob,self.setup_hds]
         obs_types = ["mflist water budget obs","hyd file",
-                     "external obs-sim smp files","hob"]
+                     "external obs-sim smp files","hob","hds"]
         self.obs_dfs = {}
         for obs_method, obs_type in zip(obs_methods,obs_types):
             self.log("processing obs type {0}".format(obs_type))
             obs_method()
             self.log("processing obs type {0}".format(obs_type))
+
 
     def build_prior(self):
         self.log("building prior covariance matrix")
@@ -1305,7 +1340,7 @@ class PstFromFlopyModel(object):
             #bc_dfs = [bc_df.loc[bc_df.pargp==pargp,:].copy() for pargp in bc_df.pargp.unique()]
             struct_dict[self.bc_geostruct] = bc_dfs
         if len(struct_dict) > 0:
-            cov = pyemu.helpers.pilotpoint_prior_builder(self.pst,
+            cov = pyemu.helpers.geostatistical_prior_builder(self.pst,
                                                          struct_dict=struct_dict,
                                                          sigma_range=6)
         else:
@@ -1558,6 +1593,40 @@ class PstFromFlopyModel(object):
                      os.path.join(self.m.model_ws,self.bc_org,filename))
         return filename_model
 
+
+    def setup_hds(self):
+        if self.hds_kperk is None or len(self.hds_kperk) == 0:
+            return
+        from .gw_utils import setup_hds_obs
+        if len(self.hds_kperk) == 2:
+            try:
+                if len(self.hds_kperk[0] == 2):
+                    pass
+            except:
+                self.hds_kperk = [self.hds_kperk]
+        oc = self.m.get_package("OC")
+        if oc is None:
+            raise Exception("can't find OC package in model to setup hds grid obs")
+        if not oc.savehead:
+            raise Exception("OC not saving hds, can't setup grid obs")
+        hds_unit = oc.iuhead
+        hds_file = self.m.get_output(unit=hds_unit)
+        assert os.path.exists(os.path.join(self.org_model_ws,hds_file)),\
+        "couldn't find existing hds file {0} in org_model_ws".format(hds_file)
+        shutil.copy2(os.path.join(self.org_model_ws,hds_file),
+                     os.path.join(self.m.model_ws,hds_file))
+        inact = None
+        if self.m.lpf is not None:
+            inact = self.m.lpf.hdry
+        elif self.m.upw is not None:
+            inact = self.m.upw.hdry
+        if inact is None:
+            skip = lambda x: x == self.m.bas6.hnoflo
+        else:
+            skip = lambda x: x == self.m.bas6.hnoflo or x == inact
+        setup_hds_obs(os.path.join(self.m.model_ws,hds_file),
+                      kperk_pairs=self.hds_kperk,skip=skip)
+
     def setup_smp(self):
         if self.obssim_smp_pairs is None:
             return
@@ -1644,7 +1713,11 @@ def apply_array_pars():
     #         os.remove(fname)
     #     except:
     #         print("error removing mult array:{0}".format(fname))
+<<<<<<< HEAD
     if 'pp_file' in df.columns:
+=======
+    if "pp_file" in df.columns:
+>>>>>>> c017c36d1d7410845b3f8ad32caa5b5fa33b3fcb
         for pp_file,fac_file,mlt_file in zip(df.pp_file,df.fac_file,df.mlt_file):
             if pd.isnull(pp_file):
                 continue
