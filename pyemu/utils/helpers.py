@@ -737,7 +737,7 @@ wildass_guess_par_bounds_dict = {"hk":[0.01,100.0],"vka":[0.01,100.0],
 
 class PstFromFlopyModel(object):
 
-    def __init__(self,nam_file,org_model_ws,new_model_ws,pp_props=None,const_props=None,
+    def __init__(self,nam_file,org_model_ws,new_model_ws,org_model_exe_name=None,pp_props=None,const_props=None,
                  bc_props=None,grid_props=None,grid_geostruct=None,pp_space=None,
                  zone_props=None,pp_geostruct=None,par_bounds_dict=None,
                  bc_geostruct=None,remove_existing=False,k_zone_dict=None,
@@ -792,7 +792,7 @@ class PstFromFlopyModel(object):
         self.frun_model_lines = []
         self.frun_post_lines = []
 
-        self.setup_model(nam_file,org_model_ws,new_model_ws)
+        self.setup_model(nam_file,org_model_exe_name,org_model_ws,new_model_ws)
 
         if k_zone_dict is None:
             self.k_zone_dict = {k:self.m.bas6.ibound[k].array for k in np.arange(self.m.nlay)}
@@ -880,7 +880,7 @@ class PstFromFlopyModel(object):
             os.mkdir(d)
             self.log("setting up '{0}' dir".format(d))
 
-    def setup_model(self,nam_file,org_model_ws,new_model_ws):
+    def setup_model(self,nam_file,org_model_exe_name,org_model_ws,new_model_ws):
         split_new_mws = [i for i in os.path.split(new_model_ws) if len(i) > 0]
         if len(split_new_mws) != 1:
             self.logger.lraise("new_model_ws can only be 1 folder-level deep:{0}".
@@ -898,6 +898,8 @@ class PstFromFlopyModel(object):
         self.m.array_free_format = True
         self.m.free_format_input = True
         self.m.external_path = '.'
+        if org_model_exe_name is not None:
+            self.m.exe_name = org_model_exe_name
         self.log("loading flopy model")
         if os.path.exists(new_model_ws):
             if not self.remove_existing:
