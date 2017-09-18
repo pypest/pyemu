@@ -952,7 +952,7 @@ class PstFromFlopyModel(object):
             self.log("loading flopy model")
         else:
             self.m = model
-            self.org_model_ws = self.m.model_ws
+            self.org_model_ws = str(self.m.model_ws)
             self.new_model_ws = new_model_ws
 
         self.log("updating model attributes")
@@ -1682,7 +1682,9 @@ class PstFromFlopyModel(object):
         if self.m.hob is None:
             return
         hob_out_unit = self.m.hob.iuhobsv
-        hob_out_fname = os.path.join(self.m.model_ws,self.m.get_output_attribute(unit=hob_out_unit))
+        #hob_out_fname = os.path.join(self.m.model_ws,self.m.get_output_attribute(unit=hob_out_unit))
+        hob_out_fname = os.path.join(self.org_model_ws,self.m.get_output_attribute(unit=hob_out_unit))
+
         if not os.path.exists(hob_out_fname):
             self.logger.warn("could not find hob out file: {0}...skipping".format(hob_out_fname))
             return
