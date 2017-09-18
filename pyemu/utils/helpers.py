@@ -789,10 +789,9 @@ wildass_guess_par_bounds_dict = {"hk":[0.01,100.0],"vka":[0.01,100.0],
 
 class PstFromFlopyModel(object):
 
-    def __init__(self,nam_file,org_model_ws,new_model_ws,org_model_exe_name=None,pp_props=None,const_props=None,
-                 bc_props=None,grid_props=None,grid_geostruct=None,pp_space=None,
-                 zone_props=None,pp_geostruct=None,par_bounds_dict=None,
-
+    def __init__(self,model,new_model_ws,org_model_ws=None,pp_props=[],const_props=[],
+                 bc_props=[],grid_props=[],grid_geostruct=None,pp_space=None,
+                 zone_props=[],pp_geostruct=None,par_bounds_dict=None,
                  bc_geostruct=None,remove_existing=False,k_zone_dict=None,
                  mflist_waterbudget=True,mfhyd=True,hds_kperk=[],use_pp_zones=False,
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
@@ -846,7 +845,7 @@ class PstFromFlopyModel(object):
         self.frun_model_lines = []
         self.frun_post_lines = []
 
-        self.setup_model(nam_file,org_model_exe_name,org_model_ws,new_model_ws)
+        self.setup_model(model,org_model_ws,new_model_ws)
 
         if k_zone_dict is None:
             self.k_zone_dict = {k:self.m.bas6.ibound[k].array for k in np.arange(self.m.nlay)}
@@ -934,27 +933,33 @@ class PstFromFlopyModel(object):
             os.mkdir(d)
             self.log("setting up '{0}' dir".format(d))
 
-    def setup_model(self,nam_file,org_model_exe_name,org_model_ws,new_model_ws):
+    def setup_model(self,model,org_model_ws,new_model_ws):
         split_new_mws = [i for i in os.path.split(new_model_ws) if len(i) > 0]
         if len(split_new_mws) != 1:
             self.logger.lraise("new_model_ws can only be 1 folder-level deep:{0}".
-                               format(str(os.path.split(split_new_mws))))
+                               format(str(split_new_mws)))
 
-        self.log("loading flopy model")
-        try:
-            import flopy
-        except:
-            raise Exception("from_flopy_model() requires flopy")
-        # prepare the flopy model
-        self.org_model_ws = org_model_ws
-        self.new_model_ws = new_model_ws
-        self.m = flopy.modflow.Modflow.load(nam_file,model_ws=org_model_ws)
+        if isinstance(model,str):
+            self.log("loading flopy model")
+            try:
+                import flopy
+            except:
+                raise Exception("from_flopy_model() requires flopy")
+            # prepare the flopy model
+            self.org_model_ws = org_model_ws
+            self.new_model_ws = new_model_ws
+            self.m = flopy.modflow.Modflow.load(model,model_ws=org_model_ws)
+            self.log("loading flopy model")
+        else:
+            self.m = model
+            self.org_model_ws = self.m.model_ws
+            self.new_model_ws = new_model_ws
+
+        self.log("updating model attributes")
         self.m.array_free_format = True
         self.m.free_format_input = True
         self.m.external_path = '.'
-        if org_model_exe_name is not None:
-            self.m.exe_name = org_model_exe_name
-        self.log("loading flopy model")
+        self.log("updating model attributes")
         if os.path.exists(new_model_ws):
             if not self.remove_existing:
                 self.logger.lraise("'new_model_ws' already exists")
@@ -1115,6 +1120,8 @@ class PstFromFlopyModel(object):
         return df
 
     def grid_prep(self):
+        if len(self.grid_props) == 0:
+            return
         if self.grid_geostruct is None:
             self.logger.warn("grid_geostruct is None,"\
                   " using ExpVario with contribution=1 and a=(max(delc,delr)*10")
@@ -1124,6 +1131,8 @@ class PstFromFlopyModel(object):
             self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v)
 
     def pp_prep(self,mlt_df):
+        if len(self.pp_props) == 0:
+            return
         if self.pp_space is None:
             self.logger.warn("pp_space is None, using 10...\n")
             self.pp_space=10
@@ -1538,10 +1547,8 @@ class PstFromFlopyModel(object):
             self.logger.lraise("unrecognized attr:{1}".format(attrname))
 
     def setup_bc_pars(self):
-        #if len(self.bc_props) == 0:
-        if self.bc_props is None:
+        if len(self.bc_props) == 0:
             return
-
         self.log("processing bc_props")
         # if not isinstance(self.bc_prop_dict,dict):
         #     self.logger.lraise("bc_prop_dict must be 'dict', not {0}".
@@ -1703,7 +1710,7 @@ class PstFromFlopyModel(object):
     def setup_water_budget_obs(self):
         org_listfile = os.path.join(self.org_model_ws,self.m.lst.file_name[0])
         if os.path.exists(org_listfile):
-            shutil.copy2(org_listfile,os.path.join(self.new_model_ws,
+            shutil.copy2(org_listfile,os.path.join(self.m.model_ws,
                                                    self.m.name+".list"))
         else:
             self.logger.warn("can't find existing list file:{0}...skipping".
