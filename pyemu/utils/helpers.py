@@ -166,7 +166,6 @@ def condition_on_par_knowledge(cov,par_knowledge_dict):
     #print(sigma_ep.x)
     #q = sigma_ep.inv
     #cov_inv = cov.inv
-    #C (k) = C(k) – C(k)Zt[ZC(k)Zt + C(e)]-1ZC(k)
     print(sel)
     term2 = sel * cov * sel.T
     #term2 += sigma_ep
