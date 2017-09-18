@@ -822,7 +822,41 @@ def grid_obs_test():
     diff = df1.obsval - df2.obsval
     assert diff.max() < 1.0e-6
 
+
+def par_knowledge_test():
+    import os
+    import numpy as np
+    import pyemu
+    pst_file = os.path.join("pst","pest.pst")
+    pst = pyemu.Pst(pst_file)
+
+    tpl_file = os.path.join("utils","pp_locs.tpl")
+    str_file = os.path.join("utils","structure.dat")
+    pp_df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
+    pkd = {"kr01c01":0.1}
+    try:
+        cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{str_file:tpl_file},
+                                                         par_knowledge_dict=pkd)
+    except:
+        return
+    else:
+        raise Exception("should have failed")
+    d1 = np.diag(cov.x)
+
+
+    df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
+    df.loc[:,"zone"] = np.arange(df.shape[0])
+    gs = pyemu.geostats.read_struct_file(str_file)
+    cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{gs:df},
+                                               sigma_range=4)
+    nnz = np.count_nonzero(cov.x)
+    assert nnz == pst.npar
+    d2 = np.diag(cov.x)
+    assert np.array_equiv(d1, d2)
+
+
 if __name__ == "__main__":
+    par_knowledge_test()
     # grid_obs_test()
     # plot_summary_test()
     # load_sgems_expvar_test()
@@ -835,8 +869,8 @@ if __name__ == "__main__":
     # mflist_budget_test()
     # tpl_to_dataframe_test()
     # kl_test()
-    zero_order_regul_test()
-    first_order_pearson_regul_test()
+    #zero_order_regul_test()
+    #first_order_pearson_regul_test()
     # master_and_slaves()
     # smp_to_ins_test()
     # read_pestpp_runstorage_file_test()

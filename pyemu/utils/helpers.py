@@ -56,7 +56,7 @@ def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
     return geostatistical_prior_builder(pst=pst,struct_dict=struct_dict,
                                         sigma_range=sigma_range)
 
-def geostatistical_prior_builder(pst, struct_dict,sigma_range=4):
+def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_dict=None):
     """ a helper function to construct a full prior covariance matrix using
     a mixture of geostastical structures an parameter bounds information.
     Parameters:
@@ -66,6 +66,8 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4):
             'x','y', and 'parnme' column.  If the filename ends in '.csv',
             then a pd.DataFrame is loaded.
         sigma_range : float representing the number of standard deviations implied by parameter bounds
+        par_knowledge_dict : dictionary of {parnme:variance}
+            used to condition on existing knowledge about parameters
     Returns:
         Cov : pyemu.Cov instance
 
@@ -126,9 +128,53 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4):
                     ci = cov.inv
                 except:
                     df_zone.to_csv("prior_builder_crash.csv")
-                    raise Exception("error inverting cov {0}".format(cov.row_names[:3]))
+                    raise Exception("error inverting cov {0}".
+                                    format(cov.row_names[:3]))
                 full_cov.replace(cov)
+    if par_knowledge_dict is not None:
+        full_cov = condition_on_par_knowledge(full_cov,
+                    par_knowledge_dict=par_knowledge_dict)
     return full_cov
+
+
+
+def condition_on_par_knowledge(cov,par_knowledge_dict):
+    missing = []
+    for parnme in par_knowledge_dict.keys():
+        if parnme not in cov.row_names:
+            missing.append(parnme)
+    if len(missing):
+        raise Exception("par knowledge dict parameters not found: {0}".\
+                        format(','.join(missing)))
+    # build the selection matrix and sigma epsilon
+    #sel = cov.zero2d
+    #sel = pyemu.Matrix(x=np.zeros((cov.shape[0],1)),row_names=cov.row_names,col_names=['sel'])
+    sel = cov.zero2d
+    sigma_ep = cov.zero2d
+    for parnme,var in par_knowledge_dict.items():
+        idx = cov.row_names.index(parnme)
+        #sel.x[idx,:] = 1.0
+        sel.x[idx,idx] = 1.0
+        sigma_ep.x[idx,idx] = var
+    #print(sigma_ep.x)
+    #q = sigma_ep.inv
+    #cov_inv = cov.inv
+    #C (k) = C(k) – C(k)Zt[ZC(k)Zt + C(e)]-1ZC(k)
+    print(sel)
+    term2 = sel * cov * sel.T
+    #term2 += sigma_ep
+    #term2 = cov
+    print(term2)
+    term2 = term2.inv
+    term2 *= sel
+    term2 *= cov
+
+    new_cov = cov - term2
+
+    return new_cov
+
+
+
 
 
 def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
