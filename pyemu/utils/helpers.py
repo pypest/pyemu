@@ -32,8 +32,15 @@ def run(cmd_str,cwd='.'):
                 raw[0] = exe_name + ".exe"
                 cmd_str = ' '.join(raw)
         else:
+            if exe_name.lower().endswith('exe'):
+                raw = cmd_str.split()
+                exe_name = exe_name.replace('.exe','')
+                raw[0] = exe_name
+                cmd_str = '{0} {1} '.format(*raw)
             if os.path.exists(exe_name) and not exe_name.startswith('./'):
                 cmd_str = "./" + cmd_str
+
+
     except Exception as e:
         os.chdir(bwd)
         raise Exception("run() raise :{0}".format(str(e)))
@@ -782,9 +789,10 @@ wildass_guess_par_bounds_dict = {"hk":[0.01,100.0],"vka":[0.01,100.0],
 
 class PstFromFlopyModel(object):
 
-    def __init__(self,nam_file,org_model_ws,new_model_ws,pp_props=[],const_props=[],
-                 bc_props=[],grid_props=[],grid_geostruct=None,pp_space=None,
-                 zone_props=[],pp_geostruct=None,par_bounds_dict=None,
+    def __init__(self,nam_file,org_model_ws,new_model_ws,org_model_exe_name=None,pp_props=None,const_props=None,
+                 bc_props=None,grid_props=None,grid_geostruct=None,pp_space=None,
+                 zone_props=None,pp_geostruct=None,par_bounds_dict=None,
+
                  bc_geostruct=None,remove_existing=False,k_zone_dict=None,
                  mflist_waterbudget=True,mfhyd=True,hds_kperk=[],use_pp_zones=False,
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
@@ -838,7 +846,7 @@ class PstFromFlopyModel(object):
         self.frun_model_lines = []
         self.frun_post_lines = []
 
-        self.setup_model(nam_file,org_model_ws,new_model_ws)
+        self.setup_model(nam_file,org_model_exe_name,org_model_ws,new_model_ws)
 
         if k_zone_dict is None:
             self.k_zone_dict = {k:self.m.bas6.ibound[k].array for k in np.arange(self.m.nlay)}
@@ -873,6 +881,7 @@ class PstFromFlopyModel(object):
         self.tpl_files,self.in_files = [],[]
         self.ins_files,self.out_files = [],[]
 
+
         self.setup_mult_dirs()
 
         self.mlt_files = []
@@ -902,11 +911,16 @@ class PstFromFlopyModel(object):
     def setup_mult_dirs(self):
         # setup dirs to hold the original and multiplier model input quantities
         set_dirs = []
-        #if len(self.pp_props) > 0 or len(self.zone_props) > 0 or \
-        #                len(self.grid_props) > 0:
-        set_dirs.append(self.arr_org)
-        set_dirs.append(self.arr_mlt)
-        if len(self.bc_props) > 0:
+#        if len(self.pp_props) > 0 or len(self.zone_props) > 0 or \
+#                        len(self.grid_props) > 0:
+        if self.pp_props is not None or \
+                        self.zone_props is not None or \
+                        self.grid_props is not None or\
+                        self.const_props is not None:
+            set_dirs.append(self.arr_org)
+            set_dirs.append(self.arr_mlt)
+ #       if len(self.bc_props) > 0:
+        if self.bc_props is not None:
             set_dirs.append(self.bc_org)
         for d in set_dirs:
             d = os.path.join(self.m.model_ws,d)
@@ -920,7 +934,7 @@ class PstFromFlopyModel(object):
             os.mkdir(d)
             self.log("setting up '{0}' dir".format(d))
 
-    def setup_model(self,nam_file,org_model_ws,new_model_ws):
+    def setup_model(self,nam_file,org_model_exe_name,org_model_ws,new_model_ws):
         split_new_mws = [i for i in os.path.split(new_model_ws) if len(i) > 0]
         if len(split_new_mws) != 1:
             self.logger.lraise("new_model_ws can only be 1 folder-level deep:{0}".
@@ -938,6 +952,8 @@ class PstFromFlopyModel(object):
         self.m.array_free_format = True
         self.m.free_format_input = True
         self.m.external_path = '.'
+        if org_model_exe_name is not None:
+            self.m.exe_name = org_model_exe_name
         self.log("loading flopy model")
         if os.path.exists(new_model_ws):
             if not self.remove_existing:
@@ -967,13 +983,22 @@ class PstFromFlopyModel(object):
                          self.zone_props,self.const_props]
         par_suffixs = [self.pp_suffix,self.gr_suffix,
                        self.zn_suffix,self.cn_suffix]
-        mlt_dfs = []
-        for par_prop,suffix in zip(par_props,par_suffixs):
-            if len(par_prop) == 2:
-                if not isinstance(par_prop[0],list):
-                    par_prop = [par_prop]
 
-            for pakattr,k_org in par_prop:
+        # Need to remove props and suffixes for which no info was provided (e.g. still None)
+        del_idx = []
+        for i,cp in enumerate(par_props):
+            if cp is None:
+                del_idx.append(i)
+        for i in del_idx[::-1]:
+            del(par_props[i])
+            del(par_suffixs[i])
+
+        mlt_dfs = []
+        for par_props,suffix in zip(par_props,par_suffixs):
+            if len(par_props) == 2:
+                if not isinstance(par_props[0],list):
+                    par_props = [par_props]
+            for pakattr,k_org in par_props:
                 attr_name = pakattr.split('.')[1]
                 pak,attr = self.parse_pakattr(pakattr)
                 ks = np.arange(self.m.nlay)
@@ -990,6 +1015,10 @@ class PstFromFlopyModel(object):
                 mlt_name = os.path.join(self.arr_mlt,"{0}.dat{1}"
                                         .format(mlt_prefix,suffix))
                 for k in k_parse:
+                    # horrible kludge to avoid passing int64 to flopy
+                    # this gift may give again...
+                    if type(k) is np.int64:
+                        k = int(k)
                     if isinstance(attr,flopy.utils.Util2d):
                         fname = self.write_u2d(attr)
 
@@ -1225,9 +1254,9 @@ class PstFromFlopyModel(object):
                                    .format(mlt_file))
             tpl_file = tpl_files.iloc[0]
             layers = mlt_df.loc[mlt_df.mlt_file==mlt_file,"layer"]
-            if layers.unique().shape[0] != 1:
-                self.logger.lraise("wrong number of layers for {0}"\
-                                   .format(mlt_file))
+            #if layers.unique().shape[0] != 1:
+            #    self.logger.lraise("wrong number of layers for {0}"\
+            #                       .format(mlt_file))
             layer = layers.iloc[0]
             names = mlt_df.loc[mlt_df.mlt_file==mlt_file,"prefix"]
             if names.unique().shape[0] != 1:
@@ -1509,7 +1538,8 @@ class PstFromFlopyModel(object):
             self.logger.lraise("unrecognized attr:{1}".format(attrname))
 
     def setup_bc_pars(self):
-        if len(self.bc_props) == 0:
+        #if len(self.bc_props) == 0:
+        if self.bc_props is None:
             return
 
         self.log("processing bc_props")
@@ -1707,7 +1737,8 @@ def apply_array_pars():
     #         os.remove(fname)
     #     except:
     #         print("error removing mult array:{0}".format(fname))
-    if "pp_file" in df.columns:
+
+    if 'pp_file' in df.columns:
         for pp_file,fac_file,mlt_file in zip(df.pp_file,df.fac_file,df.mlt_file):
             if pd.isnull(pp_file):
                 continue
