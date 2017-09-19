@@ -66,7 +66,7 @@ def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
 def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_dict=None):
     """ a helper function to construct a full prior covariance matrix using
     a mixture of geostastical structures an parameter bounds information.
-    Parameters:
+    Parameters
         pst : pyemu.Pst instance (or the name of a pst file)
         struct_dict : a python dict of geostat structure file : list of pp tpl files
             if the values in the dict are pd.DataFrames, then they must have an
@@ -187,7 +187,7 @@ def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
              tpl_file="kl.tpl"):
     """setup a karhuenen-Loeve based parameterization for a given
     geostatistical structure.
-    Parameters:
+    Parameters
         num_eig (int) : number of basis vectors to retain in the reduced basis
 
         struct_file (str) : a pest-style geostatistical structure file
@@ -206,7 +206,7 @@ def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
                          original factor values,and the template entries.
                          The original values can be used to set the parval1
                          entries in the control file
-    Returns:
+    Returns
         back_array_dict (dict(str:ndarray)) : a dictionary of back transformed
                                               arrays.  This is useful to see
                                               how much "smoothing" is taking
@@ -266,14 +266,14 @@ def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
 def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
     """ Applies a KL parameterization transform from basis factors to model
      input arrays
-     Parameters:
+     Parameters
         par_file (str) : the csv file to get factor values from.  Must contain
                         the following columns: name, new_val, org_val
         basis_file (str): the binary file that contains the reduced basis
 
         par_to_file_dict (dict(str:str)): a mapping from KL parameter prefixes
                                           to array file names.
-    Returns:
+    Returns
         None
 
     """
@@ -306,14 +306,14 @@ def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
 
 def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
         """setup preferred-value regularization
-        Parameters:
+        Parameters
         ----------
             pst (Pst instance) : the control file instance
             parbounds (bool) : weight the prior information equations according
                 to parameter bound width - approx the KL transform
             par_groups (list(str)) : parameter groups to build PI equations
                for.  If None, all adjustable parameters are used
-        Returns:
+        Returns
         -------
             None
         """
@@ -355,7 +355,7 @@ def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
 def regweight_from_parbound(pst):
     """sets regularization weights from parameter bounds
         which approximates the KL expansion
-    Parameters:
+    Parameters
     ----------
         pst (Pst) : a control file instance
     """
@@ -377,7 +377,7 @@ def regweight_from_parbound(pst):
 
 def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
         """setup preferred-difference regularization from a covariance matrix.
-        Parameters:
+        Parameters
         ----------
             pst (pyemu.Pst) : pst instance
             cov (pyemu.Cov) : covariance matrix instance
@@ -435,7 +435,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
                  port=4004,rel_path=None,local=True,cleanup=True,master_dir=None):
     """ start a group of pest(++) slaves on the local machine
 
-    Parameters:
+    Parameters
     ----------
         slave_dir : (str) the path to a complete set of input files
 
@@ -725,7 +725,7 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     values of the model-simulated equivalents to observations.  This can be
     useful for testing
 
-    Parameters:
+    Parameters
     ----------
         tpl_files : list[str]
             list of pest template files
@@ -737,7 +737,7 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
             list of corresponding model output files
         pst_filename : str (optional)
             name of file to write the control file to
-    Returns:
+    Returns
     -------
         Pst instance
     """
@@ -1787,4 +1787,3 @@ def apply_bc_pars():
         with open(os.path.join(model_ext_path,fname),'w') as f:
             f.write(df_list.to_string(header=False,index=False,formatters=fmts)+'\n')
             #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
-

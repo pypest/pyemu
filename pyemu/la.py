@@ -16,7 +16,7 @@ class LinearAnalysis(object):
         this class tries hard to not load items until they are needed
         all arguments are optional
 
-    Parameters:
+    Parameters
     ----------
         jco ([enumerable of] [string,ndarray,matrix objects]) : jacobian
         pst (pst object) : the pest control file object
@@ -127,10 +127,10 @@ class LinearAnalysis(object):
     def __fromfile(self, filename, astype=None):
         """a private method to deduce and load a filename into a matrix object
 
-        Parameters:
+        Parameters
         ----------
             filename (str) : the name of the file
-        Returns:
+        Returns
         -------
             mat (or cov) object
         """
@@ -169,10 +169,10 @@ class LinearAnalysis(object):
 
     def __load_pst(self):
         """private: set the pst attribute
-        Parameters:
+        Parameters
         ----------
             None
-        Returns:
+        Returns
         -------
             None
         """
@@ -195,10 +195,10 @@ class LinearAnalysis(object):
 
     def __load_jco(self):
         """private :set the jco attribute from a file or a matrix object
-        Parameters:
+        Parameters
         ----------
             None
-        Returns:
+        Returns
         -------
             None
         """
@@ -602,10 +602,10 @@ class LinearAnalysis(object):
     @property
     def prior_prediction(self):
         """get a dict of prior prediction variances
-        Parameters:
+        Parameters
         ----------
             None
-        Returns:
+        Returns
         -------
             dict{prediction name(str):prior variance(float)}
         """
@@ -656,10 +656,10 @@ class LinearAnalysis(object):
 
     def reset_parcov(self,arg=None):
         """reset the parcov attribute to None
-        Parameters:
+        Parameters
         ----------
             arg (str or matrix) : the value to assign to the parcov_arg attrib
-        Returns:
+        Returns
         -------
             None
         """
@@ -671,10 +671,10 @@ class LinearAnalysis(object):
 
     def reset_obscov(self,arg=None):
         """reset the obscov attribute to None
-        Parameters:
+        Parameters
         ----------
             arg (str or matrix) : the value to assign to the obscov_arg attrib
-        Returns:
+        Returns
         -------
             None
         """
@@ -711,12 +711,12 @@ class LinearAnalysis(object):
     def get(self,par_names=None,obs_names=None,astype=None):
         """method to get a new LinearAnalysis class using a
              subset of parameters and/or observations
-         Parameters:
+         Parameters
          ----------
             par_names (enumerable of str) : par names for new object
             obs_names (enumerable of str) : obs names for new object
             astype (either schur or errvar type) : type to cast the new object
-        Returns:
+        Returns
         -------
             LinearAnalysis object
         """
