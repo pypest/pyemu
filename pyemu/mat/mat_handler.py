@@ -89,24 +89,33 @@ def get_common_elements(list1, list2):
 class Matrix(object):
     """a class for easy linear algebra
 
-    Attributes:
-        x : ndarray
-            numpy ndarray
-        row_names : list(str)
-            names of the rows in the matrix
-        col_names : list(str)
-            names of the columns in the matrix
-        shape : tuple
-            shape of the matrix
-        isdiagonal : bool
-            diagonal matrix flag
+    Parameters:
+            x : (numpy.ndarray)
+                Matrix entries
+            row_names : (list)
+                list of row names
+            col_names : (list)
+                list of column names
+            isdigonal : (boolean)
+                to determine if the Matrix is diagonal
+            autoalign: (boolean)
+                used to control the autoalignment of Matrix objects
+                during linear algebra operations
 
-    Notes:
+        Returns
+            Matrix : Matrix
+
+        Attributes:
+            binary_header_dt : numpy.dtype
+                the header info in the PEST binary file type
+            binary_rec_dt : numpy.dtype
+                the record info in the PEST binary file type
+
+    Note:
         this class makes heavy use of property decorators to encapsulate
         private attributes
 
     """
-
     integer = np.int32
     double = np.float64
     char = np.uint8
@@ -122,24 +131,8 @@ class Matrix(object):
 
     def __init__(self, x=None, row_names=[], col_names=[], isdiagonal=False,
                  autoalign=True):
-        """constructor for Matrix objects
 
-        Parameters:
-            x : (numpy.ndarray)
-                Matrix entries
-            row_names : (list)
-                list of row names
-            col_names : (list)
-                list of column names
-            isdigonal : (boolean)
-                to determine if the Matrix is diagonal
-            autoalign: (boolean)
-                used to control the autoalignment of Matrix objects
-                during linear algebra operations
 
-        Returns
-            Matrix : Matrix
-        """
         self.col_names, self.row_names = [], []
         [self.col_names.append(str(c).lower()) for c in col_names]
         [self.row_names.append(str(r).lower()) for r in row_names]
