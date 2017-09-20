@@ -1,3 +1,7 @@
+"""This module contains most of the pyemu.Pst object definition.  This object
+is the primary mechanism for dealing with PEST control files
+"""
+
 from __future__ import print_function, division
 import os
 import re
