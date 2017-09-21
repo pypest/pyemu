@@ -17,9 +17,8 @@ class LinearAnalysis(object):
     """ The super class for linear analysis.  Can be used directly, but
         for prior uncertainty analyses only.  The derived types
         (pyemu.Schur, pyemu.ErrVar, pyemu.MonteCarlo, pyemu.EnsembleSmoother)
-         are for different forms of posterior uncertainty analyses.
-        This class tries hard to not load items until they are needed;
-        all arguments are optional
+        are for different forms of posterior uncertainty analyses. This class
+        tries hard to not load items until they are needed; all arguments are optional
 
     Parameters:
         jco : (varies)
