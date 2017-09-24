@@ -375,7 +375,9 @@ class OrdinaryKrige(object):
         assert 'x' in point_data.columns, "point_data missing 'x'"
         assert 'y' in point_data.columns, "point_data missing 'y'"
         self.point_data = point_data
+
         self.point_data.index = self.point_data.name
+        self.check_point_data_dist()
         self.interp_data = None
         self.spatial_reference = None
         #X, Y = np.meshgrid(point_data.x,point_data.y)
@@ -387,12 +389,32 @@ class OrdinaryKrige(object):
         #for name in self.point_cov_df.index:
         #    self.point_cov_df.loc[name,name] -= self.geostruct.nugget
 
-    def prep_for_ppk2fac(self,struct_file="structure.dat",pp_file="points.dat",):
-        pass
+    def check_point_data_dist(self, rectify=False):
+        ptx_array = self.point_data.x.values
+        pty_array = self.point_data.y.values
+        ptnames = self.point_data.name.values
+        drop = []
+        for i in range(self.point_data.shape[0]):
+            ix,iy,iname = ptx_array[i],pty_array[i],ptnames[i]
+            dist = pd.Series((ptx_array[i+1:] - ix) ** 2 + (pty_array[i+1:] - iy) ** 2, ptnames[i+1:])
+            if dist.min() < EPSILON**2:
+                print(iname,ix,iy)
+                warnings.warn("points {0} and {1} are too close. This will cause a singular kriging matrix ".\
+                              format(iname,dist.idxmin()))
+                drop_idxs = dist.loc[dist<=EPSILON**2]
+                drop.extend([pt for pt in list(drop_idxs.index) if pt not in drop])
+        if rectify and len(drop) > 0:
+            print("rectifying point data by removing the following points: {0}".format(','.join(drop)))
+            print(self.point_data.shape)
+            self.point_data = self.point_data.loc[self.point_data.index.map(lambda x: x not in drop),:]
+            print(self.point_data.shape)
+
+    #def prep_for_ppk2fac(self,struct_file="structure.dat",pp_file="points.dat",):
+    #    pass
 
     def calc_factors_grid(self,spatial_reference,zone_array=None,minpts_interp=1,
                           maxpts_interp=20,search_radius=1.0e+10,verbose=False,
-                          var_filename=None):
+                          var_filename=None, forgive=False):
 
         self.spatial_reference = spatial_reference
         self.interp_data = None
@@ -414,7 +436,7 @@ class OrdinaryKrige(object):
                                minpts_interp=minpts_interp,
                                maxpts_interp=maxpts_interp,
                                search_radius=search_radius,
-                               verbose=verbose)
+                               verbose=verbose, forgive=forgive)
             if var_filename is not None:
                 arr = df.err_var.values.reshape(x.shape)
                 np.savetxt(var_filename,arr,fmt="%15.6E")
@@ -438,7 +460,8 @@ class OrdinaryKrige(object):
                                        minpts_interp=minpts_interp,
                                        maxpts_interp=maxpts_interp,
                                        search_radius=search_radius,
-                                       verbose=verbose,pt_zone=pt_data_zone)
+                                       verbose=verbose,pt_zone=pt_data_zone,
+                                       forgive=forgive)
                 dfs.append(df)
                 if var_filename is not None:
                     a = df.err_var.values.reshape(x.shape)
@@ -453,7 +476,7 @@ class OrdinaryKrige(object):
 
     def calc_factors(self,x,y,minpts_interp=1,maxpts_interp=20,
                      search_radius=1.0e+10,verbose=False,
-                     pt_zone=None):
+                     pt_zone=None,forgive=False):
         assert len(x) == len(y)
 
         # find the point data to use for each interp point
@@ -544,7 +567,22 @@ class OrdinaryKrige(object):
             #     print("...took {0}".format(td))
             #     print("solving...",end='')
             # # solve
-            facs = np.linalg.solve(A,rhs)
+            try:
+                facs = np.linalg.solve(A,rhs)
+            except Exception as e:
+                print("error solving for factors: {0}".format(str(e)))
+                print("point:",ix,iy)
+                print("dist:",dist)
+                print("A:", A)
+                print("rhs:", rhs)
+                if forgive:
+                    inames.append([])
+                    idist.append([])
+                    ifacts.append([])
+                    err_var.append(np.NaN)
+                    continue
+                else:
+                    raise Exception("error solving for factors:{0}".format(str(e)))
             assert len(facs) - 1 == len(dist)
 
             err_var.append(float(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)])))
