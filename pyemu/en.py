@@ -13,15 +13,26 @@ SEED = 358183147 #from random.org on 5 Dec 2016
 np.random.seed(SEED)
 
 class Ensemble(pd.DataFrame):
-    """ a pandas.DataFrame derived type to store
-        ensembles of parameters and/or observations
-
-        requires: columns and mean_values kwargs
+    """ The base class type for handling parameter and observation ensembles.
+        It is directly derived from pandas.DataFrame.  This class should not be
+        instantiated directly.
     """
     def __init__(self,*args,**kwargs):
+        """constructor for base Ensemble type.  'columns' and 'mean_values'
+          must be in the kwargs
+
+        Parameters:
+            *args : (list)
+                positional args to pass to pandas.DataFrame()
+            **kwargs : (dict)
+                keyword args to pass to pandas.DataFrame().  Must contain
+                'columns' and 'mean_values'
+
+        Returns:
+            Ensemble : Ensemble
+        """
 
         assert "columns" in kwargs.keys(),"ensemble requires 'columns' kwarg"
-        #assert "index" in kwargs.keys(),"ensemble requires 'index' kwarg"
 
         mean_values = kwargs.pop("mean_values",None)
         super(Ensemble,self).__init__(*args,**kwargs)
@@ -31,15 +42,42 @@ class Ensemble(pd.DataFrame):
         self.__mean_values = mean_values
 
     def as_pyemu_matrix(self):
+        """
+        Create a pyemu.Matrix from the Ensemble.
+
+        Returns:
+            pyemu.Matrix : pyemu.Matrix
+
+        """
         x = self.copy().as_matrix().astype(np.float)
         return Matrix(x=x,row_names=list(self.index),
                       col_names=list(self.columns))
 
     def drop(self,arg):
+        """ overload of pandas.DataFrame.drop()
+
+        Parameters:
+            arg : (varies)
+                argument to pass to pandas.DataFrame.drop()
+
+        Returns:
+            Ensemble : Ensemble
+        """
         df = super(Ensemble,self).drop(arg)
         return type(self)(data=df,pst=self.pst)
 
     def dropna(self,*args,**kwargs):
+        """overload of pandas.DataFrame.dropna()
+
+        Parameters:
+            *args : (list)
+                positional args to pass to pandas.DataFrame.dropna()
+            **kwargs : (dict)
+                keyword args to pass to pandas.DataFrame.dropna()
+
+        Returns:
+            Ensemble : Ensemble
+        """
         df = super(Ensemble,self).dropna(*args,**kwargs)
         return type(self)(data=df,pst=self.pst)
 
@@ -48,20 +86,17 @@ class Ensemble(pd.DataFrame):
             Gaussian distribution
 
         Parameters:
-        ----------
-            cov: a Cov instance
+            cov: (pyemu.Cov)
                 covariance structure to draw from
-            num_reals: int
+            num_reals: (int)
                 number of realizations to generate
-            names : list of names to draw for.  If None, values all names
+            names : (list)
+                list of columne names to draw for.  If None, values all names
                     are drawn
+
         Returns:
-        -------
             None
         """
-        # set up some realization names
-        #real_names = ["{0:d}".format(i)
-        #              for i in range(num_reals)]
         real_names = np.arange(num_reals,dtype=np.int64)
 
         # make sure everything is cool WRT ordering
@@ -82,9 +117,6 @@ class Ensemble(pd.DataFrame):
         if cov.isdiagonal: #much faster
             val_array = np.array([np.random.normal(mu,std,size=num_reals) for\
                                   mu,std in zip(vals,np.sqrt(cov.x))]).transpose()
-            #for mu,std in zip(vals,np.sqrt(cov.x)):
-            #    val_array.append(np.random.normal(mu,std,size=num_reals))
-            #val_array = np.array(val_array).transpose()
         else:
             val_array = np.random.multivariate_normal(vals, cov.as_2d,num_reals)
 
@@ -99,9 +131,30 @@ class Ensemble(pd.DataFrame):
             self.loc[rname,idx] = self.mean_values[idx]
 
     def enforce(self):
+        """ placeholder method for derived ParameterEnsemble type
+        to enforce parameter bounds
+
+        Returns:
+            None
+
+        Raises:
+            Exception if called
+        """
         raise Exception("Ensemble.enforce() must overloaded by derived types")
 
     def plot(self,*args,**kwargs):
+        """placeholder overload of pandas.DataFrame.plot()
+
+        Parameters:
+            *args : (list)
+                positional args to pass to pandas.DataFrame.plot()
+            **kwargs : (dict)
+                keyword args to pass to pandas.DataFrame.plot()
+
+        Returns:
+            pandas.DataFrame.plot() return
+
+        """
         if "marginals" in kwargs.keys():
             raise NotImplementedError()
         else:
@@ -109,11 +162,33 @@ class Ensemble(pd.DataFrame):
 
 
     def __sub__(self,other):
+        """overload of pandas.DataFrame.__sub__() operator to difference two
+        Ensembles
+
+        Parameters:
+            other : (pyemu.Ensemble or pandas.DataFrame)
+                the instance to difference against
+
+        Returns:
+            Ensemble : Ensemble
+        """
         diff = super(Ensemble,self).__sub__(other)
         return Ensemble.from_dataframe(df=diff)
 
     @classmethod
     def from_dataframe(cls,**kwargs):
+        """class method constructor to create an Ensemble from
+        a pandas.DataFrame
+
+        Parameters:
+            **kwargs : (dict)
+                optional args to pass to the
+                Ensemble Constructor.  Expects 'df' in kwargs.keys()
+                that must be a pandas.DataFrame instance
+
+        Returns:
+            Ensemble : Ensemble
+        """
         df = kwargs.pop("df")
         assert isinstance(df,pd.DataFrame)
         mean_values = kwargs.pop("mean_values",df.mean(axis=0))
@@ -122,26 +197,49 @@ class Ensemble(pd.DataFrame):
         return e
 
     def reseed(self):
-         np.random.seed(SEED)
+        """method to reset the numpy.random seed using the pyemu.en
+        SEED global variable
+
+        Returns:
+            None
+
+        """
+        np.random.seed(SEED)
 
     def copy(self):
+        """make a deep copy of self
+
+        Returns:
+            Ensemble : Ensemble
+
+        """
         df = super(Ensemble,self).copy()
         return type(self).from_dataframe(df=df)
 
 class ObservationEnsemble(Ensemble):
-    """ Ensemble derived type observation noise
-
-        Parameters:
-        ----------
-            pst : Pst instance
-
+    """ Ensemble derived type for observations.  This class is primarily used to
+    generate realizations of observation noise.  These are typically generated from
+    the weights listed in the control file.  However, a general covariance matrix can
+    be explicitly used.
         Note:
-        ----
-            Does not generate realizations for observations with zero weight
-            uses the obsnme attribute of Pst.observation_data from column names
+            Does not generate noise realizations for observations with zero weight
     """
 
     def __init__(self,pst,**kwargs):
+        """ObservationEnsemble constructor.
+
+        Parameters:
+            pst : (pyemu.Pst)
+                required Ensemble constructor kwwargs
+                'columns' and 'mean_values' are generated from pst.observation_data.obsnme
+                and pst.observation_data.obsval resepctively.
+
+            **kwargs : (dict)
+                keyword args to pass to Ensemble constructor
+
+        Returns:
+            ObservationEnsemble : ObservationEnsemble
+        """
         kwargs["columns"] = pst.observation_data.obsnme
         kwargs["mean_values"] = pst.observation_data.obsval
         super(ObservationEnsemble,self).__init__(**kwargs)
@@ -149,17 +247,33 @@ class ObservationEnsemble(Ensemble):
         self.pst.observation_data.index = self.pst.observation_data.obsnme
 
     def copy(self):
+        """overload of Ensemble.copy()
+
+        Returns:
+            ObservationEnsemble : ObservationEnsemble
+        """
         df = super(Ensemble,self).copy()
         return type(self).from_dataframe(df=df,pst=self.pst.get())
 
     @property
     def names(self):
+        """property decorated method to get current non-zero weighted
+        column names.  Uses ObservationEnsemble.pst.nnz_obs_names
+
+        Returns:
+            list : list
+            non-zero weight observation names
+        """
         return self.pst.nnz_obs_names
 
 
     @property
     def mean_values(self):
-        """ zeros
+        """ property decorated method to get mean values of observation noise.
+        This is a zero-valued pandas.Series
+
+        Returns:
+            mean_values : pandas Series
         """
         vals = self.pst.observation_data.obsval.copy()
         vals.loc[self.names] = 0.0
@@ -167,12 +281,33 @@ class ObservationEnsemble(Ensemble):
 
 
     def draw(self,cov,num_reals):
+        """ draw realizations of observation noise and add to mean_values
+        Note: only draws noise realizations for non-zero weighted observations
+        zero-weighted observations are set to mean value for all realizations
+
+        Parameters:
+            cov : (pyemu.Cov)
+                covariance matrix that describes the support volume around the
+                mean values.
+            num_reals : (int)
+                number of realizations to draw
+
+        Returns:
+            None
+
+        """
         super(ObservationEnsemble,self).draw(cov,num_reals,
                                              names=self.pst.nnz_obs_names)
         self.loc[:,self.names] += self.pst.observation_data.obsval
 
     @property
     def nonzero(self):
+        """ property decorated method to get a new ObservationEnsemble
+        of only non-zero weighted observations
+
+        Returns:
+            ObservationEnsemble : ObservationEnsemble
+        """
         df = self.loc[:,self.pst.nnz_obs_names]
         return ObservationEnsemble.from_dataframe(df=df,
                         pst=self.pst.get(obs_names=self.pst.nnz_obs_names))
@@ -182,11 +317,18 @@ class ObservationEnsemble(Ensemble):
         """ this is an experiemental method to help speed up independent draws
         for a really large (>1E6) ensemble sizes.  WARNING: this constructor
         transforms the oe argument
-        :param oe: ObservationEnsemble instance
-        "param pst: Pst instance
-        :param num_reals: number of realizations to generate
-        :return: ObservationEnsemble
-        """        # set up some column names
+
+        Parameters:
+            oe : (ObservationEnsemble)
+                an existing ObservationEnsemble instance to use for 'mean_values' and
+                'columns' arguments
+            num_reals : (int)
+                number of realizations to draw
+
+        Returns:
+            ObservationEnsemble : ObservationEnsemble
+        """
+        # set up some column names
         real_names = np.arange(num_reals,dtype=np.int64)
         arr = np.empty((num_reals,len(oe.pst.obs_names)))
         obs = oe.pst.observation_data
@@ -204,6 +346,13 @@ class ObservationEnsemble(Ensemble):
 
     @property
     def phi_vector(self):
+        """property decorated method to get a vector of L2 norm (phi)
+        for the realizations.  The ObservationEnsemble.pst.weights can be
+        updated prior to calling this method to evaluate new weighting strategies
+
+        Return:
+            pandas.DataFrame : pandas.DataFrame
+        """
         weights = self.pst.observation_data.loc[self.names,"weight"]
         obsval = self.pst.observation_data.loc[self.names,"obsval"]
         phi_vec = []
@@ -216,24 +365,32 @@ class ParameterEnsemble(Ensemble):
     """ Ensemble derived type for parameters
         implements bounds enforcement, log10 transformation,
         fixed parameters and null-space projection
-
-    Parameters:
-    ----------
-        pst : pyemu.Pst instance
-        bound_tol : float
-            fractional amount to reset bounds transgression within the bound.
-            This has been shown to be very useful for the subsequent recalibration
-            because it moves parameters off of their bounds, so they are not treated as frozen in
-            the upgrade calculations. defaults to 0.0
-
-    Note:
-    ----
-        uses the parnme attribute of Pst.parameter_data from column names
+        Note: uses the parnme attribute of Pst.parameter_data from column names
         and uses the parval1 attribute of Pst.parameter_data as mean values
 
     """
 
     def __init__(self,pst,istransformed=False,**kwargs):
+        """ ParameterEnsemble constructor.
+
+        Parameters:
+            pst : (pyemu.Pst)
+                The 'columns' and 'mean_values' args need for Ensemble
+                are derived from the pst.parameter_data.parnme and pst.parameter_data.parval1
+                items, respectively
+            istransformed : (boolean)
+                flag indicating the transformation status (log10) of the arguments be passed
+            **kwargs : (dict)
+                keyword arguments to pass to Ensemble constructor.
+            bound_tol : (float) (optional)
+                fractional amount to reset bounds transgression within the bound.
+                This has been shown to be very useful for the subsequent recalibration
+                because it moves parameters off of their bounds, so they are not treated as frozen in
+                the upgrade calculations. defaults to 0.0
+
+        Returns:
+            ParameterEnsemble : ParameterEnsemble
+        """
         kwargs["columns"] = pst.parameter_data.parnme
         kwargs["mean_values"] = pst.parameter_data.parval1
 
@@ -251,6 +408,11 @@ class ParameterEnsemble(Ensemble):
         self.bound_tol = kwargs.get("bound_tol",0.0)
 
     def copy(self):
+        """ overload of Ensemble.copy()
+
+        Returns:
+            ParameterEnsemble : ParameterEnsemble
+        """
         df = super(Ensemble,self).copy()
         pe = ParameterEnsemble.from_dataframe(df=df,pst=self.pst.get())
         pe.__istransformed = self.istransformed
@@ -258,11 +420,20 @@ class ParameterEnsemble(Ensemble):
 
     @property
     def istransformed(self):
+        """property decorated method to get the current
+        transformation status of the ParameterEnsemble
+
+        Returns:
+            boolean : boolean
+        """
         return copy.copy(self.__istransformed)
 
     @property
     def mean_values(self):
         """ the mean value vector while respecting log transform
+
+        Returns:
+            mean_values : pandas.Series
         """
         if not self.istransformed:
             return self.pst.parameter_data.parval1.copy()
@@ -276,59 +447,99 @@ class ParameterEnsemble(Ensemble):
 
     @property
     def names(self):
-       return list(self.pst.parameter_data.parnme)
+        """ Get the names of the parameters in the ParameterEnsemble
+
+        Returns:
+            list : list
+                parameter names
+
+        """
+        return list(self.pst.parameter_data.parnme)
 
     @property
     def adj_names(self):
+        """ Get the names of adjustable parameters in the ParameterEnsemble
+
+        Returns:
+            list : list
+                adjustable parameter names
+        """
         return list(self.pst.parameter_data.parnme.loc[~self.fixed_indexer])
 
     @property
     def ubnd(self):
-        """ the upper bound vector while respecting log transform"""
+        """ the upper bound vector while respecting log transform
+
+        Returns:
+            pandas.Series : pandas.Series
+        """
         if not self.istransformed:
             return self.pst.parameter_data.parubnd.copy()
         else:
-            #ub = (self.pst.parameter_data.parubnd *
-            #      self.pst.parameter_data.scale) +\
-            #      self.pst.parameter_data.offset
             ub = self.pst.parameter_data.parubnd.copy()
             ub[self.log_indexer] = np.log10(ub[self.log_indexer])
             return ub
 
     @property
     def lbnd(self):
-        """ the lower bound vector while respecting log transform"""
+        """ the lower bound vector while respecting log transform
+
+        Returns:
+            pandas.Series : pandas.Series
+        """
         if not self.istransformed:
             return self.pst.parameter_data.parlbnd.copy()
         else:
-            #lb = (self.pst.parameter_data.parlbnd * \
-            #      self.pst.parameter_data.scale) + \
-            #      self.pst.parameter_data.offset
             lb = self.pst.parameter_data.parlbnd.copy()
             lb[self.log_indexer] = np.log10(lb[self.log_indexer])
             return lb
 
     @property
     def log_indexer(self):
-        """ indexer for log transform"""
+        """ indexer for log transform
+
+        Returns:
+            pandas.Series : pandas.Series
+        """
         istransformed = self.pst.parameter_data.partrans == "log"
         return istransformed.values
 
     @property
     def fixed_indexer(self):
-        """ indexer for fixed status"""
+        """ indexer for fixed status
+
+        Returns:
+            pandas.Series : pandas.Series
+        """
         #isfixed = self.pst.parameter_data.partrans == "fixed"
         isfixed = self.pst.parameter_data.partrans.\
             apply(lambda x : x in ["fixed","tied"])
         return isfixed.values
 
 
-    # def plot(self,*args,**kwargs):
-    #     if self.istransformed:
-    #         self._back_transform(inplace=True)
-    #     super(ParameterEnsemble,self).plot(*args,**kwargs)
 
     def draw(self,cov,num_reals=1,how="normal",enforce_bounds=None):
+        """draw realizations of parameter values
+
+        Parameters:
+            cov : (pyemu.Cov)
+                covariance matrix that describes the support around
+                the mean parameter values
+            num_reals : (int)
+                number of realizations to generate
+            how : (str) (optional)
+                distribution to use to generate realizations.  Options are
+                'normal' or 'uniform'.  Default is 'normal'.  If 'uniform',
+                cov argument is ignored
+            enforce_bounds : str (optional)
+                how to enforce parameter bound violations.  Options are
+                'reset' (reset individual violating values), 'drop' (drop realizations
+                that have one or more violating values.  Default is None (no bounds enforcement)
+
+        Returns:
+            None
+
+        """
         how = how.lower().strip()
         if not self.istransformed:
                 self._transform()
@@ -353,34 +564,18 @@ class ParameterEnsemble(Ensemble):
 
         self.enforce(enforce_bounds)
 
-    # def _applied_tied(self):
-    #     if self.pst is None:
-    #         return
-    #     if self.pst.tied is None:
-    #         return
-    #     ParameterEnsemble.apply_tied(self)
-
-    # @staticmethod
-    # def apply_tied(pe):
-    #     if pe.pst is None:
-    #         return
-    #     if pe.pst.tied is None:
-    #         return
-    #     par = pe.pst.parameter_data
-    #     tied =pe.pst.tied
-    #     for pname,ptied in zip(tied.parnme,tied.partied):
-    #         pval, tval = par.loc[pname,"parval1"],par.loc[ptied,"parval1"]
-    #         tied_ratio = pval / tval
-    #         if tval == 0.0:
-    #             tied_ratio = pval
-    #         #rvals = pe.loc[:,ptied]
-    #         pe.loc[:,pname] = pe.loc[:,ptied] * tied_ratio
-    #         #tvals = pe.loc[:,pname]
-    #         #print(rvals/tvals)
-
-
 
     def _draw_uniform(self,num_reals=1):
+        """ Draw parameter realizations from a (log10) uniform distribution
+        described by the parameter bounds.  Respect Log10 transformation
+
+        Parameters:
+             num_reals : (int)
+                number of realizations to generate
+
+        Returns:
+            None
+        """
         if not self.istransformed:
             self._transform()
         self.loc[:,:] = np.NaN
@@ -403,9 +598,16 @@ class ParameterEnsemble(Ensemble):
         """ this is an experiemental method to help speed up uniform draws
         for a really large (>1E6) ensemble sizes.  WARNING: this constructor
         transforms the pe argument
-        :param pe: ParameterEnsemble instance
-        :param num_reals: number of realizations to generate
-        :return: ParameterEnsemble
+
+        Parameters:
+            pe : (ParameterEnsemble)
+                existing ParameterEnsemble used to get information
+                needed to call ParameterEnsemble constructor
+            num_reals : (int)
+                number of realizations to generate
+
+        Returns:
+            ParameterEnsemble : ParameterEnsemble
         """
         if not pe.istransformed:
             pe._transform()
@@ -438,12 +640,22 @@ class ParameterEnsemble(Ensemble):
     def from_gaussian_draw(cls,pe,cov,num_reals=1):
         """ this is an experiemental method to help speed up draws
         for a really large (>1E6) ensemble sizes.  gets around the
-        dataframe expansion-by-loc that is one col at a time.  WARNING:
-        this constructor transforms the pe argument!
-        :param pe: ParameterEnsemble instance
-        "param cov: Covariance instance
-        :param num_reals: number of realizations to generate
-        :return: ParameterEnsemble
+        dataframe expansion-by-loc that is one col at a time.
+
+        Parameters:
+            pe : (ParameterEnsemble)
+                existing ParameterEnsemble used to get information
+                needed to call ParameterEnsemble constructor
+            cov : (pyemu.Cov)
+                covariance matrix to use for drawing
+            num_reals : (int)
+                number of realizations to generate
+
+        Returns:
+            ParameterEnsemble : ParameterEnsemble
+
+        Note:
+            this constructor transforms the pe argument!
         """
 
         # set up some column names
@@ -508,16 +720,17 @@ class ParameterEnsemble(Ensemble):
         return new_pe
 
     def _back_transform(self,inplace=True):
-        """ remove log10 transformation from ensemble
+        """ Private method to remove log10 transformation from ensemble
+
         Parameters:
-        ----------
-            inplace: (boolean) back transform self in place
+            inplace: (boolean)
+                back transform self in place
+
         Returns:
-        -------
-            if not inplace, ParameterEnsemble, otherwise None
+            ParameterEnsemble : ParameterEnsemble
+                if inplace if False
 
         Note:
-        ----
             Don't call this method unless you know what you are doing
 
         """
@@ -547,16 +760,17 @@ class ParameterEnsemble(Ensemble):
 
 
     def _transform(self,inplace=True):
-        """ perform log10 transformation for ensemble
+        """ Private method to perform log10 transformation for ensemble
+
         Parameters:
-        ----------
-            inplace: (boolean) transform self in place
+            inplace: (boolean)
+                transform self in place
+
         Returns:
-        -------
-            if not inplace, ParameterEnsemble, otherwise None
+            ParameterEnsemble : ParameterEnsemble
+                if inplace is False
 
         Note:
-        ----
             Don't call this method unless you know what you are doing
 
         """
@@ -585,21 +799,25 @@ class ParameterEnsemble(Ensemble):
 
     def project(self,projection_matrix,inplace=True,log=None,
                 enforce_bounds="reset"):
-        """ project the ensemble
+        """ project the ensemble using the null-space Monte Carlo method
+
         Parameters:
-        ----------
-            projection_matrix: (pyemu.Matrix) projection operator - must already respect log transform
+            projection_matrix : (pyemu.Matrix)
+                projection operator - must already respect log transform
 
-            inplace: (boolean) project self or return a new ParameterEnsemble instance
+            inplace : (boolean)
+                project self or return a new ParameterEnsemble instance
 
-            log: (pyemu.la.logger instance) for logging progress
+            log: (pyemu.Logger)
+                for logging progress
 
-            enforce_bounds: (str) parameter bound enforcement flag.  'drop' removes
-             offending realizations, 'reset' resets offending values)
+            enforce_bounds : (str)
+                parameter bound enforcement flag. 'drop' removes
+                offending realizations, 'reset' resets offending values
 
         Returns:
-        -------
-            if not inplace, ParameterEnsemble, otherwise None
+            ParameterEnsemble : ParameterEnsemble
+                if inplace is False
 
         """
 
@@ -632,15 +850,6 @@ class ParameterEnsemble(Ensemble):
                            (self.loc[real,common_names] - base)\
                            .as_matrix())
 
-            # lb_fac = np.abs(pdiff)/((base+pdiff)-self.lbnd)
-            # lb_fac[pdiff>0.0] = 1.0
-            #
-            # ub_fac = np.abs(pdiff)/(self.ubnd-(base+pdiff))
-            # ub_fac[pdiff<=0.0] = 1.0
-            #
-            # factor = max(lb_fac.max(),
-            #              ub_fac.max())
-
             if inplace:
                 self.loc[real,common_names] = base + pdiff
             else:
@@ -661,6 +870,17 @@ class ParameterEnsemble(Ensemble):
         self.__istransformed = False
 
     def enforce(self,enforce_bounds="reset"):
+        """ entry point for bounds enforcement.  This gets called for the
+        draw method(s), so users shouldn't need to call this
+
+        Parameters:
+            enforce_bounds : (str)
+                can be 'reset' to reset offending values or 'drop' to drop
+                offending realizations
+
+        Returns:
+             None
+        """
         if isinstance(enforce_bounds,bool):
             import warnings
             warnings.warn("deprecation warning: enforce_bounds should be "+\
@@ -685,6 +905,12 @@ class ParameterEnsemble(Ensemble):
         """
         enforce parameter bounds on the ensemble by finding the
         scaling factor needed to bring the most violated parameter back in bounds
+
+        Note:
+            this method not fully implemented.
+
+        Raises:
+            NotImplementedErrors if called.
 
         """
         raise NotImplementedError()
@@ -738,8 +964,15 @@ class ParameterEnsemble(Ensemble):
             self.loc[self.loc[:,name] < lb[name],name] = lb[name].copy() * (1.0 - self.bound_tol)
 
     def read_parfiles_prefix(self,prefix):
-        """ thin wrapper around read_parfiles using the pnulpar prefix concept
+        """ thin wrapper around read_parfiles using the pnulpar prefix concept.  Used to
+        fill ParameterEnsemble from PEST-type par files
 
+        Parameters:
+            prefix : (str)
+                the par file prefix
+
+        Returns:
+            None
         """
         pfile_count = 1
         parfile_names = []
@@ -758,45 +991,59 @@ class ParameterEnsemble(Ensemble):
 
 
     def read_parfiles(self,parfile_names):
-        """ read the ensemble from par files
+        """ read the ParameterEnsemble realizations from par files.  Used to fill
+        the ParameterEnsemble with realizations from PEST-type par files
 
-        Parameters:
-        ----------
-            parfile_names: (list[str]) list of par files to load
+        Parameters
+            parfile_names: (list)
+                list of par files to load
+
+        Returns:
+            None
 
         Note:
-        ----
-            log transforms after loading according and possibly resets self.__istransformed
+            log transforms after loading according and possibly resets
+            self.__istransformed
 
         """
-        par_dfs = []
         for pfile in parfile_names:
             assert os.path.exists(pfile),"ParameterEnsemble.read_parfiles() error: " +\
                                          "file: {0} not found".format(pfile)
             df = read_parfile(pfile)
             self.loc[pfile] = df.loc[:,'parval1']
         self.loc[:,:] = self.loc[:,:].astype(np.float64)
-        #if self.istransformed:
-        #    self.__istransformed = False
-        #self._transform(inplace=True)
 
 
     def to_csv(self,*args,**kwargs):
+        """overload of pandas.DataFrame.to_csv() to account
+        for parameter transformation so that the saved
+        ParameterEnsemble csv is not in Log10 space
+
+        Parameters:
+            *args : (list)
+                positional arguments to pass to pandas.DataFrame.to_csv()
+            **kwrags : (dict)
+                keyword arguments to pass to pandas.DataFrame.to_csv()
+
+        Note:
+            this function back-transforms inplace with respect to
+            log10 before writing
+        """
         if self.istransformed:
             self._back_transform(inplace=True)
         super(ParameterEnsemble,self).to_csv(*args,**kwargs)
 
     def to_parfiles(self,prefix):
         """
-            write the parameter ensemble to pest-style parameter files
+            write the parameter ensemble to PEST-style parameter files
 
         Parameters:
-        ----------
-            prefix: (str) file prefix for par files
+            prefix: (str)
+                file prefix for par files
 
         Note:
-        ----
-            this function back-transforms before writing
+            this function back-transforms inplace with respect to
+            log10 before writing
 
         """
 

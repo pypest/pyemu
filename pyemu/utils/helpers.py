@@ -32,8 +32,15 @@ def run(cmd_str,cwd='.'):
                 raw[0] = exe_name + ".exe"
                 cmd_str = ' '.join(raw)
         else:
+            if exe_name.lower().endswith('exe'):
+                raw = cmd_str.split()
+                exe_name = exe_name.replace('.exe','')
+                raw[0] = exe_name
+                cmd_str = '{0} {1} '.format(*raw)
             if os.path.exists(exe_name) and not exe_name.startswith('./'):
                 cmd_str = "./" + cmd_str
+
+
     except Exception as e:
         os.chdir(bwd)
         raise Exception("run() raise :{0}".format(str(e)))
@@ -56,16 +63,18 @@ def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
     return geostatistical_prior_builder(pst=pst,struct_dict=struct_dict,
                                         sigma_range=sigma_range)
 
-def geostatistical_prior_builder(pst, struct_dict,sigma_range=4):
+def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_dict=None):
     """ a helper function to construct a full prior covariance matrix using
     a mixture of geostastical structures an parameter bounds information.
-    Parameters:
+    Parameters
         pst : pyemu.Pst instance (or the name of a pst file)
         struct_dict : a python dict of geostat structure file : list of pp tpl files
             if the values in the dict are pd.DataFrames, then they must have an
             'x','y', and 'parnme' column.  If the filename ends in '.csv',
             then a pd.DataFrame is loaded.
         sigma_range : float representing the number of standard deviations implied by parameter bounds
+        par_knowledge_dict : dictionary of {parnme:variance}
+            used to condition on existing knowledge about parameters
     Returns:
         Cov : pyemu.Cov instance
 
@@ -126,16 +135,59 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4):
                     ci = cov.inv
                 except:
                     df_zone.to_csv("prior_builder_crash.csv")
-                    raise Exception("error inverting cov {0}".format(cov.row_names[:3]))
+                    raise Exception("error inverting cov {0}".
+                                    format(cov.row_names[:3]))
                 full_cov.replace(cov)
+    if par_knowledge_dict is not None:
+        full_cov = condition_on_par_knowledge(full_cov,
+                    par_knowledge_dict=par_knowledge_dict)
     return full_cov
+
+
+
+def condition_on_par_knowledge(cov,par_knowledge_dict):
+    missing = []
+    for parnme in par_knowledge_dict.keys():
+        if parnme not in cov.row_names:
+            missing.append(parnme)
+    if len(missing):
+        raise Exception("par knowledge dict parameters not found: {0}".\
+                        format(','.join(missing)))
+    # build the selection matrix and sigma epsilon
+    #sel = cov.zero2d
+    #sel = pyemu.Matrix(x=np.zeros((cov.shape[0],1)),row_names=cov.row_names,col_names=['sel'])
+    sel = cov.zero2d
+    sigma_ep = cov.zero2d
+    for parnme,var in par_knowledge_dict.items():
+        idx = cov.row_names.index(parnme)
+        #sel.x[idx,:] = 1.0
+        sel.x[idx,idx] = 1.0
+        sigma_ep.x[idx,idx] = var
+    #print(sigma_ep.x)
+    #q = sigma_ep.inv
+    #cov_inv = cov.inv
+    print(sel)
+    term2 = sel * cov * sel.T
+    #term2 += sigma_ep
+    #term2 = cov
+    print(term2)
+    term2 = term2.inv
+    term2 *= sel
+    term2 *= cov
+
+    new_cov = cov - term2
+
+    return new_cov
+
+
+
 
 
 def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
              tpl_file="kl.tpl"):
     """setup a karhuenen-Loeve based parameterization for a given
     geostatistical structure.
-    Parameters:
+    Parameters
         num_eig (int) : number of basis vectors to retain in the reduced basis
 
         struct_file (str) : a pest-style geostatistical structure file
@@ -154,7 +206,7 @@ def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
                          original factor values,and the template entries.
                          The original values can be used to set the parval1
                          entries in the control file
-    Returns:
+    Returns
         back_array_dict (dict(str:ndarray)) : a dictionary of back transformed
                                               arrays.  This is useful to see
                                               how much "smoothing" is taking
@@ -214,14 +266,14 @@ def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
 def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
     """ Applies a KL parameterization transform from basis factors to model
      input arrays
-     Parameters:
+     Parameters
         par_file (str) : the csv file to get factor values from.  Must contain
                         the following columns: name, new_val, org_val
         basis_file (str): the binary file that contains the reduced basis
 
         par_to_file_dict (dict(str:str)): a mapping from KL parameter prefixes
                                           to array file names.
-    Returns:
+    Returns
         None
 
     """
@@ -254,14 +306,14 @@ def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
 
 def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
         """setup preferred-value regularization
-        Parameters:
+        Parameters
         ----------
             pst (Pst instance) : the control file instance
             parbounds (bool) : weight the prior information equations according
                 to parameter bound width - approx the KL transform
             par_groups (list(str)) : parameter groups to build PI equations
                for.  If None, all adjustable parameters are used
-        Returns:
+        Returns
         -------
             None
         """
@@ -296,12 +348,14 @@ def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
                                                "weight": weight})
         if parbounds:
             regweight_from_parbound(pst)
+        if pst.control_data.pestmode == "estimation":
+            pst.control_data.pestmode = "regularization"
 
 
 def regweight_from_parbound(pst):
     """sets regularization weights from parameter bounds
         which approximates the KL expansion
-    Parameters:
+    Parameters
     ----------
         pst (Pst) : a control file instance
     """
@@ -323,7 +377,7 @@ def regweight_from_parbound(pst):
 
 def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
         """setup preferred-difference regularization from a covariance matrix.
-        Parameters:
+        Parameters
         ----------
             pst (pyemu.Pst) : pst instance
             cov (pyemu.Cov) : covariance matrix instance
@@ -372,12 +426,16 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
         else:
             pst.prior_information = pst.prior_information.append(df)
 
+        if pst.control_data.pestmode == "estimation":
+            pst.control_data.pestmode = "regularization"
+
+
 
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
                  port=4004,rel_path=None,local=True,cleanup=True,master_dir=None):
     """ start a group of pest(++) slaves on the local machine
 
-    Parameters:
+    Parameters
     ----------
         slave_dir : (str) the path to a complete set of input files
 
@@ -667,7 +725,7 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     values of the model-simulated equivalents to observations.  This can be
     useful for testing
 
-    Parameters:
+    Parameters
     ----------
         tpl_files : list[str]
             list of pest template files
@@ -679,7 +737,7 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
             list of corresponding model output files
         pst_filename : str (optional)
             name of file to write the control file to
-    Returns:
+    Returns
     -------
         Pst instance
     """
@@ -730,11 +788,11 @@ wildass_guess_par_bounds_dict = {"hk":[0.01,100.0],"vka":[0.01,100.0],
 
 class PstFromFlopyModel(object):
 
-    def __init__(self,nam_file,org_model_ws,new_model_ws,pp_props=None,const_props=None,
-                 bc_props=None,grid_props=None,grid_geostruct=None,pp_space=None,
-                 zone_props=None,pp_geostruct=None,par_bounds_dict=None,
+    def __init__(self,model,new_model_ws,org_model_ws=None,pp_props=[],const_props=[],
+                 bc_props=[],grid_props=[],grid_geostruct=None,pp_space=None,
+                 zone_props=[],pp_geostruct=None,par_bounds_dict=None,
                  bc_geostruct=None,remove_existing=False,k_zone_dict=None,
-                 mflist_waterbudget=True,mfhyd=True,use_pp_zones=False,
+                 mflist_waterbudget=True,mfhyd=True,hds_kperk=[],use_pp_zones=False,
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
                  external_ins_out_pairs=None,extra_pre_cmds=None,
                  extra_model_cmds=None,extra_post_cmds=None):
@@ -781,11 +839,12 @@ class PstFromFlopyModel(object):
         self.zone_props = zone_props
 
         self.obssim_smp_pairs = obssim_smp_pairs
+        self.hds_kperk = hds_kperk
         self.frun_pre_lines = []
         self.frun_model_lines = []
         self.frun_post_lines = []
 
-        self.setup_model(nam_file,org_model_ws,new_model_ws)
+        self.setup_model(model,org_model_ws,new_model_ws)
 
         if k_zone_dict is None:
             self.k_zone_dict = {k:self.m.bas6.ibound[k].array for k in np.arange(self.m.nlay)}
@@ -820,6 +879,7 @@ class PstFromFlopyModel(object):
         self.tpl_files,self.in_files = [],[]
         self.ins_files,self.out_files = [],[]
 
+
         self.setup_mult_dirs()
 
         self.mlt_files = []
@@ -849,11 +909,16 @@ class PstFromFlopyModel(object):
     def setup_mult_dirs(self):
         # setup dirs to hold the original and multiplier model input quantities
         set_dirs = []
-        if len(self.pp_props) > 0 or len(self.zone_props) > 0 or \
-                        len(self.grid_props) > 0:
+#        if len(self.pp_props) > 0 or len(self.zone_props) > 0 or \
+#                        len(self.grid_props) > 0:
+        if self.pp_props is not None or \
+                        self.zone_props is not None or \
+                        self.grid_props is not None or\
+                        self.const_props is not None:
             set_dirs.append(self.arr_org)
             set_dirs.append(self.arr_mlt)
-        if len(self.bc_props) > 0:
+ #       if len(self.bc_props) > 0:
+        if self.bc_props is not None:
             set_dirs.append(self.bc_org)
         for d in set_dirs:
             d = os.path.join(self.m.model_ws,d)
@@ -867,25 +932,33 @@ class PstFromFlopyModel(object):
             os.mkdir(d)
             self.log("setting up '{0}' dir".format(d))
 
-    def setup_model(self,nam_file,org_model_ws,new_model_ws):
+    def setup_model(self,model,org_model_ws,new_model_ws):
         split_new_mws = [i for i in os.path.split(new_model_ws) if len(i) > 0]
         if len(split_new_mws) != 1:
             self.logger.lraise("new_model_ws can only be 1 folder-level deep:{0}".
-                               format(str(os.path.split(split_new_mws))))
+                               format(str(split_new_mws)))
 
-        self.log("loading flopy model")
-        try:
-            import flopy
-        except:
-            raise Exception("from_flopy_model() requires flopy")
-        # prepare the flopy model
-        self.org_model_ws = org_model_ws
-        self.new_model_ws = new_model_ws
-        self.m = flopy.modflow.Modflow.load(nam_file,model_ws=org_model_ws)
+        if isinstance(model,str):
+            self.log("loading flopy model")
+            try:
+                import flopy
+            except:
+                raise Exception("from_flopy_model() requires flopy")
+            # prepare the flopy model
+            self.org_model_ws = org_model_ws
+            self.new_model_ws = new_model_ws
+            self.m = flopy.modflow.Modflow.load(model,model_ws=org_model_ws)
+            self.log("loading flopy model")
+        else:
+            self.m = model
+            self.org_model_ws = str(self.m.model_ws)
+            self.new_model_ws = new_model_ws
+
+        self.log("updating model attributes")
         self.m.array_free_format = True
         self.m.free_format_input = True
         self.m.external_path = '.'
-        self.log("loading flopy model")
+        self.log("updating model attributes")
         if os.path.exists(new_model_ws):
             if not self.remove_existing:
                 self.logger.lraise("'new_model_ws' already exists")
@@ -893,7 +966,8 @@ class PstFromFlopyModel(object):
                 self.logger.warn("removing existing 'new_model_ws")
                 shutil.rmtree(new_model_ws)
         self.m.change_model_ws(new_model_ws,reset_external=True)
-
+        self.m.exe_name = self.m.exe_name.replace(".exe",'')
+        self.m.exe = self.m.version
         self.log("writing new modflow input files")
         self.m.write_input()
         self.log("writing new modflow input files")
@@ -913,12 +987,21 @@ class PstFromFlopyModel(object):
                          self.zone_props,self.const_props]
         par_suffixs = [self.pp_suffix,self.gr_suffix,
                        self.zn_suffix,self.cn_suffix]
+
+        # Need to remove props and suffixes for which no info was provided (e.g. still None)
+        del_idx = []
+        for i,cp in enumerate(par_props):
+            if cp is None:
+                del_idx.append(i)
+        for i in del_idx[::-1]:
+            del(par_props[i])
+            del(par_suffixs[i])
+
         mlt_dfs = []
         for par_props,suffix in zip(par_props,par_suffixs):
             if len(par_props) == 2:
                 if not isinstance(par_props[0],list):
                     par_props = [par_props]
-
             for pakattr,k_org in par_props:
                 attr_name = pakattr.split('.')[1]
                 pak,attr = self.parse_pakattr(pakattr)
@@ -936,6 +1019,10 @@ class PstFromFlopyModel(object):
                 mlt_name = os.path.join(self.arr_mlt,"{0}.dat{1}"
                                         .format(mlt_prefix,suffix))
                 for k in k_parse:
+                    # horrible kludge to avoid passing int64 to flopy
+                    # this gift may give again...
+                    if type(k) is np.int64:
+                        k = int(k)
                     if isinstance(attr,flopy.utils.Util2d):
                         fname = self.write_u2d(attr)
 
@@ -953,8 +1040,9 @@ class PstFromFlopyModel(object):
                 df.loc[:,"suffix"] = suffix
                 df.loc[:,"prefix"] = mlt_prefix
                 mlt_dfs.append(df)
-        mlt_df = pd.concat(mlt_dfs,ignore_index=True)
-        return pd.concat(mlt_dfs)
+        if len(mlt_dfs) > 0:
+            mlt_df = pd.concat(mlt_dfs,ignore_index=True)
+            return mlt_df
 
     def write_u2d(self, u2d):
         filename = os.path.split(u2d.filename)[-1]
@@ -1031,6 +1119,8 @@ class PstFromFlopyModel(object):
         return df
 
     def grid_prep(self):
+        if len(self.grid_props) == 0:
+            return
         if self.grid_geostruct is None:
             self.logger.warn("grid_geostruct is None,"\
                   " using ExpVario with contribution=1 and a=(max(delc,delr)*10")
@@ -1040,6 +1130,8 @@ class PstFromFlopyModel(object):
             self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v)
 
     def pp_prep(self,mlt_df):
+        if len(self.pp_props) == 0:
+            return
         if self.pp_space is None:
             self.logger.warn("pp_space is None, using 10...\n")
             self.pp_space=10
@@ -1149,6 +1241,8 @@ class PstFromFlopyModel(object):
 
     def setup_array_pars(self):
         mlt_df = self.prep_mlt_arrays()
+        if mlt_df is None:
+            return
         mlt_df.loc[:,"tpl_file"] = mlt_df.mlt_file.apply(lambda x: os.path.split(x)[-1]+".tpl")
         mlt_files = mlt_df.mlt_file.unique()
         #for suffix,tpl_file,layer,name in zip(self.mlt_df.suffix,
@@ -1168,9 +1262,9 @@ class PstFromFlopyModel(object):
                                    .format(mlt_file))
             tpl_file = tpl_files.iloc[0]
             layers = mlt_df.loc[mlt_df.mlt_file==mlt_file,"layer"]
-            if layers.unique().shape[0] != 1:
-                self.logger.lraise("wrong number of layers for {0}"\
-                                   .format(mlt_file))
+            #if layers.unique().shape[0] != 1:
+            #    self.logger.lraise("wrong number of layers for {0}"\
+            #                       .format(mlt_file))
             layer = layers.iloc[0]
             names = mlt_df.loc[mlt_df.mlt_file==mlt_file,"prefix"]
             if names.unique().shape[0] != 1:
@@ -1234,14 +1328,15 @@ class PstFromFlopyModel(object):
 
     def setup_observations(self):
         obs_methods = [self.setup_water_budget_obs,self.setup_hyd,
-                       self.setup_smp,self.setup_hob]
+                       self.setup_smp,self.setup_hob,self.setup_hds]
         obs_types = ["mflist water budget obs","hyd file",
-                     "external obs-sim smp files","hob"]
+                     "external obs-sim smp files","hob","hds"]
         self.obs_dfs = {}
         for obs_method, obs_type in zip(obs_methods,obs_types):
             self.log("processing obs type {0}".format(obs_type))
             obs_method()
             self.log("processing obs type {0}".format(obs_type))
+
 
     def build_prior(self):
         self.log("building prior covariance matrix")
@@ -1277,7 +1372,7 @@ class PstFromFlopyModel(object):
             #bc_dfs = [bc_df.loc[bc_df.pargp==pargp,:].copy() for pargp in bc_df.pargp.unique()]
             struct_dict[self.bc_geostruct] = bc_dfs
         if len(struct_dict) > 0:
-            cov = pyemu.helpers.pilotpoint_prior_builder(self.pst,
+            cov = pyemu.helpers.geostatistical_prior_builder(self.pst,
                                                          struct_dict=struct_dict,
                                                          sigma_range=6)
         else:
@@ -1453,7 +1548,6 @@ class PstFromFlopyModel(object):
     def setup_bc_pars(self):
         if len(self.bc_props) == 0:
             return
-
         self.log("processing bc_props")
         # if not isinstance(self.bc_prop_dict,dict):
         #     self.logger.lraise("bc_prop_dict must be 'dict', not {0}".
@@ -1529,6 +1623,40 @@ class PstFromFlopyModel(object):
                      os.path.join(self.m.model_ws,self.bc_org,filename))
         return filename_model
 
+
+    def setup_hds(self):
+        if self.hds_kperk is None or len(self.hds_kperk) == 0:
+            return
+        from .gw_utils import setup_hds_obs
+        if len(self.hds_kperk) == 2:
+            try:
+                if len(self.hds_kperk[0] == 2):
+                    pass
+            except:
+                self.hds_kperk = [self.hds_kperk]
+        oc = self.m.get_package("OC")
+        if oc is None:
+            raise Exception("can't find OC package in model to setup hds grid obs")
+        if not oc.savehead:
+            raise Exception("OC not saving hds, can't setup grid obs")
+        hds_unit = oc.iuhead
+        hds_file = self.m.get_output(unit=hds_unit)
+        assert os.path.exists(os.path.join(self.org_model_ws,hds_file)),\
+        "couldn't find existing hds file {0} in org_model_ws".format(hds_file)
+        shutil.copy2(os.path.join(self.org_model_ws,hds_file),
+                     os.path.join(self.m.model_ws,hds_file))
+        inact = None
+        if self.m.lpf is not None:
+            inact = self.m.lpf.hdry
+        elif self.m.upw is not None:
+            inact = self.m.upw.hdry
+        if inact is None:
+            skip = lambda x: x == self.m.bas6.hnoflo
+        else:
+            skip = lambda x: x == self.m.bas6.hnoflo or x == inact
+        setup_hds_obs(os.path.join(self.m.model_ws,hds_file),
+                      kperk_pairs=self.hds_kperk,skip=skip)
+
     def setup_smp(self):
         if self.obssim_smp_pairs is None:
             return
@@ -1553,7 +1681,9 @@ class PstFromFlopyModel(object):
         if self.m.hob is None:
             return
         hob_out_unit = self.m.hob.iuhobsv
-        hob_out_fname = os.path.join(self.m.model_ws,self.m.get_output_attribute(unit=hob_out_unit))
+        #hob_out_fname = os.path.join(self.m.model_ws,self.m.get_output_attribute(unit=hob_out_unit))
+        hob_out_fname = os.path.join(self.org_model_ws,self.m.get_output_attribute(unit=hob_out_unit))
+
         if not os.path.exists(hob_out_fname):
             self.logger.warn("could not find hob out file: {0}...skipping".format(hob_out_fname))
             return
@@ -1581,7 +1711,7 @@ class PstFromFlopyModel(object):
     def setup_water_budget_obs(self):
         org_listfile = os.path.join(self.org_model_ws,self.m.lst.file_name[0])
         if os.path.exists(org_listfile):
-            shutil.copy2(org_listfile,os.path.join(self.new_model_ws,
+            shutil.copy2(org_listfile,os.path.join(self.m.model_ws,
                                                    self.m.name+".list"))
         else:
             self.logger.warn("can't find existing list file:{0}...skipping".
@@ -1615,11 +1745,13 @@ def apply_array_pars():
     #         os.remove(fname)
     #     except:
     #         print("error removing mult array:{0}".format(fname))
-    for pp_file,fac_file,mlt_file in zip(df.pp_file,df.fac_file,df.mlt_file):
-        if pd.isnull(pp_file):
-            continue
-        pyemu.gw_utils.fac2real(pp_file=pp_file,factors_file=fac_file,
-                                out_file=mlt_file)
+
+    if 'pp_file' in df.columns:
+        for pp_file,fac_file,mlt_file in zip(df.pp_file,df.fac_file,df.mlt_file):
+            if pd.isnull(pp_file):
+                continue
+            pyemu.gw_utils.fac2real(pp_file=pp_file,factors_file=fac_file,
+                                    out_file=mlt_file)
 
     for model_file in df.model_file.unique():
         # find all mults that need to be applied to this array
@@ -1655,4 +1787,3 @@ def apply_bc_pars():
         with open(os.path.join(model_ext_path,fname),'w') as f:
             f.write(df_list.to_string(header=False,index=False,formatters=fmts)+'\n')
             #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
-

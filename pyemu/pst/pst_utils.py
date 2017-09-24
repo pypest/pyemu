@@ -1,3 +1,6 @@
+"""This module contains helpers and default values that support
+the pyemu.Pst object.
+"""
 from __future__ import print_function, division
 import os, sys
 import stat
@@ -114,15 +117,14 @@ pst_config["pestpp_options"] = {}
 
 
 def read_resfile(resfile):
-        """load a residual file into a pandas dataframe
+        """load a residual file into a pandas.DataFrame
 
         Parameters:
-        ----------
-            resfile : str
-                residual file
+            resfile : (str)
+                residual file name
+
         Returns:
-        -------
-            pandas DataFrame
+            pandas.DataFrame : pandas.DataFrame
         """
         assert os.path.exists(resfile),"read_resfile() error: resfile " +\
                                        "{0} not found".format(resfile)
@@ -144,15 +146,14 @@ def read_resfile(resfile):
 
 
 def read_parfile(parfile):
-    """load a pest-compatible .par file into a pandas dataframe
+    """load a pest-compatible .par file into a pandas.DataFrame
 
     Parameters:
-    ----------
-        parfile : str
-            pest parameter file
+        parfile : (str)
+            pest parameter file name
+
     Returns:
-    -------
-        pandas DataFrame
+        pandas.DataFrame : pandas.DataFrame
     """
     assert os.path.exists(parfile), "Pst.parrep(): parfile not found: " +\
                                     str(parfile)
@@ -168,14 +169,13 @@ def write_parfile(df,parfile):
     """ write a pest parameter file from a dataframe
 
     Parameters:
-    ----------
-        df : pandas DataFrame
-            with column names that correspond to the entries
+        df : (pandas.DataFrame)
+            dataframe with column names that correspond to the entries
             in the parameter data section of a pest control file
-        parfile : str
+        parfile : (str)
             name of the parameter file to write
+
     Returns:
-    -------
         None
 
     """
@@ -202,12 +202,11 @@ def parse_tpl_file(tpl_file):
     """ parse a pest template file to get the parameter names
 
     Parameters:
-    ----------
-        tpl_file : str
+        tpl_file : (str)
             template file name
-    Returns:
-    -------
-        list of parameter names
+    Returns
+        par_names : list
+            list of parameter names
     """
     par_names = []
     with open(tpl_file,'r') as f:
@@ -237,8 +236,18 @@ def parse_tpl_file(tpl_file):
 
 
 def write_parvals_in_tplfiles(pst):
-    """this is a simple implementation of what pest does.  It does not
+    """write parameter values to a model input files using a template files with
+    current parameter values (stored in Pst.parameter_data.parval1).
+    This is a simple implementation of what PEST does.  It does not
     handle all the special cases, just a basic function...user beware
+
+    Parameters:
+        pst : (pyemu.Pst)
+            a Pst instance
+
+    Returns:
+        None
+
     """
     for tpl_file,in_file in zip(pst.template_files,pst.input_files):
         write_to_template(pst.parameter_data.parval1,tpl_file,in_file)
@@ -288,6 +297,19 @@ def write_to_template(parvals,tpl_file,in_file):
 
 
 def get_marker_indices(marker,line):
+    """ method to find the start and end parameter markers
+    on a template file line
+
+    Parameters:
+        marker : (str)
+            template file marker char
+        line : (str)
+            template file line
+
+    Returns:
+        indices : list
+            list of start and end indices (zero based)
+    """
     indices = [i for i, ltr in enumerate(line) if ltr == marker]
     start = indices[0:-1:2]
     end = [i+1 for i in indices[1::2]]
@@ -297,10 +319,11 @@ def get_marker_indices(marker,line):
 
 def parse_ins_file(ins_file):
     """parse a pest instruction file to get observation names
-    Parameters:
-    ----------
-        ins_file : str
+
+    Parameters
+        ins_file : (str)
             instruction file name
+
     Returns:
         list of observation names
     """
@@ -327,6 +350,16 @@ def parse_ins_file(ins_file):
 
 
 def parse_ins_string(string):
+    """ split up an instruction file line to get the observation names
+
+    Parameters:
+        string : (str)
+            instruction file line
+
+    Returns:
+        obs_names : list
+            list of observation names
+    """
     istart_markers = ["[","(","!"]
     iend_markers = ["]",")","!"]
 
@@ -355,6 +388,22 @@ def parse_ins_string(string):
 
 
 def populate_dataframe(index,columns, default_dict, dtype):
+    """ helper function to populate a generic Pst dataframe attribute.  This
+    function is called as part of constructing a generic Pst instance
+
+    Parameters:
+        index : (varies)
+            something to use as the dataframe index
+        columns: (varies)
+            something to use as the dataframe columns
+        default_dict : (dict)
+            dictionary of default values for columns
+        dtype : numpy.dtype
+            dtype used to cast dataframe columns
+
+    Returns:
+        new_df : pandas.DataFrame
+    """
     new_df = pd.DataFrame(index=index,columns=columns)
     for fieldname,dt in zip(columns,dtype.descr):
         default = default_dict[fieldname]
@@ -364,16 +413,17 @@ def populate_dataframe(index,columns, default_dict, dtype):
 
 
 def generic_pst(par_names=["par1"],obs_names=["obs1"],addreg=False):
-    """generate a generic pst instance
+    """generate a generic pst instance.  This can used to later fill in
+    the Pst parts programatically.
+
     Parameters:
-    ----------
-        par_names : list(str)
+        par_names : (list)
             parameter names to setup
-        obs_names : list(str)
+        obs_names : (list)
             observation names to setup
+
     Returns:
-    -------
-        Pst instance
+        new_pst : pyemu.Pst
 
     """
     if not isinstance(par_names,list):
@@ -414,6 +464,26 @@ def generic_pst(par_names=["par1"],obs_names=["obs1"],addreg=False):
 
 
 def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
+    """ generate a new pyemu.Pst instance from model interface files.  This
+    function is emulated in the Pst.from_io_files() class method.
+
+    Parameters:
+        tpl_files : (list)
+            template file names
+        in_files : (list)
+            model input file names
+        ins_files : (list)
+            instruction file names
+        out_files : (list)
+            model output file names
+        pst_filename : (str)
+            filename to save new pyemu.Pst.  If None, Pst is not written.
+            default is None
+
+    Returns:
+      new_pst : pyemu.Pst
+
+    """
     import warnings
     warnings.warn("pst_from_io_files has moved to pyemu.helpers and is also "+\
                   "now avaiable as a Pst class method (Pst.from_io_files())")
@@ -424,6 +494,17 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
 
 
 def try_run_inschek(pst):
+    """ attempt to run INSCHEK for each instruction file, model output
+    file pair in a pyemu.Pst.  If the run is successful, the INSCHEK written
+    .obf file is used to populate the pst.observation_data.obsval attribute
+
+    Parameters:
+        pst : (pyemu.Pst)
+
+    Returns:
+        None
+
+    """
     for ins_file,out_file in zip(pst.instruction_files,pst.output_files):
         try:
             #os.system("inschek {0} {1}".format(ins_file,out_file))
@@ -441,13 +522,14 @@ def try_run_inschek(pst):
 
 
 def get_phi_comps_from_recfile(recfile):
-        """read the phi components from a record file
+        """read the phi components from a record file by iteration
+
         Parameters:
-        ----------
-            recfile (str) : record file
+            recfile : (str)
+                pest record file name
         Returns:
-        -------
-            dict{iteration number:{group,contribution}}
+            iters : dict
+                nested dictionary of iteration number, {group,contribution}
         """
         iiter = 1
         iters = {}
@@ -475,26 +557,26 @@ def get_phi_comps_from_recfile(recfile):
 
 def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
                gwutils_compliant=False, datetime_format=None):
-    """ create an instruction file from an smp file
+    """ create an instruction file for an smp file
+
     Parameters:
-    ----------
-        smp_filename : str
+        smp_filename : (str)
             existing smp file
-        ins_filename: str:
+        ins_filename: (str)
             instruction file to create.  If None, create
             an instruction file using the smp filename
             with the ".ins" suffix
-        use_generic_names : bool
-            flag to force obseravtions names to use a generic
+        use_generic_names : (boolean)
+            flag to force observations names to use a generic
             int counter instead of trying to use a datetime str
-        gwutils_compliant : bool
+        gwutils_compliant : (boolean)
             flag to use instruction set that is compliant with the
             pest gw utils (fixed format instructions).  If false,
             use free format (with whitespace) instruction set
-        datetime_format : optional str
+        datetime_format : (str)
             str to pass to datetime.strptime in the smp_to_dataframe() function
+
     Returns:
-    -------
         dataframe instance of the smp file with the observation names and
         instruction lines as additional columns
     """
@@ -539,21 +621,21 @@ def dataframe_to_smp(dataframe,smp_filename,name_col="name",
     """ write a dataframe as an smp file
 
     Parameters:
-    ----------
-        dataframe : a pandas dataframe
-        smp_filename : str
+        dataframe : (pandas.DataFrame)
+        smp_filename : (str)
             smp file to write
-        name_col: str
+        name_col: (str)
             the column in the dataframe the marks the site namne
-        datetime_col: str
+        datetime_col: (str)
             the column in the dataframe that is a datetime instance
-        value_col: str
+        value_col: (str)
             the column in the dataframe that is the values
-        datetime_format: str
+        datetime_format: (str)
             either 'dd/mm/yyyy' or 'mm/dd/yyy'
-        value_format: a python float-compatible format
+        value_format: (str)
+            a python float-compatible format
+
     Returns:
-    -------
         None
     """
     formatters = {"name":lambda x:"{0:<20s}".format(str(x)[:max_name_len]),
@@ -587,6 +669,14 @@ def dataframe_to_smp(dataframe,smp_filename,name_col="name",
 
 def date_parser(items):
     """ datetime parser to help load smp files
+
+    Parameters:
+        items : (varies)
+            something or somethings to try to parse into datetimes
+
+    Returns:
+        dt : (varies)
+            the cast datetime things
     """
     try:
         dt = datetime.strptime(items,"%d/%m/%Y %H:%M:%S")
@@ -600,18 +690,18 @@ def date_parser(items):
 
 
 def smp_to_dataframe(smp_filename,datetime_format=None):
-    """ load an smp file into a pandas dataframe
+    """ load an smp file into a pandas dataframe (stacked in wide format)
+
     Parameters:
-    ----------
-        smp_filename : str
+        smp_filename : (str)
             smp filename to load
-        datetime_format : optional str
+        datetime_format : (str)
             should be either "%m/%d/%Y %H:%M:%S" or "%d/%m/%Y %H:%M:%S"
             If None, then we will try to deduce the format for you, which
             always dangerous
+
     Returns:
-    -------
-        a pandas dataframe instance
+        df : pandas.DataFrame
     """
 
     if datetime_format is not None:
@@ -632,6 +722,7 @@ def del_rw(action, name, exc):
     
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
                  port=4004,rel_path=None):
+
     import warnings
     warnings.warn("deprecation warning:start_slaves() has moved to the utils.helpers module")
     from pyemu.utils import start_slaves
@@ -639,6 +730,16 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
                  port=port,rel_path=rel_path)
 
 def res_from_obseravtion_data(observation_data):
+    """create a generic residual dataframe filled with np.NaN for
+    missing information
+
+    Parameters:
+        observation_data : (pandas.DataFrame)
+            pyemu.Pst.observation_data
+
+    Returns:
+        res_df : pandas.DataFrame
+    """
     res_df = observation_data.copy()
     res_df.loc[:, "name"] = res_df.pop("obsnme")
     res_df.loc[:, "measured"] = res_df.pop("obsval")

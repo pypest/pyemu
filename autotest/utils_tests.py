@@ -24,14 +24,15 @@ def fac2real_test():
 
     pp_file = os.path.join("utils", "points2.dat")
     factors_file = os.path.join("utils", "factors2.dat")
-    pyemu.utils.gw_utils.fac2real(pp_file, factors_file,
+    pyemu.geostats.fac2real(pp_file, factors_file,
                                   out_file=os.path.join("temp", "test.ref"))
     arr1 = np.loadtxt(os.path.join("utils","fac2real_points2.ref"))
     arr2 = np.loadtxt(os.path.join("temp","test.ref"))
 
     #print(np.nansum(np.abs(arr1-arr2)))
     #print(np.nanmax(np.abs(arr1-arr2)))
-    assert np.nanmax(np.abs(arr1-arr2)) < 0.01
+    nmax = np.nanmax(np.abs(arr1-arr2))
+    assert nmax < 0.01
 
     # import matplotlib.pyplot as plt
     # diff = (arr1-arr2)/arr1 * 100.0
@@ -390,10 +391,14 @@ def first_order_pearson_regul_test():
     from pyemu.utils.helpers import first_order_pearson_tikhonov,zero_order_tikhonov
     w_dir = "la"
     sc = Schur(jco=os.path.join(w_dir,"pest.jcb"))
+    pt = sc.posterior_parameter
     zero_order_tikhonov(sc.pst)
-    first_order_pearson_tikhonov(sc.pst,sc.posterior_parameter,reset=False)
+    first_order_pearson_tikhonov(sc.pst,pt,reset=False)
+
     print(sc.pst.prior_information)
     sc.pst.rectify_pi()
+    assert sc.pst.control_data.pestmode == "regularization"
+    sc.pst.write(os.path.join('temp','test.pst'))
 
 def zero_order_regul_test():
     import os
@@ -401,6 +406,9 @@ def zero_order_regul_test():
     pst = pyemu.Pst(os.path.join("pst","inctest.pst"))
     pyemu.helpers.zero_order_tikhonov(pst)
     print(pst.prior_information)
+    assert pst.control_data.pestmode == "regularization"
+    pst.write(os.path.join('temp','test.pst'))
+
 
 def kl_test():
     import os
@@ -767,41 +775,123 @@ def plot_summary_test():
         plt.close(fig)
 
 
+def grid_obs_test():
+    import os
+    import shutil
+    import numpy as np
+    import pandas as pd
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+
+    org_hds_file = os.path.join("..","examples","Freyberg_Truth","freyberg.hds")
+    hds_file = os.path.join("temp","freyberg.hds")
+    out_file = hds_file+".dat"
+    shutil.copy2(org_hds_file,hds_file)
+    pyemu.gw_utils.setup_hds_obs(hds_file)
+    df1 = pd.read_csv(out_file,delim_whitespace=True)
+    pyemu.gw_utils.apply_hds_obs(hds_file)
+    df2 = pd.read_csv(out_file,delim_whitespace=True)
+    diff = df1.obsval - df2.obsval
+    assert diff.max() < 1.0e-6
+
+    pyemu.gw_utils.setup_hds_obs(hds_file,skip=-999)
+    df1 = pd.read_csv(out_file,delim_whitespace=True)
+    pyemu.gw_utils.apply_hds_obs(hds_file)
+    df2 = pd.read_csv(out_file,delim_whitespace=True)
+    diff = df1.obsval - df2.obsval
+    assert diff.max() < 1.0e-6
+
+    skip = lambda x : x < -888.0
+    skip = lambda x: x if x > -888.0 else np.NaN
+    pyemu.gw_utils.setup_hds_obs(hds_file,skip=skip)
+    df1 = pd.read_csv(out_file,delim_whitespace=True)
+    pyemu.gw_utils.apply_hds_obs(hds_file)
+    df2 = pd.read_csv(out_file,delim_whitespace=True)
+    diff = df1.obsval - df2.obsval
+    assert diff.max() < 1.0e-6
+
+    kperk_pairs = (0,0)
+    pyemu.gw_utils.setup_hds_obs(hds_file,kperk_pairs=kperk_pairs,
+                                 skip=skip)
+    df1 = pd.read_csv(out_file,delim_whitespace=True)
+    pyemu.gw_utils.apply_hds_obs(hds_file)
+    df2 = pd.read_csv(out_file,delim_whitespace=True)
+    diff = df1.obsval - df2.obsval
+    assert diff.max() < 1.0e-6
+
+
+def par_knowledge_test():
+    import os
+    import numpy as np
+    import pyemu
+    pst_file = os.path.join("pst","pest.pst")
+    pst = pyemu.Pst(pst_file)
+
+    tpl_file = os.path.join("utils","pp_locs.tpl")
+    str_file = os.path.join("utils","structure.dat")
+    pp_df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
+    pkd = {"kr01c01":0.1}
+    try:
+        cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{str_file:tpl_file},
+                                                         par_knowledge_dict=pkd)
+    except:
+        return
+    else:
+        raise Exception("should have failed")
+    d1 = np.diag(cov.x)
+
+
+    df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
+    df.loc[:,"zone"] = np.arange(df.shape[0])
+    gs = pyemu.geostats.read_struct_file(str_file)
+    cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{gs:df},
+                                               sigma_range=4)
+    nnz = np.count_nonzero(cov.x)
+    assert nnz == pst.npar
+    d2 = np.diag(cov.x)
+    assert np.array_equiv(d1, d2)
+
+
 if __name__ == "__main__":
-    plot_summary_test()
-    load_sgems_expvar_test()
-    read_hydmod_test()
-    make_hydmod_insfile_test()
-    gslib_2_dataframe_test()
-    sgems_to_geostruct_test()
-    #linearuniversal_krige_test()
-    geostat_prior_builder_test()
-    mflist_budget_test()
-    tpl_to_dataframe_test()
-    kl_test()
-    zero_order_regul_test()
-    first_order_pearson_regul_test()
-    master_and_slaves()
-    smp_to_ins_test()
-    read_pestpp_runstorage_file_test()
-    write_tpl_test()
-    pp_to_shapefile_test()
-    read_pval_test()
-    read_hob_test()
-    setup_pp_test()
-    pp_to_tpl_test()
-    setup_ppcov_complex()
-    ppcov_complex_test()
-    setup_ppcov_simple()
-    ppcov_simple_test()
-    fac2real_test()
-    vario_test()
-    geostruct_test()
-    aniso_test()
-    struct_file_test()
-    covariance_matrix_test()
-    add_pi_obj_func_test()
-    ok_test()
-    ok_grid_test()
-    ok_grid_zone_test()
-    ppk2fac_verf_test()
+    par_knowledge_test()
+    # grid_obs_test()
+    # plot_summary_test()
+    # load_sgems_expvar_test()
+    # read_hydmod_test()
+    # make_hydmod_insfile_test()
+    # gslib_2_dataframe_test()
+    # sgems_to_geostruct_test()
+    # #linearuniversal_krige_test()
+    # geostat_prior_builder_test()
+    # mflist_budget_test()
+    # tpl_to_dataframe_test()
+    # kl_test()
+    #zero_order_regul_test()
+    #first_order_pearson_regul_test()
+    # master_and_slaves()
+    # smp_to_ins_test()
+    # read_pestpp_runstorage_file_test()
+    # write_tpl_test()
+    # pp_to_shapefile_test()
+    # read_pval_test()
+    # read_hob_test()
+    # setup_pp_test()
+    # pp_to_tpl_test()
+    # setup_ppcov_complex()
+    # ppcov_complex_test()
+    # setup_ppcov_simple()
+    # ppcov_simple_test()
+    # fac2real_test()
+    # vario_test()
+    # geostruct_test()
+    # aniso_test()
+    # struct_file_test()
+    # covariance_matrix_test()
+    # add_pi_obj_func_test()
+    # ok_test()
+    # ok_grid_test()
+    # ok_grid_zone_test()
+    # ppk2fac_verf_test()
