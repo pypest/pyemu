@@ -1,3 +1,7 @@
+""" modeul with high-level functions to help
+perform complex tasks
+"""
+
 from __future__ import print_function, division
 import os
 import multiprocessing as mp
@@ -22,6 +26,21 @@ import pyemu
 
 
 def run(cmd_str,cwd='.'):
+    """ an OS agnostic function to execute command
+
+    Parameters:
+        cmd_str : (str)
+            the str to execute with os.system()
+
+        cwd : (str)
+            the directory to execute the command in
+
+    Note:
+        uses platform to detect OS and adds .exe or ./ as appropriate
+
+        for Windows, if os.system returns non-zero, raises exception
+
+    """
     bwd = os.getcwd()
     os.chdir(cwd)
     try:
@@ -43,14 +62,14 @@ def run(cmd_str,cwd='.'):
 
     except Exception as e:
         os.chdir(bwd)
-        raise Exception("run() raise :{0}".format(str(e)))
+        raise Exception("run() raised :{0}".format(str(e)))
     print("run():{0}".format(cmd_str))
 
     try:
         ret_val = os.system(cmd_str)
     except Exception as e:
         os.chdir(bwd)
-        raise Exception("run() raise :{0}".format(str(e)))
+        raise Exception("run() raised :{0}".format(str(e)))
     os.chdir(bwd)
     if "window" in platform.platform().lower():
         if ret_val != 0:
@@ -65,18 +84,31 @@ def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
 
 def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_dict=None):
     """ a helper function to construct a full prior covariance matrix using
-    a mixture of geostastical structures an parameter bounds information.
-    Parameters
-        pst : pyemu.Pst instance (or the name of a pst file)
-        struct_dict : a python dict of geostat structure file : list of pp tpl files
-            if the values in the dict are pd.DataFrames, then they must have an
+    a mixture of geostastical structures and parameter bounds information.
+    The covariance of parameters associated with geostatistical structures is defined
+    as a mixture of GeoStruct and bounds.  That is, the GeoStruct is used to construct a
+    pyemu.Cov, then the entire pyemu.Cov is scaled by the uncertainty implied by the bounds and
+    sigma_range. Sounds complicated...
+
+    Parameters:
+        pst : (pyemu.Pst)
+            a control file (or the name of control file)
+        struct_dict : (dict)
+            a python dict of GeoStruct (or structure file), and list of pp tpl files pairs
+            If the values in the dict are pd.DataFrames, then they must have an
             'x','y', and 'parnme' column.  If the filename ends in '.csv',
-            then a pd.DataFrame is loaded.
-        sigma_range : float representing the number of standard deviations implied by parameter bounds
+            then a pd.DataFrame is loaded, otherwise a pilot points file is loaded.
+        sigma_range : (float)
+            a float representing the number of standard deviations implied by parameter bounds.
+            Default is 4.0, which implies 95% confidence parameter bounds.
         par_knowledge_dict : dictionary of {parnme:variance}
-            used to condition on existing knowledge about parameters
+            used to condition on existing knowledge about parameters.  This functionality is
+             currently in dev - don't use it.
+
     Returns:
-        Cov : pyemu.Cov instance
+        Cov : pyemu.Cov
+            a covariance matrix that includes all adjustable parameters in the control
+            file.
 
     """
     if isinstance(pst,str):
@@ -146,6 +178,10 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_di
 
 
 def condition_on_par_knowledge(cov,par_knowledge_dict):
+    """  experimental function to include conditional prior information
+    for one or more parameters in a full covariance matrix
+    """
+
     missing = []
     for parnme in par_knowledge_dict.keys():
         if parnme not in cov.row_names:
@@ -187,31 +223,34 @@ def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
              tpl_file="kl.tpl"):
     """setup a karhuenen-Loeve based parameterization for a given
     geostatistical structure.
-    Parameters
-        num_eig (int) : number of basis vectors to retain in the reduced basis
 
-        struct_file (str) : a pest-style geostatistical structure file
+    Parameters:
+        num_eig : (int)
+            number of basis vectors to retain in the reduced basis
 
-        array_dict (dict(str:ndarray)): a dict of arrays to setup as KL-based
-                                        parameters.  The key becomes the
-                                        parameter name prefix. The total
-                                        number of parameters is
-                                        len(array_dict) * num_eig
+        struct_file : (str)
+            a pest-style geostatistical structure file
 
-        basis_file (str) : the name of the binary file where the reduced
-                           basis will be saved
+        array_dict : (dict)
+            a dict of arrays to setup as KL-based parameters.  The key becomes the
+            parameter name prefix. The total number of parameters is
+            len(array_dict) * num_eig
 
-        tpl_file (str) : the name of the template file to make.  The template
-                         file is a csv file with the parameter names, the
-                         original factor values,and the template entries.
-                         The original values can be used to set the parval1
-                         entries in the control file
-    Returns
-        back_array_dict (dict(str:ndarray)) : a dictionary of back transformed
-                                              arrays.  This is useful to see
-                                              how much "smoothing" is taking
-                                              place compared to the original
-                                              arrays.
+        basis_file : (str)
+            the name of the binary file where the reduced basis will be saved
+
+        tpl_file :(str)
+            the name of the template file to make.  The template
+            file is a csv file with the parameter names, the
+            original factor values,and the template entries.
+            The original values can be used to set the parval1
+            entries in the control file
+
+    Returns:
+        back_array_dict : dict
+            a dictionary of back transformed arrays.  This is useful to see
+            how much "smoothing" is taking place compared to the original
+            arrays.
     """
     try:
         import flopy
@@ -265,15 +304,19 @@ def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
 
 def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
     """ Applies a KL parameterization transform from basis factors to model
-     input arrays
-     Parameters
-        par_file (str) : the csv file to get factor values from.  Must contain
-                        the following columns: name, new_val, org_val
-        basis_file (str): the binary file that contains the reduced basis
+     input arrays.  Companion function to kl_setup()
 
-        par_to_file_dict (dict(str:str)): a mapping from KL parameter prefixes
-                                          to array file names.
-    Returns
+     Parameters:
+        par_file :(str)
+            the csv file to get factor values from.  Must contain
+            the following columns: name, new_val, org_val
+        basis_file :(str)
+            the binary file that contains the reduced basis
+
+        par_to_file_dict : (dict)
+            a mapping from KL parameter prefixes to array file names.
+
+    Returns:
         None
 
     """
@@ -306,15 +349,19 @@ def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
 
 def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
         """setup preferred-value regularization
-        Parameters
-        ----------
-            pst (Pst instance) : the control file instance
-            parbounds (bool) : weight the prior information equations according
-                to parameter bound width - approx the KL transform
-            par_groups (list(str)) : parameter groups to build PI equations
-               for.  If None, all adjustable parameters are used
-        Returns
-        -------
+
+        Parameters:
+            pst : (pyemu.Pst)
+                the control file instance
+            parbounds : (bool)
+                flag to weight the prior information equations according
+                to parameter bound width - approx the KL transform. Default
+                is True
+            par_groups : (list)
+                parameter groups to build PI equations for.  If None, all
+                adjustable parameters are used. Default is None
+
+        Returns:
             None
         """
 
@@ -354,10 +401,12 @@ def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
 
 def regweight_from_parbound(pst):
     """sets regularization weights from parameter bounds
-        which approximates the KL expansion
-    Parameters
-    ----------
-        pst (Pst) : a control file instance
+    which approximates the KL expansion.  Called by
+    zero_order_tikhonov().
+
+    Parameters:
+        pst (pyemu.Pst)
+            a control file instance
     """
     pst.parameter_data.index = pst.parameter_data.parnme
     pst.prior_information.index = pst.prior_information.pilbl
@@ -377,15 +426,22 @@ def regweight_from_parbound(pst):
 
 def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
         """setup preferred-difference regularization from a covariance matrix.
-        Parameters
-        ----------
-            pst (pyemu.Pst) : pst instance
-            cov (pyemu.Cov) : covariance matrix instance
-            reset (bool) : drop all other pi equations.  If False, append to
+        The weights on the prior information equations are the Pearson
+        correlation coefficients implied by covariance matrix.
+
+        Parameters:
+            pst :(pyemu.Pst)
+                pst instance
+            cov : (pyemu.Cov)
+                covariance matrix instance
+            reset : (bool)
+                drop all other pi equations.  If False, append to
                 existing pi equations
-            abs_drop_tol (float) : tolerance to control how many pi
-                equations are written.  If the pearson cc is less than
-                abs_drop_tol, it will not be included in the pi equations
+            abs_drop_tol :(float)
+                tolerance to control how many pi equations are written.
+                If the Pearson C is less than abs_drop_tol, the prior information
+                 equation will not be included in the control file
+
         """
         assert isinstance(cov,pyemu.Cov)
         cc_mat = cov.to_pearson()
@@ -435,26 +491,30 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
                  port=4004,rel_path=None,local=True,cleanup=True,master_dir=None):
     """ start a group of pest(++) slaves on the local machine
 
-    Parameters
-    ----------
-        slave_dir : (str) the path to a complete set of input files
+    Parameters:
+        slave_dir : (str)
+            the path to a complete set of input files
 
-        exe_rel_path : (str) the relative path to the pest(++)
-                        executable from within the slave_dir
-        pst_rel_path : (str) the relative path to the pst file
-                        from within the slave_dir
+        exe_rel_path : (str)
+            the relative path to the pest(++) executable from within the slave_dir
+        pst_rel_path : (str)
+            the relative path to the pst file from within the slave_dir
+        num_slaves : (int)
+            number of slaves to start. defaults to number of cores
+        slave_root : (str)
+            the root to make the new slave directories in
 
-        num_slaves : (int) number of slaves to start. defaults to number of cores
-
-        slave_root : (str) the root to make the new slave directories in
-
-        rel_path: (str) the relative path to where pest(++) should be run
-                  from within the slave_dir, defaults to the uppermost level of the slave dir
-        local: (bool) flag for using "localhost" instead of hostname on slave command line
-        cleanup: (bool) flag to remove slave directories once processes exit
-        master_dir: (str) name of directory for master instance.  If master_dir
-                    exists, then it will be removed.  If master_dir is None,
-                    no master instance will be started
+        rel_path: (str)
+            the relative path to where pest(++) should be run from within the
+            slave_dir, defaults to the uppermost level of the slave dir
+        local: (boolean)
+            flag for using "localhost" instead of hostname on slave command line
+        cleanup: (boolean)
+            flag to remove slave directories once processes exit
+        master_dir: (str)
+            name of directory for master instance.  If master_dir
+            exists, then it will be removed.  If master_dir is None,
+            no master instance will be started
     """
 
     assert os.path.isdir(slave_dir)
@@ -591,17 +651,33 @@ def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
                                subplots=False,figsize=(11,8.5),pt_color='b'):
     """ helper function to plot gaussian distrbutions from prior and posterior
     means and standard deviations
-    :param df: a dataframe and csv file.  Must have columns named:
-    'prior_mean','prior_stdev','post_mean','post_stdev'.  If loaded
-    from a csv file, column 0 is assumed to tbe the index
-    :param ax: matplotlib axis.  If None, and not subplots, then one is created
-    and all distributions are plotted on a single plot
-    :param label_post: flag to add text labels to the peak of the posterior
-    :param label_prior: flag to add text labels to the peak of the prior
-    :param subplots: flag to use subplots.  If True, then 6 axes per page
-    are used and a single prior and posterior is plotted on each
-    :param figsize: matplotlib figure size
-    :return: if subplots, list of figs, list of axes, else, a single axis
+
+    Parameters:
+        df : (pandas.DataFrame)
+            a dataframe and csv file.  Must have columns named:
+            'prior_mean','prior_stdev','post_mean','post_stdev'.  If loaded
+            from a csv file, column 0 is assumed to tbe the index
+        ax: (matplotlib.pyplot.axis)
+            If None, and not subplots, then one is created
+            and all distributions are plotted on a single plot
+        label_post: (boolean)
+            flag to add text labels to the peak of the posterior
+        label_prior: (boolean)
+            flag to add text labels to the peak of the prior
+        subplots: (boolean)
+            flag to use subplots.  If True, then 6 axes per page
+            are used and a single prior and posterior is plotted on each
+        figsize: (tuple)
+            matplotlib figure size
+
+    Returns:
+        figs : list
+            list of figures
+        axes : list
+            list of axes
+
+    Note:
+        if subplots is False, a single axis is returned
     """
     import matplotlib.pyplot as plt
     if isinstance(df,str):
@@ -672,7 +748,25 @@ def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
 
 
 def gaussian_distribution(mean,stdev,num_pts=50):
-    """for plotting
+    """ get an x and y numpy.ndarray that spans the +/- 4
+    standard deviation range of a gaussian distribution with
+    a given mean and standard deviation. useful for plotting
+
+    Parameters:
+        mean : (float)
+            the mean of the distribution
+        stdev : (float)
+            the standard deviation of the distribution
+        num_pts : (int)
+            the number of points in the returned ndarrays.
+            Default is 50
+
+    Returns:
+        x : numpy.ndarray
+            the x-values of the distribution
+        y : numpy.ndarray
+            the y-values of the distribution
+
     """
     xstart = mean - (4.0 * stdev)
     xend = mean + (4.0 * stdev)
@@ -682,7 +776,22 @@ def gaussian_distribution(mean,stdev,num_pts=50):
 
 
 def read_pestpp_runstorage(filename,irun=0):
-    """read pars and obs from a specific run in a pest++ serialized run storage file"""
+    """read pars and obs from a specific run in a pest++ serialized run storage file into
+    pandas.DataFrame(s)
+
+    Parameters:
+        filename : (str)
+            the name of the run storage file
+        irun : (int)
+            the run id to process.  Default is 0
+
+    Returns:
+        par_df : pandas.DataFrame
+            parameter information
+        obs_df : pandas.DataFrame
+            observation information
+
+    """
     header_dtype = np.dtype([("n_runs",np.int64),("run_size",np.int64),("p_name_size",np.int64),
                       ("o_name_size",np.int64)])
     with open(filename,'rb') as f:
@@ -709,6 +818,28 @@ def read_pestpp_runstorage(filename,irun=0):
 
 
 def parse_dir_for_io_files(d):
+    """ a helper function to find template/input file pairs and
+    instruction file/output file pairs.  the return values from this
+    function can be passed straight to pyemu.Pst.from_io_files() classmethod
+    constructor. Assumes the template file names are <input_file>.tpl and
+    instruction file names are <output_file>.ins.
+
+    Parameters:
+        d : (str)
+            directory to search for interface files
+
+    Returns:
+        tpl_files : list
+            list of template files in d
+        in_files : list
+            list of input files in d
+        ins_files : list
+            list of instruction files in d
+        out_files : list
+            lsit of output files in d
+
+    """
+
     files = os.listdir(d)
     tpl_files = [f for f in files if f.endswith(".tpl")]
     in_files = [f.replace(".tpl","") for f in tpl_files]
@@ -727,19 +858,21 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
 
     Parameters
     ----------
-        tpl_files : list[str]
+        tpl_files : (list)
             list of pest template files
-        in_files : list[str]
+        in_files : (list)
             list of corresponding model input files
-        ins_files : list[str]
+        ins_files : (list)
             list of pest instruction files
-        out_files: list[str]
+        out_files: (list)
             list of corresponding model output files
-        pst_filename : str (optional)
-            name of file to write the control file to
+        pst_filename : (str)
+            name of file to write the control file to.  If None,
+            control file is not written.  Default is None
+
     Returns
-    -------
-        Pst instance
+        pst : pyemu.Pst
+        
     """
     par_names = []
     if not isinstance(tpl_files,list):
