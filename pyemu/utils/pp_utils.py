@@ -16,37 +16,41 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
                            pp_dir='.',tpl_dir='.',
                            shapename="pp.shp"):
     """setup grid-based pilot points.  Uses the ibound to determine
-       where to set pilot points. pilot points are given generic "pp_"
-       names.  write template files as well...hopefully this is useful
-        to someone...
-    Parameters
-    ----------
-        ml : flopy.modflow.Modflow instance
-        prefix_dict : (optional)dict{k:list}
-            a dictionary of parameter prefixes to use for each model
-            layer (e.g. {0:["hk_1","sy_1","rch"],1:["hk_2","ss_2"]}).
-            layer indices not list in prefix_dict will not have
-            pilot points written for them. If None, then "pp_<k>_" is
-            used for each layer. Zero-based layer index!!!
-        every_n_cell : int
-            the stride in the row and col loops. controls how dense the
-            point point network is compared to the model grid.
-            every_n_cell = 1 results in a pilot point in every cell
-        use_ibound_zones : bool
-            flag to use ibound values as zones for the pilot points
-        pp_dir : str
-            directory for pilot point files
-        tpl_dir : str
-            directory for template files
-        shapename : str
-            name of pilot point shapefile.  set to None to disable
-    Returns
-    -------
-        par_info : pd.DataFrame
-            a combined dataframe with pilot point, control file and
-            file location information
+    where to set pilot points. pilot points are given generic "pp_"
+    names unless predict_dict is passed.  write template files and a
+    shapefile as well...hopefully this is useful to someone...
+
+    Parameters:
+        ml : (flopy.mbase)
+            a flopy mbase dervied type.  If None, sr must not be None.
+        sr : (flopy.utils.reference.SpatialReference)
+            a spatial reference use to locate the model grid in space.  If None,
+            ml must not be None.  Default is None
+        ibound : (numpy.ndarray)
+            the modflow ibound integer array.  Used to set pilot points only in active areas.
+            If None and ml is None, then pilot points are set in all rows and columns according to
+            every_n_cell.  Default is None.
+        prefix_dict : (dict)
+            a dictionary of pilot point parameter prefix, layer pairs.  example : {"hk":[0,1,2,3]} would
+            setup pilot points with the prefix "hk" for model layers 1 - 4 (zero based). If None, a generic set
+            of pilot points with the "pp" prefix are setup for a generic nrowXncol grid. Default is None
+        use_ibound_zones : (boolean)
+            a flag to use the greater-than-zero values in the ibound as pilot point zones.  If False,ibound
+            values greater than zero are treated as a single zone.  Default is False.
+        pp_dir : (str)
+            directory to write pilot point files to.  Default is '.'
+        tpl_dir : (str)
+            directory to write pilot point template file to.  Default is '.'
+        shapename : (str)
+            name of shapefile to write that containts pilot point information. Default is "pp.shp"
+
+    Returns:
+        pp_df : pandas.DataFrame
+            a dataframe summarizing pilot point information (same information
+            written to shapename
 
     """
+
     import flopy
 
     if ml is not None:

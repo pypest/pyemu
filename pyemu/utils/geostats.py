@@ -1676,7 +1676,7 @@ def parse_factor_line(line):
             flag for transformation of the grid node
         fac_data : dict
             a dictionary of point number, factor
-        
+
     """
     raw = line.strip().split()
     inode,itrans,nfac = [int(i) for i in raw[:3]]
