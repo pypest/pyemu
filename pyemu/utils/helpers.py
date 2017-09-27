@@ -872,7 +872,7 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
 
     Returns
         pst : pyemu.Pst
-        
+
     """
     par_names = []
     if not isinstance(tpl_files,list):
@@ -920,7 +920,142 @@ wildass_guess_par_bounds_dict = {"hk":[0.01,100.0],"vka":[0.01,100.0],
                                    }
 
 class PstFromFlopyModel(object):
+    """ a monster helper class to setup multiplier parameters for an
+        existing MODFLOW model.  does all kinds of coolness like building a
+        meaningful prior, assigning somewhat meaningful parameter groups and
+        bounds, writes a forward_run.py script with all the calls need to
+        implement multiplier parameters, run MODFLOW and post-process.
 
+    Parameters:
+        model : (flopy.mbase)
+            a loaded flopy model instance. If model is an str, it is treated as a
+            MODFLOW nam file (requires org_model_ws)
+        new_model_ws : (str)
+            a directory where the new version of MODFLOW input files and PEST(++)
+            files will be written
+        org_model_ws : (str)
+            directory to existing MODFLOW model files.  Required if model argument
+            is an str.  Default is None
+        pp_props : (list)
+            pilot point multiplier parameters for grid-based properties.
+             A nested list of grid-scale model properties to parameterize using
+            name, iterable pairs.  For 3D properties, the iterable is zero-based
+            layer indices.  For example, ["lpf.hk",[0,1,2,]] would setup pilot point multiplier
+            parameters for layer property file horizontal hydraulic conductivity for model
+            layers 1,2, and 3.  For time-varying properties (e.g. recharge), the
+            iterable is for zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
+            would setup pilot point multiplier parameters for recharge for stress
+            period 1,5,11,and 16.
+        const_props : (list)
+            constant (uniform) multiplier parameters for grid-based properties.
+            A nested list of grid-scale model properties to parameterize using
+            name, iterable pairs.  For 3D properties, the iterable is zero-based
+            layer indices.  For example, ["lpf.hk",[0,1,2,]] would setup constant (uniform) multiplier
+            parameters for layer property file horizontal hydraulic conductivity for model
+            layers 1,2, and 3.  For time-varying properties (e.g. recharge), the
+            iterable is for zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
+            would setup constant (uniform) multiplier parameters for recharge for stress
+            period 1,5,11,and 16.
+        bc_props : (list)
+            boundary condition stress-period level multiplier parameters.
+            A nested list of boundary condition elements to parameterize using
+            name, iterable pairs.  The iterable is zero-based stress-period indices.
+            For example, to setup multipliers for WEL flux and for RIV conductance,
+            bc_props = [["wel.flux",[0,1,2]],["riv.cond",None]] would setup
+            multiplier parameters for well flux for stress periods 1,2 and 3 and
+            would setup one single river conductance multipler parameter that is applied
+            to all stress periods
+        grid_props : (list)
+            grid-based (every active model cell) multiplier parameters.
+            A nested list of grid-scale model properties to parameterize using
+            name, iterable pairs.  For 3D properties, the iterable is zero-based
+            layer indices (e.g., ["lpf.hk",[0,1,2,]] would setup a multiplier
+            parameter for layer property file horizontal hydraulic conductivity for model
+            layers 1,2, and 3 in every active model cell).  For time-varying properties (e.g. recharge), the
+            iterable is for zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
+            would setup grid-based multiplier parameters in every active model cell
+            for recharge for stress period 1,5,11,and 16.
+        grid_geostruct : (pyemu.geostats.GeoStruct)
+            the geostatistical structure to build the prior parameter covariance matrix
+            elements for grid-based parameters.  If None, a generic GeoStruct is created
+            using the grid-spacing information.  Default is None
+        pp_space : (int)
+            number of grid cells between pilot points.  If None, use the default
+            in pyemu.pp_utils.setup_pilot_points_grid.  Default is None
+        zone_props : (list)
+            zone-based multiplier parameters.
+            A nested list of grid-scale model properties to parameterize using
+            name, iterable pairs.  For 3D properties, the iterable is zero-based
+            layer indices (e.g., ["lpf.hk",[0,1,2,]] would setup a multiplier
+            parameter for layer property file horizontal hydraulic conductivity for model
+            layers 1,2, and 3 for unique zone values in the ibound array.
+            For time-varying properties (e.g. recharge), the iterable is for
+            zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
+            would setup zone-based multiplier parameters for recharge for stress
+            period 1,5,11,and 16.
+        pp_geostruct : (pyemu.geostats.GeoStruct)
+            the geostatistical structure to use for building the prior parameter
+            covariance matrix for pilot point parameters.  If None, a generic
+            GeoStruct is created using pp_space and grid-spacing information.
+            Default is None
+        par_bounds_dict : (dict)
+            a dictionary of model property/boundary condition name, upper-lower bound pairs.
+            For example, par_bounds_dict = {"lpf.hk":[0.01,100.0],"wel.flux":[0.5,2.0]} would
+            set the bounds for layer property file horizontal hydraulic conductivity to
+            0.001 and 100.0 and set the bounds for well package flux parameters to 0.5 and
+            2.0.  If None, then the pyemu.helpers.wildass_guess_par_bounds_dict is
+            used to set somewhat meaningful bounds.  Default is None
+        bc_geostruct : (pyemu.geostats.GeoStruct)
+            the geostastical struture to build the prior parameter covariance matrix
+            for time-varying boundary condition multiplier parameters.  This GeoStruct
+            express the time correlation so that the 'a' parameter is the length of
+            time that boundary condition multipler parameters are correlated across.
+            If None, then a generic GeoStruct is created that uses an 'a' parameter
+            of 3 stress periods.  Default is None
+        remove_existing : (boolean)
+            a flag to remove an existing new_model_ws directory.  If False and
+            new_model_ws exists, an exception is raised.  If True and new_model_ws
+            exists, the directory is destroyed - user beware! Default is False.
+        k_zone_dict : (dict)
+            a dictionary of zero-based layer index, zone array pairs.  Used to
+            override using ibound zones for zone-based parameterization.  If None,
+            use ibound values greater than zero as zones.
+        use_pp_zones : (boolean)
+             a flag to use ibound zones (or k_zone_dict, see above) as pilot
+             point zones.  If False, ibound values greater than zero are treated as
+             a single zone for pilot points.  Default is False
+         obssim_smp_pairs: (list)
+            a list of observed-simulated PEST-type SMP file pairs to get observations
+            from and include in the control file.  Default is []
+        external_tpl_in_pairs : (list)
+            a list of existing template file, model input file pairs to parse parameters
+            from and include in the control file.  Default is []
+        external_ins_out_pairs : (list)
+            a list of existing instruction file, model output file pairs to parse
+            observations from and include in the control file.  Default is []
+        extra_pre_cmds : (list)
+            a list of preprocessing commands to add to the forward_run.py script
+            commands are executed with os.system() within forward_run.py. Default
+            is [].
+        extra_post_cmds : (list)
+            a list of post-processing commands to add to the forward_run.py script.
+            Commands are executed with os.system() within forward_run.py.
+            Default is [].
+
+    Returns:
+        PstFromFlopyModel : PstFromFlopyModel
+
+    Note:
+        works a lot better of TEMPCHEK, INSCHEK and PESTCHEK are available in the
+        system path variable
+
+
+
+
+
+
+
+    """
     def __init__(self,model,new_model_ws,org_model_ws=None,pp_props=[],const_props=[],
                  bc_props=[],grid_props=[],grid_geostruct=None,pp_space=None,
                  zone_props=[],pp_geostruct=None,par_bounds_dict=None,
@@ -929,14 +1064,7 @@ class PstFromFlopyModel(object):
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
                  external_ins_out_pairs=None,extra_pre_cmds=None,
                  extra_model_cmds=None,extra_post_cmds=None):
-        """ a monster helper class to setup multiplier parameters for an
-        existing MODFLOW model.  does all kinds of coolness like building a
-        meaningful prior, assigning somewhat meaningful parameter groups and
-        bounds, writes a forward_run.py script with all the calls need to
-        implement multiplier parameters, run MODFLOW and post-process.
 
-
-        """
         self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
         self.log = self.logger.log
 
@@ -1040,6 +1168,10 @@ class PstFromFlopyModel(object):
         self.logger.statement("all done")
 
     def setup_mult_dirs(self):
+        """ setup the directories to use for multiplier parameterization.  Directories
+        are make within the PstFromFlopyModel.m.model_ws directory
+
+        """
         # setup dirs to hold the original and multiplier model input quantities
         set_dirs = []
 #        if len(self.pp_props) > 0 or len(self.zone_props) > 0 or \
@@ -1066,6 +1198,22 @@ class PstFromFlopyModel(object):
             self.log("setting up '{0}' dir".format(d))
 
     def setup_model(self,model,org_model_ws,new_model_ws):
+        """ setup the flopy.mbase instance for use with multipler parameters.
+        Changes model_ws, sets external_path and writes new MODFLOW input
+        files
+
+        Parameters:
+            model : (flopy.mbase)
+                flopy model instance
+            org_model_ws : (str)
+                the orginal model working space
+            new_model_ws : (str)
+                the new model working space
+
+        Returns:
+            None
+
+        """
         split_new_mws = [i for i in os.path.split(new_model_ws) if len(i) > 0]
         if len(split_new_mws) != 1:
             self.logger.lraise("new_model_ws can only be 1 folder-level deep:{0}".
@@ -1106,6 +1254,20 @@ class PstFromFlopyModel(object):
         self.log("writing new modflow input files")
 
     def get_count(self,name):
+        """ get the latest counter for a certain parameter type.
+
+        Parameters:
+            name : (str)
+                the parameter type
+
+        Returns:
+            count : int
+                the latest count for a parameter type
+
+        Note:
+            calling this function increments the counter for the passed
+            parameter type
+        """
         if name not in self.mlt_counter:
             self.mlt_counter[name] = 1
             c = 0
@@ -1116,6 +1278,10 @@ class PstFromFlopyModel(object):
         return c
 
     def prep_mlt_arrays(self):
+        """  prepare multipler arrays.  Copies existing model input arrays and
+        writes generic (ones) multiplier arrays
+
+        """
         par_props = [self.pp_props,self.grid_props,
                          self.zone_props,self.const_props]
         par_suffixs = [self.pp_suffix,self.gr_suffix,
@@ -1178,12 +1344,38 @@ class PstFromFlopyModel(object):
             return mlt_df
 
     def write_u2d(self, u2d):
+        """ write a flopy.utils.Util2D instance to an ASCII text file using the
+        Util2D filename
+
+        Parameters:
+            u2d : (flopy.utils.Util2D)
+
+        Returns:
+            filename : str
+                the name of the file written (without path)
+
+        """
         filename = os.path.split(u2d.filename)[-1]
         np.savetxt(os.path.join(self.m.model_ws,self.arr_org,filename),
                    u2d.array,fmt="%15.6E")
         return filename
 
     def write_const_tpl(self,name,tpl_file,zn_array):
+        """ write a template file a for a constant (uniform) multiplier parameter
+
+        Parameters:
+            name : (str)
+                the base parameter name
+            tpl_file : (str)
+                the template file to write
+            zn_array : (numpy.ndarray)
+                an array used to skip inactive cells
+
+        Returns:
+            df : pandas.DataFrame
+                a dataframe with parameter information
+
+        """
         parnme = []
         with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
             f.write("ptf ~\n")
@@ -1207,6 +1399,21 @@ class PstFromFlopyModel(object):
         return df
 
     def write_grid_tpl(self,name,tpl_file,zn_array):
+        """ write a template file a for grid-based multiplier parameters
+
+        Parameters:
+            name : (str)
+                the base parameter name
+            tpl_file : (str)
+                the template file to write
+            zn_array : (numpy.ndarray)
+                an array used to skip inactive cells
+
+        Returns:
+            df : pandas.DataFrame
+                a dataframe with parameter information
+
+        """
         parnme,x,y = [],[],[]
         with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
             f.write("ptf ~\n")
@@ -1231,6 +1438,21 @@ class PstFromFlopyModel(object):
         return df
 
     def write_zone_tpl(self,name,tpl_file,zn_array):
+        """ write a template file a for zone-based multiplier parameters
+
+        Parameters:
+            name : (str)
+                the base parameter name
+            tpl_file : (str)
+                the template file to write
+            zn_array : (numpy.ndarray)
+                an array used to skip inactive cells
+
+        Returns:
+            df : pandas.DataFrame
+                a dataframe with parameter information
+
+        """
         parnme = []
         with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
             f.write("ptf ~\n")
@@ -1252,6 +1474,9 @@ class PstFromFlopyModel(object):
         return df
 
     def grid_prep(self):
+        """ prepare grid-based parameterizations
+
+        """
         if len(self.grid_props) == 0:
             return
         if self.grid_geostruct is None:
@@ -1263,6 +1488,17 @@ class PstFromFlopyModel(object):
             self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v)
 
     def pp_prep(self,mlt_df):
+        """ prepare pilot point based parameterizations
+
+        Parameters:
+            mlt_df : (pandas.DataFrame)
+                a dataframe with multipler array information
+
+        Note:
+            calls pyemu.pp_utils.setup_pilot_points_grid
+
+
+        """
         if len(self.pp_props) == 0:
             return
         if self.pp_space is None:
@@ -1373,6 +1609,9 @@ class PstFromFlopyModel(object):
         self.par_dfs[self.pp_suffix] = pp_df
 
     def setup_array_pars(self):
+        """ main entry point for setting up array multipler parameters
+
+        """
         mlt_df = self.prep_mlt_arrays()
         if mlt_df is None:
             return
@@ -1460,6 +1699,9 @@ class PstFromFlopyModel(object):
         self.frun_pre_lines.append(line)
 
     def setup_observations(self):
+        """ main entry point for setting up observations
+
+        """
         obs_methods = [self.setup_water_budget_obs,self.setup_hyd,
                        self.setup_smp,self.setup_hob,self.setup_hds]
         obs_types = ["mflist water budget obs","hyd file",
@@ -1472,6 +1714,13 @@ class PstFromFlopyModel(object):
 
 
     def build_prior(self):
+        """ build a prior parameter covariance matrix.
+
+        Returns:
+            cov : pyemu.Cov
+                a full covariance matrix
+
+        """
         self.log("building prior covariance matrix")
         struct_dict = {}
         if self.pp_suffix in self.par_dfs.keys():
@@ -1512,8 +1761,18 @@ class PstFromFlopyModel(object):
             cov = pyemu.Cov.from_parameter_data(self.pst,sigma_range=6)
         cov.to_ascii(os.path.join(self.m.model_ws,self.pst_name+".prior.cov"))
         self.log("building prior covariance matrix")
+        return cov
 
     def build_pst(self):
+        """ build the pest control file using the parameterizations and
+        observations.
+
+        Note:
+            calls pyemu.Pst.from_io_files
+
+            calls PESTCHEK
+
+        """
         self.log("changing dir in to {0}".format(self.m.model_ws))
         os.chdir(self.m.model_ws)
         try:
@@ -1595,6 +1854,10 @@ class PstFromFlopyModel(object):
         self.log("running pestchek on {0}".format(self.pst_name))
 
     def add_external(self):
+        """ add external (existing) template files and instrution files to the
+        Pst instance
+
+        """
         if self.external_tpl_in_pairs is not None:
             if not isinstance(self.external_tpl_in_pairs,list):
                 external_tpl_in_pairs = [self.external_tpl_in_pairs]
@@ -1628,6 +1891,9 @@ class PstFromFlopyModel(object):
                     self.logger.warn("obs listed in {0} will have generic values")
 
     def write_forward_run(self):
+        """ write the forward run script forward_run.py
+
+        """
         with open(os.path.join(self.m.model_ws,self.forward_run_file),'w') as f:
             f.write("import os\nimport numpy as np\nimport pandas as pd\nimport flopy\n")
             f.write("import pyemu\n")
@@ -1639,6 +1905,19 @@ class PstFromFlopyModel(object):
                 f.write(line+'\n')
 
     def parse_k(self,k,vals):
+        """ parse the iterable from a property or boundary condition argument
+
+        Parameters:
+            k : (int or iterable int)
+                the iterable
+            vals : (iterable of ints)
+                the acceptable values that k may contain
+
+        Return
+            k_vals : (iterable of int)
+                parsed k values
+
+        """
         try:
             k = int(k)
         except:
@@ -1657,6 +1936,25 @@ class PstFromFlopyModel(object):
             return k_vals
 
     def parse_pakattr(self,pakattr):
+        """ parse package-iterable pairs from a property or boundary condition
+        argument
+
+        Parameters:
+            pakattr : (iterable len 2)
+
+
+        Returns:
+            pak : flopy.PakBase
+                the flopy package from the model instance
+            attr : (varies)
+                the flopy attribute from pak.  Could be Util2D, Util3D,
+                Transient2D, or MfList
+            attrname : (str)
+                the name of the attribute for MfList type.  Only returned if
+                attr is MfList.  For example, if attr is MfList and pak is
+                flopy.modflow.ModflowWel, then attrname can only be "flux"
+
+        """
         raw = pakattr.lower().split('.')
         if len(raw) != 2:
             self.logger.lraise("pakattr is wrong:{0}".format(pakattr))
@@ -1679,6 +1977,10 @@ class PstFromFlopyModel(object):
             self.logger.lraise("unrecognized attr:{1}".format(attrname))
 
     def setup_bc_pars(self):
+        """ main entry point for setting up boundary condition multiplier
+        parameters
+
+        """
         if len(self.bc_props) == 0:
             return
         self.log("processing bc_props")
@@ -1750,6 +2052,20 @@ class PstFromFlopyModel(object):
             self.bc_geostruct = pyemu.geostats.GeoStruct(variograms=v)
 
     def bc_helper(self,k,pak,attr,col):
+        """ helper to setup boundary condition multiplier parameters for a given
+        k, pak, attr set.
+
+        Parameters:
+            k : (int or iterable of int)
+                the zero-based stress period indices
+            pak : (flopy.PakBase)
+                the MODFLOW package
+            attr : (MfList)
+                the MfList instance
+            col : (str)
+                the column name in the MfList recarray to parameterize
+
+        """
         filename = attr.get_filename(k)
         filename_model = os.path.join(self.m.external_path,filename)
         shutil.copy2(os.path.join(self.m.model_ws,filename_model),
@@ -1758,6 +2074,19 @@ class PstFromFlopyModel(object):
 
 
     def setup_hds(self):
+        """ setup modflow head save file observations for given kper (zero-based
+        stress period index) and k (zero-based layer index) pairs using the
+         kperk argument.
+
+        Note:
+            this can setup a shit-ton of observations
+
+            this is useful for dataworth analyses or for monitoring
+            water levels as forecasts
+
+
+
+        """
         if self.hds_kperk is None or len(self.hds_kperk) == 0:
             return
         from .gw_utils import setup_hds_obs
@@ -1791,6 +2120,9 @@ class PstFromFlopyModel(object):
                       kperk_pairs=self.hds_kperk,skip=skip)
 
     def setup_smp(self):
+        """ setup observations from PEST-style SMP file pairs
+
+        """
         if self.obssim_smp_pairs is None:
             return
         if len(self.obssim_smp_pairs) == 2:
@@ -1811,6 +2143,11 @@ class PstFromFlopyModel(object):
             pyemu.pst_utils.smp_to_ins(new_sim_smp)
 
     def setup_hob(self):
+        """ setup observations from the MODFLOW HOB package
+
+
+        """
+
         if self.m.hob is None:
             return
         hob_out_unit = self.m.hob.iuhobsv
@@ -1824,6 +2161,10 @@ class PstFromFlopyModel(object):
         self.obs_dfs["hob"] = hob_df
 
     def setup_hyd(self):
+        """ setup obseravtions from the MODFLOW HYDMOD package
+
+
+        """
         if self.m.hyd is None:
             return
         org_hyd_out = os.path.join(self.org_model_ws,self.m.name+".hyd.bin")
@@ -1842,6 +2183,10 @@ class PstFromFlopyModel(object):
         self.obs_dfs["hyd"] = df
 
     def setup_water_budget_obs(self):
+        """ setup observations from the MODFLOW list file for
+        volume and flux water buget information
+
+        """
         org_listfile = os.path.join(self.org_model_ws,self.m.lst.file_name[0])
         if os.path.exists(org_listfile):
             shutil.copy2(org_listfile,os.path.join(self.m.model_ws,
@@ -1872,6 +2217,15 @@ class PstFromFlopyModel(object):
 
 
 def apply_array_pars():
+    """ a function to apply array-based multipler parameters.  Used to implement
+    the parameterization constructed by PstFromFlopyModel during a forward run
+
+    Note:
+        requires "arr_pars.csv"
+
+        should be added to the forward_run.py script
+
+    """
     df = pd.read_csv("arr_pars.csv")
     # for fname in df.model_file:
     #     try:
@@ -1901,6 +2255,15 @@ def apply_array_pars():
         np.savetxt(model_file,org_arr,fmt="%15.6E")
 
 def apply_bc_pars():
+    """ a function to apply boundary condition multiplier parameters.  Used to implement
+    the parameterization constructed by PstFromFlopyModel during a forward run
+
+    Note:
+        requires "bc_pars.csv"
+
+        should be added to the forward_run.py script
+
+    """
     df = pd.read_csv("bc_pars.dat",delim_whitespace=True)
     for fname in df.filename.unique():
         df_fname = df.loc[df.filename==fname,:]
