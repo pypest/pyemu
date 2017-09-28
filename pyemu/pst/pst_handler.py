@@ -51,6 +51,12 @@ class Pst(object):
                 "pst file not found:{0}".format(filename)
             self.load(filename)
 
+    def __setattr__(self, key, value):
+        if key == "model_command":
+            if isinstance(value, str):
+                value = [value]
+        super(Pst,self).__setattr__(key,value)
+
     @property
     def phi(self):
         """get the weighted total objective function
