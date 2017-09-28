@@ -13,9 +13,6 @@ import numpy as np
 import pandas as pd
 from pyemu import Cov
 from pyemu.utils.gw_utils import pp_file_to_dataframe
-#from pyemu.utils.reference import SpatialReference
-
-#TODO:  plot variogram elipse
 
 EPSILON = 1.0e-7
 
@@ -560,7 +557,7 @@ class OrdinaryKrige(object):
                 grid nodes.  Inversion usually fails if the kriging matrix is singular,
                 resulting from point_data entries closer than EPSILON distance.  If True,
                 warnings are issued for each failed inversion.  If False, an exception
-                 is raised for failed matrix inversion.
+                is raised for failed matrix inversion.
 
         Returns:
             df : pandas.DataFrame
@@ -571,6 +568,7 @@ class OrdinaryKrige(object):
             this method calls OrdinaryKrige.calc_factors()
 
         """
+
         self.spatial_reference = spatial_reference
         self.interp_data = None
         #assert isinstance(spatial_reference,SpatialReference)
@@ -633,7 +631,7 @@ class OrdinaryKrige(object):
                      search_radius=1.0e+10,verbose=False,
                      pt_zone=None,forgive=False):
         """ calculate ordinary kriging factors (weights) for the points
-         represented by arguments x and y
+        represented by arguments x and y
 
         Parameters:
             x : (iterable of floats)
@@ -649,7 +647,7 @@ class OrdinaryKrige(object):
                 maximum number of point_data entries to use for interpolation at
                 a given x,y interpolation point.  A larger maxpts_interp will
                 yield "smoother" interplation, but using a large maxpts_interp
-                 will slow the (already) slow kriging solution process and may
+                will slow the (already) slow kriging solution process and may
                 lead to memory errors. Default is 20.
             search_radius : (float)
                 the size of the region around a given x,y interpolation point to search for
@@ -662,12 +660,13 @@ class OrdinaryKrige(object):
                 interpolation points.  Inversion usually fails if the kriging matrix is singular,
                 resulting from point_data entries closer than EPSILON distance.  If True,
                 warnings are issued for each failed inversion.  If False, an exception
-                 is raised for failed matrix inversion.
+                is raised for failed matrix inversion.
 
          Returns:
             df : pandas.DataFrame
                 a dataframe with information summarizing the ordinary kriging
                 process for each interpolation points
+
         """
 
         assert len(x) == len(y)
@@ -1046,8 +1045,7 @@ class Vario2d(object):
 
     def covariance_points(self,x0,y0,xother,yother):
         """ get the covariance between base point x0,y0 and
-         other points xother,yother
-        implied by Vario2d
+        other points xother,yother implied by Vario2d
 
         Parameters:
             x0 : (float)
@@ -1066,6 +1064,7 @@ class Vario2d(object):
 
         Note:
             len(cov) = len(xother) = len(yother)
+
         """
         dx = x0 - xother
         dy = y0 - yother

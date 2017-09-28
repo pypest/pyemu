@@ -103,7 +103,7 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_di
             Default is 4.0, which implies 95% confidence parameter bounds.
         par_knowledge_dict : dictionary of {parnme:variance}
             used to condition on existing knowledge about parameters.  This functionality is
-             currently in dev - don't use it.
+            currently in dev - don't use it.
 
     Returns:
         Cov : pyemu.Cov
@@ -440,7 +440,7 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
             abs_drop_tol :(float)
                 tolerance to control how many pi equations are written.
                 If the Pearson C is less than abs_drop_tol, the prior information
-                 equation will not be included in the control file
+                equation will not be included in the control file
 
         """
         assert isinstance(cov,pyemu.Cov)
@@ -938,7 +938,7 @@ class PstFromFlopyModel(object):
             is an str.  Default is None
         pp_props : (list)
             pilot point multiplier parameters for grid-based properties.
-             A nested list of grid-scale model properties to parameterize using
+            A nested list of grid-scale model properties to parameterize using
             name, iterable pairs.  For 3D properties, the iterable is zero-based
             layer indices.  For example, ["lpf.hk",[0,1,2,]] would setup pilot point multiplier
             parameters for layer property file horizontal hydraulic conductivity for model
@@ -2076,7 +2076,7 @@ class PstFromFlopyModel(object):
     def setup_hds(self):
         """ setup modflow head save file observations for given kper (zero-based
         stress period index) and k (zero-based layer index) pairs using the
-         kperk argument.
+        kperk argument.
 
         Note:
             this can setup a shit-ton of observations
