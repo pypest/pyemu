@@ -375,7 +375,7 @@ def setattr_test():
     pst = pyemu.Pst(os.path.join("pst","pest.pst"))
     pst.model_command = 'test'
     assert isinstance(pst.model_command,list)
-    pst.model_command = ["test"]
+    pst.model_command = ["test","test1"]
     assert isinstance(pst.model_command,list)
     pst.write(os.path.join("temp","test.pst"))
     pst = pyemu.Pst(os.path.join("temp","test.pst"))

@@ -719,6 +719,7 @@ class Pst(object):
         self.control_data.nprior = self.prior_information.shape[0]
         self.control_data.ntplfle = len(self.template_files)
         self.control_data.ninsfle = len(self.instruction_files)
+        self.control_data.numcom = len(self.model_command)
 
     def _rectify_pgroups(self):
         """ private method to synchronize parameter groups section with
