@@ -17,16 +17,18 @@ def modflow_pval_to_template_file(pval_file,tpl_file=None):
     """write a template file for a modflow parameter value file.
     Uses names in the first column in the pval file as par names.
 
-    Parameters:
-        pval_file : (str)
-            parameter value file
-        tpl_file : str
-            template file to write.  If None, use <pval_file>.tpl.
-            Default is None
+    Parameters
+    ----------
+    pval_file : str
+        parameter value file
+    tpl_file : str, optional
+        template file to write.  If None, use <pval_file>.tpl.
+        Default is None
 
-    Returns:
-        df : pandas.DataFrame
-            pandas DataFrame with control file parameter information
+    Returns
+    -------
+    df : pandas.DataFrame
+        pandas DataFrame with control file parameter information
     """
 
     if tpl_file is None:
@@ -49,13 +51,15 @@ def modflow_pval_to_template_file(pval_file,tpl_file=None):
 def modflow_hob_to_instruction_file(hob_file):
     """write an instruction file for a modflow head observation file
 
-    Parameters:
-        hob_file : (str)
-            modflow hob file
+    Parameters
+    ----------
+    hob_file : str
+        modflow hob file
 
-    Returns:
-        df : pandas.DataFrame
-            pandas DataFrame with control file observation information
+    Returns
+    -------
+    df : pandas.DataFrame
+        pandas DataFrame with control file observation information
     """
 
     hob_df = pd.read_csv(hob_file,delim_whitespace=True,skiprows=1,
@@ -80,16 +84,19 @@ def modflow_hob_to_instruction_file(hob_file):
 def modflow_hydmod_to_instruction_file(hydmod_file):
     """write an instruction file for a modflow hydmod file
 
-    Parameters:
-        hydmod_file : (str)
-            modflow hydmod file
+    Parameters
+    ----------
+    hydmod_file : str
+        modflow hydmod file
 
-    Returns:
-        df : pandas.DataFrame
-            pandas DataFrame with control file observation information
+    Returns
+    -------
+    df : pandas.DataFrame
+        pandas DataFrame with control file observation information
 
-    Note:
-        calls modflow_read_hydmod_file()
+    Note
+    ----
+    calls modflow_read_hydmod_file()
     """
 
     hydmod_df, hydmod_outfile = modflow_read_hydmod_file(hydmod_file)
@@ -128,19 +135,22 @@ def modflow_hydmod_to_instruction_file(hydmod_file):
 def modflow_read_hydmod_file(hydmod_file, hydmod_outfile=None):
     """ read in a binary hydmod file and return a dataframe of the results
 
-    Parameters:
-        hydmod_file : (str)
-            modflow hydmod binary file
-        hydmod_outfile :str
-            output file to write.  If None, use <hydmod_file>.dat.
-            Default is None
+    Parameters
+    ----------
+    hydmod_file : str
+        modflow hydmod binary file
+    hydmod_outfile : str
+        output file to write.  If None, use <hydmod_file>.dat.
+        Default is None
 
-    Returns:
-        df : pandas.DataFrame
-            pandas DataFrame with hymod_file values
+    Returns
+    -------
+    df : pandas.DataFrame
+        pandas DataFrame with hymod_file values
 
-    Note:
-        requires flopy
+    Note
+    ----
+    requires flopy
     """
     try:
         import flopy.utils as fu
@@ -179,31 +189,33 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
                            shapename="pp.shp"):
     """ setup regularly-spaced (gridded) pilot point parameterization
 
-    Parameters:
-        ml : (flopy.mbase)
-            a flopy mbase dervied type.  If None, sr must not be None.
-        sr : (flopy.utils.reference.SpatialReference)
-            a spatial reference use to locate the model grid in space.  If None,
-            ml must not be None.  Default is None
-        ibound : (numpy.ndarray)
-            the modflow ibound integer array.  Used to set pilot points only in active areas.
-            If None and ml is None, then pilot points are set in all rows and columns according to
-            every_n_cell.  Default is None.
-        prefix_dict : (dict)
-            a dictionary of pilot point parameter prefix, layer pairs.  example : {"hk":[0,1,2,3]} would
-            setup pilot points with the prefix "hk" for model layers 1 - 4 (zero based). If None, a generic set
-            of pilot points with the "pp" prefix are setup for a generic nrowXncol grid. Default is None
-        use_ibound_zones : (boolean)
-            a flag to use the greater-than-zero values in the ibound as pilot point zones.  If False,ibound
-            values greater than zero are treated as a single zone.  Default is False.
-        pp_dir : (str)
-            directory to write pilot point files to.  Default is '.'
-        tpl_dir : (str)
-            directory to write pilot point template file to.  Default is '.'
-        shapename : (str)
-            name of shapefile to write that containts pilot point information. Default is "pp.shp"
+    Parameters
+    ----------
+    ml : flopy.mbase
+        a flopy mbase dervied type.  If None, sr must not be None.
+    sr : flopy.utils.reference.SpatialReference
+        a spatial reference use to locate the model grid in space.  If None,
+        ml must not be None.  Default is None
+    ibound : numpy.ndarray
+        the modflow ibound integer array.  Used to set pilot points only in active areas.
+        If None and ml is None, then pilot points are set in all rows and columns according to
+        every_n_cell.  Default is None.
+    prefix_dict : dict
+        a dictionary of pilot point parameter prefix, layer pairs.  example : {"hk":[0,1,2,3]} would
+        setup pilot points with the prefix "hk" for model layers 1 - 4 (zero based). If None, a generic set
+        of pilot points with the "pp" prefix are setup for a generic nrowXncol grid. Default is None
+    use_ibound_zones : bool
+        a flag to use the greater-than-zero values in the ibound as pilot point zones.  If False,ibound
+        values greater than zero are treated as a single zone.  Default is False.
+    pp_dir : str
+        directory to write pilot point files to.  Default is '.'
+    tpl_dir : str
+        directory to write pilot point template file to.  Default is '.'
+    shapename : str
+        name of shapefile to write that containts pilot point information. Default is "pp.shp"
 
-    Returns:
+    Returns
+    -------
         pp_df : pandas.DataFrame
             a dataframe summarizing pilot point information (same information
             written to shapename
@@ -221,6 +233,7 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
 
 
 def pp_file_to_dataframe(pp_filename):
+
     import warnings
     from . import pp_utils
     warnings.warn("pp_file_to_dataframe has moved to pp_utils")
@@ -269,38 +282,41 @@ def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
     an instruction file and also a _setup_.csv to use when constructing a pest
     control file
 
-    Parameters:
-        list_filename : (str)
+    Parameters
+    ----------
+    list_filename : str
             modflow list file
-        flx_filename : (str)
-            output filename that will contain the budget flux observations. Default is
-            "flux.dat"
-        vol_filename : (str)
-            output filename that will contain the budget volume observations.  Default
-            is "vol.dat"
-        start_datetime : (str)
-            an str that can be parsed into a pandas.TimeStamp.  used to give budget
-            observations meaningful names
-        prefix : (str)
-            a prefix to add to the water budget observations.  Useful if processing
-            more than one list file as part of the forward run process. Default is ''.
-        save_setup_file : (boolean)
-            a flag to save _setup_<list_filename>.csv file that contains useful
-            control file information
+    flx_filename : str
+        output filename that will contain the budget flux observations. Default is
+        "flux.dat"
+    vol_filename : str)
+        output filename that will contain the budget volume observations.  Default
+        is "vol.dat"
+    start_datetime : str
+        an str that can be parsed into a pandas.TimeStamp.  used to give budget
+        observations meaningful names
+    prefix : str
+        a prefix to add to the water budget observations.  Useful if processing
+        more than one list file as part of the forward run process. Default is ''.
+    save_setup_file : (boolean)
+        a flag to save _setup_<list_filename>.csv file that contains useful
+        control file information
 
-    Returns:
-         df : pandas.DataFrame
-            a dataframe with information for constructing a control file.  If INSCHEK fails
-            to run, reutrns None
+    Returns
+    -------
+    df : pandas.DataFrame
+        a dataframe with information for constructing a control file.  If INSCHEK fails
+        to run, reutrns None
 
-    Note:
-        This function uses INSCHEK to get observation values; the observation values are
-        the values of the list file list_filename.  If INSCHEK fails to run, the obseravtion
-        values are set to 1.0E+10
+    Note
+    ----
+    This function uses INSCHEK to get observation values; the observation values are
+    the values of the list file list_filename.  If INSCHEK fails to run, the obseravtion
+    values are set to 1.0E+10
 
-        the instruction files are named <flux_file>.ins and <vol_file>.ins, respectively
+    the instruction files are named <flux_file>.ins and <vol_file>.ins, respectively
 
-        It is recommended to use the default values for flux_file and vol_file.
+    It is recommended to use the default values for flux_file and vol_file.
 
 
     """
@@ -341,27 +357,30 @@ def apply_mflist_budget_obs(list_filename,flx_filename="flux.dat",
                             start_datetime="1-1-1970"):
     """ process a MODFLOW list file to extract flux and volume water budget entries.
 
-    Parameters:
-        list_filename : (str)
-            the modflow list file
-        flx_filename : (str)
-            the name of the output file with water budget flux information.
-            Default is "flux.dat"
-        vol_filename : (str)
-            the name of the output file with water budget volume information.
-            Default is "vol.dat"
-        start_datatime : (str)
-            an str that can be cast to a pandas.TimeStamp.  Used to give
-            observations a meaningful name
+    Parameters
+    ----------
+    list_filename : str
+        the modflow list file
+    flx_filename : str
+        the name of the output file with water budget flux information.
+        Default is "flux.dat"
+    vol_filename : str
+        the name of the output file with water budget volume information.
+        Default is "vol.dat"
+    start_datatime : str
+        an str that can be cast to a pandas.TimeStamp.  Used to give
+        observations a meaningful name
 
-    Returns:
-        flx : pandas.DataFrame
-            the flux dataframe
-        vol : pandas.DataFrame
-            the volume dataframe
+    Returns
+    -------
+    flx : pandas.DataFrame
+        the flux dataframe
+    vol : pandas.DataFrame
+        the volume dataframe
 
-    Note:
-        requires flopy
+    Note
+    ----
+    requires flopy
 
     """
     try:
@@ -376,6 +395,20 @@ def apply_mflist_budget_obs(list_filename,flx_filename="flux.dat",
 
 
 def _write_mflist_ins(ins_filename,df,prefix):
+    """ write an instruction file for a MODFLOW list file
+
+    Parameters
+    ----------
+    ins_filename : str
+        name of the instruction file to write
+    df : pandas.DataFrame
+        the dataframe of list file entries
+    prefix : str
+        the prefix to add to the column names to form
+        obseravtions names
+
+    """
+
     dt_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
     name_len = 11 - (len(prefix)+1)
     with open(ins_filename,'w') as f:
@@ -394,33 +427,36 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None):
     an instruction file and a _setup_ csv used
     construct a control file.
 
-    Parameters:
-        hds_file : (str)
-            a MODFLOW head-save file
-        kperk_pairs: (iterable)
-            an iterable of pairs of kper (zero-based stress
-            period index) and k (zero-based layer index) to
-            setup observations for.  If None, then a shit-ton
-            of observations may be produced!
-        skip : (variable)
-            a value or function used to determine which values
-            to skip when setting up observations.  If np.scalar(skip)
-            is True, then values equal to skip will not be used.  If not
-            np.scalar(skip), then skip will be treated as a lambda function that
-            returns np.NaN if the value should be skipped.
+    Parameters
+    ----------
+    hds_file : str
+        a MODFLOW head-save file
+    kperk_pairs : iterable
+        an iterable of pairs of kper (zero-based stress
+        period index) and k (zero-based layer index) to
+        setup observations for.  If None, then a shit-ton
+        of observations may be produced!
+    skip : variable
+        a value or function used to determine which values
+        to skip when setting up observations.  If np.scalar(skip)
+        is True, then values equal to skip will not be used.  If not
+        np.scalar(skip), then skip will be treated as a lambda function that
+        returns np.NaN if the value should be skipped.
 
-    Returns:
-        forward_run_line : str
-            a python code str to add to the forward run script
+    Returns
+    -------
+    forward_run_line : str
+        a python code str to add to the forward run script
 
-    Note:
-        requires flopy
+    Note
+    ----
+    requires flopy
 
-        writes <hds_file>.dat.ins instruction file
+    writes <hds_file>.dat.ins instruction file
 
-        writes _setup_<hds_file>.csv which contains much
+    writes _setup_<hds_file>.csv which contains much
 
-        useful information for construction a control file
+    useful information for construction a control file
 
 
     """
@@ -524,16 +560,18 @@ def last_kstp_from_kper(hds,kper):
     give stress period (kper) in a modflow head save file.
 
 
-    Parameters:
-        hds : (flopy.utils.HeadFile)
+    Parameters
+    ----------
+    hds : flopy.utils.HeadFile
 
-        kper : (int)
-            the zero-index stress period number
+    kper : int
+        the zero-index stress period number
 
-    Returns:
-        kstp : int
-            the zero-based last time step during stress period
-            kper in the head save file
+    Returns
+    -------
+    kstp : int
+        the zero-based last time step during stress period
+        kper in the head save file
 
 
     """
@@ -551,25 +589,24 @@ def apply_hds_obs(hds_file):
     """ process a modflow head save file.  A companion function to
     setup_hds_obs that is called during the forward run process
 
-    Parameters:
-        hds_file : (str)
-            a modflow head save filename
+    Parameters
+    ----------
+    hds_file : str
+        a modflow head save filename
 
 
-    Note:
-        requires flopy
+    Note
+    ----
+    requires flopy
 
-        writes <hds_file>.dat
+    writes <hds_file>.dat
 
-        expects <hds_file>.dat.ins to exist
+    expects <hds_file>.dat.ins to exist
 
-        uses pyemu.pst_utils.parse_ins_file to get observation names
+    uses pyemu.pst_utils.parse_ins_file to get observation names
 
-
-
-    :param hds_file:
-    :return:
     """
+
     try:
         import flopy
     except Exception as e:

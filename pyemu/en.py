@@ -16,20 +16,23 @@ class Ensemble(pd.DataFrame):
     """ The base class type for handling parameter and observation ensembles.
         It is directly derived from pandas.DataFrame.  This class should not be
         instantiated directly.
+
+    Parameters
+    ----------
+    *args : list
+        positional args to pass to pandas.DataFrame()
+    **kwargs : dict
+        keyword args to pass to pandas.DataFrame().  Must contain
+        'columns' and 'mean_values'
+
+    Returns
+    -------
+    Ensemble : Ensemble
+
     """
     def __init__(self,*args,**kwargs):
         """constructor for base Ensemble type.  'columns' and 'mean_values'
           must be in the kwargs
-
-        Parameters:
-            *args : (list)
-                positional args to pass to pandas.DataFrame()
-            **kwargs : (dict)
-                keyword args to pass to pandas.DataFrame().  Must contain
-                'columns' and 'mean_values'
-
-        Returns:
-            Ensemble : Ensemble
         """
 
         assert "columns" in kwargs.keys(),"ensemble requires 'columns' kwarg"
@@ -45,8 +48,9 @@ class Ensemble(pd.DataFrame):
         """
         Create a pyemu.Matrix from the Ensemble.
 
-        Returns:
-            pyemu.Matrix : pyemu.Matrix
+        Returns
+        -------
+        pyemu.Matrix : pyemu.Matrix
 
         """
         x = self.copy().as_matrix().astype(np.float)
@@ -56,12 +60,15 @@ class Ensemble(pd.DataFrame):
     def drop(self,arg):
         """ overload of pandas.DataFrame.drop()
 
-        Parameters:
-            arg : (varies)
-                argument to pass to pandas.DataFrame.drop()
+        Parameters
+        ----------
+        arg : iterable
+            argument to pass to pandas.DataFrame.drop()
 
-        Returns:
-            Ensemble : Ensemble
+        Returns
+        -------
+        Ensemble : Ensemble
+        
         """
         df = super(Ensemble,self).drop(arg)
         return type(self)(data=df,pst=self.pst)
@@ -69,14 +76,17 @@ class Ensemble(pd.DataFrame):
     def dropna(self,*args,**kwargs):
         """overload of pandas.DataFrame.dropna()
 
-        Parameters:
-            *args : (list)
-                positional args to pass to pandas.DataFrame.dropna()
-            **kwargs : (dict)
-                keyword args to pass to pandas.DataFrame.dropna()
+        Parameters
+        ----------
+        *args : list
+            positional args to pass to pandas.DataFrame.dropna()
+        **kwargs : dict
+            keyword args to pass to pandas.DataFrame.dropna()
 
-        Returns:
-            Ensemble : Ensemble
+        Returns
+        -------
+        Ensemble : Ensemble
+        
         """
         df = super(Ensemble,self).dropna(*args,**kwargs)
         return type(self)(data=df,pst=self.pst)
@@ -85,17 +95,16 @@ class Ensemble(pd.DataFrame):
         """ draw random realizations from a multivariate
             Gaussian distribution
 
-        Parameters:
-            cov: (pyemu.Cov)
-                covariance structure to draw from
-            num_reals: (int)
-                number of realizations to generate
-            names : (list)
-                list of columne names to draw for.  If None, values all names
-                    are drawn
+        Parameters
+        ----------    
+        cov: pyemu.Cov
+            covariance structure to draw from
+        num_reals: int
+            number of realizations to generate
+        names : list
+            list of columns names to draw for.  If None, values all names
+            are drawn
 
-        Returns:
-            None
         """
         real_names = np.arange(num_reals,dtype=np.int64)
 
@@ -130,29 +139,30 @@ class Ensemble(pd.DataFrame):
             idx = pd.isnull(self.loc[rname,:])
             self.loc[rname,idx] = self.mean_values[idx]
 
-    def enforce(self):
-        """ placeholder method for derived ParameterEnsemble type
-        to enforce parameter bounds
-
-        Returns:
-            None
-
-        Raises:
-            Exception if called
-        """
-        raise Exception("Ensemble.enforce() must overloaded by derived types")
+    # def enforce(self):
+    #     """ placeholder method for derived ParameterEnsemble type
+    #     to enforce parameter bounds
+    # 
+    # 
+    #     Raises
+    #     ------
+    #         Exception if called
+    #     """
+    #     raise Exception("Ensemble.enforce() must overloaded by derived types")
 
     def plot(self,*args,**kwargs):
         """placeholder overload of pandas.DataFrame.plot()
 
-        Parameters:
-            *args : (list)
-                positional args to pass to pandas.DataFrame.plot()
-            **kwargs : (dict)
-                keyword args to pass to pandas.DataFrame.plot()
+        Parameters
+        ----------
+        *args : list
+            positional args to pass to pandas.DataFrame.plot()
+        **kwargs : dict
+            keyword args to pass to pandas.DataFrame.plot()
 
-        Returns:
-            pandas.DataFrame.plot() return
+        Returns
+        -------
+        pandas.DataFrame.plot() return
 
         """
         if "marginals" in kwargs.keys():
@@ -165,12 +175,15 @@ class Ensemble(pd.DataFrame):
         """overload of pandas.DataFrame.__sub__() operator to difference two
         Ensembles
 
-        Parameters:
-            other : (pyemu.Ensemble or pandas.DataFrame)
-                the instance to difference against
+        Parameters
+        ----------
+        other : pyemu.Ensemble or pandas.DataFrame
+            the instance to difference against
 
-        Returns:
+        Returns
+        -------
             Ensemble : Ensemble
+        
         """
         diff = super(Ensemble,self).__sub__(other)
         return Ensemble.from_dataframe(df=diff)
@@ -180,13 +193,15 @@ class Ensemble(pd.DataFrame):
         """class method constructor to create an Ensemble from
         a pandas.DataFrame
 
-        Parameters:
-            **kwargs : (dict)
-                optional args to pass to the
-                Ensemble Constructor.  Expects 'df' in kwargs.keys()
-                that must be a pandas.DataFrame instance
+        Parameters
+        ----------
+        **kwargs : dict
+            optional args to pass to the
+            Ensemble Constructor.  Expects 'df' in kwargs.keys()
+            that must be a pandas.DataFrame instance
 
-        Returns:
+        Returns
+        -------
             Ensemble : Ensemble
         """
         df = kwargs.pop("df")
@@ -200,17 +215,15 @@ class Ensemble(pd.DataFrame):
         """method to reset the numpy.random seed using the pyemu.en
         SEED global variable
 
-        Returns:
-            None
-
         """
         np.random.seed(SEED)
 
     def copy(self):
         """make a deep copy of self
 
-        Returns:
-            Ensemble : Ensemble
+        Returns
+        -------
+        Ensemble : Ensemble
 
         """
         df = super(Ensemble,self).copy()
@@ -221,24 +234,28 @@ class ObservationEnsemble(Ensemble):
     generate realizations of observation noise.  These are typically generated from
     the weights listed in the control file.  However, a general covariance matrix can
     be explicitly used.
-        Note:
-            Does not generate noise realizations for observations with zero weight
+
+    Note:
+        Does not generate noise realizations for observations with zero weight
     """
 
     def __init__(self,pst,**kwargs):
         """ObservationEnsemble constructor.
 
-        Parameters:
-            pst : (pyemu.Pst)
-                required Ensemble constructor kwwargs
-                'columns' and 'mean_values' are generated from pst.observation_data.obsnme
-                and pst.observation_data.obsval resepctively.
+        Parameters
+        ----------
+        pst : pyemu.Pst
+            required Ensemble constructor kwwargs
+            'columns' and 'mean_values' are generated from pst.observation_data.obsnme
+            and pst.observation_data.obsval resepctively.
 
-            **kwargs : (dict)
-                keyword args to pass to Ensemble constructor
+        **kwargs : dict
+            keyword args to pass to Ensemble constructor
 
-        Returns:
-            ObservationEnsemble : ObservationEnsemble
+        Returns
+        -------
+        ObservationEnsemble : ObservationEnsemble
+
         """
         kwargs["columns"] = pst.observation_data.obsnme
         kwargs["mean_values"] = pst.observation_data.obsval
@@ -249,8 +266,10 @@ class ObservationEnsemble(Ensemble):
     def copy(self):
         """overload of Ensemble.copy()
 
-        Returns:
-            ObservationEnsemble : ObservationEnsemble
+        Returns
+        -------
+        ObservationEnsemble : ObservationEnsemble
+
         """
         df = super(Ensemble,self).copy()
         return type(self).from_dataframe(df=df,pst=self.pst.get())
@@ -260,8 +279,9 @@ class ObservationEnsemble(Ensemble):
         """property decorated method to get current non-zero weighted
         column names.  Uses ObservationEnsemble.pst.nnz_obs_names
 
-        Returns:
-            list : list
+        Returns
+        -------
+        list : list
             non-zero weight observation names
         """
         return self.pst.nnz_obs_names
@@ -272,8 +292,10 @@ class ObservationEnsemble(Ensemble):
         """ property decorated method to get mean values of observation noise.
         This is a zero-valued pandas.Series
 
-        Returns:
-            mean_values : pandas Series
+        Returns
+        -------
+        mean_values : pandas Series
+
         """
         vals = self.pst.observation_data.obsval.copy()
         vals.loc[self.names] = 0.0
@@ -285,15 +307,13 @@ class ObservationEnsemble(Ensemble):
         Note: only draws noise realizations for non-zero weighted observations
         zero-weighted observations are set to mean value for all realizations
 
-        Parameters:
-            cov : (pyemu.Cov)
-                covariance matrix that describes the support volume around the
-                mean values.
-            num_reals : (int)
-                number of realizations to draw
-
-        Returns:
-            None
+        Parameters
+        ----------
+        cov : pyemu.Cov
+            covariance matrix that describes the support volume around the
+            mean values.
+        num_reals : int
+            number of realizations to draw
 
         """
         super(ObservationEnsemble,self).draw(cov,num_reals,
@@ -305,8 +325,10 @@ class ObservationEnsemble(Ensemble):
         """ property decorated method to get a new ObservationEnsemble
         of only non-zero weighted observations
 
-        Returns:
-            ObservationEnsemble : ObservationEnsemble
+        Returns
+        -------
+        ObservationEnsemble : ObservationEnsemble
+
         """
         df = self.loc[:,self.pst.nnz_obs_names]
         return ObservationEnsemble.from_dataframe(df=df,
@@ -318,15 +340,18 @@ class ObservationEnsemble(Ensemble):
         for a really large (>1E6) ensemble sizes.  WARNING: this constructor
         transforms the oe argument
 
-        Parameters:
-            oe : (ObservationEnsemble)
-                an existing ObservationEnsemble instance to use for 'mean_values' and
-                'columns' arguments
-            num_reals : (int)
-                number of realizations to draw
+        Parameters
+        ----------
+        oe : ObservationEnsemble
+            an existing ObservationEnsemble instance to use for 'mean_values' and
+            'columns' arguments
+        num_reals : int
+            number of realizations to draw
 
-        Returns:
+        Returns
+        -------
             ObservationEnsemble : ObservationEnsemble
+
         """
         # set up some column names
         real_names = np.arange(num_reals,dtype=np.int64)
@@ -350,8 +375,10 @@ class ObservationEnsemble(Ensemble):
         for the realizations.  The ObservationEnsemble.pst.weights can be
         updated prior to calling this method to evaluate new weighting strategies
 
-        Return:
-            pandas.DataFrame : pandas.DataFrame
+        Return
+        ------
+        pandas.DataFrame : pandas.DataFrame
+
         """
         weights = self.pst.observation_data.loc[self.names,"weight"]
         obsval = self.pst.observation_data.loc[self.names,"obsval"]
@@ -368,28 +395,32 @@ class ParameterEnsemble(Ensemble):
         Note: uses the parnme attribute of Pst.parameter_data from column names
         and uses the parval1 attribute of Pst.parameter_data as mean values
 
+    Parameters
+    ----------
+    pst : pyemu.Pst
+        The 'columns' and 'mean_values' args need for Ensemble
+        are derived from the pst.parameter_data.parnme and pst.parameter_data.parval1
+        items, respectively
+    istransformed : bool
+        flag indicating the transformation status (log10) of the arguments be passed
+    **kwargs : dict
+        keyword arguments to pass to Ensemble constructor.
+    bound_tol : float
+        fractional amount to reset bounds transgression within the bound.
+        This has been shown to be very useful for the subsequent recalibration
+        because it moves parameters off of their bounds, so they are not treated as frozen in
+        the upgrade calculations. defaults to 0.0
+
+    Returns
+    -------
+    ParameterEnsemble : ParameterEnsemble
+
     """
 
     def __init__(self,pst,istransformed=False,**kwargs):
         """ ParameterEnsemble constructor.
 
-        Parameters:
-            pst : (pyemu.Pst)
-                The 'columns' and 'mean_values' args need for Ensemble
-                are derived from the pst.parameter_data.parnme and pst.parameter_data.parval1
-                items, respectively
-            istransformed : (boolean)
-                flag indicating the transformation status (log10) of the arguments be passed
-            **kwargs : (dict)
-                keyword arguments to pass to Ensemble constructor.
-            bound_tol : (float) (optional)
-                fractional amount to reset bounds transgression within the bound.
-                This has been shown to be very useful for the subsequent recalibration
-                because it moves parameters off of their bounds, so they are not treated as frozen in
-                the upgrade calculations. defaults to 0.0
 
-        Returns:
-            ParameterEnsemble : ParameterEnsemble
         """
         kwargs["columns"] = pst.parameter_data.parnme
         kwargs["mean_values"] = pst.parameter_data.parval1
@@ -410,8 +441,10 @@ class ParameterEnsemble(Ensemble):
     def copy(self):
         """ overload of Ensemble.copy()
 
-        Returns:
-            ParameterEnsemble : ParameterEnsemble
+        Returns
+        -------
+        ParameterEnsemble : ParameterEnsemble
+
         """
         df = super(Ensemble,self).copy()
         pe = ParameterEnsemble.from_dataframe(df=df,pst=self.pst.get())
@@ -423,8 +456,10 @@ class ParameterEnsemble(Ensemble):
         """property decorated method to get the current
         transformation status of the ParameterEnsemble
 
-        Returns:
-            boolean : boolean
+        Returns
+        -------
+        istransformed : bool
+
         """
         return copy.copy(self.__istransformed)
 
@@ -432,8 +467,10 @@ class ParameterEnsemble(Ensemble):
     def mean_values(self):
         """ the mean value vector while respecting log transform
 
-        Returns:
-            mean_values : pandas.Series
+        Returns
+        -------
+        mean_values : pandas.Series
+
         """
         if not self.istransformed:
             return self.pst.parameter_data.parval1.copy()
@@ -449,9 +486,10 @@ class ParameterEnsemble(Ensemble):
     def names(self):
         """ Get the names of the parameters in the ParameterEnsemble
 
-        Returns:
-            list : list
-                parameter names
+        Returns
+        -------
+        list : list
+            parameter names
 
         """
         return list(self.pst.parameter_data.parnme)
@@ -460,9 +498,11 @@ class ParameterEnsemble(Ensemble):
     def adj_names(self):
         """ Get the names of adjustable parameters in the ParameterEnsemble
 
-        Returns:
-            list : list
-                adjustable parameter names
+        Returns
+        -------
+        list : list
+            adjustable parameter names
+
         """
         return list(self.pst.parameter_data.parnme.loc[~self.fixed_indexer])
 
@@ -470,8 +510,10 @@ class ParameterEnsemble(Ensemble):
     def ubnd(self):
         """ the upper bound vector while respecting log transform
 
-        Returns:
-            pandas.Series : pandas.Series
+        Returns
+        -------
+        ubnd : pandas.Series
+
         """
         if not self.istransformed:
             return self.pst.parameter_data.parubnd.copy()
@@ -484,8 +526,10 @@ class ParameterEnsemble(Ensemble):
     def lbnd(self):
         """ the lower bound vector while respecting log transform
 
-        Returns:
-            pandas.Series : pandas.Series
+        Returns
+        -------
+        lbnd : pandas.Series
+
         """
         if not self.istransformed:
             return self.pst.parameter_data.parlbnd.copy()
@@ -498,8 +542,10 @@ class ParameterEnsemble(Ensemble):
     def log_indexer(self):
         """ indexer for log transform
 
-        Returns:
-            pandas.Series : pandas.Series
+        Returns
+        -------
+        log_indexer : pandas.Series
+
         """
         istransformed = self.pst.parameter_data.partrans == "log"
         return istransformed.values
@@ -508,8 +554,10 @@ class ParameterEnsemble(Ensemble):
     def fixed_indexer(self):
         """ indexer for fixed status
 
-        Returns:
-            pandas.Series : pandas.Series
+        Returns
+        -------
+        fixed_indexer : pandas.Series
+
         """
         #isfixed = self.pst.parameter_data.partrans == "fixed"
         isfixed = self.pst.parameter_data.partrans.\
@@ -521,23 +569,21 @@ class ParameterEnsemble(Ensemble):
     def draw(self,cov,num_reals=1,how="normal",enforce_bounds=None):
         """draw realizations of parameter values
 
-        Parameters:
-            cov : (pyemu.Cov)
-                covariance matrix that describes the support around
-                the mean parameter values
-            num_reals : (int)
-                number of realizations to generate
-            how : (str) (optional)
-                distribution to use to generate realizations.  Options are
-                'normal' or 'uniform'.  Default is 'normal'.  If 'uniform',
-                cov argument is ignored
-            enforce_bounds : str (optional)
-                how to enforce parameter bound violations.  Options are
-                'reset' (reset individual violating values), 'drop' (drop realizations
-                that have one or more violating values.  Default is None (no bounds enforcement)
-
-        Returns:
-            None
+        Parameters
+        ----------
+        cov : pyemu.Cov
+            covariance matrix that describes the support around
+            the mean parameter values
+        num_reals : int
+            number of realizations to generate
+        how : str
+            distribution to use to generate realizations.  Options are
+            'normal' or 'uniform'.  Default is 'normal'.  If 'uniform',
+            cov argument is ignored
+        enforce_bounds : str
+            how to enforce parameter bound violations.  Options are
+            'reset' (reset individual violating values), 'drop' (drop realizations
+            that have one or more violating values.  Default is None (no bounds enforcement)
 
         """
         how = how.lower().strip()
@@ -569,12 +615,11 @@ class ParameterEnsemble(Ensemble):
         """ Draw parameter realizations from a (log10) uniform distribution
         described by the parameter bounds.  Respect Log10 transformation
 
-        Parameters:
-             num_reals : (int)
-                number of realizations to generate
+        Parameters
+        ----------
+        num_reals : int
+            number of realizations to generate
 
-        Returns:
-            None
         """
         if not self.istransformed:
             self._transform()
@@ -599,15 +644,18 @@ class ParameterEnsemble(Ensemble):
         for a really large (>1E6) ensemble sizes.  WARNING: this constructor
         transforms the pe argument
 
-        Parameters:
-            pe : (ParameterEnsemble)
-                existing ParameterEnsemble used to get information
-                needed to call ParameterEnsemble constructor
-            num_reals : (int)
-                number of realizations to generate
+        Parameters
+        ----------
+        pe : ParameterEnsemble
+            existing ParameterEnsemble used to get information
+            needed to call ParameterEnsemble constructor
+        num_reals : int
+            number of realizations to generate
 
-        Returns:
-            ParameterEnsemble : ParameterEnsemble
+        Returns
+        -------
+        ParameterEnsemble : ParameterEnsemble
+
         """
         if not pe.istransformed:
             pe._transform()
@@ -642,20 +690,24 @@ class ParameterEnsemble(Ensemble):
         for a really large (>1E6) ensemble sizes.  gets around the
         dataframe expansion-by-loc that is one col at a time.
 
-        Parameters:
-            pe : (ParameterEnsemble)
-                existing ParameterEnsemble used to get information
-                needed to call ParameterEnsemble constructor
-            cov : (pyemu.Cov)
-                covariance matrix to use for drawing
-            num_reals : (int)
-                number of realizations to generate
+        Parameters
+        ----------
+        pe : ParameterEnsemble
+            existing ParameterEnsemble used to get information
+            needed to call ParameterEnsemble constructor
+        cov : (pyemu.Cov)
+            covariance matrix to use for drawing
+        num_reals : int
+            number of realizations to generate
 
-        Returns:
-            ParameterEnsemble : ParameterEnsemble
+        Returns
+        -------
+        ParameterEnsemble : ParameterEnsemble
 
-        Note:
-            this constructor transforms the pe argument!
+        Note
+        ----
+        this constructor transforms the pe argument!
+
         """
 
         # set up some column names
@@ -722,16 +774,19 @@ class ParameterEnsemble(Ensemble):
     def _back_transform(self,inplace=True):
         """ Private method to remove log10 transformation from ensemble
 
-        Parameters:
-            inplace: (boolean)
-                back transform self in place
+        Parameters
+        ----------
+        inplace: bool
+            back transform self in place
 
-        Returns:
-            ParameterEnsemble : ParameterEnsemble
-                if inplace if False
+        Returns
+        ------
+        ParameterEnsemble : ParameterEnsemble
+            if inplace if False
 
-        Note:
-            Don't call this method unless you know what you are doing
+        Note
+        ----
+        Don't call this method unless you know what you are doing
 
         """
         if not self.istransformed:
@@ -762,16 +817,19 @@ class ParameterEnsemble(Ensemble):
     def _transform(self,inplace=True):
         """ Private method to perform log10 transformation for ensemble
 
-        Parameters:
-            inplace: (boolean)
-                transform self in place
+        Parameters
+        ----------
+        inplace: bool
+            transform self in place
 
-        Returns:
-            ParameterEnsemble : ParameterEnsemble
-                if inplace is False
+        Returns
+        -------
+        ParameterEnsemble : ParameterEnsemble
+            if inplace is False
 
-        Note:
-            Don't call this method unless you know what you are doing
+        Note
+        ----
+        Don't call this method unless you know what you are doing
 
         """
         if self.istransformed:
@@ -801,23 +859,25 @@ class ParameterEnsemble(Ensemble):
                 enforce_bounds="reset"):
         """ project the ensemble using the null-space Monte Carlo method
 
-        Parameters:
-            projection_matrix : (pyemu.Matrix)
-                projection operator - must already respect log transform
+        Parameters
+        ----------
+        projection_matrix : pyemu.Matrix
+            projection operator - must already respect log transform
 
-            inplace : (boolean)
-                project self or return a new ParameterEnsemble instance
+        inplace : bool
+            project self or return a new ParameterEnsemble instance
 
-            log: (pyemu.Logger)
-                for logging progress
+        log: pyemu.Logger
+            for logging progress
 
-            enforce_bounds : (str)
-                parameter bound enforcement flag. 'drop' removes
-                offending realizations, 'reset' resets offending values
+        enforce_bounds : str
+            parameter bound enforcement flag. 'drop' removes
+            offending realizations, 'reset' resets offending values
 
-        Returns:
-            ParameterEnsemble : ParameterEnsemble
-                if inplace is False
+        Returns
+        -------
+        ParameterEnsemble : ParameterEnsemble
+            if inplace is False
 
         """
 
@@ -873,13 +933,12 @@ class ParameterEnsemble(Ensemble):
         """ entry point for bounds enforcement.  This gets called for the
         draw method(s), so users shouldn't need to call this
 
-        Parameters:
-            enforce_bounds : (str)
-                can be 'reset' to reset offending values or 'drop' to drop
-                offending realizations
+        Parameters
+        ----------
+        enforce_bounds : str
+            can be 'reset' to reset offending values or 'drop' to drop
+            offending realizations
 
-        Returns:
-             None
         """
         if isinstance(enforce_bounds,bool):
             import warnings
@@ -906,11 +965,13 @@ class ParameterEnsemble(Ensemble):
         enforce parameter bounds on the ensemble by finding the
         scaling factor needed to bring the most violated parameter back in bounds
 
-        Note:
-            this method not fully implemented.
+        Note
+        ----
+        this method not fully implemented.
 
-        Raises:
-            NotImplementedErrors if called.
+        Raises
+        ------
+        NotImplementedError if called.
 
         """
         raise NotImplementedError()
@@ -967,12 +1028,11 @@ class ParameterEnsemble(Ensemble):
         """ thin wrapper around read_parfiles using the pnulpar prefix concept.  Used to
         fill ParameterEnsemble from PEST-type par files
 
-        Parameters:
-            prefix : (str)
-                the par file prefix
+        Parameters
+        ----------
+        prefix : str
+            the par file prefix
 
-        Returns:
-            None
         """
         pfile_count = 1
         parfile_names = []
@@ -995,15 +1055,14 @@ class ParameterEnsemble(Ensemble):
         the ParameterEnsemble with realizations from PEST-type par files
 
         Parameters
-            parfile_names: (list)
-                list of par files to load
+        ----------
+        parfile_names: list
+            list of par files to load
 
-        Returns:
-            None
-
-        Note:
-            log transforms after loading according and possibly resets
-            self.__istransformed
+        Note
+        ----
+        log transforms after loading according and possibly resets
+        self.__istransformed
 
         """
         for pfile in parfile_names:
@@ -1019,15 +1078,18 @@ class ParameterEnsemble(Ensemble):
         for parameter transformation so that the saved
         ParameterEnsemble csv is not in Log10 space
 
-        Parameters:
-            *args : (list)
-                positional arguments to pass to pandas.DataFrame.to_csv()
-            **kwrags : (dict)
-                keyword arguments to pass to pandas.DataFrame.to_csv()
+        Parameters
+        ----------
+        *args : list
+            positional arguments to pass to pandas.DataFrame.to_csv()
+        **kwrags : dict
+            keyword arguments to pass to pandas.DataFrame.to_csv()
 
-        Note:
-            this function back-transforms inplace with respect to
-            log10 before writing
+        Note
+        ----
+        this function back-transforms inplace with respect to
+        log10 before writing
+
         """
         if self.istransformed:
             self._back_transform(inplace=True)
@@ -1037,13 +1099,15 @@ class ParameterEnsemble(Ensemble):
         """
             write the parameter ensemble to PEST-style parameter files
 
-        Parameters:
-            prefix: (str)
-                file prefix for par files
+        Parameters
+        ----------
+        prefix: str
+            file prefix for par files
 
-        Note:
-            this function back-transforms inplace with respect to
-            log10 before writing
+        Note
+        ----
+        this function back-transforms inplace with respect to
+        log10 before writing
 
         """
 

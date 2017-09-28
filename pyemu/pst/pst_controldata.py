@@ -61,7 +61,16 @@ class RegData(object):
                 v = v.replace('[','').replace(']','')
                 super(RegData,self).__setattr__(v,d)
                 self.optional_dict[v] = o
+
     def write(self,f):
+        """ write the regularization section to an open
+        file handle
+
+        Parameters
+        ----------
+        f : file handle
+
+        """
         f.write("* regularization\n")
         for vline in REG_VARIABLE_LINES:
             vraw = vline.strip().split()
@@ -84,12 +93,26 @@ class SvdData(object):
         self.eigwrite = kwargs.pop("eigwrite",1)
 
     def write(self,f):
+        """ write an SVD section to a file handle
+
+        Parameters
+        ----------
+        f : file handle
+
+        """
         f.write("* singular value decomposition\n")
         f.write(IFMT(self.svdmode)+'\n')
         f.write(IFMT(self.maxsing)+' '+FFMT(self.eigthresh)+"\n")
         f.write('{0}\n'.format(self.eigwrite))
 
     def parse_values_from_lines(self,lines):
+        """ parse values from lines of the SVD section
+
+        Parameters
+        ----------
+        lines : list
+
+        """
         assert len(lines) == 3,"SvdData.parse_values_from_lines: expected " + \
                                "3 lines, not {0}".format(len(lines))
         try:
@@ -153,8 +176,10 @@ class ControlData(object):
     def get_dataframe():
         """ get a generic (default) control section dataframe
         
-        Returns:
-            pandas.DataFrame : pandas.DataFrame
+        Returns
+        -------
+        pandas.DataFrame : pandas.DataFrame
+
         """
         names = []
         [names.extend(line.split()) for line in CONTROL_VARIABLE_LINES]
@@ -198,11 +223,11 @@ class ControlData(object):
     def parse_values_from_lines(self,lines):
         """ cast the string lines for a pest control file into actual inputs
 
-        Parameters:
-            lines : list
-                strings from pest control file
-        Returns:
-            None
+        Parameters
+        ----------
+        lines : list
+            strings from pest control file
+
         """
         assert len(lines) == len(CONTROL_VARIABLE_LINES),\
         "ControlData error: len of lines not equal to " +\
@@ -255,8 +280,10 @@ class ControlData(object):
     def formatted_values(self):
         """ list the entries and current values in the control data section
 
-        Returns:
-            formatted_values : pandas.Series
+        Returns
+        -------
+        formatted_values : pandas.Series
+
         """
         return self._df.apply(lambda x: self.formatters[x["type"]](x["value"]),axis=1)
 
@@ -265,10 +292,8 @@ class ControlData(object):
         
         Parameters
         ----------
-            f: file handle or string filename
-        Returns
-        -------
-            None
+        f: file handle or string filename
+
         """
         if isinstance(f,str):
             f = open(f,'w')

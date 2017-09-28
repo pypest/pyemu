@@ -11,29 +11,32 @@ class ErrVar(LinearAnalysis):
     """Derived class for error variance analysis.  Supports 2-term and
     3-term error variance analysis.  Inherits from pyemu.LinearAnalysis.
 
-    Note:
-        There are some additional keyword args that can be passed to active
-        the 3-term error variance calculation
+    
+    Parameters
+    ----------
+    **kwargs : dict
+        keyword args to pass to the LinearAnalysis base constructor.
+    omitted_parameters :  list
+        list of parameters to treat as "omitted".  Passing this argument
+        activates 3-term error variance analysis.
 
-    Parameters:
-        **kwargs : (dict)
-            keyword args to pass to the LinearAnalysis base constructor.
-        omitted_parameters :  (list)
-            list of parameters to treat as "omitted".  Passing this argument
-            activates 3-term error variance analysis.
+    omitted_parcov : varies
+        argument that can be cast to a parcov for the omitted parameters.
+        If None, omitted_parcov will be formed by extracting from the
+        LinearAnalsis.parcov attribute.
+    omitted_predictions : varies
+        argument that can be cast to a "predictions" attribute for
+        prediction sensitivity vectors WRT omitted parameters.  If None,
+        these vectors will be extracted from the LinearAnalysis.predictions
+        attribute
+    kl : bool
+        flag to perform KL scaling on the jacobian before error variance
+        calculations
 
-        omitted_parcov : (varies)
-            argument that can be cast to a parcov for the omitted parameters.
-            If None, omitted_parcov will be formed by extracting from the
-            LinearAnalsis.parcov attribute.
-        omitted_predictions : (varies)
-            argument that can be cast to a "predictions" attribute for
-            prediction sensitivity vectors WRT omitted parameters.  If None,
-            these vectors will be extracted from the LinearAnalysis.predictions
-            attribute
-        kl : (boolean)
-            flag to perform KL scaling on the jacobian before error variance
-            calculations
+    Note
+    ----
+    There are some additional keyword args that can be passed to active
+    the 3-term error variance calculation
 
 
     """
@@ -219,16 +222,18 @@ class ErrVar(LinearAnalysis):
         """ get the omitted prediction sensitivity vectors (stored as
         a pyemu.Matrix)
 
-        Returns:
-            omitted_predictions : pyemu.Matrix
-                a matrix of prediction sensitivity vectors (column wise) to
-                omitted parameters
+        Returns
+        -------
+        omitted_predictions : pyemu.Matrix
+            a matrix of prediction sensitivity vectors (column wise) to
+            omitted parameters
 
-        Note:
-            returns a reference
-        Note:
-            if ErrorVariance.__omitted_predictions is not set, then dynamically load the
-            attribute before returning
+        Note
+        ----
+        returns a reference
+        
+        if ErrorVariance.__omitted_predictions is not set, then dynamically load the
+        attribute before returning
 
         """
         if self.__omitted_predictions is None:
@@ -241,14 +246,17 @@ class ErrVar(LinearAnalysis):
     def omitted_jco(self):
         """get the omitted jco
 
-        Returns:
-            omitted_jco : pyemu.Jco
+        Returns
+        -------
+        omitted_jco : pyemu.Jco
 
-        Note:
-            returns a reference
-        Note:
-            if ErrorVariance.__omitted_jco is None,
-            then dynamically load the attribute before returning
+        Note
+        ----
+        returns a reference
+        
+        if ErrorVariance.__omitted_jco is None,
+        then dynamically load the attribute before returning
+        
         """
         if self.__omitted_jco is None:
             self.log("loading omitted_jco")
@@ -260,14 +268,17 @@ class ErrVar(LinearAnalysis):
     def omitted_parcov(self):
         """get the omitted prior parameter covariance matrix
 
-        Returns:
-            omitted_parcov : pyemu.Cov
+        Returns
+        -------
+        omitted_parcov : pyemu.Cov
 
-        Note:
-            returns a reference
-        Note:
-            If ErrorVariance.__omitted_parcov is None,
-            attribute is dynamically loaded
+        Note
+        ----
+        returns a reference
+        
+        If ErrorVariance.__omitted_parcov is None,
+        attribute is dynamically loaded
+        
         """
         if self.__omitted_parcov is None:
             self.log("loading omitted_parcov")
@@ -279,15 +290,17 @@ class ErrVar(LinearAnalysis):
         """get a pandas dataframe of error variance results indexed
             on singular value and (prediction name,<errvar term>)
 
-        Parameters:
-            singular_values : (list)
-                singular values to test.  defaults to
-                range(0,min(nnz_obs,nadj_par) + 1)
+        Parameters
+        ----------
+        singular_values : list
+            singular values to test.  defaults to
+            range(0,min(nnz_obs,nadj_par) + 1)
 
-        Returns:
-
-            pandas.DataFrame : pandas.DataFrame
-                multi-indexed pandas dataframe
+        Returns
+        -------
+        pandas.DataFrame : pandas.DataFrame
+            multi-indexed pandas dataframe
+        
         """
         if singular_values is None:
             singular_values = \
@@ -307,14 +320,17 @@ class ErrVar(LinearAnalysis):
     def get_identifiability_dataframe(self,singular_value):
         """get the parameter identifiability as a pandas dataframe
 
-        Parameters:
-            singular_value : (int)
-                the singular spectrum truncation point
+        Parameters
+        ----------
+        singular_value : int
+            the singular spectrum truncation point
 
-        Returns:
-            pandas.DataFrame : pandas.DataFrame
-                A pandas dataframe of the V_1**2 Matrix with the
-                identifiability in the column labeled "ident"
+        Returns
+        -------
+        pandas.DataFrame : pandas.DataFrame
+            A pandas dataframe of the V_1**2 Matrix with the
+            identifiability in the column labeled "ident"
+
         """
         #v1_df = self.qhalfx.v[:, :singular_value].to_dataframe() ** 2
         v1_df = self.xtqx.v[:, :singular_value].to_dataframe() ** 2
@@ -324,13 +340,16 @@ class ErrVar(LinearAnalysis):
     def variance_at(self, singular_value):
         """get the error variance of all three terms at a singluar value
 
-        Parameters:
-            singular_value : (int)
-                singular value to test
+        Parameters
+        ----------
+        singular_value : int
+            singular value to test
 
-        Returns:
-            dict : dict
-                dictionary of (err var term,prediction_name), standard_deviation pairs
+        Returns
+        -------
+        dict : dict
+            dictionary of (err var term,prediction_name), standard_deviation pairs
+
         """
         results = {}
         results.update(self.first_prediction(singular_value))
@@ -341,13 +360,15 @@ class ErrVar(LinearAnalysis):
     def R(self, singular_value):
         """get resolution Matrix (V_1 * V_1^T) at a singular value
 
-        Parameters:
-            singular_value : (int)
-                singular value to calc R at
+        Parameters
+        ----------
+        singular_value : int
+            singular value to calc R at
 
-        Returns:
-            R : pyemu.Matrix
-                resolution matrix at singular_value
+        Returns
+        -------
+        R : pyemu.Matrix
+            resolution matrix at singular_value
         """
         if self.__R is not None and singular_value == self.__R_sv:
             return self.__R
@@ -367,13 +388,16 @@ class ErrVar(LinearAnalysis):
     def I_minus_R(self,singular_value):
         """get I - R at singular value
 
-         Parameters:
-            singular_value : (int)
-                singular value to calc R at
+        Parameters
+        ----------
+        singular_value : int
+            singular value to calc R at
 
-        Returns:
-            I - R : pyemu.Matrix
-                identity matrix minus resolution matrix at singular_value
+        Returns
+        -------
+        I - R : pyemu.Matrix
+            identity matrix minus resolution matrix at singular_value
+
         """
         if self.__I_R is not None and singular_value == self.__I_R_sv:
             return self.__I_R
@@ -391,13 +415,16 @@ class ErrVar(LinearAnalysis):
         """get the parameter solution Matrix at a singular value
             V_1 * S_1^(_1) * U_1^T
 
-        Parameters:
-            singular_value : (int)
-                singular value to calc R at
+        Parameters
+        ----------
+        singular_value : int
+            singular value to calc R at
 
-        Returns:
-            G : pyemu.Matrix
-                parameter solution matrix at singular value
+        Returns
+        -------
+        G : pyemu.Matrix
+            parameter solution matrix at singular value
+
         """
         if self.__G is not None and singular_value == self.__G_sv:
             return self.__G
@@ -442,12 +469,15 @@ class ErrVar(LinearAnalysis):
             at a singular value.  used to construct error variance dataframe
 
         Parameters
-            singular_value : (int)
-                singular value to calc first term at
+        ----------
+        singular_value : int
+            singular value to calc first term at
 
-        Returns:
-            dict : dict
-                dictionary of ("first",prediction_names),error variance pairs at singular_value
+        Returns
+        -------
+        dict : dict
+            dictionary of ("first",prediction_names),error variance pairs at singular_value
+
         """
         if not self.predictions:
             raise Exception("ErrVar.first(): no predictions are set")
@@ -472,12 +502,15 @@ class ErrVar(LinearAnalysis):
             at a singular value
 
         Parameters
-            singular_value : (int)
-                singular value to calc first term at
+        ----------
+        singular_value : int
+            singular value to calc first term at
+
         Returns
         -------
-            first_term : pyemu.Cov
-                first term contribution to parameter error variance
+        first_term : pyemu.Cov
+            first term contribution to parameter error variance
+
         """
         self.log("calc first term parameter @" + str(singular_value))
         first_term = self.I_minus_R(singular_value) * self.parcov * \
@@ -495,14 +528,18 @@ class ErrVar(LinearAnalysis):
             at a singular value (y^t * G * obscov * G^T * y).  Used to construct
             error variance dataframe
 
-        Parameters:
-            singular_value : (int)
-                singular value to calc second term at
+        Parameters
+        ----------
+        singular_value : int
+            singular value to calc second term at
 
-        Returns:
-            dict : dict
-                dictionary of ("second",prediction_names), error variance
+        Returns
+        -------
+        dict : dict
+            dictionary of ("second",prediction_names), error variance
+
         """
+
         if not self.predictions:
             raise Exception("ErrVar.second(): not predictions are set")
         self.log("calc second term prediction @" + str(singular_value))
@@ -531,13 +568,16 @@ class ErrVar(LinearAnalysis):
         """get the solution space contribution to parameter error variance
              at a singular value (G * obscov * G^T)
 
-        Parameters:
-            singular_value : (int)
-                singular value to calc second term at
+        Parameters
+        ----------
+        singular_value : int
+            singular value to calc second term at
 
-        Returns:
-            second_parameter : pyemu.Cov
-                second term contribution to parameter error variance
+        Returns
+        -------
+        second_parameter : pyemu.Cov
+            second term contribution to parameter error variance
+
         """
         self.log("calc second term parameter @" + str(singular_value))
         result = self.G(singular_value) * self.obscov * self.G(singular_value).T
@@ -553,13 +593,15 @@ class ErrVar(LinearAnalysis):
         """get the omitted parameter contribution to prediction error variance
          at a singular value. used to construct error variance dataframe
 
-        Parameters:
-            singular_value : (int)
-                singular value to calc third term at
+        Parameters
+        ----------
+        singular_value : int
+            singular value to calc third term at
 
-        Returns:
-            dict : dict
-                dictionary of ("third",prediction_names),error variance
+        Returns
+        -------
+        dict : dict
+            dictionary of ("third",prediction_names),error variance
         """
         if not self.predictions:
             raise Exception("ErrVar.third(): not predictions are set")
@@ -595,13 +637,16 @@ class ErrVar(LinearAnalysis):
         """get the omitted parameter contribution to parameter error variance
              at a singular value (G * omitted_jco * Sigma_(omitted_pars) * omitted_jco^T * G^T)
 
-        Parameters:
-            singular_value : (int)
-                singular value to calc third term at
+        Parameters
+        ----------
+        singular_value : int
+            singular value to calc third term at
 
-        Returns:
-            third_parameter : pyemu.Cov
-                0.0 if need_omitted is False
+        Returns
+        -------
+        third_parameter : pyemu.Cov
+            0.0 if need_omitted is False
+
         """
         if self.__need_omitted is False:
             return 0.0
