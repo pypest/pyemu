@@ -6,6 +6,13 @@ python modules for model-independent FOSM (first-order, second-moment) (a.k.a li
 [![Build Status](https://travis-ci.org/jtwhite79/pyemu.svg?branch=develop)](https://travis-ci.org/jtwhite79/pyemu)
 [![Coverage Status](https://coveralls.io/repos/github/jtwhite79/pyemu/badge.svg?branch=develop)](https://coveralls.io/github/jtwhite79/pyemu?branch=master)
 
+Read the docs
+=============
+
+[https://jtwhite79.github.io/pyemudoc/](https://jtwhite79.github.io/pyemudoc)
+
+(These are still a work in progress)
+
 What is pyEMU?
 ================
 
