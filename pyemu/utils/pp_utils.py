@@ -16,8 +16,8 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
                            pp_dir='.',tpl_dir='.',
                            shapename="pp.shp"):
     """setup grid-based pilot points.  Uses the ibound to determine
-    where to set pilot points. pilot points are given generic "pp_"
-    names unless predict_dict is passed.  write template files and a
+    where to set pilot points. pilot points are given generic ``pp_``
+    names unless ``prefix_dict`` is passed.  Write template files and a
     shapefile as well...hopefully this is useful to someone...
 
     Parameters
@@ -32,9 +32,11 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
         If None and ml is None, then pilot points are set in all rows and columns according to
         every_n_cell.  Default is None.
     prefix_dict : dict
-        a dictionary of pilot point parameter prefix, layer pairs.  example : {"hk":[0,1,2,3]} would
-        setup pilot points with the prefix "hk" for model layers 1 - 4 (zero based). If None, a generic set
-        of pilot points with the "pp" prefix are setup for a generic nrowXncol grid. Default is None
+        a dictionary of layer index, pilot point parameter prefixes.
+        Example : ``{0:["hk_"],1:["vka_"]}`` would setup pilot points with
+        the prefix ``"hk"`` for model layers 1 and ``"vka"`` for model layer 2 (zero based).
+        If None, a generic set of pilot points with the "pp" prefix are setup
+        for a generic nrowXncol grid. Default is None.
     use_ibound_zones : bool
         a flag to use the greater-than-zero values in the ibound as pilot point zones.  If False,ibound
         values greater than zero are treated as a single zone.  Default is False.
@@ -43,14 +45,24 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
     tpl_dir : str
         directory to write pilot point template file to.  Default is '.'
     shapename : str
-        name of shapefile to write that containts pilot point information. Default is "pp.shp"
+        name of shapefile to write that contains pilot point information. Default is "pp.shp"
 
     Returns
     -------
     pp_df : pandas.DataFrame
         a dataframe summarizing pilot point information (same information
         written to shapename
+    Example
+    -------
+    ``>>>import flopy``
 
+    ``>>>from pyemu.utils import setup_pilotpoints_grid``
+
+    ``>>>m = flopy.modflow.Modfow.load("mymodel.nam")``
+
+    ``>>>setup_pilotpoints_grid(m,prefix_dict={0:["hk_"],1:["vka_"]},``
+
+    ``>>>                       every_n_cell=3,shapename="layer1_pp.shp")``
     """
 
     import flopy
@@ -322,7 +334,7 @@ def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
         the pp_file arg. Default is None
     name_prefix : str
         name to prepend to parameter names for each pilot point.  For example,
-        if name_prefix = "hk_", then each pilot point parameter will be named
+        if ``name_prefix = "hk_"``, then each pilot point parameter will be named
         "hk_0001","hk_0002", etc.  If None, parameter names from pp_df.name
         are used.  Default is None.
 

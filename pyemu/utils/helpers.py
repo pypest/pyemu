@@ -317,10 +317,10 @@ def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
 
 def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
     """ Applies a KL parameterization transform from basis factors to model
-     input arrays.  Companion function to kl_setup()
+    input arrays.  Companion function to kl_setup()
 
-     Parameters
-     ----------
+    Parameters
+    ----------
     par_file : str
         the csv file to get factor values from.  Must contain
         the following columns: name, new_val, org_val

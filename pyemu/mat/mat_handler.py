@@ -2100,8 +2100,8 @@ class Cov(Matrix):
         sigma_range: float
             defines range of upper bound - lower bound in terms of standard
             deviation (sigma). For example, if sigma_range = 4, the bounds
-             represent 4 * sigma.  Default is 4.0, representing approximately
-             95% confidence of implied normal distribution
+            represent 4 * sigma.  Default is 4.0, representing approximately
+            95% confidence of implied normal distribution
 
         Returns
         -------
@@ -2124,8 +2124,8 @@ class Cov(Matrix):
         sigma_range: float
             defines range of upper bound - lower bound in terms of standard
             deviation (sigma). For example, if sigma_range = 4, the bounds
-             represent 4 * sigma.  Default is 4.0, representing approximately
-             95% confidence of implied normal distribution
+            represent 4 * sigma.  Default is 4.0, representing approximately
+            95% confidence of implied normal distribution
 
         Returns
         -------
