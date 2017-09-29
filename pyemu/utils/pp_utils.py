@@ -60,9 +60,9 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
 
     ``>>>m = flopy.modflow.Modfow.load("mymodel.nam")``
 
-    ``>>>setup_pilotpoints_grid(m,prefix_dict={0:["hk_"],1:["vka_"]},``
+    ``>>>setup_pilotpoints_grid(m,prefix_dict={0:['hk_'],1:['vka_']},``
 
-    ``>>>                       every_n_cell=3,shapename="layer1_pp.shp")``
+    ``>>>                       every_n_cell=3,shapename='layer1_pp.shp')``
     """
 
     import flopy

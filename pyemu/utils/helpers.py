@@ -42,6 +42,12 @@ def run(cmd_str,cwd='.'):
 
     for Windows, if os.system returns non-zero, raises exception
 
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>pyemu.helpers.run("pestpp pest.pst")``
+
     """
     bwd = os.getcwd()
     os.chdir(cwd)
@@ -113,6 +119,18 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_di
     Cov : pyemu.Cov
         a covariance matrix that includes all adjustable parameters in the control
         file.
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>pst = pyemu.Pst("pest.pst")``
+
+    ``>>>sd = {"struct.dat":["hkpp.dat.tpl","vka.dat.tpl"]}``
+
+    ``>>>cov = pyemu.helpers.geostatistical_prior_builder(pst,struct_dict=sd)``
+
+    ``>>>cov.to_ascii("prior.cov")``
 
     """
 
@@ -263,6 +281,18 @@ def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
     ----
     requires flopy
 
+    Example
+    -------
+    ``>>>import flopy``
+
+    ``>>>import pyemu``
+
+    ``>>>m = flopy.modflow.Modflow.load("mymodel.nam")``
+
+    ``>>>a_dict = {"hk":m.lpf.hk[0].array}``
+
+    ``>>>ba_dict = pyemu.helpers.kl_setup(10,m.sr,"struct.dat",a_dict)``
+
     """
 
     try:
@@ -330,6 +360,18 @@ def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
     par_to_file_dict : dict
         a mapping from KL parameter prefixes to array file names.
 
+    Note
+    ----
+    This is the companion function to kl_setup.
+
+    This function should be called during the forward run
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>pyemu.helpers.kl_apply("kl.dat","basis.dat",{"hk":"hk_layer_1.dat",(100,100))``
+
 
     """
     df = pd.read_csv(par_file)
@@ -373,6 +415,14 @@ def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
     par_groups : list
         parameter groups to build PI equations for.  If None, all
         adjustable parameters are used. Default is None
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>pst = pyemu.Pst("pest.pst")``
+
+    ``>>>pyemu.helpers.zero_order_tikhonov(pst)``
 
     """
 
@@ -457,6 +507,16 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
         If the Pearson C is less than abs_drop_tol, the prior information
         equation will not be included in the control file
 
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>pst = pyemu.Pst("pest.pst")``
+
+    ``>>>cov = pyemu.Cov.from_ascii("prior.cov")``
+
+    ``>>>pyemu.helpers.first_order_pearson_tikhonov(pst,cov,abs_drop_tol=0.25)``
+
     """
     assert isinstance(cov,pyemu.Cov)
     cc_mat = cov.to_pearson()
@@ -529,6 +589,21 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         name of directory for master instance.  If master_dir
         exists, then it will be removed.  If master_dir is None,
         no master instance will be started
+
+    Note
+    ----
+    if all slaves (and optionally master) exit gracefully, then the slave
+    dirs will be removed unless cleanup is false
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    start 10 slaves using the directory "template" as the base case and
+    also start a master instance in a directory "master".
+
+    ``>>>pyemu.helpers.start_slaves("template","pestpp","pest.pst",10,master_dir="master")``
+
     """
 
     assert os.path.isdir(slave_dir)
@@ -698,6 +773,15 @@ def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
 
     if subplots is False, a single axis is returned
 
+    Example
+    -------
+    ``>>>import matplotlib.pyplot as plt``
+
+    ``>>>import pyemu``
+
+    ``>>>pyemu.helpers.plot_summary_distributions("pest.par.usum.csv")``
+
+    ``>>>plt.show()``
     """
     import matplotlib.pyplot as plt
     if isinstance(df,str):
@@ -900,6 +984,17 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     Returns
     -------
     pst : pyemu.Pst
+
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    this will construct a new Pst instance from template and instruction files
+    found in the current directory, assuming that the naming convention follows
+    that listed in parse_dir_for_io_files()
+
+    ``>>>pst = pyemu.helpers.pst_from_io_files(*pyemu.helpers.parse_dir_for_io_files('.'))``
 
     """
     par_names = []
