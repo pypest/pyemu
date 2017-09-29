@@ -21,6 +21,12 @@ class Schur(LinearAnalysis):
     Note
     ----
     Same call signature as the base LinearAnalysis class
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>sc = pyemu.Schur(jco="pest.jcb")``
     
     """
     def __init__(self,jco,**kwargs):
@@ -66,6 +72,17 @@ class Schur(LinearAnalysis):
         Note
         ----
         returns a reference
+
+        Example
+        -------
+        ``>>>import pyemu``
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
+
+        ``>>>post_cov = sc.posterior_parameter``
+
+        ``>>>post_cov.to_ascii("post.cov")``
+
 
         """
         if self.__posterior_parameter is not None:
@@ -175,6 +192,11 @@ class Schur(LinearAnalysis):
         dict : dict
             a dictionary of forecast names, posterior variance pairs
 
+        Note
+        ----
+        This method is not as easy to use as Schur.get_forecast_summary(), please
+        use it instead
+
         """
         if self.__posterior_prediction is not None:
             return self.__posterior_prediction
@@ -211,6 +233,23 @@ class Schur(LinearAnalysis):
         ----
         this is the primary method for accessing parameter uncertainty
         estimates - use this!
+
+        Example
+        -------
+        ``>>>import matplotlib.pyplot as plt``
+
+        ``>>>import pyemu``
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb",forecasts=["fore1","fore2"])``
+
+        ``>>>par_sum = sc.get_parameter_summary()``
+
+        ``>>>par_sum.plot(kind="bar")``
+
+        ``>>>plt.show()``
+
         """
         prior_mat = self.parcov.get(self.posterior_parameter.col_names)
         if prior_mat.isdiagonal:
@@ -254,6 +293,28 @@ class Schur(LinearAnalysis):
         ----
         this is the primary method for accessing forecast uncertainty
         estimates - use this!
+
+        Example
+        -------
+        ``>>>import matplotlib.pyplot as plt``
+
+        ``>>>import pyemu``
+
+        This usage assumes you have set the ``++forecasts()`` argument in the
+        control file:
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
+
+        or, you can pass the forecasts directly, assuming the forecasts are
+        names of zero-weight observations:
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb",forecasts=["fore1","fore2"])``
+
+        ``>>>fore_sum = sc.get_forecast_summary()``
+
+        ``>>>fore_sum.plot(kind="bar")``
+
+        ``>>>plt.show()``
 
         """
         sum = {"prior_var":[], "post_var":[], "percent_reduction":[]}
@@ -378,6 +439,14 @@ class Schur(LinearAnalysis):
             are the posterior variance of the forecast conditional on perfect
             knowledge of the parameters in the values of parlist_dict
 
+        Example
+        -------
+        ``>>>import pyemu``
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
+
+        ``>>>df = sc.get_par_contribution()``
+
         """
         self.log("calculating contribution from parameters")
         if parlist_dict is None:
@@ -485,6 +554,15 @@ class Schur(LinearAnalysis):
         ----
         all observations listed in obslist_dict and base_obslist with zero
         weights will be dropped unless reset_zero_weight is set
+
+        Example
+        -------
+        ``>>>import pyemu``
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
+
+        ``>>>df = sc.get_added_obs_importance(base_obslist=sc.pst.nnz_obs_names,reset_zero=True)``
+
 
         """
 
@@ -630,6 +708,14 @@ class Schur(LinearAnalysis):
         ----
         all observations listed in obslist_dict with zero
         weights will be dropped unless reset_zero_weight is set
+
+        Example
+        -------
+        ``>>>import pyemu``
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
+
+        ``df = sc.get_removed_obs_importance()``
 
         """
 
@@ -783,7 +869,18 @@ class Schur(LinearAnalysis):
             Columns of forecast variance percent reduction for this iteration,
             (percent reduction compared to initial base case)
 
+
+        Example
+        -------
+        ``>>>import pyemu``
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
+
+        ``>>>df = sc.next_most_added_importance_obs(forecast="fore1",``
+
+        ``>>>      base_obslist=sc.pst.nnz_obs_names,reset_zero=True``
         """
+
 
         if forecast is None:
             assert self.forecasts.shape[1] == 1,"forecast arg list one and only one" +\

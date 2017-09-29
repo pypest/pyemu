@@ -28,6 +28,12 @@ class MonteCarlo(LinearAnalysis):
     -------
     MonteCarlo : MonteCarlo
 
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>mc = pyemu.MonteCarlo(pst="pest.pst")``
+
     """
     def __init__(self,**kwargs):
         super(MonteCarlo,self).__init__(**kwargs)
@@ -106,7 +112,7 @@ class MonteCarlo(LinearAnalysis):
         return v2_proj
 
     def draw(self, num_reals=1, par_file = None, obs=False,
-             enforce_bounds=None,cov=None, how="gaussian"):
+             enforce_bounds=None, cov=None, how="gaussian"):
         """draw stochastic realizations of parameters and
            optionally observations, filling MonteCarlo.parensemble and
            optionally MonteCarlo.obsensemble.
@@ -128,6 +134,14 @@ class MonteCarlo(LinearAnalysis):
         how : str
             type of distribution to draw from. Must be in ["gaussian","uniform"]
             default is "gaussian".
+
+        Example
+        -------
+        ``>>>import pyemu``
+
+        ``>>>mc = pyemu.MonteCarlo(pst="pest.pst")``
+
+        ``>>>mc.draw(1000)``
 
         """
         if par_file is not None:
@@ -180,6 +194,22 @@ class MonteCarlo(LinearAnalysis):
         -------
         par_en : pyemu.ParameterEnsemble
             if inplace is False, otherwise None
+
+        Note
+        ----
+        to use this method, the MonteCarlo instance must have been constructed
+        with the ``jco`` argument.
+
+        Example
+        -------
+        ``>>>import pyemu``
+
+        ``>>>mc = pyemu.MonteCarlo(jco="pest.jcb")``
+
+        ``>>>mc.draw(1000)``
+
+        ``>>>mc.project_parensemble(par_file="final.par",nsing=100)``
+
         """
         assert self.jco is not None,"MonteCarlo.project_parensemble()" +\
                                     "requires a jacobian attribute"
@@ -212,6 +242,16 @@ class MonteCarlo(LinearAnalysis):
 
         noptmax: int
             value of NOPTMAX to set in new pest control files
+
+        Example
+        -------
+        ``>>>import pyemu``
+
+        ``>>>mc = pyemu.MonteCarlo(jco="pest.jcb")``
+
+        ``>>>mc.draw(1000, obs=True)``
+
+        ``>>>mc.write_psts("mc_", existing_jco="pest.jcb", noptmax=1)``
 
         """
         self.log("writing realized pest control files")

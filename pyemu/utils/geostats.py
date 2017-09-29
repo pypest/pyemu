@@ -63,6 +63,14 @@ class GeoStruct(object):
     transform : str
         the transform of the GeoStruct
 
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)``
+
+    ``>>>gs = pyemu.utils.geostats.GeoStruct(variograms=v,nugget=0.5)``
+
     """
     def __init__(self,nugget=0.0,variograms=[],name="struct1",
                  transform="none"):
@@ -124,7 +132,16 @@ class GeoStruct(object):
         ----
         either "names" or "cov" must be passed.  If "cov" is passed, cov.shape
         must equal len(x) and len(y).
+
+        Example
+        -------
+        ``>>>pp_df = pyemu.pp_utils.pp_file_to_dataframe("hkpp.dat")``
+
+        ``>>>cov = gs.covariance_matrix(pp_df.x,pp_df.y,pp_df.name)``
+
+
         """
+
         if not isinstance(x,np.ndarray):
             x = np.array(x)
         if not isinstance(y,np.ndarray):
@@ -152,7 +169,8 @@ class GeoStruct(object):
         return cov
 
     def covariance(self,pt0,pt1):
-        """get the covariance between two points implied by the GeoStruct
+        """get the covariance between two points implied by the GeoStruct.
+        This is used during the ordinary kriging process to get the RHS
 
         Parameters
         ----------
@@ -480,6 +498,17 @@ class OrdinaryKrige(object):
     point_data must also contain a "zone" column
 
 
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)``
+
+    ``>>>gs = pyemu.utils.geostats.GeoStruct(variograms=v,nugget=0.5)``
+
+    ``>>>pp_df = pyemu.pp_utils.pp_file_to_dataframe("hkpp.dat")``
+
+    ``>>>ok = pyemu.utils.geostats.OrdinaryKrige(gs,pp_df)``
     """
 
     def __init__(self,geostruct,point_data):
@@ -601,6 +630,29 @@ class OrdinaryKrige(object):
         ----
         this method calls OrdinaryKrige.calc_factors()
 
+
+        Example
+        -------
+        ``>>>import flopy``
+
+        ``>>>import pyemu``
+
+        ``>>>v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)``
+
+        ``>>>gs = pyemu.utils.geostats.GeoStruct(variograms=v,nugget=0.5)``
+
+        ``>>>pp_df = pyemu.pp_utils.pp_file_to_dataframe("hkpp.dat")``
+
+        ``>>>ok = pyemu.utils.geostats.OrdinaryKrige(gs,pp_df)``
+
+        ``>>>m = flopy.modflow.Modflow.load("mymodel.nam")
+
+        ``>>>df = ok.calc_factors_grid(m.sr,zone_array=m.bas6.ibound[0].array,``
+
+        ``>>>                          var_filename="ok_var.dat")``
+
+        ``>>>ok.to_grid_factor_file("factors.dat")``
+
         """
 
         self.spatial_reference = spatial_reference
@@ -702,6 +754,7 @@ class OrdinaryKrige(object):
         df : pandas.DataFrame
             a dataframe with information summarizing the ordinary kriging
             process for each interpolation points
+
 
         """
 
@@ -1188,6 +1241,12 @@ class ExpVario(Vario2d):
     -------
     ExpVario : ExpVario
 
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)``
+
     """
     def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
         super(ExpVario,self).__init__(contribution,a,anisotropy=anisotropy,
@@ -1234,6 +1293,13 @@ class GauVario(Vario2d):
     Note
     ----
     the Gaussian variogram can be unstable (not invertible) for long ranges.
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>v = pyemu.utils.geostats.GauVario(a=1000,contribution=1.0)``
+
     """
 
     def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
@@ -1280,6 +1346,11 @@ class SphVario(Vario2d):
     -------
     SphVario : SphVario
 
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>v = pyemu.utils.geostats.SphVario(a=1000,contribution=1.0)``
 
     """
 
@@ -1341,6 +1412,13 @@ def read_struct_file(struct_file,return_type=GeoStruct):
     ----
     if only on structure is listed in struct_file, then return type
     is GeoStruct.  Otherwise, return type is a list of GeoStruct
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>gs = pyemu.utils.geostats.reads_struct_file("struct.dat")``
+
 
     """
 
@@ -1490,6 +1568,13 @@ def read_sgems_variogram_xml(xml_file,return_type=GeoStruct):
     -------
     GeoStruct : GeoStruct
 
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>gs = pyemu.utils.geostats.read_sgems_variogram_xml("sgems.xml")``
+
     """
     try:
         import xml.etree.ElementTree as ET
@@ -1569,7 +1654,7 @@ def gslib_2_dataframe(filename,attr_name=None,x_idx=0,y_idx=1):
         the index of the x-coordinate information in the GSLIB file. Default is
         0 (first column)
     y_idx : (int)
-        the index of the y-coordinate information i the GSLIB file.
+        the index of the y-coordinate information in the GSLIB file.
         Default is 1 (second column)
 
     Returns
@@ -1584,6 +1669,11 @@ def gslib_2_dataframe(filename,attr_name=None,x_idx=0,y_idx=1):
     ----
     assigns generic point names ("pt0, pt1, etc)
 
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>df = pyemu.utiils.geostats.gslib_2_dataframe("prop.gslib",attr_name="hk")``
 
 
     """
@@ -1695,6 +1785,12 @@ def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
     out_file : str
         if out_file it not None
 
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>pyemu.utils.geostats.fac2real("hkpp.dat",out_file="hk_layer_1.ref")``
+
     """
 
     if pp_file is not None and isinstance(pp_file,str):
@@ -1767,7 +1863,7 @@ def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
     return arr
 
 def parse_factor_line(line):
-    """ function to parse a factor file line
+    """ function to parse a factor file line.  Used by fac2real()
 
     Parameters
     ----------
