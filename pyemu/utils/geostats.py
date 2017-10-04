@@ -1749,6 +1749,7 @@ def load_sgems_exp_var(filename):
             for item in attrib:
                 print(item,item.tag)
         df = pd.DataFrame({"x":x,"y":y,"pairs":pairs})
+        df.loc[df.y<0.0,"y"] = np.NaN
         dfs[title] = df
     return dfs
 
