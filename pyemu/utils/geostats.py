@@ -645,7 +645,7 @@ class OrdinaryKrige(object):
 
         ``>>>ok = pyemu.utils.geostats.OrdinaryKrige(gs,pp_df)``
 
-        ``>>>m = flopy.modflow.Modflow.load("mymodel.nam")
+        ``>>>m = flopy.modflow.Modflow.load("mymodel.nam")``
 
         ``>>>df = ok.calc_factors_grid(m.sr,zone_array=m.bas6.ibound[0].array,``
 
