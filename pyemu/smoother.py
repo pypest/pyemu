@@ -23,8 +23,288 @@ from pyemu.pst import Pst
 from .logger import Logger
 
 
+class EnsembleMethod():
+    """Base class for ensemble-type methods.  Should be instantiated directly
 
-class EnsembleSmoother():
+    Parameters
+    ----------
+        pst : pyemu.Pst or str
+            a control file instance or filename
+        parcov : pyemu.Cov or str
+            a prior parameter covariance matrix or filename. If None,
+            parcov is constructed from parameter bounds (diagonal)
+        obscov : pyemu.Cov or str
+            a measurement noise covariance matrix or filename. If None,
+            obscov is constructed from observation weights.
+        num_slaves : int
+            number of slaves to use in (local machine) parallel evaluation of the parmaeter
+            ensemble.  If 0, serial evaluation is used.  Ignored if submit_file is not None
+        submit_file : str
+            the name of a HTCondor submit file.  If not None, HTCondor is used to
+            evaluate the parameter ensemble in parallel by issuing condor_submit
+            as a system command
+        port : int
+            the TCP port number to communicate on for parallel run management
+        slave_dir : str
+            path to a directory with a complete set of model files and PEST
+            interface files
+
+    """
+
+    def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,use_approx_prior=True,
+                 submit_file=None,verbose=False,port=4004,slave_dir="template"):
+        self.logger = Logger(verbose)
+        if verbose is not False:
+            self.logger.echo = True
+        self.num_slaves = int(num_slaves)
+        if submit_file is not None:
+            if not os.path.exists(submit_file):
+                self.logger.lraise("submit_file {0} not found".format(submit_file))
+        elif num_slaves > 0:
+            if not os.path.exists(slave_dir):
+                self.logger.lraise("template dir {0} not found".format(slave_dir))
+
+        self.slave_dir = slave_dir
+        self.submit_file = submit_file
+        self.port = int(port)
+        self.paren_prefix = ".parensemble.{0:04d}.csv"
+        self.obsen_prefix = ".obsensemble.{0:04d}.csv"
+
+        if isinstance(pst,str):
+            pst = Pst(pst)
+        assert isinstance(pst,Pst)
+        self.pst = pst
+        self.sweep_in_csv = pst.pestpp_options.get("sweep_parameter_csv_file","sweep_in.csv")
+        self.sweep_out_csv = pst.pestpp_options.get("sweep_output_csv_file","sweep_out.csv")
+        if parcov is not None:
+            assert isinstance(parcov,Cov)
+        else:
+            parcov = Cov.from_parameter_data(self.pst)
+        if obscov is not None:
+            assert isinstance(obscov,Cov)
+        else:
+            obscov = Cov.from_observation_data(pst)
+
+        self.parcov = parcov
+        self.obscov = obscov
+
+        # if restart_iter > 0:
+        #     self.restart_iter = restart_iter
+        #     paren = self.pst.filename+self.paren_prefix.format(restart_iter)
+        #     assert os.path.exists(paren),\
+        #         "could not find restart par ensemble {0}".format(paren)
+        #     obsen0 = self.pst.filename+self.obsen_prefix.format(0)
+        #     assert os.path.exists(obsen0),\
+        #         "could not find restart obs ensemble 0 {0}".format(obsen0)
+        #     obsen = self.pst.filename+self.obsen_prefix.format(restart_iter)
+        #     assert os.path.exists(obsen),\
+        #         "could not find restart obs ensemble {0}".format(obsen)
+        #     self.restart = True
+
+
+        self.__initialized = False
+        self.iter_num = 0
+        self.raw_sweep_out = None
+
+    @property
+    def current_phi(self):
+        """ the current phi vector
+
+        Returns
+        -------
+            current_phi : pandas.DataFrame
+                the current phi vector as a pandas dataframe
+
+        """
+        return pd.DataFrame(data={"phi":self._calc_phi_vec(self.obsensemble)},\
+                            index=self.obsensemble.index)
+
+    def initialize(self,*args,**kwargs):
+        raise Exception("EnsembleMethod.initialize() must be implemented by the derived types")
+
+    def _calc_delta(self,ensemble,scaling_matrix=None):
+        '''
+        calc the scaled  ensemble differences from the mean
+        '''
+        mean = np.array(ensemble.mean(axis=0))
+        delta = ensemble.as_pyemu_matrix()
+        for i in range(ensemble.shape[0]):
+            delta.x[i,:] -= mean
+        if scaling_matrix is not None:
+            delta = scaling_matrix * delta.T
+        delta *= (1.0 / np.sqrt(float(ensemble.shape[0] - 1.0)))
+        return delta
+
+    def _calc_obs(self,parensemble):
+        self.logger.log("removing existing sweep in/out files")
+        try:
+            os.remove(self.sweep_in_csv)
+        except Exception as e:
+            self.logger.warn("error removing existing sweep in file:{0}".format(str(e)))
+        try:
+            os.remove(self.sweep_out_csv)
+        except Exception as e:
+            self.logger.warn("error removing existing sweep out file:{0}".format(str(e)))
+        self.logger.log("removing existing sweep in/out files")
+
+        if parensemble.isnull().values.any():
+            parensemble.to_csv("_nan.csv")
+            self.logger.lraise("_calc_obs() error: NaNs in parensemble (written to '_nan.csv')")
+
+        if self.submit_file is None:
+            self._calc_obs_local(parensemble)
+        else:
+            self._calc_obs_condor(parensemble)
+
+        # make a copy of sweep out for restart purposes
+        # sweep_out = str(self.iter_num)+"_raw_"+self.sweep_out_csv
+        # if os.path.exists(sweep_out):
+        #     os.remove(sweep_out)
+        # shutil.copy2(self.sweep_out_csv,sweep_out)
+
+        self.logger.log("reading sweep out csv {0}".format(self.sweep_out_csv))
+        failed_runs,obs = self._load_obs_ensemble(self.sweep_out_csv)
+        self.logger.log("reading sweep out csv {0}".format(self.sweep_out_csv))
+        self.total_runs += obs.shape[0]
+        self.logger.statement("total runs:{0}".format(self.total_runs))
+        return failed_runs,obs
+
+    def _load_obs_ensemble(self,filename):
+        if not os.path.exists(filename):
+            self.logger.lraise("obsensemble file {0} does not exists".format(filename))
+        obs = pd.read_csv(filename)
+        obs.columns = [item.lower() for item in obs.columns]
+        self.raw_sweep_out = obs.copy() # save this for later to support restart
+        assert "input_run_id" in obs.columns,\
+            "'input_run_id' col missing...need newer version of sweep"
+        obs.index = obs.input_run_id
+        failed_runs = None
+        if 1 in obs.failed_flag.values:
+            failed_runs = obs.loc[obs.failed_flag == 1].index.values
+            self.logger.warn("{0} runs failed (indices: {1})".\
+                             format(len(failed_runs),','.join([str(f) for f in failed_runs])))
+        obs = ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],
+                                                               pst=self.pst)
+        if obs.isnull().values.any():
+            self.logger.lraise("_calc_obs() error: NaNs in obsensemble")
+        return failed_runs, obs
+
+    def _get_master_thread(self):
+        master_stdout = "_master_stdout.dat"
+        master_stderr = "_master_stderr.dat"
+        def master():
+            try:
+                #os.system("sweep {0} /h :{1} 1>{2} 2>{3}". \
+                #          format(self.pst.filename, self.port, master_stdout, master_stderr))
+                pyemu.helpers.run("sweep {0} /h :{1} 1>{2} 2>{3}". \
+                          format(self.pst.filename, self.port, master_stdout, master_stderr))
+
+            except Exception as e:
+                self.logger.lraise("error starting condor master: {0}".format(str(e)))
+            with open(master_stderr, 'r') as f:
+                err_lines = f.readlines()
+            if len(err_lines) > 0:
+                self.logger.warn("master stderr lines: {0}".
+                                 format(','.join([l.strip() for l in err_lines])))
+
+        master_thread = threading.Thread(target=master)
+        master_thread.start()
+        time.sleep(2.0)
+        return master_thread
+
+    def _calc_obs_condor(self,parensemble):
+        self.logger.log("evaluating ensemble of size {0} with htcondor".\
+                        format(parensemble.shape[0]))
+
+        parensemble.to_csv(self.sweep_in_csv)
+        master_thread = self._get_master_thread()
+        condor_temp_file = "_condor_submit_stdout.dat"
+        condor_err_file = "_condor_submit_stderr.dat"
+        self.logger.log("calling condor_submit with submit file {0}".format(self.submit_file))
+        try:
+            os.system("condor_submit {0} 1>{1} 2>{2}".\
+                      format(self.submit_file,condor_temp_file,condor_err_file))
+        except Exception as e:
+            self.logger.lraise("error in condor_submit: {0}".format(str(e)))
+        self.logger.log("calling condor_submit with submit file {0}".format(self.submit_file))
+        time.sleep(2.0) #some time for condor to submit the job and echo to stdout
+        condor_submit_string = "submitted to cluster"
+        with open(condor_temp_file,'r') as f:
+            lines = f.readlines()
+        self.logger.statement("condor_submit stdout: {0}".\
+                              format(','.join([l.strip() for l in lines])))
+        with open(condor_err_file,'r') as f:
+            err_lines = f.readlines()
+        if len(err_lines) > 0:
+            self.logger.warn("stderr from condor_submit:{0}".\
+                             format([l.strip() for l in err_lines]))
+        cluster_number = None
+        for line in lines:
+            if condor_submit_string in line.lower():
+                cluster_number = int(float(line.split(condor_submit_string)[-1]))
+        if cluster_number is None:
+            self.logger.lraise("couldn't find cluster number...")
+        self.logger.statement("condor cluster: {0}".format(cluster_number))
+        master_thread.join()
+        self.logger.statement("condor master thread exited")
+        self.logger.log("calling condor_rm on cluster {0}".format(cluster_number))
+        os.system("condor_rm cluster {0}".format(cluster_number))
+        self.logger.log("calling condor_rm on cluster {0}".format(cluster_number))
+        self.logger.log("evaluating ensemble of size {0} with htcondor".\
+                        format(parensemble.shape[0]))
+
+
+    def _calc_obs_local(self,parensemble):
+        '''
+        propagate the ensemble forward using sweep.
+        '''
+        self.logger.log("evaluating ensemble of size {0} locally with sweep".\
+                        format(parensemble.shape[0]))
+        parensemble.to_csv(self.sweep_in_csv)
+        if self.num_slaves > 0:
+            master_thread = self._get_master_thread()
+            pyemu.utils.start_slaves(self.slave_dir,"sweep",self.pst.filename,
+                                     self.num_slaves,slave_root='..',port=self.port)
+            master_thread.join()
+        else:
+            os.system("sweep {0}".format(self.pst.filename))
+
+        self.logger.log("evaluating ensemble of size {0} locally with sweep".\
+                        format(parensemble.shape[0]))
+
+    def _calc_phi_vec(self,obsensemble):
+        obs_diff = self._get_residual_matrix(obsensemble)
+        #phi_vec = np.diagonal((obs_diff * self.obscov_inv_sqrt.get(row_names=obs_diff.col_names,
+        #                                                           col_names=obs_diff.col_names) * obs_diff.T).x)
+        q = np.diagonal(self.obscov_inv_sqrt.get(row_names=obs_diff.col_names,col_names=obs_diff.col_names).x)
+        phi_vec = []
+        for i in range(obs_diff.shape[0]):
+            o = obs_diff.x[i,:]
+            phi_vec.append(((obs_diff.x[i,:] * q)**2).sum())
+        return np.array(phi_vec)
+
+    def _phi_report(self,phi_vec,cur_lam):
+        self.phi_csv.write("{0},{1},{2},{3},{4},{5},{6}".format(self.iter_num,
+                                                             self.total_runs,
+                                                             cur_lam,
+                                                             phi_vec.min(),
+                                                             phi_vec.max(),
+                                                             phi_vec.mean(),
+                                                             np.median(phi_vec),
+                                                             phi_vec.std()))
+        self.phi_csv.write(",".join(["{0:20.8}".format(phi) for phi in phi_vec]))
+        self.phi_csv.write("\n")
+        self.phi_csv.flush()
+
+    def _get_residual_matrix(self, obsensemble):
+        obs_matrix = obsensemble.nonzero.as_pyemu_matrix()
+        return  obs_matrix - self.obs0_matrix.get(col_names=obs_matrix.col_names,row_names=obs_matrix.row_names)
+
+    def update(self,lambda_mults=[1.0],localizer=None,run_subset=None,use_approx=True):
+        raise Exception("EnsembleMethod.update() must be implemented by the derived types")
+
+
+class EnsembleSmoother(EnsembleMethod):
     """an implementation of the GLM iterative ensemble smoother
 
     Parameters
@@ -62,77 +342,12 @@ class EnsembleSmoother():
 
     def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,use_approx_prior=True,
                  submit_file=None,verbose=False,port=4004,slave_dir="template"):
-        self.logger = Logger(verbose)
-        if verbose is not False:
-            self.logger.echo = True
-        self.num_slaves = int(num_slaves)
-        if submit_file is not None:
-            if not os.path.exists(submit_file):
-                self.logger.lraise("submit_file {0} not found".format(submit_file))
-        elif num_slaves > 0:
-            if not os.path.exists(slave_dir):
-                self.logger.lraise("template dir {0} not found".format(slave_dir))
-
-        self.slave_dir = slave_dir
-        self.submit_file = submit_file
-        self.port = int(port)
+        super(EnsembleSmoother,self).__init__(pst=pst,parcov=parcov,obscov=obscov,num_slaves=num_slaves,
+                                              submit_file=submit_file,verbose=verbose,port=port,slave_dir=slave_dir)
         self.use_approx_prior = bool(use_approx_prior)
-        self.paren_prefix = ".parensemble.{0:04d}.csv"
-        self.obsen_prefix = ".obsensemble.{0:04d}.csv"
-
-        if isinstance(pst,str):
-            pst = Pst(pst)
-        assert isinstance(pst,Pst)
-        self.pst = pst
-        self.sweep_in_csv = pst.pestpp_options.get("sweep_parameter_csv_file","sweep_in.csv")
-        self.sweep_out_csv = pst.pestpp_options.get("sweep_output_csv_file","sweep_out.csv")
-        if parcov is not None:
-            assert isinstance(parcov,Cov)
-        else:
-            parcov = Cov.from_parameter_data(self.pst)
-        if obscov is not None:
-            assert isinstance(obscov,Cov)
-        else:
-            obscov = Cov.from_observation_data(pst)
-
-        self.parcov = parcov
-        self.obscov = obscov
-
-        # if restart_iter > 0:
-        #     self.restart_iter = restart_iter
-        #     paren = self.pst.filename+self.paren_prefix.format(restart_iter)
-        #     assert os.path.exists(paren),\
-        #         "could not find restart par ensemble {0}".format(paren)
-        #     obsen0 = self.pst.filename+self.obsen_prefix.format(0)
-        #     assert os.path.exists(obsen0),\
-        #         "could not find restart obs ensemble 0 {0}".format(obsen0)
-        #     obsen = self.pst.filename+self.obsen_prefix.format(restart_iter)
-        #     assert os.path.exists(obsen),\
-        #         "could not find restart obs ensemble {0}".format(obsen)
-        #     self.restart = True
-
-
-        self.__initialized = False
-        #self.num_reals = 0
         self.half_parcov_diag = None
         self.half_obscov_diag = None
         self.delta_par_prior = None
-        self.iter_num = 0
-        #self.enforce_bounds = None
-        self.raw_sweep_out = None
-
-    @property
-    def current_phi(self):
-        """ the current phi vector
-
-        Returns
-        -------
-            current_phi : pandas.DataFrame
-                the current phi vector as a pandas dataframe
-
-        """
-        return pd.DataFrame(data={"phi":self._calc_phi_vec(self.obsensemble)},\
-                            index=self.obsensemble.index)
 
     def initialize(self,num_reals=1,init_lambda=None,enforce_bounds="reset",
                    parensemble=None,obsensemble=None,restart_obsensemble=None):
@@ -340,182 +555,6 @@ class EnsembleSmoother():
         '''
         return self._calc_delta(obsensemble.nonzero, self.obscov.inv.sqrt)
 
-    def _calc_delta(self,ensemble,scaling_matrix):
-        '''
-        calc the scaled  ensemble differences from the mean
-        '''
-        mean = np.array(ensemble.mean(axis=0))
-        delta = ensemble.as_pyemu_matrix()
-        for i in range(ensemble.shape[0]):
-            delta.x[i,:] -= mean
-        delta = scaling_matrix * delta.T
-        delta *= (1.0 / np.sqrt(float(ensemble.shape[0] - 1.0)))
-        return delta
-
-    def _calc_obs(self,parensemble):
-        self.logger.log("removing existing sweep in/out files")
-        try:
-            os.remove(self.sweep_in_csv)
-        except Exception as e:
-            self.logger.warn("error removing existing sweep in file:{0}".format(str(e)))
-        try:
-            os.remove(self.sweep_out_csv)
-        except Exception as e:
-            self.logger.warn("error removing existing sweep out file:{0}".format(str(e)))
-        self.logger.log("removing existing sweep in/out files")
-
-        if parensemble.isnull().values.any():
-            parensemble.to_csv("_nan.csv")
-            self.logger.lraise("_calc_obs() error: NaNs in parensemble (written to '_nan.csv')")
-
-        if self.submit_file is None:
-            self._calc_obs_local(parensemble)
-        else:
-            self._calc_obs_condor(parensemble)
-
-        # make a copy of sweep out for restart purposes
-        # sweep_out = str(self.iter_num)+"_raw_"+self.sweep_out_csv
-        # if os.path.exists(sweep_out):
-        #     os.remove(sweep_out)
-        # shutil.copy2(self.sweep_out_csv,sweep_out)
-
-        self.logger.log("reading sweep out csv {0}".format(self.sweep_out_csv))
-        failed_runs,obs = self._load_obs_ensemble(self.sweep_out_csv)
-        self.logger.log("reading sweep out csv {0}".format(self.sweep_out_csv))
-        self.total_runs += obs.shape[0]
-        self.logger.statement("total runs:{0}".format(self.total_runs))
-        return failed_runs,obs
-
-    def _load_obs_ensemble(self,filename):
-        if not os.path.exists(filename):
-            self.logger.lraise("obsensemble file {0} does not exists".format(filename))
-        obs = pd.read_csv(filename)
-        obs.columns = [item.lower() for item in obs.columns]
-        self.raw_sweep_out = obs.copy() # save this for later to support restart
-        assert "input_run_id" in obs.columns,\
-            "'input_run_id' col missing...need newer version of sweep"
-        obs.index = obs.input_run_id
-        failed_runs = None
-        if 1 in obs.failed_flag.values:
-            failed_runs = obs.loc[obs.failed_flag == 1].index.values
-            self.logger.warn("{0} runs failed (indices: {1})".\
-                             format(len(failed_runs),','.join([str(f) for f in failed_runs])))
-        obs = ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],
-                                                               pst=self.pst)
-        if obs.isnull().values.any():
-            self.logger.lraise("_calc_obs() error: NaNs in obsensemble")
-        return failed_runs, obs
-
-    def _get_master_thread(self):
-        master_stdout = "_master_stdout.dat"
-        master_stderr = "_master_stderr.dat"
-        def master():
-            try:
-                #os.system("sweep {0} /h :{1} 1>{2} 2>{3}". \
-                #          format(self.pst.filename, self.port, master_stdout, master_stderr))
-                pyemu.helpers.run("sweep {0} /h :{1} 1>{2} 2>{3}". \
-                          format(self.pst.filename, self.port, master_stdout, master_stderr))
-
-            except Exception as e:
-                self.logger.lraise("error starting condor master: {0}".format(str(e)))
-            with open(master_stderr, 'r') as f:
-                err_lines = f.readlines()
-            if len(err_lines) > 0:
-                self.logger.warn("master stderr lines: {0}".
-                                 format(','.join([l.strip() for l in err_lines])))
-
-        master_thread = threading.Thread(target=master)
-        master_thread.start()
-        time.sleep(2.0)
-        return master_thread
-
-    def _calc_obs_condor(self,parensemble):
-        self.logger.log("evaluating ensemble of size {0} with htcondor".\
-                        format(parensemble.shape[0]))
-
-        parensemble.to_csv(self.sweep_in_csv)
-        master_thread = self._get_master_thread()
-        condor_temp_file = "_condor_submit_stdout.dat"
-        condor_err_file = "_condor_submit_stderr.dat"
-        self.logger.log("calling condor_submit with submit file {0}".format(self.submit_file))
-        try:
-            os.system("condor_submit {0} 1>{1} 2>{2}".\
-                      format(self.submit_file,condor_temp_file,condor_err_file))
-        except Exception as e:
-            self.logger.lraise("error in condor_submit: {0}".format(str(e)))
-        self.logger.log("calling condor_submit with submit file {0}".format(self.submit_file))
-        time.sleep(2.0) #some time for condor to submit the job and echo to stdout
-        condor_submit_string = "submitted to cluster"
-        with open(condor_temp_file,'r') as f:
-            lines = f.readlines()
-        self.logger.statement("condor_submit stdout: {0}".\
-                              format(','.join([l.strip() for l in lines])))
-        with open(condor_err_file,'r') as f:
-            err_lines = f.readlines()
-        if len(err_lines) > 0:
-            self.logger.warn("stderr from condor_submit:{0}".\
-                             format([l.strip() for l in err_lines]))
-        cluster_number = None
-        for line in lines:
-            if condor_submit_string in line.lower():
-                cluster_number = int(float(line.split(condor_submit_string)[-1]))
-        if cluster_number is None:
-            self.logger.lraise("couldn't find cluster number...")
-        self.logger.statement("condor cluster: {0}".format(cluster_number))
-        master_thread.join()
-        self.logger.statement("condor master thread exited")
-        self.logger.log("calling condor_rm on cluster {0}".format(cluster_number))
-        os.system("condor_rm cluster {0}".format(cluster_number))
-        self.logger.log("calling condor_rm on cluster {0}".format(cluster_number))
-        self.logger.log("evaluating ensemble of size {0} with htcondor".\
-                        format(parensemble.shape[0]))
-
-
-    def _calc_obs_local(self,parensemble):
-        '''
-        propagate the ensemble forward using sweep.
-        '''
-        self.logger.log("evaluating ensemble of size {0} locally with sweep".\
-                        format(parensemble.shape[0]))
-        parensemble.to_csv(self.sweep_in_csv)
-        if self.num_slaves > 0:
-            master_thread = self._get_master_thread()
-            pyemu.utils.start_slaves(self.slave_dir,"sweep",self.pst.filename,
-                                     self.num_slaves,slave_root='..',port=self.port)
-            master_thread.join()
-        else:
-            os.system("sweep {0}".format(self.pst.filename))
-
-        self.logger.log("evaluating ensemble of size {0} locally with sweep".\
-                        format(parensemble.shape[0]))
-
-    def _calc_phi_vec(self,obsensemble):
-        obs_diff = self._get_residual_matrix(obsensemble)
-        #phi_vec = np.diagonal((obs_diff * self.obscov_inv_sqrt.get(row_names=obs_diff.col_names,
-        #                                                           col_names=obs_diff.col_names) * obs_diff.T).x)
-        q = np.diagonal(self.obscov_inv_sqrt.get(row_names=obs_diff.col_names,col_names=obs_diff.col_names).x)
-        phi_vec = []
-        for i in range(obs_diff.shape[0]):
-            o = obs_diff.x[i,:]
-            phi_vec.append(((obs_diff.x[i,:] * q)**2).sum())
-        return np.array(phi_vec)
-
-    def _phi_report(self,phi_vec,cur_lam):
-        self.phi_csv.write("{0},{1},{2},{3},{4},{5},{6}".format(self.iter_num,
-                                                             self.total_runs,
-                                                             cur_lam,
-                                                             phi_vec.min(),
-                                                             phi_vec.max(),
-                                                             phi_vec.mean(),
-                                                             np.median(phi_vec),
-                                                             phi_vec.std()))
-        self.phi_csv.write(",".join(["{0:20.8}".format(phi) for phi in phi_vec]))
-        self.phi_csv.write("\n")
-        self.phi_csv.flush()
-
-    def _get_residual_matrix(self, obsensemble):
-        obs_matrix = obsensemble.nonzero.as_pyemu_matrix()
-        return  obs_matrix - self.obs0_matrix.get(col_names=obs_matrix.col_names,row_names=obs_matrix.row_names)
 
     def update(self,lambda_mults=[1.0],localizer=None,run_subset=None,use_approx=True):
         """update the iES one GLM cycle
