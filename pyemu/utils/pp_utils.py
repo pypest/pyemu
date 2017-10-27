@@ -16,37 +16,55 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
                            pp_dir='.',tpl_dir='.',
                            shapename="pp.shp"):
     """setup grid-based pilot points.  Uses the ibound to determine
-       where to set pilot points. pilot points are given generic "pp_"
-       names.  write template files as well...hopefully this is useful
-        to someone...
+    where to set pilot points. pilot points are given generic ``pp_``
+    names unless ``prefix_dict`` is passed.  Write template files and a
+    shapefile as well...hopefully this is useful to someone...
+
     Parameters
     ----------
-        ml : flopy.modflow.Modflow instance
-        prefix_dict : (optional)dict{k:list}
-            a dictionary of parameter prefixes to use for each model
-            layer (e.g. {0:["hk_1","sy_1","rch"],1:["hk_2","ss_2"]}).
-            layer indices not list in prefix_dict will not have
-            pilot points written for them. If None, then "pp_<k>_" is
-            used for each layer. Zero-based layer index!!!
-        every_n_cell : int
-            the stride in the row and col loops. controls how dense the
-            point point network is compared to the model grid.
-            every_n_cell = 1 results in a pilot point in every cell
-        use_ibound_zones : bool
-            flag to use ibound values as zones for the pilot points
-        pp_dir : str
-            directory for pilot point files
-        tpl_dir : str
-            directory for template files
-        shapename : str
-            name of pilot point shapefile.  set to None to disable
+    ml : flopy.mbase
+        a flopy mbase dervied type.  If None, sr must not be None.
+    sr : flopy.utils.reference.SpatialReference
+        a spatial reference use to locate the model grid in space.  If None,
+        ml must not be None.  Default is None
+    ibound : numpy.ndarray
+        the modflow ibound integer array.  Used to set pilot points only in active areas.
+        If None and ml is None, then pilot points are set in all rows and columns according to
+        every_n_cell.  Default is None.
+    prefix_dict : dict
+        a dictionary of layer index, pilot point parameter prefixes.
+        Example : ``{0:["hk_"],1:["vka_"]}`` would setup pilot points with
+        the prefix ``"hk"`` for model layers 1 and ``"vka"`` for model layer 2 (zero based).
+        If None, a generic set of pilot points with the "pp" prefix are setup
+        for a generic nrowXncol grid. Default is None.
+    use_ibound_zones : bool
+        a flag to use the greater-than-zero values in the ibound as pilot point zones.  If False,ibound
+        values greater than zero are treated as a single zone.  Default is False.
+    pp_dir : str
+        directory to write pilot point files to.  Default is '.'
+    tpl_dir : str
+        directory to write pilot point template file to.  Default is '.'
+    shapename : str
+        name of shapefile to write that contains pilot point information. Default is "pp.shp"
+
     Returns
     -------
-        par_info : pd.DataFrame
-            a combined dataframe with pilot point, control file and
-            file location information
+    pp_df : pandas.DataFrame
+        a dataframe summarizing pilot point information (same information
+        written to shapename
+    Example
+    -------
+    ``>>>import flopy``
 
+    ``>>>from pyemu.utils import setup_pilotpoints_grid``
+
+    ``>>>m = flopy.modflow.Modfow.load("mymodel.nam")``
+
+    ``>>>setup_pilotpoints_grid(m,prefix_dict={0:['hk_'],1:['vka_']},``
+
+    ``>>>                       every_n_cell=3,shapename='layer1_pp.shp')``
     """
+
     import flopy
 
     if ml is not None:
@@ -176,12 +194,40 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
 
 
 def pp_file_to_dataframe(pp_filename):
+
+    """ read a pilot point file to a pandas Dataframe
+
+    Parameters
+    ----------
+    pp_filename : str
+        pilot point file
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        a dataframe with pp_utils.PP_NAMES for columns
+
+    """
+
     df = pd.read_csv(pp_filename, delim_whitespace=True,
                      header=None, names=PP_NAMES,usecols=[0,1,2,3,4])
     df.loc[:,"name"] = df.name.apply(str).apply(str.lower)
     return df
 
 def pp_tpl_to_dataframe(tpl_filename):
+    """ read a pilot points template file to a pandas dataframe
+
+    Parameters
+    ----------
+    tpl_filename : str
+        pilot points template file
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        a dataframe with "parnme" included
+
+    """
     with open(tpl_filename,'r') as f:
         header = f.readline()
         marker = header.strip().split()[1]
@@ -200,16 +246,20 @@ def pp_tpl_to_dataframe(tpl_filename):
     return df
 
 def write_pp_shapfile(pp_df,shapename=None):
-    """write pilot points to a shapefile
+    """write pilot points dataframe to a shapefile
+
     Parameters
     ----------
-        pp_df : pandas.DataFrame or str
-            pilot dataframe or a pilot point filename
-        shapename : (optional) str
-            shapefile name.  If None, pp_df must be str
-    Returns
-    -------
-        None
+    pp_df : pandas.DataFrame or str
+        pilot point dataframe or a pilot point filename.  Dataframe
+        must include "x" and "y"
+    shapename : str
+        shapefile name.  If None, pp_df must be str and shapefile
+        is saved as <pp_df>.shp
+
+    Note
+    ----
+        requires pyshp
 
     """
     try:
@@ -240,7 +290,7 @@ def write_pp_shapfile(pp_df,shapename=None):
         elif dtype in [float, np.float, np.float32, np.float32]:
             shp.field(name=name, fieldType='N', size=50, decimal=8)
         else:
-            raise Exception("unrecognized field type in par_info:{0}:{1}".format(name, dtype))
+            raise Exception("unrecognized field type in pp_df:{0}:{1}".format(name, dtype))
 
 
     # some pandas awesomeness..
@@ -253,16 +303,15 @@ def write_pp_shapfile(pp_df,shapename=None):
 
 
 def write_pp_file(filename,pp_df):
-    """write a pilot points file from a dataframe
+    """write a pilot points dataframe to a pilot points file
+
     Parameters
     ----------
-        filename : str
-            pilot points file to write
-        pp_df : pandas DataFrame
-            must have columns name, x, y, zone and value
-    Returns
-    -------
-        None
+    filename : str
+        pilot points file to write
+    pp_df : pandas.DataFrame
+        a dataframe that has columns "x","y","zone", and "value"
+
     """
     with open(filename,'w') as f:
        f.write(pp_df.to_string(col_space=0,
@@ -274,25 +323,26 @@ def write_pp_file(filename,pp_df):
 
 
 def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
-    """write a template file from a pilot points file
+    """write a template file for a pilot points file
+
     Parameters
     ----------
-        pp_file : str
-            pilot points file
-        tpl_file : (optional)str
-            template file name to create.  If None, append ".tpl" to
-            the pp_file arg
-        name_prefix : (optional)str
-            name to prepend to parameter names for each pilot point.  for example,
-            if name_prefix = "hk_", then each pilot point parameter will be named
-            "hk_0001","hk_0002", etc
+    pp_file : str
+        pilot points file
+    tpl_file : str
+        template file name to write.  If None, append ".tpl" to
+        the pp_file arg. Default is None
+    name_prefix : str
+        name to prepend to parameter names for each pilot point.  For example,
+        if ``name_prefix = "hk_"``, then each pilot point parameter will be named
+        "hk_0001","hk_0002", etc.  If None, parameter names from pp_df.name
+        are used.  Default is None.
+
     Returns
     -------
         pp_df : pandas.DataFrame
-            pilot point information (name,x,y,zone,parval1) with the parameter
-            information (parnme,tpl),where is the parmaeter marker that went
-            into the template file.
-
+            a dataframe with pilot point information (name,x,y,zone,parval1)
+             with the parameter information (parnme,tpl_str)
     """
 
     if isinstance(pp_file,pd.DataFrame):

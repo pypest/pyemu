@@ -369,12 +369,23 @@ def add_pi_test():
     pst = pyemu.Pst(os.path.join("temp","test.pst"))
     print(pst.prior_information)
 
-
+def setattr_test():
+    import os
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    pst.model_command = 'test'
+    assert isinstance(pst.model_command,list)
+    pst.model_command = ["test","test1"]
+    assert isinstance(pst.model_command,list)
+    pst.write(os.path.join("temp","test.pst"))
+    pst = pyemu.Pst(os.path.join("temp","test.pst"))
+    assert isinstance(pst.model_command,list)
 
 
 if __name__ == "__main__":
+    setattr_test()
     # run_array_pars()
-    from_flopy_test()
+    #from_flopy_test()
     #add_pi_test()
     # regdata_test()
     # nnz_groups_test()

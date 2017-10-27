@@ -1,3 +1,8 @@
+"""This module contains several class definitions for parts of the
+PEST control file: ControlData, RegData and SvdData.  These
+classes are automatically created and appended to a Pst object;
+users shouldn't need to deal with these classes explicitly
+"""
 from __future__ import print_function, division
 import os
 import copy
@@ -41,6 +46,9 @@ REG_DEFAULT_LINES = """   1.0e-10    1.05e-10  0.1  nomemsave
 1.3  1.0e-2  1 1.5 1.5 0.5""".lower().split('\n')
 
 class RegData(object):
+    """ an object that encapsulates the regularization section
+    of the PEST control file
+    """
     def __init__(self):
         self.optional_dict = {}
         for vline,dline in zip(REG_VARIABLE_LINES,REG_DEFAULT_LINES):
@@ -53,7 +61,16 @@ class RegData(object):
                 v = v.replace('[','').replace(']','')
                 super(RegData,self).__setattr__(v,d)
                 self.optional_dict[v] = o
+
     def write(self,f):
+        """ write the regularization section to an open
+        file handle
+
+        Parameters
+        ----------
+        f : file handle
+
+        """
         f.write("* regularization\n")
         for vline in REG_VARIABLE_LINES:
             vraw = vline.strip().split()
@@ -66,6 +83,9 @@ class RegData(object):
 
 
 class SvdData(object):
+    """ an object that encapsulates the singular value decomposition
+    section of the PEST control file
+    """
     def __init__(self,**kwargs):
         self.svdmode = kwargs.pop("svdmode",1)
         self.maxsing = kwargs.pop("maxsing",10000000)
@@ -73,12 +93,26 @@ class SvdData(object):
         self.eigwrite = kwargs.pop("eigwrite",1)
 
     def write(self,f):
+        """ write an SVD section to a file handle
+
+        Parameters
+        ----------
+        f : file handle
+
+        """
         f.write("* singular value decomposition\n")
         f.write(IFMT(self.svdmode)+'\n')
         f.write(IFMT(self.maxsing)+' '+FFMT(self.eigthresh)+"\n")
         f.write('{0}\n'.format(self.eigwrite))
 
     def parse_values_from_lines(self,lines):
+        """ parse values from lines of the SVD section
+
+        Parameters
+        ----------
+        lines : list
+
+        """
         assert len(lines) == 3,"SvdData.parse_values_from_lines: expected " + \
                                "3 lines, not {0}".format(len(lines))
         try:
@@ -103,6 +137,9 @@ class SvdData(object):
 
 
 class ControlData(object):
+    """ an object that encapsulates the control data section
+     of the PEST control file
+    """
     def __init__(self):
 
         super(ControlData,self).__setattr__("formatters",{np.int32:IFMT,np.float64:FFMT,str:SFMT})
@@ -139,7 +176,10 @@ class ControlData(object):
     def get_dataframe():
         """ get a generic (default) control section dataframe
         
-        :return: dataframe
+        Returns
+        -------
+        pandas.DataFrame : pandas.DataFrame
+
         """
         names = []
         [names.extend(line.split()) for line in CONTROL_VARIABLE_LINES]
@@ -182,12 +222,12 @@ class ControlData(object):
 
     def parse_values_from_lines(self,lines):
         """ cast the string lines for a pest control file into actual inputs
-        Parameters:
+
+        Parameters
         ----------
-            lines: strings from pest control file
-        Returns:
-        -------
-            None
+        lines : list
+            strings from pest control file
+
         """
         assert len(lines) == len(CONTROL_VARIABLE_LINES),\
         "ControlData error: len of lines not equal to " +\
@@ -238,17 +278,22 @@ class ControlData(object):
 
     @property
     def formatted_values(self):
+        """ list the entries and current values in the control data section
+
+        Returns
+        -------
+        formatted_values : pandas.Series
+
+        """
         return self._df.apply(lambda x: self.formatters[x["type"]](x["value"]),axis=1)
 
     def write(self,f):
         """ write control data section to a file
         
-        Parameters:
+        Parameters
         ----------
-            f: file handle or string filename
-        Returns:
-        -------
-            None
+        f: file handle or string filename
+
         """
         if isinstance(f,str):
             f = open(f,'w')

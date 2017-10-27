@@ -1,3 +1,7 @@
+"""This module contains most of the pyemu.Pst object definition.  This object
+is the primary mechanism for dealing with PEST control files
+"""
+
 from __future__ import print_function, division
 import os
 import re
@@ -12,18 +16,25 @@ from pyemu.pst import pst_utils
 class Pst(object):
     """basic class for handling pest control files to support linear analysis
     as well as replicate some of the functionality of the pest utilities
+
+    Parameters
+    ----------
+    filename : str
+        the name of the control file
+    load : (boolean)
+        flag to load the control file. Default is True
+    resfile : str
+        corresponding residual file.  If None, a residual file
+        with the control file base name is sought.  Default is None
+
+    Returns
+    -------
+    Pst : Pst
+        a control file object
+
     """
     def __init__(self, filename, load=True, resfile=None):
-        """constructor of pst object
-        Parameters:
-        ----------
-            filename : [str] pest control file name
-            load : [bool] flag for loading
-            resfile : [str] residual filename
-        Returns:
-        -------
-            None
-        """
+
 
         self.filename = filename
         self.resfile = resfile
@@ -40,9 +51,21 @@ class Pst(object):
                 "pst file not found:{0}".format(filename)
             self.load(filename)
 
+    def __setattr__(self, key, value):
+        if key == "model_command":
+            if isinstance(value, str):
+                value = [value]
+        super(Pst,self).__setattr__(key,value)
+
     @property
     def phi(self):
         """get the weighted total objective function
+
+        Returns
+        -------
+        phi : float
+            sum of squared residuals
+
         """
         sum = 0.0
         for grp, contrib in self.phi_components.items():
@@ -52,12 +75,17 @@ class Pst(object):
     @property
     def phi_components(self):
         """ get the individual components of the total objective function
-        Parameters:
-        ----------
-            None
-        Returns:
+
+        Returns
         -------
-            Dict{observation group : contribution}
+        dict : dict
+            dictionary of observation group, contribution to total phi
+
+        Raises
+        ------
+        Assertion error if Pst.observation_data groups don't match
+        Pst.res groups
+
         """
 
         # calculate phi components for each obs group
@@ -102,13 +130,16 @@ class Pst(object):
     def phi_components_normalized(self):
         """ get the individual components of the total objective function
             normalized to the total PHI being 1.0
-        Args:
-            None
-        Returns:
-            Dict{observation group : normalized contribution}
-        Raises:
-            Assertion error if self.observation_data groups don't match
-            self.res groups
+
+        Returns
+        -------
+        dict : dict
+            dictionary of observation group, normalized contribution to total phi
+
+        Raises
+        ------
+        Assertion error if self.observation_data groups don't match
+        self.res groups
 
         """
         # use a dictionary comprehension to go through and normalize each component of phi to the total
@@ -116,11 +147,29 @@ class Pst(object):
         return phi_components_normalized
 
     def set_res(self,res):
+        """ reset the private Pst.res attribute
+
+        Parameters
+        ----------
+        res : (varies)
+            something to use as Pst.res attribute
+
+        """
         self.__res = res
 
     @property
     def res(self):
-        """get the residuals dataframe
+        """get the residuals dataframe attribute
+
+        Returns
+        -------
+        res : pandas.DataFrame
+
+        Note
+        ----
+        if the Pst.__res attribute has not been loaded,
+        this call loads the res dataframe from a file
+
         """
         if self.__res is not None:
             return self.__res
@@ -151,29 +200,26 @@ class Pst(object):
     @property
     def nprior(self):
         """number of prior information equations
+
+        Returns
+        -------
+        nprior : int
+            the number of prior info equations
+
         """
         self.control_data.nprior = self.prior_information.shape[0]
         return self.control_data.nprior
 
-
-    @property
-    def par_data(self):
-        """method to access parameter_data
-        """
-        warnings.warn("decorated property 'par_data' is deprecated because "+
-                      "it doesn't propagate changes back 'parameter_data'")
-        return self.parameter_data
-
-    @property
-    def obs_data(self):
-        """method to access observation_data
-        """
-        warnings.warn("decorated property 'obs_data' is deprecated because "+
-                      "it doesn't propagate changes back 'observation_data'")
-        return self.observation_data
-
     @property
     def nnz_obs(self):
+        """ get the number of non-zero weighted observations
+
+        Returns
+        -------
+        nnz_obs : int
+            the number of non-zeros weighted observations
+
+        """
         nnz = 0
         for w in self.observation_data.weight:
             if w > 0.0:
@@ -183,7 +229,13 @@ class Pst(object):
 
     @property
     def nobs(self):
-        """number of observations
+        """get the number of observations
+
+        Returns
+        -------
+        nobs : int
+            the number of observations
+
         """
         self.control_data.nobs = self.observation_data.shape[0]
         return self.control_data.nobs
@@ -191,7 +243,13 @@ class Pst(object):
 
     @property
     def npar_adj(self):
-        """number of adjustable parameters
+        """get the number of adjustable parameters (not fixed or tied)
+
+        Returns
+        -------
+        npar_adj : int
+            the number of adjustable parameters
+
         """
         pass
         np = 0
@@ -203,7 +261,13 @@ class Pst(object):
 
     @property
     def npar(self):
-        """number of parameters
+        """get number of parameters
+
+        Returns
+        -------
+        npar : int
+            the number of parameters
+
         """
         self.control_data.npar = self.parameter_data.shape[0]
         return self.control_data.npar
@@ -211,6 +275,15 @@ class Pst(object):
 
     @property
     def forecast_names(self):
+        """get the forecast names from the pestpp options (if any).
+        Returns None if no forecasts are named
+
+        Returns
+        -------
+        forecast_names : list
+            a list of forecast names.
+
+        """
         if "forecasts" in self.pestpp_options.keys():
             return self.pestpp_options["forecasts"].lower().split(',')
         elif "predictions" in self.pestpp_options.keys():
@@ -220,7 +293,13 @@ class Pst(object):
 
     @property
     def obs_groups(self):
-        """observation groups
+        """get the observation groups
+
+        Returns
+        -------
+        obs_groups : list
+            a list of unique observation groups
+
         """
         og = list(self.observation_data.groupby("obgnme").groups.keys())
         #og = list(map(pst_utils.SFMT, og))
@@ -228,7 +307,16 @@ class Pst(object):
 
     @property
     def nnz_obs_groups(self):
+        """ get the observation groups that contain at least one non-zero weighted
+         observation
 
+        Returns
+        -------
+        nnz_obs_groups : list
+            a list of observation groups that contain at
+            least one non-zero weighted observation
+
+        """
         og = []
         obs = self.observation_data
         for g in self.obs_groups:
@@ -239,7 +327,13 @@ class Pst(object):
 
     @property
     def par_groups(self):
-        """parameter groups
+        """get the parameter groups
+
+        Returns
+        -------
+        par_groups : list
+            a list of parameter groups
+
         """
         pass
         return list(self.parameter_data.groupby("pargp").groups.keys())
@@ -247,7 +341,13 @@ class Pst(object):
 
     @property
     def prior_groups(self):
-        """prior info groups
+        """get the prior info groups
+
+        Returns
+        -------
+        prior_groups : list
+            a list of prior information groups
+
         """
         og = list(self.prior_information.groupby("obgnme").groups.keys())
         #og = list(map(pst_utils.SFMT, og))
@@ -255,17 +355,38 @@ class Pst(object):
 
     @property
     def prior_names(self):
+        """ get the prior information names
+
+        Returns
+        -------
+        prior_names : list
+            a list of prior information names
+
+        """
         return list(self.prior_information.groupby(
                 self.prior_information.index).groups.keys())
 
     @property
     def par_names(self):
-        """parameter names
+        """get the parameter names
+
+        Returns
+        -------
+        par_names : list
+            a list of parameter names
         """
         return list(self.parameter_data.parnme.values)
 
     @property
     def adj_par_names(self):
+        """ get the adjustable (not fixed or tied) parameter names
+
+        Returns
+        -------
+        adj_par_names : list
+            list of adjustable (not fixed or tied) parameter names
+
+        """
         adj_names = []
         for t,n in zip(self.parameter_data.partrans,
                        self.parameter_data.parnme):
@@ -275,14 +396,26 @@ class Pst(object):
 
     @property
     def obs_names(self):
-        """observation names
+        """get the observation names
+
+        Returns
+        -------
+        obs_names : list
+            a list of observation names
+
         """
         pass
         return list(self.observation_data.obsnme.values)
 
     @property
     def nnz_obs_names(self):
-        """non-zero weight obs names
+        """get the non-zero weight observation names
+
+        Returns
+        -------
+        nnz_obs_names : list
+            a list of non-zero weighted observation names
+
         """
         nz_names = []
         for w,n in zip(self.observation_data.weight,
@@ -293,6 +426,14 @@ class Pst(object):
 
     @property
     def zero_weight_obs_names(self):
+        """ get the zero-weighted observation names
+
+        Returns
+        -------
+         zero_weight_obs_names : list
+             a list of zero-weighted observation names
+
+        """
         self.observation_data.index = self.observation_data.obsnme
         groups = self.observation_data.groupby(
                 self.observation_data.weight.apply(lambda x: x==0.0)).groups
@@ -312,12 +453,41 @@ class Pst(object):
 
     @property
     def estimation(self):
+        """ check if the control_data.pestmode is set to estimation
+
+        Returns
+        -------
+        estimation : bool
+            True if pestmode is estmation, False otherwise
+
+        """
         if self.control_data.pestmode == "estimation":
             return True
         return False
 
     @staticmethod
     def _read_df(f,nrows,names,converters,defaults=None):
+        """ a private method to read part of an open file into a pandas.DataFrame.
+
+        Parameters
+        ----------
+        f : file object
+        nrows : int
+            number of rows to read
+        names : list
+            names to set the columns of the dataframe with
+        converters : dict
+            dictionary of lambda functions to convert strings
+            to numerical format
+        defaults : dict
+            dictionary of default values to assign columns.
+            Default is None
+
+        Returns
+        -------
+        pandas.DataFrame : pandas.DataFrame
+
+        """
         seek_point = f.tell()
         df = pd.read_csv(f, header=None,names=names,
                               nrows=nrows,delim_whitespace=True,
@@ -338,14 +508,17 @@ class Pst(object):
         return df
 
     def load(self, filename):
-        """load the pest control file
-        Parameters:
+        """load the pest control file information
+
+        Parameters
         ----------
-            filename : str
-                pst filename
-        Returns:
-        -------
-            None
+        filename : str
+            pst filename
+
+        Raises
+        ------
+            lots of exceptions for incorrect format
+
         """
 
         f = open(filename, 'r')
@@ -531,7 +704,11 @@ class Pst(object):
 
 
     def _update_control_section(self):
+        """ private method to synchronize the control section counters with the
+        various parts of the control file.  This is usually called during the
+        Pst.write() method.
 
+        """
         self.control_data.npar = self.npar
         self.control_data.nobs = self.nobs
         self.control_data.npargp = self.parameter_groups.shape[0]
@@ -542,8 +719,14 @@ class Pst(object):
         self.control_data.nprior = self.prior_information.shape[0]
         self.control_data.ntplfle = len(self.template_files)
         self.control_data.ninsfle = len(self.instruction_files)
+        self.control_data.numcom = len(self.model_command)
 
     def _rectify_pgroups(self):
+        """ private method to synchronize parameter groups section with
+        the parameter data section
+
+
+        """
         # add any parameters groups
         pdata_groups = list(self.parameter_data.loc[:,"pargp"].\
             value_counts().keys())
@@ -570,7 +753,12 @@ class Pst(object):
 
 
     def _parse_pi_par_names(self):
+        """ private method to get the parameter names from prior information
+        equations.  Sets a 'names' column in Pst.prior_information that is a list
+        of parameter names
 
+
+        """
         if self.prior_information.shape[0] == 0:
             return
         if "names" in self.prior_information.columns:
@@ -599,16 +787,27 @@ class Pst(object):
 
     def add_pi_equation(self,par_names,pilbl=None,rhs=0.0,weight=1.0,
                         obs_group="pi_obgnme",coef_dict={}):
-        """ a helper to construct prior information equations
-        :param par_names: list of parameter names
-        :param pilbl: the "obsnme" to use for the prior information equation
-        :param rhs: the right hand side value of the equation
-        :param weight: the weight for the equation
-        :param obs_group: the observation group to assign
-        :param coef_dict: a dictionary of {par_name: coefficients} to
-        use in constructing the equation. If a parameter is not listed in
-        the coef_dict, it gets a coefficient of 1.0
-        :return: None
+        """ a helper to construct a new prior information equation.
+
+        Parameters
+        ----------
+        par_names : list
+            parameter names in the equation
+        pilbl : str
+            name to assign the prior information equation.  If None,
+            a generic equation name is formed. Default is None
+        rhs : (float)
+            the right-hand side of the equation
+        weight : (float)
+            the weight of the equation
+        obs_group : str
+            the observation group for the equation. Default is 'pi_obgnme'
+        coef_dict : dict
+            a dictionary of parameter name, coefficient pairs to assign
+            leading coefficients for one or more parameters in the equation.
+            If a parameter is not listed, 1.0 is used for its coefficients.
+            Default is {}
+
         """
         if pilbl is None:
             pilbl = "pilbl_{0}".format(self.__pi_count)
@@ -645,6 +844,11 @@ class Pst(object):
 
 
     def rectify_pi(self):
+        """ rectify the prior information equation with the current state of the
+        parameter_data dataframe.  Equations that list fixed, tied or missing parameters
+        are removed. This method is called during Pst.write()
+
+        """
         if self.prior_information.shape[0] == 0:
             return
         self._parse_pi_par_names()
@@ -660,15 +864,16 @@ class Pst(object):
 
     def write(self,new_filename,update_regul=False):
         """write a pest control file
-        Parameters:
+
+        Parameters
         ----------
-            new_filename (str) : name of the new pest control file
-        Returns:
-        -------
-            None
+        new_filename : str
+            name of the new pest control file
+        update_regul : (boolean)
+            flag to update zero-order Tikhonov prior information
+            equations to prefer the current parameter values
+
         """
-
-
         self._rectify_pgroups()
         self.rectify_pi()
         self._update_control_section()
@@ -798,14 +1003,24 @@ class Pst(object):
 
 
     def get(self, par_names=None, obs_names=None):
-        """get a new pst object with subset of parameters and observations
-        Args:
-            par_names (list of str) : parameter names
-            obs_names (list of str) : observation names
-        Returns:
-            new pst instance
-        Raises:
-            None
+        """get a new pst object with subset of parameters and/or observations
+
+        Parameters
+        ----------
+        par_names : list
+            a list of parameter names to have in the new Pst instance.
+            If None, all parameters are in the new Pst instance. Default
+            is None
+        obs_names : list
+            a list of observation names to have in the new Pst instance.
+            If None, all observations are in teh new Pst instance. Default
+            is None
+
+        Returns
+        -------
+        Pst : Pst
+            a new Pst instance
+
         """
         pass
         #if par_names is None and obs_names is None:
@@ -867,13 +1082,14 @@ class Pst(object):
     def parrep(self, parfile=None):
         """replicates the pest parrep util. replaces the parval1 field in the
             parameter data section dataframe
-        Parameters:
+
+        Parameters
         ----------
-            parfile (str) : parameter file to use.  If None, try to use
-                            a parameter file that corresponds to the case name
-        Returns:
-        -------
-            None
+        parfile : str
+            parameter file to use.  If None, try to use
+            a parameter file that corresponds to the case name.
+            Default is None
+
         """
         if parfile is None:
             parfile = self.filename.replace(".pst", ".par")
@@ -887,15 +1103,16 @@ class Pst(object):
 
 
     def adjust_weights_recfile(self, recfile=None):
-        """adjusts the weights of the observations based on the phi components
-        in a recfile
-        Parameters:
+        """adjusts the weights by group of the observations based on the phi components
+        in a pest record file so that total phi is equal to the number of
+        non-zero weighted observations
+
+        Parameters
         ----------
-            recfile (str) : record file name.  If None, try to use a record file
-                            with the case name
-        Returns:
-        -------
-            None
+        recfile : str
+            record file name.  If None, try to use a record file
+            with the Pst case name.  Default is None
+
         """
         if recfile is None:
             recfile = self.filename.replace(".pst", ".rec")
@@ -924,13 +1141,16 @@ class Pst(object):
             iter_components[last_complete_iter])
 
     def adjust_weights_resfile(self, resfile=None):
-        """adjust the weights by phi components in a residual file
-        Parameters:
+        """adjusts the weights by group of the observations based on the phi components
+        in a pest residual file so that total phi is equal to the number of
+        non-zero weighted observations
+
+        Parameters
         ----------
-            resfile (str) : residual filename.  If None, use self.resfile
-        Returns:
-        -------
-            None
+        resfile : str
+            residual file name.  If None, try to use a residual file
+            with the Pst case name.  Default is None
+
         """
         if resfile is not None:
             self.resfile = resfile
@@ -939,15 +1159,14 @@ class Pst(object):
         self._adjust_weights_by_phi_components(phi_comps)
 
     def _adjust_weights_by_phi_components(self, components):
-        """resets the weights of observations to account for
+        """resets the weights of observations by group to account for
         residual phi components.
-        Parameters:
+
+        Parameters
         ----------
-            components (dict{obs group:phi contribution}): group specific phi
-                contributions
-        Returns:
-        -------
-            None
+        components : dict
+            a dictionary of obs group:phi contribution pairs
+
         """
         obs = self.observation_data
         nz_groups = obs.groupby(obs["weight"].map(lambda x: x == 0)).groups
@@ -972,14 +1191,20 @@ class Pst(object):
         self.observation_data = obs
 
     def __reset_weights(self, target_phis, res_idxs, obs_idxs):
-        """reset weights based on target phi vals for each group
-        Parameters:
+        """private method to reset weights based on target phi values
+        for each group.  This method should not be called directly
+
+        Parameters
         ----------
-            target_phis (dict) : target phi contribution for groups to reweight
-            res_idxs (dict) : the index positions of each group of interest
-                 in the res dataframe
-            obs_idxs (dict) : the index positions of each group of interest
-                in the observation data dataframe
+        target_phis : dict
+            target phi contribution for groups to reweight
+        res_idxs : dict
+            the index positions of each group of interest
+            in the res dataframe
+        obs_idxs : dict
+            the index positions of each group of interest
+            in the observation data dataframe
+
         """
 
         for item in target_phis.keys():
@@ -999,12 +1224,16 @@ class Pst(object):
                 print("Pst.__reset_weights() warning: phi group {0} has zero phi, skipping...".format(item))
 
     def adjust_weights_by_list(self,obslist,weight):
-        """apply a single weight to a list of obsevation names.  supports that
-        data worth analyses in Schur
-        Parameters:
+        """reset the weight for a list of observation names.  Supports the
+        data worth analyses in pyemu.Schur class
+
+        Parameters
         ----------
-            obslist : list of obseravtion names
-            weight : (flaot) new weight to assign
+        obslist : list
+            list of observation names
+        weight : (float)
+            new weight to assign
+
         """
 
         obs = self.observation_data
@@ -1021,19 +1250,21 @@ class Pst(object):
                               obsgrp_dict=None):
         """reset the weights of observation groups to contribute a specified
         amount to the composite objective function
-        Parameters:
+
+        Parameters
         ----------
-            obs_dict (dict{obs name:new contribution})
-            obsgrp_dict (dict{obs group name:contribution})
-        Returns:
-        -------
-            None
-        Note:
+        obs_dict : dict
+            dictionary of obs name,new contribution pairs
+        obsgrp_dict : dict
+            dictionary of obs group name,contribution pairs
+
+        Note
         ----
-            if all obs in a named obs group have zero weight, they will be
-            assigned a non-zero weight so that the request phi contribution
-            can be met.  Similarly, any obs listed in obs_dict with zero
-            weight will also be reset
+        if all observations in a named obs group have zero weight, they will be
+        assigned a non-zero weight so that the request phi contribution
+        can be met.  Similarly, any observations listed in obs_dict with zero
+        weight will also be reset
+
         """
 
         self.observation_data.index = self.observation_data.obsnme
@@ -1062,17 +1293,19 @@ class Pst(object):
 
     def proportional_weights(self, fraction_stdev=1.0, wmax=100.0,
                              leave_zero=True):
-        """setup inversely proportional weights
-        Parameters:
+        """setup  weights inversely proportional to the observation value
+
+        Parameters
         ----------
-            fraction_stdev (float) : the fraction portion of the observation
-                val to treat as the standard deviation.  set to 1.0 for
-                inversely proportional
-            wmax (float) : maximum weight to allow
-            leave_zero (bool) : flag to leave existing zero weights
-        Returns:
-        -------
-            None
+        fraction_stdev : float
+            the fraction portion of the observation
+            val to treat as the standard deviation.  set to 1.0 for
+            inversely proportional
+        wmax : float
+            maximum weight to allow
+        leave_zero : bool
+            flag to leave existing zero weights
+
         """
         new_weights = []
         for oval, ow in zip(self.observation_data.obsval,
@@ -1088,7 +1321,15 @@ class Pst(object):
         self.observation_data.weight = new_weights
 
     def calculate_pertubations(self):
+        """ experimental method to calculate finite difference parameter
+        pertubations.  The pertubation values are added to the
+        Pst.parameter_data attribute
 
+        Note
+        ----
+        user beware!
+
+        """
         self.build_increments()
         self.parameter_data.loc[:,"pertubation"] = \
             self.parameter_data.parval1 + \
@@ -1114,9 +1355,17 @@ class Pst(object):
 
                 raise Exception("Pst.calculate_pertubations(): " +\
                                 "can't calc pertubations for the following "+\
-                                "parameters: {0}".format(','.join(still_out)))
+                                "Parameters {0}".format(','.join(still_out)))
 
     def build_increments(self):
+        """ experimental method to calculate parameter increments for use
+        in the finite difference pertubation calculations
+
+        Note
+        ----
+        user beware!
+
+        """
         self.enforce_bounds()
 
         par_groups = self.parameter_data.groupby("pargp").groups
@@ -1148,6 +1397,9 @@ class Pst(object):
             self.parameter_data.loc[isfixed,"parval1"]
 
     def add_transform_columns(self):
+        """ add transformed values to the Pst.parameter_data attribute
+
+        """
         for col in ["parval1","parlbnd","parubnd","increment"]:
             if col not in self.parameter_data.columns:
                 continue
@@ -1161,6 +1413,10 @@ class Pst(object):
                     apply(lambda x:np.log10(x))
 
     def enforce_bounds(self):
+        """ enforce bounds violation resulting from the
+        parameter pertubation calculations
+
+        """
         too_big = self.parameter_data.loc[:,"parval1"] > \
             self.parameter_data.loc[:,"parubnd"]
         self.parameter_data.loc[too_big,"parval1"] = \
@@ -1174,6 +1430,33 @@ class Pst(object):
 
     @classmethod
     def from_io_files(cls,tpl_files,in_files,ins_files,out_files,pst_filename=None):
+        """ create a Pst instance from model interface files. Assigns generic values for
+        parameter info.  Tries to use INSCHEK to set somewhat meaningful observation
+        values
+
+        Parameters
+        ----------
+        tpl_files : list
+            list of template file names
+        in_files : list
+            list of model input file names (pairs with template files)
+        ins_files : list
+            list of instruction file names
+        out_files : list
+            list of model output file names (pairs with instruction files)
+        pst_filename : str
+            name of control file to write.  If None, no file is written.
+            Default is None
+
+        Returns
+        -------
+        Pst : Pst
+
+        Note
+        ----
+        calls pyemu.helpers.pst_from_io_files()
+
+        """
         from pyemu import helpers
         return helpers.pst_from_io_files(tpl_files=tpl_files,in_files=in_files,
                                            ins_files=ins_files,out_files=out_files,

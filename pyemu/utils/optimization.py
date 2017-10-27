@@ -45,7 +45,7 @@ def add_pi_obj_func(pst,obj_func_dict=None,out_pst_name=None):
 #                              reset_zero_weight=1.0):
 #     """get a dataframe fo the objective function
 #         as a results of added some observations
-#         Parameters:
+#         Parameters
 #         ----------
 #             obslist_dict (dict of list of str) : groups of observations
 #                 that are to be treated as added the implied calibration.  key values become
@@ -60,7 +60,7 @@ def add_pi_obj_func(pst,obj_func_dict=None,out_pst_name=None):
 #                 If the value of reset_zero_weights can be cast to a float,
 #                 then that value will be assigned to zero weight obs.  Otherwise,
 #                 zero weight obs will be given a weight of 1.0
-#         Returns:
+#         Returns
 #         -------
 #             dataframe[obslist_dict.keys(),(forecast_name,post)
 #                 multiindex dataframe of Schur's complement results for each
@@ -135,7 +135,7 @@ def add_pi_obj_func(pst,obj_func_dict=None,out_pst_name=None):
 #     jacobian matrix. Requires corresponding pest control
 #     file.
 #
-#     Parameters:
+#     Parameters
 #         jco : pyemu.Matrix or str (filename of matrix)
 #         obj_func : optional.  If None, an obs group must exist
 #             named 'n' and must have one one member.  Can be a str, which

@@ -1,3 +1,12 @@
+"""this is a prototype ensemble smoother based on the LM-EnRML
+algorithm of Chen and Oliver 2013.  It requires the pest++ "sweep" utility
+ to propagate the ensemble forward.
+
+ TODO:
+ handle fixed and tied pars
+ handle "bunk" mod-sim equivs, like dry cells
+
+"""
 from __future__ import print_function, division
 import os
 from datetime import datetime
@@ -13,17 +22,34 @@ from pyemu.mat import Cov,Matrix
 from pyemu.pst import Pst
 from .logger import Logger
 
-"""this is a prototype ensemble smoother based on the LM-EnRML
-algorithm of Chen and Oliver 2013.  It requires the pest++ "sweep" utility
- to propagate the ensemble forward.
 
- TODO:
- handle fixed and tied pars
- handle "bunk" mod-sim equivs, like dry cells
+class EnsembleMethod():
+    """Base class for ensemble-type methods.  Should be instantiated directly
 
-"""
+    Parameters
+    ----------
+        pst : pyemu.Pst or str
+            a control file instance or filename
+        parcov : pyemu.Cov or str
+            a prior parameter covariance matrix or filename. If None,
+            parcov is constructed from parameter bounds (diagonal)
+        obscov : pyemu.Cov or str
+            a measurement noise covariance matrix or filename. If None,
+            obscov is constructed from observation weights.
+        num_slaves : int
+            number of slaves to use in (local machine) parallel evaluation of the parmaeter
+            ensemble.  If 0, serial evaluation is used.  Ignored if submit_file is not None
+        submit_file : str
+            the name of a HTCondor submit file.  If not None, HTCondor is used to
+            evaluate the parameter ensemble in parallel by issuing condor_submit
+            as a system command
+        port : int
+            the TCP port number to communicate on for parallel run management
+        slave_dir : str
+            path to a directory with a complete set of model files and PEST
+            interface files
 
-class EnsembleSmoother():
+    """
 
     def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,use_approx_prior=True,
                  submit_file=None,verbose=False,port=4004,slave_dir="template"):
@@ -41,7 +67,6 @@ class EnsembleSmoother():
         self.slave_dir = slave_dir
         self.submit_file = submit_file
         self.port = int(port)
-        self.use_approx_prior = bool(use_approx_prior)
         self.paren_prefix = ".parensemble.{0:04d}.csv"
         self.obsen_prefix = ".obsensemble.{0:04d}.csv"
 
@@ -78,181 +103,26 @@ class EnsembleSmoother():
 
 
         self.__initialized = False
-        #self.num_reals = 0
-        self.half_parcov_diag = None
-        self.half_obscov_diag = None
-        self.delta_par_prior = None
         self.iter_num = 0
-        #self.enforce_bounds = None
         self.raw_sweep_out = None
 
     @property
     def current_phi(self):
+        """ the current phi vector
+
+        Returns
+        -------
+            current_phi : pandas.DataFrame
+                the current phi vector as a pandas dataframe
+
+        """
         return pd.DataFrame(data={"phi":self._calc_phi_vec(self.obsensemble)},\
                             index=self.obsensemble.index)
 
-    def initialize(self,num_reals=1,init_lambda=None,enforce_bounds="reset",
-                   parensemble=None,obsensemble=None,restart_obsensemble=None):
-        '''
-        (re)initialize the process
-        '''
-        # initialize the phi report csv
-        self.enforce_bounds = enforce_bounds
-        self.phi_csv = open(self.pst.filename+".iobj.csv",'w')
-        self.phi_csv.write("iter_num,total_runs,lambda,min,max,mean,median,std,")
-        self.phi_csv.write(','.join(["{0:010d}".\
-                                    format(i+1) for i in range(num_reals)]))
-        self.phi_csv.write('\n')
-        self.total_runs = 0
-        # this matrix gets used a lot, so only calc once and store
-        self.obscov_inv_sqrt = self.obscov.get(self.pst.nnz_obs_names).inv.sqrt
+    def initialize(self,*args,**kwargs):
+        raise Exception("EnsembleMethod.initialize() must be implemented by the derived types")
 
-        if parensemble is not None and obsensemble is not None:
-            self.logger.log("initializing with existing ensembles")
-            if isinstance(parensemble,str):
-                self.logger.log("loading parensemble from file")
-                if not os.path.exists(obsensemble):
-                    self.logger.lraise("can not find parensemble file: {0}".\
-                                       format(parensemble))
-                df = pd.read_csv(parensemble,index_col=0)
-                #df.index = [str(i) for i in df.index]
-                self.parensemble_0 = ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
-                self.logger.log("loading parensemble from file")
-
-            elif isinstance(parensemble,ParameterEnsemble):
-                self.parensemble_0 = parensemble.copy()
-            else:
-                raise Exception("unrecognized arg type for parensemble, " +\
-                                "should be filename or ParameterEnsemble" +\
-                                ", not {0}".format(type(parensemble)))
-            self.parensemble = self.parensemble_0.copy()
-            if isinstance(obsensemble,str):
-                self.logger.log("loading obsensemble from file")
-                if not os.path.exists(obsensemble):
-                    self.logger.lraise("can not find obsensemble file: {0}".\
-                                       format(obsensemble))
-                df = pd.read_csv(obsensemble,index_col=0).loc[:,self.pst.nnz_obs_names]
-                #df.index = [str(i) for i in df.index]
-                self.obsensemble_0 = ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
-                self.logger.log("loading obsensemble from file")
-
-            elif isinstance(obsensemble,ObservationEnsemble):
-                self.obsensemble_0 = obsensemble.copy()
-            else:
-                raise Exception("unrecognized arg type for obsensemble, " +\
-                                "should be filename or ObservationEnsemble" +\
-                                ", not {0}".format(type(obsensemble)))
-
-            assert self.parensemble_0.shape[0] == self.obsensemble_0.shape[0]
-            #self.num_reals = self.parensemble_0.shape[0]
-            self.logger.log("initializing with existing ensembles")
-
-        else:
-            self.logger.log("initializing smoother with {0} realizations".format(num_reals))
-            #self.num_reals = int(num_reals)
-            #assert self.num_reals > 1
-            self.logger.log("initializing parensemble")
-            self.parensemble_0 = ParameterEnsemble(self.pst)
-            self.parensemble_0.draw(cov=self.parcov,num_reals=num_reals)
-            self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
-            self.logger.log("initializing parensemble")
-            self.parensemble = self.parensemble_0.copy()
-            self.parensemble_0.to_csv(self.pst.filename +\
-                                      self.paren_prefix.format(0))
-            self.logger.log("initializing parensemble")
-            self.logger.log("initializing obsensemble")
-            self.obsensemble_0 = ObservationEnsemble(self.pst)
-            self.obsensemble_0.draw(cov=self.obscov,num_reals=num_reals)
-            #self.obsensemble = self.obsensemble_0.copy()
-
-            # save the base obsensemble
-            self.obsensemble_0.to_csv(self.pst.filename +\
-                                      self.obsen_prefix.format(-1))
-            self.logger.log("initializing obsensemble")
-            self.logger.log("initializing smoother with {0} realizations".format(num_reals))
-
-        self.obs0_matrix = self.obsensemble_0.nonzero.as_pyemu_matrix()
-        self.enforce_bounds = enforce_bounds
-
-        if restart_obsensemble is not None:
-            self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
-            failed_runs,self.obsensemble = self._load_obs_ensemble(restart_obsensemble)
-            assert self.obsensemble.shape[0] == self.obsensemble_0.shape[0]
-            assert list(self.obsensemble.columns) == list(self.obsensemble_0.columns)
-            self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
-
-        else:
-            # run the initial parameter ensemble
-            self.logger.log("evaluating initial ensembles")
-            failed_runs, self.obsensemble = self._calc_obs(self.parensemble)
-            self.obsensemble.to_csv(self.pst.filename +\
-                                      self.obsen_prefix.format(0))
-            self.logger.log("evaluating initial ensembles")
-
-        if failed_runs is not None:
-            self.logger.warn("dropping failed realizations")
-            #failed_runs_str = [str(f) for f in failed_runs]
-            self.parensemble = self.parensemble.drop(failed_runs)
-            self.obsensemble = self.obsensemble.drop(failed_runs)
-        self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
-        self._phi_report(self.current_phi_vec,0.0)
-
-        self.last_best_mean = self.current_phi_vec.mean()
-        self.last_best_std = self.current_phi_vec.std()
-        self.logger.statement("initial phi (mean, std): {0:15.6G},{1:15.6G}".\
-                              format(self.last_best_mean,self.last_best_std))
-        if init_lambda is not None:
-            self.current_lambda = float(init_lambda)
-        else:
-            #following chen and oliver
-            x = self.last_best_mean / (2.0 * float(self.obsensemble.shape[1]))
-            self.current_lambda = 10.0**(np.floor(np.log10(x)))
-
-        # if using the approximate form of the algorithm, let
-        # the parameter scaling matrix be the identity matrix
-        # jwhite - dec 5 2016 - using the actual parcov inv
-        # for upgrades seems to be pushing parameters around
-        # too much.  for now, just not using it, maybe
-        # better choices of lambda will tame it
-        self.logger.statement("current lambda:{0:15.6g}".format(self.current_lambda))
-
-        if self.use_approx_prior:
-            self.logger.statement("using approximate parcov in solution")
-            self.half_parcov_diag = 1.0
-        else:
-            #self.logger.statement("using full parcov in solution")
-            # if self.parcov.isdiagonal:
-            #     self.half_parcov_diag = self.parcov.sqrt.inv
-            # else:
-            #     self.half_parcov_diag = Cov(x=np.diag(self.parcov.x),
-            #                                 names=self.parcov.col_names,
-            #                                 isdiagonal=True).inv.sqrt
-            self.half_parcov_diag = 1.0
-        self.delta_par_prior = self._calc_delta_par(self.parensemble_0)
-        u,s,v = self.delta_par_prior.pseudo_inv_components()
-        self.Am = u * s.inv
-
-        self.__initialized = True
-
-    def get_localizer(self):
-        onames = self.pst.nnz_obs_names
-        pnames = self.pst.adj_par_names
-        localizer = Matrix(x=np.ones((len(onames),len(pnames))),row_names=onames,col_names=pnames)
-        return localizer
-
-    def _calc_delta_par(self,parensemble):
-        '''
-        calc the scaled parameter ensemble differences from the mean
-        '''
-        return self._calc_delta(parensemble, self.half_parcov_diag)
-
-    def _calc_delta_obs(self,obsensemble):
-        '''
-        calc the scaled observation ensemble differences from the mean
-        '''
-        return self._calc_delta(obsensemble.nonzero, self.obscov.inv.sqrt)
-
-    def _calc_delta(self,ensemble,scaling_matrix):
+    def _calc_delta(self,ensemble,scaling_matrix=None):
         '''
         calc the scaled  ensemble differences from the mean
         '''
@@ -260,7 +130,8 @@ class EnsembleSmoother():
         delta = ensemble.as_pyemu_matrix()
         for i in range(ensemble.shape[0]):
             delta.x[i,:] -= mean
-        delta = scaling_matrix * delta.T
+        if scaling_matrix is not None:
+            delta = scaling_matrix * delta.T
         delta *= (1.0 / np.sqrt(float(ensemble.shape[0] - 1.0)))
         return delta
 
@@ -430,6 +301,292 @@ class EnsembleSmoother():
         return  obs_matrix - self.obs0_matrix.get(col_names=obs_matrix.col_names,row_names=obs_matrix.row_names)
 
     def update(self,lambda_mults=[1.0],localizer=None,run_subset=None,use_approx=True):
+        raise Exception("EnsembleMethod.update() must be implemented by the derived types")
+
+
+class EnsembleSmoother(EnsembleMethod):
+    """an implementation of the GLM iterative ensemble smoother
+
+    Parameters
+    ----------
+        pst : pyemu.Pst or str
+            a control file instance or filename
+        parcov : pyemu.Cov or str
+            a prior parameter covariance matrix or filename. If None,
+            parcov is constructed from parameter bounds (diagonal)
+        obscov : pyemu.Cov or str
+            a measurement noise covariance matrix or filename. If None,
+            obscov is constructed from observation weights.
+        num_slaves : int
+            number of slaves to use in (local machine) parallel evaluation of the parmaeter
+            ensemble.  If 0, serial evaluation is used.  Ignored if submit_file is not None
+        use_approx_prior : bool
+             a flag to use the MLE (approx) upgrade solution.  If True, a MAP
+             solution upgrade is used
+        submit_file : str
+            the name of a HTCondor submit file.  If not None, HTCondor is used to
+            evaluate the parameter ensemble in parallel by issuing condor_submit
+            as a system command
+        port : int
+            the TCP port number to communicate on for parallel run management
+        slave_dir : str
+            path to a directory with a complete set of model files and PEST
+            interface files
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>es = pyemu.EnsembleSmoother(pst="pest.pst")``
+    """
+
+    def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,use_approx_prior=True,
+                 submit_file=None,verbose=False,port=4004,slave_dir="template"):
+        super(EnsembleSmoother,self).__init__(pst=pst,parcov=parcov,obscov=obscov,num_slaves=num_slaves,
+                                              submit_file=submit_file,verbose=verbose,port=port,slave_dir=slave_dir)
+        self.use_approx_prior = bool(use_approx_prior)
+        self.half_parcov_diag = None
+        self.half_obscov_diag = None
+        self.delta_par_prior = None
+
+    def initialize(self,num_reals=1,init_lambda=None,enforce_bounds="reset",
+                   parensemble=None,obsensemble=None,restart_obsensemble=None):
+        """Initialize the iES process.  Depending on arguments, draws or loads
+        initial parameter observations ensembles and runs the initial parameter
+        ensemble
+
+        Parameters
+        ----------
+            num_reals : int
+                the number of realizations to draw.  Ignored if parensemble/obsensemble
+                are not None
+            init_lambda : float
+                the initial lambda to use.  During subsequent updates, the lambda is
+                updated according to upgrade success
+            enforce_bounds : str
+                how to enfore parameter bound transgression.  options are
+                reset, drop, or None
+            parensemble : pyemu.ParameterEnsemble or str
+                a parameter ensemble or filename to use as the initial
+                parameter ensemble.  If not None, then obsenemble must not be
+                None
+            obsensemble : pyemu.ObservationEnsemble or str
+                an observation ensemble or filename to use as the initial
+                observation ensemble.  If not None, then parensemble must
+                not be None
+            restart_obsensemble : pyemu.ObservationEnsemble or str
+                an observation ensemble or filename to use as an
+                evaluated observation ensemble.  If not None, this will skip the initial
+                parameter ensemble evaluation - user beware!
+
+        Example
+        -------
+        ``>>>import pyemu``
+
+        ``>>>es = pyemu.EnsembleSmoother(pst="pest.pst")``
+
+        ``>>>es.initialize(num_reals=100)``
+
+        """
+        '''
+        (re)initialize the process
+        '''
+        # initialize the phi report csv
+        self.enforce_bounds = enforce_bounds
+        self.phi_csv = open(self.pst.filename+".iobj.csv",'w')
+        self.phi_csv.write("iter_num,total_runs,lambda,min,max,mean,median,std,")
+        self.phi_csv.write(','.join(["{0:010d}".\
+                                    format(i+1) for i in range(num_reals)]))
+        self.phi_csv.write('\n')
+        self.total_runs = 0
+        # this matrix gets used a lot, so only calc once and store
+        self.obscov_inv_sqrt = self.obscov.get(self.pst.nnz_obs_names).inv.sqrt
+
+        if parensemble is not None and obsensemble is not None:
+            self.logger.log("initializing with existing ensembles")
+            if isinstance(parensemble,str):
+                self.logger.log("loading parensemble from file")
+                if not os.path.exists(obsensemble):
+                    self.logger.lraise("can not find parensemble file: {0}".\
+                                       format(parensemble))
+                df = pd.read_csv(parensemble,index_col=0)
+                #df.index = [str(i) for i in df.index]
+                self.parensemble_0 = ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
+                self.logger.log("loading parensemble from file")
+
+            elif isinstance(parensemble,ParameterEnsemble):
+                self.parensemble_0 = parensemble.copy()
+            else:
+                raise Exception("unrecognized arg type for parensemble, " +\
+                                "should be filename or ParameterEnsemble" +\
+                                ", not {0}".format(type(parensemble)))
+            self.parensemble = self.parensemble_0.copy()
+            if isinstance(obsensemble,str):
+                self.logger.log("loading obsensemble from file")
+                if not os.path.exists(obsensemble):
+                    self.logger.lraise("can not find obsensemble file: {0}".\
+                                       format(obsensemble))
+                df = pd.read_csv(obsensemble,index_col=0).loc[:,self.pst.nnz_obs_names]
+                #df.index = [str(i) for i in df.index]
+                self.obsensemble_0 = ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
+                self.logger.log("loading obsensemble from file")
+
+            elif isinstance(obsensemble,ObservationEnsemble):
+                self.obsensemble_0 = obsensemble.copy()
+            else:
+                raise Exception("unrecognized arg type for obsensemble, " +\
+                                "should be filename or ObservationEnsemble" +\
+                                ", not {0}".format(type(obsensemble)))
+
+            assert self.parensemble_0.shape[0] == self.obsensemble_0.shape[0]
+            #self.num_reals = self.parensemble_0.shape[0]
+            self.logger.log("initializing with existing ensembles")
+
+        else:
+            self.logger.log("initializing smoother with {0} realizations".format(num_reals))
+            #self.num_reals = int(num_reals)
+            #assert self.num_reals > 1
+            self.logger.log("initializing parensemble")
+            self.parensemble_0 = ParameterEnsemble(self.pst)
+            self.parensemble_0.draw(cov=self.parcov,num_reals=num_reals)
+            self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
+            self.logger.log("initializing parensemble")
+            self.parensemble = self.parensemble_0.copy()
+            self.parensemble_0.to_csv(self.pst.filename +\
+                                      self.paren_prefix.format(0))
+            self.logger.log("initializing parensemble")
+            self.logger.log("initializing obsensemble")
+            self.obsensemble_0 = ObservationEnsemble(self.pst)
+            self.obsensemble_0.draw(cov=self.obscov,num_reals=num_reals)
+            #self.obsensemble = self.obsensemble_0.copy()
+
+            # save the base obsensemble
+            self.obsensemble_0.to_csv(self.pst.filename +\
+                                      self.obsen_prefix.format(-1))
+            self.logger.log("initializing obsensemble")
+            self.logger.log("initializing smoother with {0} realizations".format(num_reals))
+
+        self.obs0_matrix = self.obsensemble_0.nonzero.as_pyemu_matrix()
+        self.enforce_bounds = enforce_bounds
+
+        if restart_obsensemble is not None:
+            self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
+            failed_runs,self.obsensemble = self._load_obs_ensemble(restart_obsensemble)
+            assert self.obsensemble.shape[0] == self.obsensemble_0.shape[0]
+            assert list(self.obsensemble.columns) == list(self.obsensemble_0.columns)
+            self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
+
+        else:
+            # run the initial parameter ensemble
+            self.logger.log("evaluating initial ensembles")
+            failed_runs, self.obsensemble = self._calc_obs(self.parensemble)
+            self.obsensemble.to_csv(self.pst.filename +\
+                                      self.obsen_prefix.format(0))
+            self.logger.log("evaluating initial ensembles")
+
+        if failed_runs is not None:
+            self.logger.warn("dropping failed realizations")
+            #failed_runs_str = [str(f) for f in failed_runs]
+            self.parensemble = self.parensemble.drop(failed_runs)
+            self.obsensemble = self.obsensemble.drop(failed_runs)
+        self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
+        self._phi_report(self.current_phi_vec,0.0)
+
+        self.last_best_mean = self.current_phi_vec.mean()
+        self.last_best_std = self.current_phi_vec.std()
+        self.logger.statement("initial phi (mean, std): {0:15.6G},{1:15.6G}".\
+                              format(self.last_best_mean,self.last_best_std))
+        if init_lambda is not None:
+            self.current_lambda = float(init_lambda)
+        else:
+            #following chen and oliver
+            x = self.last_best_mean / (2.0 * float(self.obsensemble.shape[1]))
+            self.current_lambda = 10.0**(np.floor(np.log10(x)))
+
+        # if using the approximate form of the algorithm, let
+        # the parameter scaling matrix be the identity matrix
+        # jwhite - dec 5 2016 - using the actual parcov inv
+        # for upgrades seems to be pushing parameters around
+        # too much.  for now, just not using it, maybe
+        # better choices of lambda will tame it
+        self.logger.statement("current lambda:{0:15.6g}".format(self.current_lambda))
+
+        if self.use_approx_prior:
+            self.logger.statement("using approximate parcov in solution")
+            self.half_parcov_diag = 1.0
+        else:
+            #self.logger.statement("using full parcov in solution")
+            # if self.parcov.isdiagonal:
+            #     self.half_parcov_diag = self.parcov.sqrt.inv
+            # else:
+            #     self.half_parcov_diag = Cov(x=np.diag(self.parcov.x),
+            #                                 names=self.parcov.col_names,
+            #                                 isdiagonal=True).inv.sqrt
+            self.half_parcov_diag = 1.0
+        self.delta_par_prior = self._calc_delta_par(self.parensemble_0)
+        u,s,v = self.delta_par_prior.pseudo_inv_components()
+        self.Am = u * s.inv
+
+        self.__initialized = True
+
+    def get_localizer(self):
+        """ get an empty/generic localizer matrix that can be filled
+
+        Returns
+        -------
+            localizer : pyemu.Matrix
+                matrix with nnz obs names for rows and adj par names for columns
+
+        """
+        onames = self.pst.nnz_obs_names
+        pnames = self.pst.adj_par_names
+        localizer = Matrix(x=np.ones((len(onames),len(pnames))),row_names=onames,col_names=pnames)
+        return localizer
+
+    def _calc_delta_par(self,parensemble):
+        '''
+        calc the scaled parameter ensemble differences from the mean
+        '''
+        return self._calc_delta(parensemble, self.half_parcov_diag)
+
+    def _calc_delta_obs(self,obsensemble):
+        '''
+        calc the scaled observation ensemble differences from the mean
+        '''
+        return self._calc_delta(obsensemble.nonzero, self.obscov.inv.sqrt)
+
+
+    def update(self,lambda_mults=[1.0],localizer=None,run_subset=None,use_approx=True):
+        """update the iES one GLM cycle
+
+        Parameters
+        ----------
+            lambda_mults : list
+                a list of lambda multipliers to test.  Each lambda mult value will require
+                evaluating (a subset of) the parameter ensemble.
+            localizer : pyemu.Matrix
+                a jacobian localizing matrix
+            run_subset : int
+                the number of realizations to test for each lambda_mult value.  For example,
+                if run_subset = 30 and num_reals=100, the first 30 realizations will be run (in
+                parallel) for each lambda_mult value.  Then the best lambda_mult is selected and the
+                remaining 70 realizations for that lambda_mult value are run (in parallel).
+            use_approx : bool
+                 a flag to use the MLE or MAP upgrade solution.  True indicates use MLE solution
+
+        Example
+        -------
+
+        ``>>>import pyemu``
+
+        ``>>>es = pyemu.EnsembleSmoother(pst="pest.pst")``
+
+        ``>>>es.initialize(num_reals=100)``
+
+        ``>>>es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)``
+
+         """
+
 
         if run_subset is not None:
             if run_subset >= self.obsensemble.shape[0]:

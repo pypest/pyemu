@@ -1,3 +1,7 @@
+""" module with high-level functions to help
+perform complex tasks
+"""
+
 from __future__ import print_function, division
 import os
 import multiprocessing as mp
@@ -22,6 +26,29 @@ import pyemu
 
 
 def run(cmd_str,cwd='.'):
+    """ an OS agnostic function to execute command
+
+    Parameters
+    ----------
+    cmd_str : str
+        the str to execute with os.system()
+
+    cwd : str
+        the directory to execute the command in
+
+    Note
+    ----
+    uses platform to detect OS and adds .exe or ./ as appropriate
+
+    for Windows, if os.system returns non-zero, raises exception
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>pyemu.helpers.run("pestpp pest.pst")``
+
+    """
     bwd = os.getcwd()
     os.chdir(cwd)
     try:
@@ -43,14 +70,14 @@ def run(cmd_str,cwd='.'):
 
     except Exception as e:
         os.chdir(bwd)
-        raise Exception("run() raise :{0}".format(str(e)))
+        raise Exception("run() raised :{0}".format(str(e)))
     print("run():{0}".format(cmd_str))
 
     try:
         ret_val = os.system(cmd_str)
     except Exception as e:
         os.chdir(bwd)
-        raise Exception("run() raise :{0}".format(str(e)))
+        raise Exception("run() raised :{0}".format(str(e)))
     os.chdir(bwd)
     if "window" in platform.platform().lower():
         if ret_val != 0:
@@ -65,20 +92,48 @@ def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
 
 def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_dict=None):
     """ a helper function to construct a full prior covariance matrix using
-    a mixture of geostastical structures an parameter bounds information.
-    Parameters:
-        pst : pyemu.Pst instance (or the name of a pst file)
-        struct_dict : a python dict of geostat structure file : list of pp tpl files
-            if the values in the dict are pd.DataFrames, then they must have an
-            'x','y', and 'parnme' column.  If the filename ends in '.csv',
-            then a pd.DataFrame is loaded.
-        sigma_range : float representing the number of standard deviations implied by parameter bounds
-        par_knowledge_dict : dictionary of {parnme:variance}
-            used to condition on existing knowledge about parameters
-    Returns:
-        Cov : pyemu.Cov instance
+    a mixture of geostastical structures and parameter bounds information.
+    The covariance of parameters associated with geostatistical structures is defined
+    as a mixture of GeoStruct and bounds.  That is, the GeoStruct is used to construct a
+    pyemu.Cov, then the entire pyemu.Cov is scaled by the uncertainty implied by the bounds and
+    sigma_range. Sounds complicated...
+
+    Parameters
+    ----------
+    pst : pyemu.Pst
+        a control file (or the name of control file)
+    struct_dict : dict
+        a python dict of GeoStruct (or structure file), and list of pp tpl files pairs
+        If the values in the dict are pd.DataFrames, then they must have an
+        'x','y', and 'parnme' column.  If the filename ends in '.csv',
+        then a pd.DataFrame is loaded, otherwise a pilot points file is loaded.
+    sigma_range : float
+        a float representing the number of standard deviations implied by parameter bounds.
+        Default is 4.0, which implies 95% confidence parameter bounds.
+    par_knowledge_dict : dict
+        used to condition on existing knowledge about parameters.  This functionality is
+        currently in dev - don't use it.
+
+    Returns
+    -------
+    Cov : pyemu.Cov
+        a covariance matrix that includes all adjustable parameters in the control
+        file.
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>pst = pyemu.Pst("pest.pst")``
+
+    ``>>>sd = {"struct.dat":["hkpp.dat.tpl","vka.dat.tpl"]}``
+
+    ``>>>cov = pyemu.helpers.geostatistical_prior_builder(pst,struct_dict=sd)``
+
+    ``>>>cov.to_ascii("prior.cov")``
 
     """
+
     if isinstance(pst,str):
         pst = pyemu.Pst(pst)
     assert isinstance(pst,pyemu.Pst),"pst arg must be a Pst instance, not {0}".\
@@ -146,6 +201,10 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_di
 
 
 def condition_on_par_knowledge(cov,par_knowledge_dict):
+    """  experimental function to include conditional prior information
+    for one or more parameters in a full covariance matrix
+    """
+
     missing = []
     for parnme in par_knowledge_dict.keys():
         if parnme not in cov.row_names:
@@ -166,7 +225,6 @@ def condition_on_par_knowledge(cov,par_knowledge_dict):
     #print(sigma_ep.x)
     #q = sigma_ep.inv
     #cov_inv = cov.inv
-    #C (k) = C(k) – C(k)Zt[ZC(k)Zt + C(e)]-1ZC(k)
     print(sel)
     term2 = sel * cov * sel.T
     #term2 += sigma_ep
@@ -188,32 +246,55 @@ def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
              tpl_file="kl.tpl"):
     """setup a karhuenen-Loeve based parameterization for a given
     geostatistical structure.
-    Parameters:
-        num_eig (int) : number of basis vectors to retain in the reduced basis
 
-        struct_file (str) : a pest-style geostatistical structure file
+    Parameters
+    ----------
+    num_eig : int
+        number of basis vectors to retain in the reduced basis
 
-        array_dict (dict(str:ndarray)): a dict of arrays to setup as KL-based
-                                        parameters.  The key becomes the
-                                        parameter name prefix. The total
-                                        number of parameters is
-                                        len(array_dict) * num_eig
+    struct_file : str
+        a pest-style geostatistical structure file
 
-        basis_file (str) : the name of the binary file where the reduced
-                           basis will be saved
+    array_dict : dict
+        a dict of arrays to setup as KL-based parameters.  The key becomes the
+        parameter name prefix. The total number of parameters is
+        len(array_dict) * num_eig
 
-        tpl_file (str) : the name of the template file to make.  The template
-                         file is a csv file with the parameter names, the
-                         original factor values,and the template entries.
-                         The original values can be used to set the parval1
-                         entries in the control file
-    Returns:
-        back_array_dict (dict(str:ndarray)) : a dictionary of back transformed
-                                              arrays.  This is useful to see
-                                              how much "smoothing" is taking
-                                              place compared to the original
-                                              arrays.
+    basis_file : str
+        the name of the binary file where the reduced basis will be saved
+
+    tpl_file : str
+        the name of the template file to make.  The template
+        file is a csv file with the parameter names, the
+        original factor values,and the template entries.
+        The original values can be used to set the parval1
+        entries in the control file
+
+    Returns
+    -------
+    back_array_dict : dict
+        a dictionary of back transformed arrays.  This is useful to see
+        how much "smoothing" is taking place compared to the original
+        arrays.
+
+    Note
+    ----
+    requires flopy
+
+    Example
+    -------
+    ``>>>import flopy``
+
+    ``>>>import pyemu``
+
+    ``>>>m = flopy.modflow.Modflow.load("mymodel.nam")``
+
+    ``>>>a_dict = {"hk":m.lpf.hk[0].array}``
+
+    ``>>>ba_dict = pyemu.helpers.kl_setup(10,m.sr,"struct.dat",a_dict)``
+
     """
+
     try:
         import flopy
     except Exception as e:
@@ -266,16 +347,31 @@ def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
 
 def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
     """ Applies a KL parameterization transform from basis factors to model
-     input arrays
-     Parameters:
-        par_file (str) : the csv file to get factor values from.  Must contain
-                        the following columns: name, new_val, org_val
-        basis_file (str): the binary file that contains the reduced basis
+    input arrays.  Companion function to kl_setup()
 
-        par_to_file_dict (dict(str:str)): a mapping from KL parameter prefixes
-                                          to array file names.
-    Returns:
-        None
+    Parameters
+    ----------
+    par_file : str
+        the csv file to get factor values from.  Must contain
+        the following columns: name, new_val, org_val
+    basis_file : str
+        the binary file that contains the reduced basis
+
+    par_to_file_dict : dict
+        a mapping from KL parameter prefixes to array file names.
+
+    Note
+    ----
+    This is the companion function to kl_setup.
+
+    This function should be called during the forward run
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>pyemu.helpers.kl_apply("kl.dat","basis.dat",{"hk":"hk_layer_1.dat",(100,100))``
+
 
     """
     df = pd.read_csv(par_file)
@@ -306,60 +402,76 @@ def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
 
 
 def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
-        """setup preferred-value regularization
-        Parameters:
-        ----------
-            pst (Pst instance) : the control file instance
-            parbounds (bool) : weight the prior information equations according
-                to parameter bound width - approx the KL transform
-            par_groups (list(str)) : parameter groups to build PI equations
-               for.  If None, all adjustable parameters are used
-        Returns:
-        -------
-            None
-        """
+    """setup preferred-value regularization
 
-        if par_groups is None:
-            par_groups = pst.par_groups
+    Parameters
+    ----------
+    pst : pyemu.Pst
+        the control file instance
+    parbounds : bool
+        flag to weight the prior information equations according
+        to parameter bound width - approx the KL transform. Default
+        is True
+    par_groups : list
+        parameter groups to build PI equations for.  If None, all
+        adjustable parameters are used. Default is None
 
-        pilbl, obgnme, weight, equation = [], [], [], []
-        for idx, row in pst.parameter_data.iterrows():
-            pt = row["partrans"].lower()
-            try:
-                pt = pt.decode()
-            except:
-                pass
-            if pt not in ["tied", "fixed"] and\
-                row["pargp"] in par_groups:
-                pilbl.append(row["parnme"])
-                weight.append(1.0)
-                ogp_name = "regul"+row["pargp"]
-                obgnme.append(ogp_name[:12])
-                parnme = row["parnme"]
-                parval1 = row["parval1"]
-                if pt == "log":
-                    parnme = "log(" + parnme + ")"
-                    parval1 = np.log10(parval1)
-                eq = "1.0 * " + parnme + " ={0:15.6E}".format(parval1)
-                equation.append(eq)
+    Example
+    -------
+    ``>>>import pyemu``
 
-        pst.prior_information = pd.DataFrame({"pilbl": pilbl,
-                                               "equation": equation,
-                                               "obgnme": obgnme,
-                                               "weight": weight})
-        if parbounds:
-            regweight_from_parbound(pst)
-        if pst.control_data.pestmode == "estimation":
-            pst.control_data.pestmode = "regularization"
+    ``>>>pst = pyemu.Pst("pest.pst")``
+
+    ``>>>pyemu.helpers.zero_order_tikhonov(pst)``
+
+    """
+
+    if par_groups is None:
+        par_groups = pst.par_groups
+
+    pilbl, obgnme, weight, equation = [], [], [], []
+    for idx, row in pst.parameter_data.iterrows():
+        pt = row["partrans"].lower()
+        try:
+            pt = pt.decode()
+        except:
+            pass
+        if pt not in ["tied", "fixed"] and\
+            row["pargp"] in par_groups:
+            pilbl.append(row["parnme"])
+            weight.append(1.0)
+            ogp_name = "regul"+row["pargp"]
+            obgnme.append(ogp_name[:12])
+            parnme = row["parnme"]
+            parval1 = row["parval1"]
+            if pt == "log":
+                parnme = "log(" + parnme + ")"
+                parval1 = np.log10(parval1)
+            eq = "1.0 * " + parnme + " ={0:15.6E}".format(parval1)
+            equation.append(eq)
+
+    pst.prior_information = pd.DataFrame({"pilbl": pilbl,
+                                           "equation": equation,
+                                           "obgnme": obgnme,
+                                           "weight": weight})
+    if parbounds:
+        regweight_from_parbound(pst)
+    if pst.control_data.pestmode == "estimation":
+        pst.control_data.pestmode = "regularization"
 
 
 def regweight_from_parbound(pst):
     """sets regularization weights from parameter bounds
-        which approximates the KL expansion
-    Parameters:
+    which approximates the KL expansion.  Called by
+    zero_order_tikhonov().
+
+    Parameters
     ----------
-        pst (Pst) : a control file instance
+    pst : pyemu.Pst
+        a control file instance
+
     """
+
     pst.parameter_data.index = pst.parameter_data.parnme
     pst.prior_information.index = pst.prior_information.pilbl
     for idx, parnme in enumerate(pst.prior_information.pilbl):
@@ -377,58 +489,76 @@ def regweight_from_parbound(pst):
 
 
 def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
-        """setup preferred-difference regularization from a covariance matrix.
-        Parameters:
-        ----------
-            pst (pyemu.Pst) : pst instance
-            cov (pyemu.Cov) : covariance matrix instance
-            reset (bool) : drop all other pi equations.  If False, append to
-                existing pi equations
-            abs_drop_tol (float) : tolerance to control how many pi
-                equations are written.  If the pearson cc is less than
-                abs_drop_tol, it will not be included in the pi equations
-        """
-        assert isinstance(cov,pyemu.Cov)
-        cc_mat = cov.to_pearson()
-        #print(pst.parameter_data.dtypes)
-        try:
-            ptrans = pst.parameter_data.partrans.apply(lambda x:x.decode()).to_dict()
-        except:
-            ptrans = pst.parameter_data.partrans.to_dict()
-        pi_num = pst.prior_information.shape[0] + 1
-        pilbl, obgnme, weight, equation = [], [], [], []
-        for i,iname in enumerate(cc_mat.row_names):
-            if iname not in pst.adj_par_names:
-                continue
-            for j,jname in enumerate(cc_mat.row_names[i+1:]):
-                if jname not in pst.adj_par_names:
-                    continue
-                #print(i,iname,i+j+1,jname)
-                cc = cc_mat.x[i,j+i+1]
-                if cc < abs_drop_tol:
-                    continue
-                pilbl.append("pcc_{0}".format(pi_num))
-                iiname = str(iname)
-                if str(ptrans[iname]) == "log":
-                    iiname = "log("+iname+")"
-                jjname = str(jname)
-                if str(ptrans[jname]) == "log":
-                    jjname = "log("+jname+")"
-                equation.append("1.0 * {0} - 1.0 * {1} = 0.0".\
-                                format(iiname,jjname))
-                weight.append(cc)
-                obgnme.append("regul_cc")
-                pi_num += 1
-        df = pd.DataFrame({"pilbl": pilbl,"equation": equation,
-                           "obgnme": obgnme,"weight": weight})
-        df.index = df.pilbl
-        if reset:
-            pst.prior_information = df
-        else:
-            pst.prior_information = pst.prior_information.append(df)
+    """setup preferred-difference regularization from a covariance matrix.
+    The weights on the prior information equations are the Pearson
+    correlation coefficients implied by covariance matrix.
 
-        if pst.control_data.pestmode == "estimation":
-            pst.control_data.pestmode = "regularization"
+    Parameters
+    ----------
+    pst : pyemu.Pst
+        pst instance
+    cov : pyemu.Cov
+        covariance matrix instance
+    reset : bool
+        drop all other pi equations.  If False, append to
+        existing pi equations
+    abs_drop_tol : float
+        tolerance to control how many pi equations are written.
+        If the Pearson C is less than abs_drop_tol, the prior information
+        equation will not be included in the control file
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>pst = pyemu.Pst("pest.pst")``
+
+    ``>>>cov = pyemu.Cov.from_ascii("prior.cov")``
+
+    ``>>>pyemu.helpers.first_order_pearson_tikhonov(pst,cov,abs_drop_tol=0.25)``
+
+    """
+    assert isinstance(cov,pyemu.Cov)
+    cc_mat = cov.to_pearson()
+    #print(pst.parameter_data.dtypes)
+    try:
+        ptrans = pst.parameter_data.partrans.apply(lambda x:x.decode()).to_dict()
+    except:
+        ptrans = pst.parameter_data.partrans.to_dict()
+    pi_num = pst.prior_information.shape[0] + 1
+    pilbl, obgnme, weight, equation = [], [], [], []
+    for i,iname in enumerate(cc_mat.row_names):
+        if iname not in pst.adj_par_names:
+            continue
+        for j,jname in enumerate(cc_mat.row_names[i+1:]):
+            if jname not in pst.adj_par_names:
+                continue
+            #print(i,iname,i+j+1,jname)
+            cc = cc_mat.x[i,j+i+1]
+            if cc < abs_drop_tol:
+                continue
+            pilbl.append("pcc_{0}".format(pi_num))
+            iiname = str(iname)
+            if str(ptrans[iname]) == "log":
+                iiname = "log("+iname+")"
+            jjname = str(jname)
+            if str(ptrans[jname]) == "log":
+                jjname = "log("+jname+")"
+            equation.append("1.0 * {0} - 1.0 * {1} = 0.0".\
+                            format(iiname,jjname))
+            weight.append(cc)
+            obgnme.append("regul_cc")
+            pi_num += 1
+    df = pd.DataFrame({"pilbl": pilbl,"equation": equation,
+                       "obgnme": obgnme,"weight": weight})
+    df.index = df.pilbl
+    if reset:
+        pst.prior_information = df
+    else:
+        pst.prior_information = pst.prior_information.append(df)
+
+    if pst.control_data.pestmode == "estimation":
+        pst.control_data.pestmode = "regularization"
 
 
 
@@ -436,26 +566,44 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
                  port=4004,rel_path=None,local=True,cleanup=True,master_dir=None):
     """ start a group of pest(++) slaves on the local machine
 
-    Parameters:
+    Parameters
     ----------
-        slave_dir : (str) the path to a complete set of input files
+    slave_dir :  str
+        the path to a complete set of input files
+    exe_rel_path : str
+        the relative path to the pest(++) executable from within the slave_dir
+    pst_rel_path : str
+        the relative path to the pst file from within the slave_dir
+    num_slaves : int
+        number of slaves to start. defaults to number of cores
+    slave_root : str
+        the root to make the new slave directories in
+    rel_path: str
+        the relative path to where pest(++) should be run from within the
+        slave_dir, defaults to the uppermost level of the slave dir
+    local: bool
+        flag for using "localhost" instead of hostname on slave command line
+    cleanup: bool
+        flag to remove slave directories once processes exit
+    master_dir: str
+        name of directory for master instance.  If master_dir
+        exists, then it will be removed.  If master_dir is None,
+        no master instance will be started
 
-        exe_rel_path : (str) the relative path to the pest(++)
-                        executable from within the slave_dir
-        pst_rel_path : (str) the relative path to the pst file
-                        from within the slave_dir
+    Note
+    ----
+    if all slaves (and optionally master) exit gracefully, then the slave
+    dirs will be removed unless cleanup is false
 
-        num_slaves : (int) number of slaves to start. defaults to number of cores
+    Example
+    -------
+    ``>>>import pyemu``
 
-        slave_root : (str) the root to make the new slave directories in
+    start 10 slaves using the directory "template" as the base case and
+    also start a master instance in a directory "master".
 
-        rel_path: (str) the relative path to where pest(++) should be run
-                  from within the slave_dir, defaults to the uppermost level of the slave dir
-        local: (bool) flag for using "localhost" instead of hostname on slave command line
-        cleanup: (bool) flag to remove slave directories once processes exit
-        master_dir: (str) name of directory for master instance.  If master_dir
-                    exists, then it will be removed.  If master_dir is None,
-                    no master instance will be started
+    ``>>>pyemu.helpers.start_slaves("template","pestpp","pest.pst",10,master_dir="master")``
+
     """
 
     assert os.path.isdir(slave_dir)
@@ -592,17 +740,48 @@ def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
                                subplots=False,figsize=(11,8.5),pt_color='b'):
     """ helper function to plot gaussian distrbutions from prior and posterior
     means and standard deviations
-    :param df: a dataframe and csv file.  Must have columns named:
-    'prior_mean','prior_stdev','post_mean','post_stdev'.  If loaded
-    from a csv file, column 0 is assumed to tbe the index
-    :param ax: matplotlib axis.  If None, and not subplots, then one is created
-    and all distributions are plotted on a single plot
-    :param label_post: flag to add text labels to the peak of the posterior
-    :param label_prior: flag to add text labels to the peak of the prior
-    :param subplots: flag to use subplots.  If True, then 6 axes per page
-    are used and a single prior and posterior is plotted on each
-    :param figsize: matplotlib figure size
-    :return: if subplots, list of figs, list of axes, else, a single axis
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        a dataframe and csv file.  Must have columns named:
+        'prior_mean','prior_stdev','post_mean','post_stdev'.  If loaded
+        from a csv file, column 0 is assumed to tbe the index
+    ax: matplotlib.pyplot.axis
+        If None, and not subplots, then one is created
+        and all distributions are plotted on a single plot
+    label_post: bool
+        flag to add text labels to the peak of the posterior
+    label_prior: bool
+        flag to add text labels to the peak of the prior
+    subplots: (boolean)
+        flag to use subplots.  If True, then 6 axes per page
+        are used and a single prior and posterior is plotted on each
+    figsize: tuple
+        matplotlib figure size
+
+    Returns
+    -------
+    figs : list
+        list of figures
+    axes : list
+        list of axes
+
+    Note
+    ----
+    This is useful for demystifying FOSM results
+
+    if subplots is False, a single axis is returned
+
+    Example
+    -------
+    ``>>>import matplotlib.pyplot as plt``
+
+    ``>>>import pyemu``
+
+    ``>>>pyemu.helpers.plot_summary_distributions("pest.par.usum.csv")``
+
+    ``>>>plt.show()``
     """
     import matplotlib.pyplot as plt
     if isinstance(df,str):
@@ -673,7 +852,27 @@ def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
 
 
 def gaussian_distribution(mean,stdev,num_pts=50):
-    """for plotting
+    """ get an x and y numpy.ndarray that spans the +/- 4
+    standard deviation range of a gaussian distribution with
+    a given mean and standard deviation. useful for plotting
+
+    Parameters
+    ----------
+    mean : float
+        the mean of the distribution
+    stdev : float
+        the standard deviation of the distribution
+    num_pts : int
+        the number of points in the returned ndarrays.
+        Default is 50
+
+    Returns
+    -------
+    x : numpy.ndarray
+        the x-values of the distribution
+    y : numpy.ndarray
+        the y-values of the distribution
+
     """
     xstart = mean - (4.0 * stdev)
     xend = mean + (4.0 * stdev)
@@ -683,7 +882,25 @@ def gaussian_distribution(mean,stdev,num_pts=50):
 
 
 def read_pestpp_runstorage(filename,irun=0):
-    """read pars and obs from a specific run in a pest++ serialized run storage file"""
+    """read pars and obs from a specific run in a pest++ serialized run storage file into
+    pandas.DataFrame(s)
+
+    Parameters
+    ----------
+    filename : str
+        the name of the run storage file
+    irun : int
+        the run id to process.  Default is 0
+
+    Returns
+    -------
+    par_df : pandas.DataFrame
+        parameter information
+    obs_df : pandas.DataFrame
+        observation information
+
+    """
+
     header_dtype = np.dtype([("n_runs",np.int64),("run_size",np.int64),("p_name_size",np.int64),
                       ("o_name_size",np.int64)])
     with open(filename,'rb') as f:
@@ -710,6 +927,30 @@ def read_pestpp_runstorage(filename,irun=0):
 
 
 def parse_dir_for_io_files(d):
+    """ a helper function to find template/input file pairs and
+    instruction file/output file pairs.  the return values from this
+    function can be passed straight to pyemu.Pst.from_io_files() classmethod
+    constructor. Assumes the template file names are <input_file>.tpl and
+    instruction file names are <output_file>.ins.
+
+    Parameters
+    ----------
+    d : str
+        directory to search for interface files
+
+    Returns
+    -------
+    tpl_files : list
+        list of template files in d
+    in_files : list
+        list of input files in d
+    ins_files : list
+        list of instruction files in d
+    out_files : list
+        list of output files in d
+
+    """
+
     files = os.listdir(d)
     tpl_files = [f for f in files if f.endswith(".tpl")]
     in_files = [f.replace(".tpl","") for f in tpl_files]
@@ -726,21 +967,35 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     values of the model-simulated equivalents to observations.  This can be
     useful for testing
 
-    Parameters:
+    Parameters
     ----------
-        tpl_files : list[str]
-            list of pest template files
-        in_files : list[str]
-            list of corresponding model input files
-        ins_files : list[str]
-            list of pest instruction files
-        out_files: list[str]
-            list of corresponding model output files
-        pst_filename : str (optional)
-            name of file to write the control file to
-    Returns:
+    tpl_files : list
+        list of pest template files
+    in_files : list
+        list of corresponding model input files
+    ins_files : list
+        list of pest instruction files
+    out_files: list
+        list of corresponding model output files
+    pst_filename : str
+        name of file to write the control file to.  If None,
+        control file is not written.  Default is None
+
+    Returns
     -------
-        Pst instance
+    pst : pyemu.Pst
+
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    this will construct a new Pst instance from template and instruction files
+    found in the current directory, assuming that the naming convention follows
+    that listed in parse_dir_for_io_files()
+
+    ``>>>pst = pyemu.helpers.pst_from_io_files(*pyemu.helpers.parse_dir_for_io_files('.'))``
+
     """
     par_names = []
     if not isinstance(tpl_files,list):
@@ -788,6 +1043,144 @@ wildass_guess_par_bounds_dict = {"hk":[0.01,100.0],"vka":[0.01,100.0],
                                    }
 
 class PstFromFlopyModel(object):
+    """ a monster helper class to setup multiplier parameters for an
+        existing MODFLOW model.  does all kinds of coolness like building a
+        meaningful prior, assigning somewhat meaningful parameter groups and
+        bounds, writes a forward_run.py script with all the calls need to
+        implement multiplier parameters, run MODFLOW and post-process.
+
+    Parameters
+    ----------
+    model : flopy.mbase
+        a loaded flopy model instance. If model is an str, it is treated as a
+        MODFLOW nam file (requires org_model_ws)
+    new_model_ws : str
+        a directory where the new version of MODFLOW input files and PEST(++)
+        files will be written
+    org_model_ws : str
+        directory to existing MODFLOW model files.  Required if model argument
+        is an str.  Default is None
+    pp_props : list
+        pilot point multiplier parameters for grid-based properties.
+        A nested list of grid-scale model properties to parameterize using
+        name, iterable pairs.  For 3D properties, the iterable is zero-based
+        layer indices.  For example, ["lpf.hk",[0,1,2,]] would setup pilot point multiplier
+        parameters for layer property file horizontal hydraulic conductivity for model
+        layers 1,2, and 3.  For time-varying properties (e.g. recharge), the
+        iterable is for zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
+        would setup pilot point multiplier parameters for recharge for stress
+        period 1,5,11,and 16.
+    const_props : list
+        constant (uniform) multiplier parameters for grid-based properties.
+        A nested list of grid-scale model properties to parameterize using
+        name, iterable pairs.  For 3D properties, the iterable is zero-based
+        layer indices.  For example, ["lpf.hk",[0,1,2,]] would setup constant (uniform) multiplier
+        parameters for layer property file horizontal hydraulic conductivity for model
+        layers 1,2, and 3.  For time-varying properties (e.g. recharge), the
+        iterable is for zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
+        would setup constant (uniform) multiplier parameters for recharge for stress
+        period 1,5,11,and 16.
+    bc_props : list
+        boundary condition stress-period level multiplier parameters.
+        A nested list of boundary condition elements to parameterize using
+        name, iterable pairs.  The iterable is zero-based stress-period indices.
+        For example, to setup multipliers for WEL flux and for RIV conductance,
+        bc_props = [["wel.flux",[0,1,2]],["riv.cond",None]] would setup
+        multiplier parameters for well flux for stress periods 1,2 and 3 and
+        would setup one single river conductance multipler parameter that is applied
+        to all stress periods
+    grid_props : list
+        grid-based (every active model cell) multiplier parameters.
+        A nested list of grid-scale model properties to parameterize using
+        name, iterable pairs.  For 3D properties, the iterable is zero-based
+        layer indices (e.g., ["lpf.hk",[0,1,2,]] would setup a multiplier
+        parameter for layer property file horizontal hydraulic conductivity for model
+        layers 1,2, and 3 in every active model cell).  For time-varying properties (e.g. recharge), the
+        iterable is for zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
+        would setup grid-based multiplier parameters in every active model cell
+        for recharge for stress period 1,5,11,and 16.
+    grid_geostruct : pyemu.geostats.GeoStruct
+        the geostatistical structure to build the prior parameter covariance matrix
+        elements for grid-based parameters.  If None, a generic GeoStruct is created
+        using the grid-spacing information.  Default is None
+    pp_space : int
+        number of grid cells between pilot points.  If None, use the default
+        in pyemu.pp_utils.setup_pilot_points_grid.  Default is None
+    zone_props : list
+        zone-based multiplier parameters.
+        A nested list of grid-scale model properties to parameterize using
+        name, iterable pairs.  For 3D properties, the iterable is zero-based
+        layer indices (e.g., ["lpf.hk",[0,1,2,]] would setup a multiplier
+        parameter for layer property file horizontal hydraulic conductivity for model
+        layers 1,2, and 3 for unique zone values in the ibound array.
+        For time-varying properties (e.g. recharge), the iterable is for
+        zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
+        would setup zone-based multiplier parameters for recharge for stress
+        period 1,5,11,and 16.
+    pp_geostruct : pyemu.geostats.GeoStruct
+        the geostatistical structure to use for building the prior parameter
+        covariance matrix for pilot point parameters.  If None, a generic
+        GeoStruct is created using pp_space and grid-spacing information.
+        Default is None
+    par_bounds_dict : dict
+        a dictionary of model property/boundary condition name, upper-lower bound pairs.
+        For example, par_bounds_dict = {"lpf.hk":[0.01,100.0],"wel.flux":[0.5,2.0]} would
+        set the bounds for layer property file horizontal hydraulic conductivity to
+        0.001 and 100.0 and set the bounds for well package flux parameters to 0.5 and
+        2.0.  If None, then the pyemu.helpers.wildass_guess_par_bounds_dict is
+        used to set somewhat meaningful bounds.  Default is None
+    bc_geostruct : pyemu.geostats.GeoStruct
+        the geostastical struture to build the prior parameter covariance matrix
+        for time-varying boundary condition multiplier parameters.  This GeoStruct
+        express the time correlation so that the 'a' parameter is the length of
+        time that boundary condition multiplier parameters are correlated across.
+        If None, then a generic GeoStruct is created that uses an 'a' parameter
+        of 3 stress periods.  Default is None
+    remove_existing : bool
+        a flag to remove an existing new_model_ws directory.  If False and
+        new_model_ws exists, an exception is raised.  If True and new_model_ws
+        exists, the directory is destroyed - user beware! Default is False.
+    k_zone_dict : dict
+        a dictionary of zero-based layer index, zone array pairs.  Used to
+        override using ibound zones for zone-based parameterization.  If None,
+        use ibound values greater than zero as zones.
+    use_pp_zones : bool
+         a flag to use ibound zones (or k_zone_dict, see above) as pilot
+         point zones.  If False, ibound values greater than zero are treated as
+         a single zone for pilot points.  Default is False
+     obssim_smp_pairs: list
+        a list of observed-simulated PEST-type SMP file pairs to get observations
+        from and include in the control file.  Default is []
+    external_tpl_in_pairs : list
+        a list of existing template file, model input file pairs to parse parameters
+        from and include in the control file.  Default is []
+    external_ins_out_pairs : list
+        a list of existing instruction file, model output file pairs to parse
+        observations from and include in the control file.  Default is []
+    extra_pre_cmds : list
+        a list of preprocessing commands to add to the forward_run.py script
+        commands are executed with os.system() within forward_run.py. Default
+        is [].
+    extra_post_cmds : list
+        a list of post-processing commands to add to the forward_run.py script.
+        Commands are executed with os.system() within forward_run.py.
+        Default is [].
+
+    Returns
+    -------
+    PstFromFlopyModel : PstFromFlopyModel
+
+    Attributes
+    ----------
+    pst : pyemu.Pst
+
+
+    Note
+    ----
+    works a lot better of TEMPCHEK, INSCHEK and PESTCHEK are available in the
+    system path variable
+
+    """
 
     def __init__(self,model,new_model_ws,org_model_ws=None,pp_props=[],const_props=[],
                  bc_props=[],grid_props=[],grid_geostruct=None,pp_space=None,
@@ -797,14 +1190,7 @@ class PstFromFlopyModel(object):
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
                  external_ins_out_pairs=None,extra_pre_cmds=None,
                  extra_model_cmds=None,extra_post_cmds=None):
-        """ a monster helper class to setup multiplier parameters for an
-        existing MODFLOW model.  does all kinds of coolness like building a
-        meaningful prior, assigning somewhat meaningful parameter groups and
-        bounds, writes a forward_run.py script with all the calls need to
-        implement multiplier parameters, run MODFLOW and post-process.
 
-
-        """
         self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
         self.log = self.logger.log
 
@@ -908,6 +1294,10 @@ class PstFromFlopyModel(object):
         self.logger.statement("all done")
 
     def setup_mult_dirs(self):
+        """ setup the directories to use for multiplier parameterization.  Directories
+        are make within the PstFromFlopyModel.m.model_ws directory
+
+        """
         # setup dirs to hold the original and multiplier model input quantities
         set_dirs = []
 #        if len(self.pp_props) > 0 or len(self.zone_props) > 0 or \
@@ -934,6 +1324,20 @@ class PstFromFlopyModel(object):
             self.log("setting up '{0}' dir".format(d))
 
     def setup_model(self,model,org_model_ws,new_model_ws):
+        """ setup the flopy.mbase instance for use with multipler parameters.
+        Changes model_ws, sets external_path and writes new MODFLOW input
+        files
+
+        Parameters
+        ----------
+        model : flopy.mbase
+            flopy model instance
+        org_model_ws : str
+            the orginal model working space
+        new_model_ws : str
+            the new model working space
+
+        """
         split_new_mws = [i for i in os.path.split(new_model_ws) if len(i) > 0]
         if len(split_new_mws) != 1:
             self.logger.lraise("new_model_ws can only be 1 folder-level deep:{0}".
@@ -974,6 +1378,24 @@ class PstFromFlopyModel(object):
         self.log("writing new modflow input files")
 
     def get_count(self,name):
+        """ get the latest counter for a certain parameter type.
+
+        Parameters
+        ----------
+        name : str
+            the parameter type
+
+        Returns
+        -------
+        count : int
+            the latest count for a parameter type
+
+        Note
+        ----
+        calling this function increments the counter for the passed
+        parameter type
+
+        """
         if name not in self.mlt_counter:
             self.mlt_counter[name] = 1
             c = 0
@@ -984,6 +1406,10 @@ class PstFromFlopyModel(object):
         return c
 
     def prep_mlt_arrays(self):
+        """  prepare multipler arrays.  Copies existing model input arrays and
+        writes generic (ones) multiplier arrays
+
+        """
         par_props = [self.pp_props,self.grid_props,
                          self.zone_props,self.const_props]
         par_suffixs = [self.pp_suffix,self.gr_suffix,
@@ -1046,12 +1472,42 @@ class PstFromFlopyModel(object):
             return mlt_df
 
     def write_u2d(self, u2d):
+        """ write a flopy.utils.Util2D instance to an ASCII text file using the
+        Util2D filename
+
+        Parameters
+        ----------
+        u2d : flopy.utils.Util2D
+
+        Returns
+        -------
+        filename : str
+            the name of the file written (without path)
+
+        """
         filename = os.path.split(u2d.filename)[-1]
         np.savetxt(os.path.join(self.m.model_ws,self.arr_org,filename),
                    u2d.array,fmt="%15.6E")
         return filename
 
     def write_const_tpl(self,name,tpl_file,zn_array):
+        """ write a template file a for a constant (uniform) multiplier parameter
+
+        Parameters
+        ----------
+        name : str
+            the base parameter name
+        tpl_file : str
+            the template file to write
+        zn_array : numpy.ndarray
+            an array used to skip inactive cells
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            a dataframe with parameter information
+
+        """
         parnme = []
         with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
             f.write("ptf ~\n")
@@ -1075,6 +1531,23 @@ class PstFromFlopyModel(object):
         return df
 
     def write_grid_tpl(self,name,tpl_file,zn_array):
+        """ write a template file a for grid-based multiplier parameters
+
+        Parameters
+        ----------
+        name : str
+            the base parameter name
+        tpl_file : str
+            the template file to write
+        zn_array : numpy.ndarray
+            an array used to skip inactive cells
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            a dataframe with parameter information
+
+        """
         parnme,x,y = [],[],[]
         with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
             f.write("ptf ~\n")
@@ -1099,6 +1572,23 @@ class PstFromFlopyModel(object):
         return df
 
     def write_zone_tpl(self,name,tpl_file,zn_array):
+        """ write a template file a for zone-based multiplier parameters
+
+        Parameters
+        ----------
+        name : str
+            the base parameter name
+        tpl_file : str
+            the template file to write
+        zn_array : numpy.ndarray
+            an array used to skip inactive cells
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            a dataframe with parameter information
+
+        """
         parnme = []
         with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
             f.write("ptf ~\n")
@@ -1120,6 +1610,9 @@ class PstFromFlopyModel(object):
         return df
 
     def grid_prep(self):
+        """ prepare grid-based parameterizations
+
+        """
         if len(self.grid_props) == 0:
             return
         if self.grid_geostruct is None:
@@ -1131,6 +1624,19 @@ class PstFromFlopyModel(object):
             self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v)
 
     def pp_prep(self,mlt_df):
+        """ prepare pilot point based parameterizations
+
+        Parameters
+        ----------
+        mlt_df : pandas.DataFrame
+            a dataframe with multiplier array information
+
+        Note
+        ----
+        calls pyemu.pp_utils.setup_pilot_points_grid()
+
+
+        """
         if len(self.pp_props) == 0:
             return
         if self.pp_space is None:
@@ -1241,6 +1747,9 @@ class PstFromFlopyModel(object):
         self.par_dfs[self.pp_suffix] = pp_df
 
     def setup_array_pars(self):
+        """ main entry point for setting up array multipler parameters
+
+        """
         mlt_df = self.prep_mlt_arrays()
         if mlt_df is None:
             return
@@ -1328,6 +1837,9 @@ class PstFromFlopyModel(object):
         self.frun_pre_lines.append(line)
 
     def setup_observations(self):
+        """ main entry point for setting up observations
+
+        """
         obs_methods = [self.setup_water_budget_obs,self.setup_hyd,
                        self.setup_smp,self.setup_hob,self.setup_hds]
         obs_types = ["mflist water budget obs","hyd file",
@@ -1340,6 +1852,14 @@ class PstFromFlopyModel(object):
 
 
     def build_prior(self):
+        """ build a prior parameter covariance matrix.
+
+        Returns
+        -------
+        cov : pyemu.Cov
+            a full covariance matrix
+
+        """
         self.log("building prior covariance matrix")
         struct_dict = {}
         if self.pp_suffix in self.par_dfs.keys():
@@ -1380,8 +1900,19 @@ class PstFromFlopyModel(object):
             cov = pyemu.Cov.from_parameter_data(self.pst,sigma_range=6)
         cov.to_ascii(os.path.join(self.m.model_ws,self.pst_name+".prior.cov"))
         self.log("building prior covariance matrix")
+        return cov
 
     def build_pst(self):
+        """ build the pest control file using the parameterizations and
+        observations.
+
+        Note
+        ----
+        calls pyemu.Pst.from_io_files
+
+        calls PESTCHEK
+
+        """
         self.log("changing dir in to {0}".format(self.m.model_ws))
         os.chdir(self.m.model_ws)
         try:
@@ -1463,6 +1994,10 @@ class PstFromFlopyModel(object):
         self.log("running pestchek on {0}".format(self.pst_name))
 
     def add_external(self):
+        """ add external (existing) template files and instrution files to the
+        Pst instance
+
+        """
         if self.external_tpl_in_pairs is not None:
             if not isinstance(self.external_tpl_in_pairs,list):
                 external_tpl_in_pairs = [self.external_tpl_in_pairs]
@@ -1496,6 +2031,9 @@ class PstFromFlopyModel(object):
                     self.logger.warn("obs listed in {0} will have generic values")
 
     def write_forward_run(self):
+        """ write the forward run script forward_run.py
+
+        """
         with open(os.path.join(self.m.model_ws,self.forward_run_file),'w') as f:
             f.write("import os\nimport numpy as np\nimport pandas as pd\nimport flopy\n")
             f.write("import pyemu\n")
@@ -1507,6 +2045,21 @@ class PstFromFlopyModel(object):
                 f.write(line+'\n')
 
     def parse_k(self,k,vals):
+        """ parse the iterable from a property or boundary condition argument
+
+        Parameters
+        ----------
+        k : int or iterable int
+            the iterable
+        vals : iterable of ints
+            the acceptable values that k may contain
+
+        Returns
+        -------
+        k_vals : iterable of int
+            parsed k values
+
+        """
         try:
             k = int(k)
         except:
@@ -1525,6 +2078,28 @@ class PstFromFlopyModel(object):
             return k_vals
 
     def parse_pakattr(self,pakattr):
+        """ parse package-iterable pairs from a property or boundary condition
+        argument
+
+        Parameters
+        ----------
+        pakattr : iterable len 2
+
+
+        Returns
+        -------
+        pak : flopy.PakBase
+            the flopy package from the model instance
+        attr : (varies)
+            the flopy attribute from pak.  Could be Util2D, Util3D,
+            Transient2D, or MfList
+        attrname : (str)
+            the name of the attribute for MfList type.  Only returned if
+            attr is MfList.  For example, if attr is MfList and pak is
+            flopy.modflow.ModflowWel, then attrname can only be "flux"
+
+        """
+
         raw = pakattr.lower().split('.')
         if len(raw) != 2:
             self.logger.lraise("pakattr is wrong:{0}".format(pakattr))
@@ -1547,6 +2122,10 @@ class PstFromFlopyModel(object):
             self.logger.lraise("unrecognized attr:{1}".format(attrname))
 
     def setup_bc_pars(self):
+        """ main entry point for setting up boundary condition multiplier
+        parameters
+
+        """
         if len(self.bc_props) == 0:
             return
         self.log("processing bc_props")
@@ -1618,6 +2197,21 @@ class PstFromFlopyModel(object):
             self.bc_geostruct = pyemu.geostats.GeoStruct(variograms=v)
 
     def bc_helper(self,k,pak,attr,col):
+        """ helper to setup boundary condition multiplier parameters for a given
+        k, pak, attr set.
+
+        Parameters
+        ----------
+        k : int or iterable of int
+            the zero-based stress period indices
+        pak : flopy.PakBase=
+            the MODFLOW package
+        attr : MfList
+            the MfList instance
+        col : str
+            the column name in the MfList recarray to parameterize
+
+        """
         filename = attr.get_filename(k)
         filename_model = os.path.join(self.m.external_path,filename)
         shutil.copy2(os.path.join(self.m.model_ws,filename_model),
@@ -1626,6 +2220,20 @@ class PstFromFlopyModel(object):
 
 
     def setup_hds(self):
+        """ setup modflow head save file observations for given kper (zero-based
+        stress period index) and k (zero-based layer index) pairs using the
+        kperk argument.
+
+        Note
+        ----
+            this can setup a shit-ton of observations
+
+            this is useful for dataworth analyses or for monitoring
+            water levels as forecasts
+
+
+
+        """
         if self.hds_kperk is None or len(self.hds_kperk) == 0:
             return
         from .gw_utils import setup_hds_obs
@@ -1659,6 +2267,9 @@ class PstFromFlopyModel(object):
                       kperk_pairs=self.hds_kperk,skip=skip)
 
     def setup_smp(self):
+        """ setup observations from PEST-style SMP file pairs
+
+        """
         if self.obssim_smp_pairs is None:
             return
         if len(self.obssim_smp_pairs) == 2:
@@ -1679,6 +2290,11 @@ class PstFromFlopyModel(object):
             pyemu.pst_utils.smp_to_ins(new_sim_smp)
 
     def setup_hob(self):
+        """ setup observations from the MODFLOW HOB package
+
+
+        """
+
         if self.m.hob is None:
             return
         hob_out_unit = self.m.hob.iuhobsv
@@ -1692,6 +2308,10 @@ class PstFromFlopyModel(object):
         self.obs_dfs["hob"] = hob_df
 
     def setup_hyd(self):
+        """ setup observations from the MODFLOW HYDMOD package
+
+
+        """
         if self.m.hyd is None:
             return
         org_hyd_out = os.path.join(self.org_model_ws,self.m.name+".hyd.bin")
@@ -1710,6 +2330,10 @@ class PstFromFlopyModel(object):
         self.obs_dfs["hyd"] = df
 
     def setup_water_budget_obs(self):
+        """ setup observations from the MODFLOW list file for
+        volume and flux water buget information
+
+        """
         org_listfile = os.path.join(self.org_model_ws,self.m.lst.file_name[0])
         if os.path.exists(org_listfile):
             shutil.copy2(org_listfile,os.path.join(self.m.model_ws,
@@ -1740,6 +2364,16 @@ class PstFromFlopyModel(object):
 
 
 def apply_array_pars():
+    """ a function to apply array-based multipler parameters.  Used to implement
+    the parameterization constructed by PstFromFlopyModel during a forward run
+
+    Note
+    ----
+    requires "arr_pars.csv"
+
+    should be added to the forward_run.py script
+
+    """
     df = pd.read_csv("arr_pars.csv")
     # for fname in df.model_file:
     #     try:
@@ -1769,6 +2403,16 @@ def apply_array_pars():
         np.savetxt(model_file,org_arr,fmt="%15.6E")
 
 def apply_bc_pars():
+    """ a function to apply boundary condition multiplier parameters.  Used to implement
+    the parameterization constructed by PstFromFlopyModel during a forward run
+
+    Note
+    ----
+    requires "bc_pars.csv"
+
+    should be added to the forward_run.py script
+
+    """
     df = pd.read_csv("bc_pars.dat",delim_whitespace=True)
     for fname in df.filename.unique():
         df_fname = df.loc[df.filename==fname,:]
@@ -1788,4 +2432,3 @@ def apply_bc_pars():
         with open(os.path.join(model_ext_path,fname),'w') as f:
             f.write(df_list.to_string(header=False,index=False,formatters=fmts)+'\n')
             #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
-

@@ -1,3 +1,5 @@
+"""Matrix, Jco and Cov classes for easy linear algebra
+"""
 from __future__ import print_function, division
 import copy
 import struct
@@ -11,12 +13,15 @@ from pyemu.pst.pst_handler import Pst
 
 def concat(mats):
     """Concatenate Matrix objects.  Tries either axis.
-    Parameters:
+
+    Parameters
     ----------
-        mats: an enumerable of Matrix objects
-    Returns:
+    mats: list
+        list of Matrix objects
+
+    Returns
     -------
-        Matrix
+    Matrix : Matrix
     """
     for mat in mats:
         if mat.isdiagonal:
@@ -64,13 +69,19 @@ def concat(mats):
 def get_common_elements(list1, list2):
     """find the common elements in two lists.  used to support auto align
         might be faster with sets
-    Parameters:
+
+    Parameters
     ----------
-        list1 : a list of objects
-        list2 : a list of objects
-    Returns:
+    list1 : list
+        a list of objects
+    list2 : list
+        a list of objects
+
+    Returns
     -------
+    list : list
         list of common objects shared by list1 and list2
+        
     """
     #result = []
     #for item in list1:
@@ -84,23 +95,43 @@ def get_common_elements(list1, list2):
 
 class Matrix(object):
     """a class for easy linear algebra
-    Attributes:
-        x : ndarray
-            numpy ndarray
-        row_names : list(str)
-            names of the rows in the matrix
-        col_names : list(str)
-            names of the columns in the matrix
-        shape : tuple
-            shape of the matrix
-        isdiagonal : bool
-            diagonal matrix flag
-    Notes:
-        this class makes heavy use of property decorators to encapsulate
-        private attributes
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        Matrix entries
+    row_names : list
+        list of row names
+    col_names : list
+        list of column names
+    isdigonal : bool
+        to determine if the Matrix is diagonal
+    autoalign: bool
+        used to control the autoalignment of Matrix objects
+        during linear algebra operations
+
+    Returns
+    -------
+        Matrix : Matrix
+
+    Attributes
+    ----------
+        binary_header_dt : numpy.dtype
+            the header info in the PEST binary file type
+        binary_rec_dt : numpy.dtype
+            the record info in the PEST binary file type
+
+    Methods
+    -------
+    to_ascii : write a PEST-style ASCII matrix format file
+    to_binary : write a PEST-stle compressed binary format file
+    
+    Note
+    ----
+    this class makes heavy use of property decorators to encapsulate
+    private attributes
 
     """
-
     integer = np.int32
     double = np.float64
     char = np.uint8
@@ -116,17 +147,8 @@ class Matrix(object):
 
     def __init__(self, x=None, row_names=[], col_names=[], isdiagonal=False,
                  autoalign=True):
-        """constructor for Matrix objects
-        Args:
-            x : numpy array for the Matrix entries
-            row_names : list of Matrix row names
-            col_names : list of Matrix column names
-            isdigonal : bool to determine if the Matrix is diagonal
-            autoalign: bool used to control the autoalignment of Matrix objects
-                during linear algebra operations
-        Returns:
-            None
-        """
+
+
         self.col_names, self.row_names = [], []
         [self.col_names.append(str(c).lower()) for c in col_names]
         [self.row_names.append(str(r).lower()) for r in row_names]
@@ -163,23 +185,46 @@ class Matrix(object):
         self.autoalign = bool(autoalign)
 
     def reset_x(self,x):
+        """reset self.__x private attribute
+
+        Parameters
+        ----------
+        x : numpy.ndarray
+
+        
+        Note
+        ----
+        makes a copy of 'x' argument
+        
+        """
         assert x.shape == self.shape
         self.__x = x.copy()
 
     def __str__(self):
+        """overload of object.__str__()
+        
+        Returns
+        -------
+            str : str 
+
+        """
         s = "shape:{0}:{1}".format(*self.shape)+" row names: " + str(self.row_names) + \
             '\n' + "col names: " + str(self.col_names) + '\n' + str(self.__x)
         return s
 
     def __getitem__(self, item):
-        """a very crude overload of getitem - not trying to parse item,
-            instead relying on shape of submat
-        Parameters:
+        """a very crude overload of object.__getitem__().
+
+        Parameters
         ----------
-            item : an enumerable that can be used as an index
-        Returns:
+        item : iterable
+         something that can be used as an index
+
+        Returns
         -------
-            a Matrix object that is a subMatrix of self
+        Matrix : Matrix
+            an object that is a sub-Matrix of self
+
         """
         if self.isdiagonal and isinstance(item, tuple):
             submat = np.atleast_2d((self.__x[item[0]]))
@@ -199,17 +244,21 @@ class Matrix(object):
 
 
     def __pow__(self, power):
-        """overload of __pow__ operator
-        Parameters:
+        """overload of numpy.ndarray.__pow__() operator
+
+        Parameters
         ----------
-            power: int or float.  interpreted as follows:
-                -1 = inverse of self
-                -0.5 = sqrt of inverse of self
-                0.5 = sqrt of self
-                all other positive ints = elementwise self raised to power
-        Returns:
+        power: (int or float)
+            interpreted as follows: -1 = inverse of self,
+            -0.5 = sqrt of inverse of self,
+            0.5 = sqrt of self. All other positive
+            ints = elementwise self raised to power
+
+        Returns
         -------
+        Matrix : Matrix
             a new Matrix object
+
         """
         if power < 0:
             if power == -1:
@@ -233,16 +282,20 @@ class Matrix(object):
 
 
     def __sub__(self, other):
-        """
-            subtraction overload.  tries to speedup by checking for scalars of
-            diagonal matrices on either side of operator
-        Parameters:
+        """numpy.ndarray.__sub__() overload.  Tries to speedup by
+         checking for scalars of diagonal matrices on either side of operator
+
+        Parameters
         ----------
-            other : [scalar,numpy.ndarray,Matrix object]
-        Returns:
+        other : scalar,numpy.ndarray,Matrix object
+            the thing to difference
+
+        Returns
         -------
-            Matrix object
+        Matrix : Matrix
+
         """
+
         if np.isscalar(other):
             return Matrix(x=self.x - other, row_names=self.row_names,
                           col_names=self.col_names,
@@ -310,14 +363,18 @@ class Matrix(object):
 
 
     def __add__(self, other):
-        """addition overload.  tries to speedup by checking for
+        """Overload of numpy.ndarray.__add__().  Tries to speedup by checking for
             scalars of diagonal matrices on either side of operator
-        Parameters:
+
+        Parameters
         ----------
-            other : [scalar,numpy.ndarray,Matrix object]
-        Returns:
+        other : scalar,numpy.ndarray,Matrix object
+            the thing to add
+
+        Returns
         -------
-            Matrix
+        Matrix : Matrix
+
         """
         if np.isscalar(other):
             return type(self)(x=self.x + other)
@@ -377,14 +434,19 @@ class Matrix(object):
                             "other in __add__: " + str(type(other)))
 
     def hadamard_product(self, other):
-        """element-wise multiplication.  tries to speedup by checking for
-            scalars of diagonal matrices on either side of operator
-        Parameters:
+        """Overload of numpy.ndarray.__mult__(): element-wise multiplication.
+        Tries to speedup by checking for scalars of diagonal matrices on
+        either side of operator
+
+        Parameters
         ----------
-            other : [scalar,numpy.ndarray,Matrix object]
-        Returns:
+        other : scalar,numpy.ndarray,Matrix object
+            the thing for element-wise multiplication
+
+        Returns
         -------
-            Matrix
+        Matrix : Matrix
+
         """
         if np.isscalar(other):
             return type(self)(x=self.x * other)
@@ -446,14 +508,16 @@ class Matrix(object):
 
 
     def __mul__(self, other):
-        """multiplication overload.  tries to speedup by checking for scalars or
-            diagonal matrices on either side of operator
-        Parameters:
+        """Dot product multiplication overload.  Tries to speedup by
+        checking for scalars or diagonal matrices on either side of operator
+
+        Parameters
         ----------
-            other : [scalar,numpy.ndarray,Matrix object]
+        other : scalar,numpy.ndarray,Matrix object
+            the thing the dot product against
+
         Returns:
-        -------
-            Matrix object
+            Matrix : Matrix
         """
         if np.isscalar(other):
             return type(self)(x=self.__x.copy() * other,
@@ -524,6 +588,19 @@ class Matrix(object):
 
 
     def __rmul__(self, other):
+        """Reverse order Dot product multiplication overload.
+
+        Parameters
+        ----------
+        other : scalar,numpy.ndarray,Matrix object
+            the thing the dot product against
+
+        Returns
+        -------
+        Matrix : Matrix
+
+        """
+
         if np.isscalar(other):
             return type(self)(x=self.__x.copy() * other,row_names=self.row_names,\
                               col_names=self.col_names,isdiagonal=self.isdiagonal)
@@ -589,7 +666,10 @@ class Matrix(object):
 
 
     def __set_svd(self):
-        """private method to set SVD components
+        """private method to set SVD components.
+
+        Note: this should not be called directly
+
         """
         if self.isdiagonal:
             x = np.diag(self.x.flatten())
@@ -626,14 +706,16 @@ class Matrix(object):
                           autoalign=False)
 
     def mult_isaligned(self, other):
-        """check if matrices are aligned for multiplication
-        Parameters:
+        """check if matrices are aligned for dot product multiplication
+
+        Parameters
         ----------
-            other : Matrix
-        Returns:
+        other : (Matrix)
+
+        Returns
         -------
-            True if aligned
-            False if not aligned
+        bool : bool
+            True if aligned, False if not aligned
         """
         assert isinstance(other, Matrix), \
             "Matrix.isaligned(): other argumnent must be type Matrix, not: " +\
@@ -646,13 +728,15 @@ class Matrix(object):
 
     def element_isaligned(self, other):
         """check if matrices are aligned for element-wise operations
-        Parameters:
+
+        Parameters
         ----------
-            other : Matrix
-        Returns:
+        other : Matrix
+
+        Returns
         -------
-            True if aligned
-            False if not aligned
+        bool : bool
+            True if aligned, False if not aligned
         """
         assert isinstance(other, Matrix), \
             "Matrix.isaligned(): other argument must be type Matrix, not: " +\
@@ -667,6 +751,11 @@ class Matrix(object):
     @property
     def newx(self):
         """return a copy of x
+
+        Returns
+        -------
+        numpy.ndarray : numpy.ndarray
+
         """
         return self.__x.copy()
 
@@ -674,24 +763,38 @@ class Matrix(object):
     @property
     def x(self):
         """return a reference to x
+
+        Returns
+        -------
+        numpy.ndarray : numpy.ndarray
+
         """
         return self.__x
 
     @property
     def as_2d(self):
+        """ get a 2D representation of x.  If not self.isdiagonal, simply
+        return reference to self.x, otherwise, constructs and returns
+        a 2D, diagonal ndarray
+
+        Returns
+        -------
+        numpy.ndarray : numpy.ndarray
+
+        """
         if not self.isdiagonal:
             return self.x
         return np.diag(self.x.flatten())
 
     @property
     def shape(self):
-        """get the shape of x
-        Parameters:
-        ----------
-            None
-        Returns:
+        """get the implied, 2D shape of self
+
+        Returns
         -------
-            tuple of ndims
+        tuple : tuple
+            length 2 tuple of ints
+
         """
         if self.__x is not None:
             if self.isdiagonal:
@@ -703,28 +806,45 @@ class Matrix(object):
 
     @property
     def ncol(self):
+        """ length of second dimension
+
+        Returns
+        -------
+        int : int
+            number of columns
+
+        """
         return self.shape[1]
 
     @property
     def nrow(self):
+        """ length of first dimensions
+
+        Returns
+        -------
+        int : int
+            number of rows
+
+        """
         return self.shape[0]
 
     @property
     def T(self):
-        """wrapper function for transpose
+        """wrapper function for Matrix.transpose() method
+
         """
         return self.transpose
 
 
     @property
     def transpose(self):
-        """transpose operation
-        Parameters:
-        ----------
-            None
-        Returns:
+        """transpose operation of self
+
+        Returns
         -------
+        Matrix : Matrix
             transpose of self
+
         """
         if not self.isdiagonal:
             return type(self)(x=self.__x.copy().transpose(),
@@ -739,14 +859,15 @@ class Matrix(object):
 
     @property
     def inv(self):
-        """inversion operation
-        Parameters:
-        ----------
-            None
-        Returns:
+        """inversion operation of self
+
+        Returns
         -------
+        Matrix : Matrix
             inverse of self
+
        """
+
         if self.isdiagonal:
             inv = 1.0 / self.__x
             if (np.any(~np.isfinite(inv))):
@@ -765,10 +886,46 @@ class Matrix(object):
                               autoalign=self.autoalign)
 
     def get_maxsing(self,eigthresh=1.0e-5):
+        """ Get the number of singular components with a singular
+        value ratio greater than or equal to eigthresh
+
+        Parameters
+        ----------
+        eigthresh : float
+            the ratio of the largest to smallest singular value
+
+        Returns
+        -------
+        int : int
+            number of singular components
+
+        """
         sthresh =np.abs((self.s.x / self.s.x[0]) - eigthresh)
         return max(1,np.argmin(sthresh))
 
     def pseudo_inv_components(self,maxsing=None,eigthresh=1.0e-5):
+        """ Get the truncated SVD components
+
+        Parameters
+        ----------
+        maxsing : int
+            the number of singular components to use.  If None,
+            maxsing is calculated using Matrix.get_maxsing() and eigthresh
+        eigthresh : float
+            the ratio of largest to smallest singular components to use
+            for truncation.  Ignored if maxsing is not None
+
+        Returns
+        -------
+        u : Matrix
+            truncated left singular vectors
+        s : Matrix
+            truncated singular value matrix
+        v : Matrix
+            truncated right singular vectors
+
+        """
+
         if maxsing is None:
             maxsing = self.get_maxsing(eigthresh=eigthresh)
 
@@ -778,6 +935,22 @@ class Matrix(object):
         return u,s,v
 
     def pseudo_inv(self,maxsing=None,eigthresh=1.0e-5):
+        """ The pseudo inverse of self.  Formed using truncated singular
+        value decomposition and Matrix.pseudo_inv_components
+
+        Parameters
+        ----------
+        maxsing : int
+            the number of singular components to use.  If None,
+            maxsing is calculated using Matrix.get_maxsing() and eigthresh
+        eigthresh : float
+            the ratio of largest to smallest singular components to use
+            for truncation.  Ignored if maxsing is not None
+
+        Returns
+        -------
+        Matrix : Matrix
+        """
         if maxsing is None:
             maxsing = self.get_maxsing(eigthresh=eigthresh)
         full_s = self.full_s.T
@@ -791,12 +964,12 @@ class Matrix(object):
     @property
     def sqrt(self):
         """square root operation
-        Parameters:
-        ----------
-            None
-        Returns:
+
+        Returns
         -------
+        Matrix : Matrix
             square root of self
+
         """
         if self.isdiagonal:
             return type(self)(x=np.sqrt(self.__x), isdiagonal=True,
@@ -814,6 +987,13 @@ class Matrix(object):
                               autoalign=self.autoalign)
     @property
     def full_s(self):
+        """ Get the full singular value matrix of self
+
+        Returns
+        -------
+        Matrix : Matrix
+
+        """
         x = np.zeros((self.shape),dtype=np.float32)
 
         x[:self.s.shape[0],:self.s.shape[0]] = self.s.as_2d
@@ -822,12 +1002,14 @@ class Matrix(object):
                           autoalign=False)
         return s
 
-
-
-
     @property
     def s(self):
         """the singular value (diagonal) Matrix
+
+        Returns
+        -------
+        Matrix : Matrix
+
         """
         if self.__s is None:
             self.__set_svd()
@@ -837,6 +1019,11 @@ class Matrix(object):
     @property
     def u(self):
         """the left singular vector Matrix
+
+        Returns
+        -------
+        Matrix : Matrix
+
         """
         if self.__u is None:
             self.__set_svd()
@@ -846,6 +1033,11 @@ class Matrix(object):
     @property
     def v(self):
         """the right singular vector Matrix
+
+        Returns
+        -------
+        Matrix : Matrix
+
         """
         if self.__v is None:
             self.__set_svd()
@@ -853,7 +1045,12 @@ class Matrix(object):
 
     @property
     def zero2d(self):
-        """ get an instance of self with all zeros
+        """ get an 2D instance of self with all zeros
+
+        Returns
+        -------
+        Matrix : Matrix
+
         """
         return type(self)(x=np.atleast_2d(np.zeros((self.shape[0],self.shape[1]))),
                    row_names=self.row_names,
@@ -861,15 +1058,21 @@ class Matrix(object):
                    isdiagonal=False)
 
     def indices(self, names, axis=None):
-        """get the row and col indices of names
-        Parameters:
-        ----------
-            names : [enumerable] column and/or row names
-            axis : [int] the axis to search.
-        Returns:
-        -------
-            numpy.ndarray : indices of names.  if axis is None, two ndarrays
+        """get the row and col indices of names. If axis is None, two ndarrays
                 are returned, corresponding the indices of names for each axis
+
+        Parameters
+        ----------
+        names : iterable
+            column and/or row names
+        axis : (int) (optional)
+            the axis to search.
+
+        Returns
+        -------
+        numpy.ndarray : numpy.ndarray
+            indices of names.
+
         """
         row_idxs, col_idxs = [], []
         for name in names:
@@ -899,14 +1102,15 @@ class Matrix(object):
 
 
     def align(self, names, axis=None):
-        """reorder self by names
-        Parameters:
+        """reorder self by names.  If axis is None, reorder both indices
+
+        Parameters
         ----------
-            names : [enumerable] names in row and\or column names
-            axis : [int] the axis to reorder. if None, reorder both axes
-        Returns:
-        -------
-            None
+        names : iterable
+            names in rowS and\or columnS
+        axis : (int)
+            the axis to reorder. if None, reorder both axes
+
         """
         if not isinstance(names, list):
             names = [names]
@@ -947,15 +1151,21 @@ class Matrix(object):
 
 
     def get(self, row_names=None, col_names=None, drop=False):
-        """get a (sub)Matrix ordered on row_names or col_names
-        Parameters:
+        """get a new Matrix instance ordered on row_names or col_names
+
+        Parameters
         ----------
-            row_names : [enumerable] row_names for new Matrix
-            col_names : [enumerable] col_names for new Matrix
-            drop : [bool] flag to remove row_names and/or col_names
-        Returns:
+        row_names : iterable
+            row_names for new Matrix
+        col_names : iterable
+            col_names for new Matrix
+        drop : bool
+            flag to remove row_names and/or col_names
+
+        Returns
         -------
-            Matrix
+        Matrix : Matrix
+
         """
         if row_names is None and col_names is None:
             raise Exception("Matrix.get(): must pass at least" +
@@ -1005,14 +1215,15 @@ class Matrix(object):
 
 
     def drop(self, names, axis):
-        """ drop elements from self
-        Parameters:
+        """ drop elements from self in place
+
+        Parameters
         ----------
-            names : [enumerable] names to drop
-            axis : [int] the axis to drop from. must be in [0,1]
-        Returns:
-        -------
-            None
+        names : iterable
+            names to drop
+        axis : (int)
+            the axis to drop from. must be in [0,1]
+
         """
         if axis is None:
             raise Exception("Matrix.drop(): axis arg is required")
@@ -1075,7 +1286,20 @@ class Matrix(object):
 
 
     def extract(self, row_names=None, col_names=None):
-        """wrapper method that gets then drops elements
+        """wrapper method that Matrix.gets() then Matrix.drops() elements.
+        one of row_names or col_names must be not None.
+
+        Parameters
+        ----------
+        row_names : iterable
+            row names to extract
+        col_names : (enumerate)
+            col_names to extract
+
+        Returns
+        -------
+        Matrix : Matrix
+
         """
         if row_names is None and col_names is None:
             raise Exception("Matrix.extract() " +
@@ -1084,6 +1308,16 @@ class Matrix(object):
         return extract
 
     def get_diagonal_vector(self, col_name="diag"):
+        """Get a new Matrix instance that is the diagonal of self.  The
+        shape of the new matrix is (self.shape[0],1).  Self must be square
+
+        Parameters:
+            col_name : str
+                the name of the column in the new Matrix
+
+        Returns:
+            Matrix : Matrix
+        """
         assert self.shape[0] == self.shape[1]
         assert not self.isdiagonal
         assert isinstance(col_name,str)
@@ -1092,13 +1326,14 @@ class Matrix(object):
                           col_names=[col_name],isdiagonal=False)
 
     def to_binary(self, filename):
-        """write a pest-compatible binary file
-        Parameters:
+        """write a PEST-compatible binary file.  The format is the same
+        as the format used to storage a PEST Jacobian matrix
+
+        Parameters
         ----------
-            filename : [str] filename to save binary file
-        Returns:
-        -------
-            None
+        filename : str
+            filename to save binary file
+
         """
         if self.isdiagonal:
             raise NotImplementedError()
@@ -1137,13 +1372,18 @@ class Matrix(object):
 
     @classmethod
     def from_binary(cls, filename):
-        """load from pest-compatible binary file
-        Parameters:
+        """class method load from PEST-compatible binary file into a
+        Matrix instance
+
+        Parameters
         ----------
-            filename : [str] filename to save binary file
-        Returns:
+        filename : str
+            filename to read
+
+        Returns
         -------
-            None
+        Matrix : Matrix
+
         """
 
         f = open(filename, 'rb')
@@ -1196,14 +1436,17 @@ class Matrix(object):
     @classmethod
     def from_fortranfile(cls, filename):
         """ a binary load method to accommodate one of the many
-            bizzare fortran binary writing formats
-        Parameters:
+            bizarre fortran binary writing formats
+
+        Parameters
         ----------
-            filename : str
-                name of the binary matrix file
-        Returns:
+        filename : str
+            name of the binary matrix file
+
+        Returns
         -------
-            None
+        Matrix : Matrix
+
         """
         f = FortranFile(filename,mode='r')
         itemp1, itemp2 = f.read_ints()
@@ -1242,14 +1485,15 @@ class Matrix(object):
         return cls(x=x,row_names=row_names,col_names=col_names)
 
     def to_ascii(self, out_filename, icode=2):
-        """write a pest-compatible ASCII Matrix/vector file
-        Parameters:
+        """write a PEST-compatible ASCII Matrix/vector file
+
+        Parameters
         ----------
-            out_filename : [str] output filename
-            icode : [int] pest-style info code for Matrix style
-        Returns:
-        -------
-            None
+        out_filename : str
+            output filename
+        icode : (int)
+            PEST-style info code for Matrix style
+
         """
         nrow, ncol = self.shape
         f_out = open(out_filename, 'w')
@@ -1279,14 +1523,14 @@ class Matrix(object):
 
     @classmethod
     def from_ascii(cls, filename):
-        """load a pest-compatible ASCII Matrix/vector file
-        Parameters:
+        """load a pest-compatible ASCII Matrix/vector file into a
+        Matrix instance
+
+        Parameters
         ----------
-            filename : str
-                name of the file to read
-        Returns:
-        -------
-            None
+        filename : str
+            name of the file to read
+
         """
         f = open(filename, 'r')
         raw = f.readline().strip().split()
@@ -1364,18 +1608,22 @@ class Matrix(object):
                    isdiagonal=isdiagonal)
 
     def df(self):
+        """wrapper of Matrix.to_dataframe()
+        """
         return self.to_dataframe()
 
     @classmethod
     def from_dataframe(cls, df):
-        """ populate self with dataframe information
-        Parameters:
-        ----------
-            df : pandas dataframe
+        """ class method to create a new Matrix instance from a
+         pandas.DataFrame
 
-        Returns:
+        Parameters
+        ----------
+        df : pandas.DataFrame
+
+        Returns
         -------
-            None
+        Matrix : Matrix
 
         """
         assert isinstance(df, pandas.DataFrame)
@@ -1384,13 +1632,12 @@ class Matrix(object):
         return cls(x=df.as_matrix(),row_names=row_names,col_names=col_names)
 
     def to_dataframe(self):
-        """return a pandas dataframe of the Matrix object
-        Parameters:
-        ----------
-            None
-        Returns:
+        """return a pandas.DataFrame representation of the Matrix object
+
+        Returns
         -------
-            pandas dataframe
+        pandas.DataFrame : pandas.DataFrame
+
         """
         if self.isdiagonal:
             x = np.diag(self.__x[:, 0])
@@ -1400,13 +1647,12 @@ class Matrix(object):
 
 
     def to_sparse(self, trunc=0.0):
-        """get the CSR sparse Matrix representation of Matrix
-        Parameters:
-        ----------
-            None
-        Returns:
+        """get the CSR sparse Matrix representation of the Matrix
+
+        Returns
         -------
-            scipy sparse Matrix object
+        scipy.sparse.Matrix : scipy.sparse.Matrix
+
         """
         try:
             import scipy.sparse as sparse
@@ -1427,6 +1673,21 @@ class Matrix(object):
 
 
     def extend(self,other,inplace=False):
+        """ extend self with the elements of other.
+
+        Parameters
+        ----------
+        other : (Matrix)
+            the Matrix to extend self by
+        inplace : bool
+            inplace = True not implemented
+
+        Returns
+        -------
+        Matrix : Matrix
+            if not inplace
+
+        """
         if inplace == True:
             raise NotImplementedError()
         assert len(set(self.row_names).intersection(set(other.row_names))) == 0
@@ -1453,40 +1714,91 @@ class Matrix(object):
 
 
 class Jco(Matrix):
-    """a thin wrapper class to get more intuitive attribute names
+    """a thin wrapper class to get more intuitive attribute names.  Functions
+    exactly like Matrix
     """
     def __init(self, **kwargs):
+        """ Jco constuctor takes the same arguments as Matrix.
+
+        Parameters
+        ----------
+        **kwargs : (dict)
+            constructor arguments for Matrix
+
+        Returns
+        -------
+        Jco : Jco
+
+        """
+
         super(Jco, self).__init__(kwargs)
 
 
     @property
     def par_names(self):
+        """ thin wrapper around Matrix.col_names
+
+        Returns
+        -------
+        list : list
+            parameter names
+
+        """
         return self.col_names
 
 
     @property
     def obs_names(self):
+        """ thin wrapper around Matrix.row_names
+
+        Returns
+        -------
+        list : list
+            observation names
+
+        """
         return self.row_names
 
 
     @property
     def npar(self):
+        """ number of parameters in the Jco
+
+        Returns
+        -------
+        int : int
+            number of parameters (columns)
+
+        """
         return self.shape[1]
 
 
     @property
     def nobs(self):
+        """ number of observations in the Jco
+
+        Returns
+        -------
+        int : int
+            number of observations (rows)
+
+        """
         return self.shape[0]
 
     def replace_cols(self, other, parnames=None):
         """
-        Replaces columns in one Matrix with columns from another. Intended for Jacobian matrices replacing parameters.
-        Args:
-            other: Matrix to pull columns from
-            parnames: parameter (column) names to pull from
+        Replaces columns in one Matrix with columns from another.
+        Intended for Jacobian matrices replacing parameters.
 
-        Returns:
-            nothing: operates on self
+        Parameters
+        ----------
+        other: Matrix
+            Matrix to use for replacing columns in self
+
+        parnames: list
+            parameter (column) names to use in other.  If None, all
+            columns in other are used
+
         """
         assert len(set(self.col_names).intersection(set(other.col_names))) > 0
         if not parnames:
@@ -1516,16 +1828,28 @@ class Cov(Matrix):
     """
     def __init__(self, x=None, names=[], row_names=[], col_names=[],
                  isdiagonal=False, autoalign=True):
-        """
-        Parameters:
-            x : numpy.ndarray
-            names : [enumerable] names for both columns and rows
-            row_names : [enumerable] names for rows
-            col_names : [enumerable] names for columns
-            isdiagonal : [bool] diagonal Matrix flag
-            autoalign : [bool] autoalignment flag
-        Returns:
-            None
+        """ Cov constructor.
+
+
+        Parameters
+        ----------
+        x : numpy.ndarray
+            elements in Cov
+        names : iterable
+            names for both columns and rows
+        row_names : iterable
+            names for rows
+        col_names : iterable
+            names for columns
+        isdiagonal : bool
+            diagonal Matrix flag
+        autoalign : bool
+            autoalignment flag
+
+        Returns
+        -------
+        Cov : Cov
+
         """
         self.__identity = None
         self.__zero = None
@@ -1539,34 +1863,16 @@ class Cov(Matrix):
                                   row_names=row_names,
                                   col_names=col_names,
                                   autoalign=autoalign)
-    #     self.__eigvals = None
-    #     self.__eigvecs = None
-    #
-    # @property
-    # def eigvals(self):
-    #     if self.__eigvals is None:
-    #         self.__eig()
-    #     return self.__eigvals
-    #
-    # @property
-    # def eigvecs(self):
-    #     if self.__eigvecs is None:
-    #         self.__eig()
-    #     return self.__eigvecs
-    #
-    # def __eig(self):
-    #     try:
-    #         vals,vecs = np.linalg.eigh(self.x)
-    #     except Exception as e:
-    #         raise Exception("Cov.__eig() error:{0}".format(str(e)))
-    #     names = ["eig{0}".format(i) for i in range(vals.shape[0])]
-    #     self.__eigvals = Matrix(x=np.atleast_2d(vals),row_names=names,col_names=names,
-    #                             isdiagonal=True)
 
 
     @property
     def identity(self):
         """get an identity Matrix like self
+
+        Returns
+        -------
+        Cov : Cov
+
         """
         if self.__identity is None:
             self.__identity = Cov(x=np.atleast_2d(np.ones(self.shape[0]))
@@ -1578,6 +1884,11 @@ class Cov(Matrix):
     @property
     def zero(self):
         """ get an instance of self with all zeros
+
+        Returns
+        -------
+        Cov : Cov
+
         """
         if self.__zero is None:
             self.__zero = Cov(x=np.atleast_2d(np.zeros(self.shape[0]))
@@ -1590,13 +1901,15 @@ class Cov(Matrix):
         """get a new Covariance object that is conditional on knowing some
             elements.  uses Schur's complement for conditional Covariance
             propagation
-        Parameters:
+
+        Parameters
         ----------
-            conditioning_elements : [enumerable] names of elements to
-                                    condition on
-        Returns:
+        conditioning_elements : iterable
+            names of elements to condition on
+
+        Returns
         -------
-            Cov object
+        Cov : Cov
         """
         if not isinstance(conditioning_elements,list):
             conditioning_elements = [conditioning_elements]
@@ -1620,13 +1933,20 @@ class Cov(Matrix):
         return new_Cov - (upper_off_diag * cond_Cov * upper_off_diag.T)
 
     def draw(self, mean=1.0):
-        """
-        Obtain a random draw from a covariance matrix either with mean==1 or with specified mean vector
-        Args:
-            mean: mean values. either a scalar applied to to the entire vector of length N or an N-length vector
+        """Obtain a random draw from a covariance matrix either with mean==1
+        or with specified mean vector
 
-        Returns:
-            A vector of conditioned values, sampled using the covariance matrix and applied to the mean
+        Parameters
+        ----------
+        mean: scalar of enumerable of length self.shape[0]
+            mean values. either a scalar applied to to the entire
+            vector of length N or an N-length vector
+
+        Returns
+        -------
+        numpy.nparray : numpy.ndarray
+            A vector of conditioned values, sampled
+            using the covariance matrix (self) and applied to the mean
 
         """
         if np.isscalar(mean):
@@ -1641,12 +1961,30 @@ class Cov(Matrix):
 
     @property
     def names(self):
+        """wrapper for getting row_names.  row_names == col_names for Cov
+
+        Returns
+        -------
+        list : list
+            names
+
+        """
         return self.row_names
 
 
     def replace(self,other):
         """replace elements in the covariance matrix with elements from other.
         if other is not diagonal, then self becomes non diagonal
+
+        Parameters
+        -----------
+        other : Cov
+            the Cov to replace elements in self with
+
+        Note
+        ----
+            operates in place
+
         """
         assert isinstance(other,Cov),"Cov.replace() other must be Cov, not {0}".\
             format(type(other))
@@ -1669,15 +2007,19 @@ class Cov(Matrix):
             self.isdiagonal = False
 
     def to_uncfile(self, unc_file, covmat_file="Cov.mat", var_mult=1.0):
-        """write a pest-compatible uncertainty file
-        Parameters:
+        """write a PEST-compatible uncertainty file
+
+        Parameters
         ----------
-            unc_file : [str] filename
-            Covmat : [str] Covariance Matrix filename
-            var_mult : [float] variance multiplier
-        Returns:
-        -------
-            None
+        unc_file : str
+            filename of the uncertainty file
+        covmat_file : str Covariance Matrix filename. Default is
+        "Cov.mat".  If None, and Cov.isdiaonal, then a standard deviation
+        form of the uncertainty file is written.  Exception raised if None
+        and not Cov.isdiagonal
+        var_mult : float
+            variance multiplier for the covmat_file entry
+
         """
         assert len(self.row_names) == self.shape[0], \
             "Cov.to_uncfile(): len(row_names) != x.shape[0] "
@@ -1704,13 +2046,17 @@ class Cov(Matrix):
 
     @classmethod
     def from_obsweights(cls, pst_file):
-        """load Covariance from observation weights
-        Parameters:
+        """instantiates a  Cov instance from observation weights in
+        a PEST control file.  Calls Cov.from_observation_data()
+
+        Parameters
         ----------
-            pst_file : [str] pest control file name
-        Returns:
+        pst_file : str
+            pest control file name
+
+        Returns
         -------
-            None
+        Cov : Cov
         """
         if not pst_file.endswith(".pst"):
             pst_file += ".pst"
@@ -1718,18 +2064,19 @@ class Cov(Matrix):
 
     @classmethod
     def from_observation_data(cls, pst):
-        """load Covariances from a pandas dataframe
-                of the pst observation data section
-        Parameters:
+        """instantiates a  Cov from a pandas dataframe
+                of pyemu.Pst.observation_data
+
+        Parameters
         ----------
-            pst : [pst object]
-        Returns:
+        pst : pyemu.Pst
+
+        Returns
         -------
-            None
+        Cov : Cov
+
         """
         nobs = pst.observation_data.shape[0]
-        # if pst.mode == "estimation":
-        #     nobs += pst.nprior
         x = np.zeros((nobs, 1))
         onames = []
         ocount = 0
@@ -1739,28 +2086,27 @@ class Cov(Matrix):
             x[ocount] = (1.0 / w) ** 2
             ocount += 1
             onames.append(row["obsnme"].lower())
-        # leave the prior info out of the obsCov
-        # if pst.mode == "estimation" and pst.nprior > 0:
-        #     for iidx, row in pst.prior_information.iterrows():
-        #         w = float(row["weight"])
-        #         w = max(w, 1.0e-30)
-        #         x[ocount] = (1.0 / w) ** 2
-        #         ocount += 1
-        #         onames.append(row["pilbl"].lower())
-
         return cls(x=x,names=onames,isdiagonal=True)
 
     @classmethod
     def from_parbounds(cls, pst_file, sigma_range = 4.0):
-        """load Covariances from a pest control file parameter data section
-        Parameters:
+        """Instantiates a  Cov from a pest control file parameter data section.
+        Calls Cov.from_parameter_data()
+
+        Parameters
         ----------
-            pst_file : [str] pest control file name
-            sigma_range: float defining range of upper bound - lower bound in terms of sigma (stddev).
-                          e.g. if sigma_range = 4, the bounds represent 4 * sigma
-        Returns:
+        pst_file : str
+            pest control file name
+        sigma_range: float
+            defines range of upper bound - lower bound in terms of standard
+            deviation (sigma). For example, if sigma_range = 4, the bounds
+            represent 4 * sigma.  Default is 4.0, representing approximately
+            95% confidence of implied normal distribution
+
+        Returns
         -------
-            None
+        Cov : Cov
+
         """
         if not pst_file.endswith(".pst"):
             pst_file += ".pst"
@@ -1769,16 +2115,22 @@ class Cov(Matrix):
 
     @classmethod
     def from_parameter_data(cls, pst, sigma_range = 4.0):
-        """load Covariances from a pandas dataframe of the
-                pst parameter data section
-        Parameters:
+        """load Covariances from a pandas dataframe of
+        pyemu.Pst.parameter_data
+
+        Parameters
         ----------
-            pst : [pst object]
-            sigma_range: float defining range of upper bound - lower bound in terms of sigma (stddev).
-                          e.g. if sigma_range = 4, the bounds represent 4 * sigma
-        Returns:
+        pst : (pyemu.Pst)
+        sigma_range: float
+            defines range of upper bound - lower bound in terms of standard
+            deviation (sigma). For example, if sigma_range = 4, the bounds
+            represent 4 * sigma.  Default is 4.0, representing approximately
+            95% confidence of implied normal distribution
+
+        Returns
         -------
-            None
+        Cov : Cov
+
         """
         npar = pst.npar_adj
         x = np.zeros((npar, 1))
@@ -1811,14 +2163,19 @@ class Cov(Matrix):
 
     @classmethod
     def from_uncfile(cls, filename):
-        """load Covariances from a pest-compatible uncertainty file
-        Parameters:
+        """instaniates a Cov from a PEST-compatible uncertainty file
+
+        Parameters
         ----------
-            filename : [str] uncertainty file name
-        Returns:
+        filename : str
+            uncertainty file name
+
+        Returns
         -------
-            None
-       """
+        Cov : Cov
+
+        """
+
         nentries = Cov.get_uncfile_dimensions(filename)
         x = np.zeros((nentries, nentries))
         row_names = []
@@ -1886,12 +2243,16 @@ class Cov(Matrix):
     @staticmethod
     def get_uncfile_dimensions(filename):
         """quickly read an uncertainty file to find the dimensions
-        Parameters:
+
+        Parameters
         ----------
-            filename : [str] uncertainty filename
-        Returns:
+        filename : str
+            uncertainty filename
+
+        Returns
         -------
-            nentries : [int] number of elements in file
+        nentries : int
+            number of elements in file
         """
         f = open(filename, 'r')
         nentries = 0
@@ -1930,12 +2291,33 @@ class Cov(Matrix):
 
     @classmethod
     def identity_like(cls,other):
+        """ Get an identity matrix Cov instance like other
+
+        Parameters
+        ----------
+        other : Matrix
+            must be square
+
+        Returns
+        -------
+        Cov : Cov
+
+        """
         assert other.shape[0] == other.shape[1]
         x = np.identity(other.shape[0])
         return cls(x=x,names=other.row_names,isdiagonal=False)
 
     def to_pearson(self):
+        """ Convert Cov instance to Pearson correlation coefficient
+        matrix
 
+        Returns
+        -------
+        Matrix : Matrix
+            this is on purpose so that it is clear the returned
+            instance is not a Cov
+
+        """
         std_dict = self.get_diagonal_vector().to_dataframe()["diag"].\
             apply(np.sqrt).to_dict()
         pearson = self.identity.as_2d

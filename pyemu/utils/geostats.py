@@ -1,3 +1,8 @@
+"""Geostatistical analyses within the pyemu framework.
+Support for Ordinary Kriging as well as construction of
+covariance matrices from (nested) geostistical structures.
+Also support for reading GSLIB and SGEMS files
+"""
 from __future__ import print_function
 import os
 import copy
@@ -8,9 +13,6 @@ import numpy as np
 import pandas as pd
 from pyemu import Cov
 from pyemu.utils.gw_utils import pp_file_to_dataframe
-#from pyemu.utils.reference import SpatialReference
-
-#TODO:  plot variogram elipse
 
 EPSILON = 1.0e-7
 
@@ -35,15 +37,39 @@ EPSILON = 1.0e-7
 
 
 class GeoStruct(object):
-    """a geostatistical structure object
+    """a geostatistical structure object.  The object contains
+    variograms and (optionally) nugget information.
+
     Parameters
     ----------
-        nugget : float
-            nugget contribution
-        variograms : list
-            list of Vario2d instances
-        name : str
-            name to assign the structure
+    nugget : (float)
+        nugget contribution
+    variograms : (list or Vario2d instance)
+        variogram(s) associated with this GeoStruct instance
+    name : (str)
+        name to assign the structure.  Default is "struct1".
+    transform : (str)
+        the transformation to apply to the GeoStruct.  Can be
+        "none" or "log", depending on the transformation of the
+        property being represented by the GeoStruct.
+        Default is "none
+
+    Attributes
+    ----------
+    variograms : list
+        the Vario2d objects associated with the GeoStruct
+    name : str
+        the name of the GeoStruct
+    transform : str
+        the transform of the GeoStruct
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)``
+
+    ``>>>gs = pyemu.utils.geostats.GeoStruct(variograms=v,nugget=0.5)``
 
     """
     def __init__(self,nugget=0.0,variograms=[],name="struct1",
@@ -60,6 +86,14 @@ class GeoStruct(object):
         self.transform = transform
 
     def to_struct_file(self, f):
+        """ write a PEST-style structure file
+
+        Parameters
+        ----------
+        f : (str or file handle)
+            file to write the GeoStruct information to
+
+        """
         if isinstance(f, str):
             f = open(f,'w')
         f.write("STRUCTURE {0}\n".format(self.name))
@@ -74,20 +108,40 @@ class GeoStruct(object):
 
     def covariance_matrix(self,x,y,names=None,cov=None):
         """build a pyemu.Cov instance from GeoStruct
+
         Parameters
         ----------
-            x : iterable of floats
-                x locations
-            y : iterable of floats
-                y locations
-            names : iterable of str (optional)
-                names of location. If None, generic names will be used
-            cov : pyemu.Cov instance (optional)
-                an existing Cov instance to add contribution to
+        x : (iterable of floats)
+            x-coordinate locations
+        y : (iterable of floats)
+            y-coordinate locations
+        names : (iterable of str)
+            names of location. If None, cov must not be None.  Default is None.
+        cov : (pyemu.Cov) instance
+            an existing Cov instance.  The contribution of this GeoStruct is added
+            to cov.  If cov is None, names must not be None. Default is None
+
         Returns
         -------
-            pyemu.Cov
+        cov : pyemu.Cov
+            the covariance matrix implied by this GeoStruct for the x,y pairs.
+            cov has row and column names supplied by the names argument unless
+            the "cov" argument was passed.
+
+        Note
+        ----
+        either "names" or "cov" must be passed.  If "cov" is passed, cov.shape
+        must equal len(x) and len(y).
+
+        Example
+        -------
+        ``>>>pp_df = pyemu.pp_utils.pp_file_to_dataframe("hkpp.dat")``
+
+        ``>>>cov = gs.covariance_matrix(pp_df.x,pp_df.y,pp_df.name)``
+
+
         """
+
         if not isinstance(x,np.ndarray):
             x = np.array(x)
         if not isinstance(y,np.ndarray):
@@ -115,13 +169,19 @@ class GeoStruct(object):
         return cov
 
     def covariance(self,pt0,pt1):
-        """get the covariance between two points implied by the GeoStruct
+        """get the covariance between two points implied by the GeoStruct.
+        This is used during the ordinary kriging process to get the RHS
+
         Parameters
         ----------
-            pt0 : iterable length 2 of floats
-            pt1 : iterable length 2 of floats
+        pt0 : (iterable length 2 of floats)
+        pt1 : (iterable length 2 of floats)
+
         Returns
-            float : covariance
+        -------
+        covariance : float
+            the covariance between pt0 and pt1 implied by the GeoStruct
+
         """
         #raise Exception()
         cov = self.nugget
@@ -130,6 +190,29 @@ class GeoStruct(object):
         return cov
 
     def covariance_points(self,x0,y0,xother,yother):
+        """ Get the covariance between point x0,y0 and the points
+        contained in xother, yother.
+
+        Parameters
+        ----------
+        x0 : (float)
+            x-coordinate
+        y0 : (float)
+            y-coordinate
+        xother : (iterable of floats)
+            x-coordinate of other points
+        yother : (iterable of floats)
+            y-coordinate of other points
+
+        Returns
+        -------
+        cov : numpy.ndarray
+            a 1-D array of covariance between point x0,y0 and the
+            points contained in xother, yother.  len(cov) = len(xother) =
+            len(yother)
+
+        """
+
         cov = np.zeros((len(xother))) + self.nugget
         for v in self.variograms:
             cov += v.covariance_points(x0,y0,xother,yother)
@@ -137,6 +220,14 @@ class GeoStruct(object):
 
     @property
     def sill(self):
+        """ get the sill of the GeoStruct
+
+        Return
+        ------
+        sill : float
+            the sill of the (nested) GeoStruct, including nugget and contribution
+            from each variogram
+        """
         sill = self.nugget
         for v in self.variograms:
             sill += v.contribution
@@ -144,6 +235,26 @@ class GeoStruct(object):
 
 
     def plot(self,**kwargs):
+        """ make a cheap plot of the GeoStruct
+
+        Parameters
+        ----------
+        **kwargs : (dict)
+            keyword arguments to use for plotting.
+
+        Returns
+        -------
+        ax : matplotlib.pyplot.axis
+            the axis with the GeoStruct plot
+
+        Note
+        ----
+        optional arguments include "ax" (an existing axis),
+        "individuals" (plot each variogram on a separate axis),
+        "legend" (add a legend to the plot(s)).  All other kwargs
+        are passed to matplotlib.pyplot.plot()
+
+        """
         #
         if "ax" in kwargs:
             ax = kwargs.pop("ax")
@@ -169,6 +280,13 @@ class GeoStruct(object):
         return ax
 
     def __str__(self):
+        """ the str representation of the GeoStruct
+
+        Returns
+        -------
+        str : str
+            the str representation of the GeoStruct
+        """
         s = ''
         s += 'name:{0},nugget:{1},structures:\n'.format(self.name,self.nugget)
         for v in self.variograms:
@@ -361,6 +479,37 @@ class GeoStruct(object):
 
 
 class OrdinaryKrige(object):
+    """ Ordinary Kriging using Pandas and Numpy.
+
+    Parameters
+    ----------
+    geostruct : (GeoStruct)
+        a pyemu.geostats.GeoStruct to use for the kriging
+    point_data : (pandas.DataFrame)
+        the conditioning points to use for kriging.  point_data must contain
+        columns "name", "x", "y".
+
+    Note
+    ----
+    if point_data is an str, then it is assumed to be a pilot points file
+    and is loaded as such using pyemu.pp_utils.pp_file_to_dataframe()
+
+    If zoned interpolation is used for grid-based interpolation, then
+    point_data must also contain a "zone" column
+
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)``
+
+    ``>>>gs = pyemu.utils.geostats.GeoStruct(variograms=v,nugget=0.5)``
+
+    ``>>>pp_df = pyemu.pp_utils.pp_file_to_dataframe("hkpp.dat")``
+
+    ``>>>ok = pyemu.utils.geostats.OrdinaryKrige(gs,pp_df)``
+    """
 
     def __init__(self,geostruct,point_data):
         if isinstance(geostruct,str):
@@ -375,7 +524,9 @@ class OrdinaryKrige(object):
         assert 'x' in point_data.columns, "point_data missing 'x'"
         assert 'y' in point_data.columns, "point_data missing 'y'"
         self.point_data = point_data
+
         self.point_data.index = self.point_data.name
+        self.check_point_data_dist()
         self.interp_data = None
         self.spatial_reference = None
         #X, Y = np.meshgrid(point_data.x,point_data.y)
@@ -387,12 +538,122 @@ class OrdinaryKrige(object):
         #for name in self.point_cov_df.index:
         #    self.point_cov_df.loc[name,name] -= self.geostruct.nugget
 
-    def prep_for_ppk2fac(self,struct_file="structure.dat",pp_file="points.dat",):
-        pass
+    def check_point_data_dist(self, rectify=False):
+        """ check for point_data entries that are closer than
+        EPSILON distance - this will cause a singular kriging matrix.
+
+        Parameters
+        ----------
+        rectify : (boolean)
+            flag to fix the problems with point_data
+            by dropping additional points that are
+            closer than EPSILON distance.  Default is False
+
+        Note
+        ----
+        this method will issue warnings for points that are closer
+        than EPSILON distance
+
+        """
+
+        ptx_array = self.point_data.x.values
+        pty_array = self.point_data.y.values
+        ptnames = self.point_data.name.values
+        drop = []
+        for i in range(self.point_data.shape[0]):
+            ix,iy,iname = ptx_array[i],pty_array[i],ptnames[i]
+            dist = pd.Series((ptx_array[i+1:] - ix) ** 2 + (pty_array[i+1:] - iy) ** 2, ptnames[i+1:])
+            if dist.min() < EPSILON**2:
+                print(iname,ix,iy)
+                warnings.warn("points {0} and {1} are too close. This will cause a singular kriging matrix ".\
+                              format(iname,dist.idxmin()))
+                drop_idxs = dist.loc[dist<=EPSILON**2]
+                drop.extend([pt for pt in list(drop_idxs.index) if pt not in drop])
+        if rectify and len(drop) > 0:
+            print("rectifying point data by removing the following points: {0}".format(','.join(drop)))
+            print(self.point_data.shape)
+            self.point_data = self.point_data.loc[self.point_data.index.map(lambda x: x not in drop),:]
+            print(self.point_data.shape)
+
+    #def prep_for_ppk2fac(self,struct_file="structure.dat",pp_file="points.dat",):
+    #    pass
 
     def calc_factors_grid(self,spatial_reference,zone_array=None,minpts_interp=1,
                           maxpts_interp=20,search_radius=1.0e+10,verbose=False,
-                          var_filename=None):
+                          var_filename=None, forgive=False):
+        """ calculate kriging factors (weights) for a structured grid.
+
+        Parameters
+        ----------
+        spatial_reference : (flopy.utils.reference.SpatialReference)
+            a spatial reference that describes the orientation and
+            spatail projection of the the structured grid
+        zone_array : (numpy.ndarray)
+            an integer array of zones to use for kriging.  If not None,
+            then point_data must also contain a "zone" column.  point_data
+            entries with a zone value not found in zone_array will be skipped.
+            If None, then all point_data will (potentially) be used for
+            interpolating each grid node. Default is None
+        minpts_interp : (int)
+            minimum number of point_data entires to use for interpolation at
+            a given grid node.  grid nodes with less than minpts_interp
+            point_data found will be skipped (assigned np.NaN).  Defaut is 1
+        maxpts_interp : (int)
+            maximum number of point_data entries to use for interpolation at
+            a given grid node.  A larger maxpts_interp will yield "smoother"
+            interplation, but using a large maxpts_interp will slow the
+            (already) slow kriging solution process and may lead to
+            memory errors. Default is 20.
+        search_radius : (float)
+            the size of the region around a given grid node to search for
+            point_data entries. Default is 1.0e+10
+        verbose : (boolean)
+            a flag to  echo process to stdout during the interpolatino process.
+            Default is False
+        var_filename : (str)
+            a filename to save the kriging variance for each interpolated grid node.
+            Default is None.
+        forgive : (boolean)
+            flag to continue if inversion of the kriging matrix failes at one or more
+            grid nodes.  Inversion usually fails if the kriging matrix is singular,
+            resulting from point_data entries closer than EPSILON distance.  If True,
+            warnings are issued for each failed inversion.  If False, an exception
+            is raised for failed matrix inversion.
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            a dataframe with information summarizing the ordinary kriging
+            process for each grid node
+
+        Note
+        ----
+        this method calls OrdinaryKrige.calc_factors()
+
+
+        Example
+        -------
+        ``>>>import flopy``
+
+        ``>>>import pyemu``
+
+        ``>>>v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)``
+
+        ``>>>gs = pyemu.utils.geostats.GeoStruct(variograms=v,nugget=0.5)``
+
+        ``>>>pp_df = pyemu.pp_utils.pp_file_to_dataframe("hkpp.dat")``
+
+        ``>>>ok = pyemu.utils.geostats.OrdinaryKrige(gs,pp_df)``
+
+        ``>>>m = flopy.modflow.Modflow.load("mymodel.nam")``
+
+        ``>>>df = ok.calc_factors_grid(m.sr,zone_array=m.bas6.ibound[0].array,``
+
+        ``>>>                          var_filename="ok_var.dat")``
+
+        ``>>>ok.to_grid_factor_file("factors.dat")``
+
+        """
 
         self.spatial_reference = spatial_reference
         self.interp_data = None
@@ -414,7 +675,7 @@ class OrdinaryKrige(object):
                                minpts_interp=minpts_interp,
                                maxpts_interp=maxpts_interp,
                                search_radius=search_radius,
-                               verbose=verbose)
+                               verbose=verbose, forgive=forgive)
             if var_filename is not None:
                 arr = df.err_var.values.reshape(x.shape)
                 np.savetxt(var_filename,arr,fmt="%15.6E")
@@ -438,7 +699,8 @@ class OrdinaryKrige(object):
                                        minpts_interp=minpts_interp,
                                        maxpts_interp=maxpts_interp,
                                        search_radius=search_radius,
-                                       verbose=verbose,pt_zone=pt_data_zone)
+                                       verbose=verbose,pt_zone=pt_data_zone,
+                                       forgive=forgive)
                 dfs.append(df)
                 if var_filename is not None:
                     a = df.err_var.values.reshape(x.shape)
@@ -453,7 +715,49 @@ class OrdinaryKrige(object):
 
     def calc_factors(self,x,y,minpts_interp=1,maxpts_interp=20,
                      search_radius=1.0e+10,verbose=False,
-                     pt_zone=None):
+                     pt_zone=None,forgive=False):
+        """ calculate ordinary kriging factors (weights) for the points
+        represented by arguments x and y
+
+        Parameters
+        ----------
+        x : (iterable of floats)
+            x-coordinates to calculate kriging factors for
+        y : (iterable of floats)
+            y-coordinates to calculate kriging factors for
+        minpts_interp : (int)
+            minimum number of point_data entires to use for interpolation at
+            a given x,y interplation point.  interpolation points with less
+            than minpts_interp point_data found will be skipped
+            (assigned np.NaN).  Defaut is 1
+        maxpts_interp : (int)
+            maximum number of point_data entries to use for interpolation at
+            a given x,y interpolation point.  A larger maxpts_interp will
+            yield "smoother" interplation, but using a large maxpts_interp
+            will slow the (already) slow kriging solution process and may
+            lead to memory errors. Default is 20.
+        search_radius : (float)
+            the size of the region around a given x,y interpolation point to search for
+            point_data entries. Default is 1.0e+10
+        verbose : (boolean)
+            a flag to  echo process to stdout during the interpolatino process.
+            Default is False
+        forgive : (boolean)
+            flag to continue if inversion of the kriging matrix failes at one or more
+            interpolation points.  Inversion usually fails if the kriging matrix is singular,
+            resulting from point_data entries closer than EPSILON distance.  If True,
+            warnings are issued for each failed inversion.  If False, an exception
+            is raised for failed matrix inversion.
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            a dataframe with information summarizing the ordinary kriging
+            process for each interpolation points
+
+
+        """
+
         assert len(x) == len(y)
 
         # find the point data to use for each interp point
@@ -544,7 +848,22 @@ class OrdinaryKrige(object):
             #     print("...took {0}".format(td))
             #     print("solving...",end='')
             # # solve
-            facs = np.linalg.solve(A,rhs)
+            try:
+                facs = np.linalg.solve(A,rhs)
+            except Exception as e:
+                print("error solving for factors: {0}".format(str(e)))
+                print("point:",ix,iy)
+                print("dist:",dist)
+                print("A:", A)
+                print("rhs:", rhs)
+                if forgive:
+                    inames.append([])
+                    idist.append([])
+                    ifacts.append([])
+                    err_var.append(np.NaN)
+                    continue
+                else:
+                    raise Exception("error solving for factors:{0}".format(str(e)))
             assert len(facs) - 1 == len(dist)
 
             err_var.append(float(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)])))
@@ -575,6 +894,25 @@ class OrdinaryKrige(object):
 
     def to_grid_factors_file(self, filename,points_file="points.junk",
                              zone_file="zone.junk"):
+        """ write a grid-based PEST-style factors file.  This file can be used with
+        the fac2real() method to write an interpolated structured array
+
+        Parameters
+        ----------
+        filename : (str)
+            factor filename
+        points_file : (str)
+            points filename to add to the header of the factors file.
+            Not used by fac2real() method.  Default is "points.junk"
+        zone_file : (str)
+            zone filename to add to the header of the factors file.
+            Not used by fac2real() method.  Default is "zone.junk"
+
+        Note
+        ----
+        this method should be called after OrdinaryKirge.calc_factors_grid()
+
+        """
         if self.interp_data is None:
             raise Exception("ok.interp_data is None, must call calc_factors_grid() first")
         if self.spatial_reference is None:
@@ -599,26 +937,31 @@ class OrdinaryKrige(object):
 
 
 class Vario2d(object):
-    """base class for 2-D variograms
+    """base class for 2-D variograms.
+
     Parameters
     ----------
-        contribution : float
-            sill of the variogram
-        a : float
-            (practical) range
-        anisotropy : float (optional)
-            Anisotropy ratio. If None, 1.0 used
-        bearing : float (optional)
-            angle in degrees East of North cooresponding to anisotropy ellipse.
-            If None, 0.0 used
-        name : str (optional)
-            name of the variogram
+    contribution : (float)
+        sill of the variogram
+    a : (float)
+        (practical) range of correlation
+    anisotropy : (float)
+        Anisotropy ratio. Default is 1.0
+    bearing : (float)
+        angle in degrees East of North corresponding to anisotropy ellipse.
+        Default is 0.0
+    name : (str)
+        name of the variogram.  Default is "var1"
+
     Returns
     -------
-        Vario2d instance
+    Vario2d : Vario2d
+
     Note
     ----
-        This base class should not be instantiated directly.
+    This base class should not be instantiated directly as it does not implement
+    an h_function() method.
+
     """
 
     def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
@@ -633,6 +976,14 @@ class Vario2d(object):
         self.bearing = float(bearing)
 
     def to_struct_file(self, f):
+        """ write the Vario2d to a PEST-style structure file
+
+        Parameters
+        ----------
+        f : (str or file handle)
+            item to write to
+
+        """
         if isinstance(f, str):
             f = open(f,'w')
         f.write("VARIOGRAM {0}\n".format(self.name))
@@ -644,19 +995,66 @@ class Vario2d(object):
 
     @property
     def bearing_rads(self):
+        """ get the bearing of the Vario2d in radians
+
+        Returns
+        -------
+        bearing_rads : float
+            the Vario2d bearing in radians
+        """
         return (np.pi / 180.0 ) * (90.0 - self.bearing)
 
     @property
     def rotation_coefs(self):
+        """ get the rotation coefficents in radians
+
+        Returns
+        -------
+        rotation_coefs : list
+            the rotation coefficients implied by Vario2d.bearing
+
+
+        """
         return [np.cos(self.bearing_rads),
                 np.sin(self.bearing_rads),
                 -1.0*np.sin(self.bearing_rads),
                 np.cos(self.bearing_rads)]
 
     def inv_h(self,h):
+        """ the inverse of the h_function.  Used for plotting
+
+        Parameters
+        ----------
+        h : (float)
+            the value of h_function to invert
+
+        Returns
+        -------
+        inv_h : float
+            the inverse of h
+
+        """
         return self.contribution - self._h_function(h)
 
-    def plot(self,ax=None,**kwargs):
+    def plot(self,**kwargs):
+        """ get a cheap plot of the Vario2d
+
+        Parameters
+        ----------
+        **kwargs : (dict)
+            keyword arguments to use for plotting
+
+        Returns
+        -------
+        ax : matplotlib.pyplot.axis
+
+        Note
+        ----
+        optional arguments in kwargs include
+        "ax" (existing matplotlib.pyplot.axis).  Other
+        kwargs are passed to matplotlib.pyplot.plot()
+
+        """
         import matplotlib.pyplot as plt
         ax = kwargs.pop("ax",plt.subplot(111))
         x = np.linspace(0,self.a*3,100)
@@ -667,20 +1065,27 @@ class Vario2d(object):
         return ax
 
     def covariance_matrix(self,x,y,names=None,cov=None):
-        """build a pyemu.Cov instance from Vario2d
+        """build a pyemu.Cov instance implied by Vario2d
+
         Parameters
         ----------
-            x : iterable of floats
-                x locations
-            y : iterable of floats
-                y locations
-            names : iterable of str (optional)
-                names of location. If None, generic names will be used
-            cov : pyemu.Cov instance (optional)
-                an existing Cov instance to add contribution to
+        x : (iterable of floats)
+            x-coordinate locations
+        y : (iterable of floats)
+            y-coordinate locations
+        names : (iterable of str)
+            names of locations. If None, cov must not be None
+        cov : (pyemu.Cov)
+            an existing Cov instance.  Vario2d contribution is added to cov
+
         Returns
         -------
-            pyemu.Cov
+        cov : pyemu.Cov
+
+        Note
+        ----
+        either names or cov must not be None.
+
         """
         if not isinstance(x,np.ndarray):
             x = np.array(x)
@@ -720,6 +1125,24 @@ class Vario2d(object):
         return cov
 
     def _apply_rotation(self,dx,dy):
+        """ private method to rotate points
+        according to Vario2d.bearing and Vario2d.anisotropy
+
+        Parameters
+        ----------
+        dx : (float or numpy.ndarray)
+            x-coordinates to rotate
+        dy : (float or numpy.ndarray)
+            y-coordinates to rotate
+
+        Returns
+        -------
+            dxx : (float or numpy.ndarray)
+                rotated x-coordinates
+            dyy : (float or numpy.ndarray)
+                rotated y-coordinates
+
+        """
         if self.anisotropy == 1.0:
             return dx,dy
         rcoefs = self.rotation_coefs
@@ -731,6 +1154,31 @@ class Vario2d(object):
         return dxx,dyy
 
     def covariance_points(self,x0,y0,xother,yother):
+        """ get the covariance between base point x0,y0 and
+        other points xother,yother implied by Vario2d
+
+        Parameters
+        ----------
+        x0 : (float)
+            x-coordinate of base point
+        y0 : (float)
+            y-coordinate of base point
+        xother : (float or numpy.ndarray)
+            x-coordinates of other points
+        yother : (float or numpy.ndarray)
+            y-coordinates of other points
+
+        Returns
+        -------
+        cov : numpy.ndarray
+            covariance between base point and other points implied by
+            Vario2d.
+
+        Note
+        ----
+        len(cov) = len(xother) = len(yother)
+
+        """
         dx = x0 - xother
         dy = y0 - yother
         dxx,dyy = self._apply_rotation(dx,dy)
@@ -738,6 +1186,22 @@ class Vario2d(object):
         return self._h_function(h)
 
     def covariance(self,pt0,pt1):
+        """ get the covarince between two points implied by Vario2d
+
+        Parameters
+        ----------
+        pt0 : (iterable of len 2)
+            first point x and y
+        pt1 : (iterable of len 2)
+            second point x and y
+
+        Returns
+        -------
+        cov : float
+            covariance between pt0 and pt1
+
+        """
+
         x = np.array([pt0[0],pt1[0]])
         y = np.array([pt0[1],pt1[1]])
         names = ["n1","n2"]
@@ -745,57 +1209,97 @@ class Vario2d(object):
 
 
     def __str__(self):
+        """ get the str representation of Vario2d
+
+        Returns
+        -------
+        str : str
+        """
         s = "name:{0},contribution:{1},a:{2},anisotropy:{3},bearing:{4}\n".\
             format(self.name,self.contribution,self.a,\
                    self.anisotropy,self.bearing)
         return s
 
 class ExpVario(Vario2d):
+    """ Exponetial variogram derived type
 
-    def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
-        """Exponential 2-D variograms
     Parameters
     ----------
-        contribution : float
-            sill of the variogram
-        a : float
-            (practical) range
-        anisotropy : float (optional)
-            Anisotropy ratio. If None, 1.0 used
-        bearing : float (optional)
-            angle in degrees East of North cooresponding to anisotropy ellipse.
-            If None, 0.0 used
-        name : str (optional)
-            name of the variogram
+    contribution : (float)
+        sill of the variogram
+    a : (float)
+        (practical) range of correlation
+    anisotropy : (float)
+        Anisotropy ratio. Default is 1.0
+    bearing : (float)
+        angle in degrees East of North corresponding to anisotropy ellipse.
+        Default is 0.0
+    name : (str)
+        name of the variogram.  Default is "var1"
+
     Returns
     -------
-        ExpVario instance
+    ExpVario : ExpVario
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)``
+
     """
+    def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
         super(ExpVario,self).__init__(contribution,a,anisotropy=anisotropy,
                                       bearing=bearing,name=name)
         self.vartype = 2
 
     def _h_function(self,h):
+        """ private method exponential variogram "h" function
+
+        Parameters
+        ----------
+        h : (float or numpy.ndarray)
+            distance(s)
+
+        Returns
+        -------
+        h_function : float or numpy.ndarray
+            the value of the "h" function implied by the ExpVario
+
+        """
         return self.contribution * np.exp(-1.0 * h / self.a)
 
 class GauVario(Vario2d):
-    """Gaussian 2-D variograms
+    """Gaussian variogram derived type
+
     Parameters
     ----------
-        contribution : float
-            sill of the variogram
-        a : float
-            (practical) range
-        anisotropy : float (optional)
-            Anisotropy ratio. If None, 1.0 used
-        bearing : float (optional)
-            angle in degrees East of North cooresponding to anisotropy ellipse.
-            If None, 0.0 used
-        name : str (optional)
-            name of the variogram
+    contribution : (float)
+        sill of the variogram
+    a : (float)
+        (practical) range of correlation
+    anisotropy : (float)
+        Anisotropy ratio. Default is 1.0
+    bearing : (float)
+        angle in degrees East of North corresponding to anisotropy ellipse.
+        Default is 0.0
+    name : (str)
+        name of the variogram.  Default is "var1"
+
     Returns
     -------
-        GauVario instance
+    GauVario : GauVario
+
+    Note
+    ----
+    the Gaussian variogram can be unstable (not invertible) for long ranges.
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>v = pyemu.utils.geostats.GauVario(a=1000,contribution=1.0)``
+
     """
 
     def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
@@ -804,27 +1308,50 @@ class GauVario(Vario2d):
         self.vartype = 3
 
     def _h_function(self,h):
+        """ private method for the gaussian variogram "h" function
+
+        Parameters
+        ----------
+        h : (float or numpy.ndarray)
+            distance(s)
+
+        Returns
+        -------
+        h_function : float or numpy.ndarray
+            the value of the "h" function implied by the GauVario
+
+        """
+
         hh = -1.0 * (h * h) / (self.a * self.a)
         return self.contribution * np.exp(hh)
 
 class SphVario(Vario2d):
-    """Spherical 2-D variograms
+    """Spherical variogram derived type
+
     Parameters
     ----------
-        contribution : float
-            sill of the variogram
-        a : float
-            (practical) range
-        anisotropy : float (optional)
-            Anisotropy ratio. If None, 1.0 used
-        bearing : float (optional)
-            angle in degrees East of North cooresponding to anisotropy ellipse.
-            If None, 0.0 used
-        name : str (optional)
-            name of the variogram
+    contribution : (float)
+        sill of the variogram
+    a : (float)
+        (practical) range of correlation
+    anisotropy : (float)
+        Anisotropy ratio. Default is 1.0
+    bearing : (float)
+        angle in degrees East of North corresponding to anisotropy ellipse.
+        Default is 0.0
+    name : (str)
+        name of the variogram.  Default is "var1"
+
     Returns
     -------
-        SphVario instance
+    SphVario : SphVario
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>v = pyemu.utils.geostats.SphVario(a=1000,contribution=1.0)``
+
     """
 
     def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
@@ -833,6 +1360,19 @@ class SphVario(Vario2d):
         self.vartype = 1
 
     def _h_function(self,h):
+        """ private method for the spherical variogram "h" function
+
+        Parameters
+        ----------
+        h : (float or numpy.ndarray)
+            distance(s)
+
+        Returns
+        -------
+        h_function : float or numpy.ndarray
+            the value of the "h" function implied by the SphVario
+
+        """
 
         hh = h / self.a
         h = self.contribution * (1.0 - (hh * (1.5 - (0.5 * hh * hh))))
@@ -855,14 +1395,31 @@ class SphVario(Vario2d):
 
 
 def read_struct_file(struct_file,return_type=GeoStruct):
-    """read an existing structure file into a GeoStruct instance
+    """read an existing PEST-type structure file into a GeoStruct instance
+
     Parameters
     ----------
-        struct_file : str
-            existing pest-type structure file
+    struct_file : (str)
+        existing pest-type structure file
+    return_type :  (object)
+        the instance type to return.  Default is GeoStruct
+
     Returns
     -------
-        GeoStruct instance
+    GeoStruct : list or GeoStruct
+
+    Note
+    ----
+    if only on structure is listed in struct_file, then return type
+    is GeoStruct.  Otherwise, return type is a list of GeoStruct
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>gs = pyemu.utils.geostats.reads_struct_file("struct.dat")``
+
+
     """
 
     VARTYPE = {1:SphVario,2:ExpVario,3:GauVario,4:None}
@@ -910,6 +1467,20 @@ def read_struct_file(struct_file,return_type=GeoStruct):
 
 
 def _read_variogram(f):
+    """Function to instantiate a Vario2d from a PEST-style structure file
+
+    Parameters
+    ----------
+    f : (file handle)
+        file handle opened for reading
+
+    Returns
+    -------
+    Vario2d : Vario2d
+        Vario2d derived type
+
+    """
+
     line = ''
     vartype = None
     bearing = 0.0
@@ -938,6 +1509,24 @@ def _read_variogram(f):
 
 
 def _read_structure_attributes(f):
+    """ function to read information from a PEST-style structure file
+
+    Parameters
+    ----------
+    f : (file handle)
+        file handle open for reading
+
+    Returns
+    -------
+    nugget : float
+        the GeoStruct nugget
+    transform : str
+        the GeoStruct transformation
+    variogram_info : dict
+        dictionary of structure-level variogram information
+
+    """
+
     line = ''
     variogram_info = {}
     while "end structure" not in line:
@@ -965,6 +1554,28 @@ def _read_structure_attributes(f):
 
 
 def read_sgems_variogram_xml(xml_file,return_type=GeoStruct):
+    """ function to read an SGEMS-type variogram XML file into
+    a GeoStruct
+
+    Parameters
+    ----------
+    xml_file : (str)
+        SGEMS variogram XML file
+    return_type :  (object)
+        the instance type to return.  Default is GeoStruct
+
+    Returns
+    -------
+    GeoStruct : GeoStruct
+
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>gs = pyemu.utils.geostats.read_sgems_variogram_xml("sgems.xml")``
+
+    """
     try:
         import xml.etree.ElementTree as ET
 
@@ -1030,7 +1641,42 @@ def read_sgems_variogram_xml(xml_file,return_type=GeoStruct):
 
 
 def gslib_2_dataframe(filename,attr_name=None,x_idx=0,y_idx=1):
+    """ function to read a GSLIB point data file into a pandas.DataFrame
 
+    Parameters
+    ----------
+    filename : (str)
+        GSLIB file
+    attr_name : (str)
+        the column name in the dataframe for the attribute.  If None, GSLIB file
+        can have only 3 columns.  attr_name must be in the GSLIB file header
+    x_idx : (int)
+        the index of the x-coordinate information in the GSLIB file. Default is
+        0 (first column)
+    y_idx : (int)
+        the index of the y-coordinate information in the GSLIB file.
+        Default is 1 (second column)
+
+    Returns
+    -------
+    df : pandas.DataFrame
+
+    Raises
+    ------
+    exception if attr_name is None and GSLIB file has more than 3 columns
+
+    Note
+    ----
+    assigns generic point names ("pt0, pt1, etc)
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>df = pyemu.utiils.geostats.gslib_2_dataframe("prop.gslib",attr_name="hk")``
+
+
+    """
     with open(filename,'r') as f:
         title = f.readline().strip()
         num_attrs = int(f.readline().strip())
@@ -1065,6 +1711,22 @@ def gslib_2_dataframe(filename,attr_name=None,x_idx=0,y_idx=1):
 #    def __init__(self,na)
 
 def load_sgems_exp_var(filename):
+    """ read an SGEM experimental variogram into a sequence of
+    pandas.DataFrames
+
+    Parameters
+    ----------
+    filename : (str)
+        an SGEMS experimental variogram XML file
+
+    Returns
+    -------
+    dfs : list
+        a list of pandas.DataFrames of x, y, pairs for each
+        division in the experimental variogram
+
+    """
+
     assert os.path.exists(filename)
     import xml.etree.ElementTree as etree
     tree = etree.parse(filename)
@@ -1087,6 +1749,7 @@ def load_sgems_exp_var(filename):
             for item in attrib:
                 print(item,item.tag)
         df = pd.DataFrame({"x":x,"y":y,"pairs":pairs})
+        df.loc[df.y<0.0,"y"] = np.NaN
         dfs[title] = df
     return dfs
 
@@ -1094,19 +1757,43 @@ def load_sgems_exp_var(filename):
 
 def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
              upper_lim=1.0e+30,lower_lim=-1.0e+30,fill_value=1.0e+30):
-    """A python replication of the PEST fac2real utility
+    """A python replication of the PEST fac2real utility for creating a
+    structure grid array from previously calculated kriging factors (weights)
+
     Parameters
     ----------
-        pp_file : str
-            existing pilot points file
-        factors_file : str
-            existing factors file from ppk2fac, etc
-        out_file : str
-            filename of array to write
+    pp_file : (str)
+        PEST-type pilot points file
+    factors_file : (str)
+        PEST-style factors file
+    out_file : (str)
+        filename of array to write.  If None, array is returned, else
+        value of out_file is returned.  Default is "test.ref".
+    upper_lim : (float)
+        maximum interpolated value in the array.  Values greater than
+        upper_lim are set to fill_value
+    lower_lim : (float)
+        minimum interpolated value in the array.  Values less than lower_lim
+        are set to fill_value
+    fill_value : (float)
+        the value to assign array nodes that are not interpolated
+
+
     Returns
     -------
-        None
+    arr : numpy.ndarray
+        if out_file is None
+    out_file : str
+        if out_file it not None
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>pyemu.utils.geostats.fac2real("hkpp.dat",out_file="hk_layer_1.ref")``
+
     """
+
     if pp_file is not None and isinstance(pp_file,str):
         assert os.path.exists(pp_file)
         # pp_data = pd.read_csv(pp_file,delim_whitespace=True,header=None,
@@ -1177,6 +1864,24 @@ def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
     return arr
 
 def parse_factor_line(line):
+    """ function to parse a factor file line.  Used by fac2real()
+
+    Parameters
+    ----------
+    line : (str)
+        a factor line from a factor file
+
+    Returns
+    -------
+    inode : int
+        the inode of the grid node
+    itrans : int
+        flag for transformation of the grid node
+    fac_data : dict
+        a dictionary of point number, factor
+
+    """
+
     raw = line.strip().split()
     inode,itrans,nfac = [int(i) for i in raw[:3]]
     fac_data = {int(raw[ifac])-1:float(raw[ifac+1]) for ifac in range(4,4+nfac*2,2)}
