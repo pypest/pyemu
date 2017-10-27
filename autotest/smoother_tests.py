@@ -1207,6 +1207,11 @@ def setup_lorenz():
 
     df.to_csv(os.path.join(d,state_file),sep=' ',index=False)
 
+    df.loc[:,"prev"] = df.variable.apply(lambda x: "~    prev_{0}    ~".format(x))
+    with open(os.path.join(d,state_file+".tpl"),'w') as f:
+        f.write("ptf ~\n")
+        df.to_csv(f,sep=' ',index=False)
+
     with open(os.path.join(d,state_file+".ins"),'w') as f:
         f.write("pif ~\nl1\n")
         for v in df.variable:
@@ -1223,15 +1228,26 @@ def setup_lorenz():
         f.write("df.loc['z','new'] = (x * y) - (beta * z)\n")
         f.write("df.to_csv('{0}')\n".format(state_file))
 
-    with open(os.path.join(d,"par.tpl"),'w') as f:
-        f.write("ptf ~\n")
-        f.write("dum ~ dum   ~\n")
+    #with open(os.path.join(d,"par.tpl"),'w') as f:
+    #    f.write("ptf ~\n")
+    #    f.write("dum ~ dum   ~\n")
 
     base_dir = os.getcwd()
     os.chdir(d)
     pst = pyemu.Pst.from_io_files(*pyemu.helpers.parse_dir_for_io_files('.'))
     os.chdir(base_dir)
+    pst.parameter_data.loc[:,"parval1"] = prev
+    pst.parameter_data.loc['prev_y',"parlbnd"] = -40.0
+    pst.parameter_data.loc['prev_y', "parubnd"] = 40.0
+    pst.parameter_data.loc['prev_x', "parlbnd"] = -40.0
+    pst.parameter_data.loc['prev_x', "parubnd"] = 40.0
 
+    pst.parameter_data.loc['prev_z', "parlbnd"] = 0.0
+    pst.parameter_data.loc['prev_z', "parubnd"] = 50.0
+    pst.parameter_data.loc[:,"partrans"] = "none"
+
+
+    print(pst.parameter_data)
 
 
 
