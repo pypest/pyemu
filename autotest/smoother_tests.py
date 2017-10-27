@@ -1188,8 +1188,55 @@ def tenpar_plot():
             plt.close()
 
 
+def setup_lorenz():
+    import os
+    import shutil
+    import pandas as pd
+    import pyemu
+
+    state_file = "states.dat"
+    d = os.path.join("smoother", "lorenz")
+    prev = [0.0,1.0,1.05]
+    if os.path.exists(d):
+        shutil.rmtree(d)
+    os.mkdir(d)
+
+    df = pd.DataFrame({"variable":['x','y','z']},index=['x','y','z'])
+    df.loc[:,"prev"] = prev
+    df.loc[:,"new"] = prev
+
+    df.to_csv(os.path.join(d,state_file),sep=' ',index=False)
+
+    with open(os.path.join(d,state_file+".ins"),'w') as f:
+        f.write("pif ~\nl1\n")
+        for v in df.variable:
+            f.write("l1 w !prev_{0}! !new_{0}!\n".format(v))
+
+    with open(os.path.join(d,"forward_run.py"),'w') as f:
+        f.write("import os\nimport numpy as np\nimport pandas as pd\n")
+        f.write("sigma,rho,beta = 10.0,28.0,2.66667\n")
+
+        f.write("df = pd.read_csv('{0}')\n".format(state_file))
+        f.write("x,y,z = df.loc[['x','y','z'],'prev'].values\n")
+        f.write("df.loc['x','new'] = sigma * (y - x)\n")
+        f.write("df.loc['y','new'] = (rho * x) - y - (x * z)\n")
+        f.write("df.loc['z','new'] = (x * y) - (beta * z)\n")
+        f.write("df.to_csv('{0}')\n".format(state_file))
+
+    with open(os.path.join(d,"par.tpl"),'w') as f:
+        f.write("ptf ~\n")
+        f.write("dum ~ dum   ~\n")
+
+    base_dir = os.getcwd()
+    os.chdir(d)
+    pst = pyemu.Pst.from_io_files(*pyemu.helpers.parse_dir_for_io_files('.'))
+    os.chdir(base_dir)
+
+
+
 
 if __name__ == "__main__":
+    setup_lorenz()
     #henry_setup()
     #henry()
     #henry_plot()
@@ -1203,7 +1250,7 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #chenoliver_setup()
     #chenoliver_condor()
-    chenoliver()
+    #chenoliver()
     #chenoliver_existing()
     #chenoliver_plot()
     #chenoliver_func_plot()
