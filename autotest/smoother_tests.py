@@ -1207,7 +1207,7 @@ def setup_lorenz():
 
     df.to_csv(os.path.join(d,state_file),sep=' ',index=False)
 
-    df.loc[:,"prev"] = df.variable.apply(lambda x: "~    prev_{0}    ~".format(x))
+    df.loc[:,"prev"] = df.variable.apply(lambda x: "~    {0}    ~".format(x))
     with open(os.path.join(d,state_file+".tpl"),'w') as f:
         f.write("ptf ~\n")
         df.to_csv(f,sep=' ',index=False)
@@ -1215,14 +1215,14 @@ def setup_lorenz():
     with open(os.path.join(d,state_file+".ins"),'w') as f:
         f.write("pif ~\nl1\n")
         for v in df.variable:
-            f.write("l1 w !prev_{0}! !new_{0}!\n".format(v))
+            f.write("l1 w !prev_{0}! !{0}!\n".format(v))
 
     with open(os.path.join(d,"forward_run.py"),'w') as f:
         f.write("import os\nimport numpy as np\nimport pandas as pd\n")
         f.write("sigma,rho,beta = 10.0,28.0,2.66667\n")
 
-        f.write("df = pd.read_csv('{0}')\n".format(state_file))
-        f.write("x,y,z = df.loc[['x','y','z'],'prev'].values\n")
+        f.write("df = pd.read_csv('{0}',delim_whitespace=True)\n".format(state_file))
+        f.write("x,y,z = df.loc[:,'prev'].values\n")
         f.write("df.loc['x','new'] = sigma * (y - x)\n")
         f.write("df.loc['y','new'] = (rho * x) - y - (x * z)\n")
         f.write("df.loc['z','new'] = (x * y) - (beta * z)\n")
@@ -1237,15 +1237,19 @@ def setup_lorenz():
     pst = pyemu.Pst.from_io_files(*pyemu.helpers.parse_dir_for_io_files('.'))
     os.chdir(base_dir)
     pst.parameter_data.loc[:,"parval1"] = prev
-    pst.parameter_data.loc['prev_y',"parlbnd"] = -40.0
-    pst.parameter_data.loc['prev_y', "parubnd"] = 40.0
-    pst.parameter_data.loc['prev_x', "parlbnd"] = -40.0
-    pst.parameter_data.loc['prev_x', "parubnd"] = 40.0
+    pst.parameter_data.loc['y',"parlbnd"] = -40.0
+    pst.parameter_data.loc['y', "parubnd"] = 40.0
+    pst.parameter_data.loc['x', "parlbnd"] = -40.0
+    pst.parameter_data.loc['x', "parubnd"] = 40.0
 
-    pst.parameter_data.loc['prev_z', "parlbnd"] = 0.0
-    pst.parameter_data.loc['prev_z', "parubnd"] = 50.0
+    pst.parameter_data.loc['z', "parlbnd"] = 0.0
+    pst.parameter_data.loc['z', "parubnd"] = 50.0
     pst.parameter_data.loc[:,"partrans"] = "none"
 
+
+    pst.model_command = "forward_run.py"
+
+    pst.write(os.path.join(d,"lorenz.pst"))
 
     print(pst.parameter_data)
 
