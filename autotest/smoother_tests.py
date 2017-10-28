@@ -1194,14 +1194,17 @@ def setup_lorenz():
     import pandas as pd
     import pyemu
 
-    state_file = "states.dat"
-    d = os.path.join("smoother", "lorenz")
-    prev = [0.0,1.0,1.05]
+    state_file = "lorenz.dat"
+    d = os.path.join("smoother", "lorenz","template")
+    dt = 1.0
+
+    prev = [1.0,1.0,1.05,dt]
     if os.path.exists(d):
         shutil.rmtree(d)
-    os.mkdir(d)
+    #os.mkdir(d)
+    os.makedirs(d)
 
-    df = pd.DataFrame({"variable":['x','y','z']},index=['x','y','z'])
+    df = pd.DataFrame({"variable":['x','y','z','dt']},index=['x','y','z','dt'])
     df.loc[:,"prev"] = prev
     df.loc[:,"new"] = prev
 
@@ -1221,12 +1224,14 @@ def setup_lorenz():
         f.write("import os\nimport numpy as np\nimport pandas as pd\n")
         f.write("sigma,rho,beta = 10.0,28.0,2.66667\n")
 
-        f.write("df = pd.read_csv('{0}',delim_whitespace=True)\n".format(state_file))
-        f.write("x,y,z = df.loc[:,'prev'].values\n")
+        f.write("df = pd.read_csv('{0}',delim_whitespace=True,index_col=0)\n".format(state_file))
+        f.write("x,y,z,dt = df.loc[:,'prev'].values\n")
+
         f.write("df.loc['x','new'] = sigma * (y - x)\n")
         f.write("df.loc['y','new'] = (rho * x) - y - (x * z)\n")
         f.write("df.loc['z','new'] = (x * y) - (beta * z)\n")
-        f.write("df.to_csv('{0}')\n".format(state_file))
+        f.write("df.loc[:,'new'] *= dt\n")
+        f.write("df.to_csv('{0}',sep=' ')\n".format(state_file))
 
     #with open(os.path.join(d,"par.tpl"),'w') as f:
     #    f.write("ptf ~\n")
@@ -1241,18 +1246,24 @@ def setup_lorenz():
     pst.parameter_data.loc['y', "parubnd"] = 40.0
     pst.parameter_data.loc['x', "parlbnd"] = -40.0
     pst.parameter_data.loc['x', "parubnd"] = 40.0
-
     pst.parameter_data.loc['z', "parlbnd"] = 0.0
     pst.parameter_data.loc['z', "parubnd"] = 50.0
     pst.parameter_data.loc[:,"partrans"] = "none"
+    pst.parameter_data.loc['dt','partrans'] = 'fixed'
 
+    pst.observation_data.loc[:,"weight"] = 0.0
+    pst.observation_data.loc[['x','y','z'],'weight'] = 1.0
 
-    pst.model_command = "forward_run.py"
+    pst.model_command = "python forward_run.py"
+    pst.pestpp_options["lambda_scale_fac"] = 1.0
+    pst.pestpp_options["upgrade_augment"] = "false"
+    pst.control_data.noptmax = 10
 
     pst.write(os.path.join(d,"lorenz.pst"))
 
     print(pst.parameter_data)
 
+    pyemu.helpers.run("pestpp lorenz.pst",cwd=d)
 
 
 if __name__ == "__main__":
