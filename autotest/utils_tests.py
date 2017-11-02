@@ -856,8 +856,8 @@ def par_knowledge_test():
 
 
 if __name__ == "__main__":
-    par_knowledge_test()
-    # grid_obs_test()
+    #par_knowledge_test()
+    grid_obs_test()
     # plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()

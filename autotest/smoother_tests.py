@@ -1267,7 +1267,7 @@ def setup_lorenz():
 
 
 if __name__ == "__main__":
-    setup_lorenz()
+    #setup_lorenz()
     #henry_setup()
     #henry()
     #henry_plot()

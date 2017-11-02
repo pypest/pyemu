@@ -2260,9 +2260,9 @@ class PstFromFlopyModel(object):
         elif self.m.upw is not None:
             inact = self.m.upw.hdry
         if inact is None:
-            skip = lambda x: x == self.m.bas6.hnoflo
+            skip = lambda x: np.NaN if x == self.m.bas6.hnoflo else x
         else:
-            skip = lambda x: x == self.m.bas6.hnoflo or x == inact
+            skip = lambda x: np.NaN if x == self.m.bas6.hnoflo or x == inact else x
         setup_hds_obs(os.path.join(self.m.model_ws,hds_file),
                       kperk_pairs=self.hds_kperk,skip=skip)
 

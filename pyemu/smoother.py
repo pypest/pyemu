@@ -24,7 +24,7 @@ from .logger import Logger
 
 
 class EnsembleMethod():
-    """Base class for ensemble-type methods.  Should be instantiated directly
+    """Base class for ensemble-type methods.  Should not be instantiated directly
 
     Parameters
     ----------
