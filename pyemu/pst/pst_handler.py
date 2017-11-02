@@ -1500,6 +1500,7 @@ class Pst(object):
         new_par_data = pst_utils.populate_dataframe(new_parnme,pst_utils.pst_config["par_fieldnames"],
                                                     pst_utils.pst_config["par_defaults"],
                                                     pst_utils.pst_config["par_dtype"])
+        new_par_data.loc[new_parnme,"parnme"] = new_parnme
         self.parameter_data = self.parameter_data.append(new_par_data)
 
         if pst_path is not None:
