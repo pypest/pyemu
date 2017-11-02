@@ -382,8 +382,26 @@ def setattr_test():
     assert isinstance(pst.model_command,list)
 
 
+def add_pars_test():
+    import os
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    npar = pst.npar
+    tpl_file = os.path.join("temp","crap.in.tpl")
+    with open(tpl_file,'w') as f:
+        f.write("ptf ~\n")
+        f.write("  ~junk1   ~\n")
+        f.write("  ~ {0}  ~\n".format(pst.parameter_data.parnme[0]))
+    pst.add_parameters(tpl_file,"crap.in",pst_path="temp")
+    assert npar + 1 == pst.npar
+    assert "junk1" in pst.parameter_data.parnme
+    assert os.path.join("temp","crap.in") in pst.input_files
+    assert os.path.join("temp","crap.in.tpl") in pst.template_files
+
+
 if __name__ == "__main__":
-    setattr_test()
+    add_pars_test()
+    #setattr_test()
     # run_array_pars()
     #from_flopy_test()
     #add_pi_test()
