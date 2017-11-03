@@ -907,7 +907,7 @@ class Pst(object):
         self.parameter_groups.loc[:,"pargpnme"] = pargpnme.values
         #self.parameter_groups.index = pargpnme
 
-        if self.parameter_data.isnull().values.any():
+        if self.parameter_data.loc[:,pst_utils.pst_config["par_fieldnames"]].isnull().values.any():
             warnings.warn("WARNING: NaNs in parameter_data dataframe")
 
         f_out.write("* parameter data\n")
@@ -944,7 +944,7 @@ class Pst(object):
             except:
                 pass
             f_out.write(pst_utils.SFMT(str(group))+'\n')
-        if self.observation_data.isnull().values.any():
+        if self.observation_data.loc[:,pst_utils.pst_config["obs_fieldnames"]].isnull().values.any():
             warnings.warn("WARNING: NaNs in observation_data dataframe")
         f_out.write("* observation data\n")
         #self.observation_data.index = self.observation_data.pop("obsnme")
@@ -1478,7 +1478,8 @@ class Pst(object):
 
         Returns
         -------
-        None
+        new_par_data : pandas.DataFrame
+            the data for the new parameters that were added
 
         Note
         ----
@@ -1509,17 +1510,7 @@ class Pst(object):
         self.template_files.append(template_file)
         self.input_files.append(in_file)
 
+        return new_par_data
 
 
-    # eventually move this to pst_utils
-    # @classmethod
-    # def from_flopy_model(cls,m,pp_pakattr_list=None,const_pakattr_list=None,bc_pakattr_list=None,
-    #                      pp_space=None,pp_bounds=None,pp_geostruct=None,bc_geostruct=None,
-    #                      remove_existing=False):
-    #     from pyemu import helpers
-    #     return helpers.pst_from_flopy_model(m,pp_pakattr_list=pp_pakattr_list,
-    #                                         const_pakattr_list=const_pakattr_list,
-    #                                         bc_pakattr_list=bc_pakattr_list,
-    #                                         pp_space=None,pp_bounds=None,pp_geostruct=None,
-    #                                         bc_geostruct=None,remove_existing=remove_existing)
-    #
+

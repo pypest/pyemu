@@ -1662,7 +1662,7 @@ class PstFromFlopyModel(object):
             ib = self.k_zone_dict
         else:
             ib = {k:self.m.bas6.ibound[k].array for k in range(self.m.nlay)}
-        pp_df = pyemu.gw_utils.setup_pilotpoints_grid(self.m,
+        pp_df = pyemu.pp_utils.setup_pilotpoints_grid(self.m,
                                          ibound=ib,
                                          use_ibound_zones=self.use_pp_zones,
                                          prefix_dict=pp_dict,
@@ -2337,12 +2337,12 @@ class PstFromFlopyModel(object):
         org_listfile = os.path.join(self.org_model_ws,self.m.lst.file_name[0])
         if os.path.exists(org_listfile):
             shutil.copy2(org_listfile,os.path.join(self.m.model_ws,
-                                                   self.m.name+".list"))
+                                                   self.m.lst.file_name[0]))
         else:
             self.logger.warn("can't find existing list file:{0}...skipping".
                                format(org_listfile))
             return
-        list_file = os.path.join(self.m.model_ws,self.m.name+".list")
+        list_file = os.path.join(self.m.model_ws,self.m.lst.file_name[0])
         flx_file = os.path.join(self.m.model_ws,"flux.dat")
         vol_file = os.path.join(self.m.model_ws,"vol.dat")
         df = pyemu.gw_utils.setup_mflist_budget_obs(list_file,
@@ -2385,7 +2385,7 @@ def apply_array_pars():
         for pp_file,fac_file,mlt_file in zip(df.pp_file,df.fac_file,df.mlt_file):
             if pd.isnull(pp_file):
                 continue
-            pyemu.gw_utils.fac2real(pp_file=pp_file,factors_file=fac_file,
+            pyemu.geostats.fac2real(pp_file=pp_file,factors_file=fac_file,
                                     out_file=mlt_file)
 
     for model_file in df.model_file.unique():
