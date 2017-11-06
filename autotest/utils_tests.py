@@ -292,15 +292,18 @@ def setup_pp_test():
     pp_dir = os.path.join("utils")
     ml.export(os.path.join("temp","test_unrot_grid.shp"))
 
-    par_info_unrot = pyemu.gw_utils.setup_pilotpoints_grid(ml,prefix_dict={0:["hk1_","sy1_","rch_"]},
+    par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(ml,prefix_dict={0:["hk1_","sy1_","rch_"]},
                                                      every_n_cell=2,pp_dir=pp_dir,tpl_dir=pp_dir,
                                                      shapename=os.path.join("temp","test_unrot.shp"))
+
+
+
 
     ml.sr.rotation = 15
     ml.export(os.path.join("temp","test_rot_grid.shp"))
     #pyemu.gw_utils.setup_pilotpoints_grid(ml)
 
-    par_info_rot = pyemu.gw_utils.setup_pilotpoints_grid(ml,every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
+    par_info_rot = pyemu.pp_utils.setup_pilotpoints_grid(ml,every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
                                                      shapename=os.path.join("temp", "test_rot.shp"))
 
     print(par_info_unrot.x)
@@ -856,8 +859,8 @@ def par_knowledge_test():
 
 
 if __name__ == "__main__":
-    #par_knowledge_test()
-    grid_obs_test()
+    # par_knowledge_test()
+    # grid_obs_test()
     # plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
@@ -869,8 +872,8 @@ if __name__ == "__main__":
     # mflist_budget_test()
     # tpl_to_dataframe_test()
     # kl_test()
-    #zero_order_regul_test()
-    #first_order_pearson_regul_test()
+    # zero_order_regul_test()
+    # first_order_pearson_regul_test()
     # master_and_slaves()
     # smp_to_ins_test()
     # read_pestpp_runstorage_file_test()
@@ -878,7 +881,7 @@ if __name__ == "__main__":
     # pp_to_shapefile_test()
     # read_pval_test()
     # read_hob_test()
-    # setup_pp_test()
+    setup_pp_test()
     # pp_to_tpl_test()
     # setup_ppcov_complex()
     # ppcov_complex_test()

@@ -2265,6 +2265,7 @@ class PstFromFlopyModel(object):
             skip = lambda x: np.NaN if x == self.m.bas6.hnoflo or x == inact else x
         setup_hds_obs(os.path.join(self.m.model_ws,hds_file),
                       kperk_pairs=self.hds_kperk,skip=skip)
+        self.frun_post_lines.append("pyemu.gw_utils.apply_hds_obs('{0}')".format(hds_file))
 
     def setup_smp(self):
         """ setup observations from PEST-style SMP file pairs

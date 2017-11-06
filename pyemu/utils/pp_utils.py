@@ -178,13 +178,13 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
                 shp.field(name=name,fieldType='C',size=50)
             elif dtype in [int,np.int,np.int64,np.int32]:
                 shp.field(name=name, fieldType='N', size=50, decimal=0)
-            elif dtype in [float,np.float,np.float32,np.float32]:
-                shp.field(name=name, fieldType='N', size=50, decimal=8)
+            elif dtype in [float,np.float,np.float32,np.float64]:
+                shp.field(name=name, fieldType='N', size=50, decimal=10)
             else:
                 raise Exception("unrecognized field type in par_info:{0}:{1}".format(name,dtype))
 
         #some pandas awesomeness..
-        par_info.apply(lambda x:shp.poly([[[x.x,x.y]]]), axis=1)
+        par_info.apply(lambda x:shp.poly([[[x.x,x.y]]],shapeType=shapefile.POINT), axis=1)
         par_info.apply(lambda x:shp.record(*x),axis=1)
 
         shp.save(shapename)
