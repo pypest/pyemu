@@ -2387,7 +2387,7 @@ def apply_array_pars():
             if pd.isnull(pp_file):
                 continue
             pyemu.geostats.fac2real(pp_file=pp_file,factors_file=fac_file,
-                                    out_file=mlt_file)
+                                    out_file=mlt_file,lower_lim=1.0e-10)
 
     for model_file in df.model_file.unique():
         # find all mults that need to be applied to this array

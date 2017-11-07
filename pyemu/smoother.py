@@ -350,7 +350,8 @@ class EnsembleSmoother(EnsembleMethod):
         self.delta_par_prior = None
 
     def initialize(self,num_reals=1,init_lambda=None,enforce_bounds="reset",
-                   parensemble=None,obsensemble=None,restart_obsensemble=None):
+                   parensemble=None,obsensemble=None,restart_obsensemble=None,
+                   drop_bad_reals=None):
         """Initialize the iES process.  Depending on arguments, draws or loads
         initial parameter observations ensembles and runs the initial parameter
         ensemble
@@ -378,6 +379,9 @@ class EnsembleSmoother(EnsembleMethod):
                 an observation ensemble or filename to use as an
                 evaluated observation ensemble.  If not None, this will skip the initial
                 parameter ensemble evaluation - user beware!
+            drop_bad_reals : float
+                drop realizations with phi greater than drop_bad_reals. If None, all
+                realizations are kept. Default is None
 
         Example
         -------
@@ -487,9 +491,32 @@ class EnsembleSmoother(EnsembleMethod):
         if failed_runs is not None:
             self.logger.warn("dropping failed realizations")
             #failed_runs_str = [str(f) for f in failed_runs]
-            self.parensemble = self.parensemble.drop(failed_runs)
-            self.obsensemble = self.obsensemble.drop(failed_runs)
+            #self.parensemble = self.parensemble.drop(failed_runs)
+            #self.obsensemble = self.obsensemble.drop(failed_runs)
+            self.parensemble.loc[failed_runs,:] = np.NaN
+            self.parensemble = self.parensemble.dropna()
+            self.obsensemble.loc[failed_runs,:] = np.NaN
+            self.obsensemble = self.obsensemble.dropna()
+
         self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
+
+        if drop_bad_reals is not None:
+            assert isinstance(drop_bad_reals,float)
+            drop_idx = np.argwhere(self.current_phi_vec > drop_bad_reals).flatten()
+            run_ids = self.obsensemble.index.values
+            drop_idx = run_ids[drop_idx]
+            if len(drop_idx) == self.obsensemble.shape[0]:
+                raise Exception("dropped all realizations as 'bad'")
+            if len(drop_idx) > 0:
+                self.logger.warn("{0} realizations dropped as 'bad' (indices :{1})".\
+                                 format(len(drop_idx),','.join([str(d) for d in drop_idx])))
+                self.parensemble.loc[drop_idx,:] = np.NaN
+                self.parensemble = self.parensemble.dropna()
+                self.obsensemble.loc[drop_idx,:] = np.NaN
+                self.obsensemble = self.obsensemble.dropna()
+
+                self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
+
         self._phi_report(self.current_phi_vec,0.0)
 
         self.last_best_mean = self.current_phi_vec.mean()

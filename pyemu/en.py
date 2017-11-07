@@ -188,6 +188,7 @@ class Ensemble(pd.DataFrame):
         diff = super(Ensemble,self).__sub__(other)
         return Ensemble.from_dataframe(df=diff)
 
+
     @classmethod
     def from_dataframe(cls,**kwargs):
         """class method constructor to create an Ensemble from
