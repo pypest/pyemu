@@ -1207,6 +1207,8 @@ class PstFromFlopyModel(object):
         self.remove_existing = remove_existing
         self.external_tpl_in_pairs = external_tpl_in_pairs
         self.external_ins_out_pairs = external_ins_out_pairs
+
+        self.setup_model(model, org_model_ws, new_model_ws)
         self.add_external()
 
         self.arr_mult_dfs = []
@@ -1231,7 +1233,7 @@ class PstFromFlopyModel(object):
         self.frun_model_lines = []
         self.frun_post_lines = []
 
-        self.setup_model(model,org_model_ws,new_model_ws)
+
 
         if k_zone_dict is None:
             self.k_zone_dict = {k:self.m.bas6.ibound[k].array for k in np.arange(self.m.nlay)}
@@ -1256,7 +1258,7 @@ class PstFromFlopyModel(object):
                 ilist = [ilist]
             for cmd in ilist:
                 self.logger.statement("forward_run line:{0}".format(cmd))
-                alist.append("pyemu.run('{0}')\n".format(cmd))
+                alist.append("pyemu.helpers.run('{0}')\n".format(cmd))
 
         # add the model call
         line = "pyemu.helpers.run('{0} {1} 1>{1}.stdout 2>{1}.stderr')".format(self.m.exe_name,self.m.namefile)
@@ -2021,10 +2023,10 @@ class PstFromFlopyModel(object):
                                        format(ins_file))
                 self.logger.statement("external ins:{0}".format(ins_file))
                 shutil.copy2(ins_file,os.path.join(self.m.model_ws,
-                                                   os.path.split(ins_file)))
+                                                   os.path.split(ins_file)[-1]))
                 if os.path.exists(out_file):
                     shutil.copy2(out_file,os.path.join(self.m.model_ws,
-                                                   os.path.split(out_file)))
+                                                   os.path.split(out_file)[-1]))
                     self.logger.warn("obs listed in {0} will have values listed in {1}"
                                      .format(ins_file,out_file))
                 else:
