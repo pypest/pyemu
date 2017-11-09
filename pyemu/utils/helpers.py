@@ -1233,8 +1233,6 @@ class PstFromFlopyModel(object):
         self.frun_model_lines = []
         self.frun_post_lines = []
 
-
-
         if k_zone_dict is None:
             self.k_zone_dict = {k:self.m.bas6.ibound[k].array for k in np.arange(self.m.nlay)}
         else:

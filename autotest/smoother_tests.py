@@ -1267,6 +1267,7 @@ def setup_lorenz():
 
 
 if __name__ == "__main__":
+
     #setup_lorenz()
     #henry_setup()
     #henry()
@@ -1281,7 +1282,7 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #chenoliver_setup()
     #chenoliver_condor()
-    #chenoliver()
+    chenoliver()
     #chenoliver_existing()
     #chenoliver_plot()
     #chenoliver_func_plot()

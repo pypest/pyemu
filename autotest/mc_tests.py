@@ -315,6 +315,7 @@ def obs_id_draw_test():
     print(oe.shape)
     print(oe.head())
 
+
 def par_diagonal_draw_test():
     import os
     import numpy as np
@@ -355,8 +356,52 @@ def phi_vector_test():
     mc.draw(num_reals,obs=True)
     print(mc.obsensemble.phi_vector)
 
+
+def change_weights_test():
+    import os
+    import numpy as np
+    import pyemu
+    from pyemu import MonteCarlo, ObservationEnsemble
+    from datetime import datetime
+    jco = os.path.join("pst", "pest.jcb")
+    pst = jco.replace(".jcb", ".pst")
+
+    mc = MonteCarlo(jco=jco, pst=pst)
+    print(mc.pst.nnz_obs_names)
+    ogcov = mc.obscov.to_dataframe().loc[mc.pst.nnz_obs_names,mc.pst.nnz_obs_names]
+
+    num_reals = 10000
+    oe = ObservationEnsemble.from_id_gaussian_draw(mc.obsensemble, num_reals=num_reals)
+    for oname in mc.pst.nnz_obs_names:
+        w = mc.pst.observation_data.loc[oname,"weight"]
+        v = ogcov.loc[oname,oname]
+        est = np.std(oe.loc[:,oname])**2
+        pd = 100.0 * (np.abs(v-est)) / v
+        print(oname,np.std(oe.loc[:,oname])**2,ogcov.loc[oname,oname],pd,(1.0/w)**2)
+        assert pd < 10.0,"{0},{1},{2},{3}".format(oname,v,est,pd)
+        assert (1.0/w)**2 == v,"{0},{1},{2}".format(oname,v,(1.0/w)**2)
+
+    mc.pst.observation_data.loc[mc.pst.nnz_obs_names,"weight"] = 1000.0
+    mc.reset_obscov(pyemu.Cov.from_observation_data(mc.pst))
+    newcov = mc.obscov.to_dataframe().loc[mc.pst.nnz_obs_names,mc.pst.nnz_obs_names]
+    #print(mc.obsensemble.pst.observation_data.loc[mc.pst.nnz_obs_names,"weight"])
+
+    num_reals = 10000
+    oe = ObservationEnsemble.from_id_gaussian_draw(mc.obsensemble, num_reals=num_reals)
+    for oname in mc.pst.nnz_obs_names:
+        w = mc.pst.observation_data.loc[oname, "weight"]
+        v = newcov.loc[oname, oname]
+        est = np.std(oe.loc[:, oname]) ** 2
+        pd = 100.0 * (np.abs(v - est)) / v
+        # print(oname,np.std(oe.loc[:,oname])**2,ogcov.loc[oname,oname],pd,(1.0/w)**2)
+        assert pd < 10.0, "{0},{1},{2},{3}".format(oname, v, est, pd)
+        assert (1.0 / w) ** 2 == v, "{0},{1},{2}".format(oname, v, (1.0 / w) ** 2)
+
+
+
 if __name__ == "__main__":
-    phi_vector_test()
+    change_weights_test()
+    #phi_vector_test()
     #par_diagonal_draw_test()
     #obs_id_draw_test()
     #diagonal_cov_draw_test()
