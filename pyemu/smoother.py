@@ -332,6 +332,9 @@ class EnsembleSmoother(EnsembleMethod):
         slave_dir : str
             path to a directory with a complete set of model files and PEST
             interface files
+        drop_bad_reals : float
+                drop realizations with phi greater than drop_bad_reals. If None, all
+                realizations are kept. Default is None
 
     Example
     -------
@@ -341,17 +344,18 @@ class EnsembleSmoother(EnsembleMethod):
     """
 
     def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,use_approx_prior=True,
-                 submit_file=None,verbose=False,port=4004,slave_dir="template"):
+                 submit_file=None,verbose=False,port=4004,slave_dir="template",drop_bad_reals=None):
         super(EnsembleSmoother,self).__init__(pst=pst,parcov=parcov,obscov=obscov,num_slaves=num_slaves,
                                               submit_file=submit_file,verbose=verbose,port=port,slave_dir=slave_dir)
         self.use_approx_prior = bool(use_approx_prior)
         self.half_parcov_diag = None
         self.half_obscov_diag = None
         self.delta_par_prior = None
+        self.drop_bad_reals = drop_bad_reals
 
     def initialize(self,num_reals=1,init_lambda=None,enforce_bounds="reset",
                    parensemble=None,obsensemble=None,restart_obsensemble=None,
-                   drop_bad_reals=None):
+                   ):
         """Initialize the iES process.  Depending on arguments, draws or loads
         initial parameter observations ensembles and runs the initial parameter
         ensemble
@@ -379,9 +383,7 @@ class EnsembleSmoother(EnsembleMethod):
                 an observation ensemble or filename to use as an
                 evaluated observation ensemble.  If not None, this will skip the initial
                 parameter ensemble evaluation - user beware!
-            drop_bad_reals : float
-                drop realizations with phi greater than drop_bad_reals. If None, all
-                realizations are kept. Default is None
+
 
         Example
         -------
@@ -500,9 +502,8 @@ class EnsembleSmoother(EnsembleMethod):
 
         self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
 
-        if drop_bad_reals is not None:
-            assert isinstance(drop_bad_reals,float)
-            drop_idx = np.argwhere(self.current_phi_vec > drop_bad_reals).flatten()
+        if self.drop_bad_reals is not None:
+            drop_idx = np.argwhere(self.current_phi_vec > self.drop_bad_reals).flatten()
             run_ids = self.obsensemble.index.values
             drop_idx = run_ids[drop_idx]
             if len(drop_idx) == self.obsensemble.shape[0]:
@@ -775,6 +776,26 @@ class EnsembleSmoother(EnsembleMethod):
                                          format(len(failed_runs_this),lam_vals[i]))
                     oe.iloc[failed_runs_this,:] = np.NaN
                     oe = oe.dropna()
+
+            # don't drop bad reals here, instead, mask bad reals in the lambda
+            # selection and drop later
+            # if self.drop_bad_reals is not None:
+            #     assert isinstance(drop_bad_reals, float)
+            #     drop_idx = np.argwhere(self.current_phi_vec > self.drop_bad_reals).flatten()
+            #     run_ids = self.obsensemble.index.values
+            #     drop_idx = run_ids[drop_idx]
+            #     if len(drop_idx) == self.obsensemble.shape[0]:
+            #         raise Exception("dropped all realizations as 'bad'")
+            #     if len(drop_idx) > 0:
+            #         self.logger.warn("{0} realizations dropped as 'bad' (indices :{1})". \
+            #                          format(len(drop_idx), ','.join([str(d) for d in drop_idx])))
+            #         self.parensemble.loc[drop_idx, :] = np.NaN
+            #         self.parensemble = self.parensemble.dropna()
+            #         self.obsensemble.loc[drop_idx, :] = np.NaN
+            #         self.obsensemble = self.obsensemble.dropna()
+            #
+            #         self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
+
             obsen_lam.append(oe)
         obsen_combine = None
 
@@ -788,6 +809,16 @@ class EnsembleSmoother(EnsembleMethod):
                               format(self.current_lambda,
                          self.last_best_mean,self.last_best_std))
         phi_vecs = [self._calc_phi_vec(obsen) for obsen in obsen_lam]
+        if self.drop_bad_reals is not None:
+            for i,pv in enumerate(phi_vecs):
+                #for testing the drop_bad_reals functionality
+                #pv[[0,3,7]] = self.drop_bad_reals + 1.0
+                pv[pv>self.drop_bad_reals] = np.NaN
+                pv = pv[~np.isnan(pv)]
+                if len(pv) == 0:
+                    raise Exception("all realization for lambda {0} dropped as 'bad'".\
+                                    format(lam_vals[i]))
+                phi_vecs[i] = pv
         mean_std = [(pv.mean(),pv.std()) for pv in phi_vecs]
         update_pars = False
         update_lambda = False
@@ -821,18 +852,43 @@ class EnsembleSmoother(EnsembleMethod):
                 failed_runs, self.obsensemble = self._calc_obs(self.parensemble)
                 if failed_runs is not None:
                     self.logger.warn("dropping failed realizations")
-                    self.parensemble = self.parensemble.drop(failed_runs)
-                    self.obsensemble = self.obsensemble.drop(failed_runs)
+                    self.parensemble.loc[failed_runs, :] = np.NaN
+                    self.parensemble = self.parensemble.dropna()
+                    self.obsensemble.loc[failed_runs, :] = np.NaN
+                    self.obsensemble = self.obsensemble.dropna()
+
                 self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
-                self._phi_report(self.current_phi_vec,self.current_lambda * lambda_mults[best_i])
+
+
+
+                #self._phi_report(self.current_phi_vec,self.current_lambda * lambda_mults[best_i])
                 best_mean = self.current_phi_vec.mean()
                 best_std = self.current_phi_vec.std()
             else:
                 self.obsensemble = obsen_lam[best_i]
                 # reindex parensemble in case failed runs
                 self.parensemble = ParameterEnsemble.from_dataframe(df=self.parensemble.loc[self.obsensemble.index],pst=self.pst)
-                self._phi_report(phi_vecs[best_i],self.current_lambda * lambda_mults[best_i])
                 self.current_phi_vec = phi_vecs[best_i]
+
+            if self.drop_bad_reals is not None:
+                # for testing drop_bad_reals functionality
+                # self.current_phi_vec[::2] = self.drop_bad_reals + 1.0
+                drop_idx = np.argwhere(self.current_phi_vec > self.drop_bad_reals).flatten()
+                run_ids = self.obsensemble.index.values
+                drop_idx = run_ids[drop_idx]
+                if len(drop_idx) > self.obsensemble.shape[0] - 3:
+                    raise Exception("dropped too many realizations as 'bad'")
+                if len(drop_idx) > 0:
+                    self.logger.warn("{0} realizations dropped as 'bad' (indices :{1})". \
+                                     format(len(drop_idx), ','.join([str(d) for d in drop_idx])))
+                    self.parensemble.loc[drop_idx, :] = np.NaN
+                    self.parensemble = self.parensemble.dropna()
+                    self.obsensemble.loc[drop_idx, :] = np.NaN
+                    self.obsensemble = self.obsensemble.dropna()
+
+                    self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
+
+            self._phi_report(self.current_phi_vec,self.current_lambda * lambda_mults[best_i])
 
             self.logger.statement("   best lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
                   format(self.current_lambda*lambda_mults[best_i],
