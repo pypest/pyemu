@@ -399,11 +399,7 @@ class EnsembleSmoother(EnsembleMethod):
         '''
         # initialize the phi report csv
         self.enforce_bounds = enforce_bounds
-        self.phi_csv = open(self.pst.filename+".iobj.csv",'w')
-        self.phi_csv.write("iter_num,total_runs,lambda,min,max,mean,median,std,")
-        self.phi_csv.write(','.join(["{0:010d}".\
-                                    format(i+1) for i in range(num_reals)]))
-        self.phi_csv.write('\n')
+
         self.total_runs = 0
         # this matrix gets used a lot, so only calc once and store
         self.obscov_inv_sqrt = self.obscov.get(self.pst.nnz_obs_names).inv.sqrt
@@ -474,6 +470,12 @@ class EnsembleSmoother(EnsembleMethod):
 
         self.obs0_matrix = self.obsensemble_0.nonzero.as_pyemu_matrix()
         self.enforce_bounds = enforce_bounds
+
+        self.phi_csv = open(self.pst.filename + ".iobj.csv", 'w')
+        self.phi_csv.write("iter_num,total_runs,lambda,min,max,mean,median,std,")
+        self.phi_csv.write(','.join(["{0:010d}". \
+                                    format(i + 1) for i in range(num_reals)]))
+        self.phi_csv.write('\n')
 
         if restart_obsensemble is not None:
             self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))

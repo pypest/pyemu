@@ -1036,8 +1036,8 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     return new_pst
 
 
-wildass_guess_par_bounds_dict = {"hk":[0.01,100.0],"vka":[0.01,100.0],
-                                   "sy":[0.25,1.75],"ss":[0.01,100.0],
+wildass_guess_par_bounds_dict = {"hk":[0.1,10.0],"vka":[0.1,10.0],
+                                   "sy":[0.25,1.75],"ss":[0.1,10.0],
                                    "cond":[0.01,100.0],"flux":[0.25,1.75],
                                    "rech":[0.75,1.25],"stage":[0.9,1.1],
                                    }
@@ -1699,7 +1699,7 @@ class PstFromFlopyModel(object):
                 pp_df_k = pp_df.loc[pp_df.pargp==pg]
                 ok_pp = pyemu.geostats.OrdinaryKrige(self.pp_geostruct,pp_df_k)
                 ok_pp.calc_factors_grid(self.m.sr,var_filename=var_file,
-                                        zone_array=self.k_zone_dict[k])
+                                        zone_array=ib[k])
                 ok_pp.to_grid_factors_file(fac_file)
                 fac_files[k] = fac_file
                 self.log("calculating factors for k={0}".format(k))

@@ -1336,7 +1336,9 @@ class Matrix(object):
 
         """
         if self.isdiagonal:
-            raise NotImplementedError()
+            #raise NotImplementedError()
+            self.__x = self.as_2d
+            self.isdiagonal = False
         f = open(filename, 'wb')
         nnz = np.count_nonzero(self.x) #number of non-zero entries
         # write the header
@@ -1604,6 +1606,7 @@ class Matrix(object):
             diag_delta = np.abs(diag.sum() - x.sum())
             if diag_delta < diag_tol:
                 isdiagonal = True
+                x = np.atleast_2d(np.diag(x)).transpose()
         return cls(x=x,row_names=row_names,col_names=col_names,
                    isdiagonal=isdiagonal)
 

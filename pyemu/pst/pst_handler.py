@@ -1079,7 +1079,7 @@ class Pst(object):
         raise Exception("Pst.zero_oder_tikhonov has moved to utils.helpers")
 
 
-    def parrep(self, parfile=None):
+    def parrep(self, parfile=None,enforce_bounds=True):
         """replicates the pest parrep util. replaces the parval1 field in the
             parameter data section dataframe
 
@@ -1089,6 +1089,10 @@ class Pst(object):
             parameter file to use.  If None, try to use
             a parameter file that corresponds to the case name.
             Default is None
+        enforce_hounds : bool
+            flag to enforce parameter bounds after parameter values are updated.
+            This is useful because PEST and PEST++ round the parameter values in the
+            par file, which may cause slight bound violations
 
         """
         if parfile is None:
@@ -1099,6 +1103,14 @@ class Pst(object):
         self.parameter_data.parval1 = par_df.parval1
         self.parameter_data.scale = par_df.scale
         self.parameter_data.offset = par_df.offset
+
+        if enforce_bounds:
+            par = self.parameter_data
+            idx = par.loc[par.parval1 > par.parubnd,"parnme"]
+            par.loc[idx,"parval1"] = par.loc[idx,"parubnd"]
+            idx = par.loc[par.parval1 < par.parlbnd,"parnme"]
+            par.loc[idx, "parval1"] = par.loc[idx, "parlbnd"]
+
 
 
 
