@@ -538,19 +538,25 @@ def try_run_inschek(pst):
 
     """
     for ins_file,out_file in zip(pst.instruction_files,pst.output_files):
-        try:
-            #os.system("inschek {0} {1}".format(ins_file,out_file))
-            pyemu.helpers.run("inschek {0} {1}".format(ins_file,out_file))
-            obf_file = ins_file.replace(".ins",".obf")
-            df = pd.read_csv(obf_file,delim_whitespace=True,
-                             skiprows=0,index_col=0,names=["obsval"])
-            pst.observation_data.loc[df.index,"obsval"] = df["obsval"]
-        except Exception as e:
-            print("error using inschek for instruction file {0}:{1}".
-                  format(ins_file,str(e)))
-            print("observations in this instruction file will have"+
-                  "generic values.")
+        df = _try_run_inschek(ins_file,out_file)
+        if df is not None:
+            pst.observation_data.loc[df.index, "obsval"] = df.obsval
 
+
+def _try_run_inschek(ins_file,out_file):
+    try:
+        # os.system("inschek {0} {1}".format(ins_file,out_file))
+        pyemu.helpers.run("inschek {0} {1}".format(ins_file, out_file))
+        obf_file = ins_file.replace(".ins", ".obf")
+        df = pd.read_csv(obf_file, delim_whitespace=True,
+                         skiprows=0, index_col=0, names=["obsval"])
+        return df
+    except Exception as e:
+        print("error using inschek for instruction file {0}:{1}".
+              format(ins_file, str(e)))
+        print("observations in this instruction file will have" +
+              "generic values.")
+        return None
 
 
 def get_phi_comps_from_recfile(recfile):

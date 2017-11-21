@@ -400,12 +400,34 @@ def add_pars_test():
     assert os.path.join("temp","crap.in") in pst.input_files
     assert os.path.join("temp","crap.in.tpl") in pst.template_files
 
+def add_obs_test():
+    import os
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    nobs = pst.nobs
+    ins_file = os.path.join("temp", "crap.out.ins")
+    out_file = os.path.join("temp","crap.out")
+    oval = 1234.56
+    with open(ins_file, 'w') as f:
+        f.write("pif ~\n")
+        #f.write("  ~junk1   ~\n")
+        #f.write("  ~ {0}  ~\n".format(pst.parameter_data.parnme[0]))
+        f.write("l1 w  !{0}!\n".format("crap1"))
+    with open(out_file,"w") as f:
+        f.write("junk1  {0:8.2f} \n".format(oval))
+    pst.add_observations(ins_file,out_file, pst_path="temp")
+    assert nobs + 1 == pst.nobs
+    assert "crap1" in pst.observation_data.obsnme
+    assert os.path.join("temp", "crap.out") in pst.output_files,str(pst.output_files)
+    assert os.path.join("temp", "crap.out.ins") in pst.instruction_files
+    assert pst.observation_data.loc["crap1","obsval"] == oval
 
 if __name__ == "__main__":
+    add_obs_test()
     #add_pars_test()
     #setattr_test()
     # run_array_pars()
-    from_flopy_test()
+    #from_flopy_test()
     #add_pi_test()
     # regdata_test()
     # nnz_groups_test()

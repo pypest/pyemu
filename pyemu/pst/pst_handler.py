@@ -1525,4 +1525,114 @@ class Pst(object):
         return new_par_data
 
 
+    def add_parameters(self,template_file,in_file,pst_path=None):
+        """ add new parameters to a control file
+
+        Parameters
+        ----------
+            tpl_file : str
+                template file
+            in_file : str
+                model input file
+            pst_path : str(optional)
+                the path to append to the template_file and in_file in the control file.  If
+                not None, then any existing path in front of the template or in file is split off
+                and pst_path is prepended.  Default is None
+
+        Returns
+        -------
+        new_par_data : pandas.DataFrame
+            the data for the new parameters that were added. If no new parameters are in the
+            new template file, returns None
+
+        Note
+        ----
+        populates the new parameter information with default values
+
+        """
+        assert os.path.exists(template_file)
+
+        # get the parameter names in the template file
+        parnme = pst_utils.parse_tpl_file(template_file)
+
+        # find "new" parameters that are not already in the control file
+        new_parnme = [p for p in parnme if p not in self.parameter_data.parnme]
+
+        if len(new_parnme) == 0:
+            warnings.warn("no new parameters found in template file {0}".format(template_file))
+            new_par_data = None
+        else:
+            # extend pa
+            # rameter_data
+            new_par_data = pst_utils.populate_dataframe(new_parnme,pst_utils.pst_config["par_fieldnames"],
+                                                        pst_utils.pst_config["par_defaults"],
+                                                        pst_utils.pst_config["par_dtype"])
+            new_par_data.loc[new_parnme,"parnme"] = new_parnme
+            self.parameter_data = self.parameter_data.append(new_par_data)
+
+        if pst_path is not None:
+            template_file = os.path.join(pst_path,os.path.split(template_file)[-1])
+            in_file = os.path.join(pst_path, os.path.split(in_file)[-1])
+        self.template_files.append(template_file)
+        self.input_files.append(in_file)
+
+        return new_par_data
+
+
+    def add_observations(self,ins_file,out_file,pst_path=None):
+        """ add new parameters to a control file
+
+        Parameters
+        ----------
+            ins_file : str
+                instruction file
+            out_file : str
+                model output file
+            pst_path : str(optional)
+                the path to append to the instruction file and out file in the control file.  If
+                not None, then any existing path in front of the template or in file is split off
+                and pst_path is prepended.  Default is None
+
+        Returns
+        -------
+        new_obs_data : pandas.DataFrame
+            the data for the new observations that were added
+
+        Note
+        ----
+        populates the new observation information with default values
+
+        tries to run inschek to populate obsval with the current model output file values
+
+        """
+        assert os.path.exists(ins_file)
+
+        # get the parameter names in the template file
+        obsnme = pst_utils.parse_ins_file(ins_file)
+
+        # find "new" parameters that are not already in the control file
+        new_obsnme = [o for o in obsnme if o not in self.observation_data.obsnme]
+
+        if len(new_obsnme) == 0:
+            raise Exception("no new observations found in instruction file {0}".format(ins_file))
+
+        # extend observation_data
+        new_obs_data = pst_utils.populate_dataframe(new_obsnme,pst_utils.pst_config["obs_fieldnames"],
+                                                    pst_utils.pst_config["obs_defaults"],
+                                                    pst_utils.pst_config["obs_dtype"])
+        new_obs_data.loc[new_obsnme,"obsnme"] = new_obsnme
+        self.observation_data = self.observation_data.append(new_obs_data)
+
+        if pst_path is not None:
+            ins_file = os.path.join(pst_path,os.path.split(ins_file)[-1])
+            out_file = os.path.join(pst_path, os.path.split(out_file)[-1])
+        self.instruction_files.append(ins_file)
+        self.output_files.append(out_file)
+
+        df = pst_utils._try_run_inschek(ins_file,out_file)
+        if df is not None:
+            self.observation_data.loc[df.index,"obsval"] = df.obsval
+            new_obs_data.loc[df.index,"obsval"] = df.obsval
+        return new_obs_data
+
 

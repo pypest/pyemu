@@ -421,7 +421,7 @@ def _write_mflist_ins(ins_filename,df,prefix):
                 f.write(" w !{0}!".format(obsnme))
             f.write("\n")
 
-def setup_hds_obs(hds_file,kperk_pairs=None,skip=None):
+def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
     """a function to setup using all values from a
     layer-stress period pair for observations.  Writes
     an instruction file and a _setup_ csv used
@@ -430,7 +430,8 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None):
     Parameters
     ----------
     hds_file : str
-        a MODFLOW head-save file
+        a MODFLOW head-save file.  If the hds_file endswith 'ucn',
+        then the file is treated as a UcnFile type.
     kperk_pairs : iterable
         an iterable of pairs of kper (zero-based stress
         period index) and k (zero-based layer index) to
@@ -442,6 +443,8 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None):
         is True, then values equal to skip will not be used.  If not
         np.scalar(skip), then skip will be treated as a lambda function that
         returns np.NaN if the value should be skipped.
+    prefix : str
+        the prefix to use for the observation names. default is "hds".
 
     Returns
     -------
@@ -467,10 +470,16 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None):
         return
 
     assert os.path.exists(hds_file),"head save file not found"
-    try:
-        hds = flopy.utils.HeadFile(hds_file)
-    except Exception as e:
-        raise Exception("error instantiating HeadFile:{0}".format(str(e)))
+    if hds_file.lower().endswith(".ucn"):
+        try:
+            hds = flopy.utils.UcnFile(hds_file)
+        except Exception as e:
+            raise Exception("error instantiating UcnFile:{0}".format(str(e)))
+    else:
+        try:
+            hds = flopy.utils.HeadFile(hds_file)
+        except Exception as e:
+            raise Exception("error instantiating HeadFile:{0}".format(str(e)))
 
     if kperk_pairs is None:
         kperk_pairs = []
@@ -533,7 +542,7 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None):
     #        return  dts[int(kper)].strftime("%Y%m%d")
     #    else:
     #        return "kper{0:04.0f}".format(kper)
-    fmt = "hds_{0:02.0f}_{1:03.0f}_{2:03.0f}_{3:03.0f}"
+    fmt = prefix + "_{0:02.0f}_{1:03.0f}_{2:03.0f}_{3:03.0f}"
     # df.loc[:,"obsnme"] = df.apply(lambda x: fmt.format(x.kidx,x.iidx,x.jidx,
     #                                                   get_kper_str(x.kper)),axis=1)
     df.loc[:,"obsnme"] = df.apply(lambda x: fmt.format(x.kidx,x.iidx,x.jidx,
@@ -592,8 +601,8 @@ def apply_hds_obs(hds_file):
     Parameters
     ----------
     hds_file : str
-        a modflow head save filename
-
+        a modflow head save filename. if hds_file ends with 'ucn',
+        then the file is treated as a UcnFile type.
 
     Note
     ----
@@ -625,7 +634,10 @@ def apply_hds_obs(hds_file):
     for i,item in enumerate(items):
         df.loc[:,item] = df.obsnme.apply(lambda x: int(x.split('_')[i+1]))
 
-    hds = flopy.utils.HeadFile(hds_file)
+    if hds_file.lower().endswith('ucn'):
+        hds = flopy.utils.UcnFile(hds_file)
+    else:
+        hds = flopy.utils.HeadFile(hds_file)
     kpers = df.kper.unique()
     df.loc[:,"obsval"] = np.NaN
     for kper in kpers:

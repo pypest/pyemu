@@ -860,7 +860,7 @@ def par_knowledge_test():
 
 if __name__ == "__main__":
     # par_knowledge_test()
-    # grid_obs_test()
+    grid_obs_test()
     # plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
@@ -881,7 +881,7 @@ if __name__ == "__main__":
     # pp_to_shapefile_test()
     # read_pval_test()
     # read_hob_test()
-    setup_pp_test()
+    #setup_pp_test()
     # pp_to_tpl_test()
     # setup_ppcov_complex()
     # ppcov_complex_test()
