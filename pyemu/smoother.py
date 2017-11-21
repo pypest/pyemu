@@ -442,6 +442,7 @@ class EnsembleSmoother(EnsembleMethod):
 
             assert self.parensemble_0.shape[0] == self.obsensemble_0.shape[0]
             #self.num_reals = self.parensemble_0.shape[0]
+            num_reals = self.parensemble.shape[0]
             self.logger.log("initializing with existing ensembles")
 
         else:
@@ -902,7 +903,7 @@ class EnsembleSmoother(EnsembleMethod):
             # be aggressive
             self.current_lambda *= (lambda_mults[best_i] * 0.75)
             # but don't let lambda get too small
-            self.current_lambda = max(self.current_lambda,0.001)
+            self.current_lambda = max(self.current_lambda,0.00001)
             self.logger.statement("updating lambda: {0:15.6G}".\
                   format(self.current_lambda ))
 

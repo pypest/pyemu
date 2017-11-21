@@ -1685,7 +1685,8 @@ class PstFromFlopyModel(object):
         for pg in pargp:
             ks = pp_df.loc[pp_df.pargp==pg,"k"].unique()
             if len(ks) != 1:
-                self.logger.lraise("something is wrong in fac calcs")
+                self.logger.lraise("something is wrong in fac calcs for par group {0}".format(pg))
+
             k = int(ks[0])
             if k not in pp_dfs_k.keys():
                 self.log("calculating factors for k={0}".format(k))
@@ -2107,6 +2108,11 @@ class PstFromFlopyModel(object):
         attrname = raw[1]
         pak = self.m.get_package(pakname)
         if pak is None:
+            if pakname == "extra":
+                self.logger.statement("'extra' pak detected:{0}".format(pakattr))
+                ud = flopy.utils.Util3d(self.m,(self.m.nlay,self.m.nrow,self.m.ncol),np.float32,1.0,attrname)
+                return "extra",ud
+
             self.logger.lraise("pak {0} not found".format(pakname))
         if hasattr(pak,attrname):
             attr = getattr(pak,attrname)

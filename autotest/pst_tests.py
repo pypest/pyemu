@@ -288,17 +288,18 @@ def from_flopy_test():
     nam_file = "freyberg.nam"
 
     new_model_ws = "temp_pst_from_flopy"
-    pp_props = [["upw.ss",0],["upw.ss",1],["upw.ss",2],\
+    pp_props = [["upw.ss",0],["upw.ss",1],["upw.ss",2],["extra.prsity",0],\
                 ["rch.rech",np.arange(182)],["rch.rech",np.arange(183,365)]]
     helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
                                     pp_props=pp_props,hds_kperk=[0,0],remove_existing=True)
+
 
     m = flopy.modflow.Modflow.load(nam_file,model_ws=org_model_ws,exe_name="mfnwt")
     const_props = [["rch.rech",i] for i in range(365)]
     helper = pyemu.helpers.PstFromFlopyModel(m,new_model_ws,
                                     const_props=const_props,hds_kperk=[0,0],remove_existing=True)
 
-    grid_props = []
+    grid_props = [["extra.pr",0]]
     for k in range(3):
         #grid scale pars for hk in all layers
         grid_props.append(["upw.hk",k])
@@ -309,6 +310,7 @@ def from_flopy_test():
     helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
                                     grid_props=grid_props,hds_kperk=[0,0],remove_existing=True)
 
+    return
     # zones using ibound values - vka in layer 2
     zone_props = ["upw.vka",1]
     helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
@@ -400,10 +402,10 @@ def add_pars_test():
 
 
 if __name__ == "__main__":
-    add_pars_test()
+    #add_pars_test()
     #setattr_test()
     # run_array_pars()
-    #from_flopy_test()
+    from_flopy_test()
     #add_pi_test()
     # regdata_test()
     # nnz_groups_test()
