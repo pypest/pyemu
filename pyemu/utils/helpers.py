@@ -1124,10 +1124,11 @@ class PstFromFlopyModel(object):
         Default is None
     par_bounds_dict : dict
         a dictionary of model property/boundary condition name, upper-lower bound pairs.
-        For example, par_bounds_dict = {"lpf.hk":[0.01,100.0],"wel.flux":[0.5,2.0]} would
-        set the bounds for layer property file horizontal hydraulic conductivity to
-        0.001 and 100.0 and set the bounds for well package flux parameters to 0.5 and
-        2.0.  If None, then the pyemu.helpers.wildass_guess_par_bounds_dict is
+        For example, par_bounds_dict = {"hk":[0.01,100.0],"flux":[0.5,2.0]} would
+        set the bounds for horizontal hydraulic conductivity to
+        0.001 and 100.0 and set the bounds for flux parameters to 0.5 and
+        2.0.  For parameters not found in par_bounds_dict,
+        pyemu.helpers.wildass_guess_par_bounds_dict is
         used to set somewhat meaningful bounds.  Default is None
     bc_geostruct : pyemu.geostats.GeoStruct
         the geostastical struture to build the prior parameter covariance matrix
@@ -1165,6 +1166,13 @@ class PstFromFlopyModel(object):
         a list of post-processing commands to add to the forward_run.py script.
         Commands are executed with os.system() within forward_run.py.
         Default is [].
+    tmp_files : list
+        a list of temporary files that should be removed at the start of the forward
+        run script.  Default is [].
+    model_exe_name : str
+        binary name to run modflow.  If None, a default from flopy is used,
+        which is dangerous because of the non-standard binary names
+        (e.g. MODFLOW-NWT_x64, MODFLOWNWT, mfnwt, etc). Default is None.
 
     Returns
     -------
@@ -1189,7 +1197,8 @@ class PstFromFlopyModel(object):
                  mflist_waterbudget=True,mfhyd=True,hds_kperk=[],use_pp_zones=False,
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
                  external_ins_out_pairs=None,extra_pre_cmds=None,
-                 extra_model_cmds=None,extra_post_cmds=None):
+                 extra_model_cmds=None,extra_post_cmds=None,
+                 tmp_files=None,model_exe_name=None):
 
         self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
         self.log = self.logger.log
@@ -1232,6 +1241,11 @@ class PstFromFlopyModel(object):
         self.frun_pre_lines = []
         self.frun_model_lines = []
         self.frun_post_lines = []
+        self.tmp_files = []
+        if tmp_files is not None:
+            if not isinstance(tmp_files,list):
+                tmp_files = [tmp_files]
+            self.tmp_files.extend(tmp_files)
 
         if k_zone_dict is None:
             self.k_zone_dict = {k:self.m.bas6.ibound[k].array for k in np.arange(self.m.nlay)}
@@ -1259,7 +1273,11 @@ class PstFromFlopyModel(object):
                 alist.append("pyemu.helpers.run('{0}')\n".format(cmd))
 
         # add the model call
-        line = "pyemu.helpers.run('{0} {1} 1>{1}.stdout 2>{1}.stderr')".format(self.m.exe_name,self.m.namefile)
+
+        if model_exe_name is None:
+            model_exe_name = self.m.exe_name
+            self.logger.warn("using flopy binary to execute the model:{0}".format(mod))
+        line = "pyemu.helpers.run('{0} {1} 1>{1}.stdout 2>{1}.stderr')".format(model_exe_name,self.m.namefile)
         self.logger.statement("forward_run line:{0}".format(line))
         self.frun_model_lines.append(line)
 
@@ -2038,6 +2056,11 @@ class PstFromFlopyModel(object):
         with open(os.path.join(self.m.model_ws,self.forward_run_file),'w') as f:
             f.write("import os\nimport numpy as np\nimport pandas as pd\nimport flopy\n")
             f.write("import pyemu\n")
+            for tmp_file in self.tmp_files:
+                f.write("try:\n")
+                f.write("   os.remove('{0}')\n".format(tmp_file))
+                f.write("except Exception as e:\n")
+                f.write("   print('error removing tmp file:{0}')\n".format(tmp_file))
             for line in self.frun_pre_lines:
                 f.write(line+'\n')
             for line in self.frun_model_lines:
@@ -2272,6 +2295,7 @@ class PstFromFlopyModel(object):
         setup_hds_obs(os.path.join(self.m.model_ws,hds_file),
                       kperk_pairs=self.hds_kperk,skip=skip)
         self.frun_post_lines.append("pyemu.gw_utils.apply_hds_obs('{0}')".format(hds_file))
+        self.tmp_files.append(hds_file)
 
     def setup_smp(self):
         """ setup observations from PEST-style SMP file pairs
@@ -2313,6 +2337,7 @@ class PstFromFlopyModel(object):
             return
         hob_df = pyemu.gw_utils.modflow_hob_to_instruction_file(hob_out_fname)
         self.obs_dfs["hob"] = hob_df
+        self.tmp_files.append(os.path.split(hob_out_fname))
 
     def setup_hyd(self):
         """ setup observations from the MODFLOW HYDMOD package
@@ -2335,6 +2360,7 @@ class PstFromFlopyModel(object):
         self.logger.statement("forward_run line: {0}".format(line))
         self.frun_post_lines.append(line)
         self.obs_dfs["hyd"] = df
+        self.tmp_files.append(os.path.split(new_hyd_out)[-1])
 
     def setup_water_budget_obs(self):
         """ setup observations from the MODFLOW list file for
@@ -2358,9 +2384,10 @@ class PstFromFlopyModel(object):
                                                             start_datetime=self.m.start_datetime)
         if df is not None:
             self.obs_dfs["wb"] = df
-        line = "try:\n    os.remove('{0}')\nexcept:\n    pass".format(os.path.split(list_file)[-1])
-        self.logger.statement("forward_run line:{0}".format(line))
-        self.frun_pre_lines.append(line)
+        #line = "try:\n    os.remove('{0}')\nexcept:\n    pass".format(os.path.split(list_file)[-1])
+        #self.logger.statement("forward_run line:{0}".format(line))
+        #self.frun_pre_lines.append(line)
+        self.tmp_files.append(os.path.split(list_file)[-1])
         line = "pyemu.gw_utils.apply_mflist_budget_obs('{0}',flx_filename='{1}',vol_filename='{2}',start_datetime='{3}')".\
                 format(os.path.split(list_file)[-1],
                        os.path.split(flx_file)[-1],
@@ -2407,7 +2434,7 @@ def apply_array_pars():
 
         for mlt in df_mf.mlt_file:
             org_arr *= np.loadtxt(mlt)
-        np.savetxt(model_file,org_arr,fmt="%15.6E")
+        np.savetxt(model_file,org_arr,fmt="%15.6E",delimiter='')
 
 def apply_bc_pars():
     """ a function to apply boundary condition multiplier parameters.  Used to implement

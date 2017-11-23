@@ -1605,7 +1605,7 @@ class Pst(object):
         tries to run inschek to populate obsval with the current model output file values
 
         """
-        assert os.path.exists(ins_file)
+        assert os.path.exists(ins_file),"{0}, {1}".format(os.getcwd(),ins_file)
 
         # get the parameter names in the template file
         obsnme = pst_utils.parse_ins_file(ins_file)

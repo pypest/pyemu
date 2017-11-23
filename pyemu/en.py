@@ -385,7 +385,8 @@ class ObservationEnsemble(Ensemble):
         obsval = self.pst.observation_data.loc[self.names,"obsval"]
         phi_vec = []
         for idx in self.index.values:
-            phi = ((self.loc[idx,self.names] - obsval)**2 * weights).sum()
+            simval = self.loc[idx,self.names]
+            phi = (((simval - obsval) * weights)**2).sum()
             phi_vec.append(phi)
         return pd.DataFrame({"phi":phi_vec},index=self.index)
 

@@ -291,9 +291,10 @@ def from_flopy_test():
     pp_props = [["upw.ss",0],["upw.ss",1],["upw.ss",2],["extra.prsity",0],\
                 ["rch.rech",np.arange(182)],["rch.rech",np.arange(183,365)]]
     helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
-                                    pp_props=pp_props,hds_kperk=[0,0],remove_existing=True)
+                                    pp_props=pp_props,hds_kperk=[0,0],remove_existing=True,
+                                             model_exe_name="mfnwt")
 
-
+    return
     m = flopy.modflow.Modflow.load(nam_file,model_ws=org_model_ws,exe_name="mfnwt")
     const_props = [["rch.rech",i] for i in range(365)]
     helper = pyemu.helpers.PstFromFlopyModel(m,new_model_ws,
@@ -310,7 +311,6 @@ def from_flopy_test():
     helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
                                     grid_props=grid_props,hds_kperk=[0,0],remove_existing=True)
 
-    return
     # zones using ibound values - vka in layer 2
     zone_props = ["upw.vka",1]
     helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
@@ -423,11 +423,11 @@ def add_obs_test():
     print(pst.observation_data.loc["crap1","obsval"], oval)
 
 if __name__ == "__main__":
-    add_obs_test()
+    #add_obs_test()
     #add_pars_test()
     #setattr_test()
     # run_array_pars()
-    #from_flopy_test()
+    from_flopy_test()
     #add_pi_test()
     # regdata_test()
     # nnz_groups_test()
