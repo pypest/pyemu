@@ -1284,7 +1284,6 @@ class PstFromFlopyModel(object):
         self.tpl_files,self.in_files = [],[]
         self.ins_files,self.out_files = [],[]
 
-
         self.setup_mult_dirs()
 
         self.mlt_files = []
@@ -1765,6 +1764,9 @@ class PstFromFlopyModel(object):
             mlt_df.loc[mlt_df.mlt_file==out_file,"pp_file"] = pp_file
         self.par_dfs[self.pp_suffix] = pp_df
 
+        mlt_df.loc[mlt_df.suffix==self.pp_suffix,"tpl_file"] = np.NaN
+
+
     def setup_array_pars(self):
         """ main entry point for setting up array multipler parameters
 
@@ -1773,6 +1775,7 @@ class PstFromFlopyModel(object):
         if mlt_df is None:
             return
         mlt_df.loc[:,"tpl_file"] = mlt_df.mlt_file.apply(lambda x: os.path.split(x)[-1]+".tpl")
+        #mlt_df.loc[mlt_df.tpl_file.apply(lambda x:pd.notnull(x.pp_file)),"tpl_file"] = np.NaN
         mlt_files = mlt_df.mlt_file.unique()
         #for suffix,tpl_file,layer,name in zip(self.mlt_df.suffix,
         #                                 self.mlt_df.tpl,self.mlt_df.layer,
@@ -1842,6 +1845,11 @@ class PstFromFlopyModel(object):
             np.savetxt(os.path.join(self.m.model_ws,mlt_file),
                        ones,fmt="%15.6E")
             self.log("save test mlt array {0}".format(mlt_file))
+        for tpl_file,mlt_file in zip(mlt_df.tpl_file,mlt_df.mlt_file):
+            if pd.isnull(tpl_file):
+                continue
+            self.tpl_files.append(tpl_file)
+            self.in_files.append(mlt_file)
 
         os.chdir(self.m.model_ws)
         try:
@@ -1934,10 +1942,14 @@ class PstFromFlopyModel(object):
         """
         self.log("changing dir in to {0}".format(self.m.model_ws))
         os.chdir(self.m.model_ws)
+        tpl_files = self.tpl_files.copy()
+        in_files = self.in_files.copy()
         try:
             files = os.listdir('.')
-            tpl_files = [f for f in files if f.endswith(".tpl")]
-            in_files = [f.replace(".tpl",'') for f in tpl_files]
+            new_tpl_files = [f for f in files if f.endswith(".tpl") and f not in tpl_files]
+            new_in_files = [f.replace(".tpl",'') for f in new_tpl_files]
+            tpl_files.extend(new_tpl_files)
+            in_files.extend(new_in_files)
             ins_files = [f for f in files if f.endswith(".ins")]
             out_files = [f.replace(".ins",'') for f in ins_files]
             for tpl_file,in_file in zip(tpl_files,in_files):
