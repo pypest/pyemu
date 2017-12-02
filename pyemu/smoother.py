@@ -1,11 +1,6 @@
 """this is a prototype ensemble smoother based on the LM-EnRML
 algorithm of Chen and Oliver 2013.  It requires the pest++ "sweep" utility
- to propagate the ensemble forward.
-
- TODO:
- handle fixed and tied pars
- handle "bunk" mod-sim equivs, like dry cells
-
+to propagate the ensemble forward.
 """
 from __future__ import print_function, division
 import os
@@ -118,6 +113,10 @@ class EnsembleMethod():
         """
         return pd.DataFrame(data={"phi":self._calc_phi_vec(self.obsensemble)},\
                             index=self.obsensemble.index)
+
+    @property
+    def current_actual_phi(self):
+        return self.obsensemble.phi_vector()
 
     def initialize(self,*args,**kwargs):
         raise Exception("EnsembleMethod.initialize() must be implemented by the derived types")
@@ -283,8 +282,8 @@ class EnsembleMethod():
             phi_vec.append(((obs_diff.x[i,:] * q)**2).sum())
         return np.array(phi_vec)
 
-    def _phi_report(self,phi_vec,cur_lam):
-        self.phi_csv.write("{0},{1},{2},{3},{4},{5},{6}".format(self.iter_num,
+    def _phi_report(self,phi_csv,phi_vec,cur_lam):
+        phi_csv.write("{0},{1},{2},{3},{4},{5},{6}".format(self.iter_num,
                                                              self.total_runs,
                                                              cur_lam,
                                                              phi_vec.min(),
@@ -292,9 +291,22 @@ class EnsembleMethod():
                                                              phi_vec.mean(),
                                                              np.median(phi_vec),
                                                              phi_vec.std()))
-        self.phi_csv.write(",".join(["{0:20.8}".format(phi) for phi in phi_vec]))
-        self.phi_csv.write("\n")
-        self.phi_csv.flush()
+        phi_csv.write(",".join(["{0:20.8}".format(phi) for phi in phi_vec]))
+        phi_csv.write("\n")
+        phi_csv.flush()
+
+    # def _phi_report(self,phi_vec,cur_lam):
+    #     self.phi_csv.write("{0},{1},{2},{3},{4},{5},{6}".format(self.iter_num,
+    #                                                          self.total_runs,
+    #                                                          cur_lam,
+    #                                                          phi_vec.min(),
+    #                                                          phi_vec.max(),
+    #                                                          phi_vec.mean(),
+    #                                                          np.median(phi_vec),
+    #                                                          phi_vec.std()))
+    #     self.phi_csv.write(",".join(["{0:20.8}".format(phi) for phi in phi_vec]))
+    #     self.phi_csv.write("\n")
+    #     self.phi_csv.flush()
 
     def _get_residual_matrix(self, obsensemble):
         obs_matrix = obsensemble.nonzero.as_pyemu_matrix()
@@ -477,6 +489,11 @@ class EnsembleSmoother(EnsembleMethod):
         self.phi_csv.write(','.join(["{0:010d}". \
                                     format(i + 1) for i in range(num_reals)]))
         self.phi_csv.write('\n')
+        self.phi_act_csv = open(self.pst.filename + ".iobj.actual.csv", 'w')
+        self.phi_act_csv.write("iter_num,total_runs,lambda,min,max,mean,median,std,")
+        self.phi_act_csv.write(','.join(["{0:010d}". \
+                                    format(i + 1) for i in range(num_reals)]))
+        self.phi_act_csv.write('\n')
 
         if restart_obsensemble is not None:
             self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
@@ -521,7 +538,8 @@ class EnsembleSmoother(EnsembleMethod):
 
                 self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
 
-        self._phi_report(self.current_phi_vec,0.0)
+        self._phi_report(self.phi_csv,self.current_phi_vec,0.0)
+        self._phi_report(self.phi_act_csv, self.obsensemble.phi_vector, 0.0)
 
         self.last_best_mean = self.current_phi_vec.mean()
         self.last_best_std = self.current_phi_vec.std()
@@ -891,7 +909,9 @@ class EnsembleSmoother(EnsembleMethod):
 
                     self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
 
-            self._phi_report(self.current_phi_vec,self.current_lambda * lambda_mults[best_i])
+            self._phi_report(self.phi_csv,self.current_phi_vec,self.current_lambda * lambda_mults[best_i])
+            self._phi_report(self.phi_act_csv, self.obsensemble.phi_vector,self.current_lambda * lambda_mults[best_i])
+
 
             self.logger.statement("   best lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
                   format(self.current_lambda*lambda_mults[best_i],

@@ -1267,7 +1267,6 @@ def setup_lorenz():
 
     pyemu.helpers.run("pestpp lorenz.pst",cwd=d)
 
-
 if __name__ == "__main__":
 
     #setup_lorenz()

@@ -89,6 +89,7 @@ def modflow_hydmod_to_instruction_file(hydmod_file):
     hydmod_file : str
         modflow hydmod file
 
+
     Returns
     -------
     df : pandas.DataFrame
@@ -161,7 +162,7 @@ def modflow_read_hydmod_file(hydmod_file, hydmod_outfile=None):
     obs = fu.HydmodObs(hydmod_file)
     hyd_df = obs.get_dataframe()
 
-    hyd_df.columns = [i[:12] if i.lower() != 'totim' else i for i in hyd_df.columns]
+    hyd_df.columns = [i[2:] if i.lower() != 'totim' else i for i in hyd_df.columns]
     #hyd_df.loc[:,"datetime"] = hyd_df.index
     hyd_df['totim'] = hyd_df.index.map(lambda x: x.strftime("%Y%m%d"))
 
@@ -173,7 +174,15 @@ def modflow_read_hydmod_file(hydmod_file, hydmod_outfile=None):
 
     hyd_df.rename(columns={'value': 'obsval'}, inplace=True)
 
-    hyd_df['obsnme'] = [i + '_' + j for i, j in zip(hyd_df.variable, hyd_df.datestamp)]
+    hyd_df['obsnme'] = [i.lower() + '_' + j.lower() for i, j in zip(hyd_df.variable, hyd_df.datestamp)]
+
+    vc = hyd_df.obsnme.value_counts().sort_values()
+    vc = list(vc.loc[vc>1].index.values)
+    if len(vc) > 0:
+        hyd_df.to_csv("hyd_df.duplciates.csv")
+        obs.get_dataframe().to_csv("hyd_org.duplicates.csv")
+        raise Exception("duplicates in obsnme:{0}".format(vc))
+    #assert hyd_df.obsnme.value_counts().max() == 1,"duplicates in obsnme"
 
     if not hydmod_outfile:
         hydmod_outfile = hydmod_file + '.dat'
