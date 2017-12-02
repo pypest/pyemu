@@ -1588,11 +1588,14 @@ class PstFromFlopyModel(object):
         df.loc[:,"tpl"] = tpl_file
         return df
 
-    def write_zone_tpl(self,name,tpl_file,zn_array):
+    @staticmethod
+    def write_zone_tpl(model, name, tpl_file, zn_array, logger=None):
         """ write a template file a for zone-based multiplier parameters
 
         Parameters
         ----------
+        model : flopy model object
+            model from which to obtain workspace information, nrow, and ncol
         name : str
             the base parameter name
         tpl_file : str
@@ -1600,6 +1603,8 @@ class PstFromFlopyModel(object):
         zn_array : numpy.ndarray
             an array used to skip inactive cells
 
+        logger : a logger object
+            optional - a logger object to document errors, etc.
         Returns
         -------
         df : pandas.DataFrame
@@ -1607,23 +1612,24 @@ class PstFromFlopyModel(object):
 
         """
         parnme = []
-        with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
+        with open(os.path.join(model.model_ws, tpl_file), 'w') as f:
             f.write("ptf ~\n")
-            for i in range(self.m.nrow):
-                for j in range(self.m.ncol):
+            for i in range(model.nrow):
+                for j in range(model.ncol):
                     if zn_array[i,j] < 1:
                         pname = " 1.0  "
                     else:
-                        pname = "{0}_zn{1}".format(name,zn_array[i,j])
+                        pname = "{0}_zn{1}".format(name, zn_array[i, j])
                         if len(pname) > 12:
-                            self.logger.lraise("zone pname too long:{0}".\
+                            if logger is not None:
+                                logger.lraise("zone pname too long:{0}".\
                                                format(pname))
                         parnme.append(pname)
                         pname = " ~   {0}    ~".format(pname)
                     f.write(pname)
                 f.write("\n")
-        df = pd.DataFrame({"parnme":parnme},index=parnme)
-        df.loc[:,"pargp"] = "{0}{1}".format(self.zn_suffix,name)
+        df = pd.DataFrame({"parnme":parnme}, index=parnme)
+        df.loc[:, "pargp"] = "{0}{1}".format(self.zn_suffix, name)
         return df
 
     def grid_prep(self):
@@ -1640,7 +1646,7 @@ class PstFromFlopyModel(object):
             v = pyemu.geostats.ExpVario(contribution=1.0,a=dist)
             self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v)
 
-    def pp_prep(self,mlt_df):
+    def pp_prep(self, mlt_df):
         """ prepare pilot point based parameterizations
 
         Parameters
@@ -1817,7 +1823,7 @@ class PstFromFlopyModel(object):
 
             elif suffix == self.zn_suffix:
                 self.log("writing zone tpl:{0}".format(tpl_file))
-                df = self.write_zone_tpl(name,tpl_file,ib)
+                df = write_zone_tpl(self.m, name, tpl_file, ib, self.logger)
                 self.log("writing zone tpl:{0}".format(tpl_file))
             if df is None:
                 continue
