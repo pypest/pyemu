@@ -1276,7 +1276,7 @@ class PstFromFlopyModel(object):
 
         if model_exe_name is None:
             model_exe_name = self.m.exe_name
-            self.logger.warn("using flopy binary to execute the model:{0}".format(mod))
+            self.logger.warn("using flopy binary to execute the model:{0}".format(model))
         line = "pyemu.helpers.run('{0} {1} 1>{1}.stdout 2>{1}.stderr')".format(model_exe_name,self.m.namefile)
         self.logger.statement("forward_run line:{0}".format(line))
         self.frun_model_lines.append(line)
