@@ -1942,8 +1942,8 @@ class PstFromFlopyModel(object):
         """
         self.log("changing dir in to {0}".format(self.m.model_ws))
         os.chdir(self.m.model_ws)
-        tpl_files = self.tpl_files.copy()
-        in_files = self.in_files.copy()
+        tpl_files = copy.deepcopy(self.tpl_files)
+        in_files = copy.deepcopy(self.in_files)
         try:
             files = os.listdir('.')
             new_tpl_files = [f for f in files if f.endswith(".tpl") and f not in tpl_files]
