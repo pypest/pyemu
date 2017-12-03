@@ -2284,12 +2284,12 @@ class PstFromFlopyModel(object):
         if self.hds_kperk is None or len(self.hds_kperk) == 0:
             return
         from .gw_utils import setup_hds_obs
-        if len(self.hds_kperk) == 2:
-            try:
-                if len(self.hds_kperk[0] == 2):
-                    pass
-            except:
-                self.hds_kperk = [self.hds_kperk]
+        # if len(self.hds_kperk) == 2:
+        #     try:
+        #         if len(self.hds_kperk[0] == 2):
+        #             pass
+        #     except:
+        #         self.hds_kperk = [self.hds_kperk]
         oc = self.m.get_package("OC")
         if oc is None:
             raise Exception("can't find OC package in model to setup hds grid obs")
@@ -2310,6 +2310,7 @@ class PstFromFlopyModel(object):
             skip = lambda x: np.NaN if x == self.m.bas6.hnoflo else x
         else:
             skip = lambda x: np.NaN if x == self.m.bas6.hnoflo or x == inact else x
+        print(self.hds_kperk)
         setup_hds_obs(os.path.join(self.m.model_ws,hds_file),
                       kperk_pairs=self.hds_kperk,skip=skip)
         self.frun_post_lines.append("pyemu.gw_utils.apply_hds_obs('{0}')".format(hds_file))
