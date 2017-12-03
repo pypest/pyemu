@@ -1296,7 +1296,7 @@ class PstFromFlopyModel(object):
         self.setup_array_pars()
         self.setup_observations()
         self.build_pst()
-        self.build_prior()
+        self.parcov = self.build_prior()
         self.log("saving intermediate _setup_<> dfs into {0}".
                  format(self.m.model_ws))
         for tag,df in self.par_dfs.items():
@@ -1589,7 +1589,7 @@ class PstFromFlopyModel(object):
         return df
 
     @staticmethod
-    def write_zone_tpl(model, name, tpl_file, zn_array, logger=None):
+    def write_zone_tpl(model, name, tpl_file, zn_array, zn_suffix, logger=None):
         """ write a template file a for zone-based multiplier parameters
 
         Parameters
@@ -1629,7 +1629,7 @@ class PstFromFlopyModel(object):
                     f.write(pname)
                 f.write("\n")
         df = pd.DataFrame({"parnme":parnme}, index=parnme)
-        df.loc[:, "pargp"] = "{0}{1}".format(self.zn_suffix, name)
+        df.loc[:, "pargp"] = "{0}{1}".format(zn_suffix, name)
         return df
 
     def grid_prep(self):
@@ -1823,7 +1823,7 @@ class PstFromFlopyModel(object):
 
             elif suffix == self.zn_suffix:
                 self.log("writing zone tpl:{0}".format(tpl_file))
-                df = write_zone_tpl(self.m, name, tpl_file, ib, self.logger)
+                df = self.write_zone_tpl(self.m, name, tpl_file, ib, self.zn_suffix, self.logger)
                 self.log("writing zone tpl:{0}".format(tpl_file))
             if df is None:
                 continue

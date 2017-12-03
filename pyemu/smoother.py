@@ -462,8 +462,10 @@ class EnsembleSmoother(EnsembleMethod):
             #self.num_reals = int(num_reals)
             #assert self.num_reals > 1
             self.logger.log("initializing parensemble")
-            self.parensemble_0 = ParameterEnsemble(self.pst)
-            self.parensemble_0.draw(cov=self.parcov,num_reals=num_reals)
+            #self.parensemble_0 = ParameterEnsemble(self.pst)
+            #self.parensemble_0.draw(cov=self.parcov,num_reals=num_reals)
+            self.parensemble_0 = pyemu.ParameterEnsemble.from_gaussian_draw(ParameterEnsemble(self.pst),
+                                                                            self.parcov,num_reals=num_reals)
             self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
             self.logger.log("initializing parensemble")
             self.parensemble = self.parensemble_0.copy()
@@ -471,8 +473,10 @@ class EnsembleSmoother(EnsembleMethod):
                                       self.paren_prefix.format(0))
             self.logger.log("initializing parensemble")
             self.logger.log("initializing obsensemble")
-            self.obsensemble_0 = ObservationEnsemble(self.pst)
-            self.obsensemble_0.draw(cov=self.obscov,num_reals=num_reals)
+            #self.obsensemble_0 = ObservationEnsemble(self.pst)
+            #self.obsensemble_0.draw(cov=self.obscov,num_reals=num_reals)
+            self.obsensemble_0 = pyemu.ObservationEnsemble.from_id_gaussian_draw(ObservationEnsemble(self.pst),
+                                                                                 num_reals=num_reals)
             #self.obsensemble = self.obsensemble_0.copy()
 
             # save the base obsensemble
