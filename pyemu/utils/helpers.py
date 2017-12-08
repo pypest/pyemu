@@ -851,7 +851,7 @@ def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
     return ax
 
 
-def gaussian_distribution(mean,stdev,num_pts=50):
+def gaussian_distribution(mean, stdev, num_pts=50):
     """ get an x and y numpy.ndarray that spans the +/- 4
     standard deviation range of a gaussian distribution with
     a given mean and standard deviation. useful for plotting
