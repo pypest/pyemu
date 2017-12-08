@@ -858,9 +858,19 @@ def par_knowledge_test():
     assert np.array_equiv(d1, d2)
 
 
+def gw_sft_ins_test():
+    import os
+    import pyemu
+
+    sft_outfile = os.path.join("utils","test_sft.out")
+    pyemu.gw_utils.setup_sft_obs(sft_outfile)
+
+    pyemu.gw_utils.setup_sft_obs(sft_outfile,start_datetime="1-1-1970")
+
 if __name__ == "__main__":
+    gw_sft_ins_test()
     # par_knowledge_test()
-    grid_obs_test()
+    # grid_obs_test()
     # plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()

@@ -3,10 +3,11 @@
 
 import os
 import copy
+from datetime import datetime
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
-from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config
+from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,_try_run_inschek
 from pyemu.utils.helpers import run
 PP_FMT = {"name": SFMT, "x": FFMT, "y": FFMT, "zone": IFMT, "tpl": SFMT,
           "parval1": FFMT}
@@ -656,3 +657,26 @@ def apply_hds_obs(hds_file):
         df.loc[df_kper.index,"obsval"] = data[df_kper.k,df_kper.i,df_kper.j]
     assert df.dropna().shape[0] == df.shape[0]
     df.loc[:,["obsnme","obsval"]].to_csv(out_file,index=False,sep=" ")
+
+
+def setup_sft_obs(sft_file,ins_file=None,start_datetime=None):
+    df = pd.read_csv(sft_file,skiprows=1,delim_whitespace=True)
+    df.columns = [c.lower().replace("-","_") for c in df.columns]
+    if start_datetime is not None:
+        start_datetime = pd.to_datetime(start_datetime)
+        df.loc[:,"time_str"] = pd.to_timedelta(df.time,unit='d') + start_datetime
+        df.loc[:,"time_str"] = df.time_str.apply(lambda x: datetime.strftime(x,"%d%m%Y"))
+    else:
+        df.loc[:,"time_str"] = df.time.apply(lambda x: "{0:08.2f}".format(x))
+    df.loc[:,"ins_str"] = df.apply(lambda x: "l1 w w w !sfrconc{0}_{1}! !flowgw{0}_{1}! !gwconc{0}_{1}!\n".\
+                                   format(x.sfr_node,x.time_str),axis=1)
+    df.index = np.arange(df.shape[0])
+    if ins_file is None:
+        ins_file = sft_file+".ins"
+
+    with open(ins_file,'w') as f:
+        f.write("pif ~\nl2\n")
+        [f.write(i) for i in df.ins_str]
+    df = _try_run_inschek(ins_file,sft_file)
+
+    return df
