@@ -1634,6 +1634,36 @@ class Matrix(object):
         col_names = copy.deepcopy(list(df.columns))
         return cls(x=df.as_matrix(),row_names=row_names,col_names=col_names)
 
+
+    @classmethod
+    def from_names(cls,row_names,col_names,isdiagonal=False,autoalign=True):
+        """ class method to create a new Matrix instance from
+        row names and column names, filled with trash
+
+        Parameters
+        ----------
+            row_names : iterable
+                row names for the new matrix
+            col_names : iterable
+                col_names for the new matrix
+            isdiagonal : bool
+                flag for diagonal matrix. Default is False
+            autoalign : bool
+                flag for autoaligning new matrix
+                during linear algebra calcs. Default
+                is True
+
+        Returns
+        -------
+            mat : Matrix
+                the new Matrix instance
+
+        """
+
+        return cls(x=np.empty((len(row_names),len(col_names))),row_names=row_names,
+                      col_names=col_names,isdiagonal=isdiagonal,autoalign=autoalign)
+
+
     def to_dataframe(self):
         """return a pandas.DataFrame representation of the Matrix object
 
@@ -1824,6 +1854,29 @@ class Jco(Matrix):
         otheridx = [np.where(np.array(otherobs) == i)[0][0] for i in parnames]
         self.x[:,selfidx] = other.x[:,otheridx]
 
+
+    @classmethod
+    def from_pst(cls,pst):
+        """construct a new empty Jco from a control file filled
+        with trash
+
+        Parameters
+        ----------
+            pst : Pst
+                a control file instance.  If type is 'str',
+                Pst is loaded from filename
+
+        Return
+        ------
+            jco : Jco
+                the new Jco instance
+
+        """
+
+        if isinstance(pst,str):
+            pst = Pst(pst)
+
+        return Jco.from_names(pst.adj_par_names,pst.obs_names)
 
 class Cov(Matrix):
     """a subclass of Matrix for handling diagonal or dense Covariance matrices

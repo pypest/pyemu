@@ -241,6 +241,30 @@ def cov_replace_test():
     cov1.replace(cov2)
     assert cov1.x[-1,-1] == 2.0
 
+
+def from_names_test():
+    import os
+    import pyemu
+
+    rnames = ["row_{0}".format(i) for i in range(20)]
+    cnames = ["col_{0}".format(i) for i in range(40)]
+
+    m = pyemu.Matrix.from_names(rnames,cnames)
+    assert m.shape[0] == len(rnames)
+    assert m.shape[1] == len(cnames)
+
+    pst_name = os.path.join("pst","pest.pst")
+    pst = pyemu.Pst(pst_name)
+    j = pyemu.Jco.from_pst(pst)
+
+    jj = pyemu.Jco.from_pst(pst_name)
+
+    assert j.shape == jj.shape
+
+
+    c = pyemu.Cov.from_names(rnames,cnames)
+    assert type(c) == pyemu.Cov
+
 if __name__ == "__main__":
     #mat_test()
     #load_jco_test()
@@ -253,4 +277,5 @@ if __name__ == "__main__":
     #get_diag_test()
     #to_pearson_test()
     #sigma_range_test()
-    cov_replace_test()
+    #cov_replace_test()
+    from_names_test()
