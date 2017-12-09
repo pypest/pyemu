@@ -867,6 +867,9 @@ def gw_sft_ins_test():
 
     pyemu.gw_utils.setup_sft_obs(sft_outfile,start_datetime="1-1-1970")
 
+    pyemu.gw_utils.setup_sft_obs(sft_outfile, start_datetime="1-1-1970",times=[30.0,4*30])
+
+
 if __name__ == "__main__":
     gw_sft_ins_test()
     # par_knowledge_test()

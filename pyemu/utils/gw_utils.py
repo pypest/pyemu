@@ -523,6 +523,7 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
             jidx.extend([j for j in range(hds.ncol)])
             idx.extend(["i{0:04d}_j{1:04d}".format(i,j) for j in range(hds.ncol)])
     idx = idx[:hds.nrow*hds.ncol]
+
     df = pd.DataFrame(data,index=idx)
     data_cols = list(df.columns)
     data_cols.sort()
@@ -659,17 +660,59 @@ def apply_hds_obs(hds_file):
     df.loc[:,["obsnme","obsval"]].to_csv(out_file,index=False,sep=" ")
 
 
-def setup_sft_obs(sft_file,ins_file=None,start_datetime=None):
+def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None):
+    """writes an instruction file for a mt3d-usgs sft output file
+
+    Parameters
+    ----------
+        sft_file : str
+            the sft output file (ASCII)
+        ins_file : str
+            the name of the instruction file to create.  If None, the name
+            is <sft_file>.ins.  Default is None
+        start_datetime : str
+            a pandas.to_datetime() compatible str.  If not None,
+            then the resulting observation names have the datetime
+            suffix.  If None, the suffix is the output totim.  Default
+            is None
+        times : iterable
+            a container of times to make observations for.  If None, all times are used.
+            Default is None.
+
+
+    Returns
+    -------
+        df : pandas.DataFrame
+            a dataframe with obsnme and obsval for the sft simulated concentrations and flows.
+            If inschek was not successfully run, then returns None
+
+
+    Note
+    ----
+        setups up observations for SW conc, GW conc and flowgw for all times and reaches.
+    """
+
     df = pd.read_csv(sft_file,skiprows=1,delim_whitespace=True)
     df.columns = [c.lower().replace("-","_") for c in df.columns]
+    if times is None:
+        times = df.time.unique()
+    missing = []
+    for t in times:
+        if t not in df.time:
+            missing.append(str(t))
+    if len(missing) > 0:
+        print(df.time)
+        raise Exception("the following times are missing:{0}".format(','.join(missing)))
+    idx = df.time.apply(lambda x: x in times)
     if start_datetime is not None:
         start_datetime = pd.to_datetime(start_datetime)
         df.loc[:,"time_str"] = pd.to_timedelta(df.time,unit='d') + start_datetime
         df.loc[:,"time_str"] = df.time_str.apply(lambda x: datetime.strftime(x,"%d%m%Y"))
     else:
         df.loc[:,"time_str"] = df.time.apply(lambda x: "{0:08.2f}".format(x))
-    df.loc[:,"ins_str"] = df.apply(lambda x: "l1 w w w !sfrconc{0}_{1}! !flowgw{0}_{1}! !gwconc{0}_{1}!\n".\
-                                   format(x.sfr_node,x.time_str),axis=1)
+    df.loc[:,"ins_str"] = "l1\n"
+    df.loc[idx,"ins_str"] = df.apply(lambda x: "l1 w w w !sfrconc{0}_{1}! !flowgw{0}_{1}! !gwconc{0}_{1}!\n".\
+                                     format(x.sfr_node,x.time_str),axis=1)
     df.index = np.arange(df.shape[0])
     if ins_file is None:
         ins_file = sft_file+".ins"
@@ -678,5 +721,27 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None):
         f.write("pif ~\nl2\n")
         [f.write(i) for i in df.ins_str]
     df = _try_run_inschek(ins_file,sft_file)
+    if df is not None:
+        return df
+    else:
+        return None
 
-    return df
+
+
+# def setup_ssm_parameters(mt):
+#     """Set up ssm file multiplier parameters for the point sources and sinks
+#
+#     Parameters
+#     ----------
+#         ssm_file : str
+#             the ssm file to parameterize
+#
+#     """
+#     try:
+#         import flopy
+#     except Exception as e:
+#         raise Exception("error importing flopy: {0}".format(str(e)))
+#
+#     # first load the stress period list data in the ssm file
+#
+#     ssm = flopy.mt3d.Mt3dSsm.load(ssm_file,
