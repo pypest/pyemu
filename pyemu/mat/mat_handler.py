@@ -1636,7 +1636,7 @@ class Matrix(object):
 
 
     @classmethod
-    def from_names(cls,row_names,col_names,isdiagonal=False,autoalign=True):
+    def from_names(cls,row_names,col_names,isdiagonal=False,autoalign=True, random=False):
         """ class method to create a new Matrix instance from
         row names and column names, filled with trash
 
@@ -1652,15 +1652,21 @@ class Matrix(object):
                 flag for autoaligning new matrix
                 during linear algebra calcs. Default
                 is True
-
+            random : bool
+                flag for contents of the trash matrix.
+                If True, fill with random numbers, if False, fill with zeros
+                Default is False
         Returns
         -------
             mat : Matrix
                 the new Matrix instance
 
         """
-
-        return cls(x=np.empty((len(row_names),len(col_names))),row_names=row_names,
+        if random:
+            return cls(x=np.random.random((len(row_names), len(col_names))), row_names=row_names,
+                       col_names=col_names, isdiagonal=isdiagonal, autoalign=autoalign)
+        else:
+            return cls(x=np.empty((len(row_names),len(col_names))),row_names=row_names,
                       col_names=col_names,isdiagonal=isdiagonal,autoalign=autoalign)
 
 
@@ -1856,7 +1862,7 @@ class Jco(Matrix):
 
 
     @classmethod
-    def from_pst(cls,pst):
+    def from_pst(cls,pst, random=False):
         """construct a new empty Jco from a control file filled
         with trash
 
@@ -1865,7 +1871,10 @@ class Jco(Matrix):
             pst : Pst
                 a control file instance.  If type is 'str',
                 Pst is loaded from filename
-
+            random : bool
+                flag for contents of the trash matrix.
+                If True, fill with random numbers, if False, fill with zeros
+                Default is False
         Return
         ------
             jco : Jco
@@ -1876,7 +1885,7 @@ class Jco(Matrix):
         if isinstance(pst,str):
             pst = Pst(pst)
 
-        return Jco.from_names(pst.adj_par_names,pst.obs_names)
+        return Jco.from_names(pst.adj_par_names,pst.obs_names, random=random)
 
 class Cov(Matrix):
     """a subclass of Matrix for handling diagonal or dense Covariance matrices
