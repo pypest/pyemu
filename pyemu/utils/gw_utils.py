@@ -697,8 +697,9 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None):
     if times is None:
         times = df.time.unique()
     missing = []
+    utimes = df.time.unique()
     for t in times:
-        if t not in df.time:
+        if t not in utimes:
             missing.append(str(t))
     if len(missing) > 0:
         print(df.time)
