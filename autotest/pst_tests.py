@@ -445,12 +445,12 @@ def test_write_input_files():
 
 
 if __name__ == "__main__":
-    test_write_input_files()
+    #test_write_input_files()
     #add_obs_test()
     #add_pars_test()
     #setattr_test()
     # run_array_pars()
-    #from_flopy_test()
+    from_flopy_test()
     #add_pi_test()
     # regdata_test()
     # nnz_groups_test()

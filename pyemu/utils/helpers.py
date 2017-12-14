@@ -2074,10 +2074,10 @@ class PstFromFlopyModel(object):
                                        format(tpl_file))
                 self.logger.statement("external tpl:{0}".format(tpl_file))
                 shutil.copy2(tpl_file,os.path.join(self.m.model_ws,
-                                                   os.path.split(tpl_file)))
+                                                   os.path.split(tpl_file)[-1]))
                 if os.path.exists(in_file):
                     shutil.copy2(in_file,os.path.join(self.m.model_ws,
-                                                   os.path.split(in_file)))
+                                                   os.path.split(in_file)[-1]))
 
         if self.external_ins_out_pairs is not None:
             if not isinstance(self.external_ins_out_pairs,list):
