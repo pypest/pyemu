@@ -243,7 +243,7 @@ def parse_tpl_file(tpl_file):
     return par_names
 
 
-def write_parvals_in_tplfiles(pst):
+def write_input_files(pst):
     """write parameter values to a model input files using a template files with
     current parameter values (stored in Pst.parameter_data.parval1).
     This is a simple implementation of what PEST does.  It does not
@@ -255,8 +255,10 @@ def write_parvals_in_tplfiles(pst):
         a Pst instance
 
     """
+    par = pst.parameter_data
+    par.loc[:,"parval1_trans"] = (par.parval1 * par.scale) + par.offset
     for tpl_file,in_file in zip(pst.template_files,pst.input_files):
-        write_to_template(pst.parameter_data.parval1,tpl_file,in_file)
+        write_to_template(pst.parameter_data.parval1_trans,tpl_file,in_file)
 
 def write_to_template(parvals,tpl_file,in_file):
     """ write parameter values to model input files using template files

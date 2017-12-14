@@ -1635,4 +1635,14 @@ class Pst(object):
             new_obs_data.loc[df.index,"obsval"] = df.obsval
         return new_obs_data
 
+    def write_input_files(self):
+        """writes model input files using template files and current parvals.
+        just syntatic sugar for pst_utils.write_input_files()
 
+        Note
+        ----
+            adds "parval1_trans" column to Pst.parmaeter_data that includes the
+            effect of scale and offset
+
+        """
+        pst_utils.write_input_files(self)
