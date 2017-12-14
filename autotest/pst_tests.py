@@ -421,12 +421,36 @@ def add_obs_test():
     assert os.path.join("temp", "crap.out.ins") in pst.instruction_files
     print(pst.observation_data.loc["crap1","obsval"], oval)
 
+def test_write_input_files():
+    import os
+    import shutil
+    import numpy as np
+    import pyemu
+    from pyemu import Pst, pst_utils
+    # creation functionality
+    dir = os.path.join("..", "verification", "10par_xsec", "template_mac")
+    if os.path.exists("temp_dir"):
+        shutil.rmtree("temp_dir")
+    shutil.copytree(dir,"temp_dir")
+    os.chdir("temp_dir")
+    pst = Pst(os.path.join("pest.pst"))
+    pst.write_input_files()
+    arr1 = np.loadtxt(pst.input_files[0])
+    print(pst.parameter_data.parval1)
+    pst.parameter_data.loc[:,"parval1"] *= 10.0
+    pst.write_input_files()
+    arr2 = np.loadtxt(pst.input_files[0])
+    assert (arr1 * 10).sum() == arr2.sum()
+    os.chdir("..")
+
+
 if __name__ == "__main__":
+    test_write_input_files()
     #add_obs_test()
     #add_pars_test()
     #setattr_test()
     # run_array_pars()
-    from_flopy_test()
+    #from_flopy_test()
     #add_pi_test()
     # regdata_test()
     # nnz_groups_test()
@@ -436,7 +460,7 @@ if __name__ == "__main__":
     # smp_test()
     # smp_dateparser_test()
     #pst_manip_test()
-    # tpl_ins_test()
+    #tpl_ins_test()
     #load_test()
     #res_test()
     #smp_test()
