@@ -288,13 +288,12 @@ def from_flopy_test():
     nam_file = "freyberg.nam"
 
     new_model_ws = "temp_pst_from_flopy"
-    pp_props = [["upw.ss",0],["upw.ss",1],["upw.ss",2],["extra.prsity",0],\
+    pp_props = [["upw.ss",[0,1]],["upw.ss",1],["upw.ss",2],["extra.prsity",0],\
                 ["rch.rech",np.arange(182)],["rch.rech",np.arange(183,365)]]
     helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
                                     pp_props=pp_props,hds_kperk=[0,0],remove_existing=True,
                                              model_exe_name="mfnwt")
 
-    return
     m = flopy.modflow.Modflow.load(nam_file,model_ws=org_model_ws,exe_name="mfnwt")
     const_props = [["rch.rech",i] for i in range(365)]
     helper = pyemu.helpers.PstFromFlopyModel(m,new_model_ws,

@@ -1442,11 +1442,13 @@ class PstFromFlopyModel(object):
             del(par_suffixs[i])
 
         mlt_dfs = []
-        for par_props,suffix in zip(par_props,par_suffixs):
-            if len(par_props) == 2:
-                if not isinstance(par_props[0],list):
-                    par_props = [par_props]
-            for pakattr,k_org in par_props:
+        for par_prop,suffix in zip(par_props,par_suffixs):
+            if len(par_prop) == 2:
+                if not isinstance(par_prop[0],list):
+                    par_prop = [par_prop]
+            if len(par_prop) == 0:
+                continue
+            for pakattr,k_org in par_prop:
                 attr_name = pakattr.split('.')[1]
                 pak,attr = self.parse_pakattr(pakattr)
                 ks = np.arange(self.m.nlay)
@@ -1638,6 +1640,7 @@ class PstFromFlopyModel(object):
         """
         if len(self.grid_props) == 0:
             return
+
         if self.grid_geostruct is None:
             self.logger.warn("grid_geostruct is None,"\
                   " using ExpVario with contribution=1 and a=(max(delc,delr)*10")
@@ -1673,10 +1676,18 @@ class PstFromFlopyModel(object):
             v = pyemu.geostats.ExpVario(contribution=1.0,a=pp_dist)
             self.pp_geostruct = pyemu.geostats.GeoStruct(variograms=v)
 
-
         pp_df = mlt_df.loc[mlt_df.suffix==self.pp_suffix,:]
         layers = pp_df.layer.unique()
-        pp_dict = {l:list(pp_df.loc[pp_df.layer==l,"prefix"]) for l in layers}
+        pp_dict = {l:list(pp_df.loc[pp_df.layer==l,"prefix"].unique()) for l in layers}
+        # big assumption here - if prefix is listed more than once, use the lowest layer index
+        for i,l in enumerate(layers):
+            p = set(pp_dict[l])
+            for ll in layers[i+1:]:
+                pp = set(pp_dict[ll])
+                d = pp - p
+                pp_dict[ll] = list(d)
+
+
         pp_array_file = {p:m for p,m in zip(pp_df.prefix,pp_df.mlt_file)}
         self.logger.statement("pp_dict: {0}".format(str(pp_dict)))
 
@@ -1707,9 +1718,19 @@ class PstFromFlopyModel(object):
         pp_df.loc[:,"fac_file"] = np.NaN
         for pg in pargp:
             ks = pp_df.loc[pp_df.pargp==pg,"k"].unique()
-            if len(ks) != 1:
+            if len(ks) == 0:
                 self.logger.lraise("something is wrong in fac calcs for par group {0}".format(pg))
+            if len(ks) == 1:
 
+                ib_k = ib[ks[0]]
+            if len(ks) != 1:
+                #self.logger.lraise("something is wrong in fac calcs for par group {0}".format(pg))
+                self.logger.warn("multiple k values for {0},forming composite zone array...".format(pg))
+                ib_k = np.zeros((self.m.nrow,self.m.ncol))
+                for k in ks:
+                    t = ib[k].copy()
+                    t[t<1] = 0
+                    ib_k[t>0] = t[t>0]
             k = int(ks[0])
             if k not in pp_dfs_k.keys():
                 self.log("calculating factors for k={0}".format(k))
@@ -1723,7 +1744,7 @@ class PstFromFlopyModel(object):
                 pp_df_k = pp_df.loc[pp_df.pargp==pg]
                 ok_pp = pyemu.geostats.OrdinaryKrige(self.pp_geostruct,pp_df_k)
                 ok_pp.calc_factors_grid(self.m.sr,var_filename=var_file,
-                                        zone_array=ib[k])
+                                        zone_array=ib_k)
                 ok_pp.to_grid_factors_file(fac_file)
                 fac_files[k] = fac_file
                 self.log("calculating factors for k={0}".format(k))
@@ -1809,21 +1830,21 @@ class PstFromFlopyModel(object):
                 self.logger.lraise("wrong number of names for {0}"\
                                    .format(mlt_file))
             name = names.iloc[0]
-            ib = self.k_zone_dict[layer]
+            #ib = self.k_zone_dict[layer]
             df = None
             if suffix == self.cn_suffix:
                 self.log("writing const tpl:{0}".format(tpl_file))
-                df = self.write_const_tpl(name,tpl_file,ib)
+                df = self.write_const_tpl(name,tpl_file,self.m.bas6.ibound[layer].array)
                 self.log("writing const tpl:{0}".format(tpl_file))
 
             elif suffix == self.gr_suffix:
                 self.log("writing grid tpl:{0}".format(tpl_file))
-                df = self.write_grid_tpl(name,tpl_file,ib)
+                df = self.write_grid_tpl(name,tpl_file,self.m.bas6.ibound[layer].array)
                 self.log("writing grid tpl:{0}".format(tpl_file))
 
             elif suffix == self.zn_suffix:
                 self.log("writing zone tpl:{0}".format(tpl_file))
-                df = self.write_zone_tpl(self.m, name, tpl_file, ib, self.zn_suffix, self.logger)
+                df = self.write_zone_tpl(self.m, name, tpl_file, self.k_zone_dict[layer], self.zn_suffix, self.logger)
                 self.log("writing zone tpl:{0}".format(tpl_file))
             if df is None:
                 continue
@@ -1851,11 +1872,20 @@ class PstFromFlopyModel(object):
             np.savetxt(os.path.join(self.m.model_ws,mlt_file),
                        ones,fmt="%15.6E")
             self.log("save test mlt array {0}".format(mlt_file))
-        for tpl_file,mlt_file in zip(mlt_df.tpl_file,mlt_df.mlt_file):
-            if pd.isnull(tpl_file):
-                continue
-            self.tpl_files.append(tpl_file)
-            self.in_files.append(mlt_file)
+            tpl_files = mlt_df.loc[mlt_df.mlt_file == mlt_file, "tpl_file"]
+            if tpl_files.unique().shape[0] != 1:
+                self.logger.lraise("wrong number of tpl_files for {0}" \
+                                   .format(mlt_file))
+            tpl_file = tpl_files.iloc[0]
+            if pd.notnull(tpl_file):
+                self.tpl_files.append(tpl_file)
+                self.in_files.append(mlt_file)
+
+        # for tpl_file,mlt_file in zip(mlt_df.tpl_file,mlt_df.mlt_file):
+        #     if pd.isnull(tpl_file):
+        #         continue
+        #     self.tpl_files.append(tpl_file)
+        #     self.in_files.append(mlt_file)
 
         os.chdir(self.m.model_ws)
         try:
