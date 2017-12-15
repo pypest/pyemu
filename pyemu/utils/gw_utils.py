@@ -399,8 +399,8 @@ def apply_mflist_budget_obs(list_filename,flx_filename="flux.dat",
         raise Exception("error import flopy: {0}".format(str(e)))
     mlf = flopy.utils.MfListBudget(list_filename)
     flx,vol = mlf.get_dataframes(start_datetime=start_datetime,diff=True)
-    flx.to_csv(flx_filename,sep=' ',index_label="datetime")
-    vol.to_csv(vol_filename,sep=' ',index_label="datetime")
+    flx.to_csv(flx_filename,sep=' ',index_label="datetime",date_format="%Y%M%d")
+    vol.to_csv(vol_filename,sep=' ',index_label="datetime",date_format="%Y%M%d")
     return flx,vol
 
 
