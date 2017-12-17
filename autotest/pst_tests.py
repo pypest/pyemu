@@ -444,13 +444,40 @@ def test_write_input_files():
     os.chdir("..")
 
 
+def res_stats_test():
+    import os
+    import pyemu
+
+    import os
+    import numpy as np
+    from pyemu import Pst, pst_utils
+    # residual functionality testing
+    pst_dir = os.path.join("pst")
+
+    p = pyemu.pst_utils.generic_pst(["p1"],["o1"])
+    try:
+        p.get_res_stats()
+    except:
+        pass
+    else:
+        raise Exception()
+
+    p = Pst(os.path.join(pst_dir, "pest.pst"))
+    phi_comp = p.phi_components
+    #print(phi_comp)
+    df = p.get_res_stats()
+    assert np.abs(df.loc["rss","all"] - p.phi) < 1.0e-6,"{0},{1}".format(df.loc["rss","all"],p.phi)
+    for pc in phi_comp.keys():
+        assert phi_comp[pc] == p.phi_components[pc]
+
 if __name__ == "__main__":
+    res_stats_test()
     #test_write_input_files()
     #add_obs_test()
     #add_pars_test()
     #setattr_test()
     # run_array_pars()
-    from_flopy_test()
+    #from_flopy_test()
     #add_pi_test()
     # regdata_test()
     # nnz_groups_test()

@@ -1036,10 +1036,10 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     return new_pst
 
 
-wildass_guess_par_bounds_dict = {"hk":[0.1,10.0],"vka":[0.1,10.0],
+wildass_guess_par_bounds_dict = {"hk":[0.01,100.0],"vka":[0.1,10.0],
                                    "sy":[0.25,1.75],"ss":[0.1,10.0],
                                    "cond":[0.01,100.0],"flux":[0.25,1.75],
-                                   "rech":[0.75,1.25],"stage":[0.9,1.1],
+                                   "rech":[0.9,1.1],"stage":[0.9,1.1],
                                    }
 
 class PstFromFlopyModel(object):

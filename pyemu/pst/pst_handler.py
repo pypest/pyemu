@@ -1641,8 +1641,87 @@ class Pst(object):
 
         Note
         ----
-            adds "parval1_trans" column to Pst.parmaeter_data that includes the
+            adds "parval1_trans" column to Pst.parameter_data that includes the
             effect of scale and offset
 
         """
         pst_utils.write_input_files(self)
+
+    def get_res_stats(self,nonzero=True):
+        """ get some common residual stats from the current obsvals,
+        weights and grouping in self.observation_data and the modelled values in
+        self.res.  The key here is 'current' because if obsval, weights and/or
+        groupings have changed in self.observation_data since the res file was generated
+        then the current values for obsval, weight and group are used
+
+        Parameters
+        ----------
+            nonzero : bool
+                calculate stats using only nonzero-weighted observations.  This may seem
+                obsvious to most users, but you never know....
+
+        Returns
+        -------
+            df : pd.DataFrame
+                a dataframe with columns for groups names and indices of statistic name.
+
+        Note
+        ----
+            the normalized RMSE is normalized against the obsval range (max - min)
+
+        """
+        res = self.res.copy()
+        res.loc[:,"obsnme"] = res.pop("name")
+        res.index = res.obsnme
+        if nonzero:
+            obs = self.observation_data.loc[self.nnz_obs_names,:]
+        #print(obs.shape,res.shape)
+        res = res.loc[obs.obsnme,:]
+        #print(obs.shape, res.shape)
+
+        #reset the res parts to current obs values and remove
+        #duplicate attributes
+        res.loc[:,"weight"] = obs.weight
+        res.loc[:,"obsval"] = obs.obsval
+        res.loc[:,"obgnme"] = obs.obgnme
+        res.pop("group")
+        res.pop("measured")
+
+        #build these attribute lists for faster lookup later
+        og_dict = {og:res.loc[res.obgnme==og,"obsnme"] for og in res.obgnme.unique()}
+        og_names = list(og_dict.keys())
+
+        # the list of functions and names
+        sfuncs = [self._stats_rss, self._stats_mean,self._stats_mae,
+                         self._stats_rmse,self._stats_nrmse]
+        snames = ["rss","mean","mae","rmse","nrmse"]
+
+        data = []
+        for sfunc,sname in zip(sfuncs,snames):
+            full = sfunc(res)
+            groups = [full]
+            for og in og_names:
+                onames = og_dict[og]
+                res_og = res.loc[onames,:]
+                groups.append(sfunc(res_og))
+            data.append(groups)
+
+        og_names.insert(0,"all")
+        df = pd.DataFrame(data,columns=og_names,index=snames)
+        return df
+
+    def _stats_rss(self,df):
+        return (((df.modelled - df.obsval) * df.weight)**2).sum()
+
+    def _stats_mean(self,df):
+        return (df.modelled - df.obsval).mean()
+
+    def _stats_mae(self,df):
+        return ((df.modelled - df.obsval).apply(np.abs)).sum() / df.shape[0]
+
+    def _stats_rmse(self,df):
+        return np.sqrt(((df.modelled - df.obsval)**2).sum() / df.shape[0])
+
+    def _stats_nrmse(self,df):
+        return self._stats_rmse(df) / (df.obsval.max() - df.obsval.min())
+
