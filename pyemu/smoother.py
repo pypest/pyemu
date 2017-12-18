@@ -116,7 +116,7 @@ class EnsembleMethod():
 
     @property
     def current_actual_phi(self):
-        return self.obsensemble.phi_vector()
+        return self.obsensemble.phi_vector
 
     def initialize(self,*args,**kwargs):
         raise Exception("EnsembleMethod.initialize() must be implemented by the derived types")
