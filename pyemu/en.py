@@ -1,5 +1,6 @@
 from __future__ import print_function, division
 import os
+from datetime import datetime
 import copy
 import math
 import numpy as np
@@ -612,6 +613,103 @@ class ParameterEnsemble(Ensemble):
 
         self.enforce(enforce_bounds)
 
+    @classmethod
+    def from_gaussian_draw_homegrown(cls, pe, cov, num_reals=1):
+        """ this is an experiemental method to help speed up draws
+        for a really large (>1E6) ensemble sizes.  gets around the
+        dataframe expansion-by-loc that is one col at a time.  Implements
+        multivariate normal draws to get around the 32-bit lapack limitations
+        in scipy/numpy
+
+        Parameters
+        ----------
+        pe : ParameterEnsemble
+            existing ParameterEnsemble used to get information
+            needed to call ParameterEnsemble constructor
+        cov : (pyemu.Cov)
+            covariance matrix to use for drawing
+        num_reals : int
+            number of realizations to generate
+
+        Returns
+        -------
+        ParameterEnsemble : ParameterEnsemble
+
+        Note
+        ----
+        this constructor transforms the pe argument!
+        """
+
+        s = datetime.now()
+        print("{0} - starting home-grown multivariate draws".format(s))
+
+
+        # set up some column names
+        # real_names = ["{0:d}".format(i)
+        #              for i in range(num_reals)]
+        real_names = np.arange(num_reals, dtype=np.int64)
+
+        if not pe.istransformed:
+            pe._transform()
+        # make sure everything is cool WRT ordering
+        if pe.names != cov.row_names:
+            common_names = get_common_elements(pe.names,
+                                               cov.row_names)
+            vals = pe.mean_values.loc[common_names]
+            cov = cov.get(common_names)
+            pass
+        else:
+            vals = pe.mean_values
+            common_names = pe.names
+
+        #generate standard normal vectors
+        snv = np.random.randn(num_reals,cov.shape[0])
+
+        #jwhite - 18-dec-17: the cholesky version is giving significantly diff
+        #results compared to eigen solve, so turning this off for now - need to
+        #learn more about this...
+        use_chol = False
+        if use_chol:
+            a = np.linalg.cholesky(cov.as_2d)
+
+        else:
+            #decompose...
+            v, w = np.linalg.eigh(cov.as_2d)
+
+            #form projection matrix
+            a = np.dot(w,np.diag(np.sqrt(v)))
+
+        #project...
+        reals = []
+        for vec in snv:
+            real = vals + np.dot(a,vec)
+            reals.append(real)
+
+        df = pd.DataFrame(reals,columns=common_names,index=real_names)
+        istransformed = pe.pst.parameter_data.loc[common_names, "partrans"] == "log"
+        #print("back transforming")
+        df.loc[:, istransformed] = 10.0 ** df.loc[:, istransformed]
+
+        # replace the realizations for fixed parameters with the original
+        # parval1 in the control file
+        #print("handling fixed pars")
+        pe.pst.parameter_data.index = pe.pst.parameter_data.parnme
+        fixed_vals = pe.pst.parameter_data.loc[pe.fixed_indexer, "parval1"]
+        for fname, fval in zip(fixed_vals.index, fixed_vals.values):
+            # if fname not in df.columns:
+            #    continue
+            #print(fname)
+            df.loc[:, fname] = fval
+
+        # print("apply tied")
+        new_pe = cls.from_dataframe(pst=pe.pst, df=df)
+        # ParameterEnsemble.apply_tied(new_pe)
+
+
+        e = datetime.now()
+        print("{0} - done...took {1}".format(e,(e-s).total_seconds()))
+
+        return new_pe
 
     def _draw_uniform(self,num_reals=1):
         """ Draw parameter realizations from a (log10) uniform distribution

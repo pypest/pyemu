@@ -398,9 +398,61 @@ def change_weights_test():
         assert (1.0 / w) ** 2 == v, "{0},{1},{2}".format(oname, v, (1.0 / w) ** 2)
 
 
+def homegrown_draw_test():
+
+    import os
+    import numpy as np
+    import pyemu
+    from datetime import datetime
+
+    v = pyemu.geostats.ExpVario(contribution=1.0,a=1.0)
+    gs = pyemu.geostats.GeoStruct(variograms=[v])
+
+    npar = 1000
+    pst = pyemu.pst_utils.generic_pst(["p{0:010d}".format(i) for i in range(npar)],["o1"])
+
+    pst.parameter_data.loc[:,"partrans"] = "none"
+    par = pst.parameter_data
+    par.loc[:,"x"] = np.random.random(npar) * 10.0
+    par.loc[:, "y"] = np.random.random(npar) * 10.0
+
+    cov = gs.covariance_matrix(par.x,par.y,par.parnme)
+    num_reals = 1000
+
+    mc = pyemu.MonteCarlo(pst=pst)
+
+    s = datetime.now()
+    #print(s)
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(mc.parensemble, cov, num_reals=num_reals)
+    mc.draw(num_reals=num_reals,cov=cov)
+    pe = mc.parensemble
+    d1 = (datetime.now() - s).total_seconds()
+    #print(d1)
+
+    s = datetime.now()
+    #print(s)
+    peh = pyemu.ParameterEnsemble.from_gaussian_draw_homegrown(mc.parensemble, cov, num_reals=num_reals)
+    d2 = (datetime.now() - s).total_seconds()
+    #print(d2)
+
+    #import matplotlib.pyplot as plt
+
+    for pname in peh.names:
+        #ax = plt.subplot(111)
+        m1 = pe.loc[:,pname].mean()
+        m2 = peh.loc[:, pname].mean()
+        print(par.loc[pname,"parval1"],m2,m1)
+        #pe.loc[:,pname].hist(ax=ax,bins=10,alpha=0.5)
+        #peh.loc[:,pname].hist(ax=ax,bins=10,alpha=0.5)
+        #plt.show()
+        #break
+
+    print(d2,d1)
+
 
 if __name__ == "__main__":
-    change_weights_test()
+    homegrown_draw_test()
+    #change_weights_test()
     #phi_vector_test()
     #par_diagonal_draw_test()
     #obs_id_draw_test()
