@@ -449,9 +449,65 @@ def homegrown_draw_test():
 
     print(d2,d1)
 
+def ensemble_covariance_test():
+    import os
+    import numpy as np
+    import pyemu
+    from datetime import datetime
+
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=1.0)
+    gs = pyemu.geostats.GeoStruct(variograms=[v])
+
+    npar = 10
+    pst = pyemu.pst_utils.generic_pst(["p{0:010d}".format(i) for i in range(npar)], ["o1"])
+
+    pst.parameter_data.loc[:, "partrans"] = "none"
+    par = pst.parameter_data
+    par.loc[:, "x"] = np.random.random(npar) * 10.0
+    par.loc[:, "y"] = np.random.random(npar) * 10.0
+
+    cov = gs.covariance_matrix(par.x, par.y, par.parnme)
+    num_reals = 100000
+
+    mc = pyemu.MonteCarlo(pst=pst)
+
+    peh = pyemu.ParameterEnsemble.from_gaussian_draw_homegrown(mc.parensemble, cov, num_reals=num_reals)
+
+    localizer = np.ones_like(cov.x)
+    localizer[cov.x<1.0e-1] = 0.0
+
+    cov = cov.hadamard_product(localizer)
+
+    ecov = peh.covariance_matrix(localizer=localizer)
+
+    d = 100.0 * (np.abs((cov - ecov).x) / cov.x)
+    d[localizer==0.0] = np.NaN
+
+    assert np.nanmax(d) < 10.0
+
+    # import matplotlib.pyplot as plt
+    #
+    # cov = cov.x
+    # cov[localizer == 0.0] = np.NaN
+    # ecov = ecov.x
+    # ecov[localizer == 0.0] = np.NaN
+    #
+    # ax = plt.subplot(311)
+    # ax2 = plt.subplot(312)
+    # ax3 = plt.subplot(313)
+    # vmax = cov.max()
+    # vmin = cov.min()
+    # ax.imshow(cov,vmax=vmax,vmin=vmin)
+    # ax2.imshow(ecov,vmax=vmax,vmin=vmin)
+    # p = ax3.imshow(d)
+    # plt.colorbar(p)
+    # plt.show()
+
+
 
 if __name__ == "__main__":
-    homegrown_draw_test()
+    ensemble_covariance_test()
+    #homegrown_draw_test()
     #change_weights_test()
     #phi_vector_test()
     #par_diagonal_draw_test()

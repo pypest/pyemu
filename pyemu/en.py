@@ -6,7 +6,7 @@ import math
 import numpy as np
 import pandas as pd
 
-from pyemu.mat.mat_handler import get_common_elements,Matrix
+from pyemu.mat.mat_handler import get_common_elements,Matrix,Cov
 from pyemu.pst.pst_utils import write_parfile,read_parfile
 
 SEED = 358183147 #from random.org on 5 Dec 2016
@@ -45,9 +45,14 @@ class Ensemble(pd.DataFrame):
             raise Exception("Ensemble requires 'mean_values' kwarg")
         self.__mean_values = mean_values
 
-    def as_pyemu_matrix(self):
+    def as_pyemu_matrix(self,typ=Matrix):
         """
         Create a pyemu.Matrix from the Ensemble.
+
+        Parameters
+        ----------
+            typ : pyemu.Matrix or derived type
+                the type of matrix to return
 
         Returns
         -------
@@ -55,7 +60,7 @@ class Ensemble(pd.DataFrame):
 
         """
         x = self.copy().as_matrix().astype(np.float)
-        return Matrix(x=x,row_names=list(self.index),
+        return typ(x=x,row_names=list(self.index),
                       col_names=list(self.columns))
 
     def drop(self,arg):
@@ -230,6 +235,41 @@ class Ensemble(pd.DataFrame):
         """
         df = super(Ensemble,self).copy()
         return type(self).from_dataframe(df=df)
+
+
+
+    def covariance_matrix(self,localizer=None):
+        """calculate the approximate covariance matrix implied by the ensemble using
+        mean-differencing operation at the core of EnKF
+
+        Parameters
+        ----------
+            localizer : pyemu.Matrix
+                covariance localizer to apply
+
+        Returns
+        -------
+            cov : pyemu.Cov
+                covariance matrix
+
+        """
+
+
+
+
+        mean = np.array(self.mean(axis=0))
+        delta = self.as_pyemu_matrix(typ=Cov)
+        for i in range(self.shape[0]):
+            delta.x[i, :] -= mean
+        delta *= (1.0 / np.sqrt(float(self.shape[0] - 1.0)))
+
+        if localizer is not None:
+            delta = delta.T * delta
+            return delta.hadamard_product(localizer)
+
+        return delta.T * delta
+
+
 
 class ObservationEnsemble(Ensemble):
     """ Ensemble derived type for observations.  This class is primarily used to
