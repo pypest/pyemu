@@ -912,6 +912,8 @@ class EnsembleSmoother(EnsembleMethod):
                     self.obsensemble = self.obsensemble.dropna()
 
                     self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
+                    best_mean = self.current_phi_vec.mean()
+                    best_std = self.current_phi_vec.std()
 
             self._phi_report(self.phi_csv,self.current_phi_vec,self.current_lambda * lambda_mults[best_i])
             self._phi_report(self.phi_act_csv, self.obsensemble.phi_vector,self.current_lambda * lambda_mults[best_i])
@@ -920,8 +922,10 @@ class EnsembleSmoother(EnsembleMethod):
             self.logger.statement("   best lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
                   format(self.current_lambda*lambda_mults[best_i],
                          best_mean,best_std))
+            self.logger.statement("   actual mean phi: {0:15.6G}".format(self.current_actual_phi.mean()))
             self.last_best_mean = best_mean
             self.last_best_std = best_std
+
 
         if update_lambda:
             # be aggressive
