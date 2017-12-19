@@ -355,6 +355,7 @@ def phi_vector_test():
     num_reals = 10
     mc.draw(num_reals,obs=True)
     print(mc.obsensemble.phi_vector)
+    print(float(mc.obsensemble.phi_vector.mean()))
 
 
 def change_weights_test():
@@ -506,10 +507,10 @@ def ensemble_covariance_test():
 
 
 if __name__ == "__main__":
-    ensemble_covariance_test()
+    #ensemble_covariance_test()
     #homegrown_draw_test()
     #change_weights_test()
-    #phi_vector_test()
+    phi_vector_test()
     #par_diagonal_draw_test()
     #obs_id_draw_test()
     #diagonal_cov_draw_test()

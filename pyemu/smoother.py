@@ -922,7 +922,7 @@ class EnsembleSmoother(EnsembleMethod):
             self.logger.statement("   best lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
                   format(self.current_lambda*lambda_mults[best_i],
                          best_mean,best_std))
-            self.logger.statement("   actual mean phi: {0:15.6G}".format(self.current_actual_phi.mean()))
+            self.logger.statement("   actual mean phi: {0:15.6G}".format(float(self.current_actual_phi.mean())))
             self.last_best_mean = best_mean
             self.last_best_std = best_std
 

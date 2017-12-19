@@ -1173,6 +1173,9 @@ class PstFromFlopyModel(object):
         binary name to run modflow.  If None, a default from flopy is used,
         which is dangerous because of the non-standard binary names
         (e.g. MODFLOW-NWT_x64, MODFLOWNWT, mfnwt, etc). Default is None.
+    build_prior : bool
+        flag to build prior covariance matrix. Default is Triue
+
 
     Returns
     -------
@@ -1198,7 +1201,7 @@ class PstFromFlopyModel(object):
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
                  external_ins_out_pairs=None,extra_pre_cmds=None,
                  extra_model_cmds=None,extra_post_cmds=None,
-                 tmp_files=None,model_exe_name=None):
+                 tmp_files=None,model_exe_name=None,build_prior=True):
 
         self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
         self.log = self.logger.log
@@ -1296,7 +1299,10 @@ class PstFromFlopyModel(object):
         self.setup_array_pars()
         self.setup_observations()
         self.build_pst()
-        self.parcov = self.build_prior()
+        if build_prior:
+            self.parcov = self.build_prior()
+        else:
+            self.parcov = None
         self.log("saving intermediate _setup_<> dfs into {0}".
                  format(self.m.model_ws))
         for tag,df in self.par_dfs.items():
