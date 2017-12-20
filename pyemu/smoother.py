@@ -273,8 +273,7 @@ class EnsembleMethod():
 
     def _calc_phi_vec(self,obsensemble):
         obs_diff = self._get_residual_matrix(obsensemble)
-        #phi_vec = np.diagonal((obs_diff * self.obscov_inv_sqrt.get(row_names=obs_diff.col_names,
-        #                                                           col_names=obs_diff.col_names) * obs_diff.T).x)
+
         q = np.diagonal(self.obscov_inv_sqrt.get(row_names=obs_diff.col_names,col_names=obs_diff.col_names).x)
         phi_vec = []
         for i in range(obs_diff.shape[0]):
@@ -308,9 +307,36 @@ class EnsembleMethod():
     #     self.phi_csv.write("\n")
     #     self.phi_csv.flush()
 
+    def _apply_inequality_constraints(self,res_mat):
+        obs = self.pst.observation_data.loc[res_mat.col_names]
+        gt_names = obs.loc[obs.obgnme.apply(lambda x: x.startswith("gt_")), "obsnme"]
+        lt_names = obs.loc[obs.obgnme.apply(lambda x: x.startswith("lt_")), "obsnme"]
+        if gt_names.shape[0] == 0 and lt_names.shape[0] == 0:
+            return res_mat
+        res_df = res_mat.to_dataframe()
+        if gt_names.shape[0] > 0:
+            for gt_name in gt_names:
+                print(res_df.loc[:,gt_name])
+                #if the residual is greater than zero, this means the ineq is satisified
+                res_df.loc[res_df.loc[:,gt_name] > 0,gt_name] = 0.0
+                print(res_df.loc[:,gt_name])
+                print()
+
+
+        if lt_names.shape[0] > 0:
+            for lt_name in lt_names:
+                print(res_df.loc[:,lt_name])
+                #f the residual is less than zero, this means the ineq is satisfied
+                res_df.loc[res_df.loc[:,lt_name] < 0,lt_name] = 0.0
+                print(res_df.loc[:,lt_name])
+                print()
+
     def _get_residual_matrix(self, obsensemble):
         obs_matrix = obsensemble.nonzero.as_pyemu_matrix()
-        return  obs_matrix - self.obs0_matrix.get(col_names=obs_matrix.col_names,row_names=obs_matrix.row_names)
+        res_mat = obs_matrix - self.obs0_matrix.get(col_names=obs_matrix.col_names,row_names=obs_matrix.row_names)
+        self._apply_inequality_constraints(res_mat)
+        print(res_mat)
+        return  res_mat
 
     def update(self,lambda_mults=[1.0],localizer=None,run_subset=None,use_approx=True):
         raise Exception("EnsembleMethod.update() must be implemented by the derived types")

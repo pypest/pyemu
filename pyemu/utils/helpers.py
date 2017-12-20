@@ -1551,7 +1551,7 @@ class PstFromFlopyModel(object):
                 f.write("\n")
         df = pd.DataFrame({"parnme":parnme},index=parnme)
         #df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
-        df.loc[:,"pargp"] = self.cn_suffix
+        df.loc[:,"pargp"] = self.cn_suffix.replace('_','')
         df.loc[:,"tpl"] = tpl_file
         return df
 
@@ -1592,7 +1592,7 @@ class PstFromFlopyModel(object):
                     f.write(pname)
                 f.write("\n")
         df = pd.DataFrame({"parnme":parnme,"x":x,"y":y},index=parnme)
-        df.loc[:,"pargp"] = "{0}{1}".format(self.gr_suffix,name)
+        df.loc[:,"pargp"] = "{0}{1}".format(self.gr_suffix.replace('_',''),name)
         df.loc[:,"tpl"] = tpl_file
         return df
 
@@ -1637,7 +1637,7 @@ class PstFromFlopyModel(object):
                     f.write(pname)
                 f.write("\n")
         df = pd.DataFrame({"parnme":parnme}, index=parnme)
-        df.loc[:, "pargp"] = "{0}{1}".format(zn_suffix, name)
+        df.loc[:, "pargp"] = "{0}{1}".format(zn_suffix.replace("_",''), name)
         return df
 
     def grid_prep(self):

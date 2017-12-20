@@ -957,6 +957,60 @@ def tenpar():
         es.update(lambda_mults=[.1,1000.0])
     os.chdir(os.path.join("..",".."))
 
+
+def tenpar_opt():
+    import os
+    import numpy as np
+    import flopy
+    import pyemu
+
+    os.chdir(os.path.join("smoother","10par_xsec"))
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
+    pst = pyemu.Pst("10par_xsec.pst")
+    dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+
+    v = pyemu.utils.ExpVario(contribution=0.25,a=60.0)
+    gs = pyemu.utils.GeoStruct(variograms=[v],transform="log")
+    par = pst.parameter_data
+    k_names = par.loc[par.parnme.apply(lambda x: x.startswith('k')),"parnme"]
+    sr = flopy.utils.SpatialReference(delc=[10],delr=np.zeros((10))+10.0)
+
+    full_cov = gs.covariance_matrix(sr.xcentergrid[0,:],sr.ycentergrid[0,:],k_names)
+    dia_parcov.drop(list(k_names),axis=1)
+    cov = dia_parcov.extend(full_cov)
+
+    obs = pst.observation_data
+    obs.loc["h01_02","weight"] = 1.0
+    obs.loc["h01_02","obgnme"] = "gt_test"
+    obs.loc["h01_02", "obsval"] = -10000
+    obs.loc["h01_09","weight"] = 1.0
+    obs.loc["h01_09",'obgnme'] = "lt_test"
+    obs.loc["h01_09", 'obsval'] = 10000
+
+    #print(obs)
+
+    es = pyemu.EnsembleSmoother(pst,parcov=cov,
+                                num_slaves=10,port=4005,verbose=True,
+                                drop_bad_reals=14000.)
+    lz = es.get_localizer().to_dataframe()
+    #the k pars upgrad of h01_04 and h01_06 are localized
+    upgrad_pars = [pname for pname in lz.columns if "_" in pname and\
+                   int(pname.split('_')[1]) > 4]
+    lz.loc["h01_04",upgrad_pars] = 0.0
+    upgrad_pars = [pname for pname in lz.columns if '_' in pname and \
+                   int(pname.split('_')[1]) > 6]
+    lz.loc["h01_06", upgrad_pars] = 0.0
+    lz = pyemu.Matrix.from_dataframe(lz).T
+    print(lz)
+    es.initialize(num_reals=10,init_lambda=10000.0)
+
+    for it in range(1):
+        #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
+        #es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
+        es.update(lambda_mults=[.1,1000.0])
+    os.chdir(os.path.join("..",".."))
+
 def tenpar_restart():
     import os
     import numpy as np
@@ -1289,7 +1343,8 @@ if __name__ == "__main__":
     #chenoliver_func_plot()
     #chenoliver_plot_sidebyside()
     #chenoliver_obj_plot()
-    tenpar()
+    #tenpar()
+    tenpar_opt()
     #tenpar_restart()
     #tenpar_plot()
     #tenpar_failed_runs()
