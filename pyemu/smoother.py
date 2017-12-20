@@ -316,26 +316,28 @@ class EnsembleMethod():
         res_df = res_mat.to_dataframe()
         if gt_names.shape[0] > 0:
             for gt_name in gt_names:
-                print(res_df.loc[:,gt_name])
+                #print(res_df.loc[:,gt_name])
                 #if the residual is greater than zero, this means the ineq is satisified
                 res_df.loc[res_df.loc[:,gt_name] > 0,gt_name] = 0.0
-                print(res_df.loc[:,gt_name])
-                print()
+                #print(res_df.loc[:,gt_name])
+                #print()
 
 
         if lt_names.shape[0] > 0:
             for lt_name in lt_names:
-                print(res_df.loc[:,lt_name])
+                #print(res_df.loc[:,lt_name])
                 #f the residual is less than zero, this means the ineq is satisfied
                 res_df.loc[res_df.loc[:,lt_name] < 0,lt_name] = 0.0
-                print(res_df.loc[:,lt_name])
-                print()
+                #print(res_df.loc[:,lt_name])
+                #print()
 
     def _get_residual_matrix(self, obsensemble):
         obs_matrix = obsensemble.nonzero.as_pyemu_matrix()
+
         res_mat = obs_matrix - self.obs0_matrix.get(col_names=obs_matrix.col_names,row_names=obs_matrix.row_names)
+        #print(res_mat)
         self._apply_inequality_constraints(res_mat)
-        print(res_mat)
+        #print(res_mat)
         return  res_mat
 
     def update(self,lambda_mults=[1.0],localizer=None,run_subset=None,use_approx=True):

@@ -981,18 +981,17 @@ def tenpar_opt():
     cov = dia_parcov.extend(full_cov)
 
     obs = pst.observation_data
-    obs.loc["h01_02","weight"] = 1.0
-    obs.loc["h01_02","obgnme"] = "gt_test"
-    obs.loc["h01_02", "obsval"] = -10000
-    obs.loc["h01_09","weight"] = 1.0
+    # obs.loc["h01_02","weight"] = 10.0
+    # obs.loc["h01_02","obgnme"] = "lt_test"
+    # obs.loc["h01_02", "obsval"] = 1.0
+    obs.loc["h01_09","weight"] = 100.0
     obs.loc["h01_09",'obgnme'] = "lt_test"
-    obs.loc["h01_09", 'obsval'] = 10000
-
-    #print(obs)
-
+    obs.loc["h01_09", 'obsval'] = 3.0
+    print(obs)
+    #return()
     es = pyemu.EnsembleSmoother(pst,parcov=cov,
                                 num_slaves=10,port=4005,verbose=True,
-                                drop_bad_reals=14000.)
+                                drop_bad_reals=140000.)
     lz = es.get_localizer().to_dataframe()
     #the k pars upgrad of h01_04 and h01_06 are localized
     upgrad_pars = [pname for pname in lz.columns if "_" in pname and\
@@ -1005,7 +1004,7 @@ def tenpar_opt():
     print(lz)
     es.initialize(num_reals=10,init_lambda=10000.0)
 
-    for it in range(1):
+    for it in range(10):
         #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
         #es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
         es.update(lambda_mults=[.1,1000.0])
