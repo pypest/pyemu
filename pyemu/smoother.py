@@ -309,8 +309,8 @@ class EnsembleMethod():
 
     def _apply_inequality_constraints(self,res_mat):
         obs = self.pst.observation_data.loc[res_mat.col_names]
-        gt_names = obs.loc[obs.obgnme.apply(lambda x: x.startswith("gt_")), "obsnme"]
-        lt_names = obs.loc[obs.obgnme.apply(lambda x: x.startswith("lt_")), "obsnme"]
+        gt_names = obs.loc[obs.obgnme.apply(lambda x: x.startswith("g_") or x.startswith("less")), "obsnme"]
+        lt_names = obs.loc[obs.obgnme.apply(lambda x: x.startswith("l_") or x.startswith("greater")), "obsnme"]
         if gt_names.shape[0] == 0 and lt_names.shape[0] == 0:
             return res_mat
         res_df = res_mat.to_dataframe()

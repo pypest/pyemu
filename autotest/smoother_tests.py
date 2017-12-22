@@ -961,6 +961,8 @@ def tenpar():
 def tenpar_opt():
     import os
     import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
     import flopy
     import pyemu
 
@@ -986,7 +988,7 @@ def tenpar_opt():
     # obs.loc["h01_02", "obsval"] = 1.0
     obs.loc["h01_09","weight"] = 100.0
     obs.loc["h01_09",'obgnme'] = "lt_test"
-    obs.loc["h01_09", 'obsval'] = 3.0
+    obs.loc["h01_09", 'obsval'] = 2.0
     print(obs)
     #return()
     es = pyemu.EnsembleSmoother(pst,parcov=cov,
@@ -1002,13 +1004,55 @@ def tenpar_opt():
     lz.loc["h01_06", upgrad_pars] = 0.0
     lz = pyemu.Matrix.from_dataframe(lz).T
     print(lz)
-    es.initialize(num_reals=10,init_lambda=10000.0)
+    es.initialize(num_reals=300,init_lambda=10000.0)
 
-    for it in range(10):
+    niter=10
+    for it in range(niter):
         #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
         #es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
-        es.update(lambda_mults=[.1,1000.0])
+        es.update(lambda_mults=[.1,1.0,10.0],run_subset=30)
+    oe_ieq = pd.read_csv("10par_xsec.pst.obsensemble.{0:04d}.csv".format(niter))
+
+
+    obs.loc["h01_09","weight"] = 0.0
+    es = pyemu.EnsembleSmoother(pst, parcov=cov,
+                                num_slaves=10, port=4005, verbose=True,
+                                drop_bad_reals=14000.)
+    lz = es.get_localizer().to_dataframe()
+    # the k pars upgrad of h01_04 and h01_06 are localized
+    upgrad_pars = [pname for pname in lz.columns if "_" in pname and \
+                   int(pname.split('_')[1]) > 4]
+    lz.loc["h01_04", upgrad_pars] = 0.0
+    upgrad_pars = [pname for pname in lz.columns if '_' in pname and \
+                   int(pname.split('_')[1]) > 6]
+    lz.loc["h01_06", upgrad_pars] = 0.0
+    lz = pyemu.Matrix.from_dataframe(lz).T
+    print(lz)
+    es.initialize(num_reals=300, init_lambda=10000.0)
+
+    for it in range(niter):
+        # es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
+        # es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
+        es.update(lambda_mults=[.1, 1.0,10.0], run_subset=30)
+
+    oe_base = pd.read_csv("10par_xsec.pst.obsensemble.{0:04d}.csv".format(niter))
+
+    for oname in obs.obsnme:
+        ax = plt.subplot(111)
+        oe_base.loc[:,oname].hist(bins=20, ax=ax, color="0.5", alpha=0.54)
+
+        oe_ieq.loc[:,oname].hist(bins=20,ax=ax,color="b",alpha=0.5)
+
+        ax.set_xlim(oe_ieq.loc[:,oname].min()*0.75,oe_ieq.loc[:,oname].max() * 1.25)
+
+        plt.savefig(oname+".png")
+        plt.close("all")
+
+    oe_base.to_csv("base.csv")
+    oe_ieq.to_csv("ieq.csv")
+
     os.chdir(os.path.join("..",".."))
+
 
 def tenpar_restart():
     import os
