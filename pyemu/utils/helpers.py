@@ -9,6 +9,7 @@ import subprocess as sp
 import platform
 import time
 import warnings
+from datetime import datetime
 import struct
 import socket
 import shutil
@@ -2521,3 +2522,147 @@ def apply_bc_pars():
         with open(os.path.join(model_ext_path,fname),'w') as f:
             f.write(df_list.to_string(header=False,index=False,formatters=fmts)+'\n')
             #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
+
+
+def plot_flopy_par_ensemble(pst,pe,num_reals=None,model=None):
+    """function to plot ensemble of parameter values for a flopy/modflow model.  Assumes
+    the FlopytoPst helper was used to setup the model and the forward run.
+
+    Parameters
+    ----------
+        pst : Pst instance
+
+        pe : ParameterEnsemble instance
+
+        num_reals : int
+            number of realizations to process.  If None, all realizations are processed.
+            default is None
+        model : flopy.mbase
+            model instance used for masking inactive areas and also geo-locating plots.  If None,
+            generic plots are made.  Default is None.
+
+    Note
+    ----
+        Needs "arr_pars.csv" to run
+
+    Todo
+    ----
+        add better support for log vs nonlog- currently just logging everything
+        add support for cartopy basemap and stamen tiles
+
+    """
+    try:
+        import matplotlib.pyplot as plt
+    except Exception as e:
+        raise Exception("error import matplotlib: {0}".format(str(e)))
+    from matplotlib.backends.backend_pdf import PdfPages
+    assert os.path.exists("arr_pars.csv"),"couldn't find arr_pars.csv, can't continue"
+    df = pd.read_csv("arr_pars.csv")
+    if isinstance(pst,str):
+        pst = pyemu.Pst(pst)
+    if isinstance(pe,str):
+        pe = pd.read_csv(pe,index_col=0)
+    if num_reals is None:
+        num_reals = pe.shape[0]
+    arr_dict,arr_mx,arr_mn = {},{},{}
+
+    islog = True
+
+    ib,sr = None,None
+    if model is not None:
+        if isinstance(model,str):
+            model = flopy.modflow.Modflow.load(model,load_only=[],verbose=False,check=False)
+        if model.bas6 is not None:
+            ib = {k:model.bas6.ibound[k].array for k in range(model.nlay)}
+            sr = model.sr
+        if model.btn is not None:
+            raise NotImplementedError()
+
+    for i in range(num_reals):
+        print(datetime.now(),"processing realization number {0} of {1}".format(i+1,num_reals))
+        pst.parameter_data.loc[pe.columns,"parval1"] = pe.iloc[i,:]
+        pst.write_input_files()
+        apply_array_pars()
+        for model_file,k in zip(df.model_file,df.layer):
+            arr = np.loadtxt(model_file)
+            if islog:
+                arr = np.log10(arr)
+
+            if ib is not None:
+                arr = np.ma.masked_where(ib[k]<1,arr)
+            arr = np.ma.masked_invalid(arr)
+            if model_file not in arr_dict.keys():
+                arr_dict[model_file] = []
+                arr_mx[model_file] = -1.0e+10
+                arr_mn[model_file] = 1.0e+10
+            arr_mx[model_file] = max(arr_mx[model_file],arr.max())
+            arr_mn[model_file] = min(arr_mn[model_file],arr.min())
+
+            arr_dict[model_file].append(arr)
+
+
+    nrow,ncol = 3,2
+
+    def _get_fig_and_axes():
+        fig = plt.figure(figsize=(8.5, 11))
+        axes = [plt.subplot(nrow, ncol, ii + 1) for ii in range(nrow * ncol)]
+        [ax.set_xticklabels([]) for ax in axes]
+        [ax.set_yticklabels([]) for ax in axes]
+        return fig,axes
+
+    for model_file,arrs in arr_dict.items():
+        k = df.loc[df.model_file==model_file,"layer"].values[0]
+        print("plotting arrays for {0}".format(model_file))
+        mx,mn = arr_mx[model_file],arr_mn[model_file]
+        with PdfPages(model_file+".pdf") as pdf:
+            fig,axes = _get_fig_and_axes()
+            ax_count = 0
+            for i,arr in enumerate(arrs):
+
+                if ax_count >= nrow*ncol:
+
+                    pdf.savefig()
+                    plt.close(fig)
+                    fig, axes = _get_fig_and_axes()
+                    ax_count = 0
+                    #ax = plt.subplot(111)
+                if sr is not None:
+                    p = axes[ax_count].pcolormesh(sr.xcentergrid,sr.ycentergrid,arr,vmax=mx,vmin=mn)
+                else:
+                    p = axes[ax_count].imshow(arr,vmax=mx,vmin=mn)
+                plt.colorbar(p,ax=axes[ax_count])
+                if islog:
+                    arr = 10.*arr
+                axes[ax_count].set_title("real index:{0}, max:{1:5.2E}, min:{2:5.2E}".format(i,arr.max(),arr.min()),fontsize=6)
+
+                ax_count += 1
+            stack = np.array(arrs)
+            arr_dict = {}
+            for lab,arr in zip(["mean","std"],[np.nanmean(stack,axis=0),np.nanstd(stack,axis=0)]):
+                if ib is not None:
+                    arr = np.ma.masked_where(ib[k]<1,arr)
+                arr = np.ma.masked_invalid(arr)
+                arr_dict[lab] = arr
+                if ax_count >= nrow*ncol:
+
+                    pdf.savefig()
+                    plt.close(fig)
+                    fig, axes = _get_fig_and_axes()
+                    ax_count = 0
+                if sr is not None:
+                    p = axes[ax_count].pcolormesh(sr.xcentergrid,sr.ycentergrid,arr)
+                else:
+                    p = axes[ax_count].imshow(arr)
+                plt.colorbar(p,ax=axes[ax_count])
+                axes[ax_count].set_title("{0}, max:{1:5.2E}, min:{2:5.2E}".format(lab,arr.max(),arr.min()),fontsize=6)
+                ax_count += 1
+            pdf.savefig()
+            plt.close("all")
+            if sr is not None:
+                for i,arr in enumerate(arrs):
+                    arr_dict[str(i)] = arr
+                flopy.export.shapefile_utils.write_grid_shapefile(model_file+".shp",sr,array_dict=arr_dict)
+
+    return
+
+

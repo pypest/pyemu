@@ -276,6 +276,37 @@ def regdata_test():
     assert pst_new.reg_data.phimlim == phimlim
 
 
+def plot_flopy_par_ensemble_test():
+    import shutil
+    import numpy as np
+    try:
+        import flopy
+    except:
+        return
+    try:
+        import matplotlib.pyplot as plt
+    except:
+        print("error importing pyplot")
+        return
+    import pyemu
+    org_model_ws = os.path.join("..", "examples", "Freyberg_transient")
+    nam_file = "freyberg.nam"
+
+    new_model_ws = "temp_pst_from_flopy"
+    pp_props = [["upw.hk", 0], ["upw.hk", 1]]
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
+                                             grid_props=pp_props, remove_existing=True,
+                                             model_exe_name="mfnwt")
+    mc = pyemu.MonteCarlo(pst=helper.pst)
+    os.chdir(new_model_ws)
+    mc.draw(10,cov=helper.parcov)
+
+    pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None, model=helper.m)
+    pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None)
+
+    pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=1)
+
+
 def from_flopy_test():
     import shutil
     import numpy as np
@@ -348,6 +379,7 @@ def from_flopy_test():
     obs.loc[obs.weight>0.0,"obsval"] += np.random.normal(0.0,2.0,pst.nnz_obs)
     pst.control_data.noptmax = 0
     pst.write(os.path.join(new_model_ws,"freyberg_pest.pst"))
+
 
 
 def run_array_pars():
@@ -471,13 +503,14 @@ def res_stats_test():
         assert phi_comp[pc] == p.phi_components[pc]
 
 if __name__ == "__main__":
-    res_stats_test()
+    #res_stats_test()
     #test_write_input_files()
     #add_obs_test()
     #add_pars_test()
     #setattr_test()
     # run_array_pars()
     #from_flopy_test()
+    plot_flopy_par_ensemble_test()
     #add_pi_test()
     # regdata_test()
     # nnz_groups_test()

@@ -38,7 +38,7 @@ def mc_test():
 def fixed_par_test():
     import os
     import numpy as np
-    from pyemu import MonteCarlo
+    from pyemu import MonteCarlo,ParameterEnsemble
     jco = os.path.join("pst","pest.jcb")
     pst = jco.replace(".jcb",".pst")
     mc = MonteCarlo(jco=jco,pst=pst)
@@ -46,6 +46,7 @@ def fixed_par_test():
     mc.draw(10)
     assert np.all(mc.parensemble.loc[:,"mult1"] ==
                   mc.pst.parameter_data.loc["mult1","parval1"])
+    pe = ParameterEnsemble.from_gaussian_draw(mc.parensemble,mc.parcov,2)
 
 
 def uniform_draw_test():
@@ -510,14 +511,14 @@ if __name__ == "__main__":
     #ensemble_covariance_test()
     #homegrown_draw_test()
     #change_weights_test()
-    phi_vector_test()
+    #phi_vector_test()
     #par_diagonal_draw_test()
     #obs_id_draw_test()
     #diagonal_cov_draw_test()
     #pe_to_csv_test()
     #scale_offset_test()
     #mc_test()
-    #fixed_par_test()
+    fixed_par_test()
     #uniform_draw_test()
     #gaussian_draw_test()
     #write_regul_test()

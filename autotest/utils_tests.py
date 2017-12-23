@@ -778,6 +778,9 @@ def plot_summary_test():
         plt.close(fig)
 
 
+
+
+
 def grid_obs_test():
     import os
     import shutil
@@ -870,11 +873,14 @@ def gw_sft_ins_test():
     pyemu.gw_utils.setup_sft_obs(sft_outfile, start_datetime="1-1-1970",times=[30.0,4*30])
 
 
+
+
 if __name__ == "__main__":
-    gw_sft_ins_test()
+
+    #gw_sft_ins_test()
     # par_knowledge_test()
     # grid_obs_test()
-    # plot_summary_test()
+    plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
     # make_hydmod_insfile_test()
