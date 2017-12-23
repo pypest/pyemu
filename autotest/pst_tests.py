@@ -297,39 +297,48 @@ def plot_flopy_par_ensemble_test():
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              grid_props=pp_props, remove_existing=True,
                                              model_exe_name="mfnwt")
-    mc = pyemu.MonteCarlo(pst=helper.pst)
+
+    pst = pyemu.Pst(os.path.join(new_model_ws,"freyberg_pest.pst"))
+    mc = pyemu.MonteCarlo(pst=pst)
     os.chdir(new_model_ws)
-    mc.draw(10,cov=helper.parcov)
+    cov = pyemu.Cov.from_ascii("freyberg_pest.pst.prior.cov")
+    mc.draw(100,cov=cov)
+    #pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None, model=helper.m)
+    #pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None)
 
-    pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None, model=helper.m)
-    pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None)
+    #3try:
+    import cartopy.crs as ccrs
+    import cartopy.io.img_tiles as cimgt
 
-    # try:
-    #     import cartopy.crs as ccrs
-    #     import cartopy.io.img_tiles as cimgt
-    #
-    #     import pyproj
+    import pyproj
     # except:
     #     return
-    #
-    # stamen_terrain = cimgt.StamenTerrain()
-    # zoom = 8
-    #
-    # def fig_ax_gen():
-    #     fig = plt.figure(figsize=(20,20))
-    #     nrow,ncol = 5,4
-    #     axes = []
-    #     for i in range(nrow*ncol):
-    #         ax = plt.subplot(nrow,ncol,i+1,projection=stamen_terrain.crs)
-    #         ax.set_extent([97, 98.5, 29.5, 31.])
-    #         ax.add_image(stamen_terrain,zoom=zoom)
-    #
-    #         axes.append(ax)
-    #     return fig, axes
-    #
-    # pcolormesh_trans = ccrs.UTM(zone=14)
-    # pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=1,fig_axes_generator=fig_ax_gen,
-    #                                       pcolormesh_transform=pcolormesh_trans)
+
+    stamen_terrain = cimgt.StamenTerrain()
+    zoom = 10
+
+    def fig_ax_gen():
+        fig = plt.figure(figsize=(20,20))
+        nrow,ncol = 5,4
+
+        axes = []
+        for i in range(nrow*ncol):
+            #print(i)
+            ax = plt.subplot(nrow,ncol,i+1,projection=stamen_terrain.crs)
+            ax.set_extent([-97.775, -97.625, 30.2, 30.35])
+            #ax.set_extent([175.2, 176.2, -37, -38.2])
+            ax.add_image(stamen_terrain,zoom)
+            #plt.show()
+            axes.append(ax)
+
+            #break
+        return fig, axes
+    #fig,axes = fig_ax_gen()
+    #plt.show()
+    #return
+    pcolormesh_trans = ccrs.UTM(zone=14)
+    pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None,fig_axes_generator=fig_ax_gen,
+                                          pcolormesh_transform=pcolormesh_trans,model="freyberg.nam")
 
     os.chdir("..")
 
