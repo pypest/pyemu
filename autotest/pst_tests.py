@@ -304,8 +304,34 @@ def plot_flopy_par_ensemble_test():
     pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None, model=helper.m)
     pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None)
 
-    pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=1)
+    # try:
+    #     import cartopy.crs as ccrs
+    #     import cartopy.io.img_tiles as cimgt
+    #
+    #     import pyproj
+    # except:
+    #     return
+    #
+    # stamen_terrain = cimgt.StamenTerrain()
+    # zoom = 8
+    #
+    # def fig_ax_gen():
+    #     fig = plt.figure(figsize=(20,20))
+    #     nrow,ncol = 5,4
+    #     axes = []
+    #     for i in range(nrow*ncol):
+    #         ax = plt.subplot(nrow,ncol,i+1,projection=stamen_terrain.crs)
+    #         ax.set_extent([97, 98.5, 29.5, 31.])
+    #         ax.add_image(stamen_terrain,zoom=zoom)
+    #
+    #         axes.append(ax)
+    #     return fig, axes
+    #
+    # pcolormesh_trans = ccrs.UTM(zone=14)
+    # pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=1,fig_axes_generator=fig_ax_gen,
+    #                                       pcolormesh_transform=pcolormesh_trans)
 
+    os.chdir("..")
 
 def from_flopy_test():
     import shutil

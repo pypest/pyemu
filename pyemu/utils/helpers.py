@@ -2524,7 +2524,8 @@ def apply_bc_pars():
             #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
 
 
-def plot_flopy_par_ensemble(pst,pe,num_reals=None,model=None):
+def plot_flopy_par_ensemble(pst,pe,num_reals=None,model=None,fig_axes_generator=None,
+                            pcolormesh_transform=None):
     """function to plot ensemble of parameter values for a flopy/modflow model.  Assumes
     the FlopytoPst helper was used to setup the model and the forward run.
 
@@ -2540,6 +2541,12 @@ def plot_flopy_par_ensemble(pst,pe,num_reals=None,model=None):
         model : flopy.mbase
             model instance used for masking inactive areas and also geo-locating plots.  If None,
             generic plots are made.  Default is None.
+        fig_axes_generator : function
+            a function that returns a pyplot.figure and list of pyplot.axes instances for plots.
+            If None, a generic 8.5inX11in figure with 3 rows and 2 cols is used.
+        pcolormesh_transform : cartopy.csr.CRS
+            transform to map pcolormesh plot into correct location.  Requires model arg
+
 
     Note
     ----
@@ -2601,39 +2608,45 @@ def plot_flopy_par_ensemble(pst,pe,num_reals=None,model=None):
             arr_dict[model_file].append(arr)
 
 
-    nrow,ncol = 3,2
+
 
     def _get_fig_and_axes():
+        nrow, ncol = 3, 2
         fig = plt.figure(figsize=(8.5, 11))
         axes = [plt.subplot(nrow, ncol, ii + 1) for ii in range(nrow * ncol)]
         [ax.set_xticklabels([]) for ax in axes]
         [ax.set_yticklabels([]) for ax in axes]
         return fig,axes
 
+    if fig_axes_generator is None:
+        fig_axes_generator = _get_fig_and_axes
+
     for model_file,arrs in arr_dict.items():
         k = df.loc[df.model_file==model_file,"layer"].values[0]
         print("plotting arrays for {0}".format(model_file))
         mx,mn = arr_mx[model_file],arr_mn[model_file]
         with PdfPages(model_file+".pdf") as pdf:
-            fig,axes = _get_fig_and_axes()
+            fig,axes = fig_axes_generator()
             ax_count = 0
             for i,arr in enumerate(arrs):
 
-                if ax_count >= nrow*ncol:
+                if ax_count >= len(axes):
 
                     pdf.savefig()
                     plt.close(fig)
-                    fig, axes = _get_fig_and_axes()
+                    fig, axes = fig_axes_generator()
                     ax_count = 0
                     #ax = plt.subplot(111)
                 if sr is not None:
-                    p = axes[ax_count].pcolormesh(sr.xcentergrid,sr.ycentergrid,arr,vmax=mx,vmin=mn)
+                    p = axes[ax_count].pcolormesh(sr.xcentergrid,sr.ycentergrid,arr,vmax=mx,vmin=mn,
+                                                  transform=pcolormesh_transform)
                 else:
                     p = axes[ax_count].imshow(arr,vmax=mx,vmin=mn)
                 plt.colorbar(p,ax=axes[ax_count])
                 if islog:
                     arr = 10.*arr
-                axes[ax_count].set_title("real index:{0}, max:{1:5.2E}, min:{2:5.2E}".format(i,arr.max(),arr.min()),fontsize=6)
+                axes[ax_count].set_title("real index:{0}, max:{1:5.2E}, min:{2:5.2E}".\
+                                         format(i,arr.max(),arr.min()),fontsize=6)
 
                 ax_count += 1
             stack = np.array(arrs)
@@ -2643,14 +2656,15 @@ def plot_flopy_par_ensemble(pst,pe,num_reals=None,model=None):
                     arr = np.ma.masked_where(ib[k]<1,arr)
                 arr = np.ma.masked_invalid(arr)
                 arr_dict[lab] = arr
-                if ax_count >= nrow*ncol:
+                if ax_count >= len(axes):
 
                     pdf.savefig()
                     plt.close(fig)
-                    fig, axes = _get_fig_and_axes()
+                    fig, axes = fig_axes_generator()
                     ax_count = 0
                 if sr is not None:
-                    p = axes[ax_count].pcolormesh(sr.xcentergrid,sr.ycentergrid,arr)
+                    p = axes[ax_count].pcolormesh(sr.xcentergrid,sr.ycentergrid,arr,
+                                                  transform=pcolormesh_transform)
                 else:
                     p = axes[ax_count].imshow(arr)
                 plt.colorbar(p,ax=axes[ax_count])
