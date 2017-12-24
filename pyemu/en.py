@@ -429,7 +429,10 @@ class ObservationEnsemble(Ensemble):
             simval = self.loc[idx,self.names]
             phi = (((simval - obsval) * weights)**2).sum()
             phi_vec.append(phi)
-        return pd.DataFrame({"phi":phi_vec},index=self.index)
+        #return pd.DataFrame({"phi":phi_vec},index=self.index)
+        return pd.Series(data=phi_vec,index=self.index)
+
+
 
 class ParameterEnsemble(Ensemble):
     """ Ensemble derived type for parameters

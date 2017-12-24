@@ -965,7 +965,6 @@ def tenpar_opt():
     import matplotlib.pyplot as plt
     import flopy
     import pyemu
-
     os.chdir(os.path.join("smoother","10par_xsec"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
@@ -991,7 +990,10 @@ def tenpar_opt():
     obs.loc["h01_09", 'obsval'] = 2.0
     print(obs)
     #return()
-    es = pyemu.EnsembleSmoother(pst,parcov=cov,
+    pst.write("10par_xsec_opt.pst")
+    pst.write(os.path.join("template","10par_xsec_opt.pst"))
+
+    es = pyemu.EnsembleSmoother("10par_xsec_opt.pst",parcov=cov,
                                 num_slaves=10,port=4005,verbose=True,
                                 drop_bad_reals=140000.)
     lz = es.get_localizer().to_dataframe()
@@ -1011,11 +1013,11 @@ def tenpar_opt():
         #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
         #es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
         es.update(lambda_mults=[.1,1.0,10.0],run_subset=30)
-    oe_ieq = pd.read_csv("10par_xsec.pst.obsensemble.{0:04d}.csv".format(niter))
 
+    oe_ieq = pd.read_csv("10par_xsec_opt.pst.obsensemble.{0:04d}.csv".format(niter))
 
-    obs.loc["h01_09","weight"] = 0.0
-    es = pyemu.EnsembleSmoother(pst, parcov=cov,
+    #obs.loc["h01_09","weight"] = 0.0
+    es = pyemu.EnsembleSmoother("10par_xsec.pst", parcov=cov,
                                 num_slaves=10, port=4005, verbose=True,
                                 drop_bad_reals=14000.)
     lz = es.get_localizer().to_dataframe()
@@ -1048,8 +1050,8 @@ def tenpar_opt():
         plt.savefig(oname+".png")
         plt.close("all")
 
-    oe_base.to_csv("base.csv")
-    oe_ieq.to_csv("ieq.csv")
+    #oe_base.to_csv("base.csv")
+    #oe_ieq.to_csv("ieq.csv")
 
     os.chdir(os.path.join("..",".."))
 

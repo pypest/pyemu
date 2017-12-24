@@ -353,7 +353,7 @@ def phi_vector_test():
     pst = pyemu.Pst(jco.replace(".jcb",".pst"))
 
     mc = pyemu.MonteCarlo(pst=pst)
-    num_reals = 10
+    num_reals = 15
     mc.draw(num_reals,obs=True)
     print(mc.obsensemble.phi_vector)
     print(float(mc.obsensemble.phi_vector.mean()))
@@ -511,14 +511,14 @@ if __name__ == "__main__":
     #ensemble_covariance_test()
     #homegrown_draw_test()
     #change_weights_test()
-    #phi_vector_test()
+    phi_vector_test()
     #par_diagonal_draw_test()
     #obs_id_draw_test()
     #diagonal_cov_draw_test()
     #pe_to_csv_test()
     #scale_offset_test()
     #mc_test()
-    fixed_par_test()
+    #fixed_par_test()
     #uniform_draw_test()
     #gaussian_draw_test()
     #write_regul_test()

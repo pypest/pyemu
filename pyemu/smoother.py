@@ -282,6 +282,7 @@ class EnsembleMethod():
         return np.array(phi_vec)
 
     def _phi_report(self,phi_csv,phi_vec,cur_lam):
+        #print(phi_vec.min(),phi_vec.max())
         phi_csv.write("{0},{1},{2},{3},{4},{5},{6}".format(self.iter_num,
                                                              self.total_runs,
                                                              cur_lam,
@@ -290,6 +291,7 @@ class EnsembleMethod():
                                                              phi_vec.mean(),
                                                              np.median(phi_vec),
                                                              phi_vec.std()))
+        #[print(phi) for phi in phi_vec]
         phi_csv.write(",".join(["{0:20.8}".format(phi) for phi in phi_vec]))
         phi_csv.write("\n")
         phi_csv.flush()
@@ -571,7 +573,7 @@ class EnsembleSmoother(EnsembleMethod):
                 self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
 
         self._phi_report(self.phi_csv,self.current_phi_vec,0.0)
-        self._phi_report(self.phi_act_csv, self.obsensemble.phi_vector, 0.0)
+        self._phi_report(self.phi_act_csv, self.obsensemble.phi_vector.values, 0.0)
 
         self.last_best_mean = self.current_phi_vec.mean()
         self.last_best_std = self.current_phi_vec.std()
@@ -944,7 +946,7 @@ class EnsembleSmoother(EnsembleMethod):
                     best_std = self.current_phi_vec.std()
 
             self._phi_report(self.phi_csv,self.current_phi_vec,self.current_lambda * lambda_mults[best_i])
-            self._phi_report(self.phi_act_csv, self.obsensemble.phi_vector,self.current_lambda * lambda_mults[best_i])
+            self._phi_report(self.phi_act_csv, self.obsensemble.phi_vector.values,self.current_lambda * lambda_mults[best_i])
 
 
             self.logger.statement("   best lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
