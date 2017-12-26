@@ -639,7 +639,8 @@ class EnsembleSmoother(EnsembleMethod):
         return self._calc_delta(obsensemble.nonzero, self.obscov.inv.sqrt)
 
 
-    def update(self,lambda_mults=[1.0],localizer=None,run_subset=None,use_approx=True):
+    def update(self,lambda_mults=[1.0],localizer=None,run_subset=None,use_approx=True,
+               calc_only=False):
         """update the iES one GLM cycle
 
         Parameters
@@ -656,6 +657,9 @@ class EnsembleSmoother(EnsembleMethod):
                 remaining 70 realizations for that lambda_mult value are run (in parallel).
             use_approx : bool
                  a flag to use the MLE or MAP upgrade solution.  True indicates use MLE solution
+            calc_only : bool
+                a flag to calculate the upgrade matrix only (not run the ensemble). This is mostly for
+                debugging and testing on travis. Default is False
 
         Example
         -------
@@ -780,6 +784,9 @@ class EnsembleSmoother(EnsembleMethod):
 
             paren_lam.append(pd.DataFrame(parensemble_cur_lam.loc[:,:]))
             self.logger.log("calcs for  lambda {0}".format(cur_lam_mult))
+
+        if calc_only:
+            return
 
 
         # subset if needed

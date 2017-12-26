@@ -914,6 +914,118 @@ def chenoliver_condor():
         es.update(lambda_mults=[1.0],use_approx=True)
     os.chdir(os.path.join("..",".."))
 
+
+def tenpar_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    import flopy
+    import pyemu
+
+    os.chdir(os.path.join("smoother", "10par_xsec"))
+
+    #bak_obj = pd.read_csv("iobj.bak",skipinitialspace=True)
+    #bak_obj_act = pd.read_csv("iobj.actual.bak")
+    bak_upgrade = pd.read_csv("upgrade_1.bak")
+
+
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
+    pst = pyemu.Pst("10par_xsec.pst")
+    par = pst.parameter_data
+    par.loc["stage", "partrans"] = "fixed"
+
+    v = pyemu.utils.ExpVario(contribution=0.25, a=60.0)
+    gs = pyemu.utils.GeoStruct(variograms=[v], transform="log")
+    par = pst.parameter_data
+    k_names = par.loc[par.parnme.apply(lambda x: x.startswith('k')), "parnme"]
+    sr = flopy.utils.SpatialReference(delc=[10], delr=np.zeros((10)) + 10.0)
+
+    cov = gs.covariance_matrix(sr.xcentergrid[0, :], sr.ycentergrid[0, :], k_names)
+
+    obs = pst.observation_data
+    obs.loc["h01_09", "weight"] = 100.0
+    obs.loc["h01_09", 'obgnme'] = "lt_test"
+    obs.loc["h01_09", 'obsval'] = 2.0
+
+    es = pyemu.EnsembleSmoother(pst, parcov=cov,
+                                num_slaves=10, port=4005, verbose=True,
+                                drop_bad_reals=14000.)
+
+    lz = es.get_localizer().to_dataframe()
+    # the k pars upgrad of h01_04 and h01_06 are localized
+    upgrad_pars = [pname for pname in lz.columns if "_" in pname and \
+                   int(pname.split('_')[1]) > 4]
+    lz.loc["h01_04", upgrad_pars] = 0.0
+    upgrad_pars = [pname for pname in lz.columns if '_' in pname and \
+                   int(pname.split('_')[1]) > 6]
+    lz.loc["h01_06", upgrad_pars] = 0.0
+    lz = pyemu.Matrix.from_dataframe(lz).T
+
+    es.initialize(parensemble="10par_xsec.pe.bak",obsensemble="10par_xsec.oe.bak",
+                  restart_obsensemble="10par_xsec.oe.restart.bak",init_lambda=10000.0)
+    # just for force full upgrade testing for
+    es.iter_num = 2
+    es.update(lambda_mults=[.1, 1000.0],calc_only=True,use_approx=False,localizer=lz)
+
+    #obj = pd.read_csv("10par_xsec.pst.iobj.csv")
+    #obj_act = pd.read_csv("10par_xsec.pst.iobj.actual.csv")
+    upgrade = pd.read_csv("10par_xsec.pst.upgrade_1.0003.csv")
+
+
+    os.chdir(os.path.join("..", ".."))
+
+    # for b,n in zip([bak_obj,bak_obj_act,bak_upgrade],[obj,obj_act,upgrade]):
+    #     print(b,n)
+    #     d = b - n
+    #     print(d.max(),d.min())
+
+    d = (bak_upgrade - upgrade).apply(np.abs)
+    assert d.max().max() < 1.0e-6
+
+def tenpar_fixed():
+    import os
+    import numpy as np
+    import flopy
+    import pyemu
+
+    os.chdir(os.path.join("smoother","10par_xsec"))
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
+    pst = pyemu.Pst("10par_xsec.pst")
+    par = pst.parameter_data
+    par.loc["stage","partrans"] = "fixed"
+
+    v = pyemu.utils.ExpVario(contribution=0.25,a=60.0)
+    gs = pyemu.utils.GeoStruct(variograms=[v],transform="log")
+    par = pst.parameter_data
+    k_names = par.loc[par.parnme.apply(lambda x: x.startswith('k')),"parnme"]
+    sr = flopy.utils.SpatialReference(delc=[10],delr=np.zeros((10))+10.0)
+
+    cov = gs.covariance_matrix(sr.xcentergrid[0,:],sr.ycentergrid[0,:],k_names)
+
+    es = pyemu.EnsembleSmoother(pst,parcov=cov,
+                                num_slaves=10,port=4005,verbose=True,
+                                drop_bad_reals=14000.)
+    lz = es.get_localizer().to_dataframe()
+    #the k pars upgrad of h01_04 and h01_06 are localized
+    upgrad_pars = [pname for pname in lz.columns if "_" in pname and\
+                   int(pname.split('_')[1]) > 4]
+    lz.loc["h01_04",upgrad_pars] = 0.0
+    upgrad_pars = [pname for pname in lz.columns if '_' in pname and \
+                   int(pname.split('_')[1]) > 6]
+    lz.loc["h01_06", upgrad_pars] = 0.0
+    lz = pyemu.Matrix.from_dataframe(lz).T
+    print(lz)
+    es.initialize(num_reals=100,init_lambda=10000.0)
+
+    for it in range(1):
+        #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
+        #es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
+        es.update(lambda_mults=[.1,1000.0])
+    os.chdir(os.path.join("..",".."))
+
+
 def tenpar():
     import os
     import numpy as np
@@ -924,6 +1036,7 @@ def tenpar():
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
     pst = pyemu.Pst("10par_xsec.pst")
+
     dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
 
     v = pyemu.utils.ExpVario(contribution=0.25,a=60.0)
@@ -935,6 +1048,8 @@ def tenpar():
     full_cov = gs.covariance_matrix(sr.xcentergrid[0,:],sr.ycentergrid[0,:],k_names)
     dia_parcov.drop(list(k_names),axis=1)
     cov = dia_parcov.extend(full_cov)
+
+
 
     es = pyemu.EnsembleSmoother("10par_xsec.pst",parcov=cov,
                                 num_slaves=10,port=4005,verbose=True,
@@ -950,7 +1065,6 @@ def tenpar():
     lz = pyemu.Matrix.from_dataframe(lz).T
     print(lz)
     es.initialize(num_reals=100,init_lambda=10000.0)
-
     for it in range(1):
         #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
         #es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
@@ -994,8 +1108,7 @@ def tenpar_opt():
     pst.write(os.path.join("template","10par_xsec_opt.pst"))
 
     es = pyemu.EnsembleSmoother("10par_xsec_opt.pst",parcov=cov,
-                                num_slaves=10,port=4005,verbose=True,
-                                drop_bad_reals=140000.)
+                                num_slaves=10,port=4005,verbose=True)
     lz = es.get_localizer().to_dataframe()
     #the k pars upgrad of h01_04 and h01_06 are localized
     upgrad_pars = [pname for pname in lz.columns if "_" in pname and\
@@ -1006,9 +1119,12 @@ def tenpar_opt():
     lz.loc["h01_06", upgrad_pars] = 0.0
     lz = pyemu.Matrix.from_dataframe(lz).T
     print(lz)
-    es.initialize(num_reals=300,init_lambda=10000.0)
 
-    niter=10
+    mc = pyemu.MonteCarlo(pst=pst,parcov=cov)
+    mc.draw(300,obs=True)
+    es.initialize(parensemble=mc.parensemble,obsensemble=mc.obsensemble,init_lambda=10000.0)
+
+    niter=20
     for it in range(niter):
         #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
         #es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
@@ -1018,8 +1134,7 @@ def tenpar_opt():
 
     #obs.loc["h01_09","weight"] = 0.0
     es = pyemu.EnsembleSmoother("10par_xsec.pst", parcov=cov,
-                                num_slaves=10, port=4005, verbose=True,
-                                drop_bad_reals=14000.)
+                                num_slaves=10, port=4005, verbose=True)
     lz = es.get_localizer().to_dataframe()
     # the k pars upgrad of h01_04 and h01_06 are localized
     upgrad_pars = [pname for pname in lz.columns if "_" in pname and \
@@ -1030,7 +1145,7 @@ def tenpar_opt():
     lz.loc["h01_06", upgrad_pars] = 0.0
     lz = pyemu.Matrix.from_dataframe(lz).T
     print(lz)
-    es.initialize(num_reals=300, init_lambda=10000.0)
+    es.initialize(parensemble=mc.parensemble,obsensemble=mc.obsensemble, init_lambda=10000.0)
 
     for it in range(niter):
         # es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
@@ -1054,6 +1169,66 @@ def tenpar_opt():
     #oe_ieq.to_csv("ieq.csv")
 
     os.chdir(os.path.join("..",".."))
+
+
+def plot_10par_opt_traj():
+    import numpy as np
+    import pandas as pd
+    from matplotlib.backends.backend_pdf import PdfPages
+    import matplotlib.pyplot as plt
+    import pyemu
+
+
+
+    d = os.path.join("smoother","10par_xsec")
+    case1 = "10par_xsec.pst"
+    case2 = "10par_xsec_opt.pst"
+
+    files = os.listdir(d)
+    case1_oes = [f for f in files if case1 in f and "obsensemble" in f]
+    case2_oes = [f for f in files if case2 in f and "obsensemble" in f]
+
+    case1_oes = [pd.read_csv(os.path.join(d,f)) for f in case1_oes]
+    case2_oes = [pd.read_csv(os.path.join(d,f)) for f in case2_oes]
+
+    case1_pes = [f for f in files if case1 in f and "parensemble" in f]
+    case2_pes = [f for f in files if case2 in f and "parensemble" in f]
+
+    case1_pes = [pd.read_csv(os.path.join(d, f)) for f in case1_pes]
+    case2_pes = [pd.read_csv(os.path.join(d, f)) for f in case2_pes]
+
+    print(case1_oes)
+    print(case2_oes)
+
+    pst = pyemu.Pst(os.path.join(d,"10par_xsec.pst"))
+    with PdfPages("traj.pdf") as pdf:
+        for oname in pst.observation_data.obsnme:
+            #dfs1 = [c.loc[:,[oname]] for c in case1_oes]
+            df1 = pd.concat([c.loc[:,[oname]] for c in case1_oes],axis=1)
+            df2 = pd.concat([c.loc[:, [oname]] for c in case2_oes], axis=1)
+            df1.columns = np.arange(df1.shape[1])
+            df2.columns = np.arange(df2.shape[1])
+            fig = plt.figure(figsize=(10,5))
+            ax = plt.subplot(111)
+            [ax.plot(df1.columns,df1.loc[i,:],color='0.5',lw=0.2) for i in df1.index]
+            [ax.plot(df2.columns, df2.loc[i, :], color='b', lw=0.2) for i in df2.index]
+            ax.set_title(oname)
+            pdf.savefig()
+            plt.close(fig)
+
+        for pname in pst.parameter_data.parnme:
+            #dfs1 = [c.loc[:,[oname]] for c in case1_oes]
+            df1 = pd.concat([c.loc[:,[pname]] for c in case1_pes],axis=1)
+            df2 = pd.concat([c.loc[:, [pname]] for c in case2_pes], axis=1)
+            df1.columns = np.arange(df1.shape[1])
+            df2.columns = np.arange(df2.shape[1])
+            fig = plt.figure(figsize=(10,5))
+            ax = plt.subplot(111)
+            [ax.plot(df1.columns,df1.loc[i,:],color='0.5',lw=0.2) for i in df1.index]
+            [ax.plot(df2.columns, df2.loc[i, :], color='b', lw=0.2) for i in df2.index]
+            ax.set_title(pname)
+            pdf.savefig()
+            plt.close(fig)
 
 
 def tenpar_restart():
@@ -1388,8 +1563,11 @@ if __name__ == "__main__":
     #chenoliver_func_plot()
     #chenoliver_plot_sidebyside()
     #chenoliver_obj_plot()
+    #tenpar_fixed()
     #tenpar()
-    tenpar_opt()
+    tenpar_test()
+    #tenpar_opt()
+    #plot_10par_opt_traj()
     #tenpar_restart()
     #tenpar_plot()
     #tenpar_failed_runs()

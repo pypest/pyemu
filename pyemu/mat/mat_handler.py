@@ -1229,7 +1229,14 @@ class Matrix(object):
             raise Exception("Matrix.drop(): axis arg is required")
         if not isinstance(names, list):
             names = [names]
+        if axis == 1:
+            assert len(names) < self.shape[1], "can't drop all names along axis 1"
+        else:
+            assert len(names) < self.shape[0], "can't drop all names along axis 0"
+
         idxs = self.indices(names, axis=axis)
+
+
 
         if self.isdiagonal:
             self.__x = np.delete(self.__x, idxs, 0)
