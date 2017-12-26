@@ -283,7 +283,7 @@ class EnsembleMethod():
 
     def _phi_report(self,phi_csv,phi_vec,cur_lam):
         #print(phi_vec.min(),phi_vec.max())
-        phi_csv.write("{0},{1},{2},{3},{4},{5},{6}".format(self.iter_num,
+        phi_csv.write("{0},{1},{2},{3},{4},{5},{6},".format(self.iter_num,
                                                              self.total_runs,
                                                              cur_lam,
                                                              phi_vec.min(),
