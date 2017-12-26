@@ -18,7 +18,7 @@ from pyemu.pst import Pst
 from .logger import Logger
 
 
-class EnsembleMethod():
+class EnsembleMethod(object):
     """Base class for ensemble-type methods.  Should not be instantiated directly
 
     Parameters
