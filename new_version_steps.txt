@@ -3,3 +3,4 @@
 2) tag new version in master branch
 3) python setup.py sdist bdist_wheel
 4) twine upload dist/*
+5) update README.md to point to build and coverage status for master
