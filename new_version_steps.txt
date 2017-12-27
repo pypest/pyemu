@@ -1,0 +1,5 @@
+0) update setup.py to new version
+1) checkout master and merge
+2) tag new version in master branch
+3) python setup.py sdist bdist_wheel
+4) twine upload dist/*
