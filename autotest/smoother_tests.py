@@ -1064,11 +1064,12 @@ def tenpar():
     lz.loc["h01_06", upgrad_pars] = 0.0
     lz = pyemu.Matrix.from_dataframe(lz).T
     print(lz)
-    es.initialize(num_reals=100,init_lambda=10000.0)
-    for it in range(1):
+    es.initialize(num_reals=100,init_lambda=10000.0,regul_factor=1.0)
+    for it in range(10):
         #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
         #es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
         es.update(lambda_mults=[.1,1000.0])
+
     os.chdir(os.path.join("..",".."))
 
 
