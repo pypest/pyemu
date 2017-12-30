@@ -733,9 +733,11 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
     for p in procs:
         p.wait()
     if cleanup:
-        for dir in slave_dirs:
-            shutil.rmtree(dir)
-
+        for d in slave_dirs:
+            try:
+                shutil.rmtree(d)
+            except Exception as e:
+                warnings.warn("unable to remove slavr dir{0}:{1}".format(d,str(e)))
 
 def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
                                subplots=False,figsize=(11,8.5),pt_color='b'):
