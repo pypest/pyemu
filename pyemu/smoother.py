@@ -359,8 +359,7 @@ class EnsembleMethod(object):
 
     def _get_residual_par_matrix(self, parensemble):
         par_matrix = parensemble.as_pyemu_matrix()
-        res_mat = par_matrix - self.par0_matrix.get(col_names=par_matrix.col_names,
-                                                    row_names=par_matrix.row_names)
+        res_mat = par_matrix.get(col_names=self.pst.adj_par_names) - self.par0_matrix.get(col_names=self.pst.adj_par_names)
         return  res_mat
 
 
