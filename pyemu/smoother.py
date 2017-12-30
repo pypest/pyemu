@@ -271,14 +271,21 @@ class EnsembleMethod(object):
         self.logger.log("evaluating ensemble of size {0} locally with sweep".\
                         format(parensemble.shape[0]))
 
-    def _calc_phi_vec(self,obsensemble):
-        obs_diff = self._get_residual_matrix(obsensemble)
+    def _calc_phi_vec(self,obsensemble,parensemble=None):
+        obs_diff = self._get_residual_obs_matrix(obsensemble)
 
         q = np.diagonal(self.obscov_inv_sqrt.get(row_names=obs_diff.col_names,col_names=obs_diff.col_names).x)
         phi_vec = []
         for i in range(obs_diff.shape[0]):
             o = obs_diff.x[i,:]
             phi_vec.append(((obs_diff.x[i,:] * q)**2).sum())
+        reg_phi_vec  = []
+        if parensemble is not None:
+            par_diff = self._get_residual_par_matrix(parensemble)
+            prior = self.parcov.get(row_names=par_diff.col_names,col_names=par_diff.col_names).inv
+            for i in range(par_diff.shape[0]):
+                reg_phi_vec.append(par_diff.x[i,:].transpose() * prior * par_diff.x[i,:])
+
         return np.array(phi_vec)
 
     def _phi_report(self,phi_csv,phi_vec,cur_lam):
@@ -333,14 +340,23 @@ class EnsembleMethod(object):
                 #print(res_df.loc[:,lt_name])
                 #print()
 
-    def _get_residual_matrix(self, obsensemble):
+    def _get_residual_obs_matrix(self, obsensemble):
         obs_matrix = obsensemble.nonzero.as_pyemu_matrix()
 
-        res_mat = obs_matrix - self.obs0_matrix.get(col_names=obs_matrix.col_names,row_names=obs_matrix.row_names)
+        res_mat = obs_matrix - self.obs0_matrix.get(col_names=obs_matrix.col_names,
+                                                    row_names=obs_matrix.row_names)
         #print(res_mat)
         self._apply_inequality_constraints(res_mat)
         #print(res_mat)
         return  res_mat
+
+
+    def _get_residual_par_matrix(self, parensemble):
+        par_matrix = parensemble.nonzero.as_pyemu_matrix()
+        res_mat = par_matrix - self.par0_matrix.get(col_names=par_matrix.col_names,
+                                                    row_names=par_matrix.row_names)
+        return  res_mat
+
 
     def update(self,lambda_mults=[1.0],localizer=None,run_subset=None,use_approx=True):
         raise Exception("EnsembleMethod.update() must be implemented by the derived types")
@@ -516,6 +532,7 @@ class EnsembleSmoother(EnsembleMethod):
             self.logger.log("initializing smoother with {0} realizations".format(num_reals))
 
         self.obs0_matrix = self.obsensemble_0.nonzero.as_pyemu_matrix()
+        self.par0_matrix = self.parensemble_0.as_pyemu_matrix()
         self.enforce_bounds = enforce_bounds
 
         self.phi_csv = open(self.pst.filename + ".iobj.csv", 'w')
@@ -702,7 +719,7 @@ class EnsembleSmoother(EnsembleMethod):
         self.logger.log("calculate pseudo inv comps")
 
         self.logger.log("calculate obs diff matrix")
-        obs_diff = self.obscov_inv_sqrt * self._get_residual_matrix(self.obsensemble).T
+        obs_diff = self.obscov_inv_sqrt * self._get_residual_obs_matrix(self.obsensemble).T
         self.logger.log("calculate obs diff matrix")
 
         # here is the math part...calculate upgrade matrices
