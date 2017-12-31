@@ -18,6 +18,144 @@ from pyemu.pst import Pst
 from .logger import Logger
 
 
+class Phi(object):
+    def __init__(self,em,num_reals):
+        assert isinstance(em,EnsembleMethod)
+        self.em = em
+        self.cur_lam = None
+        self.phi_files = {}
+        self._tags = ["composite","meas","meas.actual","reg"]
+        self._prepare_output_files(num_reals)
+        self.obs0_matrix = self.em.obsensemble_0.nonzero.as_pyemu_matrix()
+        self.par0_matrix = self.em.parensemble_0.as_pyemu_matrix()
+
+    # @property
+    # def comp_phi(self):
+    #     return
+    #
+    # @property
+    # def meas_phi(self):
+    #     return
+    #
+    # @property
+    # def actual_meas_phi(self):
+    #     return
+    #
+    # @property
+    # def reg_phi(self):
+    #     return
+
+
+    def _prepare_output_files(self,num_reals):
+
+        for tag in self._tags:
+            f = open(self.em.pst.filename + ".iobj.{0}.csv".format(tag), 'w')
+            f.write("iter_num,total_runs,lambda,min,max,mean,median,std,")
+            f.write(','.join(["{0:010d}".format(i + 1) for i in range(num_reals)]))
+            f.write('\n')
+            self.phi_files[tag] = f
+
+    def write(self):
+        for t,pv in self.phi_vec_dict.items():
+            self._phi_report(self.phi_files[t],pv)
+
+    @property
+    def phi_vec_dict(self):
+        d = {t:pv for t,pv in zip(self._tags,[self.comp_phi,self.meas_phi,self.meas_phi_actual,self.reg_phi])}
+        return d
+
+    def _phi_report(self,phi_csv,phi_vec):
+        cur_lam = self.cur_lam
+        if cur_lam is None:
+            cur_lam = 0.0
+        phi_csv.write("{0},{1},{2},{3},{4},{5},{6},".format(self.em.iter_num,
+                                                             self.em.total_runs,
+                                                             cur_lam,
+                                                             phi_vec.min(),
+                                                             phi_vec.max(),
+                                                             phi_vec.mean(),
+                                                             np.median(phi_vec),
+                                                             phi_vec.std()))
+        #[print(phi) for phi in phi_vec]
+        phi_csv.write(",".join(["{0:20.8}".format(phi) for phi in phi_vec]))
+        phi_csv.write("\n")
+        phi_csv.flush()
+
+    def update(self,obsensemble,parensemble,cur_lam=None):
+        self.cur_lam = cur_lam
+        self.meas_phi = self._calc_meas_phi(obsensemble)
+        self.meas_phi_actual = self._calc_meas_phi_actual(obsensemble)
+        self.reg_phi = self._calc_regul_phi(parensemble)
+        self.comp_phi = self.meas_phi + (self.reg_phi * self.em.regul_factor)
+
+    def report(self,f):
+        pass
+
+    def _calc_meas_phi(self,obsensemble):
+        obs_diff = self._get_residual_obs_matrix(obsensemble)
+
+        q = np.diagonal(self.em.obscov_inv_sqrt.get(row_names=obs_diff.col_names,col_names=obs_diff.col_names).x)
+        phi_vec = []
+        for i in range(obs_diff.shape[0]):
+            o = obs_diff.x[i,:]
+            phi_vec.append(((obs_diff.x[i,:] * q)**2).sum())
+
+        return np.array(phi_vec)
+
+
+    def _calc_regul_phi(self,parensemble):
+        if isinstance(parensemble,pd.DataFrame):
+            parensemble = pyemu.ParameterEnsemble.from_dataframe(pst=self.em.pst,df=parensemble)
+
+        reg_phi_vec = []
+        par_diff = self._get_residual_par_matrix(parensemble)
+        prior = self.em.parcov.get(row_names=par_diff.col_names, col_names=par_diff.col_names).inv.x
+        for i in range(par_diff.shape[0]):
+            reg_phi_vec.append(np.dot(np.dot(par_diff.x[i, :].transpose(), prior), par_diff.x[i, :]))
+        return np.array(reg_phi_vec)
+
+    def _calc_meas_phi_actual(self,obsensemble):
+        return obsensemble.phi_vector
+
+    def _get_residual_obs_matrix(self, obsensemble):
+        obs_matrix = obsensemble.nonzero.as_pyemu_matrix()
+
+        res_mat = obs_matrix - self.obs0_matrix.get(col_names=obs_matrix.col_names,
+                                                    row_names=obs_matrix.row_names)
+        self._apply_inequality_constraints(res_mat)
+        return  res_mat
+
+    def _get_residual_par_matrix(self, parensemble):
+        par_matrix = parensemble.as_pyemu_matrix()
+        res_mat = par_matrix.get(col_names=self.em.pst.adj_par_names) - \
+                  self.par0_matrix.get(col_names=self.em.pst.adj_par_names)
+        return  res_mat
+
+    def _apply_inequality_constraints(self,res_mat):
+        obs = self.em.pst.observation_data.loc[res_mat.col_names]
+        gt_names = obs.loc[obs.obgnme.apply(lambda x: x.startswith("g_") or x.startswith("less")), "obsnme"]
+        lt_names = obs.loc[obs.obgnme.apply(lambda x: x.startswith("l_") or x.startswith("greater")), "obsnme"]
+        if gt_names.shape[0] == 0 and lt_names.shape[0] == 0:
+            return res_mat
+        res_df = res_mat.to_dataframe()
+        if gt_names.shape[0] > 0:
+            for gt_name in gt_names:
+                #print(res_df.loc[:,gt_name])
+                #if the residual is greater than zero, this means the ineq is satisified
+                res_df.loc[res_df.loc[:,gt_name] > 0,gt_name] = 0.0
+                #print(res_df.loc[:,gt_name])
+                #print()
+
+
+        if lt_names.shape[0] > 0:
+            for lt_name in lt_names:
+                #print(res_df.loc[:,lt_name])
+                #f the residual is less than zero, this means the ineq is satisfied
+                res_df.loc[res_df.loc[:,lt_name] < 0,lt_name] = 0.0
+                #print(res_df.loc[:,lt_name])
+                #print()
+
+
 class EnsembleMethod(object):
     """Base class for ensemble-type methods.  Should not be instantiated directly
 
@@ -82,20 +220,6 @@ class EnsembleMethod(object):
 
         self.parcov = parcov
         self.obscov = obscov
-
-        # if restart_iter > 0:
-        #     self.restart_iter = restart_iter
-        #     paren = self.pst.filename+self.paren_prefix.format(restart_iter)
-        #     assert os.path.exists(paren),\
-        #         "could not find restart par ensemble {0}".format(paren)
-        #     obsen0 = self.pst.filename+self.obsen_prefix.format(0)
-        #     assert os.path.exists(obsen0),\
-        #         "could not find restart obs ensemble 0 {0}".format(obsen0)
-        #     obsen = self.pst.filename+self.obsen_prefix.format(restart_iter)
-        #     assert os.path.exists(obsen),\
-        #         "could not find restart obs ensemble {0}".format(obsen)
-        #     self.restart = True
-
 
         self.__initialized = False
         self.iter_num = 0

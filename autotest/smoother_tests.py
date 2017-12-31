@@ -915,6 +915,62 @@ def chenoliver_condor():
     os.chdir(os.path.join("..",".."))
 
 
+def tenpar_phi():
+    import os
+    import numpy as np
+    import pandas as pd
+    import flopy
+    import pyemu
+
+    os.chdir(os.path.join("smoother", "10par_xsec"))
+    # bak_obj = pd.read_csv("iobj.bak",skipinitialspace=True)
+    # bak_obj_act = pd.read_csv("iobj.actual.bak")
+    bak_upgrade = pd.read_csv("upgrade_1.bak")
+
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
+    pst = pyemu.Pst("10par_xsec.pst")
+    par = pst.parameter_data
+    par.loc["stage", "partrans"] = "fixed"
+
+    v = pyemu.utils.ExpVario(contribution=0.25, a=60.0)
+    gs = pyemu.utils.GeoStruct(variograms=[v], transform="log")
+    par = pst.parameter_data
+    k_names = par.loc[par.parnme.apply(lambda x: x.startswith('k')), "parnme"]
+    sr = flopy.utils.SpatialReference(delc=[10], delr=np.zeros((10)) + 10.0)
+
+    cov = gs.covariance_matrix(sr.xcentergrid[0, :], sr.ycentergrid[0, :], k_names)
+
+    obs = pst.observation_data
+    obs.loc["h01_09", "weight"] = 100.0
+    obs.loc["h01_09", 'obgnme'] = "lt_test"
+    obs.loc["h01_09", 'obsval'] = 2.0
+
+    es = pyemu.EnsembleSmoother(pst, parcov=cov,
+                                num_slaves=10, port=4005, verbose=True,
+                                drop_bad_reals=14000.)
+
+    lz = es.get_localizer().to_dataframe()
+    # the k pars upgrad of h01_04 and h01_06 are localized
+    upgrad_pars = [pname for pname in lz.columns if "_" in pname and \
+                   int(pname.split('_')[1]) > 4]
+    lz.loc["h01_04", upgrad_pars] = 0.0
+    upgrad_pars = [pname for pname in lz.columns if '_' in pname and \
+                   int(pname.split('_')[1]) > 6]
+    lz.loc["h01_06", upgrad_pars] = 0.0
+    lz = pyemu.Matrix.from_dataframe(lz).T
+
+    es.initialize(parensemble="10par_xsec.pe.bak", obsensemble="10par_xsec.oe.bak",
+                  restart_obsensemble="10par_xsec.oe.restart.bak", init_lambda=10000.0)
+
+    phi = pyemu.smoother.Phi(es,es.obsensemble.shape[0])
+    phi.update(es.obsensemble,es.parensemble)
+    phi.write()
+    print(phi.meas_phi.mean(),phi.meas_phi.shape)
+    es.update(lambda_mults=[.1, 1000.0], calc_only=True, use_approx=False, localizer=lz)
+
+    os.chdir(os.path.join("..", ".."))
+
 def tenpar_test():
     import os
     import numpy as np
@@ -1568,8 +1624,8 @@ if __name__ == "__main__":
     #chenoliver_plot_sidebyside()
     #chenoliver_obj_plot()
     #tenpar_fixed()
-    #tenpar()
-    tenpar_test()
+    tenpar_phi()
+    #tenpar_test()
     #tenpar_opt()
     #plot_10par_opt_traj()
     #tenpar_restart()
