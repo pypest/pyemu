@@ -24,27 +24,10 @@ class Phi(object):
         self.em = em
         self.cur_lam = None
         self.phi_files = {}
-        self._tags = ["composite","meas","meas.actual","reg"]
+        self._tags = ["composite","meas","actual","reg"]
         self._prepare_output_files(num_reals)
         self.obs0_matrix = self.em.obsensemble_0.nonzero.as_pyemu_matrix()
         self.par0_matrix = self.em.parensemble_0.as_pyemu_matrix()
-
-    # @property
-    # def comp_phi(self):
-    #     return
-    #
-    # @property
-    # def meas_phi(self):
-    #     return
-    #
-    # @property
-    # def actual_meas_phi(self):
-    #     return
-    #
-    # @property
-    # def reg_phi(self):
-    #     return
-
 
     def _prepare_output_files(self,num_reals):
 
@@ -81,18 +64,32 @@ class Phi(object):
         phi_csv.write("\n")
         phi_csv.flush()
 
-    def update(self,obsensemble,parensemble,cur_lam=None):
+    def get_composite_phi(self,obsensemble,parensemble):
+        assert obsensemble.shape[0] == parensemble.shape[0]
+        meas_phi = self._calc_meas_phi(obsensemble)
+        reg_phi = self._calc_regul_phi(parensemble)
+        return meas_phi + (reg_phi * self.em.regul_factor)
+
+    def update(self,cur_lam=None):
+        #assert obsensemble.shape[0] == parensemble.shape[0]
         self.cur_lam = cur_lam
-        self.meas_phi = self._calc_meas_phi(obsensemble)
-        self.meas_phi_actual = self._calc_meas_phi_actual(obsensemble)
-        self.reg_phi = self._calc_regul_phi(parensemble)
+        self.meas_phi = self._calc_meas_phi(self.em.obsensemble)
+        self.meas_phi_actual = self._calc_meas_phi_actual(self.em.obsensemble)
+        self.reg_phi = self._calc_regul_phi(self.em.parensemble)
         self.comp_phi = self.meas_phi + (self.reg_phi * self.em.regul_factor)
 
-    def report(self,f):
-        pass
+    def report(self):
+        self.write()
+        ls = self.em.logger.statement
+        pvd = self.phi_vec_dict
+        ls("**** phi summary ****")
+        for t in self._tags:
+            ls("{0:9s} mean: {1:>15.6G}, std: {2:>15.6G}".\
+               format(t,pvd[t].mean(),pvd[t].std()))
+        ls("*********************")
 
     def _calc_meas_phi(self,obsensemble):
-        obs_diff = self._get_residual_obs_matrix(obsensemble)
+        obs_diff = self.get_residual_obs_matrix(obsensemble)
 
         q = np.diagonal(self.em.obscov_inv_sqrt.get(row_names=obs_diff.col_names,col_names=obs_diff.col_names).x)
         phi_vec = []
@@ -108,7 +105,7 @@ class Phi(object):
             parensemble = pyemu.ParameterEnsemble.from_dataframe(pst=self.em.pst,df=parensemble)
 
         reg_phi_vec = []
-        par_diff = self._get_residual_par_matrix(parensemble)
+        par_diff = self.get_residual_par_matrix(parensemble)
         prior = self.em.parcov.get(row_names=par_diff.col_names, col_names=par_diff.col_names).inv.x
         for i in range(par_diff.shape[0]):
             reg_phi_vec.append(np.dot(np.dot(par_diff.x[i, :].transpose(), prior), par_diff.x[i, :]))
@@ -117,7 +114,7 @@ class Phi(object):
     def _calc_meas_phi_actual(self,obsensemble):
         return obsensemble.phi_vector
 
-    def _get_residual_obs_matrix(self, obsensemble):
+    def get_residual_obs_matrix(self, obsensemble):
         obs_matrix = obsensemble.nonzero.as_pyemu_matrix()
 
         res_mat = obs_matrix - self.obs0_matrix.get(col_names=obs_matrix.col_names,
@@ -125,7 +122,7 @@ class Phi(object):
         self._apply_inequality_constraints(res_mat)
         return  res_mat
 
-    def _get_residual_par_matrix(self, parensemble):
+    def get_residual_par_matrix(self, parensemble):
         par_matrix = parensemble.as_pyemu_matrix()
         res_mat = par_matrix.get(col_names=self.em.pst.adj_par_names) - \
                   self.par0_matrix.get(col_names=self.em.pst.adj_par_names)
@@ -224,23 +221,6 @@ class EnsembleMethod(object):
         self.__initialized = False
         self.iter_num = 0
         self.raw_sweep_out = None
-
-    @property
-    def current_phi(self):
-        """ the current phi vector
-
-        Returns
-        -------
-            current_phi : pandas.DataFrame
-                the current phi vector as a pandas dataframe
-
-        """
-        return pd.DataFrame(data={"phi":self._calc_phi_vec(self.obsensemble)},\
-                            index=self.obsensemble.index)
-
-    @property
-    def current_actual_phi(self):
-        return self.obsensemble.phi_vector
 
     def initialize(self,*args,**kwargs):
         raise Exception("EnsembleMethod.initialize() must be implemented by the derived types")
@@ -395,97 +375,6 @@ class EnsembleMethod(object):
         self.logger.log("evaluating ensemble of size {0} locally with sweep".\
                         format(parensemble.shape[0]))
 
-    def _calc_phi_vec(self,obsensemble):
-        obs_diff = self._get_residual_obs_matrix(obsensemble)
-
-        q = np.diagonal(self.obscov_inv_sqrt.get(row_names=obs_diff.col_names,col_names=obs_diff.col_names).x)
-        phi_vec = []
-        for i in range(obs_diff.shape[0]):
-            o = obs_diff.x[i,:]
-            phi_vec.append(((obs_diff.x[i,:] * q)**2).sum())
-
-        return np.array(phi_vec)
-
-
-    def _calc_regul_phi_vec(self,parensemble):
-        if isinstance(parensemble,pd.DataFrame):
-            parensemble = pyemu.ParameterEnsemble.from_dataframe(pst=self.pst,df=parensemble)
-
-        reg_phi_vec = []
-        par_diff = self._get_residual_par_matrix(parensemble)
-        prior = self.parcov.get(row_names=par_diff.col_names, col_names=par_diff.col_names).inv.x
-        for i in range(par_diff.shape[0]):
-            reg_phi_vec.append(np.dot(np.dot(par_diff.x[i, :].transpose(), prior), par_diff.x[i, :]))
-        return np.array(reg_phi_vec)
-
-    def _phi_report(self,phi_csv,phi_vec,cur_lam):
-        #print(phi_vec.min(),phi_vec.max())
-        phi_csv.write("{0},{1},{2},{3},{4},{5},{6},".format(self.iter_num,
-                                                             self.total_runs,
-                                                             cur_lam,
-                                                             phi_vec.min(),
-                                                             phi_vec.max(),
-                                                             phi_vec.mean(),
-                                                             np.median(phi_vec),
-                                                             phi_vec.std()))
-        #[print(phi) for phi in phi_vec]
-        phi_csv.write(",".join(["{0:20.8}".format(phi) for phi in phi_vec]))
-        phi_csv.write("\n")
-        phi_csv.flush()
-
-    # def _phi_report(self,phi_vec,cur_lam):
-    #     self.phi_csv.write("{0},{1},{2},{3},{4},{5},{6}".format(self.iter_num,
-    #                                                          self.total_runs,
-    #                                                          cur_lam,
-    #                                                          phi_vec.min(),
-    #                                                          phi_vec.max(),
-    #                                                          phi_vec.mean(),
-    #                                                          np.median(phi_vec),
-    #                                                          phi_vec.std()))
-    #     self.phi_csv.write(",".join(["{0:20.8}".format(phi) for phi in phi_vec]))
-    #     self.phi_csv.write("\n")
-    #     self.phi_csv.flush()
-
-    def _apply_inequality_constraints(self,res_mat):
-        obs = self.pst.observation_data.loc[res_mat.col_names]
-        gt_names = obs.loc[obs.obgnme.apply(lambda x: x.startswith("g_") or x.startswith("less")), "obsnme"]
-        lt_names = obs.loc[obs.obgnme.apply(lambda x: x.startswith("l_") or x.startswith("greater")), "obsnme"]
-        if gt_names.shape[0] == 0 and lt_names.shape[0] == 0:
-            return res_mat
-        res_df = res_mat.to_dataframe()
-        if gt_names.shape[0] > 0:
-            for gt_name in gt_names:
-                #print(res_df.loc[:,gt_name])
-                #if the residual is greater than zero, this means the ineq is satisified
-                res_df.loc[res_df.loc[:,gt_name] > 0,gt_name] = 0.0
-                #print(res_df.loc[:,gt_name])
-                #print()
-
-
-        if lt_names.shape[0] > 0:
-            for lt_name in lt_names:
-                #print(res_df.loc[:,lt_name])
-                #f the residual is less than zero, this means the ineq is satisfied
-                res_df.loc[res_df.loc[:,lt_name] < 0,lt_name] = 0.0
-                #print(res_df.loc[:,lt_name])
-                #print()
-
-    def _get_residual_obs_matrix(self, obsensemble):
-        obs_matrix = obsensemble.nonzero.as_pyemu_matrix()
-
-        res_mat = obs_matrix - self.obs0_matrix.get(col_names=obs_matrix.col_names,
-                                                    row_names=obs_matrix.row_names)
-        #print(res_mat)
-        self._apply_inequality_constraints(res_mat)
-        #print(res_mat)
-        return  res_mat
-
-
-    def _get_residual_par_matrix(self, parensemble):
-        par_matrix = parensemble.as_pyemu_matrix()
-        res_mat = par_matrix.get(col_names=self.pst.adj_par_names) - self.par0_matrix.get(col_names=self.pst.adj_par_names)
-        return  res_mat
-
 
     def update(self,lambda_mults=[1.0],localizer=None,run_subset=None,use_approx=True):
         raise Exception("EnsembleMethod.update() must be implemented by the derived types")
@@ -636,11 +525,7 @@ class EnsembleSmoother(EnsembleMethod):
 
         else:
             self.logger.log("initializing smoother with {0} realizations".format(num_reals))
-            #self.num_reals = int(num_reals)
-            #assert self.num_reals > 1
             self.logger.log("initializing parensemble")
-            #self.parensemble_0 = ParameterEnsemble(self.pst)
-            #self.parensemble_0.draw(cov=self.parcov,num_reals=num_reals)
             self.parensemble_0 = pyemu.ParameterEnsemble.from_gaussian_draw(ParameterEnsemble(self.pst),
                                                                             self.parcov,num_reals=num_reals)
             self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
@@ -650,8 +535,6 @@ class EnsembleSmoother(EnsembleMethod):
                                       self.paren_prefix.format(0))
             self.logger.log("initializing parensemble")
             self.logger.log("initializing obsensemble")
-            #self.obsensemble_0 = ObservationEnsemble(self.pst)
-            #self.obsensemble_0.draw(cov=self.obscov,num_reals=num_reals)
             self.obsensemble_0 = pyemu.ObservationEnsemble.from_id_gaussian_draw(ObservationEnsemble(self.pst),
                                                                                  num_reals=num_reals)
             #self.obsensemble = self.obsensemble_0.copy()
@@ -662,27 +545,11 @@ class EnsembleSmoother(EnsembleMethod):
             self.logger.log("initializing obsensemble")
             self.logger.log("initializing smoother with {0} realizations".format(num_reals))
 
-        self.obs0_matrix = self.obsensemble_0.nonzero.as_pyemu_matrix()
-        self.par0_matrix = self.parensemble_0.as_pyemu_matrix()
+        self.phi = Phi(self,num_reals)
+
+        # self.obs0_matrix = self.obsensemble_0.nonzero.as_pyemu_matrix()
+        # self.par0_matrix = self.parensemble_0.as_pyemu_matrix()
         self.enforce_bounds = enforce_bounds
-
-        self.phi_csv = open(self.pst.filename + ".iobj.csv", 'w')
-        self.phi_csv.write("iter_num,total_runs,lambda,min,max,mean,median,std,")
-        self.phi_csv.write(','.join(["{0:010d}". \
-                                    format(i + 1) for i in range(num_reals)]))
-        self.phi_csv.write('\n')
-
-        self.phi_act_csv = open(self.pst.filename + ".iobj.actual.csv", 'w')
-        self.phi_act_csv.write("iter_num,total_runs,lambda,min,max,mean,median,std,")
-        self.phi_act_csv.write(','.join(["{0:010d}". \
-                                    format(i + 1) for i in range(num_reals)]))
-        self.phi_act_csv.write('\n')
-
-        self.phi_reg_csv = open(self.pst.filename + ".iobj.regul.csv", 'w')
-        self.phi_reg_csv.write("iter_num,total_runs,lambda,min,max,mean,median,std,")
-        self.phi_reg_csv.write(','.join(["{0:010d}". \
-                                        format(i + 1) for i in range(num_reals)]))
-        self.phi_reg_csv.write('\n')
 
         if restart_obsensemble is not None:
             self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
@@ -709,16 +576,12 @@ class EnsembleSmoother(EnsembleMethod):
             self.obsensemble.loc[failed_runs,:] = np.NaN
             self.obsensemble = self.obsensemble.dropna()
 
-        self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
-        self.current_reg_phi_vec = self._calc_regul_phi_vec(self.parensemble)
-        if self.regul_factor > 0.0:
-            # add reg penalty to phi_vec
-            self.current_phi_vec += self.current_reg_phi_vec * self.regul_factor
-
+        self.phi.update()
 
 
         if self.drop_bad_reals is not None:
-            drop_idx = np.argwhere(self.current_phi_vec > self.drop_bad_reals).flatten()
+            #drop_idx = np.argwhere(self.current_phi_vec > self.drop_bad_reals).flatten()
+            drop_idx = np.argwhere(self.phi.comp_phi > self.drop_bad_reals).flatten()
             run_ids = self.obsensemble.index.values
             drop_idx = run_ids[drop_idx]
             if len(drop_idx) == self.obsensemble.shape[0]:
@@ -731,20 +594,15 @@ class EnsembleSmoother(EnsembleMethod):
                 self.obsensemble.loc[drop_idx,:] = np.NaN
                 self.obsensemble = self.obsensemble.dropna()
 
-                self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
-                self.current_reg_phi_vec = self._calc_regul_phi_vec(self.parensemble)
-                if self.regul_factor > 0.0:
-                    self.current_phi_vec += self.current_reg_phi_vec * self.regul_factor
+                self.phi.update()
 
+        self.phi.report()
 
-        self._phi_report(self.phi_csv,self.current_phi_vec,0.0)
-        self._phi_report(self.phi_act_csv, self.obsensemble.phi_vector.values, 0.0)
-        self._phi_report(self.phi_reg_csv, self.current_reg_phi_vec, 0.0)
+        self.last_best_mean = self.phi.comp_phi.mean()
+        self.last_best_std = self.phi.comp_phi.std()
 
-        self.last_best_mean = self.current_phi_vec.mean()
-        self.last_best_std = self.current_phi_vec.std()
-        self.logger.statement("initial phi (mean, std): {0:15.6G},{1:15.6G}".\
-                              format(self.last_best_mean,self.last_best_std))
+        #self.logger.statement("initial phi (mean, std): {0:15.6G},{1:15.6G}".\
+        #                      format(self.last_best_mean,self.last_best_std))
         if init_lambda is not None:
             self.current_lambda = float(init_lambda)
         else:
@@ -840,7 +698,6 @@ class EnsembleSmoother(EnsembleMethod):
 
          """
 
-
         if run_subset is not None:
             if run_subset >= self.obsensemble.shape[0]:
                 self.logger.warn("run_subset ({0}) >= num of active reals ({1})...ignoring ".\
@@ -868,7 +725,8 @@ class EnsembleSmoother(EnsembleMethod):
         self.logger.log("calculate pseudo inv comps")
 
         self.logger.log("calculate obs diff matrix")
-        obs_diff = self.obscov_inv_sqrt * self._get_residual_obs_matrix(self.obsensemble).T
+        #obs_diff = self.obscov_inv_sqrt * self._get_residual_obs_matrix(self.obsensemble).T
+        obs_diff = self.obscov_inv_sqrt * self.phi.get_residual_obs_matrix(self.obsensemble).T
         self.logger.log("calculate obs diff matrix")
 
         # here is the math part...calculate upgrade matrices
@@ -1029,19 +887,20 @@ class EnsembleSmoother(EnsembleMethod):
 
         # here is where we need to select out the "best" lambda par and obs
         # ensembles
-        self.logger.statement("\n**************************")
-        self.logger.statement(str(datetime.now()))
+        self.logger.statement("**************************")
+        #self.logger.statement(str(datetime.now()))
+        self.logger.statement("lambda testing summary")
         self.logger.statement("total runs:{0}".format(self.total_runs))
         self.logger.statement("iteration: {0}".format(self.iter_num))
         self.logger.statement("current lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
                               format(self.current_lambda,
                          self.last_best_mean,self.last_best_std))
-        phi_vecs = [self._calc_phi_vec(obsen) for obsen in obsen_lam]
-        phi_vecs_reg = [self._calc_regul_phi_vec(paren) for paren in paren_lam]
-        if self.regul_factor > 0.0:
-
-            for i,(pv,prv) in enumerate(zip(phi_vecs,phi_vecs_reg)):
-                phi_vecs[i] = pv + (prv * self.regul_factor)
+        #phi_vecs = [self._calc_phi_vec(obsen) for obsen in obsen_lam]
+        #phi_vecs_reg = [self._calc_regul_phi_vec(paren) for paren in paren_lam]
+        #if self.regul_factor > 0.0:
+        #    for i,(pv,prv) in enumerate(zip(phi_vecs,phi_vecs_reg)):
+        #        phi_vecs[i] = pv + (prv * self.regul_factor)
+        phi_vecs = [self.phi.get_composite_phi(oe,pe.loc[oe.index,:]) for oe,pe in zip(obsen_lam,paren_lam)]
 
         if self.drop_bad_reals is not None:
             for i,pv in enumerate(phi_vecs):
@@ -1091,24 +950,19 @@ class EnsembleSmoother(EnsembleMethod):
                     self.obsensemble.loc[failed_runs, :] = np.NaN
                     self.obsensemble = self.obsensemble.dropna()
 
-                self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
-                self.current_reg_phi_vec = self._calc_regul_phi_vec(self.parensemble)
-                if self.regul_factor > 0.0:
-                    self.current_phi_vec += self.current_reg_phi_vec * self.regul_factor
-
-                #self._phi_report(self.current_phi_vec,self.current_lambda * lambda_mults[best_i])
-                best_mean = self.current_phi_vec.mean()
-                best_std = self.current_phi_vec.std()
+                self.phi.update()
+                best_mean = self.phi.comp_phi.mean()
+                best_std = self.phi.comp_phi.std()
             else:
                 self.obsensemble = obsen_lam[best_i]
                 # reindex parensemble in case failed runs
                 self.parensemble = ParameterEnsemble.from_dataframe(df=self.parensemble.loc[self.obsensemble.index],pst=self.pst)
-                self.current_phi_vec = phi_vecs[best_i]
-                self.current_reg_phi_vec = phi_vecs_reg[best_i]
+                self.phi.update()
             if self.drop_bad_reals is not None:
                 # for testing drop_bad_reals functionality
                 # self.current_phi_vec[::2] = self.drop_bad_reals + 1.0
-                drop_idx = np.argwhere(self.current_phi_vec > self.drop_bad_reals).flatten()
+                #drop_idx = np.argwhere(self.current_phi_vec > self.drop_bad_reals).flatten()
+                drop_idx = np.argwhere(self.phi.comp_phi > self.drop_bad_reals).flatten()
                 run_ids = self.obsensemble.index.values
                 drop_idx = run_ids[drop_idx]
                 if len(drop_idx) > self.obsensemble.shape[0] - 3:
@@ -1121,21 +975,17 @@ class EnsembleSmoother(EnsembleMethod):
                     self.obsensemble.loc[drop_idx, :] = np.NaN
                     self.obsensemble = self.obsensemble.dropna()
 
-                    self.current_phi_vec = self._calc_phi_vec(self.obsensemble)
-                    self.current_reg_phi_vec = self._calc_regul_phi_vec(self.parensemble)
-                    if self.regul_factor > 0.0:
-                        self.current_phi_vec += self.current_reg_phi_vec * self.regul_factor
-                    best_mean = self.current_phi_vec.mean()
-                    best_std = self.current_phi_vec.std()
+                    self.phi.update()
+                    best_mean = self.phi.comp_phi.mean()
+                    best_std = self.phi.comp_phi.std()
 
-            self._phi_report(self.phi_csv,self.current_phi_vec,self.current_lambda * lambda_mults[best_i])
-            self._phi_report(self.phi_act_csv, self.obsensemble.phi_vector.values,self.current_lambda * lambda_mults[best_i])
-            self._phi_report(self.phi_reg_csv, self.current_reg_phi_vec, self.current_lambda * lambda_mults[best_i])
+
+            self.phi.report()
 
             self.logger.statement("   best lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
                   format(self.current_lambda*lambda_mults[best_i],
                          best_mean,best_std))
-            self.logger.statement("   actual mean phi: {0:15.6G}".format(float(self.current_actual_phi.mean())))
+            #self.logger.statement("   actual mean phi: {0:15.6G}".format(float(self.current_actual_phi.mean())))
             self.last_best_mean = best_mean
             self.last_best_std = best_std
 

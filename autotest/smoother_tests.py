@@ -250,7 +250,6 @@ def freyberg():
     #print(parcov.to_pearson().x[-1,:])
     parcov.to_binary("freyberg_prior.jcb")
     parcov.to_ascii("freyberg_prior.cov")
-    return
     pst.observation_data.loc[:,"weight"] /= 10.0
     pst.write("temp.pst")
     obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
@@ -943,7 +942,7 @@ def tenpar_phi():
 
     obs = pst.observation_data
     obs.loc["h01_09", "weight"] = 100.0
-    obs.loc["h01_09", 'obgnme'] = "lt_test"
+    obs.loc["h01_09", 'obgnme'] = "l_test"
     obs.loc["h01_09", 'obsval'] = 2.0
 
     es = pyemu.EnsembleSmoother(pst, parcov=cov,
@@ -965,18 +964,12 @@ def tenpar_phi():
                   regul_factor=1.0)
 
     phi = pyemu.smoother.Phi(es,es.obsensemble.shape[0])
-    phi.update(es.obsensemble,es.parensemble)
+    phi.update()
     #phi.write()
-    print(phi.meas_phi.mean(),phi.meas_phi.shape)
-    print(phi.reg_phi.mean(),phi.comp_phi.mean())
-    print(phi.meas_phi_actual.mean())
     es.update(lambda_mults=[.1, 1000.0], calc_only=False, use_approx=False, localizer=lz)
 
-    phi.update(es.obsensemble, es.parensemble)
+    phi.update()
     # phi.write()
-    print(phi.meas_phi.mean(), phi.meas_phi.shape)
-    print(phi.reg_phi.mean(), phi.comp_phi.mean())
-    print(phi.meas_phi_actual.mean())
     os.chdir(os.path.join("..", ".."))
 
 def tenpar_test():
@@ -1168,7 +1161,7 @@ def tenpar_opt():
     # obs.loc["h01_02","obgnme"] = "lt_test"
     # obs.loc["h01_02", "obsval"] = 1.0
     obs.loc["h01_09","weight"] = 100.0
-    obs.loc["h01_09",'obgnme'] = "lt_test"
+    obs.loc["h01_09",'obgnme'] = "l_test"
     obs.loc["h01_09", 'obsval'] = 2.0
     print(obs)
     #return()
@@ -1613,7 +1606,7 @@ if __name__ == "__main__":
 
     #setup_lorenz()
     #henry_setup()
-    #henry()
+    #˘henry()
     #henry_plot()
     #freyberg()
     #freyberg_plot()
@@ -1632,8 +1625,8 @@ if __name__ == "__main__":
     #chenoliver_plot_sidebyside()
     #chenoliver_obj_plot()
     #tenpar_fixed()
-    tenpar_phi()
-    #tenpar_test()
+    #tenpar_phi()
+    tenpar_test()
     #tenpar_opt()
     #plot_10par_opt_traj()
     #tenpar_restart()
