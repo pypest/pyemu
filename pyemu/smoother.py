@@ -26,7 +26,11 @@ class Phi(object):
         self._tags = ["composite","meas","actual","reg"]
         self._prepare_output_files(num_reals)
         self.obs0_matrix = self.em.obsensemble_0.nonzero.as_pyemu_matrix()
-        self.par0_matrix = self.em.parensemble_0.as_pyemu_matrix()
+        if self.em.parensemble.istransformed:
+
+            self.par0_matrix = self.em.parensemble_0.as_pyemu_matrix()
+        else:
+            self.par0_matrix = self.em.parensemble._transform(inplace=False).as_pyemu_matrix()
 
     def _prepare_output_files(self,num_reals):
 
@@ -119,7 +123,12 @@ class Phi(object):
         return  res_mat
 
     def get_residual_par_matrix(self, parensemble):
-        par_matrix = parensemble.as_pyemu_matrix()
+        if parensemble.istransformed:
+
+            par_matrix = parensemble.as_pyemu_matrix()
+        else:
+            par_matrix = parensemble._transform(inplace=False).as_pyemu_matrix()
+
         res_mat = par_matrix.get(col_names=self.em.pst.adj_par_names) - \
                   self.par0_matrix.get(col_names=self.em.pst.adj_par_names)
         return  res_mat

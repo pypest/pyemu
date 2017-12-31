@@ -264,9 +264,9 @@ def freyberg():
     # parcov_hk = gs.covariance_matrix(pp_df.x,pp_df.y,pp_df.name)
     # parcov_full = parcov_hk.extend(parcov_rch)
 
-    es.initialize(100,init_lambda=100.0,enforce_bounds="reset")
+    es.initialize(100,init_lambda=100.0,enforce_bounds="reset",regul_factor=1.0)
     for i in range(10):
-        es.update(lambda_mults=[0.01,0.2,5.0,100.0],run_subset=20,use_approx=False)
+        es.update(lambda_mults=[0.01,0.2,5.0,100.0],run_subset=20,use_approx=True)
 
     os.chdir(os.path.join("..",".."))
 
