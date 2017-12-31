@@ -961,14 +961,22 @@ def tenpar_phi():
     lz = pyemu.Matrix.from_dataframe(lz).T
 
     es.initialize(parensemble="10par_xsec.pe.bak", obsensemble="10par_xsec.oe.bak",
-                  restart_obsensemble="10par_xsec.oe.restart.bak", init_lambda=10000.0)
+                  restart_obsensemble="10par_xsec.oe.restart.bak", init_lambda=10000.0,
+                  regul_factor=1.0)
 
     phi = pyemu.smoother.Phi(es,es.obsensemble.shape[0])
     phi.update(es.obsensemble,es.parensemble)
-    phi.write()
+    #phi.write()
     print(phi.meas_phi.mean(),phi.meas_phi.shape)
-    es.update(lambda_mults=[.1, 1000.0], calc_only=True, use_approx=False, localizer=lz)
+    print(phi.reg_phi.mean(),phi.comp_phi.mean())
+    print(phi.meas_phi_actual.mean())
+    es.update(lambda_mults=[.1, 1000.0], calc_only=False, use_approx=False, localizer=lz)
 
+    phi.update(es.obsensemble, es.parensemble)
+    # phi.write()
+    print(phi.meas_phi.mean(), phi.meas_phi.shape)
+    print(phi.reg_phi.mean(), phi.comp_phi.mean())
+    print(phi.meas_phi_actual.mean())
     os.chdir(os.path.join("..", ".."))
 
 def tenpar_test():
