@@ -266,7 +266,8 @@ def freyberg():
 
     es.initialize(100,init_lambda=100.0,enforce_bounds="reset")
     for i in range(10):
-        es.update(lambda_mults=[0.01,0.2,5.0,100.0],run_subset=20)
+        es.update(lambda_mults=[0.01,0.2,5.0,100.0],run_subset=20,use_approx=False)
+
     os.chdir(os.path.join("..",".."))
 
 def freyberg_condor():
@@ -1606,11 +1607,11 @@ if __name__ == "__main__":
 
     #setup_lorenz()
     #henry_setup()
-    #˘henry()
+    #henry()
     #henry_plot()
-    #freyberg()
+    freyberg()
     #freyberg_plot()
-    #freyberg_plot_iobj()
+    freyberg_plot_iobj()
     #freyberg_plot_par_seq()
     #freyberg_plot_obs_seq()
     #chenoliver_func_plot()
@@ -1626,7 +1627,7 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #tenpar_fixed()
     #tenpar_phi()
-    tenpar_test()
+    #tenpar_test()
     #tenpar_opt()
     #plot_10par_opt_traj()
     #tenpar_restart()

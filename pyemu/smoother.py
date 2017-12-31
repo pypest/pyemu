@@ -22,7 +22,6 @@ class Phi(object):
     def __init__(self,em,num_reals):
         assert isinstance(em,EnsembleMethod)
         self.em = em
-        self.cur_lam = None
         self.phi_files = {}
         self._tags = ["composite","meas","actual","reg"]
         self._prepare_output_files(num_reals)
@@ -38,19 +37,16 @@ class Phi(object):
             f.write('\n')
             self.phi_files[tag] = f
 
-    def write(self):
+    def write(self,cur_lam=0.0):
         for t,pv in self.phi_vec_dict.items():
-            self._phi_report(self.phi_files[t],pv)
+            self._phi_report(self.phi_files[t],pv,cur_lam)
 
     @property
     def phi_vec_dict(self):
         d = {t:pv for t,pv in zip(self._tags,[self.comp_phi,self.meas_phi,self.meas_phi_actual,self.reg_phi])}
         return d
 
-    def _phi_report(self,phi_csv,phi_vec):
-        cur_lam = self.cur_lam
-        if cur_lam is None:
-            cur_lam = 0.0
+    def _phi_report(self,phi_csv,phi_vec,cur_lam=0.0):
         phi_csv.write("{0},{1},{2},{3},{4},{5},{6},".format(self.em.iter_num,
                                                              self.em.total_runs,
                                                              cur_lam,
@@ -70,16 +66,16 @@ class Phi(object):
         reg_phi = self._calc_regul_phi(parensemble)
         return meas_phi + (reg_phi * self.em.regul_factor)
 
-    def update(self,cur_lam=None):
+    def update(self):
         #assert obsensemble.shape[0] == parensemble.shape[0]
-        self.cur_lam = cur_lam
+        #self.cur_lam = cur_lam
         self.meas_phi = self._calc_meas_phi(self.em.obsensemble)
         self.meas_phi_actual = self._calc_meas_phi_actual(self.em.obsensemble)
         self.reg_phi = self._calc_regul_phi(self.em.parensemble)
         self.comp_phi = self.meas_phi + (self.reg_phi * self.em.regul_factor)
 
-    def report(self):
-        self.write()
+    def report(self,cur_lam=0.0):
+        self.write(cur_lam)
         ls = self.em.logger.statement
         pvd = self.phi_vec_dict
         ls("**** phi summary ****")
@@ -596,7 +592,7 @@ class EnsembleSmoother(EnsembleMethod):
 
                 self.phi.update()
 
-        self.phi.report()
+        self.phi.report(cur_lam=0.0)
 
         self.last_best_mean = self.phi.comp_phi.mean()
         self.last_best_std = self.phi.comp_phi.std()
@@ -980,7 +976,7 @@ class EnsembleSmoother(EnsembleMethod):
                     best_std = self.phi.comp_phi.std()
 
 
-            self.phi.report()
+            self.phi.report(cur_lam=self.current_lambda * lambda_mults[best_i])
 
             self.logger.statement("   best lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
                   format(self.current_lambda*lambda_mults[best_i],
