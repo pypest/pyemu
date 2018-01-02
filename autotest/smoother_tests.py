@@ -257,18 +257,124 @@ def freyberg():
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=20,
                                 verbose=True)
 
-    #gs.variograms[0].a=10000
-    #gs.variograms[0].contribution=0.01
-    #gs.variograms[0].anisotropy = 10.0
-    # pp_df = pyemu.utils.gw_utils.pp_file_to_dataframe("points1.dat")
-    # parcov_hk = gs.covariance_matrix(pp_df.x,pp_df.y,pp_df.name)
-    # parcov_full = parcov_hk.extend(parcov_rch)
+    es.initialize(100,init_lambda=100.0,enforce_bounds="reset",regul_factor=0.5)
+    for i in range(20):
+        es.update(lambda_mults=[0.01,0.2,5.0,100.0],run_subset=20,use_approx=False)
 
-    es.initialize(100,init_lambda=100.0,enforce_bounds="reset",regul_factor=1.0)
-    for i in range(10):
-        es.update(lambda_mults=[0.01,0.2,5.0,100.0],run_subset=20,use_approx=True)
+
 
     os.chdir(os.path.join("..",".."))
+
+def freyerg_reg_compare():
+    import os
+    import pandas as pd
+    import pyemu
+
+    os.chdir(os.path.join("smoother", "freyberg"))
+
+    if not os.path.exists("freyberg.xy"):
+        import flopy
+
+        ml = flopy.modflow.Modflow.load("freyberg.nam", model_ws="template",
+                                        load_only=[])
+        xy = pd.DataFrame([(x, y) for x, y in zip(ml.sr.xcentergrid.flatten(), ml.sr.ycentergrid.flatten())],
+                          columns=['x', 'y'])
+        names = []
+        for i in range(ml.nrow):
+            for j in range(ml.ncol):
+                names.append("hkr{0:02d}c{1:02d}".format(i, j))
+        xy.loc[:, "name"] = names
+        xy.to_csv("freyberg.xy")
+    else:
+        xy = pd.read_csv("freyberg.xy")
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
+
+    pst = pyemu.Pst(os.path.join("freyberg.pst"))
+    dia_parcov = pyemu.Cov.from_parameter_data(pst, sigma_range=6.0)
+
+    nothk_names = [pname for pname in pst.adj_par_names if "hk" not in pname]
+    parcov_nothk = dia_parcov.get(row_names=nothk_names)
+    gs = pyemu.utils.geostats.read_struct_file(os.path.join("template", "structure.dat"))
+    print(gs.variograms[0].a, gs.variograms[0].contribution)
+    # gs.variograms[0].a *= 10.0
+    # gs.variograms[0].contribution *= 10.0
+    gs.nugget = 0.0
+    print(gs.variograms[0].a, gs.variograms[0].contribution)
+
+    full_parcov = gs.covariance_matrix(xy.x, xy.y, xy.name)
+    parcov = parcov_nothk.extend(full_parcov)
+    # print(parcov.to_pearson().x[-1,:])
+    parcov.to_binary("freyberg_prior.jcb")
+    parcov.to_ascii("freyberg_prior.cov")
+    pst.observation_data.loc[:, "weight"] /= 10.0
+    pst.write("temp.pst")
+    obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
+
+    es = pyemu.EnsembleSmoother(pst, parcov=parcov, obscov=obscov, num_slaves=20,
+                                verbose=True)
+
+    es.initialize(300, init_lambda=100.0, enforce_bounds="reset", regul_factor=0.0)
+    for i in range(5):
+        es.update(lambda_mults=[0.01, 0.2, 5.0, 100.0], run_subset=20, use_approx=False)
+
+    noreg_par = es.parensemble.copy()
+    noreg_obs = es.obsensemble.copy()
+    noreg_iobj = pd.read_csv("freyberg.pst.iobj.actual.csv")
+
+    es = pyemu.EnsembleSmoother(pst, parcov=parcov, obscov=obscov, num_slaves=20,
+                                verbose=True)
+
+    es.initialize(300, init_lambda=100.0, enforce_bounds="reset", regul_factor=1.0)
+    for i in range(5):
+        es.update(lambda_mults=[0.01, 0.2, 5.0, 100.0], run_subset=20, use_approx=False)
+    reg_par = es.parensemble.copy()
+    reg_obs = es.obsensemble.copy()
+    reg_iobj = pd.read_csv("freyberg.pst.iobj.actual.csv")
+
+    os.chdir(os.path.join("..", ".."))
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+
+    with PdfPages("freyberg_reg_compare.pdf") as pdf:
+        for oname in es.pst.nnz_obs_names:
+            fig = plt.figure(figsize=(6,6))
+            ax = plt.subplot(111)
+            es.obsensemble_0.loc[:,oname].hist(bins=20,ax=ax,color="0.5",alpha=0.5)
+            reg_obs.loc[:,oname].hist(bins=20,ax=ax,color='m',alpha=0.5)
+            noreg_obs.loc[:,oname].hist(bins=20,ax=ax,color='b',alpha=0.5)
+            ax.set_title(oname)
+            pdf.savefig()
+            plt.close(fig)
+
+        for pname in es.pst.adj_par_names:
+            fig = plt.figure(figsize=(6,6))
+            ax = plt.subplot(111)
+            es.parensemble_0.loc[:,pname].hist(bins=20,ax=ax,color="0.5",alpha=0.5)
+            reg_par.loc[:,pname].hist(bins=20,ax=ax,color='m',alpha=0.5)
+            noreg_par.loc[:,pname].hist(bins=20,ax=ax,color='b',alpha=0.5)
+            ax.set_title(pname)
+            pdf.savefig()
+            plt.close(fig)
+
+        fig = plt.figure(figsize=(6, 6))
+        ax = plt.subplot(111)
+        ax.plot(reg_iobj.total_runs,reg_iobj.loc[:,"mean"],color='m')
+        ax.plot(noreg_iobj.total_runs,noreg_iobj.loc[:,"mean"],color='b')
+        pdf.savefig()
+        plt.close(fig)
+        reals = [c for c in reg_iobj.columns if c.startswith('0')]
+
+        for i in reg_iobj.index:
+            fig = plt.figure(figsize=(6, 6))
+            ax = plt.subplot(111)
+            reg_iobj.loc[i,reals].hist(ax=ax,alpha=0.5,color='b',bins=20)
+            noreg_iobj.loc[i,reals].hist(ax=ax,alpha=0.5,color='m',bins=20)
+            ax.set_title("phi {0}".format(i))
+            pdf.savefig()
+            plt.close(fig)
+
+
 
 def freyberg_condor():
     import os
@@ -1609,9 +1715,10 @@ if __name__ == "__main__":
     #henry_setup()
     #henry()
     #henry_plot()
-    freyberg()
+    #freyberg()
     #freyberg_plot()
-    freyberg_plot_iobj()
+    #freyberg_plot_iobj()
+    freyerg_reg_compare()
     #freyberg_plot_par_seq()
     #freyberg_plot_obs_seq()
     #chenoliver_func_plot()
