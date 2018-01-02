@@ -1039,7 +1039,7 @@ class EnsembleSmoother(EnsembleMethod):
                     self.obsensemble.loc[failed_runs, :] = np.NaN
                     self.obsensemble = self.obsensemble.dropna()
 
-                #self.phi.update()
+                self.phi.update()
                 best_mean = self.phi.comp_phi.mean()
                 best_std = self.phi.comp_phi.std()
             else:
