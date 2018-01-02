@@ -13,6 +13,7 @@ SEED = 358183147 #from random.org on 5 Dec 2016
 #print("setting random seed")
 np.random.seed(SEED)
 
+
 class Ensemble(pd.DataFrame):
     """ The base class type for handling parameter and observation ensembles.
         It is directly derived from pandas.DataFrame.  This class should not be
@@ -483,6 +484,26 @@ class ParameterEnsemble(Ensemble):
                          "ParameterEnsemble")
         self.pst.parameter_data.index = self.pst.parameter_data.parnme
         self.bound_tol = kwargs.get("bound_tol",0.0)
+
+    def dropna(self, *args, **kwargs):
+        """overload of pandas.DataFrame.dropna()
+
+        Parameters
+        ----------
+        *args : list
+            positional args to pass to pandas.DataFrame.dropna()
+        **kwargs : dict
+            keyword args to pass to pandas.DataFrame.dropna()
+
+        Returns
+        -------
+        Ensemble : Ensemble
+
+        """
+        df = super(Ensemble, self).dropna(*args, **kwargs)
+        pe = ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
+        pe.__istransformed = self.istransformed
+        return pe
 
     def copy(self):
         """ overload of Ensemble.copy()
@@ -1234,9 +1255,13 @@ class ParameterEnsemble(Ensemble):
         log10 before writing
 
         """
+        retrans = False
         if self.istransformed:
             self._back_transform(inplace=True)
+            retrans = True
         super(ParameterEnsemble,self).to_csv(*args,**kwargs)
+        if retrans:
+            self._transform(inplace=True)
 
     def to_parfiles(self,prefix):
         """

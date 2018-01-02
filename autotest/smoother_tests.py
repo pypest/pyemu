@@ -288,18 +288,17 @@ def freyberg():
 
     parcov.to_binary("freyberg_prior.jcb")
     parcov.to_ascii("freyberg_prior.cov")
-    pst.observation_data.loc[:,"weight"] /= 10.0
+    #pst.observation_data.loc[:,"weight"] /= 10.0
     pst.write("temp.pst")
     obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
 
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=20,
                                 verbose=True)
 
-    es.initialize(100,init_lambda=100.0,enforce_bounds="reset",regul_factor=0.5)
-    for i in range(20):
-        es.update(lambda_mults=[0.01,0.2,5.0,100.0],run_subset=20,use_approx=False)
-
-
+    es.initialize(100,init_lambda=10.0,enforce_bounds="reset",regul_factor=0.0,use_approx_prior=True)
+    for i in range(3):
+        es.update(lambda_mults=[0.01,0.2,1.0,5.0,100.0],run_subset=20,use_approx=True)
+        #es.update(use_approx=False)
 
     os.chdir(os.path.join("..",".."))
 
@@ -1156,7 +1155,8 @@ def tenpar_test():
     try:
         #bak_obj = pd.read_csv("iobj.bak",skipinitialspace=True)
         #bak_obj_act = pd.read_csv("iobj.actual.bak")
-        bak_upgrade = pd.read_csv("upgrade_1.bak")
+        bak_upgrade1 = pd.read_csv("upgrade_1.bak")
+        bak_upgrade2 = pd.read_csv("upgrade_2.bak")
 
 
         csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
@@ -1193,14 +1193,16 @@ def tenpar_test():
         lz = pyemu.Matrix.from_dataframe(lz).T
 
         es.initialize(parensemble="10par_xsec.pe.bak",obsensemble="10par_xsec.oe.bak",
-                      restart_obsensemble="10par_xsec.oe.restart.bak",init_lambda=10000.0)
+                      restart_obsensemble="10par_xsec.oe.restart.bak",init_lambda=10000.0,
+                      use_approx_prior=False)
         # just for force full upgrade testing for
         es.iter_num = 2
         es.update(lambda_mults=[.1, 1000.0],calc_only=True,use_approx=False,localizer=lz)
 
         #obj = pd.read_csv("10par_xsec.pst.iobj.csv")
         #obj_act = pd.read_csv("10par_xsec.pst.iobj.actual.csv")
-        upgrade = pd.read_csv("10par_xsec.pst.upgrade_1.0003.csv")
+        upgrade1 = pd.read_csv("10par_xsec.pst.upgrade_1.0003.csv")
+        upgrade2 = pd.read_csv("10par_xsec.pst.upgrade_2.0003.csv")
 
     except Exception as e:
         os.chdir(os.path.join("..", ".."))
@@ -1213,7 +1215,10 @@ def tenpar_test():
     #     d = b - n
     #     print(d.max(),d.min())
 
-    d = (bak_upgrade - upgrade).apply(np.abs)
+    d = (bak_upgrade1 - upgrade1).apply(np.abs)
+    assert d.max().max() < 1.0e-6,d.max()
+
+    d = (bak_upgrade2 - upgrade2).apply(np.abs)
     assert d.max().max() < 1.0e-6
 
 def tenpar_fixed():
@@ -1297,11 +1302,11 @@ def tenpar():
     lz.loc["h01_06", upgrad_pars] = 0.0
     lz = pyemu.Matrix.from_dataframe(lz).T
     print(lz)
-    es.initialize(num_reals=100,init_lambda=10000.0,regul_factor=1.0)
+    es.initialize(num_reals=100,init_lambda=1.0,regul_factor=0.0,use_approx_prior=True)
     for it in range(10):
         #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
         #es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
-        es.update(lambda_mults=[.1,1000.0])
+        es.update(lambda_mults=[1.0],use_approx=False)
 
     os.chdir(os.path.join("..",".."))
 
@@ -1781,7 +1786,7 @@ if __name__ == "__main__":
     #henry_setup()
     #henry()
     #henry_plot()
-    freyberg()
+    #freyberg()
     #freyberg_plot()
     #freyberg_plot_iobj()
     #freyerg_reg_compare()
@@ -1800,12 +1805,13 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #tenpar_fixed()
     #tenpar_phi()
-    #tenpar_test()
+    tenpar_test()
     #tenpar_opt()
     #plot_10par_opt_traj()
     #tenpar_restart()
     #tenpar_plot()
     #tenpar_failed_runs()
+    #tenpar()
     #freyberg()
     #freyberg_check_phi_calc()
     #freyberg_condor()

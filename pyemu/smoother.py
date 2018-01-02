@@ -74,11 +74,11 @@ class Phi(object):
         phi_csv.write("\n")
         phi_csv.flush()
 
-    def get_meas_and_composite_phi(self,obsensemble,parensemble):
+    def get_meas_and_regul_phi(self,obsensemble,parensemble):
         assert obsensemble.shape[0] == parensemble.shape[0]
         meas_phi = self._calc_meas_phi(obsensemble)
         reg_phi = self._calc_regul_phi(parensemble)
-        return meas_phi,meas_phi + (reg_phi * self.em.regul_factor)
+        return meas_phi,reg_phi
 
 
 
@@ -175,12 +175,12 @@ class Phi(object):
         return  res_mat
 
     def get_residual_par_matrix(self, parensemble):
-        if parensemble.istransformed:
-
-            par_matrix = parensemble.as_pyemu_matrix()
-        else:
-            par_matrix = parensemble._transform(inplace=False).as_pyemu_matrix()
-
+        # these should already be transformed
+        # if parensemble.istransformed:
+        #     par_matrix = parensemble.as_pyemu_matrix()
+        # else:
+        #     par_matrix = parensemble._transform(inplace=False).as_pyemu_matrix()
+        par_matrix = parensemble.as_pyemu_matrix()
         #res_mat = par_matrix.get(col_names=self.em.pst.adj_par_names) - \
         #          self.par0_matrix.get(col_names=self.em.pst.adj_par_names)
         res_mat = par_matrix.get(col_names=self.par0_matrix.col_names) - self.par0_matrix
@@ -477,12 +477,13 @@ class EnsembleSmoother(EnsembleMethod):
     ``>>>es = pyemu.EnsembleSmoother(pst="pest.pst")``
     """
 
-    def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,use_approx_prior=True,
-                 submit_file=None,verbose=False,port=4004,slave_dir="template",drop_bad_reals=None):
+    def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,submit_file=None,verbose=False,
+                 port=4004,slave_dir="template",drop_bad_reals=None):
+
         super(EnsembleSmoother,self).__init__(pst=pst,parcov=parcov,obscov=obscov,num_slaves=num_slaves,
                                               submit_file=submit_file,verbose=verbose,port=port,slave_dir=slave_dir)
-        self.use_approx_prior = bool(use_approx_prior)
-        self.half_parcov_diag = None
+        #self.use_approx_prior = bool(use_approx_prior)
+        self.parcov_inv_sqrt = None
         self.half_obscov_diag = None
         self.delta_par_prior = None
         self.drop_bad_reals = drop_bad_reals
@@ -515,7 +516,7 @@ class EnsembleSmoother(EnsembleMethod):
 
     def initialize(self,num_reals=1,init_lambda=None,enforce_bounds="reset",
                    parensemble=None,obsensemble=None,restart_obsensemble=None,
-                   regul_factor=0.0):
+                   regul_factor=0.0,use_approx_prior=True):
         """Initialize the iES process.  Depending on arguments, draws or loads
         initial parameter observations ensembles and runs the initial parameter
         ensemble
@@ -543,6 +544,16 @@ class EnsembleSmoother(EnsembleMethod):
                 an observation ensemble or filename to use as an
                 evaluated observation ensemble.  If not None, this will skip the initial
                 parameter ensemble evaluation - user beware!
+            regul_factor : float
+                the regularization penalty fraction of the composite objective.  The
+                Prurist, MAP solution would be regul_factor = 1.0, yielding equal
+                parts measurement and regularization to the composite objective function.
+                Default is 0.0, which means only seek to minimize the measurement objective
+                function
+            use_approx_prior : bool
+                a flag to use the inverse, square root of the prior ccovariance matrix
+                for scaling the upgrade calculation.  If True, this matrix is not used.
+                Default is True
 
 
         Example
@@ -565,6 +576,25 @@ class EnsembleSmoother(EnsembleMethod):
         self.total_runs = 0
         # this matrix gets used a lot, so only calc once and store
         self.obscov_inv_sqrt = self.obscov.get(self.pst.nnz_obs_names).inv.sqrt
+
+        if use_approx_prior:
+            self.logger.statement("using approximate parcov in solution")
+            self.parcov_inv_sqrt = 1.0
+        else:
+            self.logger.statement("using full parcov in solution")
+            # Chen and Oliver use a low rank approx here, but so far,
+            # I haven't needed it - not using enough parameters yet
+            #if self.parcov.isdiagonal:
+            #    self.parcov_inv_sqrt = self.parcov.sqrt.inv
+            #else:
+                #self.parcov_inv_sqrt = self.parcov.get_diagonal_vector().inv.sqrt
+            #    self.parcov_inv_sqrt = Cov(x=np.atleast_2d(np.diag(self.parcov.x)),
+            #                                names=self.parcov.col_names,
+            #                                isdiagonal=True).inv.sqrt
+            #self.parcov_inv_sqrt = 1.0
+            self.logger.log("forming inverse sqrt parcov matrix")
+            self.parcov_inv_sqrt = self.parcov.inv.sqrt
+            self.logger.log("forming inverse sqrt parcov matrix")
 
         if parensemble is not None and obsensemble is not None:
             self.logger.log("initializing with existing ensembles")
@@ -659,6 +689,11 @@ class EnsembleSmoother(EnsembleMethod):
             self.obsensemble.loc[failed_runs,:] = np.NaN
             self.obsensemble = self.obsensemble.dropna()
 
+        if not self.parensemble.istransformed:
+            self.parensemble._transform(inplace=True)
+        if not self.parensemble_0.istransformed:
+            self.parensemble_0._transform(inplace=True)
+
         self.phi = Phi(self)
 
         if self.drop_bad_reals is not None:
@@ -703,18 +738,8 @@ class EnsembleSmoother(EnsembleMethod):
         # better choices of lambda will tame it
         self.logger.statement("current lambda:{0:15.6g}".format(self.current_lambda))
 
-        if self.use_approx_prior:
-            self.logger.statement("using approximate parcov in solution")
-            self.half_parcov_diag = 1.0
-        else:
-            #self.logger.statement("using full parcov in solution")
-            # if self.parcov.isdiagonal:
-            #     self.half_parcov_diag = self.parcov.sqrt.inv
-            # else:
-            #     self.half_parcov_diag = Cov(x=np.diag(self.parcov.x),
-            #                                 names=self.parcov.col_names,
-            #                                 isdiagonal=True).inv.sqrt
-            self.half_parcov_diag = 1.0
+
+
         self.delta_par_prior = self._calc_delta_par(self.parensemble_0)
         u,s,v = self.delta_par_prior.pseudo_inv_components()
         self.Am = u * s.inv
@@ -739,13 +764,13 @@ class EnsembleSmoother(EnsembleMethod):
         '''
         calc the scaled parameter ensemble differences from the mean
         '''
-        return self._calc_delta(parensemble, self.half_parcov_diag)
+        return self._calc_delta(parensemble, self.parcov_inv_sqrt)
 
     def _calc_delta_obs(self,obsensemble):
         '''
         calc the scaled observation ensemble differences from the mean
         '''
-        return self._calc_delta(obsensemble.nonzero, self.obscov.inv.sqrt)
+        return self._calc_delta(obsensemble.nonzero, self.obscov_inv_sqrt)
 
 
     def update(self,lambda_mults=[1.0],localizer=None,run_subset=None,use_approx=True,
@@ -782,6 +807,9 @@ class EnsembleSmoother(EnsembleMethod):
         ``>>>es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)``
 
          """
+
+        #if not self.parensemble.istransformed:
+        #    self.parensemble._transform(inplace=False)
 
         if run_subset is not None:
             if run_subset >= self.obsensemble.shape[0]:
@@ -832,7 +860,7 @@ class EnsembleSmoother(EnsembleMethod):
             # build up this matrix as a single element so we can apply
             # localization
             self.logger.log("building upgrade_1 matrix")
-            upgrade_1 = -1.0 * (self.half_parcov_diag * scaled_delta_par) *\
+            upgrade_1 = -1.0 * (self.parcov_inv_sqrt * scaled_delta_par) *\
                         v * s * scaled_ident * u.T
             self.logger.log("building upgrade_1 matrix")
 
@@ -868,11 +896,11 @@ class EnsembleSmoother(EnsembleMethod):
                 self.logger.log("building upgrade_2 matrix")
                 par_diff = (self.parensemble - self.parensemble_0.loc[self.parensemble.index,:]).\
                     as_pyemu_matrix().T
-                x4 = self.Am.T * self.half_parcov_diag * par_diff
+                x4 = self.Am.T * self.parcov_inv_sqrt * par_diff
                 x5 = self.Am * x4
                 x6 = scaled_delta_par.T * x5
                 x7 = v * scaled_ident * v.T * x6
-                upgrade_2 = -1.0 * (self.half_parcov_diag *
+                upgrade_2 = -1.0 * (self.parcov_inv_sqrt *
                                    scaled_delta_par * x7).to_dataframe()
                 upgrade_2.index.name = "parnme"
                 upgrade_2 = upgrade_2.T
@@ -887,10 +915,25 @@ class EnsembleSmoother(EnsembleMethod):
                 self.logger.log("building upgrade_2 matrix")
             parensemble_cur_lam.enforce(self.enforce_bounds)
 
+            #fill in fixed pars with initial values
+            fi = parensemble_cur_lam.fixed_indexer
+            li = parensemble_cur_lam.log_indexer
+            log_values = self.pst.parameter_data.loc[:,"parval1"].copy()
+            log_values.loc[li] = log_values.loc[li].apply(np.log10)
+            fixed_vals = log_values.loc[fi]
+
+            for fname, fval in zip(fixed_vals.index, fixed_vals.values):
+                # if fname not in df.columns:
+                #    continue
+                # print(fname)
+                parensemble_cur_lam.loc[:, fname] = fval
+
             # this is for testing failed runs on upgrade testing
             # works with the 10par_xsec smoother test
             #parensemble_cur_lam.iloc[:,:] = -1000000.0
 
+            # some hackery - we lose track of the transform flag here, but just
+            # know it is transformed
             paren_lam.append(pd.DataFrame(parensemble_cur_lam.loc[:,:]))
             self.logger.log("calcs for  lambda {0}".format(cur_lam_mult))
 
@@ -904,6 +947,13 @@ class EnsembleSmoother(EnsembleMethod):
             #subset_idx = ["{0:d}".format(i) for i in np.random.randint(0,self.parensemble.shape[0]-1,run_subset)]
             subset_idx = self.parensemble.iloc[:run_subset,:].index.values
             self.logger.statement("subset idxs: " + ','.join([str(s) for s in subset_idx]))
+            #paren_lam_subset = []
+            #for pe in paren_lam:
+            #    pe_sub = ParameterEnsemble.from_dataframe(df=pe.loc[subset_idx,:],pst=pe.pst)
+            #    pe_sub.__istransformed = pe.istransformed
+            #    paren_lam_subset.append(pe)
+
+            # more tracking of transformed - just know it!
             paren_lam_subset = [pe.loc[subset_idx,:] for pe in paren_lam]
             paren_combine = pd.concat(paren_lam_subset,ignore_index=True)
             paren_lam_subset = None
@@ -914,6 +964,7 @@ class EnsembleSmoother(EnsembleMethod):
 
         self.logger.log("evaluating ensembles for lambdas : {0}".\
                         format(','.join(["{0:8.3E}".format(l) for l in lam_vals])))
+        paren_combine = ParameterEnsemble.from_dataframe(df=paren_combine,pst=self.pst,istransformed=True)
         failed_runs, obsen_combine = self._calc_obs(paren_combine)
         #if failed_runs is not None:
         #    obsen_combine.loc[failed_runs,:] = np.NaN
@@ -930,6 +981,7 @@ class EnsembleSmoother(EnsembleMethod):
         if run_subset is not None:
             nrun_per_lam = run_subset
         obsen_lam = []
+
         for i in range(len(lam_vals)):
             sidx = i * nrun_per_lam
             eidx = sidx + nrun_per_lam
@@ -947,6 +999,9 @@ class EnsembleSmoother(EnsembleMethod):
                                          format(len(failed_runs_this),lam_vals[i]))
                     oe.iloc[failed_runs_this,:] = np.NaN
                     oe = oe.dropna()
+                    paren_lam[i].iloc[failed_runs_this,:] = np.NaN
+                    paren_lam[i] = ParameterEnsemble.from_dataframe(df=paren_lam[i].dropna(),pst=self.pst)
+                    paren_lam[i].__instransformed = True
 
             # don't drop bad reals here, instead, mask bad reals in the lambda
             # selection and drop later
@@ -986,31 +1041,36 @@ class EnsembleSmoother(EnsembleMethod):
         #    for i,(pv,prv) in enumerate(zip(phi_vecs,phi_vecs_reg)):
         #        phi_vecs[i] = pv + (prv * self.regul_factor)
         self.logger.log("calc lambda phi vectors")
-        phi_vecs = [self.phi.get_meas_and_composite_phi(oe,pe.loc[oe.index,:]) for oe,pe in zip(obsen_lam,paren_lam)]
+        phi_vecs = [self.phi.get_meas_and_regul_phi(oe,pe.loc[oe.index,:]) for oe,pe in zip(obsen_lam,paren_lam)]
         self.logger.log("calc lambda phi vectors")
         if self.drop_bad_reals is not None:
-            for i,(meas_pv,comp_pv) in enumerate(phi_vecs):
-
+            for i,(meas_pv,regul_pv) in enumerate(phi_vecs):
                 #for testing the drop_bad_reals functionality
                 #pv[[0,3,7]] = self.drop_bad_reals + 1.0
-                comp_pv[meas_pv>self.drop_bad_reals] = np.NaN
-                comp_pv = comp_pv[~np.isnan(comp_pv)]
+                regul_pv = regul_pv.copy()
+                regul_pv[meas_pv>self.drop_bad_reals] = np.NaN
+                regul_pv = regul_pv[~np.isnan(regul_pv)]
                 meas_pv[meas_pv>self.drop_bad_reals] = np.NaN
                 meas_pv = meas_pv[~np.isnan(meas_pv)]
-                if len(comp_pv) == 0:
+                if len(meas_pv) == 0:
                     raise Exception("all realization for lambda {0} dropped as 'bad'".\
                                     format(lam_vals[i]))
-                phi_vecs[i] = (meas_pv,comp_pv)
-        mean_std = [(pv[1].mean(),pv[1].std()) for pv in phi_vecs]
+                phi_vecs[i] = (meas_pv,regul_pv)
+        mean_std_meas = [(pv[0].mean(),pv[0].std()) for pv in phi_vecs]
+        mean_std_regul = [(pv[1].mean(), pv[1].std()) for pv in phi_vecs]
         update_pars = False
         update_lambda = False
         # accept a new best if its within 10%
         best_mean = self.last_best_mean * 1.1
         best_std = self.last_best_std * 1.1
         best_i = 0
-        for i,(m,s) in enumerate(mean_std):
-            self.logger.statement(" tested lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
-                                 format(self.current_lambda * lambda_mults[i],m,s))
+        for i,((mm,ms),(rm,rs)) in enumerate(zip(mean_std_meas,mean_std_regul)):
+            self.logger.statement(" tested lambda:{0:15.6G}, meas mean:{1:15.6G}, meas std:{2:15.6G}".
+                                  format(self.current_lambda * lambda_mults[i],mm,ms))
+            self.logger.statement("{0:30s}regul mean:{1:15.6G}, regul std:{2:15.6G}".\
+                                  format(' ',rm,rs))
+            m = mm + (self.regul_factor * rm)
+            s = ms + (self.regul_factor * rs)
             if m < best_mean:
                 update_pars = True
                 best_mean = m
@@ -1029,7 +1089,8 @@ class EnsembleSmoother(EnsembleMethod):
             self.logger.statement("not accepting iteration, increased lambda:{0}".\
                   format(self.current_lambda))
         else:
-            self.parensemble = ParameterEnsemble.from_dataframe(df=paren_lam[best_i],pst=self.pst)
+            #more transformation status hard coding - ugly
+            self.parensemble = ParameterEnsemble.from_dataframe(df=paren_lam[best_i],pst=self.pst,istransformed=True)
             if run_subset is not None:
                 failed_runs, self.obsensemble = self._calc_obs(self.parensemble)
                 if failed_runs is not None:
@@ -1045,8 +1106,9 @@ class EnsembleSmoother(EnsembleMethod):
             else:
                 self.obsensemble = obsen_lam[best_i]
                 # reindex parensemble in case failed runs
-                self.parensemble = ParameterEnsemble.from_dataframe(df=self.parensemble.loc[self.obsensemble.index],pst=self.pst)
-                #self.phi.update()
+                self.parensemble = ParameterEnsemble.from_dataframe(df=self.parensemble.loc[self.obsensemble.index],
+                                                                    pst=self.pst,istransformed=self.parensemble.istransformed)
+                self.phi.update()
             if self.drop_bad_reals is not None:
                 # for testing drop_bad_reals functionality
                 # self.current_phi_vec[::2] = self.drop_bad_reals + 1.0
@@ -1067,7 +1129,6 @@ class EnsembleSmoother(EnsembleMethod):
                     self.phi.update()
                     best_mean = self.phi.comp_phi.mean()
                     best_std = self.phi.comp_phi.std()
-
 
             self.phi.report(cur_lam=self.current_lambda * lambda_mults[best_i])
 
@@ -1093,6 +1154,6 @@ class EnsembleSmoother(EnsembleMethod):
         self.obsensemble.to_csv(self.pst.filename+self.obsen_prefix.\
                                     format(self.iter_num))
         if self.raw_sweep_out is not None:
-            self.raw_sweep_out.to_csv(self.pst.filename+"_raw{0}".\
+            self.raw_sweep_out.to_csv(self.pst.filename+"_sweepraw{0}.csv".\
                                         format(self.iter_num))
         self.logger.log("iteration {0}".format(self.iter_num))
