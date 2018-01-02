@@ -40,6 +40,7 @@ class Phi(object):
         self.em.logger.log("inverting parcov for regul phi calcs")
         self.inv_parcov = self.em.parcov.inv
         self.em.logger.log("inverting parcov for regul phi calcs")
+        self.update()
 
     def _prepare_output_files(self):
         num_reals = self.em.obsensemble.shape[0]
@@ -73,39 +74,43 @@ class Phi(object):
         phi_csv.write("\n")
         phi_csv.flush()
 
-    def get_composite_phi(self,obsensemble,parensemble):
+    def get_meas_and_composite_phi(self,obsensemble,parensemble):
         assert obsensemble.shape[0] == parensemble.shape[0]
         meas_phi = self._calc_meas_phi(obsensemble)
         reg_phi = self._calc_regul_phi(parensemble)
-        return meas_phi + (reg_phi * self.em.regul_factor)
+        return meas_phi,meas_phi + (reg_phi * self.em.regul_factor)
 
-    # def update(self):
-    #     #assert obsensemble.shape[0] == parensemble.shape[0]
-    #     #self.cur_lam = cur_lam
-    #     self.meas_phi = self._calc_meas_phi(self.em.obsensemble)
-    #     self.meas_phi_actual = self._calc_meas_phi_actual(self.em.obsensemble)
-    #     self.reg_phi = self._calc_regul_phi(self.em.parensemble)
-    #     self.comp_phi = self.meas_phi + (self.reg_phi * self.em.regul_factor)
 
-    @property
-    def meas_phi(self):
-        #print('calc meas phi')
-        return self._calc_meas_phi(self.em.obsensemble)
 
-    @property
-    def meas_phi_actual(self):
-        #print('calc actual phi')
-        return self._calc_meas_phi_actual(self.em.obsensemble)
+    def update(self):
+        #assert obsensemble.shape[0] == parensemble.shape[0]
+        #self.cur_lam = cur_lam
+        self.meas_phi = self._calc_meas_phi(self.em.obsensemble)
+        self.meas_phi_actual = self._calc_meas_phi_actual(self.em.obsensemble)
+        self.reg_phi = self._calc_regul_phi(self.em.parensemble)
+        self.comp_phi = self.meas_phi + (self.reg_phi * self.em.regul_factor)
 
-    @property
-    def reg_phi(self):
-        #print('calc regul phi')
-        return self._calc_regul_phi(self.em.parensemble)
 
-    @property
-    def comp_phi(self):
-        #print('calc comp phi')
-        return self.meas_phi + (self.reg_phi * self.em.regul_factor)
+    # dynamic updating is too costly when lots of pars are being used...
+    # @property
+    # def meas_phi(self):
+    #     #print('calc meas phi')
+    #     return self._calc_meas_phi(self.em.obsensemble)
+    #
+    # @property
+    # def meas_phi_actual(self):
+    #     #print('calc actual phi')
+    #     return self._calc_meas_phi_actual(self.em.obsensemble)
+    #
+    # @property
+    # def reg_phi(self):
+    #     #print('calc regul phi')
+    #     return self._calc_regul_phi(self.em.parensemble)
+    #
+    # @property
+    # def comp_phi(self):
+    #     #print('calc comp phi')
+    #     return self.meas_phi + (self.reg_phi * self.em.regul_factor)
 
     def report(self,cur_lam=0.0):
         self.write(cur_lam)
@@ -658,9 +663,10 @@ class EnsembleSmoother(EnsembleMethod):
 
         if self.drop_bad_reals is not None:
             #drop_idx = np.argwhere(self.current_phi_vec > self.drop_bad_reals).flatten()
-            comp_phi = self.phi.comp_phi
-            print(comp_phi)
-            drop_idx = np.argwhere(self.phi.comp_phi > self.drop_bad_reals).flatten()
+            #comp_phi = self.phi.comp_phi
+            #drop_idx = np.argwhere(self.phi.comp_phi > self.drop_bad_reals).flatten()
+            #meas_phi = self.phi.meas_phi
+            drop_idx = np.argwhere(self.phi.meas_phi > self.drop_bad_reals).flatten()
             run_ids = self.obsensemble.index.values
             drop_idx = run_ids[drop_idx]
             if len(drop_idx) == self.obsensemble.shape[0]:
@@ -673,7 +679,7 @@ class EnsembleSmoother(EnsembleMethod):
                 self.obsensemble.loc[drop_idx,:] = np.NaN
                 self.obsensemble = self.obsensemble.dropna()
 
-                #self.phi.update()
+                self.phi.update()
 
         self.phi.report(cur_lam=0.0)
 
@@ -979,19 +985,23 @@ class EnsembleSmoother(EnsembleMethod):
         #if self.regul_factor > 0.0:
         #    for i,(pv,prv) in enumerate(zip(phi_vecs,phi_vecs_reg)):
         #        phi_vecs[i] = pv + (prv * self.regul_factor)
-        phi_vecs = [self.phi.get_composite_phi(oe,pe.loc[oe.index,:]) for oe,pe in zip(obsen_lam,paren_lam)]
-
+        self.logger.log("calc lambda phi vectors")
+        phi_vecs = [self.phi.get_meas_and_composite_phi(oe,pe.loc[oe.index,:]) for oe,pe in zip(obsen_lam,paren_lam)]
+        self.logger.log("calc lambda phi vectors")
         if self.drop_bad_reals is not None:
-            for i,pv in enumerate(phi_vecs):
+            for i,(meas_pv,comp_pv) in enumerate(phi_vecs):
+
                 #for testing the drop_bad_reals functionality
                 #pv[[0,3,7]] = self.drop_bad_reals + 1.0
-                pv[pv>self.drop_bad_reals] = np.NaN
-                pv = pv[~np.isnan(pv)]
-                if len(pv) == 0:
+                comp_pv[meas_pv>self.drop_bad_reals] = np.NaN
+                comp_pv = comp_pv[~np.isnan(comp_pv)]
+                meas_pv[meas_pv>self.drop_bad_reals] = np.NaN
+                meas_pv = meas_pv[~np.isnan(meas_pv)]
+                if len(comp_pv) == 0:
                     raise Exception("all realization for lambda {0} dropped as 'bad'".\
                                     format(lam_vals[i]))
-                phi_vecs[i] = pv
-        mean_std = [(pv.mean(),pv.std()) for pv in phi_vecs]
+                phi_vecs[i] = (meas_pv,comp_pv)
+        mean_std = [(pv[1].mean(),pv[1].std()) for pv in phi_vecs]
         update_pars = False
         update_lambda = False
         # accept a new best if its within 10%
@@ -1054,7 +1064,7 @@ class EnsembleSmoother(EnsembleMethod):
                     self.obsensemble.loc[drop_idx, :] = np.NaN
                     self.obsensemble = self.obsensemble.dropna()
 
-                    #self.phi.update()
+                    self.phi.update()
                     best_mean = self.phi.comp_phi.mean()
                     best_std = self.phi.comp_phi.std()
 
