@@ -459,8 +459,8 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
 
     Returns
     -------
-    forward_run_line : str
-        a python code str to add to the forward run script
+    (forward_run_line, df) : str, pd.DataFrame
+        a python code str to add to the forward run script and the setup info for the observations
 
     Note
     ----
@@ -561,7 +561,7 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
                                                       x.kper),axis=1)
 
     df.loc[:,"ins_str"] = df.obsnme.apply(lambda x: "l1 w !{0}!".format(x))
-
+    df.loc[:,"obgnme"] = prefix
     #write the instruction file
     with open(hds_file+".dat.ins","w") as f:
         f.write("pif ~\nl1\n")
@@ -574,7 +574,7 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
     setup_file = os.path.join(hds_path,"_setup_{0}.csv".format(os.path.split(hds_file)[-1]))
     df.to_csv(setup_file)
     fwd_run_line = "pyemu.gw_utils.apply_hds_obs('{0}')\n".format(hds_file)
-    return fwd_run_line
+    return fwd_run_line, df
 
 def last_kstp_from_kper(hds,kper):
     """ function to find the last time step (kstp) for a
@@ -729,75 +729,6 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None):
         return None
 
 
-# def setup_sfr_seg_parameters(sfr_file,tpl_file=None):
-#     """helper to setup parameters for sfr2 hc1fact/hc2fact, flow and runoff in
-#     the segment data portion of the sfr2 file.  This helper does not support all
-#     of the crazy-ass sfr2 options - just basic stuff
-#
-#     Parameters
-#     ----------
-#         sfr_file : str
-#             name of existing sfr file
-#
-#     Returns
-#     -------
-#         df : pandas.DataFrame
-#             a dataframe with useful parameter setup information
-#
-#
-#     """
-#     assert os.path.exists(sfr_file)
-#     f_in = open(sfr_file)
-#
-#
-#
-#     if tpl_file is None:
-#         tpl_file = sfr_file + ".tpl"
-#     f_tpl = open(tpl_file,'w')
-#     f_tpl.write("ptf ~\n")
-#     while True:
-#         line = f_in.readline()
-#         f_tpl.write(line)
-#         if line == "":
-#             raise Exception("error finding nreach value - EOF")
-#         try:
-#             nreach = int(line.strip().split()[0])
-#             break
-#         except:
-#             continue
-#
-#     print(nreach)
-#     fpos = f_in.tell()
-#     df_reach = pd.read_csv(f_in,nrows=nreach,delim_whitespace=True,header=None,
-#                            names=["k","i","j","iseg","ireach","rchlen"])
-#     #print(df_reach.tail())
-#     f_in.seek(fpos)
-#     for _ in range(nreach):
-#         f_tpl.write(f_in.readline())
-#     line = f_in.readline()
-#     f_tpl.write(line)
-#     if line == '':
-#         print(f_in.readline())
-#         raise Exception("error reading nsegs - EOF")
-#     nsegs = int(line.strip().split()[0])
-#     vals_list = []
-#     val_names = ['iseg','flow','runoff','roughch','hc1fact','hc2fact']
-#     for iseg in range(nsegs):
-#         ds4b = f_in.readline().strip().split()
-#         ds4c = f_in.readline().strip().split()
-#         ds4d = f_in.readline().strip().split()
-#         nseg = int(ds4b[0])
-#         icalc = int(ds4b[1])
-#         assert icalc == 1, "icalc 1 only..."
-#         if "flow" in par_list:
-#
-#         vals = [float(v) for v in ds4b[4:]]
-#         vals.extend([float(v) for v in ds4c])
-#         vals.extend([float(v) for v in ds4d])
-#
-#
-
-
 def setup_sfr_seg_parameters(nam_file,model_ws='.'):
     try:
         import flopy
@@ -813,20 +744,22 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.'):
         assert seg_data.shape == shape,"cannot use: seg data must have the same number of entires for all kpers"
 
     seg_data = pd.DataFrame.from_records(seg_data)
+    seg_data.loc[:, :] = 1
+    seg_data.to_csv(os.path.join(model_ws, "sfr_seg_pars.dat"), sep=' ')
     par_cols = ["flow","runoff","etsw","pptsw","roughch","hcond1","hcond2"]
     for par_col in par_cols:
         if seg_data.loc[:,par_col].sum() == 0.0:
             print("all zeros for {0}...skipping...".format(par_col))
-            seg_data.loc[:,par_col] = 1.0
+            #seg_data.loc[:,par_col] = 1
         else:
             seg_data.loc[:,par_col] = seg_data.nseg.apply(lambda x: "~    {0}_{1:04d}   ~".format(par_col,x))
     seg_data.index = seg_data.nseg
     with open(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),'w') as f:
         f.write("ptf ~\n")
         seg_data.to_csv(f,sep=' ')
-    for par_col in par_cols:
-        seg_data.loc[:,par_col] = 1.0
-    seg_data.to_csv(os.path.join(model_ws,"sfr_seg_pars.dat"),sep=' ')
+    #for par_col in par_cols:
+    #    seg_data.loc[:,par_col] = 1.0
+
     with open(os.path.join(model_ws,"sfr_seg_pars.config"),'w') as f:
         f.write("nam_file {0}\n".format(nam_file))
         f.write("model_ws {0}\n".format(model_ws))

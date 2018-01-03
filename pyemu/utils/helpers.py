@@ -1198,7 +1198,7 @@ class PstFromFlopyModel(object):
 
     def __init__(self,model,new_model_ws,org_model_ws=None,pp_props=[],const_props=[],
                  bc_props=[],grid_props=[],grid_geostruct=None,pp_space=None,
-                 zone_props=[],pp_geostruct=None,par_bounds_dict=None,
+                 zone_props=[],pp_geostruct=None,par_bounds_dict=None,sfr_pars=False,
                  bc_geostruct=None,remove_existing=False,k_zone_dict=None,
                  mflist_waterbudget=True,mfhyd=True,hds_kperk=[],use_pp_zones=False,
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
@@ -1300,6 +1300,9 @@ class PstFromFlopyModel(object):
         self.mlt_dfs = []
         self.setup_bc_pars()
         self.setup_array_pars()
+
+        if sfr_pars:
+            self.setup_sfr_pars()
         self.setup_observations()
         self.build_pst()
         if build_prior:
@@ -1318,6 +1321,16 @@ class PstFromFlopyModel(object):
                  format(self.m.model_ws))
 
         self.logger.statement("all done")
+
+    def setup_sfr_pars(self):
+        """setup multiplier parameters for sfr segment data"""
+        assert self.m.sfr is not None,"can't find sfr package..."
+        df = pyemu.gw_utils.setup_sfr_seg_parameters(self.m.namefile,self.m.model_ws)
+        self.par_dfs["sfr"] = df
+
+        self.frun_pre_lines.append("pyemu.gw_utils.apply_sfr_seg_parameters()")
+        self.tpl_files.append("sfr_seg_pars.dat.tpl")
+        self.in_files.append("sfr_seg_pars.dat")
 
     def setup_mult_dirs(self):
         """ setup the directories to use for multiplier parameterization.  Directories
@@ -1378,7 +1391,7 @@ class PstFromFlopyModel(object):
             # prepare the flopy model
             self.org_model_ws = org_model_ws
             self.new_model_ws = new_model_ws
-            self.m = flopy.modflow.Modflow.load(model,model_ws=org_model_ws)
+            self.m = flopy.modflow.Modflow.load(model,model_ws=org_model_ws,check=False,verbose=True,forgive=False)
             self.log("loading flopy model")
         else:
             self.m = model
@@ -2350,8 +2363,9 @@ class PstFromFlopyModel(object):
         else:
             skip = lambda x: np.NaN if x == self.m.bas6.hnoflo or x == inact else x
         print(self.hds_kperk)
-        setup_hds_obs(os.path.join(self.m.model_ws,hds_file),
+        frun_line, df = setup_hds_obs(os.path.join(self.m.model_ws,hds_file),
                       kperk_pairs=self.hds_kperk,skip=skip)
+        self.obs_dfs["hds"] = df
         self.frun_post_lines.append("pyemu.gw_utils.apply_hds_obs('{0}')".format(hds_file))
         self.tmp_files.append(hds_file)
 

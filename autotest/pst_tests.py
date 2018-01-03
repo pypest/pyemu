@@ -354,6 +354,17 @@ def from_flopy_test():
     nam_file = "freyberg.nam"
 
     new_model_ws = "temp_pst_from_flopy"
+
+    # add sfr to nam file for testing
+    sfr_nam_file = "sfr_" + nam_file
+    shutil.copy2(os.path.join(org_model_ws, nam_file), os.path.join(org_model_ws, sfr_nam_file))
+    f = open(os.path.join(org_model_ws, sfr_nam_file), 'a')
+    f.write("SFR  55 freyberg.sfr")
+    f.close()
+    helper = pyemu.helpers.PstFromFlopyModel(sfr_nam_file, new_model_ws, org_model_ws,
+                                             hds_kperk=[0, 0], remove_existing=True,
+                                             model_exe_name="mfnwt",sfr_pars=True)
+    
     pp_props = [["upw.ss",[0,1]],["upw.ss",1],["upw.ss",2],["extra.prsity",0],\
                 ["rch.rech",np.arange(182)],["rch.rech",np.arange(183,365)]]
     helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
@@ -414,6 +425,7 @@ def from_flopy_test():
     obs.loc[obs.weight>0.0,"obsval"] += np.random.normal(0.0,2.0,pst.nnz_obs)
     pst.control_data.noptmax = 0
     pst.write(os.path.join(new_model_ws,"freyberg_pest.pst"))
+
 
 
 
