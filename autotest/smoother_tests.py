@@ -1020,7 +1020,7 @@ def chenoliver():
     num_reals = 100
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
                                 num_slaves=15,verbose=True)
-    es.initialize(num_reals=num_reals,enforce_bounds=None,init_lambda=10.0)
+    es.initialize(num_reals=num_reals,enforce_bounds=None,init_lambda=10.0,regul_factor=1.0,use_approx_prior=False)
     for it in range(25):
         es.update(use_approx=False)
     os.chdir(os.path.join("..",".."))
@@ -1797,7 +1797,7 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #chenoliver_setup()
     #chenoliver_condor()
-    #chenoliver()
+    chenoliver()
     #chenoliver_existing()
     #chenoliver_plot()
     #chenoliver_func_plot()
@@ -1805,7 +1805,7 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #tenpar_fixed()
     #tenpar_phi()
-    tenpar_test()
+    #tenpar_test()
     #tenpar_opt()
     #plot_10par_opt_traj()
     #tenpar_restart()

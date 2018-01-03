@@ -138,29 +138,8 @@ class Phi(object):
     def _calc_regul_phi(self,parensemble):
         if isinstance(parensemble,pd.DataFrame):
             parensemble = pyemu.ParameterEnsemble.from_dataframe(pst=self.em.pst,df=parensemble)
-        #reg_phi_vec = []
         par_diff = self.get_residual_par_matrix(parensemble)
-        # print("get prior")
-        # prior = self.em.parcov.get(row_names=par_diff.col_names, col_names=par_diff.col_names).inv.x
-        # s = datetime.now()
-        # for i in range(par_diff.shape[0]):
-        #     v = np.atleast_2d(par_diff.x[i,:]).transpose()
-        #
-        #     print(par_diff.shape, self.inv_parcov.shape, v.shape,v.transpose().shape)
-        #     p = np.dot(v.transpose(),self.inv_parcov.x)
-        #     print(p.shape)
-        #     p = np.dot(p, v)
-        #     print(p.shape)
-        #     reg_phi_vec.append(p)
-        # e = datetime.now()
-        # print((e-s).total_seconds())
-        #s = datetime.now()
         reg_phi_vec = np.diag(np.dot(np.dot(par_diff.x,self.inv_parcov.x),par_diff.x.transpose()))
-        #e = datetime.now()
-        # print((e-s).total_seconds())
-        # print(reg_phi_vec)
-        # print(reg_phi_vec2)
-        #return np.array(reg_phi_vec)
         return reg_phi_vec
 
     def _calc_meas_phi_actual(self,obsensemble):
@@ -584,14 +563,6 @@ class EnsembleSmoother(EnsembleMethod):
             self.logger.statement("using full parcov in solution")
             # Chen and Oliver use a low rank approx here, but so far,
             # I haven't needed it - not using enough parameters yet
-            #if self.parcov.isdiagonal:
-            #    self.parcov_inv_sqrt = self.parcov.sqrt.inv
-            #else:
-                #self.parcov_inv_sqrt = self.parcov.get_diagonal_vector().inv.sqrt
-            #    self.parcov_inv_sqrt = Cov(x=np.atleast_2d(np.diag(self.parcov.x)),
-            #                                names=self.parcov.col_names,
-            #                                isdiagonal=True).inv.sqrt
-            #self.parcov_inv_sqrt = 1.0
             self.logger.log("forming inverse sqrt parcov matrix")
             self.parcov_inv_sqrt = self.parcov.inv.sqrt
             self.logger.log("forming inverse sqrt parcov matrix")
@@ -730,15 +701,7 @@ class EnsembleSmoother(EnsembleMethod):
             x = self.last_best_mean / (2.0 * float(self.obsensemble.shape[1]))
             self.current_lambda = 10.0**(np.floor(np.log10(x)))
 
-        # if using the approximate form of the algorithm, let
-        # the parameter scaling matrix be the identity matrix
-        # jwhite - dec 5 2016 - using the actual parcov inv
-        # for upgrades seems to be pushing parameters around
-        # too much.  for now, just not using it, maybe
-        # better choices of lambda will tame it
         self.logger.statement("current lambda:{0:15.6g}".format(self.current_lambda))
-
-
 
         self.delta_par_prior = self._calc_delta_par(self.parensemble_0)
         u,s,v = self.delta_par_prior.pseudo_inv_components()
@@ -933,7 +896,8 @@ class EnsembleSmoother(EnsembleMethod):
             #parensemble_cur_lam.iloc[:,:] = -1000000.0
 
             # some hackery - we lose track of the transform flag here, but just
-            # know it is transformed
+            # know it is transformed.  Need to create dataframe here because
+            # pd.concat doesn't like par ensembles later
             paren_lam.append(pd.DataFrame(parensemble_cur_lam.loc[:,:]))
             self.logger.log("calcs for  lambda {0}".format(cur_lam_mult))
 
@@ -947,13 +911,8 @@ class EnsembleSmoother(EnsembleMethod):
             #subset_idx = ["{0:d}".format(i) for i in np.random.randint(0,self.parensemble.shape[0]-1,run_subset)]
             subset_idx = self.parensemble.iloc[:run_subset,:].index.values
             self.logger.statement("subset idxs: " + ','.join([str(s) for s in subset_idx]))
-            #paren_lam_subset = []
-            #for pe in paren_lam:
-            #    pe_sub = ParameterEnsemble.from_dataframe(df=pe.loc[subset_idx,:],pst=pe.pst)
-            #    pe_sub.__istransformed = pe.istransformed
-            #    paren_lam_subset.append(pe)
 
-            # more tracking of transformed - just know it!
+            # more tracking of transformed - just know it! Creating dataframes...
             paren_lam_subset = [pe.loc[subset_idx,:] for pe in paren_lam]
             paren_combine = pd.concat(paren_lam_subset,ignore_index=True)
             paren_lam_subset = None
@@ -964,10 +923,9 @@ class EnsembleSmoother(EnsembleMethod):
 
         self.logger.log("evaluating ensembles for lambdas : {0}".\
                         format(','.join(["{0:8.3E}".format(l) for l in lam_vals])))
+        # back to par ensemble and know it is transformed
         paren_combine = ParameterEnsemble.from_dataframe(df=paren_combine,pst=self.pst,istransformed=True)
         failed_runs, obsen_combine = self._calc_obs(paren_combine)
-        #if failed_runs is not None:
-        #    obsen_combine.loc[failed_runs,:] = np.NaN
         self.logger.log("evaluating ensembles for lambdas : {0}".\
                         format(','.join(["{0:8.3E}".format(l) for l in lam_vals])))
         paren_combine = None
@@ -1107,7 +1065,8 @@ class EnsembleSmoother(EnsembleMethod):
                 self.obsensemble = obsen_lam[best_i]
                 # reindex parensemble in case failed runs
                 self.parensemble = ParameterEnsemble.from_dataframe(df=self.parensemble.loc[self.obsensemble.index],
-                                                                    pst=self.pst,istransformed=self.parensemble.istransformed)
+                                                                    pst=self.pst,
+                                                                    istransformed=self.parensemble.istransformed)
                 self.phi.update()
             if self.drop_bad_reals is not None:
                 # for testing drop_bad_reals functionality

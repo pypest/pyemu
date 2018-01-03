@@ -869,18 +869,58 @@ def gw_sft_ins_test():
     pyemu.gw_utils.setup_sft_obs(sft_outfile)
 
     pyemu.gw_utils.setup_sft_obs(sft_outfile,start_datetime="1-1-1970")
-
     pyemu.gw_utils.setup_sft_obs(sft_outfile, start_datetime="1-1-1970",times=[30.0,4*30])
 
 
+def sfr_helper_test():
+    import os
+    import shutil
+    import pandas as pd
+    import pyemu
+    import flopy
+
+    #setup the process
+    pyemu.gw_utils.setup_sfr_seg_parameters("supply2.nam",model_ws="utils")
+
+    os.chdir("utils")
+    # change some hcond1 values
+    df = pd.read_csv("sfr_seg_pars.dat",delim_whitespace=True)
+    df.loc[:,"hcond1"] = 0.5
+    df.to_csv("sfr_seg_pars.dat",sep=' ')
+
+    #change the name of the sfr file that will be created
+    pars = {}
+    with open("sfr_seg_pars.config") as f:
+        for line in f:
+            line = line.strip().split()
+            pars[line[0]] = line[1]
+    pars["sfr_filename"] = "test.sfr"
+    with open("sfr_seg_pars.config",'w') as f:
+        for k,v in pars.items():
+            f.write("{0} {1}\n".format(k,v))
+
+    #make sure the hcond1 mult worked...
+    sd1 = pyemu.gw_utils.apply_sfr_seg_parameters().segment_data[0]
+    m1 = flopy.modflow.Modflow.load("supply2.nam",load_only=["sfr"],check=False)
+    sd2 = m1.sfr.segment_data[0]
+
+    sd1 = pd.DataFrame.from_records(sd1)
+    sd2 = pd.DataFrame.from_records(sd2)
+
+    print(sd1.hcond1)
+    print(sd2.hcond2)
+
+    os.chdir("..")
+
+    assert (sd1.hcond1 * 2.0).sum() == sd2.hcond1.sum()
 
 
 if __name__ == "__main__":
-
+    sfr_helper_test()
     #gw_sft_ins_test()
     # par_knowledge_test()
     # grid_obs_test()
-    plot_summary_test()
+    #plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
     # make_hydmod_insfile_test()

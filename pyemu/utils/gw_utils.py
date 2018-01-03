@@ -4,10 +4,11 @@
 import os
 import copy
 from datetime import datetime
+import shutil
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
-from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,_try_run_inschek
+from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,_try_run_inschek,parse_tpl_file
 from pyemu.utils.helpers import run
 PP_FMT = {"name": SFMT, "x": FFMT, "y": FFMT, "zone": IFMT, "tpl": SFMT,
           "parval1": FFMT}
@@ -726,6 +727,149 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None):
         return df
     else:
         return None
+
+
+# def setup_sfr_seg_parameters(sfr_file,tpl_file=None):
+#     """helper to setup parameters for sfr2 hc1fact/hc2fact, flow and runoff in
+#     the segment data portion of the sfr2 file.  This helper does not support all
+#     of the crazy-ass sfr2 options - just basic stuff
+#
+#     Parameters
+#     ----------
+#         sfr_file : str
+#             name of existing sfr file
+#
+#     Returns
+#     -------
+#         df : pandas.DataFrame
+#             a dataframe with useful parameter setup information
+#
+#
+#     """
+#     assert os.path.exists(sfr_file)
+#     f_in = open(sfr_file)
+#
+#
+#
+#     if tpl_file is None:
+#         tpl_file = sfr_file + ".tpl"
+#     f_tpl = open(tpl_file,'w')
+#     f_tpl.write("ptf ~\n")
+#     while True:
+#         line = f_in.readline()
+#         f_tpl.write(line)
+#         if line == "":
+#             raise Exception("error finding nreach value - EOF")
+#         try:
+#             nreach = int(line.strip().split()[0])
+#             break
+#         except:
+#             continue
+#
+#     print(nreach)
+#     fpos = f_in.tell()
+#     df_reach = pd.read_csv(f_in,nrows=nreach,delim_whitespace=True,header=None,
+#                            names=["k","i","j","iseg","ireach","rchlen"])
+#     #print(df_reach.tail())
+#     f_in.seek(fpos)
+#     for _ in range(nreach):
+#         f_tpl.write(f_in.readline())
+#     line = f_in.readline()
+#     f_tpl.write(line)
+#     if line == '':
+#         print(f_in.readline())
+#         raise Exception("error reading nsegs - EOF")
+#     nsegs = int(line.strip().split()[0])
+#     vals_list = []
+#     val_names = ['iseg','flow','runoff','roughch','hc1fact','hc2fact']
+#     for iseg in range(nsegs):
+#         ds4b = f_in.readline().strip().split()
+#         ds4c = f_in.readline().strip().split()
+#         ds4d = f_in.readline().strip().split()
+#         nseg = int(ds4b[0])
+#         icalc = int(ds4b[1])
+#         assert icalc == 1, "icalc 1 only..."
+#         if "flow" in par_list:
+#
+#         vals = [float(v) for v in ds4b[4:]]
+#         vals.extend([float(v) for v in ds4c])
+#         vals.extend([float(v) for v in ds4d])
+#
+#
+
+
+def setup_sfr_seg_parameters(nam_file,model_ws='.'):
+    try:
+        import flopy
+    except Exception as e:
+        return
+
+    m = flopy.modflow.Modflow.load(nam_file,load_only=["sfr"],model_ws=model_ws,check=False)
+    shutil.copy(os.path.join(model_ws,m.sfr.file_name[0]),os.path.join(model_ws,"__temp.sfr"))
+    segment_data = m.sfr.segment_data
+    shape = segment_data[list(segment_data.keys())[0]].shape
+
+    for kper,seg_data in m.sfr.segment_data.items():
+        assert seg_data.shape == shape,"cannot use: seg data must have the same number of entires for all kpers"
+
+    seg_data = pd.DataFrame.from_records(seg_data)
+    par_cols = ["flow","runoff","etsw","pptsw","roughch","hcond1","hcond2"]
+    for par_col in par_cols:
+        if seg_data.loc[:,par_col].sum() == 0.0:
+            print("all zeros for {0}...skipping...".format(par_col))
+            seg_data.loc[:,par_col] = 1.0
+        else:
+            seg_data.loc[:,par_col] = seg_data.nseg.apply(lambda x: "~    {0}_{1:04d}   ~".format(par_col,x))
+    seg_data.index = seg_data.nseg
+    with open(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),'w') as f:
+        f.write("ptf ~\n")
+        seg_data.to_csv(f,sep=' ')
+    for par_col in par_cols:
+        seg_data.loc[:,par_col] = 1.0
+    seg_data.to_csv(os.path.join(model_ws,"sfr_seg_pars.dat"),sep=' ')
+    with open(os.path.join(model_ws,"sfr_seg_pars.config"),'w') as f:
+        f.write("nam_file {0}\n".format(nam_file))
+        f.write("model_ws {0}\n".format(model_ws))
+        f.write("mult_file sfr_seg_pars.dat\n")
+        f.write("sfr_filename {0}".format(m.sfr.file_name[0]))
+
+    parnme = parse_tpl_file(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"))
+    df = pd.DataFrame(parnme,index=parnme,columns=["parnme"])
+    df.loc[:,"pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
+    df.loc[:,"parubnd"] = 1.1
+    df.loc[:,"parlbnd"] = 0.9
+    hpars = df.loc[df.pargp.apply(lambda x: x.startswith("hcond")),"parnme"]
+    df.loc[hpars,"parubnd"] = 100.0
+    df.loc[hpars, "parlbnd"] = 0.001
+
+
+    return df
+    #for pcol in [""]
+
+
+def apply_sfr_seg_parameters():
+    import flopy
+    assert os.path.exists("sfr_seg_pars.config")
+    assert os.path.exists("__temp.sfr")
+    with open("sfr_seg_pars.config",'r') as f:
+        pars = {}
+        for line in f:
+            line = line.strip().split()
+            pars[line[0]] = line[1]
+    print(pars)
+    #m = flopy.modflow.Modflow.load(pars["nam_file"],model_ws=pars["model_ws"],load_only=["sfr"],check=False)
+    m = flopy.modflow.Modflow.load(pars["nam_file"], check=False)
+    sfr = flopy.modflow.ModflowSfr2.load(os.path.join("__temp.sfr"),m)
+
+    mlt_df = pd.read_csv(pars["mult_file"],delim_whitespace=True)
+    for key,val in m.sfr.segment_data.items():
+        df = pd.DataFrame.from_records(val)
+        df *= mlt_df
+        val = df.to_records(index=False)
+        sfr.segment_data[key] = val
+    sfr.write_file(filename=pars["sfr_filename"])
+    return sfr
+
 
 
 
