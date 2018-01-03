@@ -917,7 +917,7 @@ def sfr_helper_test():
 
 if __name__ == "__main__":
     sfr_helper_test()
-    #gw_sft_ins_test()
+    gw_sft_ins_test()
     # par_knowledge_test()
     # grid_obs_test()
     #plot_summary_test()

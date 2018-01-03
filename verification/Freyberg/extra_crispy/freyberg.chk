@@ -1,5 +1,4 @@
 type,package,k,i,j,value,desc
-Error,model,0,0,0,0.000000,No solver package
 Warning,UPW,0,0,0,0.000000,specific storage values below checker threshold of 1e-06
 Warning,UPW,0,0,1,0.000000,specific storage values below checker threshold of 1e-06
 Warning,UPW,0,0,2,0.000000,specific storage values below checker threshold of 1e-06

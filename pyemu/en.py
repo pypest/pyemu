@@ -501,9 +501,10 @@ class ParameterEnsemble(Ensemble):
 
         """
         df = super(Ensemble, self).dropna(*args, **kwargs)
-        pe = ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
-        pe.__istransformed = self.istransformed
-        return pe
+        if df is not None:
+            pe = ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
+            pe.__istransformed = self.istransformed
+            return pe
 
     def copy(self):
         """ overload of Ensemble.copy()
