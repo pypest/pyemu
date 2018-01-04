@@ -1332,6 +1332,7 @@ class PstFromFlopyModel(object):
         self.tpl_files.append("sfr_seg_pars.dat.tpl")
         self.in_files.append("sfr_seg_pars.dat")
 
+
     def setup_mult_dirs(self):
         """ setup the directories to use for multiplier parameterization.  Directories
         are make within the PstFromFlopyModel.m.model_ws directory
@@ -2043,10 +2044,20 @@ class PstFromFlopyModel(object):
             par.loc[par.parnme.apply(lambda x: x.startswith(tag)),"parubnd"] = up
             par.loc[par.parnme.apply(lambda x: x.startswith(tag)),"parlbnd"] = lw
 
+        for name,df in self.par_dfs.items():
+            if "parnme" not in df:
+                continue
+            df.index = df.parnme
+            for col in ["parubnd","parlbnd","pargp"]:
+                if col in df.columns:
+                    par.loc[df.index,col] = df.loc[:,col]
+
         if self.par_bounds_dict is not None:
             for tag,[lw,up] in self.par_bounds_dict.items():
                 par.loc[par.parnme.apply(lambda x: x.startswith(tag)),"parubnd"] = up
                 par.loc[par.parnme.apply(lambda x: x.startswith(tag)),"parlbnd"] = lw
+
+
 
         obs = pst.observation_data
         for name,df in self.obs_dfs.items():

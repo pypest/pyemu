@@ -880,8 +880,8 @@ def sfr_helper_test():
     import flopy
 
     #setup the process
-    pyemu.gw_utils.setup_sfr_seg_parameters("supply2.nam",model_ws="utils")
-
+    df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters("supply2.nam",model_ws="utils")
+    print(df_sfr)
     os.chdir("utils")
     # change some hcond1 values
     df = pd.read_csv("sfr_seg_pars.dat",delim_whitespace=True)
@@ -907,8 +907,8 @@ def sfr_helper_test():
     sd1 = pd.DataFrame.from_records(sd1)
     sd2 = pd.DataFrame.from_records(sd2)
 
-    print(sd1.hcond1)
-    print(sd2.hcond2)
+    #print(sd1.hcond1)
+    #print(sd2.hcond2)
 
     os.chdir("..")
 

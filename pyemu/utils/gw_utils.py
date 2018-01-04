@@ -729,97 +729,166 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None):
         return None
 
 
-def setup_sfr_seg_parameters(nam_file,model_ws='.'):
+def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hcond1","hcond2"],
+                             tie_hcond=True):
+    """Setup multiplier parameters for SFR segment data.  Just handles the
+    standard input case, not all the cryptic SFR options.  Loads the dis, bas, and sfr files
+    with flopy using model_ws.  However, expects that apply_sfr_seg_parameters() will be called
+    from within model_ws at runtime.
+
+    Parameters
+    ----------
+        nam_file : str
+            MODFLOw name file.  DIS, BAS, and SFR must be available as pathed in the nam_file
+        model_ws : str
+            model workspace for flopy to load the MODFLOW model from
+        par_cols : list(str)
+            segment data entires to parameterize
+        tie_hcond : flag to use same mult par for hcond1 and hcond2 for a given segment.  Default is True
+
+    Returns
+    -------
+        df : pandas.DataFrame
+            a dataframe with useful parameter setup information
+
+    Note
+    ----
+        the number (and numbering) of segment data entries must consistent across
+        all stress periods.
+        writes <nam_file>+"_backup_.sfr" as the backup of the original sfr file
+        skips values = 0.0 since multipliers don't work for these
+
+    """
+
     try:
         import flopy
     except Exception as e:
         return
 
+    if tie_hcond:
+        if "hcond1" not in par_cols or "hcond2" not in par_cols:
+            tie_hcond = False
+
+    # load MODFLOW model
     m = flopy.modflow.Modflow.load(nam_file,load_only=["sfr"],model_ws=model_ws,check=False)
-    shutil.copy(os.path.join(model_ws,m.sfr.file_name[0]),os.path.join(model_ws,"__temp.sfr"))
+    #make backup copy of sfr file
+    shutil.copy(os.path.join(model_ws,m.sfr.file_name[0]),os.path.join(model_ws,nam_file+"_backup_.sfr"))
+
+    #get the segment data (dict)
     segment_data = m.sfr.segment_data
     shape = segment_data[list(segment_data.keys())[0]].shape
-
+    # check
     for kper,seg_data in m.sfr.segment_data.items():
         assert seg_data.shape == shape,"cannot use: seg data must have the same number of entires for all kpers"
 
+    # convert the first seg data to a dataframe
     seg_data = pd.DataFrame.from_records(seg_data)
-    seg_data.loc[:, :] = 1
+    seg_data_org = seg_data.copy()
     seg_data.to_csv(os.path.join(model_ws, "sfr_seg_pars.dat"), sep=' ')
-    par_cols = ["flow","runoff","etsw","pptsw","roughch","hcond1","hcond2"]
+
+    #make sure all par cols are found
+    missing = []
     for par_col in par_cols:
+        if par_col not in seg_data.columns:
+            missing.append(par_col)
+    if len(missing) > 0:
+        raise Exception("the following par_cols were not found: {0}".format(','.join(missing)))
+
+    #the data cols not to parameterize
+    notpar_cols = [c for i,c in enumerate(seg_data.columns) if c not in par_cols and i > 6]
+
+    #process par cols
+    tpl_str,pvals = [],[]
+    for par_col in par_cols:
+        prefix = par_col
+        if tie_hcond and par_col == 'hcond2':
+            prefix = 'hcond1'
         if seg_data.loc[:,par_col].sum() == 0.0:
             print("all zeros for {0}...skipping...".format(par_col))
             #seg_data.loc[:,par_col] = 1
         else:
-            seg_data.loc[:,par_col] = seg_data.nseg.apply(lambda x: "~    {0}_{1:04d}   ~".format(par_col,x))
+            seg_data.loc[:,par_col] = seg_data.apply(lambda x: "~    {0}_{1:04d}   ~".
+                                                     format(prefix,int(x.nseg)) if float(x[par_col]) != 0.0\
+                                                     else "1.0",axis=1)
+
+            org_vals = seg_data_org.loc[seg_data_org.loc[:,par_col] != 0.0,par_col]
+            pnames = seg_data.loc[org_vals.index,par_col]
+            pvals.extend(list(org_vals.values))
+            tpl_str.extend(list(pnames.values))
+
+    pnames = [t.replace('~','').strip() for t in tpl_str]
+    df = pd.DataFrame({"parnme":pnames,"org_value":pvals,"tpl_str":tpl_str},index=pnames)
+    df.drop_duplicates(inplace=True)
+    #set not par cols to 1.0
+    seg_data.loc[:,notpar_cols] = "1.0"
     seg_data.index = seg_data.nseg
+
+    #write the template file
     with open(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),'w') as f:
         f.write("ptf ~\n")
         seg_data.to_csv(f,sep=' ')
-    #for par_col in par_cols:
-    #    seg_data.loc[:,par_col] = 1.0
 
+
+    #write the config file used by apply_sfr_pars()
     with open(os.path.join(model_ws,"sfr_seg_pars.config"),'w') as f:
         f.write("nam_file {0}\n".format(nam_file))
         f.write("model_ws {0}\n".format(model_ws))
         f.write("mult_file sfr_seg_pars.dat\n")
         f.write("sfr_filename {0}".format(m.sfr.file_name[0]))
 
+    #make sure the tpl file exists and has the same num of pars
     parnme = parse_tpl_file(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"))
-    df = pd.DataFrame(parnme,index=parnme,columns=["parnme"])
+    assert len(parnme) == df.shape[0]
+
+    #set some useful par info
     df.loc[:,"pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
     df.loc[:,"parubnd"] = 1.1
     df.loc[:,"parlbnd"] = 0.9
     hpars = df.loc[df.pargp.apply(lambda x: x.startswith("hcond")),"parnme"]
     df.loc[hpars,"parubnd"] = 100.0
-    df.loc[hpars, "parlbnd"] = 0.001
-
-
+    df.loc[hpars, "parlbnd"] = 0.01
     return df
-    #for pcol in [""]
 
 
 def apply_sfr_seg_parameters():
+    """apply the SFR segement multiplier parameters.  Expected to be run in the same dir
+    as the model exists
+
+    Parameters
+    ----------
+        None
+
+    Returns
+    -------
+        sfr : flopy.modflow.ModflowSfr instance
+
+    Note
+    ----
+        expects "sfr_seg_pars.config" to exist
+        expects <nam_file>+"_backup_.sfr" to exist
+
+
+    """
     import flopy
     assert os.path.exists("sfr_seg_pars.config")
-    assert os.path.exists("__temp.sfr")
+
     with open("sfr_seg_pars.config",'r') as f:
         pars = {}
         for line in f:
             line = line.strip().split()
             pars[line[0]] = line[1]
-    print(pars)
+    bak_sfr_file = pars["nam_file"]+"_backup_.sfr"
     #m = flopy.modflow.Modflow.load(pars["nam_file"],model_ws=pars["model_ws"],load_only=["sfr"],check=False)
     m = flopy.modflow.Modflow.load(pars["nam_file"], check=False)
-    sfr = flopy.modflow.ModflowSfr2.load(os.path.join("__temp.sfr"),m)
+    sfr = flopy.modflow.ModflowSfr2.load(os.path.join(bak_sfr_file),m)
 
     mlt_df = pd.read_csv(pars["mult_file"],delim_whitespace=True)
     for key,val in m.sfr.segment_data.items():
         df = pd.DataFrame.from_records(val)
-        df *= mlt_df
+        df.iloc[:,7:] *= mlt_df.iloc[:,7:]
         val = df.to_records(index=False)
         sfr.segment_data[key] = val
     sfr.write_file(filename=pars["sfr_filename"])
     return sfr
 
 
-
-
-# def setup_ssm_parameters(mt):
-#     """Set up ssm file multiplier parameters for the point sources and sinks
-#
-#     Parameters
-#     ----------
-#         ssm_file : str
-#             the ssm file to parameterize
-#
-#     """
-#     try:
-#         import flopy
-#     except Exception as e:
-#         raise Exception("error importing flopy: {0}".format(str(e)))
-#
-#     # first load the stress period list data in the ssm file
-#
-#     ssm = flopy.mt3d.Mt3dSsm.load(ssm_file,

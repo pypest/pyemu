@@ -364,7 +364,7 @@ def from_flopy_test():
     helper = pyemu.helpers.PstFromFlopyModel(sfr_nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
                                              model_exe_name="mfnwt",sfr_pars=True)
-    
+
     pp_props = [["upw.ss",[0,1]],["upw.ss",1],["upw.ss",2],["extra.prsity",0],\
                 ["rch.rech",np.arange(182)],["rch.rech",np.arange(183,365)]]
     helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
