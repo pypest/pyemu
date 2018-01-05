@@ -718,6 +718,7 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
     # check for multiple components
     df_times = df.loc[idx,:]
     df.loc[:,"icomp"] = 1
+    icomp_idx = list(df.columns).index("icomp")
     for t in times:
         df_time = df.loc[df.time==t,:]
         vc = df_time.sfr_node.value_counts()
@@ -725,11 +726,13 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
         assert np.all(vc.values==ncomp)
         nstrm = df_time.shape[0] / ncomp
         for icomp in range(ncomp):
-            df_time.loc[nstrm*(icomp):nstrm*(icomp+1),"icomp"] = int(icomp+1)
-        #print(df_time)
-        #exit()
-    #counts = df_times.loc[:,"sfr-node"].value_counts()
-        df_time.loc[:,"ins_str"] = df_time.apply(lambda x: "l1 w w w !sfrc{0}_{1}_{2}! !swgw{0}_{1}_{2}! !gwcn{0}_{1}_{2}!\n".\
+            s = int(nstrm*(icomp))
+            e = int(nstrm*(icomp+1))
+            idxs = df_time.iloc[s:e,:].index
+            #df_time.iloc[nstrm*(icomp):nstrm*(icomp+1),icomp_idx.loc["icomp"] = int(icomp+1)
+            df_time.loc[idxs,"icomp"] = int(icomp+1)
+
+        df.loc[df_time.index,"ins_str"] = df_time.apply(lambda x: "l1 w w w !sfrc{0}_{1}_{2}! !swgw{0}_{1}_{2}! !gwcn{0}_{1}_{2}!\n".\
                                          format(x.sfr_node,x.icomp,x.time_str),axis=1)
     df.index = np.arange(df.shape[0])
     if ins_file is None:
