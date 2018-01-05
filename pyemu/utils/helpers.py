@@ -26,7 +26,7 @@ except:
 import pyemu
 
 
-def run(cmd_str,cwd='.'):
+def run(cmd_str,cwd='.',verbose=False):
     """ an OS agnostic function to execute command
 
     Parameters
@@ -36,6 +36,9 @@ def run(cmd_str,cwd='.'):
 
     cwd : str
         the directory to execute the command in
+
+    verbose : bool
+        flag to echo to stdout complete cmd str
 
     Note
     ----
@@ -72,7 +75,8 @@ def run(cmd_str,cwd='.'):
     except Exception as e:
         os.chdir(bwd)
         raise Exception("run() raised :{0}".format(str(e)))
-    print("run():{0}".format(cmd_str))
+    if verbose:
+        print("run():{0}".format(cmd_str))
 
     try:
         ret_val = os.system(cmd_str)
@@ -564,7 +568,8 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
 
 
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
-                 port=4004,rel_path=None,local=True,cleanup=True,master_dir=None):
+                 port=4004,rel_path=None,local=True,cleanup=True,master_dir=None,
+                 verbose=False):
     """ start a group of pest(++) slaves on the local machine
 
     Parameters
@@ -590,6 +595,8 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         name of directory for master instance.  If master_dir
         exists, then it will be removed.  If master_dir is None,
         no master instance will be started
+    verbose : bool
+        flag to echo useful information to stdout
 
     Note
     ----
@@ -664,7 +671,8 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
             cwd = os.path.join(master_dir,rel_path)
         else:
             cwd = master_dir
-        print("master:{0} in {1}".format(' '.join(args),cwd))
+        if verbose:
+            print("master:{0} in {1}".format(' '.join(args),cwd))
         try:
             os.chdir(cwd)
             master_p = sp.Popen(args)#,stdout=sp.PIPE,stderr=sp.PIPE)
@@ -707,7 +715,8 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
                 cwd = new_slave_dir
 
             os.chdir(cwd)
-            print("slave:{0} in {1}".format(' '.join(args),cwd))
+            if verbose:
+                print("slave:{0} in {1}".format(' '.join(args),cwd))
             with open(os.devnull,'w') as f:
                 p = sp.Popen(args,stdout=f,stderr=f)
             procs.append(p)
@@ -1937,15 +1946,31 @@ class PstFromFlopyModel(object):
             self.log("processing obs type {0}".format(obs_type))
 
 
-    def build_prior(self):
+    def build_prior(self, fmt="ascii",filename=None):
         """ build a prior parameter covariance matrix.
+
+        Parameters
+        ----------
+            fmt : str
+                the format to save the cov matrix.  Options are "ascii","binary","uncfile".
+                default is "ascii"
+            filename : str
+                the filename to save the prior cov matrix to.  If None, the name is formed using
+                model nam_file name.  Default is None.
 
         Returns
         -------
-        cov : pyemu.Cov
+            cov : pyemu.Cov
             a full covariance matrix
 
         """
+
+        fmt = fmt.lower()
+        acc_fmts = ["ascii","binary","uncfile"]
+        if fmt not in acc_fmts:
+            self.logger.lraise("unrecognized prior save 'fmt':{0}, options are: {1}".
+                               format(fmt,','.join(acc_fmts)))
+
         self.log("building prior covariance matrix")
         struct_dict = {}
         if self.pp_suffix in self.par_dfs.keys():
@@ -1984,13 +2009,28 @@ class PstFromFlopyModel(object):
                                                          sigma_range=6)
         else:
             cov = pyemu.Cov.from_parameter_data(self.pst,sigma_range=6)
-        cov.to_ascii(os.path.join(self.m.model_ws,self.pst_name+".prior.cov"))
+
+        if filename is None:
+            filename = os.path.join(self.m.model_ws,self.pst_name+".prior.cov")
+        self.logger.statement("saving prior covariance matrix to file {0}".format(filename))
+        if fmt == 'ascii':
+            cov.to_ascii(filename)
+        elif fmt == 'binary':
+            cov.to_binary(filename)
+        elif fmt == 'uncfile':
+            cov.to_uncfile(filename)
         self.log("building prior covariance matrix")
         return cov
 
-    def build_pst(self):
+    def build_pst(self,filename=None):
         """ build the pest control file using the parameterizations and
         observations.
+
+        Parameters
+        ----------
+            filename : str
+                the filename to save the pst to.  If None, the name if formed from
+                the model namfile name.  Default is None.
 
         Note
         ----
@@ -2076,10 +2116,11 @@ class PstFromFlopyModel(object):
         self.write_forward_run()
         self.log("writing forward_run.py")
 
-        pst_path = os.path.join(self.m.model_ws,self.pst_name)
-        self.logger.statement("writing pst {0}".format(pst_path))
+        if filename is None:
+            filename = os.path.join(self.m.model_ws,self.pst_name)
+        self.logger.statement("writing pst {0}".format(filename))
 
-        pst.write(pst_path)
+        pst.write(filename)
         self.pst = pst
 
         self.log("running pestchek on {0}".format(self.pst_name))

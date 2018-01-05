@@ -869,7 +869,7 @@ def gw_sft_ins_test():
     pyemu.gw_utils.setup_sft_obs(sft_outfile)
 
     pyemu.gw_utils.setup_sft_obs(sft_outfile,start_datetime="1-1-1970")
-    pyemu.gw_utils.setup_sft_obs(sft_outfile, start_datetime="1-1-1970",times=[30.0,4*30])
+    pyemu.gw_utils.setup_sft_obs(sft_outfile, start_datetime="1-1-1970",times=[10950.00])
 
 
 def sfr_helper_test():
@@ -916,8 +916,8 @@ def sfr_helper_test():
 
 
 if __name__ == "__main__":
-    sfr_helper_test()
-    #gw_sft_ins_test()
+    #sfr_helper_test()
+    gw_sft_ins_test()
     # par_knowledge_test()
     # grid_obs_test()
     #plot_summary_test()

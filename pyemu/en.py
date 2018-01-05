@@ -1183,11 +1183,13 @@ class ParameterEnsemble(Ensemble):
         violating vals to bound
         """
 
-        ub = self.ubnd
-        lb = self.lbnd
+        ub = (self.ubnd * (1.0+self.bound_tol)).to_dict()
+        lb = (self.lbnd * (1.0 - self.bound_tol)).to_dict()
         for iname,name in enumerate(self.columns):
-            self.loc[self.loc[:,name] > ub[name],name] = ub[name].copy() * (1.0 + self.bound_tol)
-            self.loc[self.loc[:,name] < lb[name],name] = lb[name].copy() * (1.0 - self.bound_tol)
+            #self.loc[self.loc[:,name] > ub[name],name] = ub[name] * (1.0 + self.bound_tol)
+            #self.loc[self.loc[:,name] < lb[name],name] = lb[name].copy() * (1.0 - self.bound_tol)
+            self.loc[self.loc[:,name] > ub[name],name] = ub[name]
+            self.loc[self.loc[:,name] < lb[name],name] = lb[name]
 
     def read_parfiles_prefix(self,prefix):
         """ thin wrapper around read_parfiles using the pnulpar prefix concept.  Used to

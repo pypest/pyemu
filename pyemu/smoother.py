@@ -876,8 +876,11 @@ class EnsembleSmoother(EnsembleMethod):
 
                 parensemble_cur_lam += upgrade_2
                 self.logger.log("building upgrade_2 matrix")
+            self.logger.log("enforcing bounds")
             parensemble_cur_lam.enforce(self.enforce_bounds)
+            self.logger.log("enforcing bounds")
 
+            self.logger.log("filling fixed parameters")
             #fill in fixed pars with initial values
             fi = parensemble_cur_lam.fixed_indexer
             li = parensemble_cur_lam.log_indexer
@@ -890,7 +893,7 @@ class EnsembleSmoother(EnsembleMethod):
                 #    continue
                 # print(fname)
                 parensemble_cur_lam.loc[:, fname] = fval
-
+            self.logger.log("filling fixed parameters")
             # this is for testing failed runs on upgrade testing
             # works with the 10par_xsec smoother test
             #parensemble_cur_lam.iloc[:,:] = -1000000.0

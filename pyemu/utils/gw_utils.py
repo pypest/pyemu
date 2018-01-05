@@ -661,7 +661,7 @@ def apply_hds_obs(hds_file):
     df.loc[:,["obsnme","obsval"]].to_csv(out_file,index=False,sep=" ")
 
 
-def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None):
+def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1):
     """writes an instruction file for a mt3d-usgs sft output file
 
     Parameters
@@ -679,6 +679,8 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None):
         times : iterable
             a container of times to make observations for.  If None, all times are used.
             Default is None.
+        ncomp : int
+            number of components in transport model. Default is 1.
 
 
     Returns
@@ -713,8 +715,22 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None):
     else:
         df.loc[:,"time_str"] = df.time.apply(lambda x: "{0:08.2f}".format(x))
     df.loc[:,"ins_str"] = "l1\n"
-    df.loc[idx,"ins_str"] = df.apply(lambda x: "l1 w w w !sfrconc{0}_{1}! !flowgw{0}_{1}! !gwconc{0}_{1}!\n".\
-                                     format(x.sfr_node,x.time_str),axis=1)
+    # check for multiple components
+    df_times = df.loc[idx,:]
+    df.loc[:,"icomp"] = 1
+    for t in times:
+        df_time = df.loc[df.time==t,:]
+        vc = df_time.sfr_node.value_counts()
+        ncomp = vc.max()
+        assert np.all(vc.values==ncomp)
+        nstrm = df_time.shape[0] / ncomp
+        for icomp in range(ncomp):
+            df_time.loc[nstrm*(icomp):nstrm*(icomp+1),"icomp"] = int(icomp+1)
+        #print(df_time)
+        #exit()
+    #counts = df_times.loc[:,"sfr-node"].value_counts()
+        df_time.loc[:,"ins_str"] = df_time.apply(lambda x: "l1 w w w !sfrc{0}_{1}_{2}! !swgw{0}_{1}_{2}! !gwcn{0}_{1}_{2}!\n".\
+                                         format(x.sfr_node,x.icomp,x.time_str),axis=1)
     df.index = np.arange(df.shape[0])
     if ins_file is None:
         ins_file = sft_file+".ins"
@@ -888,6 +904,7 @@ def apply_sfr_seg_parameters():
         df.iloc[:,7:] *= mlt_df.iloc[:,7:]
         val = df.to_records(index=False)
         sfr.segment_data[key] = val
+    m.remove_package("sfr")
     sfr.write_file(filename=pars["sfr_filename"])
     return sfr
 
