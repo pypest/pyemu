@@ -293,7 +293,7 @@ def freyberg():
     obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
 
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=20,
-                                verbose=True)
+                                verbose=True,port=4006)
 
     es.initialize(100,init_lambda=10.0,enforce_bounds="reset",regul_factor=0.0,use_approx_prior=True)
     for i in range(3):
@@ -1797,7 +1797,7 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #chenoliver_setup()
     #chenoliver_condor()
-    chenoliver()
+    #chenoliver()
     #chenoliver_existing()
     #chenoliver_plot()
     #chenoliver_func_plot()
@@ -1805,7 +1805,7 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #tenpar_fixed()
     #tenpar_phi()
-    #tenpar_test()
+    tenpar_test()
     #tenpar_opt()
     #plot_10par_opt_traj()
     #tenpar_restart()

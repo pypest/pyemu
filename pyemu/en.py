@@ -1185,11 +1185,17 @@ class ParameterEnsemble(Ensemble):
 
         ub = (self.ubnd * (1.0+self.bound_tol)).to_dict()
         lb = (self.lbnd * (1.0 - self.bound_tol)).to_dict()
-        for iname,name in enumerate(self.columns):
+        #for iname,name in enumerate(self.columns):
             #self.loc[self.loc[:,name] > ub[name],name] = ub[name] * (1.0 + self.bound_tol)
             #self.loc[self.loc[:,name] < lb[name],name] = lb[name].copy() * (1.0 - self.bound_tol)
-            self.loc[self.loc[:,name] > ub[name],name] = ub[name]
-            self.loc[self.loc[:,name] < lb[name],name] = lb[name]
+        #    self.loc[self.loc[:,name] > ub[name],name] = ub[name]
+        #    self.loc[self.loc[:,name] < lb[name],name] = lb[name]
+
+        val_arr = self.values
+        for iname, name in enumerate(self.columns):
+            val_arr[val_arr[:,iname] > ub[name],iname] = ub[name]
+            val_arr[val_arr[:, iname] < lb[name],iname] = lb[name]
+
 
     def read_parfiles_prefix(self,prefix):
         """ thin wrapper around read_parfiles using the pnulpar prefix concept.  Used to

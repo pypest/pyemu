@@ -1014,8 +1014,11 @@ class EnsembleSmoother(EnsembleMethod):
                 meas_pv[meas_pv>self.drop_bad_reals] = np.NaN
                 meas_pv = meas_pv[~np.isnan(meas_pv)]
                 if len(meas_pv) == 0:
-                    raise Exception("all realization for lambda {0} dropped as 'bad'".\
-                                    format(lam_vals[i]))
+                    #raise Exception("all realization for lambda {0} dropped as 'bad'".\
+                    #                format(lam_vals[i]))
+                    self.logger.warn("all realizations for lambda {0} marked as 'bad'")
+                    meas_pv = np.zeros_like(obsen_lam[0].shape[0]) + 1.0e+30
+                    regul_pv = np.zeros_like(obsen_lam[0].shape[0]) + 1.0e+30
                 phi_vecs[i] = (meas_pv,regul_pv)
         mean_std_meas = [(pv[0].mean(),pv[0].std()) for pv in phi_vecs]
         mean_std_regul = [(pv[1].mean(), pv[1].std()) for pv in phi_vecs]

@@ -222,6 +222,15 @@ def enforce_test():
     mc.draw(num_reals=100,enforce_bounds='drop')
     assert mc.parensemble.shape[0] == 0
 
+    mc = pyemu.MonteCarlo(jco=os.path.join("mc","freyberg_ord.jco"))
+    mc.draw(100,enforce_bounds="reset")
+    diff = mc.parensemble.ubnd - mc.parensemble.max(axis=0)
+    assert diff.min() == 0.0
+
+    diff = mc.parensemble.lbnd - mc.parensemble.min(axis=0)
+    assert diff.max() == 0.0
+    #print(mc.parensemble.max(axis=0))
+    #print(mc.parensemble.iloc[:,0])
 
 def enforce_scale():
     import os
@@ -511,7 +520,7 @@ if __name__ == "__main__":
     #ensemble_covariance_test()
     #homegrown_draw_test()
     #change_weights_test()
-    phi_vector_test()
+    #phi_vector_test()
     #par_diagonal_draw_test()
     #obs_id_draw_test()
     #diagonal_cov_draw_test()
@@ -525,7 +534,7 @@ if __name__ == "__main__":
     #from_dataframe_test()
     #ensemble_seed_test()
     #pnulpar_test()
-    #enforce_test()
+    enforce_test()
     #tied_test()
     #enforce_scale_test()
     #freyberg_verf_test()
