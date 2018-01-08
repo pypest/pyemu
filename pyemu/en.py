@@ -60,7 +60,7 @@ class Ensemble(pd.DataFrame):
         pyemu.Matrix : pyemu.Matrix
 
         """
-        x = self.copy().as_matrix().astype(np.float)
+        x = self.values.copy().astype(np.float)
         return typ(x=x,row_names=list(self.index),
                       col_names=list(self.columns))
 

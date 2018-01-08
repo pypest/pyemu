@@ -1474,15 +1474,15 @@ class Pst(object):
                                            ins_files=ins_files,out_files=out_files,
                                          pst_filename=pst_filename)
 
-    def add_parameters(self,template_file,in_file,pst_path=None):
+    def add_parameters(self,template_file,in_file=None,pst_path=None):
         """ add new parameters to a control file
 
         Parameters
         ----------
             tpl_file : str
                 template file
-            in_file : str
-                model input file
+            in_file : str(optional
+                model input file. If None, tpl_file.replace(".tpl","") is used
             pst_path : str(optional)
                 the path to append to the template_file and in_file in the control file.  If
                 not None, then any existing path in front of the template or in file is split off
@@ -1515,7 +1515,8 @@ class Pst(object):
                                                     pst_utils.pst_config["par_dtype"])
         new_par_data.loc[new_parnme,"parnme"] = new_parnme
         self.parameter_data = self.parameter_data.append(new_par_data)
-
+        if in_file is None:
+            in_file = tpl_file.replace('.tpl','')
         if pst_path is not None:
             template_file = os.path.join(pst_path,os.path.split(template_file)[-1])
             in_file = os.path.join(pst_path, os.path.split(in_file)[-1])
@@ -1525,15 +1526,15 @@ class Pst(object):
         return new_par_data
 
 
-    def add_parameters(self,template_file,in_file,pst_path=None):
+    def add_parameters(self,template_file,in_file=None,pst_path=None):
         """ add new parameters to a control file
 
         Parameters
         ----------
-            tpl_file : str
+            template_file : str
                 template file
-            in_file : str
-                model input file
+            in_file : str(optional)
+                model input file. If None, template_file.replace('.tpl','') is used
             pst_path : str(optional)
                 the path to append to the template_file and in_file in the control file.  If
                 not None, then any existing path in front of the template or in file is split off
@@ -1550,7 +1551,7 @@ class Pst(object):
         populates the new parameter information with default values
 
         """
-        assert os.path.exists(template_file)
+        assert os.path.exists(template_file),"template file '{0}' not found".format(template_file)
 
         # get the parameter names in the template file
         parnme = pst_utils.parse_tpl_file(template_file)
@@ -1569,7 +1570,8 @@ class Pst(object):
                                                         pst_utils.pst_config["par_dtype"])
             new_par_data.loc[new_parnme,"parnme"] = new_parnme
             self.parameter_data = self.parameter_data.append(new_par_data)
-
+        if in_file is None:
+            in_file = template_file.replace(".tpl",'')
         if pst_path is not None:
             template_file = os.path.join(pst_path,os.path.split(template_file)[-1])
             in_file = os.path.join(pst_path, os.path.split(in_file)[-1])

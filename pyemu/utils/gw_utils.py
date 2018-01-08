@@ -907,7 +907,7 @@ def apply_sfr_seg_parameters():
         df.iloc[:,7:] *= mlt_df.iloc[:,7:]
         val = df.to_records(index=False)
         sfr.segment_data[key] = val
-    m.remove_package("sfr")
+    #m.remove_package("sfr")
     sfr.write_file(filename=pars["sfr_filename"])
     return sfr
 

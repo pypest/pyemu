@@ -988,14 +988,7 @@ class EnsembleSmoother(EnsembleMethod):
 
         # here is where we need to select out the "best" lambda par and obs
         # ensembles
-        self.logger.statement("**************************")
-        #self.logger.statement(str(datetime.now()))
-        self.logger.statement("lambda testing summary")
-        self.logger.statement("total runs:{0}".format(self.total_runs))
-        self.logger.statement("iteration: {0}".format(self.iter_num))
-        self.logger.statement("current lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}".\
-                              format(self.current_lambda,
-                         self.last_best_mean,self.last_best_std))
+
         #phi_vecs = [self._calc_phi_vec(obsen) for obsen in obsen_lam]
         #phi_vecs_reg = [self._calc_regul_phi_vec(paren) for paren in paren_lam]
         #if self.regul_factor > 0.0:
@@ -1024,6 +1017,15 @@ class EnsembleSmoother(EnsembleMethod):
         mean_std_regul = [(pv[1].mean(), pv[1].std()) for pv in phi_vecs]
         update_pars = False
         update_lambda = False
+        self.logger.statement("**************************")
+        # self.logger.statement(str(datetime.now()))
+        self.logger.statement("lambda testing summary")
+        self.logger.statement("total runs:{0}".format(self.total_runs))
+        self.logger.statement("iteration: {0}".format(self.iter_num))
+        self.logger.statement("current lambda:{0:15.6G}, mean:{1:15.6G}, std:{2:15.6G}". \
+                              format(self.current_lambda,
+                                     self.last_best_mean, self.last_best_std))
+
         # accept a new best if its within 10%
         best_mean = self.last_best_mean * 1.1
         best_std = self.last_best_std * 1.1
