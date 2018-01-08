@@ -472,9 +472,9 @@ class Schur(LinearAnalysis):
             if len(par_list) == 0:
                 continue
             names.append(case_name)
-            self.log("calculating contribution from: " + str(par_list) + '\n')
+            self.log("calculating contribution from: " + str(par_list))
             case_prior,case_post = self.__contribution_from_parameters(par_list)
-            self.log("calculating contribution from: " + str(par_list) + '\n')
+            self.log("calculating contribution from: " + str(par_list))
             for forecast in case_prior.keys():
                 pr = case_prior[forecast]
                 pt = case_post[forecast]
@@ -596,6 +596,7 @@ class Schur(LinearAnalysis):
 
         # if needed reset the zero-weight obs in base_obslist
         if base_obslist is not None and reset:
+            # check for zero
             self.log("resetting zero weight obs in base_obslist")
             self.pst.adjust_weights_by_list(base_obslist, weight)
             self.log("resetting zero weight obs in base_obslist")
@@ -605,6 +606,7 @@ class Schur(LinearAnalysis):
 
         # if needed reset the zero-weight obs in obslist_dict
         if obslist_dict is not None and reset:
+            z_obs = []
             for case,obslist in obslist_dict.items():
                 if not isinstance(obslist,list):
                     obslist_dict[case] = [obslist]
@@ -613,9 +615,10 @@ class Schur(LinearAnalysis):
                     raise Exception("observation(s) listed in both "+\
                                     "base_obslist and obslist_dict: "+\
                                     ','.join(inboth))
-                self.log("resetting zero weight obs in {0}".format(case))
-                self.pst.adjust_weights_by_list(obslist, weight)
-                self.log("resetting zero weight obs in {0}".format(case))
+                z_obs.extend(obslist)
+            self.log("resetting zero weight obs in obslist_dict")
+            self.pst.adjust_weights_by_list(z_obs, weight)
+            self.log("resetting zero weight obs in obslist_dict")
 
         # for a comprehensive obslist_dict
         if obslist_dict is None and reset:
