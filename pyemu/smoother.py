@@ -648,6 +648,8 @@ class EnsembleSmoother(EnsembleMethod):
             failed_runs, self.obsensemble = self._calc_obs(self.parensemble)
             self.obsensemble.to_csv(self.pst.filename +\
                                       self.obsen_prefix.format(0))
+            if self.raw_sweep_out is not None:
+                self.raw_sweep_out.to_csv(self.pst.filename + "_sweepraw0.csv")
             self.logger.log("evaluating initial ensembles")
 
         if failed_runs is not None:
