@@ -582,7 +582,8 @@ class Schur(LinearAnalysis):
                 weight = 1.0
             self.logger.statement("resetting zero weights to {0}".format(weight))
             # make copies of the original obscov and pst
-            org_obscov = self.obscov.get(self.obscov.row_names)
+            #org_obscov = self.obscov.get(self.obscov.row_names)
+            org_obscov = self.obscov.copy()
             org_pst = self.pst.get()
 
         obs = self.pst.observation_data

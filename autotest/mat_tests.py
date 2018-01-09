@@ -275,18 +275,37 @@ def from_uncfile_test():
     cov_full_kx = cov_full.get(row_names=cov_kx.row_names,col_names=cov_kx.col_names)
     assert np.abs((cov_kx - cov_full_kx).x).max() == 0.0
 
+
+def copy_test():
+    import os
+    import pyemu
+
+    import os
+    import numpy as np
+    import pyemu
+
+    cov_full = pyemu.Cov.from_uncfile(os.path.join("mat", "param.unc"))
+    cov_copy = cov_full.copy()
+    assert np.abs((cov_copy- cov_full).x).max() == 0.0
+    cov_full = cov_full + 2.0
+    #print(cov_full.row_names)
+    assert np.abs((cov_copy - cov_full).x).max() == 2.0,np.abs((cov_copy - cov_full).x).max()
+
+
+
 if __name__ == "__main__":
-    #mat_test()
-    #load_jco_test()
-    #extend_test()
-    #pseudo_inv_test()
-    #drop_test()
-    #get_test()
-    #cov_identity_test()
-    #hadamard_product_test()
-    #get_diag_test()
-    #to_pearson_test()
-    #sigma_range_test()
-    #cov_replace_test()
-    #from_names_test()
+    mat_test()
+    load_jco_test()
+    extend_test()
+    pseudo_inv_test()
+    drop_test()
+    get_test()
+    cov_identity_test()
+    hadamard_product_test()
+    get_diag_test()
+    to_pearson_test()
+    sigma_range_test()
+    cov_replace_test()
+    from_names_test()
     from_uncfile_test()
+    copy_test()

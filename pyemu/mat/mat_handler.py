@@ -377,7 +377,8 @@ class Matrix(object):
 
         """
         if np.isscalar(other):
-            return type(self)(x=self.x + other)
+            return type(self)(x=self.x + other,row_names=self.row_names,
+                              col_names=self.col_names,isdiagonal=self.isdiagonal)
         if isinstance(other, np.ndarray):
             assert self.shape == other.shape, \
                 "Matrix.__add__(): shape mismatch: " +\
@@ -520,7 +521,7 @@ class Matrix(object):
             Matrix : Matrix
         """
         if np.isscalar(other):
-            return type(self)(x=self.__x.copy() * other,
+            return type(self)(x=self.x.copy() * other,
                               row_names=self.row_names,
                               col_names=self.col_names,
                               isdiagonal=self.isdiagonal)
@@ -602,7 +603,7 @@ class Matrix(object):
         """
 
         if np.isscalar(other):
-            return type(self)(x=self.__x.copy() * other,row_names=self.row_names,\
+            return type(self)(x=self.x.copy() * other,row_names=self.row_names,\
                               col_names=self.col_names,isdiagonal=self.isdiagonal)
         elif isinstance(other, np.ndarray):
             assert self.shape[0] == other.shape[1], \
@@ -1212,6 +1213,12 @@ class Matrix(object):
             col_names = copy.deepcopy(self.col_names)
 
         return type(self)(x=extract, row_names=row_names, col_names=col_names)
+
+
+    def copy(self):
+        return type(self)(x=self.newx,row_names=self.row_names,
+                          col_names=self.col_names,
+                          isdiagonal=self.isdiagonal,autoalign=self.autoalign)
 
 
     def drop(self, names, axis):
