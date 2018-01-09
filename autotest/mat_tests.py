@@ -265,6 +265,16 @@ def from_names_test():
     c = pyemu.Cov.from_names(rnames,cnames)
     assert type(c) == pyemu.Cov
 
+def from_uncfile_test():
+    import os
+    import numpy as np
+    import pyemu
+
+    cov_full = pyemu.Cov.from_uncfile(os.path.join("mat","param.unc"))
+    cov_kx = pyemu.Cov.from_ascii(os.path.join("mat","cov_kx.mat"))
+    cov_full_kx = cov_full.get(row_names=cov_kx.row_names,col_names=cov_kx.col_names)
+    assert np.abs((cov_kx - cov_full_kx).x).max() == 0.0
+
 if __name__ == "__main__":
     #mat_test()
     #load_jco_test()
@@ -278,4 +288,5 @@ if __name__ == "__main__":
     #to_pearson_test()
     #sigma_range_test()
     #cov_replace_test()
-    from_names_test()
+    #from_names_test()
+    from_uncfile_test()

@@ -2293,7 +2293,7 @@ class Cov(Matrix):
                                             "unrecognized keyword in" +
                                             "std block: " + line2)
                     if var != 1.0:
-                        x *= var
+                        cov *= var
                     for name in cov.row_names:
                         if name in row_names:
                             raise Exception("Cov.from_uncfile():" +
@@ -2302,7 +2302,7 @@ class Cov(Matrix):
                     col_names.extend(cov.col_names)
 
                     for i, rname in enumerate(cov.row_names):
-                        x[idx + i,idx:idx + cov.shape[0]] = cov.x[i, :]
+                        x[idx + i,idx:idx + cov.shape[0]] = cov.x[i, :].copy()
                     idx += cov.shape[0]
                 else:
                     raise Exception('Cov.from_uncfile(): ' +
