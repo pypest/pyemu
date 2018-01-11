@@ -139,7 +139,8 @@ class Phi(object):
         if isinstance(parensemble,pd.DataFrame):
             parensemble = pyemu.ParameterEnsemble.from_dataframe(pst=self.em.pst,df=parensemble)
         par_diff = self.get_residual_par_matrix(parensemble)
-        reg_phi_vec = np.diag(np.dot(np.dot(par_diff.x,self.inv_parcov.x),par_diff.x.transpose()))
+        #reg_phi_vec = np.diag(np.dot(np.dot(par_diff.x,self.inv_parcov.x),par_diff.x.transpose()))
+        reg_phi_vec = np.diag((par_diff * self.inv_parcov * par_diff.T).x)
         return reg_phi_vec
 
     def _calc_meas_phi_actual(self,obsensemble):
