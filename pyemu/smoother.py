@@ -495,7 +495,7 @@ class EnsembleSmoother(EnsembleMethod):
 
     def initialize(self,num_reals=1,init_lambda=None,enforce_bounds="reset",
                    parensemble=None,obsensemble=None,restart_obsensemble=None,
-                   regul_factor=0.0,use_approx_prior=True):
+                   regul_factor=0.0,use_approx_prior=True,build_empirical_prior=False):
         """Initialize the iES process.  Depending on arguments, draws or loads
         initial parameter observations ensembles and runs the initial parameter
         ensemble
@@ -533,6 +533,9 @@ class EnsembleSmoother(EnsembleMethod):
                 a flag to use the inverse, square root of the prior ccovariance matrix
                 for scaling the upgrade calculation.  If True, this matrix is not used.
                 Default is True
+            build_empirical_prior : bool
+                flag to build the prior parameter covariance matrix from an existing parensemble.
+                If True and parensemble is None, an exception is raised
 
 
         Example
@@ -608,7 +611,12 @@ class EnsembleSmoother(EnsembleMethod):
             num_reals = self.parensemble.shape[0]
             self.logger.log("initializing with existing ensembles")
 
+            if build_empirical_prior:
+                self.reset_parcov(self.parensemble.covariance_matrix())
+
         else:
+            if build_empirical_prior:
+                self.logger.lraise("can't use build_emprirical_prior without parensemble...")
             self.logger.log("initializing smoother with {0} realizations".format(num_reals))
             self.logger.log("initializing parensemble")
             self.parensemble_0 = pyemu.ParameterEnsemble.from_gaussian_draw(ParameterEnsemble(self.pst),
@@ -630,6 +638,17 @@ class EnsembleSmoother(EnsembleMethod):
             self.logger.log("initializing obsensemble")
             self.logger.log("initializing smoother with {0} realizations".format(num_reals))
 
+
+        if use_approx_prior:
+            self.logger.statement("using approximate parcov in solution")
+            self.parcov_inv_sqrt = 1.0
+        else:
+            self.logger.statement("using full parcov in solution")
+            # Chen and Oliver use a low rank approx here, but so far,
+            # I haven't needed it - not using enough parameters yet
+            self.logger.log("forming inverse sqrt parcov matrix")
+            self.parcov_inv_sqrt = self.parcov.inv.sqrt
+            self.logger.log("forming inverse sqrt parcov matrix")
 
         # self.obs0_matrix = self.obsensemble_0.nonzero.as_pyemu_matrix()
         # self.par0_matrix = self.parensemble_0.as_pyemu_matrix()

@@ -46,7 +46,7 @@ def fixed_par_test():
     mc.draw(10)
     assert np.all(mc.parensemble.loc[:,"mult1"] ==
                   mc.pst.parameter_data.loc["mult1","parval1"])
-    pe = ParameterEnsemble.from_gaussian_draw(mc.parensemble,mc.parcov,2)
+    pe = ParameterEnsemble.from_gaussian_draw(mc.pst,mc.parcov,2)
 
 
 def uniform_draw_test():
@@ -67,7 +67,7 @@ def uniform_draw_test():
     #mc.parensemble.loc[:,"mult1"].plot(kind="hist",bins=50,ax=ax,alpha=0.5)
     #plt.show()
     start = datetime.now()
-    pe = mc.parensemble.from_uniform_draw(mc.parensemble,5000)
+    pe = mc.parensemble.from_uniform_draw(mc.pst,5000)
     print(datetime.now() - start)
     print(pe)
 
@@ -94,7 +94,7 @@ def gaussian_draw_test():
     print(datetime.now() - start)
 
     start = datetime.now()
-    pe = ParameterEnsemble.from_gaussian_draw(mc.parensemble,cov,num_reals=num_reals)
+    pe = ParameterEnsemble.from_gaussian_draw(mc.pst,cov,num_reals=num_reals)
     print(datetime.now() - start)
     print(mc.parensemble.head())
     print(pe.head())
@@ -321,7 +321,7 @@ def obs_id_draw_test():
 
     mc = MonteCarlo(jco=jco,pst=pst)
     num_reals = 100
-    oe = ObservationEnsemble.from_id_gaussian_draw(mc.obsensemble,num_reals=num_reals)
+    oe = ObservationEnsemble.from_id_gaussian_draw(mc.pst,num_reals=num_reals)
     print(oe.shape)
     print(oe.head())
 
@@ -348,8 +348,7 @@ def par_diagonal_draw_test():
     print(datetime.now() - start)
 
     start = datetime.now()
-    pe = ParameterEnsemble.from_gaussian_draw(mc.parensemble,cov,num_reals=num_reals)
-    mc.parensemble._back_transform()
+    pe = ParameterEnsemble.from_gaussian_draw(mc.pst,cov,num_reals=num_reals)
     print(datetime.now() - start)
     print(mc.parensemble.head())
     print(pe.head())
@@ -382,7 +381,7 @@ def change_weights_test():
     ogcov = mc.obscov.to_dataframe().loc[mc.pst.nnz_obs_names,mc.pst.nnz_obs_names]
 
     num_reals = 10000
-    oe = ObservationEnsemble.from_id_gaussian_draw(mc.obsensemble, num_reals=num_reals)
+    oe = ObservationEnsemble.from_id_gaussian_draw(mc.pst, num_reals=num_reals)
     for oname in mc.pst.nnz_obs_names:
         w = mc.pst.observation_data.loc[oname,"weight"]
         v = ogcov.loc[oname,oname]
@@ -398,7 +397,7 @@ def change_weights_test():
     #print(mc.obsensemble.pst.observation_data.loc[mc.pst.nnz_obs_names,"weight"])
 
     num_reals = 10000
-    oe = ObservationEnsemble.from_id_gaussian_draw(mc.obsensemble, num_reals=num_reals)
+    oe = ObservationEnsemble.from_id_gaussian_draw(mc.pst, num_reals=num_reals)
     for oname in mc.pst.nnz_obs_names:
         w = mc.pst.observation_data.loc[oname, "weight"]
         v = newcov.loc[oname, oname]
@@ -434,7 +433,7 @@ def homegrown_draw_test():
 
     s = datetime.now()
     #print(s)
-    pe = pyemu.ParameterEnsemble.from_gaussian_draw(mc.parensemble, cov, num_reals=num_reals)
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov, num_reals=num_reals)
     mc.draw(num_reals=num_reals,cov=cov)
     pe = mc.parensemble
     d1 = (datetime.now() - s).total_seconds()
@@ -442,7 +441,7 @@ def homegrown_draw_test():
 
     s = datetime.now()
     #print(s)
-    peh = pyemu.ParameterEnsemble.from_gaussian_draw_homegrown(mc.parensemble, cov, num_reals=num_reals)
+    peh = pyemu.ParameterEnsemble.from_gaussian_draw_homegrown(pst, cov, num_reals=num_reals)
     d2 = (datetime.now() - s).total_seconds()
     #print(d2)
 
@@ -482,7 +481,7 @@ def ensemble_covariance_test():
 
     mc = pyemu.MonteCarlo(pst=pst)
 
-    peh = pyemu.ParameterEnsemble.from_gaussian_draw_homegrown(mc.parensemble, cov, num_reals=num_reals)
+    peh = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov, num_reals=num_reals,use_homegrown=True)
 
     localizer = np.ones_like(cov.x)
     localizer[cov.x<1.0e-1] = 0.0
@@ -519,22 +518,20 @@ def ensemble_covariance_test():
 if __name__ == "__main__":
     #ensemble_covariance_test()
     #homegrown_draw_test()
-    #change_weights_test()
-    #phi_vector_test()
-    #par_diagonal_draw_test()
-    #obs_id_draw_test()
-    #diagonal_cov_draw_test()
-    #pe_to_csv_test()
-    #scale_offset_test()
-    #mc_test()
-    #fixed_par_test()
-    #uniform_draw_test()
-    #gaussian_draw_test()
-    #write_regul_test()
-    #from_dataframe_test()
-    #ensemble_seed_test()
-    #pnulpar_test()
-    enforce_test()
-    #tied_test()
-    #enforce_scale_test()
-    #freyberg_verf_test()
+    # change_weights_test()
+    # phi_vector_test()
+    # par_diagonal_draw_test()
+    # obs_id_draw_test()
+    # diagonal_cov_draw_test()
+    # pe_to_csv_test()
+    # scale_offset_test()
+    # mc_test()
+    # fixed_par_test()
+    # uniform_draw_test()
+    # gaussian_draw_test()
+    # write_regul_test()
+    # from_dataframe_test()
+    # ensemble_seed_test()
+    # pnulpar_test()
+    # enforce_test()
+    
