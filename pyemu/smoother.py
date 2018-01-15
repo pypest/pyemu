@@ -38,7 +38,7 @@ class Phi(object):
             self.par0_matrix = self.em.parensemble_0._transform(inplace=False).as_pyemu_matrix()
         self.par0_matrix = self.par0_matrix.get(col_names=self.em.parcov.row_names)
         self.em.logger.log("inverting parcov for regul phi calcs")
-        self.inv_parcov = self.em.parcov.pseudo_inv(eigthresh=1.0e-7)
+        self.inv_parcov = self.em.parcov.pseudo_inv(eigthresh=self.em.pst.svd_data.eigthresh)
         self.em.logger.log("inverting parcov for regul phi calcs")
         self.update()
 
@@ -730,7 +730,7 @@ class EnsembleSmoother(EnsembleMethod):
         self.logger.statement("current lambda:{0:15.6g}".format(self.current_lambda))
 
         self.delta_par_prior = self._calc_delta_par(self.parensemble_0)
-        u,s,v = self.delta_par_prior.pseudo_inv_components()
+        u,s,v = self.delta_par_prior.pseudo_inv_components(eigthresh=self.pst.svd_data.eigthresh)
         self.Am = u * s.inv
         if self.save_mats:
             np.savetxt(self.pst.filename.replace(".pst",'.') + "0.prior_par_diff.dat", self.delta_par_prior.x, fmt="%15.6e")
@@ -830,7 +830,7 @@ class EnsembleSmoother(EnsembleMethod):
         self.logger.log("calculate scaled delta par")
 
         self.logger.log("calculate pseudo inv comps")
-        u,s,v = scaled_delta_obs.pseudo_inv_components()
+        u,s,v = scaled_delta_obs.pseudo_inv_components(eigthresh=self.pst.svd_data.eigthresh)
         self.logger.log("calculate pseudo inv comps")
 
         self.logger.log("calculate obs diff matrix")
@@ -880,6 +880,8 @@ class EnsembleSmoother(EnsembleMethod):
             self.logger.log("applying residuals")
 
             self.logger.log("processing upgrade_1")
+            if self.save_mats:
+                np.savetxt(mat_prefix + ".upgrade_1.dat", upgrade_1.T.x, fmt="%15.6e")
             upgrade_1 = upgrade_1.to_dataframe()
             upgrade_1.index.name = "parnme"
             upgrade_1 = upgrade_1.T
@@ -905,8 +907,9 @@ class EnsembleSmoother(EnsembleMethod):
                 x5 = self.Am * x4
                 x6 = scaled_delta_par.T * x5
                 x7 = v * scaled_ident * v.T * x6
-                upgrade_2 = -1.0 * (self.parcov_inv_sqrt *
-                                   scaled_delta_par * x7).to_dataframe()
+                ug2_mat = -1.0 * (self.parcov_inv_sqrt *
+                                   scaled_delta_par * x7)
+                upgrade_2 = ug2_mat.to_dataframe()
                 upgrade_2.index.name = "parnme"
                 upgrade_2 = upgrade_2.T
                 upgrade_2.to_csv(self.pst.filename+".upgrade_2.{0:04d}.csv".\
@@ -919,6 +922,8 @@ class EnsembleSmoother(EnsembleMethod):
                     np.savetxt(mat_prefix + ".x5.dat", x5.x, fmt="%15.6e")
                     np.savetxt(mat_prefix + ".x6.dat", x6.x, fmt="%15.6e")
                     np.savetxt(mat_prefix + ".x7.dat", x7.x, fmt="%15.6e")
+                    np.savetxt(mat_prefix + ".upgrade_2.dat", ug2_mat.T.x, fmt="%15.6e")
+
                 if upgrade_2.isnull().values.any():
                     self.logger.lraise("NaNs in upgrade_2")
 

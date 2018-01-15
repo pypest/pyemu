@@ -903,11 +903,15 @@ class Matrix(object):
         """
         #sthresh =np.abs((self.s.x / self.s.x[0]) - eigthresh)
         sthresh = self.s.x.flatten()/self.s.x[0]
+        ising = 0
         for i,st in enumerate(sthresh):
-            if st <= eigthresh:
-                return max(1,i)
+            if st > eigthresh:
+                ising += 1
+                #return max(1,i)
+            else:
+                break
         #return max(1,np.argmin(sthresh))
-        return max(1,i+1)
+        return max(1,ising)
 
     def pseudo_inv_components(self,maxsing=None,eigthresh=1.0e-5):
         """ Get the truncated SVD components
