@@ -901,8 +901,13 @@ class Matrix(object):
             number of singular components
 
         """
-        sthresh =np.abs((self.s.x / self.s.x[0]) - eigthresh)
-        return max(1,np.argmin(sthresh))
+        #sthresh =np.abs((self.s.x / self.s.x[0]) - eigthresh)
+        sthresh = self.s.x.flatten()/self.s.x[0]
+        for i,st in enumerate(sthresh):
+            if st <= eigthresh:
+                return max(1,i)
+        #return max(1,np.argmin(sthresh))
+        return max(1,i+1)
 
     def pseudo_inv_components(self,maxsing=None,eigthresh=1.0e-5):
         """ Get the truncated SVD components

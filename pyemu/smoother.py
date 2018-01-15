@@ -734,6 +734,7 @@ class EnsembleSmoother(EnsembleMethod):
         if self.save_mats:
             np.savetxt(self.pst.filename.replace(".pst",'.') + "0.prior_par_diff.dat", self.delta_par_prior.x, fmt="%15.6e")
             np.savetxt(self.pst.filename.replace(".pst",'.') + "0.am_u.dat",u.x,fmt="%15.6e")
+            np.savetxt(self.pst.filename.replace(".pst", '.') + "0.am_v.dat", v.x, fmt="%15.6e")
             np.savetxt(self.pst.filename.replace(".pst",'.') + "0.am_s_inv.dat", s.inv.as_2d, fmt="%15.6e")
             np.savetxt(self.pst.filename.replace(".pst",'.') + "0.am.dat", self.Am.x, fmt="%15.6e")
 
@@ -894,8 +895,8 @@ class EnsembleSmoother(EnsembleMethod):
             parensemble_cur_lam += upgrade_1
 
             # parameter-based upgrade portion
-            #if not use_approx and self.iter_num > 1:
-            if True:
+            if not use_approx and self.iter_num > 1:
+            #if True:
                 self.logger.log("building upgrade_2 matrix")
                 par_diff = (self.parensemble - self.parensemble_0.loc[self.parensemble.index,:]).\
                     as_pyemu_matrix().T
