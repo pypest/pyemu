@@ -655,6 +655,10 @@ def apply_hds_obs(hds_file):
     for kper in kpers:
         kstp = last_kstp_from_kper(hds,kper)
         data = hds.get_data(kstpkper=(kstp,kper))
+        #jwhite 15jan2018 fix for really large values that are getting some
+        #trash added to them...
+        data[data>1.0e+20] = 1.0e+20
+        data[data<-1.0e+20] = -1.0e+20
         df_kper = df.loc[df.kper==kper,:]
         df.loc[df_kper.index,"obsval"] = data[df_kper.k,df_kper.i,df_kper.j]
     assert df.dropna().shape[0] == df.shape[0]
@@ -789,7 +793,7 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
             tie_hcond = False
 
     # load MODFLOW model
-    m = flopy.modflow.Modflow.load(nam_file,load_only=["sfr"],model_ws=model_ws,check=False)
+    m = flopy.modflow.Modflow.load(nam_file,load_only=["sfr"],model_ws=model_ws,check=False,forgive=False)
     #make backup copy of sfr file
     shutil.copy(os.path.join(model_ws,m.sfr.file_name[0]),os.path.join(model_ws,nam_file+"_backup_.sfr"))
 
