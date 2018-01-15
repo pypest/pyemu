@@ -458,16 +458,17 @@ class EnsembleSmoother(EnsembleMethod):
     """
 
     def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,submit_file=None,verbose=False,
-                 port=4004,slave_dir="template",drop_bad_reals=None):
+                 port=4004,slave_dir="template",drop_bad_reals=None,save_mats=False):
 
         super(EnsembleSmoother,self).__init__(pst=pst,parcov=parcov,obscov=obscov,num_slaves=num_slaves,
-                                              submit_file=submit_file,verbose=verbose,port=port,slave_dir=slave_dir)
+                                              submit_file=submit_file,verbose=verbose,port=port,
+                                              slave_dir=slave_dir)
         #self.use_approx_prior = bool(use_approx_prior)
         self.parcov_inv_sqrt = None
         self.half_obscov_diag = None
         self.delta_par_prior = None
         self.drop_bad_reals = drop_bad_reals
-
+        self.save_mats = save_mats
     # @classmethod
     # def from_pestpp_args(cls,pst):
     #     if isinstance(pst,str):
@@ -613,7 +614,10 @@ class EnsembleSmoother(EnsembleMethod):
             self.logger.log("initializing with existing ensembles")
 
             if build_empirical_prior:
-                self.parcov = self.parensemble.covariance_matrix()
+
+                self.reset_parcov(self.parensemble.covariance_matrix())
+                if self.save_mats:
+                    self.parcov.to_binary(self.pst.filename+".empcov.jcb")
 
         else:
             if build_empirical_prior:
@@ -728,6 +732,11 @@ class EnsembleSmoother(EnsembleMethod):
         self.delta_par_prior = self._calc_delta_par(self.parensemble_0)
         u,s,v = self.delta_par_prior.pseudo_inv_components()
         self.Am = u * s.inv
+        if self.save_mats:
+            np.savetxt(self.pst.filename.replace(".pst",'.') + "0.prior_par_diff.dat", self.delta_par_prior.x, fmt="%15.6e")
+            np.savetxt(self.pst.filename.replace(".pst",'.') + "0.am_u.dat",u.x,fmt="%15.6e")
+            np.savetxt(self.pst.filename.replace(".pst",'.') + "0.am_s_inv.dat", s.inv.as_2d, fmt="%15.6e")
+            np.savetxt(self.pst.filename.replace(".pst",'.') + "0.am.dat", self.Am.x, fmt="%15.6e")
 
         self.__initialized = True
 
@@ -803,6 +812,7 @@ class EnsembleSmoother(EnsembleMethod):
                 run_subset = None
 
         self.iter_num += 1
+        mat_prefix =  self.pst.filename.replace('.pst','')+".{0}".format(self.iter_num)
         self.logger.log("iteration {0}".format(self.iter_num))
         self.logger.statement("{0} active realizations".format(self.obsensemble.shape[0]))
         if self.obsensemble.shape[0] < 2:
@@ -827,6 +837,12 @@ class EnsembleSmoother(EnsembleMethod):
         obs_diff = self.obscov_inv_sqrt * self.phi.get_residual_obs_matrix(self.obsensemble).T
         self.logger.log("calculate obs diff matrix")
 
+        if self.save_mats:
+            np.savetxt(mat_prefix + ".obs_diff.dat", scaled_delta_obs.x, fmt="%15.6e")
+            np.savetxt(mat_prefix + ".par_diff.dat", scaled_delta_par.x, fmt="%15.6e")
+            np.savetxt(mat_prefix + ".u.dat", u.x, fmt="%15.6e")
+            np.savetxt(mat_prefix + ".s.dat", s.x, fmt="%15.6e")
+            np.savetxt(mat_prefix + ".v.dat", v.x, fmt="%15.6e")
         # here is the math part...calculate upgrade matrices
         mean_lam,std_lam,paren_lam,obsen_lam = [],[],[],[]
         lam_vals = []
@@ -847,6 +863,8 @@ class EnsembleSmoother(EnsembleMethod):
             self.logger.log("building upgrade_1 matrix")
             upgrade_1 = -1.0 * (self.parcov_inv_sqrt * scaled_delta_par) *\
                         v * s * scaled_ident * u.T
+            if self.save_mats:
+                np.savetxt(mat_prefix+".ivec.dat".format(self.iter_num), scaled_ident.x, fmt="%15.6e")
             self.logger.log("building upgrade_1 matrix")
 
             # apply localization
@@ -877,7 +895,8 @@ class EnsembleSmoother(EnsembleMethod):
             parensemble_cur_lam += upgrade_1
 
             # parameter-based upgrade portion
-            if not use_approx and self.iter_num > 1:
+            #if not use_approx and self.iter_num > 1:
+            if True:
                 self.logger.log("building upgrade_2 matrix")
                 par_diff = (self.parensemble - self.parensemble_0.loc[self.parensemble.index,:]).\
                     as_pyemu_matrix().T
@@ -893,6 +912,12 @@ class EnsembleSmoother(EnsembleMethod):
                                    format(self.iter_num))
                 upgrade_2.index = [int(i) for i in upgrade_2.index]
 
+                if self.save_mats:
+                    np.savetxt(mat_prefix + ".scaled_par_resid.dat", par_diff.x, fmt="%15.6e")
+                    np.savetxt(mat_prefix + ".x4.dat", x4.x, fmt="%15.6e")
+                    np.savetxt(mat_prefix + ".x5.dat", x5.x, fmt="%15.6e")
+                    np.savetxt(mat_prefix + ".x6.dat", x6.x, fmt="%15.6e")
+                    np.savetxt(mat_prefix + ".x7.dat", x7.x, fmt="%15.6e")
                 if upgrade_2.isnull().values.any():
                     self.logger.lraise("NaNs in upgrade_2")
 
