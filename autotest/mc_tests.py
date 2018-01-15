@@ -516,7 +516,7 @@ def ensemble_covariance_test():
 
 
 if __name__ == "__main__":
-    #ensemble_covariance_test()
+    ensemble_covariance_test()
     #homegrown_draw_test()
     # change_weights_test()
     # phi_vector_test()

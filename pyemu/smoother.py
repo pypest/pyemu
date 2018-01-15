@@ -732,10 +732,10 @@ class EnsembleSmoother(EnsembleMethod):
         u,s,v = self.delta_par_prior.pseudo_inv_components()
         self.Am = u * s.inv
         if self.save_mats:
-            np.savetxt(self.pst.filename + ".prior_par_diff.dat", self.delta_par_prior.x, fmt="%15.6e")
-            np.savetxt(self.pst.filename+".Am_u.dat",u.x,fmt="%15.6e")
-            np.savetxt(self.pst.filename + ".Am_s_inv.dat", s.inv.as_2d, fmt="%15.6e")
-            np.savetxt(self.pst.filename + ".Am.dat", self.Am.x, fmt="%15.6e")
+            np.savetxt(self.pst.filename.replace(".pst",'.') + "0.prior_par_diff.dat", self.delta_par_prior.x, fmt="%15.6e")
+            np.savetxt(self.pst.filename.replace(".pst",'.') + "0.am_u.dat",u.x,fmt="%15.6e")
+            np.savetxt(self.pst.filename.replace(".pst",'.') + "0.am_s_inv.dat", s.inv.as_2d, fmt="%15.6e")
+            np.savetxt(self.pst.filename.replace(".pst",'.') + "0.am.dat", self.Am.x, fmt="%15.6e")
 
         self.__initialized = True
 
@@ -863,7 +863,7 @@ class EnsembleSmoother(EnsembleMethod):
             upgrade_1 = -1.0 * (self.parcov_inv_sqrt * scaled_delta_par) *\
                         v * s * scaled_ident * u.T
             if self.save_mats:
-                np.savetxt(mat_prefix+ "{0}.ivec.dat".format(self.iter_num), scaled_ident.x, fmt="%15.6e")
+                np.savetxt(mat_prefix+".ivec.dat".format(self.iter_num), scaled_ident.x, fmt="%15.6e")
             self.logger.log("building upgrade_1 matrix")
 
             # apply localization
