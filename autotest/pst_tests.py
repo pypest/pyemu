@@ -557,7 +557,7 @@ if __name__ == "__main__":
     #setattr_test()
     # run_array_pars()
     from_flopy_test()
-    #plot_flopy_par_ensemble_test()
+    plot_flopy_par_ensemble_test()
     #add_pi_test()
     # regdata_test()
     # nnz_groups_test()

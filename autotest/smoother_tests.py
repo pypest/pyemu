@@ -296,8 +296,9 @@ def freyberg():
                                 verbose=True,port=4006)
 
     es.initialize(100,init_lambda=10.0,enforce_bounds="reset",regul_factor=0.0,use_approx_prior=True)
-    for i in range(3):
-        es.update(lambda_mults=[0.01,0.2,1.0,5.0,100.0],run_subset=20,use_approx=True)
+    es.update()
+    #for i in range(1):
+    #    es.update(lambda_mults=[0.01,0.2,1.0,5.0,100.0],run_subset=20,use_approx=True)
         #es.update(use_approx=False)
 
     os.chdir(os.path.join("..",".."))
@@ -361,15 +362,16 @@ def freyberg_emp():
     #pst.observation_data.loc[:,"weight"] /= 10.0
     pst.write("temp.pst")
     obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
-    pe = pyemu.ParameterEnsemble(pst)
-    pe = pe.from_gaussian_draw_homegrown()
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,parcov,num_reals=100,use_homegrown=True)
+    oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst,num_reals=100)
     es = pyemu.EnsembleSmoother(pst,num_slaves=20,
                                 verbose=True,port=4006)
 
-    es.initialize(100,init_lambda=10.0,enforce_bounds="reset",regul_factor=0.0,
+    es.initialize(parensemble=pe,obsensemble=oe,init_lambda=10.0,enforce_bounds="reset",regul_factor=0.0,
                   use_approx_prior=True,build_empirical_prior=True)
-    for i in range(3):
-        es.update(lambda_mults=[0.01,0.2,1.0,5.0,100.0],run_subset=20,use_approx=True)
+    es.update()
+    #for i in range(3):
+    #    es.update(lambda_mults=[0.01,0.2,1.0,5.0,100.0],run_subset=20,use_approx=True)
         #es.update(use_approx=False)
 
     os.chdir(os.path.join("..",".."))
@@ -441,7 +443,7 @@ def freyerg_reg_compare():
     pst.observation_data.loc[:, "weight"] /= 10.0
     pst.write("temp.pst")
     obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
-
+    pyemu.Ensemble.reseed()
     es = pyemu.EnsembleSmoother(pst, parcov=parcov, obscov=obscov, num_slaves=20,
                                 verbose=True)
 

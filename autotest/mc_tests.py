@@ -441,7 +441,7 @@ def homegrown_draw_test():
 
     s = datetime.now()
     #print(s)
-    peh = pyemu.ParameterEnsemble.from_gaussian_draw_homegrown(pst, cov, num_reals=num_reals)
+    peh = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov, num_reals=num_reals,use_homegrown=True)
     d2 = (datetime.now() - s).total_seconds()
     #print(d2)
 
@@ -516,8 +516,8 @@ def ensemble_covariance_test():
 
 
 if __name__ == "__main__":
-    ensemble_covariance_test()
-    #homegrown_draw_test()
+    #ensemble_covariance_test()
+    homegrown_draw_test()
     # change_weights_test()
     # phi_vector_test()
     # par_diagonal_draw_test()
@@ -534,4 +534,3 @@ if __name__ == "__main__":
     # ensemble_seed_test()
     # pnulpar_test()
     # enforce_test()
-    

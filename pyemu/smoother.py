@@ -38,7 +38,7 @@ class Phi(object):
             self.par0_matrix = self.em.parensemble_0._transform(inplace=False).as_pyemu_matrix()
         self.par0_matrix = self.par0_matrix.get(col_names=self.em.parcov.row_names)
         self.em.logger.log("inverting parcov for regul phi calcs")
-        self.inv_parcov = self.em.parcov.inv
+        self.inv_parcov = self.em.parcov.pseudo_inv(eigthresh=1.0e-7)
         self.em.logger.log("inverting parcov for regul phi calcs")
         self.update()
 
@@ -614,6 +614,7 @@ class EnsembleSmoother(EnsembleMethod):
             self.logger.log("initializing with existing ensembles")
 
             if build_empirical_prior:
+
                 self.reset_parcov(self.parensemble.covariance_matrix())
                 if self.save_mats:
                     self.parcov.to_binary(self.pst.filename+".empcov.jcb")
@@ -623,7 +624,7 @@ class EnsembleSmoother(EnsembleMethod):
                 self.logger.lraise("can't use build_emprirical_prior without parensemble...")
             self.logger.log("initializing smoother with {0} realizations".format(num_reals))
             self.logger.log("initializing parensemble")
-            self.parensemble_0 = pyemu.ParameterEnsemble.from_gaussian_draw(ParameterEnsemble(self.pst),
+            self.parensemble_0 = pyemu.ParameterEnsemble.from_gaussian_draw(self.pst,
                                                                             self.parcov,num_reals=num_reals)
             self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
             self.logger.log("initializing parensemble")
@@ -632,7 +633,7 @@ class EnsembleSmoother(EnsembleMethod):
                                       self.paren_prefix.format(0))
             self.logger.log("initializing parensemble")
             self.logger.log("initializing obsensemble")
-            self.obsensemble_0 = pyemu.ObservationEnsemble.from_id_gaussian_draw(ObservationEnsemble(self.pst),
+            self.obsensemble_0 = pyemu.ObservationEnsemble.from_id_gaussian_draw(self.pst,
                                                                                  num_reals=num_reals)
             #self.obsensemble = self.obsensemble_0.copy()
 

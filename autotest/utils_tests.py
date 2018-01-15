@@ -801,7 +801,7 @@ def grid_obs_test():
     pyemu.gw_utils.apply_hds_obs(hds_file)
     df2 = pd.read_csv(out_file,delim_whitespace=True)
     diff = df1.obsval - df2.obsval
-    assert diff.max() < 1.0e-6
+    assert diff.max() < 1.0e-6,diff.max()
 
     pyemu.gw_utils.setup_hds_obs(hds_file,skip=-999)
     df1 = pd.read_csv(out_file,delim_whitespace=True)
@@ -915,11 +915,11 @@ def sfr_helper_test():
 
 
 if __name__ == "__main__":
-    setup_pp_test()
+    #setup_pp_test()
     #sfr_helper_test()
     #gw_sft_ins_test()
     # par_knowledge_test()
-    # grid_obs_test()
+    grid_obs_test()
     #plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
