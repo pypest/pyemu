@@ -1009,7 +1009,7 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     ``>>>pst = pyemu.helpers.pst_from_io_files(*pyemu.helpers.parse_dir_for_io_files('.'))``
 
     """
-    par_names = []
+    par_names = set()
     if not isinstance(tpl_files,list):
         tpl_files = [tpl_files]
     if not isinstance(in_files,list):
@@ -1018,8 +1018,10 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
 
     for tpl_file in tpl_files:
         assert os.path.exists(tpl_file),"template file not found: "+str(tpl_file)
-        new_names = [name for name in pyemu.pst_utils.parse_tpl_file(tpl_file) if name not in par_names]
-        par_names.extend(new_names)
+        #new_names = [name for name in pyemu.pst_utils.parse_tpl_file(tpl_file) if name not in par_names]
+        #par_names.extend(new_names)
+        new_names = pyemu.pst_utils.parse_tpl_file(tpl_file)
+        par_names.update(new_names)
 
     if not isinstance(ins_files,list):
         ins_files = [ins_files]
@@ -1033,7 +1035,7 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
         assert os.path.exists(ins_file),"instruction file not found: "+str(ins_file)
         obs_names.extend(pyemu.pst_utils.parse_ins_file(ins_file))
 
-    new_pst = pyemu.pst_utils.generic_pst(par_names,obs_names)
+    new_pst = pyemu.pst_utils.generic_pst(list(par_names),list(obs_names))
 
     new_pst.template_files = tpl_files
     new_pst.input_files = in_files
