@@ -1229,11 +1229,11 @@ def tenpar_test():
     try:
         #bak_obj = pd.read_csv("iobj.bak",skipinitialspace=True)
         #bak_obj_act = pd.read_csv("iobj.actual.bak")
-        bak_upgrade1 = pd.read_csv("upgrade_1.bak")
-        bak_upgrade2 = pd.read_csv("upgrade_2.bak")
+        bak_upgrade1 = pd.read_csv("upgrade_1.bak.csv")
+        bak_upgrade2 = pd.read_csv("upgrade_2.bak.csv")
 
 
-        csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+        csv_files = [f for f in os.listdir('.') if f.endswith(".csv") and ".bak" not in f]
         [os.remove(csv_file) for csv_file in csv_files]
         pst = pyemu.Pst("10par_xsec.pst")
         par = pst.parameter_data
@@ -1860,8 +1860,8 @@ if __name__ == "__main__":
     #henry_setup()
     #henry()
     #henry_plot()
-    freyberg()
-    freyberg_emp()
+    #freyberg()
+    #freyberg_emp()
     #freyberg_plot()
     #freyberg_plot_iobj()
     #freyerg_reg_compare()
@@ -1880,7 +1880,7 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #tenpar_fixed()
     #tenpar_phi()
-    #tenpar_test()
+    tenpar_test()
     #tenpar_opt()
     #plot_10par_opt_traj()
     #tenpar_restart()
