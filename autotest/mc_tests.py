@@ -293,12 +293,12 @@ def pe_to_csv_test():
 def diagonal_cov_draw_test():
     import os
     import numpy as np
-    from pyemu import MonteCarlo,Cov,Pst
+    from pyemu import MonteCarlo,Cov,Pst,ParameterEnsemble
     jco = os.path.join("pst","pest.jcb")
     pst = Pst(jco.replace(".jcb",".pst"))
 
     mc = MonteCarlo(jco=jco,pst=pst)
-    num_reals = 10
+    num_reals = 100
     mc.draw(num_reals,obs=True)
     print(mc.obsensemble)
     pe1 = mc.parensemble.copy()
@@ -309,6 +309,9 @@ def diagonal_cov_draw_test():
     mc.parensemble.reseed()
     mc.draw(num_reals,cov=cov)
     pe2 = mc.parensemble
+
+    pe3 = ParameterEnsemble.from_gaussian_draw(mc.pst,num_reals=num_reals,cov=mc.parcov)
+
     #print(pe1-pe2)
 
 def obs_id_draw_test():
@@ -517,12 +520,12 @@ def ensemble_covariance_test():
 
 if __name__ == "__main__":
     #ensemble_covariance_test()
-    homegrown_draw_test()
+    #homegrown_draw_test()
     # change_weights_test()
     # phi_vector_test()
     # par_diagonal_draw_test()
     # obs_id_draw_test()
-    # diagonal_cov_draw_test()
+    diagonal_cov_draw_test()
     # pe_to_csv_test()
     # scale_offset_test()
     # mc_test()

@@ -2039,7 +2039,7 @@ class PstFromFlopyModel(object):
         calls PESTCHEK
 
         """
-        self.log("changing dir in to {0}".format(self.m.model_ws))
+        self.logger.statement("changing dir in to {0}".format(self.m.model_ws))
         os.chdir(self.m.model_ws)
         tpl_files = copy.deepcopy(self.tpl_files)
         in_files = copy.deepcopy(self.in_files)
@@ -2060,11 +2060,12 @@ class PstFromFlopyModel(object):
                 if ins_file not in self.ins_files:
                     self.ins_files.append(ins_file)
                     self.out_files.append(out_file)
+            self.log("instantiating control file from i/o files")
             pst = pyemu.Pst.from_io_files(tpl_files=self.tpl_files,
                                           in_files=self.in_files,
                                           ins_files=self.ins_files,
                                           out_files=self.out_files)
-
+            self.log("instantiating control file from i/o files")
         except Exception as e:
             os.chdir("..")
             self.logger.lraise("error build Pst:{0}".format(str(e)))
@@ -2108,7 +2109,7 @@ class PstFromFlopyModel(object):
                 if col in obs.columns:
                     obs.loc[df.obsnme,col] = df.loc[:,col]
 
-        self.pst_name = self.m.name+"_pest.pst"
+        self.pst_name = self.m.name+".pst"
         pst.model_command = ["python forward_run.py"]
         pst.control_data.noptmax = 0
 

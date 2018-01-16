@@ -908,18 +908,24 @@ class ParameterEnsemble(Ensemble):
 
         if cov.isdiagonal:
             print("making diagonal cov draws")
+            print("building mean and std dicts")
             arr = np.zeros((num_reals,len(vals)))
             stds = {pname:std for pname,std in zip(common_names,np.sqrt(cov.x.flatten()))}
             means = {pname:val for pname,val in zip(common_names,vals)}
-            for i,pname in enumerate(vals.index.values):
-                if pname in pst.adj_par_names:
-                    s = stds[pname]
-                    v = means[pname]
-                    arr[:,i] = np.random.normal(means[pname],stds[pname],
-                                                size=num_reals)
+            print("numpy draw")
+            draws = np.random.randn(num_reals,len(common_names))
+            print("post-processing")
+            adj_pars = set(pst.adj_par_names)
+            for i,pname in enumerate(common_names):
+                if pname in adj_pars:
+                    #s = stds[pname]
+                    #v = means[pname]
+                    #arr[:,i] = np.random.normal(means[pname],stds[pname],
+                    #                            size=num_reals)
+                    arr[:,i] = (arr[:,i] * stds[pname]) + means[pname]
                 else:
                     arr[:,i] = means[pname]
-
+            print("build df")
             df = pd.DataFrame(data=arr,columns=common_names,index=real_names)
         else:
             if use_homegrown:

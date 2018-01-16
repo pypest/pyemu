@@ -233,14 +233,17 @@ def parse_tpl_file(tpl_file):
                 str(marker)
             for line in f:
                 par_line = line.strip().split(marker)[1::2]
-                for p in par_line:
-                    if p not in par_names:
-                        par_names.append(p)
+                par_names.extend(par_line)
+                #for p in par_line:
+                #    if p not in par_names:
+                #        par_names.append(p)
         except Exception as e:
             raise Exception("error processing template file " +\
                             tpl_file+" :\n" + str(e))
     par_names = [pn.strip().lower() for pn in par_names]
-    return par_names
+    seen = set()
+    seen_add = seen.add
+    return [x for x in par_names if not (x in seen or seen_add(x))]
 
 
 def write_input_files(pst):
