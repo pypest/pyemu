@@ -380,8 +380,7 @@ class ObservationEnsemble(Ensemble):
     @classmethod
     def from_id_gaussian_draw(cls,pst,num_reals):
         """ this is an experiemental method to help speed up independent draws
-        for a really large (>1E6) ensemble sizes.  WARNING: this constructor
-        transforms the oe argument
+        for a really large (>1E6) ensemble sizes.
 
         Parameters
         ----------
@@ -409,6 +408,48 @@ class ObservationEnsemble(Ensemble):
         df.loc[:,pst.obs_names] += pst.observation_data.obsval
         new_oe = cls.from_dataframe(pst=pst,df=df)
         return new_oe
+
+    def to_binary(self, filename):
+        """write the observation ensemble to a jco-style binary file.  The
+        ensemble is transposed in the binary file so that the 20-char obs
+        names are carried
+
+        Parameters
+        ----------
+        filename : str
+            the filename to write
+
+        Returns
+        -------
+        None
+
+
+        Note
+        ----
+        The ensemble is transposed in the binary file
+
+        """
+        self.as_pyemu_matrix().T.to_binary(filename)
+
+
+    @classmethod
+    def from_binary(cls,pst,filename):
+        """instantiate an observation obsemble from a jco-type file
+
+        Parameters
+        ----------
+        pst : pyemu.Pst
+            a Pst instance
+        filename : str
+            the binary file name
+
+        Returns
+        -------
+        oe : ObservationEnsemble
+
+        """
+        m = Matrix.from_binary(filename)
+        return ObservationEnsemble(data=m.T.x,pst=pst)
 
 
     @property
@@ -975,6 +1016,24 @@ class ParameterEnsemble(Ensemble):
 
         return new_pe
 
+    @classmethod
+    def from_binary(cls, pst, filename):
+        """instantiate an parameter obsemble from a jco-type file
+
+        Parameters
+        ----------
+        pst : pyemu.Pst
+            a Pst instance
+        filename : str
+            the binary file name
+
+        Returns
+        -------
+        pe : ParameterEnsemble
+
+        """
+        m = Matrix.from_binary(filename)
+        return ParameterEnsemble(data=m.x, pst=pst)
 
     def _back_transform(self,inplace=True):
         """ Private method to remove log10 transformation from ensemble
@@ -1311,6 +1370,36 @@ class ParameterEnsemble(Ensemble):
         super(ParameterEnsemble,self).to_csv(*args,**kwargs)
         if retrans:
             self._transform(inplace=True)
+
+
+    def to_binary(self,filename):
+        """write the parameter ensemble to a jco-style binary file
+
+        Parameters
+        ----------
+        filename : str
+            the filename to write
+
+        Returns
+        -------
+        None
+
+
+        Note
+        ----
+        this function back-transforms inplace with respect to
+        log10 before writing
+
+        """
+
+        retrans = False
+        if self.istransformed:
+            self._back_transform(inplace=True)
+            retrans = True
+        self.as_pyemu_matrix().to_binary(filename)
+        if retrans:
+            self._transform(inplace=True)
+
 
     def to_parfiles(self,prefix):
         """

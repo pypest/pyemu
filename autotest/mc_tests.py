@@ -513,11 +513,83 @@ def ensemble_covariance_test():
     # plt.colorbar(p)
     # plt.show()
 
+def binary_ensemble_dev():
+    import os
+    from datetime import datetime
+    import numpy as np
+    import pandas as pd
+    import pyemu
 
+    d = os.path.join("..","misc")
+    pst = os.path.join(d,"pest.pst")
+    csv = os.path.join(d,"par.csv")
+    jcb = csv+".jcb"
+    pst = pyemu.Pst(pst)
+
+    start = datetime.now()
+    print(start,"loading csv")
+    df = pd.read_csv(csv)
+    end = datetime.now()
+    print("csv load took:",(end-start).total_seconds())
+
+    pe = pyemu.ParameterEnsemble.from_dataframe(pst=pst,df=df)
+    start = datetime.now()
+    print(start,"writing binary")
+    pe.as_pyemu_matrix().to_binary(jcb)
+    end = datetime.now()
+    print("binary write took:",(end-start).total_seconds())
+
+    start = datetime.now()
+    print(start,"loading jcb")
+    m = pyemu.Matrix.from_binary(jcb)
+    end = datetime.now()
+    print("jcb load took:",(end-start).total_seconds())
+
+
+def to_from_binary_test():
+    import os
+    import numpy as np
+    import pyemu
+    from datetime import datetime
+
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=1.0)
+    gs = pyemu.geostats.GeoStruct(variograms=[v])
+
+    npar = 1000
+    pst = pyemu.pst_utils.generic_pst(["p{0:010d}".format(i) for i in range(npar)], ["o1"])
+
+    pst.parameter_data.loc[:, "partrans"] = "none"
+    par = pst.parameter_data
+    par.loc[:, "x"] = np.random.random(npar) * 10.0
+    par.loc[:, "y"] = np.random.random(npar) * 10.0
+
+    cov = gs.covariance_matrix(par.x, par.y, par.parnme)
+    num_reals = 1000
+
+    mc = pyemu.MonteCarlo(pst=pst)
+
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov, num_reals=num_reals, use_homegrown=True)
+    oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst,num_reals=num_reals)
+
+
+    pe_name = os.path.join("temp","pe.jcb")
+    oe_name = os.path.join("temp","oe.jcb")
+    pe.to_binary(pe_name)
+    oe.to_binary(oe_name)
+
+    pe1 = pyemu.ParameterEnsemble.from_binary(mc.pst,pe_name)
+    oe1 = pyemu.ObservationEnsemble.from_binary(mc.pst,oe_name)
+
+    d = (oe - oe1).apply(np.abs)
+    assert d.max().max() == 0.0
+    d = (pe - pe1).apply(np.abs)
+    assert d.max().max() == 0.0
 
 if __name__ == "__main__":
+    #binary_ensemble_dev()
+    to_from_binary_test()
     #ensemble_covariance_test()
-    homegrown_draw_test()
+    #homegrown_draw_test()
     # change_weights_test()
     # phi_vector_test()
     # par_diagonal_draw_test()
