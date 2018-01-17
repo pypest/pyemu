@@ -396,12 +396,14 @@ class ObservationEnsemble(Ensemble):
         """
         # set up some column names
         real_names = np.arange(num_reals,dtype=np.int64)
-        arr = np.empty((num_reals,len(pst.obs_names)))
+        #arr = np.empty((num_reals,len(pst.obs_names)))
         obs = pst.observation_data
         stds = {name:1.0/obs.loc[name,"weight"] for name in pst.nnz_obs_names}
+        nz_names = set(pst.nnz_obs_names)
+        arr = np.random.randn(num_reals,pst.nobs)
         for i,oname in enumerate(pst.obs_names):
-            if oname in pst.nnz_obs_names:
-                arr[:,i] = np.random.normal(0.0,stds[oname],size=num_reals)
+            if oname in nz_names:
+                arr[:,i] *= stds[oname]
             else:
                 arr[:,i] = 0.0
         df = pd.DataFrame(arr,index=real_names,columns=pst.obs_names)
@@ -949,18 +951,24 @@ class ParameterEnsemble(Ensemble):
 
         if cov.isdiagonal:
             print("making diagonal cov draws")
+            print("building mean and std dicts")
             arr = np.zeros((num_reals,len(vals)))
             stds = {pname:std for pname,std in zip(common_names,np.sqrt(cov.x.flatten()))}
             means = {pname:val for pname,val in zip(common_names,vals)}
-            for i,pname in enumerate(vals.index.values):
-                if pname in pst.adj_par_names:
-                    s = stds[pname]
-                    v = means[pname]
-                    arr[:,i] = np.random.normal(means[pname],stds[pname],
-                                                size=num_reals)
+            print("numpy draw")
+            arr = np.random.randn(num_reals,len(common_names))
+            print("post-processing")
+            adj_pars = set(pst.adj_par_names)
+            for i,pname in enumerate(common_names):
+                if pname in adj_pars:
+                    #s = stds[pname]
+                    #v = means[pname]
+                    #arr[:,i] = np.random.normal(means[pname],stds[pname],
+                    #                            size=num_reals)
+                    arr[:,i] = (arr[:,i] * stds[pname]) + means[pname]
                 else:
                     arr[:,i] = means[pname]
-
+            print("build df")
             df = pd.DataFrame(data=arr,columns=common_names,index=real_names)
         else:
             if use_homegrown:

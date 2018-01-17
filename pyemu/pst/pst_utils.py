@@ -216,7 +216,7 @@ def parse_tpl_file(tpl_file):
         list of parameter names
 
     """
-    par_names = []
+    par_names = set()
     with open(tpl_file,'r') as f:
         try:
             header = f.readline().strip().split()
@@ -232,15 +232,20 @@ def parse_tpl_file(tpl_file):
                 "template file error: marker must be a single character, not:" +\
                 str(marker)
             for line in f:
-                par_line = line.strip().split(marker)[1::2]
-                for p in par_line:
-                    if p not in par_names:
-                        par_names.append(p)
+                par_line = set(line.lower().strip().split(marker)[1::2])
+                par_names.update(par_line)
+                #par_names.extend(par_line)
+                #for p in par_line:
+                #    if p not in par_names:
+                #        par_names.append(p)
         except Exception as e:
             raise Exception("error processing template file " +\
                             tpl_file+" :\n" + str(e))
-    par_names = [pn.strip().lower() for pn in par_names]
-    return par_names
+    #par_names = [pn.strip().lower() for pn in par_names]
+    #seen = set()
+    #seen_add = seen.add
+    #return [x for x in par_names if not (x in seen or seen_add(x))]
+    return [p.strip() for p in list(par_names)]
 
 
 def write_input_files(pst):
@@ -366,12 +371,12 @@ def parse_ins_file(ins_file):
             str(marker)
         for line in f:
             if marker in line:
-                raw = line.strip().split(marker)
+                raw = line.lower().strip().split(marker)
                 for item in raw[::2]:
                     obs_names.extend(parse_ins_string(item))
             else:
                 obs_names.extend(parse_ins_string(line.strip()))
-    obs_names = [on.strip().lower() for on in obs_names]
+    #obs_names = [on.strip().lower() for on in obs_names]
     return obs_names
 
 
@@ -473,11 +478,13 @@ def generic_pst(par_names=["par1"],obs_names=["obs1"],addreg=False):
                                   new_pst.par_defaults,new_pst.par_dtype)
     par_data.loc[:,"parnme"] = par_names
     par_data.index = par_names
+    par_data.sort_index(inplace=True)
     new_pst.parameter_data = par_data
     obs_data = populate_dataframe(obs_names,new_pst.obs_fieldnames,
                                   new_pst.obs_defaults,new_pst.obs_dtype)
     obs_data.loc[:,"obsnme"] = obs_names
     obs_data.index = obs_names
+    obs_data.sort_index(inplace=True)
     new_pst.observation_data = obs_data
 
     new_pst.template_files = ["file.tpl"]
