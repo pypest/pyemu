@@ -214,6 +214,7 @@ class Ensemble(pd.DataFrame):
         """
         df = kwargs.pop("df")
         assert isinstance(df,pd.DataFrame)
+        df.columns = [c.lower() for c in df.columns]
         mean_values = kwargs.pop("mean_values",df.mean(axis=0))
         e = cls(data=df,index=df.index,columns=df.columns,
                 mean_values=mean_values,**kwargs)
