@@ -298,10 +298,10 @@ def plot_flopy_par_ensemble_test():
                                              grid_props=pp_props, remove_existing=True,
                                              model_exe_name="mfnwt")
 
-    pst = pyemu.Pst(os.path.join(new_model_ws,"freyberg_pest.pst"))
+    pst = pyemu.Pst(os.path.join(new_model_ws,"freyberg.pst"))
     mc = pyemu.MonteCarlo(pst=pst)
     os.chdir(new_model_ws)
-    cov = pyemu.Cov.from_ascii("freyberg_pest.pst.prior.cov")
+    cov = pyemu.Cov.from_ascii("freyberg.pst.prior.cov")
     mc.draw(100,cov=cov)
     #pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None, model=helper.m)
     #pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None)
@@ -556,8 +556,8 @@ if __name__ == "__main__":
     #add_pars_test()
     #setattr_test()
     # run_array_pars()
-    from_flopy_test()
-    #plot_flopy_par_ensemble_test()
+    #from_flopy_test()
+    plot_flopy_par_ensemble_test()
     #add_pi_test()
     # regdata_test()
     # nnz_groups_test()
