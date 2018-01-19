@@ -2278,19 +2278,25 @@ class Cov(Matrix):
             line = line.strip()
             if 'start' in line:
                 if 'standard_deviation' in line:
+                    std_mult = 1.0
                     while True:
                         line2 = f.readline().strip().lower()
                         if line2.strip().lower().startswith("end"):
                             break
+
+
                         raw = line2.strip().split()
                         name,val = raw[0], float(raw[1])
-                        x[idx, idx] = val**2
-                        if name in row_names:
-                            raise Exception("Cov.from_uncfile():" +
-                                            "duplicate name: " + str(name))
-                        row_names.append(name)
-                        col_names.append(name)
-                        idx += 1
+                        if name == "std_multiplier":
+                            std_mult = val
+                        else:
+                            x[idx, idx] = (val*std_mult)**2
+                            if name in row_names:
+                                raise Exception("Cov.from_uncfile():" +
+                                                "duplicate name: " + str(name))
+                            row_names.append(name)
+                            col_names.append(name)
+                            idx += 1
 
                 elif 'covariance_matrix' in line:
                     isdiagonal = False
@@ -2353,6 +2359,8 @@ class Cov(Matrix):
                 if 'standard_deviation' in line:
                     while True:
                         line2 = f.readline().strip().lower()
+                        if "std_multiplier" in line2:
+                            continue
                         if line2.strip().lower().startswith("end"):
                             break
                         nentries += 1
