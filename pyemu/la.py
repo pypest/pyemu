@@ -1029,3 +1029,24 @@ class LinearAnalysis(object):
         css.loc[:,"hill_css"] = (dss_sum * parval1) / (float(self.pst.nnz_obs)**2)
         return css
 
+    def get_cso_dataframe(self):
+        """
+        get a dataframe of composite observation sensitivity, as returned by PEST in the
+        seo file.
+
+        Note that this formulation deviates slightly from the PEST documentation in that the
+        values are divided by (npar-1) rather than by (npar).
+
+        The equation is cso_j = ((Q^1/2*J*J^T*Q^1/2)^1/2)_jj/(NPAR-1)
+        Returns:
+        cso : pandas.DataFrame
+
+        """
+        assert self.jco is not None
+        assert self.pst is not None
+        weights = self.pst.observation_data.loc[self.jco.to_dataframe().index,"weight"].copy().values
+        cso = np.diag(np.sqrt((self.qhalfx.x.dot(self.qhalfx.x.T))))/(float(self.pst.npar-1))
+        cso_df = pd.DataFrame.from_dict({'obnme':self.jco.to_dataframe().index,'cso':cso})
+        cso_df.index=cso_df['obnme']
+        cso_df.drop('obnme', axis=1, inplace=True)
+        return cso_df
