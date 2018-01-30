@@ -220,7 +220,8 @@ class Ensemble(pd.DataFrame):
                 mean_values=mean_values,**kwargs)
         return e
 
-    def reseed(self):
+    @staticmethod
+    def reseed():
         """method to reset the numpy.random seed using the pyemu.en
         SEED global variable
 
