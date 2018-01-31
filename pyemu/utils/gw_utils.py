@@ -915,4 +915,187 @@ def apply_sfr_seg_parameters():
     sfr.write_file(filename=pars["sfr_filename"])
     return sfr
 
+def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
+                  include_path=False):
+    """setup observations using the sfr ASCII output file.  Setups
+    the ability to aggregate flows for groups of segments.  Applies
+    only flow to aquier and flow out.
+
+    Parameters
+    ----------
+    sft_out_file : str
+        the existing SFR output file
+    seg_group_dict : dict
+        a dictionary of SFR segements to aggregate together for a single obs.
+        the key value in the dict is the base observation name. If None, all segments
+        are used as individual observations. Default is None
+    model : flopy.mbase
+        a flopy model.  If passed, the observation names will have the datetime of the
+        observation appended to them.  If None, the observation names will have the
+        stress period appended to them. Default is None.
+    include_path : bool
+        flag to prepend sfr_out_file path to sfr_obs.config.  Useful for setting up
+        process in separate directory for where python is running.
+
+
+    Returns
+    -------
+    df : pd.DataFrame
+        dataframe of obsnme, obsval and obgnme if inschek run was successful.  Else None
+
+    """
+
+    sfr_dict = load_sfr_out(sfr_out_file)
+    kpers = list(sfr_dict.keys())
+    kpers.sort()
+
+    if seg_group_dict is None:
+        seg_group_dict = {"seg{0:04d}".format(s):s for s in sfr_dict[kpers[0]].segment}
+
+
+    sfr_segs = set(sfr_dict[list(sfr_dict.keys())[0]].segment)
+    keys = ["sfr_out_file"]
+    values = [sfr_out_file]
+    for oname,segs in seg_group_dict.items():
+        if np.isscalar(segs):
+            segs_set = {segs}
+            segs = [segs]
+        else:
+            segs_set = set(segs)
+        diff =  segs_set.difference(sfr_segs)
+        if len(diff) > 0:
+            raise Exception("the following segs listed with oname {0} where not found: {1}".
+                            format(oname,','.join([str(s) for s in diff])))
+        for seg in segs:
+            keys.append(oname)
+            values.append(seg)
+
+    df_key = pd.DataFrame({"obs_base":keys,"segment":values})
+    if include_path:
+        pth = os.path.join(*os.path.split(sfr_out_file)[:-1],"sfr_obs.config")
+    else:
+        pth = "sfr_obs.config"
+    print("writing 'sfr_obs.config' to {0}".format(pth))
+    df_key.to_csv(pth)
+    df = apply_sfr_obs()
+    if model is not None:
+        dts = (pd.to_datetime(model.start_datetime) + pd.to_timedelta(np.cumsum(model.dis.perlen.array),unit='d')).date
+        df.loc[:,"datetime"] = df.kper.apply(lambda x: dts[x])
+        df.loc[:,"time_str"] = df.datetime.apply(lambda x: x.strftime("%Y%M%d"))
+    else:
+        df.loc[:,"time_str"] = df.kper.apply(lambda x: "{0:04d}".format(x))
+    df.loc[:,"flaqx_obsnme"] = df.apply(lambda x: "{0}_{1}_{2}".format("fa",x.obs_base,x.time_str),axis=1)
+    df.loc[:,"flout_obsnme"] = df.apply(lambda x: "{0}_{1}_{2}".format("fo",x.obs_base,x.time_str),axis=1)
+
+    if ins_file is None:
+        ins_file = sfr_out_file + ".processed.ins"
+
+    with open(ins_file,'w') as f:
+        f.write("pif ~\nl1\n")
+        for fla,flo in zip(df.flaqx_obsnme,df.flout_obsnme):
+            f.write("l1 w w !{0}! !{1}!\n".format(fla,flo))
+
+    df = _try_run_inschek(ins_file,sfr_out_file+".processed")
+    df.loc[:,"obsnme"] = df.index.values
+    df.obgnme = df.obsnme.apply(lambda x: "flaqx" if x.startswith("fa") else "flout")
+    return(df)
+
+
+def apply_sfr_obs():
+    """apply the sfr observation process - pairs with setup_sfr_obs().
+    requires sfr_obs.config.  Writes <sfr_out_file>.processed, where
+    <sfr_out_file> is defined in "sfr_obs.config"
+
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    df : pd.DataFrame
+        a dataframe of aggregrated sfr segment aquifer and outflow
+    """
+    assert os.path.exists("sfr_obs.config")
+    df_key = pd.read_csv("sfr_obs.config",index_col=0)
+
+    assert df_key.iloc[0,0] == "sfr_out_file",df_key.iloc[0,:]
+    sfr_out_file = df_key.iloc[0,1]
+    df_key = df_key.iloc[1:,:]
+    df_key.loc[:, "segment"] = df_key.segment.apply(np.int)
+    df_key.index = df_key.segment
+    seg_group_dict = df_key.groupby(df_key.obs_base).groups
+
+    sfr_kper = load_sfr_out(sfr_out_file)
+    kpers = list(sfr_kper.keys())
+    kpers.sort()
+    #results = {o:[] for o in seg_group_dict.keys()}
+    results = []
+    for kper in kpers:
+        df = sfr_kper[kper]
+        for obs_base,segs in seg_group_dict.items():
+            agg = df.loc[segs.values,:].sum()
+            #print(obs_base,agg)
+            results.append([kper,obs_base,agg["flaqx"],agg["flout"]])
+    df = pd.DataFrame(data=results,columns=["kper","obs_base","flaqx","flout"])
+    df.to_csv(sfr_out_file+".processed",sep=' ',index=False)
+    return df
+
+
+
+
+
+def load_sfr_out(sfr_out_file):
+    """load an ASCII SFR output file into a dictionary of kper: dataframes.  aggregates
+    segments and only returns flow to aquifer and flow out.
+
+    Parameters
+    ----------
+    sfr_out_file : str
+        SFR ASCII output file
+
+    Returns
+    -------
+        sfr_dict : dict
+            dictionary of {kper:dataframe}
+
+    """
+    assert os.path.exists(sfr_out_file),"couldn't find sft_out_file {0}".\
+        format(sfr_out_file)
+    tag = " stream listing"
+    lcount = 0
+    sfr_dict = {}
+    with open(sfr_out_file) as f:
+        while True:
+            line = f.readline().lower()
+            lcount += 1
+            if line == '':
+                break
+            if line.startswith(tag):
+                raw = line.strip().split()
+                kper = int(raw[3]) - 1
+                kstp = int(raw[5]) - 1
+                [f.readline() for _ in range(4)] #skip to where the data starts
+                lcount += 4
+                dlines = []
+                while True:
+                    dline = f.readline()
+                    lcount += 1
+                    if dline.strip() == '':
+                        break
+                    draw = dline.strip().split()
+                    dlines.append(draw)
+                df = pd.DataFrame(data=np.array(dlines)).iloc[:,[3,6,7]]
+                df.columns = ["segment","flaqx","flout"]
+                df.loc[:,"segment"] = df.segment.apply(np.int)
+                df.loc[:,"flaqx"] = df.flaqx.apply(np.float)
+                df.loc[:,"flout"] = df.flout.apply(np.float)
+                df.index = df.segment
+                df = df.groupby(df.segment).sum()
+                df.loc[:,"segment"] = df.index
+                if kper in sfr_dict.keys():
+                    print("multiple entries found for kper {0}, replacing...".format(kper))
+                sfr_dict[kper] = df
+    return sfr_dict
+
 
