@@ -1341,7 +1341,7 @@ class PstFromFlopyModel(object):
 
     def setup_sfr_obs(self):
         """setup sfr ASCII observations"""
-        if self.sfr_obs is None:
+        if not self.sfr_obs:
             return
 
         if self.m.sfr is None:
