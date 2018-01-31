@@ -61,7 +61,7 @@ class Phi(object):
         return d
 
     def _phi_report(self,phi_csv,phi_vec,cur_lam=0.0):
-        phi_csv.write("{0},{1},{2},{3},{4},{5},{6},".format(self.em.iter_num,
+        phi_csv.write("{0},{1},{2},{3},{4},{5},{6},{7},".format(self.em.iter_num,
                                                              self.em.total_runs,
                                                              cur_lam,
                                                              phi_vec.min(),

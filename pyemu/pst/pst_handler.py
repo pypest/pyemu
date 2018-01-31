@@ -689,7 +689,9 @@ class Pst(object):
 
         for line in f:
             if line.strip().startswith("++") and '#' not in line:
-                args = line.replace('++','').strip().split()
+                #args = line.replace('++','').strip().split()
+                args = line.replace("++",'').strip().split(')')
+                args = [a for a in args if a != '']
                 #args = ['++'+arg.strip() for arg in args]
                 #self.pestpp_lines.extend(args)
                 keys = [arg.split('(')[0] for arg in args]
@@ -997,6 +999,8 @@ class Pst(object):
             self.reg_data.write(f_out)
 
         for key,value in self.pestpp_options.items():
+            if isinstance(value,list):
+                value  = ','.join([str(v) for v in value])
             f_out.write("++{0}({1})\n".format(str(key),str(value)))
 
         f_out.close()
