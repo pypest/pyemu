@@ -1189,6 +1189,9 @@ class PstFromFlopyModel(object):
         (e.g. MODFLOW-NWT_x64, MODFLOWNWT, mfnwt, etc). Default is None.
     build_prior : bool
         flag to build prior covariance matrix. Default is Triue
+    sfr_obs : bool
+        flag to include observations of flow and aquifer exchange from
+        the sfr ASCII output file
 
 
     Returns
@@ -1215,7 +1218,8 @@ class PstFromFlopyModel(object):
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
                  external_ins_out_pairs=None,extra_pre_cmds=None,
                  extra_model_cmds=None,extra_post_cmds=None,
-                 tmp_files=None,model_exe_name=None,build_prior=True):
+                 tmp_files=None,model_exe_name=None,build_prior=True,
+                 sfr_obs=False):
 
         self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
         self.log = self.logger.log
@@ -1255,6 +1259,7 @@ class PstFromFlopyModel(object):
 
         self.obssim_smp_pairs = obssim_smp_pairs
         self.hds_kperk = hds_kperk
+        self.sfr_obs = sfr_obs
         self.frun_pre_lines = []
         self.frun_model_lines = []
         self.frun_post_lines = []
@@ -1332,6 +1337,31 @@ class PstFromFlopyModel(object):
                  format(self.m.model_ws))
 
         self.logger.statement("all done")
+
+
+    def setup_sfr_obs(self):
+        """setup sfr ASCII observations"""
+        if self.sfr_obs is None:
+            return
+
+        if self.m.sfr is None:
+            self.logger.lraise("no sfr package found...")
+        org_sfr_out_file = os.path.join(self.org_model_ws,"{0}.sfr.out".format(self.m.name))
+        if not os.path.exists(org_sfr_out_file):
+            self.logger.lraise("setup_sfr_obs() error: could not locate existing sfr out file: {0}".
+                               format(org_sfr_out_file))
+        new_sfr_out_file = os.path.join(self.m.model_ws,os.path.split(org_sfr_out_file)[-1])
+        shutil.copy2(org_sfr_out_file,new_sfr_out_file)
+        seg_group_dict = None
+        if isinstance(self.sfr_obs,dict):
+            seg_group_dict = arg
+
+        df = pyemu.gw_utils.setup_sfr_obs(new_sfr_out_file,seg_group_dict=seg_group_dict,
+                                          model=self.m,include_path=True)
+        if df is not None:
+            self.obs_dfs["sfr"] = df
+        self.frun_post_lines.append("pyemu.gw_utils.apply_sfr_obs()")
+
 
     def setup_sfr_pars(self):
         """setup multiplier parameters for sfr segment data"""
@@ -1938,9 +1968,10 @@ class PstFromFlopyModel(object):
 
         """
         obs_methods = [self.setup_water_budget_obs,self.setup_hyd,
-                       self.setup_smp,self.setup_hob,self.setup_hds]
+                       self.setup_smp,self.setup_hob,self.setup_hds,
+                       self.setup_sfr_obs]
         obs_types = ["mflist water budget obs","hyd file",
-                     "external obs-sim smp files","hob","hds"]
+                     "external obs-sim smp files","hob","hds","sfr"]
         self.obs_dfs = {}
         for obs_method, obs_type in zip(obs_methods,obs_types):
             self.log("processing obs type {0}".format(obs_type))

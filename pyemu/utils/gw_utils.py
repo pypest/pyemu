@@ -952,10 +952,9 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
     if seg_group_dict is None:
         seg_group_dict = {"seg{0:04d}".format(s):s for s in sfr_dict[kpers[0]].segment}
 
-
     sfr_segs = set(sfr_dict[list(sfr_dict.keys())[0]].segment)
     keys = ["sfr_out_file"]
-    values = [sfr_out_file]
+    values = [os.path.split(sfr_out_file)[-1]]
     for oname,segs in seg_group_dict.items():
         if np.isscalar(segs):
             segs_set = {segs}
@@ -972,13 +971,23 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
 
     df_key = pd.DataFrame({"obs_base":keys,"segment":values})
     if include_path:
-        pth = os.path.join(os.path.split(sfr_out_file)[:-1])
-        pth = os.path.join(pth,"sfr_obs.config")
+        pth = os.path.join(*[p for p in os.path.split(sfr_out_file)[:-1]])
+        config_file = os.path.join(pth,"sfr_obs.config")
     else:
-        pth = "sfr_obs.config"
-    print("writing 'sfr_obs.config' to {0}".format(pth))
-    df_key.to_csv(pth)
-    df = apply_sfr_obs()
+        config_file = "sfr_obs.config"
+    print("writing 'sfr_obs.config' to {0}".format(config_file))
+    df_key.to_csv(config_file)
+
+    bd = '.'
+    if include_path:
+        bd = os.getcwd()
+        os.chdir(pth)
+    try:
+        df = apply_sfr_obs()
+    except Exception as e:
+        os.chdir(bd)
+        raise Exception("error in apply_sfr_obs(): {0}".format(str(e)))
+    os.chdir(bd)
     if model is not None:
         dts = (pd.to_datetime(model.start_datetime) + pd.to_timedelta(np.cumsum(model.dis.perlen.array),unit='d')).date
         df.loc[:,"datetime"] = df.kper.apply(lambda x: dts[x])
@@ -996,7 +1005,16 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
         for fla,flo in zip(df.flaqx_obsnme,df.flout_obsnme):
             f.write("l1 w w !{0}! !{1}!\n".format(fla,flo))
 
-    df = _try_run_inschek(ins_file,sfr_out_file+".processed")
+    df = None
+    pth = os.path.split(ins_file)[:-1]
+    pth = os.path.join(*pth)
+    bd = os.getcwd()
+    os.chdir(pth)
+    try:
+        df = _try_run_inschek(os.path.split(ins_file)[-1],os.path.split(sfr_out_file+".processed")[-1])
+    except Exception as e:
+        pass
+    os.chdir(bd)
     if df is not None:
         df.loc[:,"obsnme"] = df.index.values
         df.obgnme = df.obsnme.apply(lambda x: "flaqx" if x.startswith("fa") else "flout")
@@ -1062,7 +1080,7 @@ def load_sfr_out(sfr_out_file):
             dictionary of {kper:dataframe}
 
     """
-    assert os.path.exists(sfr_out_file),"couldn't find sft_out_file {0}".\
+    assert os.path.exists(sfr_out_file),"couldn't find sfr out file {0}".\
         format(sfr_out_file)
     tag = " stream listing"
     lcount = 0
