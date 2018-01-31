@@ -972,7 +972,8 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
 
     df_key = pd.DataFrame({"obs_base":keys,"segment":values})
     if include_path:
-        pth = os.path.join(*os.path.split(sfr_out_file)[:-1],"sfr_obs.config")
+        pth = os.path.join(os.path.split(sfr_out_file)[:-1])
+        pth = os.path.join(pth,"sfr_obs.config")
     else:
         pth = "sfr_obs.config"
     print("writing 'sfr_obs.config' to {0}".format(pth))
@@ -996,9 +997,10 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
             f.write("l1 w w !{0}! !{1}!\n".format(fla,flo))
 
     df = _try_run_inschek(ins_file,sfr_out_file+".processed")
-    df.loc[:,"obsnme"] = df.index.values
-    df.obgnme = df.obsnme.apply(lambda x: "flaqx" if x.startswith("fa") else "flout")
-    return(df)
+    if df is not None:
+        df.loc[:,"obsnme"] = df.index.values
+        df.obgnme = df.obsnme.apply(lambda x: "flaqx" if x.startswith("fa") else "flout")
+        return df
 
 
 def apply_sfr_obs():
