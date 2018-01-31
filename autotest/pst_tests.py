@@ -355,16 +355,17 @@ def from_flopy_test():
 
     new_model_ws = "temp_pst_from_flopy"
 
-    # add sfr to nam file for testing
-    #sfr_nam_file = "sfr_" + nam_file
-    #shutil.copy2(os.path.join(org_model_ws, nam_file), os.path.join(org_model_ws, sfr_nam_file))
-    #f = open(os.path.join(org_model_ws, sfr_nam_file), 'a')
-    #f.write("SFR  55 freyberg.sfr")
-    #f.close()
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
-                                             model_exe_name="mfnwt",sfr_pars=True,sfr_obs=True)
-
+                                             model_exe_name="mfnwt",sfr_pars=True,sfr_obs=True,
+                                             all_wells=True)
+    bd = os.getcwd()
+    os.chdir(new_model_ws)
+    try:
+        pyemu.helpers.apply_bc_pars()
+    except:
+        pass
+    os.chdir(bd)
     pp_props = [["upw.ss",[0,1]],["upw.ss",1],["upw.ss",2],["extra.prsity",0],\
                 ["rch.rech",0],["rch.rech",[1,2]]]
     helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
@@ -556,8 +557,8 @@ if __name__ == "__main__":
     #add_pars_test()
     #setattr_test()
     # run_array_pars()
-    #from_flopy_test()
-    plot_flopy_par_ensemble_test()
+    from_flopy_test()
+    #plot_flopy_par_ensemble_test()
     #add_pi_test()
     # regdata_test()
     # nnz_groups_test()
