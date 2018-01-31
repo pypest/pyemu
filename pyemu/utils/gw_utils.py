@@ -954,7 +954,10 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
 
     sfr_segs = set(sfr_dict[list(sfr_dict.keys())[0]].segment)
     keys = ["sfr_out_file"]
-    values = [os.path.split(sfr_out_file)[-1]]
+    if include_path:
+        values = [os.path.split(sfr_out_file)[-1]]
+    else:
+        values = [sfr_out_file]
     for oname,segs in seg_group_dict.items():
         if np.isscalar(segs):
             segs_set = {segs}

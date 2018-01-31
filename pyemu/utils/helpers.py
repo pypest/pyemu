@@ -1354,7 +1354,7 @@ class PstFromFlopyModel(object):
         shutil.copy2(org_sfr_out_file,new_sfr_out_file)
         seg_group_dict = None
         if isinstance(self.sfr_obs,dict):
-            seg_group_dict = arg
+            seg_group_dict = self.sfr_obs
 
         df = pyemu.gw_utils.setup_sfr_obs(new_sfr_out_file,seg_group_dict=seg_group_dict,
                                           model=self.m,include_path=True)
