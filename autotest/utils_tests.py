@@ -914,12 +914,26 @@ def sfr_helper_test():
     assert (sd1.hcond1 * 2.0).sum() == sd2.hcond1.sum()
 
 
+def sfr_obs_test():
+    import os
+    import pyemu
+    import flopy
+
+    sfr_file = os.path.join("utils","freyberg.sfr.out")
+    pyemu.gw_utils.setup_sfr_obs(sfr_file)
+    pyemu.gw_utils.setup_sfr_obs(sfr_file,seg_group_dict={"obs1":[1,4],"obs2":[16,17,18,19,22,23]})
+
+    m = flopy.modflow.Modflow.load("freyberg.nam",model_ws="utils",load_only=[],check=False)
+    pyemu.gw_utils.setup_sfr_obs(sfr_file,model=m)
+    pyemu.gw_utils.setup_sfr_obs(sfr_file, seg_group_dict={"obs1": [1, 4], "obs2": [16, 17, 18, 19, 22, 23]},model=m)
+
 if __name__ == "__main__":
+    sfr_obs_test()
     #setup_pp_test()
     #sfr_helper_test()
     #gw_sft_ins_test()
     # par_knowledge_test()
-    grid_obs_test()
+    #grid_obs_test()
     #plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()

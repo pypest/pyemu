@@ -1189,6 +1189,14 @@ class PstFromFlopyModel(object):
         (e.g. MODFLOW-NWT_x64, MODFLOWNWT, mfnwt, etc). Default is None.
     build_prior : bool
         flag to build prior covariance matrix. Default is Triue
+    sfr_obs : bool
+        flag to include observations of flow and aquifer exchange from
+        the sfr ASCII output file
+    all_wells : bool
+        flag to add multiplier parameters for every wells in all stress periods.
+        These parameters are treated as independent - not correlated in space or
+        time to each other or any other parameters.  If True, 'wel.flux' must not
+        be in bc_props
 
 
     Returns
@@ -1215,7 +1223,8 @@ class PstFromFlopyModel(object):
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
                  external_ins_out_pairs=None,extra_pre_cmds=None,
                  extra_model_cmds=None,extra_post_cmds=None,
-                 tmp_files=None,model_exe_name=None,build_prior=True):
+                 tmp_files=None,model_exe_name=None,build_prior=True,
+                 sfr_obs=False, all_wells=True):
 
         self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
         self.log = self.logger.log
@@ -1228,6 +1237,7 @@ class PstFromFlopyModel(object):
         self.arr_org = "arr_org"
         self.arr_mlt = "arr_mlt"
         self.bc_org = "bc_org"
+        self.bc_mlt = "bc_mlt"
         self.forward_run_file = "forward_run.py"
 
         self.remove_existing = remove_existing
@@ -1255,6 +1265,7 @@ class PstFromFlopyModel(object):
 
         self.obssim_smp_pairs = obssim_smp_pairs
         self.hds_kperk = hds_kperk
+        self.sfr_obs = sfr_obs
         self.frun_pre_lines = []
         self.frun_model_lines = []
         self.frun_post_lines = []
@@ -1300,7 +1311,7 @@ class PstFromFlopyModel(object):
 
         self.tpl_files,self.in_files = [],[]
         self.ins_files,self.out_files = [],[]
-
+        self.all_wells = all_wells
         self.setup_mult_dirs()
 
         self.mlt_files = []
@@ -1309,6 +1320,8 @@ class PstFromFlopyModel(object):
         self.mlt_counter = {}
         self.par_dfs = {}
         self.mlt_dfs = []
+        if self.all_wells:
+            self.setup_all_wells()
         self.setup_bc_pars()
         self.setup_array_pars()
 
@@ -1332,6 +1345,31 @@ class PstFromFlopyModel(object):
                  format(self.m.model_ws))
 
         self.logger.statement("all done")
+
+
+    def setup_sfr_obs(self):
+        """setup sfr ASCII observations"""
+        if not self.sfr_obs:
+            return
+
+        if self.m.sfr is None:
+            self.logger.lraise("no sfr package found...")
+        org_sfr_out_file = os.path.join(self.org_model_ws,"{0}.sfr.out".format(self.m.name))
+        if not os.path.exists(org_sfr_out_file):
+            self.logger.lraise("setup_sfr_obs() error: could not locate existing sfr out file: {0}".
+                               format(org_sfr_out_file))
+        new_sfr_out_file = os.path.join(self.m.model_ws,os.path.split(org_sfr_out_file)[-1])
+        shutil.copy2(org_sfr_out_file,new_sfr_out_file)
+        seg_group_dict = None
+        if isinstance(self.sfr_obs,dict):
+            seg_group_dict = self.sfr_obs
+
+        df = pyemu.gw_utils.setup_sfr_obs(new_sfr_out_file,seg_group_dict=seg_group_dict,
+                                          model=self.m,include_path=True)
+        if df is not None:
+            self.obs_dfs["sfr"] = df
+        self.frun_post_lines.append("pyemu.gw_utils.apply_sfr_obs()")
+
 
     def setup_sfr_pars(self):
         """setup multiplier parameters for sfr segment data"""
@@ -1362,6 +1400,9 @@ class PstFromFlopyModel(object):
  #       if len(self.bc_props) > 0:
         if self.bc_props is not None:
             set_dirs.append(self.bc_org)
+        if self.all_wells:
+            set_dirs.append(self.bc_mlt)
+
         for d in set_dirs:
             d = os.path.join(self.m.model_ws,d)
             self.log("setting up '{0}' dir".format(d))
@@ -1938,9 +1979,10 @@ class PstFromFlopyModel(object):
 
         """
         obs_methods = [self.setup_water_budget_obs,self.setup_hyd,
-                       self.setup_smp,self.setup_hob,self.setup_hds]
+                       self.setup_smp,self.setup_hob,self.setup_hds,
+                       self.setup_sfr_obs]
         obs_types = ["mflist water budget obs","hyd file",
-                     "external obs-sim smp files","hob","hds"]
+                     "external obs-sim smp files","hob","hds","sfr"]
         self.obs_dfs = {}
         for obs_method, obs_type in zip(obs_methods,obs_types):
             self.log("processing obs type {0}".format(obs_type))
@@ -2350,6 +2392,45 @@ class PstFromFlopyModel(object):
             v = pyemu.geostats.ExpVario(contribution=1.0,a=180.0) # 180 correlation length
             self.bc_geostruct = pyemu.geostats.GeoStruct(variograms=v)
 
+    def setup_all_wells(self):
+        """helper to setup crazy numbers of well flux multipliers"""
+        self.log("setup all wells parameterization")
+        assert self.m.wel is not None
+        pak, attr, col = self.parse_pakattr("wel.flux")
+        k_parse = self.parse_k(np.arange(self.m.nper), np.arange(self.m.nper))
+        bc_filenames = []
+        for k in k_parse:
+            bc_filenames.append(self.bc_helper(k, pak, attr, col))
+        parnme = []
+        for bc_filename in bc_filenames:
+            bc_filename = os.path.split(bc_filename)[-1]
+            kper = int(bc_filename.split('.')[0].split('_')[1])
+            df = pd.read_csv(os.path.join(self.m.model_ws,self.bc_org,bc_filename),
+                             delim_whitespace=True,header=None,names=['l','r','c','flux'])
+            mlt_file = os.path.join(self.m.model_ws, self.bc_mlt, bc_filename)
+            df.loc[:,"flux"] = 1.0
+            df.to_csv(mlt_file,sep=' ',index=False,header=False)
+            df.loc[:,"parnme"] = ["wf{0:04d}_{1:03d}".format(i,kper) for i in range(df.shape[0])]
+            parnme.extend(list(df.parnme))
+            df.loc[:,"tpl_str"] = df.parnme.apply(lambda x: "~  {0}   ~".format(x))
+            tpl_file = os.path.join(self.m.model_ws,bc_filename+".tpl")
+
+
+            self.logger.statement("writin tpl file "+tpl_file)
+            with open(tpl_file,'w') as f:
+                f.write("ptf ~\n")
+                f.write(df.loc[:,['l','r','c','tpl_str']].to_string(index=False,header=False)+'\n')
+            self.tpl_files.append(os.path.split(tpl_file)[-1])
+            self.in_files.append(os.path.join(self.bc_mlt, bc_filename))
+
+        df = pd.DataFrame({"parnme":parnme}, index=parnme)
+        df.loc[:,"parubnd"] = 1.2
+        df.loc[:,"parlbnd"] = 0.8
+        df.loc[:,"pargp"] = df.parnme.apply(lambda x: "wflux_{0}".format(x.split('_')[-1]))
+        self.par_dfs["wel_flux"] = df
+        self.log("setup all wells parameterization")
+
+
     def bc_helper(self,k,pak,attr,col):
         """ helper to setup boundary condition multiplier parameters for a given
         k, pak, attr set.
@@ -2574,25 +2655,48 @@ def apply_bc_pars():
     should be added to the forward_run.py script
 
     """
-    df = pd.read_csv("bc_pars.dat",delim_whitespace=True)
-    for fname in df.filename.unique():
-        df_fname = df.loc[df.filename==fname,:]
-        names = df_fname.dtype_names.iloc[0].split(',')
-        bc_org = df_fname.bc_org.iloc[0]
-        model_ext_path = df_fname.model_ext_path.iloc[0]
-        df_list = pd.read_csv(os.path.join(bc_org,fname),
-                              delim_whitespace=True,header=None,names=names)
-        for col,val in zip(df_fname.col,df_fname.val):
-            df_list.loc[:,col] *= val
-        fmts = {}
-        for name in names:
-            if name in ["i","j","k","inode"]:
-                fmts[name] = pyemu.pst_utils.IFMT
-            else:
-                fmts[name] = pyemu.pst_utils.FFMT
-        with open(os.path.join(model_ext_path,fname),'w') as f:
-            f.write(df_list.to_string(header=False,index=False,formatters=fmts)+'\n')
-            #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
+    bcp = "bc_pars.dat"
+    if os.path.exists(bcp):
+        df = pd.read_csv(bcp,delim_whitespace=True)
+        for fname in df.filename.unique():
+            df_fname = df.loc[df.filename==fname,:]
+            names = df_fname.dtype_names.iloc[0].split(',')
+            bc_org = df_fname.bc_org.iloc[0]
+            model_ext_path = df_fname.model_ext_path.iloc[0]
+            df_list = pd.read_csv(os.path.join(bc_org,fname),
+                                  delim_whitespace=True,header=None,names=names)
+            for col,val in zip(df_fname.col,df_fname.val):
+                df_list.loc[:,col] *= val
+            fmts = {}
+            for name in names:
+                if name in ["i","j","k","inode"]:
+                    fmts[name] = pyemu.pst_utils.IFMT
+                else:
+                    fmts[name] = pyemu.pst_utils.FFMT
+            with open(os.path.join(model_ext_path,fname),'w') as f:
+                f.write(df_list.to_string(header=False,index=False,formatters=fmts)+'\n')
+                #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
+
+    mlt_dir = "bc_mlt"
+    org_dir = "bc_org"
+    names = ["l","r","c","flux"]
+    fmt = {"flux": pyemu.pst_utils.FFMT}
+    for c in names[:-1]:
+        fmt[c] = pyemu.pst_utils.IFMT
+    if not os.path.exists(mlt_dir) or not os.path.exists(org_dir):
+        return
+    mlt_files = os.listdir(mlt_dir)
+    for f in mlt_files:
+        if not "wel" in f.lower():
+            continue
+        org_file = os.path.join(org_dir,f)
+        mlt_file = os.path.join(mlt_dir,f)
+        df_org = pd.read_csv(org_file,header=None,delim_whitespace=True,names=names)
+        df_mlt = pd.read_csv(mlt_file,header=None,delim_whitespace=True,names=names)
+        assert df_org.shape == df_mlt.shape
+        df_org.iloc[:,-1] *= df_mlt.iloc[:,-1]
+        with open(f,'w') as fi:
+            fi.write(df_org.to_string(index=False,header=False,formatters=fmt)+'\n')
 
 
 def plot_flopy_par_ensemble(pst,pe,num_reals=None,model=None,fig_axes_generator=None,
