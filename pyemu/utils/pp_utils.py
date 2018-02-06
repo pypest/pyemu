@@ -228,20 +228,16 @@ def pp_tpl_to_dataframe(tpl_filename):
         a dataframe with "parnme" included
 
     """
-    with open(tpl_filename,'r') as f:
-        header = f.readline()
-        marker = header.strip().split()[1]
-        assert len(marker) == 1
-        first = f.readline().strip().split()
-        if len(first) == 5:
-            usecols = [0,1,2,3,4]
-        else:
-            usecols = [0,1,2,3,5]
+    inlines = open(tpl_filename, 'r').readlines()
+    header = inlines.pop(0)
+    marker = header.strip().split()[1]
+    assert len(marker) == 1
+    usecols = [0,1,2,3]
     df = pd.read_csv(tpl_filename, delim_whitespace=True,skiprows=1,
-                     header=None, names=PP_NAMES,usecols=usecols)
+                     header=None, names=PP_NAMES[:-1],usecols=usecols)
     df.loc[:,"name"] = df.name.apply(str).apply(str.lower)
-    df.loc[:,"tpl_str"] = df.pop("parval1").apply(str.lower)
-    df.loc[:,"parnme"] = df.tpl_str.apply(lambda x: x.replace(marker,''))
+    df["parnme"] = [i.split(marker)[1].strip() for i in inlines]
+
 
     return df
 
