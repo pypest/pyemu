@@ -184,13 +184,14 @@ class Matrix(object):
         self.isdiagonal = bool(isdiagonal)
         self.autoalign = bool(autoalign)
 
-    def reset_x(self,x):
+    def reset_x(self,x,copy=True):
         """reset self.__x private attribute
 
         Parameters
         ----------
         x : numpy.ndarray
-
+        copy : bool
+            flag to make a copy of 'x'. Defaule is True
         
         Note
         ----
@@ -198,7 +199,10 @@ class Matrix(object):
         
         """
         assert x.shape == self.shape
-        self.__x = x.copy()
+        if copy:
+            self.__x = x.copy()
+        else:
+            self.__x = x
 
     def __str__(self):
         """overload of object.__str__()
@@ -1198,7 +1202,7 @@ class Matrix(object):
                 extract = self.__x[idxs].copy()
             else:
                 extract = self.__x[idxs, :].copy()
-                extract = extract[:, idxs.copy()]
+                extract = extract[:, idxs]
             if drop:
                 self.drop(names, 0)
             return Cov(x=extract, names=names, isdiagonal=self.isdiagonal)
@@ -2085,14 +2089,20 @@ class Cov(Matrix):
         other_idxs = other.indices(other.names,0)
 
         if self.isdiagonal and other.isdiagonal:
-            self.x[self_idxs] = other.x[other_idxs]
-        else:
-            self_x = self.as_2d
-            other_x = other.as_2d
-            for i,ii in zip(self_idxs,other_idxs):
-                self_x[i,self_idxs] = other_x[ii,other_idxs]
-            self.reset_x(self_x)
+            self._Matrix__x[self_idxs] = other.x[other_idxs]
+            return
+        if self.isdiagonal:
+            self._Matrix__x = self.as_2d
             self.isdiagonal = False
+
+        print("allocating other_x")
+        other_x = other.as_2d
+        print("replacing")
+        for i,ii in zip(self_idxs,other_idxs):
+            self._Matrix__x[i,self_idxs] = other_x[ii,other_idxs]
+        #print("resetting")
+        #self.reset_x(self_x)
+        #self.isdiagonal = False
 
     def to_uncfile(self, unc_file, covmat_file="Cov.mat", var_mult=1.0):
         """write a PEST-compatible uncertainty file

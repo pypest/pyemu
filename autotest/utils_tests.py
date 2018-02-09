@@ -928,10 +928,10 @@ def sfr_obs_test():
     pyemu.gw_utils.setup_sfr_obs(sfr_file, seg_group_dict={"obs1": [1, 4], "obs2": [16, 17, 18, 19, 22, 23]},model=m)
 
 if __name__ == "__main__":
-    sfr_obs_test()
+    #sfr_obs_test()
     #setup_pp_test()
     #sfr_helper_test()
-    #gw_sft_ins_test()
+    gw_sft_ins_test()
     # par_knowledge_test()
     #grid_obs_test()
     #plot_summary_test()

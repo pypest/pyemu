@@ -234,6 +234,7 @@ def cov_replace_test():
     cov1 = pyemu.Cov.from_parameter_data(pst)
     cov2 = pyemu.Cov(x=cov1.x[:3],names=cov1.names[:3],isdiagonal=True) * 3
     cov1.replace(cov2)
+    print(cov1.x[0],cov2.x[0])
     assert cov1.x[0] == cov2.x[0]
 
     cov2 = pyemu.Cov(x=np.ones(cov1.shape) * 2,names=cov1.names[::-1])
