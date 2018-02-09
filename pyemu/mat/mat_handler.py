@@ -1352,7 +1352,7 @@ class Matrix(object):
                           row_names=self.row_names,
                           col_names=[col_name],isdiagonal=False)
 
-    def to_binary(self, filename):
+    def to_binary(self, filename,droptol=None):
         """write a PEST-compatible binary file.  The format is the same
         as the format used to storage a PEST Jacobian matrix
 
@@ -1360,12 +1360,16 @@ class Matrix(object):
         ----------
         filename : str
             filename to save binary file
+        droptol : float
+            absolute value tolerance to make values smaller than zero.  Default is None
 
         """
         if self.isdiagonal:
             #raise NotImplementedError()
             self.__x = self.as_2d
             self.isdiagonal = False
+        if droptol is not None:
+            self.x[np.abs(self.x) < droptol] = 0.0
         f = open(filename, 'wb')
         nnz = np.count_nonzero(self.x) #number of non-zero entries
         # write the header

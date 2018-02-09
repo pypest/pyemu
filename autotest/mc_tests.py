@@ -421,16 +421,26 @@ def homegrown_draw_test():
     v = pyemu.geostats.ExpVario(contribution=1.0,a=1.0)
     gs = pyemu.geostats.GeoStruct(variograms=[v])
 
-    npar = 1000
+    npar = 20
     pst = pyemu.pst_utils.generic_pst(["p{0:010d}".format(i) for i in range(npar)],["o1"])
+
 
     pst.parameter_data.loc[:,"partrans"] = "none"
     par = pst.parameter_data
     par.loc[:,"x"] = np.random.random(npar) * 10.0
     par.loc[:, "y"] = np.random.random(npar) * 10.0
 
+    par.loc[pst.par_names[0], "pargp"] = "zero"
+    par.loc[pst.par_names[1:10],"pargp"] = "one"
+    par.loc[pst.par_names[11:20], "pargp"] = "two"
+    print(pst.parameter_data.pargp.unique())
+
     cov = gs.covariance_matrix(par.x,par.y,par.parnme)
-    num_reals = 1000
+    num_reals = 10000
+
+    s = datetime.now()
+    pe_chunk = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov, num_reals=num_reals,use_homegrown=True,group_chunks=True)
+    d3 = (datetime.now() - s).total_seconds()
 
     mc = pyemu.MonteCarlo(pst=pst)
 
@@ -454,13 +464,14 @@ def homegrown_draw_test():
         #ax = plt.subplot(111)
         m1 = pe.loc[:,pname].mean()
         m2 = peh.loc[:, pname].mean()
-        print(par.loc[pname,"parval1"],m2,m1)
+        m3 = pe_chunk.loc[:,pname].mean()
+        print(par.loc[pname,"parval1"],m2,m1,m3)
         #pe.loc[:,pname].hist(ax=ax,bins=10,alpha=0.5)
         #peh.loc[:,pname].hist(ax=ax,bins=10,alpha=0.5)
         #plt.show()
         #break
 
-    print(d2,d1)
+    print(d2,d1,d3)
 
 def ensemble_covariance_test():
     import os
@@ -588,16 +599,18 @@ def to_from_binary_test():
     d = (pe - pe1).apply(np.abs)
     assert d.max().max() == 0.0
 
+
+
 if __name__ == "__main__":
     #binary_ensemble_dev()
-    to_from_binary_test()
+    #to_from_binary_test()
     #ensemble_covariance_test()
-    #homegrown_draw_test()
+    homegrown_draw_test()
     # change_weights_test()
     # phi_vector_test()
     # par_diagonal_draw_test()
     # obs_id_draw_test()
-    diagonal_cov_draw_test()
+    #diagonal_cov_draw_test()
     # pe_to_csv_test()
     # scale_offset_test()
     # mc_test()

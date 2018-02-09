@@ -802,7 +802,7 @@ class ParameterEnsemble(Ensemble):
         return new_pe
 
     @classmethod
-    def from_gaussian_draw(cls,pst,cov,num_reals=1,use_homegrown=False):
+    def from_gaussian_draw(cls,pst,cov,num_reals=1,use_homegrown=False,group_chunks=False):
         """ this is an experiemental method to help speed up draws
         for a really large (>1E6) ensemble sizes.  gets around the
         dataframe expansion-by-loc that is one col at a time.
@@ -818,6 +818,9 @@ class ParameterEnsemble(Ensemble):
         use_homegrown : bool
             flag to use home-grown full cov draws...much faster
             than numpy...
+        group_chunks : bool
+            flag to break up draws by par groups.  Only applies
+            to homegrown, full cov case. Default is False
 
         Returns
         -------
@@ -874,29 +877,62 @@ class ParameterEnsemble(Ensemble):
             if use_homegrown:
                 print("making full cov draws with home-grown goodness")
                 # generate standard normal vectors
-                snv = np.random.randn(num_reals, cov.shape[0])
+
 
                 # jwhite - 18-dec-17: the cholesky version is giving significantly diff
                 # results compared to eigen solve, so turning this off for now - need to
                 # learn more about this...
-                use_chol = False
-                if use_chol:
-                    a = np.linalg.cholesky(cov.as_2d)
+                # use_chol = False
+                # if use_chol:
+                #     a = np.linalg.cholesky(cov.as_2d)
+                #
+                # else:
+                # decompose...
+                if group_chunks:
+                    par_cov = pst.parameter_data.loc[cov.names,:]
+                    par_cov.loc[:,"idxs"] = np.arange(cov.shape[0])
+                    #print("algning cov")
+                    #cov.align(list(par_cov.parnme))
+                    pargps = par_cov.pargp.unique()
+                    print("reserving reals matrix")
+                    reals = np.zeros((num_reals,cov.shape[0]))
 
+                    for pargp in pargps:
+                        pnames = list(par_cov.loc[par_cov.pargp==pargp,"parnme"])
+                        idxs = par_cov.loc[par_cov.pargp == pargp, "idxs"]
+                        print("drawing for par group '{0}' with {1} pars "
+                              .format(pargp, len(idxs)))
+
+                        s,e = idxs[0],idxs[-1]
+                        #print("generating snv matrix")
+                        snv = np.random.randn(num_reals, len(pnames))
+
+                        cov_pg = cov.get(pnames)
+                        v, w = np.linalg.eigh(cov_pg.as_2d)
+                        a = np.dot(w, np.sqrt(np.diag(v)))
+                        pg_vals = vals[pnames]
+                        for i in range(num_reals):
+                            #v = snv[i,:]
+                            #p = np.dot(a,v)
+                            reals[i,idxs] =  pg_vals + np.dot(a,snv[i,:])
                 else:
-                    # decompose...
+
+                    print("generating snv matrix")
+                    snv = np.random.randn(num_reals, cov.shape[0])
+
+                    print("eigen solve for full cov")
                     v, w = np.linalg.eigh(cov.as_2d)
                     #w, v, other = np.linalg.svd(cov.as_2d,full_matrices=True,compute_uv=True)
 
                     # form projection matrix
-                    a = np.dot(w, np.diag(np.sqrt(v)))
+                    print("form projection")
+                    a = np.dot(w, np.sqrt(np.diag(v)))
 
-
-                # project...
-                reals = []
-                for vec in snv:
-                    real = vals + np.dot(a, vec)
-                    reals.append(real)
+                    # project...
+                    reals = []
+                    for vec in snv:
+                        real = vals + np.dot(a, vec)
+                        reals.append(real)
 
                 df = pd.DataFrame(reals, columns=common_names, index=real_names)
 
@@ -908,7 +944,6 @@ class ParameterEnsemble(Ensemble):
             #print(df.shape,cov.shape)
 
 
-        print("back transforming")
         df.loc[:,li] = 10.0**df.loc[:,li]
 
         # replace the realizations for fixed parameters with the original
