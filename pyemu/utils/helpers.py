@@ -163,7 +163,7 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_di
                 assert os.path.exists(item),"file {0} not found".\
                     format(item)
                 if item.lower().endswith(".tpl"):
-                    df = pyemu.gw_utils.pp_tpl_to_dataframe(item)
+                    df = pyemu.pp_utils.pp_tpl_to_dataframe(item)
                 elif item.lower.endswith(".csv"):
                     df = pd.read_csv(item)
             else:
