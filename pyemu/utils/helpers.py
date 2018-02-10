@@ -191,12 +191,12 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_di
                 print("getting diag var cov",df_zone.shape[0])
                 tpl_var = np.diag(full_cov.get(list(df_zone.parnme)).x)
                 if np.std(tpl_var) > 1.0e-6:
-                    warnings.warn("pilot points pars have different ranges" +\
+                    warnings.warn("pars have different ranges" +\
                                   " , using max range as variance for all pars")
                 tpl_var = tpl_var.max()
                 print("scaling full cov by diag var cov")
                 cov *= tpl_var
-                print("test for inversions")
+                print("test for inversion")
                 try:
                     ci = cov.inv
                 except:
@@ -205,6 +205,11 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_di
                                     format(cov.row_names[:3]))
                 print('replace in full cov')
                 full_cov.replace(cov)
+                d = np.diag(full_cov.x)
+                idx = np.argwhere(d==0.0)
+                for i in idx:
+                    print(full_cov.names[i])
+
     if par_knowledge_dict is not None:
         full_cov = condition_on_par_knowledge(full_cov,
                     par_knowledge_dict=par_knowledge_dict)

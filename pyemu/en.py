@@ -908,8 +908,29 @@ class ParameterEnsemble(Ensemble):
                         snv = np.random.randn(num_reals, len(pnames))
 
                         cov_pg = cov.get(pnames)
+                        try:
+                            cov_pg.inv
+                        except:
+                            covname = "trouble_{0}.cov".format(pargp)
+                            print('saving toubled cov matrix to {0}'.format(covname))
+                            cov_pg.to_ascii(covname)
+                            print(cov_pg.get_diagonal_vector())
+                            raise Exception("error inverting cov for par group '{0}', saved trouble cov to {1}".
+                                            format(pargp,covname))
                         v, w = np.linalg.eigh(cov_pg.as_2d)
-                        a = np.dot(w, np.sqrt(np.diag(v)))
+                        # check for near zero eig values
+
+                        #vdiag = np.diag(v)
+                        for i in range(v.shape[0]):
+                            if v[i] > 1.0e-10:
+                                pass
+                            else:
+                                print("near zero eigen value found",v[i],"at index",i," of ",v.shape[0])
+                                v[i] = 0.0
+                        vsqrt = np.sqrt(v)
+                        vsqrt[i:] = 0.0
+                        v = np.diag(vsqrt)
+                        a = np.dot(w, v)
                         pg_vals = vals[pnames]
                         for i in range(num_reals):
                             #v = snv[i,:]
@@ -953,7 +974,7 @@ class ParameterEnsemble(Ensemble):
         par = pst.parameter_data
         fixed_vals = par.loc[par.partrans=="fixed","parval1"]
         for fname,fval in zip(fixed_vals.index,fixed_vals.values):
-            print(fname)
+            #print(fname)
             df.loc[:,fname] = fval
 
         #print("apply tied")
@@ -1312,6 +1333,8 @@ class ParameterEnsemble(Ensemble):
         if self.istransformed:
             self._back_transform(inplace=True)
             retrans = True
+        if self.isnull().values.any():
+            warnings.warn("NaN in par ensemble")
         super(ParameterEnsemble,self).to_csv(*args,**kwargs)
         if retrans:
             self._transform(inplace=True)

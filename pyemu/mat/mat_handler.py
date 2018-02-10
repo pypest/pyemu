@@ -2103,7 +2103,7 @@ class Cov(Matrix):
         other_x = other.as_2d
         print("replacing")
         for i,ii in zip(self_idxs,other_idxs):
-            self._Matrix__x[i,self_idxs] = other_x[ii,other_idxs]
+            self._Matrix__x[i,self_idxs] = other_x[ii,other_idxs].copy()
         #print("resetting")
         #self.reset_x(self_x)
         #self.isdiagonal = False
