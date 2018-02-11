@@ -63,6 +63,23 @@ def schur_test():
     print(sc.get_par_group_contribution())
     print(sc.get_removed_obs_group_importance())
 
+def la_test_io():
+    from pyemu import Schur, Cov, Pst
+    w_dir = os.path.join("..","verification","henry")
+    forecasts = ["pd_ten","c_obs10_2"]
+    pst = Pst(os.path.join(w_dir,"pest.pst"))
+    cov = Cov.from_parameter_data(pst)
+    cov.to_binary(os.path.join("temp","pest.bin.cov"))
+    cov.to_ascii(os.path.join("temp","pest.txt.cov"))
+    sc_bin = Schur(jco=os.path.join(w_dir,"pest.jcb"),
+               forecasts=forecasts,
+               parcov=os.path.join("temp","pest.bin.cov"))
+
+    sc_ascii = Schur(jco=os.path.join(w_dir,"pest.jcb"),
+               forecasts=forecasts,
+               parcov=os.path.join("temp","pest.txt.cov"))
+
+
 
 def errvar_test_nonpest():
     import numpy as np
@@ -353,7 +370,8 @@ if __name__ == "__main__":
     #dataworth_test()
     #dataworth_next_test()
     #schur_test_nonpest()
-    schur_test()
+    #schur_test()
+    la_test_io()
     #errvar_test_nonpest()
     #errvar_test()
     #css_test()
