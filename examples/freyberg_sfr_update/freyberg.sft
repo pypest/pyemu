@@ -1,0 +1,8 @@
+       -40         3         0      1001         0                              # nsfinit, mxsfbc, icbcsf, ioutobs, ietsfr
+         1   0.50000   1.00000 0.0000010        10   1.00000         0 # isfsolv, wimp, wups, cclosesf, mxitersf, crntsf, iprtxmd
+         0         0                           -1 #coldsf
+         0         0                           -1 #dispsf
+       -40                 # nobssf
+         0       # ntmp - SP     0
+         0       # ntmp - SP     1
+         0       # ntmp - SP     2

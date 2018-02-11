@@ -350,29 +350,51 @@ def from_flopy_test():
     except:
         return
     import pyemu
-    org_model_ws = os.path.join("..","examples","Freyberg_transient")
+    org_model_ws = os.path.join("..","examples","freyberg_sfr_update")
     nam_file = "freyberg.nam"
-
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
     new_model_ws = "temp_pst_from_flopy"
 
-    # add sfr to nam file for testing
-    sfr_nam_file = "sfr_" + nam_file
-    shutil.copy2(os.path.join(org_model_ws, nam_file), os.path.join(org_model_ws, sfr_nam_file))
-    f = open(os.path.join(org_model_ws, sfr_nam_file), 'a')
-    f.write("SFR  55 freyberg.sfr")
-    f.close()
-    helper = pyemu.helpers.PstFromFlopyModel(sfr_nam_file, new_model_ws, org_model_ws,
+    hds_kperk = []
+    for k in range(m.nlay):
+        for kper in range(m.nper):
+            hds_kperk.append([kper, k])
+    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+                                         org_model_ws=org_model_ws,
+                                         zone_props=[["rch.rech",0],["rch.rech",[1,2]]],
+                                         remove_existing=True, hds_kperk=hds_kperk,
+                                         model_exe_name="mfnwt")
+    ph.pst.parameter_data.loc["rech0_zn1","parval1"] = 2.0
+
+    bd = os.getcwd()
+    os.chdir(new_model_ws)
+    #try:
+    ph.pst.write_input_files()
+    pyemu.helpers.apply_array_pars()
+    # except:
+    #     pass
+    os.chdir(bd)
+    return
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
-                                             model_exe_name="mfnwt",sfr_pars=True)
+                                             model_exe_name="mfnwt",sfr_pars=True,sfr_obs=True,
+                                             all_wells=True)
+    bd = os.getcwd()
+    os.chdir(new_model_ws)
+    try:
+        pyemu.helpers.apply_all_wells()
+    except:
+        pass
+    os.chdir(bd)
 
     pp_props = [["upw.ss",[0,1]],["upw.ss",1],["upw.ss",2],["extra.prsity",0],\
-                ["rch.rech",np.arange(182)],["rch.rech",np.arange(183,365)]]
+                ["rch.rech",0],["rch.rech",[1,2]]]
     helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
                                     pp_props=pp_props,hds_kperk=[0,0],remove_existing=True,
                                              model_exe_name="mfnwt")
 
-    m = flopy.modflow.Modflow.load(nam_file,model_ws=org_model_ws,exe_name="mfnwt")
-    const_props = [["rch.rech",i] for i in range(365)]
+    m = flopy.modflow.Modflow.load(nam_file,model_ws=org_model_ws,exe_name="mfnwt",check=False)
+    const_props = [["rch.rech",i] for i in range(m.nper)]
     helper = pyemu.helpers.PstFromFlopyModel(m,new_model_ws,
                                     const_props=const_props,hds_kperk=[0,0],remove_existing=True)
 
@@ -393,10 +415,10 @@ def from_flopy_test():
                                    zone_props=zone_props,hds_kperk=[0,0],remove_existing=True)
 
     # kper-level multipliers for boundary conditions
-    bc_props = [["drn.cond",None]]
-    for iper in range(365):
+    bc_props = []
+    for iper in range(m.nper):
         bc_props.append(["wel.flux",iper])
-        bc_props.append(["drn.elev",iper])
+        #bc_props.append(["drn.elev",iper])
     helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
                                     bc_props=bc_props,hds_kperk=[0,0],remove_existing=True)
 
@@ -556,8 +578,8 @@ if __name__ == "__main__":
     #add_pars_test()
     #setattr_test()
     # run_array_pars()
-    #from_flopy_test()
-    plot_flopy_par_ensemble_test()
+    from_flopy_test()
+    #plot_flopy_par_ensemble_test()
     #add_pi_test()
     # regdata_test()
     # nnz_groups_test()
