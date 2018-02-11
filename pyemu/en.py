@@ -842,7 +842,8 @@ class ParameterEnsemble(Ensemble):
         if list(vals.index.values) != cov.row_names:
             common_names = get_common_elements(vals.index.values,
                                                cov.row_names)
-
+            if len(common_names) == 0:
+                raise Exception("ParameterEnsemble::from_gaussian_draw() error: cov and pst share no common names")
             vals = vals.loc[common_names]
             cov = cov.get(common_names)
             pass
