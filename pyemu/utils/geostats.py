@@ -11,7 +11,7 @@ import multiprocessing as mp
 import warnings
 import numpy as np
 import pandas as pd
-from pyemu import Cov
+from pyemu.mat.mat_handler import Cov
 from pyemu.utils.gw_utils import pp_file_to_dataframe
 
 EPSILON = 1.0e-7

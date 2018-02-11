@@ -9,9 +9,8 @@ import numpy as np
 import pandas as pd
 from pyemu.mat.mat_handler import Matrix, Jco, Cov
 from pyemu.pst.pst_handler import Pst
+from pyemu.utils.helpers import _istextfile
 from .logger import Logger
-
-
 
 class LinearAnalysis(object):
     """The super class for linear analysis.  Can be used directly, but
@@ -189,7 +188,10 @@ class LinearAnalysis(object):
             self.log("loading cov: "+filename)
             if astype is None:
                 astype = Cov
-            m = astype.from_ascii(filename)
+            if _istextfile(filename):
+                m = astype.from_ascii(filename)
+            else:
+                m = astype.from_binary(filename)
             self.log("loading cov: "+filename)
         elif ext in["unc"]:
             self.log("loading unc: "+filename)
