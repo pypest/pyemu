@@ -143,9 +143,11 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_di
         pst = pyemu.Pst(pst)
     assert isinstance(pst,pyemu.Pst),"pst arg must be a Pst instance, not {0}".\
         format(type(pst))
+    print("building diagonal cov")
     full_cov = pyemu.Cov.from_parameter_data(pst,sigma_range=sigma_range)
     par = pst.parameter_data
     for gs,items in struct_dict.items():
+        print("processing ",gs)
         if isinstance(gs,str):
             gss = pyemu.geostats.read_struct_file(gs)
             if isinstance(gss,list):
@@ -182,22 +184,32 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_di
             for zone in zones:
                 df_zone = df.loc[df.zone==zone,:].copy()
                 df_zone.sort_values(by="parnme",inplace=True)
+                print("build cov matrix")
                 cov = gs.covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)
+                print("done")
                 # find the variance in the diagonal cov
-                tpl_var = np.diag(full_cov.get(list(df_zone.parnme),
-                                               list(df_zone.parnme)).x)
+                print("getting diag var cov",df_zone.shape[0])
+                tpl_var = np.diag(full_cov.get(list(df_zone.parnme)).x)
                 if np.std(tpl_var) > 1.0e-6:
-                    warnings.warn("pilot points pars have different ranges" +\
+                    warnings.warn("pars have different ranges" +\
                                   " , using max range as variance for all pars")
                 tpl_var = tpl_var.max()
+                print("scaling full cov by diag var cov")
                 cov *= tpl_var
+                print("test for inversion")
                 try:
                     ci = cov.inv
                 except:
                     df_zone.to_csv("prior_builder_crash.csv")
                     raise Exception("error inverting cov {0}".
                                     format(cov.row_names[:3]))
+                print('replace in full cov')
                 full_cov.replace(cov)
+                d = np.diag(full_cov.x)
+                idx = np.argwhere(d==0.0)
+                for i in idx:
+                    print(full_cov.names[i])
+
     if par_knowledge_dict is not None:
         full_cov = condition_on_par_knowledge(full_cov,
                     par_knowledge_dict=par_knowledge_dict)
@@ -1224,7 +1236,7 @@ class PstFromFlopyModel(object):
                  external_ins_out_pairs=None,extra_pre_cmds=None,
                  extra_model_cmds=None,extra_post_cmds=None,
                  tmp_files=None,model_exe_name=None,build_prior=True,
-                 sfr_obs=False, all_wells=True):
+                 sfr_obs=False, all_wells=False):
 
         self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
         self.log = self.logger.log
@@ -1444,7 +1456,8 @@ class PstFromFlopyModel(object):
             # prepare the flopy model
             self.org_model_ws = org_model_ws
             self.new_model_ws = new_model_ws
-            self.m = flopy.modflow.Modflow.load(model,model_ws=org_model_ws,check=False,verbose=True,forgive=False)
+            self.m = flopy.modflow.Modflow.load(model,model_ws=org_model_ws,
+                                                check=False,verbose=True,forgive=False)
             self.log("loading flopy model")
         else:
             self.m = model
@@ -1990,7 +2003,7 @@ class PstFromFlopyModel(object):
             self.log("processing obs type {0}".format(obs_type))
 
 
-    def build_prior(self, fmt="ascii",filename=None):
+    def build_prior(self, fmt="ascii",filename=None,droptol=None):
         """ build a prior parameter covariance matrix.
 
         Parameters
@@ -2001,6 +2014,9 @@ class PstFromFlopyModel(object):
             filename : str
                 the filename to save the prior cov matrix to.  If None, the name is formed using
                 model nam_file name.  Default is None.
+            droptol : float
+                tolerance for dropping near-zero values when writing compressed binary.
+                Default is None
 
         Returns
         -------
@@ -2060,7 +2076,7 @@ class PstFromFlopyModel(object):
         if fmt == 'ascii':
             cov.to_ascii(filename)
         elif fmt == 'binary':
-            cov.to_binary(filename)
+            cov.to_binary(filename,droptol=droptol)
         elif fmt == 'uncfile':
             cov.to_uncfile(filename)
         self.log("building prior covariance matrix")
@@ -2315,7 +2331,7 @@ class PstFromFlopyModel(object):
             attr = pak.stress_period_data
             return pak,attr,attrname
         else:
-            self.logger.lraise("unrecognized attr:{1}".format(attrname))
+            self.logger.lraise("unrecognized attr:{0}".format(attrname))
 
     def setup_bc_pars(self):
         """ main entry point for setting up boundary condition multiplier
@@ -2428,6 +2444,7 @@ class PstFromFlopyModel(object):
         df.loc[:,"parlbnd"] = 0.8
         df.loc[:,"pargp"] = df.parnme.apply(lambda x: "wflux_{0}".format(x.split('_')[-1]))
         self.par_dfs["wel_flux"] = df
+        self.frun_pre_lines.append("pyemu.helpers.apply_all_wells()")
         self.log("setup all wells parameterization")
 
 
@@ -2656,26 +2673,28 @@ def apply_bc_pars():
 
     """
     bcp = "bc_pars.dat"
-    if os.path.exists(bcp):
-        df = pd.read_csv(bcp,delim_whitespace=True)
-        for fname in df.filename.unique():
-            df_fname = df.loc[df.filename==fname,:]
-            names = df_fname.dtype_names.iloc[0].split(',')
-            bc_org = df_fname.bc_org.iloc[0]
-            model_ext_path = df_fname.model_ext_path.iloc[0]
-            df_list = pd.read_csv(os.path.join(bc_org,fname),
-                                  delim_whitespace=True,header=None,names=names)
-            for col,val in zip(df_fname.col,df_fname.val):
-                df_list.loc[:,col] *= val
-            fmts = {}
-            for name in names:
-                if name in ["i","j","k","inode"]:
-                    fmts[name] = pyemu.pst_utils.IFMT
-                else:
-                    fmts[name] = pyemu.pst_utils.FFMT
-            with open(os.path.join(model_ext_path,fname),'w') as f:
-                f.write(df_list.to_string(header=False,index=False,formatters=fmts)+'\n')
-                #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
+
+    df = pd.read_csv(bcp,delim_whitespace=True)
+    for fname in df.filename.unique():
+        df_fname = df.loc[df.filename==fname,:]
+        names = df_fname.dtype_names.iloc[0].split(',')
+        bc_org = df_fname.bc_org.iloc[0]
+        model_ext_path = df_fname.model_ext_path.iloc[0]
+        df_list = pd.read_csv(os.path.join(bc_org,fname),
+                              delim_whitespace=True,header=None,names=names)
+        for col,val in zip(df_fname.col,df_fname.val):
+            df_list.loc[:,col] *= val
+        fmts = {}
+        for name in names:
+            if name in ["i","j","k","inode"]:
+                fmts[name] = pyemu.pst_utils.IFMT
+            else:
+                fmts[name] = pyemu.pst_utils.FFMT
+        with open(os.path.join(model_ext_path,fname),'w') as f:
+            f.write(df_list.to_string(header=False,index=False,formatters=fmts)+'\n')
+            #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
+
+def apply_all_wells():
 
     mlt_dir = "bc_mlt"
     org_dir = "bc_org"

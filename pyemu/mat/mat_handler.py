@@ -184,13 +184,14 @@ class Matrix(object):
         self.isdiagonal = bool(isdiagonal)
         self.autoalign = bool(autoalign)
 
-    def reset_x(self,x):
+    def reset_x(self,x,copy=True):
         """reset self.__x private attribute
 
         Parameters
         ----------
         x : numpy.ndarray
-
+        copy : bool
+            flag to make a copy of 'x'. Defaule is True
         
         Note
         ----
@@ -198,7 +199,10 @@ class Matrix(object):
         
         """
         assert x.shape == self.shape
-        self.__x = x.copy()
+        if copy:
+            self.__x = x.copy()
+        else:
+            self.__x = x
 
     def __str__(self):
         """overload of object.__str__()
@@ -1198,7 +1202,7 @@ class Matrix(object):
                 extract = self.__x[idxs].copy()
             else:
                 extract = self.__x[idxs, :].copy()
-                extract = extract[:, idxs.copy()]
+                extract = extract[:, idxs]
             if drop:
                 self.drop(names, 0)
             return Cov(x=extract, names=names, isdiagonal=self.isdiagonal)
@@ -1348,7 +1352,7 @@ class Matrix(object):
                           row_names=self.row_names,
                           col_names=[col_name],isdiagonal=False)
 
-    def to_binary(self, filename):
+    def to_binary(self, filename,droptol=None):
         """write a PEST-compatible binary file.  The format is the same
         as the format used to storage a PEST Jacobian matrix
 
@@ -1356,12 +1360,16 @@ class Matrix(object):
         ----------
         filename : str
             filename to save binary file
+        droptol : float
+            absolute value tolerance to make values smaller than zero.  Default is None
 
         """
         if self.isdiagonal:
             #raise NotImplementedError()
             self.__x = self.as_2d
             self.isdiagonal = False
+        if droptol is not None:
+            self.x[np.abs(self.x) < droptol] = 0.0
         f = open(filename, 'wb')
         nnz = np.count_nonzero(self.x) #number of non-zero entries
         # write the header
@@ -2085,14 +2093,20 @@ class Cov(Matrix):
         other_idxs = other.indices(other.names,0)
 
         if self.isdiagonal and other.isdiagonal:
-            self.x[self_idxs] = other.x[other_idxs]
-        else:
-            self_x = self.as_2d
-            other_x = other.as_2d
-            for i,ii in zip(self_idxs,other_idxs):
-                self_x[i,self_idxs] = other_x[ii,other_idxs]
-            self.reset_x(self_x)
+            self._Matrix__x[self_idxs] = other.x[other_idxs]
+            return
+        if self.isdiagonal:
+            self._Matrix__x = self.as_2d
             self.isdiagonal = False
+
+        print("allocating other_x")
+        other_x = other.as_2d
+        print("replacing")
+        for i,ii in zip(self_idxs,other_idxs):
+            self._Matrix__x[i,self_idxs] = other_x[ii,other_idxs].copy()
+        #print("resetting")
+        #self.reset_x(self_x)
+        #self.isdiagonal = False
 
     def to_uncfile(self, unc_file, covmat_file="Cov.mat", var_mult=1.0):
         """write a PEST-compatible uncertainty file

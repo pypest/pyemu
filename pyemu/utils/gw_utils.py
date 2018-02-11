@@ -711,6 +711,13 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
     if len(missing) > 0:
         print(df.time)
         raise Exception("the following times are missing:{0}".format(','.join(missing)))
+    with open("sft_obs.config",'w') as f:
+        f.write(sft_file+'\n')
+        [f.write("{0:15.6E}\n".format(t)) for t in times]
+    df = apply_sft_obs()
+    utimes = df.time.unique()
+    for t in times:
+        assert t in utimes,"time {0} missing in processed dataframe".format(t)
     idx = df.time.apply(lambda x: x in times)
     if start_datetime is not None:
         start_datetime = pd.to_datetime(start_datetime)
@@ -736,20 +743,39 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
             #df_time.iloc[nstrm*(icomp):nstrm*(icomp+1),icomp_idx.loc["icomp"] = int(icomp+1)
             df_time.loc[idxs,"icomp"] = int(icomp+1)
 
-        df.loc[df_time.index,"ins_str"] = df_time.apply(lambda x: "l1 w w w !sfrc{0}_{1}_{2}! !swgw{0}_{1}_{2}! !gwcn{0}_{1}_{2}!\n".\
+        df.loc[df_time.index,"ins_str"] = df_time.apply(lambda x: "l1 w w !sfrc{0}_{1}_{2}! !swgw{0}_{1}_{2}! !gwcn{0}_{1}_{2}!\n".\
                                          format(x.sfr_node,x.icomp,x.time_str),axis=1)
     df.index = np.arange(df.shape[0])
     if ins_file is None:
-        ins_file = sft_file+".ins"
+        ins_file = sft_file+".processed.ins"
 
     with open(ins_file,'w') as f:
-        f.write("pif ~\nl2\n")
+        f.write("pif ~\nl1\n")
         [f.write(i) for i in df.ins_str]
-    df = _try_run_inschek(ins_file,sft_file)
+    df = _try_run_inschek(ins_file,sft_file+".processed")
     if df is not None:
         return df
     else:
         return None
+
+
+def apply_sft_obs():
+    times = []
+    with open("sft_obs.config") as f:
+        sft_file = f.readline().strip()
+        for line in f:
+            times.append(float(line.strip()))
+    df = pd.read_csv(sft_file,skiprows=1,delim_whitespace=True)
+    df.columns = [c.lower().replace("-", "_") for c in df.columns]
+
+    #normalize
+    for c in df.columns:
+        df.loc[df.loc[:,c]<1e-30,c] = 0.0
+        df.loc[df.loc[:, c] > 1e+30, c] = 1.0e+30
+    df.loc[:,"sfr_node"] = df.sfr_node.apply(np.int)
+    df = df.loc[df.time.apply(lambda x: x in times),:]
+    df.to_csv(sft_file+".processed",sep=' ',index=False)
+    return df
 
 
 def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hcond1","hcond2"],
@@ -994,7 +1020,7 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
     if model is not None:
         dts = (pd.to_datetime(model.start_datetime) + pd.to_timedelta(np.cumsum(model.dis.perlen.array),unit='d')).date
         df.loc[:,"datetime"] = df.kper.apply(lambda x: dts[x])
-        df.loc[:,"time_str"] = df.datetime.apply(lambda x: x.strftime("%Y%M%d"))
+        df.loc[:,"time_str"] = df.datetime.apply(lambda x: x.strftime("%Y%m%d"))
     else:
         df.loc[:,"time_str"] = df.kper.apply(lambda x: "{0:04d}".format(x))
     df.loc[:,"flaqx_obsnme"] = df.apply(lambda x: "{0}_{1}_{2}".format("fa",x.obs_base,x.time_str),axis=1)
