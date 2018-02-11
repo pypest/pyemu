@@ -891,8 +891,8 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
 
     #set some useful par info
     df.loc[:,"pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
-    df.loc[:,"parubnd"] = 1.1
-    df.loc[:,"parlbnd"] = 0.9
+    df.loc[:,"parubnd"] = 1.25
+    df.loc[:,"parlbnd"] = 0.75
     hpars = df.loc[df.pargp.apply(lambda x: x.startswith("hcond")),"parnme"]
     df.loc[hpars,"parubnd"] = 100.0
     df.loc[hpars, "parlbnd"] = 0.01
