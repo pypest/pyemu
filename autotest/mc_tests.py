@@ -436,10 +436,12 @@ def homegrown_draw_test():
     print(pst.parameter_data.pargp.unique())
 
     cov = gs.covariance_matrix(par.x,par.y,par.parnme)
-    num_reals = 10000
+    num_reals = 100
 
     s = datetime.now()
     pe_chunk = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov, num_reals=num_reals,use_homegrown=True,group_chunks=True)
+    print(pe_chunk.iloc[:,0])
+    return
     d3 = (datetime.now() - s).total_seconds()
 
     mc = pyemu.MonteCarlo(pst=pst)

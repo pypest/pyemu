@@ -2026,7 +2026,7 @@ class PstFromFlopyModel(object):
         """
 
         fmt = fmt.lower()
-        acc_fmts = ["ascii","binary","uncfile"]
+        acc_fmts = ["ascii","binary","uncfile","none"]
         if fmt not in acc_fmts:
             self.logger.lraise("unrecognized prior save 'fmt':{0}, options are: {1}".
                                format(fmt,','.join(acc_fmts)))
