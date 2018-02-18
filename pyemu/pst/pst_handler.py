@@ -12,6 +12,7 @@ import pandas as pd
 pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_controldata import ControlData, SvdData, RegData
 from pyemu.pst import pst_utils
+from pyemu.plot import plot_utils
 
 class Pst(object):
     """basic class for handling pest control files to support linear analysis
@@ -1731,3 +1732,6 @@ class Pst(object):
     def _stats_nrmse(self,df):
         return self._stats_rmse(df) / (df.obsval.max() - df.obsval.min())
 
+
+    def plot(self):
+        plot_utils.pst_helper(self)

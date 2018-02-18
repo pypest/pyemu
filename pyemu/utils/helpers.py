@@ -760,150 +760,6 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
             except Exception as e:
                 warnings.warn("unable to remove slavr dir{0}:{1}".format(d,str(e)))
 
-def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
-                               subplots=False,figsize=(11,8.5),pt_color='b'):
-    """ helper function to plot gaussian distrbutions from prior and posterior
-    means and standard deviations
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        a dataframe and csv file.  Must have columns named:
-        'prior_mean','prior_stdev','post_mean','post_stdev'.  If loaded
-        from a csv file, column 0 is assumed to tbe the index
-    ax: matplotlib.pyplot.axis
-        If None, and not subplots, then one is created
-        and all distributions are plotted on a single plot
-    label_post: bool
-        flag to add text labels to the peak of the posterior
-    label_prior: bool
-        flag to add text labels to the peak of the prior
-    subplots: (boolean)
-        flag to use subplots.  If True, then 6 axes per page
-        are used and a single prior and posterior is plotted on each
-    figsize: tuple
-        matplotlib figure size
-
-    Returns
-    -------
-    figs : list
-        list of figures
-    axes : list
-        list of axes
-
-    Note
-    ----
-    This is useful for demystifying FOSM results
-
-    if subplots is False, a single axis is returned
-
-    Example
-    -------
-    ``>>>import matplotlib.pyplot as plt``
-
-    ``>>>import pyemu``
-
-    ``>>>pyemu.helpers.plot_summary_distributions("pest.par.usum.csv")``
-
-    ``>>>plt.show()``
-    """
-    import matplotlib.pyplot as plt
-    if isinstance(df,str):
-        df = pd.read_csv(df,index_col=0)
-    if ax is None and not subplots:
-        fig = plt.figure(figsize=figsize)
-        ax = plt.subplot(111)
-        ax.grid()
-
-
-    if "post_stdev" not in df.columns and "post_var" in df.columns:
-        df.loc[:,"post_stdev"] = df.post_var.apply(np.sqrt)
-    if "prior_stdev" not in df.columns and "prior_var" in df.columns:
-        df.loc[:,"prior_stdev"] = df.prior_var.apply(np.sqrt)
-    if "prior_expt" not in df.columns and "prior_mean" in df.columns:
-        df.loc[:,"prior_expt"] = df.prior_mean
-    if "post_expt" not in df.columns and "post_mean" in df.columns:
-        df.loc[:,"post_expt"] = df.post_mean
-
-    if subplots:
-        fig = plt.figure(figsize=figsize)
-        ax = plt.subplot(2,3,1)
-        ax_per_page = 6
-        ax_count = 0
-        axes = []
-        figs = []
-    for name in df.index:
-        x,y = gaussian_distribution(df.loc[name,"post_expt"],
-                                    df.loc[name,"post_stdev"])
-        ax.fill_between(x,0,y,facecolor=pt_color,edgecolor="none",alpha=0.25)
-        if label_post:
-            mx_idx = np.argmax(y)
-            xtxt,ytxt = x[mx_idx],y[mx_idx] * 1.001
-            ax.text(xtxt,ytxt,name,ha="center",alpha=0.5)
-
-        x,y = gaussian_distribution(df.loc[name,"prior_expt"],
-                                    df.loc[name,"prior_stdev"])
-        ax.plot(x,y,color='0.5',lw=3.0,dashes=(2,1))
-        if label_prior:
-            mx_idx = np.argmax(y)
-            xtxt,ytxt = x[mx_idx],y[mx_idx] * 1.001
-            ax.text(xtxt,ytxt,name,ha="center",alpha=0.5)
-        #ylim = list(ax.get_ylim())
-        #ylim[1] *= 1.2
-        #ylim[0] = 0.0
-        #ax.set_ylim(ylim)
-        if subplots:
-            ax.set_title(name)
-            ax_count += 1
-            ax.set_yticklabels([])
-            axes.append(ax)
-            if name == df.index[-1]:
-                break
-            if ax_count >= ax_per_page:
-                figs.append(fig)
-                fig = plt.figure(figsize=figsize)
-                ax_count = 0
-            ax = plt.subplot(2,3,ax_count+1)
-    if subplots:
-        figs.append(fig)
-        return figs, axes
-    ylim = list(ax.get_ylim())
-    ylim[1] *= 1.2
-    ylim[0] = 0.0
-    ax.set_ylim(ylim)
-    ax.set_yticklabels([])
-    return ax
-
-
-def gaussian_distribution(mean, stdev, num_pts=50):
-    """ get an x and y numpy.ndarray that spans the +/- 4
-    standard deviation range of a gaussian distribution with
-    a given mean and standard deviation. useful for plotting
-
-    Parameters
-    ----------
-    mean : float
-        the mean of the distribution
-    stdev : float
-        the standard deviation of the distribution
-    num_pts : int
-        the number of points in the returned ndarrays.
-        Default is 50
-
-    Returns
-    -------
-    x : numpy.ndarray
-        the x-values of the distribution
-    y : numpy.ndarray
-        the y-values of the distribution
-
-    """
-    xstart = mean - (4.0 * stdev)
-    xend = mean + (4.0 * stdev)
-    x = np.linspace(xstart,xend,num_pts)
-    y = (1.0/np.sqrt(2.0*np.pi*stdev*stdev)) * np.exp(-1.0 * ((x - mean)**2)/(2.0*stdev*stdev))
-    return x,y
-
 
 def read_pestpp_runstorage(filename,irun=0):
     """read pars and obs from a specific run in a pest++ serialized run storage file into
@@ -2915,3 +2771,86 @@ def _istextfile(filename, blocksize=512):
     nontext = block.translate(None, _text_characters)
     return float(len(nontext)) / len(block) <= 0.30
 
+
+
+def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
+                               subplots=False,figsize=(11,8.5),pt_color='b'):
+    """ helper function to plot gaussian distrbutions from prior and posterior
+    means and standard deviations
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        a dataframe and csv file.  Must have columns named:
+        'prior_mean','prior_stdev','post_mean','post_stdev'.  If loaded
+        from a csv file, column 0 is assumed to tbe the index
+    ax: matplotlib.pyplot.axis
+        If None, and not subplots, then one is created
+        and all distributions are plotted on a single plot
+    label_post: bool
+        flag to add text labels to the peak of the posterior
+    label_prior: bool
+        flag to add text labels to the peak of the prior
+    subplots: (boolean)
+        flag to use subplots.  If True, then 6 axes per page
+        are used and a single prior and posterior is plotted on each
+    figsize: tuple
+        matplotlib figure size
+
+    Returns
+    -------
+    figs : list
+        list of figures
+    axes : list
+        list of axes
+
+    Note
+    ----
+    This is useful for demystifying FOSM results
+
+    if subplots is False, a single axis is returned
+
+    Example
+    -------
+    ``>>>import matplotlib.pyplot as plt``
+
+    ``>>>import pyemu``
+
+    ``>>>pyemu.helpers.plot_summary_distributions("pest.par.usum.csv")``
+
+    ``>>>plt.show()``
+    """
+    warnings.warn("pyemu.helpers.plot_summary_distributions() has moved to plot_utils")
+    from pyemu import plot_utils
+    return plot_utils.plot_summary_distributions(df=df,ax=ax,label_post=label_post,
+                                                 label_prior=label_prior,subplots=subplots,
+                                                 figsize=figsize,pt_color=pt_color)
+
+
+
+def gaussian_distribution(mean, stdev, num_pts=50):
+    """ get an x and y numpy.ndarray that spans the +/- 4
+    standard deviation range of a gaussian distribution with
+    a given mean and standard deviation. useful for plotting
+
+    Parameters
+    ----------
+    mean : float
+        the mean of the distribution
+    stdev : float
+        the standard deviation of the distribution
+    num_pts : int
+        the number of points in the returned ndarrays.
+        Default is 50
+
+    Returns
+    -------
+    x : numpy.ndarray
+        the x-values of the distribution
+    y : numpy.ndarray
+        the y-values of the distribution
+
+    """
+    warnings.warn("pyemu.helpers.gaussian_distribution() has moved to plot_utils")
+    from pyemu import plot_utils
+    return plot_utils.gaussian_distribution(mean=mean,stdev=stdev,num_pts=num_pts)

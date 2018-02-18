@@ -18,4 +18,6 @@ from .smoother import EnsembleSmoother
 from .mat import Matrix, Jco, Cov, concat
 from .pst import Pst, pst_utils
 from .utils import helpers, gw_utils, optimization,geostats, pp_utils
+from .plot import plot_utils
+from .logger import Logger
 

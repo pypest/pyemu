@@ -934,7 +934,7 @@ if __name__ == "__main__":
     gw_sft_ins_test()
     # par_knowledge_test()
     #grid_obs_test()
-    #plot_summary_test()
+    plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
     # make_hydmod_insfile_test()
