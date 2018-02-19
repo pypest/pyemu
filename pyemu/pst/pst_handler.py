@@ -1758,7 +1758,7 @@ class Pst(object):
 
 
     def write_par_summary_table(self,filename=None,group_names=None,
-                                sigma_range = 4.0):
+                                sigma_range = 4.0,caption=None):
         """write a stand alone parameter summary latex table
 
 
@@ -1772,6 +1772,8 @@ class Pst(object):
         sigma_range : float
             number of standard deviations represented by parameter bounds.  Default
             is 4.0, implying 95% confidence bounds
+        caption : str
+            table caption.  Default is None
 
         Returns
         -------
@@ -1824,22 +1826,25 @@ class Pst(object):
             pargp_df.loc[:, "pargp"] = pargp_df.pargp.apply(lambda x: group_names.pop(x, x))
         pargp_df.columns = pargp_df.columns.map(lambda x: labels[x])
 
-        preamble = """\\documentclass{article}\n\\usepackage{booktabs}\n
-                    \\usepackage{pdflscape}
-                   \n\\usepackage{longtable}\n\\usepackage{booktabs}\n
-                   \\begin{document}\n\\begin{center}\n"""
-
+        preamble = '\\documentclass{article}\n\\usepackage{booktabs}\n'+ \
+                    '\\usepackage{pdflscape}\n\\usepackage{longtable}\n' + \
+                    '\\usepackage{booktabs}\n\\begin{document}\n\\begin{center}\n'+\
+                    '\\begin{table}\n'
 
         if filename is None:
             filename = self.filename.replace(".pst",".par.tex")
 
         with open(filename,'w') as f:
             f.write(preamble)
+            if caption is not None:
+                f.write("\\caption{"+caption+"}\n")
             pargp_df.to_latex(f, index=False, longtable=True)
+            f.write("\\end{table}\n")
             f.write("\\end{center}\n")
             f.write("\\end{document}\n")
 
-    def write_obs_summary_table(self,filename=None,group_names=None):
+    def write_obs_summary_table(self,filename=None,group_names=None,
+                               caption=None):
         """write a stand alone observation summary latex table
 
 
@@ -1850,6 +1855,8 @@ class Pst(object):
                 group_names: dict
                     par group names : table names for example {"w0":"well stress period 1"}.
                     Default is None
+                caption : str
+                    table caption. Default is None
 
                 Returns
                 -------
@@ -1893,22 +1900,26 @@ class Pst(object):
         obsg_df = pd.DataFrame(data=data, index=list(obsgp.keys()))
         obsg_df = obsg_df.loc[:, cols]
         if group_names is not None:
-            obsg_df.loc[:, "obgnme"] = obsg_df.pargp.apply(lambda x: group_names.pop(x, x))
+            obsg_df.loc[:, "obgnme"] = obsg_df.obgnme.apply(lambda x: group_names.pop(x, x))
         obsg_df.sort_values(by="obgnme",inplace=True,ascending=True)
         obsg_df.columns = obsg_df.columns.map(lambda x: labels[x])
 
-        preamble = """\\documentclass{article}\n\\usepackage{booktabs}\n
-                            \\usepackage{pdflscape}
-                           \n\\usepackage{longtable}\n\\usepackage{booktabs}\n
-                           \\begin{document}\n\\setlength{\LTleft}{-3.5cm}
-                           \\begin{center}\n"""
+        preamble = '\\documentclass{article}\n\\usepackage{booktabs}\n' + \
+                   '\\usepackage{pdflscape}\n\\usepackage{longtable}\n' + \
+                   '\\usepackage{booktabs}\n\\begin{document}\n\\begin{center}\n' + \
+                   '\\begin{table}\n'
 
         if filename is None:
             filename = self.filename.replace(".pst", ".obs.tex")
 
         with open(filename, 'w') as f:
+
             f.write(preamble)
+            f.write("\\setlength{\\LTleft}{-4.0cm}\n")
+            if caption is not None:
+                f.write("\\caption{"+caption+"}\n")
             obsg_df.to_latex(f, index=False, longtable=True)
+            f.write("\\end{table}\n")
             f.write("\\end{center}\n")
             f.write("\\end{document}\n")
 

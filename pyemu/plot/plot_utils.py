@@ -202,8 +202,11 @@ def res_1to1(pst,logger,**kwargs):
         grouper = obs.groupby(obs.obgnme).groups
 
     fig = plt.figure(figsize=figsize)
-    plt.figtext(0.5, 0.5, "pyemu.Pst.plot(kind='1to1')\nfrom pest control file '{0}'\n at {1}"
-                .format(pst.filename, str(datetime.now())), ha="center")
+    if "fig_title" in kwargs:
+        plt.figtext(0.5,0.5,kwargs["fig_title"])
+    else:
+        plt.figtext(0.5, 0.5, "pyemu.Pst.plot(kind='1to1')\nfrom pest control file '{0}'\n at {1}"
+                    .format(pst.filename, str(datetime.now())), ha="center")
     with PdfPages(pst.filename.replace(".pst", ".1to1.pdf")) as pdf:
         ax_count = 0
         for g, names in grouper.items():
@@ -296,8 +299,11 @@ def res_obs_v_sim(pst,logger, **kwargs):
         grouper = obs.groupby(obs.obgnme).groups
 
     fig = plt.figure(figsize=figsize)
-    plt.figtext(0.5, 0.5, "pyemu.Pst.plot(kind='obs_v_sim')\nfrom pest control file '{0}'\n at {1}"
-                .format(pst.filename, str(datetime.now())), ha="center")
+    if "fig_title" in kwargs:
+        plt.figtext(0.5,0.5,kwargs["fig_title"])
+    else:
+        plt.figtext(0.5, 0.5, "pyemu.Pst.plot(kind='obs_v_sim')\nfrom pest control file '{0}'\n at {1}"
+                    .format(pst.filename, str(datetime.now())), ha="center")
     with PdfPages(pst.filename.replace(".pst", ".obs_v_sim.pdf")) as pdf:
         ax_count = 0
         for g, names in grouper.items():
@@ -469,8 +475,11 @@ def pst_prior(pst,logger, **kwargs):
         grouper = par.groupby(par.pargp).groups
 
     fig = plt.figure(figsize=figsize)
-    plt.figtext(0.5,0.5,"pyemu.Pst.plot(kind='prior')\nfrom pest control file '{0}'\n at {1}"
-             .format(pst.filename,str(datetime.now())),ha="center")
+    if "fig_title" in kwargs:
+        plt.figtext(0.5,0.5,kwargs["fig_title"])
+    else:
+        plt.figtext(0.5,0.5,"pyemu.Pst.plot(kind='prior')\nfrom pest control file '{0}'\n at {1}"
+                 .format(pst.filename,str(datetime.now())),ha="center")
     with PdfPages(pst.filename.replace(".pst",".prior.pdf")) as pdf:
         ax_count = 0
         grps_names = list(grouper.keys())
@@ -535,10 +544,11 @@ def pst_prior(pst,logger, **kwargs):
 
 
 def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
-                    filename="ensemble_helper.pdf",func_dict = None):
-    """TODO: bins as a dict
+                    filename="ensemble_helper.pdf",func_dict = None,
+                    sync_bins=True,**kwargs):
+    """TODO: bins as a dict, work out min and max and use same bins for all ens
     """
-    logger = Logger("ensemble_helper.log")
+    logger = pyemu.Logger("ensemble_helper.log")
     logger.log("pyemu.plot_utils.ensemble_helper()")
     ensembles = {}
     if isinstance(ensemble,pd.DataFrame):
@@ -561,10 +571,10 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
         if isinstance(facecolor,list):
             if len(ensemble) != len(facecolor):
                 logger.lraise("facecolor list len != ensemble list len")
-            else:
-                v = np.arange(len(ensemble))
+        else:
+            colors = ['m','c','b','r','g','y']
 
-                facecolor = plt.cm.paired(v / v.shape[0])
+            facecolor = [colors[i] for i in range(len(ensemble))]
         ensembles = {}
         for fc,en_arg in zip(facecolor,ensemble):
             if isinstance(en_arg,str):
@@ -596,10 +606,12 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
 
     #apply any functions
     if func_dict is not None:
-        for col,func in func_dict:
+        logger.log("applying functions")
+        for col,func in func_dict.items():
             for fc,en in ensembles.items():
                 if col in en.columns:
                     en.loc[:,col] = en.loc[:,col].apply(func)
+        logger.log("applying functions")
 
 
     #get a list of all cols (union)
@@ -610,19 +622,23 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
     if plot_cols is None:
         plot_cols = all_cols
     else:
-        plot_cols = set(plot_cols)
-        missing = all_cols.difference(plot_cols)
+        splot_cols = set(plot_cols)
+        missing = splot_cols - all_cols
         if len(missing) > 0:
             logger.lraise("the following plot_cols are missing: {0}".
-                          format(','.format(missing)))
+                          format(','.join(missing)))
 
     logger.statement("plotting {0} histograms".format(len(plot_cols)))
 
     fig = plt.figure(figsize=figsize)
-    plt.figtext(0.5, 0.5, "pyemu.plot_utils.ensemble_helper()\n at {0}"
-                .format(str(datetime.now())), ha="center")
+    if "fig_title" in kwargs:
+        plt.figtext(0.5,0.5,kwargs["fig_title"])
+    else:
+        plt.figtext(0.5, 0.5, "pyemu.plot_utils.ensemble_helper()\n at {0}"
+                    .format(str(datetime.now())), ha="center")
     plot_cols = list(plot_cols)
     plot_cols.sort()
+    logger.statement("saving pdf to {0}".format(filename))
     with PdfPages(filename) as pdf:
         ax_count = 0
 
@@ -637,14 +653,28 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                 [ax.set_yticks([]) for ax in axes]
                 ax_count = 0
 
+            ax = axes[ax_count]
+            ax.set_title("{0}) {1}".format(abet[ax_count],plot_col),loc="left")
+            if sync_bins:
+                mx,mn = -1.0e+30,1.0e+30
+                for fc,en in ensembles.items():
+                    if plot_col in en.columns:
+                        emx,emn = en.loc[:,plot_col].max(),en.loc[:,plot_col].min()
+                        mx = max(mx,emx)
+                        mn = min(mn,emn)
+                plot_bins = np.linspace(mn,mx,num=bins)
+            else:
+                plot_bins=bins
             for fc,en in ensembles.items():
-                ax = axes[ax_count]
+
                 if plot_col in en.columns:
-                    en.loc[:,plot_col].hist(bins=bins,facecolor=fc,
+                    en.loc[:,plot_col].hist(bins=plot_bins,facecolor=fc,
                                             edgecolor="none",alpha=0.5,
-                                            normed=True)
+                                            normed=True,ax=ax)
+            ax.grid()
 
             ax_count += 1
+
         for a in range(ax_count, nr * nc):
             axes[a].set_axis_off()
             axes[a].set_yticks([])

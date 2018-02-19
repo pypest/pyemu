@@ -8,6 +8,7 @@ import pandas as pd
 
 from pyemu.mat.mat_handler import get_common_elements,Matrix,Cov
 from pyemu.pst.pst_utils import write_parfile,read_parfile
+from pyemu.plot.plot_utils import ensemble_helper
 
 SEED = 358183147 #from random.org on 5 Dec 2016
 #print("setting random seed")
@@ -157,25 +158,35 @@ class Ensemble(pd.DataFrame):
     #     """
     #     raise Exception("Ensemble.enforce() must overloaded by derived types")
 
-    def plot(self,*args,**kwargs):
-        """placeholder overload of pandas.DataFrame.plot()
+    def plot(self,bins=10,facecolor='0.5',plot_cols=None,
+                    filename="ensemble.pdf",func_dict = None,
+                    **kwargs):
+        """plot ensemble histograms to multipage pdf
 
         Parameters
         ----------
-        *args : list
-            positional args to pass to pandas.DataFrame.plot()
+        bins : int
+            number of bins
+        facecolor : str
+            color
+        plot_cols : list of str
+            subset of ensemble columns to plot.  If None, all are plotted.
+            Default is None
+        filename : str
+            pdf filename. Default is "ensemble.pdf"
+        func_dict : dict
+            a dict of functions to apply to specific columns (e.g., np.log10)
+
         **kwargs : dict
-            keyword args to pass to pandas.DataFrame.plot()
+            keyword args to pass to plot_utils.ensemble_helper()
 
         Returns
         -------
-        pandas.DataFrame.plot() return
+        None
 
         """
-        if "marginals" in kwargs.keys():
-            raise NotImplementedError()
-        else:
-            super(self,pd.DataFrame).plot(*args,**kwargs)
+        ensemble_helper(self,bins=bins,facecolor=facecolor,plot_cols=plot_cols,
+                        filename=filename)
 
 
     def __sub__(self,other):

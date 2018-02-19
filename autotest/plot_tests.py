@@ -1,5 +1,6 @@
 import os
 #import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import pyemu
 
@@ -43,12 +44,17 @@ def pst_plot_test():
     pst.plot()
     pst.plot(kind="prior", unique_only=False)
     pst.plot(kind="prior",unique_only=True)
+    pst.plot(kind="prior", unique_only=True, fig_title="priors")
 
     pst.plot(kind="1to1")
     pst.plot(kind="1to1",include_zero=True)
+    pst.plot(kind="1to1", include_zero=True,fig_title="1to1")
+
 
     pst.plot(kind="obs_v_sim")
     pst.plot(kind="obs_v_sim",include_zero=True)
+    pst.plot(kind="obs_v_sim", include_zero=True,fig_title="obs_v_sim")
+
     ax = pst.plot(kind="phi_pie")
 
     # ax = plt.subplot(111,aspect="equal")
@@ -62,17 +68,45 @@ def ensemble_plot_test():
     except:
         return
 
-    #one en file
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    cov = pyemu.Cov.from_parameter_data(pst)
+    num_reals = 100
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=num_reals,
+                                                    use_homegrown=True)
 
-    #one en loaded
+    csv_file = os.path.join("temp", "pe.csv")
+    pe.plot(filename=csv_file + ".pdf",plot_cols=pst.par_names[:10])
 
-    #two en list
+    pe.to_csv(csv_file)
 
-    #two en list one loaded
+    pyemu.plot_utils.ensemble_helper(pe, filename=csv_file + ".pdf",
+                                     plot_cols=pst.par_names[:10])
+    pyemu.plot_utils.ensemble_helper(csv_file, filename=csv_file + ".pdf",
+                                     plot_cols=pst.par_names[:10])
 
-    #two en dict
 
-    #two en dict one loaded
+    pst.parameter_data.loc[:,"partrans"] = "none"
+    cov = pyemu.Cov.from_parameter_data(pst)
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov, num_reals=num_reals,
+                                                    use_homegrown=True)
+
+
+    pyemu.plot_utils.ensemble_helper([pe,csv_file],filename=csv_file+".pdf",
+                                     plot_cols=pst.par_names[:10])
+
+    pyemu.plot_utils.ensemble_helper([pe, csv_file], filename=csv_file + ".pdf",
+                                     plot_cols=pst.par_names[:10],sync_bins=False)
+
+    pyemu.plot_utils.ensemble_helper({"b":pe,"y":csv_file}, filename=csv_file + ".pdf",
+                                     plot_cols=pst.par_names[:10])
+
+    pyemu.plot_utils.ensemble_helper({"b":pe,"y":csv_file}, filename=csv_file + ".pdf",
+                                     plot_cols=pst.par_names[:10], sync_bins=False)
+
+    pyemu.plot_utils.ensemble_helper({"b": pe, "y": csv_file}, filename=csv_file + ".pdf",
+                                     plot_cols=pst.par_names[:10], sync_bins=False,
+                                     func_dict={pst.par_names[0]:np.log10})
+
 
 
 
