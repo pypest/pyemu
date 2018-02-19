@@ -571,8 +571,19 @@ def res_stats_test():
     for pc in phi_comp.keys():
         assert phi_comp[pc] == p.phi_components[pc]
 
+
+def write_tables_test():
+    import os
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst","freyberg_gr.pst"))
+    group_names = {"w0":"wells t"}
+    pst.write_par_summary_table(group_names=group_names)
+
+
 if __name__ == "__main__":
-    res_stats_test()
+    write_tables_test()
+    #res_stats_test()
     #test_write_input_files()
     #add_obs_test()
     #add_pars_test()

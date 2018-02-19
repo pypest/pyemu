@@ -1734,4 +1734,105 @@ class Pst(object):
 
 
     def plot(self,kind=None,**kwargs):
+        """method to plot various parts of the control. Depending
+        on 'kind' argument, a multipage pdf is written
+
+        Parameters
+        ----------
+        kind : str
+            options are 'prior' (prior parameter histograms, '1to1' (line of equality
+            and sim vs res), 'obs_v_sim' (time series using datetime suffix), 'phi_pie'
+            (pie chart of phi components)
+        kwargs : dict
+            optional args for plots
+
+        Returns
+        -------
+        None
+
+
+        """
         plot_utils.pst_helper(self,kind,**kwargs)
+
+
+
+
+    def write_par_summary_table(self,filename=None,group_names=None,
+                                sigma_range = 4.0):
+        """write a stand alone parameter summary latex table
+
+
+        Parameters
+        ----------
+        filename : str
+            latex filename. If None, use <case>.par.tex. Default is None
+        group_names: dict
+            par group names : table names for example {"w0":"well stress period 1"}.
+            Default is None
+        sigma_range : float
+            number of standard deviations represented by parameter bounds.  Default
+            is 4.0, implying 95% confidence bounds
+
+        Returns
+        -------
+        None
+        """
+
+        ffmt = lambda x: "{0:5G}".format(x)
+        par = self.parameter_data.copy()
+        pargp = par.groupby(par.pargp).groups
+        #cols = ["parval1","parubnd","parlbnd","stdev","partrans","pargp"]
+        cols = ["pargp","partrans","parval1","parubnd","parlbnd","stdev"]
+
+        labels = {"parval1":"initial value","parubnd":"upper bound",
+                  "parlbnd":"lower bound","partrans":"transform",
+                  "stdev":"standard deviation","pargp":"type"}
+
+        li = par.partrans == "log"
+        par.loc[li,"parval1"] = par.parval1.apply(np.log10)
+        par.loc[li, "parval1"] = par.parubnd.apply(np.log10)
+        par.loc[li, "parval1"] = par.parlbnd.apply(np.log10)
+        par.loc[:,"stdev"] = (par.parubnd - par.parlbnd) / sigma_range
+
+        data = {c:[] for c in cols}
+        for pg,pnames in pargp.items():
+            par_pg = par.loc[pnames,:]
+            data["pargp"].append(pg)
+            for col in cols:
+                if col in ["pargp","partrans"]:
+                    continue
+                print(col)
+                mn = par_pg.loc[:,col].min()
+                mx = par_pg.loc[:,col].max()
+                if mn == mx:
+                    data[col].append(ffmt(mn))
+                else:
+                    data[col].append("{0} - {1}".format(ffmt(mn),ffmt(mx)))
+
+            pts = par_pg.partrans.unique()
+            if len(pts) == 1:
+                data["partrans"].append(pts[0])
+            else:
+                data["partrans"].append("mixed")
+
+        pargp_df = pd.DataFrame(data=data,index=list(pargp.keys()))
+        pargp_df = pargp_df.loc[:, cols]
+        if group_names is not None:
+            pargp_df.loc[:, "pargp"] = pargp_df.pargp.apply(lambda x: group_names.pop(x, x))
+        pargp_df.columns = pargp_df.columns.map(lambda x: labels[x])
+
+        preamble = """\\documentclass{article}\n\\usepackage{booktabs}\n
+                    \\usepackage{pdflscape}
+                   \n\\usepackage{longtable}\n\\usepackage{booktabs}\n
+                   \\begin{document}\n\\begin{center}\n"""
+
+
+        if filename is None:
+            filename = self.filename.replace(".pst",".par.tex")
+
+        with open(filename,'w') as f:
+            f.write(preamble)
+            pargp_df.to_latex(f, index=False, longtable=True)
+            f.write("\\end{center}\n")
+            f.write("\\end{document}\n")
+
