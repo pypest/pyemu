@@ -579,6 +579,7 @@ def write_tables_test():
     pst = pyemu.Pst(os.path.join("pst","freyberg_gr.pst"))
     group_names = {"w0":"wells t"}
     pst.write_par_summary_table(group_names=group_names)
+    pst.write_obs_summary_table()
 
 
 if __name__ == "__main__":

@@ -1782,11 +1782,11 @@ class Pst(object):
         par = self.parameter_data.copy()
         pargp = par.groupby(par.pargp).groups
         #cols = ["parval1","parubnd","parlbnd","stdev","partrans","pargp"]
-        cols = ["pargp","partrans","parval1","parubnd","parlbnd","stdev"]
+        cols = ["pargp","partrans","count","parval1","parubnd","parlbnd","stdev"]
 
         labels = {"parval1":"initial value","parubnd":"upper bound",
                   "parlbnd":"lower bound","partrans":"transform",
-                  "stdev":"standard deviation","pargp":"type"}
+                  "stdev":"standard deviation","pargp":"type","count":"count"}
 
         li = par.partrans == "log"
         par.loc[li,"parval1"] = par.parval1.apply(np.log10)
@@ -1801,13 +1801,16 @@ class Pst(object):
             for col in cols:
                 if col in ["pargp","partrans"]:
                     continue
+                if col == "count":
+                    data["count"].append(par_pg.shape[0])
+                    continue
                 print(col)
                 mn = par_pg.loc[:,col].min()
                 mx = par_pg.loc[:,col].max()
                 if mn == mx:
                     data[col].append(ffmt(mn))
                 else:
-                    data[col].append("{0} - {1}".format(ffmt(mn),ffmt(mx)))
+                    data[col].append("{0} to {1}".format(ffmt(mn),ffmt(mx)))
 
             pts = par_pg.partrans.unique()
             if len(pts) == 1:
@@ -1833,6 +1836,79 @@ class Pst(object):
         with open(filename,'w') as f:
             f.write(preamble)
             pargp_df.to_latex(f, index=False, longtable=True)
+            f.write("\\end{center}\n")
+            f.write("\\end{document}\n")
+
+    def write_obs_summary_table(self,filename=None,group_names=None):
+        """write a stand alone observation summary latex table
+
+
+                Parameters
+                ----------
+                filename : str
+                    latex filename. If None, use <case>.par.tex. Default is None
+                group_names: dict
+                    par group names : table names for example {"w0":"well stress period 1"}.
+                    Default is None
+
+                Returns
+                -------
+                None
+                """
+
+        ffmt = lambda x: "{0:5G}".format(x)
+        obs = self.observation_data.copy()
+        obsgp = obs.groupby(obs.obgnme).groups
+        cols = ["obgnme","obsval","nzcount","zcount","weight","stdev","pe"]
+
+        labels = {"obgnme":"group","obsval":"value","nzcount":"non-zero weight",
+                  "zcount":"zero weight","weight":"weight","stdev":"standard deviation",
+                  "pe":"percent error"}
+
+        obs.loc[:,"stdev"] = 1.0 / obs.weight
+        obs.loc[:,"pe"] = 100.0 * (obs.stdev / obs.obsval)
+        obs = obs.replace([np.inf,-np.inf],np.NaN)
+
+        data = {c: [] for c in cols}
+        for og, onames in obsgp.items():
+            obs_g = obs.loc[onames, :]
+            data["obgnme"].append(og)
+            data["nzcount"].append(obs_g.loc[obs_g.weight > 0.0,:].shape[0])
+            data["zcount"].append(obs_g.loc[obs_g.weight == 0.0,:].shape[0])
+            for col in cols:
+                if col in ["obgnme","nzcount","zcount"]:
+                    continue
+
+                print(col)
+                mn = obs_g.loc[:, col].min()
+                mx = obs_g.loc[:, col].max()
+                if np.isnan(mn) or np.isnan(mx):
+                    data[col].append("NA")
+                elif mn == mx:
+                    data[col].append(ffmt(mn))
+                else:
+                    data[col].append("{0} to {1}".format(ffmt(mn), ffmt(mx)))
+
+
+        obsg_df = pd.DataFrame(data=data, index=list(obsgp.keys()))
+        obsg_df = obsg_df.loc[:, cols]
+        if group_names is not None:
+            obsg_df.loc[:, "obgnme"] = obsg_df.pargp.apply(lambda x: group_names.pop(x, x))
+        obsg_df.sort_values(by="obgnme",inplace=True,ascending=True)
+        obsg_df.columns = obsg_df.columns.map(lambda x: labels[x])
+
+        preamble = """\\documentclass{article}\n\\usepackage{booktabs}\n
+                            \\usepackage{pdflscape}
+                           \n\\usepackage{longtable}\n\\usepackage{booktabs}\n
+                           \\begin{document}\n\\setlength{\LTleft}{-3.5cm}
+                           \\begin{center}\n"""
+
+        if filename is None:
+            filename = self.filename.replace(".pst", ".obs.tex")
+
+        with open(filename, 'w') as f:
+            f.write(preamble)
+            obsg_df.to_latex(f, index=False, longtable=True)
             f.write("\\end{center}\n")
             f.write("\\end{document}\n")
 
