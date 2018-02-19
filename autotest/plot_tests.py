@@ -39,15 +39,23 @@ def pst_plot_test():
     except:
         return
 
-    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    # pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    # pst.plot()
+    # pst.plot(kind="prior")
+    # pst.plot(kind="1to1")
 
-    #nothing happens
-    pst.plot()
+    pst = pyemu.Pst(os.path.join("pst","freyberg_gr.pst"))
+    #pst.plot()
+    #pst.plot(kind="prior")
+    #pst.plot(kind="1to1")
+    #pst.plot(kind="1to1",include_zero=True)
 
-    pst.plot(kind="prior")
+    #pst.plot(kind="obs_v_sim")
+    #pst.plot(kind="obs_v_sim",include_zero=True)
+    ax = pst.plot(kind="phi_pie")
 
-    pst.plot(kind="1to1")
-
+    ax = plt.subplot(111)
+    pst.plot(kind="phi_pie",ax=ax)
 
 
 

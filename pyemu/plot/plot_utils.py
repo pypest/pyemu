@@ -5,6 +5,9 @@ import pandas as pd
 from datetime import datetime
 import string
 
+font = {'size'   : 6}
+import matplotlib
+matplotlib.rc("font",**font)
 
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
@@ -187,6 +190,7 @@ def res_1to1(pst,logger,**kwargs):
 
 
     """
+    logger.log("plot res_1to1")
     if pst.res is None:
         logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
     obs = pst.observation_data
@@ -205,6 +209,17 @@ def res_1to1(pst,logger,**kwargs):
         for g, names in grouper.items():
             logger.log("plotting 1to1 for {0}".format(g))
 
+            obs_g = obs.loc[names, :]
+            obs_g.loc[:, "sim"] = res.loc[names, "modelled"]
+            logger.statement("using control file obsvals to calculate residuals")
+            obs_g.loc[:,'res'] = obs_g.sim - obs_g.obsval
+            if "include_zero" not in kwargs or kwargs["include_zero"] is True:
+                obs_g = obs_g.loc[obs_g.weight > 0, :]
+            if obs_g.shape[0] == 0:
+                logger.statement("no non-zero obs for group '{0}'".format(g))
+                logger.log("plotting 1to1 for {0}".format(g))
+                continue
+
             if ax_count % (nr * nc) == 0:
                 plt.tight_layout()
                 pdf.savefig()
@@ -212,41 +227,44 @@ def res_1to1(pst,logger,**kwargs):
                 fig = plt.figure(figsize=figsize)
                 axes = get_page_axes()
                 ax_count = 0
-            obs_g = obs.loc[names,:]
-            obs_g.loc[:,"sim"] = res.loc[names,"modelled"]
-            obs_g = obs_g.loc[obs_g.weight>0,:]
-            if obs_g.shape[0] == 0:
-                logger.statement("no non-zero obs for group '{0}'".format(g))
-                logger.log("plotting 1to1 for {0}".format(g))
-                continue
+
             ax = axes[ax_count]
-            ax.scatter(obs_g.sim,obs_g.obsval,marker='.',s=10,color='b')
+            #if obs_g.shape[0] == 1:
+            #    ax.scatter(list(obs_g.sim),list(obs_g.obsval),marker='.',s=30,color='b')
+            #else:
+            ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
+
             mx = max(ax.get_xlim()[1],ax.get_ylim()[1])
             mn = min(ax.get_xlim()[0], ax.get_ylim()[0])
-            ax.plot([mn,mx],[mn,mx],'k',lw=1.5)
+            if obs_g.shape[0] == 1:
+                mx *= 1.1
+                mn *= 0.9
+            ax.plot([mn,mx],[mn,mx],'k--',lw=1.0)
+            xlim = (mn,mx)
             ax.set_xlim(mn,mx)
             ax.set_ylim(mn,mx)
             ax.grid()
-            ax.set_ylabel("observed")
-            ax.set_xlabel("simulated")
+            ax.set_ylabel("observed",labelpad=0.1)
+            ax.set_xlabel("simulated",labelpad=0.1)
             ax.set_title("{0}) group:{1}, {2} observations".
                                      format(abet[ax_count], g, names.shape[0]), loc="left")
 
             ax_count += 1
 
             ax = axes[ax_count]
-            ax.scatter(obs_g.sim, obs_g.obsval, marker='.', s=10, color='b')
+            ax.scatter(obs_g.sim, obs_g.res, marker='.', s=10, color='b')
             ylim = ax.get_ylim()
             mx = max(np.abs(ylim[0]),np.abs(ylim[1]))
+            if obs_g.shape[0] == 1:
+                mx *= 1.1
             ax.set_ylim(-mx, mx)
-            xlim = ax.get_xlim()
-            ax.plot(xlim,[0,0],'k',lw=1.5)
+            ax.plot(xlim,[0,0],'k--',lw=1.0)
             ax.set_xlim(xlim)
-            ax.set_ylabel("residual")
-            ax.set_xlabel("simulated")
+            ax.set_ylabel("residual",labelpad=0.1)
+            ax.set_xlabel("simulated",labelpad=0.1)
             ax.set_title("{0}) group:{1}, {2} observations".
                          format(abet[ax_count], g, names.shape[0]), loc="left")
-
+            ax.grid()
             ax_count += 1
 
             logger.log("plotting 1to1 for {0}".format(g))
@@ -259,27 +277,161 @@ def res_1to1(pst,logger,**kwargs):
         plt.tight_layout()
         pdf.savefig()
         plt.close(fig)
+    logger.log("plot res_1to1")
 
 def res_obs_v_sim(pst,logger, **kwargs):
-    raise NotImplementedError()
+    """
+    TODO: workout min and max dates and set xaxis on all plots
+
+    """
+    logger.log("plot res_obs_v_sim")
+    if pst.res is None:
+        logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
+    obs = pst.observation_data
+    res = pst.res
+
+    if "grouper" in kwargs:
+        raise NotImplementedError()
+    else:
+        grouper = obs.groupby(obs.obgnme).groups
+
+    fig = plt.figure(figsize=figsize)
+    plt.figtext(0.5, 0.5, "pyemu.Pst.plot(kind='obs_v_sim')\nfrom pest control file '{0}'\n at {1}"
+                .format(pst.filename, str(datetime.now())), ha="center")
+    with PdfPages(pst.filename.replace(".pst", ".obs_v_sim.pdf")) as pdf:
+        ax_count = 0
+        for g, names in grouper.items():
+            logger.log("plotting obs_v_sim for {0}".format(g))
+
+            obs_g = obs.loc[names, :]
+            obs_g.loc[:, "sim"] = res.loc[names, "modelled"]
+            if "include_zero" not in kwargs or kwargs["include_zero"] is True:
+                obs_g = obs_g.loc[obs_g.weight > 0, :]
+
+            if obs_g.shape[0] == 0:
+                logger.statement("no non-zero obs for group '{0}'".format(g))
+                logger.log("plotting obs_v_sim for {0}".format(g))
+                continue
+
+            # parse datetimes
+            try:
+                obs_g.loc[:, "datetime_str"] = obs_g.obsnme.apply(lambda x: x.split('_')[-1])
+            except Exception as e:
+                logger.warn("res_obs_v_sim error forming datetime_str:{0}".
+                            format(str(e)))
+                continue
+
+            try:
+                obs_g.loc[:, "datetime"] = pd.to_datetime(obs_g.datetime_str,format="%Y%m%d")
+            except Exception as e:
+                logger.warn("res_obs_v_sim error casting datetime: {0}".
+                            format(str(e)))
+                continue
+
+            if ax_count % (nr * nc) == 0:
+                plt.tight_layout()
+                pdf.savefig()
+                plt.close(fig)
+                fig = plt.figure(figsize=figsize)
+                axes = get_page_axes()
+                ax_count = 0
+
+            ax = axes[ax_count]
+            obs_g.loc[:,"site"] = obs_g.obsnme.apply(lambda x: x.split('_')[0])
+            for site in obs_g.site.unique():
+                obs_s = obs_g.loc[obs_g.site==site,:]
+                obs_s.sort_values(by="datetime")
+                ax.plot(obs_s.datetime, obs_s.obsval, ls='-', marker='.', ms=10, color='b')
+                ax.plot(obs_s.datetime, obs_s.sim, ls='-', marker='.', ms=10, color='0.5')
+            ax.set_xlim(obs_g.datetime.min(),obs_g.datetime.max())
+            ax.grid()
+            ax.set_xlabel("datetime",labelpad=0.1)
+            ax.set_title("{0}) group:{1}, {2} observations".
+                         format(abet[ax_count], g, names.shape[0]), loc="left")
+            ax_count += 1
+            logger.log("plotting obs_v_sim for {0}".format(g))
+
+        for a in range(ax_count,nr*nc):
+            axes[a].set_axis_off()
+            axes[a].set_yticks([])
+            axes[a].set_xticks([])
+
+        plt.tight_layout()
+        pdf.savefig()
+        plt.close(fig)
+    logger.log("plot res_obs_v_sim")
 
 def res_phi_pie(pst,logger, **kwargs):
-    raise NotImplementedError()
+    """plot current phi components as a pie chart.
+
+    Parameters
+    ----------
+    pst : pyemu.Pst
+    logger : pyemu.Logger
+    kwargs : dict
+        accepts 'include_zero' as a flag to include phi groups with
+        only zero-weight obs (not sure why anyone would do this, but
+        whatevs).
+    Returns
+    -------
+    ax : matplotlib.Axis
+
+    
+    """
+    logger.log("plot res_phi_pie")
+    if pst.res is None:
+        logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
+    obs = pst.observation_data
+    res = pst.res
+    phi_comps = pst.phi_components
+    if "include_zero" not in kwargs or kwargs["include_zero"] is True:
+        phi_comps = {k:v for k,v in phi_comps.items() if v > 0.0}
+    if "ax" in kwargs:
+        ax = kwargs["ax"]
+    else:
+        fig = plt.figure(figsize=figsize)
+        ax = plt.subplot(1,1,1,aspect="equal")
+
+    ax.pie(phi_comps.values(),labels=phi_comps.keys())
+    logger.log("plot res_phi_pie")
+    return ax
+
+
 
 def pst_weight_hist(pst,logger, **kwargs):
     raise NotImplementedError()
 
+
+
 def get_page_axes():
     axes = [plt.subplot(nr,nc,i+1) for i in range(nr*nc)]
     #[ax.set_yticks([]) for ax in axes]
-
     return axes
 
 def pst_prior(pst,logger, **kwargs):
-    """
-    TODO: external parcov, unique mean-std pairs
+    """ helper to plot prior parameter histograms implied by
+    parameter bounds. Saves a multipage pdf named <case>.prior.pdf
+
+    Parameters
+    ----------
+    pst : pyemu.Pst
+    logger : pyemu.Logger
+    kwargs : dict
+        accepts 'grouper' as dict to group parameters on to a single axis (use
+        parameter groups if not passed),
+        'unqiue_only' to only show unique mean-stdev combinations within a
+        given group
+
+    Returns
+    -------
+    None
+
+    TODO
+    ----
+    external parcov, unique mean-std pairs
 
     """
+    logger.log("plot pst_prior")
     par = pst.parameter_data
 
     if "parcov_filename" in pst.pestpp_options:
@@ -291,7 +443,7 @@ def pst_prior(pst,logger, **kwargs):
     logger.log("building mean parameter values")
     li = par.partrans.loc[cov.names] == "log"
     mean = par.parval1.loc[cov.names]
-    info = par.loc[cov.names,["parnme"]]
+    info = par.loc[cov.names,:].copy()
     info.loc[:,"mean"] = mean[li].apply(np.log10)
     logger.log("building mean parameter values")
 
@@ -325,11 +477,20 @@ def pst_prior(pst,logger, **kwargs):
             logger.log("plotting priors for {0}".
                        format(','.join(list(names))))
             if ax_count % (nr * nc) == 0:
+                plt.tight_layout()
                 pdf.savefig()
                 plt.close(fig)
                 fig  = plt.figure(figsize=figsize)
                 axes = get_page_axes()
                 ax_count = 0
+
+            islog = False
+            vc = info.partrans.value_counts()
+            if vc.shape[0] > 1:
+                logger.warn("mixed partrans for group {0}".format(g))
+            elif "log" in vc.index:
+                islog = True
+            if "unique_only" in kwargs:
 
             for m,s in zip(info.loc[names,'mean'],info.loc[names,'prior_std']):
                 x,y = gaussian_distribution(m,s)
@@ -337,7 +498,12 @@ def pst_prior(pst,logger, **kwargs):
                                             edgecolor="none")
                 axes[ax_count].set_title("{0}) group:{1}, {2} parameters".
                                          format(abet[ax_count],g,names.shape[0]),loc="left")
-                axes[ax_count].set_yticks([])
+
+            axes[ax_count].set_yticks([])
+            if islog:
+                axes[ax_count].set_xlabel("$log_{10}$ parameter value",labelpad=0.1)
+            else:
+                axes[ax_count].set_xlabel("parameter value", labelpad=0.1)
             logger.log("plotting priors for {0}".
                        format(','.join(list(names))))
 
@@ -348,8 +514,10 @@ def pst_prior(pst,logger, **kwargs):
             axes[a].set_yticks([])
             axes[a].set_xticks([])
 
+        plt.tight_layout()
         pdf.savefig()
         plt.close(fig)
+    logger.log("plot pst_prior")
 
 
 
