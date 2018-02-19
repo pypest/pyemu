@@ -376,7 +376,7 @@ def res_phi_pie(pst,logger, **kwargs):
     -------
     ax : matplotlib.Axis
 
-    
+
     """
     logger.log("plot res_phi_pie")
     if pst.res is None:
@@ -490,7 +490,7 @@ def pst_prior(pst,logger, **kwargs):
                 logger.warn("mixed partrans for group {0}".format(g))
             elif "log" in vc.index:
                 islog = True
-            if "unique_only" in kwargs:
+            #if "unique_only" in kwargs:
 
             for m,s in zip(info.loc[names,'mean'],info.loc[names,'prior_std']):
                 x,y = gaussian_distribution(m,s)

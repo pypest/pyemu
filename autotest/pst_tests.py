@@ -572,13 +572,13 @@ def res_stats_test():
         assert phi_comp[pc] == p.phi_components[pc]
 
 if __name__ == "__main__":
-    #res_stats_test()
+    res_stats_test()
     #test_write_input_files()
     #add_obs_test()
     #add_pars_test()
     #setattr_test()
     # run_array_pars()
-    from_flopy_test()
+    #from_flopy_test()
     #plot_flopy_par_ensemble_test()
     #add_pi_test()
     # regdata_test()
