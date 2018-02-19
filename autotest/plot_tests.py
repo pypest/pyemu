@@ -55,7 +55,29 @@ def pst_plot_test():
     # pst.plot(kind="phi_pie",ax=ax)
     # plt.show()
 
+
+def ensemble_plot_test():
+    try:
+        import matplotlib.pyplot as plt
+    except:
+        return
+
+    #one en file
+
+    #one en loaded
+
+    #two en list
+
+    #two en list one loaded
+
+    #two en dict
+
+    #two en dict one loaded
+
+
+
 if __name__ == "__main__":
     #plot_summary_test()
-    pst_plot_test()
+    #pst_plot_test()
+    ensemble_plot_test()
 

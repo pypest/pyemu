@@ -534,6 +534,129 @@ def pst_prior(pst,logger, **kwargs):
 
 
 
+def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
+                    filename="ensemble_helper.pdf",func_dict = None):
+    """TODO: bins as a dict
+    """
+    logger = Logger("ensemble_helper.log")
+    logger.log("pyemu.plot_utils.ensemble_helper()")
+    ensembles = {}
+    if isinstance(ensemble,pd.DataFrame):
+        if not isinstance(facecolor,str):
+            logger.lraise("facecolor must be str")
+        ensembles[facecolor] = ensemble
+
+    elif isinstance(ensemble,str):
+        if not isinstance(facecolor,str):
+            logger.lraise("facecolor must be str")
+
+        logger.log('loading ensemble from csv file {0}'.format(ensemble))
+        en = pd.read_csv(ensemble,index_col=0)
+        en.columns = en.columns.map(str.lower)
+        logger.statement("{0} shape: {1}".format(ensemble,en.shape))
+        ensembles[facecolor] = en
+        logger.log('loading ensemble from csv file {0}'.format(ensemble))
+
+    elif isinstance(ensemble,list):
+        if isinstance(facecolor,list):
+            if len(ensemble) != len(facecolor):
+                logger.lraise("facecolor list len != ensemble list len")
+            else:
+                v = np.arange(len(ensemble))
+
+                facecolor = plt.cm.paired(v / v.shape[0])
+        ensembles = {}
+        for fc,en_arg in zip(facecolor,ensemble):
+            if isinstance(en_arg,str):
+                logger.log("loading ensemble from csv file {0}".format(en_arg))
+                en = pd.read_csv(en_arg,index_col=0)
+                en.columns = en.columns.map(str.lower)
+                logger.log("loading ensemble from csv file {0}".format(en_arg))
+                logger.statement("ensemble {0} gets facecolor {1}".format(en_arg,fc))
+
+            elif isinstance(en_arg,pd.DataFrame):
+                en = en_arg
+            else:
+                logger.lraise("unrecognized ensemble list arg:{0}".format(en_file))
+            ensembles[fc] = en
+
+    elif isinstance(ensemble,dict):
+        for fc,en_arg in ensemble.items():
+            if isinstance(en_arg,pd.DataFrame):
+                ensembles[fc] = en_arg
+            elif isinstance(en_arg,str):
+                logger.log("loading ensemble from csv file {0}".format(en_arg))
+                en = pd.read_csv(en_arg, index_col=0)
+                en.columns = en.columns.map(str.lower)
+                logger.log("loading ensemble from csv file {0}".format(en_arg))
+                ensembles[fc] = en
+            else:
+                logger.lraise("unrecognized ensemble list arg:{0}".format(en_arg))
+
+
+    #apply any functions
+    if func_dict is not None:
+        for col,func in func_dict:
+            for fc,en in ensembles.items():
+                if col in en.columns:
+                    en.loc[:,col] = en.loc[:,col].apply(func)
+
+
+    #get a list of all cols (union)
+    all_cols = set()
+    for fc, en in ensembles.items():
+        cols = set(en.columns)
+        all_cols.update(cols)
+    if plot_cols is None:
+        plot_cols = all_cols
+    else:
+        plot_cols = set(plot_cols)
+        missing = all_cols.difference(plot_cols)
+        if len(missing) > 0:
+            logger.lraise("the following plot_cols are missing: {0}".
+                          format(','.format(missing)))
+
+    logger.statement("plotting {0} histograms".format(len(plot_cols)))
+
+    fig = plt.figure(figsize=figsize)
+    plt.figtext(0.5, 0.5, "pyemu.plot_utils.ensemble_helper()\n at {0}"
+                .format(str(datetime.now())), ha="center")
+    plot_cols = list(plot_cols)
+    plot_cols.sort()
+    with PdfPages(filename) as pdf:
+        ax_count = 0
+
+        for plot_col in plot_cols:
+            logger.log("plotting reals for {0}".format(plot_col))
+            if ax_count % (nr * nc) == 0:
+                plt.tight_layout()
+                pdf.savefig()
+                plt.close(fig)
+                fig = plt.figure(figsize=figsize)
+                axes = get_page_axes()
+                [ax.set_yticks([]) for ax in axes]
+                ax_count = 0
+
+            for fc,en in ensembles.items():
+                ax = axes[ax_count]
+                if plot_col in en.columns:
+                    en.loc[:,plot_col].hist(bins=bins,facecolor=fc,
+                                            edgecolor="none",alpha=0.5,
+                                            normed=True)
+
+            ax_count += 1
+        for a in range(ax_count, nr * nc):
+            axes[a].set_axis_off()
+            axes[a].set_yticks([])
+            axes[a].set_xticks([])
+
+        plt.tight_layout()
+        pdf.savefig()
+        plt.close(fig)
+    logger.log("pyemu.plot_utils.ensemble_helper()")
+
+
+
 
 
 
