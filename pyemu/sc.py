@@ -812,18 +812,7 @@ class Schur(LinearAnalysis):
             self.reset_pst(org_pst)
         return df
 
-    def get_removed_obs_group_importance(self):
-        """ some sugar to test the importance of observations by group
-
-        Returns
-        -------
-        pandas.Dataframe : pandas.Dataframe
-            a dataframe that has index (row labels) that are the observation groups
-            and a column labels of forecast names.  The values in the dataframe
-            are the posterior variance of the forecast resulting from
-            losing non-zero weight observations in each observation group
-
-        """
+    def obs_group_importance(self):
         obsgrp_dict = {}
         obs = self.pst.observation_data
         obs.index = obs.obsnme
@@ -831,8 +820,13 @@ class Schur(LinearAnalysis):
         groups = obs.groupby("obgnme").groups
         for grp, idxs in groups.items():
             obsgrp_dict[grp] = list(obs.loc[idxs,"obsnme"])
-        return self.get_removed_obs_importance(obsgrp_dict)
+        return obsgrp_dict
+        
+    def get_removed_obs_group_importance(self):
+        return self.get_removed_obs_importance(self.obs_group_importance())
 
+    def get_added_obs_group_importance(self):
+        return self.get_added_obs_importance(self.obs_group_importance())
 
     def next_most_important_added_obs(self,forecast=None,niter=3, obslist_dict=None,
                                       base_obslist=None,
