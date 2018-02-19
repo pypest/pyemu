@@ -1733,5 +1733,5 @@ class Pst(object):
         return self._stats_rmse(df) / (df.obsval.max() - df.obsval.min())
 
 
-    def plot(self):
-        plot_utils.pst_helper(self)
+    def plot(self,kind=None,**kwargs):
+        plot_utils.pst_helper(self,kind,**kwargs)

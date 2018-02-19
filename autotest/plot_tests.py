@@ -40,7 +40,13 @@ def pst_plot_test():
         return
 
     pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+
+    #nothing happens
     pst.plot()
+
+    pst.plot(kind="prior")
+
+    pst.plot(kind="1to1")
 
 
 
