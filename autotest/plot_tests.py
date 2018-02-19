@@ -39,25 +39,21 @@ def pst_plot_test():
     except:
         return
 
-    # pst = pyemu.Pst(os.path.join("pst","pest.pst"))
-    # pst.plot()
-    # pst.plot(kind="prior")
-    # pst.plot(kind="1to1")
-
     pst = pyemu.Pst(os.path.join("pst","freyberg_gr.pst"))
-    #pst.plot()
-    #pst.plot(kind="prior")
-    #pst.plot(kind="1to1")
-    #pst.plot(kind="1to1",include_zero=True)
+    pst.plot()
+    pst.plot(kind="prior", unique_only=False)
+    pst.plot(kind="prior",unique_only=True)
 
-    #pst.plot(kind="obs_v_sim")
-    #pst.plot(kind="obs_v_sim",include_zero=True)
+    pst.plot(kind="1to1")
+    pst.plot(kind="1to1",include_zero=True)
+
+    pst.plot(kind="obs_v_sim")
+    pst.plot(kind="obs_v_sim",include_zero=True)
     ax = pst.plot(kind="phi_pie")
 
-    ax = plt.subplot(111)
-    pst.plot(kind="phi_pie",ax=ax)
-
-
+    # ax = plt.subplot(111,aspect="equal")
+    # pst.plot(kind="phi_pie",ax=ax)
+    # plt.show()
 
 if __name__ == "__main__":
     #plot_summary_test()

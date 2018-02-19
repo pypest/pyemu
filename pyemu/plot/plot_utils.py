@@ -391,8 +391,8 @@ def res_phi_pie(pst,logger, **kwargs):
     else:
         fig = plt.figure(figsize=figsize)
         ax = plt.subplot(1,1,1,aspect="equal")
-
-    ax.pie(phi_comps.values(),labels=phi_comps.keys())
+    labels = ["{0}\n{1:4G}({2:3.1f}%)".format(k,v,100. * (v / pst.phi)) for k,v in phi_comps.items()]
+    ax.pie(phi_comps.values(),labels=labels)
     logger.log("plot res_phi_pie")
     return ax
 
@@ -473,7 +473,10 @@ def pst_prior(pst,logger, **kwargs):
              .format(pst.filename,str(datetime.now())),ha="center")
     with PdfPages(pst.filename.replace(".pst",".prior.pdf")) as pdf:
         ax_count = 0
-        for g,names in grouper.items():
+        grps_names = list(grouper.keys())
+        grps_names.sort()
+        for g in grps_names:
+            names = grouper[g]
             logger.log("plotting priors for {0}".
                        format(','.join(list(names))))
             if ax_count % (nr * nc) == 0:
@@ -490,20 +493,30 @@ def pst_prior(pst,logger, **kwargs):
                 logger.warn("mixed partrans for group {0}".format(g))
             elif "log" in vc.index:
                 islog = True
-            #if "unique_only" in kwargs:
+            ax = axes[ax_count]
+            if "unique_only" in kwargs and kwargs["unique_only"]:
 
-            for m,s in zip(info.loc[names,'mean'],info.loc[names,'prior_std']):
-                x,y = gaussian_distribution(m,s)
-                axes[ax_count].fill_between(x,0,y,facecolor='0.5',alpha=0.5,
-                                            edgecolor="none")
-                axes[ax_count].set_title("{0}) group:{1}, {2} parameters".
-                                         format(abet[ax_count],g,names.shape[0]),loc="left")
 
-            axes[ax_count].set_yticks([])
-            if islog:
-                axes[ax_count].set_xlabel("$log_{10}$ parameter value",labelpad=0.1)
+                ms = info.loc[names,:].apply(lambda x: (x["mean"],x["prior_std"]),axis=1).unique()
+                for (m,s) in ms:
+                    x, y = gaussian_distribution(m, s)
+                    ax.fill_between(x, 0, y, facecolor='0.5', alpha=0.5,
+                                    edgecolor="none")
+
+
             else:
-                axes[ax_count].set_xlabel("parameter value", labelpad=0.1)
+                for m,s in zip(info.loc[names,'mean'],info.loc[names,'prior_std']):
+                    x,y = gaussian_distribution(m,s)
+                    ax.fill_between(x,0,y,facecolor='0.5',alpha=0.5,
+                                                edgecolor="none")
+            ax.set_title("{0}) group:{1}, {2} parameters".
+                                     format(abet[ax_count],g,names.shape[0]),loc="left")
+
+            ax.set_yticks([])
+            if islog:
+                ax.set_xlabel("$log_{10}$ parameter value",labelpad=0.1)
+            else:
+                ax.set_xlabel("parameter value", labelpad=0.1)
             logger.log("plotting priors for {0}".
                        format(','.join(list(names))))
 
