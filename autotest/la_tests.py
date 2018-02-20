@@ -1,4 +1,5 @@
 import os
+import copy
 if not os.path.exists("temp"):
     os.mkdir("temp")
 
@@ -191,7 +192,7 @@ def par_contrib_speed_test():
     obs_names = ["obs{0}".format(i) for i in range(nobs)]
     fore_names = ["fore{0}".format(i) for i in range(nfore)]
 
-    all_names = obs_names.copy()
+    all_names = copy.deepcopy(obs_names)
     all_names.extend(fore_names)
     pst = pyemu.Pst.from_par_obs_names(par_names,all_names)
     cal_jco = pyemu.Jco.from_names(obs_names,par_names,random=True)

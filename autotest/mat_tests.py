@@ -331,7 +331,7 @@ def indices_test():
 
 
 if __name__ == "__main__":
-    #indices_test()
+    indices_test()
     mat_test()
     load_jco_test()
     extend_test()
