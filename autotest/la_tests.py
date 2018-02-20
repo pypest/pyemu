@@ -178,6 +178,31 @@ def dataworth_next_test():
     assert next_test.shape[0] == 4
 
 
+def par_contrib_speed_test():
+    import os
+    import numpy as np
+    import pyemu
+
+    npar = 1800
+    nobs = 1000
+    nfore = 1000
+
+    par_names = ["par{0}".format(i) for i in range(npar)]
+    obs_names = ["obs{0}".format(i) for i in range(nobs)]
+    fore_names = ["fore{0}".format(i) for i in range(nfore)]
+
+    all_names = obs_names.copy()
+    all_names.extend(fore_names)
+    pst = pyemu.Pst.from_par_obs_names(par_names,all_names)
+    cal_jco = pyemu.Jco.from_names(obs_names,par_names,random=True)
+    fore_jco = pyemu.Jco.from_names(par_names,fore_names,random=True)
+    pst.observation_data.loc[obs_names,"weight"] = 1.0
+    pst.observation_data.loc[fore_names,"weight"] = 0.0
+
+    sc = pyemu.Schur(jco=cal_jco,pst=pst,forecasts=fore_jco, verbose=True)
+    sc.get_par_contribution(parlist_dict={par_names[0]:par_names[0]})
+
+
 def par_contrib_test():
     import os
     import numpy as np
@@ -366,12 +391,13 @@ if __name__ == "__main__":
     #freyberg_verf_test()
     #forecast_pestpp_load_test()
     #map_test()
+    par_contrib_speed_test()
     #par_contrib_test()
     #dataworth_test()
     #dataworth_next_test()
     #schur_test_nonpest()
     #schur_test()
-    la_test_io()
+    #la_test_io()
     #errvar_test_nonpest()
     #errvar_test()
     #css_test()

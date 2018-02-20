@@ -278,8 +278,6 @@ def from_uncfile_test():
 
 
 def copy_test():
-    import os
-    import pyemu
 
     import os
     import numpy as np
@@ -294,7 +292,46 @@ def copy_test():
 
 
 
+def indices_test():
+    import os
+    from datetime import datetime
+    import numpy as np
+    import pyemu
+
+    nrow = 10000
+    ncol = 10000
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    m = pyemu.Matrix.from_names(rnames, cnames)
+    assert m.shape[0] == len(rnames)
+    assert m.shape[1] == len(cnames)
+
+
+    try:
+        m.indices(cnames, 0)
+    except:
+        pass
+    else:
+        raise Exception()
+
+    cycles = 10
+    s = datetime.now()
+    for _ in range(cycles):
+        idx1 = m.old_indices(cnames,1)
+    t1 = (datetime.now() - s).total_seconds()
+
+    s = datetime.now()
+    for _ in range(cycles):
+        idx2 = m.indices(cnames,1)
+    t2 = (datetime.now() - s).total_seconds()
+    print(t1,t2)
+    assert np.allclose(idx1,idx2)
+
+
 if __name__ == "__main__":
+    #indices_test()
     mat_test()
     load_jco_test()
     extend_test()

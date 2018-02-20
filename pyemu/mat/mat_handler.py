@@ -3,6 +3,7 @@
 from __future__ import print_function, division
 import copy
 import struct
+import warnings
 from datetime import datetime
 import numpy as np
 import pandas
@@ -1071,6 +1072,7 @@ class Matrix(object):
                    col_names=self.col_names,
                    isdiagonal=False)
 
+
     def indices(self, names, axis=None):
         """get the row and col indices of names. If axis is None, two ndarrays
                 are returned, corresponding the indices of names for each axis
@@ -1088,6 +1090,60 @@ class Matrix(object):
             indices of names.
 
         """
+        self_row_idxs = {self.row_names[i]:i for i in range(self.shape[0])}
+        self_col_idxs = {self.col_names[i]:i for i in range(self.shape[1])}
+
+        scol = set(self.col_names)
+        srow = set(self.row_names)
+        row_idxs = []
+        col_idxs = []
+        for name in names:
+            name = name.lower()
+            if name not in scol \
+                    and name not in srow:
+                raise Exception('Matrix.indices(): name not found: ' + name)
+            if name in scol:
+                col_idxs.append(self_col_idxs[name])
+            if name.lower() in srow:
+                row_idxs.append(self_row_idxs[name])
+        if axis is None:
+            return np.array(row_idxs, dtype=np.int32),\
+                np.array(col_idxs, dtype=np.int32)
+        elif axis == 0:
+            if len(row_idxs) != len(names):
+                raise Exception("Matrix.indices(): " +
+                                "not all names found in row_names")
+            return np.array(row_idxs, dtype=np.int32)
+        elif axis == 1:
+            if len(col_idxs) != len(names):
+                raise Exception("Matrix.indices(): " +
+                                "not all names found in col_names")
+            return np.array(col_idxs, dtype=np.int32)
+        else:
+            raise Exception("Matrix.indices(): " +
+                            "axis argument must 0 or 1, not:" + str(axis))
+
+
+
+
+    def old_indices(self, names, axis=None):
+        """get the row and col indices of names. If axis is None, two ndarrays
+                are returned, corresponding the indices of names for each axis
+
+        Parameters
+        ----------
+        names : iterable
+            column and/or row names
+        axis : (int) (optional)
+            the axis to search.
+
+        Returns
+        -------
+        numpy.ndarray : numpy.ndarray
+            indices of names.
+
+        """
+        warnings.warn("Matrix.old_indices() is deprecated - only here for testing. Use Matrix.indices()")
         row_idxs, col_idxs = [], []
         for name in names:
             if name.lower() not in self.col_names \
@@ -1916,7 +1972,7 @@ class Jco(Matrix):
         if isinstance(pst,str):
             pst = Pst(pst)
 
-        return Jco.from_names(pst.adj_par_names,pst.obs_names, random=random)
+        return Jco.from_names(pst.obs_names, pst.adj_par_names, random=random)
 
 class Cov(Matrix):
     """a subclass of Matrix for handling diagonal or dense Covariance matrices

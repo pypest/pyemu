@@ -58,6 +58,10 @@ class Pst(object):
                 value = [value]
         super(Pst,self).__setattr__(key,value)
 
+    @classmethod
+    def from_par_obs_names(cls,par_names=["par1"],obs_names=["obs1"]):
+        return pst_utils.generic_pst(par_names=par_names,obs_names=obs_names)
+
     @property
     def phi(self):
         """get the weighted total objective function
@@ -418,11 +422,14 @@ class Pst(object):
             a list of non-zero weighted observation names
 
         """
-        nz_names = []
-        for w,n in zip(self.observation_data.weight,
-                       self.observation_data.obsnme):
-            if w > 0.0:
-                nz_names.append(n)
+        # nz_names = []
+        # for w,n in zip(self.observation_data.weight,
+        #                self.observation_data.obsnme):
+        #     if w > 0.0:
+        #         nz_names.append(n)
+        obs = self.observation_data
+
+        nz_names = list(obs.loc[obs.weight>0.0,"obsnme"])
         return nz_names
 
     @property
