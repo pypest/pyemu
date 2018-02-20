@@ -108,7 +108,11 @@ def ensemble_plot_test():
                                      func_dict={pst.par_names[0]:np.log10})
 
 
-
+    deter_vals = pst.parameter_data.parval1.apply(np.log10).to_dict()
+    pyemu.plot_utils.ensemble_helper({"b": pe, "y": csv_file}, filename=csv_file + ".pdf",
+                                     plot_cols=pst.par_names[:10], sync_bins=False,
+                                     func_dict={pst.par_names[0]: np.log10},
+                                     deter_vals=deter_vals)
 
 if __name__ == "__main__":
     #plot_summary_test()

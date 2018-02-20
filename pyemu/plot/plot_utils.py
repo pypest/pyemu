@@ -545,7 +545,7 @@ def pst_prior(pst,logger, **kwargs):
 
 def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                     filename="ensemble_helper.pdf",func_dict = None,
-                    sync_bins=True,**kwargs):
+                    sync_bins=True,deter_vals=None,**kwargs):
     """TODO: bins as a dict, work out min and max and use same bins for all ens
     """
     logger = pyemu.Logger("ensemble_helper.log")
@@ -676,6 +676,11 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                     except Exception as e:
                         logger.warn("error plotting histogram for {0}:{1}".
                                     format(plot_col,str(e)))
+                if deter_vals is not None and plot_col in deter_vals:
+                    ylim = ax.get_ylim()
+                    v = deter_vals[plot_col]
+                    ax.plot([v,v],ylim,"k-",lw=1.5)
+                    ax.set_ylim(ylim)
             ax.grid()
 
             ax_count += 1
