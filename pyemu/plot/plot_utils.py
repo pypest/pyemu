@@ -663,14 +663,19 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                         mx = max(mx,emx)
                         mn = min(mn,emn)
                 plot_bins = np.linspace(mn,mx,num=bins)
+                logger.statement("{0} min:{1:5G}, max:{2:5G}".format(plot_col,mn,mx))
             else:
                 plot_bins=bins
             for fc,en in ensembles.items():
 
                 if plot_col in en.columns:
-                    en.loc[:,plot_col].hist(bins=plot_bins,facecolor=fc,
-                                            edgecolor="none",alpha=0.5,
-                                            normed=True,ax=ax)
+                    try:
+                        en.loc[:,plot_col].hist(bins=plot_bins,facecolor=fc,
+                                                edgecolor="none",alpha=0.5,
+                                                normed=True,ax=ax)
+                    except Exception as e:
+                        logger.warn("error plotting histogram for {0}:{1}".
+                                    format(plot_col,str(e)))
             ax.grid()
 
             ax_count += 1
