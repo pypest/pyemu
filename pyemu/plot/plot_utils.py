@@ -390,15 +390,17 @@ def res_phi_pie(pst,logger, **kwargs):
     obs = pst.observation_data
     res = pst.res
     phi_comps = pst.phi_components
+    norm_phi_comps = pst.phi_components_normalized
     if "include_zero" not in kwargs or kwargs["include_zero"] is True:
         phi_comps = {k:v for k,v in phi_comps.items() if v > 0.0}
+        norm_phi_comps = {k:norm_phi_comps[k] for k in phi_comps.keys()}
     if "ax" in kwargs:
         ax = kwargs["ax"]
     else:
         fig = plt.figure(figsize=figsize)
         ax = plt.subplot(1,1,1,aspect="equal")
     labels = ["{0}\n{1:4G}({2:3.1f}%)".format(k,v,100. * (v / pst.phi)) for k,v in phi_comps.items()]
-    ax.pie(phi_comps.values(),labels=labels)
+    ax.pie(norm_phi_comps.values(),labels=labels)
     logger.log("plot res_phi_pie")
     return ax
 
@@ -472,7 +474,12 @@ def pst_prior(pst,logger, **kwargs):
         #check for consistency here
 
     else:
-        grouper = par.groupby(par.pargp).groups
+        par_adj = par.loc[par.partrans.apply(lambda x: x in ["log","none"]),:]
+        grouper = par_adj.groupby(par_adj.pargp).groups
+        #grouper = par.groupby(par.pargp).groups
+
+    if len(grouper) == 0:
+        raise Exception("no adustable parameters to plot")
 
     fig = plt.figure(figsize=figsize)
     if "fig_title" in kwargs:
@@ -480,6 +487,7 @@ def pst_prior(pst,logger, **kwargs):
     else:
         plt.figtext(0.5,0.5,"pyemu.Pst.plot(kind='prior')\nfrom pest control file '{0}'\n at {1}"
                  .format(pst.filename,str(datetime.now())),ha="center")
+
     with PdfPages(pst.filename.replace(".pst",".prior.pdf")) as pdf:
         ax_count = 0
         grps_names = list(grouper.keys())
@@ -674,8 +682,7 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                 if deter_vals is not None and plot_col in deter_vals:
                     ylim = ax.get_ylim()
                     v = deter_vals[plot_col]
-                    ax.plot([v,v],ylim,"k-",lw=1.5)
-                    ax.set_ylim(ylim)
+                    ax.plot([v])
             ax.grid()
 
             ax_count += 1
