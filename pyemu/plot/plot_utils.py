@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 import string
-
+from pyemu.logger import Logger
 font = {'size'   : 6}
 import matplotlib
 matplotlib.rc("font",**font)
@@ -184,12 +184,14 @@ def pst_helper(pst,kind=None,**kwargs):
     kinds[kind](pst, logger, **kwargs)
 
 
-def res_1to1(pst,logger,**kwargs):
+def res_1to1(pst,logger=None,**kwargs):
     """
     TODO: color symbols by weight
 
 
     """
+    if logger is None:
+        logger=Logger('Default_Loggger.log')
     logger.log("plot res_1to1")
     if pst.res is None:
         logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
