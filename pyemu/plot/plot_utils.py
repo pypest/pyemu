@@ -226,7 +226,8 @@ def res_1to1(pst,logger=None,**kwargs):
                 continue
 
             if ax_count % (nr * nc) == 0:
-                plt.tight_layout()
+                if ax_count > 0:
+                    plt.tight_layout()
                 pdf.savefig()
                 plt.close(fig)
                 fig = plt.figure(figsize=figsize)
