@@ -184,7 +184,7 @@ def pst_helper(pst,kind=None,**kwargs):
     kinds[kind](pst, logger, **kwargs)
 
 
-def res_1to1(pst,logger=None,**kwargs):
+def res_1to1(pst,logger=None,plot_hexbin=False,**kwargs):
     """
     TODO: color symbols by weight
 
@@ -235,12 +235,18 @@ def res_1to1(pst,logger=None,**kwargs):
                 ax_count = 0
 
             ax = axes[ax_count]
+
             #if obs_g.shape[0] == 1:
             #    ax.scatter(list(obs_g.sim),list(obs_g.obsval),marker='.',s=30,color='b')
             #else:
-            ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
+            if plot_hexbin:
+                ax.hexbin(obs_g.sim.values, obs_g.obsval.values, mincnt=1, edgecolors=None)
+#                plt.colorbar()
+            else:
+                ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
 
-            mx = max(ax.get_xlim()[1],ax.get_ylim()[1])
+
+            mx = max(ax.get_xlim()[1], ax.get_ylim()[1])
             mn = min(ax.get_xlim()[0], ax.get_ylim()[0])
             if obs_g.shape[0] == 1:
                 mx *= 1.1
@@ -258,16 +264,20 @@ def res_1to1(pst,logger=None,**kwargs):
             ax_count += 1
 
             ax = axes[ax_count]
-            ax.scatter(obs_g.sim, obs_g.res, marker='.', s=10, color='b')
+            ax.scatter(obs_g.obsval, obs_g.res, marker='.', s=10, color='b')
             ylim = ax.get_ylim()
             mx = max(np.abs(ylim[0]),np.abs(ylim[1]))
             if obs_g.shape[0] == 1:
                 mx *= 1.1
             ax.set_ylim(-mx, mx)
+            #show a zero residuals line
             ax.plot(xlim,[0,0],'k--',lw=1.0)
+            meanres= obs_g.res.mean()
+            # show mean residuals line
+            ax.plot(xlim,[meanres,meanres], 'r-', lw=1.0)
             ax.set_xlim(xlim)
             ax.set_ylabel("residual",labelpad=0.1)
-            ax.set_xlabel("simulated",labelpad=0.1)
+            ax.set_xlabel("observed",labelpad=0.1)
             ax.set_title("{0}) group:{1}, {2} observations".
                          format(abet[ax_count], g, names.shape[0]), loc="left")
             ax.grid()
