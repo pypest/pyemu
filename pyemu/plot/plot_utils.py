@@ -285,11 +285,13 @@ def res_1to1(pst,logger=None,**kwargs):
         plt.close(fig)
     logger.log("plot res_1to1")
 
-def res_obs_v_sim(pst,logger, **kwargs):
+def res_obs_v_sim(pst,logger=None, **kwargs):
     """
     TODO: workout min and max dates and set xaxis on all plots
 
     """
+    if logger is None:
+        logger=Logger('Default_Loggger.log')
     logger.log("plot res_obs_v_sim")
     if pst.res is None:
         logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
@@ -370,7 +372,7 @@ def res_obs_v_sim(pst,logger, **kwargs):
         plt.close(fig)
     logger.log("plot res_obs_v_sim")
 
-def res_phi_pie(pst,logger, **kwargs):
+def res_phi_pie(pst,logger=None, **kwargs):
     """plot current phi components as a pie chart.
 
     Parameters
@@ -387,6 +389,8 @@ def res_phi_pie(pst,logger, **kwargs):
 
 
     """
+    if logger is None:
+        logger=Logger('Default_Loggger.log')
     logger.log("plot res_phi_pie")
     if pst.res is None:
         logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
@@ -419,7 +423,7 @@ def get_page_axes():
     #[ax.set_yticks([]) for ax in axes]
     return axes
 
-def pst_prior(pst,logger, **kwargs):
+def pst_prior(pst,logger=None, **kwargs):
     """ helper to plot prior parameter histograms implied by
     parameter bounds. Saves a multipage pdf named <case>.prior.pdf
 
@@ -442,6 +446,8 @@ def pst_prior(pst,logger, **kwargs):
     external parcov, unique mean-std pairs
 
     """
+    if logger is None:
+        logger=Logger('Default_Loggger.log')
     logger.log("plot pst_prior")
     par = pst.parameter_data
 
