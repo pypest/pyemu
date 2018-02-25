@@ -209,7 +209,11 @@ def res_1to1(pst,logger=None,plot_hexbin=False,**kwargs):
     else:
         plt.figtext(0.5, 0.5, "pyemu.Pst.plot(kind='1to1')\nfrom pest control file '{0}'\n at {1}"
                     .format(pst.filename, str(datetime.now())), ha="center")
-    with PdfPages(pst.filename.replace(".pst", ".1to1.pdf")) as pdf:
+    if plot_hexbin:
+        pdfname = pst.filename.replace(".pst", ".1to1.hexbin.pdf")
+    else:
+        pdfname = pst.filename.replace(".pst", ".1to1.pdf")
+    with PdfPages(pdfname) as pdf:
         ax_count = 0
         for g, names in grouper.items():
             logger.log("plotting 1to1 for {0}".format(g))
@@ -239,23 +243,28 @@ def res_1to1(pst,logger=None,plot_hexbin=False,**kwargs):
             #if obs_g.shape[0] == 1:
             #    ax.scatter(list(obs_g.sim),list(obs_g.obsval),marker='.',s=30,color='b')
             #else:
+            mx = max(obs_g.obsval.max(), obs_g.sim.max())
+            mn = min(obs_g.obsval.min(), obs_g.sim.min())
+
+            if obs_g.shape[0] == 1:
+                mx *= 1.1
+                mn *= 0.9
+            ax.axis('square')
             if plot_hexbin:
-                ax.hexbin(obs_g.sim.values, obs_g.obsval.values, mincnt=1, edgecolors=None)
-#                plt.colorbar()
+                ax.hexbin(obs_g.sim.values, obs_g.obsval.values, mincnt=1, gridsize=(75, 75),
+                          extent=(mn, mx, mn, mx), bins='log', edgecolors=None)
+ #               plt.colorbar(ax=ax)
             else:
                 ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
 
 
-            mx = max(ax.get_xlim()[1], ax.get_ylim()[1])
-            mn = min(ax.get_xlim()[0], ax.get_ylim()[0])
-            if obs_g.shape[0] == 1:
-                mx *= 1.1
-                mn *= 0.9
+
             ax.plot([mn,mx],[mn,mx],'k--',lw=1.0)
             xlim = (mn,mx)
             ax.set_xlim(mn,mx)
             ax.set_ylim(mn,mx)
             ax.grid()
+
             ax.set_ylabel("observed",labelpad=0.1)
             ax.set_xlabel("simulated",labelpad=0.1)
             ax.set_title("{0}) group:{1}, {2} observations".
@@ -266,12 +275,12 @@ def res_1to1(pst,logger=None,plot_hexbin=False,**kwargs):
             ax = axes[ax_count]
             ax.scatter(obs_g.obsval, obs_g.res, marker='.', s=10, color='b')
             ylim = ax.get_ylim()
-            mx = max(np.abs(ylim[0]),np.abs(ylim[1]))
+            mx = max(np.abs(ylim[0]), np.abs(ylim[1]))
             if obs_g.shape[0] == 1:
                 mx *= 1.1
             ax.set_ylim(-mx, mx)
             #show a zero residuals line
-            ax.plot(xlim,[0,0],'k--',lw=1.0)
+            ax.plot(xlim, [0,0], 'k--', lw=1.0)
             meanres= obs_g.res.mean()
             # show mean residuals line
             ax.plot(xlim,[meanres,meanres], 'r-', lw=1.0)
