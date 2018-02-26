@@ -607,7 +607,7 @@ def get_phi_comps_from_recfile(recfile):
     return iters
 
 def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
-               gwutils_compliant=False, datetime_format=None):
+               gwutils_compliant=False, datetime_format=None,prefix=''):
     """ create an instruction file for an smp file
 
     Parameters
@@ -627,6 +627,9 @@ def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
         use free format (with whitespace) instruction set
     datetime_format : str
         str to pass to datetime.strptime in the smp_to_dataframe() function
+    prefix : str
+         a prefix to add to the front of the obsnmes.  Default is ''
+
 
     Returns
     -------
@@ -643,9 +646,9 @@ def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
     name_groups = df.groupby("name").groups
     for name,idxs in name_groups.items():
         if not use_generic_names and len(name) <= 11:
-            onames = df.loc[idxs,"datetime"].apply(lambda x: name+'_'+x.strftime("%d%m%Y")).values
+            onames = df.loc[idxs,"datetime"].apply(lambda x: prefix+name+'_'+x.strftime("%d%m%Y")).values
         else:
-            onames = [name+"_{0:d}".format(i) for i in range(len(idxs))]
+            onames = [prefix+name+"_{0:d}".format(i) for i in range(len(idxs))]
         if False in (map(lambda x :len(x) <= 20,onames)):
             long_names = [oname for oname in onames if len(oname) > 20]
             raise Exception("observation names longer than 20 chars:\n{0}".format(str(long_names)))
