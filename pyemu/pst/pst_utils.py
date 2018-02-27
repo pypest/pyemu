@@ -370,6 +370,7 @@ def parse_ins_file(ins_file):
             "instruction file error: marker must be a single character, not:" +\
             str(marker)
         for line in f:
+            line = line.lower()
             if marker in line:
                 raw = line.lower().strip().split(marker)
                 for item in raw[::2]:
@@ -559,6 +560,7 @@ def _try_run_inschek(ins_file,out_file):
         obf_file = ins_file.replace(".ins", ".obf")
         df = pd.read_csv(obf_file, delim_whitespace=True,
                          skiprows=0, index_col=0, names=["obsval"])
+        df.index = df.index.map(str.lower)
         return df
     except Exception as e:
         print("error using inschek for instruction file {0}:{1}".
