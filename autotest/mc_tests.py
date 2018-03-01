@@ -129,7 +129,7 @@ def from_dataframe_test():
     mc.project_parensemble()
     mc.parensemble.to_csv(os.path.join("temp","test.csv"))
 
-    pstc = pyemu.Pst(pst)
+    pstc = Pst(pst)
     par = pstc.parameter_data
     par.sort_values(by=parnme,ascending=False,inplace=True)
     cov = Cov.from_parameter_data(pstc)
