@@ -46,6 +46,9 @@ def mat_test():
     result = first.T * third * first
     result = first * second
 
+    result = first.T.x * third
+    result = 2.0 * third
+
     newfirst = first.get(col_names="p1")
     result = newfirst * second
     result = second * newfirst.T
@@ -65,6 +68,8 @@ def mat_test():
 
     newthird = third.get(row_names=["o1"])
     result = first.T * newthird * first
+
+    result.to_sparse()
 
     # drop testing
     second.drop("p2",axis=0)
@@ -354,9 +359,9 @@ def indices_test():
 if __name__ == "__main__":
     #concat_test()
     # indices_test()
-    #mat_test()
+    mat_test()
     # load_jco_test()
-    extend_test()
+    #extend_test()
     # pseudo_inv_test()
     # drop_test()
     # get_test()
