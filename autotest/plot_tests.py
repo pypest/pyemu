@@ -59,9 +59,6 @@ def pst_plot_test():
     pst.plot(kind="obs_v_sim", include_zero=True,fig_title="obs_v_sim")
     #
     ax = pst.plot(kind="phi_pie")
-   
-    
-
     ax = plt.subplot(111,aspect="equal")
     pst.plot(kind="phi_pie",ax=ax)
     # plt.show()
