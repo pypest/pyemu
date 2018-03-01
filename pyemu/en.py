@@ -1369,6 +1369,13 @@ class ParameterEnsemble(Ensemble):
             assert os.path.exists(pfile), "ParameterEnsemble.read_parfiles() error: " + \
                                           "file: {0} not found".format(pfile)
             df = read_parfile(pfile)
+            #check for scale differences - I don't who is dumb enough
+            #to change scale between par files and pst...
+            diff = df.scale - pst.parameter_data.scale
+            if diff.apply(np.abs).sum() > 0.0:
+                warnings.warn("differences in scale detected, applying scale in par file")
+                df.loc[:,"parval1"] *= df.scale
+
             dfs[rname] = df.parval1.values
 
         df_all = pd.DataFrame(data=dfs).T
