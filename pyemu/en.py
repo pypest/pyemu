@@ -490,6 +490,14 @@ class ObservationEnsemble(Ensemble):
         return pd.Series(data=phi_vec,index=self.index)
 
 
+    def add_base(self):
+        """ add "base" control file values as a realization
+
+        """
+        if "base" in self.index:
+            raise Exception("'base' already in index")
+        self.loc["base",:] = self.pst.observation_data.loc[self.columns,"obsval"]
+
 
 class ParameterEnsemble(Ensemble):
     """ Ensemble derived type for parameters

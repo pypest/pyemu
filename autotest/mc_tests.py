@@ -633,6 +633,38 @@ def to_from_binary_test():
     assert d.max().max() == 0.0
 
 
+def add_base_test():
+    import os
+    import numpy as np
+    from pyemu import MonteCarlo, Cov, ParameterEnsemble
+    from datetime import datetime
+    jco = os.path.join("pst", "pest.jcb")
+    pst = jco.replace(".jcb", ".pst")
+
+    mc = MonteCarlo(jco=jco, pst=pst)
+    num_reals = 100
+
+    mc.draw(num_reals=num_reals, how="gaussian",obs=True)
+    mc.parensemble.add_base()
+    diff = mc.parensemble.loc["base",:] - mc.pst.parameter_data.parval1
+    assert diff.sum() == 0.0
+    try:
+        mc.parensemble.add_base()
+    except:
+        pass
+    else:
+        raise  Exception()
+
+    mc.obsensemble.add_base()
+    diff = mc.obsensemble.loc["base", :] - mc.pst.observation_data.obsval
+    assert diff.sum() == 0.0
+    try:
+        mc.obsensemble.add_base()
+    except:
+        pass
+    else:
+        raise Exception()
+
 
 if __name__ == "__main__":
     #binary_ensemble_dev()
@@ -650,9 +682,10 @@ if __name__ == "__main__":
     # fixed_par_test()
     # uniform_draw_test()
     #gaussian_draw_test()
-    parfile_test()
+    #parfile_test()
     # write_regul_test()
     # from_dataframe_test()
     # ensemble_seed_test()
     # pnulpar_test()
     # enforce_test()
+    add_base_test()
