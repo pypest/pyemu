@@ -48,7 +48,7 @@ def concat(mats):
         col_names = []
         for mat in mats:
             col_names.extend(copy.deepcopy(mat.col_names))
-        x = mats[0].newx
+        x = mats[0].newx.copy()
         for mat in mats[1:]:
             mat.align(mats[0].row_names, axis=0)
             other_x = mat.newx
@@ -59,7 +59,7 @@ def concat(mats):
         row_names = []
         for mat in mats:
             row_names.extend(copy.deepcopy(mat.row_names))
-        x = mat[0].newx
+        x = mats[0].newx.copy()
         for mat in mats[1:]:
             mat.align(mats[0].col_names, axis=1)
             other_x = mat.newx

@@ -6,7 +6,7 @@ if not os.path.exists("temp"):
 def mat_test():
     import os
     import numpy as np
-    from pyemu.mat import Jco,Cov
+    from pyemu.mat import Jco,Cov,concat
     test_dir = os.path.join("mat")
     if not os.path.exists(test_dir):
         os.mkdir(test_dir)
@@ -79,6 +79,12 @@ def mat_test():
     first.drop("o4",axis=0)
     assert first.shape == (3,2)
 
+    try:
+        concat([first,third])
+    except:
+        pass
+    else:
+        raise Exception()
 
 def drop_test():
     import numpy as np
@@ -96,6 +102,7 @@ def drop_test():
     t_array = np.atleast_2d(np.array([0,6])).transpose()
     print(first.x,t_array)
     assert np.array_equal(first.x,t_array)
+
 
 def get_test():
     import numpy as np
@@ -142,6 +149,20 @@ def extend_test():
     assert third.x[3,:].sum() == 3
     assert third.x[:,6].sum() == 3
     assert third.x[6,:].sum() == 3
+    try:
+        forth = pyemu.concat([first,third])
+    except:
+        pass
+    else:
+        raise Exception()
+
+    forth = pyemu.Matrix(x=first.x,row_names=first.row_names,col_names=[str(i) for i in range(first.shape[1])])
+    x = pyemu.concat([first,forth])
+    print(x)
+
+    fifth = pyemu.Matrix(x=first.x, row_names=[str(i) for i in range(first.shape[0])], col_names=first.col_names)
+    x = pyemu.concat([first,fifth])
+    print(x)
 
 
 def pseudo_inv_test():
@@ -331,19 +352,20 @@ def indices_test():
 
 
 if __name__ == "__main__":
-    indices_test()
-    mat_test()
-    load_jco_test()
+    #concat_test()
+    # indices_test()
+    #mat_test()
+    # load_jco_test()
     extend_test()
-    pseudo_inv_test()
-    drop_test()
-    get_test()
-    cov_identity_test()
-    hadamard_product_test()
-    get_diag_test()
-    to_pearson_test()
-    sigma_range_test()
-    cov_replace_test()
-    from_names_test()
-    from_uncfile_test()
-    copy_test()
+    # pseudo_inv_test()
+    # drop_test()
+    # get_test()
+    # cov_identity_test()
+    # hadamard_product_test()
+    # get_diag_test()
+    # to_pearson_test()
+    # sigma_range_test()
+    # cov_replace_test()
+    # from_names_test()
+    # from_uncfile_test()
+    # copy_test()
