@@ -144,7 +144,9 @@ def parfile_test():
 
     jco = os.path.join("pst", "pest.jcb")
     pst = jco.replace(".jcb", ".pst")
+
     mc = MonteCarlo(jco=jco, pst=pst)
+    mc.pst.parameter_data.loc[mc.pst.par_names[1], "scale"] = 0.001
     mc.draw(10)
     mc.parensemble.to_parfiles(os.path.join("temp","testpar"))
 
@@ -682,7 +684,7 @@ if __name__ == "__main__":
     # fixed_par_test()
     # uniform_draw_test()
     #gaussian_draw_test()
-    #parfile_test()
+    parfile_test()
     # write_regul_test()
     from_dataframe_test()
     # ensemble_seed_test()
