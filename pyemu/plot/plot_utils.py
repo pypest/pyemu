@@ -715,7 +715,7 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                 if deter_vals is not None and plot_col in deter_vals:
                     ylim = ax.get_ylim()
                     v = deter_vals[plot_col]
-                    ax.plot([v])
+                    ax.plot([v,v],ylim,"k--",lw=1.5)
             ax.grid()
 
             ax_count += 1
