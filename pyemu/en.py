@@ -1473,3 +1473,13 @@ class ParameterEnsemble(Ensemble):
             par_file = "{0}{1}.par".format(prefix,real)
             par_df.loc[:,"parval1"] =self.loc[real,:]
             write_parfile(par_df,par_file)
+
+
+    def add_base(self):
+        """ add "base" control file values as a realization
+
+        """
+        if "base" in self.index:
+            raise Exception("'base' already in index")
+        self.loc["base",:] = self.pst.parameter_data.loc[self.columns,"parval1"]
+        
