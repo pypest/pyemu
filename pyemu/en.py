@@ -2,6 +2,7 @@ from __future__ import print_function, division
 import os
 from datetime import datetime
 import copy
+import warnings
 import math
 import numpy as np
 import pandas as pd
@@ -1327,6 +1328,65 @@ class ParameterEnsemble(Ensemble):
             df = read_parfile(pfile)
             self.loc[pfile] = df.loc[:,'parval1']
         self.loc[:,:] = self.loc[:,:].astype(np.float64)
+
+    @classmethod
+    def from_parfiles(cls,pst,parfile_names,real_names=None):
+        """ create a parameter ensemble from parfiles.  Accepts parfiles with less than the
+        parameters in the control (get NaNs in the ensemble) or extra parameters in the
+        parfiles (get dropped)
+
+        Parameters:
+            pst : pyemu.Pst
+
+            parfile_names : list of str
+                par file names
+
+            real_names : str
+                optional list of realization names. If None, a single integer counter is used
+
+        Returns:
+            pyemu.ParameterEnsemble
+
+
+        """
+        if isinstance(pst,str):
+            pst = pyemu.Pst(pst)
+        dfs = {}
+        if real_names is not None:
+            assert len(real_names) == len(parfile_names)
+        else:
+            real_names = np.arange(len(parfile_names))
+
+        for rname,pfile in zip(real_names,parfile_names):
+            assert os.path.exists(pfile), "ParameterEnsemble.read_parfiles() error: " + \
+                                          "file: {0} not found".format(pfile)
+            df = read_parfile(pfile)
+            dfs[rname] = df.parval1.values
+
+        df_all = pd.DataFrame(data=dfs).T
+        df_all.columns = df.index
+
+
+
+        if len(pst.par_names) != df_all.shape[1]:
+            #if len(pst.par_names) < df_all.shape[1]:
+            #    raise Exception("pst is not compatible with par files")
+            pset = set(pst.par_names)
+            dset = set(df_all.columns)
+            diff = pset.difference(dset)
+            warnings.warn("the following parameters are not in the par files (getting NaNs) :{0}".
+                         format(','.join(diff)))
+            blank_df = pd.DataFrame(index=df_all.index,columns=diff)
+
+            df_all = pd.concat([df_all,blank_df],axis=1)
+
+            diff = dset.difference(pset)
+            if len(diff) > 0:
+                warnings.warn("the following par file parameters are not in the control (being dropped):{0}".
+                              format(','.join(diff)))
+                df_all = df_all.loc[:, pst.par_names]
+
+        return ParameterEnsemble.from_dataframe(df=df_all,pst=pst)
 
 
     def to_csv(self,*args,**kwargs):

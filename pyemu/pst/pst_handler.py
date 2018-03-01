@@ -1593,7 +1593,7 @@ class Pst(object):
         return new_par_data
 
 
-    def add_observations(self,ins_file,out_file,pst_path=None):
+    def add_observations(self,ins_file,out_file,pst_path=None,inschek=True):
         """ add new parameters to a control file
 
         Parameters
@@ -1606,6 +1606,8 @@ class Pst(object):
                 the path to append to the instruction file and out file in the control file.  If
                 not None, then any existing path in front of the template or in file is split off
                 and pst_path is prepended.  Default is None
+            inschek : bool
+                flag to run inschek.  If successful, inscheck outputs are used as obsvals
 
         Returns
         -------
@@ -1616,13 +1618,18 @@ class Pst(object):
         ----
         populates the new observation information with default values
 
-        tries to run inschek to populate obsval with the current model output file values
-
         """
         assert os.path.exists(ins_file),"{0}, {1}".format(os.getcwd(),ins_file)
 
         # get the parameter names in the template file
         obsnme = pst_utils.parse_ins_file(ins_file)
+
+        sobsnme = set(obsnme)
+        sexist = set(self.obs_names)
+        sint = sobsnme.intersection(sexist)
+        if len(sint) > 0:
+            raise Exception("the following obs instruction file {0} are already in the control file:{1}".
+                            format(ins_file,','.join(sint)))
 
         # find "new" parameters that are not already in the control file
         new_obsnme = [o for o in obsnme if o not in self.observation_data.obsnme]
@@ -1635,6 +1642,7 @@ class Pst(object):
                                                     pst_utils.pst_config["obs_defaults"],
                                                     pst_utils.pst_config["obs_dtype"])
         new_obs_data.loc[new_obsnme,"obsnme"] = new_obsnme
+        new_obs_data.index = new_obsnme
         self.observation_data = self.observation_data.append(new_obs_data)
 
         if pst_path is not None:
@@ -1642,9 +1650,11 @@ class Pst(object):
             out_file = os.path.join(pst_path, os.path.split(out_file)[-1])
         self.instruction_files.append(ins_file)
         self.output_files.append(out_file)
-
-        df = pst_utils._try_run_inschek(ins_file,out_file)
+        df = None
+        if inschek:
+            df = pst_utils._try_run_inschek(ins_file,out_file)
         if df is not None:
+            print(self.observation_data.index,df.index)
             self.observation_data.loc[df.index,"obsval"] = df.obsval
             new_obs_data.loc[df.index,"obsval"] = df.obsval
         return new_obs_data

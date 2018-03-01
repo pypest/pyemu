@@ -45,25 +45,22 @@ def pst_plot_test():
     par.loc[pst.par_names[:3],"pargp"] = "test"
     par.loc[pst.par_names[1:],"partrans"] = "fixed"
     pst.plot()
-    #pst.plot(kind="prior", unique_only=False)
-    # pst.plot(kind="prior",unique_only=True)
-    # pst.plot(kind="prior", unique_only=True, fig_title="priors")
+    pst.plot(kind="prior", unique_only=False)
+    pst.plot(kind="prior",unique_only=True)
+    pst.plot(kind="prior", unique_only=True, fig_title="priors")
     #
-    # pst.plot(kind="1to1")
-    # pst.plot(kind="1to1",include_zero=True)
-    # pst.plot(kind="1to1", include_zero=True,fig_title="1to1")
+    pst.plot(kind="1to1")
+    pst.plot(kind="1to1",include_zero=True)
+    pst.plot(kind="1to1", include_zero=True,fig_title="1to1")
     #
     #
-    # pst.plot(kind="obs_v_sim")
-    # pst.plot(kind="obs_v_sim",include_zero=True)
-    # pst.plot(kind="obs_v_sim", include_zero=True,fig_title="obs_v_sim")
+    pst.plot(kind="obs_v_sim")
+    pst.plot(kind="obs_v_sim",include_zero=True)
+    pst.plot(kind="obs_v_sim", include_zero=True,fig_title="obs_v_sim")
     #
     ax = pst.plot(kind="phi_pie")
-    plt.show()
-
-
-    # ax = plt.subplot(111,aspect="equal")
-    # pst.plot(kind="phi_pie",ax=ax)
+    ax = plt.subplot(111,aspect="equal")
+    pst.plot(kind="phi_pie",ax=ax)
     # plt.show()
 
 

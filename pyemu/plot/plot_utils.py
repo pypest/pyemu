@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 import string
-
+from pyemu.logger import Logger
 font = {'size'   : 6}
 import matplotlib
 matplotlib.rc("font",**font)
@@ -184,12 +184,14 @@ def pst_helper(pst,kind=None,**kwargs):
     kinds[kind](pst, logger, **kwargs)
 
 
-def res_1to1(pst,logger,**kwargs):
+def res_1to1(pst,logger=None,plot_hexbin=False,**kwargs):
     """
     TODO: color symbols by weight
 
 
     """
+    if logger is None:
+        logger=Logger('Default_Loggger.log')
     logger.log("plot res_1to1")
     if pst.res is None:
         logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
@@ -207,7 +209,11 @@ def res_1to1(pst,logger,**kwargs):
     else:
         plt.figtext(0.5, 0.5, "pyemu.Pst.plot(kind='1to1')\nfrom pest control file '{0}'\n at {1}"
                     .format(pst.filename, str(datetime.now())), ha="center")
-    with PdfPages(pst.filename.replace(".pst", ".1to1.pdf")) as pdf:
+    if plot_hexbin:
+        pdfname = pst.filename.replace(".pst", ".1to1.hexbin.pdf")
+    else:
+        pdfname = pst.filename.replace(".pst", ".1to1.pdf")
+    with PdfPages(pdfname) as pdf:
         ax_count = 0
         for g, names in grouper.items():
             logger.log("plotting 1to1 for {0}".format(g))
@@ -224,7 +230,8 @@ def res_1to1(pst,logger,**kwargs):
                 continue
 
             if ax_count % (nr * nc) == 0:
-                plt.tight_layout()
+                if ax_count > 0:
+                    plt.tight_layout()
                 pdf.savefig()
                 plt.close(fig)
                 fig = plt.figure(figsize=figsize)
@@ -232,21 +239,32 @@ def res_1to1(pst,logger,**kwargs):
                 ax_count = 0
 
             ax = axes[ax_count]
+
             #if obs_g.shape[0] == 1:
             #    ax.scatter(list(obs_g.sim),list(obs_g.obsval),marker='.',s=30,color='b')
             #else:
-            ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
+            mx = max(obs_g.obsval.max(), obs_g.sim.max())
+            mn = min(obs_g.obsval.min(), obs_g.sim.min())
 
-            mx = max(ax.get_xlim()[1],ax.get_ylim()[1])
-            mn = min(ax.get_xlim()[0], ax.get_ylim()[0])
             if obs_g.shape[0] == 1:
                 mx *= 1.1
                 mn *= 0.9
+            ax.axis('square')
+            if plot_hexbin:
+                ax.hexbin(obs_g.sim.values, obs_g.obsval.values, mincnt=1, gridsize=(75, 75),
+                          extent=(mn, mx, mn, mx), bins='log', edgecolors=None)
+ #               plt.colorbar(ax=ax)
+            else:
+                ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
+
+
+
             ax.plot([mn,mx],[mn,mx],'k--',lw=1.0)
             xlim = (mn,mx)
             ax.set_xlim(mn,mx)
             ax.set_ylim(mn,mx)
             ax.grid()
+
             ax.set_ylabel("observed",labelpad=0.1)
             ax.set_xlabel("simulated",labelpad=0.1)
             ax.set_title("{0}) group:{1}, {2} observations".
@@ -255,16 +273,20 @@ def res_1to1(pst,logger,**kwargs):
             ax_count += 1
 
             ax = axes[ax_count]
-            ax.scatter(obs_g.sim, obs_g.res, marker='.', s=10, color='b')
+            ax.scatter(obs_g.obsval, obs_g.res, marker='.', s=10, color='b')
             ylim = ax.get_ylim()
-            mx = max(np.abs(ylim[0]),np.abs(ylim[1]))
+            mx = max(np.abs(ylim[0]), np.abs(ylim[1]))
             if obs_g.shape[0] == 1:
                 mx *= 1.1
             ax.set_ylim(-mx, mx)
-            ax.plot(xlim,[0,0],'k--',lw=1.0)
+            #show a zero residuals line
+            ax.plot(xlim, [0,0], 'k--', lw=1.0)
+            meanres= obs_g.res.mean()
+            # show mean residuals line
+            ax.plot(xlim,[meanres,meanres], 'r-', lw=1.0)
             ax.set_xlim(xlim)
             ax.set_ylabel("residual",labelpad=0.1)
-            ax.set_xlabel("simulated",labelpad=0.1)
+            ax.set_xlabel("observed",labelpad=0.1)
             ax.set_title("{0}) group:{1}, {2} observations".
                          format(abet[ax_count], g, names.shape[0]), loc="left")
             ax.grid()
@@ -282,11 +304,13 @@ def res_1to1(pst,logger,**kwargs):
         plt.close(fig)
     logger.log("plot res_1to1")
 
-def res_obs_v_sim(pst,logger, **kwargs):
+def res_obs_v_sim(pst,logger=None, **kwargs):
     """
     TODO: workout min and max dates and set xaxis on all plots
 
     """
+    if logger is None:
+        logger=Logger('Default_Loggger.log')
     logger.log("plot res_obs_v_sim")
     if pst.res is None:
         logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
@@ -367,7 +391,7 @@ def res_obs_v_sim(pst,logger, **kwargs):
         plt.close(fig)
     logger.log("plot res_obs_v_sim")
 
-def res_phi_pie(pst,logger, **kwargs):
+def res_phi_pie(pst,logger=None, **kwargs):
     """plot current phi components as a pie chart.
 
     Parameters
@@ -384,6 +408,8 @@ def res_phi_pie(pst,logger, **kwargs):
 
 
     """
+    if logger is None:
+        logger=Logger('Default_Loggger.log')
     logger.log("plot res_phi_pie")
     if pst.res is None:
         logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
@@ -416,7 +442,7 @@ def get_page_axes():
     #[ax.set_yticks([]) for ax in axes]
     return axes
 
-def pst_prior(pst,logger, **kwargs):
+def pst_prior(pst,logger=None, **kwargs):
     """ helper to plot prior parameter histograms implied by
     parameter bounds. Saves a multipage pdf named <case>.prior.pdf
 
@@ -439,6 +465,8 @@ def pst_prior(pst,logger, **kwargs):
     external parcov, unique mean-std pairs
 
     """
+    if logger is None:
+        logger=Logger('Default_Loggger.log')
     logger.log("plot pst_prior")
     par = pst.parameter_data
 
@@ -687,7 +715,7 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                 if deter_vals is not None and plot_col in deter_vals:
                     ylim = ax.get_ylim()
                     v = deter_vals[plot_col]
-                    ax.plot([v])
+                    ax.plot([v,v],ylim,"k--",lw=1.5)
             ax.grid()
 
             ax_count += 1
