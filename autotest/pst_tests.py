@@ -374,7 +374,7 @@ def from_flopy_test():
     # except:
     #     pass
     os.chdir(bd)
-    return
+
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
                                              model_exe_name="mfnwt",sfr_pars=True,sfr_obs=True,
@@ -583,14 +583,14 @@ def write_tables_test():
 
 
 if __name__ == "__main__":
-    write_tables_test()
+    #write_tables_test()
     #res_stats_test()
     #test_write_input_files()
     #add_obs_test()
     #add_pars_test()
     #setattr_test()
     # run_array_pars()
-    #from_flopy_test()
+    from_flopy_test()
     #plot_flopy_par_ensemble_test()
     #add_pi_test()
     # regdata_test()

@@ -46,6 +46,9 @@ def schur_test_nonpest():
 
     print(s.get_removed_obs_importance({"group1":["o1","o3"]}))
 
+    print(s.pandas)
+
+
 
 def schur_test():
     import os
@@ -62,7 +65,12 @@ def schur_test():
     print(sc.prior_forecast)
     print(sc.posterior_forecast)
     print(sc.get_par_group_contribution())
-    print(sc.get_removed_obs_group_importance())
+
+
+    print(sc.get_parameter_summary(include_map=True))
+    print(sc.get_forecast_summary(include_map=True))
+    print(sc.get_removed_obs_importance(reset_zero_weight=True))
+
 
 def la_test_io():
     from pyemu import Schur, Cov, Pst
@@ -392,7 +400,8 @@ if __name__ == "__main__":
     #freyberg_verf_test()
     #forecast_pestpp_load_test()
     #map_test()
-    par_contrib_speed_test()
+    #par_contrib_speed_test()
+    schur_test()
     #par_contrib_test()
     #dataworth_test()
     #dataworth_next_test()
