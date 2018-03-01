@@ -1224,25 +1224,25 @@ class ParameterEnsemble(Ensemble):
 
         """
         raise NotImplementedError()
-        ub = self.ubnd
-        lb = self.lbnd
-        for id in self.index:
-            mx_diff = (self.loc[id,:] - ub) / ub
-            mn_diff = (lb - self.loc[id,:]) / lb
-
-            # if this real has a violation
-            mx = max(mx_diff.max(),mn_diff.max())
-            if mx > 1.0:
-                scale_factor = 1.0 / mx
-                self.loc[id,:] *= scale_factor
-
-            mx = ub - self.loc[id,:]
-            mn = lb - self.loc[id,:]
-            print(mx.loc[mx<0.0])
-            print(mn.loc[mn>0.0])
-            if (ub - self.loc[id,:]).min() < 0.0 or\
-                            (lb - self.loc[id,:]).max() > 0.0:
-                raise Exception()
+        # ub = self.ubnd
+        # lb = self.lbnd
+        # for id in self.index:
+        #     mx_diff = (self.loc[id,:] - ub) / ub
+        #     mn_diff = (lb - self.loc[id,:]) / lb
+        #
+        #     # if this real has a violation
+        #     mx = max(mx_diff.max(),mn_diff.max())
+        #     if mx > 1.0:
+        #         scale_factor = 1.0 / mx
+        #         self.loc[id,:] *= scale_factor
+        #
+        #     mx = ub - self.loc[id,:]
+        #     mn = lb - self.loc[id,:]
+        #     print(mx.loc[mx<0.0])
+        #     print(mn.loc[mn>0.0])
+        #     if (ub - self.loc[id,:]).min() < 0.0 or\
+        #                     (lb - self.loc[id,:]).max() > 0.0:
+        #         raise Exception()
 
     def enforce_drop(self):
         """ enforce parameter bounds on the ensemble by dropping

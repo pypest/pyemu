@@ -95,6 +95,9 @@ def gaussian_draw_test():
 
     start = datetime.now()
     pe = ParameterEnsemble.from_gaussian_draw(mc.pst,cov,num_reals=num_reals)
+    pet = pe._transform(inplace=False)
+
+    pe = pet._back_transform(inplace=False)
     print(datetime.now() - start)
     print(mc.parensemble.head())
     print(pe.head())
@@ -114,7 +117,7 @@ def from_dataframe_test():
     import os
     import numpy as np
     import pandas as pd
-    from pyemu import MonteCarlo,Ensemble,ParameterEnsemble,Pst
+    from pyemu import MonteCarlo,Ensemble,ParameterEnsemble,Pst, Cov
 
     jco = os.path.join("pst","pest.jcb")
     pst = jco.replace(".jcb",".pst")
@@ -125,6 +128,34 @@ def from_dataframe_test():
     print(mc.parensemble.shape)
     mc.project_parensemble()
     mc.parensemble.to_csv(os.path.join("temp","test.csv"))
+
+    pstc = pyemu.Pst(pst)
+    par = pstc.parameter_data
+    par.sort_values(by=parnme,ascending=False,inplace=True)
+    cov = Cov.from_parameter_data(pstc)
+    pe = ParameterEnsemble.from_gaussian_draw(pst=mc.pst,cov=cov)
+
+
+def parfile_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    from pyemu import MonteCarlo, Ensemble, ParameterEnsemble, Pst, Cov
+
+    jco = os.path.join("pst", "pest.jcb")
+    pst = jco.replace(".jcb", ".pst")
+    mc = MonteCarlo(jco=jco, pst=pst)
+    mc.draw(10)
+    mc.parensemble.to_parfiles(os.path.join("temp","testpar"))
+
+    pst = Pst(pst)
+    pst.parameter_data = pst.parameter_data.iloc[1:]
+    pst.parameter_data["test","parmne"] = "test"
+
+    parfiles = [os.path.join("temp",f) for f in os.listdir("temp") if "testpar" in f]
+    rnames = ["test{0}".format(i) for i in range(len(parfiles))]
+
+    pe = ParameterEnsemble.from_parfiles(pst=pst,parfile_names=parfiles,real_names=rnames)
 
 def scale_offset_test():
     import os
@@ -607,7 +638,7 @@ if __name__ == "__main__":
     #binary_ensemble_dev()
     #to_from_binary_test()
     #ensemble_covariance_test()
-    homegrown_draw_test()
+    # homegrown_draw_test()
     # change_weights_test()
     # phi_vector_test()
     # par_diagonal_draw_test()
@@ -618,7 +649,8 @@ if __name__ == "__main__":
     # mc_test()
     # fixed_par_test()
     # uniform_draw_test()
-    # gaussian_draw_test()
+    #gaussian_draw_test()
+    parfile_test()
     # write_regul_test()
     # from_dataframe_test()
     # ensemble_seed_test()
