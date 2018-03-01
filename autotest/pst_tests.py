@@ -355,25 +355,7 @@ def from_flopy_test():
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
     new_model_ws = "temp_pst_from_flopy"
 
-    hds_kperk = []
-    for k in range(m.nlay):
-        for kper in range(m.nper):
-            hds_kperk.append([kper, k])
-    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
-                                         org_model_ws=org_model_ws,
-                                         zone_props=[["rch.rech",0],["rch.rech",[1,2]]],
-                                         remove_existing=True, hds_kperk=hds_kperk,
-                                         model_exe_name="mfnwt")
-    ph.pst.parameter_data.loc["rech0_zn1","parval1"] = 2.0
 
-    bd = os.getcwd()
-    os.chdir(new_model_ws)
-    #try:
-    ph.pst.write_input_files()
-    pyemu.helpers.apply_array_pars()
-    # except:
-    #     pass
-    os.chdir(bd)
 
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
@@ -385,6 +367,26 @@ def from_flopy_test():
         pyemu.helpers.apply_all_wells()
     except:
         pass
+    os.chdir(bd)
+
+    hds_kperk = []
+    for k in range(m.nlay):
+        for kper in range(m.nper):
+            hds_kperk.append([kper, k])
+    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+                                         org_model_ws=org_model_ws,
+                                         zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
+                                         remove_existing=True, hds_kperk=hds_kperk,
+                                         model_exe_name="mfnwt")
+    ph.pst.parameter_data.loc["rech0_zn1", "parval1"] = 2.0
+
+    bd = os.getcwd()
+    os.chdir(new_model_ws)
+    # try:
+    ph.pst.write_input_files()
+    pyemu.helpers.apply_array_pars()
+    # except:
+    #     pass
     os.chdir(bd)
 
     pp_props = [["upw.ss",[0,1]],["upw.ss",1],["upw.ss",2],["extra.prsity",0],\
