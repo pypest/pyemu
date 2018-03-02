@@ -639,6 +639,8 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
             else:
                 logger.lraise("unrecognized ensemble list arg:{0}".format(en_arg))
 
+    else:
+        raise Exception("unrecognized 'ensemble' arg")
 
     #apply any functions
     if func_dict is not None:
