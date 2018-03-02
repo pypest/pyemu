@@ -110,12 +110,14 @@ def load_test():
                 load_fails.append(pst_file)
                 continue
             out_name = os.path.join(temp_dir,pst_file)
+            print(out_name)
            #p.write(out_name,update_regul=True)
             try:
                 p.write(out_name,update_regul=True)
             except Exception as e:
                 exceptions.append(pst_file + " write fail: " + str(e))
                 continue
+            print(pst_file)
             try:
                 p = Pst(out_name)
             except Exception as e:
