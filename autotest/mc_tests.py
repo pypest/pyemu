@@ -131,7 +131,7 @@ def from_dataframe_test():
 
     pstc = Pst(pst)
     par = pstc.parameter_data
-    par.sort_values(by=parnme,ascending=False,inplace=True)
+    par.sort_values(by="parnme",ascending=False,inplace=True)
     cov = Cov.from_parameter_data(pstc)
     pe = ParameterEnsemble.from_gaussian_draw(pst=mc.pst,cov=cov)
 
@@ -686,7 +686,7 @@ if __name__ == "__main__":
     #gaussian_draw_test()
     parfile_test()
     # write_regul_test()
-    # from_dataframe_test()
+    from_dataframe_test()
     # ensemble_seed_test()
     # pnulpar_test()
     # enforce_test()
