@@ -345,6 +345,7 @@ def plot_flopy_par_ensemble_test():
 def from_flopy_test():
     import shutil
     import numpy as np
+    import pandas as pd
     try:
         import flopy
     except:
@@ -357,17 +358,7 @@ def from_flopy_test():
 
 
 
-    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
-                                             hds_kperk=[0, 0], remove_existing=True,
-                                             model_exe_name="mfnwt",sfr_pars=True,sfr_obs=True,
-                                             all_wells=True)
-    bd = os.getcwd()
-    os.chdir(new_model_ws)
-    try:
-        pyemu.helpers.apply_all_wells()
-    except:
-        pass
-    os.chdir(bd)
+
 
     hds_kperk = []
     for k in range(m.nlay):
@@ -384,10 +375,62 @@ def from_flopy_test():
     os.chdir(new_model_ws)
     # try:
     ph.pst.write_input_files()
+    csv = os.path.join("arr_pars.csv")
+    df = pd.read_csv(csv)
+    df.loc[:,"upper_bound"] = np.NaN
+    df.loc[:,"lower_bound"] = np.NaN
+    df.to_csv(csv)
     pyemu.helpers.apply_array_pars()
+
+    df.loc[:, "org_file"] = df.org_file.iloc[0]
+    df.loc[:, "model_file"] = df.org_file
+    df.loc[:, "upper_bound"] = np.arange(df.shape[0])
+    df.loc[:, "lower_bound"] = np.NaN
+    print(df)
+    df.to_csv(csv)
+    try:
+        pyemu.helpers.apply_array_pars()
+    except:
+        pass
+    else:
+        raise Exception()
+    df.loc[:, "lower_bound"] = np.arange(df.shape[0])
+    df.loc[:, "upper_bound"] = np.NaN
+    print(df)
+    df.to_csv(csv)
+    try:
+        pyemu.helpers.apply_array_pars()
+    except:
+        pass
+    else:
+        raise Exception()
+
+    df.loc[:, "lower_bound"] = 0.1
+    df.loc[:, "upper_bound"] = 0.9
+    print(df)
+    df.to_csv(csv)
+
+    pyemu.helpers.apply_array_pars()
+    arr = np.loadtxt(df.model_file.iloc[0])
+    assert arr.min() >= df.lower_bound.iloc[0]
+    assert arr.max() <= df.upper_bound.iloc[0]
+
     # except:
     #     pass
     os.chdir(bd)
+
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
+                                             hds_kperk=[0, 0], remove_existing=True,
+                                             model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True,
+                                             all_wells=True)
+    bd = os.getcwd()
+    os.chdir(new_model_ws)
+    try:
+        pyemu.helpers.apply_all_wells()
+    except:
+        pass
+    os.chdir(bd)
+
 
     pp_props = [["upw.ss",[0,1]],["upw.ss",1],["upw.ss",2],["extra.prsity",0],\
                 ["rch.rech",0],["rch.rech",[1,2]]]

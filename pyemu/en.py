@@ -1389,11 +1389,12 @@ class ParameterEnsemble(Ensemble):
             pset = set(pst.par_names)
             dset = set(df_all.columns)
             diff = pset.difference(dset)
-            warnings.warn("the following parameters are not in the par files (getting NaNs) :{0}".
-                         format(','.join(diff)))
-            blank_df = pd.DataFrame(index=df_all.index,columns=diff)
+            if len(diff) > 0:
+                warnings.warn("the following parameters are not in the par files (getting NaNs) :{0}".
+                             format(','.join(diff)))
+                blank_df = pd.DataFrame(index=df_all.index,columns=diff)
 
-            df_all = pd.concat([df_all,blank_df],axis=1)
+                df_all = pd.concat([df_all,blank_df],axis=1)
 
             diff = dset.difference(pset)
             if len(diff) > 0:
