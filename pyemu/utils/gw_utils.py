@@ -67,7 +67,7 @@ def modflow_hob_to_instruction_file(hob_file):
     hob_df = pd.read_csv(hob_file,delim_whitespace=True,skiprows=1,
                          header=None,names=["simval","obsval","obsnme"])
 
-    hob_df.loc[:,"ins_line"] = hob_df.obsnme.apply(lambda x:"l1 w w !{0:s}!".format(x))
+    hob_df.loc[:,"ins_line"] = hob_df.obsnme.apply(lambda x:"l1 !{0:s}!".format(x))
     hob_df.loc[0,"ins_line"] = hob_df.loc[0,"ins_line"].replace('l1','l2')
 
     ins_file = hob_file + ".ins"
