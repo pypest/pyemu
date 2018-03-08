@@ -466,43 +466,6 @@ def kl_test():
         print(diff)
         assert np.abs(diff) < 1.0e-2
 
-def more_kl_test():
-    import os
-    import numpy as np
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    import pyemu
-    try:
-        import flopy
-    except:
-        print("flopy not imported...")
-        return
-    model_ws = os.path.join("..","examples","Freyberg_sfr_update")
-    ml = flopy.modflow.Modflow.load("freyberg.nam", model_ws=model_ws)
-    v = pyemu.geostats.ExpVario(1.0,2000.0)
-    str = pyemu.geostats.GeoStruct(variograms=v)
-    arr_dict = {"test": np.ones((ml.nrow, ml.ncol))}
-
-    basis_file = os.path.join("utils", "basis.jco")
-    tpl_file = os.path.join("utils", "test.tpl")
-    back_dict = pyemu.utils.helpers.kl_setup(num_eig=20, sr=ml.sr,
-                                             struct=str,
-                                             array_dict=arr_dict,
-                                             basis_file=basis_file,
-                                             tpl_file=tpl_file)
-
-    basis = pyemu.Matrix.from_binary(basis_file).to_dataframe().T
-    i = basis.index.map(lambda x: int(x[1:5]))
-    j = basis.index.map(lambda x: int(x[-4:]))
-    for col in basis.columns:
-        arr = np.zeros((ml.nrow,ml.ncol))
-        arr[i,j] = basis.loc[:,col]
-        #plt.imshow(arr)
-        #plt.show()
-    print(basis)
-    return
-
-
 def ok_test():
     import os
     import pandas as pd
