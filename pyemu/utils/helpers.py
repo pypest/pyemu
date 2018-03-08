@@ -2486,9 +2486,9 @@ def apply_array_pars():
 
     Note
     ----
-    requires "arr_pars.csv"
+    requires "arr_pars.csv" - this file is written by PstFromFlopy
 
-    should be added to the forward_run.py script
+    the function should be added to the forward_run.py script
 
     """
     df = pd.read_csv("arr_pars.csv")
@@ -2517,6 +2517,25 @@ def apply_array_pars():
 
         for mlt in df_mf.mlt_file:
             org_arr *= np.loadtxt(mlt)
+        if "upper_bound" in df.columns:
+            ub_vals = df_mf.upper_bound.value_counts().dropna().to_dict()
+            if len(ub_vals) == 0:
+                pass
+            elif len(ub_vals) > 1:
+                raise Exception("different upper bound values for {0}".format(org_file))
+            else:
+                ub = list(ub_vals.keys())[0]
+                org_arr[org_arr>ub] = ub
+        if "lower_bound" in df.columns:
+            lb_vals = df_mf.lower_bound.value_counts().dropna().to_dict()
+            if len(lb_vals) == 0:
+                pass
+            elif len(lb_vals) > 1:
+                raise Exception("different lower bound values for {0}".format(org_file))
+            else:
+                lb = list(lb_vals.keys())[0]
+                org_arr[org_arr < lb] = lb
+
         np.savetxt(model_file,org_arr,fmt="%15.6E",delimiter='')
 
 def apply_bc_pars():
