@@ -259,7 +259,7 @@ def condition_on_par_knowledge(cov,par_knowledge_dict):
 
 
 
-def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
+def kl_setup(num_eig,sr,struct,array_dict,basis_file="basis.dat",
              tpl_file="kl.tpl"):
     """setup a karhuenen-Loeve based parameterization for a given
     geostatistical structure.
@@ -269,8 +269,8 @@ def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
     num_eig : int
         number of basis vectors to retain in the reduced basis
 
-    struct_file : str
-        a pest-style geostatistical structure file
+    struct : str or pyemu.geostats.Geostruct
+        geostatistical structure (or file containing one)
 
     array_dict : dict
         a dict of arrays to setup as KL-based parameters.  The key becomes the
@@ -324,8 +324,10 @@ def kl_setup(num_eig,sr,struct_file,array_dict,basis_file="basis.dat",
         assert len(name) + len(str(num_eig)) <= 12,"name too long:{0}".\
             format(name)
     assert os.path.exists(struct_file)
-
-    gs = pyemu.utils.read_struct_file(struct_file)
+    if isinstance(struct,str):
+        gs = pyemu.utils.read_struct_file(struct_file)
+    else:
+        gs = struct
     names = []
     for i in range(sr.nrow):
         names.extend(["i{0:04d}j{1:04d}".format(i,j) for j in range(sr.ncol)])
