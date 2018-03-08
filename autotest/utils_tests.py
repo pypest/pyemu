@@ -430,10 +430,10 @@ def kl_test():
     arr_dict["hk_tru"] = np.loadtxt(os.path.join("..","verification",
                                                  "Freyberg","extra_crispy",
                                                  "hk.truth.ref"))
-    basis_file = os.path.join("utils","basis.dat")
+    basis_file = os.path.join("utils","basis.jco")
     tpl_file = os.path.join("utils","test.tpl")
     back_dict = pyemu.utils.helpers.kl_setup(num_eig=800,sr=ml.sr,
-                                             struct_file =str_file,
+                                             struct=str_file,
                                              array_dict=arr_dict,
                                              basis_file=basis_file,
                                              tpl_file=tpl_file)
@@ -465,6 +465,43 @@ def kl_test():
         diff = np.abs((arr - arr1)).sum()
         print(diff)
         assert np.abs(diff) < 1.0e-2
+
+def more_kl_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import pyemu
+    try:
+        import flopy
+    except:
+        print("flopy not imported...")
+        return
+    model_ws = os.path.join("..","examples","Freyberg_sfr_update")
+    ml = flopy.modflow.Modflow.load("freyberg.nam", model_ws=model_ws)
+    v = pyemu.geostats.ExpVario(1.0,2000.0)
+    str = pyemu.geostats.GeoStruct(variograms=v)
+    arr_dict = {"test": np.ones((ml.nrow, ml.ncol))}
+
+    basis_file = os.path.join("utils", "basis.jco")
+    tpl_file = os.path.join("utils", "test.tpl")
+    back_dict = pyemu.utils.helpers.kl_setup(num_eig=20, sr=ml.sr,
+                                             struct=str,
+                                             array_dict=arr_dict,
+                                             basis_file=basis_file,
+                                             tpl_file=tpl_file)
+
+    basis = pyemu.Matrix.from_binary(basis_file).to_dataframe().T
+    i = basis.index.map(lambda x: int(x[1:5]))
+    j = basis.index.map(lambda x: int(x[-4:]))
+    for col in basis.columns:
+        arr = np.zeros((ml.nrow,ml.ncol))
+        arr[i,j] = basis.loc[:,col]
+        #plt.imshow(arr)
+        #plt.show()
+    print(basis)
+    return
+
 
 def ok_test():
     import os
@@ -931,10 +968,10 @@ if __name__ == "__main__":
     #sfr_obs_test()
     #setup_pp_test()
     #sfr_helper_test()
-    gw_sft_ins_test()
+    #gw_sft_ins_test()
     # par_knowledge_test()
     #grid_obs_test()
-    plot_summary_test()
+    #plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
     # make_hydmod_insfile_test()
@@ -944,7 +981,8 @@ if __name__ == "__main__":
     # geostat_prior_builder_test()
     # mflist_budget_test()
     # tpl_to_dataframe_test()
-    # kl_test()
+    #kl_test()
+    more_kl_test()
     # zero_order_regul_test()
     # first_order_pearson_regul_test()
     # master_and_slaves()
