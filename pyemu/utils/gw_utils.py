@@ -778,7 +778,7 @@ def apply_sft_obs():
     return df
 
 
-def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hcond1","hcond2"],
+def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hcond1","hcond2", "pptsw"],
                              tie_hcond=True):
     """Setup multiplier parameters for SFR segment data.  Just handles the
     standard input case, not all the cryptic SFR options.  Loads the dis, bas, and sfr files

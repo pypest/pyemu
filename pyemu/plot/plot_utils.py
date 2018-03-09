@@ -581,8 +581,30 @@ def pst_prior(pst,logger=None, **kwargs):
 
 def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                     filename="ensemble_helper.pdf",func_dict = None,
-                    sync_bins=True,deter_vals=None,**kwargs):
-    """TODO: bins as a dict, work out min and max and use same bins for all ens
+                    sync_bins=True,deter_vals=None,std_window=4.0,**kwargs):
+    """helper function to plot ensemble histograms
+
+    Parameters
+    ----------
+    ensemble : varies
+        the ensemble argument can be a pandas.DataFrame or derived type or a str, which
+        is treated as a fileanme.  Optionally, ensemble can be a list of these types or
+        a dict, in which case, the keys are treated as facecolor str (e.g., 'b', 'y', etc).
+    facecolor : str
+        the histogram facecolor.  Only applies if ensemble is a single thing
+    plot_cols : enumerable
+        a collection of columns from the ensemble(s) to plot.  If None,
+        (the union of) all cols are plotted. Default is None
+    filename : str
+        the name of the pdf to create.  Default is "ensemble_helper.pdf"
+    func_dict : dict
+        a dictionary of unary functions (e.g., np.log10_ to apply to columns.  Key is
+        column name.  Default is None
+    sync_bins : bool
+        flag to use the same bin edges for all ensembles. Only applies if more than
+        one ensemble is being plotted.  Default is True
+    deter_vals : dict
+
     """
     logger = pyemu.Logger("ensemble_helper.log")
     logger.log("pyemu.plot_utils.ensemble_helper()")
@@ -714,10 +736,24 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                     except Exception as e:
                         logger.warn("error plotting histogram for {0}:{1}".
                                     format(plot_col,str(e)))
+
+
                 if deter_vals is not None and plot_col in deter_vals:
                     ylim = ax.get_ylim()
                     v = deter_vals[plot_col]
                     ax.plot([v,v],ylim,"k--",lw=1.5)
+                    ax.set_ylim(ylim)
+                if std_window is not None:
+                    try:
+                        ylim = ax.get_ylim()
+                        mn, st = en.loc[:,plot_col].mean(), en.loc[:,plot_col].std() * (std_window / 2.0)
+
+                        ax.plot([mn - st, mn - st], ylim, color=fc, lw=1.5,ls='--')
+                        ax.plot([mn + st, mn + st], ylim, color=fc, lw=1.5,ls='--')
+                        ax.set_ylim(ylim)
+                    except:
+                        logger.warn("error plotting std window for {0}".
+                                    format(plot_col))
             ax.grid()
 
             ax_count += 1
