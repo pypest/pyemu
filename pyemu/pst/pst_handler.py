@@ -34,7 +34,7 @@ class Pst(object):
         a control file object
 
     """
-    def __init__(self, filename, load=True, resfile=None):
+    def __init__(self, filename, load=True, resfile=None,flex=False):
 
 
         self.filename = filename
@@ -51,7 +51,10 @@ class Pst(object):
         if load:
             assert os.path.exists(filename),\
                 "pst file not found:{0}".format(filename)
-            self.load(filename)
+            if flex:
+                self.flex_load(filename)
+            else:
+                self.load(filename)
 
     def __setattr__(self, key, value):
         if key == "model_command":
@@ -526,6 +529,100 @@ class Pst(object):
         df.loc[:,"extra"] = extras
 
         return df
+
+
+    def _read_line_comments(self,f,forgive):
+        comments = []
+        while True:
+            line = f.readline().lower().strip()
+            self.lcount += 1
+            if line == '':
+                if forgive:
+                    line = None
+                    break
+                else:
+                    raise Exception("unexpected EOF")
+            if line.startswith('#'):
+                comments.append(line)
+            else:
+                break
+        return line,comments
+
+
+    def _read_section_comments(self,f,forgive):
+        section_comments = []
+        lines = []
+        while True:
+            line,comments = self._read_line_comments(f,forgive)
+            section_comments.extend(comments)
+            if line is None or line.startswith("*"):
+                break
+            lines.append(line)
+        return line,lines,section_comments
+
+
+    def flex_load(self,filename):
+        self.lcount  = 0
+        assert os.path.exists(filename), "couldn't find control file {0}".format(filename)
+        f = open(filename, 'r')
+
+        # this should be the pcf line
+        line,comments = self._read_line_comments(f,False)
+        assert line.startswith("pcf")
+        line,comments = self._read_line_comments(f,False)
+
+        assert "* control data" in line, \
+            "Pst.load() error: looking for control" + \
+            " data section, found:" + line
+        next_section, control_lines, control_comments = self._read_section_comments(f,False)
+        self.control_data.parse_values_from_lines(control_lines)
+
+        # read anything until the SVD section
+        while True:
+            if next_section.startswith("* singular value"):
+                break
+            next_section, section_lines, section_comments = self._read_section_comments(f,False)
+
+
+        # SVD
+        next_section, svd_lines, svd_comments = self._read_section_comments(f, False)
+        self.svd_data.parse_values_from_lines(svd_lines)
+
+        # parameter groups
+        assert next_section == "* parameter groups"
+        next_section, section_lines, section_comments = self._read_section_comments(f, False)
+
+        # parameter data
+        assert next_section == "* parameter data"
+        next_section, section_lines, section_comments = self._read_section_comments(f, False)
+
+        # observation groups
+        assert next_section == "* observation groups"
+        next_section, section_lines, section_comments = self._read_section_comments(f, False)
+
+        # observation data
+        assert next_section == "* observation data"
+        next_section, section_lines, section_comments = self._read_section_comments(f, False)
+
+        # model commands
+        assert next_section == "* model command line"
+        next_section, section_lines, section_comments = self._read_section_comments(f, False)
+
+        # model io
+        assert next_section == "* model input/output"
+        next_section, section_lines, section_comments = self._read_section_comments(f, False)
+
+        # prior info
+        if next_section == "* prior information":
+            next_line, section_lines, section_comments = self._read_section_comments(f, True)
+
+        # any additional sections
+        while True:
+            # TODO: catch a regul section
+            if next_line is None:
+                break
+            next_line,comments = self._read_line_comments(f,True)
+
 
     def load(self, filename):
         """load the pest control file information

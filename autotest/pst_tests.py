@@ -197,13 +197,13 @@ def tied_test():
     mc.draw(1)
     mc.write_psts(os.path.join("temp","tiedtest_"))
 
+
 def derivative_increment_tests():
     import os
     import pyemu
 
     pst = pyemu.Pst(os.path.join("pst","inctest.pst"))
     pst.calculate_pertubations()
-
 
 
 def pestpp_args_test():
@@ -356,6 +356,7 @@ def plot_flopy_par_ensemble_test():
                                           pcolormesh_transform=pcolormesh_trans,model="freyberg.nam")
 
     os.chdir("..")
+
 
 def from_flopy_test():
     import shutil
@@ -642,6 +643,12 @@ def write_tables_test():
     pst.write_obs_summary_table(group_names={"calhead":"calibration heads"},caption="obs table")
 
 
+def flex_test():
+    import os
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"),flex=True)
+
+
 if __name__ == "__main__":
     #write_tables_test()
     #res_stats_test()
@@ -657,12 +664,12 @@ if __name__ == "__main__":
     # nnz_groups_test()
     # regul_rectify_test()
     # derivative_increment_tests()
-    tied_test()
+    # tied_test()
     # smp_test()
     # smp_dateparser_test()
     #pst_manip_test()
     #tpl_ins_test()
-
+    flex_test()
     #comments_test()
     #load_test()
     #res_test()
