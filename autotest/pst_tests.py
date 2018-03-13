@@ -135,9 +135,12 @@ def comments_test():
 
 
     pst = pyemu.Pst(os.path.join("pst","comments.pst"))
-    pst.write(os.path.join("temp","comments.pst"),drop_comments=False)
+    pst.write(os.path.join("temp","comments.pst"))
     pst1 = pyemu.Pst(os.path.join("temp","comments.pst"))
-    print(pst1.parameter_data.extra)
+    assert pst1.parameter_data.extra.dropna().shape[0] == pst.parameter_data.extra.dropna().shape[0]
+    pst1.write(os.path.join("temp","comments.pst"),drop_comments=True)
+    pst2 = pyemu.Pst(os.path.join("temp","comments.pst"))
+    assert pst2.parameter_data.dropna().shape[0] == 0
 
 def smp_test():
     import os
@@ -188,7 +191,7 @@ def tied_test():
     import pyemu
     pst_dir = os.path.join("pst")
     pst = pyemu.Pst(os.path.join(pst_dir,"br_opt_no_zero_weighted.pst"))
-    print(pst.tied_lines)
+    print(pst.tied)
     pst.write(os.path.join("temp","pest_tied_tester_1.pst"))
     mc = pyemu.MonteCarlo(pst=pst)
     mc.draw(1)
@@ -654,14 +657,14 @@ if __name__ == "__main__":
     # nnz_groups_test()
     # regul_rectify_test()
     # derivative_increment_tests()
-    #tied_test()
+    tied_test()
     # smp_test()
     # smp_dateparser_test()
     #pst_manip_test()
     #tpl_ins_test()
 
     #comments_test()
-    load_test()
+    #load_test()
     #res_test()
     #smp_test()
     #from_io_with_inschek_test()

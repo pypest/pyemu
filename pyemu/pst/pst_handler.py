@@ -41,6 +41,7 @@ class Pst(object):
         self.resfile = resfile
         self.__res = None
         self.__pi_count = 0
+        self.drop_comments = True
         for key,value in pst_utils.pst_config.items():
             self.__setattr__(key,copy.copy(value))
         self.tied = None
@@ -516,11 +517,12 @@ class Pst(object):
         extras = []
         for i in range(nrows):
             line = f.readline()
-            extra = ''
+            extra = np.NaN
             if '#' in line:
                 raw = line.strip().split('#')
-                extra = '#'.join(raw[1:])
+                extra = ' # '.join(raw[1:])
             extras.append(extra)
+
         df.loc[:,"extra"] = extras
 
         return df
@@ -721,6 +723,11 @@ class Pst(object):
                     self.pestpp_options[key] = value
         f.close()
 
+        for df in [self.parameter_groups,self.parameter_data,
+                   self.observation_data,self.prior_information]:
+            if "extra" in df.columns and df.extra.dropna().shape[0] > 0:
+                self.drop_comments = False
+                break
         return
 
 
@@ -884,11 +891,18 @@ class Pst(object):
         self.prior_information = self.prior_information.loc[keep_idx,:]
 
     def _write_df(self,name,f,df,formatters,columns,drop_comments):
-        if df.isnull().values.any():
+        if df.loc[:,columns].isnull().values.any():
             warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
-        if 'extra' in df.columns:
-            columns.append("extra")
-            formatters["extra"] = lambda x: " # {0}".format(x)
+        def ext_fmt(x):
+            if pd.notnull(x):
+                return " # {0}".format(x)
+            return ''
+        if not drop_comments and 'extra' in df.columns:
+            df.loc[:,"extra_str"] = df.extra.apply(ext_fmt)
+            columns.append("extra_str")
+            #formatters["extra"] = lambda x: " # {0}".format(x) if pd.notnull(x) else 'test'
+            #formatters["extra"] = lambda x: ext_fmt(x)
+
         if name.startswith('*'):
             f.write(name+'\n')
         f.write(df.to_string(col_space=0,formatters=formatters,
@@ -897,7 +911,7 @@ class Pst(object):
                                                   header=False,
                                                   index=False) + '\n')
 
-    def write(self,new_filename,update_regul=False,drop_comments=False):
+    def write(self,new_filename,update_regul=False,drop_comments=None):
         """write a pest control file
 
         Parameters
@@ -908,10 +922,12 @@ class Pst(object):
             flag to update zero-order Tikhonov prior information
             equations to prefer the current parameter values
         drop_comments : bool
-            flag to not rewrite comments to new control file.
-            Default is False
+            flag to not rewrite comments to new control file. If
+            None, fall back Pst.drop_comments. Default is None
 
         """
+        if drop_comments is None:
+            drop_comments = self.drop_comments
         self._rectify_pgroups()
         self.rectify_pi()
         self._update_control_section()
@@ -1112,7 +1128,7 @@ class Pst(object):
                 new_res = new_res.loc[obs_names, :]
 
         new_pargp = self.parameter_groups.copy()
-        new_pargp.index = new_pargp.pargpnme
+        new_pargp.index = new_pargp.pargpnme.apply(str.strip)
         new_pargp_names = new_par.pargp.value_counts().index
         new_pargp = new_pargp.loc[new_pargp_names,:]
 
