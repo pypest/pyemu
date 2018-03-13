@@ -42,11 +42,12 @@ class Ensemble(pd.DataFrame):
         assert "columns" in kwargs.keys(),"ensemble requires 'columns' kwarg"
 
         mean_values = kwargs.pop("mean_values",None)
+
         super(Ensemble,self).__init__(*args,**kwargs)
 
         if mean_values is None:
             raise Exception("Ensemble requires 'mean_values' kwarg")
-        self.__mean_values = mean_values
+        self._mean_values = mean_values
 
     def as_pyemu_matrix(self,typ=Matrix):
         """

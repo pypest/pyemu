@@ -498,8 +498,9 @@ class Pst(object):
         """
         seek_point = f.tell()
         df = pd.read_csv(f, header=None,names=names,
-                              nrows=nrows,delim_whitespace=True,
-                              converters=converters, index_col=False)
+                         nrows=nrows,delim_whitespace=True,
+                         converters=converters, index_col=False,
+                         comment='#')
 
         # in case there was some extra junk at the end of the lines
         if df.shape[1] > len(names):
@@ -512,7 +513,16 @@ class Pst(object):
         elif np.any(pd.isnull(df)):
             raise Exception("NANs found")
         f.seek(seek_point)
-        [f.readline() for _ in range(nrows)]
+        extras = []
+        for i in range(nrows):
+            line = f.readline()
+            extra = ''
+            if '#' in line:
+                raw = line.strip().split('#')
+                extra = '#'.join(raw[1:])
+            extras.append(extra)
+        df.loc[:,"extra"] = extras
+
         return df
 
     def load(self, filename):
@@ -594,14 +604,15 @@ class Pst(object):
         assert "* parameter data" in line.lower(),\
             "Pst.load() error: looking for parameter" +\
             " data section, found:" + line
+
         try:
             self.parameter_data = self._read_df(f,self.control_data.npar,
                                                 self.par_fieldnames,
                                                 self.par_converters,
                                                 self.par_defaults)
             self.parameter_data.index = self.parameter_data.parnme
-        except:
-            raise Exception("Pst.load() error reading parameter data")
+        except Exception as e:
+            raise Exception("Pst.load() error reading parameter data: {0}".format(str(e)))
 
         # oh the tied parameter bullshit, how do I hate thee
         counts = self.parameter_data.partrans.value_counts()
@@ -872,7 +883,21 @@ class Pst(object):
             apply(lambda x: is_good(x))
         self.prior_information = self.prior_information.loc[keep_idx,:]
 
-    def write(self,new_filename,update_regul=False):
+    def _write_df(self,name,f,df,formatters,columns,drop_comments):
+        if df.isnull().values.any():
+            warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
+        if 'extra' in df.columns:
+            columns.append("extra")
+            formatters["extra"] = lambda x: " # {0}".format(x)
+        if name.startswith('*'):
+            f.write(name+'\n')
+        f.write(df.to_string(col_space=0,formatters=formatters,
+                                                  columns=columns,
+                                                  justify="right",
+                                                  header=False,
+                                                  index=False) + '\n')
+
+    def write(self,new_filename,update_regul=False,drop_comments=False):
         """write a pest control file
 
         Parameters
@@ -882,6 +907,9 @@ class Pst(object):
         update_regul : (boolean)
             flag to update zero-order Tikhonov prior information
             equations to prefer the current parameter values
+        drop_comments : bool
+            flag to not rewrite comments to new control file.
+            Default is False
 
         """
         self._rectify_pgroups()
@@ -897,7 +925,7 @@ class Pst(object):
 
         self.svd_data.write(f_out)
 
-        f_out.write("* parameter groups\n")
+        #f_out.write("* parameter groups\n")
 
         # to catch the byte code ugliness in python 3
         pargpnme = self.parameter_groups.loc[:,"pargpnme"].copy()
@@ -906,41 +934,55 @@ class Pst(object):
 
         #self.parameter_groups.index = self.parameter_groups.pop("pargpnme")
         #gp_fieldnames = [name for name in self.pargp_fieldnames if name in self.parameter_groups.columns]
-        if self.parameter_groups.isnull().values.any():
-            warnings.warn("WARNING: NaNs in parameter_groups dataframe")
-        f_out.write(self.parameter_groups.to_string(col_space=0,
-                                                  formatters=self.pargp_format,
-                                                  columns=self.pargp_fieldnames,
-                                                  justify="right",
-                                                  header=False,
-                                                  index=False) + '\n')
-        self.parameter_groups.loc[:,"pargpnme"] = pargpnme.values
+        # if self.parameter_groups.isnull().values.any():
+        #     warnings.warn("WARNING: NaNs in parameter_groups dataframe")
+        # fnames = self.pargp_fieldnames
+        # if 'extra' in self.parameter_groups.columns:
+        #     fnames.append("extra")
+        # f_out.write(self.parameter_groups.to_string(col_space=0,
+        #                                           formatters=self.pargp_format,
+        #                                           columns=fnames,
+        #                                           justify="right",
+        #                                           header=False,
+        #                                           index=False) + '\n')
+
+        self._write_df("* parameter groups",f_out, self.parameter_groups,
+                       self.pargp_format, self.pargp_fieldnames, drop_comments)
+
+
+        #self.parameter_groups.loc[:,"pargpnme"] = pargpnme.values
         #self.parameter_groups.index = pargpnme
 
-        if self.parameter_data.loc[:,pst_utils.pst_config["par_fieldnames"]].isnull().values.any():
-            warnings.warn("WARNING: NaNs in parameter_data dataframe")
+        # if self.parameter_data.loc[:,pst_utils.pst_config["par_fieldnames"]].isnull().values.any():
+        #     warnings.warn("WARNING: NaNs in parameter_data dataframe")
+        #
+        # f_out.write("* parameter data\n")
+        # #self.parameter_data.index = self.parameter_data.pop("parnme")
+        # f_out.write(self.parameter_data.to_string(col_space=0,
+        #                                           columns=self.par_fieldnames,
+        #                                           formatters=self.par_format,
+        #                                           justify="right",
+        #                                           header=False,
+        #                                           index=False) + '\n')
 
-        f_out.write("* parameter data\n")
-        #self.parameter_data.index = self.parameter_data.pop("parnme")
-        f_out.write(self.parameter_data.to_string(col_space=0,
-                                                  columns=self.par_fieldnames,
-                                                  formatters=self.par_format,
-                                                  justify="right",
-                                                  header=False,
-                                                  index=False) + '\n')
         #self.parameter_data.loc[:,"parnme"] = self.parameter_data.index
+        self._write_df("* parameter data",f_out, self.parameter_data,
+                       self.par_format, self.par_fieldnames, drop_comments)
 
         if self.tied is not None:
-            if self.tied.isnull().values.any():
-                warnings.warn("WARNING: NaNs in tied dataframe")
-            #self.tied.index = self.tied.pop("parnme")
-            f_out.write(self.tied.to_string(col_space=0,
-                                            columns=self.tied_fieldnames,
-                                            formatters=self.tied_format,
-                                            justify='right',
-                                            header=False,
-                                            index=False)+'\n')
+            # if self.tied.isnull().values.any():
+            #     warnings.warn("WARNING: NaNs in tied dataframe")
+            # #self.tied.index = self.tied.pop("parnme")
+            # f_out.write(self.tied.to_string(col_space=0,
+            #                                 columns=self.tied_fieldnames,
+            #                                 formatters=self.tied_format,
+            #                                 justify='right',
+            #                                 header=False,
+            #                                 index=False)+'\n')
             #self.tied.loc[:,"parnme"] = self.tied.index
+            self._write_df("tied parameter data", f_out, self.tied,
+                           self.tied_format, self.tied_fieldnames, drop_comments)
+
         f_out.write("* observation groups\n")
         for group in self.obs_groups:
             try:
@@ -954,17 +996,20 @@ class Pst(object):
             except:
                 pass
             f_out.write(pst_utils.SFMT(str(group))+'\n')
-        if self.observation_data.loc[:,pst_utils.pst_config["obs_fieldnames"]].isnull().values.any():
-            warnings.warn("WARNING: NaNs in observation_data dataframe")
-        f_out.write("* observation data\n")
-        #self.observation_data.index = self.observation_data.pop("obsnme")
-        f_out.write(self.observation_data.to_string(col_space=0,
-                                                  formatters=self.obs_format,
-                                                  columns=self.obs_fieldnames,
-                                                  justify="right",
-                                                  header=False,
-                                                  index=False) + '\n')
+
+        # if self.observation_data.loc[:,pst_utils.pst_config["obs_fieldnames"]].isnull().values.any():
+        #     warnings.warn("WARNING: NaNs in observation_data dataframe")
+        # f_out.write("* observation data\n")
+        # #self.observation_data.index = self.observation_data.pop("obsnme")
+        # f_out.write(self.observation_data.to_string(col_space=0,
+        #                                           formatters=self.obs_format,
+        #                                           columns=self.obs_fieldnames,
+        #                                           justify="right",
+        #                                           header=False,
+        #                                           index=False) + '\n')
         #self.observation_data.loc[:,"obsnme"] = self.observation_data.index
+        self._write_df("* observation data", f_out, self.observation_data,
+                       self.obs_format, self.obs_fieldnames, drop_comments)
 
         f_out.write("* model command line\n")
         for cline in self.model_command:
@@ -993,11 +1038,20 @@ class Pst(object):
             #                                  header=False,
             #                                 index=False) + '\n')
             #self.prior_information["pilbl"] = self.prior_information.index
-            for idx,row in self.prior_information.iterrows():
+            # for idx,row in self.prior_information.iterrows():
+            #     f_out.write(pst_utils.SFMT(row["pilbl"]))
+            #     f_out.write(eq_fmt_func(row["equation"]))
+            #     f_out.write(pst_utils.FFMT(row["weight"]))
+            #     f_out.write(pst_utils.SFMT(row["obgnme"]) + '\n')
+            for idx, row in self.prior_information.iterrows():
                 f_out.write(pst_utils.SFMT(row["pilbl"]))
                 f_out.write(eq_fmt_func(row["equation"]))
                 f_out.write(pst_utils.FFMT(row["weight"]))
-                f_out.write(pst_utils.SFMT(row["obgnme"]) + '\n')
+                f_out.write(pst_utils.SFMT(row["obgnme"]))
+                if not drop_comments and 'extra' in row:
+                    f_out.write(" # {0}".format(row['extra']))
+                f_out.write('\n')
+
         if self.control_data.pestmode.startswith("regul"):
             #f_out.write("* regularisation\n")
             #if update_regul or len(self.regul_lines) == 0:

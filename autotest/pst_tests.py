@@ -101,7 +101,7 @@ def load_test():
     exceptions = []
     load_fails = []
     for pst_file in pst_files:
-        if pst_file.endswith(".pst"):
+        if pst_file.endswith(".pst") and not "comments" in pst_file:
             print(pst_file)
             try:
                 p = Pst(os.path.join(pst_dir,pst_file))
@@ -128,6 +128,16 @@ def load_test():
     #    [f.write(pst_file+'\n') for pst_file in load_fails]
     if len(exceptions) > 0:
         raise Exception('\n'.join(exceptions))
+
+def comments_test():
+    import os
+    import pyemu
+
+
+    pst = pyemu.Pst(os.path.join("pst","comments.pst"))
+    pst.write(os.path.join("temp","comments.pst"),drop_comments=False)
+    pst1 = pyemu.Pst(os.path.join("temp","comments.pst"))
+    print(pst1.parameter_data.extra)
 
 def smp_test():
     import os
@@ -637,7 +647,7 @@ if __name__ == "__main__":
     #add_pars_test()
     #setattr_test()
     # run_array_pars()
-    from_flopy_test()
+    #from_flopy_test()
     #plot_flopy_par_ensemble_test()
     #add_pi_test()
     # regdata_test()
@@ -649,7 +659,9 @@ if __name__ == "__main__":
     # smp_dateparser_test()
     #pst_manip_test()
     #tpl_ins_test()
-    #load_test()
+
+    #comments_test()
+    load_test()
     #res_test()
     #smp_test()
     #from_io_with_inschek_test()
