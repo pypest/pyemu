@@ -393,8 +393,9 @@ def _write_mtlist_ins(ins_filename,df,prefix):
         for dt in dt_str:
             f.write("l1 ")
             for col in df.columns:
+                col = col.replace("(",'').replace(")",'')
                 raw = col.split('_')
-                name = ''.join([r[:2] for r in raw[:-2]]) + raw[-2] + raw[-1]
+                name = ''.join([r[:2] for r in raw[:-2]])[:6] + raw[-2] + raw[-1][0]
                 #raw[0] = raw[0][:6]
                 #name = ''.join(raw)
                 if prefix == '':
