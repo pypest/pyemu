@@ -630,7 +630,8 @@ def mtlist_budget_test():
         return
     list_filename = os.path.join("utils","mt3d.list")
     assert os.path.exists(list_filename)
-    pyemu.gw_utils.setup_mtlist_budget_obs(list_filename,start_datetime='1-1-1970')
+    frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(list_filename,start_datetime='1-1-1970')
+    assert len(ins_files) == 2
 
 
 

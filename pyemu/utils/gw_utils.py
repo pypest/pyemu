@@ -287,7 +287,7 @@ def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
 
 
 def setup_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",sw_filename="mtlist_sw.dat",
-                            start_datetime="1-1-1970",prefix='',
+                            start_datetime="1-1-1970",gw_prefix='gw',sw_prefix="sw",
                             save_setup_file=False):
     """ setup observations of gw (and optionally sw) mass budgets from mt3dusgs list file.  writes
         an instruction file and also a _setup_.csv to use when constructing a pest
@@ -306,18 +306,22 @@ def setup_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",sw_filenam
         start_datetime : str
             an str that can be parsed into a pandas.TimeStamp.  used to give budget
             observations meaningful names
-        prefix : str
-            a prefix to add to the water budget observations.  Useful if processing
-            more than one list file as part of the forward run process. Default is ''.
+        gw_prefix : str
+            a prefix to add to the GW budget observations.  Useful if processing
+            more than one list file as part of the forward run process. Default is 'gw'.
+        sw_prefix : str
+            a prefix to add to the SW budget observations.  Useful if processing
+            more than one list file as part of the forward run process. Default is 'sw'.
         save_setup_file : (boolean)
             a flag to save _setup_<list_filename>.csv file that contains useful
             control file information
 
         Returns
         -------
-        df : pandas.DataFrame
-            a dataframe with information for constructing a control file.  If INSCHEK fails
-            to run, reutrns None
+        frun_line, ins_filenames, df :str, list(str), pandas.DataFrame
+            the command to add to the forward run script, the names of the instruction
+            files and a dataframe with information for constructing a control file.  If INSCHEK fails
+            to run, df = None
 
         Note
         ----
@@ -331,19 +335,24 @@ def setup_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",sw_filenam
 
         """
     gw,sw = apply_mtlist_budget_obs(list_filename, gw_filename, sw_filename, start_datetime)
-    _write_mtlist_ins(gw_filename + ".ins", gw, prefix)
+    gw_ins = gw_filename + ".ins"
+    _write_mtlist_ins(gw_ins, gw, gw_prefix)
+    ins_files = [gw_ins]
     try:
         run("inschek {0}.ins {0}".format(gw_filename))
     except:
         print("error running inschek")
     if sw is not None:
-        _write_mtlist_ins(sw_filename + ".ins", sw, prefix)
+        sw_ins = sw_filename + ".ins"
+        _write_mtlist_ins(sw_ins, sw, sw_prefix)
+        ins_files.append(sw_ins)
         try:
             run("inschek {0}.ins {0}".format(sw_filename))
         except:
             print("error running inschek")
-
+    frun_line = "pyemu.gw_utils.apply_mtlist_budget_obs('{0}')".format(list_filename)
     gw_obf = gw_filename + ".obf"
+    df_gw = None
     if os.path.exists(gw_obf):
         df_gw = pd.read_csv(gw_obf, delim_whitespace=True, header=None, names=["obsnme", "obsval"])
         df_gw.loc[:, "obgnme"] = df_gw.obsnme.apply(lambda x: x[:-9])
@@ -351,12 +360,12 @@ def setup_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",sw_filenam
         if os.path.exists(sw_obf):
             df_sw = pd.read_csv(sw_obf, delim_whitespace=True, header=None, names=["obsnme", "obsval"])
             df_sw.loc[:, "obgnme"] = df_sw.obsnme.apply(lambda x: x[:-9])
-            df_gw.append(df_sw)
+            df_gw = df_gw.append(df_sw)
 
         if save_setup_file:
             df_gw.to_csv("_setup_" + os.path.split(list_filename)[-1] + '.csv', index=False)
         df_gw.index = df_gw.obsnme
-        return df_gw
+    return frun_line,ins_files,df_gw
 
 def _write_mtlist_ins(ins_filename,df,prefix):
     """ write an instruction file for a MODFLOW list file
@@ -385,8 +394,9 @@ def _write_mtlist_ins(ins_filename,df,prefix):
             f.write("l1 ")
             for col in df.columns:
                 raw = col.split('_')
-                raw[0] = raw[0][:9]
-                name = ''.join(raw)
+                name = ''.join([r[:2] for r in raw[:-2]]) + raw[-2] + raw[-1]
+                #raw[0] = raw[0][:6]
+                #name = ''.join(raw)
                 if prefix == '':
                     obsnme = "{1}_{2}".format(prefix,name[:name_len],dt)
                 else:
