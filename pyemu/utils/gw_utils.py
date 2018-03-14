@@ -286,6 +286,158 @@ def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
                        lower_lim=lower_lim,fill_value=fill_value)
 
 
+def setup_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",sw_filename="mtlist_sw.dat",
+                            start_datetime="1-1-1970",prefix='',
+                            save_setup_file=False):
+    """ setup observations of gw (and optionally sw) mass budgets from mt3dusgs list file.  writes
+        an instruction file and also a _setup_.csv to use when constructing a pest
+        control file
+
+        Parameters
+        ----------
+        list_filename : str
+                modflow list file
+        gw_filename : str
+            output filename that will contain the gw budget observations. Default is
+            "mtlist_gw.dat"
+        sw_filename : str
+            output filename that will contain the sw budget observations. Default is
+            "mtlist_sw.dat"
+        start_datetime : str
+            an str that can be parsed into a pandas.TimeStamp.  used to give budget
+            observations meaningful names
+        prefix : str
+            a prefix to add to the water budget observations.  Useful if processing
+            more than one list file as part of the forward run process. Default is ''.
+        save_setup_file : (boolean)
+            a flag to save _setup_<list_filename>.csv file that contains useful
+            control file information
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            a dataframe with information for constructing a control file.  If INSCHEK fails
+            to run, reutrns None
+
+        Note
+        ----
+        This function uses INSCHEK to get observation values; the observation values are
+        the values of the list file list_filename.  If INSCHEK fails to run, the obseravtion
+        values are set to 1.0E+10
+
+        the instruction files are named <out_filename>.ins
+
+        It is recommended to use the default value for gw_filename or sw_filename.
+
+        """
+    gw,sw = apply_mtlist_budget_obs(list_filename, gw_filename, sw_filename, start_datetime)
+    _write_mtlist_ins(gw_filename + ".ins", gw, prefix)
+    try:
+        run("inschek {0}.ins {0}".format(gw_filename))
+    except:
+        print("error running inschek")
+    if sw is not None:
+        _write_mtlist_ins(sw_filename + ".ins", sw, prefix)
+        try:
+            run("inschek {0}.ins {0}".format(sw_filename))
+        except:
+            print("error running inschek")
+
+    gw_obf = gw_filename + ".obf"
+    if os.path.exists(gw_obf):
+        df_gw = pd.read_csv(gw_obf, delim_whitespace=True, header=None, names=["obsnme", "obsval"])
+        df_gw.loc[:, "obgnme"] = df_gw.obsnme.apply(lambda x: x[:-9])
+        sw_obf = sw_filename + ".obf"
+        if os.path.exists(sw_obf):
+            df_sw = pd.read_csv(sw_obf, delim_whitespace=True, header=None, names=["obsnme", "obsval"])
+            df_sw.loc[:, "obgnme"] = df_sw.obsnme.apply(lambda x: x[:-9])
+            df_gw.append(df_sw)
+
+        if save_setup_file:
+            df_gw.to_csv("_setup_" + os.path.split(list_filename)[-1] + '.csv', index=False)
+        df_gw.index = df_gw.obsnme
+        return df_gw
+
+def _write_mtlist_ins(ins_filename,df,prefix):
+    """ write an instruction file for a MODFLOW list file
+
+    Parameters
+    ----------
+    ins_filename : str
+        name of the instruction file to write
+    df : pandas.DataFrame
+        the dataframe of list file entries
+    prefix : str
+        the prefix to add to the column names to form
+        obseravtions names
+
+    """
+
+    dt_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
+    if prefix == '':
+        name_len = 11
+    else:
+        name_len = 11 - (len(prefix)+1)
+    with open(ins_filename,'w') as f:
+        f.write('pif ~\nl1\n')
+
+        for dt in dt_str:
+            f.write("l1 ")
+            for col in df.columns:
+                raw = col.split('_')
+                raw[0] = raw[0][:9]
+                name = ''.join(raw)
+                if prefix == '':
+                    obsnme = "{1}_{2}".format(prefix,name[:name_len],dt)
+                else:
+                    obsnme = "{0}_{1}_{2}".format(prefix, name[:name_len], dt)
+                f.write(" w !{0}!".format(obsnme))
+            f.write("\n")
+
+def apply_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",
+                            sw_filename="mtlist_sw.dat",
+                            start_datetime="1-1-1970"):
+    """ process an MT3D list file to extract mass budget entries.
+
+    Parameters
+    ----------
+    list_filename : str
+        the mt3d list file
+    gw_filename : str
+        the name of the output file with gw mass budget information.
+        Default is "mtlist_gw.dat"
+    sw_filename : str
+        the name of the output file with sw mass budget information.
+        Default is "mtlist_sw.dat"
+    start_datatime : str
+        an str that can be cast to a pandas.TimeStamp.  Used to give
+        observations a meaningful name
+
+    Returns
+    -------
+    gw : pandas.DataFrame
+        the gw mass dataframe
+    sw : pandas.DataFrame (optional)
+        the sw mass dataframe
+
+    Note
+    ----
+    requires flopy
+
+    if SFT is not active, no SW mass budget will be returned
+
+    """
+    try:
+        import flopy
+    except Exception as e:
+        raise Exception("error import flopy: {0}".format(str(e)))
+    mt = flopy.utils.MtListBudget(list_filename)
+    gw,sw = mt.parse(start_datetime=start_datetime,diff=True)
+    gw.to_csv(gw_filename,sep=' ',index_label="datetime",date_format="%Y%M%d")
+    if sw is not None:
+        sw.to_csv(sw_filename,sep=' ',index_label="datetime",date_format="%Y%M%d")
+    return gw, sw
+
 def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
                             vol_filename="vol.dat",start_datetime="1-1'1970",prefix='',
                             save_setup_file=False):
@@ -333,13 +485,14 @@ def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
     """
 
 
+
     flx,vol = apply_mflist_budget_obs(list_filename,flx_filename,vol_filename,
                                       start_datetime)
     _write_mflist_ins(flx_filename+".ins",flx,prefix+"flx")
     _write_mflist_ins(vol_filename+".ins",vol, prefix+"vol")
 
-    run("inschek {0}.ins {0}".format(flx_filename))
-    run("inschek {0}.ins {0}".format(vol_filename))
+    #run("inschek {0}.ins {0}".format(flx_filename))
+    #run("inschek {0}.ins {0}".format(vol_filename))
 
     try:
         #os.system("inschek {0}.ins {0}".format(flx_filename))

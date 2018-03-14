@@ -620,6 +620,19 @@ def mflist_budget_test():
     assert os.path.exists(list_filename)
     pyemu.gw_utils.setup_mflist_budget_obs(list_filename,start_datetime=ml.start_datetime)
 
+def mtlist_budget_test():
+    import pyemu
+    import os
+    try:
+        import flopy
+    except:
+        print("no flopy...")
+        return
+    list_filename = os.path.join("utils","mt3d.list")
+    assert os.path.exists(list_filename)
+    pyemu.gw_utils.setup_mtlist_budget_obs(list_filename,start_datetime='1-1-1970')
+
+
 
 def geostat_prior_builder_test():
     import os
@@ -942,7 +955,8 @@ if __name__ == "__main__":
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
     # geostat_prior_builder_test()
-    # mflist_budget_test()
+    #mflist_budget_test()
+    mtlist_budget_test()
     # tpl_to_dataframe_test()
     #kl_test()
     #more_kl_test()

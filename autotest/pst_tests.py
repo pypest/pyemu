@@ -101,7 +101,7 @@ def load_test():
     exceptions = []
     load_fails = []
     for pst_file in pst_files:
-        if pst_file.endswith(".pst"):
+        if pst_file.endswith(".pst") and not "comments" in pst_file:
             print(pst_file)
             try:
                 p = Pst(os.path.join(pst_dir,pst_file))
@@ -128,6 +128,21 @@ def load_test():
     #    [f.write(pst_file+'\n') for pst_file in load_fails]
     if len(exceptions) > 0:
         raise Exception('\n'.join(exceptions))
+
+def comments_test():
+    import os
+    import pyemu
+
+
+    pst = pyemu.Pst(os.path.join("pst","comments.pst"))
+    pst.with_comments = True
+    pst.write(os.path.join("temp","comments.pst"))
+    pst1 = pyemu.Pst(os.path.join("temp","comments.pst"))
+    assert pst1.parameter_data.extra.dropna().shape[0] == pst.parameter_data.extra.dropna().shape[0]
+    pst1.with_comments = False
+    pst1.write(os.path.join("temp","comments.pst"))
+    pst2 = pyemu.Pst(os.path.join("temp","comments.pst"))
+    assert pst2.parameter_data.dropna().shape[0] == 0
 
 def smp_test():
     import os
@@ -178,11 +193,12 @@ def tied_test():
     import pyemu
     pst_dir = os.path.join("pst")
     pst = pyemu.Pst(os.path.join(pst_dir,"br_opt_no_zero_weighted.pst"))
-    print(pst.tied_lines)
+    print(pst.tied)
     pst.write(os.path.join("temp","pest_tied_tester_1.pst"))
     mc = pyemu.MonteCarlo(pst=pst)
     mc.draw(1)
     mc.write_psts(os.path.join("temp","tiedtest_"))
+
 
 def derivative_increment_tests():
     import os
@@ -190,7 +206,6 @@ def derivative_increment_tests():
 
     pst = pyemu.Pst(os.path.join("pst","inctest.pst"))
     pst.calculate_pertubations()
-
 
 
 def pestpp_args_test():
@@ -343,6 +358,7 @@ def plot_flopy_par_ensemble_test():
                                           pcolormesh_transform=pcolormesh_trans,model="freyberg.nam")
 
     os.chdir("..")
+
 
 def from_flopy_test():
     import shutil
@@ -629,30 +645,40 @@ def write_tables_test():
     pst.write_obs_summary_table(group_names={"calhead":"calibration heads"},caption="obs table")
 
 
+def flex_test():
+    import os
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst","pest_comments.pst"),flex=True)
+    pst.with_comments = True
+    pst.write(os.path.join("temp","pest_comments.pst"))
+
+
 if __name__ == "__main__":
-    #write_tables_test()
-    #res_stats_test()
-    #test_write_input_files()
-    #add_obs_test()
-    #add_pars_test()
-    #setattr_test()
+    # write_tables_test()
+    # res_stats_test()
+    # test_write_input_files()
+    # add_obs_test()
+    # add_pars_test()
+    # setattr_test()
     # run_array_pars()
-    from_flopy_test()
-    #plot_flopy_par_ensemble_test()
-    #add_pi_test()
+    # from_flopy_test()
+    # plot_flopy_par_ensemble_test()
+    # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
     # regul_rectify_test()
     # derivative_increment_tests()
-    #tied_test()
+    # tied_test()
     # smp_test()
     # smp_dateparser_test()
-    #pst_manip_test()
-    #tpl_ins_test()
-    #load_test()
-    #res_test()
-    #smp_test()
-    #from_io_with_inschek_test()
-    #pestpp_args_test()
-    #reweight_test()
-    #reweight_res_test()
+    # pst_manip_test()
+    # tpl_ins_test()
+    flex_test()
+    # comments_test()
+    # load_test()
+    # res_test()
+    # smp_test()
+    # from_io_with_inschek_test()
+    # pestpp_args_test()
+    # reweight_test()
+    # reweight_res_test()
