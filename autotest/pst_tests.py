@@ -135,10 +135,12 @@ def comments_test():
 
 
     pst = pyemu.Pst(os.path.join("pst","comments.pst"))
+    pst.with_comments = True
     pst.write(os.path.join("temp","comments.pst"))
     pst1 = pyemu.Pst(os.path.join("temp","comments.pst"))
     assert pst1.parameter_data.extra.dropna().shape[0] == pst.parameter_data.extra.dropna().shape[0]
-    pst1.write(os.path.join("temp","comments.pst"),drop_comments=True)
+    pst1.with_comments = False
+    pst1.write(os.path.join("temp","comments.pst"))
     pst2 = pyemu.Pst(os.path.join("temp","comments.pst"))
     assert pst2.parameter_data.dropna().shape[0] == 0
 
@@ -646,20 +648,22 @@ def write_tables_test():
 def flex_test():
     import os
     import pyemu
-    pst = pyemu.Pst(os.path.join("pst","pest.pst"),flex=True)
+    pst = pyemu.Pst(os.path.join("pst","pest_comments.pst"),flex=True)
+    pst.with_comments = True
+    pst.write(os.path.join("temp","pest_comments.pst"))
 
 
 if __name__ == "__main__":
-    #write_tables_test()
-    #res_stats_test()
-    #test_write_input_files()
-    #add_obs_test()
-    #add_pars_test()
-    #setattr_test()
+    # write_tables_test()
+    # res_stats_test()
+    # test_write_input_files()
+    # add_obs_test()
+    # add_pars_test()
+    # setattr_test()
     # run_array_pars()
-    #from_flopy_test()
-    #plot_flopy_par_ensemble_test()
-    #add_pi_test()
+    # from_flopy_test()
+    # plot_flopy_par_ensemble_test()
+    # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
     # regul_rectify_test()
@@ -667,14 +671,14 @@ if __name__ == "__main__":
     # tied_test()
     # smp_test()
     # smp_dateparser_test()
-    #pst_manip_test()
-    #tpl_ins_test()
+    # pst_manip_test()
+    # tpl_ins_test()
     flex_test()
-    #comments_test()
-    #load_test()
-    #res_test()
-    #smp_test()
-    #from_io_with_inschek_test()
-    #pestpp_args_test()
-    #reweight_test()
-    #reweight_res_test()
+    # comments_test()
+    # load_test()
+    # res_test()
+    # smp_test()
+    # from_io_with_inschek_test()
+    # pestpp_args_test()
+    # reweight_test()
+    # reweight_res_test()

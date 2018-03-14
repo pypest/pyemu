@@ -41,7 +41,9 @@ class Pst(object):
         self.resfile = resfile
         self.__res = None
         self.__pi_count = 0
-        self.drop_comments = True
+        self.with_comments = False
+        self.comments = {}
+        self.other_sections = {}
         for key,value in pst_utils.pst_config.items():
             self.__setattr__(key,copy.copy(value))
         self.tied = None
@@ -542,16 +544,18 @@ class Pst(object):
                     break
                 else:
                     raise Exception("unexpected EOF")
-            if line.startswith('#'):
-                comments.append(line)
+            if line.startswith("++"):
+                self._parse_pestpp_line(line)
+            elif line.startswith('#'):
+                comments.append(line.strip())
             else:
                 break
-        return line,comments
+        return line, comments
 
 
     def _read_section_comments(self,f,forgive):
-        section_comments = []
         lines = []
+        section_comments = []
         while True:
             line,comments = self._read_line_comments(f,forgive)
             section_comments.extend(comments)
@@ -561,67 +565,162 @@ class Pst(object):
         return line,lines,section_comments
 
 
+    def _cast_df_from_lines(self,name,lines, fieldnames, converters, defaults):
+        extra = []
+        raw = []
+        for line in lines:
+
+            if '#' in line:
+                er = line.strip().split('#')
+                extra.append('#'.join(er[1:]))
+                r = er[0].split()
+            else:
+                r = line.strip().split()
+                extra.append(np.NaN)
+            raw.append(r)
+        found_fieldnames = fieldnames[:len(raw[0])]
+        df = pd.DataFrame(raw,columns=found_fieldnames)
+        for col in fieldnames:
+            if col not in df.columns:
+                df.loc[:,col] = np.NaN
+            if col in fieldnames:
+                df.loc[:, col] = df.loc[:, col].fillna(defaults[col])
+            if col in converters:
+
+                df.loc[:,col] = df.loc[:,col].apply(converters[col])
+        df.loc[:,"extra"] = extra
+        return df
+
+
+    def _cast_prior_df_from_lines(self,lines):
+        pilbl, obgnme, weight, equation = [], [], [], []
+        extra = []
+        for line in lines:
+            if '#' in line:
+                er = line.split('#')
+                raw = er[0].split()
+                extra.append('#'.join(er[1:]))
+            else:
+                extra.append(np.NaN)
+                raw = line.split()
+            pilbl.append(raw[0].lower())
+            obgnme.append(raw[-1].lower())
+            weight.append(float(raw[-2]))
+            eq = ' '.join(raw[1:-2])
+            equation.append(eq)
+
+        self.prior_information = pd.DataFrame({"pilbl": pilbl,
+                                               "equation": equation,
+                                               "weight": weight,
+                                               "obgnme": obgnme})
+        self.prior_information.index = self.prior_information.pilbl
+        self.prior_information.loc[:,"extra"] = extra
+
     def flex_load(self,filename):
         self.lcount  = 0
+        self.comments = {}
+        self.prior_information = self.null_prior
         assert os.path.exists(filename), "couldn't find control file {0}".format(filename)
         f = open(filename, 'r')
 
         # this should be the pcf line
-        line,comments = self._read_line_comments(f,False)
-        assert line.startswith("pcf")
-        line,comments = self._read_line_comments(f,False)
+        section = "initial"
+        line,self.comments[section] = self._read_line_comments(f,False)
 
-        assert "* control data" in line, \
-            "Pst.load() error: looking for control" + \
-            " data section, found:" + line
-        next_section, control_lines, control_comments = self._read_section_comments(f,False)
-        self.control_data.parse_values_from_lines(control_lines)
+        assert line.startswith("pcf")
+
+        line, pcf_comments = self._read_line_comments(f,False)
+
+        section = "* control data"
+        assert section in line, \
+            "Pst.load() error: looking for {0}, found: {1}".format(section,line)
+
+        next_section, section_lines, self.comments[section] = self._read_section_comments(f,False)
+        self.control_data.parse_values_from_lines(section_lines)
 
         # read anything until the SVD section
         while True:
             if next_section.startswith("* singular value"):
                 break
-            next_section, section_lines, section_comments = self._read_section_comments(f,False)
-
+            next_section, section_lines, c = self._read_section_comments(f,False)
 
         # SVD
-        next_section, svd_lines, svd_comments = self._read_section_comments(f, False)
-        self.svd_data.parse_values_from_lines(svd_lines)
+        section = "* singular value decomposition"
+        next_section, section_lines,self.comments[section] = self._read_section_comments(f, False)
+        self.svd_data.parse_values_from_lines(section_lines)
 
         # parameter groups
-        assert next_section == "* parameter groups"
-        next_section, section_lines, section_comments = self._read_section_comments(f, False)
+        section = "* parameter groups"
+        assert next_section == section
+        next_section, section_lines, self.comments[section] = self._read_section_comments(f, False)
+        self.parameter_groups = self._cast_df_from_lines(next_section,section_lines,self.pargp_fieldnames,
+                                                        self.pargp_converters, self.pargp_defaults)
 
         # parameter data
-        assert next_section == "* parameter data"
-        next_section, section_lines, section_comments = self._read_section_comments(f, False)
+        section = "* parameter data"
+        assert next_section == section
+        next_section, section_lines,self.comments[section] = self._read_section_comments(f, False)
+        self.parameter_data = self._cast_df_from_lines(next_section, section_lines, self.par_fieldnames,
+                                                        self.par_converters, self.par_defaults)
+
+        # # oh the tied parameter bullshit, how do I hate thee
+        # counts = self.parameter_data.partrans.value_counts()
+        # if "tied" in counts.index:
+        #     # tied_lines = [f.readline().lower().strip().split() for _ in range(counts["tied"])]
+        #     # self.tied = pd.DataFrame(tied_lines,columns=["parnme","partied"])
+        #     # self.tied.index = self.tied.pop("parnme")
+        #     self.tied = self._read_df(f, counts["tied"], self.tied_fieldnames,
+        #                               self.tied_converters)
+        #     self.tied.index = self.tied.parnme
 
         # observation groups
-        assert next_section == "* observation groups"
-        next_section, section_lines, section_comments = self._read_section_comments(f, False)
+        section = "* observation groups"
+        assert next_section == section
+        next_section, section_lines, self.comments[section] = self._read_section_comments(f, False)
 
         # observation data
-        assert next_section == "* observation data"
-        next_section, section_lines, section_comments = self._read_section_comments(f, False)
-
+        section = "* observation data"
+        assert next_section == section
+        next_section, section_lines, self.comments[section] = self._read_section_comments(f, False)
+        self.observation_data = self._cast_df_from_lines(next_section, section_lines, self.obs_fieldnames,
+                                                        self.obs_converters, self.obs_defaults)
         # model commands
-        assert next_section == "* model command line"
-        next_section, section_lines, section_comments = self._read_section_comments(f, False)
+        section = "* model command line"
+        assert next_section == section
+        next_section, section_lines,self.comments[section] = self._read_section_comments(f, False)
 
         # model io
-        assert next_section == "* model input/output"
-        next_section, section_lines, section_comments = self._read_section_comments(f, False)
+        section = "* model input/output"
+        assert next_section == section
+        next_section, section_lines, self.comments[section] = self._read_section_comments(f, False)
+        ntpl,nins = self.control_data.ntplfle, self.control_data.ninsfle
+        assert len(section_lines) == ntpl + nins
+        for iline,line in enumerate(section_lines):
+            raw = line.split()
+            if iline < ntpl:
+                self.template_files.append(raw[0])
+                self.input_files.append(raw[1])
+            else:
+                self.instruction_files.append(raw[0])
+                self.output_files.append(raw[1])
+
 
         # prior info
-        if next_section == "* prior information":
-            next_line, section_lines, section_comments = self._read_section_comments(f, True)
+        section = "* prior information"
+        if next_section == section:
+            next_line, section_lines,self.comments[section] = self._read_section_comments(f, True)
+            self._cast_prior_df_from_lines(section_lines)
 
         # any additional sections
+        final_comments = []
         while True:
             # TODO: catch a regul section
             if next_line is None:
                 break
+            self.other_lines.append(next_line)
             next_line,comments = self._read_line_comments(f,True)
+            final_comments.extend(comments)
+            self.comments["final"] = final_comments
 
 
     def load(self, filename):
@@ -807,26 +906,31 @@ class Pst(object):
 
         for line in f:
             if line.strip().startswith("++") and '#' not in line:
-                #args = line.replace('++','').strip().split()
-                args = line.replace("++",'').strip().split(')')
-                args = [a for a in args if a != '']
-                #args = ['++'+arg.strip() for arg in args]
-                #self.pestpp_lines.extend(args)
-                keys = [arg.split('(')[0] for arg in args]
-                values = [arg.split('(')[1].replace(')','') for arg in args]
-                for key,value in zip(keys,values):
-                    if key in self.pestpp_options:
-                        print("Pst.load() warning: duplicate pest++ option found:" + str(key))
-                    self.pestpp_options[key] = value
+                self._parse_pestpp_line(line)
         f.close()
 
         for df in [self.parameter_groups,self.parameter_data,
                    self.observation_data,self.prior_information]:
             if "extra" in df.columns and df.extra.dropna().shape[0] > 0:
-                self.drop_comments = False
+                self.with_comments = False
                 break
         return
 
+
+    def _parse_pestpp_line(self,line):
+        # args = line.replace('++','').strip().split()
+        args = line.replace("++", '').strip().split(')')
+        args = [a for a in args if a != '']
+        # args = ['++'+arg.strip() for arg in args]
+        # self.pestpp_lines.extend(args)
+        keys = [arg.split('(')[0] for arg in args]
+        values = [arg.split('(')[1].replace(')', '') for arg in args if '(' in arg]
+        for _ in range(len(values)-1,len(keys)):
+            values.append('')
+        for key, value in zip(keys, values):
+            if key in self.pestpp_options:
+                print("Pst.load() warning: duplicate pest++ option found:" + str(key))
+            self.pestpp_options[key] = value
 
     def _update_control_section(self):
         """ private method to synchronize the control section counters with the
@@ -987,28 +1091,32 @@ class Pst(object):
             apply(lambda x: is_good(x))
         self.prior_information = self.prior_information.loc[keep_idx,:]
 
-    def _write_df(self,name,f,df,formatters,columns,drop_comments):
+    def _write_df(self,name,f,df,formatters,columns):
+        if name.startswith('*'):
+            f.write(name+'\n')
+        if self.with_comments:
+            for line in self.comments.get(name, []):
+                f.write(line+'\n')
         if df.loc[:,columns].isnull().values.any():
             warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
         def ext_fmt(x):
             if pd.notnull(x):
                 return " # {0}".format(x)
             return ''
-        if not drop_comments and 'extra' in df.columns:
+        if self.with_comments and 'extra' in df.columns:
             df.loc[:,"extra_str"] = df.extra.apply(ext_fmt)
             columns.append("extra_str")
             #formatters["extra"] = lambda x: " # {0}".format(x) if pd.notnull(x) else 'test'
             #formatters["extra"] = lambda x: ext_fmt(x)
 
-        if name.startswith('*'):
-            f.write(name+'\n')
+
         f.write(df.to_string(col_space=0,formatters=formatters,
                                                   columns=columns,
                                                   justify="right",
                                                   header=False,
                                                   index=False) + '\n')
 
-    def write(self,new_filename,update_regul=False,drop_comments=None):
+    def write(self,new_filename,update_regul=False):
         """write a pest control file
 
         Parameters
@@ -1018,24 +1126,26 @@ class Pst(object):
         update_regul : (boolean)
             flag to update zero-order Tikhonov prior information
             equations to prefer the current parameter values
-        drop_comments : bool
-            flag to not rewrite comments to new control file. If
-            None, fall back Pst.drop_comments. Default is None
+
 
         """
-        if drop_comments is None:
-            drop_comments = self.drop_comments
+
         self._rectify_pgroups()
         self.rectify_pi()
         self._update_control_section()
 
         f_out = open(new_filename, 'w')
+        if self.with_comments:
+            for line in self.comments.get("initial",[]):
+                f_out.write(line+'\n')
         f_out.write("pcf\n* control data\n")
         self.control_data.write(f_out)
 
-        for line in self.other_lines:
-            f_out.write(line)
-
+        # for line in self.other_lines:
+        #     f_out.write(line)
+        if self.with_comments:
+            for line in self.comments.get("* singular value decompisition",[]):
+                f_out.write(line)
         self.svd_data.write(f_out)
 
         #f_out.write("* parameter groups\n")
@@ -1045,56 +1155,16 @@ class Pst(object):
         self.parameter_groups.loc[:,"pargpnme"] = \
             self.parameter_groups.pargpnme.apply(self.pargp_format["pargpnme"])
 
-        #self.parameter_groups.index = self.parameter_groups.pop("pargpnme")
-        #gp_fieldnames = [name for name in self.pargp_fieldnames if name in self.parameter_groups.columns]
-        # if self.parameter_groups.isnull().values.any():
-        #     warnings.warn("WARNING: NaNs in parameter_groups dataframe")
-        # fnames = self.pargp_fieldnames
-        # if 'extra' in self.parameter_groups.columns:
-        #     fnames.append("extra")
-        # f_out.write(self.parameter_groups.to_string(col_space=0,
-        #                                           formatters=self.pargp_format,
-        #                                           columns=fnames,
-        #                                           justify="right",
-        #                                           header=False,
-        #                                           index=False) + '\n')
-
-        self._write_df("* parameter groups",f_out, self.parameter_groups,
-                       self.pargp_format, self.pargp_fieldnames, drop_comments)
+        self._write_df("* parameter groups", f_out, self.parameter_groups,
+                       self.pargp_format, self.pargp_fieldnames)
 
 
-        #self.parameter_groups.loc[:,"pargpnme"] = pargpnme.values
-        #self.parameter_groups.index = pargpnme
-
-        # if self.parameter_data.loc[:,pst_utils.pst_config["par_fieldnames"]].isnull().values.any():
-        #     warnings.warn("WARNING: NaNs in parameter_data dataframe")
-        #
-        # f_out.write("* parameter data\n")
-        # #self.parameter_data.index = self.parameter_data.pop("parnme")
-        # f_out.write(self.parameter_data.to_string(col_space=0,
-        #                                           columns=self.par_fieldnames,
-        #                                           formatters=self.par_format,
-        #                                           justify="right",
-        #                                           header=False,
-        #                                           index=False) + '\n')
-
-        #self.parameter_data.loc[:,"parnme"] = self.parameter_data.index
         self._write_df("* parameter data",f_out, self.parameter_data,
-                       self.par_format, self.par_fieldnames, drop_comments)
+                       self.par_format, self.par_fieldnames)
 
         if self.tied is not None:
-            # if self.tied.isnull().values.any():
-            #     warnings.warn("WARNING: NaNs in tied dataframe")
-            # #self.tied.index = self.tied.pop("parnme")
-            # f_out.write(self.tied.to_string(col_space=0,
-            #                                 columns=self.tied_fieldnames,
-            #                                 formatters=self.tied_format,
-            #                                 justify='right',
-            #                                 header=False,
-            #                                 index=False)+'\n')
-            #self.tied.loc[:,"parnme"] = self.tied.index
             self._write_df("tied parameter data", f_out, self.tied,
-                           self.tied_format, self.tied_fieldnames, drop_comments)
+                           self.tied_format, self.tied_fieldnames)
 
         f_out.write("* observation groups\n")
         for group in self.obs_groups:
@@ -1110,19 +1180,8 @@ class Pst(object):
                 pass
             f_out.write(pst_utils.SFMT(str(group))+'\n')
 
-        # if self.observation_data.loc[:,pst_utils.pst_config["obs_fieldnames"]].isnull().values.any():
-        #     warnings.warn("WARNING: NaNs in observation_data dataframe")
-        # f_out.write("* observation data\n")
-        # #self.observation_data.index = self.observation_data.pop("obsnme")
-        # f_out.write(self.observation_data.to_string(col_space=0,
-        #                                           formatters=self.obs_format,
-        #                                           columns=self.obs_fieldnames,
-        #                                           justify="right",
-        #                                           header=False,
-        #                                           index=False) + '\n')
-        #self.observation_data.loc[:,"obsnme"] = self.observation_data.index
         self._write_df("* observation data", f_out, self.observation_data,
-                       self.obs_format, self.obs_fieldnames, drop_comments)
+                       self.obs_format, self.obs_fieldnames)
 
         f_out.write("* model command line\n")
         for cline in self.model_command:
@@ -1161,7 +1220,7 @@ class Pst(object):
                 f_out.write(eq_fmt_func(row["equation"]))
                 f_out.write(pst_utils.FFMT(row["weight"]))
                 f_out.write(pst_utils.SFMT(row["obgnme"]))
-                if not drop_comments and 'extra' in row:
+                if self.with_comments and 'extra' in row:
                     f_out.write(" # {0}".format(row['extra']))
                 f_out.write('\n')
 
@@ -1173,10 +1232,17 @@ class Pst(object):
             #    [f_out.write(line) for line in self.regul_lines]
             self.reg_data.write(f_out)
 
+        for line in self.other_lines:
+            f_out.write(line+'\n')
+
         for key,value in self.pestpp_options.items():
             if isinstance(value,list):
                 value  = ','.join([str(v) for v in value])
             f_out.write("++{0}({1})\n".format(str(key),str(value)))
+
+        if self.with_comments:
+            for line in self.comments.get("final",[]):
+                f_out.write(line+'\n')
 
         f_out.close()
 
