@@ -246,9 +246,9 @@ def res_1to1(pst,logger=None,plot_hexbin=False,**kwargs):
             mx = max(obs_g.obsval.max(), obs_g.sim.max())
             mn = min(obs_g.obsval.min(), obs_g.sim.min())
 
-            if obs_g.shape[0] == 1:
-                mx *= 1.1
-                mn *= 0.9
+            #if obs_g.shape[0] == 1:
+            mx *= 1.1
+            mn *= 0.9
             ax.axis('square')
             if plot_hexbin:
                 ax.hexbin(obs_g.sim.values, obs_g.obsval.values, mincnt=1, gridsize=(75, 75),
@@ -268,7 +268,7 @@ def res_1to1(pst,logger=None,plot_hexbin=False,**kwargs):
             ax.set_ylabel("observed",labelpad=0.1)
             ax.set_xlabel("simulated",labelpad=0.1)
             ax.set_title("{0}) group:{1}, {2} observations".
-                                     format(abet[ax_count], g, names.shape[0]), loc="left")
+                                     format(abet[ax_count], g, obs_g.shape[0]), loc="left")
 
             ax_count += 1
 
@@ -288,7 +288,7 @@ def res_1to1(pst,logger=None,plot_hexbin=False,**kwargs):
             ax.set_ylabel("residual",labelpad=0.1)
             ax.set_xlabel("observed",labelpad=0.1)
             ax.set_title("{0}) group:{1}, {2} observations".
-                         format(abet[ax_count], g, names.shape[0]), loc="left")
+                         format(abet[ax_count], g, obs_g.shape[0]), loc="left")
             ax.grid()
             ax_count += 1
 
