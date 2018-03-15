@@ -653,6 +653,23 @@ def flex_test():
     pst.write(os.path.join("temp","pest_comments.pst"))
 
 
+def test_e_clean():
+    import os
+    import pyemu
+
+    pst_name = os.path.join("pst","test_missing_e.pst")
+    try:
+        pst = pyemu.Pst(pst_name)
+    except:
+        pass
+    else:
+        raise Exception()
+
+    clean_name = os.path.join("temp","clean.pst")
+    pyemu.pst_utils.clean_missing_exponent(pst_name,clean_name)
+    pst = pyemu.Pst(clean_name)
+
+
 if __name__ == "__main__":
     # write_tables_test()
     # res_stats_test()
@@ -673,8 +690,9 @@ if __name__ == "__main__":
     # smp_dateparser_test()
     # pst_manip_test()
     # tpl_ins_test()
-    flex_test()
+    #flex_test()
     # comments_test()
+    test_e_clean()
     # load_test()
     # res_test()
     # smp_test()

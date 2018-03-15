@@ -833,7 +833,7 @@ def clean_missing_exponent(pst_filename,clean_filename="clean.pst"):
 
     """
     lines = []
-    with open(pst_file,'r') as f:
+    with open(pst_filename,'r') as f:
         for line in f:
             line = line.lower().strip()
             if '+' in line:
