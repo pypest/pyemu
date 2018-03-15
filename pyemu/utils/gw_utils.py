@@ -381,8 +381,10 @@ def _write_mtlist_ins(ins_filename,df,prefix):
         obseravtions names
 
     """
-
-    dt_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
+    try:
+        dt_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
+    except:
+        dt_str = df.index.map(lambda x: "{0:08.1f}".format(x).strip())
     if prefix == '':
         name_len = 11
     else:
