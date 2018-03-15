@@ -815,7 +815,39 @@ def res_from_obseravtion_data(observation_data):
     res_df.loc[:, "residual"] = np.NaN
     return res_df
 
+def clean_missing_exponent(pst_filename,clean_filename="clean.pst"):
+    """fixes the issue where some terrible fortran program may have
+    written a floating point format without the 'e' - like 1.0-3, really?!
 
+    Parameters
+    ----------
+    pst_filename : str
+        the pest control file
+    clean_filename : str
+        the new pest control file to write. Default is "clean.pst"
+
+    Returns
+    -------
+    None
+
+
+    """
+    lines = []
+    with open(pst_file,'r') as f:
+        for line in f:
+            line = line.lower().strip()
+            if '+' in line:
+                raw = line.split('+')
+                for i,r in enumerate(raw[:-1]):
+                    if r[-1] != 'e':
+                        r = r + 'e'
+                    raw[i] = r
+                lines.append('+'.join(raw))
+            else:
+                lines.append(line)
+    with open(clean_filename,'w') as f:
+        for line in lines:
+            f.write(line+'\n')
 
 
 

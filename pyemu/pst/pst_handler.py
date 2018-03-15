@@ -64,6 +64,7 @@ class Pst(object):
                 value = [value]
         super(Pst,self).__setattr__(key,value)
 
+
     @classmethod
     def from_par_obs_names(cls,par_names=["par1"],obs_names=["obs1"]):
         return pst_utils.generic_pst(par_names=par_names,obs_names=obs_names)
