@@ -29,14 +29,6 @@ pyemu.ev module
     :undoc-members:
     :show-inheritance:
 
-pyemu.inf module
-----------------
-
-.. automodule:: pyemu.inf
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 pyemu.la module
 ---------------
 

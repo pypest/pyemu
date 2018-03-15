@@ -101,7 +101,8 @@ def load_test():
     exceptions = []
     load_fails = []
     for pst_file in pst_files:
-        if pst_file.endswith(".pst") and not "comments" in pst_file:
+        if pst_file.endswith(".pst") and not "comments" in pst_file and \
+                not "missing" in pst_file:
             print(pst_file)
             try:
                 p = Pst(os.path.join(pst_dir,pst_file))
@@ -690,10 +691,10 @@ if __name__ == "__main__":
     # smp_dateparser_test()
     # pst_manip_test()
     # tpl_ins_test()
-    #flex_test()
+    # flex_test()
     # comments_test()
-    test_e_clean()
-    # load_test()
+    # test_e_clean()
+    load_test()
     # res_test()
     # smp_test()
     # from_io_with_inschek_test()
