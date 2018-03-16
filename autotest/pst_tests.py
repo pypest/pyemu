@@ -130,7 +130,55 @@ def load_test():
     if len(exceptions) > 0:
         raise Exception('\n'.join(exceptions))
 
+
+def flex_load_test():
+    import os
+    from pyemu import Pst,pst_utils
+    pst_dir = os.path.join("pst")
+    temp_dir = "temp"
+    if not os.path.exists(temp_dir):
+        os.mkdir(temp_dir)
+    # just testing all sorts of different pst files
+    pst_files = os.listdir(pst_dir)
+    exceptions = []
+    load_fails = []
+    for pst_file in pst_files:
+        if pst_file.endswith(".pst") and not "missing" in pst_file:
+            #if not pst_file.startswith("LPR"):
+            #    continue
+            print(pst_file)
+            p = Pst(os.path.join(pst_dir, pst_file), flex=True)
+            out_name = os.path.join(temp_dir, pst_file)
+            p.write(out_name, update_regul=True)
+            p = Pst(out_name)
+            try:
+                p = Pst(os.path.join(pst_dir,pst_file),flex=True)
+            except Exception as e:
+                exceptions.append(pst_file + " read fail: " + str(e))
+                load_fails.append(pst_file)
+                continue
+            out_name = os.path.join(temp_dir,pst_file)
+            print(out_name)
+           #p.write(out_name,update_regul=True)
+            try:
+                p.write(out_name,update_regul=True)
+            except Exception as e:
+                exceptions.append(pst_file + " write fail: " + str(e))
+                continue
+            print(pst_file)
+            try:
+                p = Pst(out_name)
+            except Exception as e:
+                exceptions.append(pst_file + " reload fail: " + str(e))
+                continue
+
+    #with open("load_fails.txt",'w') as f:
+    #    [f.write(pst_file+'\n') for pst_file in load_fails]
+    if len(exceptions) > 0:
+        raise Exception('\n'.join(exceptions))
+
 def comments_test():
+
     import os
     import pyemu
 
@@ -694,7 +742,8 @@ if __name__ == "__main__":
     # flex_test()
     # comments_test()
     # test_e_clean()
-    load_test()
+    # load_test()
+    # flex_load_test()
     # res_test()
     # smp_test()
     # from_io_with_inschek_test()

@@ -641,14 +641,21 @@ class Pst(object):
 
         # read anything until the SVD section
         while True:
-            if next_section.startswith("* singular value"):
+            if next_section.startswith("* singular value") or next_section.startswith("* parameter groups"):
                 break
             next_section, section_lines, c = self._read_section_comments(f,False)
 
         # SVD
-        section = "* singular value decomposition"
-        next_section, section_lines,self.comments[section] = self._read_section_comments(f, False)
-        self.svd_data.parse_values_from_lines(section_lines)
+        if next_section.startswith("* singular value"):
+            section = "* singular value decomposition"
+            next_section, section_lines,self.comments[section] = self._read_section_comments(f, False)
+            self.svd_data.parse_values_from_lines(section_lines)
+
+        # read anything until par groups
+        while True:
+            if next_section.startswith("* parameter groups"):
+                break
+            next_section, section_lines, c = self._read_section_comments(f, False)
 
         # parameter groups
         section = "* parameter groups"
@@ -665,14 +672,14 @@ class Pst(object):
                                                         self.par_converters, self.par_defaults)
 
         # # oh the tied parameter bullshit, how do I hate thee
-        # counts = self.parameter_data.partrans.value_counts()
-        # if "tied" in counts.index:
-        #     # tied_lines = [f.readline().lower().strip().split() for _ in range(counts["tied"])]
-        #     # self.tied = pd.DataFrame(tied_lines,columns=["parnme","partied"])
-        #     # self.tied.index = self.tied.pop("parnme")
-        #     self.tied = self._read_df(f, counts["tied"], self.tied_fieldnames,
-        #                               self.tied_converters)
-        #     self.tied.index = self.tied.parnme
+        counts = self.parameter_data.partrans.value_counts()
+        if "tied" in counts.index:
+            #the tied lines got cast into the parameter data lines
+            ntied = counts["tied"]
+            self.tied = self.parameter_data.iloc[-ntied:,:2]
+            self.tied.columns = self.tied_fieldnames
+            self.tied.index = self.tied.parnme
+            self.parameter_data = self.parameter_data.iloc[:-ntied,:]
 
         # observation groups
         section = "* observation groups"
@@ -693,7 +700,7 @@ class Pst(object):
         # model io
         section = "* model input/output"
         assert next_section == section
-        next_section, section_lines, self.comments[section] = self._read_section_comments(f, False)
+        next_section, section_lines, self.comments[section] = self._read_section_comments(f, True)
         ntpl,nins = self.control_data.ntplfle, self.control_data.ninsfle
         assert len(section_lines) == ntpl + nins
         for iline,line in enumerate(section_lines):
@@ -714,12 +721,14 @@ class Pst(object):
 
         # any additional sections
         final_comments = []
+
         while True:
             # TODO: catch a regul section
+            next_line, comments = self._read_line_comments(f, True)
             if next_line is None:
                 break
             self.other_lines.append(next_line)
-            next_line,comments = self._read_line_comments(f,True)
+            #next_line,comments = self._read_line_comments(f,True)
             final_comments.extend(comments)
             self.comments["final"] = final_comments
 

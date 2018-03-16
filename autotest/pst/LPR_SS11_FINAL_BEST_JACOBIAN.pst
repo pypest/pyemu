@@ -15,7 +15,7 @@ Kx     relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic
 Kz     relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic 1.0e-5 0.5 smaller
 Rch relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic 1.0e-5 0.5 smaller
 SFRc relative   1.000000e-002  0.000000e+000  switch  2.000000e+000  parabolic 1.0e-5 0.5 smaller
-* parameter datalog
+* parameter data
 sfrc log factor    2.493963      0.5 200.0 sfrc 1 0 1
 rm1 log factor    1.142708      0.85 1.25 rch 1 0 1
 rm2 tied factor    1.142708      0.85 1.25 rch 1 0 1
