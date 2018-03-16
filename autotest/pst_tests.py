@@ -720,7 +720,7 @@ def test_e_clean():
 
 
 if __name__ == "__main__":
-    # write_tables_test()
+    write_tables_test()
     # res_stats_test()
     # test_write_input_files()
     # add_obs_test()
