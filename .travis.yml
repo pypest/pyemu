@@ -19,7 +19,7 @@ install:
   - pip install git+https://github.com/modflowpy/flopy.git@develop
 script:
   - export PYTHONPATH=$PYTHONPATH:.
-  - nosetests -v --with-id --with-timer -w ./autotest --with-coverage --cover-package=pyemu
+  - nosetests -v --with-id --nocapture --with-timer -w ./autotest --with-coverage --cover-package=pyemu
 after_success:
   - coveralls
 
