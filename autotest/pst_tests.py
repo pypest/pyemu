@@ -149,6 +149,7 @@ def flex_load_test():
             print(pst_file)
             p = Pst(os.path.join(pst_dir, pst_file), flex=True)
             out_name = os.path.join(temp_dir, pst_file)
+            print("write")
             p.write(out_name, update_regul=True)
             p = Pst(out_name)
             try:
