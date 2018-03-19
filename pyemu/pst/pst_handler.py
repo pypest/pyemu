@@ -2134,7 +2134,7 @@ class Pst(object):
                   "pe":"percent error"}
 
         obs.loc[:,"stdev"] = 1.0 / obs.weight
-        obs.loc[:,"pe"] = 100.0 * (obs.stdev / obs.obsval)
+        obs.loc[:,"pe"] = 100.0 * (obs.stdev / obs.obsval.apply(np.abs))
         obs = obs.replace([np.inf,-np.inf],np.NaN)
 
         data = {c: [] for c in cols}
