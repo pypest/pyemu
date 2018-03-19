@@ -797,6 +797,46 @@ def plot_summary_test():
 
 
 
+def hds_timeseries_test():
+    import os
+    import shutil
+    import numpy as np
+    import pandas as pd
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+
+    model_ws =os.path.join("..","examples","Freyberg_transient")
+    org_hds_file = os.path.join(model_ws, "freyberg.hds")
+    hds_file = os.path.join("temp", "freyberg.hds")
+    shutil.copy2(org_hds_file, hds_file)
+    kij_dict = {"test1":[0,0,0],"test2":(1,1,1)}
+
+    pyemu.gw_utils.setup_hds_timeseries(hds_file,kij_dict,include_path=True)
+    pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, include_path=True,prefix="hds")
+
+    m = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,load_only=[],check=False)
+    pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict,model=m,include_path=True)
+    pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, model=m, include_path=True,prefix="hds")
+
+    org_hds_file = os.path.join("utils", "MT3D001.UCN")
+    hds_file = os.path.join("temp", "MT3D001.UCN")
+    shutil.copy2(org_hds_file, hds_file)
+    kij_dict = {"test1": [0, 0, 0], "test2": (1, 1, 1)}
+
+    pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, include_path=True)
+    pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, include_path=True, prefix="hds")
+
+    m = flopy.modflow.Modflow.load("freyberg.nam", model_ws=model_ws, load_only=[], check=False)
+    pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, model=m, include_path=True)
+    pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, model=m, include_path=True, prefix="hds")
+
+    # df1 = pd.read_csv(out_file, delim_whitespace=True)
+    # pyemu.gw_utils.apply_hds_obs(hds_file)
+    # df2 = pd.read_csv(out_file, delim_whitespace=True)
+    # diff = df1.obsval - df2.obsval
 
 def grid_obs_test():
     import os
@@ -951,6 +991,7 @@ if __name__ == "__main__":
     #gw_sft_ins_test()
     # par_knowledge_test()
     #grid_obs_test()
+    hds_timeseries_test()
     #plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
@@ -960,7 +1001,7 @@ if __name__ == "__main__":
     # #linearuniversal_krige_test()
     # geostat_prior_builder_test()
     #mflist_budget_test()
-    mtlist_budget_test()
+    #mtlist_budget_test()
     # tpl_to_dataframe_test()
     #kl_test()
     #more_kl_test()

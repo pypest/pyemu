@@ -598,6 +598,180 @@ def _write_mflist_ins(ins_filename,df,prefix):
                 f.write(" w !{0}!".format(obsnme))
             f.write("\n")
 
+
+def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
+                         model=None):
+    """a function to setup extracting time-series from a binary modflow
+    head save (or equivalent format - ucn, sub, etc).  Writes
+    an instruction file and a _set_ csv
+
+    Parameters
+    ----------
+    hds_file : str
+        binary filename
+    kij_dict : dict
+        dictionary of site_name: [k,i,j] pairs
+    prefix : str
+        string to prepend to site_name when forming obsnme's.  Default is None
+    include_path : bool
+        flag to prepend sfr_out_file path to sfr_obs.config.  Useful for setting up
+        process in separate directory for where python is running.
+    model : flopy.mbase
+        a flopy model.  If passed, the observation names will have the datetime of the
+        observation appended to them.  If None, the observation names will have the
+        stress period appended to them. Default is None.
+
+    Returns
+    -------
+
+
+
+    Note
+    ----
+    This function writes hds_timeseries.config that must be in the same
+    dir where apply_hds_timeseries() is called during the forward run
+
+    assumes model time units are days!!!
+
+    """
+
+    try:
+        import flopy
+    except Exception as e:
+        print("error importing flopy, returning {0}".format(str(e)))
+        return
+
+    assert os.path.exists(hds_file),"head save file not found"
+    if hds_file.lower().endswith(".ucn"):
+        try:
+            hds = flopy.utils.UcnFile(hds_file)
+        except Exception as e:
+            raise Exception("error instantiating UcnFile:{0}".format(str(e)))
+    else:
+        try:
+            hds = flopy.utils.HeadFile(hds_file)
+        except Exception as e:
+            raise Exception("error instantiating HeadFile:{0}".format(str(e)))
+
+    nlay,nrow,ncol = hds.nlay,hds.nrow,hds.ncol
+
+    if include_path:
+        pth = os.path.join(*[p for p in os.path.split(hds_file)[:-1]])
+        config_file = os.path.join(pth,"hds_timeseries.config")
+    else:
+        config_file = "hds_timeseries.config"
+    print("writing 'hds_timeseries.config' to {0}".format(config_file))
+
+    f_config = open(config_file,'w')
+    if model is not None:
+        if model.dis.itmuni != 4:
+            warnings.warn("setup_hds_timeseries only supports 'days' time units...")
+        f_config.write("{0},{1},d\n".format(os.path.split(hds_file)[-1],model.start_datetime))
+        start = pd.to_datetime(model.start_datetime)
+    else:
+        f_config.write("{0},none,none\n".format(os.path.split(hds_file)[-1]))
+    f_config.write("site,k,i,j\n")
+    dfs = []
+
+    for site,(k,i,j) in kij_dict.items():
+        assert k >= 0 and k < nlay
+        assert i >= 0 and i < nrow
+        assert j >= 0 and j < ncol
+        df = pd.DataFrame(data=hds.get_ts((k,i,j)),columns=["totim",site])
+
+        if model is not None:
+            dts = start + pd.to_timedelta(df.totim,unit='d')
+            df.loc[:,"totim"] = dts
+        #print(df)
+        f_config.write("{0},{1},{2},{3}\n".format(site,k,i,j))
+        df.index = df.pop("totim")
+        dfs.append(df)
+
+    f_config.close()
+    df = pd.concat(dfs,axis=1)
+    df.to_csv(hds_file+"_timeseries.processed",sep=' ')
+    if model is not None:
+        t_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
+    else:
+        t_str = df.index.map(lambda x: "{0:08.2f}".format(x))
+
+    ins_file = hds_file+"_timeseries.processed.ins"
+    print("writing instruction file to {0}".format(ins_file))
+    with open(ins_file,'w') as f:
+        f.write('pif ~\n')
+        f.write("l1 \n")
+        for t in t_str:
+            f.write("l1")
+            for site in df.columns:
+                if prefix is not None:
+                    obsnme = "{0}_{1}_{2}".format(prefix,site,t)
+                else:
+                    obsnme = "{0}_{1}".format(site, t)
+                f.write(" w !{0}!".format(obsnme))
+            f.write('\n')
+
+
+    bd = '.'
+    if include_path:
+        bd = os.getcwd()
+        os.chdir(pth)
+    df = apply_hds_timeseries()
+    try:
+        df = apply_hds_timeseries()
+    except Exception as e:
+        os.chdir(bd)
+        raise Exception("error in apply_sfr_obs(): {0}".format(str(e)))
+    os.chdir(bd)
+
+    df = _try_run_inschek(ins_file,ins_file.replace(".ins",""))
+    df.loc[:,"weight"] = 0.0
+    if prefix is not None:
+        df.loc[:,"obgnme"] = df.index.map(lambda x: '_'.join(x.split('_')[:2]))
+    else:
+        df.loc[:, "obgnme"] = df.index.map(lambda x: x.split('_')[0])
+    return df
+
+
+def apply_hds_timeseries():
+
+    import flopy
+
+    assert os.path.exists("hds_timeseries.config")
+    with open("hds_timeseries.config",'r') as f:
+        line = f.readline()
+        hds_file,start_datetime,time_units = line.strip().split(',')
+        site_df = pd.read_csv(f)
+
+    print(site_df)
+
+    assert os.path.exists(hds_file), "head save file not found"
+    if hds_file.lower().endswith(".ucn"):
+        try:
+            hds = flopy.utils.UcnFile(hds_file)
+        except Exception as e:
+            raise Exception("error instantiating UcnFile:{0}".format(str(e)))
+    else:
+        try:
+            hds = flopy.utils.HeadFile(hds_file)
+        except Exception as e:
+            raise Exception("error instantiating HeadFile:{0}".format(str(e)))
+
+    nlay, nrow, ncol = hds.nlay, hds.nrow, hds.ncol
+
+    dfs = []
+    for site,k,i,j in zip(site_df.site,site_df.k,site_df.i,site_df.j):
+        assert k >= 0 and k < nlay
+        assert i >= 0 and i < nrow
+        assert j >= 0 and j < ncol
+        df = pd.DataFrame(data=hds.get_ts((k,i,j)),columns=["totim",site])
+        df.index = df.pop("totim")
+        dfs.append(df)
+    df = pd.concat(dfs,axis=1)
+    print(df)
+    df.to_csv(hds_file+"_timeseries.processed",sep=' ')
+    return df
+
+
 def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
     """a function to setup using all values from a
     layer-stress period pair for observations.  Writes
@@ -635,7 +809,6 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
     writes <hds_file>.dat.ins instruction file
 
     writes _setup_<hds_file>.csv which contains much
-
     useful information for construction a control file
 
 
@@ -742,6 +915,7 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
     fwd_run_line = "pyemu.gw_utils.apply_hds_obs('{0}')\n".format(hds_file)
     return fwd_run_line, df
 
+
 def last_kstp_from_kper(hds,kper):
     """ function to find the last time step (kstp) for a
     give stress period (kper) in a modflow head save file.
@@ -771,6 +945,7 @@ def last_kstp_from_kper(hds,kper):
         raise Exception("kstp not found for kper {0}".format(kper))
     kstp -= 1
     return kstp
+
 
 def apply_hds_obs(hds_file):
     """ process a modflow head save file.  A companion function to
@@ -1107,6 +1282,7 @@ def apply_sfr_seg_parameters():
     sfr.write_file(filename=pars["sfr_filename"])
     return sfr
 
+
 def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
                   include_path=False):
     """setup observations using the sfr ASCII output file.  Setups
@@ -1134,6 +1310,11 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
     -------
     df : pd.DataFrame
         dataframe of obsnme, obsval and obgnme if inschek run was successful.  Else None
+
+    Note
+    ----
+    This function writes "sfr_obs.config" which must be kept in the dir where
+    "apply_sfr_obs()" is being called during the forward run
 
     """
 
@@ -1255,9 +1436,6 @@ def apply_sfr_obs():
     df = pd.DataFrame(data=results,columns=["kper","obs_base","flaqx","flout"])
     df.to_csv(sfr_out_file+".processed",sep=' ',index=False)
     return df
-
-
-
 
 
 def load_sfr_out(sfr_out_file):
