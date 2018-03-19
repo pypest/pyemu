@@ -166,8 +166,8 @@ def gaussian_distribution(mean, stdev, num_pts=50):
 
 def pst_helper(pst,kind=None,**kwargs):
 
-
-    logger = pyemu.Logger("plot_pst_helper.log",echo=True)
+    echo = kwargs.get("echo",True)
+    logger = pyemu.Logger("plot_pst_helper.log",echo=echo)
     logger.statement("plot_utils.pst_helper()")
 
     kinds = {"prior":pst_prior,"1to1":res_1to1,"obs_v_sim":res_obs_v_sim,
@@ -189,7 +189,7 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
 
     """
     if logger is None:
-        logger=Logger('Default_Loggger.log')
+        logger=Logger('Default_Loggger.log',echo=False)
     logger.log("plot res_1to1")
     if pst.res is None:
         logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
@@ -318,7 +318,7 @@ def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
 
     """
     if logger is None:
-        logger=Logger('Default_Loggger.log')
+        logger=Logger('Default_Loggger.log',echo=False)
     logger.log("plot res_obs_v_sim")
     if pst.res is None:
         logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
@@ -427,7 +427,7 @@ def res_phi_pie(pst,logger=None, **kwargs):
 
     """
     if logger is None:
-        logger=Logger('Default_Loggger.log')
+        logger=Logger('Default_Loggger.log',echo=False)
     logger.log("plot res_phi_pie")
     if pst.res is None:
         logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
@@ -484,7 +484,7 @@ def pst_prior(pst,logger=None, filename=None, **kwargs):
 
     """
     if logger is None:
-        logger=Logger('Default_Loggger.log')
+        logger=Logger('Default_Loggger.log',echo=False)
     logger.log("plot pst_prior")
     par = pst.parameter_data
 
@@ -595,7 +595,7 @@ def pst_prior(pst,logger=None, filename=None, **kwargs):
     #plt.close(fig)
     figs.append(fig)
     if filename is not None:
-        with PdfPages(pst.filename.replace(".pst", ".prior.pdf")) as pdf:
+        with PdfPages(filename) as pdf:
             pdf.savefig(fig)
             plt.close(fig)
         logger.log("plot pst_prior")
@@ -800,9 +800,5 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                 pdf.savefig(fig)
                 plt.close(fig)
     logger.log("pyemu.plot_utils.ensemble_helper()")
-
-
-
-
 
 

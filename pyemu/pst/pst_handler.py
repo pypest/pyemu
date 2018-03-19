@@ -2147,7 +2147,7 @@ class Pst(object):
                 if col in ["obgnme","nzcount","zcount"]:
                     continue
 
-                print(col)
+                #print(col)
                 mn = obs_g.loc[:, col].min()
                 mx = obs_g.loc[:, col].max()
                 if np.isnan(mn) or np.isnan(mx):

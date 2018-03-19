@@ -437,6 +437,7 @@ def from_flopy_test():
                                          zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
                                          remove_existing=True, hds_kperk=hds_kperk,
                                          model_exe_name="mfnwt")
+
     ph.pst.parameter_data.loc["rech0_zn1", "parval1"] = 2.0
 
     bd = os.getcwd()
@@ -721,14 +722,14 @@ def test_e_clean():
 
 
 if __name__ == "__main__":
-    write_tables_test()
+    #write_tables_test()
     # res_stats_test()
     # test_write_input_files()
     # add_obs_test()
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    # from_flopy_test()
+    from_flopy_test()
     # plot_flopy_par_ensemble_test()
     # add_pi_test()
     # regdata_test()

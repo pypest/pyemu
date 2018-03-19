@@ -2001,9 +2001,6 @@ class PstFromFlopyModel(object):
                     par.loc[df.parnme,col] = df.loc[:,col]
         par.loc[:,"parubnd"] = 10.0
         par.loc[:,"parlbnd"] = 0.1
-        for tag,[lw,up] in wildass_guess_par_bounds_dict.items():
-            par.loc[par.parnme.apply(lambda x: x.startswith(tag)),"parubnd"] = up
-            par.loc[par.parnme.apply(lambda x: x.startswith(tag)),"parlbnd"] = lw
 
         for name,df in self.par_dfs.items():
             if "parnme" not in df:
@@ -2012,6 +2009,11 @@ class PstFromFlopyModel(object):
             for col in ["parubnd","parlbnd","pargp"]:
                 if col in df.columns:
                     par.loc[df.index,col] = df.loc[:,col]
+
+        for tag,[lw,up] in wildass_guess_par_bounds_dict.items():
+            par.loc[par.parnme.apply(lambda x: x.startswith(tag)),"parubnd"] = up
+            par.loc[par.parnme.apply(lambda x: x.startswith(tag)),"parlbnd"] = lw
+
 
         if self.par_bounds_dict is not None:
             for tag,[lw,up] in self.par_bounds_dict.items():
