@@ -1399,7 +1399,7 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
     os.chdir(bd)
     if df is not None:
         df.loc[:,"obsnme"] = df.index.values
-        df.obgnme = df.obsnme.apply(lambda x: "flaqx" if x.startswith("fa") else "flout")
+        df.loc[:,"obgnme"] = df.obsnme.apply(lambda x: "flaqx" if x.startswith("fa") else "flout")
         return df
 
 
@@ -1440,6 +1440,7 @@ def apply_sfr_obs():
             #print(obs_base,agg)
             results.append([kper,obs_base,agg["flaqx"],agg["flout"]])
     df = pd.DataFrame(data=results,columns=["kper","obs_base","flaqx","flout"])
+    df.sort_values(by=["kper","obs_base"],inplace=True)
     df.to_csv(sfr_out_file+".processed",sep=' ',index=False)
     return df
 

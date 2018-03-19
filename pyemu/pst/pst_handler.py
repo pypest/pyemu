@@ -2067,7 +2067,7 @@ class Pst(object):
                 if col == "count":
                     data["count"].append(par_pg.shape[0])
                     continue
-                print(col)
+                #print(col)
                 mn = par_pg.loc[:,col].min()
                 mx = par_pg.loc[:,col].max()
                 if mn == mx:
