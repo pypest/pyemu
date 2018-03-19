@@ -655,12 +655,12 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
 
     nlay,nrow,ncol = hds.nlay,hds.nrow,hds.ncol
 
-    if include_path:
-        pth = os.path.join(*[p for p in os.path.split(hds_file)[:-1]])
-        config_file = os.path.join(pth,"hds_timeseries.config")
-    else:
-        config_file = "hds_timeseries.config"
-    print("writing 'hds_timeseries.config' to {0}".format(config_file))
+    #if include_path:
+    #    pth = os.path.join(*[p for p in os.path.split(hds_file)[:-1]])
+    #    config_file = os.path.join(pth,"{0}_timeseries.config".format(hds_file))
+    #else:
+    config_file = "{0}_timeseries.config".format(hds_file)
+    print("writing config file to {0}".format(config_file))
 
     f_config = open(config_file,'w')
     if model is not None:
@@ -674,9 +674,10 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
     dfs = []
 
     for site,(k,i,j) in kij_dict.items():
-        assert k >= 0 and k < nlay
-        assert i >= 0 and i < nrow
-        assert j >= 0 and j < ncol
+        assert k >= 0 and k < nlay, k
+        assert i >= 0 and i < nrow, i
+        assert j >= 0 and j < ncol, j
+        site = site.lower().replace(" ",'')
         df = pd.DataFrame(data=hds.get_ts((k,i,j)),columns=["totim",site])
 
         if model is not None:
@@ -714,10 +715,11 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
     bd = '.'
     if include_path:
         bd = os.getcwd()
+        pth = os.path.join(*[p for p in os.path.split(hds_file)[:-1]])
         os.chdir(pth)
-    df = apply_hds_timeseries()
+    config_file = os.path.split(config_file)[-1]
     try:
-        df = apply_hds_timeseries()
+        df = apply_hds_timeseries(config_file)
     except Exception as e:
         os.chdir(bd)
         raise Exception("error in apply_sfr_obs(): {0}".format(str(e)))
@@ -729,20 +731,24 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
         df.loc[:,"obgnme"] = df.index.map(lambda x: '_'.join(x.split('_')[:2]))
     else:
         df.loc[:, "obgnme"] = df.index.map(lambda x: x.split('_')[0])
-    return df
+    frun_line = "pyemu.gw_utils.apply_hds_timeseries('{0}')\n".format(config_file)
+    return frun_line,df
 
 
-def apply_hds_timeseries():
+def apply_hds_timeseries(config_file=None):
 
     import flopy
 
-    assert os.path.exists("hds_timeseries.config")
-    with open("hds_timeseries.config",'r') as f:
+    if config_file is None:
+        config_file = "hds_timeseries.config"
+
+    assert os.path.exists(config_file), config_file
+    with open(config_file,'r') as f:
         line = f.readline()
         hds_file,start_datetime,time_units = line.strip().split(',')
         site_df = pd.read_csv(f)
 
-    print(site_df)
+    #print(site_df)
 
     assert os.path.exists(hds_file), "head save file not found"
     if hds_file.lower().endswith(".ucn"):
@@ -767,7 +773,7 @@ def apply_hds_timeseries():
         df.index = df.pop("totim")
         dfs.append(df)
     df = pd.concat(dfs,axis=1)
-    print(df)
+    #print(df)
     df.to_csv(hds_file+"_timeseries.processed",sep=' ')
     return df
 

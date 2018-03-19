@@ -1807,7 +1807,7 @@ class Pst(object):
 
         """
         assert os.path.exists(template_file),"template file '{0}' not found".format(template_file)
-
+        assert template_file != in_file
         # get the parameter names in the template file
         parnme = pst_utils.parse_tpl_file(template_file)
 
@@ -1863,6 +1863,7 @@ class Pst(object):
 
         """
         assert os.path.exists(ins_file),"{0}, {1}".format(os.getcwd(),ins_file)
+        assert ins_file != out_file, "doh!"
 
         # get the parameter names in the template file
         obsnme = pst_utils.parse_ins_file(ins_file)
