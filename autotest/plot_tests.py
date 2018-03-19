@@ -44,14 +44,17 @@ def pst_plot_test():
     par = pst.parameter_data
     par.loc[pst.par_names[:3],"pargp"] = "test"
     par.loc[pst.par_names[1:],"partrans"] = "fixed"
-    pst.plot()
-    pst.plot(kind="prior", unique_only=False)
-    pst.plot(kind="prior",unique_only=True)
-    pst.plot(kind="prior", unique_only=True, fig_title="priors")
+    #pst.plot()
+    #pst.plot(kind="prior", unique_only=False)
+    #pst.plot(kind="prior",unique_only=True)
+    #pst.plot(kind="prior", unique_only=True, fig_title="priors")
+    pst.plot(kind="prior", unique_only=True, fig_title="priors",filename=os.path.join("temp","test.pdf"))
+    return
     #
     pst.plot(kind="1to1")
     pst.plot(kind="1to1",include_zero=True)
     pst.plot(kind="1to1", include_zero=True,fig_title="1to1")
+    fig = pst.plot(kind="1to1", include_zero=True, fig_title="1to1")
     #
     #
     pst.plot(kind="obs_v_sim")
@@ -109,7 +112,10 @@ def ensemble_plot_test():
                                      plot_cols=pst.par_names[:10], sync_bins=False,
                                      func_dict={pst.par_names[0]:np.log10})
 
-
+    figs = pyemu.plot_utils.ensemble_helper({"b": pe, "y": csv_file}, filename=None,
+                                     plot_cols=pst.par_names[:10], sync_bins=False,
+                                     func_dict={pst.par_names[0]:np.log10})
+    plt.close("all")
     deter_vals = pst.parameter_data.parval1.apply(np.log10).to_dict()
     pyemu.plot_utils.ensemble_helper({"b": pe, "y": csv_file}, filename=csv_file + ".pdf",
                                      plot_cols=pst.par_names[:10], sync_bins=False,

@@ -726,11 +726,12 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
     os.chdir(bd)
 
     df = _try_run_inschek(ins_file,ins_file.replace(".ins",""))
-    df.loc[:,"weight"] = 0.0
-    if prefix is not None:
-        df.loc[:,"obgnme"] = df.index.map(lambda x: '_'.join(x.split('_')[:2]))
-    else:
-        df.loc[:, "obgnme"] = df.index.map(lambda x: x.split('_')[0])
+    if df is not None:
+        df.loc[:,"weight"] = 0.0
+        if prefix is not None:
+            df.loc[:,"obgnme"] = df.index.map(lambda x: '_'.join(x.split('_')[:2]))
+        else:
+            df.loc[:, "obgnme"] = df.index.map(lambda x: x.split('_')[0])
     frun_line = "pyemu.gw_utils.apply_hds_timeseries('{0}')\n".format(config_file)
     return frun_line,df
 

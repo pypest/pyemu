@@ -135,7 +135,6 @@ def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
     ax.set_yticklabels([])
     return ax
 
-
 def gaussian_distribution(mean, stdev, num_pts=50):
     """ get an x and y numpy.ndarray that spans the +/- 4
     standard deviation range of a gaussian distribution with
@@ -165,7 +164,6 @@ def gaussian_distribution(mean, stdev, num_pts=50):
     y = (1.0/np.sqrt(2.0*np.pi*stdev*stdev)) * np.exp(-1.0 * ((x - mean)**2)/(2.0*stdev*stdev))
     return x,y
 
-
 def pst_helper(pst,kind=None,**kwargs):
 
 
@@ -181,10 +179,10 @@ def pst_helper(pst,kind=None,**kwargs):
     elif kind not in kinds:
         logger.lraise("unrecognized kind:{0}, should one of {1}"
                       .format(kind,','.join(list(kinds.keys()))))
-    kinds[kind](pst, logger, **kwargs)
+    return kinds[kind](pst, logger, **kwargs)
 
 
-def res_1to1(pst,logger=None,plot_hexbin=False,**kwargs):
+def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
     """
     TODO: color symbols by weight
 
@@ -209,102 +207,112 @@ def res_1to1(pst,logger=None,plot_hexbin=False,**kwargs):
     else:
         plt.figtext(0.5, 0.5, "pyemu.Pst.plot(kind='1to1')\nfrom pest control file '{0}'\n at {1}"
                     .format(pst.filename, str(datetime.now())), ha="center")
-    if plot_hexbin:
-        pdfname = pst.filename.replace(".pst", ".1to1.hexbin.pdf")
-    else:
-        pdfname = pst.filename.replace(".pst", ".1to1.pdf")
-    with PdfPages(pdfname) as pdf:
-        ax_count = 0
-        for g, names in grouper.items():
+    #if plot_hexbin:
+    #    pdfname = pst.filename.replace(".pst", ".1to1.hexbin.pdf")
+    #else:
+    #    pdfname = pst.filename.replace(".pst", ".1to1.pdf")
+    figs = []
+    ax_count = 0
+    for g, names in grouper.items():
+        logger.log("plotting 1to1 for {0}".format(g))
+
+        obs_g = obs.loc[names, :]
+        obs_g.loc[:, "sim"] = res.loc[names, "modelled"]
+        logger.statement("using control file obsvals to calculate residuals")
+        obs_g.loc[:,'res'] = obs_g.sim - obs_g.obsval
+        if "include_zero" not in kwargs or kwargs["include_zero"] is True:
+            obs_g = obs_g.loc[obs_g.weight > 0, :]
+        if obs_g.shape[0] == 0:
+            logger.statement("no non-zero obs for group '{0}'".format(g))
             logger.log("plotting 1to1 for {0}".format(g))
+            continue
 
-            obs_g = obs.loc[names, :]
-            obs_g.loc[:, "sim"] = res.loc[names, "modelled"]
-            logger.statement("using control file obsvals to calculate residuals")
-            obs_g.loc[:,'res'] = obs_g.sim - obs_g.obsval
-            if "include_zero" not in kwargs or kwargs["include_zero"] is True:
-                obs_g = obs_g.loc[obs_g.weight > 0, :]
-            if obs_g.shape[0] == 0:
-                logger.statement("no non-zero obs for group '{0}'".format(g))
-                logger.log("plotting 1to1 for {0}".format(g))
-                continue
+        if ax_count % (nr * nc) == 0:
+            if ax_count > 0:
+                plt.tight_layout()
+            #pdf.savefig()
+            #plt.close(fig)
+            figs.append(fig)
+            fig = plt.figure(figsize=figsize)
+            axes = get_page_axes()
+            ax_count = 0
 
-            if ax_count % (nr * nc) == 0:
-                if ax_count > 0:
-                    plt.tight_layout()
-                pdf.savefig()
-                plt.close(fig)
-                fig = plt.figure(figsize=figsize)
-                axes = get_page_axes()
-                ax_count = 0
+        ax = axes[ax_count]
 
-            ax = axes[ax_count]
+        #if obs_g.shape[0] == 1:
+        #    ax.scatter(list(obs_g.sim),list(obs_g.obsval),marker='.',s=30,color='b')
+        #else:
+        mx = max(obs_g.obsval.max(), obs_g.sim.max())
+        mn = min(obs_g.obsval.min(), obs_g.sim.min())
 
-            #if obs_g.shape[0] == 1:
-            #    ax.scatter(list(obs_g.sim),list(obs_g.obsval),marker='.',s=30,color='b')
-            #else:
-            mx = max(obs_g.obsval.max(), obs_g.sim.max())
-            mn = min(obs_g.obsval.min(), obs_g.sim.min())
+        #if obs_g.shape[0] == 1:
+        mx *= 1.1
+        mn *= 0.9
+        ax.axis('square')
+        if plot_hexbin:
+            ax.hexbin(obs_g.sim.values, obs_g.obsval.values, mincnt=1, gridsize=(75, 75),
+                      extent=(mn, mx, mn, mx), bins='log', edgecolors=None)
+#               plt.colorbar(ax=ax)
+        else:
+            ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
 
-            #if obs_g.shape[0] == 1:
+
+
+        ax.plot([mn,mx],[mn,mx],'k--',lw=1.0)
+        xlim = (mn,mx)
+        ax.set_xlim(mn,mx)
+        ax.set_ylim(mn,mx)
+        ax.grid()
+
+        ax.set_ylabel("observed",labelpad=0.1)
+        ax.set_xlabel("simulated",labelpad=0.1)
+        ax.set_title("{0}) group:{1}, {2} observations".
+                                 format(abet[ax_count], g, obs_g.shape[0]), loc="left")
+
+        ax_count += 1
+
+        ax = axes[ax_count]
+        ax.scatter(obs_g.obsval, obs_g.res, marker='.', s=10, color='b')
+        ylim = ax.get_ylim()
+        mx = max(np.abs(ylim[0]), np.abs(ylim[1]))
+        if obs_g.shape[0] == 1:
             mx *= 1.1
-            mn *= 0.9
-            ax.axis('square')
-            if plot_hexbin:
-                ax.hexbin(obs_g.sim.values, obs_g.obsval.values, mincnt=1, gridsize=(75, 75),
-                          extent=(mn, mx, mn, mx), bins='log', edgecolors=None)
- #               plt.colorbar(ax=ax)
-            else:
-                ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
+        ax.set_ylim(-mx, mx)
+        #show a zero residuals line
+        ax.plot(xlim, [0,0], 'k--', lw=1.0)
+        meanres= obs_g.res.mean()
+        # show mean residuals line
+        ax.plot(xlim,[meanres,meanres], 'r-', lw=1.0)
+        ax.set_xlim(xlim)
+        ax.set_ylabel("residual",labelpad=0.1)
+        ax.set_xlabel("observed",labelpad=0.1)
+        ax.set_title("{0}) group:{1}, {2} observations".
+                     format(abet[ax_count], g, obs_g.shape[0]), loc="left")
+        ax.grid()
+        ax_count += 1
 
+        logger.log("plotting 1to1 for {0}".format(g))
 
+    for a in range(ax_count, nr * nc):
+        axes[a].set_axis_off()
+        axes[a].set_yticks([])
+        axes[a].set_xticks([])
 
-            ax.plot([mn,mx],[mn,mx],'k--',lw=1.0)
-            xlim = (mn,mx)
-            ax.set_xlim(mn,mx)
-            ax.set_ylim(mn,mx)
-            ax.grid()
+    #plt.tight_layout()
+    #pdf.savefig()
+    #plt.close(fig)
+    figs.append(fig)
+    if filename is not None:
+        with PdfPages(filename) as pdf:
+            for fig in figs:
+                pdf.savefig(fig)
+                plt.close(fig)
+        logger.log("plot res_1to1")
+    else:
+        logger.log("plot res_1to1")
+        return figs
 
-            ax.set_ylabel("observed",labelpad=0.1)
-            ax.set_xlabel("simulated",labelpad=0.1)
-            ax.set_title("{0}) group:{1}, {2} observations".
-                                     format(abet[ax_count], g, obs_g.shape[0]), loc="left")
-
-            ax_count += 1
-
-            ax = axes[ax_count]
-            ax.scatter(obs_g.obsval, obs_g.res, marker='.', s=10, color='b')
-            ylim = ax.get_ylim()
-            mx = max(np.abs(ylim[0]), np.abs(ylim[1]))
-            if obs_g.shape[0] == 1:
-                mx *= 1.1
-            ax.set_ylim(-mx, mx)
-            #show a zero residuals line
-            ax.plot(xlim, [0,0], 'k--', lw=1.0)
-            meanres= obs_g.res.mean()
-            # show mean residuals line
-            ax.plot(xlim,[meanres,meanres], 'r-', lw=1.0)
-            ax.set_xlim(xlim)
-            ax.set_ylabel("residual",labelpad=0.1)
-            ax.set_xlabel("observed",labelpad=0.1)
-            ax.set_title("{0}) group:{1}, {2} observations".
-                         format(abet[ax_count], g, obs_g.shape[0]), loc="left")
-            ax.grid()
-            ax_count += 1
-
-            logger.log("plotting 1to1 for {0}".format(g))
-
-        for a in range(ax_count, nr * nc):
-            axes[a].set_axis_off()
-            axes[a].set_yticks([])
-            axes[a].set_xticks([])
-
-        plt.tight_layout()
-        pdf.savefig()
-        plt.close(fig)
-    logger.log("plot res_1to1")
-
-def res_obs_v_sim(pst,logger=None, **kwargs):
+def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
     """
     TODO: workout min and max dates and set xaxis on all plots
 
@@ -328,68 +336,78 @@ def res_obs_v_sim(pst,logger=None, **kwargs):
     else:
         plt.figtext(0.5, 0.5, "pyemu.Pst.plot(kind='obs_v_sim')\nfrom pest control file '{0}'\n at {1}"
                     .format(pst.filename, str(datetime.now())), ha="center")
-    with PdfPages(pst.filename.replace(".pst", ".obs_v_sim.pdf")) as pdf:
-        ax_count = 0
-        for g, names in grouper.items():
+    figs = []
+    ax_count = 0
+    for g, names in grouper.items():
+        logger.log("plotting obs_v_sim for {0}".format(g))
+
+        obs_g = obs.loc[names, :]
+        obs_g.loc[:, "sim"] = res.loc[names, "modelled"]
+        if "include_zero" not in kwargs or kwargs["include_zero"] is True:
+            obs_g = obs_g.loc[obs_g.weight > 0, :]
+
+        if obs_g.shape[0] == 0:
+            logger.statement("no non-zero obs for group '{0}'".format(g))
             logger.log("plotting obs_v_sim for {0}".format(g))
+            continue
 
-            obs_g = obs.loc[names, :]
-            obs_g.loc[:, "sim"] = res.loc[names, "modelled"]
-            if "include_zero" not in kwargs or kwargs["include_zero"] is True:
-                obs_g = obs_g.loc[obs_g.weight > 0, :]
+        # parse datetimes
+        try:
+            obs_g.loc[:, "datetime_str"] = obs_g.obsnme.apply(lambda x: x.split('_')[-1])
+        except Exception as e:
+            logger.warn("res_obs_v_sim error forming datetime_str:{0}".
+                        format(str(e)))
+            continue
 
-            if obs_g.shape[0] == 0:
-                logger.statement("no non-zero obs for group '{0}'".format(g))
-                logger.log("plotting obs_v_sim for {0}".format(g))
-                continue
+        try:
+            obs_g.loc[:, "datetime"] = pd.to_datetime(obs_g.datetime_str,format="%Y%m%d")
+        except Exception as e:
+            logger.warn("res_obs_v_sim error casting datetime: {0}".
+                        format(str(e)))
+            continue
 
-            # parse datetimes
-            try:
-                obs_g.loc[:, "datetime_str"] = obs_g.obsnme.apply(lambda x: x.split('_')[-1])
-            except Exception as e:
-                logger.warn("res_obs_v_sim error forming datetime_str:{0}".
-                            format(str(e)))
-                continue
+        if ax_count % (nr * nc) == 0:
+            plt.tight_layout()
+            #pdf.savefig()
+            #plt.close(fig)
+            figs.append(fig)
+            fig = plt.figure(figsize=figsize)
+            axes = get_page_axes()
+            ax_count = 0
 
-            try:
-                obs_g.loc[:, "datetime"] = pd.to_datetime(obs_g.datetime_str,format="%Y%m%d")
-            except Exception as e:
-                logger.warn("res_obs_v_sim error casting datetime: {0}".
-                            format(str(e)))
-                continue
+        ax = axes[ax_count]
+        obs_g.loc[:,"site"] = obs_g.obsnme.apply(lambda x: x.split('_')[0])
+        for site in obs_g.site.unique():
+            obs_s = obs_g.loc[obs_g.site==site,:]
+            obs_s.sort_values(by="datetime")
+            ax.plot(obs_s.datetime, obs_s.obsval, ls='-', marker='.', ms=10, color='b')
+            ax.plot(obs_s.datetime, obs_s.sim, ls='-', marker='.', ms=10, color='0.5')
+        ax.set_xlim(obs_g.datetime.min(),obs_g.datetime.max())
+        ax.grid()
+        ax.set_xlabel("datetime",labelpad=0.1)
+        ax.set_title("{0}) group:{1}, {2} observations".
+                     format(abet[ax_count], g, names.shape[0]), loc="left")
+        ax_count += 1
+        logger.log("plotting obs_v_sim for {0}".format(g))
 
-            if ax_count % (nr * nc) == 0:
-                plt.tight_layout()
-                pdf.savefig()
+    for a in range(ax_count,nr*nc):
+        axes[a].set_axis_off()
+        axes[a].set_yticks([])
+        axes[a].set_xticks([])
+
+    plt.tight_layout()
+    #pdf.savefig()
+    #plt.close(fig)
+    figs.append(fig)
+    if filename is not None:
+        with PdfPages(pst.filename.replace(".pst", ".obs_v_sim.pdf")) as pdf:
+            for fig in figs:
+                pdf.savefig(fig)
                 plt.close(fig)
-                fig = plt.figure(figsize=figsize)
-                axes = get_page_axes()
-                ax_count = 0
-
-            ax = axes[ax_count]
-            obs_g.loc[:,"site"] = obs_g.obsnme.apply(lambda x: x.split('_')[0])
-            for site in obs_g.site.unique():
-                obs_s = obs_g.loc[obs_g.site==site,:]
-                obs_s.sort_values(by="datetime")
-                ax.plot(obs_s.datetime, obs_s.obsval, ls='-', marker='.', ms=10, color='b')
-                ax.plot(obs_s.datetime, obs_s.sim, ls='-', marker='.', ms=10, color='0.5')
-            ax.set_xlim(obs_g.datetime.min(),obs_g.datetime.max())
-            ax.grid()
-            ax.set_xlabel("datetime",labelpad=0.1)
-            ax.set_title("{0}) group:{1}, {2} observations".
-                         format(abet[ax_count], g, names.shape[0]), loc="left")
-            ax_count += 1
-            logger.log("plotting obs_v_sim for {0}".format(g))
-
-        for a in range(ax_count,nr*nc):
-            axes[a].set_axis_off()
-            axes[a].set_yticks([])
-            axes[a].set_xticks([])
-
-        plt.tight_layout()
-        pdf.savefig()
-        plt.close(fig)
-    logger.log("plot res_obs_v_sim")
+                logger.log("plot res_obs_v_sim")
+    else:
+        logger.log("plot res_obs_v_sim")
+        return figs
 
 def res_phi_pie(pst,logger=None, **kwargs):
     """plot current phi components as a pie chart.
@@ -442,7 +460,7 @@ def get_page_axes():
     #[ax.set_yticks([]) for ax in axes]
     return axes
 
-def pst_prior(pst,logger=None, **kwargs):
+def pst_prior(pst,logger=None, filename=None, **kwargs):
     """ helper to plot prior parameter histograms implied by
     parameter bounds. Saves a multipage pdf named <case>.prior.pdf
 
@@ -515,72 +533,79 @@ def pst_prior(pst,logger=None, **kwargs):
     else:
         plt.figtext(0.5,0.5,"pyemu.Pst.plot(kind='prior')\nfrom pest control file '{0}'\n at {1}"
                  .format(pst.filename,str(datetime.now())),ha="center")
+    figs = []
+    ax_count = 0
+    grps_names = list(grouper.keys())
+    grps_names.sort()
+    for g in grps_names:
+        names = grouper[g]
+        logger.log("plotting priors for {0}".
+                   format(','.join(list(names))))
+        if ax_count % (nr * nc) == 0:
+            plt.tight_layout()
+            #pdf.savefig()
+            #plt.close(fig)
+            figs.append(fig)
+            fig  = plt.figure(figsize=figsize)
+            axes = get_page_axes()
+            ax_count = 0
 
-    with PdfPages(pst.filename.replace(".pst",".prior.pdf")) as pdf:
-        ax_count = 0
-        grps_names = list(grouper.keys())
-        grps_names.sort()
-        for g in grps_names:
-            names = grouper[g]
-            logger.log("plotting priors for {0}".
-                       format(','.join(list(names))))
-            if ax_count % (nr * nc) == 0:
-                plt.tight_layout()
-                pdf.savefig()
-                plt.close(fig)
-                fig  = plt.figure(figsize=figsize)
-                axes = get_page_axes()
-                ax_count = 0
-
-            islog = False
-            vc = info.partrans.value_counts()
-            if vc.shape[0] > 1:
-                logger.warn("mixed partrans for group {0}".format(g))
-            elif "log" in vc.index:
-                islog = True
-            ax = axes[ax_count]
-            if "unique_only" in kwargs and kwargs["unique_only"]:
-
-
-                ms = info.loc[names,:].apply(lambda x: (x["mean"],x["prior_std"]),axis=1).unique()
-                for (m,s) in ms:
-                    x, y = gaussian_distribution(m, s)
-                    ax.fill_between(x, 0, y, facecolor='0.5', alpha=0.5,
-                                    edgecolor="none")
+        islog = False
+        vc = info.partrans.value_counts()
+        if vc.shape[0] > 1:
+            logger.warn("mixed partrans for group {0}".format(g))
+        elif "log" in vc.index:
+            islog = True
+        ax = axes[ax_count]
+        if "unique_only" in kwargs and kwargs["unique_only"]:
 
 
-            else:
-                for m,s in zip(info.loc[names,'mean'],info.loc[names,'prior_std']):
-                    x,y = gaussian_distribution(m,s)
-                    ax.fill_between(x,0,y,facecolor='0.5',alpha=0.5,
-                                                edgecolor="none")
-            ax.set_title("{0}) group:{1}, {2} parameters".
-                                     format(abet[ax_count],g,names.shape[0]),loc="left")
+            ms = info.loc[names,:].apply(lambda x: (x["mean"],x["prior_std"]),axis=1).unique()
+            for (m,s) in ms:
+                x, y = gaussian_distribution(m, s)
+                ax.fill_between(x, 0, y, facecolor='0.5', alpha=0.5,
+                                edgecolor="none")
 
-            ax.set_yticks([])
-            if islog:
-                ax.set_xlabel("$log_{10}$ parameter value",labelpad=0.1)
-            else:
-                ax.set_xlabel("parameter value", labelpad=0.1)
-            logger.log("plotting priors for {0}".
-                       format(','.join(list(names))))
 
-            ax_count += 1
+        else:
+            for m,s in zip(info.loc[names,'mean'],info.loc[names,'prior_std']):
+                x,y = gaussian_distribution(m,s)
+                ax.fill_between(x,0,y,facecolor='0.5',alpha=0.5,
+                                            edgecolor="none")
+        ax.set_title("{0}) group:{1}, {2} parameters".
+                                 format(abet[ax_count],g,names.shape[0]),loc="left")
 
-        for a in range(ax_count,nr*nc):
-            axes[a].set_axis_off()
-            axes[a].set_yticks([])
-            axes[a].set_xticks([])
+        ax.set_yticks([])
+        if islog:
+            ax.set_xlabel("$log_{10}$ parameter value",labelpad=0.1)
+        else:
+            ax.set_xlabel("parameter value", labelpad=0.1)
+        logger.log("plotting priors for {0}".
+                   format(','.join(list(names))))
 
-        plt.tight_layout()
-        pdf.savefig()
-        plt.close(fig)
-    logger.log("plot pst_prior")
+        ax_count += 1
 
+    for a in range(ax_count,nr*nc):
+        axes[a].set_axis_off()
+        axes[a].set_yticks([])
+        axes[a].set_xticks([])
+
+    plt.tight_layout()
+    #pdf.savefig()
+    #plt.close(fig)
+    figs.append(fig)
+    if filename is not None:
+        with PdfPages(pst.filename.replace(".pst", ".prior.pdf")) as pdf:
+            pdf.savefig(fig)
+            plt.close(fig)
+        logger.log("plot pst_prior")
+    else:
+        logger.log("plot pst_prior")
+        return figs
 
 
 def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
-                    filename="ensemble_helper.pdf",func_dict = None,
+                    filename=None,func_dict = None,
                     sync_bins=True,deter_vals=None,std_window=4.0,**kwargs):
     """helper function to plot ensemble histograms
 
@@ -699,73 +724,81 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
     plot_cols = list(plot_cols)
     plot_cols.sort()
     logger.statement("saving pdf to {0}".format(filename))
-    with PdfPages(filename) as pdf:
-        ax_count = 0
+    figs = []
 
-        for plot_col in plot_cols:
-            logger.log("plotting reals for {0}".format(plot_col))
-            if ax_count % (nr * nc) == 0:
-                plt.tight_layout()
-                pdf.savefig()
-                plt.close(fig)
-                fig = plt.figure(figsize=figsize)
-                axes = get_page_axes()
-                [ax.set_yticks([]) for ax in axes]
-                ax_count = 0
+    ax_count = 0
 
-            ax = axes[ax_count]
-            ax.set_title("{0}) {1}".format(abet[ax_count],plot_col),loc="left")
-            if sync_bins:
-                mx,mn = -1.0e+30,1.0e+30
-                for fc,en in ensembles.items():
-                    if plot_col in en.columns:
-                        emx,emn = en.loc[:,plot_col].max(),en.loc[:,plot_col].min()
-                        mx = max(mx,emx)
-                        mn = min(mn,emn)
-                plot_bins = np.linspace(mn,mx,num=bins)
-                logger.statement("{0} min:{1:5G}, max:{2:5G}".format(plot_col,mn,mx))
-            else:
-                plot_bins=bins
+    for plot_col in plot_cols:
+        logger.log("plotting reals for {0}".format(plot_col))
+        if ax_count % (nr * nc) == 0:
+            plt.tight_layout()
+            #pdf.savefig()
+            #plt.close(fig)
+            figs.append(fig)
+            fig = plt.figure(figsize=figsize)
+            axes = get_page_axes()
+            [ax.set_yticks([]) for ax in axes]
+            ax_count = 0
+
+        ax = axes[ax_count]
+        ax.set_title("{0}) {1}".format(abet[ax_count],plot_col),loc="left")
+        if sync_bins:
+            mx,mn = -1.0e+30,1.0e+30
             for fc,en in ensembles.items():
-
                 if plot_col in en.columns:
-                    try:
-                        en.loc[:,plot_col].hist(bins=plot_bins,facecolor=fc,
-                                                edgecolor="none",alpha=0.5,
-                                                normed=True,ax=ax)
-                    except Exception as e:
-                        logger.warn("error plotting histogram for {0}:{1}".
-                                    format(plot_col,str(e)))
+                    emx,emn = en.loc[:,plot_col].max(),en.loc[:,plot_col].min()
+                    mx = max(mx,emx)
+                    mn = min(mn,emn)
+            plot_bins = np.linspace(mn,mx,num=bins)
+            logger.statement("{0} min:{1:5G}, max:{2:5G}".format(plot_col,mn,mx))
+        else:
+            plot_bins=bins
+        for fc,en in ensembles.items():
+
+            if plot_col in en.columns:
+                try:
+                    en.loc[:,plot_col].hist(bins=plot_bins,facecolor=fc,
+                                            edgecolor="none",alpha=0.5,
+                                            normed=True,ax=ax)
+                except Exception as e:
+                    logger.warn("error plotting histogram for {0}:{1}".
+                                format(plot_col,str(e)))
 
 
-                if deter_vals is not None and plot_col in deter_vals:
+            if deter_vals is not None and plot_col in deter_vals:
+                ylim = ax.get_ylim()
+                v = deter_vals[plot_col]
+                ax.plot([v,v],ylim,"k--",lw=1.5)
+                ax.set_ylim(ylim)
+            if std_window is not None:
+                try:
                     ylim = ax.get_ylim()
-                    v = deter_vals[plot_col]
-                    ax.plot([v,v],ylim,"k--",lw=1.5)
+                    mn, st = en.loc[:,plot_col].mean(), en.loc[:,plot_col].std() * (std_window / 2.0)
+
+                    ax.plot([mn - st, mn - st], ylim, color=fc, lw=1.5,ls='--')
+                    ax.plot([mn + st, mn + st], ylim, color=fc, lw=1.5,ls='--')
                     ax.set_ylim(ylim)
-                if std_window is not None:
-                    try:
-                        ylim = ax.get_ylim()
-                        mn, st = en.loc[:,plot_col].mean(), en.loc[:,plot_col].std() * (std_window / 2.0)
+                except:
+                    logger.warn("error plotting std window for {0}".
+                                format(plot_col))
+        ax.grid()
 
-                        ax.plot([mn - st, mn - st], ylim, color=fc, lw=1.5,ls='--')
-                        ax.plot([mn + st, mn + st], ylim, color=fc, lw=1.5,ls='--')
-                        ax.set_ylim(ylim)
-                    except:
-                        logger.warn("error plotting std window for {0}".
-                                    format(plot_col))
-            ax.grid()
+        ax_count += 1
 
-            ax_count += 1
+    for a in range(ax_count, nr * nc):
+        axes[a].set_axis_off()
+        axes[a].set_yticks([])
+        axes[a].set_xticks([])
 
-        for a in range(ax_count, nr * nc):
-            axes[a].set_axis_off()
-            axes[a].set_yticks([])
-            axes[a].set_xticks([])
-
-        plt.tight_layout()
-        pdf.savefig()
-        plt.close(fig)
+    plt.tight_layout()
+    #pdf.savefig()
+    #plt.close(fig)
+    figs.append(fig)
+    if filename is not None:
+        with PdfPages(filename) as pdf:
+            for fig in figs:
+                pdf.savefig(fig)
+                plt.close(fig)
     logger.log("pyemu.plot_utils.ensemble_helper()")
 
 

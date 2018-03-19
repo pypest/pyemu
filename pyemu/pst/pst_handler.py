@@ -2013,7 +2013,7 @@ class Pst(object):
 
 
         """
-        plot_utils.pst_helper(self,kind,**kwargs)
+        return plot_utils.pst_helper(self,kind,**kwargs)
 
 
 
