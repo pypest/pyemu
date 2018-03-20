@@ -28,7 +28,7 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
         a spatial reference use to locate the model grid in space.  If None,
         ml must not be None.  Default is None
     ibound : numpy.ndarray
-        the modflow ibound integer array.  Used to set pilot points only in active areas.
+        the modflow ibound integer array.  Used to set pilot points only in active areas (!=0).
         If None and ml is None, then pilot points are set in all rows and columns according to
         every_n_cell.  Default is None.
     prefix_dict : dict
@@ -112,10 +112,10 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
         if k not in prefix_dict.keys():
             continue
         #cycle through rows and cols
-        for i in range(start,ib.shape[0],every_n_cell):
-            for j in range(start,ib.shape[1],every_n_cell):
+        for i in range(start,ib.shape[0]-start,every_n_cell):
+            for j in range(start,ib.shape[1]-start,every_n_cell):
                 # skip if this is an inactive cell
-                if ib[i,j] < 1:
+                if ib[i,j] == 0:
                     continue
 
                 # get the attributes we need

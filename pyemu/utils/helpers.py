@@ -1644,6 +1644,20 @@ class PstFromFlopyModel(object):
             ib = self.k_zone_dict
         else:
             ib = {k:self.m.bas6.ibound[k].array for k in range(self.m.nlay)}
+
+            for k,i in ib.items():
+                if np.any(i<0):
+                    u,c = np.unique(i[i>0], return_counts=True)
+                    counts = dict(zip(u,c))
+                    mx = -1.0e+10
+                    imx = None
+                    for u,c in counts.items():
+                        if c > mx:
+                            mx = c
+                            imx = u
+                    self.logger.warn("resetting negative ibound values for PP zone"+ \
+                                     "array in layer {0} : {1}".format(k+1,u))
+                    i[i<0] = u
         pp_df = pyemu.pp_utils.setup_pilotpoints_grid(self.m,
                                          ibound=ib,
                                          use_ibound_zones=self.use_pp_zones,
