@@ -211,9 +211,9 @@ def hadamard_product_test():
     r = pyemu.Matrix(x=np.random.rand(c.shape[0],c.shape[0]),
                      row_names=c.row_names,col_names=c.col_names)
     hp = c.hadamard_product(r)
-    assert hp.x.sum() == np.diagonal(r.x).sum()
+    assert np.abs(hp.x.sum() - np.diagonal(r.x).sum()) < 1.0e-6
     hp = r.hadamard_product(c)
-    assert hp.x.sum() == np.diagonal(r.x).sum()
+    assert np.abs(hp.x.sum() - np.diagonal(r.x).sum()) < 1.0e-6
 
 
 def get_diag_test():
@@ -359,14 +359,14 @@ def indices_test():
 if __name__ == "__main__":
     #concat_test()
     # indices_test()
-    mat_test()
+    #mat_test()
     # load_jco_test()
     #extend_test()
     # pseudo_inv_test()
     # drop_test()
     # get_test()
     # cov_identity_test()
-    # hadamard_product_test()
+    hadamard_product_test()
     # get_diag_test()
     # to_pearson_test()
     # sigma_range_test()
