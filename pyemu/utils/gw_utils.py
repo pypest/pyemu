@@ -1391,6 +1391,8 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
     df = None
     pth = os.path.split(ins_file)[:-1]
     pth = os.path.join(*pth)
+    if pth == '':
+        pth = '.'
     bd = os.getcwd()
     os.chdir(pth)
     try:

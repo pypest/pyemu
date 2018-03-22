@@ -48,7 +48,13 @@ def schur_test_nonpest():
 
     print(s.pandas)
 
+    forecasts = Matrix(x=np.random.random((1,npar)),row_names=[forecasts],col_names=pnames)
 
+    sc = Schur(jco=jco,forecasts=forecasts.T,parcov=parcov,obscov=obscov)
+    ffile = os.path.join("temp","forecasts.jcb")
+    forecasts.to_binary(ffile)
+
+    sc = Schur(jco=jco, forecasts=ffile, parcov=parcov, obscov=obscov)
 
 def schur_test():
     import os
@@ -401,11 +407,11 @@ if __name__ == "__main__":
     #forecast_pestpp_load_test()
     #map_test()
     #par_contrib_speed_test()
-    schur_test()
+    #schur_test()
     #par_contrib_test()
     #dataworth_test()
     #dataworth_next_test()
-    #schur_test_nonpest()
+    schur_test_nonpest()
     #schur_test()
     #la_test_io()
     #errvar_test_nonpest()
