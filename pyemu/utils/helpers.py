@@ -739,10 +739,6 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
             if verbose:
                 print("slave:{0} in {1}".format(' '.join(args),cwd))
             with open(os.devnull,'w') as f:
-                # Wes getting "file still in use" type errors from sp.Popen
-                # presumably due to (sub)subprocs not finishing
-                # esp when resources are maxed
-                # see while loop in cleanup
                 p = sp.Popen(args,stdout=f,stderr=f)
             procs.append(p)
             os.chdir(base_dir)
@@ -768,16 +764,15 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         p.wait()
     if cleanup:
         cleanit=0
-        while len(slave_dirs)>0 and cleanit<100000: # Danger Zone, arbitrary 100,000 limit
+        while len(slave_dirs)>0 and cleanit<100000: # arbitrary 100000 limit
             cleanit=cleanit+1
-            print('clean up attempt {0}. {1} slave directories left'.format(str(cleanit),str(len(slave_dirs))))
             for d in slave_dirs:
                 try:
                     shutil.rmtree(d,onerror=remove_readonly)
                     slave_dirs.pop(slave_dirs.index(d)) #if successfully removed
                 except Exception as e:
                     warnings.warn("unable to remove slavr dir{0}:{1}".format(d,str(e)))
-
+        self.logger.statement('clean up took {0} attempts to remove slave directories'.format(str(cleanit)))
 
 
 def read_pestpp_runstorage(filename,irun=0):
