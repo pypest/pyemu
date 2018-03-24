@@ -772,7 +772,6 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
                     slave_dirs.pop(slave_dirs.index(d)) #if successfully removed
                 except Exception as e:
                     warnings.warn("unable to remove slavr dir{0}:{1}".format(d,str(e)))
-        self.logger.statement('clean up took {0} attempts to remove slave directories'.format(str(cleanit)))
 
 
 def read_pestpp_runstorage(filename,irun=0):
