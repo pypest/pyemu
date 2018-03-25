@@ -960,7 +960,7 @@ class Pst(object):
         self.control_data.ninsfle = len(self.instruction_files)
         self.control_data.numcom = len(self.model_command)
 
-    def _rectify_pgroups(self):
+    def rectify_pgroups(self):
         """ private method to synchronize parameter groups section with
         the parameter data section
 
@@ -1140,7 +1140,7 @@ class Pst(object):
 
         """
 
-        self._rectify_pgroups()
+        self.rectify_pgroups()
         self.rectify_pi()
         self._update_control_section()
 

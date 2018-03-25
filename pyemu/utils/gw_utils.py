@@ -920,6 +920,7 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
     setup_file = os.path.join(hds_path,"_setup_{0}.csv".format(os.path.split(hds_file)[-1]))
     df.to_csv(setup_file)
     fwd_run_line = "pyemu.gw_utils.apply_hds_obs('{0}')\n".format(hds_file)
+    df.index = df.obsnme
     return fwd_run_line, df
 
 
