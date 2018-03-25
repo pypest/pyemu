@@ -25,6 +25,11 @@ except:
 
 import pyemu
 
+def remove_readonly(func, path, excinfo):
+    """remove readonly dirs, apparently only a windows issue
+    add to all rmtree calls: shutil.rmtree(**,onerror=remove_readonly), wk"""
+    os.chmod(path, 128) #stat.S_IWRITE==128==normal
+    func(path)
 
 def run(cmd_str,cwd='.',verbose=False):
     """ an OS agnostic function to execute command
@@ -670,7 +675,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
     if master_dir is not None:
         if master_dir != '.' and os.path.exists(master_dir):
             try:
-                shutil.rmtree(master_dir)#, onerror=del_rw)
+                shutil.rmtree(master_dir,onerror=remove_readonly)#, onerror=del_rw)
             except Exception as e:
                 raise Exception("unable to remove existing master dir:" + \
                                 "{0}\n{1}".format(master_dir,str(e)))
@@ -706,7 +711,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         new_slave_dir = os.path.join(slave_root,"slave_{0}".format(i))
         if os.path.exists(new_slave_dir):
             try:
-                shutil.rmtree(new_slave_dir)#, onerror=del_rw)
+                shutil.rmtree(new_slave_dir,onerror=remove_readonly)#, onerror=del_rw)
             except Exception as e:
                 raise Exception("unable to remove existing slave dir:" + \
                                 "{0}\n{1}".format(new_slave_dir,str(e)))
@@ -754,15 +759,19 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         # kill any remaining slaves
         for p in procs:
             p.kill()
-
+    # this waits for sweep to finish, but pre/post/model (sub)subprocs may take longer
     for p in procs:
         p.wait()
     if cleanup:
-        for d in slave_dirs:
-            try:
-                shutil.rmtree(d)
-            except Exception as e:
-                warnings.warn("unable to remove slavr dir{0}:{1}".format(d,str(e)))
+        cleanit=0
+        while len(slave_dirs)>0 and cleanit<100000: # arbitrary 100000 limit
+            cleanit=cleanit+1
+            for d in slave_dirs:
+                try:
+                    shutil.rmtree(d,onerror=remove_readonly)
+                    slave_dirs.pop(slave_dirs.index(d)) #if successfully removed
+                except Exception as e:
+                    warnings.warn("unable to remove slavr dir{0}:{1}".format(d,str(e)))
 
 
 def read_pestpp_runstorage(filename,irun=0):
@@ -1280,7 +1289,7 @@ class PstFromFlopyModel(object):
             self.log("setting up '{0}' dir".format(d))
             if os.path.exists(d):
                 if self.remove_existing:
-                    shutil.rmtree(d)
+                    shutil.rmtree(d,onerror=remove_readonly)
                 else:
                     raise Exception("dir '{0}' already exists".
                                     format(d))
@@ -1334,7 +1343,7 @@ class PstFromFlopyModel(object):
                 self.logger.lraise("'new_model_ws' already exists")
             else:
                 self.logger.warn("removing existing 'new_model_ws")
-                shutil.rmtree(new_model_ws)
+                shutil.rmtree(new_model_ws,onerror=remove_readonly)
         self.m.change_model_ws(new_model_ws,reset_external=True)
         self.m.exe_name = self.m.exe_name.replace(".exe",'')
         self.m.exe = self.m.version
