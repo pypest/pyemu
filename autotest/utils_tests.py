@@ -412,6 +412,10 @@ def zero_order_regul_test():
     assert pst.control_data.pestmode == "regularization"
     pst.write(os.path.join('temp','test.pst'))
 
+    pyemu.helpers.zero_order_tikhonov(pst,reset=False)
+    assert pst.prior_information.shape[0] == pst.npar_adj * 2
+
+
 
 def kl_test():
     import os
@@ -985,7 +989,7 @@ def sfr_obs_test():
     pyemu.gw_utils.setup_sfr_obs(sfr_file, seg_group_dict={"obs1": [1, 4], "obs2": [16, 17, 18, 19, 22, 23]},model=m)
 
 if __name__ == "__main__":
-    sfr_obs_test()
+    #sfr_obs_test()
     #setup_pp_test()
     #sfr_helper_test()
     #gw_sft_ins_test()
@@ -1005,7 +1009,7 @@ if __name__ == "__main__":
     # tpl_to_dataframe_test()
     #kl_test()
     #more_kl_test()
-    # zero_order_regul_test()
+    zero_order_regul_test()
     # first_order_pearson_regul_test()
     # master_and_slaves()
     # smp_to_ins_test()

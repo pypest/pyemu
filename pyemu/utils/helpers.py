@@ -431,7 +431,8 @@ def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
         np.savetxt(filename,arr,fmt="%20.8E")
 
 
-def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
+def zero_order_tikhonov(pst, parbounds=True,par_groups=None,
+                        reset=True):
     """setup preferred-value regularization
 
     Parameters
@@ -445,6 +446,10 @@ def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
     par_groups : list
         parameter groups to build PI equations for.  If None, all
         adjustable parameters are used. Default is None
+
+    reset : bool
+        flag to reset the prior_information attribute of the pst
+        instance.  Default is True
 
     Example
     -------
@@ -480,10 +485,17 @@ def zero_order_tikhonov(pst, parbounds=True,par_groups=None):
             eq = "1.0 * " + parnme + " ={0:15.6E}".format(parval1)
             equation.append(eq)
 
-    pst.prior_information = pd.DataFrame({"pilbl": pilbl,
-                                           "equation": equation,
-                                           "obgnme": obgnme,
-                                           "weight": weight})
+    if reset:
+        pst.prior_information = pd.DataFrame({"pilbl": pilbl,
+                                               "equation": equation,
+                                               "obgnme": obgnme,
+                                               "weight": weight})
+    else:
+        pi = pd.DataFrame({"pilbl": pilbl,
+                          "equation": equation,
+                          "obgnme": obgnme,
+                          "weight": weight})
+        pst.prior_information = pst.prior_information.append(pi)
     if parbounds:
         regweight_from_parbound(pst)
     if pst.control_data.pestmode == "estimation":
