@@ -150,6 +150,9 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_di
         format(type(pst))
     print("building diagonal cov")
     full_cov = pyemu.Cov.from_parameter_data(pst,sigma_range=sigma_range)
+
+    full_cov_dict = {n:float(v) for n,v in zip(full_cov.col_names,full_cov.x)}
+    #full_cov = None
     par = pst.parameter_data
     for gs,items in struct_dict.items():
         print("processing ",gs)
@@ -194,11 +197,12 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_di
                 print("done")
                 # find the variance in the diagonal cov
                 print("getting diag var cov",df_zone.shape[0])
-                tpl_var = np.diag(full_cov.get(list(df_zone.parnme)).x)
-                if np.std(tpl_var) > 1.0e-6:
-                    warnings.warn("pars have different ranges" +\
-                                  " , using max range as variance for all pars")
-                tpl_var = tpl_var.max()
+                #tpl_var = np.diag(full_cov.get(list(df_zone.parnme)).x).max()
+                tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
+                #if np.std(tpl_var) > 1.0e-6:
+                #    warnings.warn("pars have different ranges" +\
+                #                  " , using max range as variance for all pars")
+                #tpl_var = tpl_var.max()
                 print("scaling full cov by diag var cov")
                 cov *= tpl_var
                 print("test for inversion")
