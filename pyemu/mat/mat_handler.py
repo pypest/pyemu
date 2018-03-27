@@ -1411,7 +1411,21 @@ class Matrix(object):
                           col_names=[col_name],isdiagonal=False)
 
 
-    def to_coo(self,filename,droptol=None):
+    def to_coo(self,filename,droptol=None,chunk=None):
+        """write a PEST-compatible binary file.  The data format is
+        [int,int,float] for i,j,value.  It is autodetected during
+        the read with Matrix.from_binary().
+
+        Parameters
+        ----------
+        filename : str
+            filename to save binary file
+        droptol : float
+            absolute value tolerance to make values smaller than zero.  Default is None
+        chunk : int
+            number of elements to write in a single pass.  Default is None
+
+        """
         if self.isdiagonal:
             #raise NotImplementedError()
             self.__x = self.as_2d
@@ -1427,11 +1441,22 @@ class Matrix(object):
         # get the indices of non-zero entries
         row_idxs, col_idxs = np.nonzero(self.x)
         flat = self.x[row_idxs, col_idxs].flatten()
-        # zip up the index position and value pairs
-        #data = np.array(list(zip(icount, flat)), dtype=self.binary_rec_dt)
-        data = np.core.records.fromarrays([row_idxs,col_idxs,flat],dtype=self.coo_rec_dt)
-        # write
-        data.tofile(f)
+        if chunk is None:
+            data = np.core.records.fromarrays([row_idxs,col_idxs,flat],dtype=self.coo_rec_dt)
+            data.tofile(f)
+        else:
+            start,end = 0,min(chunk,flat.shape[0])
+            while True:
+                #print(row_idxs[start],row_idxs[end])
+                data = np.core.records.fromarrays([row_idxs[start:end],col_idxs[start:end],
+                                                   flat[start:end]],
+                                                  dtype=self.coo_rec_dt)
+                data.tofile(f)
+                if end == flat.shape[0]:
+                    break
+                start = end
+                end = min(flat.shape[0],start + chunk)
+
 
         for name in self.col_names:
             if len(name) > self.par_length:
@@ -1451,7 +1476,7 @@ class Matrix(object):
 
 
 
-    def to_binary(self, filename,droptol=None):
+    def to_binary(self, filename,droptol=None, chunk=None):
         """write a PEST-compatible binary file.  The format is the same
         as the format used to storage a PEST Jacobian matrix
 
@@ -1461,6 +1486,8 @@ class Matrix(object):
             filename to save binary file
         droptol : float
             absolute value tolerance to make values smaller than zero.  Default is None
+        chunk : int
+            number of elements to write in a single pass.  Default is None
 
         """
         if self.isdiagonal:
@@ -1482,9 +1509,25 @@ class Matrix(object):
         flat = self.x[row_idxs, col_idxs].flatten()
         # zip up the index position and value pairs
         #data = np.array(list(zip(icount, flat)), dtype=self.binary_rec_dt)
-        data = np.core.records.fromarrays([icount,flat],dtype=self.binary_rec_dt)
-        # write
-        data.tofile(f)
+
+
+        if chunk is None:
+            data = np.core.records.fromarrays([icount, flat], dtype=self.binary_rec_dt)
+            # write
+            data.tofile(f)
+        else:
+            start,end = 0,min(chunk,flat.shape[0])
+            while True:
+                #print(row_idxs[start],row_idxs[end])
+                data = np.core.records.fromarrays([icount[start:end],
+                                                   flat[start:end]],
+                                                  dtype=self.binary_rec_dt)
+                data.tofile(f)
+                if end == flat.shape[0]:
+                    break
+                start = end
+                end = min(flat.shape[0],start + chunk)
+
 
         for name in self.col_names:
             if len(name) > self.par_length:

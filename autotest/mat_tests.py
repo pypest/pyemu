@@ -363,7 +363,7 @@ def coo_tests():
     import pyemu
 
     nrow = 100
-    ncol = 100
+    ncol = 1000
 
     rnames = ["row_{0}".format(i) for i in range(nrow)]
     cnames = ["col_{0}".format(i) for i in range(ncol)]
@@ -375,11 +375,48 @@ def coo_tests():
     assert m.shape[1] == len(cnames)
 
     mname = os.path.join("temp","temp.jcb")
+
     m.to_coo(mname)
-
     mm = pyemu.Matrix.from_binary(mname)
-
     assert np.array_equal(m.x,mm.x)
+    os.remove(mname)
+
+    m.to_coo(mname,chunk=1)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+    m.to_coo(mname,chunk=100000)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x,mm.x)
+    os.remove(mname)
+
+    m.to_coo(mname,chunk=1000)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+
+
+    m.to_binary(mname)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+    m.to_binary(mname)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+    m.to_binary(mname)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+    m.to_binary(mname)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
 
 
 if __name__ == "__main__":

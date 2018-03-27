@@ -1902,7 +1902,7 @@ class PstFromFlopyModel(object):
             self.log("processing obs type {0}".format(obs_type))
 
 
-    def build_prior(self, fmt="ascii",filename=None,droptol=None):
+    def build_prior(self, fmt="ascii",filename=None,droptol=None, chunk=None):
         """ build a prior parameter covariance matrix.
 
         Parameters
@@ -1916,6 +1916,8 @@ class PstFromFlopyModel(object):
             droptol : float
                 tolerance for dropping near-zero values when writing compressed binary.
                 Default is None
+            chunk : int
+                chunk size to write in a single pass - for binary only
 
         Returns
         -------
@@ -1975,11 +1977,11 @@ class PstFromFlopyModel(object):
         if fmt == 'ascii':
             cov.to_ascii(filename)
         elif fmt == 'binary':
-            cov.to_binary(filename,droptol=droptol)
+            cov.to_binary(filename,droptol=droptol,chunk=chunk)
         elif fmt == 'uncfile':
             cov.to_uncfile(filename)
         elif fmt == 'coo':
-            cov.to_coo(filename,droptol=droptol)
+            cov.to_coo(filename,droptol=droptol,chunk=chunk)
         self.log("building prior covariance matrix")
         return cov
 
