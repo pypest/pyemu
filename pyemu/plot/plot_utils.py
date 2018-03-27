@@ -801,4 +801,132 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                 plt.close(fig)
     logger.log("pyemu.plot_utils.ensemble_helper()")
 
+def ensemble_res_1to1(ensemble, pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
+    """
+    TODO: color symbols by weight
 
+
+    """
+    if logger is None:
+        logger=Logger('Default_Loggger.log',echo=False)
+    logger.log("plot res_1to1")
+    if pst.res is None:
+        logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
+    obs = pst.observation_data
+    res = pst.res
+
+    if "grouper" in kwargs:
+        raise NotImplementedError()
+    else:
+        grouper = obs.groupby(obs.obgnme).groups
+
+    fig = plt.figure(figsize=figsize)
+    if "fig_title" in kwargs:
+        plt.figtext(0.5,0.5,kwargs["fig_title"])
+    else:
+        plt.figtext(0.5, 0.5, "pyemu.Pst.plot(kind='1to1')\nfrom pest control file '{0}'\n at {1}"
+                    .format(pst.filename, str(datetime.now())), ha="center")
+    #if plot_hexbin:
+    #    pdfname = pst.filename.replace(".pst", ".1to1.hexbin.pdf")
+    #else:
+    #    pdfname = pst.filename.replace(".pst", ".1to1.pdf")
+    figs = []
+    ax_count = 0
+    for g, names in grouper.items():
+        logger.log("plotting 1to1 for {0}".format(g))
+
+        obs_g = obs.loc[names, :]
+        obs_g.loc[:, "sim"] = res.loc[names, "modelled"]
+        logger.statement("using control file obsvals to calculate residuals")
+        obs_g.loc[:,'res'] = obs_g.sim - obs_g.obsval
+        if "include_zero" not in kwargs or kwargs["include_zero"] is True:
+            obs_g = obs_g.loc[obs_g.weight > 0, :]
+        if obs_g.shape[0] == 0:
+            logger.statement("no non-zero obs for group '{0}'".format(g))
+            logger.log("plotting 1to1 for {0}".format(g))
+            continue
+
+        if ax_count % (nr * nc) == 0:
+            if ax_count > 0:
+                plt.tight_layout()
+            #pdf.savefig()
+            #plt.close(fig)
+            figs.append(fig)
+            fig = plt.figure(figsize=figsize)
+            axes = get_page_axes()
+            ax_count = 0
+
+        ax = axes[ax_count]
+
+        #if obs_g.shape[0] == 1:
+        #    ax.scatter(list(obs_g.sim),list(obs_g.obsval),marker='.',s=30,color='b')
+        #else:
+        mx = max(obs_g.obsval.max(), obs_g.sim.max())
+        mn = min(obs_g.obsval.min(), obs_g.sim.min())
+
+        #if obs_g.shape[0] == 1:
+        mx *= 1.1
+        mn *= 0.9
+        ax.axis('square')
+        if plot_hexbin:
+            ax.hexbin(obs_g.sim.values, obs_g.obsval.values, mincnt=1, gridsize=(75, 75),
+                      extent=(mn, mx, mn, mx), bins='log', edgecolors=None)
+#               plt.colorbar(ax=ax)
+        else:
+            ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
+
+
+
+        ax.plot([mn,mx],[mn,mx],'k--',lw=1.0)
+        xlim = (mn,mx)
+        ax.set_xlim(mn,mx)
+        ax.set_ylim(mn,mx)
+        ax.grid()
+
+        ax.set_ylabel("observed",labelpad=0.1)
+        ax.set_xlabel("simulated",labelpad=0.1)
+        ax.set_title("{0}) group:{1}, {2} observations".
+                                 format(abet[ax_count], g, obs_g.shape[0]), loc="left")
+
+        ax_count += 1
+
+        ax = axes[ax_count]
+        ax.scatter(obs_g.obsval, obs_g.res, marker='.', s=10, color='b')
+        ylim = ax.get_ylim()
+        mx = max(np.abs(ylim[0]), np.abs(ylim[1]))
+        if obs_g.shape[0] == 1:
+            mx *= 1.1
+        ax.set_ylim(-mx, mx)
+        #show a zero residuals line
+        ax.plot(xlim, [0,0], 'k--', lw=1.0)
+        meanres= obs_g.res.mean()
+        # show mean residuals line
+        ax.plot(xlim,[meanres,meanres], 'r-', lw=1.0)
+        ax.set_xlim(xlim)
+        ax.set_ylabel("residual",labelpad=0.1)
+        ax.set_xlabel("observed",labelpad=0.1)
+        ax.set_title("{0}) group:{1}, {2} observations".
+                     format(abet[ax_count], g, obs_g.shape[0]), loc="left")
+        ax.grid()
+        ax_count += 1
+
+        logger.log("plotting 1to1 for {0}".format(g))
+
+    for a in range(ax_count, nr * nc):
+        axes[a].set_axis_off()
+        axes[a].set_yticks([])
+        axes[a].set_xticks([])
+
+    #plt.tight_layout()
+    #pdf.savefig()
+    #plt.close(fig)
+    figs.append(fig)
+    if filename is not None:
+        with PdfPages(filename) as pdf:
+            for fig in figs:
+                pdf.savefig(fig)
+                plt.close(fig)
+        logger.log("plot res_1to1")
+    else:
+        logger.log("plot res_1to1")
+        return figs

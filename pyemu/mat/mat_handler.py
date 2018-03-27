@@ -142,6 +142,8 @@ class Matrix(object):
                                 ('icount', integer)])
     binary_rec_dt = np.dtype([('j', integer),
                             ('dtemp', double)])
+    coo_rec_dt = np.dtype([('i', integer),('j', integer),
+                          ('dtemp', double)])
 
     par_length = 12
     obs_length = 20
@@ -1408,6 +1410,47 @@ class Matrix(object):
                           row_names=self.row_names,
                           col_names=[col_name],isdiagonal=False)
 
+
+    def to_coo(self,filename,droptol=None):
+        if self.isdiagonal:
+            #raise NotImplementedError()
+            self.__x = self.as_2d
+            self.isdiagonal = False
+        if droptol is not None:
+            self.x[np.abs(self.x) < droptol] = 0.0
+        f = open(filename, 'wb')
+        nnz = np.count_nonzero(self.x) #number of non-zero entries
+        # write the header
+        header = np.array((self.shape[1], self.shape[0], nnz),
+                          dtype=self.binary_header_dt)
+        header.tofile(f)
+        # get the indices of non-zero entries
+        row_idxs, col_idxs = np.nonzero(self.x)
+        flat = self.x[row_idxs, col_idxs].flatten()
+        # zip up the index position and value pairs
+        #data = np.array(list(zip(icount, flat)), dtype=self.binary_rec_dt)
+        data = np.core.records.fromarrays([row_idxs,col_idxs,flat],dtype=self.coo_rec_dt)
+        # write
+        data.tofile(f)
+
+        for name in self.col_names:
+            if len(name) > self.par_length:
+                name = name[:self.par_length - 1]
+            elif len(name) < self.par_length:
+                for i in range(len(name), self.par_length):
+                    name = name + ' '
+            f.write(name.encode())
+        for name in self.row_names:
+            if len(name) > self.obs_length:
+                name = name[:self.obs_length - 1]
+            elif len(name) < self.obs_length:
+                for i in range(len(name), self.obs_length):
+                    name = name + ' '
+            f.write(name.encode())
+        f.close()
+
+
+
     def to_binary(self, filename,droptol=None):
         """write a PEST-compatible binary file.  The format is the same
         as the format used to storage a PEST Jacobian matrix
@@ -1487,19 +1530,26 @@ class Matrix(object):
             return Matrix.from_fortranfile(filename)
 
         if itemp1 >= 0:
-           raise TypeError('Matrix.from_binary(): Jco produced by ' +
-                           'deprecated version of PEST,' +
-                           'Use JcoTRANS to convert to new format')
-        #icount = np.fromfile(f,np.int32,1)
-        #print(itemp1,itemp2,icount)
-        ncol, nrow = abs(itemp1), abs(itemp2)
-        x = np.zeros((nrow, ncol))
-        # read all data records
-        # using this a memory hog, but really fast
-        data = np.fromfile(f, Matrix.binary_rec_dt, icount)
-        icols = ((data['j'] - 1) // nrow) + 1
-        irows = data['j'] - ((icols - 1) * nrow)
-        x[irows - 1, icols - 1] = data["dtemp"]
+            # raise TypeError('Matrix.from_binary(): Jco produced by ' +
+            #                 'deprecated version of PEST,' +
+            #                 'Use JcoTRANS to convert to new format')
+            print("'COO' format detected...")
+            ncol, nrow = abs(itemp1), abs(itemp2)
+            x = np.zeros((nrow, ncol))
+            data = np.fromfile(f, Matrix.coo_rec_dt, icount)
+            x[data['i'], data['j']] = data["dtemp"]
+        else:
+
+            #icount = np.fromfile(f,np.int32,1)
+            #print(itemp1,itemp2,icount)
+            ncol, nrow = abs(itemp1), abs(itemp2)
+            x = np.zeros((nrow, ncol))
+            # read all data records
+            # using this a memory hog, but really fast
+            data = np.fromfile(f, Matrix.binary_rec_dt, icount)
+            icols = ((data['j'] - 1) // nrow) + 1
+            irows = data['j'] - ((icols - 1) * nrow)
+            x[irows - 1, icols - 1] = data["dtemp"]
         # read obs and parameter names
         col_names = []
         row_names = []

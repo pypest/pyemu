@@ -356,7 +356,34 @@ def indices_test():
     assert np.allclose(idx1,idx2)
 
 
+def coo_tests():
+    import os
+    from datetime import datetime
+    import numpy as np
+    import pyemu
+
+    nrow = 100
+    ncol = 100
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    x = np.random.random((nrow,ncol))
+
+    m = pyemu.Matrix(x=x,row_names=rnames, col_names=cnames)
+    assert m.shape[0] == len(rnames)
+    assert m.shape[1] == len(cnames)
+
+    mname = os.path.join("temp","temp.jcb")
+    m.to_coo(mname)
+
+    mm = pyemu.Matrix.from_binary(mname)
+
+    assert np.array_equal(m.x,mm.x)
+
+
 if __name__ == "__main__":
+    coo_tests()
     #concat_test()
     # indices_test()
     #mat_test()
@@ -366,7 +393,7 @@ if __name__ == "__main__":
     # drop_test()
     # get_test()
     # cov_identity_test()
-    hadamard_product_test()
+    #hadamard_product_test()
     # get_diag_test()
     # to_pearson_test()
     # sigma_range_test()

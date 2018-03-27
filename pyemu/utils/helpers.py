@@ -1908,7 +1908,7 @@ class PstFromFlopyModel(object):
         Parameters
         ----------
             fmt : str
-                the format to save the cov matrix.  Options are "ascii","binary","uncfile".
+                the format to save the cov matrix.  Options are "ascii","binary","uncfile", "coo".
                 default is "ascii"
             filename : str
                 the filename to save the prior cov matrix to.  If None, the name is formed using
@@ -1925,7 +1925,7 @@ class PstFromFlopyModel(object):
         """
 
         fmt = fmt.lower()
-        acc_fmts = ["ascii","binary","uncfile","none"]
+        acc_fmts = ["ascii","binary","uncfile","none","coo"]
         if fmt not in acc_fmts:
             self.logger.lraise("unrecognized prior save 'fmt':{0}, options are: {1}".
                                format(fmt,','.join(acc_fmts)))
@@ -1978,6 +1978,8 @@ class PstFromFlopyModel(object):
             cov.to_binary(filename,droptol=droptol)
         elif fmt == 'uncfile':
             cov.to_uncfile(filename)
+        elif fmt == 'coo':
+            cov.to_coo(filename,droptol=droptol)
         self.log("building prior covariance matrix")
         return cov
 

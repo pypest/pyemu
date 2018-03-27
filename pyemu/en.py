@@ -919,11 +919,11 @@ class ParameterEnsemble(Ensemble):
                     print("reserving reals matrix")
                     reals = np.zeros((num_reals,cov.shape[0]))
 
-                    for pargp in pargps:
+                    for ipg,pargp in enumerate(pargps):
                         pnames = list(par_cov.loc[par_cov.pargp==pargp,"parnme"])
                         idxs = par_cov.loc[par_cov.pargp == pargp, "idxs"]
-                        print("drawing for par group '{0}' with {1} pars "
-                              .format(pargp, len(idxs)))
+                        print("{0} of {1} drawing for par group '{2}' with {3} pars "
+                              .format(ipg+1,len(pargps),pargp, len(idxs)))
 
                         s,e = idxs[0],idxs[-1]
                         #print("generating snv matrix")
