@@ -183,7 +183,17 @@ def pst_helper(pst,kind=None,**kwargs):
 
 
 def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
-    """
+    """ make 1-to-1 plots and also observed vs residual by observation group
+    Parameters
+    ----------
+    pst : pyemu.Pst
+    logger : Logger
+        if None, a generic one is created.  Default is None
+    filename : str
+        PDF filename to save figures to.  If None, figures are returned.  Default is None
+    kwargs : dict
+        optional keyword args to pass to plotting functions
+
     TODO: color symbols by weight
 
 
@@ -314,7 +324,7 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
 
 def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
     """
-    TODO: workout min and max dates and set xaxis on all plots
+    timeseries plot helper...in progress
 
     """
     if logger is None:
@@ -343,7 +353,7 @@ def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
 
         obs_g = obs.loc[names, :]
         obs_g.loc[:, "sim"] = res.loc[names, "modelled"]
-        if "include_zero" not in kwargs or kwargs["include_zero"] is True:
+        if "include_zero" not in kwargs or kwargs["include_zero"] is False:
             obs_g = obs_g.loc[obs_g.weight > 0, :]
 
         if obs_g.shape[0] == 0:
@@ -453,8 +463,6 @@ def res_phi_pie(pst,logger=None, **kwargs):
 def pst_weight_hist(pst,logger, **kwargs):
     raise NotImplementedError()
 
-
-
 def get_page_axes():
     axes = [plt.subplot(nr,nc,i+1) for i in range(nr*nc)]
     #[ax.set_yticks([]) for ax in axes]
@@ -468,6 +476,8 @@ def pst_prior(pst,logger=None, filename=None, **kwargs):
     ----------
     pst : pyemu.Pst
     logger : pyemu.Logger
+    filename : str
+        PDF filename to save plots to. If None, return figs without saving.  Default is None.
     kwargs : dict
         accepts 'grouper' as dict to group parameters on to a single axis (use
         parameter groups if not passed),
@@ -596,6 +606,7 @@ def pst_prior(pst,logger=None, filename=None, **kwargs):
     figs.append(fig)
     if filename is not None:
         with PdfPages(filename) as pdf:
+            plt.tight_layout()
             pdf.savefig(fig)
             plt.close(fig)
         logger.log("plot pst_prior")
@@ -621,7 +632,7 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
         a collection of columns from the ensemble(s) to plot.  If None,
         (the union of) all cols are plotted. Default is None
     filename : str
-        the name of the pdf to create.  Default is "ensemble_helper.pdf"
+        the name of the pdf to create.  If None, return figs without saving.  Default is None.
     func_dict : dict
         a dictionary of unary functions (e.g., np.log10_ to apply to columns.  Key is
         column name.  Default is None
@@ -633,61 +644,7 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
     """
     logger = pyemu.Logger("ensemble_helper.log")
     logger.log("pyemu.plot_utils.ensemble_helper()")
-    ensembles = {}
-    if isinstance(ensemble,pd.DataFrame):
-        if not isinstance(facecolor,str):
-            logger.lraise("facecolor must be str")
-        ensembles[facecolor] = ensemble
-
-    elif isinstance(ensemble,str):
-        if not isinstance(facecolor,str):
-            logger.lraise("facecolor must be str")
-
-        logger.log('loading ensemble from csv file {0}'.format(ensemble))
-        en = pd.read_csv(ensemble,index_col=0)
-        en.columns = en.columns.map(str.lower)
-        logger.statement("{0} shape: {1}".format(ensemble,en.shape))
-        ensembles[facecolor] = en
-        logger.log('loading ensemble from csv file {0}'.format(ensemble))
-
-    elif isinstance(ensemble,list):
-        if isinstance(facecolor,list):
-            if len(ensemble) != len(facecolor):
-                logger.lraise("facecolor list len != ensemble list len")
-        else:
-            colors = ['m','c','b','r','g','y']
-
-            facecolor = [colors[i] for i in range(len(ensemble))]
-        ensembles = {}
-        for fc,en_arg in zip(facecolor,ensemble):
-            if isinstance(en_arg,str):
-                logger.log("loading ensemble from csv file {0}".format(en_arg))
-                en = pd.read_csv(en_arg,index_col=0)
-                en.columns = en.columns.map(str.lower)
-                logger.log("loading ensemble from csv file {0}".format(en_arg))
-                logger.statement("ensemble {0} gets facecolor {1}".format(en_arg,fc))
-
-            elif isinstance(en_arg,pd.DataFrame):
-                en = en_arg
-            else:
-                logger.lraise("unrecognized ensemble list arg:{0}".format(en_file))
-            ensembles[fc] = en
-
-    elif isinstance(ensemble,dict):
-        for fc,en_arg in ensemble.items():
-            if isinstance(en_arg,pd.DataFrame):
-                ensembles[fc] = en_arg
-            elif isinstance(en_arg,str):
-                logger.log("loading ensemble from csv file {0}".format(en_arg))
-                en = pd.read_csv(en_arg, index_col=0)
-                en.columns = en.columns.map(str.lower)
-                logger.log("loading ensemble from csv file {0}".format(en_arg))
-                ensembles[fc] = en
-            else:
-                logger.lraise("unrecognized ensemble list arg:{0}".format(en_arg))
-
-    else:
-        raise Exception("unrecognized 'ensemble' arg")
+    ensembles = _process_ensemble_arg(ensemble,facecolor,logger)
 
     #apply any functions
     if func_dict is not None:
@@ -795,16 +752,88 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
     #plt.close(fig)
     figs.append(fig)
     if filename is not None:
+        plt.tight_layout()
         with PdfPages(filename) as pdf:
             for fig in figs:
                 pdf.savefig(fig)
                 plt.close(fig)
     logger.log("pyemu.plot_utils.ensemble_helper()")
 
-def ensemble_res_1to1(ensemble, pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
-    """
-    TODO: color symbols by weight
 
+def _process_ensemble_arg(ensemble,facecolor, logger):
+    ensembles = {}
+    if isinstance(ensemble, pd.DataFrame):
+        if not isinstance(facecolor, str):
+            logger.lraise("facecolor must be str")
+        ensembles[facecolor] = ensemble
+
+    elif isinstance(ensemble, str):
+        if not isinstance(facecolor, str):
+            logger.lraise("facecolor must be str")
+
+        logger.log('loading ensemble from csv file {0}'.format(ensemble))
+        en = pd.read_csv(ensemble, index_col=0)
+        en.columns = en.columns.map(str.lower)
+        logger.statement("{0} shape: {1}".format(ensemble, en.shape))
+        ensembles[facecolor] = en
+        logger.log('loading ensemble from csv file {0}'.format(ensemble))
+
+    elif isinstance(ensemble, list):
+        if isinstance(facecolor, list):
+            if len(ensemble) != len(facecolor):
+                logger.lraise("facecolor list len != ensemble list len")
+        else:
+            colors = ['m', 'c', 'b', 'r', 'g', 'y']
+
+            facecolor = [colors[i] for i in range(len(ensemble))]
+        ensembles = {}
+        for fc, en_arg in zip(facecolor, ensemble):
+            if isinstance(en_arg, str):
+                logger.log("loading ensemble from csv file {0}".format(en_arg))
+                en = pd.read_csv(en_arg, index_col=0)
+                en.columns = en.columns.map(str.lower)
+                logger.log("loading ensemble from csv file {0}".format(en_arg))
+                logger.statement("ensemble {0} gets facecolor {1}".format(en_arg, fc))
+
+            elif isinstance(en_arg, pd.DataFrame):
+                en = en_arg
+            else:
+                logger.lraise("unrecognized ensemble list arg:{0}".format(en_file))
+            ensembles[fc] = en
+
+    elif isinstance(ensemble, dict):
+        for fc, en_arg in ensemble.items():
+            if isinstance(en_arg, pd.DataFrame):
+                ensembles[fc] = en_arg
+            elif isinstance(en_arg, str):
+                logger.log("loading ensemble from csv file {0}".format(en_arg))
+                en = pd.read_csv(en_arg, index_col=0)
+                en.columns = en.columns.map(str.lower)
+                logger.log("loading ensemble from csv file {0}".format(en_arg))
+                ensembles[fc] = en
+            else:
+                logger.lraise("unrecognized ensemble list arg:{0}".format(en_arg))
+
+    else:
+        raise Exception("unrecognized 'ensemble' arg")
+
+    return ensembles
+
+def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,**kwargs):
+    """helper function to plot ensemble 1-to-1 plots sbowing the simulated range
+
+    Parameters
+    ----------
+    ensemble : varies
+        the ensemble argument can be a pandas.DataFrame or derived type or a str, which
+        is treated as a fileanme.  Optionally, ensemble can be a list of these types or
+        a dict, in which case, the keys are treated as facecolor str (e.g., 'b', 'y', etc).
+    pst : pyemu.Pst
+        pst instance
+    facecolor : str
+        the histogram facecolor.  Only applies if ensemble is a single thing
+    filename : str
+        the name of the pdf to create. If None, return figs without saving.  Default is None.
 
     """
     if logger is None:
@@ -813,7 +842,7 @@ def ensemble_res_1to1(ensemble, pst,logger=None,filename=None,plot_hexbin=False,
     if pst.res is None:
         logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
     obs = pst.observation_data
-    res = pst.res
+    ensembles = _process_ensemble_arg(ensemble,facecolor,logger)
 
     if "grouper" in kwargs:
         raise NotImplementedError()
@@ -836,10 +865,8 @@ def ensemble_res_1to1(ensemble, pst,logger=None,filename=None,plot_hexbin=False,
         logger.log("plotting 1to1 for {0}".format(g))
 
         obs_g = obs.loc[names, :]
-        obs_g.loc[:, "sim"] = res.loc[names, "modelled"]
         logger.statement("using control file obsvals to calculate residuals")
-        obs_g.loc[:,'res'] = obs_g.sim - obs_g.obsval
-        if "include_zero" not in kwargs or kwargs["include_zero"] is True:
+        if "include_zero" not in kwargs or kwargs["include_zero"] is False:
             obs_g = obs_g.loc[obs_g.weight > 0, :]
         if obs_g.shape[0] == 0:
             logger.statement("no non-zero obs for group '{0}'".format(g))
@@ -858,23 +885,20 @@ def ensemble_res_1to1(ensemble, pst,logger=None,filename=None,plot_hexbin=False,
 
         ax = axes[ax_count]
 
-        #if obs_g.shape[0] == 1:
-        #    ax.scatter(list(obs_g.sim),list(obs_g.obsval),marker='.',s=30,color='b')
-        #else:
-        mx = max(obs_g.obsval.max(), obs_g.sim.max())
-        mn = min(obs_g.obsval.min(), obs_g.sim.min())
+        mx = obs_g.obsval.max()
+        mn =  obs_g.obsval.min()
 
         #if obs_g.shape[0] == 1:
         mx *= 1.1
         mn *= 0.9
-        ax.axis('square')
-        if plot_hexbin:
-            ax.hexbin(obs_g.sim.values, obs_g.obsval.values, mincnt=1, gridsize=(75, 75),
-                      extent=(mn, mx, mn, mx), bins='log', edgecolors=None)
-#               plt.colorbar(ax=ax)
-        else:
-            ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
+        #ax.axis('square')
 
+        #ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
+        for c,en in ensembles.items():
+            en_g = en.loc[:,obs_g.obsnme]
+            ex = en_g.max()
+            en = en_g.min()
+            [ax.plot([ov,ov],[een,eex],color=c) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
 
 
         ax.plot([mn,mx],[mn,mx],'k--',lw=1.0)
@@ -889,9 +913,13 @@ def ensemble_res_1to1(ensemble, pst,logger=None,filename=None,plot_hexbin=False,
                                  format(abet[ax_count], g, obs_g.shape[0]), loc="left")
 
         ax_count += 1
-
         ax = axes[ax_count]
-        ax.scatter(obs_g.obsval, obs_g.res, marker='.', s=10, color='b')
+        #ax.scatter(obs_g.obsval, obs_g.res, marker='.', s=10, color='b')
+        for c,en in ensembles.items():
+            en_g = en.loc[:,obs_g.obsnme].subtract(obs_g.obsval,axis=1)
+            ex = en_g.max()
+            en = en_g.min()
+            [ax.plot([ov,ov],[een,eex],color=c) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
         ylim = ax.get_ylim()
         mx = max(np.abs(ylim[0]), np.abs(ylim[1]))
         if obs_g.shape[0] == 1:
@@ -899,9 +927,7 @@ def ensemble_res_1to1(ensemble, pst,logger=None,filename=None,plot_hexbin=False,
         ax.set_ylim(-mx, mx)
         #show a zero residuals line
         ax.plot(xlim, [0,0], 'k--', lw=1.0)
-        meanres= obs_g.res.mean()
-        # show mean residuals line
-        ax.plot(xlim,[meanres,meanres], 'r-', lw=1.0)
+
         ax.set_xlim(xlim)
         ax.set_ylabel("residual",labelpad=0.1)
         ax.set_xlabel("observed",labelpad=0.1)
@@ -922,6 +948,7 @@ def ensemble_res_1to1(ensemble, pst,logger=None,filename=None,plot_hexbin=False,
     #plt.close(fig)
     figs.append(fig)
     if filename is not None:
+        plt.tight_layout()
         with PdfPages(filename) as pdf:
             for fig in figs:
                 pdf.savefig(fig)
