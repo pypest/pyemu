@@ -376,6 +376,11 @@ def coo_tests():
 
     mname = os.path.join("temp","temp.jcb")
 
+    pyemu.mat.save_coo(m.to_sparse(), m.row_names, m.col_names, mname)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
     m.to_coo(mname)
     mm = pyemu.Matrix.from_binary(mname)
     assert np.array_equal(m.x,mm.x)
@@ -417,6 +422,8 @@ def coo_tests():
     mm = pyemu.Matrix.from_binary(mname)
     assert np.array_equal(m.x, mm.x)
     os.remove(mname)
+
+
 
 
 if __name__ == "__main__":

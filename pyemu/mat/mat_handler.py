@@ -12,6 +12,56 @@ from scipy.io import FortranFile
 
 from pyemu.pst.pst_handler import Pst
 
+
+def save_coo(x, row_names, col_names,  filename, chunk=None):
+    """write a PEST-compatible binary file.  The data format is
+    [int,int,float] for i,j,value.  It is autodetected during
+    the read with Matrix.from_binary().
+
+    Parameters
+    ----------
+    x : numpy.sparse
+        coo sparse matrix
+    row_names : list
+        list of row_names
+    col_names : list
+        list of col_names
+    filename : str
+        filename to save binary file
+    droptol : float
+        absolute value tolerance to make values smaller than zero.  Default is None
+    chunk : int
+        number of elements to write in a single pass.  Default is None
+
+    """
+
+    f = open(filename, 'wb')
+    # print("counting nnz")
+    # write the header
+    header = np.array((x.shape[1], x.shape[0], x.nnz),
+                      dtype=Matrix.binary_header_dt)
+    header.tofile(f)
+
+    data = np.core.records.fromarrays([x.row, x.col, x.data], dtype=Matrix.coo_rec_dt)
+    data.tofile(f)
+
+    for name in col_names:
+        if len(name) > Matrix.par_length:
+            name = name[:Matrix.par_length - 1]
+        elif len(name) < Matrix.par_length:
+            for i in range(len(name), Matrix.par_length):
+                name = name + ' '
+        f.write(name.encode())
+    for name in row_names:
+        if len(name) > Matrix.obs_length:
+            name = name[:Matrix.obs_length - 1]
+        elif len(name) < Matrix.obs_length:
+            for i in range(len(name), Matrix.obs_length):
+                name = name + ' '
+        f.write(name.encode())
+    f.close()
+
+
 def concat(mats):
     """Concatenate Matrix objects.  Tries either axis.
 
@@ -1896,7 +1946,7 @@ class Matrix(object):
                     jidx.append(j)
                     data.append(val)
         # csr_Matrix( (data,(row,col)), shape=(3,3)
-        return sparse.csr_matrix((data, (iidx, jidx)), shape=(self.shape))
+        return sparse.coo_matrix((data, (iidx, jidx)), shape=(self.shape))
 
 
     def extend(self,other,inplace=False):
