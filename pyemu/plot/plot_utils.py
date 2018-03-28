@@ -839,8 +839,6 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,**
     if logger is None:
         logger=Logger('Default_Loggger.log',echo=False)
     logger.log("plot res_1to1")
-    if pst.res is None:
-        logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
     obs = pst.observation_data
     ensembles = _process_ensemble_arg(ensemble,facecolor,logger)
 
