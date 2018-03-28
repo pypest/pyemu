@@ -1433,29 +1433,35 @@ class Matrix(object):
         if droptol is not None:
             self.x[np.abs(self.x) < droptol] = 0.0
         f = open(filename, 'wb')
+        #print("counting nnz")
         nnz = np.count_nonzero(self.x) #number of non-zero entries
         # write the header
         header = np.array((self.shape[1], self.shape[0], nnz),
                           dtype=self.binary_header_dt)
         header.tofile(f)
         # get the indices of non-zero entries
+        #print("getting nnz idxs")
         row_idxs, col_idxs = np.nonzero(self.x)
-        flat = self.x[row_idxs, col_idxs].flatten()
+
         if chunk is None:
+            flat = self.x[row_idxs, col_idxs].flatten()
             data = np.core.records.fromarrays([row_idxs,col_idxs,flat],dtype=self.coo_rec_dt)
             data.tofile(f)
         else:
-            start,end = 0,min(chunk,flat.shape[0])
+
+            start,end = 0,min(chunk,row_idxs.shape[0])
             while True:
                 #print(row_idxs[start],row_idxs[end])
+                #print("chunk",start,end)
+                flat = self.x[row_idxs[start:end],col_idxs[start:end]].flatten()
                 data = np.core.records.fromarrays([row_idxs[start:end],col_idxs[start:end],
-                                                   flat[start:end]],
+                                                   flat],
                                                   dtype=self.coo_rec_dt)
                 data.tofile(f)
-                if end == flat.shape[0]:
+                if end == row_idxs.shape[0]:
                     break
                 start = end
-                end = min(flat.shape[0],start + chunk)
+                end = min(row_idxs.shape[0],start + chunk)
 
 
         for name in self.col_names:
@@ -1506,27 +1512,29 @@ class Matrix(object):
         row_idxs, col_idxs = np.nonzero(self.x)
         icount = row_idxs + 1 + col_idxs * self.shape[0]
         # flatten the array
-        flat = self.x[row_idxs, col_idxs].flatten()
+        #flat = self.x[row_idxs, col_idxs].flatten()
         # zip up the index position and value pairs
         #data = np.array(list(zip(icount, flat)), dtype=self.binary_rec_dt)
 
 
         if chunk is None:
+            flat = self.x[row_idxs, col_idxs].flatten()
             data = np.core.records.fromarrays([icount, flat], dtype=self.binary_rec_dt)
             # write
             data.tofile(f)
         else:
-            start,end = 0,min(chunk,flat.shape[0])
+            start,end = 0,min(chunk,row_idxs.shape[0])
             while True:
                 #print(row_idxs[start],row_idxs[end])
+                flat = self.x[row_idxs[start:end], col_idxs[start:end]].flatten()
                 data = np.core.records.fromarrays([icount[start:end],
-                                                   flat[start:end]],
+                                                   flat],
                                                   dtype=self.binary_rec_dt)
                 data.tofile(f)
-                if end == flat.shape[0]:
+                if end == row_idxs.shape[0]:
                     break
                 start = end
-                end = min(flat.shape[0],start + chunk)
+                end = min(row_idxs.shape[0],start + chunk)
 
 
         for name in self.col_names:
