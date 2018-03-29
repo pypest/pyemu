@@ -9,6 +9,7 @@ import numpy as np
 import pandas
 import scipy.linalg as la
 from scipy.io import FortranFile
+import scipy.sparse
 
 from pyemu.pst.pst_handler import Pst
 
@@ -1603,8 +1604,9 @@ class Matrix(object):
             f.write(name.encode())
         f.close()
 
+
     @classmethod
-    def from_binary(cls, filename):
+    def from_binary(cls,filename):
         """class method load from PEST-compatible binary file into a
         Matrix instance
 
@@ -1618,6 +1620,12 @@ class Matrix(object):
         Matrix : Matrix
 
         """
+        x,row_names,col_names = Matrix.read_binary(filename)
+        return cls(x=x, row_names=row_names, col_names=col_names)
+
+    @staticmethod
+    def read_binary(filename):
+
 
         f = open(filename, 'rb')
         # the header datatype
@@ -1666,12 +1674,13 @@ class Matrix(object):
             row_names.append(name)
         f.close()
         assert len(row_names) == x.shape[0],\
-          "Matrix.from_binary() len(row_names) (" + str(len(row_names)) +\
+          "Matrix.read_binary() len(row_names) (" + str(len(row_names)) +\
           ") != x.shape[0] (" + str(x.shape[0]) + ")"
         assert len(col_names) == x.shape[1],\
-          "Matrix.from_binary() len(col_names) (" + str(len(col_names)) +\
+          "Matrix.read_binary() len(col_names) (" + str(len(col_names)) +\
           ") != self.shape[1] (" + str(x.shape[1]) + ")"
-        return cls(x=x,row_names=row_names,col_names=col_names)
+        return x,row_names,col_names
+
 
     @classmethod
     def from_fortranfile(cls, filename):
@@ -1761,8 +1770,9 @@ class Matrix(object):
                 f_out.write(c + '\n')
             f_out.close()
 
+
     @classmethod
-    def from_ascii(cls, filename):
+    def from_ascii(cls,filename):
         """load a pest-compatible ASCII Matrix/vector file into a
         Matrix instance
 
@@ -1772,6 +1782,13 @@ class Matrix(object):
             name of the file to read
 
         """
+        x,row_names,col_names,isdiag = Matrix.read_ascii(filename)
+        return cls(x=x,row_names=row_names,col_names=col_names,isdiagonal=isdiag)
+
+
+    @staticmethod
+    def read_ascii(filename):
+
         f = open(filename, 'r')
         raw = f.readline().strip().split()
         nrow, ncol, icode = int(raw[0]), int(raw[1]), int(raw[2])
@@ -1845,8 +1862,7 @@ class Matrix(object):
             if diag_delta < diag_tol:
                 isdiagonal = True
                 x = np.atleast_2d(np.diag(x)).transpose()
-        return cls(x=x,row_names=row_names,col_names=col_names,
-                   isdiagonal=isdiagonal)
+        return x,row_names,col_names,isdiagonal
 
     def df(self):
         """wrapper of Matrix.to_dataframe()
@@ -1924,7 +1940,7 @@ class Matrix(object):
 
 
     def to_sparse(self, trunc=0.0):
-        """get the CSR sparse Matrix representation of the Matrix
+        """get the COO sparse Matrix representation of the Matrix
 
         Returns
         -------
@@ -2657,3 +2673,73 @@ class Cov(Matrix):
              pearson[i+1:,i] = pearson[i,i+1:]
         return Matrix(x=pearson,row_names=self.row_names,
                       col_names=self.col_names)
+
+
+
+class SparseMatrix(object):
+    """Note: less rigid about references since this class is for big matrices and
+    don't want to be making copies"""
+    def __init__(self,x,row_names,col_names):
+        assert isinstance(x,scipy.sparse.coo_matrix)
+        assert x.shape[0] == len(row_names)
+        assert x.shape[0] == len(col_names)
+        self.x = x
+        self.row_names = row_names
+        self.col_names = col_names
+
+
+    @property
+    def shape(self):
+        return self.x.shape
+
+    @classmethod
+    def from_binary(cls,filename):
+        x,row_names,col_names = Matrix.read_binary(filename)
+        iidx,jidx = x.nonzero()
+        coo = scipy.sparse.coo_matrix((x[iidx,jidx],(iidx,jidx)),shape=(len(row_names),len(col_names)))
+        return cls(x=coo,row_names=row_names,col_names=col_names)
+
+
+
+    def to_coo(self,filename):
+        save_coo(self.x,row_names=self.row_names,col_names=self.col_names,filename=filename)
+
+
+
+    @classmethod
+    def from_coo(cls,filename):
+        pass
+
+    @classmethod
+    def from_csv(cls,filename):
+        pass
+
+
+    def to_csv(self,filename):
+        pass
+
+
+    def to_matrix(self):
+        x = np.zeros(self.shape)
+        for i,j,d in zip(self.x.row,self.x.col,self.x.data):
+            x[i,j] = d
+        return Matrix(x=x,row_names=self.row_names,col_names=self.col_names)
+
+
+    @classmethod
+    def from_matrix(cls, matrix, droptol=None):
+        iidx,jidx = matrix.as_2d.nonzero()
+        coo = scipy.sparse.coo_matrix((matrix.x[iidx,jidx],(iidx,jidx)),shape=matrix.shape)
+        return cls(x=coo,row_names=matrix.row_names,col_names=matrix.col_names)
+
+
+    def extend_ip(self,other):
+        pass
+
+
+    def get(self,row_names=None,col_names=None):
+        pass
+
+
+
+
