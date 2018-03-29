@@ -699,8 +699,8 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
             try:
                 shutil.copytree(slave_dir,master_dir)
             except Exception as e:
-                raise Exception("unable to copy files from slave dir: " + \
-                                "{0} to new slave dir: {1}\n{2}".\
+                raise Exception("unable to copy files from base slave dir: " + \
+                                "{0} to master dir: {1}\n{2}".\
                                 format(slave_dir,master_dir,str(e)))
 
         args = [exe_rel_path, pst_rel_path, "/h", ":{0}".format(port)]

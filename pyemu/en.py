@@ -1026,8 +1026,9 @@ class ParameterEnsemble(Ensemble):
         pe : ParameterEnsemble
 
         """
-        m = Matrix.from_binary(filename)
-        return ParameterEnsemble(data=m.x, pst=pst)
+        m = Matrix.from_binary(filename).to_dataframe()
+
+        return ParameterEnsemble.from_dataframe(df=m, pst=pst)
 
     def _back_transform(self,inplace=True):
         """ Private method to remove log10 transformation from ensemble
