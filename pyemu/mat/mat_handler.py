@@ -2767,7 +2767,31 @@ class SparseMatrix(object):
             self.col_names.extend(other.col_names)
 
     def get_matrix(self,row_names,col_names):
-        raise NotImplementedError()
+        if not isinstance(row_names,list):
+            row_names = [row_names]
+        if not isinstance(col_names,list):
+            col_names = [col_names]
+
+        iidx = Matrix.find_rowcol_indices(row_names,self.row_names,self.col_names,axis=0)
+        jidx = Matrix.find_rowcol_indices(col_names,self.row_names,self.col_names,axis=1)
+
+        imap = {ii:i for i,ii in enumerate(iidx)}
+        jmap = {jj:j for j,jj in enumerate(jidx)}
+
+        iset = set(iidx)
+        jset = set(jidx)
+
+        x = np.zeros((len(row_names),len(col_names)))
+        # for i,idx in enumerate(iidx):
+        #     for j,jdx in enumerate(jidx):
+        #         if jdx in jset and idx in iset:
+        #             x[i,j] = self.x[idx,jdx]
+
+        for i,j,d in zip(self.x.row,self.x.col,self.x.data):
+            if i in iset and j in jset:
+                x[imap[i],jmap[j]] = d
+        return Matrix(x=x,row_names=row_names,col_names=col_names)
+
 
 
 
