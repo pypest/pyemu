@@ -424,7 +424,7 @@ def coo_tests():
     os.remove(mname)
 
 
-def sparse_test():
+def sparse_constructor_test():
     import os
     from datetime import datetime
     import numpy as np
@@ -451,24 +451,70 @@ def sparse_test():
     m = pyemu.Matrix.from_binary(mname)
     assert np.array_equal(m1.x,m.x)
 
+def sparse_extend_test():
+    import os
+    from datetime import datetime
+    import numpy as np
+    import pyemu
+
+    nrow = 5
+    ncol = 5
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    x = np.random.random((nrow, ncol))
+
+    m = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+
+    try:
+        sm.block_extend_ip(m)
+    except:
+        pass
+    else:
+        raise Exception()
+
+    m = pyemu.Matrix(x,row_names=['t{0}'.format(i) for i in range(nrow)],col_names=m.col_names)
+    try:
+        sm.block_extend_ip(m)
+    except:
+        pass
+    else:
+        raise Exception()
+
+
+    m = pyemu.Matrix(x,row_names=['r{0}'.format(i) for i in range(nrow)],
+                     col_names=['r{0}'.format(i) for i in range(ncol)])
+    sm.block_extend_ip(m)
+    m1 = sm.to_matrix()
+    d = m.x - m1.x[m.shape[0]:,m.shape[1]:]
+    assert d.sum() == 0
+
+    m = pyemu.Cov(x=np.atleast_2d(np.ones(nrow)),names=['p{0}'.format(i) for i in range(nrow)],isdiagonal=True)
+    sm.block_extend_ip(m)
+    d = m.as_2d - sm.to_matrix().x[-nrow:,-nrow:]
+    assert d.sum() == 0
 
 
 if __name__ == "__main__":
-    # coo_tests()
-    # indices_test()
-    # mat_test()
-    # load_jco_test()
-    # extend_test()
-    # pseudo_inv_test()
-    # drop_test()
-    # get_test()
-    # cov_identity_test()
-    # hadamard_product_test()
-    # get_diag_test()
-    # to_pearson_test()
-    # sigma_range_test()
-    # cov_replace_test()
-    # from_names_test()
-    # from_uncfile_test()
-    # copy_test()
-    sparse_test()
+    coo_tests()
+    indices_test()
+    mat_test()
+    load_jco_test()
+    extend_test()
+    pseudo_inv_test()
+    drop_test()
+    get_test()
+    cov_identity_test()
+    hadamard_product_test()
+    get_diag_test()
+    to_pearson_test()
+    sigma_range_test()
+    cov_replace_test()
+    from_names_test()
+    from_uncfile_test()
+    copy_test()
+    sparse_constructor_test()
+    sparse_extend_test()
