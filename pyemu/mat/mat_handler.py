@@ -2765,6 +2765,8 @@ class SparseMatrix(object):
                                              shape=(self.shape[0]+other.shape[0],self.shape[1]+other.shape[1]))
             self.row_names.extend(other.row_names)
             self.col_names.extend(other.col_names)
+        else:
+            raise NotImplementedError("SparseMatrix.block_extend_ip() 'other' arg only supports Matrix types ")
 
     def get_matrix(self,row_names,col_names):
         if not isinstance(row_names,list):
