@@ -2726,15 +2726,11 @@ class SparseMatrix(object):
     #     pass
 
 
-    def to_matrix(self, row_names=None, col_names=None):
-        if row_names is None and col_names is None:
-            x = np.zeros(self.shape)
-            for i,j,d in zip(self.x.row,self.x.col,self.x.data):
-                x[i,j] = d
-            return Matrix(x=x,row_names=self.row_names,col_names=self.col_names)
-        else:
-            raise NotImplementedError()
-
+    def to_matrix(self):
+        x = np.zeros(self.shape)
+        for i,j,d in zip(self.x.row,self.x.col,self.x.data):
+            x[i,j] = d
+        return Matrix(x=x,row_names=self.row_names,col_names=self.col_names)
 
 
     @classmethod
@@ -2770,7 +2766,8 @@ class SparseMatrix(object):
             self.row_names.extend(other.row_names)
             self.col_names.extend(other.col_names)
 
-
+    def get_matrix(self,row_names,col_names):
+        raise NotImplementedError()
 
 
 
