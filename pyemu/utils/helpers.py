@@ -100,7 +100,8 @@ def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
     return geostatistical_prior_builder(pst=pst,struct_dict=struct_dict,
                                         sigma_range=sigma_range)
 
-def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_dict=None):
+def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
+                                 par_knowledge_dict=None,sparse=False):
     """ a helper function to construct a full prior covariance matrix using
     a mixture of geostastical structures and parameter bounds information.
     The covariance of parameters associated with geostatistical structures is defined
@@ -152,6 +153,8 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_di
     full_cov = pyemu.Cov.from_parameter_data(pst,sigma_range=sigma_range)
 
     full_cov_dict = {n:float(v) for n,v in zip(full_cov.col_names,full_cov.x)}
+    if sparse:
+        full_cov = None
     #full_cov = None
     par = pst.parameter_data
     for gs,items in struct_dict.items():
@@ -212,12 +215,30 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_di
                     df_zone.to_csv("prior_builder_crash.csv")
                     raise Exception("error inverting cov {0}".
                                     format(cov.row_names[:3]))
-                print('replace in full cov')
-                full_cov.replace(cov)
-                d = np.diag(full_cov.x)
-                idx = np.argwhere(d==0.0)
-                for i in idx:
-                    print(full_cov.names[i])
+                if sparse:
+                    if full_cov is None:
+                        full_cov = pyemu.SparseMatrix.from_matrix(cov)
+                    else:
+                        print("extending SparseMatix")
+                        full_cov.block_extend_ip(cov)
+                else:
+                    print('replace in full cov')
+                    full_cov.replace(cov)
+                # d = np.diag(full_cov.x)
+                # idx = np.argwhere(d==0.0)
+                # for i in idx:
+                #     print(full_cov.names[i])
+
+    if sparse:
+        print("adding remaining parameters to diagonal")
+        fset = set(full_cov.row_names)
+        pset = set(pst.par_names)
+        diff = list(pset.difference(fset))
+        diff.sort()
+        vals = np.atleast_2d(np.array([full_cov_dict[d] for d in diff]))
+        cov = pyemu.Cov(x=vals,names=vals,isdiagonal=True)
+        full_cov.block_extend_ip(cov)
+
 
     if par_knowledge_dict is not None:
         full_cov = condition_on_par_knowledge(full_cov,
