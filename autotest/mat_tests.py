@@ -451,7 +451,7 @@ def sparse_test():
     m = pyemu.Matrix.from_binary(mname)
     assert np.array_equal(m1.x,m.x)
 
-    
+
 
 if __name__ == "__main__":
     # coo_tests()
