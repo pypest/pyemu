@@ -1847,7 +1847,7 @@ class Pst(object):
         if inschek:
             df = pst_utils._try_run_inschek(ins_file,out_file)
         if df is not None:
-            print(self.observation_data.index,df.index)
+            #print(self.observation_data.index,df.index)
             self.observation_data.loc[df.index,"obsval"] = df.obsval
             new_obs_data.loc[df.index,"obsval"] = df.obsval
         return new_obs_data

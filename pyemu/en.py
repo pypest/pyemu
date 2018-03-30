@@ -7,7 +7,7 @@ import math
 import numpy as np
 import pandas as pd
 
-from pyemu.mat.mat_handler import get_common_elements,Matrix,Cov
+from pyemu.mat.mat_handler import get_common_elements,Matrix,Cov,SparseMatrix
 from pyemu.pst.pst_utils import write_parfile,read_parfile
 from pyemu.plot.plot_utils import ensemble_helper
 
@@ -822,11 +822,111 @@ class ParameterEnsemble(Ensemble):
         #new_pe._applied_tied()
         return new_pe
 
+
+    @classmethod
+    def from_sparse_gaussian_draw(cls,pst,cov,num_reals):
+        """ instantiate a parameter ensemble from a sparse covariance matrix.
+        This is an advanced user method that assumes you know what you are doing
+        - few guard rails...
+
+        Parameters
+        ----------
+        pst : pyemu.Pst
+            a control file instance
+        cov : (pyemu.SparseMatrix)
+            sparse covariance matrix to use for drawing
+        num_reals : int
+            number of realizations to generate
+
+        Returns
+        -------
+        ParameterEnsemble : ParameterEnsemble
+
+        """
+
+
+        assert isinstance(cov,SparseMatrix)
+        real_names = np.arange(num_reals, dtype=np.int64)
+
+        li = pst.parameter_data.partrans == "log"
+        vals = pst.parameter_data.parval1.copy()
+        vals.loc[li] = vals.loc[li].apply(np.log10)
+
+
+        par_cov = pst.parameter_data.loc[cov.row_names, :]
+        par_cov.loc[:, "idxs"] = np.arange(cov.shape[0])
+        # print("algning cov")
+        # cov.align(list(par_cov.parnme))
+        pargps = par_cov.pargp.unique()
+        print("reserving reals matrix")
+        reals = np.zeros((num_reals, cov.shape[0]))
+
+        for ipg, pargp in enumerate(pargps):
+            pnames = list(par_cov.loc[par_cov.pargp == pargp, "parnme"])
+            idxs = par_cov.loc[par_cov.pargp == pargp, "idxs"]
+            print("{0} of {1} drawing for par group '{2}' with {3} pars "
+                  .format(ipg + 1, len(pargps), pargp, len(idxs)))
+
+            snv = np.random.randn(num_reals, len(pnames))
+
+            print("...extracting cov from sparse matrix")
+            cov_pg = cov.get_matrix(col_names=pnames,row_names=pnames)
+            if len(pnames) == 1:
+                std = np.sqrt(cov_pg.x)
+                reals[:, idxs] = vals[pnames].values[0] + (snv * std)
+            else:
+                try:
+                    cov_pg.inv
+                except:
+                    covname = "trouble_{0}.cov".format(pargp)
+                    print('saving toubled cov matrix to {0}'.format(covname))
+                    cov_pg.to_ascii(covname)
+                    print(cov_pg.get_diagonal_vector())
+                    raise Exception("error inverting cov for par group '{0}'," + \
+                                    "saved trouble cov to {1}".
+                                    format(pargp, covname))
+                v, w = np.linalg.eigh(cov_pg.as_2d)
+                # check for near zero eig values
+
+                # vdiag = np.diag(v)
+                for i in range(v.shape[0]):
+                    if v[i] > 1.0e-10:
+                        pass
+                    else:
+                        print("near zero eigen value found", v[i], \
+                              "at index", i, " of ", v.shape[0])
+                        v[i] = 0.0
+                vsqrt = np.sqrt(v)
+                vsqrt[i:] = 0.0
+                v = np.diag(vsqrt)
+                a = np.dot(w, v)
+                pg_vals = vals[pnames]
+                for i in range(num_reals):
+                    # v = snv[i,:]
+                    # p = np.dot(a,v)
+                    reals[i, idxs] = pg_vals + np.dot(a, snv[i, :])
+
+        df = pd.DataFrame(reals, columns=cov.row_names, index=real_names)
+        df.loc[:, li] = 10.0 ** df.loc[:, li]
+
+        # replace the realizations for fixed parameters with the original
+        # parval1 in the control file
+        print("handling fixed pars")
+        # pe.pst.parameter_data.index = pe.pst.parameter_data.parnme
+        par = pst.parameter_data
+        fixed_vals = par.loc[par.partrans == "fixed", "parval1"]
+        for fname, fval in zip(fixed_vals.index, fixed_vals.values):
+            # print(fname)
+            df.loc[:, fname] = fval
+
+        # print("apply tied")
+        new_pe = cls.from_dataframe(pst=pst, df=df)
+
+        return new_pe
+
     @classmethod
     def from_gaussian_draw(cls,pst,cov,num_reals=1,use_homegrown=False,group_chunks=False):
-        """ this is an experiemental method to help speed up draws
-        for a really large (>1E6) ensemble sizes.  gets around the
-        dataframe expansion-by-loc that is one col at a time.
+        """ instantiate a parameter ensemble from a covariance matrix
 
         Parameters
         ----------
@@ -847,9 +947,6 @@ class ParameterEnsemble(Ensemble):
         -------
         ParameterEnsemble : ParameterEnsemble
 
-        Note
-        ----
-        this constructor transforms the pe argument!
 
         """
 
@@ -932,7 +1029,7 @@ class ParameterEnsemble(Ensemble):
                         cov_pg = cov.get(pnames)
                         if len(pnames) == 1:
                             std = np.sqrt(cov_pg.x)
-                            reals[:,idxs] = snv * std
+                            reals[:,idxs] = vals[pnames].values[0] + (snv * std)
                         else:
                             try:
                                 cov_pg.inv

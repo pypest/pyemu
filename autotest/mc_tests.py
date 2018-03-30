@@ -668,9 +668,49 @@ def add_base_test():
         raise Exception()
 
 
+
+def sparse_draw_test():
+    import os
+    import numpy as np
+    import pyemu
+    from datetime import datetime
+
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=1.0)
+    gs = pyemu.geostats.GeoStruct(variograms=[v])
+
+    npar = 20
+    pst = pyemu.pst_utils.generic_pst(["p{0:010d}".format(i) for i in range(npar)], ["o1"])
+
+    pst.parameter_data.loc[:, "partrans"] = "none"
+    par = pst.parameter_data
+    par.loc[:, "x"] = np.random.random(npar) * 10.0
+    par.loc[:, "y"] = np.random.random(npar) * 10.0
+
+    par.loc[pst.par_names[0], "pargp"] = "zero"
+    par.loc[pst.par_names[1:10], "pargp"] = "one"
+    par.loc[pst.par_names[11:20], "pargp"] = "two"
+    print(pst.parameter_data.pargp.unique())
+
+    cov = gs.covariance_matrix(par.x, par.y, par.parnme)
+
+    num_reals = 100000
+
+    pe_base = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,cov=cov,num_reals=num_reals,group_chunks=True,
+                                                         use_homegrown=True)
+
+    scov = pyemu.SparseMatrix.from_matrix(cov)
+    pe_sparse = pyemu.ParameterEnsemble.from_sparse_gaussian_draw(pst=pst,cov=scov,num_reals=num_reals)
+
+    d = pe_base.mean() - pe_sparse.mean()
+    assert d.apply(np.abs).max() < 0.05
+    d = pe_base.std() - pe_sparse.std()
+    assert d.apply(np.abs).max() < 0.05
+
+
 if __name__ == "__main__":
+    sparse_draw_test()
     #binary_ensemble_dev()
-    to_from_binary_test()
+    #to_from_binary_test()
     # ensemble_covariance_test()
     # homegrown_draw_test()
     # change_weights_test()
