@@ -124,7 +124,9 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
     par_knowledge_dict : dict
         used to condition on existing knowledge about parameters.  This functionality is
         currently in dev - don't use it.
-
+    sparse : bool
+        flag to return a pyemu.SparseMatrix instead of a pyemu.Cov.  Only use this is
+        memory runs out.
     Returns
     -------
     Cov : pyemu.Cov

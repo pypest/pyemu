@@ -666,7 +666,7 @@ def geostat_prior_builder_test():
     assert np.array_equiv(d1, d2)
 
     cov = pyemu.helpers.geostatistical_prior_builder(pst_file, {str_file: tpl_file},sparse=True)
-    
+
 
 # def linearuniversal_krige_test():
 #     try:
