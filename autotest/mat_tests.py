@@ -155,18 +155,18 @@ def extend_test():
     assert third.x[:,6].sum() == 3
     assert third.x[6,:].sum() == 3
     try:
-        forth = pyemu.concat([first,third])
+        forth = pyemu.mat.concat([first,third])
     except:
         pass
     else:
         raise Exception()
 
     forth = pyemu.Matrix(x=first.x,row_names=first.row_names,col_names=[str(i) for i in range(first.shape[1])])
-    x = pyemu.concat([first,forth])
+    x = pyemu.mat.concat([first,forth])
     print(x)
 
     fifth = pyemu.Matrix(x=first.x, row_names=[str(i) for i in range(first.shape[0])], col_names=first.col_names)
-    x = pyemu.concat([first,fifth])
+    x = pyemu.mat.concat([first,fifth])
     print(x)
 
 
@@ -424,20 +424,132 @@ def coo_tests():
     os.remove(mname)
 
 
+def sparse_constructor_test():
+    import os
+    from datetime import datetime
+    import numpy as np
+    import pyemu
+
+    nrow = 100
+    ncol = 100
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    x = np.random.random((nrow, ncol))
+
+    m = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+
+    mname = os.path.join("temp","test.jcb")
+    m.to_binary(mname)
+    sm = pyemu.SparseMatrix.from_binary(mname)
+
+    sm.to_coo(mname)
+    m1 = sm.to_matrix()
+    m = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m1.x,m.x)
+
+def sparse_extend_test():
+    import os
+    from datetime import datetime
+    import numpy as np
+    import pyemu
+
+    nrow = 5
+    ncol = 5
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    x = np.random.random((nrow, ncol))
+
+    m = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+
+    try:
+        sm.block_extend_ip(m)
+    except:
+        pass
+    else:
+        raise Exception()
+
+    m = pyemu.Matrix(x,row_names=['t{0}'.format(i) for i in range(nrow)],col_names=m.col_names)
+    try:
+        sm.block_extend_ip(m)
+    except:
+        pass
+    else:
+        raise Exception()
+
+
+    m = pyemu.Matrix(x,row_names=['r{0}'.format(i) for i in range(nrow)],
+                     col_names=['r{0}'.format(i) for i in range(ncol)])
+    sm.block_extend_ip(m)
+    m1 = sm.to_matrix()
+    d = m.x - m1.x[m.shape[0]:,m.shape[1]:]
+    assert d.sum() == 0
+
+    m = pyemu.Cov(x=np.atleast_2d(np.ones(nrow)),names=['p{0}'.format(i) for i in range(nrow)],isdiagonal=True)
+    sm.block_extend_ip(m)
+    d = m.as_2d - sm.to_matrix().x[-nrow:,-nrow:]
+    assert d.sum() == 0
+
+def sparse_get_test():
+    import os
+    from datetime import datetime
+    import numpy as np
+    import pyemu
+
+    nrow = 5
+    ncol = 5
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    x = np.random.random((nrow, ncol))
+
+    m = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_matrix(rnames[0],cnames)
+    d = m1.x - m.x[0,:]
+    assert d.sum() == 0
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_matrix(rnames[:2], cnames)
+    d = m1.x - m.x[:2, :]
+    assert d.sum() == 0
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_matrix(rnames, cnames[0])
+    d = m1.x - m.x[:, 0]
+    assert d.sum() == 0
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_matrix(rnames, cnames[:2])
+    d = m1.x - m.x[:, :2]
+    assert d.sum() == 0
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_matrix(rnames, cnames)
+    d = m1.x - m.x
+    assert d.sum() == 0
 
 
 if __name__ == "__main__":
-    coo_tests()
-    #concat_test()
+    # coo_tests()
     # indices_test()
-    #mat_test()
+    # mat_test()
     # load_jco_test()
-    #extend_test()
+    # extend_test()
     # pseudo_inv_test()
     # drop_test()
     # get_test()
     # cov_identity_test()
-    #hadamard_product_test()
+    # hadamard_product_test()
     # get_diag_test()
     # to_pearson_test()
     # sigma_range_test()
@@ -445,3 +557,6 @@ if __name__ == "__main__":
     # from_names_test()
     # from_uncfile_test()
     # copy_test()
+    sparse_constructor_test()
+    sparse_extend_test()
+    sparse_get_test()

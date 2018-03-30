@@ -628,11 +628,11 @@ def to_from_binary_test():
 
     pe1 = pyemu.ParameterEnsemble.from_binary(mc.pst,pe_name)
     oe1 = pyemu.ObservationEnsemble.from_binary(mc.pst,oe_name)
-
+    pe1.index = pe1.index.map(np.int)
     d = (oe - oe1).apply(np.abs)
     assert d.max().max() == 0.0
     d = (pe - pe1).apply(np.abs)
-    assert d.max().max() == 0.0
+    assert d.max().max() == 0.0, d
 
 
 def add_base_test():
@@ -671,23 +671,23 @@ def add_base_test():
 if __name__ == "__main__":
     #binary_ensemble_dev()
     to_from_binary_test()
-    ensemble_covariance_test()
-    homegrown_draw_test()
-    change_weights_test()
-    phi_vector_test()
-    par_diagonal_draw_test()
-    obs_id_draw_test()
-    diagonal_cov_draw_test()
-    pe_to_csv_test()
-    scale_offset_test()
-    mc_test()
-    fixed_par_test()
-    uniform_draw_test()
-    gaussian_draw_test()
-    parfile_test()
-    write_regul_test()
-    from_dataframe_test()
-    ensemble_seed_test()
-    pnulpar_test()
-    enforce_test()
-    add_base_test()
+    # ensemble_covariance_test()
+    # homegrown_draw_test()
+    # change_weights_test()
+    # phi_vector_test()
+    # par_diagonal_draw_test()
+    # obs_id_draw_test()
+    # diagonal_cov_draw_test()
+    # pe_to_csv_test()
+    # scale_offset_test()
+    # mc_test()
+    # fixed_par_test()
+    # uniform_draw_test()
+    # gaussian_draw_test()
+    # parfile_test()
+    # write_regul_test()
+    # from_dataframe_test()
+    # ensemble_seed_test()
+    # pnulpar_test()
+    # enforce_test()
+    # add_base_test()

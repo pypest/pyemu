@@ -553,7 +553,7 @@ def from_flopy_test():
                                     pp_space=4,
                                     use_pp_zones=False,
                                     k_zone_dict=k_zone_dict,
-                                    hds_kperk=[0,0])
+                                    hds_kperk=[0,0],build_prior=False)
     pst = helper.pst
     obs = pst.observation_data
     obs.loc[:,"weight"] = 0.0
@@ -561,6 +561,8 @@ def from_flopy_test():
     obs.loc[obs.weight>0.0,"obsval"] += np.random.normal(0.0,2.0,pst.nnz_obs)
     pst.control_data.noptmax = 0
     pst.write(os.path.join(new_model_ws,"freyberg_pest.pst"))
+    cov = helper.build_prior(fmt="none",sparse=True)
+    cov.to_coo(os.path.join("temp","cov.coo"))
 
 
 

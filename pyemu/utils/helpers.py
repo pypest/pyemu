@@ -100,7 +100,8 @@ def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
     return geostatistical_prior_builder(pst=pst,struct_dict=struct_dict,
                                         sigma_range=sigma_range)
 
-def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_dict=None):
+def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
+                                 par_knowledge_dict=None,sparse=False):
     """ a helper function to construct a full prior covariance matrix using
     a mixture of geostastical structures and parameter bounds information.
     The covariance of parameters associated with geostatistical structures is defined
@@ -123,7 +124,9 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_di
     par_knowledge_dict : dict
         used to condition on existing knowledge about parameters.  This functionality is
         currently in dev - don't use it.
-
+    sparse : bool
+        flag to return a pyemu.SparseMatrix instead of a pyemu.Cov.  Only use this is
+        memory runs out.
     Returns
     -------
     Cov : pyemu.Cov
@@ -152,6 +155,8 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_di
     full_cov = pyemu.Cov.from_parameter_data(pst,sigma_range=sigma_range)
 
     full_cov_dict = {n:float(v) for n,v in zip(full_cov.col_names,full_cov.x)}
+    if sparse:
+        full_cov = None
     #full_cov = None
     par = pst.parameter_data
     for gs,items in struct_dict.items():
@@ -212,12 +217,30 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,par_knowledge_di
                     df_zone.to_csv("prior_builder_crash.csv")
                     raise Exception("error inverting cov {0}".
                                     format(cov.row_names[:3]))
-                print('replace in full cov')
-                full_cov.replace(cov)
-                d = np.diag(full_cov.x)
-                idx = np.argwhere(d==0.0)
-                for i in idx:
-                    print(full_cov.names[i])
+                if sparse:
+                    if full_cov is None:
+                        full_cov = pyemu.SparseMatrix.from_matrix(cov)
+                    else:
+                        print("extending SparseMatix")
+                        full_cov.block_extend_ip(cov)
+                else:
+                    print('replace in full cov')
+                    full_cov.replace(cov)
+                # d = np.diag(full_cov.x)
+                # idx = np.argwhere(d==0.0)
+                # for i in idx:
+                #     print(full_cov.names[i])
+
+    if sparse:
+        print("adding remaining parameters to diagonal")
+        fset = set(full_cov.row_names)
+        pset = set(pst.par_names)
+        diff = list(pset.difference(fset))
+        diff.sort()
+        vals = np.atleast_2d(np.array([full_cov_dict[d] for d in diff])).transpose()
+        cov = pyemu.Cov(x=vals,names=vals,isdiagonal=True)
+        full_cov.block_extend_ip(cov)
+
 
     if par_knowledge_dict is not None:
         full_cov = condition_on_par_knowledge(full_cov,
@@ -1902,7 +1925,8 @@ class PstFromFlopyModel(object):
             self.log("processing obs type {0}".format(obs_type))
 
 
-    def build_prior(self, fmt="ascii",filename=None,droptol=None, chunk=None):
+    def build_prior(self, fmt="ascii",filename=None,droptol=None, chunk=None, sparse=False,
+                    sigma_range=6):
         """ build a prior parameter covariance matrix.
 
         Parameters
@@ -1918,6 +1942,11 @@ class PstFromFlopyModel(object):
                 Default is None
             chunk : int
                 chunk size to write in a single pass - for binary only
+            sparse : bool
+                flag to build a pyemu.SparseMatrix format cov matrix.  Default is False
+            sigma_range : float
+                number of standard deviations represented by the parameter bounds.  Default
+                is 6.
 
         Returns
         -------
@@ -1967,9 +1996,10 @@ class PstFromFlopyModel(object):
         if len(struct_dict) > 0:
             cov = pyemu.helpers.geostatistical_prior_builder(self.pst,
                                                          struct_dict=struct_dict,
-                                                         sigma_range=6)
+                                                         sigma_range=sigma_range,
+                                                             sparse=sparse)
         else:
-            cov = pyemu.Cov.from_parameter_data(self.pst,sigma_range=6)
+            cov = pyemu.Cov.from_parameter_data(self.pst,sigma_range=sigma_range)
 
         if filename is None:
             filename = os.path.join(self.m.model_ws,self.pst_name+".prior.cov")

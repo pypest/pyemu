@@ -649,8 +649,12 @@ def geostat_prior_builder_test():
     pst_file = os.path.join("pst","pest.pst")
     pst = pyemu.Pst(pst_file)
 
-    tpl_file = os.path.join("utils","pp_locs.tpl")
-    str_file = os.path.join("utils","structure.dat")
+    tpl_file = os.path.join("utils", "pp_locs.tpl")
+    str_file = os.path.join("utils", "structure.dat")
+
+
+
+
     cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{str_file:tpl_file})
     d1 = np.diag(cov.x)
 
@@ -664,6 +668,18 @@ def geostat_prior_builder_test():
     assert nnz == pst.npar
     d2 = np.diag(cov.x)
     assert np.array_equiv(d1, d2)
+
+    ttpl_file = os.path.join("temp", "temp.dat.tpl")
+    with open(ttpl_file, 'w') as f:
+        f.write("ptf ~\n ~ temp1  ~\n")
+    pst.add_parameters(ttpl_file, ttpl_file.replace(".tpl", ""))
+
+    pst.parameter_data.loc["temp1", "parubnd"] = 1.1
+    pst.parameter_data.loc["temp1", "parlbnd"] = 0.9
+
+    cov = pyemu.helpers.geostatistical_prior_builder(pst, {str_file: tpl_file}, sparse=True)
+    assert cov.shape[0] == 602
+
 
 # def linearuniversal_krige_test():
 #     try:
@@ -1003,13 +1019,13 @@ if __name__ == "__main__":
     # gslib_2_dataframe_test()
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
-    # geostat_prior_builder_test()
+    geostat_prior_builder_test()
     #mflist_budget_test()
     #mtlist_budget_test()
     # tpl_to_dataframe_test()
     #kl_test()
     #more_kl_test()
-    zero_order_regul_test()
+    #zero_order_regul_test()
     # first_order_pearson_regul_test()
     # master_and_slaves()
     # smp_to_ins_test()
