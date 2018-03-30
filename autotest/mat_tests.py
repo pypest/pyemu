@@ -557,6 +557,6 @@ if __name__ == "__main__":
     # from_names_test()
     # from_uncfile_test()
     # copy_test()
-    # sparse_constructor_test()
-    # sparse_extend_test()
+    sparse_constructor_test()
+    sparse_extend_test()
     sparse_get_test()

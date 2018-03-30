@@ -237,7 +237,7 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
         pset = set(pst.par_names)
         diff = list(pset.difference(fset))
         diff.sort()
-        vals = np.atleast_2d(np.array([full_cov_dict[d] for d in diff]))
+        vals = np.atleast_2d(np.array([full_cov_dict[d] for d in diff])).transpose()
         cov = pyemu.Cov(x=vals,names=vals,isdiagonal=True)
         full_cov.block_extend_ip(cov)
 
@@ -1925,7 +1925,8 @@ class PstFromFlopyModel(object):
             self.log("processing obs type {0}".format(obs_type))
 
 
-    def build_prior(self, fmt="ascii",filename=None,droptol=None, chunk=None):
+    def build_prior(self, fmt="ascii",filename=None,droptol=None, chunk=None, sparse=False,
+                    sigma_range=6):
         """ build a prior parameter covariance matrix.
 
         Parameters
@@ -1941,6 +1942,11 @@ class PstFromFlopyModel(object):
                 Default is None
             chunk : int
                 chunk size to write in a single pass - for binary only
+            sparse : bool
+                flag to build a pyemu.SparseMatrix format cov matrix.  Default is False
+            sigma_range : float
+                number of standard deviations represented by the parameter bounds.  Default
+                is 6.
 
         Returns
         -------
@@ -1990,9 +1996,10 @@ class PstFromFlopyModel(object):
         if len(struct_dict) > 0:
             cov = pyemu.helpers.geostatistical_prior_builder(self.pst,
                                                          struct_dict=struct_dict,
-                                                         sigma_range=6)
+                                                         sigma_range=sigma_range,
+                                                             sparse=sparse)
         else:
-            cov = pyemu.Cov.from_parameter_data(self.pst,sigma_range=6)
+            cov = pyemu.Cov.from_parameter_data(self.pst,sigma_range=sigma_range)
 
         if filename is None:
             filename = os.path.join(self.m.model_ws,self.pst_name+".prior.cov")

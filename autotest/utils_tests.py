@@ -649,8 +649,12 @@ def geostat_prior_builder_test():
     pst_file = os.path.join("pst","pest.pst")
     pst = pyemu.Pst(pst_file)
 
-    tpl_file = os.path.join("utils","pp_locs.tpl")
-    str_file = os.path.join("utils","structure.dat")
+    tpl_file = os.path.join("utils", "pp_locs.tpl")
+    str_file = os.path.join("utils", "structure.dat")
+
+
+
+
     cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{str_file:tpl_file})
     d1 = np.diag(cov.x)
 
@@ -665,7 +669,16 @@ def geostat_prior_builder_test():
     d2 = np.diag(cov.x)
     assert np.array_equiv(d1, d2)
 
-    cov = pyemu.helpers.geostatistical_prior_builder(pst_file, {str_file: tpl_file},sparse=True)
+    ttpl_file = os.path.join("temp", "temp.dat.tpl")
+    with open(ttpl_file, 'w') as f:
+        f.write("ptf ~\n ~ temp1  ~\n")
+    pst.add_parameters(ttpl_file, ttpl_file.replace(".tpl", ""))
+
+    pst.parameter_data.loc["temp1", "parubnd"] = 1.1
+    pst.parameter_data.loc["temp1", "parlbnd"] = 0.9
+
+    cov = pyemu.helpers.geostatistical_prior_builder(pst, {str_file: tpl_file}, sparse=True)
+    assert cov.shape[0] == 602
 
 
 # def linearuniversal_krige_test():
