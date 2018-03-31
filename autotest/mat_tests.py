@@ -550,6 +550,48 @@ def sparse_get_test():
     assert d.sum() == 0
 
 
+def sparse_get_sparse_test():
+    import os
+    from datetime import datetime
+    import numpy as np
+    import pyemu
+
+    nrow = 5
+    ncol = 5
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    x = np.random.random((nrow, ncol))
+
+    m = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_matrix(rnames[0],cnames)
+    d = m1.x - m.x[0,:]
+    assert d.sum() == 0
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_sparse_matrix(rnames[:2], cnames).to_matrix()
+    d = m1.x - m.x[:2, :]
+    assert d.sum() == 0
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_sparse_matrix(rnames, cnames[0]).to_matrix()
+    d = m1.x - m.x[:, 0]
+    assert d.sum() == 0
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_sparse_matrix(rnames, cnames[:2]).to_matrix()
+    d = m1.x - m.x[:, :2]
+    assert d.sum() == 0
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_sparse_matrix(rnames, cnames).to_matrix()
+    d = m1.x - m.x
+    assert d.sum() == 0
+
+
 if __name__ == "__main__":
     # coo_tests()
     # indices_test()
@@ -569,5 +611,6 @@ if __name__ == "__main__":
     # from_uncfile_test()
     # copy_test()
     #sparse_constructor_test()
-    sparse_extend_test()
+    #sparse_extend_test()
     #sparse_get_test()
+    sparse_get_sparse_test()

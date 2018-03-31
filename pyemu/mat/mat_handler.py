@@ -2691,7 +2691,7 @@ class SparseMatrix(object):
     def __init__(self,x,row_names,col_names):
         assert isinstance(x,scipy.sparse.coo_matrix)
         assert x.shape[0] == len(row_names)
-        assert x.shape[0] == len(col_names)
+        assert x.shape[1] == len(col_names)
         self.x = x
         self.row_names = list(row_names)
         self.col_names = list(col_names)
@@ -2804,6 +2804,35 @@ class SparseMatrix(object):
             if i in iset and j in jset:
                 x[imap[i],jmap[j]] = d
         return Matrix(x=x,row_names=row_names,col_names=col_names)
+
+    def get_sparse_matrix(self,row_names,col_names):
+        if not isinstance(row_names,list):
+            row_names = [row_names]
+        if not isinstance(col_names,list):
+            col_names = [col_names]
+
+        iidx = Matrix.find_rowcol_indices(row_names,self.row_names,self.col_names,axis=0)
+        jidx = Matrix.find_rowcol_indices(col_names,self.row_names,self.col_names,axis=1)
+
+        imap = {ii:i for i,ii in enumerate(iidx)}
+        jmap = {jj:j for j,jj in enumerate(jidx)}
+
+        iset = set(iidx)
+        jset = set(jidx)
+
+        x = np.zeros((len(row_names),len(col_names)))
+        # for i,idx in enumerate(iidx):
+        #     for j,jdx in enumerate(jidx):
+        #         if jdx in jset and idx in iset:
+        #             x[i,j] = self.x[idx,jdx]
+        ii,jj,data = [],[],[]
+        for i,j,d in zip(self.x.row,self.x.col,self.x.data):
+            if i in iset and j in jset:
+                ii.append(i)
+                jj.append(j)
+                data.append(d)
+        coo = scipy.sparse.coo_matrix((data,(ii,jj)),shape=(len(row_names),len(col_names)))
+        return SparseMatrix(x=coo,row_names=row_names,col_names=col_names)
 
 
 
