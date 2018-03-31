@@ -2693,8 +2693,8 @@ class SparseMatrix(object):
         assert x.shape[0] == len(row_names)
         assert x.shape[0] == len(col_names)
         self.x = x
-        self.row_names = row_names
-        self.col_names = col_names
+        self.row_names = list(row_names)
+        self.col_names = list(col_names)
 
 
     @property
@@ -2736,7 +2736,7 @@ class SparseMatrix(object):
     @classmethod
     def from_matrix(cls, matrix, droptol=None):
         iidx,jidx = matrix.as_2d.nonzero()
-        coo = scipy.sparse.coo_matrix((matrix.x[iidx,jidx],(iidx,jidx)),shape=matrix.shape)
+        coo = scipy.sparse.coo_matrix((matrix.as_2d[iidx,jidx],(iidx,jidx)),shape=matrix.shape)
         return cls(x=coo,row_names=matrix.row_names,col_names=matrix.col_names)
 
 
@@ -2765,6 +2765,16 @@ class SparseMatrix(object):
                                              shape=(self.shape[0]+other.shape[0],self.shape[1]+other.shape[1]))
             self.row_names.extend(other.row_names)
             self.col_names.extend(other.col_names)
+
+        elif isinstance(other,SparseMatrix):
+            self.x = scipy.sparse.coo_matrix((np.append(self.x.data, other.x.data),
+                                              (np.append(self.x.row, (self.shape[0] + other.x.row)),
+                                               np.append(self.x.col, (self.shape[1] + other.x.col)))),
+                                             shape=(self.shape[0] + other.shape[0], self.shape[1] + other.shape[1]))
+            self.row_names.extend(other.row_names)
+            self.col_names.extend(other.col_names)
+
+
         else:
             raise NotImplementedError("SparseMatrix.block_extend_ip() 'other' arg only supports Matrix types ")
 

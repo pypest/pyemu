@@ -188,6 +188,40 @@ def ppcov_simple_test():
         assert np.abs(delt).max() < 1.0e-7
 
 
+
+def ppcov_simple_sparse_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
+
+    pts_file = os.path.join("utils","points1_test.dat")
+    str_file = os.path.join("utils","struct_test.dat")
+
+    mat1_file = os.path.join("utils","ppcov.struct1.out")
+    mat2_file = os.path.join("utils","ppcov.struct2.out")
+    mat3_file = os.path.join("utils","ppcov.struct3.out")
+
+    ppc_mat1 = pyemu.Cov.from_ascii(mat1_file)
+    ppc_mat2 = pyemu.Cov.from_ascii(mat2_file)
+    ppc_mat3 = pyemu.Cov.from_ascii(mat3_file)
+
+    pts = pd.read_csv(pts_file,header=None,names=["name","x","y"],usecols=[0,1,2],
+                      delim_whitespace=True)
+
+    struct1,struct2,struct3 = pyemu.utils.geostats.read_struct_file(str_file)
+    print(struct1)
+    print(struct2)
+    print(struct3)
+
+    for mat,struct in zip([ppc_mat1,ppc_mat2,ppc_mat3],[struct1,struct2,struct3]):
+
+        str_mat = struct.sparse_covariance_matrix(x=pts.x,y=pts.y,names=pts.name)
+        str_mat1 = str_mat.to_matrix()
+        delt = mat.x - str_mat1.x
+        print(delt)
+        assert np.abs(delt).max() < 1.0e-7
+
 def setup_ppcov_complex():
     import os
     import platform
@@ -238,6 +272,44 @@ def ppcov_complex_test():
         delt = mat.x - str_mat.x
         print(mat.x[:,0])
         print(str_mat.x[:,0])
+
+
+        print(np.abs(delt).max())
+
+        assert np.abs(delt).max() < 1.0e-7
+        #break
+
+
+def ppcov_complex_sparse_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
+
+    pts_file = os.path.join("utils","points1_test.dat")
+    str_file = os.path.join("utils","struct_complex.dat")
+
+    mat1_file = os.path.join("utils","ppcov.complex.struct1.out")
+    mat2_file = os.path.join("utils","ppcov.complex.struct2.out")
+
+    ppc_mat1 = pyemu.Cov.from_ascii(mat1_file)
+    ppc_mat2 = pyemu.Cov.from_ascii(mat2_file)
+
+    pts = pd.read_csv(pts_file,header=None,names=["name","x","y"],usecols=[0,1,2],
+                      delim_whitespace=True)
+
+    struct1,struct2 = pyemu.utils.geostats.read_struct_file(str_file)
+    print(struct1)
+    print(struct2)
+
+    for mat,struct in zip([ppc_mat1,ppc_mat2],[struct1,struct2]):
+
+        str_mat = struct.sparse_covariance_matrix(x=pts.x,y=pts.y,names=pts.name)
+        str_mat1 = str_mat.to_matrix()
+        delt = mat.x - str_mat1.x
+        print(mat.x)
+        print(str_mat1.x)
+        print(delt)
 
 
         print(np.abs(delt).max())
@@ -653,8 +725,6 @@ def geostat_prior_builder_test():
     str_file = os.path.join("utils", "structure.dat")
 
 
-
-
     cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{str_file:tpl_file})
     d1 = np.diag(cov.x)
 
@@ -677,8 +747,13 @@ def geostat_prior_builder_test():
     pst.parameter_data.loc["temp1", "parubnd"] = 1.1
     pst.parameter_data.loc["temp1", "parlbnd"] = 0.9
 
-    cov = pyemu.helpers.geostatistical_prior_builder(pst, {str_file: tpl_file}, sparse=True)
+    cov = pyemu.helpers.geostatistical_prior_builder(pst, {str_file: tpl_file},sparse=True).to_matrix()
     assert cov.shape[0] == 602
+
+    scov = pyemu.helpers.sparse_geostatistical_prior_builder(pst,{str_file: tpl_file}).to_matrix()
+    d = (cov - scov).x
+    #print(d)
+    print(d.max())
 
 
 # def linearuniversal_krige_test():
@@ -1039,7 +1114,8 @@ if __name__ == "__main__":
     # setup_ppcov_complex()
     # ppcov_complex_test()
     # setup_ppcov_simple()
-    # ppcov_simple_test()
+    #ppcov_simple_sparse_test()
+    #ppcov_complex_sparse_test()
     # fac2real_test()
     # vario_test()
     # geostruct_test()

@@ -100,6 +100,125 @@ def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
     return geostatistical_prior_builder(pst=pst,struct_dict=struct_dict,
                                         sigma_range=sigma_range)
 
+def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4):
+    """ a helper function to construct a full prior covariance matrix using
+    a mixture of geostastical structures and parameter bounds information.
+    The covariance of parameters associated with geostatistical structures is defined
+    as a mixture of GeoStruct and bounds.  That is, the GeoStruct is used to construct a
+    pyemu.Cov, then the entire pyemu.Cov is scaled by the uncertainty implied by the bounds and
+    sigma_range. Sounds complicated...
+
+    Parameters
+    ----------
+    pst : pyemu.Pst
+        a control file (or the name of control file)
+    struct_dict : dict
+        a python dict of GeoStruct (or structure file), and list of pp tpl files pairs
+        If the values in the dict are pd.DataFrames, then they must have an
+        'x','y', and 'parnme' column.  If the filename ends in '.csv',
+        then a pd.DataFrame is loaded, otherwise a pilot points file is loaded.
+    sigma_range : float
+        a float representing the number of standard deviations implied by parameter bounds.
+        Default is 4.0, which implies 95% confidence parameter bounds.
+
+    Returns
+    -------
+    Cov : pyemu.SparseMatrix
+        a sparse covariance matrix that includes all adjustable parameters in the control
+        file.
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>pst = pyemu.Pst("pest.pst")``
+
+    ``>>>sd = {"struct.dat":["hkpp.dat.tpl","vka.dat.tpl"]}``
+
+    ``>>>cov = pyemu.helpers.sparse_geostatistical_prior_builder(pst,struct_dict=sd)``
+
+    ``>>>cov.to_coo("prior.jcb")``
+
+    """
+
+    if isinstance(pst,str):
+        pst = pyemu.Pst(pst)
+    assert isinstance(pst,pyemu.Pst),"pst arg must be a Pst instance, not {0}".\
+        format(type(pst))
+    print("building diagonal cov")
+    full_cov = pyemu.Cov.from_parameter_data(pst,sigma_range=sigma_range)
+
+    full_cov_dict = {n:float(v) for n,v in zip(full_cov.col_names,full_cov.x)}
+
+    full_cov = None
+    par = pst.parameter_data
+    for gs,items in struct_dict.items():
+        print("processing ",gs)
+        if isinstance(gs,str):
+            gss = pyemu.geostats.read_struct_file(gs)
+            if isinstance(gss,list):
+                warnings.warn("using first geostat structure in file {0}".\
+                              format(gs))
+                gs = gss[0]
+            else:
+                gs = gss
+        if not isinstance(items,list):
+            items = [items]
+        for item in items:
+            if isinstance(item,str):
+                assert os.path.exists(item),"file {0} not found".\
+                    format(item)
+                if item.lower().endswith(".tpl"):
+                    df = pyemu.pp_utils.pp_tpl_to_dataframe(item)
+                elif item.lower.endswith(".csv"):
+                    df = pd.read_csv(item)
+            else:
+                df = item
+            for req in ['x','y','parnme']:
+                if req not in df.columns:
+                    raise Exception("{0} is not in the columns".format(req))
+            missing = df.loc[df.parnme.apply(
+                    lambda x : x not in par.parnme),"parnme"]
+            if len(missing) > 0:
+                warnings.warn("the following parameters are not " + \
+                              "in the control file: {0}".\
+                              format(','.join(missing)))
+                df = df.loc[df.parnme.apply(lambda x: x not in missing)]
+            if "zone" not in df.columns:
+                df.loc[:,"zone"] = 1
+            zones = df.zone.unique()
+            for zone in zones:
+                df_zone = df.loc[df.zone==zone,:].copy()
+                df_zone.sort_values(by="parnme",inplace=True)
+                print("build cov matrix")
+                cov = gs.sparse_covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)
+                print("done")
+
+                print("getting diag var cov",df_zone.shape[0])
+                #tpl_var = np.diag(full_cov.get(list(df_zone.parnme)).x).max()
+                tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
+
+                print("scaling full cov by diag var cov")
+                cov.x.data *= tpl_var
+
+                if full_cov is None:
+                    full_cov = cov
+                else:
+                    print("extending SparseMatix")
+                    full_cov.block_extend_ip(cov)
+
+
+    print("adding remaining parameters to diagonal")
+    fset = set(full_cov.row_names)
+    pset = set(pst.par_names)
+    diff = list(pset.difference(fset))
+    diff.sort()
+    vals = np.atleast_2d(np.array([full_cov_dict[d] for d in diff])).transpose()
+    cov = pyemu.Cov(x=vals,names=vals,isdiagonal=True)
+    full_cov.block_extend_ip(cov)
+
+    return full_cov
+
 def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
                                  par_knowledge_dict=None,sparse=False):
     """ a helper function to construct a full prior covariance matrix using
@@ -218,6 +337,7 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
                     raise Exception("error inverting cov {0}".
                                     format(cov.row_names[:3]))
                 if sparse:
+
                     if full_cov is None:
                         full_cov = pyemu.SparseMatrix.from_matrix(cov)
                     else:

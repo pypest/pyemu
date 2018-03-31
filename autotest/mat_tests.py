@@ -497,6 +497,17 @@ def sparse_extend_test():
     d = m.as_2d - sm.to_matrix().x[-nrow:,-nrow:]
     assert d.sum() == 0
 
+    m1 = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
+
+    sm1 = pyemu.SparseMatrix.from_matrix(m1)
+    sm2 = pyemu.SparseMatrix.from_matrix(m)
+    sm1.block_extend_ip(sm2)
+
+    m2 = sm1.to_matrix()
+    d = m.as_2d - m2.x[m.shape[0]:,m.shape[1]:]
+    assert d.sum() == 0
+
+
 def sparse_get_test():
     import os
     from datetime import datetime
@@ -557,6 +568,6 @@ if __name__ == "__main__":
     # from_names_test()
     # from_uncfile_test()
     # copy_test()
-    sparse_constructor_test()
+    #sparse_constructor_test()
     sparse_extend_test()
-    sparse_get_test()
+    #sparse_get_test()
