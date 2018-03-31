@@ -747,7 +747,7 @@ def geostat_prior_builder_test():
     pst.parameter_data.loc["temp1", "parubnd"] = 1.1
     pst.parameter_data.loc["temp1", "parlbnd"] = 0.9
 
-    cov = pyemu.helpers.geostatistical_prior_builder(pst, {str_file: tpl_file},sparse=True).to_matrix()
+    cov = pyemu.helpers.geostatistical_prior_builder(pst, {str_file: tpl_file})
     assert cov.shape[0] == 602
 
     scov = pyemu.helpers.sparse_geostatistical_prior_builder(pst,{str_file: tpl_file}).to_matrix()
