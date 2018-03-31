@@ -15,6 +15,7 @@ import socket
 import shutil
 import copy
 import numpy as np
+import scipy.sparse
 import pandas as pd
 pd.options.display.max_colwidth = 100
 
@@ -213,8 +214,10 @@ def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4):
     pset = set(pst.par_names)
     diff = list(pset.difference(fset))
     diff.sort()
-    vals = np.atleast_2d(np.array([full_cov_dict[d] for d in diff])).transpose()
-    cov = pyemu.Cov(x=vals,names=vals,isdiagonal=True)
+    vals = np.array([full_cov_dict[d] for d in diff])
+    i = np.arange(vals.shape[0])
+    coo = scipy.sparse.coo_matrix((vals,(i,i)),shape=(vals.shape[0],vals.shape[0]))
+    cov = pyemu.SparseMatrix(x=coo,row_names=diff,col_names=diff)
     full_cov.block_extend_ip(cov)
 
     return full_cov
@@ -2091,16 +2094,22 @@ class PstFromFlopyModel(object):
             #bc_dfs = [bc_df.loc[bc_df.pargp==pargp,:].copy() for pargp in bc_df.pargp.unique()]
             struct_dict[self.bc_geostruct] = bc_dfs
         if len(struct_dict) > 0:
-            cov = pyemu.helpers.geostatistical_prior_builder(self.pst,
-                                                         struct_dict=struct_dict,
-                                                         sigma_range=sigma_range,
-                                                             sparse=sparse)
+            if sparse:
+                cov = pyemu.helpers.sparse_geostatistical_prior_builder(self.pst,
+                                                                        struct_dict=struct_dict,
+                                                                        sigma_range=sigma_range)
+
+            else:
+                cov = pyemu.helpers.geostatistical_prior_builder(self.pst,
+                                                             struct_dict=struct_dict,
+                                                             sigma_range=sigma_range)
         else:
             cov = pyemu.Cov.from_parameter_data(self.pst,sigma_range=sigma_range)
 
         if filename is None:
             filename = os.path.join(self.m.model_ws,self.pst_name+".prior.cov")
-        self.logger.statement("saving prior covariance matrix to file {0}".format(filename))
+        if fmt != "none":
+            self.logger.statement("saving prior covariance matrix to file {0}".format(filename))
         if fmt == 'ascii':
             cov.to_ascii(filename)
         elif fmt == 'binary':

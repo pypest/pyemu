@@ -1173,7 +1173,7 @@ class Vario2d(object):
             cv = self._h_function(h)
             if np.any(np.isnan(cv)):
                 raise Exception("nans in cv for i1 {0}".format(i1))
-            cv[h>self.a] = 0.0
+            #cv[h>self.a] = 0.0
             j = list(np.arange(i1+1,x.shape[0]))
             i = [i1] * len(j)
             iidx.extend(i)
