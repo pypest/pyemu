@@ -42,7 +42,6 @@ def pst_plot_test():
 
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pst.plot(kind="phi_progress")
-    plt.show()
 
     pst = pyemu.Pst(os.path.join("pst","freyberg_gr.pst"))
     par = pst.parameter_data
