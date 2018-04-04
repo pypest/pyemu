@@ -40,6 +40,10 @@ def pst_plot_test():
     except:
         return
 
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.plot(kind="phi_progress")
+    plt.show()
+
     pst = pyemu.Pst(os.path.join("pst","freyberg_gr.pst"))
     par = pst.parameter_data
     par.loc[pst.par_names[:3],"pargp"] = "test"
@@ -49,7 +53,7 @@ def pst_plot_test():
     #pst.plot(kind="prior",unique_only=True)
     #pst.plot(kind="prior", unique_only=True, fig_title="priors")
     pst.plot(kind="prior", unique_only=True, fig_title="priors",filename=os.path.join("temp","test.pdf"))
-    return
+
     #
     pst.plot(kind="1to1")
     pst.plot(kind="1to1",include_zero=True)
@@ -65,6 +69,7 @@ def pst_plot_test():
     ax = plt.subplot(111,aspect="equal")
     pst.plot(kind="phi_pie",ax=ax)
     # plt.show()
+
 
 
 def ensemble_plot_test():
@@ -145,7 +150,7 @@ def ensemble_1to1_test():
 
 if __name__ == "__main__":
     #plot_summary_test()
-    #pst_plot_test()
+    pst_plot_test()
     #ensemble_plot_test()
-    ensemble_1to1_test()
+    #ensemble_1to1_test()
 

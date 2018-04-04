@@ -166,12 +166,13 @@ def gaussian_distribution(mean, stdev, num_pts=50):
 
 def pst_helper(pst,kind=None,**kwargs):
 
-    echo = kwargs.get("echo",True)
+    echo = kwargs.get("echo",False)
     logger = pyemu.Logger("plot_pst_helper.log",echo=echo)
     logger.statement("plot_utils.pst_helper()")
 
     kinds = {"prior":pst_prior,"1to1":res_1to1,"obs_v_sim":res_obs_v_sim,
-             "phi_pie":res_phi_pie,"weight_hist":pst_weight_hist}
+             "phi_pie":res_phi_pie,"weight_hist":pst_weight_hist,
+             "phi_progress":phi_progress}
 
     if kind is None:
         logger.statement("kind=None, nothing to do")
@@ -180,6 +181,44 @@ def pst_helper(pst,kind=None,**kwargs):
         logger.lraise("unrecognized kind:{0}, should one of {1}"
                       .format(kind,','.join(list(kinds.keys()))))
     return kinds[kind](pst, logger, **kwargs)
+
+
+def phi_progress(pst,logger=None,filename=None,**kwargs):
+    """ make plot of phi vs number of model runs - requires
+    available pestpp .iobj file
+        Parameters
+        ----------
+        pst : pyemu.Pst
+        logger : Logger
+            if None, a generic one is created.  Default is None
+        filename : str
+            PDF filename to save figures to.  If None, figures are returned.  Default is None
+        kwargs : dict
+            optional keyword args to pass to plotting functions
+
+
+        """
+    if logger is None:
+        logger = Logger('Default_Loggger.log', echo=False)
+    logger.log("plot phi_progress")
+
+    iobj_file = pst.filename.replace(".pst",".iobj")
+    if not os.path.exists(iobj_file):
+        logger.lraise("couldn't find iobj file {0}".format(iobj_file))
+    df = pd.read_csv(iobj_file)
+    if "ax" in kwargs:
+        ax = kwargs["ax"]
+    else:
+        fig = plt.figure(figsize=figsize)
+        ax = plt.subplot(1,1,1)
+    ax.plot(df.model_runs_completed,df.total_phi,marker='.')
+    ax.set_xlabel("model runs")
+    ax.set_ylabel("$\phi$")
+    ax.grid()
+    if filename is not None:
+        plt.savefig(filename)
+    logger.log("plot phi_progress")
+    return ax
 
 
 def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
@@ -308,7 +347,7 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
         axes[a].set_yticks([])
         axes[a].set_xticks([])
 
-    #plt.tight_layout()
+    plt.tight_layout()
     #pdf.savefig()
     #plt.close(fig)
     figs.append(fig)
@@ -331,7 +370,7 @@ def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
         logger=Logger('Default_Loggger.log',echo=False)
     logger.log("plot res_obs_v_sim")
     if pst.res is None:
-        logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
+        logger.lraise("res_obs_v_sim: pst.res is None, couldn't find residuals file")
     obs = pst.observation_data
     res = pst.res
 
