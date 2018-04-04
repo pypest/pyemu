@@ -221,6 +221,12 @@ def phi_progress(pst,logger=None,filename=None,**kwargs):
     return ax
 
 
+
+def get_page_axes(count=nr*nc):
+    axes = [plt.subplot(nr,nc,i+1) for i in range(min(count,nr*nc))]
+    #[ax.set_yticks([]) for ax in axes]
+    return axes
+
 def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
     """ make 1-to-1 plots and also observed vs residual by observation group
     Parameters
@@ -502,10 +508,7 @@ def res_phi_pie(pst,logger=None, **kwargs):
 def pst_weight_hist(pst,logger, **kwargs):
     raise NotImplementedError()
 
-def get_page_axes():
-    axes = [plt.subplot(nr,nc,i+1) for i in range(nr*nc)]
-    #[ax.set_yticks([]) for ax in axes]
-    return axes
+
 
 def pst_prior(pst,logger=None, filename=None, **kwargs):
     """ helper to plot prior parameter histograms implied by
