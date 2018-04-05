@@ -983,7 +983,7 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,**
         axes[a].set_yticks([])
         axes[a].set_xticks([])
 
-    #plt.tight_layout()
+    plt.tight_layout()
     #pdf.savefig()
     #plt.close(fig)
     figs.append(fig)

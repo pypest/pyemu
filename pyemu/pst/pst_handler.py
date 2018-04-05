@@ -1504,14 +1504,16 @@ class Pst(object):
         """
 
         obs = self.observation_data
-        obs = self.observation_data
         if not isinstance(obslist,list):
             obslist = [obslist]
-        obslist = [str(i).lower() for i in obslist]
-        groups = obs.groupby([lambda x:x in obslist,
-                             obs.weight.apply(lambda x:x==0.0)]).groups
-        if (True,True) in groups:
-            obs.loc[groups[True,True],"weight"] = weight
+        obslist = set([str(i).lower() for i in obslist])
+        #groups = obs.groupby([lambda x:x in obslist,
+        #                     obs.weight.apply(lambda x:x==0.0)]).groups
+        #if (True,True) in groups:
+        #    obs.loc[groups[True,True],"weight"] = weight
+        reset_names = obs.loc[obs.apply(lambda x: x.obsnme in obslist and x.weight==0,axis=1),"obsnme"]
+        if len(reset_names) > 0:
+            obs.loc[reset_names,"weight"] = weight
 
     def adjust_weights(self,obs_dict=None,
                               obsgrp_dict=None):
