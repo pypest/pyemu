@@ -331,7 +331,7 @@ def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
         logger=Logger('Default_Loggger.log',echo=False)
     logger.log("plot res_obs_v_sim")
     if pst.res is None:
-        logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
+        logger.lraise("res_obs_v_sim: pst.res is None, couldn't find residuals file")
     obs = pst.observation_data
     res = pst.res
 
@@ -440,7 +440,7 @@ def res_phi_pie(pst,logger=None, **kwargs):
         logger=Logger('Default_Loggger.log',echo=False)
     logger.log("plot res_phi_pie")
     if pst.res is None:
-        logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
+        logger.lraise("res_phi_pie: pst.res is None, couldn't find residuals file")
     obs = pst.observation_data
     res = pst.res
     phi_comps = pst.phi_components
@@ -905,8 +905,8 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,**
         ax.set_ylim(mn,mx)
         ax.grid()
 
-        ax.set_ylabel("observed",labelpad=0.1)
-        ax.set_xlabel("simulated",labelpad=0.1)
+        ax.set_xlabel("observed",labelpad=0.1)
+        ax.set_ylabel("simulated",labelpad=0.1)
         ax.set_title("{0}) group:{1}, {2} observations".
                                  format(abet[ax_count], g, obs_g.shape[0]), loc="left")
 
