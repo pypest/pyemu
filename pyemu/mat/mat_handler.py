@@ -2331,9 +2331,9 @@ class Cov(Matrix):
             self._Matrix__x = self.as_2d
             self.isdiagonal = False
 
-        print("allocating other_x")
+        #print("allocating other_x")
         other_x = other.as_2d
-        print("replacing")
+        #print("replacing")
         for i,ii in zip(self_idxs,other_idxs):
             self._Matrix__x[i,self_idxs] = other_x[ii,other_idxs].copy()
         #print("resetting")

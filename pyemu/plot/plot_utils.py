@@ -166,12 +166,13 @@ def gaussian_distribution(mean, stdev, num_pts=50):
 
 def pst_helper(pst,kind=None,**kwargs):
 
-    echo = kwargs.get("echo",True)
+    echo = kwargs.get("echo",False)
     logger = pyemu.Logger("plot_pst_helper.log",echo=echo)
     logger.statement("plot_utils.pst_helper()")
 
     kinds = {"prior":pst_prior,"1to1":res_1to1,"obs_v_sim":res_obs_v_sim,
-             "phi_pie":res_phi_pie,"weight_hist":pst_weight_hist}
+             "phi_pie":res_phi_pie,"weight_hist":pst_weight_hist,
+             "phi_progress":phi_progress}
 
     if kind is None:
         logger.statement("kind=None, nothing to do")
@@ -181,6 +182,50 @@ def pst_helper(pst,kind=None,**kwargs):
                       .format(kind,','.join(list(kinds.keys()))))
     return kinds[kind](pst, logger, **kwargs)
 
+
+def phi_progress(pst,logger=None,filename=None,**kwargs):
+    """ make plot of phi vs number of model runs - requires
+    available pestpp .iobj file
+        Parameters
+        ----------
+        pst : pyemu.Pst
+        logger : Logger
+            if None, a generic one is created.  Default is None
+        filename : str
+            PDF filename to save figures to.  If None, figures are returned.  Default is None
+        kwargs : dict
+            optional keyword args to pass to plotting functions
+
+
+        """
+    if logger is None:
+        logger = Logger('Default_Loggger.log', echo=False)
+    logger.log("plot phi_progress")
+
+    iobj_file = pst.filename.replace(".pst",".iobj")
+    if not os.path.exists(iobj_file):
+        logger.lraise("couldn't find iobj file {0}".format(iobj_file))
+    df = pd.read_csv(iobj_file)
+    if "ax" in kwargs:
+        ax = kwargs["ax"]
+    else:
+        fig = plt.figure(figsize=figsize)
+        ax = plt.subplot(1,1,1)
+    ax.plot(df.model_runs_completed,df.total_phi,marker='.')
+    ax.set_xlabel("model runs")
+    ax.set_ylabel("$\phi$")
+    ax.grid()
+    if filename is not None:
+        plt.savefig(filename)
+    logger.log("plot phi_progress")
+    return ax
+
+
+
+def get_page_axes(count=nr*nc):
+    axes = [plt.subplot(nr,nc,i+1) for i in range(min(count,nr*nc))]
+    #[ax.set_yticks([]) for ax in axes]
+    return axes
 
 def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
     """ make 1-to-1 plots and also observed vs residual by observation group
@@ -308,7 +353,7 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
         axes[a].set_yticks([])
         axes[a].set_xticks([])
 
-    #plt.tight_layout()
+    plt.tight_layout()
     #pdf.savefig()
     #plt.close(fig)
     figs.append(fig)
@@ -463,10 +508,7 @@ def res_phi_pie(pst,logger=None, **kwargs):
 def pst_weight_hist(pst,logger, **kwargs):
     raise NotImplementedError()
 
-def get_page_axes():
-    axes = [plt.subplot(nr,nc,i+1) for i in range(nr*nc)]
-    #[ax.set_yticks([]) for ax in axes]
-    return axes
+
 
 def pst_prior(pst,logger=None, filename=None, **kwargs):
     """ helper to plot prior parameter histograms implied by
@@ -941,7 +983,7 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,**
         axes[a].set_yticks([])
         axes[a].set_xticks([])
 
-    #plt.tight_layout()
+    plt.tight_layout()
     #pdf.savefig()
     #plt.close(fig)
     figs.append(fig)
@@ -955,3 +997,59 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,**
     else:
         logger.log("plot res_1to1")
         return figs
+
+
+# def par_cov_helper(cov,pst,logger=None,filename=None,**kwargs):
+#     assert isinstance(cov,pyemu.Cov)
+#     if logger is None:
+#         logger=Logger('Default_Loggger.log',echo=False)
+#     logger.log("plot par cov")
+#
+#     par = pst.parameter_data
+#     if "grouper" in kwargs:
+#         raise NotImplementedError()
+#     else:
+#         grouper = par.groupby(par.pargp).groups
+#
+#     fig = plt.figure(figsize=figsize)
+#     if "fig_title" in kwargs:
+#         plt.figtext(0.5,0.5,kwargs["fig_title"])
+#     else:
+#         plt.figtext(0.5, 0.5, "pyemu.Pst.plot(kind='1to1')\nfrom pest control file '{0}'\n at {1}"
+#                     .format(pst.filename, str(datetime.now())), ha="center")
+#
+#     figs = []
+#     ax_count = 0
+#     for g, names in grouper.items():
+#         logger.log("plotting par cov for {0}".format(g))
+#         if ax_count % (nr * nc) == 0:
+#             if ax_count > 0:
+#                 plt.tight_layout()
+#             #pdf.savefig()
+#             #plt.close(fig)
+#             figs.append(fig)
+#             fig = plt.figure(figsize=figsize)
+#             axes = get_page_axes()
+#             ax_count = 0
+#
+#         ax = axes[ax_count]
+#         names = list(names)
+#         cov_g = cov.get(row_names=names,col_names=names).x
+#         ax.imshow(np.ma.masked_where(cov_g==0,cov_g))
+#         ax.set_title("{0}) group:{1}, {2} elements".
+#                      format(abet[ax_count], g, cov_g.shape[0]), loc="left")
+#
+#     plt.tight_layout()
+#     # pdf.savefig()
+#     # plt.close(fig)
+#     figs.append(fig)
+#     if filename is not None:
+#         plt.tight_layout()
+#         with PdfPages(filename) as pdf:
+#             for fig in figs:
+#                 pdf.savefig(fig)
+#                 plt.close(fig)
+#         logger.log("plot res_1to1")
+#     else:
+#         logger.log("plot res_1to1")
+#         return figs

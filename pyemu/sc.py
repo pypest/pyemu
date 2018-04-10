@@ -611,6 +611,7 @@ class Schur(LinearAnalysis):
             for case,obslist in obslist_dict.items():
                 if not isinstance(obslist,list):
                     obslist_dict[case] = [obslist]
+                    obslist = [obslist]
                 inboth = set(base_obslist).intersection(set(obslist))
                 if len(inboth) > 0:
                     raise Exception("observation(s) listed in both "+\
@@ -667,6 +668,7 @@ class Schur(LinearAnalysis):
             case_obslist = list(base_obslist)
             dedup_obslist = [oname for oname in obslist if oname not in case_obslist]
             case_obslist.extend(dedup_obslist)
+            #print(self.pst.observation_data.loc[case_obslist,:])
             case_post = self.get(par_names=self.jco.par_names,
                                  obs_names=case_obslist).posterior_forecast
             for forecast,pt in case_post.items():
