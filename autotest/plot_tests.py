@@ -147,9 +147,38 @@ def ensemble_1to1_test():
     pyemu.plot_utils.ensemble_res_1to1({"0.5":oe1,"b":oe2},pst,filename=os.path.join("temp","e1to1.pdf"))
 
 
+# def cov_test():
+#     try:
+#         import matplotlib.pyplot as plt
+#     except:
+#         return
+#
+#     import os
+#     import numpy as np
+#     import pyemu
+#     pst_file = os.path.join("pst", "pest.pst")
+#     pst = pyemu.Pst(pst_file)
+#
+#     tpl_file = os.path.join("utils", "pp_locs.tpl")
+#     str_file = os.path.join("utils", "structure.dat")
+#
+#     cov = pyemu.helpers.geostatistical_prior_builder(pst_file, {str_file: tpl_file})
+#     d1 = np.diag(cov.x)
+#
+#     df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
+#     #df.loc[:, "zone"] = np.arange(df.shape[0])
+#     gs = pyemu.geostats.read_struct_file(str_file)
+#     cov = pyemu.helpers.geostatistical_prior_builder(pst_file, {gs: df},
+#                                                      sigma_range=4)
+#
+#     pyemu.plot_utils.par_cov_helper(cov,pst)
+#     plt.show()
+
+
 if __name__ == "__main__":
-    #plot_summary_test()
-    pst_plot_test()
+    plot_summary_test()
+    #pst_plot_test()
     #ensemble_plot_test()
     #ensemble_1to1_test()
+    #cov_test()
 

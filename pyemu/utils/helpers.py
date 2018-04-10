@@ -101,7 +101,7 @@ def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
     return geostatistical_prior_builder(pst=pst,struct_dict=struct_dict,
                                         sigma_range=sigma_range)
 
-def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4):
+def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4,verbose=False):
     """ a helper function to construct a full prior covariance matrix using
     a mixture of geostastical structures and parameter bounds information.
     The covariance of parameters associated with geostatistical structures is defined
@@ -121,6 +121,8 @@ def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4):
     sigma_range : float
         a float representing the number of standard deviations implied by parameter bounds.
         Default is 4.0, which implies 95% confidence parameter bounds.
+    verbose : bool
+        flag for stdout.
 
     Returns
     -------
@@ -146,7 +148,7 @@ def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4):
         pst = pyemu.Pst(pst)
     assert isinstance(pst,pyemu.Pst),"pst arg must be a Pst instance, not {0}".\
         format(type(pst))
-    print("building diagonal cov")
+    if verbose: print("building diagonal cov")
     full_cov = pyemu.Cov.from_parameter_data(pst,sigma_range=sigma_range)
 
     full_cov_dict = {n:float(v) for n,v in zip(full_cov.col_names,full_cov.x)}
@@ -154,7 +156,7 @@ def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4):
     full_cov = None
     par = pst.parameter_data
     for gs,items in struct_dict.items():
-        print("processing ",gs)
+        if verbose: print("processing ",gs)
         if isinstance(gs,str):
             gss = pyemu.geostats.read_struct_file(gs)
             if isinstance(gss,list):
@@ -191,25 +193,25 @@ def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4):
             for zone in zones:
                 df_zone = df.loc[df.zone==zone,:].copy()
                 df_zone.sort_values(by="parnme",inplace=True)
-                print("build cov matrix")
+                if verbose: print("build cov matrix")
                 cov = gs.sparse_covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)
-                print("done")
+                if verbose: print("done")
 
-                print("getting diag var cov",df_zone.shape[0])
+                if verbose: print("getting diag var cov",df_zone.shape[0])
                 #tpl_var = np.diag(full_cov.get(list(df_zone.parnme)).x).max()
                 tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
 
-                print("scaling full cov by diag var cov")
+                if verbose: print("scaling full cov by diag var cov")
                 cov.x.data *= tpl_var
 
                 if full_cov is None:
                     full_cov = cov
                 else:
-                    print("extending SparseMatix")
+                    if verbose: print("extending SparseMatix")
                     full_cov.block_extend_ip(cov)
 
 
-    print("adding remaining parameters to diagonal")
+    if verbose: print("adding remaining parameters to diagonal")
     fset = set(full_cov.row_names)
     pset = set(pst.par_names)
     diff = list(pset.difference(fset))
@@ -223,7 +225,7 @@ def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4):
     return full_cov
 
 def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
-                                 par_knowledge_dict=None):
+                                 par_knowledge_dict=None,verbose=False):
     """ a helper function to construct a full prior covariance matrix using
     a mixture of geostastical structures and parameter bounds information.
     The covariance of parameters associated with geostatistical structures is defined
@@ -246,6 +248,8 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
     par_knowledge_dict : dict
         used to condition on existing knowledge about parameters.  This functionality is
         currently in dev - don't use it.
+    verbose : bool
+        stdout flag
     Returns
     -------
     Cov : pyemu.Cov
@@ -270,14 +274,14 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
         pst = pyemu.Pst(pst)
     assert isinstance(pst,pyemu.Pst),"pst arg must be a Pst instance, not {0}".\
         format(type(pst))
-    print("building diagonal cov")
+    if verbose: print("building diagonal cov")
     full_cov = pyemu.Cov.from_parameter_data(pst,sigma_range=sigma_range)
 
     full_cov_dict = {n:float(v) for n,v in zip(full_cov.col_names,full_cov.x)}
     #full_cov = None
     par = pst.parameter_data
     for gs,items in struct_dict.items():
-        print("processing ",gs)
+        if verbose: print("processing ",gs)
         if isinstance(gs,str):
             gss = pyemu.geostats.read_struct_file(gs)
             if isinstance(gss,list):
@@ -314,20 +318,20 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
             for zone in zones:
                 df_zone = df.loc[df.zone==zone,:].copy()
                 df_zone.sort_values(by="parnme",inplace=True)
-                print("build cov matrix")
+                if verbose: print("build cov matrix")
                 cov = gs.covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)
-                print("done")
+                if verbose: print("done")
                 # find the variance in the diagonal cov
-                print("getting diag var cov",df_zone.shape[0])
+                if verbose: print("getting diag var cov",df_zone.shape[0])
                 #tpl_var = np.diag(full_cov.get(list(df_zone.parnme)).x).max()
                 tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
                 #if np.std(tpl_var) > 1.0e-6:
                 #    warnings.warn("pars have different ranges" +\
                 #                  " , using max range as variance for all pars")
                 #tpl_var = tpl_var.max()
-                print("scaling full cov by diag var cov")
+                if verbose: print("scaling full cov by diag var cov")
                 cov *= tpl_var
-                print("test for inversion")
+                if verbose: print("test for inversion")
                 try:
                     ci = cov.inv
                 except:
@@ -335,7 +339,7 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
                     raise Exception("error inverting cov {0}".
                                     format(cov.row_names[:3]))
 
-                print('replace in full cov')
+                    if verbose: print('replace in full cov')
                 full_cov.replace(cov)
                 # d = np.diag(full_cov.x)
                 # idx = np.argwhere(d==0.0)

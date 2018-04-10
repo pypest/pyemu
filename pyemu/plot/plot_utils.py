@@ -997,3 +997,59 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,**
     else:
         logger.log("plot res_1to1")
         return figs
+
+
+# def par_cov_helper(cov,pst,logger=None,filename=None,**kwargs):
+#     assert isinstance(cov,pyemu.Cov)
+#     if logger is None:
+#         logger=Logger('Default_Loggger.log',echo=False)
+#     logger.log("plot par cov")
+#
+#     par = pst.parameter_data
+#     if "grouper" in kwargs:
+#         raise NotImplementedError()
+#     else:
+#         grouper = par.groupby(par.pargp).groups
+#
+#     fig = plt.figure(figsize=figsize)
+#     if "fig_title" in kwargs:
+#         plt.figtext(0.5,0.5,kwargs["fig_title"])
+#     else:
+#         plt.figtext(0.5, 0.5, "pyemu.Pst.plot(kind='1to1')\nfrom pest control file '{0}'\n at {1}"
+#                     .format(pst.filename, str(datetime.now())), ha="center")
+#
+#     figs = []
+#     ax_count = 0
+#     for g, names in grouper.items():
+#         logger.log("plotting par cov for {0}".format(g))
+#         if ax_count % (nr * nc) == 0:
+#             if ax_count > 0:
+#                 plt.tight_layout()
+#             #pdf.savefig()
+#             #plt.close(fig)
+#             figs.append(fig)
+#             fig = plt.figure(figsize=figsize)
+#             axes = get_page_axes()
+#             ax_count = 0
+#
+#         ax = axes[ax_count]
+#         names = list(names)
+#         cov_g = cov.get(row_names=names,col_names=names).x
+#         ax.imshow(np.ma.masked_where(cov_g==0,cov_g))
+#         ax.set_title("{0}) group:{1}, {2} elements".
+#                      format(abet[ax_count], g, cov_g.shape[0]), loc="left")
+#
+#     plt.tight_layout()
+#     # pdf.savefig()
+#     # plt.close(fig)
+#     figs.append(fig)
+#     if filename is not None:
+#         plt.tight_layout()
+#         with PdfPages(filename) as pdf:
+#             for fig in figs:
+#                 pdf.savefig(fig)
+#                 plt.close(fig)
+#         logger.log("plot res_1to1")
+#     else:
+#         logger.log("plot res_1to1")
+#         return figs
