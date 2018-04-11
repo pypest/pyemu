@@ -1358,8 +1358,7 @@ class PstFromFlopyModel(object):
         self.mlt_dfs = []
         if self.all_wells:
             self.setup_all_wells()
-        self.setup_temporal_bc_pars()
-        self.setup_spatial_bc_pars()
+        self.setup_bc_pars()
 
         self.setup_array_pars()
 
@@ -2392,6 +2391,23 @@ class PstFromFlopyModel(object):
         else:
             self.logger.lraise("unrecognized attr:{0}".format(attrname))
 
+
+    def setup_bc_pars(self):
+        tdf = self.setup_temporal_bc_pars()
+        sdf = self.setup_spatial_bc_pars()
+        if tdf is None and sdf is None:
+            return
+        os.chdir(self.m.model_ws)
+        try:
+            apply_bc_pars()
+        except Exception as e:
+            os.chdir("..")
+            self.logger.lraise("error test running apply_bc_pars():{0}".format(str(e)))
+        os.chdir('..')
+        line = "pyemu.helpers.apply_bc_pars()\n"
+        self.logger.statement("forward_run line:{0}".format(line))
+        self.frun_pre_lines.append(line)
+
     def setup_temporal_bc_pars(self):
         """ main entry point for setting up boundary condition multiplier
         parameters
@@ -2443,31 +2459,21 @@ class PstFromFlopyModel(object):
         df.loc[:,"pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
         names = ["filename","dtype_names","bc_org","model_ext_path","col","kper","pak","val"]
         df.loc[:,names].\
-            to_csv(os.path.join(self.m.model_ws,"bc_pars.dat"),sep=' ')
+            to_csv(os.path.join(self.m.model_ws,"temporal_bc_pars.dat"),sep=' ')
         df.loc[:,"val"] = df.tpl_str
-        tpl_name = os.path.join(self.m.model_ws,'bc_pars.dat.tpl')
+        tpl_name = os.path.join(self.m.model_ws,'temporal_bc_pars.dat.tpl')
         f_tpl =  open(tpl_name,'w')
         f_tpl.write("ptf ~\n")
         f_tpl.flush()
         df.loc[:,names].to_csv(f_tpl,sep=' ')
 
         self.par_dfs["temporal_bc"] = df
-        os.chdir(self.m.model_ws)
-        try:
-            apply_bc_pars()
-        except Exception as e:
-            os.chdir("..")
-            self.logger.lraise("error test running apply_bc_pars():{0}".format(str(e)))
-        os.chdir('..')
-        line = "pyemu.helpers.apply_bc_pars()\n"
-        self.logger.statement("forward_run line:{0}".format(line))
-        self.frun_pre_lines.append(line)
 
         if self.temporal_bc_geostruct is None:
             v = pyemu.geostats.ExpVario(contribution=1.0,a=180.0) # 180 correlation length
             self.temporal_bc_geostruct = pyemu.geostats.GeoStruct(variograms=v)
         self.log("processing temporal_bc_props")
-
+        return True
 
     def setup_spatial_bc_pars(self):
         """helper to setup crazy numbers of well flux multipliers"""
@@ -2495,102 +2501,76 @@ class PstFromFlopyModel(object):
                 pak_name = pak.name[0].lower()
                 bc_pak.append(pak_name)
                 bc_k.append(k)
-                bc_dtype_names.append(list(attr.dtype.names))
+                #bc_dtype_names.append(list(attr.dtype.names))
+                bc_dtype_names.append(','.join(attr.dtype.names))
 
                 #bc_parnme.append("{0}{1}_{2:03d}".format(pak_name, col, c))
-        df = pd.DataFrame({"filename": bc_filenames, "col": bc_cols,
+        info_df = pd.DataFrame({"filename": bc_filenames, "col": bc_cols,
                            "kper": bc_k, "pak": bc_pak,
                            "dtype_names": bc_dtype_names})
+        info_df.loc[:,"bc_mlt"] = self.bc_mlt
+        info_df.loc[:,"bc_org"] = self.bc_org
+        info_df.loc[:,"model_ext_path"] = self.m.external_path
+
         # check that all files for a given package have the same number of entries
-        df.loc[:,"itmp"] = np.NaN
+        info_df.loc[:,"itmp"] = np.NaN
         pak_dfs = {}
-        for pak in df.pak.unique():
-            df_pak = df.loc[df.pak==pak,:]
+        for pak in info_df.pak.unique():
+            df_pak = info_df.loc[info_df.pak==pak,:]
             itmp = []
             for filename in df_pak.filename:
+                names = df_pak.dtype_names.iloc[0].split(',')
                 fdf = pd.read_csv(os.path.join(self.m.model_ws,filename),
-                                  delim_whitespace=True,header=None,names=df_pak.dtype_names.iloc[0])
+                                  delim_whitespace=True,header=None,names=names)
                 itmp.append(fdf.shape[0])
                 pak_dfs[pak] = fdf
-            df.loc[df.pak==pak,"itmp"] = itmp
+            info_df.loc[info_df.pak==pak,"itmp"] = itmp
             if np.unique(np.array(itmp)).shape[0] != 1:
                 df.to_csv("spatial_bc_trouble.csv")
                 self.logger.lraise("spatial_bc_pars() error: must have same number of "+\
                                    "entries for every stress period for {0}".format(pak))
 
+        # make the pak dfs have unique model indices
+        for pak,df in pak_dfs.items():
+            df.loc[:,"idx"] = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k,x.i,x.j),axis=1)
+            if df.idx.unique().shape[0] != df.shape[0]:
+                self.logger.warn("duplicate entries in bc pak {0}...collapsing".format(pak))
+                df.drop_dupliates(subset="idx",inplace=True)
+            df.index = df.idx
+            pak_dfs[pak] = df
+
         # write template files - find which cols are parameterized...
+        par_dfs = []
+        for pak,df in pak_dfs.items():
+            pak_df = info_df.loc[info_df.pak==pak,:]
+            # reset all non-index cols to 1.0
+            for col in df.columns:
+                if col not in ['k','i','j','inode']:
+                    df.loc[:,col] = 1.0
+            in_file = os.path.join(self.m.model_ws,self.bc_mlt,pak+".csv")
+            tpl_file = os.path.join(self.m.model_ws, pak + ".csv.tpl")
+            df.to_csv(in_file)
+            parnme,pargp = [],[]
+            for col in pak_df.col:
+                names = df.index.map(lambda x: "{0}{1}{2}".format(pak[0],col[0],x))
+                df.loc[:,col] = names.map(lambda x: "~   {0}   ~".format(x))
+                par_df = pd.DataFrame({"parnme": names}, index=names)
+                par_df.loc[:,"pargp"] = "{0}_{1}".format(pak,col)
+                par_df.loc[:,"tpl_file"] = tpl_file
+                par_df.loc[:,"in_file"] = in_file
+                par_dfs.append(par_df)
+            with open(tpl_file,'w') as f:
+                f.write("ptf ~\n")
+                f.flush()
+                df.to_csv(f)
 
-        
-        tds = pd.to_timedelta(np.cumsum(self.m.dis.perlen.array), unit='d')
-        dts = pd.to_datetime(self.m._start_datetime) + tds
-        df.loc[:, "datetime"] = df.kper.apply(lambda x: dts[x])
-        df.loc[:, "timedelta"] = df.kper.apply(lambda x: tds[x])
-        df.loc[:, "val"] = 1.0
-        # df.loc[:,"kper"] = df.kper.apply(np.int)
-        # df.loc[:,"parnme"] = df.apply(lambda x: "{0}{1}_{2:03d}".format(x.pak,x.col,x.kper),axis=1)
-        df.loc[:, "tpl_str"] = df.parnme.apply(lambda x: "~   {0}   ~".format(x))
-        df.loc[:, "bc_org"] = self.bc_org
-        df.loc[:, "model_ext_path"] = self.m.external_path
-        df.loc[:, "pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
-        names = ["filename", "dtype_names", "bc_org", "model_ext_path", "col", "kper", "pak", "val"]
-        df.loc[:, names]. \
-            to_csv(os.path.join(self.m.model_ws, "bc_pars.dat"), sep=' ')
-        df.loc[:, "val"] = df.tpl_str
-        tpl_name = os.path.join(self.m.model_ws, 'bc_pars.dat.tpl')
-        f_tpl = open(tpl_name, 'w')
-        f_tpl.write("ptf ~\n")
-        f_tpl.flush()
-        df.loc[:, names].to_csv(f_tpl, sep=' ')
-
-        self.par_dfs["temporal_bc"] = df
-        os.chdir(self.m.model_ws)
-        try:
-            apply_bc_pars()
-        except Exception as e:
-            os.chdir("..")
-            self.logger.lraise("error test running apply_bc_pars():{0}".format(str(e)))
-        os.chdir('..')
-        line = "pyemu.helpers.apply_bc_pars()\n"
-        self.logger.statement("forward_run line:{0}".format(line))
-        self.frun_pre_lines.append(line)
-
+        par_df = pd.concat(par_dfs)
+        self.par_dfs["spatial_bc"] = par_df
+        info_df.to_csv(os.path.join(self.m.model_ws,"spatial_bc_pars.dat"),sep=' ')
         if self.temporal_bc_geostruct is None:
             v = pyemu.geostats.ExpVario(contribution=1.0, a=180.0)  # 180 correlation length
             self.temporal_bc_geostruct = pyemu.geostats.GeoStruct(variograms=v)
-
-        pak, attr, col = self.parse_pakattr("wel.flux")
-        k_parse = self.parse_k(np.arange(self.m.nper), np.arange(self.m.nper))
-        bc_filenames = []
-        for k in k_parse:
-            bc_filenames.append(self.bc_helper(k, pak, attr, col))
-        parnme = []
-        for bc_filename in bc_filenames:
-            bc_filename = os.path.split(bc_filename)[-1]
-            kper = int(bc_filename.split('.')[0].split('_')[1])
-            df = pd.read_csv(os.path.join(self.m.model_ws,self.bc_org,bc_filename),
-                             delim_whitespace=True,header=None,names=['l','r','c','flux'])
-            mlt_file = os.path.join(self.m.model_ws, self.bc_mlt, bc_filename)
-            df.loc[:,"flux"] = 1.0
-            df.to_csv(mlt_file,sep=' ',index=False,header=False)
-            df.loc[:,"parnme"] = ["wf{0:04d}_{1:03d}".format(i,kper) for i in range(df.shape[0])]
-            parnme.extend(list(df.parnme))
-            df.loc[:,"tpl_str"] = df.parnme.apply(lambda x: "~  {0}   ~".format(x))
-            tpl_file = os.path.join(self.m.model_ws,bc_filename+".tpl")
-
-            self.logger.statement("writing tpl file "+tpl_file)
-            with open(tpl_file,'w') as f:
-                f.write("ptf ~\n")
-                f.write(df.loc[:,['l','r','c','tpl_str']].to_string(index=False,header=False)+'\n')
-            self.tpl_files.append(os.path.split(tpl_file)[-1])
-            self.in_files.append(os.path.join(self.bc_mlt, bc_filename))
-
-        df = pd.DataFrame({"parnme":parnme}, index=parnme)
-        df.loc[:,"parubnd"] = 1.2
-        df.loc[:,"parlbnd"] = 0.8
-        df.loc[:,"pargp"] = df.parnme.apply(lambda x: "wflux_{0}".format(x.split('_')[-1]))
-        self.par_dfs["wel_flux"] = df
-        self.frun_pre_lines.append("pyemu.helpers.apply_all_wells()")
-        self.log("processing spatial_bc_props")
+        return True
 
 
     def setup_all_wells(self):
@@ -2877,24 +2857,78 @@ def apply_bc_pars():
     should be added to the forward_run.py script
 
     """
-    bcp = "bc_pars.dat"
+    temp_file = "temporal_bc_pars.dat"
+    spat_file = "spatial_bc_pars.dat"
 
-    df = pd.read_csv(bcp,delim_whitespace=True)
-    for fname in df.filename.unique():
-        df_fname = df.loc[df.filename==fname,:]
-        names = df_fname.dtype_names.iloc[0].split(',')
-        bc_org = df_fname.bc_org.iloc[0]
-        model_ext_path = df_fname.model_ext_path.iloc[0]
-        df_list = pd.read_csv(os.path.join(bc_org,fname),
-                              delim_whitespace=True,header=None,names=names)
-        for col,val in zip(df_fname.col,df_fname.val):
-            df_list.loc[:,col] *= val
-        fmts = {}
-        for name in names:
-            if name in ["i","j","k","inode"]:
-                fmts[name] = pyemu.pst_utils.IFMT
-            else:
-                fmts[name] = pyemu.pst_utils.FFMT
+    temp_df,spat_df = None,None
+    if os.path.exists(temp_file):
+        temp_df = pd.read_csv(temp_file, delim_whitespace=True)
+        temp_df.loc[:,"split_filename"] = temp_df.filename.apply(lambda x: os.path.split(x)[-1])
+        org_dir = temp_df.bc_org.iloc[0]
+        model_exp_path = temp_df.model_ext_path.iloc[0]
+    if os.path.exists(spat_file):
+        spat_df = pd.read_csv(spat_file, delim_whitespace=True)
+        spat_df.loc[:,"split_filename"] = spat_df.filename.apply(lambda x: os.path.split(x)[-1])
+        mlt_dir = spat_df.bc_mlt.iloc[0]
+        org_dir = spat_df.bc_org.iloc[0]
+        model_ext_path = spat_df.model_ext_path.iloc[0]
+    if temp_df is None and spat_df is None:
+        raise Exception("apply_bc_pars() - no key dfs found, nothing to do...")
+    # load the spatial mult dfs
+    sp_mlts = {}
+    if spat_df is not None:
+
+        for f in os.listdir(mlt_dir):
+            df = pd.read_csv(os.path.join(mlt_dir,f),index_col=0)
+            df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k,x.i,x.j),axis=1)
+            pak = f.split(".")[0].lower()
+            if pak in sp_mlts.keys():
+                raise Exception("duplciate multplier csv for pak {0}".format(pak))
+            sp_mlts[pak] = df
+
+    org_files = os.listdir(org_dir)
+    #for fname in df.filename.unique():
+    for fname in org_files:
+
+        #print(temp_df.filename)
+        #print(spat_df.filename)
+        if temp_df is not None and fname in temp_df.split_filename.values:
+            temp_df_fname = temp_df.loc[temp_df.split_filename==fname,:]
+            names = temp_df_fname.dtype_names.iloc[0].split(',')
+            print(names)
+        if spat_df is not None and fname in spat_df.split_filename.values:
+            spat_df_fname = spat_df.loc[spat_df.split_filename == fname, :]
+            names = spat_df_fname.dtype_names.iloc[0].split(',')
+        if names is not None:
+
+            # bc_org = df_fname.bc_org.iloc[0]
+            # model_ext_path = df_fname.model_ext_path.iloc[0]
+            df_list = pd.read_csv(os.path.join(org_dir,fname),
+                                  delim_whitespace=True,header=None,names=names)
+            df_list.loc[:,"idx"] = df_list.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k,x.i,x.j),axis=1)
+            df_list.index = df_list.idx
+            pak_name = fname.split('_')[0].lower()
+            if pak_name in sp_mlts:
+                mlt_df = sp_mlts[pak_name]
+                for col in df_list.columns:
+                    if col in ["k","i","j","inode"]:
+                        continue
+                    if col in mlt_df.columns:
+                        df_list.loc[mlt_df.index,col] *= mlt_df.loc[:,col]
+
+            print(df_list)
+            if temp_df is not None and fname in temp_df.split_filename.values:
+                temp_df_fname = temp_df.loc[temp_df.split_filename == fname, :]
+                for col,val in zip(temp_df_fname.col,temp_df_fname.val):
+                     df_list.loc[:,col] *= val
+            fmts = {}
+            for name in names:
+                if name in ["i","j","k","inode"]:
+                    fmts[name] = pyemu.pst_utils.IFMT
+                else:
+                    fmts[name] = pyemu.pst_utils.FFMT
+
+        
         with open(os.path.join(model_ext_path,fname),'w') as f:
             f.write(df_list.to_string(header=False,index=False,formatters=fmts)+'\n')
             #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
