@@ -1240,15 +1240,16 @@ class PstFromFlopyModel(object):
     """
 
     def __init__(self,model,new_model_ws,org_model_ws=None,pp_props=[],const_props=[],
-                 bc_props=[],grid_props=[],grid_geostruct=None,pp_space=None,
+                 temporal_bc_props=[],grid_props=[],grid_geostruct=None,pp_space=None,
                  zone_props=[],pp_geostruct=None,par_bounds_dict=None,sfr_pars=False,
-                 bc_geostruct=None,remove_existing=False,k_zone_dict=None,
+                 temporal_bc_geostruct=None,remove_existing=False,k_zone_dict=None,
                  mflist_waterbudget=True,mfhyd=True,hds_kperk=[],use_pp_zones=False,
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
                  external_ins_out_pairs=None,extra_pre_cmds=None,
                  extra_model_cmds=None,extra_post_cmds=None,
                  tmp_files=None,model_exe_name=None,build_prior=True,
-                 sfr_obs=False, all_wells=False):
+                 sfr_obs=False, all_wells=False,bc_props=[],
+                 spatial_bc_props=[],spatial_bc_geostruct=None):
 
         self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
         self.log = self.logger.log
@@ -1279,13 +1280,24 @@ class PstFromFlopyModel(object):
         self.use_pp_zones = use_pp_zones
 
         self.const_props = const_props
-        self.bc_props = bc_props
-        self.bc_geostruct = bc_geostruct
 
         self.grid_props = grid_props
         self.grid_geostruct = grid_geostruct
 
         self.zone_props = zone_props
+
+        if len(bc_props) > 0:
+            if len(temporal_bc_props) > 0:
+                self.logger.lraise("bc_props and temporal_bc_props. "+\
+                                   "bc_props is deprecated and replaced by temporal_bc_props")
+            self.logger.warn("bc_props is deprecated and replaced by temporal_bc_props")
+            temporal_bc_props = bc_props
+
+        self.temporal_bc_props = temporal_bc_props
+        self.temporal_bc_geostruct = temporal_bc_geostruct
+        self.spatial_bc_props = spatial_bc_props
+        self.spatial_bc_geostruct = spatial_bc_geostruct
+
 
         self.obssim_smp_pairs = obssim_smp_pairs
         self.hds_kperk = hds_kperk
@@ -1346,7 +1358,9 @@ class PstFromFlopyModel(object):
         self.mlt_dfs = []
         if self.all_wells:
             self.setup_all_wells()
-        self.setup_bc_pars()
+        self.setup_temporal_bc_pars()
+        self.setup_spatial_bc_pars()
+
         self.setup_array_pars()
 
         if sfr_pars:
@@ -1422,9 +1436,9 @@ class PstFromFlopyModel(object):
             set_dirs.append(self.arr_org)
             set_dirs.append(self.arr_mlt)
  #       if len(self.bc_props) > 0:
-        if self.bc_props is not None:
+        if len(self.temporal_bc_props) > 0 or len(self.spatial_bc_props) > 0:
             set_dirs.append(self.bc_org)
-        if self.all_wells:
+        if len(self.spatial_bc_props):
             set_dirs.append(self.bc_mlt)
 
         for d in set_dirs:
@@ -2085,8 +2099,8 @@ class PstFromFlopyModel(object):
                 gr_dfs.append(p_df)
             #gr_dfs = [gr_df.loc[gr_df.pargp==pargp,:].copy() for pargp in gr_df.pargp.unique()]
             struct_dict[self.grid_geostruct] = gr_dfs
-        if "bc" in self.par_dfs.keys():
-            bc_df = self.par_dfs["bc"]
+        if "temporal_bc" in self.par_dfs.keys():
+            bc_df = self.par_dfs["temporal_bc"]
             bc_df.loc[:,"y"] = 0
             bc_df.loc[:,"x"] = bc_df.timedelta.apply(lambda x: x.days)
             bc_dfs = []
@@ -2096,7 +2110,7 @@ class PstFromFlopyModel(object):
                 #print(p_df)
                 bc_dfs.append(p_df)
             #bc_dfs = [bc_df.loc[bc_df.pargp==pargp,:].copy() for pargp in bc_df.pargp.unique()]
-            struct_dict[self.bc_geostruct] = bc_dfs
+            struct_dict[self.temporal_bc_geostruct] = bc_dfs
         if len(struct_dict) > 0:
             if sparse:
                 cov = pyemu.helpers.sparse_geostatistical_prior_builder(self.pst,
@@ -2378,14 +2392,14 @@ class PstFromFlopyModel(object):
         else:
             self.logger.lraise("unrecognized attr:{0}".format(attrname))
 
-    def setup_bc_pars(self):
+    def setup_temporal_bc_pars(self):
         """ main entry point for setting up boundary condition multiplier
         parameters
 
         """
-        if len(self.bc_props) == 0:
+        if len(self.temporal_bc_props) == 0:
             return
-        self.log("processing bc_props")
+        self.log("processing temporal_bc_props")
         # if not isinstance(self.bc_prop_dict,dict):
         #     self.logger.lraise("bc_prop_dict must be 'dict', not {0}".
         #                        format(str(type(self.bc_prop_dict))))
@@ -2395,10 +2409,10 @@ class PstFromFlopyModel(object):
         bc_k = []
         bc_dtype_names = []
         bc_parnme = []
-        if len(self.bc_props) == 2:
-            if not isinstance(self.bc_props[0],list):
-                self.bc_props = [self.bc_props]
-        for pakattr,k_org in self.bc_props:
+        if len(self.temporal_bc_props) == 2:
+            if not isinstance(self.temporal_bc_props[0],list):
+                self.temporal_bc_props = [self.temporal_bc_props]
+        for pakattr,k_org in self.temporal_bc_props:
             pak,attr,col = self.parse_pakattr(pakattr)
             k_parse = self.parse_k(k_org,np.arange(self.m.nper))
             c = self.get_count(pakattr)
@@ -2411,7 +2425,7 @@ class PstFromFlopyModel(object):
                 bc_dtype_names.append(','.join(attr.dtype.names))
 
                 bc_parnme.append("{0}{1}_{2:03d}".format(pak_name,col,c))
-        self.log("processing bc_prop_dict")
+
         df = pd.DataFrame({"filename":bc_filenames,"col":bc_cols,
                            "kper":bc_k,"pak":bc_pak,
                            "dtype_names":bc_dtype_names,
@@ -2437,7 +2451,7 @@ class PstFromFlopyModel(object):
         f_tpl.flush()
         df.loc[:,names].to_csv(f_tpl,sep=' ')
 
-        self.par_dfs["bc"] = df
+        self.par_dfs["temporal_bc"] = df
         os.chdir(self.m.model_ws)
         try:
             apply_bc_pars()
@@ -2449,14 +2463,141 @@ class PstFromFlopyModel(object):
         self.logger.statement("forward_run line:{0}".format(line))
         self.frun_pre_lines.append(line)
 
-        if self.bc_geostruct is None:
+        if self.temporal_bc_geostruct is None:
             v = pyemu.geostats.ExpVario(contribution=1.0,a=180.0) # 180 correlation length
-            self.bc_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+            self.temporal_bc_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+        self.log("processing temporal_bc_props")
+
+
+    def setup_spatial_bc_pars(self):
+        """helper to setup crazy numbers of well flux multipliers"""
+        if len(self.spatial_bc_props) == 0:
+            return
+        self.log("processing spatial_bc_props")
+
+        bc_filenames = []
+        bc_cols = []
+        bc_pak = []
+        bc_k = []
+        bc_dtype_names = []
+        bc_parnme = []
+        if len(self.spatial_bc_props) == 2:
+            if not isinstance(self.spatial_bc_props[0], list):
+                self.spatial_bc_props = [self.spatial_bc_props]
+        for pakattr, k_org in self.spatial_bc_props:
+            pak, attr, col = self.parse_pakattr(pakattr)
+            k_parse = self.parse_k(k_org, np.arange(self.m.nper))
+            c = self.get_count(pakattr)
+            lens = []
+            for k in k_parse:
+                bc_filenames.append(self.bc_helper(k, pak, attr, col))
+                bc_cols.append(col)
+                pak_name = pak.name[0].lower()
+                bc_pak.append(pak_name)
+                bc_k.append(k)
+                bc_dtype_names.append(list(attr.dtype.names))
+
+                #bc_parnme.append("{0}{1}_{2:03d}".format(pak_name, col, c))
+        df = pd.DataFrame({"filename": bc_filenames, "col": bc_cols,
+                           "kper": bc_k, "pak": bc_pak,
+                           "dtype_names": bc_dtype_names})
+        # check that all files for a given package have the same number of entries
+        df.loc[:,"itmp"] = np.NaN
+        pak_dfs = {}
+        for pak in df.pak.unique():
+            df_pak = df.loc[df.pak==pak,:]
+            itmp = []
+            for filename in df_pak.filename:
+                fdf = pd.read_csv(os.path.join(self.m.model_ws,filename),
+                                  delim_whitespace=True,header=None,names=df_pak.dtype_names.iloc[0])
+                itmp.append(fdf.shape[0])
+                pak_dfs[pak] = fdf
+            df.loc[df.pak==pak,"itmp"] = itmp
+            if np.unique(np.array(itmp)).shape[0] != 1:
+                df.to_csv("spatial_bc_trouble.csv")
+                self.logger.lraise("spatial_bc_pars() error: must have same number of "+\
+                                   "entries for every stress period for {0}".format(pak))
+
+        # write template files - find which cols are parameterized...
+
+        
+        tds = pd.to_timedelta(np.cumsum(self.m.dis.perlen.array), unit='d')
+        dts = pd.to_datetime(self.m._start_datetime) + tds
+        df.loc[:, "datetime"] = df.kper.apply(lambda x: dts[x])
+        df.loc[:, "timedelta"] = df.kper.apply(lambda x: tds[x])
+        df.loc[:, "val"] = 1.0
+        # df.loc[:,"kper"] = df.kper.apply(np.int)
+        # df.loc[:,"parnme"] = df.apply(lambda x: "{0}{1}_{2:03d}".format(x.pak,x.col,x.kper),axis=1)
+        df.loc[:, "tpl_str"] = df.parnme.apply(lambda x: "~   {0}   ~".format(x))
+        df.loc[:, "bc_org"] = self.bc_org
+        df.loc[:, "model_ext_path"] = self.m.external_path
+        df.loc[:, "pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
+        names = ["filename", "dtype_names", "bc_org", "model_ext_path", "col", "kper", "pak", "val"]
+        df.loc[:, names]. \
+            to_csv(os.path.join(self.m.model_ws, "bc_pars.dat"), sep=' ')
+        df.loc[:, "val"] = df.tpl_str
+        tpl_name = os.path.join(self.m.model_ws, 'bc_pars.dat.tpl')
+        f_tpl = open(tpl_name, 'w')
+        f_tpl.write("ptf ~\n")
+        f_tpl.flush()
+        df.loc[:, names].to_csv(f_tpl, sep=' ')
+
+        self.par_dfs["temporal_bc"] = df
+        os.chdir(self.m.model_ws)
+        try:
+            apply_bc_pars()
+        except Exception as e:
+            os.chdir("..")
+            self.logger.lraise("error test running apply_bc_pars():{0}".format(str(e)))
+        os.chdir('..')
+        line = "pyemu.helpers.apply_bc_pars()\n"
+        self.logger.statement("forward_run line:{0}".format(line))
+        self.frun_pre_lines.append(line)
+
+        if self.temporal_bc_geostruct is None:
+            v = pyemu.geostats.ExpVario(contribution=1.0, a=180.0)  # 180 correlation length
+            self.temporal_bc_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+
+        pak, attr, col = self.parse_pakattr("wel.flux")
+        k_parse = self.parse_k(np.arange(self.m.nper), np.arange(self.m.nper))
+        bc_filenames = []
+        for k in k_parse:
+            bc_filenames.append(self.bc_helper(k, pak, attr, col))
+        parnme = []
+        for bc_filename in bc_filenames:
+            bc_filename = os.path.split(bc_filename)[-1]
+            kper = int(bc_filename.split('.')[0].split('_')[1])
+            df = pd.read_csv(os.path.join(self.m.model_ws,self.bc_org,bc_filename),
+                             delim_whitespace=True,header=None,names=['l','r','c','flux'])
+            mlt_file = os.path.join(self.m.model_ws, self.bc_mlt, bc_filename)
+            df.loc[:,"flux"] = 1.0
+            df.to_csv(mlt_file,sep=' ',index=False,header=False)
+            df.loc[:,"parnme"] = ["wf{0:04d}_{1:03d}".format(i,kper) for i in range(df.shape[0])]
+            parnme.extend(list(df.parnme))
+            df.loc[:,"tpl_str"] = df.parnme.apply(lambda x: "~  {0}   ~".format(x))
+            tpl_file = os.path.join(self.m.model_ws,bc_filename+".tpl")
+
+            self.logger.statement("writing tpl file "+tpl_file)
+            with open(tpl_file,'w') as f:
+                f.write("ptf ~\n")
+                f.write(df.loc[:,['l','r','c','tpl_str']].to_string(index=False,header=False)+'\n')
+            self.tpl_files.append(os.path.split(tpl_file)[-1])
+            self.in_files.append(os.path.join(self.bc_mlt, bc_filename))
+
+        df = pd.DataFrame({"parnme":parnme}, index=parnme)
+        df.loc[:,"parubnd"] = 1.2
+        df.loc[:,"parlbnd"] = 0.8
+        df.loc[:,"pargp"] = df.parnme.apply(lambda x: "wflux_{0}".format(x.split('_')[-1]))
+        self.par_dfs["wel_flux"] = df
+        self.frun_pre_lines.append("pyemu.helpers.apply_all_wells()")
+        self.log("processing spatial_bc_props")
+
 
     def setup_all_wells(self):
         """helper to setup crazy numbers of well flux multipliers"""
         self.log("setup all wells parameterization")
-        assert self.m.wel is not None
+        if self.m.wel is None:
+            self.logger.lraise("setup_all_wells() requires a wel pak")
         pak, attr, col = self.parse_pakattr("wel.flux")
         k_parse = self.parse_k(np.arange(self.m.nper), np.arange(self.m.nper))
         bc_filenames = []
@@ -2477,7 +2618,7 @@ class PstFromFlopyModel(object):
             tpl_file = os.path.join(self.m.model_ws,bc_filename+".tpl")
 
 
-            self.logger.statement("writin tpl file "+tpl_file)
+            self.logger.statement("writing tpl file "+tpl_file)
             with open(tpl_file,'w') as f:
                 f.write("ptf ~\n")
                 f.write(df.loc[:,['l','r','c','tpl_str']].to_string(index=False,header=False)+'\n')

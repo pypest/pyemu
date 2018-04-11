@@ -422,6 +422,10 @@ def from_flopy_test():
     org_model_ws = os.path.join("..","examples","freyberg_sfr_update")
     nam_file = "freyberg.nam"
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    flopy.modflow.ModflowRiv(m,stress_period_data={0:[[0,0,0,30.0,1.0,25.0],[0,0,1,31.0,1.0,25.0]]})
+    org_model_ws = "temp"
+    m.change_model_ws(org_model_ws)
+    m.write_input()
     new_model_ws = "temp_pst_from_flopy"
 
 
@@ -432,11 +436,15 @@ def from_flopy_test():
     for k in range(m.nlay):
         for kper in range(m.nper):
             hds_kperk.append([kper, k])
+    bc_props = [["riv.cond",None],["riv.stage",None],["wel.flux",None]]
     ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
                                          org_model_ws=org_model_ws,
                                          zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
                                          remove_existing=True, hds_kperk=hds_kperk,
-                                         model_exe_name="mfnwt")
+                                         model_exe_name="mfnwt",temporal_bc_props=bc_props,
+                                         spatial_bc_props=bc_props)
+
+    return
 
     ph.pst.parameter_data.loc["rech0_zn1", "parval1"] = 2.0
 
