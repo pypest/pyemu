@@ -422,10 +422,13 @@ def from_flopy_test():
     org_model_ws = os.path.join("..","examples","freyberg_sfr_update")
     nam_file = "freyberg.nam"
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
-    flopy.modflow.ModflowRiv(m,stress_period_data={0:[[0,0,0,30.0,1.0,25.0],[0,0,1,31.0,1.0,25.0]]})
+    flopy.modflow.ModflowRiv(m,stress_period_data={0:[[0,0,0,30.0,1.0,25.0],
+                                                      [0,0,1,31.0,1.0,25.0],
+                                                      [0,0,1,31.0,1.0,25.0]]})
     org_model_ws = "temp"
     m.change_model_ws(org_model_ws)
     m.write_input()
+
     new_model_ws = "temp_pst_from_flopy"
 
 
@@ -444,7 +447,18 @@ def from_flopy_test():
                                          model_exe_name="mfnwt",temporal_bc_props=bc_props,
                                          spatial_bc_props=bc_props)
 
-    return
+    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+                                         org_model_ws=org_model_ws,
+                                         zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
+                                         remove_existing=True, hds_kperk=hds_kperk,
+                                         model_exe_name="mfnwt",
+                                         spatial_bc_props=bc_props)
+
+    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+                                         org_model_ws=org_model_ws,
+                                         zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
+                                         remove_existing=True, hds_kperk=hds_kperk,
+                                         model_exe_name="mfnwt", temporal_bc_props=bc_props)
 
     ph.pst.parameter_data.loc["rech0_zn1", "parval1"] = 2.0
 
@@ -496,18 +510,14 @@ def from_flopy_test():
     #     pass
     os.chdir(bd)
 
+    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
-                                             model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True,
-                                             all_wells=True)
+                                             model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True)
     bd = os.getcwd()
-    os.chdir(new_model_ws)
-    try:
-        pyemu.helpers.apply_all_wells()
-    except:
-        pass
-    os.chdir(bd)
-
 
     pp_props = [["upw.ss",[0,1]],["upw.ss",1],["upw.ss",2],["extra.prsity",0],\
                 ["rch.rech",0],["rch.rech",[1,2]]]
@@ -555,7 +565,8 @@ def from_flopy_test():
                                     const_props=const_props,
                                     grid_props=grid_props,
                                     zone_props=zone_props,
-                                    bc_props=bc_props,
+                                    temporal_bc_props=bc_props,
+                                    spatial_bc_props=bc_props,
                                     remove_existing=True,
                                     obssim_smp_pairs=obssim_smp_pairs,
                                     pp_space=4,

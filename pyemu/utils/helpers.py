@@ -1118,7 +1118,7 @@ class PstFromFlopyModel(object):
         iterable is for zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
         would setup constant (uniform) multiplier parameters for recharge for stress
         period 1,5,11,and 16.
-    bc_props : list
+    temporal_bc_props : list
         boundary condition stress-period level multiplier parameters.
         A nested list of boundary condition elements to parameterize using
         name, iterable pairs.  The iterable is zero-based stress-period indices.
@@ -1127,6 +1127,14 @@ class PstFromFlopyModel(object):
         multiplier parameters for well flux for stress periods 1,2 and 3 and
         would setup one single river conductance multipler parameter that is applied
         to all stress periods
+    spatial_bc_priops : list
+        boundary condition spatial multiplier parameters.
+        A nested list of boundary condition elements to parameterize using
+        names (e.g. ["riv.cond","wel.flux"].  Setups up cell-based parameters for
+        each boundary condition element listed.  These multipler parameters are applied across
+        all stress periods.  For this to work, there must be the same number of entries
+        for all stress periods.  If more than one BC of the same type is in a single
+        cell, only one parameter is used to multiply all BCs in the same cell.
     grid_props : list
         grid-based (every active model cell) multiplier parameters.
         A nested list of grid-scale model properties to parameterize using
@@ -1140,7 +1148,7 @@ class PstFromFlopyModel(object):
     grid_geostruct : pyemu.geostats.GeoStruct
         the geostatistical structure to build the prior parameter covariance matrix
         elements for grid-based parameters.  If None, a generic GeoStruct is created
-        using the grid-spacing information.  Default is None
+        using an "a" parameter that is 10 times the max cell size.  Default is None
     pp_space : int
         number of grid cells between pilot points.  If None, use the default
         in pyemu.pp_utils.setup_pilot_points_grid.  Default is None
@@ -1168,13 +1176,18 @@ class PstFromFlopyModel(object):
         2.0.  For parameters not found in par_bounds_dict,
         pyemu.helpers.wildass_guess_par_bounds_dict is
         used to set somewhat meaningful bounds.  Default is None
-    bc_geostruct : pyemu.geostats.GeoStruct
+    temporal_bc_geostruct : pyemu.geostats.GeoStruct
         the geostastical struture to build the prior parameter covariance matrix
         for time-varying boundary condition multiplier parameters.  This GeoStruct
         express the time correlation so that the 'a' parameter is the length of
         time that boundary condition multiplier parameters are correlated across.
         If None, then a generic GeoStruct is created that uses an 'a' parameter
         of 3 stress periods.  Default is None
+    spatial_bc_geostruct : pyemu.geostats.GeoStruct
+        the geostastical struture to build the prior parameter covariance matrix
+        for spatially-varying boundary condition multiplier parameters.
+        If None, a generic GeoStruct is created using an "a" parameter that
+        is 10 times the max cell size.  Default is None.
     remove_existing : bool
         a flag to remove an existing new_model_ws directory.  If False and
         new_model_ws exists, an exception is raised.  If True and new_model_ws
@@ -1216,11 +1229,7 @@ class PstFromFlopyModel(object):
     sfr_obs : bool
         flag to include observations of flow and aquifer exchange from
         the sfr ASCII output file
-    all_wells : bool
-        flag to add multiplier parameters for every wells in all stress periods.
-        These parameters are treated as independent - not correlated in space or
-        time to each other or any other parameters.  If True, 'wel.flux' must not
-        be in bc_props
+
 
 
     Returns
@@ -1357,7 +1366,9 @@ class PstFromFlopyModel(object):
         self.par_dfs = {}
         self.mlt_dfs = []
         if self.all_wells:
-            self.setup_all_wells()
+            #self.setup_all_wells()
+            self.logger.lraise("all_wells has been deprecated and replaced with"+\
+                               " spatial_bc_pars.")
         self.setup_bc_pars()
 
         self.setup_array_pars()
@@ -2110,6 +2121,15 @@ class PstFromFlopyModel(object):
                 bc_dfs.append(p_df)
             #bc_dfs = [bc_df.loc[bc_df.pargp==pargp,:].copy() for pargp in bc_df.pargp.unique()]
             struct_dict[self.temporal_bc_geostruct] = bc_dfs
+        if "spatial_bc" in self.par_dfs.keys():
+            bc_df = self.par_dfs["spatial_bc"]
+            bc_dfs = []
+            for pargp in bc_df.pargp.unique():
+                gp_df = bc_df.loc[bc_df.pargp==pargp,:]
+                #p_df = gp_df.drop_duplicates(subset="parnme")
+                #print(p_df)
+                bc_dfs.append(gp_df)
+            struct_dict[self.spatial_bc_geostruct] = bc_dfs
         if len(struct_dict) > 0:
             if sparse:
                 cov = pyemu.helpers.sparse_geostatistical_prior_builder(self.pst,
@@ -2535,7 +2555,7 @@ class PstFromFlopyModel(object):
             df.loc[:,"idx"] = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k,x.i,x.j),axis=1)
             if df.idx.unique().shape[0] != df.shape[0]:
                 self.logger.warn("duplicate entries in bc pak {0}...collapsing".format(pak))
-                df.drop_dupliates(subset="idx",inplace=True)
+                df.drop_duplicates(subset="idx",inplace=True)
             df.index = df.idx
             pak_dfs[pak] = df
 
@@ -2547,71 +2567,78 @@ class PstFromFlopyModel(object):
             for col in df.columns:
                 if col not in ['k','i','j','inode']:
                     df.loc[:,col] = 1.0
-            in_file = os.path.join(self.m.model_ws,self.bc_mlt,pak+".csv")
-            tpl_file = os.path.join(self.m.model_ws, pak + ".csv.tpl")
-            df.to_csv(in_file)
+            in_file = os.path.join(self.bc_mlt,pak+".csv")
+            tpl_file = os.path.join(pak + ".csv.tpl")
+            # save an all "ones" mult df for testing
+            df.to_csv(os.path.join(self.m.model_ws,in_file))
             parnme,pargp = [],[]
-            for col in pak_df.col:
+            x = df.apply(lambda x: self.m.sr.xcentergrid[int(x.i),int(x.j)],axis=1).values
+            y = df.apply(lambda x: self.m.sr.ycentergrid[int(x.i),int(x.j)],axis=1).values
+            for col in pak_df.col.unique():
                 names = df.index.map(lambda x: "{0}{1}{2}".format(pak[0],col[0],x))
                 df.loc[:,col] = names.map(lambda x: "~   {0}   ~".format(x))
-                par_df = pd.DataFrame({"parnme": names}, index=names)
-                par_df.loc[:,"pargp"] = "{0}_{1}".format(pak,col)
+                par_df = pd.DataFrame({"parnme": names,"x":x,"y":y}, index=names)
+                par_df.loc[:,"pargp"] = df.k.apply(lambda x : "{0}{1}_k{2:02.0f}".format(pak,col,int(x))).values
                 par_df.loc[:,"tpl_file"] = tpl_file
                 par_df.loc[:,"in_file"] = in_file
                 par_dfs.append(par_df)
-            with open(tpl_file,'w') as f:
+            with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
                 f.write("ptf ~\n")
                 f.flush()
                 df.to_csv(f)
+            self.tpl_files.append(tpl_file)
+            self.in_files.append(in_file)
 
         par_df = pd.concat(par_dfs)
         self.par_dfs["spatial_bc"] = par_df
         info_df.to_csv(os.path.join(self.m.model_ws,"spatial_bc_pars.dat"),sep=' ')
-        if self.temporal_bc_geostruct is None:
-            v = pyemu.geostats.ExpVario(contribution=1.0, a=180.0)  # 180 correlation length
-            self.temporal_bc_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+        if self.spatial_bc_geostruct is None:
+            dist = 10 * float(max(self.m.dis.delr.array.max(),
+                                  self.m.dis.delc.array.max()))
+            v = pyemu.geostats.ExpVario(contribution=1.0, a=dist)
+            self.spatial_bc_geostruct = pyemu.geostats.GeoStruct(variograms=v)
         return True
 
 
-    def setup_all_wells(self):
-        """helper to setup crazy numbers of well flux multipliers"""
-        self.log("setup all wells parameterization")
-        if self.m.wel is None:
-            self.logger.lraise("setup_all_wells() requires a wel pak")
-        pak, attr, col = self.parse_pakattr("wel.flux")
-        k_parse = self.parse_k(np.arange(self.m.nper), np.arange(self.m.nper))
-        bc_filenames = []
-        for k in k_parse:
-            bc_filenames.append(self.bc_helper(k, pak, attr, col))
-        parnme = []
-        for bc_filename in bc_filenames:
-            bc_filename = os.path.split(bc_filename)[-1]
-            kper = int(bc_filename.split('.')[0].split('_')[1])
-            df = pd.read_csv(os.path.join(self.m.model_ws,self.bc_org,bc_filename),
-                             delim_whitespace=True,header=None,names=['l','r','c','flux'])
-            mlt_file = os.path.join(self.m.model_ws, self.bc_mlt, bc_filename)
-            df.loc[:,"flux"] = 1.0
-            df.to_csv(mlt_file,sep=' ',index=False,header=False)
-            df.loc[:,"parnme"] = ["wf{0:04d}_{1:03d}".format(i,kper) for i in range(df.shape[0])]
-            parnme.extend(list(df.parnme))
-            df.loc[:,"tpl_str"] = df.parnme.apply(lambda x: "~  {0}   ~".format(x))
-            tpl_file = os.path.join(self.m.model_ws,bc_filename+".tpl")
-
-
-            self.logger.statement("writing tpl file "+tpl_file)
-            with open(tpl_file,'w') as f:
-                f.write("ptf ~\n")
-                f.write(df.loc[:,['l','r','c','tpl_str']].to_string(index=False,header=False)+'\n')
-            self.tpl_files.append(os.path.split(tpl_file)[-1])
-            self.in_files.append(os.path.join(self.bc_mlt, bc_filename))
-
-        df = pd.DataFrame({"parnme":parnme}, index=parnme)
-        df.loc[:,"parubnd"] = 1.2
-        df.loc[:,"parlbnd"] = 0.8
-        df.loc[:,"pargp"] = df.parnme.apply(lambda x: "wflux_{0}".format(x.split('_')[-1]))
-        self.par_dfs["wel_flux"] = df
-        self.frun_pre_lines.append("pyemu.helpers.apply_all_wells()")
-        self.log("setup all wells parameterization")
+    # def setup_all_wells(self):
+    #     """helper to setup crazy numbers of well flux multipliers"""
+    #     self.log("setup all wells parameterization")
+    #     if self.m.wel is None:
+    #         self.logger.lraise("setup_all_wells() requires a wel pak")
+    #     pak, attr, col = self.parse_pakattr("wel.flux")
+    #     k_parse = self.parse_k(np.arange(self.m.nper), np.arange(self.m.nper))
+    #     bc_filenames = []
+    #     for k in k_parse:
+    #         bc_filenames.append(self.bc_helper(k, pak, attr, col))
+    #     parnme = []
+    #     for bc_filename in bc_filenames:
+    #         bc_filename = os.path.split(bc_filename)[-1]
+    #         kper = int(bc_filename.split('.')[0].split('_')[1])
+    #         df = pd.read_csv(os.path.join(self.m.model_ws,self.bc_org,bc_filename),
+    #                          delim_whitespace=True,header=None,names=['l','r','c','flux'])
+    #         mlt_file = os.path.join(self.m.model_ws, self.bc_mlt, bc_filename)
+    #         df.loc[:,"flux"] = 1.0
+    #         df.to_csv(mlt_file,sep=' ',index=False,header=False)
+    #         df.loc[:,"parnme"] = ["wf{0:04d}_{1:03d}".format(i,kper) for i in range(df.shape[0])]
+    #         parnme.extend(list(df.parnme))
+    #         df.loc[:,"tpl_str"] = df.parnme.apply(lambda x: "~  {0}   ~".format(x))
+    #         tpl_file = os.path.join(self.m.model_ws,bc_filename+".tpl")
+    #
+    #
+    #         self.logger.statement("writing tpl file "+tpl_file)
+    #         with open(tpl_file,'w') as f:
+    #             f.write("ptf ~\n")
+    #             f.write(df.loc[:,['l','r','c','tpl_str']].to_string(index=False,header=False)+'\n')
+    #         self.tpl_files.append(os.path.split(tpl_file)[-1])
+    #         self.in_files.append(os.path.join(self.bc_mlt, bc_filename))
+    #
+    #     df = pd.DataFrame({"parnme":parnme}, index=parnme)
+    #     df.loc[:,"parubnd"] = 1.2
+    #     df.loc[:,"parlbnd"] = 0.8
+    #     df.loc[:,"pargp"] = df.parnme.apply(lambda x: "wflux_{0}".format(x.split('_')[-1]))
+    #     self.par_dfs["wel_flux"] = df
+    #     self.frun_pre_lines.append("pyemu.helpers.apply_all_wells()")
+    #     self.log("setup all wells parameterization")
 
 
     def bc_helper(self,k,pak,attr,col):
@@ -2865,7 +2892,7 @@ def apply_bc_pars():
         temp_df = pd.read_csv(temp_file, delim_whitespace=True)
         temp_df.loc[:,"split_filename"] = temp_df.filename.apply(lambda x: os.path.split(x)[-1])
         org_dir = temp_df.bc_org.iloc[0]
-        model_exp_path = temp_df.model_ext_path.iloc[0]
+        model_ext_path = temp_df.model_ext_path.iloc[0]
     if os.path.exists(spat_file):
         spat_df = pd.read_csv(spat_file, delim_whitespace=True)
         spat_df.loc[:,"split_filename"] = spat_df.filename.apply(lambda x: os.path.split(x)[-1])
@@ -2895,7 +2922,7 @@ def apply_bc_pars():
         if temp_df is not None and fname in temp_df.split_filename.values:
             temp_df_fname = temp_df.loc[temp_df.split_filename==fname,:]
             names = temp_df_fname.dtype_names.iloc[0].split(',')
-            print(names)
+            #print(names)
         if spat_df is not None and fname in spat_df.split_filename.values:
             spat_df_fname = spat_df.loc[spat_df.split_filename == fname, :]
             names = spat_df_fname.dtype_names.iloc[0].split(',')
@@ -2933,28 +2960,28 @@ def apply_bc_pars():
             f.write(df_list.to_string(header=False,index=False,formatters=fmts)+'\n')
             #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
 
-def apply_all_wells():
-
-    mlt_dir = "bc_mlt"
-    org_dir = "bc_org"
-    names = ["l","r","c","flux"]
-    fmt = {"flux": pyemu.pst_utils.FFMT}
-    for c in names[:-1]:
-        fmt[c] = pyemu.pst_utils.IFMT
-    if not os.path.exists(mlt_dir) or not os.path.exists(org_dir):
-        return
-    mlt_files = os.listdir(mlt_dir)
-    for f in mlt_files:
-        if not "wel" in f.lower():
-            continue
-        org_file = os.path.join(org_dir,f)
-        mlt_file = os.path.join(mlt_dir,f)
-        df_org = pd.read_csv(org_file,header=None,delim_whitespace=True,names=names)
-        df_mlt = pd.read_csv(mlt_file,header=None,delim_whitespace=True,names=names)
-        assert df_org.shape == df_mlt.shape
-        df_org.iloc[:,-1] *= df_mlt.iloc[:,-1]
-        with open(f,'w') as fi:
-            fi.write(df_org.to_string(index=False,header=False,formatters=fmt)+'\n')
+# def apply_all_wells():
+#
+#     mlt_dir = "bc_mlt"
+#     org_dir = "bc_org"
+#     names = ["l","r","c","flux"]
+#     fmt = {"flux": pyemu.pst_utils.FFMT}
+#     for c in names[:-1]:
+#         fmt[c] = pyemu.pst_utils.IFMT
+#     if not os.path.exists(mlt_dir) or not os.path.exists(org_dir):
+#         return
+#     mlt_files = os.listdir(mlt_dir)
+#     for f in mlt_files:
+#         if not "wel" in f.lower():
+#             continue
+#         org_file = os.path.join(org_dir,f)
+#         mlt_file = os.path.join(mlt_dir,f)
+#         df_org = pd.read_csv(org_file,header=None,delim_whitespace=True,names=names)
+#         df_mlt = pd.read_csv(mlt_file,header=None,delim_whitespace=True,names=names)
+#         assert df_org.shape == df_mlt.shape
+#         df_org.iloc[:,-1] *= df_mlt.iloc[:,-1]
+#         with open(f,'w') as fi:
+#             fi.write(df_org.to_string(index=False,header=False,formatters=fmt)+'\n')
 
 
 def plot_flopy_par_ensemble(pst,pe,num_reals=None,model=None,fig_axes_generator=None,
