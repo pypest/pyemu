@@ -119,12 +119,15 @@ pst_config["pestpp_options"] = {}
 def read_resfile(resfile):
         """load a residual file into a pandas.DataFrame
 
-        Parameters:
-            resfile : (str)
-                residual file name
+        Parameters
+        ----------
+        resfile : str
+            residual file name
 
-        Returns:
-            pandas.DataFrame : pandas.DataFrame
+        Returns
+        -------
+        pandas.DataFrame : pandas.DataFrame
+
         """
         assert os.path.exists(resfile),"read_resfile() error: resfile " +\
                                        "{0} not found".format(resfile)
@@ -148,12 +151,15 @@ def read_resfile(resfile):
 def read_parfile(parfile):
     """load a pest-compatible .par file into a pandas.DataFrame
 
-    Parameters:
-        parfile : (str)
-            pest parameter file name
+    Parameters
+    ----------
+    parfile : str
+        pest parameter file name
 
-    Returns:
-        pandas.DataFrame : pandas.DataFrame
+    Returns
+    -------
+    pandas.DataFrame : pandas.DataFrame
+
     """
     assert os.path.exists(parfile), "Pst.parrep(): parfile not found: " +\
                                     str(parfile)
@@ -168,15 +174,13 @@ def read_parfile(parfile):
 def write_parfile(df,parfile):
     """ write a pest parameter file from a dataframe
 
-    Parameters:
-        df : (pandas.DataFrame)
-            dataframe with column names that correspond to the entries
-            in the parameter data section of a pest control file
-        parfile : (str)
-            name of the parameter file to write
-
-    Returns:
-        None
+    Parameters
+    ----------
+    df : (pandas.DataFrame)
+        dataframe with column names that correspond to the entries
+        in the parameter data section of a pest control file
+    parfile : str
+        name of the parameter file to write
 
     """
     columns = ["parnme","parval1","scale","offset"]
@@ -201,14 +205,18 @@ def write_parfile(df,parfile):
 def parse_tpl_file(tpl_file):
     """ parse a pest template file to get the parameter names
 
-    Parameters:
-        tpl_file : (str)
-            template file name
+    Parameters
+    ----------
+    tpl_file : str
+        template file name
+
     Returns
-        par_names : list
-            list of parameter names
+    -------
+    par_names : list
+        list of parameter names
+
     """
-    par_names = []
+    par_names = set()
     with open(tpl_file,'r') as f:
         try:
             header = f.readline().strip().split()
@@ -224,35 +232,52 @@ def parse_tpl_file(tpl_file):
                 "template file error: marker must be a single character, not:" +\
                 str(marker)
             for line in f:
-                par_line = line.strip().split(marker)[1::2]
-                for p in par_line:
-                    if p not in par_names:
-                        par_names.append(p)
+                par_line = set(line.lower().strip().split(marker)[1::2])
+                par_names.update(par_line)
+                #par_names.extend(par_line)
+                #for p in par_line:
+                #    if p not in par_names:
+                #        par_names.append(p)
         except Exception as e:
             raise Exception("error processing template file " +\
                             tpl_file+" :\n" + str(e))
-    par_names = [pn.strip().lower() for pn in par_names]
-    return par_names
+    #par_names = [pn.strip().lower() for pn in par_names]
+    #seen = set()
+    #seen_add = seen.add
+    #return [x for x in par_names if not (x in seen or seen_add(x))]
+    return [p.strip() for p in list(par_names)]
 
 
-def write_parvals_in_tplfiles(pst):
+def write_input_files(pst):
     """write parameter values to a model input files using a template files with
     current parameter values (stored in Pst.parameter_data.parval1).
     This is a simple implementation of what PEST does.  It does not
     handle all the special cases, just a basic function...user beware
 
-    Parameters:
-        pst : (pyemu.Pst)
-            a Pst instance
-
-    Returns:
-        None
+    Parameters
+    ----------
+    pst : (pyemu.Pst)
+        a Pst instance
 
     """
+    par = pst.parameter_data
+    par.loc[:,"parval1_trans"] = (par.parval1 * par.scale) + par.offset
     for tpl_file,in_file in zip(pst.template_files,pst.input_files):
-        write_to_template(pst.parameter_data.parval1,tpl_file,in_file)
+        write_to_template(pst.parameter_data.parval1_trans,tpl_file,in_file)
 
 def write_to_template(parvals,tpl_file,in_file):
+    """ write parameter values to model input files using template files
+
+    Parameters
+    ----------
+    parvals : dict or pandas.Series
+        a way to look up parameter values using parameter names
+    tpl_file : str
+        template file
+    in_file : str
+        input file
+
+    """
     f_in = open(in_file,'w')
     f_tpl = open(tpl_file,'r')
     header = f_tpl.readline().strip().split()
@@ -298,17 +323,20 @@ def write_to_template(parvals,tpl_file,in_file):
 
 def get_marker_indices(marker,line):
     """ method to find the start and end parameter markers
-    on a template file line
+    on a template file line.  Used by write_to_template()
 
-    Parameters:
-        marker : (str)
-            template file marker char
-        line : (str)
-            template file line
+    Parameters
+    ----------
+    marker : str
+        template file marker char
+    line : str
+        template file line
 
-    Returns:
-        indices : list
-            list of start and end indices (zero based)
+    Returns
+    -------
+    indices : list
+        list of start and end indices (zero based)
+
     """
     indices = [i for i, ltr in enumerate(line) if ltr == marker]
     start = indices[0:-1:2]
@@ -321,11 +349,14 @@ def parse_ins_file(ins_file):
     """parse a pest instruction file to get observation names
 
     Parameters
-        ins_file : (str)
-            instruction file name
+    ----------
+    ins_file : str
+        instruction file name
 
-    Returns:
-        list of observation names
+    Returns
+    -------
+    list of observation names
+
     """
 
     obs_names = []
@@ -339,26 +370,30 @@ def parse_ins_file(ins_file):
             "instruction file error: marker must be a single character, not:" +\
             str(marker)
         for line in f:
+            line = line.lower()
             if marker in line:
-                raw = line.strip().split(marker)
+                raw = line.lower().strip().split(marker)
                 for item in raw[::2]:
                     obs_names.extend(parse_ins_string(item))
             else:
                 obs_names.extend(parse_ins_string(line.strip()))
-    obs_names = [on.strip().lower() for on in obs_names]
+    #obs_names = [on.strip().lower() for on in obs_names]
     return obs_names
 
 
 def parse_ins_string(string):
     """ split up an instruction file line to get the observation names
 
-    Parameters:
-        string : (str)
-            instruction file line
+    Parameters
+    ----------
+    string : str
+        instruction file line
 
-    Returns:
-        obs_names : list
-            list of observation names
+    Returns
+    -------
+    obs_names : list
+        list of observation names
+
     """
     istart_markers = ["[","(","!"]
     iend_markers = ["]",")","!"]
@@ -391,18 +426,21 @@ def populate_dataframe(index,columns, default_dict, dtype):
     """ helper function to populate a generic Pst dataframe attribute.  This
     function is called as part of constructing a generic Pst instance
 
-    Parameters:
-        index : (varies)
-            something to use as the dataframe index
-        columns: (varies)
-            something to use as the dataframe columns
-        default_dict : (dict)
-            dictionary of default values for columns
-        dtype : numpy.dtype
-            dtype used to cast dataframe columns
+    Parameters
+    ----------
+    index : (varies)
+        something to use as the dataframe index
+    columns: (varies)
+        something to use as the dataframe columns
+    default_dict : (dict)
+        dictionary of default values for columns
+    dtype : numpy.dtype
+        dtype used to cast dataframe columns
 
-    Returns:
-        new_df : pandas.DataFrame
+    Returns
+    -------
+    new_df : pandas.DataFrame
+
     """
     new_df = pd.DataFrame(index=index,columns=columns)
     for fieldname,dt in zip(columns,dtype.descr):
@@ -416,14 +454,16 @@ def generic_pst(par_names=["par1"],obs_names=["obs1"],addreg=False):
     """generate a generic pst instance.  This can used to later fill in
     the Pst parts programatically.
 
-    Parameters:
-        par_names : (list)
-            parameter names to setup
-        obs_names : (list)
-            observation names to setup
+    Parameters
+    ----------
+    par_names : (list)
+        parameter names to setup
+    obs_names : (list)
+        observation names to setup
 
-    Returns:
-        new_pst : pyemu.Pst
+    Returns
+    -------
+    new_pst : pyemu.Pst
 
     """
     if not isinstance(par_names,list):
@@ -439,11 +479,13 @@ def generic_pst(par_names=["par1"],obs_names=["obs1"],addreg=False):
                                   new_pst.par_defaults,new_pst.par_dtype)
     par_data.loc[:,"parnme"] = par_names
     par_data.index = par_names
+    par_data.sort_index(inplace=True)
     new_pst.parameter_data = par_data
     obs_data = populate_dataframe(obs_names,new_pst.obs_fieldnames,
                                   new_pst.obs_defaults,new_pst.obs_dtype)
     obs_data.loc[:,"obsnme"] = obs_names
     obs_data.index = obs_names
+    obs_data.sort_index(inplace=True)
     new_pst.observation_data = obs_data
 
     new_pst.template_files = ["file.tpl"]
@@ -467,21 +509,23 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     """ generate a new pyemu.Pst instance from model interface files.  This
     function is emulated in the Pst.from_io_files() class method.
 
-    Parameters:
-        tpl_files : (list)
-            template file names
-        in_files : (list)
-            model input file names
-        ins_files : (list)
-            instruction file names
-        out_files : (list)
-            model output file names
-        pst_filename : (str)
-            filename to save new pyemu.Pst.  If None, Pst is not written.
-            default is None
+    Parameters
+    ----------
+    tpl_files : (list)
+        template file names
+    in_files : (list)
+        model input file names
+    ins_files : (list)
+        instruction file names
+    out_files : (list)
+        model output file names
+    pst_filename : str
+        filename to save new pyemu.Pst.  If None, Pst is not written.
+        default is None
 
-    Returns:
-      new_pst : pyemu.Pst
+    Returns
+    -------
+    new_pst : pyemu.Pst
 
     """
     import warnings
@@ -498,87 +542,103 @@ def try_run_inschek(pst):
     file pair in a pyemu.Pst.  If the run is successful, the INSCHEK written
     .obf file is used to populate the pst.observation_data.obsval attribute
 
-    Parameters:
-        pst : (pyemu.Pst)
-
-    Returns:
-        None
+    Parameters
+    ----------
+    pst : (pyemu.Pst)
 
     """
     for ins_file,out_file in zip(pst.instruction_files,pst.output_files):
-        try:
-            #os.system("inschek {0} {1}".format(ins_file,out_file))
-            pyemu.helpers.run("inschek {0} {1}".format(ins_file,out_file))
-            obf_file = ins_file.replace(".ins",".obf")
-            df = pd.read_csv(obf_file,delim_whitespace=True,
-                             skiprows=0,index_col=0,names=["obsval"])
-            pst.observation_data.loc[df.index,"obsval"] = df["obsval"]
-        except Exception as e:
-            print("error using inschek for instruction file {0}:{1}".
-                  format(ins_file,str(e)))
-            print("observations in this instruction file will have"+
-                  "generic values.")
+        df = _try_run_inschek(ins_file,out_file)
+        if df is not None:
+            pst.observation_data.loc[df.index, "obsval"] = df.obsval
 
+
+def _try_run_inschek(ins_file,out_file):
+    try:
+        # os.system("inschek {0} {1}".format(ins_file,out_file))
+        pyemu.helpers.run("inschek {0} {1}".format(ins_file, out_file))
+        obf_file = ins_file.replace(".ins", ".obf")
+        df = pd.read_csv(obf_file, delim_whitespace=True,
+                         skiprows=0, index_col=0, names=["obsval"])
+        df.index = df.index.map(str.lower)
+        return df
+    except Exception as e:
+        print("error using inschek for instruction file {0}:{1}".
+              format(ins_file, str(e)))
+        print("observations in this instruction file will have" +
+              "generic values.")
+        return None
 
 
 def get_phi_comps_from_recfile(recfile):
-        """read the phi components from a record file by iteration
+    """read the phi components from a record file by iteration
 
-        Parameters:
-            recfile : (str)
-                pest record file name
-        Returns:
-            iters : dict
-                nested dictionary of iteration number, {group,contribution}
-        """
-        iiter = 1
-        iters = {}
-        f = open(recfile,'r')
-        while True:
-            line = f.readline()
-            if line == '':
-                break
-            if "starting phi for this iteration" in line.lower() or \
-                "final phi" in line.lower():
-                contributions = {}
-                while True:
-                    line = f.readline()
-                    if line == '':
-                        break
-                    if "contribution to phi" not in line.lower():
-                        iters[iiter] = contributions
-                        iiter += 1
-                        break
-                    raw = line.strip().split()
-                    val = float(raw[-1])
-                    group = raw[-3].lower().replace('\"', '')
-                    contributions[group] = val
-        return iters
+    Parameters
+    ----------
+    recfile : str
+        pest record file name
+
+    Returns
+    -------
+    iters : dict
+        nested dictionary of iteration number, {group,contribution}
+
+    """
+    iiter = 1
+    iters = {}
+    f = open(recfile,'r')
+    while True:
+        line = f.readline()
+        if line == '':
+            break
+        if "starting phi for this iteration" in line.lower() or \
+            "final phi" in line.lower():
+            contributions = {}
+            while True:
+                line = f.readline()
+                if line == '':
+                    break
+                if "contribution to phi" not in line.lower():
+                    iters[iiter] = contributions
+                    iiter += 1
+                    break
+                raw = line.strip().split()
+                val = float(raw[-1])
+                group = raw[-3].lower().replace('\"', '')
+                contributions[group] = val
+    return iters
 
 def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
-               gwutils_compliant=False, datetime_format=None):
+               gwutils_compliant=False, datetime_format=None,prefix=''):
     """ create an instruction file for an smp file
 
-    Parameters:
-        smp_filename : (str)
-            existing smp file
-        ins_filename: (str)
-            instruction file to create.  If None, create
-            an instruction file using the smp filename
-            with the ".ins" suffix
-        use_generic_names : (boolean)
-            flag to force observations names to use a generic
-            int counter instead of trying to use a datetime str
-        gwutils_compliant : (boolean)
-            flag to use instruction set that is compliant with the
-            pest gw utils (fixed format instructions).  If false,
-            use free format (with whitespace) instruction set
-        datetime_format : (str)
-            str to pass to datetime.strptime in the smp_to_dataframe() function
+    Parameters
+    ----------
+    smp_filename : str
+        existing smp file
+    ins_filename: str
+        instruction file to create.  If None, create
+        an instruction file using the smp filename
+        with the ".ins" suffix
+    use_generic_names : bool
+        flag to force observations names to use a generic
+        int counter instead of trying to use a datetime str
+    gwutils_compliant : bool
+        flag to use instruction set that is compliant with the
+        pest gw utils (fixed format instructions).  If false,
+        use free format (with whitespace) instruction set
+    datetime_format : str
+        str to pass to datetime.strptime in the smp_to_dataframe() function
+    prefix : str
+         a prefix to add to the front of the obsnmes.  Default is ''
 
-    Returns:
+
+    Returns
+    -------
+    df : pandas.DataFrame
         dataframe instance of the smp file with the observation names and
         instruction lines as additional columns
+
     """
     if ins_filename is None:
         ins_filename = smp_filename+".ins"
@@ -588,9 +648,9 @@ def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
     name_groups = df.groupby("name").groups
     for name,idxs in name_groups.items():
         if not use_generic_names and len(name) <= 11:
-            onames = df.loc[idxs,"datetime"].apply(lambda x: name+'_'+x.strftime("%d%m%Y")).values
+            onames = df.loc[idxs,"datetime"].apply(lambda x: prefix+name+'_'+x.strftime("%d%m%Y")).values
         else:
-            onames = [name+"_{0:d}".format(i) for i in range(len(idxs))]
+            onames = [prefix+name+"_{0:d}".format(i) for i in range(len(idxs))]
         if False in (map(lambda x :len(x) <= 20,onames)):
             long_names = [oname for oname in onames if len(oname) > 20]
             raise Exception("observation names longer than 20 chars:\n{0}".format(str(long_names)))
@@ -620,23 +680,22 @@ def dataframe_to_smp(dataframe,smp_filename,name_col="name",
                      max_name_len=12):
     """ write a dataframe as an smp file
 
-    Parameters:
-        dataframe : (pandas.DataFrame)
-        smp_filename : (str)
-            smp file to write
-        name_col: (str)
-            the column in the dataframe the marks the site namne
-        datetime_col: (str)
-            the column in the dataframe that is a datetime instance
-        value_col: (str)
-            the column in the dataframe that is the values
-        datetime_format: (str)
-            either 'dd/mm/yyyy' or 'mm/dd/yyy'
-        value_format: (str)
-            a python float-compatible format
+    Parameters
+    ----------
+    dataframe : pandas.DataFrame
+    smp_filename : str
+        smp file to write
+    name_col: str
+        the column in the dataframe the marks the site namne
+    datetime_col: str
+        the column in the dataframe that is a datetime instance
+    value_col: str
+        the column in the dataframe that is the values
+    datetime_format: str
+        either 'dd/mm/yyyy' or 'mm/dd/yyy'
+    value_format: str
+        a python float-compatible format
 
-    Returns:
-        None
     """
     formatters = {"name":lambda x:"{0:<20s}".format(str(x)[:max_name_len]),
                   "value":lambda x:value_format.format(x)}
@@ -670,13 +729,15 @@ def dataframe_to_smp(dataframe,smp_filename,name_col="name",
 def date_parser(items):
     """ datetime parser to help load smp files
 
-    Parameters:
-        items : (varies)
-            something or somethings to try to parse into datetimes
+    Parameters
+    ----------
+    items : iterable
+        something or somethings to try to parse into datetimes
 
-    Returns:
-        dt : (varies)
-            the cast datetime things
+    Returns
+    -------
+    dt : iterable
+        the cast datetime things
     """
     try:
         dt = datetime.strptime(items,"%d/%m/%Y %H:%M:%S")
@@ -692,16 +753,19 @@ def date_parser(items):
 def smp_to_dataframe(smp_filename,datetime_format=None):
     """ load an smp file into a pandas dataframe (stacked in wide format)
 
-    Parameters:
-        smp_filename : (str)
-            smp filename to load
-        datetime_format : (str)
-            should be either "%m/%d/%Y %H:%M:%S" or "%d/%m/%Y %H:%M:%S"
-            If None, then we will try to deduce the format for you, which
-            always dangerous
+    Parameters
+    ----------
+    smp_filename : str
+        smp filename to load
+    datetime_format : str
+        should be either "%m/%d/%Y %H:%M:%S" or "%d/%m/%Y %H:%M:%S"
+        If None, then we will try to deduce the format for you, which
+        always dangerous
 
-    Returns:
-        df : pandas.DataFrame
+    Returns
+    -------
+    df : pandas.DataFrame
+
     """
 
     if datetime_format is not None:
@@ -733,12 +797,15 @@ def res_from_obseravtion_data(observation_data):
     """create a generic residual dataframe filled with np.NaN for
     missing information
 
-    Parameters:
-        observation_data : (pandas.DataFrame)
-            pyemu.Pst.observation_data
+    Parameters
+    ----------
+    observation_data : pandas.DataFrame
+        pyemu.Pst.observation_data
 
-    Returns:
-        res_df : pandas.DataFrame
+    Returns
+    -------
+    res_df : pandas.DataFrame
+
     """
     res_df = observation_data.copy()
     res_df.loc[:, "name"] = res_df.pop("obsnme")
@@ -748,7 +815,39 @@ def res_from_obseravtion_data(observation_data):
     res_df.loc[:, "residual"] = np.NaN
     return res_df
 
+def clean_missing_exponent(pst_filename,clean_filename="clean.pst"):
+    """fixes the issue where some terrible fortran program may have
+    written a floating point format without the 'e' - like 1.0-3, really?!
 
+    Parameters
+    ----------
+    pst_filename : str
+        the pest control file
+    clean_filename : str
+        the new pest control file to write. Default is "clean.pst"
+
+    Returns
+    -------
+    None
+
+
+    """
+    lines = []
+    with open(pst_filename,'r') as f:
+        for line in f:
+            line = line.lower().strip()
+            if '+' in line:
+                raw = line.split('+')
+                for i,r in enumerate(raw[:-1]):
+                    if r[-1] != 'e':
+                        r = r + 'e'
+                    raw[i] = r
+                lines.append('+'.join(raw))
+            else:
+                lines.append(line)
+    with open(clean_filename,'w') as f:
+        for line in lines:
+            f.write(line+'\n')
 
 
 

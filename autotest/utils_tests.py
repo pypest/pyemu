@@ -188,6 +188,40 @@ def ppcov_simple_test():
         assert np.abs(delt).max() < 1.0e-7
 
 
+
+def ppcov_simple_sparse_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
+
+    pts_file = os.path.join("utils","points1_test.dat")
+    str_file = os.path.join("utils","struct_test.dat")
+
+    mat1_file = os.path.join("utils","ppcov.struct1.out")
+    mat2_file = os.path.join("utils","ppcov.struct2.out")
+    mat3_file = os.path.join("utils","ppcov.struct3.out")
+
+    ppc_mat1 = pyemu.Cov.from_ascii(mat1_file)
+    ppc_mat2 = pyemu.Cov.from_ascii(mat2_file)
+    ppc_mat3 = pyemu.Cov.from_ascii(mat3_file)
+
+    pts = pd.read_csv(pts_file,header=None,names=["name","x","y"],usecols=[0,1,2],
+                      delim_whitespace=True)
+
+    struct1,struct2,struct3 = pyemu.utils.geostats.read_struct_file(str_file)
+    print(struct1)
+    print(struct2)
+    print(struct3)
+
+    for mat,struct in zip([ppc_mat1,ppc_mat2,ppc_mat3],[struct1,struct2,struct3]):
+
+        str_mat = struct.sparse_covariance_matrix(x=pts.x,y=pts.y,names=pts.name)
+        str_mat1 = str_mat.to_matrix()
+        delt = mat.x - str_mat1.x
+        print(delt)
+        assert np.abs(delt).max() < 1.0e-7
+
 def setup_ppcov_complex():
     import os
     import platform
@@ -245,6 +279,44 @@ def ppcov_complex_test():
         assert np.abs(delt).max() < 1.0e-7
         #break
 
+
+def ppcov_complex_sparse_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
+
+    pts_file = os.path.join("utils","points1_test.dat")
+    str_file = os.path.join("utils","struct_complex.dat")
+
+    mat1_file = os.path.join("utils","ppcov.complex.struct1.out")
+    mat2_file = os.path.join("utils","ppcov.complex.struct2.out")
+
+    ppc_mat1 = pyemu.Cov.from_ascii(mat1_file)
+    ppc_mat2 = pyemu.Cov.from_ascii(mat2_file)
+
+    pts = pd.read_csv(pts_file,header=None,names=["name","x","y"],usecols=[0,1,2],
+                      delim_whitespace=True)
+
+    struct1,struct2 = pyemu.utils.geostats.read_struct_file(str_file)
+    print(struct1)
+    print(struct2)
+
+    for mat,struct in zip([ppc_mat1,ppc_mat2],[struct1,struct2]):
+
+        str_mat = struct.sparse_covariance_matrix(x=pts.x,y=pts.y,names=pts.name)
+        str_mat1 = str_mat.to_matrix()
+        delt = mat.x - str_mat1.x
+        print(mat.x)
+        print(str_mat1.x)
+        print(delt)
+
+
+        print(np.abs(delt).max())
+
+        assert np.abs(delt).max() < 1.0e-7
+        #break
+
 def pp_to_tpl_test():
     import os
     import pyemu
@@ -292,15 +364,18 @@ def setup_pp_test():
     pp_dir = os.path.join("utils")
     ml.export(os.path.join("temp","test_unrot_grid.shp"))
 
-    par_info_unrot = pyemu.gw_utils.setup_pilotpoints_grid(ml,prefix_dict={0:["hk1_","sy1_","rch_"]},
+    par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(ml,prefix_dict={0:["hk1_","sy1_","rch_"]},
                                                      every_n_cell=2,pp_dir=pp_dir,tpl_dir=pp_dir,
                                                      shapename=os.path.join("temp","test_unrot.shp"))
+
+
+
 
     ml.sr.rotation = 15
     ml.export(os.path.join("temp","test_rot_grid.shp"))
     #pyemu.gw_utils.setup_pilotpoints_grid(ml)
 
-    par_info_rot = pyemu.gw_utils.setup_pilotpoints_grid(ml,every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
+    par_info_rot = pyemu.pp_utils.setup_pilotpoints_grid(ml,every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
                                                      shapename=os.path.join("temp", "test_rot.shp"))
 
     print(par_info_unrot.x)
@@ -409,6 +484,10 @@ def zero_order_regul_test():
     assert pst.control_data.pestmode == "regularization"
     pst.write(os.path.join('temp','test.pst'))
 
+    pyemu.helpers.zero_order_tikhonov(pst,reset=False)
+    assert pst.prior_information.shape[0] == pst.npar_adj * 2
+
+
 
 def kl_test():
     import os
@@ -427,10 +506,10 @@ def kl_test():
     arr_dict["hk_tru"] = np.loadtxt(os.path.join("..","verification",
                                                  "Freyberg","extra_crispy",
                                                  "hk.truth.ref"))
-    basis_file = os.path.join("utils","basis.dat")
+    basis_file = os.path.join("utils","basis.jco")
     tpl_file = os.path.join("utils","test.tpl")
     back_dict = pyemu.utils.helpers.kl_setup(num_eig=800,sr=ml.sr,
-                                             struct_file =str_file,
+                                             struct=str_file,
                                              array_dict=arr_dict,
                                              basis_file=basis_file,
                                              tpl_file=tpl_file)
@@ -617,6 +696,23 @@ def mflist_budget_test():
     assert os.path.exists(list_filename)
     pyemu.gw_utils.setup_mflist_budget_obs(list_filename,start_datetime=ml.start_datetime)
 
+def mtlist_budget_test():
+    import pyemu
+    import os
+    try:
+        import flopy
+    except:
+        print("no flopy...")
+        return
+    list_filename = os.path.join("utils","mt3d.list")
+    assert os.path.exists(list_filename)
+    frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(list_filename,start_datetime='1-1-1970')
+    assert len(ins_files) == 2
+
+    frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(list_filename, start_datetime=None)
+    assert len(ins_files) == 2
+
+
 
 def geostat_prior_builder_test():
     import os
@@ -625,8 +721,10 @@ def geostat_prior_builder_test():
     pst_file = os.path.join("pst","pest.pst")
     pst = pyemu.Pst(pst_file)
 
-    tpl_file = os.path.join("utils","pp_locs.tpl")
-    str_file = os.path.join("utils","structure.dat")
+    tpl_file = os.path.join("utils", "pp_locs.tpl")
+    str_file = os.path.join("utils", "structure.dat")
+
+
     cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{str_file:tpl_file})
     d1 = np.diag(cov.x)
 
@@ -640,6 +738,23 @@ def geostat_prior_builder_test():
     assert nnz == pst.npar
     d2 = np.diag(cov.x)
     assert np.array_equiv(d1, d2)
+
+    ttpl_file = os.path.join("temp", "temp.dat.tpl")
+    with open(ttpl_file, 'w') as f:
+        f.write("ptf ~\n ~ temp1  ~\n")
+    pst.add_parameters(ttpl_file, ttpl_file.replace(".tpl", ""))
+
+    pst.parameter_data.loc["temp1", "parubnd"] = 1.1
+    pst.parameter_data.loc["temp1", "parlbnd"] = 0.9
+
+    cov = pyemu.helpers.geostatistical_prior_builder(pst, {str_file: tpl_file})
+    assert cov.shape[0] == 602
+
+    scov = pyemu.helpers.sparse_geostatistical_prior_builder(pst,{str_file: tpl_file}).to_matrix()
+    d = (cov - scov).x
+    #print(d)
+    print(d.max())
+
 
 # def linearuniversal_krige_test():
 #     try:
@@ -775,6 +890,49 @@ def plot_summary_test():
         plt.close(fig)
 
 
+
+
+def hds_timeseries_test():
+    import os
+    import shutil
+    import numpy as np
+    import pandas as pd
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+
+    model_ws =os.path.join("..","examples","Freyberg_transient")
+    org_hds_file = os.path.join(model_ws, "freyberg.hds")
+    hds_file = os.path.join("temp", "freyberg.hds")
+    shutil.copy2(org_hds_file, hds_file)
+    kij_dict = {"test1":[0,0,0],"test2":(1,1,1)}
+
+    pyemu.gw_utils.setup_hds_timeseries(hds_file,kij_dict,include_path=True)
+    pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, include_path=True,prefix="hds")
+
+    m = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,load_only=[],check=False)
+    pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict,model=m,include_path=True)
+    pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, model=m, include_path=True,prefix="hds")
+
+    org_hds_file = os.path.join("utils", "MT3D001.UCN")
+    hds_file = os.path.join("temp", "MT3D001.UCN")
+    shutil.copy2(org_hds_file, hds_file)
+    kij_dict = {"test1": [0, 0, 0], "test2": (1, 1, 1)}
+
+    pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, include_path=True)
+    pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, include_path=True, prefix="hds")
+
+    m = flopy.modflow.Modflow.load("freyberg.nam", model_ws=model_ws, load_only=[], check=False)
+    pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, model=m, include_path=True)
+    pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, model=m, include_path=True, prefix="hds")
+
+    # df1 = pd.read_csv(out_file, delim_whitespace=True)
+    # pyemu.gw_utils.apply_hds_obs(hds_file)
+    # df2 = pd.read_csv(out_file, delim_whitespace=True)
+    # diff = df1.obsval - df2.obsval
+
 def grid_obs_test():
     import os
     import shutil
@@ -795,7 +953,7 @@ def grid_obs_test():
     pyemu.gw_utils.apply_hds_obs(hds_file)
     df2 = pd.read_csv(out_file,delim_whitespace=True)
     diff = df1.obsval - df2.obsval
-    assert diff.max() < 1.0e-6
+    assert diff.max() < 1.0e-6,diff.max()
 
     pyemu.gw_utils.setup_hds_obs(hds_file,skip=-999)
     df1 = pd.read_csv(out_file,delim_whitespace=True)
@@ -855,22 +1013,95 @@ def par_knowledge_test():
     assert np.array_equiv(d1, d2)
 
 
+def gw_sft_ins_test():
+    import os
+    import pyemu
+
+    sft_outfile = os.path.join("utils","test_sft.out")
+    #pyemu.gw_utils.setup_sft_obs(sft_outfile)
+    #pyemu.gw_utils.setup_sft_obs(sft_outfile,start_datetime="1-1-1970")
+    pyemu.gw_utils.setup_sft_obs(sft_outfile, start_datetime="1-1-1970",times=[10950.00])
+
+
+def sfr_helper_test():
+    import os
+    import shutil
+    import pandas as pd
+    import pyemu
+    import flopy
+
+    #setup the process
+    df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters("supply2.nam",model_ws="utils")
+    print(df_sfr)
+    os.chdir("utils")
+    # change some hcond1 values
+    df = pd.read_csv("sfr_seg_pars.dat",delim_whitespace=True)
+    df.loc[:,"hcond1"] = 0.5
+    df.to_csv("sfr_seg_pars.dat",sep=' ')
+
+    #change the name of the sfr file that will be created
+    pars = {}
+    with open("sfr_seg_pars.config") as f:
+        for line in f:
+            line = line.strip().split()
+            pars[line[0]] = line[1]
+    pars["sfr_filename"] = "test.sfr"
+    with open("sfr_seg_pars.config",'w') as f:
+        for k,v in pars.items():
+            f.write("{0} {1}\n".format(k,v))
+
+    #make sure the hcond1 mult worked...
+    sd1 = pyemu.gw_utils.apply_sfr_seg_parameters().segment_data[0]
+    m1 = flopy.modflow.Modflow.load("supply2.nam",load_only=["sfr"],check=False)
+    sd2 = m1.sfr.segment_data[0]
+
+    sd1 = pd.DataFrame.from_records(sd1)
+    sd2 = pd.DataFrame.from_records(sd2)
+
+    #print(sd1.hcond1)
+    #print(sd2.hcond2)
+
+    os.chdir("..")
+
+    assert (sd1.hcond1 * 2.0).sum() == sd2.hcond1.sum()
+
+
+def sfr_obs_test():
+    import os
+    import pyemu
+    import flopy
+
+    sfr_file = os.path.join("utils","freyberg.sfr.out")
+    pyemu.gw_utils.setup_sfr_obs(sfr_file)
+    pyemu.gw_utils.setup_sfr_obs(sfr_file,seg_group_dict={"obs1":[1,4],"obs2":[16,17,18,19,22,23]})
+
+    m = flopy.modflow.Modflow.load("freyberg.nam",model_ws="utils",load_only=[],check=False)
+    pyemu.gw_utils.setup_sfr_obs(sfr_file,model=m)
+    pyemu.gw_utils.setup_sfr_obs(sfr_file, seg_group_dict={"obs1": [1, 4], "obs2": [16, 17, 18, 19, 22, 23]},model=m)
+
 if __name__ == "__main__":
-    par_knowledge_test()
-    # grid_obs_test()
-    # plot_summary_test()
+    #sfr_obs_test()
+    #setup_pp_test()
+    #sfr_helper_test()
+    #gw_sft_ins_test()
+    # par_knowledge_test()
+    #grid_obs_test()
+    #hds_timeseries_test()
+    #plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
     # make_hydmod_insfile_test()
     # gslib_2_dataframe_test()
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
-    # geostat_prior_builder_test()
-    # mflist_budget_test()
+    geostat_prior_builder_test()
+    #mflist_budget_test()
+    #mtlist_budget_test()
     # tpl_to_dataframe_test()
-    # kl_test()
+    #kl_test()
+    #more_kl_test()
     #zero_order_regul_test()
-    #first_order_pearson_regul_test()
+    # first_order_pearson_regul_test()
     # master_and_slaves()
     # smp_to_ins_test()
     # read_pestpp_runstorage_file_test()
@@ -878,12 +1109,13 @@ if __name__ == "__main__":
     # pp_to_shapefile_test()
     # read_pval_test()
     # read_hob_test()
-    # setup_pp_test()
+    #setup_pp_test()
     # pp_to_tpl_test()
     # setup_ppcov_complex()
     # ppcov_complex_test()
     # setup_ppcov_simple()
-    # ppcov_simple_test()
+    #ppcov_simple_sparse_test()
+    #ppcov_complex_sparse_test()
     # fac2real_test()
     # vario_test()
     # geostruct_test()

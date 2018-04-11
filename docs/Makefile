@@ -6,7 +6,8 @@ SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = pyemu
 SOURCEDIR     = .
-BUILDDIR      = _build
+#BUILDDIR      = _build
+BUILDDIR      = ../../pyemudoc
 
 # Put it first so that "make" without argument is like "make help".
 help:

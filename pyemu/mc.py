@@ -13,17 +13,26 @@ from pyemu.mat import Cov
 class MonteCarlo(LinearAnalysis):
     """LinearAnalysis derived type for monte carlo analysis
 
-    Parameters:
-        **kwargs : (varies)
-            dictionary of keyword arguments.  See pyemu.LinearAnalysis for
-            complete definitions
+    Parameters
+    ----------
+    **kwargs : dict
+        dictionary of keyword arguments.  See pyemu.LinearAnalysis for
+        complete definitions
 
-    Attributes:
-        parensemble : (pyemu.ParameterEnsemble)
-        obsensemble : (pyemu.ObservationEnsemble)
+    Attributes
+    ----------
+    parensemble : pyemu.ParameterEnsemble
+    obsensemble : pyemu.ObservationEnsemble
 
-    Returns:
-        MonteCarlo : MonteCarlo
+    Returns
+    -------
+    MonteCarlo : MonteCarlo
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>mc = pyemu.MonteCarlo(pst="pest.pst")``
 
     """
     def __init__(self,**kwargs):
@@ -37,8 +46,10 @@ class MonteCarlo(LinearAnalysis):
     def num_reals(self):
         """ get the number of realizations in the parameter ensemble
 
-        Returns:
-            num_real : int
+        Returns
+        -------
+        num_real : int
+        
         """
         return self.parensemble.shape[0]
 
@@ -47,16 +58,20 @@ class MonteCarlo(LinearAnalysis):
             a ratio between the largest and smallest singular
             values
 
-        Parameters:
-            epsilon: (float)
-                singular value ratio
+        Parameters
+        ----------
+        epsilon: float
+            singular value ratio
 
-        Returns :
-
-            nsing : float
-                number of singular components above the epsilon ratio threshold
-        Note:
+        Returns
+        -------
+        nsing : float
+            number of singular components above the epsilon ratio threshold
+        
+        Note
+        -----
             If nsing == nadj_par, then None is returned
+        
         """
         mx = self.xtqx.shape[0]
         nsing = mx - np.searchsorted(
@@ -69,14 +84,18 @@ class MonteCarlo(LinearAnalysis):
     def get_null_proj(self,nsing=None):
         """ get a null-space projection matrix of XTQX
 
-        Parameters:
-            nsing: (int)
-                optional number of singular components to use
-                If Nonte, then nsing is determined from
-                call to MonteCarlo.get_nsing()
-        Returns:
-            v2_proj : pyemu.Matrix
-                the null-space projection matrix (V2V2^T)
+        Parameters
+        ----------
+        nsing: int
+            optional number of singular components to use
+            If Nonte, then nsing is determined from
+            call to MonteCarlo.get_nsing()
+        
+        Returns
+        -------
+        v2_proj : pyemu.Matrix
+            the null-space projection matrix (V2V2^T)
+        
         """
         if nsing is None:
             nsing = self.get_nsing()
@@ -93,27 +112,37 @@ class MonteCarlo(LinearAnalysis):
         return v2_proj
 
     def draw(self, num_reals=1, par_file = None, obs=False,
-             enforce_bounds=None,cov=None, how="gaussian"):
+             enforce_bounds=None, cov=None, how="gaussian"):
         """draw stochastic realizations of parameters and
            optionally observations, filling MonteCarlo.parensemble and
            optionally MonteCarlo.obsensemble.
 
-        Parameters:
-            num_reals : (int)
-                number of realization to generate
-            par_file : (str)
-                parameter file to use as mean values. If None,
-                use MonteCarlo.pst.parameter_data.parval1.
-                Default is None
-            obs : (boolean)
-                add a realization of measurement noise to observation values,
-                forming MonteCarlo.obsensemble.Default is False
-            enforce_bounds : (str)
-                enforce parameter bounds based on control file information.
-                options are 'reset', 'drop' or None.  Default is None
-            how : (str)
-                type of distribution to draw from. Must be in ["gaussian","uniform"]
-                default is "gaussian".
+        Parameters
+        ----------
+        num_reals : int
+            number of realization to generate
+        par_file : str
+            parameter file to use as mean values. If None,
+            use MonteCarlo.pst.parameter_data.parval1.
+            Default is None
+        obs : bool
+            add a realization of measurement noise to observation values,
+            forming MonteCarlo.obsensemble.Default is False
+        enforce_bounds : str
+            enforce parameter bounds based on control file information.
+            options are 'reset', 'drop' or None.  Default is None
+        how : str
+            type of distribution to draw from. Must be in ["gaussian","uniform"]
+            default is "gaussian".
+
+        Example
+        -------
+        ``>>>import pyemu``
+
+        ``>>>mc = pyemu.MonteCarlo(pst="pest.pst")``
+
+        ``>>>mc.draw(1000)``
+
         """
         if par_file is not None:
             self.pst.parrep(par_file)
@@ -148,21 +177,39 @@ class MonteCarlo(LinearAnalysis):
                             inplace=True,enforce_bounds='reset'):
         """ perform the null-space projection operations for null-space monte carlo
 
-        Parameters:
-            par_file: (str)
-                an optional file of parameter values to use
-            nsing: (int)
-                number of singular values to in forming null subspace matrix
-            inplace: (boolean)
-                overwrite the existing parameter ensemble with the
-                projected values
-            enforce_bounds: (str)
-                how to enforce parameter bounds.  can be None, 'reset', or 'drop'.
-                Default is None
+        Parameters
+        ----------
+        par_file: str
+            an optional file of parameter values to use
+        nsing: int
+            number of singular values to in forming null subspace matrix
+        inplace: bool
+            overwrite the existing parameter ensemble with the
+            projected values
+        enforce_bounds: str
+            how to enforce parameter bounds.  can be None, 'reset', or 'drop'.
+            Default is None
 
-        Returns:
-            par_en : pyemu.ParameterEnsemble
-                if inplace is False, otherwise None
+        Returns
+        -------
+        par_en : pyemu.ParameterEnsemble
+            if inplace is False, otherwise None
+
+        Note
+        ----
+        to use this method, the MonteCarlo instance must have been constructed
+        with the ``jco`` argument.
+
+        Example
+        -------
+        ``>>>import pyemu``
+
+        ``>>>mc = pyemu.MonteCarlo(jco="pest.jcb")``
+
+        ``>>>mc.draw(1000)``
+
+        ``>>>mc.project_parensemble(par_file="final.par",nsing=100)``
+
         """
         assert self.jco is not None,"MonteCarlo.project_parensemble()" +\
                                     "requires a jacobian attribute"
@@ -181,19 +228,31 @@ class MonteCarlo(LinearAnalysis):
         """ write parameter and optionally observation realizations
             to a series of pest control files
 
-        Parameters:
-            prefix: (str)
-                pest control file prefix
+        Parameters
+        ----------
+        prefix: str
+            pest control file prefix
 
-            existing_jco: (str)
-                filename of an existing jacobian matrix to add to the
-                pest++ options in the control file.  This is useful for
-                NSMC since this jco can be used to get the first set of
-                parameter upgrades for free!  Needs to be the path the jco
-                file as seen from the location where pest++ will be run
+        existing_jco: str
+            filename of an existing jacobian matrix to add to the
+            pest++ options in the control file.  This is useful for
+            NSMC since this jco can be used to get the first set of
+            parameter upgrades for free!  Needs to be the path the jco
+            file as seen from the location where pest++ will be run
 
-            noptmax: (int)
-                value of NOPTMAX to set in new pest control files
+        noptmax: int
+            value of NOPTMAX to set in new pest control files
+
+        Example
+        -------
+        ``>>>import pyemu``
+
+        ``>>>mc = pyemu.MonteCarlo(jco="pest.jcb")``
+
+        ``>>>mc.draw(1000, obs=True)``
+
+        ``>>>mc.write_psts("mc_", existing_jco="pest.jcb", noptmax=1)``
+
         """
         self.log("writing realized pest control files")
         # get a copy of the pest control file

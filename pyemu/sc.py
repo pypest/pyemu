@@ -12,13 +12,22 @@ class Schur(LinearAnalysis):
     """derived type for prior and posterior uncertainty and data-worth
     analysis using Schur compliment
 
-    Parameters:
-        **kwargs : (varies)
-            keyword arguments to pass to the LinearAnalysis constructor.  See
-            LinearAnalysis definition for argument types
+    Parameters
+    ----------
+    **kwargs : dict
+        keyword arguments to pass to the LinearAnalysis constructor.  See
+        LinearAnalysis definition for argument types
 
-    Note:
-        Same call signature as the base LinearAnalysis class
+    Note
+    ----
+    Same call signature as the base LinearAnalysis class
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>sc = pyemu.Schur(jco="pest.jcb")``
+    
     """
     def __init__(self,jco,**kwargs):
         self.__posterior_prediction = None
@@ -55,12 +64,25 @@ class Schur(LinearAnalysis):
         is None, the posterior parameter covariance matrix is calculated via
         Schur compliment before returning
 
-        Returns:
-            posterior_parameter : pyemu.Cov
-                the posterior parameter covariance matrix
+        Returns
+        -------
+        posterior_parameter : pyemu.Cov
+            the posterior parameter covariance matrix
 
-        Note:
-            returns a reference
+        Note
+        ----
+        returns a reference
+
+        Example
+        -------
+        ``>>>import pyemu``
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
+
+        ``>>>post_cov = sc.posterior_parameter``
+
+        ``>>>post_cov.to_ascii("post.cov")``
+
 
         """
         if self.__posterior_parameter is not None:
@@ -92,9 +114,11 @@ class Schur(LinearAnalysis):
         """ get the posterior expectation for parameters using Bayes linear
         estimation
 
-        Returns:
-            post_expt : pandas.DataFrame
-                a dataframe with prior and posterior parameter expectations
+        Returns
+        -------
+        post_expt : pandas.DataFrame
+            a dataframe with prior and posterior parameter expectations
+
         """
         res = self.pst.res
         assert res is not None
@@ -131,11 +155,11 @@ class Schur(LinearAnalysis):
     def map_forecast_estimate(self):
         """ get the prior and posterior forecast (prediction) expectations.
 
-        Returns:
-            pandas.DataFrame : pandas.DataFrame
-                dataframe with prior and posterior forecast expected values
+        Returns
+        -------
+        pandas.DataFrame : pandas.DataFrame
+            dataframe with prior and posterior forecast expected values
 
-        :return:
         """
         assert self.forecasts is not None
         islog = self.pst.parameter_data.partrans == "log"
@@ -163,9 +187,15 @@ class Schur(LinearAnalysis):
     def posterior_prediction(self):
         """get posterior forecast (prediction) variances
 
-        Returns:
-            dict : dict
-                a dictionary of forecast names, posterior variance pairs
+        Returns
+        -------
+        dict : dict
+            a dictionary of forecast names, posterior variance pairs
+
+        Note
+        ----
+        This method is not as easy to use as Schur.get_forecast_summary(), please
+        use it instead
 
         """
         if self.__posterior_prediction is not None:
@@ -188,18 +218,38 @@ class Schur(LinearAnalysis):
         """get a summary of the parameter uncertainty
 
         Parameters
-            include_map : (boolean)
-                if True, add the prior and posterior expectations
-                and report standard deviation instead of variance
+        ----------
+        include_map : bool
+            if True, add the prior and posterior expectations
+            and report standard deviation instead of variance
 
-        Returns:
-            pandas.DataFrame : pandas.DataFrame
-                dataframe of prior,posterior variances and percent
-                uncertainty reduction of each parameter
+        Returns
+        -------
+        pandas.DataFrame : pandas.DataFrame
+            dataframe of prior,posterior variances and percent
+            uncertainty reduction of each parameter
 
-        Note:
-            this is the primary method for accessing parameter uncertainty
-            estimates - use this!
+        Note
+        ----
+        this is the primary method for accessing parameter uncertainty
+        estimates - use this!
+
+        Example
+        -------
+        ``>>>import matplotlib.pyplot as plt``
+
+        ``>>>import pyemu``
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb",forecasts=["fore1","fore2"])``
+
+        ``>>>par_sum = sc.get_parameter_summary()``
+
+        ``>>>par_sum.plot(kind="bar")``
+
+        ``>>>plt.show()``
+
         """
         prior_mat = self.parcov.get(self.posterior_parameter.col_names)
         if prior_mat.isdiagonal:
@@ -227,19 +277,45 @@ class Schur(LinearAnalysis):
     def get_forecast_summary(self, include_map=False):
         """get a summary of the forecast uncertainty
 
-        Parameters:
-            include_map : (boolean)
-                if True, add the prior and posterior expectations
-                and report standard deviation instead of variance
+        Parameters
+        ----------
+        include_map : bool
+            if True, add the prior and posterior expectations
+            and report standard deviation instead of variance
 
-        Returns:
-            pandas.DataFrame : pandas.DataFrame
-                    dataframe of prior,posterior variances and percent
-                    uncertainty reduction of each parameter
+        Returns
+        -------
+        pandas.DataFrame : pandas.DataFrame
+                dataframe of prior,posterior variances and percent
+                uncertainty reduction of each parameter
 
-        Note:
-            this is the primary method for accessing forecast uncertainty
-            estimates - use this!
+        Note
+        ----
+        this is the primary method for accessing forecast uncertainty
+        estimates - use this!
+
+        Example
+        -------
+        ``>>>import matplotlib.pyplot as plt``
+
+        ``>>>import pyemu``
+
+        This usage assumes you have set the ``++forecasts()`` argument in the
+        control file:
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
+
+        or, you can pass the forecasts directly, assuming the forecasts are
+        names of zero-weight observations:
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb",forecasts=["fore1","fore2"])``
+
+        ``>>>fore_sum = sc.get_forecast_summary()``
+
+        ``>>>fore_sum.plot(kind="bar")``
+
+        ``>>>plt.show()``
+
         """
         sum = {"prior_var":[], "post_var":[], "percent_reduction":[]}
         for forecast in self.prior_forecast.keys():
@@ -265,18 +341,22 @@ class Schur(LinearAnalysis):
         """private method get the prior and posterior uncertainty reduction as a result of
         some parameter becoming perfectly known
 
-        Parameters:
-            parameter_names : (list)
-                parameter that are perfectly known
+        Parameters
+        ----------
+        parameter_names : list
+            parameter that are perfectly known
 
-        Returns:
-            dict : dict
-                dictionary of forecast name,  [prior uncertainty w/o parameter_names,
-                    % posterior uncertainty w/o parameter names]
+        Returns
+        -------
+        dict : dict
+            dictionary of forecast name,  [prior uncertainty w/o parameter_names,
+                % posterior uncertainty w/o parameter names]
 
-        Note:
-            this method is used by get_parameter_contribution() method - don't
-            call this method directly
+        Note
+        ----
+        this method is used by get_parameter_contribution() method - don't
+        call this method directly
+
         """
 
 
@@ -291,19 +371,22 @@ class Schur(LinearAnalysis):
         """ get a new Schur instance that includes conditional update from
         some parameters becoming known perfectly
 
-        Parameters:
-            parameter_names : list
-                parameters that are to be treated as notionally perfectly
-                known
+        Parameters
+        ----------
+        parameter_names : list
+            parameters that are to be treated as notionally perfectly
+            known
 
-        Returns:
-            la_cond : Schur
-                a new Schur instance conditional on perfect knowledge
-                of some parameters
+        Returns
+        -------
+        la_cond : Schur
+            a new Schur instance conditional on perfect knowledge
+            of some parameters
 
-        Note:
-            this method is used by the get_parameter_contribution() method -
-            don't call this method directly
+        Note
+        ----
+        this method is used by the get_parameter_contribution() method -
+        don't call this method directly
 
         """
         if not isinstance(parameter_names, list):
@@ -338,21 +421,32 @@ class Schur(LinearAnalysis):
         """get a dataframe the prior and posterior uncertainty
         reduction as a result of some parameter becoming perfectly known
 
-        Parameters:
-            parlist_dict : (dict)
-                a nested dictionary-list of groups of parameters
-                that are to be treated as perfectly known.  key values become
-                row labels in returned dataframe.  If None, each adjustable parameter
-                is sequentially treated as known and the returned dataframe
-                has row labels for each adjustable parameter
+        Parameters
+        ----------
+        parlist_dict : dict
+            a nested dictionary-list of groups of parameters
+            that are to be treated as perfectly known.  key values become
+            row labels in returned dataframe.  If None, each adjustable parameter
+            is sequentially treated as known and the returned dataframe
+            has row labels for each adjustable parameter
 
-        Returns:
-            pandas.DataFrame : pandas.DataFrame
-                a dataframe that summarizes the parameter contribution analysis.
-                The dataframe has index (row labels) of the keys in parlist_dict
-                and a column labels of forecast names.  The values in the dataframe
-                are the posterior variance of the forecast conditional on perfect
-                knowledge of the parameters in the values of parlist_dict
+        Returns
+        -------
+        pandas.DataFrame : pandas.DataFrame
+            a dataframe that summarizes the parameter contribution analysis.
+            The dataframe has index (row labels) of the keys in parlist_dict
+            and a column labels of forecast names.  The values in the dataframe
+            are the posterior variance of the forecast conditional on perfect
+            knowledge of the parameters in the values of parlist_dict
+
+        Example
+        -------
+        ``>>>import pyemu``
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
+
+        ``>>>df = sc.get_par_contribution()``
+
         """
         self.log("calculating contribution from parameters")
         if parlist_dict is None:
@@ -378,9 +472,9 @@ class Schur(LinearAnalysis):
             if len(par_list) == 0:
                 continue
             names.append(case_name)
-            self.log("calculating contribution from: " + str(par_list) + '\n')
+            self.log("calculating contribution from: " + str(par_list))
             case_prior,case_post = self.__contribution_from_parameters(par_list)
-            self.log("calculating contribution from: " + str(par_list) + '\n')
+            self.log("calculating contribution from: " + str(par_list))
             for forecast in case_prior.keys():
                 pr = case_prior[forecast]
                 pt = case_post[forecast]
@@ -402,13 +496,14 @@ class Schur(LinearAnalysis):
         automatically constructs the parlist_dict argument where the keys are the
         group names and the values are the adjustable parameters in the groups
 
-        Returns:
-            pandas.DataFrame : pandas.DataFrame
-                a dataframe that summarizes the parameter contribution analysis.
-                The dataframe has index (row labels) that are the parameter groups
-                and a column labels of forecast names.  The values in the dataframe
-                are the posterior variance of the forecast conditional on perfect
-                knowledge of the adjustable parameters in each parameter groups
+        Returns
+        -------
+        pandas.DataFrame : pandas.DataFrame
+            a dataframe that summarizes the parameter contribution analysis.
+            The dataframe has index (row labels) that are the parameter groups
+            and a column labels of forecast names.  The values in the dataframe
+            are the posterior variance of the forecast conditional on perfect
+            knowledge of the adjustable parameters in each parameter groups
 
         """
         pargrp_dict = {}
@@ -425,37 +520,50 @@ class Schur(LinearAnalysis):
         """get a dataframe fo the posterior uncertainty
         as a results of added some observations
 
-        Parameters:
-            obslist_dict : (dict)
-                a nested dictionary-list of groups of observations
-                that are to be treated as gained.  key values become
-                row labels in returned dataframe. If None, then every zero-weighted
-                observation is tested sequentially. Default is None
-            base_obslist : (list)
-                observation names to treat as the "existing" observations.
-                The values of obslist_dict will be added to this list during
-                each test.  If None, then the values in obslist_dict will
-                be treated as the entire calibration dataset.  That is, there
-                are no existing data. Default is None.  Standard practice would
-                be to pass this argument as Schur.pst.nnz_obs_names.
-            reset_zero_weight : (boolean or float)
-                a flag to reset observations with zero weight in either
-                obslist_dict or base_obslist. The value of reset_zero_weights
-                can be cast to a float,then that value will be assigned to
-                zero weight obs.  Otherwise, zero weight obs will be given a
-                weight of 1.0.  Default is False.
+        Parameters
+        ----------
+        obslist_dict : dict
+            a nested dictionary-list of groups of observations
+            that are to be treated as gained.  key values become
+            row labels in returned dataframe. If None, then every zero-weighted
+            observation is tested sequentially. Default is None
+        base_obslist : list
+            observation names to treat as the "existing" observations.
+            The values of obslist_dict will be added to this list during
+            each test.  If None, then the values in obslist_dict will
+            be treated as the entire calibration dataset.  That is, there
+            are no existing data. Default is None.  Standard practice would
+            be to pass this argument as Schur.pst.nnz_obs_names.
+        reset_zero_weight : (boolean or float)
+            a flag to reset observations with zero weight in either
+            obslist_dict or base_obslist. The value of reset_zero_weights
+            can be cast to a float,then that value will be assigned to
+            zero weight obs.  Otherwise, zero weight obs will be given a
+            weight of 1.0.  Default is False.
 
-        Returns:
-            pandas.DataFrame : pandas.DataFrame
-                dataframe with row labels (index) of obslist_dict.keys() and
-                columns of forecast_name.  The values in the dataframe are the
-                posterior variance of the forecasts resulting from notional inversion
-                using the observations in obslist_dict[key value] plus the observations
-                in base_obslist (if any)
+        Returns
+        -------
+        pandas.DataFrame : pandas.DataFrame
+            dataframe with row labels (index) of obslist_dict.keys() and
+            columns of forecast_name.  The values in the dataframe are the
+            posterior variance of the forecasts resulting from notional inversion
+            using the observations in obslist_dict[key value] plus the observations
+            in base_obslist (if any)
 
-        Note:
-            all observations listed in obslist_dict and base_obslist with zero
-            weights will be dropped unless reset_zero_weight is set
+        Note
+        ----
+        all observations listed in obslist_dict and base_obslist with zero
+        weights will be dropped unless reset_zero_weight is set
+
+        Example
+        -------
+        ``>>>import pyemu``
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
+
+        ``>>>df = sc.get_added_obs_importance(base_obslist=sc.pst.nnz_obs_names,reset_zero=True)``
+
+
         """
 
         if obslist_dict is not None:
@@ -474,7 +582,8 @@ class Schur(LinearAnalysis):
                 weight = 1.0
             self.logger.statement("resetting zero weights to {0}".format(weight))
             # make copies of the original obscov and pst
-            org_obscov = self.obscov.get(self.obscov.row_names)
+            #org_obscov = self.obscov.get(self.obscov.row_names)
+            org_obscov = self.obscov.copy()
             org_pst = self.pst.get()
 
         obs = self.pst.observation_data
@@ -488,6 +597,7 @@ class Schur(LinearAnalysis):
 
         # if needed reset the zero-weight obs in base_obslist
         if base_obslist is not None and reset:
+            # check for zero
             self.log("resetting zero weight obs in base_obslist")
             self.pst.adjust_weights_by_list(base_obslist, weight)
             self.log("resetting zero weight obs in base_obslist")
@@ -497,17 +607,20 @@ class Schur(LinearAnalysis):
 
         # if needed reset the zero-weight obs in obslist_dict
         if obslist_dict is not None and reset:
+            z_obs = []
             for case,obslist in obslist_dict.items():
                 if not isinstance(obslist,list):
                     obslist_dict[case] = [obslist]
+                    obslist = [obslist]
                 inboth = set(base_obslist).intersection(set(obslist))
                 if len(inboth) > 0:
                     raise Exception("observation(s) listed in both "+\
                                     "base_obslist and obslist_dict: "+\
                                     ','.join(inboth))
-                self.log("resetting zero weight obs in {0}".format(case))
-                self.pst.adjust_weights_by_list(obslist, weight)
-                self.log("resetting zero weight obs in {0}".format(case))
+                z_obs.extend(obslist)
+            self.log("resetting zero weight obs in obslist_dict")
+            self.pst.adjust_weights_by_list(z_obs, weight)
+            self.log("resetting zero weight obs in obslist_dict")
 
         # for a comprehensive obslist_dict
         if obslist_dict is None and reset:
@@ -555,6 +668,7 @@ class Schur(LinearAnalysis):
             case_obslist = list(base_obslist)
             dedup_obslist = [oname for oname in obslist if oname not in case_obslist]
             case_obslist.extend(dedup_obslist)
+            #print(self.pst.observation_data.loc[case_obslist,:])
             case_post = self.get(par_names=self.jco.par_names,
                                  obs_names=case_obslist).posterior_forecast
             for forecast,pt in case_post.items():
@@ -575,29 +689,40 @@ class Schur(LinearAnalysis):
         """get a dataframe the posterior uncertainty
         as a result of losing some observations
 
-        Parameters:
-            obslist_dict : (dict)
-                dictionary of groups of observations
-                that are to be treated as lost.  key values become
-                row labels in returned dataframe. If None, then test every
-                (nonzero weight - see reset_zero_weight) observation
-            reset_zero_weight : (boolean or float)
-                a flag to reset observations with zero weight in obslist_dict.
-                If the value of reset_zero_weights can be cast to a float,
-                then that value will be assigned to zero weight obs.  Otherwise,
-                zero weight obs will be given a weight of 1.0
+        Parameters
+        ----------
+        obslist_dict : dict
+            dictionary of groups of observations
+            that are to be treated as lost.  key values become
+            row labels in returned dataframe. If None, then test every
+            (nonzero weight - see reset_zero_weight) observation
+        reset_zero_weight : bool or float
+            a flag to reset observations with zero weight in obslist_dict.
+            If the value of reset_zero_weights can be cast to a float,
+            then that value will be assigned to zero weight obs.  Otherwise,
+            zero weight obs will be given a weight of 1.0
 
-        Returns:
-            pandas.DataFrame : pandas.DataFrame
-                a dataframe with index of obslist_dict.keys() and columns
-                of forecast names.  The values in the dataframe are the posterior
-                variances of the forecasts resulting from losing the information
-                containted in obslist_dict[key value]
+        Returns
+        -------
+        pandas.DataFrame : pandas.DataFrame
+            a dataframe with index of obslist_dict.keys() and columns
+            of forecast names.  The values in the dataframe are the posterior
+            variances of the forecasts resulting from losing the information
+            contained in obslist_dict[key value]
 
+        Note
+        ----
+        all observations listed in obslist_dict with zero
+        weights will be dropped unless reset_zero_weight is set
 
-        Note:
-            all observations listed in obslist_dict with zero
-            weights will be dropped unless reset_zero_weight is set
+        Example
+        -------
+        ``>>>import pyemu``
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
+
+        ``df = sc.get_removed_obs_importance()``
+
         """
 
 
@@ -689,17 +814,7 @@ class Schur(LinearAnalysis):
             self.reset_pst(org_pst)
         return df
 
-    def get_removed_obs_group_importance(self):
-        """ some sugar to test the importance of observations by group
-
-        Returns:
-            pandas.Dataframe : pandas.Dataframe
-                a dataframe that has index (row labels) that are the observation groups
-                and a column labels of forecast names.  The values in the dataframe
-                are the posterior variance of the forecast resulting from
-                losing non-zero weight observations in each observation group
-
-        """
+    def obs_group_importance(self):
         obsgrp_dict = {}
         obs = self.pst.observation_data
         obs.index = obs.obsnme
@@ -707,8 +822,13 @@ class Schur(LinearAnalysis):
         groups = obs.groupby("obgnme").groups
         for grp, idxs in groups.items():
             obsgrp_dict[grp] = list(obs.loc[idxs,"obsnme"])
-        return self.get_removed_obs_importance(obsgrp_dict)
+        return obsgrp_dict
+        
+    def get_removed_obs_group_importance(self):
+        return self.get_removed_obs_importance(self.obs_group_importance())
 
+    def get_added_obs_group_importance(self):
+        return self.get_added_obs_importance(self.obs_group_importance())
 
     def next_most_important_added_obs(self,forecast=None,niter=3, obslist_dict=None,
                                       base_obslist=None,
@@ -719,33 +839,48 @@ class Schur(LinearAnalysis):
         next iteration.  In this way, the added observation importance values include
         the conditional information from the last iteration.
 
-        Parameters:
-            forecast : (str)
-                name of the forecast to use in the ranking process.  If
-                more than one forecast has been listed, this argument is required
-            niter : (int)
-                number of sequential iterations
-            obslist_dict (dict):
-                nested dictionary-list of  groups of observations
-                that are to be treated as gained.  key values become
-                row labels in result dataframe. If None, then test every observation
-                individually
-            base_obslist : (list)
-                observation names to treat as the "existing" observations.
-                The values of obslist_dict will be added to this list during testing.
-                If None, then each list in the values of obslist_dict will be
-                treated as an individual calibration dataset.
-            reset_zero_weight : (boolean or float)
-                a flag to reset observations with zero weight in either
-                obslist_dict or base_obslist. If the value of reset_zero_weights
-                can be cast to a float,then that value will be assigned to
-                zero weight obs.  Otherwise, zero weight obs will be given a weight of 1.0
-        Returns:
-            pandas.DataFrame : pandas.DataFrame
-                DataFrame with columns of best obslist_dict key for each iteration.
-                Columns of forecast variance percent reduction for this iteration,
-                (percent reduction compared to initial base case)
+        Parameters
+        ----------
+        forecast : str
+            name of the forecast to use in the ranking process.  If
+            more than one forecast has been listed, this argument is required
+        niter : int
+            number of sequential iterations
+        obslist_dict dict:
+            nested dictionary-list of  groups of observations
+            that are to be treated as gained.  key values become
+            row labels in result dataframe. If None, then test every observation
+            individually
+        base_obslist : list
+            observation names to treat as the "existing" observations.
+            The values of obslist_dict will be added to this list during testing.
+            If None, then each list in the values of obslist_dict will be
+            treated as an individual calibration dataset.
+        reset_zero_weight : (boolean or float)
+            a flag to reset observations with zero weight in either
+            obslist_dict or base_obslist. If the value of reset_zero_weights
+            can be cast to a float,then that value will be assigned to
+            zero weight obs.  Otherwise, zero weight obs will be given a weight of 1.0
+
+        Returns
+        -------
+        pandas.DataFrame : pandas.DataFrame
+            DataFrame with columns of best obslist_dict key for each iteration.
+            Columns of forecast variance percent reduction for this iteration,
+            (percent reduction compared to initial base case)
+
+
+        Example
+        -------
+        ``>>>import pyemu``
+
+        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
+
+        ``>>>df = sc.next_most_added_importance_obs(forecast="fore1",``
+
+        ``>>>      base_obslist=sc.pst.nnz_obs_names,reset_zero=True``
         """
+
 
         if forecast is None:
             assert self.forecasts.shape[1] == 1,"forecast arg list one and only one" +\
@@ -819,20 +954,23 @@ class Schur(LinearAnalysis):
         treated as known perfectly for the remaining iterations.  In this way, the
         next iteration seeks the next most influential group of parameters.
 
-        Parameters:
-            forecast : (str)
-                name of the forecast to use in the ranking process.  If
-                more than one forecast has been listed, this argument is required
-            parlist_dict : (dict)
-                a nested dictionary-list of groups of parameters
-                that are to be treated as perfectly known.  key values become
-                row labels in dataframe
+        Parameters
+        ----------
+        forecast : str
+            name of the forecast to use in the ranking process.  If
+            more than one forecast has been listed, this argument is required
+        parlist_dict : dict
+            a nested dictionary-list of groups of parameters
+            that are to be treated as perfectly known.  key values become
+            row labels in dataframe
 
-        Returns:
-            pandas.DataFrame : pandas.DataFrame
-                a dataframe with index of iteration number and columns
-                of parlist_dict keys.  The values are the results of the knowing
-                each parlist_dict entry expressed as posterior variance reduction
+        Returns
+        -------
+        pandas.DataFrame : pandas.DataFrame
+            a dataframe with index of iteration number and columns
+            of parlist_dict keys.  The values are the results of the knowing
+            each parlist_dict entry expressed as posterior variance reduction
+
         """
         if forecast is None:
             assert len(self.forecasts) == 1,"forecast arg list one and only one" +\

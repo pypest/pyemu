@@ -101,7 +101,8 @@ def load_test():
     exceptions = []
     load_fails = []
     for pst_file in pst_files:
-        if pst_file.endswith(".pst"):
+        if pst_file.endswith(".pst") and not "comments" in pst_file and \
+                not "missing" in pst_file:
             print(pst_file)
             try:
                 p = Pst(os.path.join(pst_dir,pst_file))
@@ -110,12 +111,14 @@ def load_test():
                 load_fails.append(pst_file)
                 continue
             out_name = os.path.join(temp_dir,pst_file)
+            print(out_name)
            #p.write(out_name,update_regul=True)
             try:
                 p.write(out_name,update_regul=True)
             except Exception as e:
                 exceptions.append(pst_file + " write fail: " + str(e))
                 continue
+            print(pst_file)
             try:
                 p = Pst(out_name)
             except Exception as e:
@@ -126,6 +129,70 @@ def load_test():
     #    [f.write(pst_file+'\n') for pst_file in load_fails]
     if len(exceptions) > 0:
         raise Exception('\n'.join(exceptions))
+
+
+def flex_load_test():
+    import os
+    from pyemu import Pst,pst_utils
+    pst_dir = os.path.join("pst")
+    temp_dir = "temp"
+    if not os.path.exists(temp_dir):
+        os.mkdir(temp_dir)
+    # just testing all sorts of different pst files
+    pst_files = os.listdir(pst_dir)
+    exceptions = []
+    load_fails = []
+    for pst_file in pst_files:
+        if pst_file.endswith(".pst") and not "missing" in pst_file:
+            #if not pst_file.startswith("LPR"):
+            #    continue
+            print(pst_file)
+            p = Pst(os.path.join(pst_dir, pst_file), flex=True)
+            out_name = os.path.join(temp_dir, pst_file)
+            print("write")
+            p.write(out_name, update_regul=True)
+            p = Pst(out_name)
+            try:
+                p = Pst(os.path.join(pst_dir,pst_file),flex=True)
+            except Exception as e:
+                exceptions.append(pst_file + " read fail: " + str(e))
+                load_fails.append(pst_file)
+                continue
+            out_name = os.path.join(temp_dir,pst_file)
+            print(out_name)
+           #p.write(out_name,update_regul=True)
+            try:
+                p.write(out_name,update_regul=True)
+            except Exception as e:
+                exceptions.append(pst_file + " write fail: " + str(e))
+                continue
+            print(pst_file)
+            try:
+                p = Pst(out_name)
+            except Exception as e:
+                exceptions.append(pst_file + " reload fail: " + str(e))
+                continue
+
+    #with open("load_fails.txt",'w') as f:
+    #    [f.write(pst_file+'\n') for pst_file in load_fails]
+    if len(exceptions) > 0:
+        raise Exception('\n'.join(exceptions))
+
+def comments_test():
+
+    import os
+    import pyemu
+
+
+    pst = pyemu.Pst(os.path.join("pst","comments.pst"))
+    pst.with_comments = True
+    pst.write(os.path.join("temp","comments.pst"))
+    pst1 = pyemu.Pst(os.path.join("temp","comments.pst"))
+    assert pst1.parameter_data.extra.dropna().shape[0] == pst.parameter_data.extra.dropna().shape[0]
+    pst1.with_comments = False
+    pst1.write(os.path.join("temp","comments.pst"))
+    pst2 = pyemu.Pst(os.path.join("temp","comments.pst"))
+    assert pst2.parameter_data.dropna().shape[0] == 0
 
 def smp_test():
     import os
@@ -176,11 +243,12 @@ def tied_test():
     import pyemu
     pst_dir = os.path.join("pst")
     pst = pyemu.Pst(os.path.join(pst_dir,"br_opt_no_zero_weighted.pst"))
-    print(pst.tied_lines)
+    print(pst.tied)
     pst.write(os.path.join("temp","pest_tied_tester_1.pst"))
     mc = pyemu.MonteCarlo(pst=pst)
     mc.draw(1)
     mc.write_psts(os.path.join("temp","tiedtest_"))
+
 
 def derivative_increment_tests():
     import os
@@ -188,7 +256,6 @@ def derivative_increment_tests():
 
     pst = pyemu.Pst(os.path.join("pst","inctest.pst"))
     pst.calculate_pertubations()
-
 
 
 def pestpp_args_test():
@@ -276,29 +343,176 @@ def regdata_test():
     assert pst_new.reg_data.phimlim == phimlim
 
 
-def from_flopy_test():
+def plot_flopy_par_ensemble_test():
     import shutil
     import numpy as np
     try:
         import flopy
     except:
         return
+    try:
+        import matplotlib.pyplot as plt
+    except:
+        print("error importing pyplot")
+        return
     import pyemu
-    org_model_ws = os.path.join("..","examples","Freyberg_transient")
+    org_model_ws = os.path.join("..", "examples", "Freyberg_transient")
     nam_file = "freyberg.nam"
 
     new_model_ws = "temp_pst_from_flopy"
-    pp_props = [["upw.ss",0],["upw.ss",1],["upw.ss",2],\
-                ["rch.rech",np.arange(182)],["rch.rech",np.arange(183,365)]]
-    helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
-                                    pp_props=pp_props,hds_kperk=[0,0],remove_existing=True)
+    pp_props = [["upw.hk", 0], ["upw.hk", 1]]
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
+                                             grid_props=pp_props, remove_existing=True,
+                                             model_exe_name="mfnwt")
 
-    m = flopy.modflow.Modflow.load(nam_file,model_ws=org_model_ws,exe_name="mfnwt")
-    const_props = [["rch.rech",i] for i in range(365)]
+    pst = pyemu.Pst(os.path.join(new_model_ws,"freyberg.pst"))
+    mc = pyemu.MonteCarlo(pst=pst)
+    os.chdir(new_model_ws)
+    cov = pyemu.Cov.from_ascii("freyberg.pst.prior.cov")
+    mc.draw(100,cov=cov)
+    #pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None, model=helper.m)
+    #pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None)
+
+    #3try:
+    import cartopy.crs as ccrs
+    import cartopy.io.img_tiles as cimgt
+
+    import pyproj
+    # except:
+    #     return
+
+    stamen_terrain = cimgt.StamenTerrain()
+    zoom = 10
+
+    def fig_ax_gen():
+        fig = plt.figure(figsize=(20,20))
+        nrow,ncol = 5,4
+
+        axes = []
+        for i in range(nrow*ncol):
+            #print(i)
+            ax = plt.subplot(nrow,ncol,i+1,projection=stamen_terrain.crs)
+            ax.set_extent([-97.775, -97.625, 30.2, 30.35])
+            #ax.set_extent([175.2, 176.2, -37, -38.2])
+            ax.add_image(stamen_terrain,zoom)
+            #plt.show()
+            axes.append(ax)
+
+            #break
+        return fig, axes
+    #fig,axes = fig_ax_gen()
+    #plt.show()
+    #return
+    pcolormesh_trans = ccrs.UTM(zone=14)
+    pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None,fig_axes_generator=fig_ax_gen,
+                                          pcolormesh_transform=pcolormesh_trans,model="freyberg.nam")
+
+    os.chdir("..")
+
+
+def from_flopy_test():
+    import shutil
+    import numpy as np
+    import pandas as pd
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+    org_model_ws = os.path.join("..","examples","freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    new_model_ws = "temp_pst_from_flopy"
+
+
+
+
+
+    hds_kperk = []
+    for k in range(m.nlay):
+        for kper in range(m.nper):
+            hds_kperk.append([kper, k])
+    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+                                         org_model_ws=org_model_ws,
+                                         zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
+                                         remove_existing=True, hds_kperk=hds_kperk,
+                                         model_exe_name="mfnwt")
+
+    ph.pst.parameter_data.loc["rech0_zn1", "parval1"] = 2.0
+
+    bd = os.getcwd()
+    os.chdir(new_model_ws)
+    # try:
+    ph.pst.write_input_files()
+    csv = os.path.join("arr_pars.csv")
+    df = pd.read_csv(csv)
+    df.loc[:,"upper_bound"] = np.NaN
+    df.loc[:,"lower_bound"] = np.NaN
+    df.to_csv(csv)
+    pyemu.helpers.apply_array_pars()
+
+    df.loc[:, "org_file"] = df.org_file.iloc[0]
+    df.loc[:, "model_file"] = df.org_file
+    df.loc[:, "upper_bound"] = np.arange(df.shape[0])
+    df.loc[:, "lower_bound"] = np.NaN
+    print(df)
+    df.to_csv(csv)
+    try:
+        pyemu.helpers.apply_array_pars()
+    except:
+        pass
+    else:
+        raise Exception()
+    df.loc[:, "lower_bound"] = np.arange(df.shape[0])
+    df.loc[:, "upper_bound"] = np.NaN
+    print(df)
+    df.to_csv(csv)
+    try:
+        pyemu.helpers.apply_array_pars()
+    except:
+        pass
+    else:
+        raise Exception()
+
+    df.loc[:, "lower_bound"] = 0.1
+    df.loc[:, "upper_bound"] = 0.9
+    print(df)
+    df.to_csv(csv)
+
+    pyemu.helpers.apply_array_pars()
+    arr = np.loadtxt(df.model_file.iloc[0])
+    assert arr.min() >= df.lower_bound.iloc[0]
+    assert arr.max() <= df.upper_bound.iloc[0]
+
+    # except:
+    #     pass
+    os.chdir(bd)
+
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
+                                             hds_kperk=[0, 0], remove_existing=True,
+                                             model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True,
+                                             all_wells=True)
+    bd = os.getcwd()
+    os.chdir(new_model_ws)
+    try:
+        pyemu.helpers.apply_all_wells()
+    except:
+        pass
+    os.chdir(bd)
+
+
+    pp_props = [["upw.ss",[0,1]],["upw.ss",1],["upw.ss",2],["extra.prsity",0],\
+                ["rch.rech",0],["rch.rech",[1,2]]]
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
+                                    pp_props=pp_props,hds_kperk=[0,0],remove_existing=True,
+                                             model_exe_name="mfnwt")
+
+    m = flopy.modflow.Modflow.load(nam_file,model_ws=org_model_ws,exe_name="mfnwt",check=False)
+    const_props = [["rch.rech",i] for i in range(m.nper)]
     helper = pyemu.helpers.PstFromFlopyModel(m,new_model_ws,
                                     const_props=const_props,hds_kperk=[0,0],remove_existing=True)
 
-    grid_props = []
+    grid_props = [["extra.pr",0]]
     for k in range(3):
         #grid scale pars for hk in all layers
         grid_props.append(["upw.hk",k])
@@ -315,10 +529,10 @@ def from_flopy_test():
                                    zone_props=zone_props,hds_kperk=[0,0],remove_existing=True)
 
     # kper-level multipliers for boundary conditions
-    bc_props = [["drn.cond",None]]
-    for iper in range(365):
+    bc_props = []
+    for iper in range(m.nper):
         bc_props.append(["wel.flux",iper])
-        bc_props.append(["drn.elev",iper])
+        #bc_props.append(["drn.elev",iper])
     helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
                                     bc_props=bc_props,hds_kperk=[0,0],remove_existing=True)
 
@@ -339,7 +553,7 @@ def from_flopy_test():
                                     pp_space=4,
                                     use_pp_zones=False,
                                     k_zone_dict=k_zone_dict,
-                                    hds_kperk=[0,0])
+                                    hds_kperk=[0,0],build_prior=False)
     pst = helper.pst
     obs = pst.observation_data
     obs.loc[:,"weight"] = 0.0
@@ -347,6 +561,10 @@ def from_flopy_test():
     obs.loc[obs.weight>0.0,"obsval"] += np.random.normal(0.0,2.0,pst.nnz_obs)
     pst.control_data.noptmax = 0
     pst.write(os.path.join(new_model_ws,"freyberg_pest.pst"))
+    cov = helper.build_prior(fmt="none",sparse=True)
+    cov.to_coo(os.path.join("temp","cov.coo"))
+
+
 
 
 def run_array_pars():
@@ -369,26 +587,170 @@ def add_pi_test():
     pst = pyemu.Pst(os.path.join("temp","test.pst"))
     print(pst.prior_information)
 
+def setattr_test():
+    import os
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    pst.model_command = 'test'
+    assert isinstance(pst.model_command,list)
+    pst.model_command = ["test","test1"]
+    assert isinstance(pst.model_command,list)
+    pst.write(os.path.join("temp","test.pst"))
+    pst = pyemu.Pst(os.path.join("temp","test.pst"))
+    assert isinstance(pst.model_command,list)
 
+
+def add_pars_test():
+    import os
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    npar = pst.npar
+    tpl_file = os.path.join("temp","crap.in.tpl")
+    with open(tpl_file,'w') as f:
+        f.write("ptf ~\n")
+        f.write("  ~junk1   ~\n")
+        f.write("  ~ {0}  ~\n".format(pst.parameter_data.parnme[0]))
+    pst.add_parameters(tpl_file,"crap.in",pst_path="temp")
+    assert npar + 1 == pst.npar
+    assert "junk1" in pst.parameter_data.parnme
+    assert os.path.join("temp","crap.in") in pst.input_files
+    assert os.path.join("temp","crap.in.tpl") in pst.template_files
+
+def add_obs_test():
+    import os
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    nobs = pst.nobs
+    ins_file = os.path.join("temp", "crap.out.ins")
+    out_file = os.path.join("temp","crap.out")
+    oval = 1234.56
+    with open(ins_file, 'w') as f:
+        f.write("pif ~\n")
+        #f.write("  ~junk1   ~\n")
+        #f.write("  ~ {0}  ~\n".format(pst.parameter_data.parnme[0]))
+        f.write("l1 w  !{0}!\n".format("crap1"))
+    with open(out_file,"w") as f:
+        f.write("junk1  {0:8.2f} \n".format(oval))
+    pst.add_observations(ins_file,out_file, pst_path="temp")
+    assert nobs + 1 == pst.nobs
+    assert "crap1" in pst.observation_data.obsnme
+    assert os.path.join("temp", "crap.out") in pst.output_files,str(pst.output_files)
+    assert os.path.join("temp", "crap.out.ins") in pst.instruction_files
+    print(pst.observation_data.loc["crap1","obsval"], oval)
+
+def test_write_input_files():
+    import os
+    import shutil
+    import numpy as np
+    import pyemu
+    from pyemu import Pst, pst_utils
+    # creation functionality
+    dir = os.path.join("..", "verification", "10par_xsec", "template_mac")
+    if os.path.exists("temp_dir"):
+        shutil.rmtree("temp_dir")
+    shutil.copytree(dir,"temp_dir")
+    os.chdir("temp_dir")
+    pst = Pst(os.path.join("pest.pst"))
+    pst.write_input_files()
+    arr1 = np.loadtxt(pst.input_files[0])
+    print(pst.parameter_data.parval1)
+    pst.parameter_data.loc[:,"parval1"] *= 10.0
+    pst.write_input_files()
+    arr2 = np.loadtxt(pst.input_files[0])
+    assert (arr1 * 10).sum() == arr2.sum()
+    os.chdir("..")
+
+
+def res_stats_test():
+    import os
+    import pyemu
+
+    import os
+    import numpy as np
+    from pyemu import Pst, pst_utils
+    # residual functionality testing
+    pst_dir = os.path.join("pst")
+
+    p = pyemu.pst_utils.generic_pst(["p1"],["o1"])
+    try:
+        p.get_res_stats()
+    except:
+        pass
+    else:
+        raise Exception()
+
+    p = Pst(os.path.join(pst_dir, "pest.pst"))
+    phi_comp = p.phi_components
+    #print(phi_comp)
+    df = p.get_res_stats()
+    assert np.abs(df.loc["rss","all"] - p.phi) < 1.0e-6,"{0},{1}".format(df.loc["rss","all"],p.phi)
+    for pc in phi_comp.keys():
+        assert phi_comp[pc] == p.phi_components[pc]
+
+
+def write_tables_test():
+    import os
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst","freyberg_gr.pst"))
+    group_names = {"w0":"wells t"}
+    pst.write_par_summary_table(group_names=group_names,caption="par table")
+    pst.write_obs_summary_table(group_names={"calhead":"calibration heads"},caption="obs table")
+
+
+def flex_test():
+    import os
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst","pest_comments.pst"),flex=True)
+    pst.with_comments = True
+    pst.write(os.path.join("temp","pest_comments.pst"))
+
+
+def test_e_clean():
+    import os
+    import pyemu
+
+    pst_name = os.path.join("pst","test_missing_e.pst")
+    try:
+        pst = pyemu.Pst(pst_name)
+    except:
+        pass
+    else:
+        raise Exception()
+
+    clean_name = os.path.join("temp","clean.pst")
+    pyemu.pst_utils.clean_missing_exponent(pst_name,clean_name)
+    pst = pyemu.Pst(clean_name)
 
 
 if __name__ == "__main__":
+    #write_tables_test()
+    # res_stats_test()
+    # test_write_input_files()
+    # add_obs_test()
+    # add_pars_test()
+    # setattr_test()
     # run_array_pars()
     from_flopy_test()
-    #add_pi_test()
+    # plot_flopy_par_ensemble_test()
+    # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
     # regul_rectify_test()
     # derivative_increment_tests()
-    #tied_test()
+    # tied_test()
     # smp_test()
     # smp_dateparser_test()
-    #pst_manip_test()
+    # pst_manip_test()
     # tpl_ins_test()
-    #load_test()
-    #res_test()
-    #smp_test()
-    #from_io_with_inschek_test()
-    #pestpp_args_test()
-    #reweight_test()
-    #reweight_res_test()
+    # flex_test()
+    # comments_test()
+    # test_e_clean()
+    # load_test()
+    # flex_load_test()
+    # res_test()
+    # smp_test()
+    # from_io_with_inschek_test()
+    # pestpp_args_test()
+    # reweight_test()
+    # reweight_res_test()

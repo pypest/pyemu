@@ -166,20 +166,44 @@ def freyberg_check_phi_calc():
     [os.remove(csv_file) for csv_file in csv_files]
 
     pst = pyemu.Pst(os.path.join("freyberg.pst"))
-    dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+    x, y, names = [], [], []
+    for i in range(ml.nrow):
+        for j in range(ml.ncol):
+            if ml.bas6.ibound.array[0, i, j] < 1:
+                continue
+            names.append("hkr{0:02d}c{1:02d}".format(i, j))
+            x.append(ml.sr.xcentergrid[i, j])
+            y.append(ml.sr.ycentergrid[i, j])
+            # xy.loc[:,"name"] = names
+            # xy.to_csv("freyberg.xy")
+            # else:
+            # xy = pd.read_csv("freyberg.xy")
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
 
-    nothk_names = [pname for pname in pst.adj_par_names if "hk" not in pname]
-    parcov_nothk = dia_parcov.get(row_names=nothk_names)
-    gs = pyemu.utils.geostats.read_struct_file(os.path.join("template","structure.dat"))
-    print(gs.variograms[0].a,gs.variograms[0].contribution)
-    #gs.variograms[0].a *= 10.0
-    #gs.variograms[0].contribution *= 10.0
-    gs.nugget = 0.0
-    print(gs.variograms[0].a,gs.variograms[0].contribution)
+    pst = pyemu.Pst(os.path.join("freyberg.pst"))
+    # dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+    par = pst.parameter_data
+    hk_names = par.loc[par.parnme.apply(lambda x: x.startswith("hk")), 'parnme']
+    hk_par = par.loc[hk_names, :]
+    hk_par.loc[:, "i"] = hk_par.parnme.apply(lambda x: int(x[3:5]))
+    hk_par.loc[:, "j"] = hk_par.parnme.apply(lambda x: int(x[-2:]))
+    hk_par.loc[:, "x"] = hk_par.apply(lambda x: ml.sr.xcentergrid[x.i, x.j], axis=1)
+    hk_par.loc[:, "y"] = hk_par.apply(lambda x: ml.sr.ycentergrid[x.i, x.j], axis=1)
 
-    full_parcov = gs.covariance_matrix(xy.x,xy.y,xy.name)
-    parcov = parcov_nothk.extend(full_parcov)
-    #print(parcov.to_pearson().x[-1,:])
+    # nothk_names = [pname for pname in pst.adj_par_names if "hk" not in pname]
+    # parcov_nothk = dia_parcov.get(row_names=nothk_names)
+    gs = pyemu.utils.geostats.read_struct_file(os.path.join("template", "structure.dat"))
+    # print(gs.variograms[0].a,gs.variograms[0].contribution)
+    # gs.variograms[0].a *= 10.0
+    # gs.variograms[0].contribution *= 10.0
+    # gs.nugget = 0.0
+    # print(gs.variograms[0].a,gs.variograms[0].contribution)
+
+    # full_parcov = gs.covariance_matrix(x,y,names)
+    # parcov = parcov_nothk.extend(full_parcov)
+    # print(parcov.to_pearson().x[-1,:])
+    parcov = pyemu.helpers.geostatistical_prior_builder(pst, struct_dict={gs: hk_par}, sigma_range=6)
 
     pst.observation_data.loc[:,"weight"] /= 10.0
     #pst.write("temp.pst")
@@ -215,18 +239,162 @@ def freyberg():
 
     os.chdir(os.path.join("smoother","freyberg"))
 
+    #if not os.path.exists("freyberg.xy"):
+    import flopy
+
+    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws="template",
+                                    load_only=[])
+    #xy = pd.DataFrame([(x,y) for x,y in zip(ml.sr.xcentergrid.flatten(),ml.sr.ycentergrid.flatten())],
+    #                  columns=['x','y'])
+    x,y,names = [],[],[]
+    for i in range(ml.nrow):
+        for j in range(ml.ncol ):
+            if ml.bas6.ibound.array[0,i,j] <1:
+                continue
+            names.append("hkr{0:02d}c{1:02d}".format(i,j))
+            x.append(ml.sr.xcentergrid[i,j])
+            y.append(ml.sr.ycentergrid[i,j])
+        #xy.loc[:,"name"] = names
+        #xy.to_csv("freyberg.xy")
+    #else:
+        #xy = pd.read_csv("freyberg.xy")
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
+
+    pst = pyemu.Pst(os.path.join("freyberg.pst"))
+    #dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+    par = pst.parameter_data
+    hk_names = par.loc[par.parnme.apply(lambda x: x.startswith("hk")),'parnme']
+    hk_par = par.loc[hk_names,:]
+    hk_par.loc[:,"i"] = hk_par.parnme.apply(lambda x: int(x[3:5]))
+    hk_par.loc[:, "j"] = hk_par.parnme.apply(lambda x: int(x[-2:]))
+    hk_par.loc[:,"x"] = hk_par.apply(lambda x: ml.sr.xcentergrid[x.i,x.j],axis=1)
+    hk_par.loc[:, "y"] = hk_par.apply(lambda x: ml.sr.ycentergrid[x.i, x.j], axis=1)
+
+
+    #nothk_names = [pname for pname in pst.adj_par_names if "hk" not in pname]
+    #parcov_nothk = dia_parcov.get(row_names=nothk_names)
+    gs = pyemu.utils.geostats.read_struct_file(os.path.join("template","structure.dat"))
+    #print(gs.variograms[0].a,gs.variograms[0].contribution)
+    #gs.variograms[0].a *= 10.0
+    #gs.variograms[0].contribution *= 10.0
+    #gs.nugget = 0.0
+    #print(gs.variograms[0].a,gs.variograms[0].contribution)
+
+    #full_parcov = gs.covariance_matrix(x,y,names)
+    #parcov = parcov_nothk.extend(full_parcov)
+    #print(parcov.to_pearson().x[-1,:])
+    parcov = pyemu.helpers.geostatistical_prior_builder(pst,struct_dict={gs:hk_par},sigma_range=6)
+
+    parcov.to_binary("freyberg_prior.jcb")
+    parcov.to_ascii("freyberg_prior.cov")
+    #pst.observation_data.loc[:,"weight"] /= 10.0
+    pst.write("temp.pst")
+    obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
+
+    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=20,
+                                verbose=True,port=4006)
+
+    es.initialize(100,init_lambda=10.0,enforce_bounds="reset",regul_factor=0.0,use_approx_prior=True)
+    es.update()
+    #for i in range(1):
+    #    es.update(lambda_mults=[0.01,0.2,1.0,5.0,100.0],run_subset=20,use_approx=True)
+        #es.update(use_approx=False)
+
+    os.chdir(os.path.join("..",".."))
+
+def freyberg_emp():
+    import os
+    import pandas as pd
+    import pyemu
+
+    os.chdir(os.path.join("smoother","freyberg"))
+
+    #if not os.path.exists("freyberg.xy"):
+    import flopy
+
+    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws="template",
+                                    load_only=[])
+    #xy = pd.DataFrame([(x,y) for x,y in zip(ml.sr.xcentergrid.flatten(),ml.sr.ycentergrid.flatten())],
+    #                  columns=['x','y'])
+    x,y,names = [],[],[]
+    for i in range(ml.nrow):
+        for j in range(ml.ncol ):
+            if ml.bas6.ibound.array[0,i,j] <1:
+                continue
+            names.append("hkr{0:02d}c{1:02d}".format(i,j))
+            x.append(ml.sr.xcentergrid[i,j])
+            y.append(ml.sr.ycentergrid[i,j])
+        #xy.loc[:,"name"] = names
+        #xy.to_csv("freyberg.xy")
+    #else:
+        #xy = pd.read_csv("freyberg.xy")
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
+
+    pst = pyemu.Pst(os.path.join("freyberg.pst"))
+    #dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+    par = pst.parameter_data
+    hk_names = par.loc[par.parnme.apply(lambda x: x.startswith("hk")),'parnme']
+    hk_par = par.loc[hk_names,:]
+    hk_par.loc[:,"i"] = hk_par.parnme.apply(lambda x: int(x[3:5]))
+    hk_par.loc[:, "j"] = hk_par.parnme.apply(lambda x: int(x[-2:]))
+    hk_par.loc[:,"x"] = hk_par.apply(lambda x: ml.sr.xcentergrid[x.i,x.j],axis=1)
+    hk_par.loc[:, "y"] = hk_par.apply(lambda x: ml.sr.ycentergrid[x.i, x.j], axis=1)
+
+
+    #nothk_names = [pname for pname in pst.adj_par_names if "hk" not in pname]
+    #parcov_nothk = dia_parcov.get(row_names=nothk_names)
+    gs = pyemu.utils.geostats.read_struct_file(os.path.join("template","structure.dat"))
+    #print(gs.variograms[0].a,gs.variograms[0].contribution)
+    #gs.variograms[0].a *= 10.0
+    #gs.variograms[0].contribution *= 10.0
+    #gs.nugget = 0.0
+    #print(gs.variograms[0].a,gs.variograms[0].contribution)
+
+    #full_parcov = gs.covariance_matrix(x,y,names)
+    #parcov = parcov_nothk.extend(full_parcov)
+    #print(parcov.to_pearson().x[-1,:])
+    parcov = pyemu.helpers.geostatistical_prior_builder(pst,struct_dict={gs:hk_par},sigma_range=6)
+
+    parcov.to_binary("freyberg_prior.jcb")
+    parcov.to_ascii("freyberg_prior.cov")
+    #pst.observation_data.loc[:,"weight"] /= 10.0
+    pst.write("temp.pst")
+    obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,parcov,num_reals=100,use_homegrown=True)
+    oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst,num_reals=100)
+    es = pyemu.EnsembleSmoother(pst,num_slaves=20,
+                                verbose=True,port=4006)
+
+    es.initialize(parensemble=pe,obsensemble=oe,init_lambda=10.0,enforce_bounds="reset",regul_factor=0.0,
+                  use_approx_prior=True,build_empirical_prior=True)
+    es.update()
+    #for i in range(3):
+    #    es.update(lambda_mults=[0.01,0.2,1.0,5.0,100.0],run_subset=20,use_approx=True)
+        #es.update(use_approx=False)
+
+    os.chdir(os.path.join("..",".."))
+
+def freyerg_reg_compare():
+    import os
+    import pandas as pd
+    import pyemu
+
+    os.chdir(os.path.join("smoother", "freyberg"))
+
     if not os.path.exists("freyberg.xy"):
         import flopy
 
-        ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws="template",
+        ml = flopy.modflow.Modflow.load("freyberg.nam", model_ws="template",
                                         load_only=[])
-        xy = pd.DataFrame([(x,y) for x,y in zip(ml.sr.xcentergrid.flatten(),ml.sr.ycentergrid.flatten())],
-                          columns=['x','y'])
+        xy = pd.DataFrame([(x, y) for x, y in zip(ml.sr.xcentergrid.flatten(), ml.sr.ycentergrid.flatten())],
+                          columns=['x', 'y'])
         names = []
         for i in range(ml.nrow):
-            for j in range(ml.ncol ):
-                names.append("hkr{0:02d}c{1:02d}".format(i,j))
-        xy.loc[:,"name"] = names
+            for j in range(ml.ncol):
+                names.append("hkr{0:02d}c{1:02d}".format(i, j))
+        xy.loc[:, "name"] = names
         xy.to_csv("freyberg.xy")
     else:
         xy = pd.read_csv("freyberg.xy")
@@ -234,41 +402,112 @@ def freyberg():
     [os.remove(csv_file) for csv_file in csv_files]
 
     pst = pyemu.Pst(os.path.join("freyberg.pst"))
-    dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+    x, y, names = [], [], []
+    for i in range(ml.nrow):
+        for j in range(ml.ncol):
+            if ml.bas6.ibound.array[0, i, j] < 1:
+                continue
+            names.append("hkr{0:02d}c{1:02d}".format(i, j))
+            x.append(ml.sr.xcentergrid[i, j])
+            y.append(ml.sr.ycentergrid[i, j])
+            # xy.loc[:,"name"] = names
+            # xy.to_csv("freyberg.xy")
+            # else:
+            # xy = pd.read_csv("freyberg.xy")
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
 
-    nothk_names = [pname for pname in pst.adj_par_names if "hk" not in pname]
-    parcov_nothk = dia_parcov.get(row_names=nothk_names)
-    gs = pyemu.utils.geostats.read_struct_file(os.path.join("template","structure.dat"))
-    print(gs.variograms[0].a,gs.variograms[0].contribution)
-    #gs.variograms[0].a *= 10.0
-    #gs.variograms[0].contribution *= 10.0
-    gs.nugget = 0.0
-    print(gs.variograms[0].a,gs.variograms[0].contribution)
+    pst = pyemu.Pst(os.path.join("freyberg.pst"))
+    # dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+    par = pst.parameter_data
+    hk_names = par.loc[par.parnme.apply(lambda x: x.startswith("hk")), 'parnme']
+    hk_par = par.loc[hk_names, :]
+    hk_par.loc[:, "i"] = hk_par.parnme.apply(lambda x: int(x[3:5]))
+    hk_par.loc[:, "j"] = hk_par.parnme.apply(lambda x: int(x[-2:]))
+    hk_par.loc[:, "x"] = hk_par.apply(lambda x: ml.sr.xcentergrid[x.i, x.j], axis=1)
+    hk_par.loc[:, "y"] = hk_par.apply(lambda x: ml.sr.ycentergrid[x.i, x.j], axis=1)
 
-    full_parcov = gs.covariance_matrix(xy.x,xy.y,xy.name)
-    parcov = parcov_nothk.extend(full_parcov)
-    #print(parcov.to_pearson().x[-1,:])
-    parcov.to_binary("freyberg_prior.jcb")
-    parcov.to_ascii("freyberg_prior.cov")
-    return
-    pst.observation_data.loc[:,"weight"] /= 10.0
+    # nothk_names = [pname for pname in pst.adj_par_names if "hk" not in pname]
+    # parcov_nothk = dia_parcov.get(row_names=nothk_names)
+    gs = pyemu.utils.geostats.read_struct_file(os.path.join("template", "structure.dat"))
+    # print(gs.variograms[0].a,gs.variograms[0].contribution)
+    # gs.variograms[0].a *= 10.0
+    # gs.variograms[0].contribution *= 10.0
+    # gs.nugget = 0.0
+    # print(gs.variograms[0].a,gs.variograms[0].contribution)
+
+    # full_parcov = gs.covariance_matrix(x,y,names)
+    # parcov = parcov_nothk.extend(full_parcov)
+    # print(parcov.to_pearson().x[-1,:])
+    parcov = pyemu.helpers.geostatistical_prior_builder(pst, struct_dict={gs: hk_par}, sigma_range=6)
+    pst.observation_data.loc[:, "weight"] /= 10.0
     pst.write("temp.pst")
     obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
-
-    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=20,
+    pyemu.Ensemble.reseed()
+    es = pyemu.EnsembleSmoother(pst, parcov=parcov, obscov=obscov, num_slaves=20,
                                 verbose=True)
 
-    #gs.variograms[0].a=10000
-    #gs.variograms[0].contribution=0.01
-    #gs.variograms[0].anisotropy = 10.0
-    # pp_df = pyemu.utils.gw_utils.pp_file_to_dataframe("points1.dat")
-    # parcov_hk = gs.covariance_matrix(pp_df.x,pp_df.y,pp_df.name)
-    # parcov_full = parcov_hk.extend(parcov_rch)
+    es.initialize(300, init_lambda=100.0, enforce_bounds="reset", regul_factor=0.0)
+    for i in range(5):
+        es.update(lambda_mults=[0.01, 0.2, 5.0, 100.0], run_subset=20, use_approx=False)
 
-    es.initialize(100,init_lambda=100.0,enforce_bounds="reset")
-    for i in range(10):
-        es.update(lambda_mults=[0.01,0.2,5.0,100.0],run_subset=20)
-    os.chdir(os.path.join("..",".."))
+    noreg_par = es.parensemble.copy()
+    noreg_obs = es.obsensemble.copy()
+    noreg_iobj = pd.read_csv("freyberg.pst.iobj.actual.csv")
+
+    es = pyemu.EnsembleSmoother(pst, parcov=parcov, obscov=obscov, num_slaves=20,
+                                verbose=True)
+
+    es.initialize(300, init_lambda=100.0, enforce_bounds="reset", regul_factor=1.0)
+    for i in range(5):
+        es.update(lambda_mults=[0.01, 0.2, 5.0, 100.0], run_subset=20, use_approx=False)
+    reg_par = es.parensemble.copy()
+    reg_obs = es.obsensemble.copy()
+    reg_iobj = pd.read_csv("freyberg.pst.iobj.actual.csv")
+
+    os.chdir(os.path.join("..", ".."))
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+
+    with PdfPages("freyberg_reg_compare.pdf") as pdf:
+        for oname in es.pst.nnz_obs_names:
+            fig = plt.figure(figsize=(6,6))
+            ax = plt.subplot(111)
+            es.obsensemble_0.loc[:,oname].hist(bins=20,ax=ax,color="0.5",alpha=0.5)
+            reg_obs.loc[:,oname].hist(bins=20,ax=ax,color='m',alpha=0.5)
+            noreg_obs.loc[:,oname].hist(bins=20,ax=ax,color='b',alpha=0.5)
+            ax.set_title(oname)
+            pdf.savefig()
+            plt.close(fig)
+
+        for pname in es.pst.adj_par_names:
+            fig = plt.figure(figsize=(6,6))
+            ax = plt.subplot(111)
+            es.parensemble_0.loc[:,pname].hist(bins=20,ax=ax,color="0.5",alpha=0.5)
+            reg_par.loc[:,pname].hist(bins=20,ax=ax,color='m',alpha=0.5)
+            noreg_par.loc[:,pname].hist(bins=20,ax=ax,color='b',alpha=0.5)
+            ax.set_title(pname)
+            pdf.savefig()
+            plt.close(fig)
+
+        fig = plt.figure(figsize=(6, 6))
+        ax = plt.subplot(111)
+        ax.plot(reg_iobj.total_runs,reg_iobj.loc[:,"mean"],color='m')
+        ax.plot(noreg_iobj.total_runs,noreg_iobj.loc[:,"mean"],color='b')
+        pdf.savefig()
+        plt.close(fig)
+        reals = [c for c in reg_iobj.columns if c.startswith('0')]
+
+        for i in reg_iobj.index:
+            fig = plt.figure(figsize=(6, 6))
+            ax = plt.subplot(111)
+            reg_iobj.loc[i,reals].hist(ax=ax,alpha=0.5,color='b',bins=20)
+            noreg_iobj.loc[i,reals].hist(ax=ax,alpha=0.5,color='m',bins=20)
+            ax.set_title("phi {0}".format(i))
+            pdf.savefig()
+            plt.close(fig)
+
+
 
 def freyberg_condor():
     import os
@@ -277,38 +516,44 @@ def freyberg_condor():
 
     os.chdir(os.path.join("smoother","freyberg"))
 
-    if not os.path.exists("freyberg.xy"):
-        import flopy
-
-        ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws="template",
-                                        load_only=[])
-        xy = pd.DataFrame([(x,y) for x,y in zip(ml.sr.xcentergrid.flatten(),ml.sr.ycentergrid.flatten())],
-                          columns=['x','y'])
-        names = []
-        for i in range(ml.nrow):
-            for j in range(ml.ncol ):
-                names.append("hkr{0:02d}c{1:02d}".format(i,j))
-        xy.loc[:,"name"] = names
-        xy.to_csv("freyberg.xy")
-    else:
-        xy = pd.read_csv("freyberg.xy")
+    x, y, names = [], [], []
+    for i in range(ml.nrow):
+        for j in range(ml.ncol):
+            if ml.bas6.ibound.array[0, i, j] < 1:
+                continue
+            names.append("hkr{0:02d}c{1:02d}".format(i, j))
+            x.append(ml.sr.xcentergrid[i, j])
+            y.append(ml.sr.ycentergrid[i, j])
+            # xy.loc[:,"name"] = names
+            # xy.to_csv("freyberg.xy")
+            # else:
+            # xy = pd.read_csv("freyberg.xy")
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
 
     pst = pyemu.Pst(os.path.join("freyberg.pst"))
-    dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+    # dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+    par = pst.parameter_data
+    hk_names = par.loc[par.parnme.apply(lambda x: x.startswith("hk")), 'parnme']
+    hk_par = par.loc[hk_names, :]
+    hk_par.loc[:, "i"] = hk_par.parnme.apply(lambda x: int(x[3:5]))
+    hk_par.loc[:, "j"] = hk_par.parnme.apply(lambda x: int(x[-2:]))
+    hk_par.loc[:, "x"] = hk_par.apply(lambda x: ml.sr.xcentergrid[x.i, x.j], axis=1)
+    hk_par.loc[:, "y"] = hk_par.apply(lambda x: ml.sr.ycentergrid[x.i, x.j], axis=1)
 
-    nothk_names = [pname for pname in pst.adj_par_names if "hk" not in pname]
-    parcov_nothk = dia_parcov.get(row_names=nothk_names)
-    gs = pyemu.utils.geostats.read_struct_file(os.path.join("template","structure.dat"))
-    print(gs.variograms[0].a,gs.variograms[0].contribution)
-    #gs.variograms[0].a *= 10.0
-    #gs.variograms[0].contribution *= 10.0
-    gs.nugget = 0.0
-    print(gs.variograms[0].a,gs.variograms[0].contribution)
+    # nothk_names = [pname for pname in pst.adj_par_names if "hk" not in pname]
+    # parcov_nothk = dia_parcov.get(row_names=nothk_names)
+    gs = pyemu.utils.geostats.read_struct_file(os.path.join("template", "structure.dat"))
+    # print(gs.variograms[0].a,gs.variograms[0].contribution)
+    # gs.variograms[0].a *= 10.0
+    # gs.variograms[0].contribution *= 10.0
+    # gs.nugget = 0.0
+    # print(gs.variograms[0].a,gs.variograms[0].contribution)
 
-    full_parcov = gs.covariance_matrix(xy.x,xy.y,xy.name)
-    parcov = parcov_nothk.extend(full_parcov)
+    # full_parcov = gs.covariance_matrix(x,y,names)
+    # parcov = parcov_nothk.extend(full_parcov)
+    # print(parcov.to_pearson().x[-1,:])
+    parcov = pyemu.helpers.geostatistical_prior_builder(pst, struct_dict={gs: hk_par}, sigma_range=6)
     #print(parcov.to_pearson().x[-1,:])
 
     pst.observation_data.loc[:,"weight"] /= 10.0
@@ -849,7 +1094,7 @@ def chenoliver():
     num_reals = 100
     es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
                                 num_slaves=15,verbose=True)
-    es.initialize(num_reals=num_reals,enforce_bounds=None,init_lambda=10.0)
+    es.initialize(num_reals=num_reals,enforce_bounds=None,init_lambda=10.0,regul_factor=1.0,use_approx_prior=False)
     for it in range(25):
         es.update(use_approx=False)
     os.chdir(os.path.join("..",".."))
@@ -914,30 +1159,166 @@ def chenoliver_condor():
         es.update(lambda_mults=[1.0],use_approx=True)
     os.chdir(os.path.join("..",".."))
 
-def tenpar():
-    import os
 
+def tenpar_phi():
+    import os
     import numpy as np
+    import pandas as pd
+    import flopy
+    import pyemu
+
+    os.chdir(os.path.join("smoother", "10par_xsec"))
+    # bak_obj = pd.read_csv("iobj.bak",skipinitialspace=True)
+    # bak_obj_act = pd.read_csv("iobj.actual.bak")
+    bak_upgrade = pd.read_csv("upgrade_1.bak")
+
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
+    pst = pyemu.Pst("10par_xsec.pst")
+    par = pst.parameter_data
+    par.loc["stage", "partrans"] = "fixed"
+
+    v = pyemu.utils.ExpVario(contribution=0.25, a=60.0)
+    gs = pyemu.utils.GeoStruct(variograms=[v], transform="log")
+    par = pst.parameter_data
+    k_names = par.loc[par.parnme.apply(lambda x: x.startswith('k')), "parnme"]
+    sr = flopy.utils.SpatialReference(delc=[10], delr=np.zeros((10)) + 10.0)
+
+    cov = gs.covariance_matrix(sr.xcentergrid[0, :], sr.ycentergrid[0, :], k_names)
+
+    obs = pst.observation_data
+    obs.loc["h01_09", "weight"] = 100.0
+    obs.loc["h01_09", 'obgnme'] = "l_test"
+    obs.loc["h01_09", 'obsval'] = 2.0
+
+    es = pyemu.EnsembleSmoother(pst, parcov=cov,
+                                num_slaves=10, port=4005, verbose=True,
+                                drop_bad_reals=14000.)
+
+    lz = es.get_localizer().to_dataframe()
+    # the k pars upgrad of h01_04 and h01_06 are localized
+    upgrad_pars = [pname for pname in lz.columns if "_" in pname and \
+                   int(pname.split('_')[1]) > 4]
+    lz.loc["h01_04", upgrad_pars] = 0.0
+    upgrad_pars = [pname for pname in lz.columns if '_' in pname and \
+                   int(pname.split('_')[1]) > 6]
+    lz.loc["h01_06", upgrad_pars] = 0.0
+    lz = pyemu.Matrix.from_dataframe(lz).T
+
+    es.initialize(parensemble="10par_xsec.pe.bak", obsensemble="10par_xsec.oe.bak",
+                  restart_obsensemble="10par_xsec.oe.restart.bak", init_lambda=10000.0,
+                  regul_factor=1.0)
+
+    phi = pyemu.smoother.Phi(es,es.obsensemble.shape[0])
+    phi.update()
+    #phi.write()
+    es.update(lambda_mults=[.1, 1000.0], calc_only=False, use_approx=False, localizer=lz)
+
+    phi.update()
+    # phi.write()
+    os.chdir(os.path.join("..", ".."))
+
+def tenpar_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    import flopy
+    import pyemu
+
+    os.chdir(os.path.join("smoother", "10par_xsec"))
+    try:
+        #bak_obj = pd.read_csv("iobj.bak",skipinitialspace=True)
+        #bak_obj_act = pd.read_csv("iobj.actual.bak")
+        bak_upgrade1 = pd.read_csv("upgrade_1.bak.csv")
+        bak_upgrade2 = pd.read_csv("upgrade_2.bak.csv")
+
+
+        csv_files = [f for f in os.listdir('.') if f.endswith(".csv") and ".bak" not in f]
+        [os.remove(csv_file) for csv_file in csv_files]
+        pst = pyemu.Pst("10par_xsec.pst")
+        par = pst.parameter_data
+        par.loc["stage", "partrans"] = "fixed"
+
+        v = pyemu.utils.ExpVario(contribution=0.25, a=60.0)
+        gs = pyemu.utils.GeoStruct(variograms=[v], transform="log")
+        par = pst.parameter_data
+        k_names = par.loc[par.parnme.apply(lambda x: x.startswith('k')), "parnme"]
+        sr = flopy.utils.SpatialReference(delc=[10], delr=np.zeros((10)) + 10.0)
+
+        cov = gs.covariance_matrix(sr.xcentergrid[0, :], sr.ycentergrid[0, :], k_names)
+
+        obs = pst.observation_data
+        obs.loc["h01_09", "weight"] = 100.0
+        obs.loc["h01_09", 'obgnme'] = "lt_test"
+        obs.loc["h01_09", 'obsval'] = 2.0
+
+        es = pyemu.EnsembleSmoother(pst, parcov=cov,
+                                    num_slaves=10, port=4005, verbose=True,
+                                    drop_bad_reals=14000.)
+
+        lz = es.get_localizer().to_dataframe()
+        # the k pars upgrad of h01_04 and h01_06 are localized
+        upgrad_pars = [pname for pname in lz.columns if "_" in pname and \
+                       int(pname.split('_')[1]) > 4]
+        lz.loc["h01_04", upgrad_pars] = 0.0
+        upgrad_pars = [pname for pname in lz.columns if '_' in pname and \
+                       int(pname.split('_')[1]) > 6]
+        lz.loc["h01_06", upgrad_pars] = 0.0
+        lz = pyemu.Matrix.from_dataframe(lz).T
+
+        es.initialize(parensemble="10par_xsec.pe.bak",obsensemble="10par_xsec.oe.bak",
+                      restart_obsensemble="10par_xsec.oe.restart.bak",init_lambda=10000.0,
+                      use_approx_prior=False)
+        # just for force full upgrade testing for
+        es.iter_num = 2
+        es.update(lambda_mults=[.1, 1000.0],calc_only=True,use_approx=False,localizer=lz)
+
+        #obj = pd.read_csv("10par_xsec.pst.iobj.csv")
+        #obj_act = pd.read_csv("10par_xsec.pst.iobj.actual.csv")
+        upgrade1 = pd.read_csv("10par_xsec.pst.upgrade_1.0003.csv")
+        upgrade2 = pd.read_csv("10par_xsec.pst.upgrade_2.0003.csv")
+
+    except Exception as e:
+        os.chdir(os.path.join("..", ".."))
+        raise Exception(str(e))
+
+    os.chdir(os.path.join("..", ".."))
+
+    # for b,n in zip([bak_obj,bak_obj_act,bak_upgrade],[obj,obj_act,upgrade]):
+    #     print(b,n)
+    #     d = b - n
+    #     print(d.max(),d.min())
+
+    d = (bak_upgrade1 - upgrade1).apply(np.abs)
+    assert d.max().max() < 1.0e-6,d.max()
+
+    d = (bak_upgrade2 - upgrade2).apply(np.abs)
+    assert d.max().max() < 1.0e-6
+
+def tenpar_fixed():
+    import os
+    import numpy as np
+    import flopy
     import pyemu
 
     os.chdir(os.path.join("smoother","10par_xsec"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
     pst = pyemu.Pst("10par_xsec.pst")
-    dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+    par = pst.parameter_data
+    par.loc["stage","partrans"] = "fixed"
 
     v = pyemu.utils.ExpVario(contribution=0.25,a=60.0)
     gs = pyemu.utils.GeoStruct(variograms=[v],transform="log")
     par = pst.parameter_data
     k_names = par.loc[par.parnme.apply(lambda x: x.startswith('k')),"parnme"]
-    sr = pyemu.utils.SpatialReference(delc=[10],delr=np.zeros((10))+10.0)
+    sr = flopy.utils.SpatialReference(delc=[10],delr=np.zeros((10))+10.0)
 
-    full_cov = gs.covariance_matrix(sr.xcentergrid[0,:],sr.ycentergrid[0,:],k_names)
-    dia_parcov.drop(list(k_names),axis=1)
-    cov = dia_parcov.extend(full_cov)
+    cov = gs.covariance_matrix(sr.xcentergrid[0,:],sr.ycentergrid[0,:],k_names)
 
-    es = pyemu.EnsembleSmoother("10par_xsec.pst",parcov=cov,
-                                num_slaves=10,port=4005)
+    es = pyemu.EnsembleSmoother(pst,parcov=cov,
+                                num_slaves=10,port=4005,verbose=True,
+                                drop_bad_reals=14000.)
     lz = es.get_localizer().to_dataframe()
     #the k pars upgrad of h01_04 and h01_06 are localized
     upgrad_pars = [pname for pname in lz.columns if "_" in pname and\
@@ -948,17 +1329,225 @@ def tenpar():
     lz.loc["h01_06", upgrad_pars] = 0.0
     lz = pyemu.Matrix.from_dataframe(lz).T
     print(lz)
-    es.initialize(num_reals=300,init_lambda=10000.0)
+    es.initialize(num_reals=100,init_lambda=10000.0)
 
-    for it in range(20):
+    for it in range(1):
         #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
-        es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
+        #es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
+        es.update(lambda_mults=[.1,1000.0])
     os.chdir(os.path.join("..",".."))
+
+
+def tenpar():
+    import os
+    import numpy as np
+    import flopy
+    import pyemu
+
+    os.chdir(os.path.join("smoother","10par_xsec"))
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
+    pst = pyemu.Pst("10par_xsec.pst")
+
+    dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+
+    v = pyemu.utils.ExpVario(contribution=0.25,a=60.0)
+    gs = pyemu.utils.GeoStruct(variograms=[v],transform="log")
+    par = pst.parameter_data
+    k_names = par.loc[par.parnme.apply(lambda x: x.startswith('k')),"parnme"]
+    sr = flopy.utils.SpatialReference(delc=[10],delr=np.zeros((10))+10.0)
+
+    full_cov = gs.covariance_matrix(sr.xcentergrid[0,:],sr.ycentergrid[0,:],k_names)
+    dia_parcov.drop(list(k_names),axis=1)
+    cov = dia_parcov.extend(full_cov)
+
+
+
+    es = pyemu.EnsembleSmoother("10par_xsec.pst",parcov=cov,
+                                num_slaves=10,port=4005,verbose=True,
+                                drop_bad_reals=14000.)
+    lz = es.get_localizer().to_dataframe()
+    #the k pars upgrad of h01_04 and h01_06 are localized
+    upgrad_pars = [pname for pname in lz.columns if "_" in pname and\
+                   int(pname.split('_')[1]) > 4]
+    lz.loc["h01_04",upgrad_pars] = 0.0
+    upgrad_pars = [pname for pname in lz.columns if '_' in pname and \
+                   int(pname.split('_')[1]) > 6]
+    lz.loc["h01_06", upgrad_pars] = 0.0
+    lz = pyemu.Matrix.from_dataframe(lz).T
+    print(lz)
+    es.initialize(num_reals=100,init_lambda=1.0,regul_factor=0.0,use_approx_prior=True)
+    for it in range(10):
+        #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
+        #es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
+        es.update(lambda_mults=[1.0],use_approx=False)
+
+    os.chdir(os.path.join("..",".."))
+
+
+def tenpar_opt():
+    import os
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import flopy
+    import pyemu
+    os.chdir(os.path.join("smoother","10par_xsec"))
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
+    pst = pyemu.Pst("10par_xsec.pst")
+    dia_parcov = pyemu.Cov.from_parameter_data(pst,sigma_range=6.0)
+
+    v = pyemu.utils.ExpVario(contribution=0.25,a=60.0)
+    gs = pyemu.utils.GeoStruct(variograms=[v],transform="log")
+    par = pst.parameter_data
+    k_names = par.loc[par.parnme.apply(lambda x: x.startswith('k')),"parnme"]
+    sr = flopy.utils.SpatialReference(delc=[10],delr=np.zeros((10))+10.0)
+
+    full_cov = gs.covariance_matrix(sr.xcentergrid[0,:],sr.ycentergrid[0,:],k_names)
+    dia_parcov.drop(list(k_names),axis=1)
+    cov = dia_parcov.extend(full_cov)
+
+    obs = pst.observation_data
+    # obs.loc["h01_02","weight"] = 10.0
+    # obs.loc["h01_02","obgnme"] = "lt_test"
+    # obs.loc["h01_02", "obsval"] = 1.0
+    obs.loc["h01_09","weight"] = 100.0
+    obs.loc["h01_09",'obgnme'] = "l_test"
+    obs.loc["h01_09", 'obsval'] = 2.0
+    print(obs)
+    #return()
+    pst.write("10par_xsec_opt.pst")
+    pst.write(os.path.join("template","10par_xsec_opt.pst"))
+
+    es = pyemu.EnsembleSmoother("10par_xsec_opt.pst",parcov=cov,
+                                num_slaves=10,port=4005,verbose=True)
+    lz = es.get_localizer().to_dataframe()
+    #the k pars upgrad of h01_04 and h01_06 are localized
+    upgrad_pars = [pname for pname in lz.columns if "_" in pname and\
+                   int(pname.split('_')[1]) > 4]
+    lz.loc["h01_04",upgrad_pars] = 0.0
+    upgrad_pars = [pname for pname in lz.columns if '_' in pname and \
+                   int(pname.split('_')[1]) > 6]
+    lz.loc["h01_06", upgrad_pars] = 0.0
+    lz = pyemu.Matrix.from_dataframe(lz).T
+    print(lz)
+
+    mc = pyemu.MonteCarlo(pst=pst,parcov=cov)
+    mc.draw(300,obs=True)
+    es.initialize(parensemble=mc.parensemble,obsensemble=mc.obsensemble,init_lambda=10000.0)
+
+    niter=20
+    for it in range(niter):
+        #es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
+        #es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
+        es.update(lambda_mults=[.1,1.0,10.0],run_subset=30)
+
+    oe_ieq = pd.read_csv("10par_xsec_opt.pst.obsensemble.{0:04d}.csv".format(niter))
+
+    #obs.loc["h01_09","weight"] = 0.0
+    es = pyemu.EnsembleSmoother("10par_xsec.pst", parcov=cov,
+                                num_slaves=10, port=4005, verbose=True)
+    lz = es.get_localizer().to_dataframe()
+    # the k pars upgrad of h01_04 and h01_06 are localized
+    upgrad_pars = [pname for pname in lz.columns if "_" in pname and \
+                   int(pname.split('_')[1]) > 4]
+    lz.loc["h01_04", upgrad_pars] = 0.0
+    upgrad_pars = [pname for pname in lz.columns if '_' in pname and \
+                   int(pname.split('_')[1]) > 6]
+    lz.loc["h01_06", upgrad_pars] = 0.0
+    lz = pyemu.Matrix.from_dataframe(lz).T
+    print(lz)
+    es.initialize(parensemble=mc.parensemble,obsensemble=mc.obsensemble, init_lambda=10000.0)
+
+    for it in range(niter):
+        # es.update(lambda_mults=[0.1,1.0,10.0],localizer=lz,run_subset=20)
+        # es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)
+        es.update(lambda_mults=[.1, 1.0,10.0], run_subset=30)
+
+    oe_base = pd.read_csv("10par_xsec.pst.obsensemble.{0:04d}.csv".format(niter))
+
+    for oname in obs.obsnme:
+        ax = plt.subplot(111)
+        oe_base.loc[:,oname].hist(bins=20, ax=ax, color="0.5", alpha=0.54)
+
+        oe_ieq.loc[:,oname].hist(bins=20,ax=ax,color="b",alpha=0.5)
+
+        ax.set_xlim(oe_ieq.loc[:,oname].min()*0.75,oe_ieq.loc[:,oname].max() * 1.25)
+
+        plt.savefig(oname+".png")
+        plt.close("all")
+
+    #oe_base.to_csv("base.csv")
+    #oe_ieq.to_csv("ieq.csv")
+
+    os.chdir(os.path.join("..",".."))
+
+
+def plot_10par_opt_traj():
+    import numpy as np
+    import pandas as pd
+    from matplotlib.backends.backend_pdf import PdfPages
+    import matplotlib.pyplot as plt
+    import pyemu
+
+
+
+    d = os.path.join("smoother","10par_xsec")
+    case1 = "10par_xsec.pst"
+    case2 = "10par_xsec_opt.pst"
+
+    files = os.listdir(d)
+    case1_oes = [f for f in files if case1 in f and "obsensemble" in f]
+    case2_oes = [f for f in files if case2 in f and "obsensemble" in f]
+
+    case1_oes = [pd.read_csv(os.path.join(d,f)) for f in case1_oes]
+    case2_oes = [pd.read_csv(os.path.join(d,f)) for f in case2_oes]
+
+    case1_pes = [f for f in files if case1 in f and "parensemble" in f]
+    case2_pes = [f for f in files if case2 in f and "parensemble" in f]
+
+    case1_pes = [pd.read_csv(os.path.join(d, f)) for f in case1_pes]
+    case2_pes = [pd.read_csv(os.path.join(d, f)) for f in case2_pes]
+
+    print(case1_oes)
+    print(case2_oes)
+
+    pst = pyemu.Pst(os.path.join(d,"10par_xsec.pst"))
+    with PdfPages("traj.pdf") as pdf:
+        for oname in pst.observation_data.obsnme:
+            #dfs1 = [c.loc[:,[oname]] for c in case1_oes]
+            df1 = pd.concat([c.loc[:,[oname]] for c in case1_oes],axis=1)
+            df2 = pd.concat([c.loc[:, [oname]] for c in case2_oes], axis=1)
+            df1.columns = np.arange(df1.shape[1])
+            df2.columns = np.arange(df2.shape[1])
+            fig = plt.figure(figsize=(10,5))
+            ax = plt.subplot(111)
+            [ax.plot(df1.columns,df1.loc[i,:],color='0.5',lw=0.2) for i in df1.index]
+            [ax.plot(df2.columns, df2.loc[i, :], color='b', lw=0.2) for i in df2.index]
+            ax.set_title(oname)
+            pdf.savefig()
+            plt.close(fig)
+
+        for pname in pst.parameter_data.parnme:
+            #dfs1 = [c.loc[:,[oname]] for c in case1_oes]
+            df1 = pd.concat([c.loc[:,[pname]] for c in case1_pes],axis=1)
+            df2 = pd.concat([c.loc[:, [pname]] for c in case2_pes], axis=1)
+            df1.columns = np.arange(df1.shape[1])
+            df2.columns = np.arange(df2.shape[1])
+            fig = plt.figure(figsize=(10,5))
+            ax = plt.subplot(111)
+            [ax.plot(df1.columns,df1.loc[i,:],color='0.5',lw=0.2) for i in df1.index]
+            [ax.plot(df2.columns, df2.loc[i, :], color='b', lw=0.2) for i in df2.index]
+            ax.set_title(pname)
+            pdf.savefig()
+            plt.close(fig)
+
 
 def tenpar_restart():
     import os
-
     import numpy as np
+    import flopy
     import pyemu
 
     os.chdir(os.path.join("smoother","10par_xsec"))
@@ -970,7 +1559,7 @@ def tenpar_restart():
     gs = pyemu.utils.GeoStruct(variograms=[v],transform="log")
     par = pst.parameter_data
     k_names = par.loc[par.parnme.apply(lambda x: x.startswith('k')),"parnme"]
-    sr = pyemu.utils.SpatialReference(delc=[10],delr=np.zeros((10))+10.0)
+    sr = flopy.utils.SpatialReference(delc=[10],delr=np.zeros((10))+10.0)
 
     full_cov = gs.covariance_matrix(sr.xcentergrid[0,:],sr.ycentergrid[0,:],k_names)
     dia_parcov.drop(list(k_names),axis=1)
@@ -1188,14 +1777,94 @@ def tenpar_plot():
             plt.close()
 
 
+def setup_lorenz():
+    import os
+    import shutil
+    import pandas as pd
+    import pyemu
+
+    state_file = "lorenz.dat"
+    d = os.path.join("smoother", "lorenz","template")
+    dt = 1.0
+
+    prev = [1.0,1.0,1.05,dt]
+    if os.path.exists(d):
+        shutil.rmtree(d)
+    #os.mkdir(d)
+    os.makedirs(d)
+
+    df = pd.DataFrame({"variable":['x','y','z','dt']},index=['x','y','z','dt'])
+    df.loc[:,"prev"] = prev
+    df.loc[:,"new"] = prev
+
+    df.to_csv(os.path.join(d,state_file),sep=' ',index=False)
+
+    df.loc[:,"prev"] = df.variable.apply(lambda x: "~    {0}    ~".format(x))
+    with open(os.path.join(d,state_file+".tpl"),'w') as f:
+        f.write("ptf ~\n")
+        df.to_csv(f,sep=' ',index=False)
+
+    with open(os.path.join(d,state_file+".ins"),'w') as f:
+        f.write("pif ~\nl1\n")
+        for v in df.variable:
+            f.write("l1 w !prev_{0}! !{0}!\n".format(v))
+
+    with open(os.path.join(d,"forward_run.py"),'w') as f:
+        f.write("import os\nimport numpy as np\nimport pandas as pd\n")
+        f.write("sigma,rho,beta = 10.0,28.0,2.66667\n")
+
+        f.write("df = pd.read_csv('{0}',delim_whitespace=True,index_col=0)\n".format(state_file))
+        f.write("x,y,z,dt = df.loc[:,'prev'].values\n")
+
+        f.write("df.loc['x','new'] = sigma * (y - x)\n")
+        f.write("df.loc['y','new'] = (rho * x) - y - (x * z)\n")
+        f.write("df.loc['z','new'] = (x * y) - (beta * z)\n")
+        f.write("df.loc[:,'new'] *= dt\n")
+        f.write("df.to_csv('{0}',sep=' ')\n".format(state_file))
+
+    #with open(os.path.join(d,"par.tpl"),'w') as f:
+    #    f.write("ptf ~\n")
+    #    f.write("dum ~ dum   ~\n")
+
+    base_dir = os.getcwd()
+    os.chdir(d)
+    pst = pyemu.Pst.from_io_files(*pyemu.helpers.parse_dir_for_io_files('.'))
+    os.chdir(base_dir)
+    pst.parameter_data.loc[:,"parval1"] = prev
+    pst.parameter_data.loc['y',"parlbnd"] = -40.0
+    pst.parameter_data.loc['y', "parubnd"] = 40.0
+    pst.parameter_data.loc['x', "parlbnd"] = -40.0
+    pst.parameter_data.loc['x', "parubnd"] = 40.0
+    pst.parameter_data.loc['z', "parlbnd"] = 0.0
+    pst.parameter_data.loc['z', "parubnd"] = 50.0
+    pst.parameter_data.loc[:,"partrans"] = "none"
+    pst.parameter_data.loc['dt','partrans'] = 'fixed'
+
+    pst.observation_data.loc[:,"weight"] = 0.0
+    pst.observation_data.loc[['x','y','z'],'weight'] = 1.0
+
+    pst.model_command = "python forward_run.py"
+    pst.pestpp_options["lambda_scale_fac"] = 1.0
+    pst.pestpp_options["upgrade_augment"] = "false"
+    pst.control_data.noptmax = 10
+
+    pst.write(os.path.join(d,"lorenz.pst"))
+
+    print(pst.parameter_data)
+
+    pyemu.helpers.run("pestpp lorenz.pst",cwd=d)
 
 if __name__ == "__main__":
+
+    #setup_lorenz()
     #henry_setup()
     #henry()
     #henry_plot()
-    freyberg()
+    #freyberg()
+    #freyberg_emp()
     #freyberg_plot()
     #freyberg_plot_iobj()
+    #freyerg_reg_compare()
     #freyberg_plot_par_seq()
     #freyberg_plot_obs_seq()
     #chenoliver_func_plot()
@@ -1209,10 +1878,15 @@ if __name__ == "__main__":
     #chenoliver_func_plot()
     #chenoliver_plot_sidebyside()
     #chenoliver_obj_plot()
-    #tenpar()
+    #tenpar_fixed()
+    #tenpar_phi()
+    tenpar_test()
+    #tenpar_opt()
+    #plot_10par_opt_traj()
     #tenpar_restart()
     #tenpar_plot()
     #tenpar_failed_runs()
+    #tenpar()
     #freyberg()
     #freyberg_check_phi_calc()
     #freyberg_condor()

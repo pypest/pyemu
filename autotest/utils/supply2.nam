@@ -1,0 +1,14 @@
+LIST    10   supply2.lst
+DIS     11   supply2.dis
+BAS6    12   supply2.ba6
+BCF6    13   supply2.bc6
+RCH     15   supply2.rch
+#STR     16  supply2.str
+SFR     16   supply2.sfr
+OC      17   supply2.oc
+PCG     18   supply2.pcg
+WEL     20   supply2.wel
+#GWM     19   supply2.gwm
+#DATA    20   supply2.gwmwell
+DATA    81   supply2.sfrout
+DATA    51   supply2.hds

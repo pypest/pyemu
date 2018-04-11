@@ -1,4 +1,5 @@
 import os
+import copy
 if not os.path.exists("temp"):
     os.mkdir("temp")
 
@@ -45,6 +46,15 @@ def schur_test_nonpest():
 
     print(s.get_removed_obs_importance({"group1":["o1","o3"]}))
 
+    print(s.pandas)
+
+    forecasts = Matrix(x=np.random.random((1,npar)),row_names=[forecasts],col_names=pnames)
+
+    sc = Schur(jco=jco,forecasts=forecasts.T,parcov=parcov,obscov=obscov)
+    ffile = os.path.join("temp","forecasts.jcb")
+    forecasts.to_binary(ffile)
+
+    sc = Schur(jco=jco, forecasts=ffile, parcov=parcov, obscov=obscov)
 
 def schur_test():
     import os
@@ -61,7 +71,29 @@ def schur_test():
     print(sc.prior_forecast)
     print(sc.posterior_forecast)
     print(sc.get_par_group_contribution())
-    print(sc.get_removed_obs_group_importance())
+
+
+    print(sc.get_parameter_summary(include_map=True))
+    print(sc.get_forecast_summary(include_map=True))
+    print(sc.get_removed_obs_importance(reset_zero_weight=True))
+
+
+def la_test_io():
+    from pyemu import Schur, Cov, Pst
+    w_dir = os.path.join("..","verification","henry")
+    forecasts = ["pd_ten","c_obs10_2"]
+    pst = Pst(os.path.join(w_dir,"pest.pst"))
+    cov = Cov.from_parameter_data(pst)
+    cov.to_binary(os.path.join("temp","pest.bin.cov"))
+    cov.to_ascii(os.path.join("temp","pest.txt.cov"))
+    sc_bin = Schur(jco=os.path.join(w_dir,"pest.jcb"),
+               forecasts=forecasts,
+               parcov=os.path.join("temp","pest.bin.cov"))
+
+    sc_ascii = Schur(jco=os.path.join(w_dir,"pest.jcb"),
+               forecasts=forecasts,
+               parcov=os.path.join("temp","pest.txt.cov"))
+
 
 
 def errvar_test_nonpest():
@@ -159,6 +191,31 @@ def dataworth_next_test():
     print(next_test)
     print(imp_df.sort_index())
     assert next_test.shape[0] == 4
+
+
+def par_contrib_speed_test():
+    import os
+    import numpy as np
+    import pyemu
+
+    npar = 1800
+    nobs = 1000
+    nfore = 1000
+
+    par_names = ["par{0}".format(i) for i in range(npar)]
+    obs_names = ["obs{0}".format(i) for i in range(nobs)]
+    fore_names = ["fore{0}".format(i) for i in range(nfore)]
+
+    all_names = copy.deepcopy(obs_names)
+    all_names.extend(fore_names)
+    pst = pyemu.Pst.from_par_obs_names(par_names,all_names)
+    cal_jco = pyemu.Jco.from_names(obs_names,par_names,random=True)
+    fore_jco = pyemu.Jco.from_names(par_names,fore_names,random=True)
+    pst.observation_data.loc[obs_names,"weight"] = 1.0
+    pst.observation_data.loc[fore_names,"weight"] = 0.0
+
+    sc = pyemu.Schur(jco=cal_jco,pst=pst,forecasts=fore_jco, verbose=True)
+    sc.get_par_contribution(parlist_dict={par_names[0]:par_names[0]})
 
 
 def par_contrib_test():
@@ -344,19 +401,21 @@ def alternative_dw():
 
 
 
-
 if __name__ == "__main__":
-    alternative_dw()
-    freyberg_verf_test()
-    forecast_pestpp_load_test()
-    map_test()
-    par_contrib_test()
-    dataworth_test()
-    dataworth_next_test()
+    #alternative_dw()
+    #freyberg_verf_test()
+    #forecast_pestpp_load_test()
+    #map_test()
+    #par_contrib_speed_test()
+    #schur_test()
+    #par_contrib_test()
+    #dataworth_test()
+    #dataworth_next_test()
     schur_test_nonpest()
-    schur_test()
-    errvar_test_nonpest()
-    errvar_test()
-    css_test()
+    #schur_test()
+    #la_test_io()
+    #errvar_test_nonpest()
+    #errvar_test()
+    #css_test()
     #inf_test()
     #inf2_test()
