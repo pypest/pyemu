@@ -439,26 +439,36 @@ def from_flopy_test():
     for k in range(m.nlay):
         for kper in range(m.nper):
             hds_kperk.append([kper, k])
-    bc_props = [["riv.cond",None],["riv.stage",None],["wel.flux",None]]
+    temp_bc_props = [["wel.flux",None]]
+    spat_bc_props = [["riv.cond", 0], ["riv.stage", 0]]
     ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
                                          org_model_ws=org_model_ws,
                                          zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
-                                         remove_existing=True, hds_kperk=hds_kperk,
-                                         model_exe_name="mfnwt",temporal_bc_props=bc_props,
-                                         spatial_bc_props=bc_props)
+                                         remove_existing=True,
+                                         model_exe_name="mfnwt",temporal_bc_props=temp_bc_props,
+                                         spatial_bc_props=spat_bc_props)
+    par = ph.pst.parameter_data
+    par.loc["welflux_000",'parval1'] = 2.0
+
+    os.chdir(new_model_ws)
+    ph.pst.write_input_files()
+    pyemu.helpers.apply_bc_pars()
+    os.chdir("..")
+    
+
 
     ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
                                          org_model_ws=org_model_ws,
                                          zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
-                                         remove_existing=True, hds_kperk=hds_kperk,
+                                         remove_existing=True,
                                          model_exe_name="mfnwt",
-                                         spatial_bc_props=bc_props)
+                                         spatial_bc_props=spat_bc_props)
 
     ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
                                          org_model_ws=org_model_ws,
                                          zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
-                                         remove_existing=True, hds_kperk=hds_kperk,
-                                         model_exe_name="mfnwt", temporal_bc_props=bc_props)
+                                         remove_existing=True,
+                                         model_exe_name="mfnwt", temporal_bc_props=temp_bc_props)
 
     ph.pst.parameter_data.loc["rech0_zn1", "parval1"] = 2.0
 

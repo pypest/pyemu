@@ -2485,8 +2485,8 @@ class PstFromFlopyModel(object):
         f_tpl =  open(tpl_name,'w')
         f_tpl.write("ptf ~\n")
         f_tpl.flush()
-        df.loc[:,names].to_csv(f_tpl,sep=' ')
-
+        df.loc[:,names].to_csv(f_tpl,sep=' ',quotechar=' ')
+        f_tpl.close()
         self.par_dfs["temporal_bc"] = df
 
         if self.temporal_bc_geostruct is None:
@@ -2512,21 +2512,24 @@ class PstFromFlopyModel(object):
                 self.spatial_bc_props = [self.spatial_bc_props]
         for pakattr, k_org in self.spatial_bc_props:
             pak, attr, col = self.parse_pakattr(pakattr)
-            k_parse = self.parse_k(k_org, np.arange(self.m.nper))
-            c = self.get_count(pakattr)
-            lens = []
-            for k in k_parse:
+            k_parse = self.parse_k(k_org, np.arange(self.m.nlay))
+            if len(k_parse) > 1:
+                self.logger.lraise("spatial_bc_pars error: each set of spatial bc pars can only be applied "+\
+                                   "to a single layer (e.g. [wel.flux,0].\n"+\
+                                   "You passed [{0},{1}], implying broadcasting to layers {2}".
+                                   format(pakattr,k_org,k_parse))
+            for k in range(self.m.nper):
                 bc_filenames.append(self.bc_helper(k, pak, attr, col))
                 bc_cols.append(col)
                 pak_name = pak.name[0].lower()
                 bc_pak.append(pak_name)
-                bc_k.append(k)
+                bc_k.append(k_parse[0])
                 #bc_dtype_names.append(list(attr.dtype.names))
                 bc_dtype_names.append(','.join(attr.dtype.names))
 
                 #bc_parnme.append("{0}{1}_{2:03d}".format(pak_name, col, c))
         info_df = pd.DataFrame({"filename": bc_filenames, "col": bc_cols,
-                           "kper": bc_k, "pak": bc_pak,
+                           "k": bc_k, "pak": bc_pak,
                            "dtype_names": bc_dtype_names})
         info_df.loc[:,"bc_mlt"] = self.bc_mlt
         info_df.loc[:,"bc_org"] = self.bc_org
@@ -2542,11 +2545,13 @@ class PstFromFlopyModel(object):
                 names = df_pak.dtype_names.iloc[0].split(',')
                 fdf = pd.read_csv(os.path.join(self.m.model_ws,filename),
                                   delim_whitespace=True,header=None,names=names)
+                for c in ['k','i','j']:
+                    fdf.loc[:,c] -= 1
                 itmp.append(fdf.shape[0])
                 pak_dfs[pak] = fdf
             info_df.loc[info_df.pak==pak,"itmp"] = itmp
             if np.unique(np.array(itmp)).shape[0] != 1:
-                df.to_csv("spatial_bc_trouble.csv")
+                info_df.to_csv("spatial_bc_trouble.csv")
                 self.logger.lraise("spatial_bc_pars() error: must have same number of "+\
                                    "entries for every stress period for {0}".format(pak))
 
@@ -2575,9 +2580,21 @@ class PstFromFlopyModel(object):
             x = df.apply(lambda x: self.m.sr.xcentergrid[int(x.i),int(x.j)],axis=1).values
             y = df.apply(lambda x: self.m.sr.ycentergrid[int(x.i),int(x.j)],axis=1).values
             for col in pak_df.col.unique():
+                col_df = pak_df.loc[pak_df.col==col]
+                k_vals = col_df.k.unique()
+                npar = col_df.k.apply(lambda x: x in k_vals).shape[0]
+                if npar == 0:
+                    continue
                 names = df.index.map(lambda x: "{0}{1}{2}".format(pak[0],col[0],x))
+
                 df.loc[:,col] = names.map(lambda x: "~   {0}   ~".format(x))
-                par_df = pd.DataFrame({"parnme": names,"x":x,"y":y}, index=names)
+                df.loc[df.k.apply(lambda x: x not in k_vals),col] = 1.0
+                par_df = pd.DataFrame({"parnme": names,"x":x,"y":y,"k":df.k.values}, index=names)
+                par_df = par_df.loc[par_df.k.apply(lambda x: x in k_vals)]
+                if par_df.shape[0] == 0:
+                    self.logger.lraise("no parameters found for spatial bc k,pak,attr {0}, {1}, {2}".
+                                       format(k_vals,pak,col))
+
                 par_df.loc[:,"pargp"] = df.k.apply(lambda x : "{0}{1}_k{2:02.0f}".format(pak,col,int(x))).values
                 par_df.loc[:,"tpl_file"] = tpl_file
                 par_df.loc[:,"in_file"] = in_file
@@ -2919,20 +2936,21 @@ def apply_bc_pars():
 
         #print(temp_df.filename)
         #print(spat_df.filename)
+        names = None
         if temp_df is not None and fname in temp_df.split_filename.values:
             temp_df_fname = temp_df.loc[temp_df.split_filename==fname,:]
-            names = temp_df_fname.dtype_names.iloc[0].split(',')
+            if temp_df_fname.shape[0] > 0:
+                names = temp_df_fname.dtype_names.iloc[0].split(',')
             #print(names)
         if spat_df is not None and fname in spat_df.split_filename.values:
             spat_df_fname = spat_df.loc[spat_df.split_filename == fname, :]
-            names = spat_df_fname.dtype_names.iloc[0].split(',')
+            if spat_df_fname.shape[0] > 0:
+                names = spat_df_fname.dtype_names.iloc[0].split(',')
         if names is not None:
 
-            # bc_org = df_fname.bc_org.iloc[0]
-            # model_ext_path = df_fname.model_ext_path.iloc[0]
             df_list = pd.read_csv(os.path.join(org_dir,fname),
                                   delim_whitespace=True,header=None,names=names)
-            df_list.loc[:,"idx"] = df_list.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k,x.i,x.j),axis=1)
+            df_list.loc[:,"idx"] = df_list.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k-1,x.i-1,x.j-1),axis=1)
             df_list.index = df_list.idx
             pak_name = fname.split('_')[0].lower()
             if pak_name in sp_mlts:
@@ -2943,21 +2961,25 @@ def apply_bc_pars():
                     if col in mlt_df.columns:
                         df_list.loc[mlt_df.index,col] *= mlt_df.loc[:,col]
 
-            print(df_list)
             if temp_df is not None and fname in temp_df.split_filename.values:
                 temp_df_fname = temp_df.loc[temp_df.split_filename == fname, :]
                 for col,val in zip(temp_df_fname.col,temp_df_fname.val):
                      df_list.loc[:,col] *= val
-            fmts = {}
+            #fmts = {}
+            fmts = ''
             for name in names:
                 if name in ["i","j","k","inode"]:
-                    fmts[name] = pyemu.pst_utils.IFMT
+                    #fmts[name] = pyemu.pst_utils.IFMT
+                    #fmts[name] = lambda x: " {0:>9.0f}".format(x)
+                    fmts += "%10d"
                 else:
-                    fmts[name] = pyemu.pst_utils.FFMT
+                    #fmts[name] = pyemu.pst_utils.FFMT
+                    #fmts[name] = lambda x: " {0:>9G}".format(x)
+                    fmts += "%10G"
 
-        
-        with open(os.path.join(model_ext_path,fname),'w') as f:
-            f.write(df_list.to_string(header=False,index=False,formatters=fmts)+'\n')
+        np.savetxt(os.path.join(model_ext_path,fname),df_list.loc[:,names].as_matrix(),fmt=fmts)
+        #with open(os.path.join(model_ext_path,fname),'w') as f:
+        #    f.write(df_list.loc[:,names].to_string(header=False,index=False,formatters=fmts)+'\n')
             #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
 
 # def apply_all_wells():

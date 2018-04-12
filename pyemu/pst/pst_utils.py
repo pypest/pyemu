@@ -296,8 +296,8 @@ def write_to_template(parvals,tpl_file,in_file):
         if marker not in line:
             f_in.write(line)
         else:
-            line = line.lower().rstrip()
-            par_names = line.split(marker)[1::2]
+            line = line.rstrip()
+            par_names = line.lower().split(marker)[1::2]
             par_names = [name.strip() for name in par_names]
             start,end = get_marker_indices(marker,line)
             assert len(par_names) == len(start)
