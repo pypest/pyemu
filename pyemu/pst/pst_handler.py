@@ -46,7 +46,7 @@ class Pst(object):
         self.other_sections = {}
         for key,value in pst_utils.pst_config.items():
             self.__setattr__(key,copy.copy(value))
-        self.tied = None
+        #self.tied = None
         self.control_data = ControlData()
         self.svd_data = SvdData()
         self.reg_data = RegData()
@@ -480,6 +480,17 @@ class Pst(object):
             return True
         return False
 
+    @property
+    def tied(self):
+        par = self.parameter_data
+        tied_pars = par.loc[par.partrans=="tied","parnme"]
+        if tied_pars.shape[0] == 0:
+            return None
+        if "partied" not in par.columns:
+            par.loc[:,"partied"] = np.NaN
+        tied = par.loc[tied_pars,["parnme","partied"]]
+        return tied
+
     @staticmethod
     def _read_df(f,nrows,names,converters,defaults=None):
         """ a private method to read part of an open file into a pandas.DataFrame.
@@ -663,6 +674,7 @@ class Pst(object):
         next_section, section_lines, self.comments[section] = self._read_section_comments(f, False)
         self.parameter_groups = self._cast_df_from_lines(next_section,section_lines,self.pargp_fieldnames,
                                                         self.pargp_converters, self.pargp_defaults)
+        self.parameter_groups.index = self.parameter_groups.pargpnme
 
         # parameter data
         section = "* parameter data"
@@ -670,16 +682,23 @@ class Pst(object):
         next_section, section_lines,self.comments[section] = self._read_section_comments(f, False)
         self.parameter_data = self._cast_df_from_lines(next_section, section_lines, self.par_fieldnames,
                                                         self.par_converters, self.par_defaults)
+        self.parameter_data.index = self.parameter_data.parnme
 
         # # oh the tied parameter bullshit, how do I hate thee
         counts = self.parameter_data.partrans.value_counts()
         if "tied" in counts.index:
             #the tied lines got cast into the parameter data lines
             ntied = counts["tied"]
-            self.tied = self.parameter_data.iloc[-ntied:,:2]
-            self.tied.columns = self.tied_fieldnames
-            self.tied.index = self.tied.parnme
+            # self.tied = self.parameter_data.iloc[-ntied:,:2]
+            # self.tied.columns = self.tied_fieldnames
+            # self.tied.index = self.tied.parnme
+            tied = self.parameter_data.iloc[-ntied:,:2]
+            tied.columns = self.tied_fieldnames
+            tied.index = tied.parnme
             self.parameter_data = self.parameter_data.iloc[:-ntied,:]
+            self.parameter_data.loc[:,'partied'] = np.NaN
+
+            self.parameter_data.loc[tied.index,"partied"] = tied.partied
 
         # observation groups
         section = "* observation groups"
@@ -692,6 +711,7 @@ class Pst(object):
         next_section, section_lines, self.comments[section] = self._read_section_comments(f, False)
         self.observation_data = self._cast_df_from_lines(next_section, section_lines, self.obs_fieldnames,
                                                         self.obs_converters, self.obs_defaults)
+        self.observation_data.index = self.observation_data.obsnme
         # model commands
         section = "* model command line"
         assert next_section == section
@@ -828,9 +848,12 @@ class Pst(object):
             # tied_lines = [f.readline().lower().strip().split() for _ in range(counts["tied"])]
             # self.tied = pd.DataFrame(tied_lines,columns=["parnme","partied"])
             # self.tied.index = self.tied.pop("parnme")
-            self.tied = self._read_df(f,counts["tied"],self.tied_fieldnames,
+            tied = self._read_df(f,counts["tied"],self.tied_fieldnames,
                                       self.tied_converters)
-            self.tied.index = self.tied.parnme
+            tied.index = tied.parnme
+            self.parameter_data.loc[:,"partied"] = np.NaN
+            self.parameter_data.loc[tied.index,"partied"] = tied.partied
+
         # obs groups - just read past for now
         line = f.readline()
         assert "* observation groups" in line.lower(),\
@@ -1081,7 +1104,6 @@ class Pst(object):
         self.prior_information.loc[pilbl,"weight"] = weight
         self.prior_information.loc[pilbl,"obgnme"] = obs_group
 
-
     def rectify_pi(self):
         """ rectify the prior information equation with the current state of the
         parameter_data dataframe.  Equations that list fixed, tied or missing parameters
@@ -1108,7 +1130,8 @@ class Pst(object):
             for line in self.comments.get(name, []):
                 f.write(line+'\n')
         if df.loc[:,columns].isnull().values.any():
-            warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
+            #warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
+            raise Exception("NaNs in {0} dataframe".format(name))
         def ext_fmt(x):
             if pd.notnull(x):
                 return " # {0}".format(x)
@@ -1323,7 +1346,7 @@ class Pst(object):
         if self.tied is not None:
             print("Pst.get() warning: not checking for tied parameter " +
                   "compatibility in new Pst instance")
-            new_pst.tied = self.tied.copy()
+            #new_pst.tied = self.tied.copy()
         new_pst.other_lines = self.other_lines
         new_pst.pestpp_options = self.pestpp_options
         new_pst.regul_lines = self.regul_lines
