@@ -708,11 +708,11 @@ def sparse_draw_test():
 
 
 if __name__ == "__main__":
-    sparse_draw_test()
-    #binary_ensemble_dev()
-    #to_from_binary_test()
+    # sparse_draw_test()
+    # binary_ensemble_dev()
+    # to_from_binary_test()
     # ensemble_covariance_test()
-    # homegrown_draw_test()
+    homegrown_draw_test()
     # change_weights_test()
     # phi_vector_test()
     # par_diagonal_draw_test()
