@@ -1551,6 +1551,8 @@ class Matrix(object):
             number of elements to write in a single pass.  Default is None
 
         """
+        if np.any(np.isnan(self.x)):
+            raise Exception("Matrix.to_binary(): nans found")
         if self.isdiagonal:
             #raise NotImplementedError()
             self.__x = self.as_2d
@@ -1625,6 +1627,8 @@ class Matrix(object):
 
         """
         x,row_names,col_names = Matrix.read_binary(filename)
+        if np.any(np.isnan(x)):
+            warnings.warn("Matrix.from_binary(): nans in matrix")
         return cls(x=x, row_names=row_names, col_names=col_names)
 
     @staticmethod

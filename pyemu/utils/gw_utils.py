@@ -614,7 +614,7 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
     prefix : str
         string to prepend to site_name when forming obsnme's.  Default is None
     include_path : bool
-        flag to prepend sfr_out_file path to sfr_obs.config.  Useful for setting up
+        flag to prepend hds_file path. Useful for setting up
         process in separate directory for where python is running.
     model : flopy.mbase
         a flopy model.  If passed, the observation names will have the datetime of the
