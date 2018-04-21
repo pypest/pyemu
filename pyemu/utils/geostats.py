@@ -1981,7 +1981,7 @@ def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
     arr[arr<lower_lim] = lower_lim
     arr[arr>upper_lim] = upper_lim
 
-    print(out_file,arr.min(),pp_data.parval1.min(),lower_lim)
+    #print(out_file,arr.min(),pp_data.parval1.min(),lower_lim)
 
     if out_file is not None:
         np.savetxt(out_file,arr,fmt="%15.6E",delimiter='')
