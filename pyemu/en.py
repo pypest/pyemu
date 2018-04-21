@@ -11,10 +11,12 @@ from pyemu.mat.mat_handler import get_common_elements,Matrix,Cov,SparseMatrix
 from pyemu.pst.pst_utils import write_parfile,read_parfile
 from pyemu.plot.plot_utils import ensemble_helper
 
-warnings.filterwarnings("ignore",message="Pandas doesn't allow columns to be "+\
-                                         "created via a new attribute name - see"+\
-                                         "https://pandas.pydata.org/pandas-docs/"+\
-                                         "stable/indexing.html#attribute-access")
+#warnings.filterwarnings("ignore",message="Pandas doesn't allow columns to be "+\
+#                                         "created via a new attribute name - see"+\
+#                                         "https://pandas.pydata.org/pandas-docs/"+\
+#                                         "stable/indexing.html#attribute-access")
+warnings.filterwarnings("ignore",category=UserWarning)
+
 SEED = 358183147 #from random.org on 5 Dec 2016
 #print("setting random seed")
 np.random.seed(SEED)
