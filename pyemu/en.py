@@ -931,7 +931,7 @@ class ParameterEnsemble(Ensemble):
         return new_pe
 
     @classmethod
-    def from_gaussian_draw(cls,pst,cov,num_reals=1,use_homegrown=False,group_chunks=False):
+    def from_gaussian_draw(cls,pst,cov,num_reals=1,use_homegrown=True,group_chunks=False):
         """ instantiate a parameter ensemble from a covariance matrix
 
         Parameters
@@ -1079,7 +1079,7 @@ class ParameterEnsemble(Ensemble):
                     # form projection matrix
                     print("form projection")
                     a = np.dot(w, np.sqrt(np.diag(v)))
-
+                    #print(a)
                     # project...
                     reals = []
                     for vec in snv:
