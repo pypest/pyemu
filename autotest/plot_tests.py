@@ -127,6 +127,12 @@ def ensemble_plot_test():
                                      deter_vals=deter_vals)
 
 
+    pyemu.plot_utils.ensemble_helper({"b": pe, "y": csv_file}, filename=csv_file + ".pdf",
+                                     plot_cols=pst.par_names[:10], sync_bins=False,
+                                     func_dict={pst.par_names[0]: np.log10},
+                                     deter_vals=deter_vals,deter_range=True)
+
+
 def ensemble_1to1_test():
     try:
         import matplotlib.pyplot as plt
@@ -176,9 +182,9 @@ def ensemble_1to1_test():
 
 
 if __name__ == "__main__":
-    plot_summary_test()
+    #plot_summary_test()
     #pst_plot_test()
-    #ensemble_plot_test()
+    ensemble_plot_test()
     #ensemble_1to1_test()
     #cov_test()
 

@@ -1659,7 +1659,7 @@ class Pst(object):
 
         """
         self.enforce_bounds()
-
+        self.add_transform_columns()
         par_groups = self.parameter_data.groupby("pargp").groups
         inctype = self.parameter_groups.groupby("inctyp").groups
         for itype,inc_groups in inctype.items():
