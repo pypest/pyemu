@@ -659,7 +659,8 @@ def pst_prior(pst,logger=None, filename=None, **kwargs):
 
 def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                     filename=None,func_dict = None,
-                    sync_bins=True,deter_vals=None,std_window=4.0,**kwargs):
+                    sync_bins=True,deter_vals=None,std_window=4.0,
+                    deter_range=False,**kwargs):
     """helper function to plot ensemble histograms
 
     Parameters
@@ -682,6 +683,7 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
         flag to use the same bin edges for all ensembles. Only applies if more than
         one ensemble is being plotted.  Default is True
     deter_vals : dict
+        dict of deterministic values to plot as a vertical line. key is ensemble columnn name
 
     """
     logger = pyemu.Logger("ensemble_helper.log")
@@ -763,12 +765,14 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                     logger.warn("error plotting histogram for {0}:{1}".
                                 format(plot_col,str(e)))
 
-
+            v = None
             if deter_vals is not None and plot_col in deter_vals:
                 ylim = ax.get_ylim()
                 v = deter_vals[plot_col]
                 ax.plot([v,v],ylim,"k--",lw=1.5)
                 ax.set_ylim(ylim)
+
+
             if std_window is not None:
                 try:
                     ylim = ax.get_ylim()
@@ -777,6 +781,10 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                     ax.plot([mn - st, mn - st], ylim, color=fc, lw=1.5,ls='--')
                     ax.plot([mn + st, mn + st], ylim, color=fc, lw=1.5,ls='--')
                     ax.set_ylim(ylim)
+                    if deter_range and v is not None:
+                        xmn = v - st
+                        xmx = v + st
+                        ax.set_xlim(xmn,xmx)
                 except:
                     logger.warn("error plotting std window for {0}".
                                 format(plot_col))

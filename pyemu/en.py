@@ -11,10 +11,12 @@ from pyemu.mat.mat_handler import get_common_elements,Matrix,Cov,SparseMatrix
 from pyemu.pst.pst_utils import write_parfile,read_parfile
 from pyemu.plot.plot_utils import ensemble_helper
 
-warnings.filterwarnings("ignore",message="Pandas doesn't allow columns to be "+\
-                                         "created via a new attribute name - see"+\
-                                         "https://pandas.pydata.org/pandas-docs/"+\
-                                         "stable/indexing.html#attribute-access")
+#warnings.filterwarnings("ignore",message="Pandas doesn't allow columns to be "+\
+#                                         "created via a new attribute name - see"+\
+#                                         "https://pandas.pydata.org/pandas-docs/"+\
+#                                         "stable/indexing.html#attribute-access")
+warnings.filterwarnings("ignore",category=UserWarning)
+
 SEED = 358183147 #from random.org on 5 Dec 2016
 #print("setting random seed")
 np.random.seed(SEED)
@@ -929,7 +931,7 @@ class ParameterEnsemble(Ensemble):
         return new_pe
 
     @classmethod
-    def from_gaussian_draw(cls,pst,cov,num_reals=1,use_homegrown=False,group_chunks=False):
+    def from_gaussian_draw(cls,pst,cov,num_reals=1,use_homegrown=True,group_chunks=False):
         """ instantiate a parameter ensemble from a covariance matrix
 
         Parameters
@@ -1077,7 +1079,7 @@ class ParameterEnsemble(Ensemble):
                     # form projection matrix
                     print("form projection")
                     a = np.dot(w, np.sqrt(np.diag(v)))
-
+                    #print(a)
                     # project...
                     reals = []
                     for vec in snv:
