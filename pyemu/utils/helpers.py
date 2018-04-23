@@ -729,6 +729,62 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
     if pst.control_data.pestmode == "estimation":
         pst.control_data.pestmode = "regularization"
 
+def simple_tpl_from_pars(parnames, tplfilename='model.input.tpl'):
+    """
+    Make a template file just assuming a list of parameter names the values of which should be
+    listed in order in a model input file
+    Args:
+        parnames: list of names from which to make a template file
+        tplfilename: filename for TPL file (default: model.input.tpl)
+
+    Returns:
+        writes a file <tplfilename> with each parameter name on a line
+
+    """
+    with open(tplfilename, 'w') as ofp:
+        ofp.write('ptf ~\n')
+        [ofp.write('~{0:^12}~\n'.format(cname)) for cname in parnames]
+
+
+def simple_ins_from_obs(obsnames, insfilename='model.output.ins'):
+    """
+    writes an instruction file that assumes wanting to read the values names in obsnames in order
+    one per line from a model output file
+    Args:
+        obsnames: list of obsnames to read in
+        insfilename: filename for INS file (default: model.output.ins)
+
+    Returns:
+        writes a file <insfilename> with each observation read off a line
+
+    """
+    with open(insfilename, 'w') as ofp:
+        ofp.write('pif ~\n')
+        [ofp.write('!{0}!\n'.format(cob)) for cob in obsnames]
+
+def pst_from_parnames_obsnames(parnames, obsnames,
+                               tplfilename='model.input.tpl', insfilename='model.output.ins'):
+    """
+    Creates a Pst object from a list of parameter names and a list of observation names.
+    Default values are provided for the TPL and INS
+    Args:
+        parnames: list of names from which to make a template file
+        obsnames: list of obsnames to read in
+        tplfilename: filename for TPL file (default: model.input.tpl)
+        insfilename: filename for INS file (default: model.output.ins)
+
+    Returns:
+        Pst object
+
+    """
+    simple_tpl_from_pars(parnames, tplfilename)
+    simple_ins_from_obs(obsnames, insfilename)
+
+    modelinputfilename = tplfilename.replace('.tpl','')
+    modeloutputfilename = insfilename.replace('.ins','')
+
+    return pyemu.Pst.from_io_files(tplfilename, modelinputfilename, insfilename, modeloutputfilename)
+
 
 
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
