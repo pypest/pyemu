@@ -3379,8 +3379,8 @@ def build_jac_test_csv(pst,num_steps,par_names=None,forward=True):
         idx.extend(["{0}_{1}".format(par_name,i) for i in range(num_steps)])
     df = pd.DataFrame(index=idx, columns=pst.par_names)
     li = par.partrans == "log"
-    lbnd = par.parlbnd
-    ubnd = par.parubnd
+    lbnd = par.parlbnd.copy()
+    ubnd = par.parubnd.copy()
     lbnd.loc[li] = lbnd.loc[li].apply(np.log10)
     ubnd.loc[li] = ubnd.loc[li].apply(np.log10)
     lbnd = lbnd.to_dict()

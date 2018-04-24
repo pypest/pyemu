@@ -1101,6 +1101,8 @@ def write_jactest_test():
     import pyemu
 
     pst = pyemu.Pst(os.path.join("pst", "5.pst"))
+    print(pst.parameter_data)
+    #return
     df = pyemu.helpers.build_jac_test_csv(pst,num_steps=5)
     print(df)
 
@@ -1109,6 +1111,11 @@ def write_jactest_test():
 
     df = pyemu.helpers.build_jac_test_csv(pst, num_steps=5,forward=False)
     print(df)
+    df.to_csv(os.path.join("temp","sweep_in.csv"))
+    print(pst.parameter_data)
+    pst.write(os.path.join("temp","test.pst"))
+    pyemu.helpers.run("sweep test.pst",cwd="temp")
+
 
 if __name__ == "__main__":
     pst_from_parnames_obsnames_test()

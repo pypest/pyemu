@@ -39,8 +39,13 @@ def pst_plot_test():
         import matplotlib.pyplot as plt
     except:
         return
-
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    pst.parameter_data.loc[:, "partrans"] = "none"
+    pst.plot(kind="prior")
+    #plt.show()
+    #return
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+
     pst.plot(kind="phi_progress")
 
     pst = pyemu.Pst(os.path.join("pst","freyberg_gr.pst"))
@@ -48,9 +53,11 @@ def pst_plot_test():
     par.loc[pst.par_names[:3],"pargp"] = "test"
     par.loc[pst.par_names[1:],"partrans"] = "fixed"
     #pst.plot()
-    #pst.plot(kind="prior", unique_only=False)
-    #pst.plot(kind="prior",unique_only=True)
-    #pst.plot(kind="prior", unique_only=True, fig_title="priors")
+    pst.parameter_data.loc[:,"partrans"] = "none"
+    plt.show()
+    pst.plot(kind="prior", unique_only=False)
+    pst.plot(kind="prior",unique_only=True)
+    pst.plot(kind="prior", unique_only=True, fig_title="priors")
     pst.plot(kind="prior", unique_only=True, fig_title="priors",filename=os.path.join("temp","test.pdf"))
 
     #
@@ -183,8 +190,8 @@ def ensemble_1to1_test():
 
 if __name__ == "__main__":
     #plot_summary_test()
-    #pst_plot_test()
-    ensemble_plot_test()
+    pst_plot_test()
+    #ensemble_plot_test()
     #ensemble_1to1_test()
     #cov_test()
 
