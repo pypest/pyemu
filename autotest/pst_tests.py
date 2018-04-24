@@ -152,26 +152,26 @@ def flex_load_test():
             print("write")
             p.write(out_name, update_regul=True)
             p = Pst(out_name)
-            try:
-                p = Pst(os.path.join(pst_dir,pst_file),flex=True)
-            except Exception as e:
-                exceptions.append(pst_file + " read fail: " + str(e))
-                load_fails.append(pst_file)
-                continue
-            out_name = os.path.join(temp_dir,pst_file)
-            print(out_name)
-           #p.write(out_name,update_regul=True)
-            try:
-                p.write(out_name,update_regul=True)
-            except Exception as e:
-                exceptions.append(pst_file + " write fail: " + str(e))
-                continue
-            print(pst_file)
-            try:
-                p = Pst(out_name)
-            except Exception as e:
-                exceptions.append(pst_file + " reload fail: " + str(e))
-                continue
+           #  try:
+           #      p = Pst(os.path.join(pst_dir,pst_file),flex=True)
+           #  except Exception as e:
+           #      exceptions.append(pst_file + " read fail: " + str(e))
+           #      load_fails.append(pst_file)
+           #      continue
+           #  out_name = os.path.join(temp_dir,pst_file)
+           #  print(out_name)
+           # #p.write(out_name,update_regul=True)
+           #  try:
+           #      p.write(out_name,update_regul=True)
+           #  except Exception as e:
+           #      exceptions.append(pst_file + " write fail: " + str(e))
+           #      continue
+           #  print(pst_file)
+           #  try:
+           #      p = Pst(out_name)
+           #  except Exception as e:
+           #      exceptions.append(pst_file + " reload fail: " + str(e))
+           #      continue
 
     #with open("load_fails.txt",'w') as f:
     #    [f.write(pst_file+'\n') for pst_file in load_fails]
@@ -248,6 +248,33 @@ def tied_test():
     mc = pyemu.MonteCarlo(pst=pst)
     mc.draw(1)
     mc.write_psts(os.path.join("temp","tiedtest_"))
+
+    par = pst.parameter_data
+    par.loc[pst.par_names[::3],"partrans"] = "tied"
+    try:
+        pst.write(os.path.join("temp", "pest_tied_tester_1.pst"))
+    except:
+        pass
+    else:
+        raise Exception()
+    par.loc[pst.par_names[::3],"partied"] = pst.par_names[0]
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    print(pst.tied)
+    par = pst.parameter_data
+    par.loc[pst.par_names[2],"partrans"] = "tied"
+    print(pst.tied)
+    par.loc[pst.par_names[2],"partied"] = "junk1"
+    pst.write(os.path.join("temp","test.pst"))
+    pst = pyemu.Pst(os.path.join("temp","test.pst"))
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    print(pst.tied)
+    par = pst.parameter_data
+    par.loc[pst.par_names[2], "partrans"] = "tied"
+    par.loc[pst.par_names[2],"partied"] = "junk"
+    pst.write(os.path.join("temp", "test.pst"))
+    pst = pyemu.Pst(os.path.join("temp", "test.pst"))
 
 
 def derivative_increment_tests():
@@ -422,6 +449,13 @@ def from_flopy_test():
     org_model_ws = os.path.join("..","examples","freyberg_sfr_update")
     nam_file = "freyberg.nam"
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    flopy.modflow.ModflowRiv(m,stress_period_data={0:[[0,0,0,30.0,1.0,25.0],
+                                                      [0,0,1,31.0,1.0,25.0],
+                                                      [0,0,1,31.0,1.0,25.0]]})
+    org_model_ws = "temp"
+    m.change_model_ws(org_model_ws)
+    m.write_input()
+
     new_model_ws = "temp_pst_from_flopy"
 
 
@@ -432,11 +466,36 @@ def from_flopy_test():
     for k in range(m.nlay):
         for kper in range(m.nper):
             hds_kperk.append([kper, k])
+    temp_bc_props = [["wel.flux",None]]
+    spat_bc_props = [["riv.cond", 0], ["riv.stage", 0]]
     ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
                                          org_model_ws=org_model_ws,
                                          zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
-                                         remove_existing=True, hds_kperk=hds_kperk,
-                                         model_exe_name="mfnwt")
+                                         remove_existing=True,
+                                         model_exe_name="mfnwt",temporal_bc_props=temp_bc_props,
+                                         spatial_bc_props=spat_bc_props)
+    par = ph.pst.parameter_data
+    par.loc["welflux_000",'parval1'] = 2.0
+
+    os.chdir(new_model_ws)
+    ph.pst.write_input_files()
+    pyemu.helpers.apply_bc_pars()
+    os.chdir("..")
+
+
+
+    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+                                         org_model_ws=org_model_ws,
+                                         zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
+                                         remove_existing=True,
+                                         model_exe_name="mfnwt",
+                                         spatial_bc_props=spat_bc_props)
+
+    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+                                         org_model_ws=org_model_ws,
+                                         zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
+                                         remove_existing=True,
+                                         model_exe_name="mfnwt", temporal_bc_props=temp_bc_props)
 
     ph.pst.parameter_data.loc["rech0_zn1", "parval1"] = 2.0
 
@@ -488,18 +547,14 @@ def from_flopy_test():
     #     pass
     os.chdir(bd)
 
+    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
-                                             model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True,
-                                             all_wells=True)
+                                             model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True)
     bd = os.getcwd()
-    os.chdir(new_model_ws)
-    try:
-        pyemu.helpers.apply_all_wells()
-    except:
-        pass
-    os.chdir(bd)
-
 
     pp_props = [["upw.ss",[0,1]],["upw.ss",1],["upw.ss",2],["extra.prsity",0],\
                 ["rch.rech",0],["rch.rech",[1,2]]]
@@ -547,7 +602,8 @@ def from_flopy_test():
                                     const_props=const_props,
                                     grid_props=grid_props,
                                     zone_props=zone_props,
-                                    bc_props=bc_props,
+                                    temporal_bc_props=bc_props,
+                                    spatial_bc_props=bc_props,
                                     remove_existing=True,
                                     obssim_smp_pairs=obssim_smp_pairs,
                                     pp_space=4,
@@ -724,33 +780,33 @@ def test_e_clean():
 
 
 if __name__ == "__main__":
-    #write_tables_test()
+    # write_tables_test()
     # res_stats_test()
     # test_write_input_files()
     # add_obs_test()
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    from_flopy_test()
+    # from_flopy_test()
     # plot_flopy_par_ensemble_test()
-    # add_pi_test()
-    # regdata_test()
-    # nnz_groups_test()
-    # regul_rectify_test()
-    # derivative_increment_tests()
-    # tied_test()
-    # smp_test()
-    # smp_dateparser_test()
-    # pst_manip_test()
-    # tpl_ins_test()
-    # flex_test()
-    # comments_test()
-    # test_e_clean()
-    # load_test()
-    # flex_load_test()
-    # res_test()
-    # smp_test()
-    # from_io_with_inschek_test()
-    # pestpp_args_test()
-    # reweight_test()
-    # reweight_res_test()
+    #add_pi_test()
+    #regdata_test()
+    #nnz_groups_test()
+    #regul_rectify_test()
+    #derivative_increment_tests()
+    #tied_test()
+    #smp_test()
+    #smp_dateparser_test()
+    #pst_manip_test()
+    #tpl_ins_test()
+    #flex_test()
+    #comments_test()
+    #test_e_clean()
+    #load_test()
+    flex_load_test()
+    res_test()
+    smp_test()
+    from_io_with_inschek_test()
+    pestpp_args_test()
+    reweight_test()
+    reweight_res_test()

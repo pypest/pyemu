@@ -160,7 +160,7 @@ def modflow_read_hydmod_file(hydmod_file, hydmod_outfile=None):
     except Exception as e:
         print('flopy is not installed - cannot read {0}\n{1}'.format(hydmod_file, e))
         return
-    print('Starting to read HYDMOD data from {0}'.format(hydmod_file))
+    #print('Starting to read HYDMOD data from {0}'.format(hydmod_file))
     obs = fu.HydmodObs(hydmod_file)
     hyd_df = obs.get_dataframe()
 
@@ -614,7 +614,7 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
     prefix : str
         string to prepend to site_name when forming obsnme's.  Default is None
     include_path : bool
-        flag to prepend sfr_out_file path to sfr_obs.config.  Useful for setting up
+        flag to prepend hds_file path. Useful for setting up
         process in separate directory for where python is running.
     model : flopy.mbase
         a flopy model.  If passed, the observation names will have the datetime of the
