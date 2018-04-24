@@ -1079,6 +1079,23 @@ def sfr_obs_test():
     pyemu.gw_utils.setup_sfr_obs(sfr_file,model=m)
     pyemu.gw_utils.setup_sfr_obs(sfr_file, seg_group_dict={"obs1": [1, 4], "obs2": [16, 17, 18, 19, 22, 23]},model=m)
 
+def pst_from_parnames_obsnames_test():
+    import pyemu
+    import os
+
+    parnames  = ['param1','par2','p3']
+    obsnames  = ['obervation1','ob2','o6']
+
+    pst = pyemu.helpers.pst_from_parnames_obsnames(parnames, obsnames)
+
+    pst.write('simpletemp.pst')
+
+    newpst = pyemu.Pst('simpletemp.pst')
+
+    assert newpst.nobs == len(obsnames)
+    assert newpst.npar == len(parnames)
+
+
 def write_jactest_test():
     import os
     import pyemu
@@ -1101,7 +1118,8 @@ def write_jactest_test():
 
 
 if __name__ == "__main__":
-    write_jactest_test()
+    pst_from_parnames_obsnames_test()
+    #write_jactest_test()
     #sfr_obs_test()
     #setup_pp_test()
     #sfr_helper_test()
