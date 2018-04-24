@@ -3324,8 +3324,8 @@ def build_jac_test_csv(pst,num_steps,par_names=None,forward=True):
     df = pd.DataFrame(index=idx, columns=pst.par_names)
     irow = 0
     li = par.partrans == "log"
-    lbnd = par.parlbnd
-    ubnd = par.parubnd
+    lbnd = par.parlbnd.copy()
+    ubnd = par.parubnd.copy()
     lbnd.loc[li] = lbnd.loc[li].apply(np.log10)
     ubnd.loc[li] = ubnd.loc[li].apply(np.log10)
     lbnd = lbnd.to_dict()
@@ -3337,8 +3337,6 @@ def build_jac_test_csv(pst,num_steps,par_names=None,forward=True):
         sign = 1.0
     else:
         sign = -1.0
-
-
 
     for jcol,par_name in enumerate(par_names):
         org_val = org_vals.loc[par_name]

@@ -550,7 +550,8 @@ def pst_prior(pst,logger=None, filename=None, **kwargs):
     li = par.partrans.loc[cov.names] == "log"
     mean = par.parval1.loc[cov.names]
     info = par.loc[cov.names,:].copy()
-    info.loc[:,"mean"] = mean[li].apply(np.log10)
+    info.loc[:,"mean"] = mean
+    info.loc[li,"mean"] = mean[li].apply(np.log10)
     logger.log("building mean parameter values")
 
     logger.log("building stdev parameter values")
