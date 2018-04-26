@@ -334,7 +334,7 @@ class ErrVar(LinearAnalysis):
 
         """
         if singular_value is None:
-            singular_value = int(np.min(self.pst.nnz_obs, self.pst.npar_adj))
+            singular_value = int(min(self.pst.nnz_obs, self.pst.npar_adj))
         #v1_df = self.qhalfx.v[:, :singular_value].to_dataframe() ** 2
         v1_df = self.xtqx.v[:, :singular_value].to_dataframe() ** 2
         v1_df["ident"] = v1_df.sum(axis=1)
