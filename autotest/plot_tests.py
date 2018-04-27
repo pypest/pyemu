@@ -54,7 +54,6 @@ def pst_plot_test():
     par.loc[pst.par_names[1:],"partrans"] = "fixed"
     #pst.plot()
     pst.parameter_data.loc[:,"partrans"] = "none"
-    plt.show()
     pst.plot(kind="prior", unique_only=False)
     pst.plot(kind="prior",unique_only=True)
     pst.plot(kind="prior", unique_only=True, fig_title="priors")
