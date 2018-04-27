@@ -364,6 +364,11 @@ def setup_pp_test():
     pp_dir = os.path.join("utils")
     ml.export(os.path.join("temp","test_unrot_grid.shp"))
 
+    par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(sr=ml.sr, prefix_dict={0: ["hk1_", "sy1_", "rch_"]},
+                                                           every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
+                                                           shapename=os.path.join("temp", "test_unrot.shp"),
+                                                           )
+
     par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(ml,prefix_dict={0:["hk1_","sy1_","rch_"]},
                                                      every_n_cell=2,pp_dir=pp_dir,tpl_dir=pp_dir,
                                                      shapename=os.path.join("temp","test_unrot.shp"))
@@ -1121,7 +1126,7 @@ if __name__ == "__main__":
     pst_from_parnames_obsnames_test()
     #write_jactest_test()
     #sfr_obs_test()
-    #setup_pp_test()
+    setup_pp_test()
     #sfr_helper_test()
     #gw_sft_ins_test()
     # par_knowledge_test()

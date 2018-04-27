@@ -779,6 +779,12 @@ def test_e_clean():
     pst = pyemu.Pst(clean_name)
 
 
+def run_test():
+    import os
+    import pyemu
+
+
+
 if __name__ == "__main__":
     # write_tables_test()
     # res_stats_test()
@@ -803,10 +809,11 @@ if __name__ == "__main__":
     #comments_test()
     #test_e_clean()
     #load_test()
-    flex_load_test()
-    res_test()
-    smp_test()
-    from_io_with_inschek_test()
-    pestpp_args_test()
-    reweight_test()
-    reweight_res_test()
+    # flex_load_test()
+    # res_test()
+    # smp_test()
+    # from_io_with_inschek_test()
+    # pestpp_args_test()
+    # reweight_test()
+    # reweight_res_test()
+    run_test()

@@ -569,8 +569,20 @@ class OrdinaryKrige(object):
         assert 'name' in point_data.columns,"point_data missing 'name'"
         assert 'x' in point_data.columns, "point_data missing 'x'"
         assert 'y' in point_data.columns, "point_data missing 'y'"
-        self.point_data = point_data
+        #check for duplicates in point data
+        unique_name = point_data.name.unique()
+        if len(unique_name) != point_data.shape[0]:
+            warnings.warn("duplicates detected in point_data..attempting to rectify")
+            ux_std = point_data.groupby(point_data.name).std()['x']
+            if ux_std.max() > 0.0:
+                raise Exception("duplicate point_info entries with name {0} have different x values"
+                                .format(uname))
+            uy_std = point_data.groupby(point_data.name).std()['y']
+            if uy_std.max() > 0.0:
+                raise Exception("duplicate point_info entries with name {0} have different y values"
+                                .format(uname))
 
+            self.point_data = point_data.drop_duplicates(subset=["name"])
         self.point_data.index = self.point_data.name
         self.check_point_data_dist()
         self.interp_data = None
@@ -578,9 +590,9 @@ class OrdinaryKrige(object):
         #X, Y = np.meshgrid(point_data.x,point_data.y)
         #self.point_data_dist = pd.DataFrame(data=np.sqrt((X - X.T) ** 2 + (Y - Y.T) ** 2),
         #                                    index=point_data.name,columns=point_data.name)
-        self.point_cov_df = self.geostruct.covariance_matrix(point_data.x,
-                                                            point_data.y,
-                                                            point_data.name).to_dataframe()
+        self.point_cov_df = self.geostruct.covariance_matrix(self.point_data.x,
+                                                            self.point_data.y,
+                                                            self.point_data.name).to_dataframe()
         #for name in self.point_cov_df.index:
         #    self.point_cov_df.loc[name,name] -= self.geostruct.nugget
 

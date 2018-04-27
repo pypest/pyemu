@@ -1022,6 +1022,7 @@ class LinearAnalysis(object):
         jco = self.jco.to_dataframe()
         weights = self.pst.observation_data.loc[jco.index,"weight"].copy().values
         jco = (jco.T * weights).T
+
         dss_sum = jco.apply(np.linalg.norm)
         css = (dss_sum / float(self.pst.nnz_obs)).to_frame()
         css.columns = ["pest_css"]

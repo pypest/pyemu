@@ -74,7 +74,11 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
             ibound = ml.bas6.ibound.array
     else:
         assert sr is not None,"if 'ml' is not passed, 'sr' must be passed"
-        assert ibound is not None,"if 'ml' is not pass, 'ibound' must be passed"
+        if ibound is None:
+
+            print("ibound not passed, using array of ones")
+            ibound = {k:np.ones((sr.nrow,sr.ncol)) for k in prefix_dict.keys()}
+        #assert ibound is not None,"if 'ml' is not pass, 'ibound' must be passed"
 
     try:
         xcentergrid = sr.xcentergrid
