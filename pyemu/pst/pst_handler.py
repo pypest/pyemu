@@ -1659,7 +1659,7 @@ class Pst(object):
 
         """
         self.enforce_bounds()
-
+        self.add_transform_columns()
         par_groups = self.parameter_data.groupby("pargp").groups
         inctype = self.parameter_groups.groupby("inctyp").groups
         for itype,inc_groups in inctype.items():
@@ -2026,9 +2026,9 @@ class Pst(object):
                   "stdev":"standard deviation","pargp":"type","count":"count"}
 
         li = par.partrans == "log"
-        par.loc[li,"parval1"] = par.parval1.apply(np.log10)
-        par.loc[li, "parval1"] = par.parubnd.apply(np.log10)
-        par.loc[li, "parval1"] = par.parlbnd.apply(np.log10)
+        par.loc[li,"parval1"] = par.parval1.loc[li].apply(np.log10)
+        par.loc[li, "parubnd"] = par.parubnd.loc[li].apply(np.log10)
+        par.loc[li, "parlbnd"] = par.parlbnd.loc[li].apply(np.log10)
         par.loc[:,"stdev"] = (par.parubnd - par.parlbnd) / sigma_range
 
         data = {c:[] for c in cols}
@@ -2158,3 +2158,9 @@ class Pst(object):
             f.write("\\end{center}\n")
             f.write("\\end{document}\n")
 
+
+    # def run(self,exe_name="pestpp",cwd=None):
+    #     cmd_line = "{0} {1}".format(exe_name,os.path.split(self.filename)[-1])
+    #     if cwd is None:
+    #         cwd = os.path.join(*os.path.split(self.filename[:-1]))
+    #     pyemu_run(cmd_line,cwd=cwd)

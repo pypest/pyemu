@@ -729,6 +729,62 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
     if pst.control_data.pestmode == "estimation":
         pst.control_data.pestmode = "regularization"
 
+def simple_tpl_from_pars(parnames, tplfilename='model.input.tpl'):
+    """
+    Make a template file just assuming a list of parameter names the values of which should be
+    listed in order in a model input file
+    Args:
+        parnames: list of names from which to make a template file
+        tplfilename: filename for TPL file (default: model.input.tpl)
+
+    Returns:
+        writes a file <tplfilename> with each parameter name on a line
+
+    """
+    with open(tplfilename, 'w') as ofp:
+        ofp.write('ptf ~\n')
+        [ofp.write('~{0:^12}~\n'.format(cname)) for cname in parnames]
+
+
+def simple_ins_from_obs(obsnames, insfilename='model.output.ins'):
+    """
+    writes an instruction file that assumes wanting to read the values names in obsnames in order
+    one per line from a model output file
+    Args:
+        obsnames: list of obsnames to read in
+        insfilename: filename for INS file (default: model.output.ins)
+
+    Returns:
+        writes a file <insfilename> with each observation read off a line
+
+    """
+    with open(insfilename, 'w') as ofp:
+        ofp.write('pif ~\n')
+        [ofp.write('!{0}!\n'.format(cob)) for cob in obsnames]
+
+def pst_from_parnames_obsnames(parnames, obsnames,
+                               tplfilename='model.input.tpl', insfilename='model.output.ins'):
+    """
+    Creates a Pst object from a list of parameter names and a list of observation names.
+    Default values are provided for the TPL and INS
+    Args:
+        parnames: list of names from which to make a template file
+        obsnames: list of obsnames to read in
+        tplfilename: filename for TPL file (default: model.input.tpl)
+        insfilename: filename for INS file (default: model.output.ins)
+
+    Returns:
+        Pst object
+
+    """
+    simple_tpl_from_pars(parnames, tplfilename)
+    simple_ins_from_obs(obsnames, insfilename)
+
+    modelinputfilename = tplfilename.replace('.tpl','')
+    modeloutputfilename = insfilename.replace('.ins','')
+
+    return pyemu.Pst.from_io_files(tplfilename, modelinputfilename, insfilename, modeloutputfilename)
+
 
 
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
@@ -3289,3 +3345,92 @@ def gaussian_distribution(mean, stdev, num_pts=50):
     warnings.warn("pyemu.helpers.gaussian_distribution() has moved to plot_utils")
     from pyemu import plot_utils
     return plot_utils.gaussian_distribution(mean=mean,stdev=stdev,num_pts=num_pts)
+
+
+def build_jac_test_csv(pst,num_steps,par_names=None,forward=True):
+    """ build a dataframe of jactest inputs for use with sweep
+
+    Parameters
+    ----------
+    pst : pyemu.Pst
+
+    num_steps : int
+        number of pertubation steps for each parameter
+    par_names : list
+        names of pars to test.  If None, all adjustable pars are used
+        Default is None
+    forward : bool
+        flag to start with forward pertubations.  Default is True
+
+    Returns
+    -------
+        df : pandas.DataFrame
+
+    """
+    if isinstance(pst,str):
+        pst = pyemu.Pst(pst)
+    #pst.add_transform_columns()
+    pst.build_increments()
+    incr = pst.parameter_data.increment.to_dict()
+    irow = 0
+    par = pst.parameter_data
+    if par_names is None:
+        par_names = pst.adj_par_names
+    total_runs = num_steps * len(par_names)
+    idx = []
+    for par_name in par_names:
+        idx.extend(["{0}_{1}".format(par_name,i) for i in range(num_steps)])
+    df = pd.DataFrame(index=idx, columns=pst.par_names)
+    irow = 0
+    li = par.partrans == "log"
+    lbnd = par.parlbnd.copy()
+    ubnd = par.parubnd.copy()
+    lbnd.loc[li] = lbnd.loc[li].apply(np.log10)
+    ubnd.loc[li] = ubnd.loc[li].apply(np.log10)
+    lbnd = lbnd.to_dict()
+    ubnd = ubnd.to_dict()
+
+    org_vals = par.parval1.copy()
+    org_vals.loc[li] = org_vals.loc[li].apply(np.log10)
+    if forward:
+        sign = 1.0
+    else:
+        sign = -1.0
+
+    for jcol,par_name in enumerate(par_names):
+        org_val = org_vals.loc[par_name]
+        last_val = org_val
+        for step in range(num_steps):
+            vals = org_vals.copy()
+            i = incr[par_name]
+
+
+            val = last_val + (sign * incr[par_name])
+            if val > ubnd[par_name]:
+                sign = -1.0
+                val = org_val + (sign * incr[par_name])
+                if val < lbnd[par_name]:
+                    raise Exception("parameter {0} went out of bounds".
+                                    format(par_name))
+            elif val < lbnd[par_name]:
+                sign = 1.0
+                val = org_val + (sign * incr[par_name])
+                if val > ubnd[par_name]:
+                    raise Exception("parameter {0} went out of bounds".
+                                    format(par_name))
+
+            vals.loc[par_name] = val
+            vals.loc[li] = 10**vals.loc[li]
+            df.loc[idx[irow],pst.par_names] = vals
+            irow += 1
+            last_val = val
+    return df
+
+
+
+
+
+
+
+
+

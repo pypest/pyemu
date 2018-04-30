@@ -364,6 +364,11 @@ def setup_pp_test():
     pp_dir = os.path.join("utils")
     ml.export(os.path.join("temp","test_unrot_grid.shp"))
 
+    par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(sr=ml.sr, prefix_dict={0: ["hk1_", "sy1_", "rch_"]},
+                                                           every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
+                                                           shapename=os.path.join("temp", "test_unrot.shp"),
+                                                           )
+
     par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(ml,prefix_dict={0:["hk1_","sy1_","rch_"]},
                                                      every_n_cell=2,pp_dir=pp_dir,tpl_dir=pp_dir,
                                                      shapename=os.path.join("temp","test_unrot.shp"))
@@ -1079,9 +1084,49 @@ def sfr_obs_test():
     pyemu.gw_utils.setup_sfr_obs(sfr_file,model=m)
     pyemu.gw_utils.setup_sfr_obs(sfr_file, seg_group_dict={"obs1": [1, 4], "obs2": [16, 17, 18, 19, 22, 23]},model=m)
 
+def pst_from_parnames_obsnames_test():
+    import pyemu
+    import os
+
+    parnames  = ['param1','par2','p3']
+    obsnames  = ['obervation1','ob2','o6']
+
+    pst = pyemu.helpers.pst_from_parnames_obsnames(parnames, obsnames)
+
+    pst.write('simpletemp.pst')
+
+    newpst = pyemu.Pst('simpletemp.pst')
+
+    assert newpst.nobs == len(obsnames)
+    assert newpst.npar == len(parnames)
+
+
+def write_jactest_test():
+    import os
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst", "5.pst"))
+    print(pst.parameter_data)
+    #return
+    df = pyemu.helpers.build_jac_test_csv(pst,num_steps=5)
+    print(df)
+
+    df = pyemu.helpers.build_jac_test_csv(pst, num_steps=5,par_names=["par1"])
+    print(df)
+
+    df = pyemu.helpers.build_jac_test_csv(pst, num_steps=5,forward=False)
+    print(df)
+    df.to_csv(os.path.join("temp","sweep_in.csv"))
+    print(pst.parameter_data)
+    pst.write(os.path.join("temp","test.pst"))
+    pyemu.helpers.run("sweep test.pst",cwd="temp")
+
+
 if __name__ == "__main__":
+    pst_from_parnames_obsnames_test()
+    #write_jactest_test()
     #sfr_obs_test()
-    #setup_pp_test()
+    setup_pp_test()
     #sfr_helper_test()
     #gw_sft_ins_test()
     # par_knowledge_test()
@@ -1094,7 +1139,7 @@ if __name__ == "__main__":
     # gslib_2_dataframe_test()
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
-    geostat_prior_builder_test()
+    #geostat_prior_builder_test()
     #mflist_budget_test()
     #mtlist_budget_test()
     # tpl_to_dataframe_test()
