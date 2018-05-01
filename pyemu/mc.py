@@ -157,17 +157,30 @@ class MonteCarlo(LinearAnalysis):
         else:
             cov = self.parcov
 
-        self.parensemble = ParameterEnsemble(pst=self.pst)
-        self.obsensemble = ObservationEnsemble(pst=self.pst)
         self.log("generating {0:d} parameter realizations".format(num_reals))
-        self.parensemble.draw(cov,num_reals=num_reals, how=how,
-                              enforce_bounds=enforce_bounds)
-        #if enforce_bounds:
-        #    self.parensemble.enforce()
+
+        if how == "gaussian":
+            self.parensemble = ParameterEnsemble.from_gaussian_draw(pst=self.pst,cov=cov,
+                                                                    num_reals=num_reals,
+                                                                    use_homegrown=True)
+
+        elif how == "uniform":
+            self.parensemble = ParameterEnsemble.from_uniform_draw(pst=self.pst,num_reals=num_reals)
+
+        else:
+            raise Exception("MonteCarlo.draw(): unrecognized 'how' arg: {0}".format(how))
+
+        #self.parensemble = ParameterEnsemble(pst=self.pst)
+        #self.obsensemble = ObservationEnsemble(pst=self.pst)
+        #self.parensemble.draw(cov,num_reals=num_reals, how=how,
+        #                      enforce_bounds=enforce_bounds)
+        if enforce_bounds is not  None:
+            self.parensemble.enforce(enforce_bounds)
         self.log("generating {0:d} parameter realizations".format(num_reals))
+
         if obs:
             self.log("generating {0:d} observation realizations".format(num_reals))
-            self.obsensemble.draw(self.obscov,num_reals=num_reals)
+            self.obsensemble = ObservationEnsemble.from_id_gaussian_draw(pst=self.pst,num_reals=num_reals)
             self.log("generating {0:d} observation realizations".format(num_reals))
 
 
