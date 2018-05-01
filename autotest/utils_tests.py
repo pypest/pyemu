@@ -364,25 +364,38 @@ def setup_pp_test():
     pp_dir = os.path.join("utils")
     ml.export(os.path.join("temp","test_unrot_grid.shp"))
 
+    par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(sr=ml.sr, prefix_dict={0: "hk1",1:"hk2"},
+                                                           every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
+                                                           shapename=os.path.join("temp", "test_unrot.shp"),
+                                                           )
+    #print(par_info_unrot.parnme.value_counts())
+    gs = pyemu.geostats.GeoStruct(variograms=pyemu.geostats.ExpVario(a=1000,contribution=1.0))
+    ok = pyemu.geostats.OrdinaryKrige(gs,par_info_unrot)
+    ok.calc_factors_grid(ml.sr)
     par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(sr=ml.sr, prefix_dict={0: ["hk1_", "sy1_", "rch_"]},
                                                            every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
                                                            shapename=os.path.join("temp", "test_unrot.shp"),
                                                            )
+    ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
+    ok.calc_factors_grid(ml.sr)
 
     par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(ml,prefix_dict={0:["hk1_","sy1_","rch_"]},
                                                      every_n_cell=2,pp_dir=pp_dir,tpl_dir=pp_dir,
                                                      shapename=os.path.join("temp","test_unrot.shp"))
-
+    ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
+    ok.calc_factors_grid(ml.sr)
 
 
 
     ml.sr.rotation = 15
     ml.export(os.path.join("temp","test_rot_grid.shp"))
+
     #pyemu.gw_utils.setup_pilotpoints_grid(ml)
 
     par_info_rot = pyemu.pp_utils.setup_pilotpoints_grid(ml,every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
                                                      shapename=os.path.join("temp", "test_rot.shp"))
-
+    ok = pyemu.geostats.OrdinaryKrige(gs, par_info_unrot)
+    ok.calc_factors_grid(ml.sr)
     print(par_info_unrot.x)
     print(par_info_rot.x)
 
@@ -1123,7 +1136,7 @@ def write_jactest_test():
 
 
 if __name__ == "__main__":
-    pst_from_parnames_obsnames_test()
+    #pst_from_parnames_obsnames_test()
     #write_jactest_test()
     #sfr_obs_test()
     setup_pp_test()

@@ -583,6 +583,8 @@ class OrdinaryKrige(object):
                                 .format(uname))
 
             self.point_data = point_data.drop_duplicates(subset=["name"])
+        else:
+            self.point_data = point_data
         self.point_data.index = self.point_data.name
         self.check_point_data_dist()
         self.interp_data = None
@@ -635,6 +637,8 @@ class OrdinaryKrige(object):
 
     #def prep_for_ppk2fac(self,struct_file="structure.dat",pp_file="points.dat",):
     #    pass
+
+
 
     def calc_factors_grid(self,spatial_reference,zone_array=None,minpts_interp=1,
                           maxpts_interp=20,search_radius=1.0e+10,verbose=False,
