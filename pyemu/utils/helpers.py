@@ -3364,7 +3364,8 @@ def build_jac_test_csv(pst,num_steps,par_names=None,forward=True):
 
     Returns
     -------
-        df : pandas.DataFrame
+    df : pandas.DataFrame
+        the index of the dataframe is par name and the parval used.
 
     """
     if isinstance(pst,str):
@@ -3399,7 +3400,7 @@ def build_jac_test_csv(pst,num_steps,par_names=None,forward=True):
     # base case goes in as first row, no perturbations
     df.loc["base",pst.par_names] = par.parval1.copy()
     irow = 1
-
+    full_names = ["base"]
     for jcol, par_name in enumerate(par_names):
         org_val = org_vals.loc[par_name]
         last_val = org_val
@@ -3425,8 +3426,11 @@ def build_jac_test_csv(pst,num_steps,par_names=None,forward=True):
             vals.loc[par_name] = val
             vals.loc[li] = 10**vals.loc[li]
             df.loc[idx[irow],pst.par_names] = vals
+            full_names.append("{0}_{1:<15.6E}".format(par_name,vals.loc[par_name]).strip())
+
             irow += 1
             last_val = val
+    df.index = full_names
     return df
 
 
