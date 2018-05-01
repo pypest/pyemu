@@ -3373,12 +3373,11 @@ def build_jac_test_csv(pst,num_steps,par_names=None,forward=True):
     par = pst.parameter_data
     if par_names is None:
         par_names = pst.adj_par_names
-    total_runs = num_steps * len(par_names)
-    idx = []
+    total_runs = num_steps * len(par_names) + 1
+    idx = ["base"]
     for par_name in par_names:
         idx.extend(["{0}_{1}".format(par_name,i) for i in range(num_steps)])
     df = pd.DataFrame(index=idx, columns=pst.par_names)
-    irow = 0
     li = par.partrans == "log"
     lbnd = par.parlbnd.copy()
     ubnd = par.parubnd.copy()
@@ -3394,7 +3393,11 @@ def build_jac_test_csv(pst,num_steps,par_names=None,forward=True):
     else:
         sign = -1.0
 
-    for jcol,par_name in enumerate(par_names):
+    # base case goes in as first row, no perturbations
+    df.loc["base",pst.par_names] = par.parval1.copy()
+    irow = 1
+
+    for jcol, par_name in enumerate(par_names):
         org_val = org_vals.loc[par_name]
         last_val = org_val
         for step in range(num_steps):
