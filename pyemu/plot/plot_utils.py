@@ -464,6 +464,89 @@ def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
         logger.log("plot res_obs_v_sim")
         return figs
 
+def plot_id_bar(id_df, nsv=None, logger=None, **kwargs):
+    """
+    Plot a stacked bar chart of identifiability based on a identifiability dataframe
+
+    Parameters
+    ----------
+        id_df : pandas dataframe of identifiability
+        nsv : number of singular values to consider
+        logger : pyemu.Logger
+        kwargs : dict of keyword arguments
+
+    Returns
+    -------
+    ax : matplotlib.Axis
+
+       Example
+    -------
+    ``>>> import pyemu``
+    ``>>> pest_obj = pyemu.Pst(pest_control_file)``
+    ``>>> ev = pyemu.ErrVar(jco='freyberg_jac.jcb'))``
+    ``>>> id_df = ev.get_identifiability_dataframe(singular_value=48)``
+    ``>>> pyemu.plot_id_bar(id_df, nsv=12, figsize=(12,4)``
+     """
+    if logger is None:
+        logger=Logger('Default_Loggger.log',echo=False)
+    logger.log("plot res_phi_pie")
+
+
+    df = id_df.copy()
+
+    # drop the final `ident` column
+    if 'ident' in df.columns:
+        df.drop('ident', inplace=True, axis=1)
+
+    if nsv is None or nsv > len(df.columns):
+        nsv = len(df.columns)
+        logger.log('set number of SVs and number in the dataframe')
+
+    df = df[df.columns[:nsv]]
+
+    df['ident'] = df.sum(axis=1)
+    df.sort_values(by='ident', inplace=True, ascending=False)
+    df.drop('ident', inplace=True, axis=1)
+
+    if 'figsize' in kwargs:
+        figsize=kwargs['figsize']
+    else:
+        figsize = (8, 10.5)
+    if "ax" in kwargs:
+        ax = kwargs["ax"]
+    else:
+        fig = plt.figure(figsize=figsize)
+        ax = plt.subplot(1,1,1)
+
+    # plto the stacked bar chart (the easy part!)
+    df.plot.bar(stacked=True, cmap='jet_r', legend=False, ax=ax)
+
+    #
+    # horrible shenanigans to make a colorbar rather than a legend
+    #
+
+    # special case colormap just dark red if one SV
+    if nsv == 1:
+        tcm = matplotlib.colors.LinearSegmentedColormap.from_list('one_sv', [plt.get_cmap('jet_r')(0)] * 2, N=2)
+        sm = plt.cm.ScalarMappable(cmap=tcm, norm=matplotlib.colors.Normalize(vmin=0, vmax=nsv + 1))
+    # or typically just rock the jet_r colormap over the range of SVs
+    else:
+        sm = plt.cm.ScalarMappable(cmap=plt.get_cmap('jet_r'), norm=matplotlib.colors.Normalize(vmin=1, vmax=nsv))
+    sm._A = []
+
+    # now, if too many ticks for the colorbar, summarize them
+    if nsv < 20:
+        ticks = range(1, nsv + 1)
+    else:
+        ticks = np.arange(1, nsv + 1, int((nsv + 1) / 30))
+
+    cb = plt.colorbar(sm)
+    cb.set_ticks(ticks)
+
+    logger.log('Finished identifiability bar chart')
+
+    return ax
+
 def res_phi_pie(pst,logger=None, **kwargs):
     """plot current phi components as a pie chart.
 

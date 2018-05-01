@@ -1135,10 +1135,19 @@ def write_jactest_test():
     pst.write(os.path.join("temp","test.pst"))
     #pyemu.helpers.run("sweep test.pst",cwd="temp")
 
+def plot_id_bar_test():
+    import pyemu
+    import matplotlib.pyplot as plt
+    w_dir = "la"
+    ev = pyemu.ErrVar(jco=os.path.join(w_dir, "pest.jcb"))
+    id_df = ev.get_identifiability_dataframe(singular_value=15)
+    pyemu.plot_utils.plot_id_bar(id_df)
+    #plt.show()
 
 if __name__ == "__main__":
+    plot_id_bar_test()
     #pst_from_parnames_obsnames_test()
-    write_jactest_test()
+    #write_jactest_test()
     #sfr_obs_test()
     #setup_pp_test()
     #sfr_helper_test()
