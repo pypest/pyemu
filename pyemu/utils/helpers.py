@@ -3011,11 +3011,14 @@ def apply_bc_pars():
             pak_name = fname.split('_')[0].lower()
             if pak_name in sp_mlts:
                 mlt_df = sp_mlts[pak_name]
+                mlt_df_ri = mlt_df.reindex(df_list.index)
                 for col in df_list.columns:
                     if col in ["k","i","j","inode"]:
                         continue
                     if col in mlt_df.columns:
-                        df_list.loc[mlt_df.index,col] *= mlt_df.loc[:,col]
+                       # print(mlt_df.loc[mlt_df.index.duplicated(),:])
+                       # print(df_list.loc[df_list.index.duplicated(),:])
+                        df_list.loc[:,col] *= mlt_df_ri.loc[:,col].values
 
             if temp_df is not None and fname in temp_df.split_filename.values:
                 temp_df_fname = temp_df.loc[temp_df.split_filename == fname, :]

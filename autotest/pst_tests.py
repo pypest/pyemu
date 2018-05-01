@@ -793,7 +793,7 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    # from_flopy_test()
+    from_flopy_test()
     # plot_flopy_par_ensemble_test()
     #add_pi_test()
     #regdata_test()
