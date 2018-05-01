@@ -798,10 +798,10 @@ class ParameterEnsemble(Ensemble):
         #ub = pe.ubnd
         #lb = pe.lbnd
         li = pst.parameter_data.partrans == "log"
-        ub = pst.parameter_data.parubnd
+        ub = pst.parameter_data.parubnd.copy()
         ub.loc[li] = ub.loc[li].apply(np.log10)
         ub = ub.to_dict()
-        lb = pst.parameter_data.parlbnd
+        lb = pst.parameter_data.parlbnd.copy()
         lb.loc[li] = lb.loc[li].apply(np.log10)
         lb = lb.to_dict()
 
@@ -811,6 +811,7 @@ class ParameterEnsemble(Ensemble):
         real_names = np.arange(num_reals,dtype=np.int64)
         arr = np.empty((num_reals,len(ub)))
         for i,pname in enumerate(pst.parameter_data.parnme):
+            print(pname,lb[pname],ub[pname])
             if pname in pst.adj_par_names:
                 arr[:,i] = np.random.uniform(lb[pname],
                                                       ub[pname],
@@ -1103,7 +1104,7 @@ class ParameterEnsemble(Ensemble):
         print("handling fixed pars")
         #pe.pst.parameter_data.index = pe.pst.parameter_data.parnme
         par = pst.parameter_data
-        fixed_vals = par.loc[par.partrans=="fixed","parval1"]
+        fixed_vals = par.loc[par.partrans.apply(lambda x: x in ["fixed","tied"]),"parval1"]
         for fname,fval in zip(fixed_vals.index,fixed_vals.values):
             #print(fname)
             df.loc[:,fname] = fval

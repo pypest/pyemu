@@ -58,6 +58,7 @@ def schur_test_nonpest():
 
 def schur_test():
     import os
+    import numpy as np
     from pyemu import Schur, Cov, Pst
     w_dir = os.path.join("..","verification","henry")
     forecasts = ["pd_ten","c_obs10_2"]
@@ -76,6 +77,13 @@ def schur_test():
     print(sc.get_parameter_summary(include_map=True))
     print(sc.get_forecast_summary(include_map=True))
     print(sc.get_removed_obs_importance(reset_zero_weight=True))
+
+    sc = Schur(jco=os.path.join(w_dir,"pest.jcb"),
+               forecasts=forecasts,
+               sigma_range=6.0)
+    cov = Cov.from_parameter_data(pst,sigma_range=6.0)
+
+    assert np.abs((sc.parcov.x - cov.x).sum()) == 0.0
 
 
 def la_test_io():
@@ -402,12 +410,12 @@ def alternative_dw():
 
 
 if __name__ == "__main__":
-    alternative_dw()
+    #alternative_dw()
     #freyberg_verf_test()
     #forecast_pestpp_load_test()
     #map_test()
     #par_contrib_speed_test()
-    #schur_test()
+    schur_test()
     #par_contrib_test()
     #dataworth_test()
     #dataworth_next_test()
