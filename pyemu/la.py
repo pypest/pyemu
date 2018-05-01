@@ -51,6 +51,12 @@ class LinearAnalysis(object):
     verbose : (either bool or string)
         controls log file / screen output.  If str, a filename is assumed and
             and log file is written to verbose
+    sigma_range : float
+        defines range of upper bound - lower bound in terms of standard
+        deviation (sigma). For example, if sigma_range = 4, the bounds
+        represent 4 * sigma.  Default is 4.0, representing approximately
+        95% confidence of implied normal distribution.  This arg is only
+        used if constructing parcov from parameter bounds.
     
     Note
     ----
@@ -60,7 +66,7 @@ class LinearAnalysis(object):
     """
     def __init__(self, jco=None, pst=None, parcov=None, obscov=None,
                  predictions=None, ref_var=1.0, verbose=False,
-                 resfile=False, forecasts=None,**kwargs):
+                 resfile=False, forecasts=None,sigma_range=4.0,**kwargs):
         self.logger = Logger(verbose)
         self.log = self.logger.log
         self.jco_arg = jco
@@ -82,6 +88,8 @@ class LinearAnalysis(object):
         if forecasts is not None and predictions is not None:
             raise Exception("can't pass both forecasts and predictions")
 
+
+        self.sigma_range = sigma_range
 
         #private attributes - access is through @decorated functions
         self.__pst = None
@@ -281,12 +289,12 @@ class LinearAnalysis(object):
             # if the arg is a string ending with "pst"
             # then load parcov from parbounds
             if self.parcov_arg.lower().endswith(".pst"):
-                self.__parcov = Cov.from_parbounds(self.parcov_arg)
+                self.__parcov = Cov.from_parbounds(self.parcov_arg,sigma_range=self.sigma_range)
             else:
                 self.__parcov = self.__fromfile(self.parcov_arg, astype=Cov)
         # if the arg is a pst object
         elif isinstance(self.parcov_arg,Pst):
-            self.__parcov = Cov.from_parameter_data(self.parcov_arg)
+            self.__parcov = Cov.from_parameter_data(self.parcov_arg,sigma_range=self.sigma_range)
         else:
             raise Exception("linear_analysis.__load_parcov(): " +
                             "parcov_arg must be a " +
