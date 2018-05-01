@@ -1104,7 +1104,7 @@ class ParameterEnsemble(Ensemble):
         print("handling fixed pars")
         #pe.pst.parameter_data.index = pe.pst.parameter_data.parnme
         par = pst.parameter_data
-        fixed_vals = par.loc[par.partrans=="fixed","parval1"]
+        fixed_vals = par.loc[par.partrans.apply(lambda x: x in ["fixed","tied"]),"parval1"]
         for fname,fval in zip(fixed_vals.index,fixed_vals.values):
             #print(fname)
             df.loc[:,fname] = fval
