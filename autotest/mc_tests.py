@@ -6,7 +6,7 @@ if not os.path.exists("temp"):
 def mc_test():
     import os
     import numpy as np
-    from pyemu import MonteCarlo
+    from pyemu import MonteCarlo, Cov
     jco = os.path.join("pst","pest.jcb")
     pst = jco.replace(".jcb",".pst")
 
@@ -15,7 +15,9 @@ def mc_test():
         os.mkdir(out_dir)
 
     #write testing
-    mc = MonteCarlo(jco=jco,verbose=True)
+    mc = MonteCarlo(jco=jco,verbose=True,sigma_range=6)
+    cov = Cov.from_parameter_data(mc.pst,sigma_range=6)
+    assert np.abs((mc.parcov.x - cov.x).sum()) == 0.0
     mc.draw(10,obs=True)
     mc.write_psts(os.path.join("temp","real_"))
     mc.parensemble.to_parfiles(os.path.join("mc","real_"))
@@ -720,7 +722,7 @@ if __name__ == "__main__":
     # diagonal_cov_draw_test()
     # pe_to_csv_test()
     # scale_offset_test()
-    # mc_test()
+    mc_test()
     # fixed_par_test()
     # uniform_draw_test()
     # gaussian_draw_test()
@@ -729,5 +731,5 @@ if __name__ == "__main__":
     # from_dataframe_test()
     # ensemble_seed_test()
     # pnulpar_test()
-    enforce_test()
-    add_base_test()
+    #enforce_test()
+    #add_base_test()
