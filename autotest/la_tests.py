@@ -402,7 +402,7 @@ def alternative_dw():
 
 
 if __name__ == "__main__":
-    #alternative_dw()
+    alternative_dw()
     #freyberg_verf_test()
     #forecast_pestpp_load_test()
     #map_test()
@@ -416,6 +416,6 @@ if __name__ == "__main__":
     #la_test_io()
     #errvar_test_nonpest()
     #errvar_test()
-    css_test()
+    #css_test()
     #inf_test()
     #inf2_test()

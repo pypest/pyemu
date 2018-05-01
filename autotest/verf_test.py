@@ -116,9 +116,9 @@ def pnulpar_test():
 
 
 if __name__ == "__main__":
-    predunc7_test()
+    #predunc7_test()
     #predunc1_test()
     #predvar1b_test()
-    #ident_test()
+    ident_test()
     #pnulpar_test()
 

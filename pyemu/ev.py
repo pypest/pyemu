@@ -318,7 +318,7 @@ class ErrVar(LinearAnalysis):
         return pd.DataFrame(results, index=singular_values)
 
 
-    def get_identifiability_dataframe(self,singular_value=None,precondition=True):
+    def get_identifiability_dataframe(self,singular_value=None,precondition=False):
         """get the parameter identifiability as a pandas dataframe
 
         Parameters
@@ -326,6 +326,9 @@ class ErrVar(LinearAnalysis):
         singular_value : int
             the singular spectrum truncation point. Defaults to minimum of
             non-zero-weighted observations and adjustable parameters
+        precondition : bool
+            flag to use the preconditioned hessian (xtqt + sigma_theta^-1).
+            Default is False
 
         Returns
         -------
