@@ -3033,11 +3033,11 @@ def apply_bc_pars():
                 if name in ["i","j","k","inode"]:
                     #fmts[name] = pyemu.pst_utils.IFMT
                     #fmts[name] = lambda x: " {0:>9.0f}".format(x)
-                    fmts += "%10d"
+                    fmts += " %9d"
                 else:
                     #fmts[name] = pyemu.pst_utils.FFMT
                     #fmts[name] = lambda x: " {0:>9G}".format(x)
-                    fmts += "%10G"
+                    fmts += " %9G"
 
         np.savetxt(os.path.join(model_ext_path,fname),df_list.loc[:,names].as_matrix(),fmt=fmts)
         #with open(os.path.join(model_ext_path,fname),'w') as f:
