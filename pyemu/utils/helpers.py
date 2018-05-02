@@ -789,7 +789,7 @@ def pst_from_parnames_obsnames(parnames, obsnames,
 
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
                  port=4004,rel_path=None,local=True,cleanup=True,master_dir=None,
-                 verbose=False):
+                 verbose=False,silent_master=False):
     """ start a group of pest(++) slaves on the local machine
 
     Parameters
@@ -893,9 +893,12 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
             cwd = master_dir
         if verbose:
             print("master:{0} in {1}".format(' '.join(args),cwd))
+        stdout=None
+        if silent_master:
+            stdout = open(os.devnull,'w')
         try:
             os.chdir(cwd)
-            master_p = sp.Popen(args)#,stdout=sp.PIPE,stderr=sp.PIPE)
+            master_p = sp.Popen(args,stdout=stdout)#,stdout=sp.PIPE,stderr=sp.PIPE)
             os.chdir(base_dir)
         except Exception as e:
             raise Exception("error starting master instance: {0}".\
