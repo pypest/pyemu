@@ -466,8 +466,8 @@ def master_and_slaves():
     if not os.path.exists(master_dir):
         os.mkdir(master_dir)
     assert os.path.exists(slave_dir)
-    #pyemu.helpers.start_slaves(slave_dir,"pestpp","pest.pst",1,
-    #                           slave_root="temp",master_dir=master_dir)
+    pyemu.helpers.start_slaves(slave_dir,"pestpp","pest.pst",1,
+                               slave_root="temp",master_dir=master_dir)
 
     #now try it from within the master dir
     base_cwd = os.getcwd()
@@ -1145,7 +1145,8 @@ def plot_id_bar_test():
     #plt.show()
 
 if __name__ == "__main__":
-    plot_id_bar_test()
+    master_and_slaves()
+    #plot_id_bar_test()
     #pst_from_parnames_obsnames_test()
     #write_jactest_test()
     #sfr_obs_test()

@@ -63,7 +63,7 @@ class LinearAnalysis(object):
         when calculating prior parameter covariance matrix from
         bounds.  This arg is onlyused if constructing parcov
         from parameter bounds.Default is True.
-        
+
     Note
     ----
     the class makes heavy use of property decorator to encapsulate

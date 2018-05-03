@@ -17,7 +17,7 @@ from .mc import MonteCarlo
 from .smoother import EnsembleSmoother
 from .mat import Matrix, Jco, Cov, SparseMatrix
 from .pst import Pst, pst_utils
-from .utils import helpers, gw_utils, optimization,geostats, pp_utils
+from .utils import helpers, gw_utils, optimization,geostats, pp_utils, os_utils
 from .plot import plot_utils
 from .logger import Logger
 
