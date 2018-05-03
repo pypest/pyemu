@@ -10,6 +10,7 @@ import warnings
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
+import pyemu
 from pyemu.pst.pst_controldata import ControlData, SvdData, RegData
 from pyemu.pst import pst_utils
 from pyemu.plot import plot_utils
