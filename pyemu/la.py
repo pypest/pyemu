@@ -57,7 +57,13 @@ class LinearAnalysis(object):
         represent 4 * sigma.  Default is 4.0, representing approximately
         95% confidence of implied normal distribution.  This arg is only
         used if constructing parcov from parameter bounds.
-    
+
+    scale_offset : True
+        flag to apply parameter scale and offset to parameter bounds
+        when calculating prior parameter covariance matrix from
+        bounds.  This arg is onlyused if constructing parcov
+        from parameter bounds.Default is True.
+        
     Note
     ----
     the class makes heavy use of property decorator to encapsulate
@@ -66,7 +72,8 @@ class LinearAnalysis(object):
     """
     def __init__(self, jco=None, pst=None, parcov=None, obscov=None,
                  predictions=None, ref_var=1.0, verbose=False,
-                 resfile=False, forecasts=None,sigma_range=4.0,**kwargs):
+                 resfile=False, forecasts=None,sigma_range=4.0,
+                 scale_offset=True,**kwargs):
         self.logger = Logger(verbose)
         self.log = self.logger.log
         self.jco_arg = jco
@@ -90,6 +97,7 @@ class LinearAnalysis(object):
 
 
         self.sigma_range = sigma_range
+        self.scale_offset = scale_offset
 
         #private attributes - access is through @decorated functions
         self.__pst = None
@@ -289,12 +297,16 @@ class LinearAnalysis(object):
             # if the arg is a string ending with "pst"
             # then load parcov from parbounds
             if self.parcov_arg.lower().endswith(".pst"):
-                self.__parcov = Cov.from_parbounds(self.parcov_arg,sigma_range=self.sigma_range)
+                self.__parcov = Cov.from_parbounds(self.parcov_arg,
+                                                   sigma_range=self.sigma_range,
+                                                   scale_offset=self.scale_offset)
             else:
                 self.__parcov = self.__fromfile(self.parcov_arg, astype=Cov)
         # if the arg is a pst object
         elif isinstance(self.parcov_arg,Pst):
-            self.__parcov = Cov.from_parameter_data(self.parcov_arg,sigma_range=self.sigma_range)
+            self.__parcov = Cov.from_parameter_data(self.parcov_arg,
+                                                    sigma_range=self.sigma_range,
+                                                    scale_offset=self.scale_offset)
         else:
             raise Exception("linear_analysis.__load_parcov(): " +
                             "parcov_arg must be a " +

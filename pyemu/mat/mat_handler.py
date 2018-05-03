@@ -2427,7 +2427,7 @@ class Cov(Matrix):
         return cls(x=x,names=onames,isdiagonal=True)
 
     @classmethod
-    def from_parbounds(cls, pst_file, sigma_range = 4.0):
+    def from_parbounds(cls, pst_file, sigma_range = 4.0,scale_offset=True):
         """Instantiates a  Cov from a pest control file parameter data section.
         Calls Cov.from_parameter_data()
 
@@ -2440,6 +2440,9 @@ class Cov(Matrix):
             deviation (sigma). For example, if sigma_range = 4, the bounds
             represent 4 * sigma.  Default is 4.0, representing approximately
             95% confidence of implied normal distribution
+        scale_offset : bool
+            flag to apply scale and offset to parameter upper and lower
+            bounds before calculating varaince.  Default is True
 
         Returns
         -------

@@ -85,6 +85,23 @@ def schur_test():
 
     assert np.abs((sc.parcov.x - cov.x).sum()) == 0.0
 
+    sc = Schur(jco=os.path.join(w_dir, "pest.jcb"),
+               forecasts=forecasts,
+               sigma_range=6.0,scale_offset=False)
+    assert np.abs((sc.parcov.x - cov.x).sum()) == 0.0
+
+    pst.parameter_data.loc[:,"offset"] = 100.0
+    cov = Cov.from_parameter_data(pst)
+    sc = Schur(jco=os.path.join(w_dir, "pest.jcb"),
+               pst=pst,
+               forecasts=forecasts,
+               sigma_range=6.0, scale_offset=False)
+    assert np.abs((sc.parcov.x - cov.x).sum()) != 0.0
+
+    cov = Cov.from_parameter_data(pst,scale_offset=False,sigma_range=6.0)
+    assert np.abs((sc.parcov.x - cov.x).sum()) == 0.0
+
+
 
 def la_test_io():
     from pyemu import Schur, Cov, Pst
