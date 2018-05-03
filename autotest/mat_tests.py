@@ -269,6 +269,27 @@ def cov_replace_test():
     assert cov1.x[-1,-1] == 2.0
 
 
+def cov_scale_offset_test():
+    import os
+    import numpy as np
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+
+
+    par = pst.parameter_data
+    par.loc[:,"partrans"] = "none"
+    cov1 = pyemu.Cov.from_parameter_data(pst)
+    par.loc[:,"offset"] = 100
+    cov2 = pyemu.Cov.from_parameter_data(pst)
+
+    d = np.abs((cov1.x - cov2.x)).sum()
+    assert d == 0.0,d
+
+    pyemu.Cov.from_parameter_data(pst,scale_offset=False)
+    assert np.abs(cov1.x - cov2.x).sum() == 0.0
+
+
 def from_names_test():
     import os
     import pyemu
@@ -593,6 +614,7 @@ def sparse_get_sparse_test():
 
 
 if __name__ == "__main__":
+    cov_scale_offset_test()
     # coo_tests()
     # indices_test()
     # mat_test()
@@ -610,7 +632,7 @@ if __name__ == "__main__":
     # from_names_test()
     # from_uncfile_test()
     # copy_test()
-    #sparse_constructor_test()
-    #sparse_extend_test()
-    #sparse_get_test()
-    sparse_get_sparse_test()
+    # sparse_constructor_test()
+    # sparse_extend_test()
+    # sparse_get_test()
+    # sparse_get_sparse_test()

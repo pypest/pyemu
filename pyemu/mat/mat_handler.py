@@ -2452,7 +2452,7 @@ class Cov(Matrix):
         return Cov.from_parameter_data(new_pst, sigma_range)
 
     @classmethod
-    def from_parameter_data(cls, pst, sigma_range = 4.0):
+    def from_parameter_data(cls, pst, sigma_range = 4.0, scale_offset=True):
         """load Covariances from a pandas dataframe of
         pyemu.Pst.parameter_data
 
@@ -2464,6 +2464,9 @@ class Cov(Matrix):
             deviation (sigma). For example, if sigma_range = 4, the bounds
             represent 4 * sigma.  Default is 4.0, representing approximately
             95% confidence of implied normal distribution
+        scale_offset : bool
+            flag to apply scale and offset to parameter upper and lower
+            bounds before calculating varaince.  Default is True
 
         Returns
         -------
@@ -2478,8 +2481,12 @@ class Cov(Matrix):
             t = row["partrans"]
             if t in ["fixed", "tied"]:
                 continue
-            lb = row.parlbnd * row.scale + row.offset
-            ub = row.parubnd * row.scale + row.offset
+            if scale_offset:
+                lb = row.parlbnd * row.scale + row.offset
+                ub = row.parubnd * row.scale + row.offset
+            else:
+                lb = row.parlbnd
+                ub = row.parubnd
 
             if t == "log":
                 var = ((np.log10(np.abs(ub)) - np.log10(np.abs(lb))) / sigma_range) ** 2
