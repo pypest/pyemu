@@ -104,14 +104,16 @@ class Pst(object):
         components = {}
         ogroups = self.observation_data.groupby("obgnme").groups
         rgroups = self.res.groupby("group").groups
-        for og in ogroups.keys():
-            assert og in rgroups.keys(),"Pst.adjust_weights_res() obs group " +\
-                "not found: " + str(og)
-            og_res_df = self.res.ix[rgroups[og]]
-            og_res_df.index = og_res_df.name
+        self.res.index = self.res.name
+        for og,onames in ogroups.items():
+            #assert og in rgroups.keys(),"Pst.phi_componentw obs group " +\
+            #    "not found: " + str(og)
+            #og_res_df = self.res.ix[rgroups[og]]
+            og_res_df = self.res.loc[onames,:].dropna()
+            #og_res_df.index = og_res_df.name
             og_df = self.observation_data.ix[ogroups[og]]
             og_df.index = og_df.obsnme
-            og_res_df = og_res_df.loc[og_df.index,:]
+            #og_res_df = og_res_df.loc[og_df.index,:]
             assert og_df.shape[0] == og_res_df.shape[0],\
             " Pst.phi_components error: group residual dataframe row length" +\
             "doesn't match observation data group dataframe row length" + \

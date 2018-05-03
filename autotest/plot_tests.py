@@ -41,6 +41,11 @@ def pst_plot_test():
         return
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pst.parameter_data.loc[:, "partrans"] = "none"
+
+    ax = pst.plot(kind="phi_pie")
+    pst.observation_data.loc[pst.nnz_obs_names[::2],"obgnme"] = "test"
+    print(pst.phi_components)
+    pst.plot(kind="phi_pie")
     pst.plot(kind="prior")
     #plt.show()
     #return
