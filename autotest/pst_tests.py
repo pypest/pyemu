@@ -783,6 +783,9 @@ def run_test():
     import os
     import pyemu
 
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    pst.run("pestchek")
+
 
 
 if __name__ == "__main__":
@@ -800,7 +803,7 @@ if __name__ == "__main__":
     # nnz_groups_test()
     # regul_rectify_test()
     # derivative_increment_tests()
-    tied_test()
+    # tied_test()
     # smp_test()
     # smp_dateparser_test()
     # pst_manip_test()
@@ -816,4 +819,4 @@ if __name__ == "__main__":
     # pestpp_args_test()
     # reweight_test()
     # reweight_res_test()
-    # run_test()
+    run_test()

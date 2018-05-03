@@ -21,6 +21,7 @@ except:
     pass
 
 import pyemu
+from pyemu.utils.os_utils import run, start_slaves
 
 def remove_readonly(func, path, excinfo):
     """remove readonly dirs, apparently only a windows issue

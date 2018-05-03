@@ -13,6 +13,7 @@ pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_controldata import ControlData, SvdData, RegData
 from pyemu.pst import pst_utils
 from pyemu.plot import plot_utils
+#from pyemu.utils.os_utils import run
 
 class Pst(object):
     """basic class for handling pest control files to support linear analysis
@@ -2161,8 +2162,8 @@ class Pst(object):
             f.write("\\end{document}\n")
 
 
-    # def run(self,exe_name="pestpp",cwd=None):
-    #     cmd_line = "{0} {1}".format(exe_name,os.path.split(self.filename)[-1])
-    #     if cwd is None:
-    #         cwd = os.path.join(*os.path.split(self.filename[:-1]))
-    #     pyemu_run(cmd_line,cwd=cwd)
+    def run(self,exe_name="pestpp",cwd=None):
+        cmd_line = "{0} {1}".format(exe_name,os.path.split(self.filename)[-1])
+        if cwd is None:
+            cwd = os.path.join(*os.path.split(self.filename)[:-1])
+        pyemu.utils.os_utils.run(cmd_line,cwd=cwd)
