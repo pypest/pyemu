@@ -46,6 +46,7 @@ class Pst(object):
         self.with_comments = False
         self.comments = {}
         self.other_sections = {}
+        self.new_filename = None
         for key,value in pst_utils.pst_config.items():
             self.__setattr__(key,copy.copy(value))
         #self.tied = None
@@ -1166,7 +1167,7 @@ class Pst(object):
 
 
         """
-
+        self.new_filename = new_filename
         self.rectify_pgroups()
         self.rectify_pi()
         self._update_control_section()
@@ -2164,7 +2165,27 @@ class Pst(object):
 
 
     def run(self,exe_name="pestpp",cwd=None):
-        cmd_line = "{0} {1}".format(exe_name,os.path.split(self.filename)[-1])
+        """run a command related to the pst instance. If
+        write() has been called, then the filename passed to write
+        is in the command, otherwise the original constructor
+        filename is used
+
+        exe_name : str
+            the name of the executable to call.  Default is "pestpp"
+        cwd : str
+            the directory to execute the command in.  If None,
+            os.path.split(self.filename) is used to find
+            cwd.  Default is None
+
+
+        """
+        filename = self.filename
+        if self.new_filename is not None:
+            filename = self.new_filename
+        cmd_line = "{0} {1}".format(exe_name,os.path.split(filename)[-1])
         if cwd is None:
-            cwd = os.path.join(*os.path.split(self.filename)[:-1])
+            cwd = os.path.join(*os.path.split(filename)[:-1])
+            if cwd == '':
+                cwd = '.'
+        print("executing {0} in dir {1}".format(cmd_line, cwd))
         pyemu.utils.os_utils.run(cmd_line,cwd=cwd)

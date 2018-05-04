@@ -175,8 +175,16 @@ def pst_helper(pst,kind=None,**kwargs):
              "phi_progress":phi_progress}
 
     if kind is None:
-        logger.statement("kind=None, nothing to do")
-        return
+        returns = []
+        base_filename = pst.filename
+        if pst.new_filename is not None:
+            base_filename = pst.new_filename
+        base_filename = base_filename.replace(".pst",'')
+        for name,func in kinds.items():
+            plt_name = base_filename+"."+name+".pdf"
+            returns.append(func(pst,logger=logger,filename=plt_name))
+
+        return returns
     elif kind not in kinds:
         logger.lraise("unrecognized kind:{0}, should one of {1}"
                       .format(kind,','.join(list(kinds.keys()))))
@@ -305,11 +313,11 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
         mn *= 0.9
         ax.axis('square')
         if plot_hexbin:
-            ax.hexbin(obs_g.sim.values, obs_g.obsval.values, mincnt=1, gridsize=(75, 75),
+            ax.hexbin(obs_g.obsval.values, obs_g.sim.values, mincnt=1, gridsize=(75, 75),
                       extent=(mn, mx, mn, mx), bins='log', edgecolors=None)
 #               plt.colorbar(ax=ax)
         else:
-            ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
+            ax.scatter([obs_g.obsval], [obs_g.sim], marker='.', s=10, color='b')
 
 
 
@@ -319,8 +327,8 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
         ax.set_ylim(mn,mx)
         ax.grid()
 
-        ax.set_ylabel("observed",labelpad=0.1)
-        ax.set_xlabel("simulated",labelpad=0.1)
+        ax.set_xlabel("observed",labelpad=0.1)
+        ax.set_ylabel("simulated",labelpad=0.1)
         ax.set_title("{0}) group:{1}, {2} observations".
                                  format(abet[ax_count], g, obs_g.shape[0]), loc="left")
 
@@ -393,6 +401,7 @@ def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
                     .format(pst.filename, str(datetime.now())), ha="center")
     figs = []
     ax_count = 0
+    axes = None
     for g, names in grouper.items():
         logger.log("plotting obs_v_sim for {0}".format(g))
 
@@ -445,10 +454,15 @@ def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
         ax_count += 1
         logger.log("plotting obs_v_sim for {0}".format(g))
 
+    if axes is None:
+        return
+
     for a in range(ax_count,nr*nc):
         axes[a].set_axis_off()
         axes[a].set_yticks([])
         axes[a].set_xticks([])
+
+
 
     plt.tight_layout()
     #pdf.savefig()
@@ -589,7 +603,8 @@ def res_phi_pie(pst,logger=None, **kwargs):
 
 
 def pst_weight_hist(pst,logger, **kwargs):
-    raise NotImplementedError()
+    #raise NotImplementedError()
+    pass
 
 
 

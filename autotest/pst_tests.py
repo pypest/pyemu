@@ -784,7 +784,10 @@ def run_test():
     import pyemu
 
     pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    #pst.run("pestchek")
+    pst.write(os.path.join("temp","test.pst"))
     pst.run("pestchek")
+
 
 
 
