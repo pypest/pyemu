@@ -599,7 +599,7 @@ def res_phi_pie(pst,logger=None, **kwargs):
     ax.pie([float(v) for v in norm_phi_comps.values()],labels=labels)
     logger.log("plot res_phi_pie")
     if "filename" in kwargs:
-        plt.savefig(filename)
+        plt.savefig(kwargs["filename"])
     return ax
 
 
