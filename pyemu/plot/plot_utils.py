@@ -503,7 +503,7 @@ def plot_id_bar(id_df, nsv=None, logger=None, **kwargs):
      """
     if logger is None:
         logger=Logger('Default_Loggger.log',echo=False)
-    logger.log("plot res_phi_pie")
+    logger.log("plot id bar")
 
 
     df = id_df.copy()
@@ -557,7 +557,7 @@ def plot_id_bar(id_df, nsv=None, logger=None, **kwargs):
     cb = plt.colorbar(sm)
     cb.set_ticks(ticks)
 
-    logger.log('Finished identifiability bar chart')
+    logger.log('plot id bar')
 
     return ax
 
@@ -598,6 +598,8 @@ def res_phi_pie(pst,logger=None, **kwargs):
     labels = ["{0}\n{1:4G}({2:3.1f}%)".format(k,v,100. * (v / pst.phi)) for k,v in phi_comps.items()]
     ax.pie([float(v) for v in norm_phi_comps.values()],labels=labels)
     logger.log("plot res_phi_pie")
+    if "filename" in kwargs:
+        plt.savefig(filename)
     return ax
 
 
