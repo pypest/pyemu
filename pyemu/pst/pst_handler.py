@@ -1136,7 +1136,9 @@ class Pst(object):
                 f.write(line+'\n')
         if df.loc[:,columns].isnull().values.any():
             #warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
-            raise Exception("NaNs in {0} dataframe".format(name))
+            csv_name = "pst.{0}.nans.csv".format(name.replace(" ",'_').replace('*',''))
+            df.to_csv(csv_name)
+            raise Exception("NaNs in {0} dataframe, csv written to {1}".format(name, csv_name))
         def ext_fmt(x):
             if pd.notnull(x):
                 return " # {0}".format(x)

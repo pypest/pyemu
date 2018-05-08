@@ -1108,6 +1108,148 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,**
         return figs
 
 
+def ensemble_change_summary(ensemble, pst,facecolor='0.5',logger=None,filename=None,**kwargs):
+    """helper function to plot first and second moment change histograms
+
+    Parameters
+    ----------
+    ensemble : varies
+        the ensemble argument can be a pandas.DataFrame or derived type or a str, which
+        is treated as a fileanme.  Optionally, ensemble can be a list of these types or
+        a dict, in which case, the keys are treated as facecolor str (e.g., 'b', 'y', etc).
+        for this function, any dict key facecolors are ignored - use the facecolor arg
+    pst : pyemu.Pst
+        pst instance
+    facecolor : str
+        the histogram facecolor.
+    filename : str
+        the name of the pdf to create. If None, return figs without saving.  Default is None.
+
+    """
+    if logger is None:
+        logger=Logger('Default_Loggger.log',echo=False)
+    logger.log("plot res_1to1")
+    obs = pst.observation_data
+    ensembles = _process_ensemble_arg(ensemble,facecolor,logger)
+
+    if "grouper" in kwargs:
+        raise NotImplementedError()
+    else:
+        en_cols = set(ensembles[list(ensembles.keys())[0]].columns)
+        if len(en_cols.symmetric_difference(set(pst.par_names))) == 0:
+            grouper = pst.parameter_data.groupby(pst.parameter_data.pargp)
+        elif len(en_cols.symmetric_difference(set(pst.obs_names))):
+            grouper = pst.observation_data.groupby(pst.observation_data.obgnme)
+
+    fig = plt.figure(figsize=figsize)
+    if "fig_title" in kwargs:
+        plt.figtext(0.5,0.5,kwargs["fig_title"])
+    else:
+        plt.figtext(0.5, 0.5, "pyemu.Pst.plot(kind='1to1')\nfrom pest control file '{0}'\n at {1}"
+                    .format(pst.filename, str(datetime.now())), ha="center")
+    #if plot_hexbin:
+    #    pdfname = pst.filename.replace(".pst", ".1to1.hexbin.pdf")
+    #else:
+    #    pdfname = pst.filename.replace(".pst", ".1to1.pdf")
+    figs = []
+    ax_count = 0
+    for g, names in grouper.items():
+        logger.log("plotting 1to1 for {0}".format(g))
+
+        obs_g = obs.loc[names, :]
+        logger.statement("using control file obsvals to calculate residuals")
+        if "include_zero" not in kwargs or kwargs["include_zero"] is False:
+            obs_g = obs_g.loc[obs_g.weight > 0, :]
+        if obs_g.shape[0] == 0:
+            logger.statement("no non-zero obs for group '{0}'".format(g))
+            logger.log("plotting 1to1 for {0}".format(g))
+            continue
+
+        if ax_count % (nr * nc) == 0:
+            if ax_count > 0:
+                plt.tight_layout()
+            #pdf.savefig()
+            #plt.close(fig)
+            figs.append(fig)
+            fig = plt.figure(figsize=figsize)
+            axes = get_page_axes()
+            ax_count = 0
+
+        ax = axes[ax_count]
+
+        mx = obs_g.obsval.max()
+        mn =  obs_g.obsval.min()
+
+        #if obs_g.shape[0] == 1:
+        mx *= 1.1
+        mn *= 0.9
+        #ax.axis('square')
+
+        #ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
+        for c,en in ensembles.items():
+            en_g = en.loc[:,obs_g.obsnme]
+            ex = en_g.max()
+            en = en_g.min()
+            [ax.plot([ov,ov],[een,eex],color=c) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
+
+
+        ax.plot([mn,mx],[mn,mx],'k--',lw=1.0)
+        xlim = (mn,mx)
+        ax.set_xlim(mn,mx)
+        ax.set_ylim(mn,mx)
+        ax.grid()
+
+        ax.set_xlabel("observed",labelpad=0.1)
+        ax.set_ylabel("simulated",labelpad=0.1)
+        ax.set_title("{0}) group:{1}, {2} observations".
+                                 format(abet[ax_count], g, obs_g.shape[0]), loc="left")
+
+        ax_count += 1
+        ax = axes[ax_count]
+        #ax.scatter(obs_g.obsval, obs_g.res, marker='.', s=10, color='b')
+        for c,en in ensembles.items():
+            en_g = en.loc[:,obs_g.obsnme].subtract(obs_g.obsval,axis=1)
+            ex = en_g.max()
+            en = en_g.min()
+            [ax.plot([ov,ov],[een,eex],color=c) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
+        ylim = ax.get_ylim()
+        mx = max(np.abs(ylim[0]), np.abs(ylim[1]))
+        if obs_g.shape[0] == 1:
+            mx *= 1.1
+        ax.set_ylim(-mx, mx)
+        #show a zero residuals line
+        ax.plot(xlim, [0,0], 'k--', lw=1.0)
+
+        ax.set_xlim(xlim)
+        ax.set_ylabel("residual",labelpad=0.1)
+        ax.set_xlabel("observed",labelpad=0.1)
+        ax.set_title("{0}) group:{1}, {2} observations".
+                     format(abet[ax_count], g, obs_g.shape[0]), loc="left")
+        ax.grid()
+        ax_count += 1
+
+        logger.log("plotting 1to1 for {0}".format(g))
+
+    for a in range(ax_count, nr * nc):
+        axes[a].set_axis_off()
+        axes[a].set_yticks([])
+        axes[a].set_xticks([])
+
+    plt.tight_layout()
+    #pdf.savefig()
+    #plt.close(fig)
+    figs.append(fig)
+    if filename is not None:
+        plt.tight_layout()
+        with PdfPages(filename) as pdf:
+            for fig in figs:
+                pdf.savefig(fig)
+                plt.close(fig)
+        logger.log("plot res_1to1")
+    else:
+        logger.log("plot res_1to1")
+        return figs
+
 # def par_cov_helper(cov,pst,logger=None,filename=None,**kwargs):
 #     assert isinstance(cov,pyemu.Cov)
 #     if logger is None:
