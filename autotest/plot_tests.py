@@ -42,8 +42,7 @@ def pst_plot_test():
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pst.parameter_data.loc[:, "partrans"] = "none"
     pst.plot()
-    plt.show()
-    return
+
     ax = pst.plot(kind="phi_pie")
     pst.observation_data.loc[pst.nnz_obs_names[::2],"obgnme"] = "test"
     print(pst.phi_components)
@@ -223,8 +222,8 @@ def ensemble_summary_test():
 
 if __name__ == "__main__":
     #plot_summary_test()
-    #pst_plot_test()
-    ensemble_summary_test()
+    pst_plot_test()
+    #ensemble_summary_test()
     #ensemble_plot_test()
     #ensemble_1to1_test()
     #cov_test()
