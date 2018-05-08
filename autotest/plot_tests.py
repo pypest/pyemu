@@ -166,6 +166,33 @@ def ensemble_1to1_test():
     pyemu.plot_utils.ensemble_res_1to1({"0.5":oe1,"b":oe2},pst,filename=os.path.join("temp","e1to1.pdf"))
 
 
+
+def ensemble_summary_test():
+    try:
+        import matplotlib.pyplot as plt
+    except:
+        return
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    num_reals = 100
+
+    oe1 = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst,num_reals=num_reals)
+    pst.observation_data.loc[pst.nnz_obs_names,"weight"] *= 10.0
+    oe2 = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst, num_reals=num_reals)
+    #print(oe1.loc[:,pst.nnz_obs_names].std())
+    #print(oe2.loc[:,pst.nnz_obs_names].std())
+
+    pyemu.plot_utils.ensemble_change_summary(oe1,oe2,pst,filename=os.path.join("temp","edeltasum.pdf"))
+    pst.parameter_data.loc[:,"partrans"] = "none"
+    cov1 = pyemu.Cov.from_parameter_data(pst,sigma_range=6)
+    pe1 = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov1,num_reals=1000)
+
+    cov2 = cov1 * 0.001
+    pe2 = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov2,num_reals=1000)
+
+    pyemu.plot_utils.ensemble_change_summary(pe1, pe2, pst, filename=os.path.join("temp", "edeltasum.pdf"))
+
+
 # def cov_test():
 #     try:
 #         import matplotlib.pyplot as plt
@@ -196,7 +223,8 @@ def ensemble_1to1_test():
 
 if __name__ == "__main__":
     #plot_summary_test()
-    pst_plot_test()
+    #pst_plot_test()
+    ensemble_summary_test()
     #ensemble_plot_test()
     #ensemble_1to1_test()
     #cov_test()

@@ -1108,16 +1108,15 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,**
         return figs
 
 
-def ensemble_change_summary(ensemble, pst,facecolor='0.5',logger=None,filename=None,**kwargs):
+def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',logger=None,filename=None,**kwargs):
     """helper function to plot first and second moment change histograms
 
     Parameters
     ----------
-    ensemble : varies
-        the ensemble argument can be a pandas.DataFrame or derived type or a str, which
-        is treated as a fileanme.  Optionally, ensemble can be a list of these types or
-        a dict, in which case, the keys are treated as facecolor str (e.g., 'b', 'y', etc).
-        for this function, any dict key facecolors are ignored - use the facecolor arg
+    ensemble1 : varies
+        str or pd.DataFrames
+    ensemble2 : varies
+        str or pd.DataFrame
     pst : pyemu.Pst
         pst instance
     facecolor : str
@@ -1128,18 +1127,44 @@ def ensemble_change_summary(ensemble, pst,facecolor='0.5',logger=None,filename=N
     """
     if logger is None:
         logger=Logger('Default_Loggger.log',echo=False)
-    logger.log("plot res_1to1")
-    obs = pst.observation_data
-    ensembles = _process_ensemble_arg(ensemble,facecolor,logger)
+    logger.log("plot ensemble change")
+
+    if isinstance(ensemble1, str):
+        ensemble1 = pd.read_csv(ensemble1,index_col=0)
+        ensemble1.columns = ensemble1.columns.str.lower()
+
+    if isinstance(ensemble2, str):
+        ensemble2 = pd.read_csv(ensemble2,index_col=0)
+        ensemble2.columns = ensemble2.columns.str.lower()
+
+    d = set(ensemble1.columns).symmetric_difference(set(ensemble2. columns))
+
+    if len(d) != 0:
+        logger.lraise("ensemble1 does not have the same columns as ensemble2: {0}".
+                      format(','.join(d)))
+
+    en1_mn,en1_std = ensemble1.mean(axis=0),ensemble1.std(axis=0)
+    en2_mn, en2_std = ensemble2.mean(axis=0), ensemble2.std(axis=0)
+
+    mn_diff = 100.0 * ((en1_mn - en2_mn) / en1_mn)
+    std_diff = 100 * (( en1_std - en2_std)/ en1_std)
+
 
     if "grouper" in kwargs:
         raise NotImplementedError()
     else:
-        en_cols = set(ensembles[list(ensembles.keys())[0]].columns)
+        en_cols = set(ensemble1.columns)
         if len(en_cols.symmetric_difference(set(pst.par_names))) == 0:
-            grouper = pst.parameter_data.groupby(pst.parameter_data.pargp)
-        elif len(en_cols.symmetric_difference(set(pst.obs_names))):
-            grouper = pst.observation_data.groupby(pst.observation_data.obgnme)
+            par = pst.parameter_data.loc[pst.adj_par_names,:]
+            grouper = par.groupby(par.pargp).groups
+            grouper["all"] = pst.adj_par_names
+        elif len(en_cols.symmetric_difference(set(pst.obs_names))) == 0:
+            obs = pst.observation_data.loc[pst.nnz_obs_names,:]
+            grouper = obs.groupby(obs.obgnme).groups
+            grouper["all"] = pst.nnz_obs_names
+        else:
+            logger.lraise("could match ensemble cols with par or obs...")
+
 
     fig = plt.figure(figsize=figsize)
     if "fig_title" in kwargs:
@@ -1154,15 +1179,14 @@ def ensemble_change_summary(ensemble, pst,facecolor='0.5',logger=None,filename=N
     figs = []
     ax_count = 0
     for g, names in grouper.items():
-        logger.log("plotting 1to1 for {0}".format(g))
+        logger.log("plotting change for {0}".format(g))
 
-        obs_g = obs.loc[names, :]
-        logger.statement("using control file obsvals to calculate residuals")
-        if "include_zero" not in kwargs or kwargs["include_zero"] is False:
-            obs_g = obs_g.loc[obs_g.weight > 0, :]
-        if obs_g.shape[0] == 0:
-            logger.statement("no non-zero obs for group '{0}'".format(g))
-            logger.log("plotting 1to1 for {0}".format(g))
+        mn_g = mn_diff.loc[names]
+        std_g = std_diff.loc[names]
+
+        if mn_g.shape[0] == 0:
+            logger.statement("no entries for group '{0}'".format(g))
+            logger.log("plotting change for {0}".format(g))
             continue
 
         if ax_count % (nr * nc) == 0:
@@ -1176,59 +1200,34 @@ def ensemble_change_summary(ensemble, pst,facecolor='0.5',logger=None,filename=N
             ax_count = 0
 
         ax = axes[ax_count]
-
-        mx = obs_g.obsval.max()
-        mn =  obs_g.obsval.min()
-
-        #if obs_g.shape[0] == 1:
-        mx *= 1.1
-        mn *= 0.9
-        #ax.axis('square')
-
-        #ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
-        for c,en in ensembles.items():
-            en_g = en.loc[:,obs_g.obsnme]
-            ex = en_g.max()
-            en = en_g.min()
-            [ax.plot([ov,ov],[een,eex],color=c) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
+        mn_g.hist(ax=ax,facecolor=facecolor,alpha=0.5,edgecolor=None,bins=bins)
+        #std_g.hist(ax=ax,facecolor='b',alpha=0.5,edgecolor=None)
 
 
-        ax.plot([mn,mx],[mn,mx],'k--',lw=1.0)
-        xlim = (mn,mx)
-        ax.set_xlim(mn,mx)
-        ax.set_ylim(mn,mx)
+
+        #ax.set_xlim(xlim)
+        ax.set_yticklabels([])
+        ax.set_xlabel("mean percent change",labelpad=0.1)
+        ax.set_title("{0}) mean change group:{1}, {2} entries".
+                     format(abet[ax_count], g, mn_g.shape[0]), loc="left")
         ax.grid()
-
-        ax.set_xlabel("observed",labelpad=0.1)
-        ax.set_ylabel("simulated",labelpad=0.1)
-        ax.set_title("{0}) group:{1}, {2} observations".
-                                 format(abet[ax_count], g, obs_g.shape[0]), loc="left")
-
         ax_count += 1
+
         ax = axes[ax_count]
-        #ax.scatter(obs_g.obsval, obs_g.res, marker='.', s=10, color='b')
-        for c,en in ensembles.items():
-            en_g = en.loc[:,obs_g.obsnme].subtract(obs_g.obsval,axis=1)
-            ex = en_g.max()
-            en = en_g.min()
-            [ax.plot([ov,ov],[een,eex],color=c) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
-        ylim = ax.get_ylim()
-        mx = max(np.abs(ylim[0]), np.abs(ylim[1]))
-        if obs_g.shape[0] == 1:
-            mx *= 1.1
-        ax.set_ylim(-mx, mx)
-        #show a zero residuals line
-        ax.plot(xlim, [0,0], 'k--', lw=1.0)
+        std_g.hist(ax=ax, facecolor=facecolor, alpha=0.5, edgecolor=None, bins=bins)
+        # std_g.hist(ax=ax,facecolor='b',alpha=0.5,edgecolor=None)
 
-        ax.set_xlim(xlim)
-        ax.set_ylabel("residual",labelpad=0.1)
-        ax.set_xlabel("observed",labelpad=0.1)
-        ax.set_title("{0}) group:{1}, {2} observations".
-                     format(abet[ax_count], g, obs_g.shape[0]), loc="left")
+
+
+        # ax.set_xlim(xlim)
+        ax.set_yticklabels([])
+        ax.set_xlabel("sigma percent change", labelpad=0.1)
+        ax.set_title("{0}) sigma change group:{1}, {2} entries".
+                     format(abet[ax_count], g, mn_g.shape[0]), loc="left")
         ax.grid()
         ax_count += 1
 
-        logger.log("plotting 1to1 for {0}".format(g))
+        logger.log("plotting change for {0}".format(g))
 
     for a in range(ax_count, nr * nc):
         axes[a].set_axis_off()
@@ -1245,10 +1244,12 @@ def ensemble_change_summary(ensemble, pst,facecolor='0.5',logger=None,filename=N
             for fig in figs:
                 pdf.savefig(fig)
                 plt.close(fig)
-        logger.log("plot res_1to1")
+        logger.log("plot ensemble change")
     else:
-        logger.log("plot res_1to1")
+        logger.log("plot ensemble change")
         return figs
+
+
 
 # def par_cov_helper(cov,pst,logger=None,filename=None,**kwargs):
 #     assert isinstance(cov,pyemu.Cov)
