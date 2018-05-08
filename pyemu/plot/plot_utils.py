@@ -1414,11 +1414,10 @@ def plot_jac_test(csvin, csvout, targetobs=None, filetype=None, maxoutputpages=1
         print("WARNING, more than 10 pages of output requested per parameter")
         print("maxoutputpage reset to 10.")
         maxoutputpages=10
-        np.min()
     num_obs_plotted = np.min(np.array([maxoutputpages*32, len(targetobs)]))
     if num_obs_plotted < len(targetobs):
         # get random sample
-        obs_plotted = targetobs[0:num_obs_plotted]
+        obs_plotted = np.random.choice(len(targetobs), num_obs_plotted, replace=False)
         real_pages = maxoutputpages
     else:
         obs_plotted = targetobs
