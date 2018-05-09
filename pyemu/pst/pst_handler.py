@@ -172,6 +172,8 @@ class Pst(object):
             something to use as Pst.res attribute
 
         """
+        if isinstance(res,str):
+            res = pst_utils.read_resfile(res)
         self.__res = res
 
     @property
@@ -199,9 +201,15 @@ class Pst(object):
                 if not os.path.exists(self.resfile):
                     self.resfile = self.resfile.replace(".res", ".rei")
                     if not os.path.exists(self.resfile):
-                        raise Exception("Pst.res: " +
-                                        "could not residual file case.res" +
-                                        " or case.rei")
+                        if self.new_filename is not None:
+                            self.resfile = self.new_filename.replace(".pst",".res")
+                            if not os.path.exists(self.resfile):
+                                self.resfile = self.resfile.replace(".res","rei")
+                                if not os.path.exists(self.resfile):
+                                    raise Exception("Pst.res: " +
+                                                    "could not residual file case.res" +
+                                                    " or case.rei")
+
 
             res = pst_utils.read_resfile(self.resfile)
             missing_bool = self.observation_data.obsnme.apply\
