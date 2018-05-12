@@ -1983,9 +1983,9 @@ def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
             raise Exception("error parsing factor line {0}:{1}".format(line,str(e)))
         #fac_prods = [pp_data.loc[pp,"value"]*fac_data[pp] for pp in fac_data]
         if itrans == 0:
-            fac_sum = sum([pp_dict[pp] * fac_data[pp] for pp in fac_data])
+            fac_sum = sum([pp_dict[pp_names[pp-1]] * fac_data[pp] for pp in fac_data])
         else:
-            fac_sum = sum([pp_dict_log[pp] * fac_data[pp] for pp in fac_data])
+            fac_sum = sum([pp_dict_log[pp_names[pp-1]] * fac_data[pp] for pp in fac_data])
         if itrans != 0:
             fac_sum = 10**fac_sum
         #col = ((inode - 1) // nrow) + 1
