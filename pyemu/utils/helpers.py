@@ -1016,10 +1016,10 @@ class PstFromFlopyModel(object):
         multiplier parameters for well flux for stress periods 1,2 and 3 and
         would setup one single river conductance multipler parameter that is applied
         to all stress periods
-    spatial_bc_priops : list
+    spatial_bc_props : list
         boundary condition spatial multiplier parameters.
         A nested list of boundary condition elements to parameterize using
-        names (e.g. ["riv.cond","wel.flux"].  Setups up cell-based parameters for
+        names (e.g. [["riv.cond",0],["wel.flux",1] to setup up cell-based parameters for
         each boundary condition element listed.  These multipler parameters are applied across
         all stress periods.  For this to work, there must be the same number of entries
         for all stress periods.  If more than one BC of the same type is in a single

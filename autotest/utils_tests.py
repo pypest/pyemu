@@ -1145,7 +1145,7 @@ def plot_id_bar_test():
     #plt.show()
 
 if __name__ == "__main__":
-    master_and_slaves()
+    #master_and_slaves()
     #plot_id_bar_test()
     #pst_from_parnames_obsnames_test()
     #write_jactest_test()
@@ -1185,7 +1185,7 @@ if __name__ == "__main__":
     # setup_ppcov_simple()
     #ppcov_simple_sparse_test()
     #ppcov_complex_sparse_test()
-    # fac2real_test()
+    fac2real_test()
     # vario_test()
     # geostruct_test()
     # aniso_test()
