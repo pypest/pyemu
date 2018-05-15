@@ -1137,9 +1137,13 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
         ensemble2 = pd.read_csv(ensemble2,index_col=0)
     ensemble2.columns = ensemble2.columns.str.lower()
 
-    # assuming that unnamed cols will occur as result of csv read only - better to fix in pestpp-ies
-    ensemble1.drop([col for col in ensemble1.columns if "unnamed:" in col],axis=1,inplace=True)
-    ensemble2.drop([col for col in ensemble2.columns if "unnamed:" in col],axis=1,inplace=True)
+    # better to ensure this is caught by pestpp-ies ensemble csvs
+    unnamed1 = [col for col in ensemble1.columns if "unnamed:" in col]
+    if len(unnamed1) != 0:
+        ensemble1 = ensemble1.iloc[:,:-1] # ensure unnamed col result of poor csv read only (ie last col)
+    unnamed2 = [col for col in ensemble2.columns if "unnamed:" in col]
+    if len(unnamed2) != 0:
+        ensemble2 = ensemble2.iloc[:,:-1] # ensure unnamed col result of poor csv read only (ie last col)
 
     d = set(ensemble1.columns).symmetric_difference(set(ensemble2. columns))
 
