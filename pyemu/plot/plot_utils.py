@@ -1131,11 +1131,19 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
 
     if isinstance(ensemble1, str):
         ensemble1 = pd.read_csv(ensemble1,index_col=0)
-        ensemble1.columns = ensemble1.columns.str.lower()
+    ensemble1.columns = ensemble1.columns.str.lower()
 
     if isinstance(ensemble2, str):
         ensemble2 = pd.read_csv(ensemble2,index_col=0)
-        ensemble2.columns = ensemble2.columns.str.lower()
+    ensemble2.columns = ensemble2.columns.str.lower()
+
+    # better to ensure this is caught by pestpp-ies ensemble csvs
+    unnamed1 = [col for col in ensemble1.columns if "unnamed:" in col]
+    if len(unnamed1) != 0:
+        ensemble1 = ensemble1.iloc[:,:-1] # ensure unnamed col result of poor csv read only (ie last col)
+    unnamed2 = [col for col in ensemble2.columns if "unnamed:" in col]
+    if len(unnamed2) != 0:
+        ensemble2 = ensemble2.iloc[:,:-1] # ensure unnamed col result of poor csv read only (ie last col)
 
     d = set(ensemble1.columns).symmetric_difference(set(ensemble2. columns))
 
@@ -1163,7 +1171,7 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
             grouper = obs.groupby(obs.obgnme).groups
             grouper["all"] = pst.nnz_obs_names
         else:
-            logger.lraise("could match ensemble cols with par or obs...")
+            logger.lraise("could not match ensemble cols with par or obs...")
 
 
     fig = plt.figure(figsize=figsize)
