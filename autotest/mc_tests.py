@@ -231,8 +231,8 @@ def pnulpar_test():
     par_files = [os.path.join(par_dir, f) for f in os.listdir(par_dir) if f.endswith('.par')]
     real_num = [int(os.path.split(f)[-1].split('.')[0].split('_')[1]) for f in par_files]
 
-    en_pnul = pyemu.ParameterEnsemble(mc.pst)
-    en_pnul.read_parfiles(par_files)
+    en_pnul = pyemu.ParameterEnsemble.from_parfiles(pst=mc.pst,parfile_names=par_files)
+    #en_pnul.read_parfiles(par_files)
     en_pnul.index = real_num
     en.sort_index(axis=1, inplace=True)
     en.sort_index(axis=0, inplace=True)

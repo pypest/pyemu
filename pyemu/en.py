@@ -1480,7 +1480,7 @@ class ParameterEnsemble(Ensemble):
             diff = df.scale - pst.parameter_data.scale
             if diff.apply(np.abs).sum() > 0.0:
                 warnings.warn("differences in scale detected, applying scale in par file")
-                df.loc[:,"parval1"] *= df.scale
+                #df.loc[:,"parval1"] *= df.scale
 
             dfs[rname] = df.parval1.values
 
