@@ -15,8 +15,7 @@ from pyemu.plot.plot_utils import ensemble_helper
 #                                         "created via a new attribute name - see"+\
 #                                         "https://pandas.pydata.org/pandas-docs/"+\
 #                                         "stable/indexing.html#attribute-access")
-warnings.filterwarnings("ignore",category=UserWarning)
-
+warnings.filterwarnings("ignore",category=UserWarning,module="pandas")
 SEED = 358183147 #from random.org on 5 Dec 2016
 #print("setting random seed")
 np.random.seed(SEED)
@@ -1405,20 +1404,22 @@ class ParameterEnsemble(Ensemble):
             the par file prefix
 
         """
-        pfile_count = 1
-        parfile_names = []
-        while True:
-            pfile_name = prefix +"{0:d}.par".format(pfile_count)
-            if not os.path.exists(pfile_name):
-                break
-            parfile_names.append(pfile_name)
-            pfile_count += 1
+        raise Exception("ParameterEnsemble.read_parfiles_prefix() is deprecated.  Use ParameterEnsemble.from_parfiles()")
 
-        if len(parfile_names) == 0:
-            raise Exception("ParameterEnsemble.read_parfiles_prefix() error: " + \
-                            "no parfiles found with prefix {0}".format(prefix))
-
-        return self.read_parfiles(parfile_names)
+        # pfile_count = 1
+        # parfile_names = []
+        # while True:
+        #     pfile_name = prefix +"{0:d}.par".format(pfile_count)
+        #     if not os.path.exists(pfile_name):
+        #         break
+        #     parfile_names.append(pfile_name)
+        #     pfile_count += 1
+        #
+        # if len(parfile_names) == 0:
+        #     raise Exception("ParameterEnsemble.read_parfiles_prefix() error: " + \
+        #                     "no parfiles found with prefix {0}".format(prefix))
+        #
+        # return self.read_parfiles(parfile_names)
 
 
     def read_parfiles(self,parfile_names):
@@ -1436,12 +1437,13 @@ class ParameterEnsemble(Ensemble):
         self.__istransformed
 
         """
-        for pfile in parfile_names:
-            assert os.path.exists(pfile),"ParameterEnsemble.read_parfiles() error: " +\
-                                         "file: {0} not found".format(pfile)
-            df = read_parfile(pfile)
-            self.loc[pfile] = df.loc[:,'parval1']
-        self.loc[:,:] = self.loc[:,:].astype(np.float64)
+        raise Exception("ParameterEnsemble.read_parfiles() is deprecated.  Use ParameterEnsemble.from_parfiles()")
+        # for pfile in parfile_names:
+        #     assert os.path.exists(pfile),"ParameterEnsemble.read_parfiles() error: " +\
+        #                                  "file: {0} not found".format(pfile)
+        #     df = read_parfile(pfile)
+        #     self.loc[pfile] = df.loc[:,'parval1']
+        # self.loc[:,:] = self.loc[:,:].astype(np.float64)
 
     @classmethod
     def from_parfiles(cls,pst,parfile_names,real_names=None):

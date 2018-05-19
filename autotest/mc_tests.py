@@ -731,6 +731,6 @@ if __name__ == "__main__":
     # write_regul_test()
     # from_dataframe_test()
     # ensemble_seed_test()
-    pnulpar_test()
+    # pnulpar_test()
     # enforce_test()
-    # add_base_test()
+    add_base_test()

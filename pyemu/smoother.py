@@ -8,6 +8,7 @@ from datetime import datetime
 import shutil
 import threading
 import time
+import warnings
 import numpy as np
 import pandas as pd
 import pyemu
@@ -460,9 +461,15 @@ class EnsembleSmoother(EnsembleMethod):
     def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,submit_file=None,verbose=False,
                  port=4004,slave_dir="template",drop_bad_reals=None,save_mats=False):
 
+
+
         super(EnsembleSmoother,self).__init__(pst=pst,parcov=parcov,obscov=obscov,num_slaves=num_slaves,
                                               submit_file=submit_file,verbose=verbose,port=port,
                                               slave_dir=slave_dir)
+        warnings.warn("pyemu's EnsembleSmoother is for prototyping only.  Use PESTPP-IES for a production " +
+                         "implementation of iterative ensemble smoother")
+        self.logger.warn("pyemu's EnsembleSmoother is for prototyping only.  Use PESTPP-IES for a production " +
+                      "implementation of iterative ensemble smoother")
         #self.use_approx_prior = bool(use_approx_prior)
         self.parcov_inv_sqrt = None
         self.half_obscov_diag = None
