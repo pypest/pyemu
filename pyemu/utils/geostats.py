@@ -584,7 +584,7 @@ class OrdinaryKrige(object):
 
             self.point_data = point_data.drop_duplicates(subset=["name"])
         else:
-            self.point_data = point_data
+            self.point_data = point_data.copy()
         self.point_data.index = self.point_data.name
         self.check_point_data_dist()
         self.interp_data = None
@@ -1965,7 +1965,7 @@ def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
                         ','.join(list(diff)))
 
     arr = np.zeros((nrow,ncol),dtype=np.float) + fill_value
-    pp_dict = {name:val for name,val in zip(pp_data.index,pp_data.parval1)}
+    pp_dict = {int(name):val for name,val in zip(pp_data.index,pp_data.parval1)}
     try:
         pp_dict_log = {name:np.log10(val) for name,val in zip(pp_data.index,pp_data.parval1)}
     except:

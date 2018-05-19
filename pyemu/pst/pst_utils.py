@@ -554,6 +554,7 @@ def try_run_inschek(pst):
 
 
 def _try_run_inschek(ins_file,out_file):
+
     try:
         # os.system("inschek {0} {1}".format(ins_file,out_file))
         pyemu.helpers.run("inschek {0} {1}".format(ins_file, out_file))
