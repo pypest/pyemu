@@ -97,14 +97,19 @@ def ident_test():
 def pnulpar_test():
     pst = pyemu.Pst(ord_base+".pst")
     # load the pnulpar projected ensemble
-    pnul_en = pyemu.ParameterEnsemble(pst)
-    pnul_en.read_parfiles_prefix(os.path.join(verf_dir,"proj_par_draws","draw_"))
+    d = os.path.join(verf_dir,"proj_par_draws")
+    par_files = [ os.path.join(d,f) for f in os.listdir(d) if f.starswith("draw_")]
+    pnul_en = pyemu.ParameterEnsemble.from_parfiles(pst=pst,parfile_names=par_files)
+    #pnul_en.read_parfiles_prefix(os.path.join(verf_dir,"proj_par_draws","draw_"))
     pnul_en.loc[:,"fname"] = pnul_en.index
     pnul_en.index = pnul_en.fname.apply(lambda x:str(int(x.split('.')[0].split('_')[-1])))
     f = pnul_en.pop("fname")
 
     mc = pyemu.MonteCarlo(jco=ord_base+".jco")
-    mc.parensemble.read_parfiles_prefix(os.path.join(verf_dir,"prior_par_draws","draw_"))
+    d = os.path.join(verf_dir, "prior_par_draws")
+    par_files = [os.path.join(d, f) for f in os.listdir(d) if f.starswith("draw_")]
+    #mc.parensemble.read_parfiles_prefix(os.path.join(verf_dir,"prior_par_draws","draw_"))
+    mc.parensemble = pyemu.ParameterEnsemble.from_parfiles(pst=mc.pst,parfile_names=par_files)
     mc.parensemble.loc[:,"fname"] = mc.parensemble.index
     mc.parensemble.index = mc.parensemble.fname.apply(lambda x:str(int(x.split('.')[0].split('_')[-1])))
     f = mc.parensemble.pop("fname")
@@ -119,6 +124,6 @@ if __name__ == "__main__":
     #predunc7_test()
     #predunc1_test()
     #predvar1b_test()
-    ident_test()
-    #pnulpar_test()
+    #ident_test()
+    pnulpar_test()
 

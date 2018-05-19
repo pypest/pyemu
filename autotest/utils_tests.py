@@ -570,10 +570,11 @@ def ok_test():
     ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
     interp_points = pts_data.copy()
     kf = ok.calc_factors(interp_points.x,interp_points.y)
-    for ptname in pts_data.name:
-        assert kf.loc[ptname,"inames"][0] == ptname
-        assert kf.loc[ptname,"ifacts"][0] == 1.0
-        assert sum(kf.loc[ptname,"ifacts"]) == 1.0
+    #for ptname in pts_data.name:
+    for i in kf.index:
+        assert len(kf.loc[i,"inames"])== 1
+        assert kf.loc[i,"ifacts"][0] == 1.0
+        assert sum(kf.loc[i,"ifacts"]) == 1.0
     print(kf)
 
 def ok_grid_test():
@@ -1185,14 +1186,14 @@ if __name__ == "__main__":
     # setup_ppcov_simple()
     #ppcov_simple_sparse_test()
     #ppcov_complex_sparse_test()
-    fac2real_test()
+    #fac2real_test()
     # vario_test()
     # geostruct_test()
     # aniso_test()
     # struct_file_test()
     # covariance_matrix_test()
     # add_pi_obj_func_test()
-    # ok_test()
+    ok_test()
     # ok_grid_test()
     # ok_grid_zone_test()
     # ppk2fac_verf_test()

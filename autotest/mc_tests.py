@@ -217,7 +217,8 @@ def pnulpar_test():
     mc = pyemu.MonteCarlo(jco=os.path.join("mc","freyberg_ord.jco"))
     par_dir = os.path.join("mc","prior_par_draws")
     par_files = [os.path.join(par_dir,f) for f in os.listdir(par_dir) if f.endswith('.par')]
-    mc.parensemble.read_parfiles(par_files)
+    #mc.parensemble.read_parfiles(par_files)
+    mc.parensemble = pyemu.ParameterEnsemble.from_parfiles(pst=mc.pst,parfile_names=par_files)
     real_num = [int(os.path.split(f)[-1].split('.')[0].split('_')[1]) for f in par_files]
     mc.parensemble.index = real_num
     #print(mc.parensemble)
@@ -722,7 +723,7 @@ if __name__ == "__main__":
     # diagonal_cov_draw_test()
     # pe_to_csv_test()
     # scale_offset_test()
-    mc_test()
+    # mc_test()
     # fixed_par_test()
     # uniform_draw_test()
     # gaussian_draw_test()
@@ -730,6 +731,6 @@ if __name__ == "__main__":
     # write_regul_test()
     # from_dataframe_test()
     # ensemble_seed_test()
-    # pnulpar_test()
-    #enforce_test()
-    #add_base_test()
+    pnulpar_test()
+    # enforce_test()
+    # add_base_test()
