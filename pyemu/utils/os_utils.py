@@ -4,6 +4,7 @@ import platform
 import shutil
 import subprocess as sp
 import time
+from datetime import datetime
 
 
 def remove_readonly(func, path, excinfo):
@@ -105,6 +106,9 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         no master instance will be started
     verbose : bool
         flag to echo useful information to stdout
+    silent_master : bool
+        flag to pipe master output to devnull.  This is only for
+        pestpp Travis testing. Default is False
 
     Note
     ----
@@ -244,8 +248,17 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
         #     if master_p.poll() is not None:
         #         print(master_p.stdout.readlines())
         #         break
-        master_p.wait()
-        time.sleep(1.5) # a few cycles to let the slaves end gracefully
+        if silent_master:
+            # this keeps travis from thinking something is wrong...
+            while True:
+                rv = master_p.poll()
+                if master_p.poll() is not None:
+                    break
+                print(datetime.now(), "still running")
+                time.sleep(5)
+        else:
+            master_p.wait()
+            time.sleep(1.5) # a few cycles to let the slaves end gracefully
         # kill any remaining slaves
         for p in procs:
             p.kill()
