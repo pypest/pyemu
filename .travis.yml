@@ -5,9 +5,11 @@ python:
   - "3.5"
   - "3.6"
 before_install:
+  - git clone -b develop --depth:1 https://github.com/dwelter/pestpp
   - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
+  - export PATH="$HOME/pestpp/exe/linux:$PATH"
   - conda update --yes conda
   - "export DISPLAY=:99.0"
   - "sh -e /etc/init.d/xvfb start"
@@ -17,6 +19,7 @@ install:
   - pip install pyshp
   - pip install nose-timer
   - pip install git+https://github.com/modflowpy/flopy.git@develop
+  - pip install pymake
 script:
   - export PYTHONPATH=$PYTHONPATH:.
   - nosetests -v --with-id --nocapture --with-timer -w ./autotest --with-coverage --cover-package=pyemu
