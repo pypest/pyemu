@@ -41,7 +41,7 @@ before_install:
   - ln -fs /usr/bin/g++-6 "$HOME/.local/bin/g++" && g++ --version
   - ls -l /usr/bin/g++-6
   - export CXX="g++"
-  - git clone -b develop --depth:1 https://github.com/dwelter/pestpp
+  - git clone -b develop --depth 1 https://github.com/dwelter/pestpp
   - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
