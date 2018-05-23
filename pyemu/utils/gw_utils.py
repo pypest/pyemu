@@ -446,9 +446,9 @@ def apply_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",
         raise Exception("error import flopy: {0}".format(str(e)))
     mt = flopy.utils.MtListBudget(list_filename)
     gw,sw = mt.parse(start_datetime=start_datetime,diff=True)
-    gw.to_csv(gw_filename,sep=' ',index_label="datetime",date_format="%Y%M%d")
+    gw.to_csv(gw_filename,sep=' ',index_label="datetime",date_format="%Y%m%d")
     if sw is not None:
-        sw.to_csv(sw_filename,sep=' ',index_label="datetime",date_format="%Y%M%d")
+        sw.to_csv(sw_filename,sep=' ',index_label="datetime",date_format="%Y%m%d")
     return gw, sw
 
 def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
@@ -566,8 +566,8 @@ def apply_mflist_budget_obs(list_filename,flx_filename="flux.dat",
         raise Exception("error import flopy: {0}".format(str(e)))
     mlf = flopy.utils.MfListBudget(list_filename)
     flx,vol = mlf.get_dataframes(start_datetime=start_datetime,diff=True)
-    flx.to_csv(flx_filename,sep=' ',index_label="datetime",date_format="%Y%M%d")
-    vol.to_csv(vol_filename,sep=' ',index_label="datetime",date_format="%Y%M%d")
+    flx.to_csv(flx_filename,sep=' ',index_label="datetime",date_format="%Y%m%d")
+    vol.to_csv(vol_filename,sep=' ',index_label="datetime",date_format="%Y%m%d")
     return flx,vol
 
 
@@ -1071,7 +1071,7 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
     if start_datetime is not None:
         start_datetime = pd.to_datetime(start_datetime)
         df.loc[:,"time_str"] = pd.to_timedelta(df.time,unit='d') + start_datetime
-        df.loc[:,"time_str"] = df.time_str.apply(lambda x: datetime.strftime(x,"%d%m%Y"))
+        df.loc[:,"time_str"] = df.time_str.apply(lambda x: datetime.strftime(x,"%Y%m%d"))
     else:
         df.loc[:,"time_str"] = df.time.apply(lambda x: "{0:08.2f}".format(x))
     df.loc[:,"ins_str"] = "l1\n"
