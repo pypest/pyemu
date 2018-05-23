@@ -1,7 +1,7 @@
 examples/* linguist-vendored=true
 autotest/* linguist-vendored=true
 dist/* linguist-vendored=true
-doc/*
-build/*
-misc/*
-verification/*
+doc/* linguist-vendored=true
+build/* linguist-vendored=true
+misc/* linguist-vendored=true
+verification/* linguist-vendored=true
