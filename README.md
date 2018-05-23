@@ -45,7 +45,7 @@ Version 0.5 of pyemu includes
 
 * support for reading and writing the new pest control file format with comments (!)
 * work on the multivariate Gaussian draws to speed things up
-* Even more work on the PstFromFlopy helper class.  It lots of kewl stuff now
+* Even more work on the PstFromFlopy helper class.  It has lots of kewl stuff now
 * addition of a sparse matrix handler and a new JCO binary format for really large numbers of pars (>100K)
 * more work towards getting pestpp and modflow buidling the Travis YML, moving towards having execution tests.
 * the ensemble smoother in pyemu has been marked with a DeprecationWarning and will be retired in the next release.
