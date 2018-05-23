@@ -25,7 +25,7 @@ from pyemu.utils.os_utils import run, start_slaves
 
 def remove_readonly(func, path, excinfo):
     """remove readonly dirs, apparently only a windows issue
-    add to all rmtree calls: shutil.rmtree(**,onerror=remove_readonly), wk
+    add to all rmtree calls: shutil.rmtree(*,onerror=remove_readonly), wk
 
     Parameters
     ----------
