@@ -1,0 +1,7 @@
+examples/* linguist-vendored=true
+autotest/* linguist-vendored=true
+dist/* linguist-vendored=true
+doc/*
+build/*
+misc/*
+verification/*

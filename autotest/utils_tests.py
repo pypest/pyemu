@@ -710,10 +710,11 @@ def mflist_budget_test():
         print("no flopy...")
         return
     model_ws = os.path.join("..","examples","Freyberg_transient")
-    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False)
+    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False,load_only=[])
     list_filename = os.path.join(model_ws,"freyberg.list")
     assert os.path.exists(list_filename)
-    pyemu.gw_utils.setup_mflist_budget_obs(list_filename,start_datetime=ml.start_datetime)
+    df = pyemu.gw_utils.setup_mflist_budget_obs(list_filename,start_datetime=ml.start_datetime)
+    print(df)
 
 def mtlist_budget_test():
     import pyemu
@@ -1165,7 +1166,7 @@ if __name__ == "__main__":
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
     #geostat_prior_builder_test()
-    #mflist_budget_test()
+    mflist_budget_test()
     #mtlist_budget_test()
     # tpl_to_dataframe_test()
     #kl_test()
@@ -1193,7 +1194,7 @@ if __name__ == "__main__":
     # struct_file_test()
     # covariance_matrix_test()
     # add_pi_obj_func_test()
-    ok_test()
+    # ok_test()
     # ok_grid_test()
     # ok_grid_zone_test()
     # ppk2fac_verf_test()
