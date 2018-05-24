@@ -1275,6 +1275,7 @@ class PstFromFlopyModel(object):
 
         if sfr_pars:
             self.setup_sfr_pars()
+        self.mflist_waterbudget = mflist_waterbudget
         self.setup_observations()
         self.build_pst()
         if build_prior:
@@ -2712,34 +2713,35 @@ class PstFromFlopyModel(object):
         volume and flux water buget information
 
         """
-        org_listfile = os.path.join(self.org_model_ws,self.m.lst.file_name[0])
-        if os.path.exists(org_listfile):
-            shutil.copy2(org_listfile,os.path.join(self.m.model_ws,
-                                                   self.m.lst.file_name[0]))
-        else:
-            self.logger.warn("can't find existing list file:{0}...skipping".
-                               format(org_listfile))
-            return
-        list_file = os.path.join(self.m.model_ws,self.m.lst.file_name[0])
-        flx_file = os.path.join(self.m.model_ws,"flux.dat")
-        vol_file = os.path.join(self.m.model_ws,"vol.dat")
-        df = pyemu.gw_utils.setup_mflist_budget_obs(list_file,
-                                                            flx_filename=flx_file,
-                                                            vol_filename=vol_file,
-                                                            start_datetime=self.m.start_datetime)
-        if df is not None:
-            self.obs_dfs["wb"] = df
-        #line = "try:\n    os.remove('{0}')\nexcept:\n    pass".format(os.path.split(list_file)[-1])
-        #self.logger.statement("forward_run line:{0}".format(line))
-        #self.frun_pre_lines.append(line)
-        self.tmp_files.append(os.path.split(list_file)[-1])
-        line = "pyemu.gw_utils.apply_mflist_budget_obs('{0}',flx_filename='{1}',vol_filename='{2}',start_datetime='{3}')".\
-                format(os.path.split(list_file)[-1],
-                       os.path.split(flx_file)[-1],
-                       os.path.split(vol_file)[-1],
-                       self.m.start_datetime)
-        self.logger.statement("forward_run line:{0}".format(line))
-        self.frun_post_lines.append(line)
+        if self.mflist_waterbudget:
+            org_listfile = os.path.join(self.org_model_ws,self.m.lst.file_name[0])
+            if os.path.exists(org_listfile):
+                shutil.copy2(org_listfile,os.path.join(self.m.model_ws,
+                                                       self.m.lst.file_name[0]))
+            else:
+                self.logger.warn("can't find existing list file:{0}...skipping".
+                                   format(org_listfile))
+                return
+            list_file = os.path.join(self.m.model_ws,self.m.lst.file_name[0])
+            flx_file = os.path.join(self.m.model_ws,"flux.dat")
+            vol_file = os.path.join(self.m.model_ws,"vol.dat")
+            df = pyemu.gw_utils.setup_mflist_budget_obs(list_file,
+                                                                flx_filename=flx_file,
+                                                                vol_filename=vol_file,
+                                                                start_datetime=self.m.start_datetime)
+            if df is not None:
+                self.obs_dfs["wb"] = df
+            #line = "try:\n    os.remove('{0}')\nexcept:\n    pass".format(os.path.split(list_file)[-1])
+            #self.logger.statement("forward_run line:{0}".format(line))
+            #self.frun_pre_lines.append(line)
+            self.tmp_files.append(os.path.split(list_file)[-1])
+            line = "pyemu.gw_utils.apply_mflist_budget_obs('{0}',flx_filename='{1}',vol_filename='{2}',start_datetime='{3}')".\
+                    format(os.path.split(list_file)[-1],
+                           os.path.split(flx_file)[-1],
+                           os.path.split(vol_file)[-1],
+                           self.m.start_datetime)
+            self.logger.statement("forward_run line:{0}".format(line))
+            self.frun_post_lines.append(line)
 
 
 def apply_array_pars():
