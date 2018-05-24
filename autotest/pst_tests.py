@@ -620,7 +620,22 @@ def from_flopy_test():
     cov = helper.build_prior(fmt="none",sparse=True)
     cov.to_coo(os.path.join("temp","cov.coo"))
 
+def from_flopy_reachinput_test():
+    """ test for building sfr pars from reachinput sfr and seg pars across all kper"""
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+    org_model_ws = os.path.join("..","examples","freyberg_sfr_reaches")
+    nam_file = "freyberg.nam"
+    new_model_ws = "temp_pst_from_flopy_reaches"
 
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
+                                             hds_kperk=[0, 0], remove_existing=True,
+                                             model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True)
 
 
 def run_array_pars():
@@ -800,6 +815,7 @@ if __name__ == "__main__":
     # setattr_test()
     # run_array_pars()
     # from_flopy_test()
+    # from_flopy_reachinput_test()
     # plot_flopy_par_ensemble_test()
     # add_pi_test()
     # regdata_test()

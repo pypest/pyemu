@@ -1140,6 +1140,9 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
             MODFLOw name file.  DIS, BAS, and SFR must be available as pathed in the nam_file
         model_ws : str
             model workspace for flopy to load the MODFLOW model from
+        OR
+        nam_file : flopy.modflow.mf.Modflow
+            flopy modflow model object
         par_cols : list(str)
             segment data entires to parameterize
         tie_hcond : flag to use same mult par for hcond1 and hcond2 for a given segment.  Default is True
@@ -1167,8 +1170,13 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
         if "hcond1" not in par_cols or "hcond2" not in par_cols:
             tie_hcond = False
 
-    # load MODFLOW model
-    m = flopy.modflow.Modflow.load(nam_file,load_only=["sfr"],model_ws=model_ws,check=False,forgive=False)
+    if isinstance(nam_file,flopy.modflow.mf.Modflow) and nam_file.sfr is not None:
+        m = nam_file
+        nam_file = m.namefile
+        model_ws = m.model_ws
+    else:
+        # load MODFLOW model # is this needed? could we just pass the model if it has already been read in?
+        m = flopy.modflow.Modflow.load(nam_file,load_only=["sfr"],model_ws=model_ws,check=False,forgive=False)
     #make backup copy of sfr file
     shutil.copy(os.path.join(model_ws,m.sfr.file_name[0]),os.path.join(model_ws,nam_file+"_backup_.sfr"))
 
@@ -1178,22 +1186,33 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
     # check
     for kper,seg_data in m.sfr.segment_data.items():
         assert seg_data.shape == shape,"cannot use: seg data must have the same number of entires for all kpers"
+    seg_data_col_order = list(seg_data.dtype.names)
+    # convert segment_data dictionary to multi index df - this could get ugly
+    reform = {(k, c): segment_data[k][c] for k in segment_data.keys() for c in segment_data[k].dtype.names}
+    seg_data_all_kper = pd.DataFrame.from_dict(reform)
+    seg_data_all_kper.columns.names = ['kper', 'col']
 
-    # convert the first seg data to a dataframe
-    seg_data = pd.DataFrame.from_records(seg_data)
-    seg_data_org = seg_data.copy()
-    seg_data.to_csv(os.path.join(model_ws, "sfr_seg_pars.dat"), sep=' ')
+    # extract the first seg data kper to a dataframe
+    seg_data = seg_data_all_kper[0].copy() # pd.DataFrame.from_records(seg_data)
 
-    #make sure all par cols are found
+    #make sure all par cols are found and search of any data in kpers
     missing = []
     for par_col in par_cols:
         if par_col not in seg_data.columns:
             missing.append(par_col)
+        # look across all kper in multiindex df to check for values entry - fill with absmax should capture entries
+        seg_data.loc[:,par_col] = seg_data_all_kper.loc[:, (slice(None),par_col)].abs().max(level=1,axis=1)
     if len(missing) > 0:
         raise Exception("the following par_cols were not found: {0}".format(','.join(missing)))
 
+    seg_data = seg_data[seg_data_col_order] # reset column orders to inital
+    seg_data_org = seg_data.copy()
+    seg_data.to_csv(os.path.join(model_ws, "sfr_seg_pars.dat"), sep=' ')
+
     #the data cols not to parameterize
-    notpar_cols = [c for i,c in enumerate(seg_data.columns) if c not in par_cols and i > 6]
+    # better than a column indexer as pandas can change column orders
+    idx_cols=['nseg', 'icalc', 'outseg', 'iupseg', 'iprior', 'nstrpts']
+    notpar_cols = [c for c in seg_data.columns if c not in par_cols+idx_cols]
 
     #process par cols
     tpl_str,pvals = [],[]
@@ -1247,14 +1266,116 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
     df.loc[hpars, "parlbnd"] = 0.01
     return df
 
+def setup_sfr_reach_parameters(nam_file,model_ws='.',par_cols=['strhc1']):
+    """Setup multiplier paramters for reach data, when reachinput option is specififed in sfr.
+    Similare to setup_sfr_seg_parameters() method will apply params to sfr reachdata
+    Can load the dis, bas, and sfr files with flopy using model_ws. Or can pass a model object (SFR loading can be slow)
+    However, expects that apply_sfr_reach_parameters() will be called
+    from within model_ws at runtime.
 
-def apply_sfr_seg_parameters():
+    Parameters
+    ----------
+        nam_file : str
+            MODFLOw name file.  DIS, BAS, and SFR must be available as pathed in the nam_file
+        model_ws : str
+            model workspace for flopy to load the MODFLOW model from
+        OR
+        nam_file : flopy.modflow.mf.Modflow
+            flopy modflow model object
+
+        par_cols : list(str)
+            segment data entires to parameterize
+
+    Returns
+    -------
+        df : pandas.DataFrame
+            a dataframe with useful parameter setup information
+
+    Note
+    ----
+        skips values = 0.0 since multipliers don't work for these
+
+    """
+    try:
+        import flopy
+    except Exception as e:
+        return
+
+    if isinstance(nam_file,flopy.modflow.mf.Modflow) and nam_file.sfr is not None:
+        # flopy MODFLOW model has been passed and has SFR loaded
+        m = nam_file
+        nam_file = m.namefile
+        model_ws = m.model_ws
+    else:
+        # if model has not been passed or SFR not loaded # load MODFLOW model
+        m = flopy.modflow.Modflow.load(nam_file,load_only=["sfr"],model_ws=model_ws,check=False,forgive=False)
+    # get reachdata as dataframe
+    reach_data = pd.DataFrame.from_records(m.sfr.reach_data)
+    # write inital reach_data as csv
+    reach_data_orig = reach_data.copy()
+    reach_data.to_csv(os.path.join(m.model_ws, "sfr_reach_pars.dat"), sep=' ')
+
+    # generate template file with pars in par_cols
+    #process par cols
+    tpl_str,pvals = [],[]
+    par_cols=["strhc1"]
+    idx_cols=["node", "k", "i", "j", "iseg", "ireach", "reachID", "outreach"]
+    #the data cols not to parameterize
+    notpar_cols = [c for c in reach_data.columns if c not in par_cols+idx_cols]
+    for par_col in par_cols:
+        if par_col == "strhc1":
+            prefix = 'strk' # shorten par
+        else:
+            prefix = par_col
+        reach_data.loc[:, par_col] = reach_data.apply(
+            lambda x: "~    {0}_{1:04d}   ~".format(prefix, int(x.reachID))
+            if float(x[par_col]) != 0.0 else "1.0", axis=1)
+        org_vals = reach_data_orig.loc[reach_data_orig.loc[:, par_col] != 0.0, par_col]
+        pnames = reach_data.loc[org_vals.index, par_col]
+        pvals.extend(list(org_vals.values))
+        tpl_str.extend(list(pnames.values))
+    pnames = [t.replace('~','').strip() for t in tpl_str]
+    df = pd.DataFrame({"parnme":pnames,"org_value":pvals,"tpl_str":tpl_str},index=pnames)
+    df.drop_duplicates(inplace=True)
+
+    # set not par cols to 1.0
+    reach_data.loc[:, notpar_cols] = "1.0"
+    reach_data.index = reach_data.reachID
+
+    # write the template file
+    with open(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"), 'w') as f:
+        f.write("ptf ~\n")
+        reach_data.to_csv(f, sep=' ')
+
+    # write the config file used by apply_sfr_pars()
+    with open(os.path.join(model_ws, "sfr_reach_pars.config"), 'w') as f:
+        f.write("nam_file {0}\n".format(nam_file))
+        f.write("model_ws {0}\n".format(model_ws))
+        f.write("mult_file sfr_reach_pars.dat\n")
+        f.write("sfr_filename {0}".format(m.sfr.file_name[0]))
+
+    # make sure the tpl file exists and has the same num of pars
+    parnme = parse_tpl_file(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"))
+    assert len(parnme) == df.shape[0]
+
+    # set some useful par info
+    df.loc[:, "pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
+    df.loc[:, "parubnd"] = 1.25
+    df.loc[:, "parlbnd"] = 0.75
+    hpars = df.loc[df.pargp.apply(lambda x: x.startswith("strk")), "parnme"]
+    df.loc[hpars, "parubnd"] = 100.0
+    df.loc[hpars, "parlbnd"] = 0.01
+    return df
+
+
+def apply_sfr_seg_parameters(reach_pars=False):
     """apply the SFR segement multiplier parameters.  Expected to be run in the same dir
     as the model exists
 
     Parameters
     ----------
-        None
+        reach_pars : bool
+            if reach paramters need to be applied
 
     Returns
     -------
@@ -1277,19 +1398,38 @@ def apply_sfr_seg_parameters():
             pars[line[0]] = line[1]
     bak_sfr_file = pars["nam_file"]+"_backup_.sfr"
     #m = flopy.modflow.Modflow.load(pars["nam_file"],model_ws=pars["model_ws"],load_only=["sfr"],check=False)
-    m = flopy.modflow.Modflow.load(pars["nam_file"], check=False)
+    m = flopy.modflow.Modflow.load(pars["nam_file"], load_only=[], check=False)
     sfr = flopy.modflow.ModflowSfr2.load(os.path.join(bak_sfr_file),m)
 
     mlt_df = pd.read_csv(pars["mult_file"],delim_whitespace=True)
+    idx_cols = ['nseg', 'icalc', 'outseg', 'iupseg', 'iprior', 'nstrpts']
+    mlt_cols = mlt_df.columns.drop(idx_cols)
     for key,val in m.sfr.segment_data.items():
         df = pd.DataFrame.from_records(val)
-        df.iloc[:,7:] *= mlt_df.iloc[:,7:]
+        df.loc[:,mlt_cols] *= mlt_df.loc[:,mlt_cols]
         val = df.to_records(index=False)
         sfr.segment_data[key] = val
+    if reach_pars:
+        assert os.path.exists("sfr_reach_pars.config")
+
+        with open("sfr_reach_pars.config", 'r') as f:
+            r_pars = {}
+            for line in f:
+                line = line.strip().split()
+                r_pars[line[0]] = line[1]
+        r_mlt_df = pd.read_csv(r_pars["mult_file"],delim_whitespace=True)
+        r_idx_cols = ["node", "k", "i", "j", "iseg", "ireach", "reachID", "outreach"]
+        r_mlt_cols = r_mlt_df.columns.drop(r_idx_cols)
+        r_df = pd.DataFrame.from_records(m.sfr.reach_data)
+        r_df.loc[:, r_mlt_cols] *= r_mlt_df.loc[:, r_mlt_cols]
+        sfr.reach_data = r_df.to_records(index=False)
     #m.remove_package("sfr")
     sfr.write_file(filename=pars["sfr_filename"])
     return sfr
 
+def apply_sfr_parameters(reach_pars=False):
+    sfr = apply_sfr_seg_parameters(reach_pars=reach_pars)
+    return sfr
 
 def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
                   include_path=False):
