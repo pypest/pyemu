@@ -621,12 +621,14 @@ def from_flopy_test():
     cov.to_coo(os.path.join("temp","cov.coo"))
 
 def from_flopy_reachinput_test():
+    import pandas as pd
     """ test for building sfr pars from reachinput sfr and seg pars across all kper"""
     try:
         import flopy
     except:
         return
     import pyemu
+    bd = os.getcwd()
     org_model_ws = os.path.join("..","examples","freyberg_sfr_reaches")
     nam_file = "freyberg.nam"
     new_model_ws = "temp_pst_from_flopy_reaches"
@@ -636,7 +638,17 @@ def from_flopy_reachinput_test():
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
                                              model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True)
-
+    os.chdir(new_model_ws)
+    with open("sfr_seg_pars.config",'r') as f:
+        pars = {}
+        for line in f:
+            line = line.strip().split()
+            pars[line[0]] = line[1]
+    tpl_df = pd.read_csv("{}.tpl".format(pars["mult_file"]), delim_whitespace=True, skiprows=1)
+    mult_df = tpl_df.replace(r"^\~.*\~$",'100000.0', regex=True).copy()
+    mult_df.to_csv(pars["mult_file"], sep=' ')
+    pyemu.gw_utils.apply_sfr_parameters(True)
+    os.chdir(bd)
 
 def run_array_pars():
     import os
@@ -815,7 +827,7 @@ if __name__ == "__main__":
     # setattr_test()
     # run_array_pars()
     # from_flopy_test()
-    # from_flopy_reachinput_test()
+    from_flopy_reachinput_test()
     # plot_flopy_par_ensemble_test()
     # add_pi_test()
     # regdata_test()

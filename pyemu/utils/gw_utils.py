@@ -1238,7 +1238,6 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
     df.drop_duplicates(inplace=True)
     #set not par cols to 1.0
     seg_data.loc[:,notpar_cols] = "1.0"
-    seg_data.index = seg_data.nseg
 
     #write the template file
     with open(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),'w') as f:
@@ -1340,7 +1339,6 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.',par_cols=['strhc1']):
 
     # set not par cols to 1.0
     reach_data.loc[:, notpar_cols] = "1.0"
-    reach_data.index = reach_data.reachID
 
     # write the template file
     with open(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"), 'w') as f:
