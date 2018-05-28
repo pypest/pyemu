@@ -1150,14 +1150,6 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
     if len(d) != 0:
         logger.lraise("ensemble1 does not have the same columns as ensemble2: {0}".
                       format(','.join(d)))
-
-    en1_mn,en1_std = ensemble1.mean(axis=0),ensemble1.std(axis=0)
-    en2_mn, en2_std = ensemble2.mean(axis=0), ensemble2.std(axis=0)
-
-    mn_diff = 100.0 * ((en1_mn - en2_mn) / en1_mn)
-    std_diff = 100 * (( en1_std - en2_std)/ en1_std)
-
-
     if "grouper" in kwargs:
         raise NotImplementedError()
     else:
@@ -1166,12 +1158,30 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
             par = pst.parameter_data.loc[pst.adj_par_names,:]
             grouper = par.groupby(par.pargp).groups
             grouper["all"] = pst.adj_par_names
+            #li = par.partrans == "log"
+            #ensemble1.loc[:,li] = ensemble1.loc[:,li].apply(np.log10)
+            #ensemble2.loc[:, li] = ensemble2.loc[:, li].apply(np.log10)
         elif len(en_cols.symmetric_difference(set(pst.obs_names))) == 0:
             obs = pst.observation_data.loc[pst.nnz_obs_names,:]
             grouper = obs.groupby(obs.obgnme).groups
             grouper["all"] = pst.nnz_obs_names
         else:
             logger.lraise("could not match ensemble cols with par or obs...")
+
+    en1_mn, en1_std = ensemble1.mean(axis=0), ensemble1.std(axis=0)
+    en2_mn, en2_std = ensemble2.mean(axis=0), ensemble2.std(axis=0)
+
+    # mn_diff = 100.0 * ((en1_mn - en2_mn) / en1_mn)
+    # std_diff = 100 * ((en1_std - en2_std) / en1_std)
+
+    mn_diff = (en1_mn - en2_mn)
+    std_diff = 100 * (1.0 - ((en1_std - en2_std) / en1_std))
+
+
+
+    #diff = ensemble1 - ensemble2
+    #mn_diff = diff.mean(axis=0)
+    #std_diff = diff.std(axis=0)
 
 
     fig = plt.figure(figsize=figsize)
@@ -1209,15 +1219,18 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
 
         ax = axes[ax_count]
         mn_g.hist(ax=ax,facecolor=facecolor,alpha=0.5,edgecolor=None,bins=bins)
+        mx = max(mn_g.max(), mn_g.min(),np.abs(mn_g.max()),np.abs(mn_g.min())) * 1.2
+        ax.set_xlim(-mx,mx)
+
         #std_g.hist(ax=ax,facecolor='b',alpha=0.5,edgecolor=None)
 
 
 
         #ax.set_xlim(xlim)
         ax.set_yticklabels([])
-        ax.set_xlabel("mean percent change",labelpad=0.1)
-        ax.set_title("{0}) mean change group:{1}, {2} entries".
-                     format(abet[ax_count], g, mn_g.shape[0]), loc="left")
+        ax.set_xlabel("mean change",labelpad=0.1)
+        ax.set_title("{0}) mean change group:{1}, {2} entries\nmax:{3:10G}, min:{4:10G}".
+                     format(abet[ax_count], g, mn_g.shape[0],mn_g.max(),mn_g.min()), loc="left")
         ax.grid()
         ax_count += 1
 
@@ -1229,9 +1242,9 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
 
         # ax.set_xlim(xlim)
         ax.set_yticklabels([])
-        ax.set_xlabel("sigma percent change", labelpad=0.1)
-        ax.set_title("{0}) sigma change group:{1}, {2} entries".
-                     format(abet[ax_count], g, mn_g.shape[0]), loc="left")
+        ax.set_xlabel("sigma percent reduction", labelpad=0.1)
+        ax.set_title("{0}) sigma change group:{1}, {2} entries\nmax:{3:10G}, min:{4:10G}".
+                     format(abet[ax_count], g, mn_g.shape[0], std_g.max(), std_g.min()), loc="left")
         ax.grid()
         ax_count += 1
 
