@@ -96,7 +96,13 @@ def ensemble_plot_test():
                                                     use_homegrown=True)
 
     csv_file = os.path.join("temp", "pe.csv")
+
     pe.plot(filename=csv_file + ".pdf",plot_cols=pst.par_names[:10])
+
+    pd = pst.parameter_data.groupby("pargp").groups
+
+    pyemu.plot_utils.ensemble_helper(pe,plot_cols=pd,filename=csv_file+".pdf",alpha=0.1)
+
 
     pe.to_csv(csv_file)
 
@@ -222,9 +228,9 @@ def ensemble_summary_test():
 
 if __name__ == "__main__":
     #plot_summary_test()
-    pst_plot_test()
+    #pst_plot_test()
     #ensemble_summary_test()
-    #ensemble_plot_test()
+    ensemble_plot_test()
     #ensemble_1to1_test()
     #cov_test()
 
