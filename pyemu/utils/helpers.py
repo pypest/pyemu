@@ -2113,6 +2113,7 @@ class PstFromFlopyModel(object):
                                           in_files=self.in_files,
                                           ins_files=self.ins_files,
                                           out_files=self.out_files)
+
             self.log("instantiating control file from i/o files")
         except Exception as e:
             os.chdir("..")
@@ -2162,7 +2163,6 @@ class PstFromFlopyModel(object):
         self.pst_name = self.m.name+".pst"
         pst.model_command = ["python forward_run.py"]
         pst.control_data.noptmax = 0
-
         self.log("writing forward_run.py")
         self.write_forward_run()
         self.log("writing forward_run.py")
@@ -2173,6 +2173,7 @@ class PstFromFlopyModel(object):
 
         pst.write(filename)
         self.pst = pst
+        print(list(self.pst.parameter_groups.pargpnme))
 
         self.log("running pestchek on {0}".format(self.pst_name))
         os.chdir(self.m.model_ws)
