@@ -1125,7 +1125,7 @@ class PstFromFlopyModel(object):
         which is dangerous because of the non-standard binary names
         (e.g. MODFLOW-NWT_x64, MODFLOWNWT, mfnwt, etc). Default is None.
     build_prior : bool
-        flag to build prior covariance matrix. Default is Triue
+        flag to build prior covariance matrix. Default is True
     sfr_obs : bool
         flag to include observations of flow and aquifer exchange from
         the sfr ASCII output file
@@ -1143,7 +1143,7 @@ class PstFromFlopyModel(object):
 
     Note
     ----
-    works a lot better of TEMPCHEK, INSCHEK and PESTCHEK are available in the
+    works a lot better if TEMPCHEK, INSCHEK and PESTCHEK are available in the
     system path variable
 
     """
@@ -1270,6 +1270,7 @@ class PstFromFlopyModel(object):
             self.logger.lraise("all_wells has been deprecated and replaced with"+\
                                " spatial_bc_pars.")
         self.setup_bc_pars()
+
 
         self.setup_array_pars()
 
