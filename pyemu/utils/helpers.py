@@ -2173,7 +2173,6 @@ class PstFromFlopyModel(object):
 
         pst.write(filename)
         self.pst = pst
-        print(list(self.pst.parameter_groups.pargpnme))
 
         self.log("running pestchek on {0}".format(self.pst_name))
         os.chdir(self.m.model_ws)

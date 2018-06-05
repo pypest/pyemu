@@ -1181,7 +1181,6 @@ class Pst(object):
         self.rectify_pgroups()
         self.rectify_pi()
         self._update_control_section()
-        print(list(self.parameter_groups.pargpnme))
 
         f_out = open(new_filename, 'w')
         if self.with_comments:
@@ -1207,7 +1206,6 @@ class Pst(object):
         self._write_df("* parameter groups", f_out, self.parameter_groups,
                        self.pargp_format, self.pargp_fieldnames)
         self.parameter_groups.loc[:,"pargpnme"] = pargpnme
-        print(list(self.parameter_groups.pargpnme))
 
         self._write_df("* parameter data",f_out, self.parameter_data,
                        self.par_format, self.par_fieldnames)
