@@ -1581,7 +1581,7 @@ class PstFromFlopyModel(object):
                 f.write("\n")
         df = pd.DataFrame({"parnme":parnme},index=parnme)
         #df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
-        df.loc[:,"pargp"] = self.cn_suffix.replace('_','')
+        df.loc[:,"pargp"] = "{0}_{1}".format(name,self.cn_suffix.replace('_',''))
         df.loc[:,"tpl"] = tpl_file
         return df
 
@@ -3173,7 +3173,6 @@ def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
     return plot_utils.plot_summary_distributions(df=df,ax=ax,label_post=label_post,
                                                  label_prior=label_prior,subplots=subplots,
                                                  figsize=figsize,pt_color=pt_color)
-
 
 
 def gaussian_distribution(mean, stdev, num_pts=50):

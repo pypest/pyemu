@@ -470,8 +470,7 @@ def from_flopy_test():
                                          remove_existing=True,
                                          model_exe_name="mfnwt",temporal_bc_props=temp_bc_props,
                                          spatial_bc_props=spat_bc_props)
-    print(list(ph.pst.parameter_groups.pargpnme))
-    return
+
     par = ph.pst.parameter_data
     par.loc["welflux_000",'parval1'] = 2.0
 
