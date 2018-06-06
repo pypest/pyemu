@@ -458,10 +458,6 @@ def from_flopy_test():
 
     new_model_ws = "temp_pst_from_flopy"
 
-
-
-
-
     hds_kperk = []
     for k in range(m.nlay):
         for kper in range(m.nper):
@@ -474,6 +470,7 @@ def from_flopy_test():
                                          remove_existing=True,
                                          model_exe_name="mfnwt",temporal_bc_props=temp_bc_props,
                                          spatial_bc_props=spat_bc_props)
+
     par = ph.pst.parameter_data
     par.loc["welflux_000",'parval1'] = 2.0
 
@@ -815,7 +812,28 @@ def run_test():
     pst.write(os.path.join("temp","test.pst"))
     pst.run("pestchek")
 
+def rectify_pgroup_test():
+    import os
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    npar = pst.npar
+    tpl_file = os.path.join("temp", "crap.in.tpl")
+    with open(tpl_file, 'w') as f:
+        f.write("ptf ~\n")
+        f.write("  ~junk1   ~\n")
+        f.write("  ~ {0}  ~\n".format(pst.parameter_data.parnme[0]))
+    #print(pst.parameter_groups)
 
+    pst.add_parameters(tpl_file, "crap.in", pst_path="temp")
+
+    #print(pst.parameter_groups)
+    pst.rectify_pgroups()
+    #print(pst.parameter_groups)
+
+    pst.parameter_groups.loc["pargp","inctyp"] = "absolute"
+    print(pst.parameter_groups)
+    pst.write(os.path.join('temp',"test.pst"))
+    print(pst.parameter_groups)
 
 
 if __name__ == "__main__":
@@ -826,8 +844,8 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    # from_flopy_test()
-    from_flopy_reachinput_test()
+    from_flopy_test()
+    #from_flopy_reachinput_test()
     # plot_flopy_par_ensemble_test()
     # add_pi_test()
     # regdata_test()
@@ -850,4 +868,5 @@ if __name__ == "__main__":
     # pestpp_args_test()
     # reweight_test()
     # reweight_res_test()
-    run_test()
+    #run_test()
+    #rectify_pgroup_test()

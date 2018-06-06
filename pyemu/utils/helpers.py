@@ -1581,7 +1581,7 @@ class PstFromFlopyModel(object):
                 f.write("\n")
         df = pd.DataFrame({"parnme":parnme},index=parnme)
         #df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
-        df.loc[:,"pargp"] = self.cn_suffix.replace('_','')
+        df.loc[:,"pargp"] = "{0}_{1}".format(name,self.cn_suffix.replace('_',''))
         df.loc[:,"tpl"] = tpl_file
         return df
 
@@ -2113,6 +2113,7 @@ class PstFromFlopyModel(object):
                                           in_files=self.in_files,
                                           ins_files=self.ins_files,
                                           out_files=self.out_files)
+
             self.log("instantiating control file from i/o files")
         except Exception as e:
             os.chdir("..")
@@ -2162,7 +2163,6 @@ class PstFromFlopyModel(object):
         self.pst_name = self.m.name+".pst"
         pst.model_command = ["python forward_run.py"]
         pst.control_data.noptmax = 0
-
         self.log("writing forward_run.py")
         self.write_forward_run()
         self.log("writing forward_run.py")
@@ -3173,7 +3173,6 @@ def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
     return plot_utils.plot_summary_distributions(df=df,ax=ax,label_post=label_post,
                                                  label_prior=label_prior,subplots=subplots,
                                                  figsize=figsize,pt_color=pt_color)
-
 
 
 def gaussian_distribution(mean, stdev, num_pts=50):

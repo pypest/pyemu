@@ -1205,7 +1205,7 @@ class Pst(object):
 
         self._write_df("* parameter groups", f_out, self.parameter_groups,
                        self.pargp_format, self.pargp_fieldnames)
-
+        self.parameter_groups.loc[:,"pargpnme"] = pargpnme
 
         self._write_df("* parameter data",f_out, self.parameter_data,
                        self.par_format, self.par_fieldnames)
