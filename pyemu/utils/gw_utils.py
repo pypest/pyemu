@@ -1119,7 +1119,7 @@ def apply_sft_obs():
 
     #normalize
     for c in df.columns:
-        df.loc[df.loc[:,c].apply(np.abs)<1e-30,c] = 0.0
+        df.loc[df.loc[:,c].apply(lam<1e-30),c] = 0.0
         df.loc[df.loc[:, c] > 1e+30, c] = 1.0e+30
     df.loc[:,"sfr_node"] = df.sfr_node.apply(np.int)
     df = df.loc[df.time.apply(lambda x: x in times),:]
