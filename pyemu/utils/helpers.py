@@ -1025,7 +1025,7 @@ class PstFromFlopyModel(object):
         For example, to setup multipliers for WEL flux and for RIV conductance,
         bc_props = [["wel.flux",[0,1,2]],["riv.cond",None]] would setup
         multiplier parameters for well flux for stress periods 1,2 and 3 and
-        would setup one single river conductance multipler parameter that is applied
+        would setup one single river conductance multiplier parameter that is applied
         to all stress periods
     spatial_bc_props : list
         boundary condition spatial multiplier parameters.
@@ -1100,7 +1100,7 @@ class PstFromFlopyModel(object):
          a flag to use ibound zones (or k_zone_dict, see above) as pilot
          point zones.  If False, ibound values greater than zero are treated as
          a single zone for pilot points.  Default is False
-     obssim_smp_pairs: list
+    obssim_smp_pairs: list
         a list of observed-simulated PEST-type SMP file pairs to get observations
         from and include in the control file.  Default is []
     external_tpl_in_pairs : list
@@ -1129,7 +1129,7 @@ class PstFromFlopyModel(object):
     sfr_obs : bool
         flag to include observations of flow and aquifer exchange from
         the sfr ASCII output file
-
+    all_wells : bool [DEPRECATED - now use spatial_bc_pars]
 
 
     Returns
