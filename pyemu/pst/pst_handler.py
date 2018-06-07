@@ -1180,7 +1180,7 @@ class Pst(object):
 
         if self.nnz_obs == 0:
             warnings.warn("no non-zero weight obs")
-            
+
         print("noptmax: {0}".format(self.control_data.noptmax))
 
 

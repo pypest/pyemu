@@ -71,6 +71,126 @@ def run(cmd_str,cwd='.',verbose=False):
     pyemu.os_utils.run(cmd_str=cmd_str,cwd=cwd,verbose=verbose)
 
 
+def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=False):
+    """ a helper function to construct a parameter ensenble from a full prior covariance matrix
+    implied by the geostatistical structure(s) in struct_dict.  This function is much more efficient
+    for problems with lots of pars (>200K).
+
+    Parameters
+    ----------
+    pst : pyemu.Pst
+        a control file (or the name of control file)
+    struct_dict : dict
+        a python dict of GeoStruct (or structure file), and list of pp tpl files pairs
+        If the values in the dict are pd.DataFrames, then they must have an
+        'x','y', and 'parnme' column.  If the filename ends in '.csv',
+        then a pd.DataFrame is loaded, otherwise a pilot points file is loaded.
+    num_reals : int
+        number of realizations to draw.  Default is 100
+    sigma_range : float
+        a float representing the number of standard deviations implied by parameter bounds.
+        Default is 4.0, which implies 95% confidence parameter bounds.
+    verbose : bool
+        flag for stdout.
+
+    Returns
+    -------
+
+    par_ens : pyemu.ParameterEnsemble
+
+
+    Example
+    -------
+    ``>>>import pyemu``
+
+    ``>>>pst = pyemu.Pst("pest.pst")``
+
+    ``>>>sd = {"struct.dat":["hkpp.dat.tpl","vka.dat.tpl"]}``
+
+    ``>>>pe = pyemu.helpers.geostatistical_draws(pst,struct_dict=sd,num_reals=100)``
+
+    ``>>>pe.to_csv("par_ensemble.csv")``
+
+    """
+
+    if isinstance(pst,str):
+        pst = pyemu.Pst(pst)
+    assert isinstance(pst,pyemu.Pst),"pst arg must be a Pst instance, not {0}".\
+        format(type(pst))
+    if verbose: print("building diagonal cov")
+
+    full_cov = pyemu.Cov.from_parameter_data(pst, sigma_range=sigma_range)
+    full_cov_dict = {n: float(v) for n, v in zip(full_cov.col_names, full_cov.x)}
+
+    par_org = pst.parameter_data.copy
+    par = pst.parameter_data
+    par_ens = []
+    pars_in_cov = set()
+    for gs,items in struct_dict.items():
+        if verbose: print("processing ",gs)
+        if isinstance(gs,str):
+            gss = pyemu.geostats.read_struct_file(gs)
+            if isinstance(gss,list):
+                warnings.warn("using first geostat structure in file {0}".\
+                              format(gs))
+                gs = gss[0]
+            else:
+                gs = gss
+        if not isinstance(items,list):
+            items = [items]
+        for item in items:
+            if isinstance(item,str):
+                assert os.path.exists(item),"file {0} not found".\
+                    format(item)
+                if item.lower().endswith(".tpl"):
+                    df = pyemu.pp_utils.pp_tpl_to_dataframe(item)
+                elif item.lower.endswith(".csv"):
+                    df = pd.read_csv(item)
+            else:
+                df = item
+            for req in ['x','y','parnme']:
+                if req not in df.columns:
+                    raise Exception("{0} is not in the columns".format(req))
+            missing = df.loc[df.parnme.apply(
+                    lambda x : x not in par.parnme),"parnme"]
+            if len(missing) > 0:
+                warnings.warn("the following parameters are not " + \
+                              "in the control file: {0}".\
+                              format(','.join(missing)))
+                df = df.loc[df.parnme.apply(lambda x: x not in missing)]
+            if "zone" not in df.columns:
+                df.loc[:,"zone"] = 1
+            zones = df.zone.unique()
+            for zone in zones:
+                df_zone = df.loc[df.zone==zone,:].copy()
+                df_zone.sort_values(by="parnme",inplace=True)
+                if verbose: print("build cov matrix")
+                cov = gs.sparse_covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)
+                if verbose: print("done")
+
+                if verbose: print("getting diag var cov",df_zone.shape[0])
+                #tpl_var = np.diag(full_cov.get(list(df_zone.parnme)).x).max()
+                tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
+
+                if verbose: print("scaling full cov by diag var cov")
+                cov.x.data *= tpl_var
+
+                pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,cov=cov,num_reals=num_reals)
+                par_ens.append(pe.loc[:,:])
+                pars_in_cov.update(set(pe.columns))
+
+    if verbose: print("adding remaining parameters to diagonal")
+    fset = set(pars_in_cov)
+    diff = list(pars_in_cov.difference(fset))
+
+    cov = full_cov.get(diff,diff)
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=num_reals)
+    par_ens.append(pe.loc[:,:])
+
+    par_ens = pyemu.ParameterEnsemble.from_dataframe(df=pd.concat(par_ens),pst=pst)
+    return par_ens
+
+
 def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
     warnings.warn("'pilotpoint_prior_builder' has been renamed to "+\
                   "'geostatistical_prior_builder'")
