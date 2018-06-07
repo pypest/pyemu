@@ -862,6 +862,70 @@ def read_pestpp_runstorage(filename,irun=0):
     return par_df,obs_df
 
 
+def jco_from_pestpp_runstorage(filename):
+    """ read pars and obs from a pest++ serialized run storage file (e.g., *.rnj) and return 
+    pyemu.Jco.  This can then be passed to Jco.to_binary or Jco.to_coo, etc., to write jco file
+    in a subsequent step to avoid memory resource issues associated with very large problems.
+
+    Parameters
+    ----------
+    filename : str
+        the name of the run storage file
+
+    Returns
+    -------
+    jco_cols : pyemu.Jco
+
+
+    Notes
+    -------
+    TODO:
+    0. Check rnj file contains transformed par vals (i.e., in model input space)
+    1. Currently only returns pyemu.Jco; doesn't write jco file due to memory issues 
+        associated with very large problems
+    3. Compare rnj and jco from Freyberg problem in autotests
+
+    """
+
+    header_dtype = np.dtype([("n_runs",np.int64),("run_size",np.int64),("p_name_size",np.int64),
+                      ("o_name_size",np.int64)])
+
+    with open(filename,'rb') as f:
+        header = np.fromfile(f,dtype=header_dtype,count=1)
+        
+    try:
+        base_par,base_obs =  read_pestpp_runstorage(filename,irun=0)
+    except:
+        raise Exception("couldn't get base run...")
+
+    jco_cols = {}
+    for irun in range(1,int(header["n_runs"])):
+        par_df,obs_df = read_pestpp_runstorage(filename,irun=irun)
+        obs_diff = base_obs - obs_df
+        par_diff = base_par - par_df
+        # check only one non-zero element per col(par)
+        if len(par_diff[par_diff.parval1 != 0]) > 1:
+            raise Exception("more than one par diff - looks like the file wasn't created during jco filling...")
+        ipar = par_diff[par_diff.parval1 != 0].index[0]
+        # derivatives
+        jco_col = obs_diff / par_diff.loc[ipar].parval1
+        # some tracking, checks
+        print("processing par {0}: {1}...".format(irun, ipar))
+        print("%nzsens: {0}%...".format((jco_col[abs(jco_col.obsval)>1e-8].shape[0] / jco_col.shape[0])*100.))
+
+        jco_cols[ipar] = jco_col.obsval
+
+    jco_cols = pd.DataFrame.from_records(data=jco_cols, index=list(obs_diff.index.values))
+
+    jco_cols = pyemu.Jco.from_dataframe(jco_cols)
+    
+    # write # memory considerations important here for very large matrices - break into chunks...
+    #jco_fnam = "{0}".format(filename[:-4]+".jco")
+    #jco_cols.to_binary(filename=jco_fnam, droptol=None, chunk=None)
+
+    return jco_cols
+
+
 def parse_dir_for_io_files(d):
     """ a helper function to find template/input file pairs and
     instruction file/output file pairs.  the return values from this
