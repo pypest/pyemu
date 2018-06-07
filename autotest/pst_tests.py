@@ -836,7 +836,27 @@ def rectify_pgroup_test():
     print(pst.parameter_groups)
 
 
+def try_process_ins_test():
+    import os
+    import pandas as pd
+    import pyemu
+
+    ins_file = os.path.join("utils","BH.mt3d.processed.ins")
+    df = pyemu.pst_utils.try_process_ins_file(ins_file)
+
+    #df1 = pyemu.pst_utils._try_run_inschek(ins_file,ins_file.replace(".ins",""))
+    df1 = pd.read_csv(ins_file.replace(".ins",".obf"), delim_whitespace=True, names=["obsnme","obsval"],index_col=0)
+    #df1.index = df1.obsnme
+    df1.loc[:,"obsnme"] = df1.index
+    df1.index = df1.obsnme
+    #df1 = df1.loc[df.obsnme,:]
+    diff = df.obsval - df1.obsval
+    print(diff.max(),diff.min())
+    print(diff.sum())
+    assert diff.sum() < 1.0e+10
+
 if __name__ == "__main__":
+    try_process_ins_test()
     # write_tables_test()
     # res_stats_test()
     # test_write_input_files()
@@ -844,7 +864,7 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    from_flopy_test()
+    #from_flopy_test()
     #from_flopy_reachinput_test()
     # plot_flopy_par_ensemble_test()
     # add_pi_test()
