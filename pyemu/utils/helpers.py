@@ -1233,11 +1233,15 @@ class PstFromFlopyModel(object):
     extra_pre_cmds : list
         a list of preprocessing commands to add to the forward_run.py script
         commands are executed with os.system() within forward_run.py. Default
-        is [].
+        is None.
+    redirect_forward_output : bool
+        flag for whether to redirect forward model output to text files (True) or
+        allow model output to be directed to the screen (False)
+        Default is True
     extra_post_cmds : list
         a list of post-processing commands to add to the forward_run.py script.
         Commands are executed with os.system() within forward_run.py.
-        Default is [].
+        Default is None.
     tmp_files : list
         a list of temporary files that should be removed at the start of the forward
         run script.  Default is [].
@@ -1275,7 +1279,7 @@ class PstFromFlopyModel(object):
                  mflist_waterbudget=True,mfhyd=True,hds_kperk=[],use_pp_zones=False,
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
                  external_ins_out_pairs=None,extra_pre_cmds=None,
-                 extra_model_cmds=None,extra_post_cmds=None,
+                 extra_model_cmds=None,extra_post_cmds=None,redirect_forward_output=True,
                  tmp_files=None,model_exe_name=None,build_prior=True,
                  sfr_obs=False, all_wells=False,bc_props=[],
                  spatial_bc_props=[],spatial_bc_geostruct=None):
@@ -1370,7 +1374,10 @@ class PstFromFlopyModel(object):
         if model_exe_name is None:
             model_exe_name = self.m.exe_name
             self.logger.warn("using flopy binary to execute the model:{0}".format(model))
-        line = "pyemu.helpers.run('{0} {1} 1>{1}.stdout 2>{1}.stderr')".format(model_exe_name,self.m.namefile)
+        if redirect_forward_output:
+            line = "pyemu.helpers.run('{0} {1} 1>{1}.stdout 2>{1}.stderr')".format(model_exe_name,self.m.namefile)
+        else:
+            line = "pyemu.helpers.run('{0} {1} ')".format(model_exe_name, self.m.namefile)
         self.logger.statement("forward_run line:{0}".format(line))
         self.frun_model_lines.append(line)
 
