@@ -1164,6 +1164,27 @@ class Pst(object):
                                                   header=False,
                                                   index=False) + '\n')
 
+    def sanity_checks(self):
+
+        dups = self.parameter_data.parnme.value_counts()
+        dups = dups.loc[dups>1]
+        if dups.shape[0] > 0:
+            warnings.warn("duplicate parameter names: {0}".format(','.join(list(dups.index))))
+        dups = self.observation_data.obsnme.value_counts()
+        dups = dups.loc[dups>1]
+        if dups.shape[0] > 0:
+            warnings.warn("duplicate observation names: {0}".format(','.join(list(dups.index))))
+
+        if self.npar_adj == 0:
+            warnings.warn("no adjustable pars")
+
+        if self.nnz_obs == 0:
+            warnings.warn("no non-zero weight obs")
+            
+        print("noptmax: {0}".format(self.control_data.noptmax))
+
+
+
     def write(self,new_filename,update_regul=False):
         """write a pest control file
 
@@ -1181,6 +1202,7 @@ class Pst(object):
         self.rectify_pgroups()
         self.rectify_pi()
         self._update_control_section()
+        self.sanity_checks()
 
         f_out = open(new_filename, 'w')
         if self.with_comments:

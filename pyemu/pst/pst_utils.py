@@ -555,57 +555,67 @@ def try_run_inschek(pst):
 
 def try_process_ins_file(ins_file,out_file=None):
     assert os.path.exists(ins_file),"instruction file {0} not found".format(ins_file)
+    try:
+        obs_names = parse_ins_file(ins_file)
+    except Exception as e:
+        raise Exception("error parsing ins file {0} for obs names: {1}".format(ins_file,str(e)))
+
     if out_file is None:
         out_file = ins_file.replace(".ins","")
-    assert os.path.exists(out_file),"out file {0} not found".format(out_file)
+    if not os.path.exists(out_file):
+        print("out file {0} not found".format(out_file))
+        return pd.DataFrame({"obsnme":obs_names},index="obsnme")
+    try:
+        f_ins = open(ins_file,'r')
+        f_out = open(out_file,'r')
 
-    f_ins = open(ins_file,'r')
-    f_out = open(out_file,'r')
+        header = f_ins.readline().lower().strip().split()
+        assert header[0] == "pif"
+        marker = header[1]
+        icount,ocount = 1,0
+        obsnme,obsval = [],[]
+        for iline in f_ins:
+            iraw = iline.lower().strip().split()
+            if iraw[0][0] != 'l':
+                raise Exception("not support instruction:{0}".format(iraw[0]))
+            num_lines = int(iraw[0][1:])
+            for i in range(num_lines):
+                oline = f_out.readline().lower().strip()
+                ocount += 1
+            if '(' in oline:
+                raise Exception("semi-fixed obs index instructions not supported")
+            elif '[' in oline:
+                raise Exception("fixed obs index instructions not supported")
+            elif marker in oline:
+                raise Exception("marker-based file seeking not supported")
+            oraw = oline.strip().split()
+            if oline[0] in [' ','   ']:
+                oraw.insert(0,'')
+            oc = 0
+            for ir in iraw[1:]:
+                if ir == 'w':
+                    oc += 1
+                    if oc >= len(oraw):
+                        raise Exception("out file line {0} too short".format(ocount))
+                elif '!' in ir:
+                    n = ir.replace('!','')
+                    try:
+                        v = float(oraw[oc])
+                    except:
+                        raise Exception("error processing ins {0} for obs {1}, string: {2} on line {3} (ins line {4}".
+                                        format(ir,n,oline,ocount,icount))
+                    obsnme.append(n)
+                    obsval.append(v)
+                    oc += 1
 
-    header = f_ins.readline().lower().strip().split()
-    assert header[0] == "pif"
-    marker = header[1]
-    icount,ocount = 1,0
-    obsnme,obsval = [],[]
-    for iline in f_ins:
-        iraw = iline.lower().strip().split()
-        if iraw[0][0] != 'l':
-            raise Exception("not support instruction:{0}".format(iraw[0]))
-        num_lines = int(iraw[0][1:])
-        for i in range(num_lines):
-            oline = f_out.readline().lower().strip()
-            ocount += 1
-        if '(' in oline:
-            raise Exception("semi-fixed obs index instructions not supported")
-        elif '[' in oline:
-            raise Exception("fixed obs index instructions not supported")
-        elif marker in oline:
-            raise Exception("marker-based file seeking not supported")
-        oraw = oline.strip().split()
-        if oline[0] in [' ','   ']:
-            oraw.insert(0,'')
-        oc = 0
-        for ir in iraw[1:]:
-            if ir == 'w':
-                oc += 1
-                if oc >= len(oraw):
-                    raise Exception("out file line {0} too short".format(ocount))
-            elif '!' in ir:
-                n = ir.replace('!','')
-                try:
-                    v = float(oraw[oc])
-                except:
-                    raise Exception("error processing ins {0} for obs {1}, string: {2} on line {3} (ins line {4}".
-                                    format(ir,n,oline,ocount,icount))
-                obsnme.append(n)
-                obsval.append(v)
-                oc += 1
+        f_ins.close()
+        f_out.close()
+        df = pd.DataFrame({"obsnme":obsnme,"obsval":obsval},index=obsnme)
 
-    f_ins.close()
-    f_out.close()
-    df = pd.DataFrame({"obsnme":obsnme,"obsval":obsval},index=obsnme)
-
-    return df
+        return df
+    except Exception as e:
+        print("error processing ins file {0}: {1]".format(ins_file,str(e)))
+        return pd.DataFrame({"obsnme":obs_names},index=obs_names)
 
 
 
