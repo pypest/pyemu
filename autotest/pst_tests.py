@@ -472,6 +472,8 @@ def from_flopy_test():
                                          spatial_bc_props=spat_bc_props)
 
     par = ph.pst.parameter_data
+    pe = ph.draw(100)
+
     par.loc["welflux_000",'parval1'] = 2.0
 
     os.chdir(new_model_ws)
@@ -487,13 +489,14 @@ def from_flopy_test():
                                          remove_existing=True,
                                          model_exe_name="mfnwt",
                                          spatial_bc_props=spat_bc_props)
+    pe = ph.draw(100)
 
     ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
                                          org_model_ws=org_model_ws,
                                          zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
                                          remove_existing=True,
                                          model_exe_name="mfnwt", temporal_bc_props=temp_bc_props)
-
+    pe = ph.draw(100)
     ph.pst.parameter_data.loc["rech0_zn1", "parval1"] = 2.0
 
     bd = os.getcwd()
@@ -551,6 +554,7 @@ def from_flopy_test():
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
                                              model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True)
+    pe = helper.draw(100)
     bd = os.getcwd()
 
     pp_props = [["upw.ss",[0,1]],["upw.ss",1],["upw.ss",2],["extra.prsity",0],\
@@ -563,7 +567,7 @@ def from_flopy_test():
     const_props = [["rch.rech",i] for i in range(m.nper)]
     helper = pyemu.helpers.PstFromFlopyModel(m,new_model_ws,
                                     const_props=const_props,hds_kperk=[0,0],remove_existing=True)
-
+    pe = helper.draw(100)
     grid_props = [["extra.pr",0]]
     for k in range(3):
         #grid scale pars for hk in all layers
@@ -574,12 +578,12 @@ def from_flopy_test():
         const_props.append(["upw.sy",k])
     helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
                                     grid_props=grid_props,hds_kperk=[0,0],remove_existing=True)
-
+    pe = helper.draw(100)
     # zones using ibound values - vka in layer 2
     zone_props = ["upw.vka",1]
     helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
                                    zone_props=zone_props,hds_kperk=[0,0],remove_existing=True)
-
+    pe = helper.draw(100)
     # kper-level multipliers for boundary conditions
     bc_props = []
     for iper in range(m.nper):
@@ -588,7 +592,7 @@ def from_flopy_test():
     helper = pyemu.helpers.PstFromFlopyModel(nam_file,new_model_ws,org_model_ws,
                                     bc_props=bc_props,hds_kperk=[0,0],remove_existing=True)
 
-
+    pe = helper.draw(100)
     zn_arr = np.loadtxt(os.path.join("..","examples","Freyberg_Truth","hk.zones"),dtype=int)
     k_zone_dict = {k:zn_arr for k in range(3)}
 
@@ -607,6 +611,7 @@ def from_flopy_test():
                                     use_pp_zones=False,
                                     k_zone_dict=k_zone_dict,
                                     hds_kperk=[0,0],build_prior=False)
+    pe = helper.draw(100)
     pst = helper.pst
     obs = pst.observation_data
     obs.loc[:,"weight"] = 0.0
@@ -897,8 +902,8 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    #from_flopy_test()
-    #from_flopy_reachinput_test()
+    from_flopy_test()
+    # from_flopy_reachinput_test()
     # plot_flopy_par_ensemble_test()
     # add_pi_test()
     # regdata_test()
@@ -921,6 +926,6 @@ if __name__ == "__main__":
     # pestpp_args_test()
     # reweight_test()
     # reweight_res_test()
-    #run_test()
-    #rectify_pgroup_test()
-    sanity_check_test()
+    # run_test()
+    # rectify_pgroup_test()
+    # sanity_check_test()

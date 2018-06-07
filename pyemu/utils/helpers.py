@@ -165,7 +165,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Fa
                 df_zone = df.loc[df.zone==zone,:].copy()
                 df_zone.sort_values(by="parnme",inplace=True)
                 if verbose: print("build cov matrix")
-                cov = gs.sparse_covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)
+                cov = gs.covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)
                 if verbose: print("done")
 
                 if verbose: print("getting diag var cov",df_zone.shape[0])
@@ -173,21 +173,22 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Fa
                 tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
 
                 if verbose: print("scaling full cov by diag var cov")
-                cov.x.data *= tpl_var
+                cov *= tpl_var
 
-                pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,cov=cov,num_reals=num_reals)
-                par_ens.append(pe.loc[:,:])
+                pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,cov=cov,num_reals=num_reals,group_chunks=False)
+                #df = pe.iloc[:,:]
+                par_ens.append(pd.DataFrame(pe))
                 pars_in_cov.update(set(pe.columns))
 
     if verbose: print("adding remaining parameters to diagonal")
-    fset = set(pars_in_cov)
-    diff = list(pars_in_cov.difference(fset))
-
-    cov = full_cov.get(diff,diff)
-    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=num_reals)
-    par_ens.append(pe.loc[:,:])
-
-    par_ens = pyemu.ParameterEnsemble.from_dataframe(df=pd.concat(par_ens),pst=pst)
+    fset = set(full_cov.row_names)
+    diff = list(fset.difference(pars_in_cov))
+    if (len(diff) > 0):
+        cov = full_cov.get(diff,diff)
+        pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=num_reals)
+        par_ens.append(pd.DataFrame(pe))
+    par_ens = pd.concat(par_ens)
+    par_ens = pyemu.ParameterEnsemble.from_dataframe(df=par_ens,pst=pst)
     return par_ens
 
 
@@ -1251,7 +1252,6 @@ class PstFromFlopyModel(object):
         the sfr ASCII output file
     all_wells : bool [DEPRECATED - now use spatial_bc_pars]
 
-
     Returns
     -------
     PstFromFlopyModel : PstFromFlopyModel
@@ -1415,6 +1415,9 @@ class PstFromFlopyModel(object):
                  format(self.m.model_ws))
 
         self.logger.statement("all done")
+
+
+
 
 
     def setup_sfr_obs(self):
@@ -2084,6 +2087,72 @@ class PstFromFlopyModel(object):
             obs_method()
             self.log("processing obs type {0}".format(obs_type))
 
+
+
+    def draw(self, num_reals=100, sigma_range=6):
+        """ draw like a boss!
+
+        Parameters
+        ----------
+            num_reals : int
+                number of realizations to generate. Default is 100
+            sigma_range : float
+                number of standard deviations represented by the parameter bounds.  Default
+                is 6.
+
+        Returns
+        -------
+            cov : pyemu.Cov
+            a full covariance matrix
+
+        """
+
+        self.log("drawing realizations")
+        struct_dict = {}
+        if self.pp_suffix in self.par_dfs.keys():
+            pp_df = self.par_dfs[self.pp_suffix]
+            pp_dfs = []
+            for pargp in pp_df.pargp.unique():
+                gp_df = pp_df.loc[pp_df.pargp==pargp,:]
+                p_df = gp_df.drop_duplicates(subset="parnme")
+                pp_dfs.append(p_df)
+            #pp_dfs = [pp_df.loc[pp_df.pargp==pargp,:].copy() for pargp in pp_df.pargp.unique()]
+            struct_dict[self.pp_geostruct] = pp_dfs
+        if self.gr_suffix in self.par_dfs.keys():
+            gr_df = self.par_dfs[self.gr_suffix]
+            gr_dfs = []
+            for pargp in gr_df.pargp.unique():
+                gp_df = gr_df.loc[gr_df.pargp==pargp,:]
+                p_df = gp_df.drop_duplicates(subset="parnme")
+                gr_dfs.append(p_df)
+            #gr_dfs = [gr_df.loc[gr_df.pargp==pargp,:].copy() for pargp in gr_df.pargp.unique()]
+            struct_dict[self.grid_geostruct] = gr_dfs
+        if "temporal_bc" in self.par_dfs.keys():
+            bc_df = self.par_dfs["temporal_bc"]
+            bc_df.loc[:,"y"] = 0
+            bc_df.loc[:,"x"] = bc_df.timedelta.apply(lambda x: x.days)
+            bc_dfs = []
+            for pargp in bc_df.pargp.unique():
+                gp_df = bc_df.loc[bc_df.pargp==pargp,:]
+                p_df = gp_df.drop_duplicates(subset="parnme")
+                #print(p_df)
+                bc_dfs.append(p_df)
+            #bc_dfs = [bc_df.loc[bc_df.pargp==pargp,:].copy() for pargp in bc_df.pargp.unique()]
+            struct_dict[self.temporal_bc_geostruct] = bc_dfs
+        if "spatial_bc" in self.par_dfs.keys():
+            bc_df = self.par_dfs["spatial_bc"]
+            bc_dfs = []
+            for pargp in bc_df.pargp.unique():
+                gp_df = bc_df.loc[bc_df.pargp==pargp,:]
+                #p_df = gp_df.drop_duplicates(subset="parnme")
+                #print(p_df)
+                bc_dfs.append(gp_df)
+            struct_dict[self.spatial_bc_geostruct] = bc_dfs
+        pe = geostatistical_draws(self.pst,struct_dict=struct_dict,num_reals=num_reals,
+                             sigma_range=sigma_range)
+
+        self.log("drawing realizations")
+        return pe
 
     def build_prior(self, fmt="ascii",filename=None,droptol=None, chunk=None, sparse=False,
                     sigma_range=6):

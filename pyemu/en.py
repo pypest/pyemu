@@ -977,6 +977,7 @@ class ParameterEnsemble(Ensemble):
         else:
             common_names = cov.row_names
 
+        li = pst.parameter_data.partrans.loc[common_names] == "log"
         if cov.isdiagonal:
             print("making diagonal cov draws")
             print("building mean and std dicts")
@@ -1103,7 +1104,7 @@ class ParameterEnsemble(Ensemble):
         print("handling fixed pars")
         #pe.pst.parameter_data.index = pe.pst.parameter_data.parnme
         par = pst.parameter_data
-        fixed_vals = par.loc[par.partrans.apply(lambda x: x in ["fixed","tied"]),"parval1"]
+        fixed_vals = par.loc[common_names,:].loc[par.partrans.apply(lambda x: x in ["fixed","tied"]),"parval1"]
         for fname,fval in zip(fixed_vals.index,fixed_vals.values):
             #print(fname)
             df.loc[:,fname] = fval

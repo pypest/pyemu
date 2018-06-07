@@ -776,6 +776,36 @@ def geostat_prior_builder_test():
     print(d.max())
 
 
+def geostat_draws_test():
+    import os
+    import numpy as np
+    import pyemu
+    pst_file = os.path.join("pst","pest.pst")
+    pst = pyemu.Pst(pst_file)
+
+    tpl_file = os.path.join("utils", "pp_locs.tpl")
+    str_file = os.path.join("utils", "structure.dat")
+
+
+    pe = pyemu.helpers.geostatistical_draws(pst_file,{str_file:tpl_file})
+
+    df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
+    df.loc[:,"zone"] = np.arange(df.shape[0])
+    gs = pyemu.geostats.read_struct_file(str_file)
+    pe = pyemu.helpers.geostatistical_draws(pst_file,{gs:df},
+                                               sigma_range=4)
+
+    ttpl_file = os.path.join("temp", "temp.dat.tpl")
+    with open(ttpl_file, 'w') as f:
+        f.write("ptf ~\n ~ temp1  ~\n")
+    pst.add_parameters(ttpl_file, ttpl_file.replace(".tpl", ""))
+
+    pst.parameter_data.loc["temp1", "parubnd"] = 1.1
+    pst.parameter_data.loc["temp1", "parlbnd"] = 0.9
+
+    pe = pyemu.helpers.geostatistical_draws(pst, {str_file: tpl_file})
+
+
 # def linearuniversal_krige_test():
 #     try:
 #         import flopy
@@ -1166,7 +1196,8 @@ if __name__ == "__main__":
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
     #geostat_prior_builder_test()
-    mflist_budget_test()
+    geostat_draws_test()
+    #mflist_budget_test()
     #mtlist_budget_test()
     # tpl_to_dataframe_test()
     #kl_test()
