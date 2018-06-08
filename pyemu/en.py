@@ -932,7 +932,7 @@ class ParameterEnsemble(Ensemble):
 
     @classmethod
     def from_gaussian_draw(cls,pst,cov,num_reals=1,use_homegrown=True,group_chunks=False,
-                           fill_fixed=True,enforce_bounds=True):
+                           fill_fixed=True,enforce_bounds=False):
         """ instantiate a parameter ensemble from a covariance matrix
 
         Parameters
@@ -955,7 +955,7 @@ class ParameterEnsemble(Ensemble):
         enforce_bounds : bool
             flag to enforce parameter bounds from the pst.  realized
             parameter values that violate bounds are simply changed to the
-            value of the violated bound.  Default is True
+            value of the violated bound.  Default is False
 
         Returns
         -------
