@@ -3,7 +3,6 @@ import copy
 if not os.path.exists("temp"):
     os.mkdir("temp")
 
-
 def schur_test_nonpest():
     import numpy as np
     from pyemu import Matrix, Cov, Schur, Jco
