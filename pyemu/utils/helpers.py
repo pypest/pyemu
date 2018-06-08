@@ -71,7 +71,7 @@ def run(cmd_str,cwd='.',verbose=False):
     pyemu.os_utils.run(cmd_str=cmd_str,cwd=cwd,verbose=verbose)
 
 
-def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=False):
+def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=True):
     """ a helper function to construct a parameter ensenble from a full prior covariance matrix
     implied by the geostatistical structure(s) in struct_dict.  This function is much more efficient
     for problems with lots of pars (>200K).
@@ -174,8 +174,9 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Fa
 
                 if verbose: print("scaling full cov by diag var cov")
                 cov *= tpl_var
-
-                pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,cov=cov,num_reals=num_reals,group_chunks=False)
+                # no fixed values here
+                pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,cov=cov,num_reals=num_reals,
+                                                                group_chunks=False,fill_fixed=False)
                 #df = pe.iloc[:,:]
                 par_ens.append(pd.DataFrame(pe))
                 pars_in_cov.update(set(pe.columns))
@@ -185,7 +186,9 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Fa
     diff = list(fset.difference(pars_in_cov))
     if (len(diff) > 0):
         cov = full_cov.get(diff,diff)
-        pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=num_reals)
+        # here we fill in the fixed values
+        pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=num_reals,
+                                                        fill_fixed=True)
         par_ens.append(pd.DataFrame(pe))
     par_ens = pd.concat(par_ens)
     par_ens = pyemu.ParameterEnsemble.from_dataframe(df=par_ens,pst=pst)

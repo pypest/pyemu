@@ -931,7 +931,8 @@ class ParameterEnsemble(Ensemble):
         return new_pe
 
     @classmethod
-    def from_gaussian_draw(cls,pst,cov,num_reals=1,use_homegrown=True,group_chunks=False):
+    def from_gaussian_draw(cls,pst,cov,num_reals=1,use_homegrown=True,group_chunks=False,
+                           fill_fixed=True,enforce_bounds=True):
         """ instantiate a parameter ensemble from a covariance matrix
 
         Parameters
@@ -948,6 +949,13 @@ class ParameterEnsemble(Ensemble):
         group_chunks : bool
             flag to break up draws by par groups.  Only applies
             to homegrown, full cov case. Default is False
+        fill_fixed : bool
+            flag to fill in fixed parameters from the pst into the
+            ensemble using the parval1 from the pst.  Default is True
+        enforce_bounds : bool
+            flag to enforce parameter bounds from the pst.  realized
+            parameter values that violate bounds are simply changed to the
+            value of the violated bound.  Default is True
 
         Returns
         -------
@@ -1103,15 +1111,17 @@ class ParameterEnsemble(Ensemble):
         # parval1 in the control file
         print("handling fixed pars")
         #pe.pst.parameter_data.index = pe.pst.parameter_data.parnme
-        par = pst.parameter_data
-        fixed_vals = par.loc[common_names,:].loc[par.partrans.apply(lambda x: x in ["fixed","tied"]),"parval1"]
-        for fname,fval in zip(fixed_vals.index,fixed_vals.values):
-            #print(fname)
-            df.loc[:,fname] = fval
+        if fill_fixed:
+            par = pst.parameter_data
+            fixed_vals = par.loc[par.partrans.apply(lambda x: x in ["fixed","tied"]),"parval1"]
+            for fname,fval in zip(fixed_vals.index,fixed_vals.values):
+                #print(fname)
+                df.loc[:,fname] = fval
 
-        #print("apply tied")
+            #print("apply tied")
         new_pe = cls.from_dataframe(pst=pst,df=df)
-
+        if enforce_bounds:
+            new_pe.enforce()
         return new_pe
 
     @classmethod
