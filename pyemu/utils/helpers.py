@@ -986,15 +986,17 @@ def read_pestpp_runstorage(filename,irun=0):
     return par_df,obs_df
 
 
-def jco_from_pestpp_runstorage(filename):
+def jco_from_pestpp_runstorage(rnj_filename,pst_filename):
     """ read pars and obs from a pest++ serialized run storage file (e.g., *.rnj) and return 
     pyemu.Jco.  This can then be passed to Jco.to_binary or Jco.to_coo, etc., to write jco file
     in a subsequent step to avoid memory resource issues associated with very large problems.
 
     Parameters
     ----------
-    filename : str
+    rnj_filename : str
         the name of the run storage file
+    pst_filename : str
+        the name of the pst file
 
     Returns
     -------
@@ -1014,30 +1016,38 @@ def jco_from_pestpp_runstorage(filename):
     header_dtype = np.dtype([("n_runs",np.int64),("run_size",np.int64),("p_name_size",np.int64),
                       ("o_name_size",np.int64)])
 
-    with open(filename,'rb') as f:
+    pst = pyemu.Pst(pst_filename)
+    par = pst.parameter_data
+    log_pars = set(par.loc[par.partrans=="log","parnme"].values)
+    with open(rnj_filename,'rb') as f:
         header = np.fromfile(f,dtype=header_dtype,count=1)
         
     try:
-        base_par,base_obs =  read_pestpp_runstorage(filename,irun=0)
+        base_par,base_obs =  read_pestpp_runstorage(rnj_filename,irun=0)
     except:
         raise Exception("couldn't get base run...")
-
+    par = par.loc[base_par.index,:]
+    li = base_par.index.map(lambda x: par.loc[x,"partrans"]=="log")
+    base_par.loc[li] = base_par.loc[li].apply(np.log10)
     jco_cols = {}
     for irun in range(1,int(header["n_runs"])):
-        par_df,obs_df = read_pestpp_runstorage(filename,irun=irun)
+        par_df,obs_df = read_pestpp_runstorage(rnj_filename,irun=irun)
+        par_df.loc[li] = par_df.loc[li].apply(np.log10)
         obs_diff = base_obs - obs_df
         par_diff = base_par - par_df
         # check only one non-zero element per col(par)
         if len(par_diff[par_diff.parval1 != 0]) > 1:
             raise Exception("more than one par diff - looks like the file wasn't created during jco filling...")
-        ipar = par_diff[par_diff.parval1 != 0].index[0]
+        parnme = par_diff[par_diff.parval1 != 0].index[0]
+        parval = par_diff.parval1.loc[parnme]
+
         # derivatives
-        jco_col = obs_diff / par_diff.loc[ipar].parval1
+        jco_col = obs_diff / parval
         # some tracking, checks
-        print("processing par {0}: {1}...".format(irun, ipar))
+        print("processing par {0}: {1}...".format(irun, parnme))
         print("%nzsens: {0}%...".format((jco_col[abs(jco_col.obsval)>1e-8].shape[0] / jco_col.shape[0])*100.))
 
-        jco_cols[ipar] = jco_col.obsval
+        jco_cols[parnme] = jco_col.obsval
 
     jco_cols = pd.DataFrame.from_records(data=jco_cols, index=list(obs_diff.index.values))
 

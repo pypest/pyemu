@@ -1176,6 +1176,20 @@ def plot_id_bar_test():
     pyemu.plot_utils.plot_id_bar(id_df)
     #plt.show()
 
+
+def jco_from_pestpp_runstorage_test():
+    import os
+    import pyemu
+
+    jco_file = os.path.join("utils","pest.jcb")
+    jco = pyemu.Jco.from_binary(jco_file)
+
+    rnj_file = jco_file.replace(".jcb",".rnj")
+    pst_file = jco_file.replace(".jcb",".pst")
+    jco2 = pyemu.helpers.jco_from_pestpp_runstorage(rnj_file,pst_file)
+    diff = (jco - jco2).to_dataframe()
+    print(diff)
+
 if __name__ == "__main__":
     #master_and_slaves()
     #plot_id_bar_test()
@@ -1196,7 +1210,8 @@ if __name__ == "__main__":
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
     #geostat_prior_builder_test()
-    geostat_draws_test()
+    # geostat_draws_test()
+    jco_from_pestpp_runstorage_test()
     #mflist_budget_test()
     #mtlist_budget_test()
     # tpl_to_dataframe_test()
