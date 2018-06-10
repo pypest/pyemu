@@ -3168,12 +3168,15 @@ def apply_bc_pars():
     #for fname in df.filename.unique():
     for fname in org_files:
         # need to get the PAK name to handle stupid horrible expceptions for HFB...
-        pakspat = sum([True if fname in i else False for i in spat_df.filename])
-        if pakspat:
-            pak = spat_df.loc[spat_df.filename.str.contains(fname)].pak.values[0]
-        else:
-            pak = 'notHFB'
-
+        try:
+            pakspat = sum([True if fname in i else False for i in spat_df.filename])
+            if pakspat:
+                pak = spat_df.loc[spat_df.filename.str.contains(fname)].pak.values[0]
+            else:
+                pak = 'notHFB'
+        except:
+            pak = "notHFB"
+            
         names = None
         if temp_df is not None and fname in temp_df.split_filename.values:
             temp_df_fname = temp_df.loc[temp_df.split_filename==fname,:]
