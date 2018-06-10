@@ -190,7 +190,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
         pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=num_reals,
                                                         fill_fixed=True)
         par_ens.append(pd.DataFrame(pe))
-    par_ens = pd.concat(par_ens)
+    par_ens = pd.concat(par_ens,axis=1)
     par_ens = pyemu.ParameterEnsemble.from_dataframe(df=par_ens,pst=pst)
     return par_ens
 

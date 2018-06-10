@@ -892,8 +892,60 @@ def sanity_check_test():
 
     pst.write(os.path.join("temp","test.pst"))
 
+def pst_from_flopy_geo_draw_test():
+
+    import shutil
+    import numpy as np
+    import pandas as pd
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+    org_model_ws = os.path.join("..","examples","freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    flopy.modflow.ModflowRiv(m,stress_period_data={0:[[0,0,0,30.0,1.0,25.0],
+                                                      [0,0,1,31.0,1.0,25.0],
+                                                      [0,0,1,31.0,1.0,25.0]]})
+    org_model_ws = "temp"
+    m.change_model_ws(org_model_ws)
+    m.write_input()
+
+    new_model_ws = "temp_pst_from_flopy"
+
+    hds_kperk = []
+    for k in range(m.nlay):
+        for kper in range(m.nper):
+            hds_kperk.append([kper, k])
+    temp_bc_props = [["wel.flux",None]]
+    spat_bc_props = [["riv.cond", 0], ["riv.stage", 0]]
+    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+                                         org_model_ws=org_model_ws,
+                                         zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
+                                         remove_existing=True,
+                                         model_exe_name="mfnwt",temporal_bc_props=temp_bc_props,
+                                         spatial_bc_props=spat_bc_props)
+
+    num_reals = 100000
+    pe1 = ph.draw(num_reals=num_reals,sigma_range=6)
+    pyemu.Ensemble.reseed()
+    pe2 = pyemu.ParameterEnsemble.from_gaussian_draw(ph.pst,ph.build_prior(sigma_range=6),num_reals=num_reals)
+
+    mn1,mn2 = pe1.mean(),pe2.mean()
+    sd1,sd2 = pe1.std(),pe2.std()
+
+    diff_mn = mn1 - mn2
+    diff_sd = sd1 - sd2
+    #print(mn1,mn2)
+    print(diff_mn)
+    assert diff_mn.apply(np.abs).max() < 0.1
+    print(diff_sd)
+    assert diff_sd.apply(np.abs).max() < 0.1
+
 
 if __name__ == "__main__":
+    pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
     # res_stats_test()
@@ -902,7 +954,7 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    from_flopy_test()
+    #from_flopy_test()
     # from_flopy_reachinput_test()
     # plot_flopy_par_ensemble_test()
     # add_pi_test()

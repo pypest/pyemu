@@ -788,6 +788,8 @@ def geostat_draws_test():
 
 
     pe = pyemu.helpers.geostatistical_draws(pst_file,{str_file:tpl_file})
+    assert (pe.shape == pe.dropna().shape)
+
 
     df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
@@ -804,6 +806,7 @@ def geostat_draws_test():
     pst.parameter_data.loc["temp1", "parlbnd"] = 0.9
 
     pe = pyemu.helpers.geostatistical_draws(pst, {str_file: tpl_file})
+    assert (pe.shape == pe.dropna().shape)
 
 
 # def linearuniversal_krige_test():
@@ -1210,8 +1213,8 @@ if __name__ == "__main__":
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
     #geostat_prior_builder_test()
-    # geostat_draws_test()
-    jco_from_pestpp_runstorage_test()
+    geostat_draws_test()
+    #jco_from_pestpp_runstorage_test()
     #mflist_budget_test()
     #mtlist_budget_test()
     # tpl_to_dataframe_test()

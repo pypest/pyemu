@@ -539,8 +539,10 @@ class ParameterEnsemble(Ensemble):
 
 
         """
-        kwargs["columns"] = pst.parameter_data.parnme
-        kwargs["mean_values"] = pst.parameter_data.parval1
+        if "columns" not in kwargs:
+            kwargs["columns"] = pst.parameter_data.parnme
+        if "mean_values" not in kwargs:
+            kwargs["mean_values"] = pst.parameter_data.parval1
 
         super(ParameterEnsemble,self).__init__(**kwargs)
         # a flag for current log transform status
