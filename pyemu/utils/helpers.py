@@ -2096,7 +2096,7 @@ class PstFromFlopyModel(object):
 
 
 
-    def draw(self, num_reals=100, sigma_range=6):
+    def draw(self, num_reals=100, sigma_range=6, verbose=True):
         """ draw like a boss!
 
         Parameters
@@ -2156,7 +2156,7 @@ class PstFromFlopyModel(object):
                 bc_dfs.append(gp_df)
             struct_dict[self.spatial_bc_geostruct] = bc_dfs
         pe = geostatistical_draws(self.pst,struct_dict=struct_dict,num_reals=num_reals,
-                             sigma_range=sigma_range)
+                             sigma_range=sigma_range, verbose=verbose)
 
         self.log("drawing realizations")
         return pe
