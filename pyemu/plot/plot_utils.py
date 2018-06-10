@@ -785,7 +785,7 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
         one ensemble is being plotted.  Default is True
     deter_vals : dict
         dict of deterministic values to plot as a vertical line. key is ensemble columnn name
-    std_winoow : float
+    std_window : float
         the number of standard deviations around the mean to mark as vertical lines.  If None,
         nothing happens.  Default is None
     deter_range : bool
@@ -1461,7 +1461,8 @@ def plot_jac_test(csvin, csvout, targetobs=None, filetype=None, maxoutputpages=1
     num_obs_plotted = np.min(np.array([maxoutputpages*32, len(targetobs)]))
     if num_obs_plotted < len(targetobs):
         # get random sample
-        obs_plotted = np.random.choice(len(targetobs), num_obs_plotted, replace=False)
+        index_plotted = np.random.choice(len(targetobs), num_obs_plotted, replace=False)
+        obs_plotted = [targetobs[x] for x in index_plotted]
         real_pages = maxoutputpages
     else:
         obs_plotted = targetobs
@@ -1475,7 +1476,7 @@ def plot_jac_test(csvin, csvout, targetobs=None, filetype=None, maxoutputpages=1
             for row in range(0, 8):
                 for col in range(0, 4):
                     count = 32 * page + 4 * row + col
-                    if count < len(targetobs):
+                    if count < num_obs_plotted:
                         axes[row, col].scatter(group['increment'], group[obs_plotted[count]])
                         axes[row, col].plot(group['increment'], group[obs_plotted[count]], 'r')
                         axes[row, col].set_title(obs_plotted[count])
@@ -1489,3 +1490,4 @@ def plot_jac_test(csvin, csvout, targetobs=None, filetype=None, maxoutputpages=1
                 plt.show()
             else:
                 plt.savefig(os.path.join(figures_dir, "{0}_jactest_{1}.{2}".format(param, page, filetype)))
+            plt.close()

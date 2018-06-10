@@ -162,7 +162,8 @@ class MonteCarlo(LinearAnalysis):
         if how == "gaussian":
             self.parensemble = ParameterEnsemble.from_gaussian_draw(pst=self.pst,cov=cov,
                                                                     num_reals=num_reals,
-                                                                    use_homegrown=True)
+                                                                    use_homegrown=True,
+                                                                    enforce_bounds=False)
 
         elif how == "uniform":
             self.parensemble = ParameterEnsemble.from_uniform_draw(pst=self.pst,num_reals=num_reals)

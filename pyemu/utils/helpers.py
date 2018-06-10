@@ -71,7 +71,7 @@ def run(cmd_str,cwd='.',verbose=False):
     pyemu.os_utils.run(cmd_str=cmd_str,cwd=cwd,verbose=verbose)
 
 
-def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=False):
+def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=True):
     """ a helper function to construct a parameter ensenble from a full prior covariance matrix
     implied by the geostatistical structure(s) in struct_dict.  This function is much more efficient
     for problems with lots of pars (>200K).
@@ -174,8 +174,9 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Fa
 
                 if verbose: print("scaling full cov by diag var cov")
                 cov *= tpl_var
-
-                pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,cov=cov,num_reals=num_reals,group_chunks=False)
+                # no fixed values here
+                pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,cov=cov,num_reals=num_reals,
+                                                                group_chunks=False,fill_fixed=False)
                 #df = pe.iloc[:,:]
                 par_ens.append(pd.DataFrame(pe))
                 pars_in_cov.update(set(pe.columns))
@@ -185,9 +186,11 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Fa
     diff = list(fset.difference(pars_in_cov))
     if (len(diff) > 0):
         cov = full_cov.get(diff,diff)
-        pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=num_reals)
+        # here we fill in the fixed values
+        pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=num_reals,
+                                                        fill_fixed=True)
         par_ens.append(pd.DataFrame(pe))
-    par_ens = pd.concat(par_ens)
+    par_ens = pd.concat(par_ens,axis=1)
     par_ens = pyemu.ParameterEnsemble.from_dataframe(df=par_ens,pst=pst)
     return par_ens
 
@@ -981,6 +984,80 @@ def read_pestpp_runstorage(filename,irun=0):
     obs_df = pd.DataFrame({"obsnme":obs_names,"obsval":obs_vals})
     obs_df.index = obs_df.pop("obsnme")
     return par_df,obs_df
+
+
+def jco_from_pestpp_runstorage(rnj_filename,pst_filename):
+    """ read pars and obs from a pest++ serialized run storage file (e.g., *.rnj) and return 
+    pyemu.Jco.  This can then be passed to Jco.to_binary or Jco.to_coo, etc., to write jco file
+    in a subsequent step to avoid memory resource issues associated with very large problems.
+
+    Parameters
+    ----------
+    rnj_filename : str
+        the name of the run storage file
+    pst_filename : str
+        the name of the pst file
+
+    Returns
+    -------
+    jco_cols : pyemu.Jco
+
+
+    Notes
+    -------
+    TODO:
+    0. Check rnj file contains transformed par vals (i.e., in model input space)
+    1. Currently only returns pyemu.Jco; doesn't write jco file due to memory issues 
+        associated with very large problems
+    3. Compare rnj and jco from Freyberg problem in autotests
+
+    """
+
+    header_dtype = np.dtype([("n_runs",np.int64),("run_size",np.int64),("p_name_size",np.int64),
+                      ("o_name_size",np.int64)])
+
+    pst = pyemu.Pst(pst_filename)
+    par = pst.parameter_data
+    log_pars = set(par.loc[par.partrans=="log","parnme"].values)
+    with open(rnj_filename,'rb') as f:
+        header = np.fromfile(f,dtype=header_dtype,count=1)
+        
+    try:
+        base_par,base_obs =  read_pestpp_runstorage(rnj_filename,irun=0)
+    except:
+        raise Exception("couldn't get base run...")
+    par = par.loc[base_par.index,:]
+    li = base_par.index.map(lambda x: par.loc[x,"partrans"]=="log")
+    base_par.loc[li] = base_par.loc[li].apply(np.log10)
+    jco_cols = {}
+    for irun in range(1,int(header["n_runs"])):
+        par_df,obs_df = read_pestpp_runstorage(rnj_filename,irun=irun)
+        par_df.loc[li] = par_df.loc[li].apply(np.log10)
+        obs_diff = base_obs - obs_df
+        par_diff = base_par - par_df
+        # check only one non-zero element per col(par)
+        if len(par_diff[par_diff.parval1 != 0]) > 1:
+            raise Exception("more than one par diff - looks like the file wasn't created during jco filling...")
+        parnme = par_diff[par_diff.parval1 != 0].index[0]
+        parval = par_diff.parval1.loc[parnme]
+
+        # derivatives
+        jco_col = obs_diff / parval
+        # some tracking, checks
+        print("processing par {0}: {1}...".format(irun, parnme))
+        print("%nzsens: {0}%...".format((jco_col[abs(jco_col.obsval)>1e-8].shape[0] / jco_col.shape[0])*100.))
+
+        jco_cols[parnme] = jco_col.obsval
+
+    jco_cols = pd.DataFrame.from_records(data=jco_cols, index=list(obs_diff.index.values))
+
+    jco_cols = pyemu.Jco.from_dataframe(jco_cols)
+    
+    # write # memory considerations important here for very large matrices - break into chunks...
+    #jco_fnam = "{0}".format(filename[:-4]+".jco")
+    #jco_cols.to_binary(filename=jco_fnam, droptol=None, chunk=None)
+
+    return jco_cols
 
 
 def parse_dir_for_io_files(d):
@@ -2516,6 +2593,13 @@ class PstFromFlopyModel(object):
                                   format(attrname,pakname))
             attr = pak.stress_period_data
             return pak,attr,attrname
+        elif hasattr(pak,'hfb_data'):
+            dtype = pak.hfb_data.dtype
+            if attrname not in dtype.names:
+                self.logger.lraise('attr {0} not found in dtypes.names for {1}.hfb_data. Thanks for playing.'.\
+                                   format(attrname,pakname))
+            attr = pak.hfb_data
+            return pak, attr, attrname
         else:
             self.logger.lraise("unrecognized attr:{0}".format(attrname))
 
@@ -2626,16 +2710,24 @@ class PstFromFlopyModel(object):
                                    "to a single layer (e.g. [wel.flux,0].\n"+\
                                    "You passed [{0},{1}], implying broadcasting to layers {2}".
                                    format(pakattr,k_org,k_parse))
-            for k in range(self.m.nper):
+            # horrible special case for HFB since it cannot vary over time
+            if type(pak) != flopy.modflow.mfhfb.ModflowHfb:
+                for k in range(self.m.nper):
+                    bc_filenames.append(self.bc_helper(k, pak, attr, col))
+                    bc_cols.append(col)
+                    pak_name = pak.name[0].lower()
+                    bc_pak.append(pak_name)
+                    bc_k.append(k_parse[0])
+                    #bc_dtype_names.append(list(attr.dtype.names))
+                    bc_dtype_names.append(','.join(attr.dtype.names))
+            else:
                 bc_filenames.append(self.bc_helper(k, pak, attr, col))
                 bc_cols.append(col)
                 pak_name = pak.name[0].lower()
                 bc_pak.append(pak_name)
                 bc_k.append(k_parse[0])
-                #bc_dtype_names.append(list(attr.dtype.names))
                 bc_dtype_names.append(','.join(attr.dtype.names))
 
-                #bc_parnme.append("{0}{1}_{2:03d}".format(pak_name, col, c))
         info_df = pd.DataFrame({"filename": bc_filenames, "col": bc_cols,
                            "k": bc_k, "pak": bc_pak,
                            "dtype_names": bc_dtype_names})
@@ -2651,10 +2743,23 @@ class PstFromFlopyModel(object):
             itmp = []
             for filename in df_pak.filename:
                 names = df_pak.dtype_names.iloc[0].split(',')
-                fdf = pd.read_csv(os.path.join(self.m.model_ws,filename),
-                                  delim_whitespace=True,header=None,names=names)
-                for c in ['k','i','j']:
-                    fdf.loc[:,c] -= 1
+
+                if pak != 'hfb6':
+                    fdf = pd.read_csv(os.path.join(self.m.model_ws, filename),
+                                      delim_whitespace=True, header=None, names=names)
+                    for c in ['k','i','j']:
+                        fdf.loc[:,c] -= 1
+                else:
+                    # need to navigate the HFB file to skip both comments and header line
+                    skiprows = sum(
+                        [1 if i.strip().startswith('#') else 0
+                         for i in open(os.path.join(self.m.model_ws, filename), 'r').readlines()]) + 1
+                    fdf = pd.read_csv(os.path.join(self.m.model_ws, filename),
+                                      delim_whitespace=True, header=None, names=names, skiprows=skiprows  ).dropna()
+
+                    for c in ['k', 'irow1','icol1','irow2','icol2']:
+                        fdf.loc[:, c] -= 1
+
                 itmp.append(fdf.shape[0])
                 pak_dfs[pak] = fdf
             info_df.loc[info_df.pak==pak,"itmp"] = itmp
@@ -2665,7 +2770,11 @@ class PstFromFlopyModel(object):
 
         # make the pak dfs have unique model indices
         for pak,df in pak_dfs.items():
-            df.loc[:,"idx"] = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k,x.i,x.j),axis=1)
+            if pak != 'hfb6':
+                df.loc[:,"idx"] = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k,x.i,x.j),axis=1)
+            else:
+                df.loc[:, "idx"] = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
+                                                                                                             x.irow2, x.icol2), axis=1)
             if df.idx.unique().shape[0] != df.shape[0]:
                 self.logger.warn("duplicate entries in bc pak {0}...collapsing".format(pak))
                 df.drop_duplicates(subset="idx",inplace=True)
@@ -2678,15 +2787,21 @@ class PstFromFlopyModel(object):
             pak_df = info_df.loc[info_df.pak==pak,:]
             # reset all non-index cols to 1.0
             for col in df.columns:
-                if col not in ['k','i','j','inode']:
+                if col not in ['k','i','j','inode', 'irow1','icol1','irow2','icol2']:
                     df.loc[:,col] = 1.0
             in_file = os.path.join(self.bc_mlt,pak+".csv")
             tpl_file = os.path.join(pak + ".csv.tpl")
             # save an all "ones" mult df for testing
             df.to_csv(os.path.join(self.m.model_ws,in_file))
             parnme,pargp = [],[]
-            x = df.apply(lambda x: self.m.sr.xcentergrid[int(x.i),int(x.j)],axis=1).values
-            y = df.apply(lambda x: self.m.sr.ycentergrid[int(x.i),int(x.j)],axis=1).values
+            if pak != 'hfb6':
+                x = df.apply(lambda x: self.m.sr.xcentergrid[int(x.i),int(x.j)],axis=1).values
+                y = df.apply(lambda x: self.m.sr.ycentergrid[int(x.i),int(x.j)],axis=1).values
+            else:
+                # note -- for HFB6, only row and col for node 1
+                x = df.apply(lambda x: self.m.sr.xcentergrid[int(x.irow1),int(x.icol1)],axis=1).values
+                y = df.apply(lambda x: self.m.sr.ycentergrid[int(x.irow1),int(x.icol1)],axis=1).values
+
             for col in pak_df.col.unique():
                 col_df = pak_df.loc[pak_df.col==col]
                 k_vals = col_df.k.unique()
@@ -2707,6 +2822,8 @@ class PstFromFlopyModel(object):
                 par_df.loc[:,"tpl_file"] = tpl_file
                 par_df.loc[:,"in_file"] = in_file
                 par_dfs.append(par_df)
+
+
             with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
                 f.write("ptf ~\n")
                 f.flush()
@@ -2782,7 +2899,11 @@ class PstFromFlopyModel(object):
             the column name in the MfList recarray to parameterize
 
         """
-        filename = attr.get_filename(k)
+        # special case for horrible HFB6 exception
+        if type(pak) == flopy.modflow.mfhfb.ModflowHfb:
+            filename = pak.file_name[0]
+        else:
+            filename = attr.get_filename(k)
         filename_model = os.path.join(self.m.external_path,filename)
         shutil.copy2(os.path.join(self.m.model_ws,filename_model),
                      os.path.join(self.m.model_ws,self.bc_org,filename))
@@ -3032,41 +3153,64 @@ def apply_bc_pars():
     if spat_df is not None:
 
         for f in os.listdir(mlt_dir):
-            df = pd.read_csv(os.path.join(mlt_dir,f),index_col=0)
-            df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k,x.i,x.j),axis=1)
             pak = f.split(".")[0].lower()
+            df = pd.read_csv(os.path.join(mlt_dir,f),index_col=0)
+            if pak != 'hfb6':
+                df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k,x.i,x.j),axis=1)
+            else:
+                df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
+                                                                                 x.irow2, x.icol2), axis = 1)
             if pak in sp_mlts.keys():
-                raise Exception("duplciate multplier csv for pak {0}".format(pak))
+                raise Exception("duplicate multplier csv for pak {0}".format(pak))
             sp_mlts[pak] = df
 
     org_files = os.listdir(org_dir)
     #for fname in df.filename.unique():
     for fname in org_files:
+        # need to get the PAK name to handle stupid horrible expceptions for HFB...
+        pakspat = sum([True if fname in i else False for i in spat_df.filename])
+        if pakspat:
+            pak = spat_df.loc[spat_df.filename.str.contains(fname)].pak.values[0]
+        else:
+            pak = 'notHFB'
 
-        #print(temp_df.filename)
-        #print(spat_df.filename)
         names = None
         if temp_df is not None and fname in temp_df.split_filename.values:
             temp_df_fname = temp_df.loc[temp_df.split_filename==fname,:]
             if temp_df_fname.shape[0] > 0:
                 names = temp_df_fname.dtype_names.iloc[0].split(',')
-            #print(names)
         if spat_df is not None and fname in spat_df.split_filename.values:
             spat_df_fname = spat_df.loc[spat_df.split_filename == fname, :]
             if spat_df_fname.shape[0] > 0:
                 names = spat_df_fname.dtype_names.iloc[0].split(',')
         if names is not None:
 
-            df_list = pd.read_csv(os.path.join(org_dir,fname),
-                                  delim_whitespace=True,header=None,names=names)
-            df_list.loc[:,"idx"] = df_list.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k-1,x.i-1,x.j-1),axis=1)
+            if pak == 'hfb6':
+                # ugh - need to yank out the header rows if HFB6
+                tmpfn = spat_df.loc[spat_df.pak == pak, :].filename.values[0]
+                skiprows = sum(
+                    [1 if i.strip().startswith('#') else 0
+                     for i in open(os.path.join(org_dir, tmpfn), 'r').readlines()]) + 1
+                headrows = ['{}\n'.format(i.strip()) for i in open(os.path.join(org_dir, tmpfn), 'r').readlines()[:skiprows]]
+                df_list = pd.read_csv(os.path.join(org_dir, fname),
+                                      delim_whitespace=True, header=None, names=names, skiprows=skiprows).dropna()
+                df_list.loc[:, "idx"] = df_list.apply(
+                    lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
+                                                                                     x.irow2, x.icol2), axis=1)
+                footrows = '{}\n'.format(open(os.path.join(org_dir, fname), 'r').readlines()[-1].strip())
+            else:
+                df_list = pd.read_csv(os.path.join(org_dir, fname),
+                                      delim_whitespace=True, header=None, names=names)
+                df_list.loc[:, "idx"] = df_list.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k, x.i, x.j), axis=1)
+
+
             df_list.index = df_list.idx
             pak_name = fname.split('_')[0].lower()
             if pak_name in sp_mlts:
                 mlt_df = sp_mlts[pak_name]
                 mlt_df_ri = mlt_df.reindex(df_list.index)
                 for col in df_list.columns:
-                    if col in ["k","i","j","inode"]:
+                    if col in ["k","i","j","inode",'irow1','icol1','irow2','icol2']:
                         continue
                     if col in mlt_df.columns:
                        # print(mlt_df.loc[mlt_df.index.duplicated(),:])
@@ -3080,7 +3224,7 @@ def apply_bc_pars():
             #fmts = {}
             fmts = ''
             for name in names:
-                if name in ["i","j","k","inode"]:
+                if name in ["i","j","k","inode",'irow1','icol1','irow2','icol2']:
                     #fmts[name] = pyemu.pst_utils.IFMT
                     #fmts[name] = lambda x: " {0:>9.0f}".format(x)
                     fmts += " %9d"
@@ -3088,9 +3232,12 @@ def apply_bc_pars():
                     #fmts[name] = pyemu.pst_utils.FFMT
                     #fmts[name] = lambda x: " {0:>9G}".format(x)
                     fmts += " %9G"
-
-        np.savetxt(os.path.join(model_ext_path,fname),df_list.loc[:,names].as_matrix(),fmt=fmts)
-        #with open(os.path.join(model_ext_path,fname),'w') as f:
+        if pak == 'hfb6':
+            np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].as_matrix(), fmt=fmts,
+                       header=''.join(headrows), footer=footrows)
+        else:
+            np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].as_matrix(), fmt=fmts)
+            #with open(os.path.join(model_ext_path,fname),'w') as f:
         #    f.write(df_list.loc[:,names].to_string(header=False,index=False,formatters=fmts)+'\n')
             #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
 
