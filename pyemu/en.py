@@ -1086,7 +1086,14 @@ class ParameterEnsemble(Ensemble):
                     print("eigen solve for full cov")
                     v, w = np.linalg.eigh(cov.as_2d)
                     #w, v, other = np.linalg.svd(cov.as_2d,full_matrices=True,compute_uv=True)
-
+                    # vdiag = np.diag(v)
+                    for i in range(v.shape[0]):
+                        if v[i] > 1.0e-10:
+                            pass
+                        else:
+                            print("near zero eigen value found", v[i], \
+                                  "at index", i, " of ", v.shape[0])
+                            v[i] = 0.0
                     # form projection matrix
                     print("form projection")
                     a = np.dot(w, np.sqrt(np.diag(v)))
