@@ -8,7 +8,8 @@ import shutil
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
-from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,_try_run_inschek,parse_tpl_file
+from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,_try_run_inschek,\
+    parse_tpl_file,try_process_ins_file
 from pyemu.utils.helpers import run
 PP_FMT = {"name": SFMT, "x": FFMT, "y": FFMT, "zone": IFMT, "tpl": SFMT,
           "parval1": FFMT}
@@ -725,7 +726,8 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
         raise Exception("error in apply_sfr_obs(): {0}".format(str(e)))
     os.chdir(bd)
 
-    df = _try_run_inschek(ins_file,ins_file.replace(".ins",""))
+    #df = _try_run_inschek(ins_file,ins_file.replace(".ins",""))
+    d = try_process_ins_file(ins_file,ins_file.replace(".ins",""))
     if df is not None:
         df.loc[:,"weight"] = 0.0
         if prefix is not None:
@@ -1101,7 +1103,8 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
     with open(ins_file,'w') as f:
         f.write("pif ~\nl1\n")
         [f.write(i) for i in df.ins_str]
-    df = _try_run_inschek(ins_file,sft_file+".processed")
+    #df = _try_run_inschek(ins_file,sft_file+".processed")
+    df = try_process_ins_file(ins_file,sft_file+".processed")
     if df is not None:
         return df
     else:
@@ -1535,7 +1538,8 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
     bd = os.getcwd()
     os.chdir(pth)
     try:
-        df = _try_run_inschek(os.path.split(ins_file)[-1],os.path.split(sfr_out_file+".processed")[-1])
+        #df = _try_run_inschek(os.path.split(ins_file)[-1],os.path.split(sfr_out_file+".processed")[-1])
+        df = try_process_ins_file(os.path.split(ins_file)[-1],os.path.split(sfr_out_file+".processed")[-1])
     except Exception as e:
         pass
     os.chdir(bd)
