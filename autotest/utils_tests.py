@@ -507,7 +507,7 @@ def zero_order_regul_test():
 
 
 
-def kl_test():
+def  kl_test():
     import os
     import numpy as np
     import pandas as pd
@@ -1213,12 +1213,12 @@ if __name__ == "__main__":
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
     #geostat_prior_builder_test()
-    geostat_draws_test()
+    #geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
     #mflist_budget_test()
     #mtlist_budget_test()
     # tpl_to_dataframe_test()
-    #kl_test()
+    kl_test()
     #more_kl_test()
     #zero_order_regul_test()
     # first_order_pearson_regul_test()
