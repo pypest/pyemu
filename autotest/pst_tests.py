@@ -452,6 +452,9 @@ def from_flopy_test():
     flopy.modflow.ModflowRiv(m,stress_period_data={0:[[0,0,0,30.0,1.0,25.0],
                                                       [0,0,1,31.0,1.0,25.0],
                                                       [0,0,1,31.0,1.0,25.0]]})
+    hfb_data =
+    flopy.modflow.ModflowHfb(m,)
+
     org_model_ws = "temp"
     m.change_model_ws(org_model_ws)
     m.write_input()

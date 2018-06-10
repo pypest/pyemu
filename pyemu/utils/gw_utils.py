@@ -1641,3 +1641,68 @@ def load_sfr_out(sfr_out_file):
     return sfr_dict
 
 
+def write_hfb_template(m):
+    """write a template file for an hfb (yuck!)
+
+    Parameters
+    ----------
+        m : flopy.modflow.Modflow instance with an HFB file
+
+    Returns
+    -------
+        (tpl_filename, df) : (str, pandas.DataFrame)
+            the name of the template file and a dataframe with useful info.
+
+    """
+
+    assert m.hfb6 is not None
+    hfb_file = os.path.join(m.model_ws,m.hfb6.file_name[0])
+    assert os.path.exists(hfb_file),"couldn't find hfb_file".format(hfb_file)
+    f_in = open(hfb_file,'r')
+    f_tpl = open(hfb_file+".tpl",'w')
+    f_tpl.write("ptf ~\n")
+    parnme,parval1,xs,ys = [],[],[],[]
+    iis,jjs,kks = [],[],[]
+    xc = m.sr.xcentergrid
+    yc = m.sr.ycentergrid
+
+    while True:
+        line = f_in.readline()
+        if line == "":
+            break
+        f_tpl.write(line)
+        if not line.startswith("#"):
+            raw = line.strip().split()
+            nphfb = int(raw[0])
+            mxfb = int(raw[1])
+            nhfbnp = int(raw[2])
+            if nphfb > 0 or mxfb > 0:
+                raise Exception("not supporting terrible HFB pars")
+            for i in range(nhfbnp):
+                line = f_in.readline()
+                if line == "":
+                    raise Exception("EOF")
+                raw = line.strip().split()
+                k = int(raw[0]) - 1
+                i = int(raw[1]) - 1
+                j = int(raw[2]) - 1
+                pn = "hb{0:02}{1:04d}{2:04}".format(k,i,j)
+                pv = float(raw[5])
+                raw[5] = "~ {0}  ~".format(pn)
+                line = ' '.join(raw)+'\n'
+                f_tpl.write(line)
+                parnme.append(pn)
+                parval1.append(pv)
+                xs.append(xc[i,j])
+                ys.append(yc[i,j])
+                iis.append(i)
+                jjs.append(j)
+                kks.append(k)
+            break
+    df = pd.DataFrame({"parnme":parnme,"parval1":parval1,"x":xs,"y":ys,
+                       "i":iis,"j":jjs,"k":kks},index=parnme)
+    return df
+
+
+
+

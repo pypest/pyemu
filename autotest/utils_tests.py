@@ -1193,6 +1193,42 @@ def jco_from_pestpp_runstorage_test():
     diff = (jco - jco2).to_dataframe()
     print(diff)
 
+
+def hfb_test():
+    import os
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+
+    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    try:
+        pyemu.gw_utils.write_hfb_template(m)
+    except:
+        pass
+    else:
+        raise Exception()
+
+    hfb_data = []
+    jcol1, jcol2 = 14,15
+    for i in range(m.nrow):
+        hfb_data.append([0,i,jcol1,i,jcol2,0.001])
+    flopy.modflow.ModflowHfb(m,0,0,len(hfb_data),hfb_data=hfb_data)
+    m.change_model_ws("temp")
+    m.write_input()
+    m.exe_name = "mfnwt"
+    try:
+        m.run_model()
+    except:
+        pass
+
+    df = pyemu.gw_utils.write_hfb_template(m)
+    assert df.shape[0] == m.hfb6.hfb_data.shape[0]
+
+
 if __name__ == "__main__":
     #master_and_slaves()
     #plot_id_bar_test()
@@ -1218,7 +1254,8 @@ if __name__ == "__main__":
     #mflist_budget_test()
     #mtlist_budget_test()
     # tpl_to_dataframe_test()
-    kl_test()
+    #kl_test()
+    hfb_test()
     #more_kl_test()
     #zero_order_regul_test()
     # first_order_pearson_regul_test()

@@ -2593,13 +2593,13 @@ class PstFromFlopyModel(object):
                                   format(attrname,pakname))
             attr = pak.stress_period_data
             return pak,attr,attrname
-        elif hasattr(pak,'hfb_data'):
-            dtype = pak.hfb_data.dtype
-            if attrname not in dtype.names:
-                self.logger.lraise('attr {0} not found in dtypes.names for {1}.hfb_data. Thanks for playing.'.\
-                                   format(attrname,pakname))
-            attr = pak.hfb_data
-            return pak, attr, attrname
+        # elif hasattr(pak,'hfb_data'):
+        #     dtype = pak.hfb_data.dtype
+        #     if attrname not in dtype.names:
+        #         self.logger.lraise('attr {0} not found in dtypes.names for {1}.hfb_data. Thanks for playing.'.\
+        #                            format(attrname,pakname))
+        #     attr = pak.hfb_data
+        #     return pak, attr, attrname
         else:
             self.logger.lraise("unrecognized attr:{0}".format(attrname))
 
@@ -2710,23 +2710,23 @@ class PstFromFlopyModel(object):
                                    "to a single layer (e.g. [wel.flux,0].\n"+\
                                    "You passed [{0},{1}], implying broadcasting to layers {2}".
                                    format(pakattr,k_org,k_parse))
-            # horrible special case for HFB since it cannot vary over time
-            if type(pak) != flopy.modflow.mfhfb.ModflowHfb:
-                for k in range(self.m.nper):
-                    bc_filenames.append(self.bc_helper(k, pak, attr, col))
-                    bc_cols.append(col)
-                    pak_name = pak.name[0].lower()
-                    bc_pak.append(pak_name)
-                    bc_k.append(k_parse[0])
-                    #bc_dtype_names.append(list(attr.dtype.names))
-                    bc_dtype_names.append(','.join(attr.dtype.names))
-            else:
+            # # horrible special case for HFB since it cannot vary over time
+            #if type(pak) != flopy.modflow.mfhfb.ModflowHfb:
+            for k in range(self.m.nper):
                 bc_filenames.append(self.bc_helper(k, pak, attr, col))
                 bc_cols.append(col)
                 pak_name = pak.name[0].lower()
                 bc_pak.append(pak_name)
                 bc_k.append(k_parse[0])
+                #bc_dtype_names.append(list(attr.dtype.names))
                 bc_dtype_names.append(','.join(attr.dtype.names))
+            # else:
+            # bc_filenames.append(self.bc_helper(k, pak, attr, col))
+            # bc_cols.append(col)
+            # pak_name = pak.name[0].lower()
+            # bc_pak.append(pak_name)
+            # bc_k.append(k_parse[0])
+            # bc_dtype_names.append(','.join(attr.dtype.names))
 
         info_df = pd.DataFrame({"filename": bc_filenames, "col": bc_cols,
                            "k": bc_k, "pak": bc_pak,
@@ -2744,21 +2744,21 @@ class PstFromFlopyModel(object):
             for filename in df_pak.filename:
                 names = df_pak.dtype_names.iloc[0].split(',')
 
-                if pak != 'hfb6':
-                    fdf = pd.read_csv(os.path.join(self.m.model_ws, filename),
-                                      delim_whitespace=True, header=None, names=names)
-                    for c in ['k','i','j']:
-                        fdf.loc[:,c] -= 1
-                else:
-                    # need to navigate the HFB file to skip both comments and header line
-                    skiprows = sum(
-                        [1 if i.strip().startswith('#') else 0
-                         for i in open(os.path.join(self.m.model_ws, filename), 'r').readlines()]) + 1
-                    fdf = pd.read_csv(os.path.join(self.m.model_ws, filename),
-                                      delim_whitespace=True, header=None, names=names, skiprows=skiprows  ).dropna()
-
-                    for c in ['k', 'irow1','icol1','irow2','icol2']:
-                        fdf.loc[:, c] -= 1
+                #mif pak != 'hfb6':
+                fdf = pd.read_csv(os.path.join(self.m.model_ws, filename),
+                                  delim_whitespace=True, header=None, names=names)
+                for c in ['k','i','j']:
+                    fdf.loc[:,c] -= 1
+                # else:
+                #     # need to navigate the HFB file to skip both comments and header line
+                #     skiprows = sum(
+                #         [1 if i.strip().startswith('#') else 0
+                #          for i in open(os.path.join(self.m.model_ws, filename), 'r').readlines()]) + 1
+                #     fdf = pd.read_csv(os.path.join(self.m.model_ws, filename),
+                #                       delim_whitespace=True, header=None, names=names, skiprows=skiprows  ).dropna()
+                #
+                #     for c in ['k', 'irow1','icol1','irow2','icol2']:
+                #         fdf.loc[:, c] -= 1
 
                 itmp.append(fdf.shape[0])
                 pak_dfs[pak] = fdf
@@ -2770,11 +2770,11 @@ class PstFromFlopyModel(object):
 
         # make the pak dfs have unique model indices
         for pak,df in pak_dfs.items():
-            if pak != 'hfb6':
-                df.loc[:,"idx"] = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k,x.i,x.j),axis=1)
-            else:
-                df.loc[:, "idx"] = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
-                                                                                                             x.irow2, x.icol2), axis=1)
+            #if pak != 'hfb6':
+            df.loc[:,"idx"] = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k,x.i,x.j),axis=1)
+            # else:
+            #     df.loc[:, "idx"] = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
+            #                                                                                                  x.irow2, x.icol2), axis=1)
             if df.idx.unique().shape[0] != df.shape[0]:
                 self.logger.warn("duplicate entries in bc pak {0}...collapsing".format(pak))
                 df.drop_duplicates(subset="idx",inplace=True)
@@ -2794,13 +2794,13 @@ class PstFromFlopyModel(object):
             # save an all "ones" mult df for testing
             df.to_csv(os.path.join(self.m.model_ws,in_file))
             parnme,pargp = [],[]
-            if pak != 'hfb6':
-                x = df.apply(lambda x: self.m.sr.xcentergrid[int(x.i),int(x.j)],axis=1).values
-                y = df.apply(lambda x: self.m.sr.ycentergrid[int(x.i),int(x.j)],axis=1).values
-            else:
-                # note -- for HFB6, only row and col for node 1
-                x = df.apply(lambda x: self.m.sr.xcentergrid[int(x.irow1),int(x.icol1)],axis=1).values
-                y = df.apply(lambda x: self.m.sr.ycentergrid[int(x.irow1),int(x.icol1)],axis=1).values
+            #if pak != 'hfb6':
+            x = df.apply(lambda x: self.m.sr.xcentergrid[int(x.i),int(x.j)],axis=1).values
+            y = df.apply(lambda x: self.m.sr.ycentergrid[int(x.i),int(x.j)],axis=1).values
+            # else:
+            #     # note -- for HFB6, only row and col for node 1
+            #     x = df.apply(lambda x: self.m.sr.xcentergrid[int(x.irow1),int(x.icol1)],axis=1).values
+            #     y = df.apply(lambda x: self.m.sr.ycentergrid[int(x.irow1),int(x.icol1)],axis=1).values
 
             for col in pak_df.col.unique():
                 col_df = pak_df.loc[pak_df.col==col]
@@ -2900,10 +2900,10 @@ class PstFromFlopyModel(object):
 
         """
         # special case for horrible HFB6 exception
-        if type(pak) == flopy.modflow.mfhfb.ModflowHfb:
-            filename = pak.file_name[0]
-        else:
-            filename = attr.get_filename(k)
+        # if type(pak) == flopy.modflow.mfhfb.ModflowHfb:
+        #     filename = pak.file_name[0]
+        # else:
+        filename = attr.get_filename(k)
         filename_model = os.path.join(self.m.external_path,filename)
         shutil.copy2(os.path.join(self.m.model_ws,filename_model),
                      os.path.join(self.m.model_ws,self.bc_org,filename))
@@ -3155,11 +3155,11 @@ def apply_bc_pars():
         for f in os.listdir(mlt_dir):
             pak = f.split(".")[0].lower()
             df = pd.read_csv(os.path.join(mlt_dir,f),index_col=0)
-            if pak != 'hfb6':
-                df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k,x.i,x.j),axis=1)
-            else:
-                df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
-                                                                                 x.irow2, x.icol2), axis = 1)
+            #if pak != 'hfb6':
+            df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k,x.i,x.j),axis=1)
+            # else:
+            #     df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
+            #                                                                      x.irow2, x.icol2), axis = 1)
             if pak in sp_mlts.keys():
                 raise Exception("duplicate multplier csv for pak {0}".format(pak))
             sp_mlts[pak] = df
@@ -3168,15 +3168,15 @@ def apply_bc_pars():
     #for fname in df.filename.unique():
     for fname in org_files:
         # need to get the PAK name to handle stupid horrible expceptions for HFB...
-        try:
-            pakspat = sum([True if fname in i else False for i in spat_df.filename])
-            if pakspat:
-                pak = spat_df.loc[spat_df.filename.str.contains(fname)].pak.values[0]
-            else:
-                pak = 'notHFB'
-        except:
-            pak = "notHFB"
-            
+        # try:
+        #     pakspat = sum([True if fname in i else False for i in spat_df.filename])
+        #     if pakspat:
+        #         pak = spat_df.loc[spat_df.filename.str.contains(fname)].pak.values[0]
+        #     else:
+        #         pak = 'notHFB'
+        # except:
+        #     pak = "notHFB"
+
         names = None
         if temp_df is not None and fname in temp_df.split_filename.values:
             temp_df_fname = temp_df.loc[temp_df.split_filename==fname,:]
@@ -3188,23 +3188,23 @@ def apply_bc_pars():
                 names = spat_df_fname.dtype_names.iloc[0].split(',')
         if names is not None:
 
-            if pak == 'hfb6':
-                # ugh - need to yank out the header rows if HFB6
-                tmpfn = spat_df.loc[spat_df.pak == pak, :].filename.values[0]
-                skiprows = sum(
-                    [1 if i.strip().startswith('#') else 0
-                     for i in open(os.path.join(org_dir, tmpfn), 'r').readlines()]) + 1
-                headrows = ['{}\n'.format(i.strip()) for i in open(os.path.join(org_dir, tmpfn), 'r').readlines()[:skiprows]]
-                df_list = pd.read_csv(os.path.join(org_dir, fname),
-                                      delim_whitespace=True, header=None, names=names, skiprows=skiprows).dropna()
-                df_list.loc[:, "idx"] = df_list.apply(
-                    lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
-                                                                                     x.irow2, x.icol2), axis=1)
-                footrows = '{}\n'.format(open(os.path.join(org_dir, fname), 'r').readlines()[-1].strip())
-            else:
-                df_list = pd.read_csv(os.path.join(org_dir, fname),
-                                      delim_whitespace=True, header=None, names=names)
-                df_list.loc[:, "idx"] = df_list.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k, x.i, x.j), axis=1)
+            # if pak == 'hfb6':
+            #     # ugh - need to yank out the header rows if HFB6
+            #     tmpfn = spat_df.loc[spat_df.pak == pak, :].filename.values[0]
+            #     skiprows = sum(
+            #         [1 if i.strip().startswith('#') else 0
+            #          for i in open(os.path.join(org_dir, tmpfn), 'r').readlines()]) + 1
+            #     headrows = ['{}\n'.format(i.strip()) for i in open(os.path.join(org_dir, tmpfn), 'r').readlines()[:skiprows]]
+            #     df_list = pd.read_csv(os.path.join(org_dir, fname),
+            #                           delim_whitespace=True, header=None, names=names, skiprows=skiprows).dropna()
+            #     df_list.loc[:, "idx"] = df_list.apply(
+            #         lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
+            #                                                                          x.irow2, x.icol2), axis=1)
+            #     footrows = '{}\n'.format(open(os.path.join(org_dir, fname), 'r').readlines()[-1].strip())
+            # else:
+            df_list = pd.read_csv(os.path.join(org_dir, fname),
+                                  delim_whitespace=True, header=None, names=names)
+            df_list.loc[:, "idx"] = df_list.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k, x.i, x.j), axis=1)
 
 
             df_list.index = df_list.idx
@@ -3235,11 +3235,11 @@ def apply_bc_pars():
                     #fmts[name] = pyemu.pst_utils.FFMT
                     #fmts[name] = lambda x: " {0:>9G}".format(x)
                     fmts += " %9G"
-        if pak == 'hfb6':
-            np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].as_matrix(), fmt=fmts,
-                       header=''.join(headrows), footer=footrows)
-        else:
-            np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].as_matrix(), fmt=fmts)
+        # if pak == 'hfb6':
+        #     np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].as_matrix(), fmt=fmts,
+        #                header=''.join(headrows), footer=footrows)
+        # else:
+        np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].as_matrix(), fmt=fmts)
             #with open(os.path.join(model_ext_path,fname),'w') as f:
         #    f.write(df_list.loc[:,names].to_string(header=False,index=False,formatters=fmts)+'\n')
             #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
