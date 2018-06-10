@@ -452,8 +452,11 @@ def from_flopy_test():
     flopy.modflow.ModflowRiv(m,stress_period_data={0:[[0,0,0,30.0,1.0,25.0],
                                                       [0,0,1,31.0,1.0,25.0],
                                                       [0,0,1,31.0,1.0,25.0]]})
-    hfb_data =
-    flopy.modflow.ModflowHfb(m,)
+    hfb_data = []
+    jcol1, jcol2 = 14, 15
+    for i in range(m.nrow):
+        hfb_data.append([0, i, jcol1, i, jcol2, 0.001])
+    flopy.modflow.ModflowHfb(m, 0, 0, len(hfb_data), hfb_data=hfb_data)
 
     org_model_ws = "temp"
     m.change_model_ws(org_model_ws)
@@ -472,8 +475,8 @@ def from_flopy_test():
                                          zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
                                          remove_existing=True,
                                          model_exe_name="mfnwt",temporal_bc_props=temp_bc_props,
-                                         spatial_bc_props=spat_bc_props)
-
+                                         spatial_bc_props=spat_bc_props,hfb_pars=True)
+    return
     par = ph.pst.parameter_data
     pe = ph.draw(100)
 

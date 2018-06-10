@@ -1659,7 +1659,8 @@ def write_hfb_template(m):
     hfb_file = os.path.join(m.model_ws,m.hfb6.file_name[0])
     assert os.path.exists(hfb_file),"couldn't find hfb_file".format(hfb_file)
     f_in = open(hfb_file,'r')
-    f_tpl = open(hfb_file+".tpl",'w')
+    tpl_file = hfb_file+".tpl"
+    f_tpl = open(tpl_file,'w')
     f_tpl.write("ptf ~\n")
     parnme,parval1,xs,ys = [],[],[],[]
     iis,jjs,kks = [],[],[]
@@ -1699,9 +1700,15 @@ def write_hfb_template(m):
                 jjs.append(j)
                 kks.append(k)
             break
+
+    f_tpl.close()
+    f_in.close()
     df = pd.DataFrame({"parnme":parnme,"parval1":parval1,"x":xs,"y":ys,
                        "i":iis,"j":jjs,"k":kks},index=parnme)
-    return df
+    df.loc[:,"pargp"] = "hfb_hydfac"
+    df.loc[:,"parubnd"] = df.parval1.max() * 10.0
+    df.loc[:,"parlbnd"] = df.parval1.min() * 0.1
+    return tpl_file,df
 
 
 

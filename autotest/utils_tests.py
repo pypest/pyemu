@@ -1225,7 +1225,8 @@ def hfb_test():
     except:
         pass
 
-    df = pyemu.gw_utils.write_hfb_template(m)
+    tpl_file,df = pyemu.gw_utils.write_hfb_template(m)
+    assert os.path.exists(tpl_file)
     assert df.shape[0] == m.hfb6.hfb_data.shape[0]
 
 

@@ -1332,6 +1332,10 @@ class PstFromFlopyModel(object):
         flag to include observations of flow and aquifer exchange from
         the sfr ASCII output file
     all_wells : bool [DEPRECATED - now use spatial_bc_pars]
+    hfb_pars : bool
+        add HFB parameters.  uses pyemu.gw_utils.write_hfb_template().  the resulting
+        HFB pars have parval1 equal to the values in the original file and use the
+        spatial_bc_geostruct to build geostatistical covariates between parameters
 
     Returns
     -------
@@ -1359,7 +1363,8 @@ class PstFromFlopyModel(object):
                  extra_model_cmds=None,extra_post_cmds=None,redirect_forward_output=True,
                  tmp_files=None,model_exe_name=None,build_prior=True,
                  sfr_obs=False, all_wells=False,bc_props=[],
-                 spatial_bc_props=[],spatial_bc_geostruct=None):
+                 spatial_bc_props=[],spatial_bc_geostruct=None,
+                 hfb_pars=False):
 
         self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
         self.log = self.logger.log
@@ -1480,6 +1485,10 @@ class PstFromFlopyModel(object):
 
         if sfr_pars:
             self.setup_sfr_pars()
+
+        if hfb_pars:
+            self.setup_hfb_pars()
+
         self.mflist_waterbudget = mflist_waterbudget
         self.setup_observations()
         self.build_pst()
@@ -1548,6 +1557,18 @@ class PstFromFlopyModel(object):
             self.frun_pre_lines.append("pyemu.gw_utils.apply_sfr_seg_parameters()")
         self.par_dfs["sfr"] = pd.concat(par_dfs["sfr"])
 
+
+    def setup_hfb_pars(self):
+        """setup non-mult parameters for hfb (yuck!)
+
+        """
+        if self.m.hfb6 is None:
+            self.logger.lraise("couldn't find hfb pak")
+        tpl_file,df = pyemu.gw_utils.write_hfb_template(self.m)
+
+        self.in_files.append(os.path.split(tpl_file.replace(".tpl",""))[-1])
+        self.tpl_files.append(os.path.split(tpl_file)[-1])
+        self.par_dfs["hfb"] = df
 
     def setup_mult_dirs(self):
         """ setup the directories to use for multiplier parameterization.  Directories
@@ -2315,6 +2336,12 @@ class PstFromFlopyModel(object):
                 #print(p_df)
                 bc_dfs.append(gp_df)
             struct_dict[self.spatial_bc_geostruct] = bc_dfs
+        if "hfb" in self.par_dfs.keys():
+            if self.spatial_bc_geostruct in struct_dict.keys():
+                struct_dict[self.spatial_bc_geostruct].append(self.par_dfs["hfb"])
+            else:
+                struct_dict[self.spatial_bc_geostruct] = [self.par_dfs["hfb"]]
+
         if len(struct_dict) > 0:
             if sparse:
                 cov = pyemu.helpers.sparse_geostatistical_prior_builder(self.pst,
