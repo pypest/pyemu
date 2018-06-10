@@ -785,7 +785,7 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
         one ensemble is being plotted.  Default is True
     deter_vals : dict
         dict of deterministic values to plot as a vertical line. key is ensemble columnn name
-    std_winoow : float
+    std_window : float
         the number of standard deviations around the mean to mark as vertical lines.  If None,
         nothing happens.  Default is None
     deter_range : bool
