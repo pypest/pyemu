@@ -703,13 +703,13 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
         f.write('pif ~\n')
         f.write("l1 \n")
         for t in t_str:
-            f.write("l1")
+            f.write("l1 w ")
             for site in df.columns:
                 if prefix is not None:
                     obsnme = "{0}_{1}_{2}".format(prefix,site,t)
                 else:
                     obsnme = "{0}_{1}".format(site, t)
-                f.write(" w !{0}!".format(obsnme))
+                f.write(" !{0}!".format(obsnme))
             f.write('\n')
 
 
@@ -727,7 +727,7 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
     os.chdir(bd)
 
     #df = _try_run_inschek(ins_file,ins_file.replace(".ins",""))
-    d = try_process_ins_file(ins_file,ins_file.replace(".ins",""))
+    df = try_process_ins_file(ins_file,ins_file.replace(".ins",""))
     if df is not None:
         df.loc[:,"weight"] = 0.0
         if prefix is not None:
