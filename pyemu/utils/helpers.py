@@ -493,10 +493,9 @@ def condition_on_par_knowledge(cov,par_knowledge_dict):
 
 
 
-
-
-def kl_setup(num_eig,sr,struct,array_dict,basis_file="basis.jco",
-             tpl_file="kl.tpl"):
+def kl_setup(num_eig,sr,struct,prefixes,
+             factors_file="kl_factors.dat",islog=True, basis_file=None,
+             tpl_dir="."):
     """setup a karhuenen-Loeve based parameterization for a given
     geostatistical structure.
 
@@ -554,12 +553,12 @@ def kl_setup(num_eig,sr,struct,array_dict,basis_file="basis.jco",
     except Exception as e:
         raise Exception("error import flopy: {0}".format(str(e)))
     assert isinstance(sr,flopy.utils.SpatialReference)
-    for name,array in array_dict.items():
-        assert isinstance(array,np.ndarray)
-        assert array.shape[0] == sr.nrow
-        assert array.shape[1] == sr.ncol
-        assert len(name) + len(str(num_eig)) <= 12,"name too long:{0}".\
-            format(name)
+    # for name,array in array_dict.items():
+    #     assert isinstance(array,np.ndarray)
+    #     assert array.shape[0] == sr.nrow
+    #     assert array.shape[1] == sr.ncol
+    #     assert len(name) + len(str(num_eig)) <= 12,"name too long:{0}".\
+    #         format(name)
 
     if isinstance(struct,str):
         assert os.path.exists(struct)
@@ -574,32 +573,72 @@ def kl_setup(num_eig,sr,struct,array_dict,basis_file="basis.jco",
                                sr.ycentergrid.flatten(),
                                names=names)
 
-    trunc_basis = cov.u[:,:num_eig].T
-    #for i in range(num_eig):
-    #    trunc_basis.x[i,:] *= cov.s.x[i]
-    trunc_basis.to_binary(basis_file)
-    #trunc_basis = trunc_basis.T
+    eig_names = ["eig_{0:04d}".format(i) for i in range(cov.shape[0])]
+    trunc_basis = cov.u
+    trunc_basis.col_names = eig_names
+    #trunc_basis.col_names = [""]
+    if basis_file is not None:
+        trunc_basis.to_binary(basis_file)
+    trunc_basis = trunc_basis[:,:num_eig]
+    eig_names = eig_names[:num_eig]
 
-    back_array_dict = {}
-    f = open(tpl_file,'w')
-    f.write("ptf ~\n")
-    f.write("name,org_val,new_val\n")
-    for name,array in array_dict.items():
-        mname = name+"mean"
-        f.write("{0},{1:20.8E},~   {2}    ~\n".format(mname,0.0,mname))
-        #array -= array.mean()
-        array_flat = pyemu.Matrix(x=np.atleast_2d(array.flatten()).transpose()
-                                  ,col_names=["flat"],row_names=names,
-                                  isdiagonal=False)
-        factors = trunc_basis * array_flat
-        enames = ["{0}{1:04d}".format(name,i) for i in range(num_eig)]
-        for n,val in zip(enames,factors.x):
-            f.write("{0},{1:20.8E},~    {0}    ~\n".format(n,val[0]))
-        back_array_dict[name] = (factors.T * trunc_basis).x.reshape(array.shape)
-        #print(array_back)
-        #print(factors.shape)
+    pp_df = pd.DataFrame({"name":eig_names},index=eig_names)
+    pp_df.loc[:,"x"] = -1.0 * sr.ncol
+    pp_df.loc[:,"y"] = -1.0 * sr.nrow
+    pp_df.loc[:,"zone"] = -999
+    pp_df.loc[:,"parval1"] = 1.0
+    pyemu.pp_utils.write_pp_file(os.path.join("temp.dat"),pp_df)
 
-    return back_array_dict
+
+    eigen_basis_to_factor_file(sr.nrow,sr.ncol,trunc_basis,factors_file=factors_file,islog=islog)
+    dfs = []
+    for prefix in prefixes:
+        tpl_file = "kl_{0}.dat.tpl".format(prefix)
+        df = pyemu.pp_utils.pilot_points_to_tpl("temp.dat",tpl_file,prefix)
+        df.loc[:,"tpl_file"] = tpl_file
+        df.loc[:,"in_file"] = tpl_file.replace(".tpl","")
+        df.loc[:,"prefix"] = prefix
+        dfs.append(df)
+        #arr = pyemu.geostats.fac2real(df,factors_file=factors_file,out_file=None)
+    return pd.concat(dfs)
+
+    # back_array_dict = {}
+    # f = open(tpl_file,'w')
+    # f.write("ptf ~\n")
+    # f.write("name,org_val,new_val\n")
+    # for name,array in array_dict.items():
+    #     mname = name+"mean"
+    #     f.write("{0},{1:20.8E},~   {2}    ~\n".format(mname,0.0,mname))
+    #     #array -= array.mean()
+    #     array_flat = pyemu.Matrix(x=np.atleast_2d(array.flatten()).transpose()
+    #                               ,col_names=["flat"],row_names=names,
+    #                               isdiagonal=False)
+    #     factors = trunc_basis * array_flat
+    #     enames = ["{0}{1:04d}".format(name,i) for i in range(num_eig)]
+    #     for n,val in zip(enames,factors.x):
+    #        f.write("{0},{1:20.8E},~    {0}    ~\n".format(n,val[0]))
+    #     back_array_dict[name] = (factors.T * trunc_basis).x.reshape(array.shape)
+    #     print(array_back)
+    #     print(factors.shape)
+    #
+    # return back_array_dict
+
+
+def eigen_basis_to_factor_file(nrow,ncol,basis,factors_file,islog=True):
+    assert nrow * ncol == basis.shape[0]
+    with open(factors_file,'w') as f:
+        f.write("junk.dat\n")
+        f.write("junk.zone.dat\n")
+        f.write("{0} {1}\n".format(ncol,nrow))
+        f.write("{0}\n".format(basis.shape[1]))
+        [f.write(name+"\n") for name in basis.col_names]
+        t = 0
+        if islog:
+            t = 1
+        for i in range(nrow * ncol):
+            f.write("{0} {1} {2} {3:8.5e}".format(i+1,t,basis.shape[1],0.0))
+            [f.write(" {0} {1:12.8g} ".format(i + 1, w)) for i, w in enumerate(basis.x[i,:])]
+            f.write("\n")
 
 
 def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
@@ -644,16 +683,15 @@ def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
     assert basis.shape[1] == arr_shape[0] * arr_shape[1]
     arr_min = 1.0e-10 # a temp hack
 
-    means = df.loc[df.name.apply(lambda x: x.endswith("mean")),:]
-    print(means)
+    #means = df.loc[df.name.apply(lambda x: x.endswith("mean")),:]
+    #print(means)
     df = df.loc[df.name.apply(lambda x: not x.endswith("mean")),:]
     for prefix,filename in par_to_file_dict.items():
         factors = pyemu.Matrix.from_dataframe(df.loc[df.prefix==prefix,["new_val"]])
         factors.autoalign = False
-
-        #assert df_pre.shape[0] == arr_shape[0] * arr_shape[1]
-        arr = (factors.T * basis).x.reshape(arr_shape)
-        arr += means.loc[means.prefix==prefix,"new_val"].values
+        basis_prefix = basis[:factors.shape[0],:]
+        arr = (factors.T * basis_prefix).x.reshape(arr_shape)
+        #arr += means.loc[means.prefix==prefix,"new_val"].values
         arr[arr<arr_min] = arr_min
         np.savetxt(filename,arr,fmt="%20.8E")
 

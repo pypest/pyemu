@@ -512,6 +512,7 @@ def  kl_test():
     import numpy as np
     import pandas as pd
     import pyemu
+    import matplotlib.pyplot as plt
     try:
         import flopy
     except:
@@ -520,45 +521,93 @@ def  kl_test():
     model_ws = os.path.join("..","verification","Freyberg","extra_crispy")
     ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws)
     str_file = os.path.join("..","verification","Freyberg","structure.dat")
-    arr_dict = {"test":np.ones((ml.nrow,ml.ncol))}
-    arr_dict["hk_tru"] = np.loadtxt(os.path.join("..","verification",
+    arr_tru = np.loadtxt(os.path.join("..","verification",
                                                  "Freyberg","extra_crispy",
-                                                 "hk.truth.ref"))
+                                                 "hk.truth.ref")) + 20
     basis_file = os.path.join("utils","basis.jco")
     tpl_file = os.path.join("utils","test.tpl")
-    back_dict = pyemu.utils.helpers.kl_setup(num_eig=800,sr=ml.sr,
+    factors_file = os.path.join("temp","factors.dat")
+    num_eig = 100
+    prefixes = ["hk1"]
+    df = pyemu.utils.helpers.kl_setup(num_eig=num_eig, sr=ml.sr,
                                              struct=str_file,
-                                             array_dict=arr_dict,
+                                             factors_file=factors_file,
                                              basis_file=basis_file,
-                                             tpl_file=tpl_file)
-    for name in back_dict.keys():
-        diff = np.abs((arr_dict[name] - back_dict[name])).sum()
-        print(diff)
-        assert np.abs(diff) < 1.0e-2
-    df = pd.read_csv(tpl_file,skiprows=1)
-    df.loc[:,"new_val"] = df.org_val
-    df.to_csv(tpl_file.replace(".tpl",".csv"),index=False)
-    #kl_appy(par_file, basis_file,par_to_file_dict)
-    par_to_file_dict = {"test":os.path.join("temp","test.ref"),\
-                        "hk_tru":os.path.join("temp","hk_tru.ref")}
-    pyemu.utils.helpers.kl_apply(tpl_file.replace(".tpl",".csv"),basis_file,
-                                 par_to_file_dict,(ml.nrow,ml.ncol))
-    #import matplotlib.pyplot as plt
-    for par,filename in par_to_file_dict.items():
-        arr = np.loadtxt(filename)
-        arr1 = arr_dict[par]
-        # mx = max(arr.max(),arr1.max())
-        # mn = min(arr.min(),arr1.min())
-        # fig = plt.figure()
-        # ax1,ax2 = plt.subplot(211),plt.subplot(212)
-        # c1 = ax1.imshow(arr,vmin=mn,vmax=mx)
-        # plt.colorbar(c1,ax=ax1)
-        # c2 = ax2.imshow(arr_dict[par],vmin=mn,vmax=mx)
-        # plt.colorbar(c2,ax=ax2)
-        # plt.show()
-        diff = np.abs((arr - arr1)).sum()
-        print(diff)
-        assert np.abs(diff) < 1.0e-2
+                                            prefixes=prefixes,islog=False)
+
+    basis = pyemu.Matrix.from_binary(basis_file)
+    basis = basis[:,:num_eig]
+    arr_tru = np.atleast_2d(arr_tru.flatten()).transpose()
+    proj = np.dot(basis.T.x,arr_tru)[:num_eig]
+    #proj.autoalign = False
+    print(arr_tru.shape)
+    print(basis.shape)
+    print(proj.shape)
+    back = np.dot(basis.x, proj)
+
+    print(back.shape)
+    back = back.reshape(ml.nrow,ml.ncol)
+    print(back.shape)
+    #print(back)
+    print(df.shape,arr_tru.shape)
+    df.parval1 = proj
+    arr = pyemu.geostats.fac2real(df,factors_file,out_file=None)
+    print(arr)
+    fig = plt.figure(figsize=(10, 10))
+    ax1, ax2 = plt.subplot(121),plt.subplot(122)
+    mn,mx = arr_tru.min(),arr_tru.max()
+
+    #ax1.imshow(back)
+    #ax2.imshow(arr)
+    #plt.show()
+
+    #arr = pyemu.
+    # par_to_file_dict = {"test": os.path.join("temp", "test.ref"), \
+    #                     "hk_tru": os.path.join("temp", "hk_tru.ref")}
+    # df = pd.read_csv(tpl_file, skiprows=1)
+    # df.loc[:, "new_val"] = df.org_val
+    # df.to_csv(tpl_file.replace(".tpl", ".csv"), index=False)
+    # pyemu.utils.helpers.kl_apply(tpl_file.replace(".tpl", ".csv"), basis_file,
+    #                              par_to_file_dict, (ml.nrow, ml.ncol))
+    # for par,filename in par_to_file_dict.items():
+    #     arr = np.loadtxt(filename)
+    #     arr1 = arr_dict[par]
+    #     fig = plt.figure(figsize=(10,10))
+    #     ax1, ax2 = plt.subplot(121),plt.subplot(122)
+    #     mn,mx = arr1.min(),arr1.max()
+    #     ax1.imshow(arr,vmin=mn,vmax=mx)
+    #     ax2.imshow(arr1,vmin=mn,vmax=mx)
+    #     #print(mn,mx)
+    #     plt.show()
+    #     diff = np.abs((arr - arr1)).sum()
+    #     print(diff)
+    #
+    #
+    # back_dict = pyemu.utils.helpers.kl_setup(num_eig=800,sr=ml.sr,
+    #                                          struct=str_file,
+    #                                          array_dict=arr_dict,
+    #                                          basis_file=basis_file,
+    #                                          tpl_file=tpl_file)
+    # for name in back_dict.keys():
+    #     diff = np.abs((arr_dict[name] - back_dict[name])).sum()
+    #     print(diff)
+    #     assert np.abs(diff) < 1.0e-2
+    # df = pd.read_csv(tpl_file,skiprows=1)
+    # df.loc[:,"new_val"] = df.org_val
+    # df.to_csv(tpl_file.replace(".tpl",".csv"),index=False)
+    # #kl_appy(par_file, basis_file,par_to_file_dict)
+    # par_to_file_dict = {"test":os.path.join("temp","test.ref"),\
+    #                     "hk_tru":os.path.join("temp","hk_tru.ref")}
+    # pyemu.utils.helpers.kl_apply(tpl_file.replace(".tpl",".csv"),basis_file,
+    #                              par_to_file_dict,(ml.nrow,ml.ncol))
+    # #import matplotlib.pyplot as plt
+    # for par,filename in par_to_file_dict.items():
+    #     arr = np.loadtxt(filename)
+    #     arr1 = arr_dict[par]
+    #     diff = np.abs((arr - arr1)).sum()
+    #     print(diff)
+    #     assert np.abs(diff) < 1.0e-2
+
 
 def ok_test():
     import os
@@ -1255,8 +1304,8 @@ if __name__ == "__main__":
     #mflist_budget_test()
     #mtlist_budget_test()
     # tpl_to_dataframe_test()
-    #kl_test()
-    hfb_test()
+    kl_test()
+    # hfb_test()
     #more_kl_test()
     #zero_order_regul_test()
     # first_order_pearson_regul_test()
