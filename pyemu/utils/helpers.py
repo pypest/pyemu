@@ -1402,7 +1402,7 @@ class PstFromFlopyModel(object):
                  tmp_files=None,model_exe_name=None,build_prior=True,
                  sfr_obs=False, all_wells=False,bc_props=[],
                  spatial_bc_props=[],spatial_bc_geostruct=None,
-                 hfb_pars=False):
+                 hfb_pars=False, kl_props=None,kl_num_eig=100, kl_geostruct=None):
 
         self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
         self.log = self.logger.log
@@ -1412,6 +1412,7 @@ class PstFromFlopyModel(object):
         self.gr_suffix = "_gr"
         self.pp_suffix = "_pp"
         self.cn_suffix = "_cn"
+        self.kl_suffix = "_kl"
         self.arr_org = "arr_org"
         self.arr_mlt = "arr_mlt"
         self.bc_org = "bc_org"
@@ -1438,6 +1439,10 @@ class PstFromFlopyModel(object):
         self.grid_geostruct = grid_geostruct
 
         self.zone_props = zone_props
+
+        self.kl_props = kl_props
+        self.kl_geostruct = kl_geostruct
+        self.kl_num_eig = kl_num_eig
 
         if len(bc_props) > 0:
             if len(temporal_bc_props) > 0:
@@ -1620,7 +1625,8 @@ class PstFromFlopyModel(object):
         if self.pp_props is not None or \
                         self.zone_props is not None or \
                         self.grid_props is not None or\
-                        self.const_props is not None:
+                        self.const_props is not None or \
+                        self.kl_props is not None:
             set_dirs.append(self.arr_org)
             set_dirs.append(self.arr_mlt)
  #       if len(self.bc_props) > 0:
@@ -1730,9 +1736,11 @@ class PstFromFlopyModel(object):
 
         """
         par_props = [self.pp_props,self.grid_props,
-                         self.zone_props,self.const_props]
+                         self.zone_props,self.const_props,
+                     self.kl_props]
         par_suffixs = [self.pp_suffix,self.gr_suffix,
-                       self.zn_suffix,self.cn_suffix]
+                       self.zn_suffix,self.cn_suffix,
+                       self.kl_suffix]
 
         # Need to remove props and suffixes for which no info was provided (e.g. still None)
         del_idx = []
@@ -2110,6 +2118,9 @@ class PstFromFlopyModel(object):
         mlt_df.loc[mlt_df.suffix==self.pp_suffix,"tpl_file"] = np.NaN
 
 
+    def kl_prep(self):
+        raise NotImplementedError()
+
     def setup_array_pars(self):
         """ main entry point for setting up array multipler parameters
 
@@ -2162,6 +2173,7 @@ class PstFromFlopyModel(object):
                 self.log("writing zone tpl:{0}".format(tpl_file))
                 df = self.write_zone_tpl(self.m, name, tpl_file, self.k_zone_dict[layer], self.zn_suffix, self.logger)
                 self.log("writing zone tpl:{0}".format(tpl_file))
+
             if df is None:
                 continue
             if suffix not in par_dfs:
@@ -2180,6 +2192,11 @@ class PstFromFlopyModel(object):
             self.log("setting up grid process")
             self.grid_prep()
             self.log("setting up grid process")
+
+        if self.kl_suffix in mlt_df.suffix.values:
+            self.log("setting up kl process")
+            self.kl_prep()
+            self.log("setting up kl process")
 
         mlt_df.to_csv(os.path.join(self.m.model_ws,"arr_pars.csv"))
         ones = np.ones((self.m.nrow,self.m.ncol))
