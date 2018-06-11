@@ -593,13 +593,18 @@ def kl_setup(num_eig,sr,struct,prefixes,
     eigen_basis_to_factor_file(sr.nrow,sr.ncol,trunc_basis,factors_file=factors_file,islog=islog)
     dfs = []
     for prefix in prefixes:
-        tpl_file = "kl_{0}.dat.tpl".format(prefix)
+        tpl_file = os.path.join(tpl_dir,"{0}.dat_kl.tpl".format(prefix))
         df = pyemu.pp_utils.pilot_points_to_tpl("temp.dat",tpl_file,prefix)
+        shutil.copy2("temp.dat",tpl_file.replace(".tpl",""))
         df.loc[:,"tpl_file"] = tpl_file
         df.loc[:,"in_file"] = tpl_file.replace(".tpl","")
         df.loc[:,"prefix"] = prefix
+        df.loc[:,"pargp"] = "kl_{0}".format(prefix)
         dfs.append(df)
         #arr = pyemu.geostats.fac2real(df,factors_file=factors_file,out_file=None)
+    df = pd.concat(dfs)
+    df.loc[:,"parubnd"] = 10.0
+    df.loc[:,"parlbnd"] = 0.1
     return pd.concat(dfs)
 
     # back_array_dict = {}
@@ -2099,8 +2104,8 @@ class PstFromFlopyModel(object):
         pp_df.loc[:,"pargp"] = pp_df.pargp.apply(lambda x: "pp_{0}".format(x))
         out_files = mlt_df.loc[mlt_df.mlt_file.
                     apply(lambda x: x.endswith(self.pp_suffix)),"mlt_file"]
-        mlt_df.loc[:,"fac_file"] = np.NaN
-        mlt_df.loc[:,"pp_file"] = np.NaN
+        #mlt_df.loc[:,"fac_file"] = np.NaN
+        #mlt_df.loc[:,"pp_file"] = np.NaN
         for out_file in out_files:
             pp_df_pf = pp_df.loc[pp_df.out_file==out_file,:]
             fac_files = pp_df_pf.fac_file
@@ -2118,8 +2123,73 @@ class PstFromFlopyModel(object):
         mlt_df.loc[mlt_df.suffix==self.pp_suffix,"tpl_file"] = np.NaN
 
 
-    def kl_prep(self):
-        raise NotImplementedError()
+    def kl_prep(self,mlt_df):
+        """ prepare KL based parameterizations
+
+        Parameters
+        ----------
+        mlt_df : pandas.DataFrame
+            a dataframe with multiplier array information
+
+        Note
+        ----
+        calls pyemu.helpers.setup_kl()
+
+
+        """
+        if len(self.kl_props) == 0:
+            return
+
+        if self.kl_geostruct is None:
+            self.logger.warn("kl_geostruct is None,"\
+                  " using ExpVario with contribution=1 and a=(10.0*max(delr,delc))")
+            kl_dist = 10.0 * float(max(self.m.dis.delr.array.max(),
+                                           self.m.dis.delc.array.max()))
+            v = pyemu.geostats.ExpVario(contribution=1.0,a=kl_dist)
+            self.kl_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+
+        kl_df = mlt_df.loc[mlt_df.suffix==self.kl_suffix,:]
+        layers = kl_df.layer.unique()
+        #kl_dict = {l:list(kl_df.loc[kl_df.layer==l,"prefix"].unique()) for l in layers}
+        # big assumption here - if prefix is listed more than once, use the lowest layer index
+        #for i,l in enumerate(layers):
+        #    p = set(kl_dict[l])
+        #    for ll in layers[i+1:]:
+        #        pp = set(kl_dict[ll])
+        #        d = pp - p
+        #        kl_dict[ll] = list(d)
+        kl_prefix = list(kl_df.loc[:,"prefix"])
+
+        kl_array_file = {p:m for p,m in zip(kl_df.prefix,kl_df.mlt_file)}
+        self.logger.statement("kl_prefix: {0}".format(str(kl_prefix)))
+
+        fac_file = os.path.join(self.m.model_ws, "kl.fac")
+
+        self.log("calling kl_setup() with factors file {0}".format(fac_file))
+
+        kl_df = kl_setup(self.kl_num_eig,self.m.sr,self.kl_geostruct,kl_prefix,
+                         factors_file=fac_file,basis_file=fac_file+".basis.jcb",
+                         tpl_dir=self.m.model_ws)
+        self.logger.statement("{0} kl parameters created".
+                              format(kl_df.shape[0]))
+        self.logger.statement("kl 'pargp':{0}".
+                              format(','.join(kl_df.pargp.unique())))
+
+        self.log("calling kl_setup() with factors file {0}".format(fac_file))
+        kl_mlt_df = mlt_df.loc[mlt_df.suffix==self.kl_suffix]
+        for prefix in kl_df.prefix.unique():
+            prefix_df = kl_df.loc[kl_df.prefix==prefix,:]
+            in_file = os.path.split(prefix_df.loc[:,"in_file"][0])[-1]
+            assert prefix in mlt_df.prefix.values,"{0}:{1}".format(prefix,mlt_df.prefix)
+            mlt_df.loc[mlt_df.prefix==prefix,"pp_file"] = in_file
+            mlt_df.loc[mlt_df.prefix==prefix,"fac_file"] = os.path.split(fac_file)[-1]
+
+        print(kl_mlt_df)
+        mlt_df.loc[mlt_df.suffix == self.kl_suffix, "tpl_file"] = np.NaN
+        self.par_dfs[self.kl_suffix] = kl_df
+        # calc factors for each layer
+
+
 
     def setup_array_pars(self):
         """ main entry point for setting up array multipler parameters
@@ -2195,7 +2265,7 @@ class PstFromFlopyModel(object):
 
         if self.kl_suffix in mlt_df.suffix.values:
             self.log("setting up kl process")
-            self.kl_prep()
+            self.kl_prep(mlt_df)
             self.log("setting up kl process")
 
         mlt_df.to_csv(os.path.join(self.m.model_ws,"arr_pars.csv"))
