@@ -4,13 +4,14 @@ the pyemu.Pst object.
 from __future__ import print_function, division
 import os, sys
 import stat
+import warnings
 from datetime import datetime
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
 
 import pyemu
-
+from ..pyemu_warnings import PyemuWarning
 #formatters
 #SFMT = lambda x: "{0:>20s}".format(str(x.decode()))
 def SFMT(item):
@@ -528,9 +529,9 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     new_pst : pyemu.Pst
 
     """
-    import warnings
+
     warnings.warn("pst_from_io_files has moved to pyemu.helpers and is also "+\
-                  "now avaiable as a Pst class method (Pst.from_io_files())")
+                  "now avaiable as a Pst class method (Pst.from_io_files())",PyemuWarning)
     from pyemu import helpers
     return helpers.pst_from_io_files(tpl_files=tpl_files,in_files=in_files,
                               ins_files=ins_files,out_files=out_files,
@@ -854,8 +855,8 @@ def del_rw(action, name, exc):
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
                  port=4004,rel_path=None):
 
-    import warnings
-    warnings.warn("deprecation warning:start_slaves() has moved to the utils.helpers module")
+
+    warnings.warn("deprecation warning:start_slaves() has moved to the utils.helpers module",PyemuWarning)
     from pyemu.utils import start_slaves
     start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=num_slaves,slave_root=slave_root,
                  port=port,rel_path=rel_path)

@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
 import pyemu
+from ..pyemu_warnings import PyemuWarning
 from pyemu.pst.pst_controldata import ControlData, SvdData, RegData
 from pyemu.pst import pst_utils
 from pyemu.plot import plot_utils
@@ -975,7 +976,7 @@ class Pst(object):
             values.append('')
         for key, value in zip(keys, values):
             if key in self.pestpp_options:
-                print("Pst.load() warning: duplicate pest++ option found:" + str(key))
+                print("Pst.load() warning: duplicate pest++ option found:" + str(key),PyemuWarning)
             self.pestpp_options[key] = value
 
     def _update_control_section(self):
@@ -1169,17 +1170,17 @@ class Pst(object):
         dups = self.parameter_data.parnme.value_counts()
         dups = dups.loc[dups>1]
         if dups.shape[0] > 0:
-            warnings.warn("duplicate parameter names: {0}".format(','.join(list(dups.index))))
+            warnings.warn("duplicate parameter names: {0}".format(','.join(list(dups.index))),PyemuWarning)
         dups = self.observation_data.obsnme.value_counts()
         dups = dups.loc[dups>1]
         if dups.shape[0] > 0:
-            warnings.warn("duplicate observation names: {0}".format(','.join(list(dups.index))))
+            warnings.warn("duplicate observation names: {0}".format(','.join(list(dups.index))),PyemuWarning)
 
         if self.npar_adj == 0:
-            warnings.warn("no adjustable pars")
+            warnings.warn("no adjustable pars",PyemuWarning)
 
         if self.nnz_obs == 0:
-            warnings.warn("no non-zero weight obs")
+            warnings.warn("no non-zero weight obs",PyemuWarning)
 
         print("noptmax: {0}".format(self.control_data.noptmax))
 
@@ -1265,7 +1266,8 @@ class Pst(object):
 
         if self.nprior > 0:
             if self.prior_information.isnull().values.any():
-                print("WARNING: NaNs in prior_information dataframe")
+                #print("WARNING: NaNs in prior_information dataframe")
+                warnings.warn("NaNs in prior_information dataframe",PyemuWarning)
             f_out.write("* prior information\n")
             #self.prior_information.index = self.prior_information.pop("pilbl")
             max_eq_len = self.prior_information.equation.apply(lambda x:len(x)).max()
@@ -1381,8 +1383,8 @@ class Pst(object):
         new_pst.output_files = self.output_files
 
         if self.tied is not None:
-            print("Pst.get() warning: not checking for tied parameter " +
-                  "compatibility in new Pst instance")
+            warnings.warn("Pst.get() not checking for tied parameter " +
+                  "compatibility in new Pst instance",PyemuWarning)
             #new_pst.tied = self.tied.copy()
         new_pst.other_lines = self.other_lines
         new_pst.pestpp_options = self.pestpp_options
@@ -1548,7 +1550,7 @@ class Pst(object):
                 weight_mult = np.sqrt(target_phis[item] / actual_phi)
                 self.observation_data.loc[obs_idxs[item], "weight"] *= weight_mult
             else:
-                print("Pst.__reset_weights() warning: phi group {0} has zero phi, skipping...".format(item))
+                ("Pst.__reset_weights() warning: phi group {0} has zero phi, skipping...".format(item))
 
     def adjust_weights_by_list(self,obslist,weight):
         """reset the weight for a list of observation names.  Supports the
@@ -1826,7 +1828,7 @@ class Pst(object):
         new_parnme = [p for p in parnme if p not in self.parameter_data.parnme]
 
         if len(new_parnme) == 0:
-            warnings.warn("no new parameters found in template file {0}".format(template_file))
+            warnings.warn("no new parameters found in template file {0}".format(template_file),PyemuWarning)
             new_par_data = None
         else:
             # extend pa

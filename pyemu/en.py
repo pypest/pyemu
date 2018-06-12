@@ -3,6 +3,8 @@ import os
 from datetime import datetime
 import copy
 import warnings
+warnings.filterwarnings("ignore",category=UserWarning,module="pandas")
+from .pyemu_warnings import PyemuWarning
 import math
 import numpy as np
 import pandas as pd
@@ -15,7 +17,6 @@ from pyemu.plot.plot_utils import ensemble_helper
 #                                         "created via a new attribute name - see"+\
 #                                         "https://pandas.pydata.org/pandas-docs/"+\
 #                                         "stable/indexing.html#attribute-access")
-warnings.filterwarnings("ignore",category=UserWarning,module="pandas")
 SEED = 358183147 #from random.org on 5 Dec 2016
 #print("setting random seed")
 np.random.seed(SEED)
@@ -551,9 +552,8 @@ class ParameterEnsemble(Ensemble):
         if "tied" in list(self.pst.parameter_data.partrans.values):
             #raise NotImplementedError("ParameterEnsemble does not " +\
             #                          "support tied parameters")
-            import warnings
             warnings.warn("tied parameters are treated as fixed in "+\
-                         "ParameterEnsemble")
+                         "ParameterEnsemble",PyemuWarning)
         self.pst.parameter_data.index = self.pst.parameter_data.parnme
         self.bound_tol = kwargs.get("bound_tol",0.0)
 
@@ -1326,7 +1326,7 @@ class ParameterEnsemble(Ensemble):
             import warnings
             warnings.warn("deprecation warning: enforce_bounds should be "+\
                           "either 'reset', 'drop', 'scale', or None, not bool"+\
-                          "...resetting to None.")
+                          "...resetting to None.",PyemuWarning)
             enforce_bounds = None
         if enforce_bounds is None:
             return
@@ -1501,7 +1501,8 @@ class ParameterEnsemble(Ensemble):
             #to change scale between par files and pst...
             diff = df.scale - pst.parameter_data.scale
             if diff.apply(np.abs).sum() > 0.0:
-                warnings.warn("differences in scale detected, applying scale in par file")
+                warnings.warn("differences in scale detected, applying scale in par file",
+                              PyemuWarning)
                 #df.loc[:,"parval1"] *= df.scale
 
             dfs[rname] = df.parval1.values
@@ -1519,7 +1520,7 @@ class ParameterEnsemble(Ensemble):
             diff = pset.difference(dset)
             if len(diff) > 0:
                 warnings.warn("the following parameters are not in the par files (getting NaNs) :{0}".
-                             format(','.join(diff)))
+                             format(','.join(diff)),PyemuWarning)
                 blank_df = pd.DataFrame(index=df_all.index,columns=diff)
 
                 df_all = pd.concat([df_all,blank_df],axis=1)
@@ -1527,7 +1528,7 @@ class ParameterEnsemble(Ensemble):
             diff = dset.difference(pset)
             if len(diff) > 0:
                 warnings.warn("the following par file parameters are not in the control (being dropped):{0}".
-                              format(','.join(diff)))
+                              format(','.join(diff)),PyemuWarning)
                 df_all = df_all.loc[:, pst.par_names]
 
         return ParameterEnsemble.from_dataframe(df=df_all,pst=pst)
@@ -1556,7 +1557,7 @@ class ParameterEnsemble(Ensemble):
             self._back_transform(inplace=True)
             retrans = True
         if self.isnull().values.any():
-            warnings.warn("NaN in par ensemble")
+            warnings.warn("NaN in par ensemble",PyemuWarning)
         super(ParameterEnsemble,self).to_csv(*args,**kwargs)
         if retrans:
             self._transform(inplace=True)
@@ -1587,7 +1588,7 @@ class ParameterEnsemble(Ensemble):
             self._back_transform(inplace=True)
             retrans = True
         if self.isnull().values.any():
-            warnings.warn("NaN in par ensemble")
+            warnings.warn("NaN in par ensemble",PyemuWarning)
         self.as_pyemu_matrix().to_binary(filename)
         if retrans:
             self._transform(inplace=True)
@@ -1609,7 +1610,7 @@ class ParameterEnsemble(Ensemble):
 
         """
         if self.isnull().values.any():
-            warnings.warn("NaN in par ensemble")
+            warnings.warn("NaN in par ensemble",PyemuWarning)
         if self.istransformed:
             self._back_transform(inplace=True)
 

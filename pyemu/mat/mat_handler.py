@@ -12,7 +12,7 @@ from scipy.io import FortranFile
 import scipy.sparse
 
 from pyemu.pst.pst_handler import Pst
-
+from ..pyemu_warnings import PyemuWarning
 
 def save_coo(x, row_names, col_names,  filename, chunk=None):
     """write a PEST-compatible binary file.  The data format is
@@ -1202,7 +1202,7 @@ class Matrix(object):
             indices of names.
 
         """
-        warnings.warn("Matrix.old_indices() is deprecated - only here for testing. Use Matrix.indices()")
+        warnings.warn("Matrix.old_indices() is deprecated - only here for testing. Use Matrix.indices()",PyemuWarning)
         row_idxs, col_idxs = [], []
         for name in names:
             if name.lower() not in self.col_names \
@@ -1630,7 +1630,7 @@ class Matrix(object):
         """
         x,row_names,col_names = Matrix.read_binary(filename)
         if np.any(np.isnan(x)):
-            warnings.warn("Matrix.from_binary(): nans in matrix")
+            warnings.warn("Matrix.from_binary(): nans in matrix",PyemuWarning)
         return cls(x=x, row_names=row_names, col_names=col_names)
 
     @staticmethod
