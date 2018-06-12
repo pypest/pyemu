@@ -185,7 +185,10 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
     fset = set(full_cov.row_names)
     diff = list(fset.difference(pars_in_cov))
     if (len(diff) > 0):
-        cov = full_cov.get(diff,diff)
+        name_dict = {name:i for i,name in enumerate(full_cov.row_names)}
+        vec = np.atleast_2d(np.array([full_cov.x[name_dict[d]] for d in diff]))
+        cov = pyemu.Cov(x=vec,names=diff,isdiagonal=True)
+        #cov = full_cov.get(diff,diff)
         # here we fill in the fixed values
         pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=num_reals,
                                                         fill_fixed=True)
