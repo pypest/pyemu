@@ -7,6 +7,7 @@ from datetime import datetime
 import shutil
 import numpy as np
 import pandas as pd
+import re
 pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,_try_run_inschek,parse_tpl_file
 from pyemu.utils.helpers import run
@@ -1640,4 +1641,128 @@ def load_sfr_out(sfr_out_file):
                 sfr_dict[kper] = df
     return sfr_dict
 
+def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
+    """writes an instruction file for a mt3d-usgs sft output file
 
+    Parameters
+    ----------
+        sft_file : str
+            the sft output file (ASCII)
+        ins_file : str
+            the name of the instruction file to create.  If None, the name
+            is <sft_file>.ins.  Default is None
+        start_datetime : str
+            a pandas.to_datetime() compatible str.  If not None,
+            then the resulting observation names have the datetime
+            suffix.  If None, the suffix is the output totim.  Default
+            is None
+        times : iterable
+            a container of times to make observations for.  If None, all times are used.
+            Default is None.
+        ncomp : int
+            number of components in transport model. Default is 1.
+
+
+    Returns
+    -------
+        df : pandas.DataFrame
+            a dataframe with obsnme and obsval for the sft simulated concentrations and flows.
+            If inschek was not successfully run, then returns None
+
+
+    Note
+    ----
+        setups up observations for SW conc, GW conc and flowgw for all times and reaches.
+    """
+
+    with open(gage_file, 'r') as f:
+        line1 = f.readline()
+        gage_num = int(re.sub("[^0-9]","",line1.split("GAGE No.")[-1].strip().split()[0]))
+        gage_type = line1.split("GAGE No.")[-1].strip().split()[1].lower()
+        obj_num = int(line1.strip().split()[-1])
+        line2 = f.readline()
+        df = pd.read_csv(f, delim_whitespace=True, names=line2.split()[1:])
+
+    df.columns = [c.lower().replace("-","_") for c in df.columns]
+    if times is None:
+        times = df.time.unique()
+    missing = []
+    utimes = df.time.unique()
+    for t in times:
+        if t not in utimes:
+            missing.append(str(t))
+    if len(missing) > 0:
+        print(df.time)
+        raise Exception("the following times are missing:{0}".format(','.join(missing)))
+    with open("gage_obs.config",'w') as f:
+        f.write(gage_file+'\n')
+        [f.write("{0:15.10E}\n".format(t)) for t in times]
+    df = apply_gage_obs()
+    utimes = df.time.unique()
+    for t in times:
+        assert t in utimes,"time {0} missing in processed dataframe".format(t)
+    idx = df.time.apply(lambda x: np.isclose(x,times).any())
+    if start_datetime is not None:
+        start_datetime = pd.to_datetime(start_datetime)
+        df.loc[:,"time_str"] = pd.to_timedelta(df.time,unit='d') + start_datetime
+        df.loc[:,"time_str"] = df.time_str.apply(lambda x: datetime.strftime(x,"%Y%m%d"))
+    else:
+        df.loc[:,"time_str"] = df.time.apply(lambda x: "{0:08.2f}".format(x))
+    df.loc[:,"ins_str"] = "l1\n"
+    # check for multiple components
+    df_times = df.loc[idx,:]
+    for df_time in df_times:
+    # df.loc[:,"icomp"] = 1
+    # icomp_idx = list(df.columns).index("icomp")
+    # for t in times:
+    #     df_time = df.loc[df.time==t,:]
+    #     vc = df_time.sfr_node.value_counts()
+    #     ncomp = vc.max()
+    #     assert np.all(vc.values==ncomp)
+    #     nstrm = df_time.shape[0] / ncomp
+    #     for icomp in range(ncomp):
+    #         s = int(nstrm*(icomp))
+    #         e = int(nstrm*(icomp+1))
+    #         idxs = df_time.iloc[s:e,:].index
+    #         #df_time.iloc[nstrm*(icomp):nstrm*(icomp+1),icomp_idx.loc["icomp"] = int(icomp+1)
+    #         df_time.loc[idxs,"icomp"] = int(icomp+1)
+
+        df.loc[df_time.index,"ins_str"] = df_time.apply(lambda x: "l1 w !g{0}{1}_{2}! !swgw{0}_{1}! !gwcn{0}_{1}!\n".\
+                                         format(gage_type[0],x.time_str),axis=1)
+    df.index = np.arange(df.shape[0])
+    if ins_file is None:
+        ins_file = gage_file+".processed.ins"
+
+    with open(ins_file,'w') as f:
+        f.write("pif ~\nl1\n")
+        [f.write(i) for i in df.ins_str]
+    df = _try_run_inschek(ins_file,sft_file+".processed")
+    if df is not None:
+        return df
+    else:
+        return None
+
+
+def apply_gage_obs():
+    times = []
+    with open("gage_obs.config") as f:
+        gage_file = f.readline().strip()
+        for line in f:
+            times.append(float(line.strip()))
+    with open(gage_file, 'r') as f:
+        line1 = f.readline()
+        gage_num = int(re.sub("[^0-9]","",line1.split("GAGE No.")[-1].strip().split()[0]))
+        gage_type = line1.split("GAGE No.")[-1].strip().split()[1].lower()
+        obj_num = int(line1.strip().split()[-1])
+        line2 = f.readline()
+        df = pd.read_csv(f, delim_whitespace=True, names=line2.split()[1:])
+    df.columns = [c.lower().replace("-", "_") for c in df.columns]
+
+    #normalize
+    # for c in df.columns:
+    #     df.loc[df.loc[:,c].apply(lambda x: x<1e-30),c] = 0.0
+    #     df.loc[df.loc[:, c] > 1e+30, c] = 1.0e+30
+    # df.loc[:,"sfr_node"] = df.sfr_node.apply(np.int)
+    df = df.loc[df.time.apply(lambda x: np.isclose(x,times).any()),:]
+    df.to_csv(gage_file+".processed",sep=' ',index=False)
+    return df
