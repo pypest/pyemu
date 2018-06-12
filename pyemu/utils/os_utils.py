@@ -6,7 +6,7 @@ import subprocess as sp
 import warnings
 import time
 from datetime import datetime
-
+from ..pyemu_warnings import PyemuWarning
 
 def remove_readonly(func, path, excinfo):
     """remove readonly dirs, apparently only a windows issue
@@ -275,5 +275,5 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
                     shutil.rmtree(d,onerror=remove_readonly)
                     slave_dirs.pop(slave_dirs.index(d)) #if successfully removed
                 except Exception as e:
-                    warnings.warn("unable to remove slavr dir{0}:{1}".format(d,str(e)))
+                    warnings.warn("unable to remove slavr dir{0}:{1}".format(d,str(e)),PyemuWarning)
 

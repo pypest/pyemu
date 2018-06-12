@@ -6,8 +6,10 @@ users shouldn't need to deal with these classes explicitly
 from __future__ import print_function, division
 import os
 import copy
+import warnings
 import numpy as np
 import pandas
+from ..pyemu_warnings import PyemuWarning
 pandas.options.display.max_colwidth = 100
 #from pyemu.pst.pst_handler import SFMT,SFMT_LONG,FFMT,IFMT
 
@@ -262,9 +264,9 @@ class ControlData(object):
                                     found = True
                                     break
                         if not found:
-                            print("warning: non-conforming value found for " +\
-                                  name + ":" + str(v))
-                            print("ignoring...")
+                            warnings.warn("non-conforming value found for " +\
+                                  name + ":" + str(v) + "...ignoring",PyemuWarning)
+
 
                 else:
                     self._df.loc[name,"value"] = v

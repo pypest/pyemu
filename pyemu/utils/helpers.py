@@ -14,7 +14,7 @@ import numpy as np
 import scipy.sparse
 import pandas as pd
 pd.options.display.max_colwidth = 100
-
+from ..pyemu_warnings import PyemuWarning
 try:
     import flopy
 except:
@@ -67,7 +67,7 @@ def run(cmd_str,cwd='.',verbose=False):
     ``>>>pyemu.helpers.run("pestpp pest.pst")``
 
     """
-    warnings.warn("run() has moved to pyemu.os_utils")
+    warnings.warn("run() has moved to pyemu.os_utils",PyemuWarning)
     pyemu.os_utils.run(cmd_str=cmd_str,cwd=cwd,verbose=verbose)
 
 
@@ -132,7 +132,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
             gss = pyemu.geostats.read_struct_file(gs)
             if isinstance(gss,list):
                 warnings.warn("using first geostat structure in file {0}".\
-                              format(gs))
+                              format(gs),PyemuWarning)
                 gs = gss[0]
             else:
                 gs = gss
@@ -156,7 +156,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
             if len(missing) > 0:
                 warnings.warn("the following parameters are not " + \
                               "in the control file: {0}".\
-                              format(','.join(missing)))
+                              format(','.join(missing)),PyemuWarning)
                 df = df.loc[df.parnme.apply(lambda x: x not in missing)]
             if "zone" not in df.columns:
                 df.loc[:,"zone"] = 1
@@ -200,7 +200,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
 
 def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
     warnings.warn("'pilotpoint_prior_builder' has been renamed to "+\
-                  "'geostatistical_prior_builder'")
+                  "'geostatistical_prior_builder'",PyemuWarning)
     return geostatistical_prior_builder(pst=pst,struct_dict=struct_dict,
                                         sigma_range=sigma_range)
 
@@ -264,7 +264,7 @@ def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4,verbose=F
             gss = pyemu.geostats.read_struct_file(gs)
             if isinstance(gss,list):
                 warnings.warn("using first geostat structure in file {0}".\
-                              format(gs))
+                              format(gs),PyemuWarning)
                 gs = gss[0]
             else:
                 gs = gss
@@ -288,7 +288,7 @@ def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4,verbose=F
             if len(missing) > 0:
                 warnings.warn("the following parameters are not " + \
                               "in the control file: {0}".\
-                              format(','.join(missing)))
+                              format(','.join(missing)),PyemuWarning)
                 df = df.loc[df.parnme.apply(lambda x: x not in missing)]
             if "zone" not in df.columns:
                 df.loc[:,"zone"] = 1
@@ -389,7 +389,7 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
             gss = pyemu.geostats.read_struct_file(gs)
             if isinstance(gss,list):
                 warnings.warn("using first geostat structure in file {0}".\
-                              format(gs))
+                              format(gs),PyemuWarning)
                 gs = gss[0]
             else:
                 gs = gss
@@ -413,7 +413,7 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
             if len(missing) > 0:
                 warnings.warn("the following parameters are not " + \
                               "in the control file: {0}".\
-                              format(','.join(missing)))
+                              format(','.join(missing)),PyemuWarning)
                 df = df.loc[df.parnme.apply(lambda x: x not in missing)]
             if "zone" not in df.columns:
                 df.loc[:,"zone"] = 1
@@ -980,7 +980,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
 
     """
 
-    warnings.warn("start_slaves has moved to pyemu.os_utils")
+    warnings.warn("start_slaves has moved to pyemu.os_utils",PyemuWarning)
     pyemu.os_utils.start_slaves(slave_dir=slave_dir,exe_rel_path=exe_rel_path,pst_rel_path=pst_rel_path
                       ,num_slaves=num_slaves,slave_root=slave_root,port=port,rel_path=rel_path,
                       local=local,cleanup=cleanup,master_dir=master_dir,verbose=verbose,
@@ -3669,7 +3669,7 @@ def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
 
     ``>>>plt.show()``
     """
-    warnings.warn("pyemu.helpers.plot_summary_distributions() has moved to plot_utils")
+    warnings.warn("pyemu.helpers.plot_summary_distributions() has moved to plot_utils",PyemuWarning)
     from pyemu import plot_utils
     return plot_utils.plot_summary_distributions(df=df,ax=ax,label_post=label_post,
                                                  label_prior=label_prior,subplots=subplots,
@@ -3699,7 +3699,7 @@ def gaussian_distribution(mean, stdev, num_pts=50):
         the y-values of the distribution
 
     """
-    warnings.warn("pyemu.helpers.gaussian_distribution() has moved to plot_utils")
+    warnings.warn("pyemu.helpers.gaussian_distribution() has moved to plot_utils",PyemuWarning)
     from pyemu import plot_utils
     return plot_utils.gaussian_distribution(mean=mean,stdev=stdev,num_pts=num_pts)
 
