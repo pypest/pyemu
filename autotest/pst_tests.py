@@ -437,6 +437,47 @@ def plot_flopy_par_ensemble_test():
     os.chdir("..")
 
 
+def from_flopy_kl_test():
+    import shutil
+    import numpy as np
+    import pandas as pd
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    flopy.modflow.ModflowRiv(m, stress_period_data={0: [[0, 0, 0, 30.0, 1.0, 25.0],
+                                                        [0, 0, 1, 31.0, 1.0, 25.0],
+                                                        [0, 0, 1, 31.0, 1.0, 25.0]]})
+    hfb_data = []
+    jcol1, jcol2 = 14, 15
+    for i in range(m.nrow):
+        hfb_data.append([0, i, jcol1, i, jcol2, 0.001])
+    flopy.modflow.ModflowHfb(m, 0, 0, len(hfb_data), hfb_data=hfb_data)
+
+    org_model_ws = "temp"
+    m.change_model_ws(org_model_ws)
+    m.write_input()
+
+    new_model_ws = "temp_pst_from_flopy"
+
+    hds_kperk = []
+    for k in range(m.nlay):
+        for kper in range(m.nper):
+            hds_kperk.append([kper, k])
+    temp_bc_props = [["wel.flux", None]]
+    spat_bc_props = [["riv.cond", 0], ["riv.stage", 0]]
+    kl_props = [["upw.hk",0],["upw.vka",0],["rch.rech",0]]
+    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+                                         org_model_ws=org_model_ws,
+                                         kl_props=kl_props,
+                                         remove_existing=True,
+                                         model_exe_name="mfnwt")
+
+
 def from_flopy_test():
     import shutil
     import numpy as np
@@ -452,6 +493,12 @@ def from_flopy_test():
     flopy.modflow.ModflowRiv(m,stress_period_data={0:[[0,0,0,30.0,1.0,25.0],
                                                       [0,0,1,31.0,1.0,25.0],
                                                       [0,0,1,31.0,1.0,25.0]]})
+    hfb_data = []
+    jcol1, jcol2 = 14, 15
+    for i in range(m.nrow):
+        hfb_data.append([0, i, jcol1, i, jcol2, 0.001])
+    flopy.modflow.ModflowHfb(m, 0, 0, len(hfb_data), hfb_data=hfb_data)
+
     org_model_ws = "temp"
     m.change_model_ws(org_model_ws)
     m.write_input()
@@ -469,7 +516,7 @@ def from_flopy_test():
                                          zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
                                          remove_existing=True,
                                          model_exe_name="mfnwt",temporal_bc_props=temp_bc_props,
-                                         spatial_bc_props=spat_bc_props)
+                                         spatial_bc_props=spat_bc_props,hfb_pars=True)
 
     par = ph.pst.parameter_data
     pe = ph.draw(100)
@@ -945,7 +992,7 @@ def pst_from_flopy_geo_draw_test():
 
 
 if __name__ == "__main__":
-    pst_from_flopy_geo_draw_test()
+    #pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
     # res_stats_test()
@@ -954,7 +1001,8 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    #from_flopy_test()
+    from_flopy_test()
+    #from_flopy_kl_test()
     # from_flopy_reachinput_test()
     # plot_flopy_par_ensemble_test()
     # add_pi_test()

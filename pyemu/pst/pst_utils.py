@@ -595,15 +595,15 @@ def try_process_ins_file(ins_file,out_file=None):
             for ir in iraw[1:]:
                 if ir == 'w':
                     oc += 1
-                    if oc >= len(oraw):
+                    if oc > len(oraw):
                         raise Exception("out file line {0} too short".format(ocount))
                 elif '!' in ir:
                     n = ir.replace('!','')
                     try:
                         v = float(oraw[oc])
-                    except:
-                        raise Exception("error processing ins {0} for obs {1}, string: {2} on line {3} (ins line {4}".
-                                        format(ir,n,oline,ocount,icount))
+                    except Exception as e:
+                        raise Exception("error processing ins {0} for obs {1}, string: {2} on line {3} (ins line {4}):{5}".
+                                        format(ir,n,oline,ocount,icount,str(e)))
                     obsnme.append(n)
                     obsval.append(v)
                     oc += 1
@@ -614,7 +614,7 @@ def try_process_ins_file(ins_file,out_file=None):
 
         return df
     except Exception as e:
-        print("error processing ins file {0}: {1]".format(ins_file,str(e)))
+        print("error processing ins file {0}: {1}".format(ins_file,str(e)))
         return pd.DataFrame({"obsnme":obs_names},index=obs_names)
 
 

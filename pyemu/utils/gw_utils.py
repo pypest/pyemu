@@ -9,7 +9,8 @@ import numpy as np
 import pandas as pd
 import re
 pd.options.display.max_colwidth = 100
-from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,_try_run_inschek,parse_tpl_file
+from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,_try_run_inschek,\
+    parse_tpl_file,try_process_ins_file
 from pyemu.utils.helpers import run
 PP_FMT = {"name": SFMT, "x": FFMT, "y": FFMT, "zone": IFMT, "tpl": SFMT,
           "parval1": FFMT}
@@ -703,13 +704,13 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
         f.write('pif ~\n')
         f.write("l1 \n")
         for t in t_str:
-            f.write("l1")
+            f.write("l1 w ")
             for site in df.columns:
                 if prefix is not None:
                     obsnme = "{0}_{1}_{2}".format(prefix,site,t)
                 else:
                     obsnme = "{0}_{1}".format(site, t)
-                f.write(" w !{0}!".format(obsnme))
+                f.write(" !{0}!".format(obsnme))
             f.write('\n')
 
 
@@ -726,7 +727,8 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
         raise Exception("error in apply_sfr_obs(): {0}".format(str(e)))
     os.chdir(bd)
 
-    df = _try_run_inschek(ins_file,ins_file.replace(".ins",""))
+    #df = _try_run_inschek(ins_file,ins_file.replace(".ins",""))
+    df = try_process_ins_file(ins_file,ins_file.replace(".ins",""))
     if df is not None:
         df.loc[:,"weight"] = 0.0
         if prefix is not None:
@@ -1102,7 +1104,8 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
     with open(ins_file,'w') as f:
         f.write("pif ~\nl1\n")
         [f.write(i) for i in df.ins_str]
-    df = _try_run_inschek(ins_file,sft_file+".processed")
+    #df = _try_run_inschek(ins_file,sft_file+".processed")
+    df = try_process_ins_file(ins_file,sft_file+".processed")
     if df is not None:
         return df
     else:
@@ -1536,7 +1539,8 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
     bd = os.getcwd()
     os.chdir(pth)
     try:
-        df = _try_run_inschek(os.path.split(ins_file)[-1],os.path.split(sfr_out_file+".processed")[-1])
+        #df = _try_run_inschek(os.path.split(ins_file)[-1],os.path.split(sfr_out_file+".processed")[-1])
+        df = try_process_ins_file(os.path.split(ins_file)[-1],os.path.split(sfr_out_file+".processed")[-1])
     except Exception as e:
         pass
     os.chdir(bd)
@@ -1766,3 +1770,75 @@ def apply_gage_obs():
     df = df.loc[df.time.apply(lambda x: np.isclose(x,times).any()),:]
     df.to_csv(gage_file+".processed",sep=' ',index=False)
     return df
+
+
+def write_hfb_template(m):
+    """write a template file for an hfb (yuck!)
+
+    Parameters
+    ----------
+        m : flopy.modflow.Modflow instance with an HFB file
+
+    Returns
+    -------
+        (tpl_filename, df) : (str, pandas.DataFrame)
+            the name of the template file and a dataframe with useful info.
+
+    """
+
+    assert m.hfb6 is not None
+    hfb_file = os.path.join(m.model_ws,m.hfb6.file_name[0])
+    assert os.path.exists(hfb_file),"couldn't find hfb_file".format(hfb_file)
+    f_in = open(hfb_file,'r')
+    tpl_file = hfb_file+".tpl"
+    f_tpl = open(tpl_file,'w')
+    f_tpl.write("ptf ~\n")
+    parnme,parval1,xs,ys = [],[],[],[]
+    iis,jjs,kks = [],[],[]
+    xc = m.sr.xcentergrid
+    yc = m.sr.ycentergrid
+
+    while True:
+        line = f_in.readline()
+        if line == "":
+            break
+        f_tpl.write(line)
+        if not line.startswith("#"):
+            raw = line.strip().split()
+            nphfb = int(raw[0])
+            mxfb = int(raw[1])
+            nhfbnp = int(raw[2])
+            if nphfb > 0 or mxfb > 0:
+                raise Exception("not supporting terrible HFB pars")
+            for i in range(nhfbnp):
+                line = f_in.readline()
+                if line == "":
+                    raise Exception("EOF")
+                raw = line.strip().split()
+                k = int(raw[0]) - 1
+                i = int(raw[1]) - 1
+                j = int(raw[2]) - 1
+                pn = "hb{0:02}{1:04d}{2:04}".format(k,i,j)
+                pv = float(raw[5])
+                raw[5] = "~ {0}  ~".format(pn)
+                line = ' '.join(raw)+'\n'
+                f_tpl.write(line)
+                parnme.append(pn)
+                parval1.append(pv)
+                xs.append(xc[i,j])
+                ys.append(yc[i,j])
+                iis.append(i)
+                jjs.append(j)
+                kks.append(k)
+            break
+
+    f_tpl.close()
+    f_in.close()
+    df = pd.DataFrame({"parnme":parnme,"parval1":parval1,"x":xs,"y":ys,
+                       "i":iis,"j":jjs,"k":kks},index=parnme)
+    df.loc[:,"pargp"] = "hfb_hydfac"
+    df.loc[:,"parubnd"] = df.parval1.max() * 10.0
+    df.loc[:,"parlbnd"] = df.parval1.min() * 0.1
+    return tpl_file,df
+
+

@@ -1586,6 +1586,8 @@ class ParameterEnsemble(Ensemble):
         if self.istransformed:
             self._back_transform(inplace=True)
             retrans = True
+        if self.isnull().values.any():
+            warnings.warn("NaN in par ensemble")
         self.as_pyemu_matrix().to_binary(filename)
         if retrans:
             self._transform(inplace=True)
@@ -1606,7 +1608,8 @@ class ParameterEnsemble(Ensemble):
         log10 before writing
 
         """
-
+        if self.isnull().values.any():
+            warnings.warn("NaN in par ensemble")
         if self.istransformed:
             self._back_transform(inplace=True)
 
