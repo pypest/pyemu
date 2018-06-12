@@ -148,6 +148,8 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
                     df = pd.read_csv(item)
             else:
                 df = item
+            if verbose: print("working on pargroups {0}".\
+                              format(df.pargp.unique().tolist()))
             for req in ['x','y','parnme']:
                 if req not in df.columns:
                     raise Exception("{0} is not in the columns".format(req))
@@ -159,7 +161,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
                               format(','.join(missing)))
                 df = df.loc[df.parnme.apply(lambda x: x not in missing)]
             if "zone" not in df.columns:
-                df.loc[:,"zone"] = 1
+                df["zone"] = 1
             zones = df.zone.unique()
             for zone in zones:
                 df_zone = df.loc[df.zone==zone,:].copy()
@@ -2228,9 +2230,10 @@ class PstFromFlopyModel(object):
             bc_dfs = []
             for pargp in bc_df.pargp.unique():
                 gp_df = bc_df.loc[bc_df.pargp==pargp,:]
-                #p_df = gp_df.drop_duplicates(subset="parnme")
+                # TODO ask Jeremy why this was commented!
+                p_df = gp_df.drop_duplicates(subset="parnme")
                 #print(p_df)
-                bc_dfs.append(gp_df)
+                bc_dfs.append(p_df)
             struct_dict[self.spatial_bc_geostruct] = bc_dfs
         pe = geostatistical_draws(self.pst,struct_dict=struct_dict,num_reals=num_reals,
                              sigma_range=sigma_range, verbose=verbose)
@@ -2839,6 +2842,7 @@ class PstFromFlopyModel(object):
                                   self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0, a=dist)
             self.spatial_bc_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+        self.log("processing spatial_bc_props")
         return True
 
 
