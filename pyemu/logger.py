@@ -2,6 +2,8 @@
 """
 from __future__ import print_function, division
 from datetime import datetime
+import warnings
+from .pyemu_warnings import PyemuWarning
 import copy
 
 class Logger(object):
@@ -103,6 +105,7 @@ class Logger(object):
         if self.filename:
             self.f.write(s)
             self.f.flush
+        warnings.warn(s,PyemuWarning)
 
     def lraise(self,message):
         """log an exception, close the log file, then raise the exception

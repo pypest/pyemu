@@ -6,12 +6,14 @@ import copy
 import csv
 from datetime import datetime
 import shutil
+import warnings
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,_try_run_inschek,\
     parse_tpl_file,try_process_ins_file
 from pyemu.utils.helpers import run
+from ..pyemu_warnings import PyemuWarning
 PP_FMT = {"name": SFMT, "x": FFMT, "y": FFMT, "zone": IFMT, "tpl": SFMT,
           "parval1": FFMT}
 PP_NAMES = ["name","x","y","zone","parval1"]
@@ -235,8 +237,7 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
 
     """
     from . import pp_utils
-    import warnings
-    warnings.warn("setup_pilotpoint_grid has moved to pp_utils...")
+    warnings.warn("setup_pilotpoint_grid has moved to pp_utils...",PyemuWarning)
     return pp_utils.setup_pilotpoints_grid(ml=ml,sr=sr,ibound=ibound,
                                            prefix_dict=prefix_dict,
                                            every_n_cell=every_n_cell,
@@ -247,42 +248,38 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
 
 def pp_file_to_dataframe(pp_filename):
 
-    import warnings
+
     from . import pp_utils
-    warnings.warn("pp_file_to_dataframe has moved to pp_utils")
+    warnings.warn("pp_file_to_dataframe has moved to pp_utils",PyemuWarning)
     return pp_utils.pp_file_to_dataframe(pp_filename)
 
 def pp_tpl_to_dataframe(tpl_filename):
-    import warnings
+
     from . import pp_utils
-    warnings.warn("pp_tpl_to_dataframe has moved to pp_utils")
+    warnings.warn("pp_tpl_to_dataframe has moved to pp_utils",PyemuWarning)
     return pp_utils.pp_tpl_to_dataframe(tpl_filename)
 
 def write_pp_shapfile(pp_df,shapename=None):
     from . import pp_utils
-    import warnings
-    warnings.warn("write_pp_shapefile has moved to pp_utils")
+    warnings.warn("write_pp_shapefile has moved to pp_utils",PyemuWarning)
     pp_utils.write_pp_shapfile(pp_df,shapename=shapename)
 
 
 def write_pp_file(filename,pp_df):
     from . import pp_utils
-    import warnings
-    warnings.warn("write_pp_file has moved to pp_utils")
+    warnings.warn("write_pp_file has moved to pp_utils",PyemuWarning)
     return pp_utils.write_pp_file(filename,pp_df)
 
 def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
     from . import pp_utils
-    import warnings
-    warnings.warn("pilot_points_to_tpl has moved to pp_utils")
+    warnings.warn("pilot_points_to_tpl has moved to pp_utils",PyemuWarning)
     return pp_utils.pilot_points_to_tpl(pp_file,tpl_file=tpl_file,
                                         name_prefix=name_prefix)
 
 def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
              upper_lim=1.0e+30,lower_lim=-1.0e+30,fill_value=1.0e+30):
     from . import geostats as gs
-    import warnings
-    warnings.warn("fac2real has moved to geostats")
+    warnings.warn("fac2real has moved to geostats",PyemuWarning)
     return gs.fac2real(pp_file=pp_file,factors_file=factors_file,
                        out_file=out_file,upper_lim=upper_lim,
                        lower_lim=lower_lim,fill_value=fill_value)
@@ -667,7 +664,7 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
     f_config = open(config_file,'w')
     if model is not None:
         if model.dis.itmuni != 4:
-            warnings.warn("setup_hds_timeseries only supports 'days' time units...")
+            warnings.warn("setup_hds_timeseries only supports 'days' time units...",PyemuWarning)
         f_config.write("{0},{1},d\n".format(os.path.split(hds_file)[-1],model.start_datetime))
         start = pd.to_datetime(model.start_datetime)
     else:

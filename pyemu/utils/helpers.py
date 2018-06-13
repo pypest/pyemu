@@ -14,7 +14,7 @@ import numpy as np
 import scipy.sparse
 import pandas as pd
 pd.options.display.max_colwidth = 100
-
+from ..pyemu_warnings import PyemuWarning
 try:
     import flopy
 except:
@@ -67,7 +67,7 @@ def run(cmd_str,cwd='.',verbose=False):
     ``>>>pyemu.helpers.run("pestpp pest.pst")``
 
     """
-    warnings.warn("run() has moved to pyemu.os_utils")
+    warnings.warn("run() has moved to pyemu.os_utils",PyemuWarning)
     pyemu.os_utils.run(cmd_str=cmd_str,cwd=cwd,verbose=verbose)
 
 
@@ -132,7 +132,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
             gss = pyemu.geostats.read_struct_file(gs)
             if isinstance(gss,list):
                 warnings.warn("using first geostat structure in file {0}".\
-                              format(gs))
+                              format(gs),PyemuWarning)
                 gs = gss[0]
             else:
                 gs = gss
@@ -156,7 +156,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
             if len(missing) > 0:
                 warnings.warn("the following parameters are not " + \
                               "in the control file: {0}".\
-                              format(','.join(missing)))
+                              format(','.join(missing)),PyemuWarning)
                 df = df.loc[df.parnme.apply(lambda x: x not in missing)]
             if "zone" not in df.columns:
                 df.loc[:,"zone"] = 1
@@ -185,7 +185,10 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
     fset = set(full_cov.row_names)
     diff = list(fset.difference(pars_in_cov))
     if (len(diff) > 0):
-        cov = full_cov.get(diff,diff)
+        name_dict = {name:i for i,name in enumerate(full_cov.row_names)}
+        vec = np.atleast_2d(np.array([full_cov.x[name_dict[d]] for d in diff]))
+        cov = pyemu.Cov(x=vec,names=diff,isdiagonal=True)
+        #cov = full_cov.get(diff,diff)
         # here we fill in the fixed values
         pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=num_reals,
                                                         fill_fixed=True)
@@ -197,7 +200,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
 
 def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
     warnings.warn("'pilotpoint_prior_builder' has been renamed to "+\
-                  "'geostatistical_prior_builder'")
+                  "'geostatistical_prior_builder'",PyemuWarning)
     return geostatistical_prior_builder(pst=pst,struct_dict=struct_dict,
                                         sigma_range=sigma_range)
 
@@ -261,7 +264,7 @@ def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4,verbose=F
             gss = pyemu.geostats.read_struct_file(gs)
             if isinstance(gss,list):
                 warnings.warn("using first geostat structure in file {0}".\
-                              format(gs))
+                              format(gs),PyemuWarning)
                 gs = gss[0]
             else:
                 gs = gss
@@ -285,7 +288,7 @@ def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4,verbose=F
             if len(missing) > 0:
                 warnings.warn("the following parameters are not " + \
                               "in the control file: {0}".\
-                              format(','.join(missing)))
+                              format(','.join(missing)),PyemuWarning)
                 df = df.loc[df.parnme.apply(lambda x: x not in missing)]
             if "zone" not in df.columns:
                 df.loc[:,"zone"] = 1
@@ -386,7 +389,7 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
             gss = pyemu.geostats.read_struct_file(gs)
             if isinstance(gss,list):
                 warnings.warn("using first geostat structure in file {0}".\
-                              format(gs))
+                              format(gs),PyemuWarning)
                 gs = gss[0]
             else:
                 gs = gss
@@ -410,7 +413,7 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
             if len(missing) > 0:
                 warnings.warn("the following parameters are not " + \
                               "in the control file: {0}".\
-                              format(','.join(missing)))
+                              format(','.join(missing)),PyemuWarning)
                 df = df.loc[df.parnme.apply(lambda x: x not in missing)]
             if "zone" not in df.columns:
                 df.loc[:,"zone"] = 1
@@ -593,13 +596,18 @@ def kl_setup(num_eig,sr,struct,prefixes,
     eigen_basis_to_factor_file(sr.nrow,sr.ncol,trunc_basis,factors_file=factors_file,islog=islog)
     dfs = []
     for prefix in prefixes:
-        tpl_file = "kl_{0}.dat.tpl".format(prefix)
+        tpl_file = os.path.join(tpl_dir,"{0}.dat_kl.tpl".format(prefix))
         df = pyemu.pp_utils.pilot_points_to_tpl("temp.dat",tpl_file,prefix)
+        shutil.copy2("temp.dat",tpl_file.replace(".tpl",""))
         df.loc[:,"tpl_file"] = tpl_file
         df.loc[:,"in_file"] = tpl_file.replace(".tpl","")
         df.loc[:,"prefix"] = prefix
+        df.loc[:,"pargp"] = "kl_{0}".format(prefix)
         dfs.append(df)
         #arr = pyemu.geostats.fac2real(df,factors_file=factors_file,out_file=None)
+    df = pd.concat(dfs)
+    df.loc[:,"parubnd"] = 10.0
+    df.loc[:,"parlbnd"] = 0.1
     return pd.concat(dfs)
 
     # back_array_dict = {}
@@ -972,7 +980,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
 
     """
 
-    warnings.warn("start_slaves has moved to pyemu.os_utils")
+    warnings.warn("start_slaves has moved to pyemu.os_utils",PyemuWarning)
     pyemu.os_utils.start_slaves(slave_dir=slave_dir,exe_rel_path=exe_rel_path,pst_rel_path=pst_rel_path
                       ,num_slaves=num_slaves,slave_root=slave_root,port=port,rel_path=rel_path,
                       local=local,cleanup=cleanup,master_dir=master_dir,verbose=verbose,
@@ -2099,8 +2107,8 @@ class PstFromFlopyModel(object):
         pp_df.loc[:,"pargp"] = pp_df.pargp.apply(lambda x: "pp_{0}".format(x))
         out_files = mlt_df.loc[mlt_df.mlt_file.
                     apply(lambda x: x.endswith(self.pp_suffix)),"mlt_file"]
-        mlt_df.loc[:,"fac_file"] = np.NaN
-        mlt_df.loc[:,"pp_file"] = np.NaN
+        #mlt_df.loc[:,"fac_file"] = np.NaN
+        #mlt_df.loc[:,"pp_file"] = np.NaN
         for out_file in out_files:
             pp_df_pf = pp_df.loc[pp_df.out_file==out_file,:]
             fac_files = pp_df_pf.fac_file
@@ -2118,8 +2126,73 @@ class PstFromFlopyModel(object):
         mlt_df.loc[mlt_df.suffix==self.pp_suffix,"tpl_file"] = np.NaN
 
 
-    def kl_prep(self):
-        raise NotImplementedError()
+    def kl_prep(self,mlt_df):
+        """ prepare KL based parameterizations
+
+        Parameters
+        ----------
+        mlt_df : pandas.DataFrame
+            a dataframe with multiplier array information
+
+        Note
+        ----
+        calls pyemu.helpers.setup_kl()
+
+
+        """
+        if len(self.kl_props) == 0:
+            return
+
+        if self.kl_geostruct is None:
+            self.logger.warn("kl_geostruct is None,"\
+                  " using ExpVario with contribution=1 and a=(10.0*max(delr,delc))")
+            kl_dist = 10.0 * float(max(self.m.dis.delr.array.max(),
+                                           self.m.dis.delc.array.max()))
+            v = pyemu.geostats.ExpVario(contribution=1.0,a=kl_dist)
+            self.kl_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+
+        kl_df = mlt_df.loc[mlt_df.suffix==self.kl_suffix,:]
+        layers = kl_df.layer.unique()
+        #kl_dict = {l:list(kl_df.loc[kl_df.layer==l,"prefix"].unique()) for l in layers}
+        # big assumption here - if prefix is listed more than once, use the lowest layer index
+        #for i,l in enumerate(layers):
+        #    p = set(kl_dict[l])
+        #    for ll in layers[i+1:]:
+        #        pp = set(kl_dict[ll])
+        #        d = pp - p
+        #        kl_dict[ll] = list(d)
+        kl_prefix = list(kl_df.loc[:,"prefix"])
+
+        kl_array_file = {p:m for p,m in zip(kl_df.prefix,kl_df.mlt_file)}
+        self.logger.statement("kl_prefix: {0}".format(str(kl_prefix)))
+
+        fac_file = os.path.join(self.m.model_ws, "kl.fac")
+
+        self.log("calling kl_setup() with factors file {0}".format(fac_file))
+
+        kl_df = kl_setup(self.kl_num_eig,self.m.sr,self.kl_geostruct,kl_prefix,
+                         factors_file=fac_file,basis_file=fac_file+".basis.jcb",
+                         tpl_dir=self.m.model_ws)
+        self.logger.statement("{0} kl parameters created".
+                              format(kl_df.shape[0]))
+        self.logger.statement("kl 'pargp':{0}".
+                              format(','.join(kl_df.pargp.unique())))
+
+        self.log("calling kl_setup() with factors file {0}".format(fac_file))
+        kl_mlt_df = mlt_df.loc[mlt_df.suffix==self.kl_suffix]
+        for prefix in kl_df.prefix.unique():
+            prefix_df = kl_df.loc[kl_df.prefix==prefix,:]
+            in_file = os.path.split(prefix_df.loc[:,"in_file"][0])[-1]
+            assert prefix in mlt_df.prefix.values,"{0}:{1}".format(prefix,mlt_df.prefix)
+            mlt_df.loc[mlt_df.prefix==prefix,"pp_file"] = in_file
+            mlt_df.loc[mlt_df.prefix==prefix,"fac_file"] = os.path.split(fac_file)[-1]
+
+        print(kl_mlt_df)
+        mlt_df.loc[mlt_df.suffix == self.kl_suffix, "tpl_file"] = np.NaN
+        self.par_dfs[self.kl_suffix] = kl_df
+        # calc factors for each layer
+
+
 
     def setup_array_pars(self):
         """ main entry point for setting up array multipler parameters
@@ -2195,7 +2268,7 @@ class PstFromFlopyModel(object):
 
         if self.kl_suffix in mlt_df.suffix.values:
             self.log("setting up kl process")
-            self.kl_prep()
+            self.kl_prep(mlt_df)
             self.log("setting up kl process")
 
         mlt_df.to_csv(os.path.join(self.m.model_ws,"arr_pars.csv"))
@@ -3286,7 +3359,7 @@ def apply_bc_pars():
             # else:
             df_list = pd.read_csv(os.path.join(org_dir, fname),
                                   delim_whitespace=True, header=None, names=names)
-            df_list.loc[:, "idx"] = df_list.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k, x.i, x.j), axis=1)
+            df_list.loc[:, "idx"] = df_list.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k-1, x.i-1, x.j-1), axis=1)
 
 
             df_list.index = df_list.idx
@@ -3596,7 +3669,7 @@ def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
 
     ``>>>plt.show()``
     """
-    warnings.warn("pyemu.helpers.plot_summary_distributions() has moved to plot_utils")
+    warnings.warn("pyemu.helpers.plot_summary_distributions() has moved to plot_utils",PyemuWarning)
     from pyemu import plot_utils
     return plot_utils.plot_summary_distributions(df=df,ax=ax,label_post=label_post,
                                                  label_prior=label_prior,subplots=subplots,
@@ -3626,7 +3699,7 @@ def gaussian_distribution(mean, stdev, num_pts=50):
         the y-values of the distribution
 
     """
-    warnings.warn("pyemu.helpers.gaussian_distribution() has moved to plot_utils")
+    warnings.warn("pyemu.helpers.gaussian_distribution() has moved to plot_utils",PyemuWarning)
     from pyemu import plot_utils
     return plot_utils.gaussian_distribution(mean=mean,stdev=stdev,num_pts=num_pts)
 
