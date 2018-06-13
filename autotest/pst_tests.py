@@ -478,7 +478,7 @@ def from_flopy_kl_test():
                                          model_exe_name="mfnwt")
 
 
-def from_flopy_test():
+def from_flopy():
     import shutil
     import numpy as np
     import pandas as pd
@@ -487,6 +487,7 @@ def from_flopy_test():
     except:
         return
     import pyemu
+
     org_model_ws = os.path.join("..","examples","freyberg_sfr_update")
     nam_file = "freyberg.nam"
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
@@ -668,6 +669,14 @@ def from_flopy_test():
     pst.write(os.path.join(new_model_ws,"freyberg_pest.pst"))
     cov = helper.build_prior(fmt="none",sparse=True)
     cov.to_coo(os.path.join("temp","cov.coo"))
+
+
+
+def from_flopy_test():
+    try:
+        from_flopy()
+    except Exception as e:
+        raise Exception("error in from_flopy:"+str(e))
 
 def from_flopy_reachinput_test():
     import pandas as pd
@@ -1001,7 +1010,7 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    from_flopy_test()
+    from_flopy()
     #from_flopy_kl_test()
     # from_flopy_reachinput_test()
     # plot_flopy_par_ensemble_test()
