@@ -3,6 +3,7 @@
 
 import os
 import copy
+import csv
 from datetime import datetime
 import shutil
 import numpy as np
@@ -1644,6 +1645,48 @@ def load_sfr_out(sfr_out_file):
                 sfr_dict[kper] = df
     return sfr_dict
 
+def write_hfb_zone_multipliers_template(m):
+    """write a template file for an hfb using multipliers per zone (double yuck!)
+
+    Parameters
+    ----------
+        m : flopy.modflow.Modflow instance with an HFB file
+
+    Returns
+    -------
+        (tpl_filename, df) : (str, pandas.DataFrame)
+            the name of the template file and a dataframe with useful info.
+
+    """
+    assert m.hfb6 is not None
+    # find the file
+    hfb_file = os.path.join(m.model_ws, m.hfb6.file_name[0])
+    hfb_file_contents = open(hfb_file, 'r').readlines()
+    # navigate the header
+    skiprows = sum([1 if i.strip().startswith('#') else 0 for i in hfb_file_contents]) + 1
+    header = hfb_file_contents[:skiprows]
+    # read in the data
+    names = ['lay', 'irow1','icol1','irow2','icol2', 'hydchr']
+    hfb_in = pd.read_csv(hfb_file, skiprows=skiprows, delim_whitespace=True, names=names).dropna()
+    for cn in names[:-1]:
+        hfb_in[cn] = hfb_in[cn].astype(np.int)
+    # set up a parameter for each unique conductivity value
+    unique_cond = hfb_in.hydchr.unique()
+    hfb_tpl = dict(zip(unique_cond, ['hbz_{0:04d}'.format(i) for i in range(len(unique_cond))]))
+    # set up the TPL line for each parameter and assign
+    hfb_in['tpl'] = 'blank'
+    for cn, cg in hfb_in.groupby('hydchr'):
+        hfb_in.loc[hfb_in.hydchr == cn, 'tpl'] = '~{0:^10s}~'.format(hfb_tpl[cn])
+    assert 'blank' not in hfb_in.tpl
+    # write out the TPL file
+    tpl_file = hfb_file + ".tpl"
+    with open(tpl_file, 'w') as ofp:
+        ofp.write('ptf ~\n')
+        [ofp.write('{0}\n'.format(line.strip())) for line in header]
+
+        hfb_in[['lay', 'irow1','icol1','irow2','icol2', 'tpl']].to_csv(ofp, sep=' ', quotechar=' ',
+        header=None, index=None)
+
 
 def write_hfb_template(m):
     """write a template file for an hfb (yuck!)
@@ -1703,6 +1746,7 @@ def write_hfb_template(m):
                 iis.append(i)
                 jjs.append(j)
                 kks.append(k)
+
             break
 
     f_tpl.close()
