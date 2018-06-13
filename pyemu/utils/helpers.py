@@ -3363,7 +3363,7 @@ def apply_bc_pars():
             # else:
             df_list = pd.read_csv(os.path.join(org_dir, fname),
                                   delim_whitespace=True, header=None, names=names)
-            df_list.loc[:, "idx"] = df_list.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k, x.i, x.j), axis=1)
+            df_list.loc[:, "idx"] = df_list.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k-1, x.i-1, x.j-1), axis=1)
 
 
             df_list.index = df_list.idx
