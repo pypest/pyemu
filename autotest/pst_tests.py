@@ -682,7 +682,17 @@ def from_flopy_test():
         raise Exception("error in from_flopy:"+str(e))
     #print(os.getcwd())
 
-def from_flopy_reachinput_test():
+def from_flopy_test_reachinput_test():
+    bd = os.getcwd()
+    try:
+        from_flopy_reachinput()
+    except Exception as e:
+        os.chdir(bd)
+        raise Exception("error in from_flopy_reachinput:"+str(e))
+    #print(os.getcwd())
+
+
+def from_flopy_reachinput():
     import pandas as pd
     """ test for building sfr pars from reachinput sfr and seg pars across all kper"""
     try:
@@ -1014,10 +1024,10 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    flopy_test()
+    #flopy_test()
     #add_obs_test()
     #from_flopy_kl_test()
-    # from_flopy_reachinput_test()
+    from_flopy_reachinput_test()
     # plot_flopy_par_ensemble_test()
     # add_pi_test()
     # regdata_test()
