@@ -479,6 +479,7 @@ def from_flopy_kl_test():
 
 
 def from_flopy():
+
     import shutil
     import numpy as np
     import pandas as pd
@@ -673,10 +674,13 @@ def from_flopy():
 
 
 def from_flopy_test():
+    bd = os.getcwd()
     try:
         from_flopy()
     except Exception as e:
+        os.chdir(bd)
         raise Exception("error in from_flopy:"+str(e))
+    #print(os.getcwd())
 
 def from_flopy_reachinput_test():
     import pandas as pd
@@ -1010,7 +1014,8 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    from_flopy()
+    flopy_test()
+    #add_obs_test()
     #from_flopy_kl_test()
     # from_flopy_reachinput_test()
     # plot_flopy_par_ensemble_test()
