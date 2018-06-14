@@ -1402,7 +1402,8 @@ def apply_sfr_seg_parameters(reach_pars=False):
 
     mlt_df = pd.read_csv(pars["mult_file"],delim_whitespace=True)
     idx_cols = ['nseg', 'icalc', 'outseg', 'iupseg', 'iprior', 'nstrpts']
-    mlt_cols = mlt_df.columns.drop(idx_cols)
+    present_cols = [c for c in idx_cols if c in mlt_df.columns]
+    mlt_cols = mlt_df.columns.drop(present_cols)
     for key,val in m.sfr.segment_data.items():
         df = pd.DataFrame.from_records(val)
         df.loc[:,mlt_cols] *= mlt_df.loc[:,mlt_cols]
