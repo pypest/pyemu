@@ -2832,7 +2832,9 @@ class PstFromFlopyModel(object):
         f_tpl =  open(tpl_name,'w')
         f_tpl.write("ptf ~\n")
         f_tpl.flush()
-        df.loc[:,names].to_csv(f_tpl,sep=' ',quotechar=' ')
+        f_tpl.write("index ")
+        #df.loc[:,names].to_csv(f_tpl,sep=' ',quotechar=' ')
+        f_tpl.write(df.loc[:,names].to_string(index_names=True))
         f_tpl.close()
         self.par_dfs["temporal_bc"] = df
 
@@ -2947,7 +2949,7 @@ class PstFromFlopyModel(object):
             in_file = os.path.join(self.bc_mlt,pak+".csv")
             tpl_file = os.path.join(pak + ".csv.tpl")
             # save an all "ones" mult df for testing
-            df.to_csv(os.path.join(self.m.model_ws,in_file))
+            df.to_csv(os.path.join(self.m.model_ws,in_file), sep=' ')
             parnme,pargp = [],[]
             #if pak != 'hfb6':
             x = df.apply(lambda x: self.m.sr.xcentergrid[int(x.i),int(x.j)],axis=1).values
@@ -2981,8 +2983,10 @@ class PstFromFlopyModel(object):
 
             with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
                 f.write("ptf ~\n")
-                f.flush()
-                df.to_csv(f)
+                #f.flush()
+                #df.to_csv(f)
+                f.write("index ")
+                f.write(df.to_string(index_names=False)+'\n')
             self.tpl_files.append(tpl_file)
             self.in_files.append(in_file)
 
@@ -3309,7 +3313,7 @@ def apply_bc_pars():
 
         for f in os.listdir(mlt_dir):
             pak = f.split(".")[0].lower()
-            df = pd.read_csv(os.path.join(mlt_dir,f),index_col=0)
+            df = pd.read_csv(os.path.join(mlt_dir,f),index_col=0, delim_whitespace=True)
             #if pak != 'hfb6':
             df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k,x.i,x.j),axis=1)
             # else:
@@ -3317,6 +3321,8 @@ def apply_bc_pars():
             #                                                                      x.irow2, x.icol2), axis = 1)
             if pak in sp_mlts.keys():
                 raise Exception("duplicate multplier csv for pak {0}".format(pak))
+            if df.shape[0] == 0:
+                raise Exception("empty dataframe for spatial bc file: {0}".format(f))
             sp_mlts[pak] = df
 
     org_files = os.listdir(org_dir)
@@ -3368,7 +3374,7 @@ def apply_bc_pars():
                 mlt_df = sp_mlts[pak_name]
                 mlt_df_ri = mlt_df.reindex(df_list.index)
                 for col in df_list.columns:
-                    if col in ["k","i","j","inode",'irow1','icol1','irow2','icol2']:
+                    if col in ["k","i","j","inode",'irow1','icol1','irow2','icol2','idx']:
                         continue
                     if col in mlt_df.columns:
                        # print(mlt_df.loc[mlt_df.index.duplicated(),:])

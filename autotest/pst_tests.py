@@ -520,6 +520,7 @@ def from_flopy():
                                          model_exe_name="mfnwt",temporal_bc_props=temp_bc_props,
                                          spatial_bc_props=spat_bc_props,hfb_pars=True)
 
+
     par = ph.pst.parameter_data
     pe = ph.draw(100)
 
@@ -1027,7 +1028,7 @@ if __name__ == "__main__":
     #flopy_test()
     #add_obs_test()
     #from_flopy_kl_test()
-    from_flopy_reachinput_test()
+    from_flopy()
     # plot_flopy_par_ensemble_test()
     # add_pi_test()
     # regdata_test()
