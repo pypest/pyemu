@@ -478,7 +478,8 @@ def from_flopy_kl_test():
                                          model_exe_name="mfnwt")
 
 
-def from_flopy_test():
+def from_flopy():
+
     import shutil
     import numpy as np
     import pandas as pd
@@ -487,6 +488,7 @@ def from_flopy_test():
     except:
         return
     import pyemu
+
     org_model_ws = os.path.join("..","examples","freyberg_sfr_update")
     nam_file = "freyberg.nam"
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
@@ -669,7 +671,28 @@ def from_flopy_test():
     cov = helper.build_prior(fmt="none",sparse=True)
     cov.to_coo(os.path.join("temp","cov.coo"))
 
-def from_flopy_reachinput_test():
+
+
+def from_flopy_test():
+    bd = os.getcwd()
+    try:
+        from_flopy()
+    except Exception as e:
+        os.chdir(bd)
+        raise Exception("error in from_flopy:"+str(e))
+    #print(os.getcwd())
+
+def from_flopy_test_reachinput_test():
+    bd = os.getcwd()
+    try:
+        from_flopy_reachinput()
+    except Exception as e:
+        os.chdir(bd)
+        raise Exception("error in from_flopy_reachinput:"+str(e))
+    #print(os.getcwd())
+
+
+def from_flopy_reachinput():
     import pandas as pd
     """ test for building sfr pars from reachinput sfr and seg pars across all kper"""
     try:
@@ -1001,9 +1024,10 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    from_flopy_test()
+    #flopy_test()
+    #add_obs_test()
     #from_flopy_kl_test()
-    # from_flopy_reachinput_test()
+    from_flopy_reachinput_test()
     # plot_flopy_par_ensemble_test()
     # add_pi_test()
     # regdata_test()
