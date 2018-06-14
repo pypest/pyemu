@@ -3422,6 +3422,42 @@ def apply_bc_pars():
 #         with open(f,'w') as fi:
 #             fi.write(df_org.to_string(index=False,header=False,formatters=fmt)+'\n')
 
+def apply_hfb_pars():
+    """ a function to apply HFB multiplier parameters.  Used to implement
+    the parameterization constructed by write_hfb_zone_multipliers_template()
+
+    This is to account for the horrible HFB6 format that differs from other BCs making this a special case
+
+    Note
+    ----
+    requires "hfb_pars.csv"
+
+    should be added to the forward_run.py script
+    """
+    hfb_pars = pd.read_csv('hfb6_pars.csv')
+
+    hfb_mults_contents = open(hfb_pars.mlt_file.values[0], 'r').readlines()
+    skiprows = sum([1 if i.strip().startswith('#') else 0 for i in hfb_mults_contents]) + 1
+    header = hfb_mults_contents[:skiprows]
+
+    # read in the multipliers
+    names = ['lay', 'irow1','icol1','irow2','icol2', 'hydchr']
+    hfb_mults = pd.read_csv(hfb_pars.mlt_file.values[0], skiprows=skiprows, delim_whitespace=True, names=names).dropna()
+    for cn in names[:-1]:
+        hfb_mults[cn] = hfb_mults[cn].astype(np.int)
+
+    # read in the original file
+    hfb_org = pd.read_csv(hfb_pars.org_file.values[0], skiprows=skiprows, delim_whitespace=True, names=names).dropna()
+
+    # multiply it out
+    hfb_org.hydchr *= hfb_mults.hydchr
+
+    # write the results
+    with open(hfb_pars.model_file.values[0], 'w') as ofp:
+        [ofp.write('{0}\n'.format(line.strip())) for line in header]
+
+        hfb_org[['lay', 'irow1','icol1','irow2','icol2', 'hydchr']].to_csv(ofp, sep=' ',
+                header=None, index=None)
 
 def plot_flopy_par_ensemble(pst,pe,num_reals=None,model=None,fig_axes_generator=None,
                             pcolormesh_transform=None):
