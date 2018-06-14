@@ -593,7 +593,7 @@ class Matrix(object):
                 return type(self)(x=np.dot(np.diag(self.__x.flatten()).transpose(),
                                            other))
             else:
-                return type(self)(x=np.dot(self.__x, other))
+                return type(self)(x=np.atleast_2d(np.dot(self.__x, other)))
         elif isinstance(other, Matrix):
             if self.autoalign and other.autoalign\
                and not self.mult_isaligned(other):
