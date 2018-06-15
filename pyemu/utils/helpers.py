@@ -2324,7 +2324,7 @@ class PstFromFlopyModel(object):
 
 
 
-    def draw(self, num_reals=100, sigma_range=6, verbose=True):
+    def draw(self, num_reals=100, sigma_range=6):
         """ draw like a boss!
 
         Parameters
@@ -2379,13 +2379,12 @@ class PstFromFlopyModel(object):
             bc_dfs = []
             for pargp in bc_df.pargp.unique():
                 gp_df = bc_df.loc[bc_df.pargp==pargp,:]
-                # TODO ask Jeremy why this was commented!
-                p_df = gp_df.drop_duplicates(subset="parnme")
+                #p_df = gp_df.drop_duplicates(subset="parnme")
                 #print(p_df)
-                bc_dfs.append(p_df)
+                bc_dfs.append(gp_df)
             struct_dict[self.spatial_bc_geostruct] = bc_dfs
         pe = geostatistical_draws(self.pst,struct_dict=struct_dict,num_reals=num_reals,
-                             sigma_range=sigma_range, verbose=verbose)
+                             sigma_range=sigma_range)
 
         self.log("drawing realizations")
         return pe
