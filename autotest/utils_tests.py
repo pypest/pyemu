@@ -1128,6 +1128,23 @@ def sfr_obs_test():
     pyemu.gw_utils.setup_sfr_obs(sfr_file,model=m)
     pyemu.gw_utils.setup_sfr_obs(sfr_file, seg_group_dict={"obs1": [1, 4], "obs2": [16, 17, 18, 19, 22, 23]},model=m)
 
+
+def gage_obs_test():
+    import os
+    import pyemu
+    import numpy as np
+
+    gage_file = os.path.join("utils", "RmSouth_pred_7d.gage1.go")
+    df, ins_file, obs_file = pyemu.gw_utils.setup_gage_obs(gage_file, start_datetime='2007-04-11')
+    print(obs_file, ins_file)
+
+    times = np.concatenate(([0], np.arange(7., 7. * 404, 7.)))
+    df, ins_file, obs_file = pyemu.gw_utils.setup_gage_obs(gage_file, start_datetime='2007-04-11', times=times)
+    print(obs_file, ins_file)
+    pyemu.gw_utils.apply_gage_obs()
+
+
+
 def pst_from_parnames_obsnames_test():
     import pyemu
     import os
