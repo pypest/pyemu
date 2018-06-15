@@ -1136,7 +1136,7 @@ def gage_obs_test():
 
     bd = os.getcwd()
     os.chdir("utils")
-    
+
     gage_file = "RmSouth_pred_7d.gage1.go"
     df, ins_file, obs_file = pyemu.gw_utils.setup_gage_obs(gage_file, start_datetime='2007-04-11')
     print(obs_file, ins_file)
