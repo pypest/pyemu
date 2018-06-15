@@ -161,7 +161,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
                               format(','.join(missing)),PyemuWarning)
                 df = df.loc[df.parnme.apply(lambda x: x not in missing)]
             if "zone" not in df.columns:
-                df.loc["zone"] = 1
+                df.loc[:,"zone"] = 1
             zones = df.zone.unique()
             for zone in zones:
                 df_zone = df.loc[df.zone==zone,:].copy()
