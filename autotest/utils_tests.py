@@ -1134,7 +1134,10 @@ def gage_obs_test():
     import pyemu
     import numpy as np
 
-    gage_file = os.path.join("utils", "RmSouth_pred_7d.gage1.go")
+    bd = os.getcwd()
+    os.chdir("utils")
+    
+    gage_file = "RmSouth_pred_7d.gage1.go"
     df, ins_file, obs_file = pyemu.gw_utils.setup_gage_obs(gage_file, start_datetime='2007-04-11')
     print(obs_file, ins_file)
 
@@ -1143,6 +1146,7 @@ def gage_obs_test():
     print(obs_file, ins_file)
     pyemu.gw_utils.apply_gage_obs()
 
+    os.chdir(bd)
 
 
 def pst_from_parnames_obsnames_test():

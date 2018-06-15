@@ -1651,7 +1651,7 @@ def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
     Parameters
     ----------
         gage_file : str
-            the sft output file (ASCII)
+            the gage output file (ASCII)
         ins_file : str
             the name of the instruction file to create.  If None, the name
             is <gage_file>.processed.ins.  Default is None
@@ -1729,6 +1729,7 @@ def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
     # set up instructions (line feed for lines without obs (not in time)
     df.loc[:, "ins_str"] = "l1\n"
     df_times = df.loc[idx, :]  # Slice by desired times
+    # TODO include GAGE No. in obs name (if permissible)
     df.loc[df_times.index, "ins_str"] = df_times.apply(lambda x: "l1 w {}\n".format(
         ' '.join(["!g{}{}{}!".format(gage_type[0], obs, x.time_str) for obs in obs_ids[1:]])), axis=1)
     df.index = np.arange(df.shape[0])
