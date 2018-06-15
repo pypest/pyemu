@@ -161,7 +161,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
                               format(','.join(missing)),PyemuWarning)
                 df = df.loc[df.parnme.apply(lambda x: x not in missing)]
             if "zone" not in df.columns:
-                df["zone"] = 1
+                df.loc["zone"] = 1
             zones = df.zone.unique()
             for zone in zones:
                 df_zone = df.loc[df.zone==zone,:].copy()
@@ -2834,7 +2834,9 @@ class PstFromFlopyModel(object):
         f_tpl =  open(tpl_name,'w')
         f_tpl.write("ptf ~\n")
         f_tpl.flush()
-        df.loc[:,names].to_csv(f_tpl,sep=' ',quotechar=' ')
+        f_tpl.write("index ")
+        #df.loc[:,names].to_csv(f_tpl,sep=' ',quotechar=' ')
+        f_tpl.write(df.loc[:,names].to_string(index_names=True))
         f_tpl.close()
         self.par_dfs["temporal_bc"] = df
 
@@ -2949,7 +2951,7 @@ class PstFromFlopyModel(object):
             in_file = os.path.join(self.bc_mlt,pak+".csv")
             tpl_file = os.path.join(pak + ".csv.tpl")
             # save an all "ones" mult df for testing
-            df.to_csv(os.path.join(self.m.model_ws,in_file))
+            df.to_csv(os.path.join(self.m.model_ws,in_file), sep=' ')
             parnme,pargp = [],[]
             #if pak != 'hfb6':
             x = df.apply(lambda x: self.m.sr.xcentergrid[int(x.i),int(x.j)],axis=1).values
@@ -2983,8 +2985,10 @@ class PstFromFlopyModel(object):
 
             with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
                 f.write("ptf ~\n")
-                f.flush()
-                df.to_csv(f)
+                #f.flush()
+                #df.to_csv(f)
+                f.write("index ")
+                f.write(df.to_string(index_names=False)+'\n')
             self.tpl_files.append(tpl_file)
             self.in_files.append(in_file)
 
@@ -3317,7 +3321,7 @@ def apply_bc_pars():
 
         for f in os.listdir(mlt_dir):
             pak = f.split(".")[0].lower()
-            df = pd.read_csv(os.path.join(mlt_dir,f),index_col=0)
+            df = pd.read_csv(os.path.join(mlt_dir,f),index_col=0, delim_whitespace=True)
             #if pak != 'hfb6':
             df.index = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k,x.i,x.j),axis=1)
             # else:
@@ -3325,6 +3329,8 @@ def apply_bc_pars():
             #                                                                      x.irow2, x.icol2), axis = 1)
             if pak in sp_mlts.keys():
                 raise Exception("duplicate multplier csv for pak {0}".format(pak))
+            if df.shape[0] == 0:
+                raise Exception("empty dataframe for spatial bc file: {0}".format(f))
             sp_mlts[pak] = df
 
     org_files = os.listdir(org_dir)
@@ -3376,7 +3382,7 @@ def apply_bc_pars():
                 mlt_df = sp_mlts[pak_name]
                 mlt_df_ri = mlt_df.reindex(df_list.index)
                 for col in df_list.columns:
-                    if col in ["k","i","j","inode",'irow1','icol1','irow2','icol2']:
+                    if col in ["k","i","j","inode",'irow1','icol1','irow2','icol2','idx']:
                         continue
                     if col in mlt_df.columns:
                        # print(mlt_df.loc[mlt_df.index.duplicated(),:])
@@ -3430,6 +3436,42 @@ def apply_bc_pars():
 #         with open(f,'w') as fi:
 #             fi.write(df_org.to_string(index=False,header=False,formatters=fmt)+'\n')
 
+def apply_hfb_pars():
+    """ a function to apply HFB multiplier parameters.  Used to implement
+    the parameterization constructed by write_hfb_zone_multipliers_template()
+
+    This is to account for the horrible HFB6 format that differs from other BCs making this a special case
+
+    Note
+    ----
+    requires "hfb_pars.csv"
+
+    should be added to the forward_run.py script
+    """
+    hfb_pars = pd.read_csv('hfb6_pars.csv')
+
+    hfb_mults_contents = open(hfb_pars.mlt_file.values[0], 'r').readlines()
+    skiprows = sum([1 if i.strip().startswith('#') else 0 for i in hfb_mults_contents]) + 1
+    header = hfb_mults_contents[:skiprows]
+
+    # read in the multipliers
+    names = ['lay', 'irow1','icol1','irow2','icol2', 'hydchr']
+    hfb_mults = pd.read_csv(hfb_pars.mlt_file.values[0], skiprows=skiprows, delim_whitespace=True, names=names).dropna()
+    for cn in names[:-1]:
+        hfb_mults[cn] = hfb_mults[cn].astype(np.int)
+
+    # read in the original file
+    hfb_org = pd.read_csv(hfb_pars.org_file.values[0], skiprows=skiprows, delim_whitespace=True, names=names).dropna()
+
+    # multiply it out
+    hfb_org.hydchr *= hfb_mults.hydchr
+
+    # write the results
+    with open(hfb_pars.model_file.values[0], 'w') as ofp:
+        [ofp.write('{0}\n'.format(line.strip())) for line in header]
+
+        hfb_org[['lay', 'irow1','icol1','irow2','icol2', 'hydchr']].to_csv(ofp, sep=' ',
+                header=None, index=None)
 
 def plot_flopy_par_ensemble(pst,pe,num_reals=None,model=None,fig_axes_generator=None,
                             pcolormesh_transform=None):

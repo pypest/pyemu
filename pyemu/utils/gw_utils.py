@@ -3,6 +3,7 @@
 
 import os
 import copy
+import csv
 from datetime import datetime
 import shutil
 import warnings
@@ -1402,7 +1403,8 @@ def apply_sfr_seg_parameters(reach_pars=False):
 
     mlt_df = pd.read_csv(pars["mult_file"],delim_whitespace=True)
     idx_cols = ['nseg', 'icalc', 'outseg', 'iupseg', 'iprior', 'nstrpts']
-    mlt_cols = mlt_df.columns.drop(idx_cols)
+    present_cols = [c for c in idx_cols if c in mlt_df.columns]
+    mlt_cols = mlt_df.columns.drop(present_cols)
     for key,val in m.sfr.segment_data.items():
         df = pd.DataFrame.from_records(val)
         df.loc[:,mlt_cols] *= mlt_df.loc[:,mlt_cols]
@@ -1642,6 +1644,7 @@ def load_sfr_out(sfr_out_file):
                 sfr_dict[kper] = df
     return sfr_dict
 
+
 def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
     """writes an instruction file for a mt3d-usgs sft output file
 
@@ -1765,6 +1768,76 @@ def apply_gage_obs(return_obs_file=False):
         return df
 
 
+def write_hfb_zone_multipliers_template(m):
+    """write a template file for an hfb using multipliers per zone (double yuck!)
+
+    Parameters
+    ----------
+        m : flopy.modflow.Modflow instance with an HFB file
+
+    Returns
+    -------
+        (hfb_mults, tpl_filename) : (dict, str)
+            a dictionary with original unique HFB conductivity values and their corresponding parameter names
+            and the name of the template file
+
+    """
+    assert m.hfb6 is not None
+    # find the model file
+    hfb_file = os.path.join(m.model_ws, m.hfb6.file_name[0])
+
+    # this will use multipliers, so need to copy down the original
+    if not os.path.exists('hfb6_org'):
+        os.mkdir('hfb6_org')
+    # copy down the original file
+    shutil.copy2(os.path.join(m.model_ws, m.hfb6.file_name[0]), os.path.join('hfb6_org', m.hfb6.file_name[0]))
+
+    if not os.path.exists('hfb6_mlt'):
+        os.mkdir('hfb6_mlt')
+
+    # read in the model file
+    hfb_file_contents = open(hfb_file, 'r').readlines()
+
+    # navigate the header
+    skiprows = sum([1 if i.strip().startswith('#') else 0 for i in hfb_file_contents]) + 1
+    header = hfb_file_contents[:skiprows]
+
+    # read in the data
+    names = ['lay', 'irow1','icol1','irow2','icol2', 'hydchr']
+    hfb_in = pd.read_csv(hfb_file, skiprows=skiprows, delim_whitespace=True, names=names).dropna()
+    for cn in names[:-1]:
+        hfb_in[cn] = hfb_in[cn].astype(np.int)
+
+    # set up a multiplier for each unique conductivity value
+    unique_cond = hfb_in.hydchr.unique()
+    hfb_mults = dict(zip(unique_cond, ['hbz_{0:04d}'.format(i) for i in range(len(unique_cond))]))
+    # set up the TPL line for each parameter and assign
+    hfb_in['tpl'] = 'blank'
+    for cn, cg in hfb_in.groupby('hydchr'):
+        hfb_in.loc[hfb_in.hydchr == cn, 'tpl'] = '~{0:^10s}~'.format(hfb_mults[cn])
+
+    assert 'blank' not in hfb_in.tpl
+
+    # write out the TPL file
+    tpl_file = "hfb6.mlt.tpl"
+    with open(tpl_file, 'w') as ofp:
+        ofp.write('ptf ~\n')
+        [ofp.write('{0}\n'.format(line.strip())) for line in header]
+
+        hfb_in[['lay', 'irow1','icol1','irow2','icol2', 'tpl']].to_csv(ofp, sep=' ', quotechar=' ',
+                header=None, index=None)
+
+    # make a lookup for lining up the necessary files to perform multiplication with the
+    # helpers.apply_hfb_pars() function which must be added to the forward run script
+    with open('hfb6_pars.csv', 'w') as ofp:
+        ofp.write('org_file,mlt_file,model_file\n')
+        ofp.write('{0},{1},{2}\n'.format(os.path.join('hfb6_org', m.hfb6.file_name[0]),
+                                         os.path.join('hfb6_mlt', tpl_file.replace('.tpl','')),
+                                         hfb_file))
+
+    return hfb_mults, tpl_file
+
+
 def write_hfb_template(m):
     """write a template file for an hfb (yuck!)
 
@@ -1823,6 +1896,7 @@ def write_hfb_template(m):
                 iis.append(i)
                 jjs.append(j)
                 kks.append(k)
+
             break
 
     f_tpl.close()

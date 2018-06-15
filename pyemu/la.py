@@ -391,13 +391,14 @@ class LinearAnalysis(object):
                 if arg.shape[1] == 1:
                     vecs.append(arg)
                 else:
-                    assert arg.shape[0] == self.jco.shape[1],\
-                    "linear_analysis.__load_predictions(): " +\
-                    "multi-prediction matrix(npar,npred) not aligned " +\
-                    "with jco(nobs,npar): " + str(arg.shape) +\
-                    ' ' + str(self.jco.shape)
-                    #for pred_name in arg.row_names:
-                    #    vecs.append(arg.extract(row_names=pred_name).T)
+                    if self.jco is not None:
+                        assert arg.shape[0] == self.jco.shape[1],\
+                        "linear_analysis.__load_predictions(): " +\
+                        "multi-prediction matrix(npar,npred) not aligned " +\
+                        "with jco(nobs,npar): " + str(arg.shape) +\
+                        ' ' + str(self.jco.shape)
+                        #for pred_name in arg.row_names:
+                        #    vecs.append(arg.extract(row_names=pred_name).T)
                     mat = arg
             elif isinstance(arg, str):
                 if arg.lower() in self.jco.row_names:
