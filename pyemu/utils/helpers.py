@@ -3221,18 +3221,23 @@ class PstFromFlopyModel(object):
             self.frun_post_lines.append(line)
 
 
-def apply_array_pars():
+def apply_array_pars(arr_par_file="arr_pars.csv"):
     """ a function to apply array-based multipler parameters.  Used to implement
     the parameterization constructed by PstFromFlopyModel during a forward run
 
+    Parameters
+    ----------
+    arr_par_file : str
+    path to csv file detailing parameter array multipliers
+
     Note
     ----
-    requires "arr_pars.csv" - this file is written by PstFromFlopy
+    "arr_pars.csv" - is written by PstFromFlopy
 
-    the function should be added to the forward_run.py script
+    the function should be added to the forward_run.py script but can be called on any correctly formatted csv
 
     """
-    df = pd.read_csv("arr_pars.csv")
+    df = pd.read_csv(arr_par_file)
     # for fname in df.model_file:
     #     try:
     #         os.remove(fname)
