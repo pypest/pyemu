@@ -1028,7 +1028,7 @@ if __name__ == "__main__":
     #flopy_test()
     # add_obs_test()
     # from_flopy_kl_test()
-    # from_flopy_reachinput()
+    from_flopy_reachinput()
     # plot_flopy_par_ensemble_test()
     # add_pi_test()
     # regdata_test()
