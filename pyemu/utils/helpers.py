@@ -148,8 +148,8 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
                     df = pd.read_csv(item)
             else:
                 df = item
-                if verbose: print("working on pargroups {0}".\
-                                  format(df.pargp.unique().tolist()))
+            if df.columns.contains('pargp'):
+                if verbose: print("working on pargroups {0}".format(df.pargp.unique().tolist()))
             for req in ['x','y','parnme']:
                 if req not in df.columns:
                     raise Exception("{0} is not in the columns".format(req))

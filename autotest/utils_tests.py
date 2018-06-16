@@ -1138,12 +1138,14 @@ def gage_obs_test():
     os.chdir("utils")
 
     gage_file = "RmSouth_pred_7d.gage1.go"
-    df, ins_file, obs_file = pyemu.gw_utils.setup_gage_obs(gage_file, start_datetime='2007-04-11')
-    print(obs_file, ins_file)
+    gage = pyemu.gw_utils.setup_gage_obs(gage_file, start_datetime='2007-04-11')
+    if gage is not None:
+        print(gage[1], gage[2])
 
     times = np.concatenate(([0], np.arange(7., 7. * 404, 7.)))
     df, ins_file, obs_file = pyemu.gw_utils.setup_gage_obs(gage_file, start_datetime='2007-04-11', times=times)
-    print(obs_file, ins_file)
+    if gage is not None:
+        print(gage[1], gage[2])
     pyemu.gw_utils.apply_gage_obs()
 
     os.chdir(bd)
@@ -1253,6 +1255,7 @@ if __name__ == "__main__":
     #pst_from_parnames_obsnames_test()
     #write_jactest_test()
     #sfr_obs_test()
+    gage_obs_test()
     #setup_pp_test()
     #sfr_helper_test()
     #gw_sft_ins_test()
