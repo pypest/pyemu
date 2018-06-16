@@ -1685,9 +1685,9 @@ def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
         line1 = f.readline()
         gage_num = int(re.sub("[^0-9]", "", line1.split("GAGE No.")[-1].strip().split()[0]))
         gage_type = line1.split("GAGE No.")[-1].strip().split()[1].lower()
-        obj_num = int(line1.strip().split()[-1])
+        obj_num = int(line1.replace('"', '').strip().split()[-1])
         line2 = f.readline()
-        df = pd.read_csv(f, delim_whitespace=True, names=line2.split()[1:])
+        df = pd.read_csv(f, delim_whitespace=True, names=line2.replace('"', '').split()[1:])
 
     df.columns = [c.lower().replace("-", "_").replace('.', '_').strip('_') for c in df.columns]
     # get unique observation ids
@@ -1757,9 +1757,9 @@ def apply_gage_obs(return_obs_file=False):
         line1 = f.readline()
         gage_num = int(re.sub("[^0-9]", "", line1.split("GAGE No.")[-1].strip().split()[0]))
         gage_type = line1.split("GAGE No.")[-1].strip().split()[1].lower()
-        obj_num = int(line1.strip().split()[-1])
+        obj_num = int(line1.replace('"', '').strip().split()[-1])
         line2 = f.readline()
-        df = pd.read_csv(f, delim_whitespace=True, names=line2.split()[1:])
+        df = pd.read_csv(f, delim_whitespace=True, names=line2.replace('"', '').split()[1:])
     df.columns = [c.lower().replace("-", "_").replace('.', '_') for c in df.columns]
     df = df.loc[df.time.apply(lambda x: np.isclose(x, times).any()), :]
     df.to_csv(obs_file, sep=' ', index=False)

@@ -1,5 +1,5 @@
- GAGE No.    1:  Lake No. =     1 
-    DATA: Time       Stage(H)         Volume     Vol.Change        Precip.          Evap.         Runoff       GW-Inflw      GW-Outflw       SW-Inflw      SW-Outflw     Withdrawal     Lake-Inflx     Total-Cond    Percent-Err 
+ "GAGE No.    1:  Lake No. =     1 "
+    "DATA: Time       Stage(H)         Volume     Vol.Change        Precip.          Evap.         Runoff       GW-Inflw      GW-Outflw       SW-Inflw      SW-Outflw     Withdrawal     Lake-Inflx     Total-Cond    Percent-Err "
      0.0000000E+00    101.0230026  3.1504720E+08  0.0000000E+00  0.0000000E+00  0.0000000E+00  0.0000000E+00  0.0000000E+00  0.0000000E+00  0.0000000E+00  0.0000000E+00  0.0000000E+00  0.0000000E+00  0.0000000E+00  0.0000000E+00
      1.9230770E+00    100.9650902  3.1051200E+08 -2.3583040E+06  3.8929144E+05  1.8935962E+05  0.0000000E+00  5.1397965E+04  1.2538754E+01  1.8562016E+06  4.4598055E+06  6.0210000E+03  0.0000000E+00  4.9844556E+03 -7.2606999E-05
      4.2307696E+00    100.9165431  3.0671021E+08 -1.6474430E+06  3.8929144E+05  1.8935962E+05  0.0000000E+00  5.2502672E+04  9.3140669E+00  1.8362439E+06  3.7300922E+06  6.0210000E+03  0.0000000E+00  4.9829629E+03 -2.7597456E-05
