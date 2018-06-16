@@ -1143,7 +1143,7 @@ def gage_obs_test():
         print(gage[1], gage[2])
 
     times = np.concatenate(([0], np.arange(7., 7. * 404, 7.)))
-    df, ins_file, obs_file = pyemu.gw_utils.setup_gage_obs(gage_file, start_datetime='2007-04-11', times=times)
+    gage = pyemu.gw_utils.setup_gage_obs(gage_file, start_datetime='2007-04-11', times=times)
     if gage is not None:
         print(gage[1], gage[2])
     pyemu.gw_utils.apply_gage_obs()
