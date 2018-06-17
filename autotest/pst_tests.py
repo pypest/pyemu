@@ -382,60 +382,69 @@ def plot_flopy_par_ensemble_test():
     except:
         print("error importing pyplot")
         return
+    try:
+        import shapely
+    except:
+        print("error importing shapely")
+        return
+
     import pyemu
-    org_model_ws = os.path.join("..", "examples", "Freyberg_transient")
-    nam_file = "freyberg.nam"
+    bd = os.getcwd()
+    try:
+        org_model_ws = os.path.join("..", "examples", "Freyberg_transient")
+        nam_file = "freyberg.nam"
 
-    new_model_ws = "temp_pst_from_flopy"
-    pp_props = [["upw.hk", 0], ["upw.hk", 1]]
-    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
-                                             grid_props=pp_props, remove_existing=True,
-                                             model_exe_name="mfnwt")
+        new_model_ws = "temp_pst_from_flopy"
+        pp_props = [["upw.hk", 0], ["upw.hk", 1]]
+        helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
+                                                 grid_props=pp_props, remove_existing=True,
+                                                 model_exe_name="mfnwt")
 
-    pst = pyemu.Pst(os.path.join(new_model_ws,"freyberg.pst"))
-    mc = pyemu.MonteCarlo(pst=pst)
-    os.chdir(new_model_ws)
-    cov = pyemu.Cov.from_ascii("freyberg.pst.prior.cov")
-    mc.draw(100,cov=cov)
-    #pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None, model=helper.m)
-    #pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None)
+        pst = pyemu.Pst(os.path.join(new_model_ws,"freyberg.pst"))
+        mc = pyemu.MonteCarlo(pst=pst)
+        os.chdir(new_model_ws)
+        cov = pyemu.Cov.from_ascii("freyberg.pst.prior.cov")
+        mc.draw(100,cov=cov)
+        #pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None, model=helper.m)
+        #pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None)
 
-    #3try:
-    import cartopy.crs as ccrs
-    import cartopy.io.img_tiles as cimgt
+        import cartopy.crs as ccrs
+        import cartopy.io.img_tiles as cimgt
 
-    import pyproj
-    # except:
-    #     return
+        import pyproj
+        # except:
+        #     return
 
-    stamen_terrain = cimgt.StamenTerrain()
-    zoom = 10
+        stamen_terrain = cimgt.StamenTerrain()
+        zoom = 10
 
-    def fig_ax_gen():
-        fig = plt.figure(figsize=(20,20))
-        nrow,ncol = 5,4
+        def fig_ax_gen():
+            fig = plt.figure(figsize=(20,20))
+            nrow,ncol = 5,4
 
-        axes = []
-        for i in range(nrow*ncol):
-            #print(i)
-            ax = plt.subplot(nrow,ncol,i+1,projection=stamen_terrain.crs)
-            ax.set_extent([-97.775, -97.625, 30.2, 30.35])
-            #ax.set_extent([175.2, 176.2, -37, -38.2])
-            ax.add_image(stamen_terrain,zoom)
-            #plt.show()
-            axes.append(ax)
+            axes = []
+            for i in range(nrow*ncol):
+                #print(i)
+                ax = plt.subplot(nrow,ncol,i+1,projection=stamen_terrain.crs)
+                ax.set_extent([-97.775, -97.625, 30.2, 30.35])
+                #ax.set_extent([175.2, 176.2, -37, -38.2])
+                ax.add_image(stamen_terrain,zoom)
+                #plt.show()
+                axes.append(ax)
 
-            #break
-        return fig, axes
-    #fig,axes = fig_ax_gen()
-    #plt.show()
-    #return
-    pcolormesh_trans = ccrs.UTM(zone=14)
-    pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None,fig_axes_generator=fig_ax_gen,
-                                          pcolormesh_transform=pcolormesh_trans,model="freyberg.nam")
+                #break
+            return fig, axes
+        #fig,axes = fig_ax_gen()
+        #plt.show()
+        #return
+        pcolormesh_trans = ccrs.UTM(zone=14)
+        pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None,fig_axes_generator=fig_ax_gen,
+                                              pcolormesh_transform=pcolormesh_trans,model="freyberg.nam")
 
-    os.chdir("..")
-
+        os.chdir("..")
+    except Exception as e:
+        os.chdir(bd)
+        raise Exception(str(e))
 
 def from_flopy_kl_test():
     import shutil
@@ -717,10 +726,11 @@ def from_flopy_reachinput():
         for line in f:
             line = line.strip().split()
             pars[line[0]] = line[1]
-    tpl_df = pd.read_csv("{}.tpl".format(pars["mult_file"]), delim_whitespace=True, skiprows=1)
+    #tpl_df = pd.read_csv("{}.tpl".format(pars["mult_file"]), delim_whitespace=True,skiprows=1,index_col=0)
+    tpl_df = pd.read_csv("{}.tpl".format(pars["mult_file"]), delim_whitespace=False, skiprows=1, index_col=0)
     mult_df = tpl_df.replace(r"^\~.*\~$",'100000.0', regex=True).copy()
-    mult_df.to_csv(pars["mult_file"], sep=' ')
-    pyemu.gw_utils.apply_sfr_parameters(True)
+    mult_df.to_csv(pars["mult_file"], sep=',',index_label="iseg")
+    pyemu.gw_utils.apply_sfr_parameters(reach_pars=False)
     os.chdir(bd)
 
 def run_array_pars():
@@ -1027,9 +1037,9 @@ if __name__ == "__main__":
     # run_array_pars()
     #flopy_test()
     # add_obs_test()
-    # from_flopy_kl_test()
+    #from_flopy_kl_test()
     from_flopy_reachinput()
-    # plot_flopy_par_ensemble_test()
+    #plot_flopy_par_ensemble_test()
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()

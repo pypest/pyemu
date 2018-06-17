@@ -1344,7 +1344,7 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.',par_cols=['strhc1']):
     # write the template file
     with open(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"), 'w') as f:
         f.write("ptf ~\n")
-        reach_data.to_csv(f, sep=' ')
+        reach_data.to_csv(f, sep=',',quotechar=' ',quoting=1)
 
     # write the config file used by apply_sfr_pars()
     with open(os.path.join(model_ws, "sfr_reach_pars.config"), 'w') as f:
@@ -1400,7 +1400,8 @@ def apply_sfr_seg_parameters(reach_pars=False):
     m = flopy.modflow.Modflow.load(pars["nam_file"], load_only=[], check=False)
     sfr = flopy.modflow.ModflowSfr2.load(os.path.join(bak_sfr_file),m)
 
-    mlt_df = pd.read_csv(pars["mult_file"],delim_whitespace=True)
+    mlt_df = pd.read_csv(pars["mult_file"],delim_whitespace=False,index_col=0)
+
     idx_cols = ['nseg', 'icalc', 'outseg', 'iupseg', 'iprior', 'nstrpts']
     present_cols = [c for c in idx_cols if c in mlt_df.columns]
     mlt_cols = mlt_df.columns.drop(present_cols)

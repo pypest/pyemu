@@ -424,7 +424,7 @@ def pp_to_shapefile_test():
         return
     pp_file = os.path.join("utils","points1.dat")
     shp_file = os.path.join("temp","points1.dat.shp")
-    pyemu.gw_utils.write_pp_shapfile(pp_file)
+    pyemu.pp_utils.write_pp_shapfile(pp_file)
 
 def write_tpl_test():
     import os
@@ -890,7 +890,7 @@ def read_hydmod_test():
     df = pd.read_csv(os.path.join('temp', 'freyberg.hyd.bin.dat'), delim_whitespace=True)
     dftrue = pd.read_csv(os.path.join('utils', 'freyberg.hyd.bin.dat.true'), delim_whitespace=True)
 
-    assert np.allclose(df.obsval.as_matrix(), dftrue.obsval.as_matrix())
+    assert np.allclose(df.obsval.values, dftrue.obsval.values)
 
 def make_hydmod_insfile_test():
     import os
@@ -1086,7 +1086,7 @@ def sfr_helper_test():
     # change some hcond1 values
     df = pd.read_csv("sfr_seg_pars.dat",delim_whitespace=True)
     df.loc[:,"hcond1"] = 0.5
-    df.to_csv("sfr_seg_pars.dat",sep=' ')
+    df.to_csv("sfr_seg_pars.dat",sep=',')
 
     #change the name of the sfr file that will be created
     pars = {}
@@ -1233,20 +1233,20 @@ if __name__ == "__main__":
     #write_jactest_test()
     #sfr_obs_test()
     #setup_pp_test()
-    #sfr_helper_test()
-    #gw_sft_ins_test()
+    sfr_helper_test()
+    # gw_sft_ins_test()
     # par_knowledge_test()
-    #grid_obs_test()
-    #hds_timeseries_test()
-    #plot_summary_test()
+    # grid_obs_test()
+    # hds_timeseries_test()
+    # plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
     # make_hydmod_insfile_test()
     # gslib_2_dataframe_test()
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
-    #geostat_prior_builder_test()
-    geostat_draws_test()
+    # geostat_prior_builder_test()
+    # geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
     #mflist_budget_test()
     #mtlist_budget_test()
