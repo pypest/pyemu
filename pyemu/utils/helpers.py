@@ -148,6 +148,8 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
                     df = pd.read_csv(item)
             else:
                 df = item
+            if df.columns.contains('pargp'):
+                if verbose: print("working on pargroups {0}".format(df.pargp.unique().tolist()))
             for req in ['x','y','parnme']:
                 if req not in df.columns:
                     raise Exception("{0} is not in the columns".format(req))
@@ -2998,6 +3000,7 @@ class PstFromFlopyModel(object):
                                   self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0, a=dist)
             self.spatial_bc_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+        self.log("processing spatial_bc_props")
         return True
 
 
@@ -3221,18 +3224,23 @@ class PstFromFlopyModel(object):
             self.frun_post_lines.append(line)
 
 
-def apply_array_pars():
+def apply_array_pars(arr_par_file="arr_pars.csv"):
     """ a function to apply array-based multipler parameters.  Used to implement
     the parameterization constructed by PstFromFlopyModel during a forward run
 
+    Parameters
+    ----------
+    arr_par_file : str
+    path to csv file detailing parameter array multipliers
+
     Note
     ----
-    requires "arr_pars.csv" - this file is written by PstFromFlopy
+    "arr_pars.csv" - is written by PstFromFlopy
 
-    the function should be added to the forward_run.py script
+    the function should be added to the forward_run.py script but can be called on any correctly formatted csv
 
     """
-    df = pd.read_csv("arr_pars.csv")
+    df = pd.read_csv(arr_par_file)
     # for fname in df.model_file:
     #     try:
     #         os.remove(fname)
