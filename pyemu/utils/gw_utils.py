@@ -1208,7 +1208,7 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
 
     seg_data = seg_data[seg_data_col_order] # reset column orders to inital
     seg_data_org = seg_data.copy()
-    seg_data.to_csv(os.path.join(model_ws, "sfr_seg_pars.dat"), sep=' ')
+    seg_data.to_csv(os.path.join(model_ws, "sfr_seg_pars.dat"), sep=',')
 
     #the data cols not to parameterize
     # better than a column indexer as pandas can change column orders
@@ -1243,7 +1243,7 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
     #write the template file
     with open(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),'w') as f:
         f.write("ptf ~\n")
-        seg_data.to_csv(f,sep=' ')
+        seg_data.to_csv(f,sep=',')
 
 
     #write the config file used by apply_sfr_pars()

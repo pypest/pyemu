@@ -1083,8 +1083,38 @@ def sfr_helper_test():
     df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters("supply2.nam",model_ws="utils")
     print(df_sfr)
     os.chdir("utils")
+
+    # change the name of the sfr file that will be created
+    pars = {}
+    with open("sfr_seg_pars.config") as f:
+        for line in f:
+            line = line.strip().split()
+            pars[line[0]] = line[1]
+    pars["sfr_filename"] = "test.sfr"
+    with open("sfr_seg_pars.config", 'w') as f:
+        for k, v in pars.items():
+            f.write("{0} {1}\n".format(k, v))
+
     # change some hcond1 values
-    df = pd.read_csv("sfr_seg_pars.dat",delim_whitespace=True)
+    df = pd.read_csv("sfr_seg_pars.dat", delim_whitespace=False,index_col=0)
+    df.loc[:, "hcond1"] = 1.0
+    df.to_csv("sfr_seg_pars.dat", sep=',')
+
+    # make sure the hcond1 mult worked...
+    sd1 = pyemu.gw_utils.apply_sfr_seg_parameters().segment_data[0]
+    m1 = flopy.modflow.Modflow.load("supply2.nam", load_only=["sfr"], check=False)
+    sd2 = m1.sfr.segment_data[0]
+
+    sd1 = pd.DataFrame.from_records(sd1)
+    sd2 = pd.DataFrame.from_records(sd2)
+
+    # print(sd1.hcond1)
+    # print(sd2.hcond2)
+
+    assert sd1.hcond1.sum() == sd2.hcond1.sum()
+
+    # change some hcond1 values
+    df = pd.read_csv("sfr_seg_pars.dat",delim_whitespace=False,index_col=0)
     df.loc[:,"hcond1"] = 0.5
     df.to_csv("sfr_seg_pars.dat",sep=',')
 
