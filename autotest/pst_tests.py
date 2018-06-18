@@ -727,10 +727,14 @@ def from_flopy_reachinput():
             line = line.strip().split()
             pars[line[0]] = line[1]
     #tpl_df = pd.read_csv("{}.tpl".format(pars["mult_file"]), delim_whitespace=True,skiprows=1,index_col=0)
-    tpl_df = pd.read_csv("{}.tpl".format(pars["mult_file"]), delim_whitespace=False, skiprows=1, index_col=0)
-    mult_df = tpl_df.replace(r"^\~.*\~$",'100000.0', regex=True).copy()
-    mult_df.to_csv(pars["mult_file"], sep=',',index_label="iseg")
-    pyemu.gw_utils.apply_sfr_parameters(reach_pars=False)
+    #with open("{}.tpl".format(pars["mult_file"]),'r') as f:
+    #    f.readline()
+    #    tpl_df = pd.read_csv(f,index_col=0)
+    #tpl_df = pd.read_csv("{}.tpl".format(pars["mult_file"]), index_col=0,skiprows=1)
+    #mult_df = tpl_df.replace(r"^\~.*\~$",'100000.0', regex=True).copy()
+    #mult_df.to_csv(pars["mult_file"], sep=',',index_label="iseg")
+    
+    pyemu.gw_utils.apply_sfr_parameters(reach_pars=True)
     os.chdir(bd)
 
 def run_array_pars():
