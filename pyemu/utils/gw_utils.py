@@ -9,6 +9,7 @@ import shutil
 import warnings
 import numpy as np
 import pandas as pd
+import re
 pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,_try_run_inschek,\
     parse_tpl_file,try_process_ins_file
@@ -1644,6 +1645,131 @@ def load_sfr_out(sfr_out_file):
                 sfr_dict[kper] = df
     return sfr_dict
 
+
+def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
+    """writes an instruction file for a mt3d-usgs sft output file
+
+    Parameters
+    ----------
+        gage_file : str
+            the gage output file (ASCII)
+        ins_file : str
+            the name of the instruction file to create.  If None, the name
+            is <gage_file>.processed.ins.  Default is None
+        start_datetime : str
+            a pandas.to_datetime() compatible str.  If not None,
+            then the resulting observation names have the datetime
+            suffix.  If None, the suffix is the output totim.  Default
+            is None
+        times : iterable
+            a container of times to make observations for.  If None, all times are used.
+            Default is None.
+
+
+    Returns
+    -------
+        df : pandas.DataFrame
+            a dataframe with obsnme and obsval for the sft simulated concentrations and flows.
+            If inschek was not successfully run, then returns None
+        ins_file : str
+            file name of instructions file relating to gage output.
+        obs_file : str
+            file name of processed gage output (processed according to times passed above.)
+
+
+    Note
+    ----
+        setups up observations for gage outputs (all columns).
+    """
+
+    with open(gage_file, 'r') as f:
+        line1 = f.readline()
+        gage_num = int(re.sub("[^0-9]", "", line1.split("GAGE No.")[-1].strip().split()[0]))
+        gage_type = line1.split("GAGE No.")[-1].strip().split()[1].lower()
+        obj_num = int(line1.replace('"', '').strip().split()[-1])
+        line2 = f.readline()
+        df = pd.read_csv(f, delim_whitespace=True, names=line2.replace('"', '').split()[1:])
+
+    df.columns = [c.lower().replace("-", "_").replace('.', '_').strip('_') for c in df.columns]
+    # get unique observation ids
+    obs_ids = []
+    for col in df.columns:
+        colspl = col.split('_')
+        if len(colspl) > 1:
+            obs_ids.append(f"{colspl[0][0]}{colspl[-1][0]}")
+        else:
+            obs_ids.append(f"{col[0:2]}")
+    # find passed times in df
+    if times is None:
+        times = df.time.unique()
+    missing = []
+    utimes = df.time.unique()
+    for t in times:
+        if not np.isclose(t, utimes).any():
+            missing.append(str(t))
+    if len(missing) > 0:
+        print(df.time)
+        raise Exception("the following times are missing:{0}".format(','.join(missing)))
+    # write output times to config file
+    with open("gage_obs.config", 'w') as f:
+        f.write(gage_file+'\n')
+        [f.write("{0:15.10E}\n".format(t)) for t in times]
+    # extract data for times: returns dataframe and saves a processed df - read by pest
+    df, obs_file = apply_gage_obs(return_obs_file=True)
+    utimes = df.time.unique()
+    for t in times:
+        assert np.isclose(t, utimes).any(), "time {0} missing in processed dataframe".format(t)
+    idx = df.time.apply(lambda x: np.isclose(x, times).any())  # boolean selector of desired times in df
+    if start_datetime is not None:
+        # convert times to usable observation times
+        start_datetime = pd.to_datetime(start_datetime)
+        df.loc[:, "time_str"] = pd.to_timedelta(df.time, unit='d') + start_datetime
+        df.loc[:, "time_str"] = df.time_str.apply(lambda x: datetime.strftime(x, "%Y%m%d"))
+    else:
+        df.loc[:, "time_str"] = df.time.apply(lambda x: "{0:08.2f}".format(x))
+    # set up instructions (line feed for lines without obs (not in time)
+    df.loc[:, "ins_str"] = "l1\n"
+    df_times = df.loc[idx, :]  # Slice by desired times
+    # TODO include GAGE No. in obs name (if permissible)
+    df.loc[df_times.index, "ins_str"] = df_times.apply(lambda x: "l1 w {}\n".format(
+        ' '.join(["!g{}{}{}!".format(gage_type[0], obs, x.time_str) for obs in obs_ids[1:]])), axis=1)
+    df.index = np.arange(df.shape[0])
+    if ins_file is None:
+        ins_file = gage_file+".processed.ins"
+
+    with open(ins_file, 'w') as f:
+        f.write("pif ~\nl1\n")
+        [f.write(i) for i in df.ins_str]
+    df = _try_run_inschek(ins_file, gage_file+".processed")
+    if df is not None:
+        return df, ins_file, obs_file
+    else:
+        return None
+
+
+def apply_gage_obs(return_obs_file=False):
+    times = []
+    with open("gage_obs.config") as f:
+        gage_file = f.readline().strip()
+        for line in f:
+            times.append(float(line.strip()))
+    obs_file = gage_file+".processed"
+    with open(gage_file, 'r') as f:
+        line1 = f.readline()
+        gage_num = int(re.sub("[^0-9]", "", line1.split("GAGE No.")[-1].strip().split()[0]))
+        gage_type = line1.split("GAGE No.")[-1].strip().split()[1].lower()
+        obj_num = int(line1.replace('"', '').strip().split()[-1])
+        line2 = f.readline()
+        df = pd.read_csv(f, delim_whitespace=True, names=line2.replace('"', '').split()[1:])
+    df.columns = [c.lower().replace("-", "_").replace('.', '_') for c in df.columns]
+    df = df.loc[df.time.apply(lambda x: np.isclose(x, times).any()), :]
+    df.to_csv(obs_file, sep=' ', index=False)
+    if return_obs_file:
+        return df, obs_file
+    else:
+        return df
+
+
 def write_hfb_zone_multipliers_template(m):
     """write a template file for an hfb using multipliers per zone (double yuck!)
 
@@ -1783,7 +1909,5 @@ def write_hfb_template(m):
     df.loc[:,"parubnd"] = df.parval1.max() * 10.0
     df.loc[:,"parlbnd"] = df.parval1.min() * 0.1
     return tpl_file,df
-
-
 
 
