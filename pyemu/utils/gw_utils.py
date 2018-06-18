@@ -1696,9 +1696,9 @@ def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
     for col in df.columns:
         colspl = col.split('_')
         if len(colspl) > 1:
-            obs_ids.append(f"{colspl[0][0]}{colspl[-1][0]}")
+            obs_ids.append("{colspl[0][0]}{colspl[-1][0]}")
         else:
-            obs_ids.append(f"{col[0:2]}")
+            obs_ids.append("{col[0:2]}")
     # find passed times in df
     if times is None:
         times = df.time.unique()
