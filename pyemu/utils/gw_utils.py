@@ -1696,6 +1696,7 @@ def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
     for col in df.columns:
         colspl = col.split('_')
         if len(colspl) > 1:
+
             obs_ids.append("{0}{1}".format(colspl[0][0],colspl[-1][0]))
         else:
             obs_ids.append("{0}".fromat(col[0:2]))
