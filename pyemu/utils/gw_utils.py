@@ -1645,6 +1645,70 @@ def load_sfr_out(sfr_out_file):
                 sfr_dict[kper] = df
     return sfr_dict
 
+def modflow_sfr_gag_to_instruction_file(gage_output_file, ins_file=None):
+    """writes an instruction file for an SFR gage output file to read Flow only at all times
+
+        Parameters
+        ----------
+            gage_output_file : str
+                the gage output filename (ASCII)
+
+            ins_file : str
+                the name of the instruction file to create.  If None, the name
+                is <gage_output_file>.ins.  Default is None
+
+        Returns
+        -------
+            df : pandas.DataFrame
+                a dataframe with obsnme and obsval for the sfr simulated flows.
+                If inschek was not successfully run, then returns None
+            ins_file : str
+                file name of instructions file relating to gage output.
+            obs_file : str
+                file name of processed gage output for all times
+
+
+        Note
+        ----
+            setups up observations for gage outputs only for the Flow column.
+
+        TODO : allow other observation types and align explicitly with times - now returns all values
+        """
+
+    if ins_file is None:
+        ins_file = gage_output_file + '.ins'
+
+    # navigate the file to be sure the header makes sense
+    indat = [line.strip() for line in open(gage_output_file, 'r').readlines()]
+    header = [i for i in indat if i.startswith('"')]
+    # yank out the gage number to identify the observation names
+    gage_num = int(re.sub("[^0-9]", "", indat[0].lower().split("gage no.")[-1].strip().split()[0]))
+
+    # get the column names
+    cols = [i for i in header if 'data' in i.lower()][0].lower().replace('"', '').replace('data:', '').split()
+
+    # make sure "Flow" is included in the columns
+    if 'flow' not in cols:
+        raise Exception('Requested field "Flow" not in gage output columns')
+
+    # find which column is for  "Flow"
+    flowidx = np.where(np.array(cols) == 'flow')[0][0]
+
+    # write out the instruction file lines
+    inslines = ['l1 ' + (flowidx + 1) * 'w ' + '!g{0:d}_{1:d}!'.format(gage_num, j)
+                for j in range(len(indat) - len(header))]
+    inslines[0] = inslines[0].replace('l1', 'l{0:d}'.format(len(header) + 1))
+
+    # write the instruction file
+    with open(ins_file, 'w') as ofp:
+        ofp.write('pif ~\n')
+        [ofp.write('{0}\n'.format(line)) for line in inslines]
+
+    df = _try_run_inschek(ins_file, gage_output_file)
+    if df is not None:
+        return df, ins_file, gage_output_file
+    else:
+        return None
 
 def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
     """writes an instruction file for a mt3d-usgs sft output file
