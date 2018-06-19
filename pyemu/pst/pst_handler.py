@@ -2100,14 +2100,15 @@ class Pst(object):
 
         preamble = '\\documentclass{article}\n\\usepackage{booktabs}\n'+ \
                     '\\usepackage{pdflscape}\n\\usepackage{longtable}\n' + \
-                    '\\usepackage{booktabs}\n\\begin{document}\n\\begin{center}\n'+\
-                    '\\begin{landscape}\n'
+                    '\\usepackage{booktabs}\n\\usepackage{nopageno}\n\\begin{document}\n'
 
         if filename is None:
             filename = self.filename.replace(".pst",".par.tex")
 
         with open(filename,'w') as f:
             f.write(preamble)
+            f.write("\\begin{center}\nParameter Summary\n\\end{center}\n")
+            f.write("\\begin{center}\n\\begin{landscape}\n")
             pargp_df.to_latex(f, index=False, longtable=True)
             f.write("\\end{landscape}\n")
             f.write("\\end{center}\n")
@@ -2173,8 +2174,7 @@ class Pst(object):
 
         preamble = '\\documentclass{article}\n\\usepackage{booktabs}\n' + \
                    '\\usepackage{pdflscape}\n\\usepackage{longtable}\n' + \
-                   '\\usepackage{booktabs}\n\\begin{document}\n\\begin{center}\n' + \
-                   '\\begin{landscape}\n'
+                   '\\usepackage{booktabs}\n\\usepackage{nopageno}\n\\begin{document}\n'
 
         if filename is None:
             filename = self.filename.replace(".pst", ".obs.tex")
@@ -2182,6 +2182,9 @@ class Pst(object):
         with open(filename, 'w') as f:
 
             f.write(preamble)
+
+            f.write("\\begin{center}\nObservation Summary\n\\end{center}\n")
+            f.write("\\begin{center}\n\\begin{landscape}\n")
             f.write("\\setlength{\\LTleft}{-4.0cm}\n")
             obsg_df.to_latex(f, index=False, longtable=True)
             f.write("\\end{landscape}\n")
