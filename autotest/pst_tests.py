@@ -864,8 +864,8 @@ def write_tables_test():
 
     pst = pyemu.Pst(os.path.join("pst","freyberg_gr.pst"))
     group_names = {"w0":"wells t"}
-    pst.write_par_summary_table(group_names=group_names,caption="par table")
-    pst.write_obs_summary_table(group_names={"calhead":"calibration heads"},caption="obs table")
+    pst.write_par_summary_table(group_names=group_names)
+    pst.write_obs_summary_table(group_names={"calhead":"calibration heads"})
 
 
 def flex_test():
@@ -1032,7 +1032,7 @@ def pst_from_flopy_geo_draw_test():
 if __name__ == "__main__":
     # pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
-    # write_tables_test()
+    write_tables_test()
     # res_stats_test()
     # test_write_input_files()
     # add_obs_test()
@@ -1042,7 +1042,7 @@ if __name__ == "__main__":
     #flopy_test()
     # add_obs_test()
     #from_flopy_kl_test()
-    from_flopy_reachinput()
+    #from_flopy_reachinput()
     #plot_flopy_par_ensemble_test()
     # add_pi_test()
     # regdata_test()

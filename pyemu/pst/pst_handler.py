@@ -2032,7 +2032,7 @@ class Pst(object):
 
 
     def write_par_summary_table(self,filename=None,group_names=None,
-                                sigma_range = 4.0,caption=None):
+                                sigma_range = 4.0):
         """write a stand alone parameter summary latex table
 
 
@@ -2046,8 +2046,6 @@ class Pst(object):
         sigma_range : float
             number of standard deviations represented by parameter bounds.  Default
             is 4.0, implying 95% confidence bounds
-        caption : str
-            table caption.  Default is None
 
         Returns
         -------
@@ -2102,23 +2100,21 @@ class Pst(object):
 
         preamble = '\\documentclass{article}\n\\usepackage{booktabs}\n'+ \
                     '\\usepackage{pdflscape}\n\\usepackage{longtable}\n' + \
-                    '\\usepackage{booktabs}\n\\begin{document}\n\\begin{center}\n'+\
-                    '\\begin{table}\n'
+                    '\\usepackage{booktabs}\n\\usepackage{nopageno}\n\\begin{document}\n'
 
         if filename is None:
             filename = self.filename.replace(".pst",".par.tex")
 
         with open(filename,'w') as f:
             f.write(preamble)
-            if caption is not None:
-                f.write("\\caption{"+caption+"}\n")
+            f.write("\\begin{center}\nParameter Summary\n\\end{center}\n")
+            f.write("\\begin{center}\n\\begin{landscape}\n")
             pargp_df.to_latex(f, index=False, longtable=True)
-            f.write("\\end{table}\n")
+            f.write("\\end{landscape}\n")
             f.write("\\end{center}\n")
             f.write("\\end{document}\n")
 
-    def write_obs_summary_table(self,filename=None,group_names=None,
-                               caption=None):
+    def write_obs_summary_table(self,filename=None,group_names=None):
         """write a stand alone observation summary latex table
 
 
@@ -2129,8 +2125,6 @@ class Pst(object):
                 group_names: dict
                     par group names : table names for example {"w0":"well stress period 1"}.
                     Default is None
-                caption : str
-                    table caption. Default is None
 
                 Returns
                 -------
@@ -2180,8 +2174,7 @@ class Pst(object):
 
         preamble = '\\documentclass{article}\n\\usepackage{booktabs}\n' + \
                    '\\usepackage{pdflscape}\n\\usepackage{longtable}\n' + \
-                   '\\usepackage{booktabs}\n\\begin{document}\n\\begin{center}\n' + \
-                   '\\begin{table}\n'
+                   '\\usepackage{booktabs}\n\\usepackage{nopageno}\n\\begin{document}\n'
 
         if filename is None:
             filename = self.filename.replace(".pst", ".obs.tex")
@@ -2189,11 +2182,12 @@ class Pst(object):
         with open(filename, 'w') as f:
 
             f.write(preamble)
+
+            f.write("\\begin{center}\nObservation Summary\n\\end{center}\n")
+            f.write("\\begin{center}\n\\begin{landscape}\n")
             f.write("\\setlength{\\LTleft}{-4.0cm}\n")
-            if caption is not None:
-                f.write("\\caption{"+caption+"}\n")
             obsg_df.to_latex(f, index=False, longtable=True)
-            f.write("\\end{table}\n")
+            f.write("\\end{landscape}\n")
             f.write("\\end{center}\n")
             f.write("\\end{document}\n")
 
