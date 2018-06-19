@@ -1699,7 +1699,7 @@ def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
 
             obs_ids.append("{0}{1}".format(colspl[0][0],colspl[-1][0]))
         else:
-            obs_ids.append("{0}".fromat(col[0:2]))
+            obs_ids.append("{0}".format(col[0:2]))
     # find passed times in df
     if times is None:
         times = df.time.unique()
