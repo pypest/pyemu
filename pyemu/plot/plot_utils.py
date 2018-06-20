@@ -595,7 +595,7 @@ def res_phi_pie(pst,logger=None, **kwargs):
     else:
         fig = plt.figure(figsize=figsize)
         ax = plt.subplot(1,1,1,aspect="equal")
-    labels = ["{0}\n{1:4G}({2:3.1f}%)".format(k,v,100. * (v / pst.phi)) for k,v in phi_comps.items()]
+    labels = ["{0}\n{1:4G}\n({2:3.1f}%)".format(k,v,100. * (v / pst.phi)) for k,v in phi_comps.items()]
     ax.pie([float(v) for v in norm_phi_comps.values()],labels=labels)
     logger.log("plot res_phi_pie")
     if "filename" in kwargs:
@@ -992,7 +992,7 @@ def _process_ensemble_arg(ensemble,facecolor, logger):
 
     return ensembles
 
-def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,**kwargs):
+def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,skip_groups=[],**kwargs):
     """helper function to plot ensemble 1-to-1 plots sbowing the simulated range
 
     Parameters
@@ -1019,6 +1019,8 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,**
         raise NotImplementedError()
     else:
         grouper = obs.groupby(obs.obgnme).groups
+        for skip_group in skip_groups:
+            grouper.pop(skip_group)
 
     fig = plt.figure(figsize=figsize)
     if "fig_title" in kwargs:
