@@ -1290,7 +1290,7 @@ class ParameterEnsemble(Ensemble):
             pdiff = self.loc[real,common_names] - base
             pdiff = np.dot(projection_matrix.x,
                            (self.loc[real,common_names] - base)\
-                           .as_matrix())
+                           .values)
 
             if inplace:
                 self.loc[real,common_names] = base + pdiff

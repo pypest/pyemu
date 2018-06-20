@@ -424,7 +424,7 @@ def pp_to_shapefile_test():
         return
     pp_file = os.path.join("utils","points1.dat")
     shp_file = os.path.join("temp","points1.dat.shp")
-    pyemu.gw_utils.write_pp_shapfile(pp_file)
+    pyemu.pp_utils.write_pp_shapfile(pp_file)
 
 def write_tpl_test():
     import os
@@ -890,7 +890,7 @@ def read_hydmod_test():
     df = pd.read_csv(os.path.join('temp', 'freyberg.hyd.bin.dat'), delim_whitespace=True)
     dftrue = pd.read_csv(os.path.join('utils', 'freyberg.hyd.bin.dat.true'), delim_whitespace=True)
 
-    assert np.allclose(df.obsval.as_matrix(), dftrue.obsval.as_matrix())
+    assert np.allclose(df.obsval.values, dftrue.obsval.values)
 
 def make_hydmod_insfile_test():
     import os
@@ -1083,10 +1083,40 @@ def sfr_helper_test():
     df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters("supply2.nam",model_ws="utils")
     print(df_sfr)
     os.chdir("utils")
+
+    # change the name of the sfr file that will be created
+    pars = {}
+    with open("sfr_seg_pars.config") as f:
+        for line in f:
+            line = line.strip().split()
+            pars[line[0]] = line[1]
+    pars["sfr_filename"] = "test.sfr"
+    with open("sfr_seg_pars.config", 'w') as f:
+        for k, v in pars.items():
+            f.write("{0} {1}\n".format(k, v))
+
     # change some hcond1 values
-    df = pd.read_csv("sfr_seg_pars.dat",delim_whitespace=True)
+    df = pd.read_csv("sfr_seg_pars.dat", delim_whitespace=False,index_col=0)
+    df.loc[:, "hcond1"] = 1.0
+    df.to_csv("sfr_seg_pars.dat", sep=',')
+
+    # make sure the hcond1 mult worked...
+    sd1 = pyemu.gw_utils.apply_sfr_seg_parameters().segment_data[0]
+    m1 = flopy.modflow.Modflow.load("supply2.nam", load_only=["sfr"], check=False)
+    sd2 = m1.sfr.segment_data[0]
+
+    sd1 = pd.DataFrame.from_records(sd1)
+    sd2 = pd.DataFrame.from_records(sd2)
+
+    # print(sd1.hcond1)
+    # print(sd2.hcond2)
+
+    assert sd1.hcond1.sum() == sd2.hcond1.sum()
+
+    # change some hcond1 values
+    df = pd.read_csv("sfr_seg_pars.dat",delim_whitespace=False,index_col=0)
     df.loc[:,"hcond1"] = 0.5
-    df.to_csv("sfr_seg_pars.dat",sep=' ')
+    df.to_csv("sfr_seg_pars.dat",sep=',')
 
     #change the name of the sfr file that will be created
     pars = {}
@@ -1127,6 +1157,29 @@ def sfr_obs_test():
     m = flopy.modflow.Modflow.load("freyberg.nam",model_ws="utils",load_only=[],check=False)
     pyemu.gw_utils.setup_sfr_obs(sfr_file,model=m)
     pyemu.gw_utils.setup_sfr_obs(sfr_file, seg_group_dict={"obs1": [1, 4], "obs2": [16, 17, 18, 19, 22, 23]},model=m)
+
+
+def gage_obs_test():
+    import os
+    import pyemu
+    import numpy as np
+
+    bd = os.getcwd()
+    os.chdir("utils")
+
+    gage_file = "RmSouth_pred_7d.gage1.go"
+    gage = pyemu.gw_utils.setup_gage_obs(gage_file, start_datetime='2007-04-11')
+    if gage is not None:
+        print(gage[1], gage[2])
+
+    times = np.concatenate(([0], np.arange(7., 7. * 404, 7.)))
+    gage = pyemu.gw_utils.setup_gage_obs(gage_file, start_datetime='2007-04-11', times=times)
+    if gage is not None:
+        print(gage[1], gage[2])
+    pyemu.gw_utils.apply_gage_obs()
+
+    os.chdir(bd)
+
 
 def pst_from_parnames_obsnames_test():
     import pyemu
@@ -1232,21 +1285,22 @@ if __name__ == "__main__":
     #pst_from_parnames_obsnames_test()
     #write_jactest_test()
     #sfr_obs_test()
+    gage_obs_test()
     #setup_pp_test()
     #sfr_helper_test()
-    #gw_sft_ins_test()
+    # gw_sft_ins_test()
     # par_knowledge_test()
-    #grid_obs_test()
-    #hds_timeseries_test()
-    #plot_summary_test()
+    # grid_obs_test()
+    # hds_timeseries_test()
+    # plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
     # make_hydmod_insfile_test()
     # gslib_2_dataframe_test()
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
-    #geostat_prior_builder_test()
-    geostat_draws_test()
+    # geostat_prior_builder_test()
+    # geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
     #mflist_budget_test()
     #mtlist_budget_test()

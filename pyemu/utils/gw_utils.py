@@ -9,6 +9,7 @@ import shutil
 import warnings
 import numpy as np
 import pandas as pd
+import re
 pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,_try_run_inschek,\
     parse_tpl_file,try_process_ins_file
@@ -1208,7 +1209,7 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
 
     seg_data = seg_data[seg_data_col_order] # reset column orders to inital
     seg_data_org = seg_data.copy()
-    seg_data.to_csv(os.path.join(model_ws, "sfr_seg_pars.dat"), sep=' ')
+    seg_data.to_csv(os.path.join(model_ws, "sfr_seg_pars.dat"), sep=',')
 
     #the data cols not to parameterize
     # better than a column indexer as pandas can change column orders
@@ -1243,7 +1244,7 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
     #write the template file
     with open(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),'w') as f:
         f.write("ptf ~\n")
-        seg_data.to_csv(f,sep=' ')
+        seg_data.to_csv(f,sep=',')
 
 
     #write the config file used by apply_sfr_pars()
@@ -1344,7 +1345,7 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.',par_cols=['strhc1']):
     # write the template file
     with open(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"), 'w') as f:
         f.write("ptf ~\n")
-        reach_data.to_csv(f, sep=' ')
+        reach_data.to_csv(f, sep=',',quotechar=' ',quoting=1)
 
     # write the config file used by apply_sfr_pars()
     with open(os.path.join(model_ws, "sfr_reach_pars.config"), 'w') as f:
@@ -1400,9 +1401,11 @@ def apply_sfr_seg_parameters(reach_pars=False):
     m = flopy.modflow.Modflow.load(pars["nam_file"], load_only=[], check=False)
     sfr = flopy.modflow.ModflowSfr2.load(os.path.join(bak_sfr_file),m)
 
-    mlt_df = pd.read_csv(pars["mult_file"],delim_whitespace=True)
+    mlt_df = pd.read_csv(pars["mult_file"],delim_whitespace=False,index_col=0)
+
     idx_cols = ['nseg', 'icalc', 'outseg', 'iupseg', 'iprior', 'nstrpts']
-    mlt_cols = mlt_df.columns.drop(idx_cols)
+    present_cols = [c for c in idx_cols if c in mlt_df.columns]
+    mlt_cols = mlt_df.columns.drop(present_cols)
     for key,val in m.sfr.segment_data.items():
         df = pd.DataFrame.from_records(val)
         df.loc[:,mlt_cols] *= mlt_df.loc[:,mlt_cols]
@@ -1642,6 +1645,196 @@ def load_sfr_out(sfr_out_file):
                 sfr_dict[kper] = df
     return sfr_dict
 
+def modflow_sfr_gag_to_instruction_file(gage_output_file, ins_file=None):
+    """writes an instruction file for an SFR gage output file to read Flow only at all times
+
+        Parameters
+        ----------
+            gage_output_file : str
+                the gage output filename (ASCII)
+
+            ins_file : str
+                the name of the instruction file to create.  If None, the name
+                is <gage_output_file>.ins.  Default is None
+
+        Returns
+        -------
+            df : pandas.DataFrame
+                a dataframe with obsnme and obsval for the sfr simulated flows.
+                If inschek was not successfully run, then returns None
+            ins_file : str
+                file name of instructions file relating to gage output.
+            obs_file : str
+                file name of processed gage output for all times
+
+
+        Note
+        ----
+            setups up observations for gage outputs only for the Flow column.
+
+        TODO : allow other observation types and align explicitly with times - now returns all values
+        """
+
+    if ins_file is None:
+        ins_file = gage_output_file + '.ins'
+
+    # navigate the file to be sure the header makes sense
+    indat = [line.strip() for line in open(gage_output_file, 'r').readlines()]
+    header = [i for i in indat if i.startswith('"')]
+    # yank out the gage number to identify the observation names
+    gage_num = int(re.sub("[^0-9]", "", indat[0].lower().split("gage no.")[-1].strip().split()[0]))
+
+    # get the column names
+    cols = [i for i in header if 'data' in i.lower()][0].lower().replace('"', '').replace('data:', '').split()
+
+    # make sure "Flow" is included in the columns
+    if 'flow' not in cols:
+        raise Exception('Requested field "Flow" not in gage output columns')
+
+    # find which column is for  "Flow"
+    flowidx = np.where(np.array(cols) == 'flow')[0][0]
+
+    # write out the instruction file lines
+    inslines = ['l1 ' + (flowidx + 1) * 'w ' + '!g{0:d}_{1:d}!'.format(gage_num, j)
+                for j in range(len(indat) - len(header))]
+    inslines[0] = inslines[0].replace('l1', 'l{0:d}'.format(len(header) + 1))
+
+    # write the instruction file
+    with open(ins_file, 'w') as ofp:
+        ofp.write('pif ~\n')
+        [ofp.write('{0}\n'.format(line)) for line in inslines]
+
+    df = _try_run_inschek(ins_file, gage_output_file)
+    if df is not None:
+        return df, ins_file, gage_output_file
+    else:
+        return None
+
+def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
+    """writes an instruction file for a mt3d-usgs sft output file
+
+    Parameters
+    ----------
+        gage_file : str
+            the gage output file (ASCII)
+        ins_file : str
+            the name of the instruction file to create.  If None, the name
+            is <gage_file>.processed.ins.  Default is None
+        start_datetime : str
+            a pandas.to_datetime() compatible str.  If not None,
+            then the resulting observation names have the datetime
+            suffix.  If None, the suffix is the output totim.  Default
+            is None
+        times : iterable
+            a container of times to make observations for.  If None, all times are used.
+            Default is None.
+
+
+    Returns
+    -------
+        df : pandas.DataFrame
+            a dataframe with obsnme and obsval for the sft simulated concentrations and flows.
+            If inschek was not successfully run, then returns None
+        ins_file : str
+            file name of instructions file relating to gage output.
+        obs_file : str
+            file name of processed gage output (processed according to times passed above.)
+
+
+    Note
+    ----
+        setups up observations for gage outputs (all columns).
+    """
+
+    with open(gage_file, 'r') as f:
+        line1 = f.readline()
+        gage_num = int(re.sub("[^0-9]", "", line1.split("GAGE No.")[-1].strip().split()[0]))
+        gage_type = line1.split("GAGE No.")[-1].strip().split()[1].lower()
+        obj_num = int(line1.replace('"', '').strip().split()[-1])
+        line2 = f.readline()
+        df = pd.read_csv(f, delim_whitespace=True, names=line2.replace('"', '').split()[1:])
+
+    df.columns = [c.lower().replace("-", "_").replace('.', '_').strip('_') for c in df.columns]
+    # get unique observation ids
+    obs_ids = []
+    for col in df.columns:
+        colspl = col.split('_')
+        if len(colspl) > 1:
+
+            obs_ids.append("{0}{1}".format(colspl[0][0],colspl[-1][0]))
+        else:
+            obs_ids.append("{0}".format(col[0:2]))
+    # find passed times in df
+    if times is None:
+        times = df.time.unique()
+    missing = []
+    utimes = df.time.unique()
+    for t in times:
+        if not np.isclose(t, utimes).any():
+            missing.append(str(t))
+    if len(missing) > 0:
+        print(df.time)
+        raise Exception("the following times are missing:{0}".format(','.join(missing)))
+    # write output times to config file
+    with open("gage_obs.config", 'w') as f:
+        f.write(gage_file+'\n')
+        [f.write("{0:15.10E}\n".format(t)) for t in times]
+    # extract data for times: returns dataframe and saves a processed df - read by pest
+    df, obs_file = apply_gage_obs(return_obs_file=True)
+    utimes = df.time.unique()
+    for t in times:
+        assert np.isclose(t, utimes).any(), "time {0} missing in processed dataframe".format(t)
+    idx = df.time.apply(lambda x: np.isclose(x, times).any())  # boolean selector of desired times in df
+    if start_datetime is not None:
+        # convert times to usable observation times
+        start_datetime = pd.to_datetime(start_datetime)
+        df.loc[:, "time_str"] = pd.to_timedelta(df.time, unit='d') + start_datetime
+        df.loc[:, "time_str"] = df.time_str.apply(lambda x: datetime.strftime(x, "%Y%m%d"))
+    else:
+        df.loc[:, "time_str"] = df.time.apply(lambda x: "{0:08.2f}".format(x))
+    # set up instructions (line feed for lines without obs (not in time)
+    df.loc[:, "ins_str"] = "l1\n"
+    df_times = df.loc[idx, :]  # Slice by desired times
+    # TODO include GAGE No. in obs name (if permissible)
+    df.loc[df_times.index, "ins_str"] = df_times.apply(lambda x: "l1 w {}\n".format(
+        ' '.join(["!g{}{}{}!".format(gage_type[0], obs, x.time_str) for obs in obs_ids[1:]])), axis=1)
+    df.index = np.arange(df.shape[0])
+    if ins_file is None:
+        ins_file = gage_file+".processed.ins"
+
+    with open(ins_file, 'w') as f:
+        f.write("pif ~\nl1\n")
+        [f.write(i) for i in df.ins_str]
+    df = _try_run_inschek(ins_file, gage_file+".processed")
+    if df is not None:
+        return df, ins_file, obs_file
+    else:
+        return None
+
+
+def apply_gage_obs(return_obs_file=False):
+    times = []
+    with open("gage_obs.config") as f:
+        gage_file = f.readline().strip()
+        for line in f:
+            times.append(float(line.strip()))
+    obs_file = gage_file+".processed"
+    with open(gage_file, 'r') as f:
+        line1 = f.readline()
+        gage_num = int(re.sub("[^0-9]", "", line1.split("GAGE No.")[-1].strip().split()[0]))
+        gage_type = line1.split("GAGE No.")[-1].strip().split()[1].lower()
+        obj_num = int(line1.replace('"', '').strip().split()[-1])
+        line2 = f.readline()
+        df = pd.read_csv(f, delim_whitespace=True, names=line2.replace('"', '').split()[1:])
+    df.columns = [c.lower().replace("-", "_").replace('.', '_') for c in df.columns]
+    df = df.loc[df.time.apply(lambda x: np.isclose(x, times).any()), :]
+    df.to_csv(obs_file, sep=' ', index=False)
+    if return_obs_file:
+        return df, obs_file
+    else:
+        return df
+
+
 def write_hfb_zone_multipliers_template(m):
     """write a template file for an hfb using multipliers per zone (double yuck!)
 
@@ -1651,38 +1844,65 @@ def write_hfb_zone_multipliers_template(m):
 
     Returns
     -------
-        (tpl_filename, df) : (str, pandas.DataFrame)
-            the name of the template file and a dataframe with useful info.
+        (hfb_mults, tpl_filename) : (dict, str)
+            a dictionary with original unique HFB conductivity values and their corresponding parameter names
+            and the name of the template file
 
     """
     assert m.hfb6 is not None
-    # find the file
+    # find the model file
     hfb_file = os.path.join(m.model_ws, m.hfb6.file_name[0])
+
+    # this will use multipliers, so need to copy down the original
+    if not os.path.exists('hfb6_org'):
+        os.mkdir('hfb6_org')
+    # copy down the original file
+    shutil.copy2(os.path.join(m.model_ws, m.hfb6.file_name[0]), os.path.join('hfb6_org', m.hfb6.file_name[0]))
+
+    if not os.path.exists('hfb6_mlt'):
+        os.mkdir('hfb6_mlt')
+
+    # read in the model file
     hfb_file_contents = open(hfb_file, 'r').readlines()
+
     # navigate the header
     skiprows = sum([1 if i.strip().startswith('#') else 0 for i in hfb_file_contents]) + 1
     header = hfb_file_contents[:skiprows]
+
     # read in the data
     names = ['lay', 'irow1','icol1','irow2','icol2', 'hydchr']
     hfb_in = pd.read_csv(hfb_file, skiprows=skiprows, delim_whitespace=True, names=names).dropna()
     for cn in names[:-1]:
         hfb_in[cn] = hfb_in[cn].astype(np.int)
-    # set up a parameter for each unique conductivity value
+
+    # set up a multiplier for each unique conductivity value
     unique_cond = hfb_in.hydchr.unique()
-    hfb_tpl = dict(zip(unique_cond, ['hbz_{0:04d}'.format(i) for i in range(len(unique_cond))]))
+    hfb_mults = dict(zip(unique_cond, ['hbz_{0:04d}'.format(i) for i in range(len(unique_cond))]))
     # set up the TPL line for each parameter and assign
     hfb_in['tpl'] = 'blank'
     for cn, cg in hfb_in.groupby('hydchr'):
-        hfb_in.loc[hfb_in.hydchr == cn, 'tpl'] = '~{0:^10s}~'.format(hfb_tpl[cn])
+        hfb_in.loc[hfb_in.hydchr == cn, 'tpl'] = '~{0:^10s}~'.format(hfb_mults[cn])
+
     assert 'blank' not in hfb_in.tpl
+
     # write out the TPL file
-    tpl_file = hfb_file + ".tpl"
+    tpl_file = "hfb6.mlt.tpl"
     with open(tpl_file, 'w') as ofp:
         ofp.write('ptf ~\n')
         [ofp.write('{0}\n'.format(line.strip())) for line in header]
 
         hfb_in[['lay', 'irow1','icol1','irow2','icol2', 'tpl']].to_csv(ofp, sep=' ', quotechar=' ',
-        header=None, index=None)
+                header=None, index=None)
+
+    # make a lookup for lining up the necessary files to perform multiplication with the
+    # helpers.apply_hfb_pars() function which must be added to the forward run script
+    with open('hfb6_pars.csv', 'w') as ofp:
+        ofp.write('org_file,mlt_file,model_file\n')
+        ofp.write('{0},{1},{2}\n'.format(os.path.join('hfb6_org', m.hfb6.file_name[0]),
+                                         os.path.join('hfb6_mlt', tpl_file.replace('.tpl','')),
+                                         hfb_file))
+
+    return hfb_mults, tpl_file
 
 
 def write_hfb_template(m):
@@ -1754,7 +1974,5 @@ def write_hfb_template(m):
     df.loc[:,"parubnd"] = df.parval1.max() * 10.0
     df.loc[:,"parlbnd"] = df.parval1.min() * 0.1
     return tpl_file,df
-
-
 
 

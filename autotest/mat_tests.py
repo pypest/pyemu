@@ -345,8 +345,8 @@ def indices_test():
     import numpy as np
     import pyemu
 
-    nrow = 10000
-    ncol = 10000
+    nrow = 1000
+    ncol = 1000
 
     rnames = ["row_{0}".format(i) for i in range(nrow)]
     cnames = ["col_{0}".format(i) for i in range(ncol)]
@@ -615,8 +615,8 @@ def sparse_get_sparse_test():
 
 if __name__ == "__main__":
     # cov_scale_offset_test()
-    coo_tests()
-    # indices_test()
+    # coo_tests()
+    indices_test()
     # mat_test()
     # load_jco_test()
     # extend_test()
@@ -632,7 +632,7 @@ if __name__ == "__main__":
     # from_names_test()
     # from_uncfile_test()
     # copy_test()
-    sparse_constructor_test()
-    sparse_extend_test()
-    sparse_get_test()
-    sparse_get_sparse_test()
+    # sparse_constructor_test()
+    # sparse_extend_test()
+    # sparse_get_test()
+    # sparse_get_sparse_test()
