@@ -2831,13 +2831,14 @@ class PstFromFlopyModel(object):
             to_csv(os.path.join(self.m.model_ws,"temporal_bc_pars.dat"),sep=' ')
         df.loc[:,"val"] = df.tpl_str
         tpl_name = os.path.join(self.m.model_ws,'temporal_bc_pars.dat.tpl')
-        f_tpl =  open(tpl_name,'w')
-        f_tpl.write("ptf ~\n")
-        f_tpl.flush()
-        f_tpl.write("index ")
-        #df.loc[:,names].to_csv(f_tpl,sep=' ',quotechar=' ')
-        f_tpl.write(df.loc[:,names].to_string(index_names=True))
-        f_tpl.close()
+        #f_tpl =  open(tpl_name,'w')
+        #f_tpl.write("ptf ~\n")
+        #f_tpl.flush()
+        # df.loc[:,names].to_csv(f_tpl,sep=' ',quotechar=' ')
+        #f_tpl.write("index ")
+        #f_tpl.write(df.loc[:,names].to_string(index_names=True))
+        #f_tpl.close()
+        write_df_tpl(tpl_name,df.loc[:,names],sep=' ',index_label="index")
         self.par_dfs["temporal_bc"] = df
 
         if self.temporal_bc_geostruct is None:
@@ -2983,12 +2984,13 @@ class PstFromFlopyModel(object):
                 par_dfs.append(par_df)
 
 
-            with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
-                f.write("ptf ~\n")
+            #with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
+            #    f.write("ptf ~\n")
                 #f.flush()
                 #df.to_csv(f)
-                f.write("index ")
-                f.write(df.to_string(index_names=False)+'\n')
+            #    f.write("index ")
+            #    f.write(df.to_string(index_names=False)+'\n')
+            write_df_tpl(os.path.join(self.m.model_ws,tpl_file),df,sep=' ',index_label="index")
             self.tpl_files.append(tpl_file)
             self.in_files.append(in_file)
 
@@ -3839,6 +3841,13 @@ def build_jac_test_csv(pst,num_steps,par_names=None,forward=True):
             last_val = val
     df.index = full_names
     return df
+
+
+def write_df_tpl(filename,df,sep=',',tpl_marker='~',**kwargs):
+    with open(filename,'w') as f:
+        f.write("ptf {0}\n".format(tpl_marker))
+        f.flush()
+        df.to_csv(f,sep=sep,mode='a',**kwargs)
 
 
 
