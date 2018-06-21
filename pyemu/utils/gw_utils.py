@@ -1756,14 +1756,16 @@ def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
 
     df.columns = [c.lower().replace("-", "_").replace('.', '_').strip('_') for c in df.columns]
     # get unique observation ids
-    obs_ids = []
-    for col in df.columns:
+    obs_ids = {col:"" for col in df.columns[1:]} # empty dictionary for observation ids
+    for col in df.columns[1:]: # exclude column 1 (TIME)
         colspl = col.split('_')
         if len(colspl) > 1:
-
-            obs_ids.append("{0}{1}".format(colspl[0][0],colspl[-1][0]))
+            # obs name built out of "g"(for gage) "s" or "l"(for gage type) 2 chars from column name - date added later
+            obs_ids[col] = "g{0}{1}{2}".format(gage_type[0], colspl[0][0],colspl[-1][0])
         else:
-            obs_ids.append("{0}".format(col[0:2]))
+            obs_ids[col] = "g{0}{1}".format(gage_type[0], col[0:2])
+    with open("_gage_obs_ids.csv", "w") as f: # write file relating obs names to meaningfull keys!
+        [f.write('{0},{1}\n'.format(key, obs)) for key, obs in obs_ids.items()]
     # find passed times in df
     if times is None:
         times = df.time.unique()
@@ -1797,7 +1799,7 @@ def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
     df_times = df.loc[idx, :]  # Slice by desired times
     # TODO include GAGE No. in obs name (if permissible)
     df.loc[df_times.index, "ins_str"] = df_times.apply(lambda x: "l1 w {}\n".format(
-        ' '.join(["!g{}{}{}!".format(gage_type[0], obs, x.time_str) for obs in obs_ids[1:]])), axis=1)
+        ' w '.join(["!{0}{1}!".format(obs, x.time_str) for key,obs in obs_ids.items()])), axis=1)
     df.index = np.arange(df.shape[0])
     if ins_file is None:
         ins_file = gage_file+".processed.ins"
