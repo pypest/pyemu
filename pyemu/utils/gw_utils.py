@@ -1421,7 +1421,7 @@ def apply_sfr_seg_parameters(reach_pars=False):
             for line in f:
                 line = line.strip().split()
                 r_pars[line[0]] = line[1]
-        r_mlt_df = pd.read_csv(r_pars["mult_file"],delim_whitespace=True)
+        r_mlt_df = pd.read_csv(r_pars["mult_file"],sep=',',index_col=0)
         r_idx_cols = ["node", "k", "i", "j", "iseg", "ireach", "reachID", "outreach"]
         r_mlt_cols = r_mlt_df.columns.drop(r_idx_cols)
         r_df = pd.DataFrame.from_records(m.sfr.reach_data)
