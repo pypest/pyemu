@@ -713,7 +713,7 @@ def from_flopy_reachinput():
     if platform.platform().lower().startswith('win'):
         tempchek = os.path.join("..", "..", "bin", "win", "tempchek.exe")
     else:
-        tempchek = os.path.join("..", "..", "bin", "linux", "tempchek")
+        tempchek = None # os.path.join("..", "..", "bin", "linux", "tempchek")
 
     bd = os.getcwd()
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_reaches")
@@ -753,9 +753,9 @@ def from_flopy_reachinput():
     for mult in [spars['mult_file'],rpars['mult_file']]:
         try:
             tpl_file = "{}.tpl".format(mult)
-            pyemu.os_utils.run("{} {}.tpl {} {}".format(tempchek,
-                                                        mult,
+            pyemu.os_utils.run("{} {} {} {}".format(tempchek,
                                                         tpl_file,
+                                                        mult,
                                                         par_file))
         except Exception as e:
             raise Exception("error running tempchek on template file {0} and data file {1} : {0}".
@@ -1077,7 +1077,7 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    from_flopy()
+    # from_flopy()
     # add_obs_test()
     # from_flopy_kl_test()
     from_flopy_test_reachinput_test()
