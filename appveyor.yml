@@ -1,9 +1,6 @@
 environment:
   
   matrix:
-    - PYTHON_VERSION: "3.5"
-      CONDA_INSTALL_LOCN: "C:\\Miniconda35-x64"
-
     - PYTHON_VERSION: "3.6"
       CONDA_INSTALL_LOCN: "C:\\Miniconda36-x64"
 
@@ -25,6 +22,7 @@ install:
   - set PYTHONUNBUFFERED=1
   # for msinttypes and newer stuff
   - conda config --set always_yes true
+  - conda update conda
   - conda update --all
   - conda config --set show_channel_urls yes
   - conda config --prepend channels conda-forge
