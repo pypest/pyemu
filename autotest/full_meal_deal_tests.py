@@ -1,11 +1,26 @@
 import os
+import platform
 
+bin_path = os.path.join("..","..","bin")
+if "linux" in platform.platform().lower():
+    bin_path = os.pat.join(bin_path,"linux")   
+elif "darwin" in platform.platform().lower():
+    bin_path = os.path.join(bin_path,"mac")
+else:
+    bin_path = os.pat.join(bin_path,"win")      
+    
 
+mf_exe_name = os.path.join(bin_path,"mfnwt")
+pp_exe_name = os.path.join(bin_path, "pestpp")
+ies_exe_name = os.path.join(bin_path, "pestpp-ies")
 
+# for f in [mf_exe_name,pp_exe_name,ies_exe_name]:
+#     if not os.path.exists(f):
+#         raise Exception("{0} not found",f)
 
 def freyberg_test():
     import shutil
-    import platform
+
     import numpy as np
     import pandas as pd
     try:
@@ -14,12 +29,7 @@ def freyberg_test():
         return
     import pyemu
 
-    if "linux" in platform.platform().lower():
-        mf_exe_name = os.path.join("..","travis_bin","mfnwt")
-        pp_exe_name = os.path.join("..", "travis_bin", "pestpp")
-        ies_exe_name = os.path.join("..", "travis_bin", "pestpp-ies")
-    else:
-        raise Exception("unrecognized platform:{0}".format(platform.platform()))
+    
 
 
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
