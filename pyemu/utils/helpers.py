@@ -3844,6 +3844,30 @@ def build_jac_test_csv(pst,num_steps,par_names=None,forward=True):
 
 
 def write_df_tpl(filename,df,sep=',',tpl_marker='~',**kwargs):
+    """function write a pandas dataframe to a template file.
+    Parameters
+    ----------
+    filename : str
+        template filename
+    df : pandas.DataFrame
+        dataframe to write
+    sep : char
+        separate to pass to df.to_csv(). default is ','
+    tpl_marker : char
+        template file marker.  default is '~'
+    kwargs : dict
+        additional keyword args to pass to df.to_csv()
+
+    Returns
+    -------
+    None
+
+    Note
+    ----
+    If you don't use this function, make sure that you flush the
+    file handle before df.to_csv() and you pass mode='a' to to_csv()
+
+    """
     with open(filename,'w') as f:
         f.write("ptf {0}\n".format(tpl_marker))
         f.flush()
