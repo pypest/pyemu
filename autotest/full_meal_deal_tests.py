@@ -3,11 +3,11 @@ import platform
 
 bin_path = os.path.join("..","..","bin")
 if "linux" in platform.platform().lower():
-    bin_path = os.pat.join(bin_path,"linux")   
+    bin_path = os.path.join(bin_path,"linux")
 elif "darwin" in platform.platform().lower():
     bin_path = os.path.join(bin_path,"mac")
 else:
-    bin_path = os.pat.join(bin_path,"win")      
+    bin_path = os.path.join(bin_path,"win")
     
 
 mf_exe_name = os.path.join(bin_path,"mfnwt")

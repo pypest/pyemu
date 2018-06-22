@@ -38,7 +38,7 @@ install:
   - conda list
 
 test_script:
-  - set PYTHONPATH=%PYTHONPATH%:.
+  - set PYTHONPATH=%PYTHONPATH%:.:..
   - nosetests -v --with-id --nocapture --with-timer -w ./autotest 
 
 after_test:
