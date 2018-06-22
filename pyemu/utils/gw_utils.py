@@ -1246,7 +1246,7 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
     #with open(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),'w') as f:
     #    f.write("ptf ~\n")
     #    seg_data.to_csv(f,sep=',')
-    write_df_tpl(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),df,sep=',')
+    write_df_tpl(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),seg_data,sep=',')
 
     #write the config file used by apply_sfr_pars()
     with open(os.path.join(model_ws,"sfr_seg_pars.config"),'w') as f:
