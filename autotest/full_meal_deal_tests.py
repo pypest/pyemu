@@ -1,6 +1,7 @@
 import os
 import platform
 
+ext = ''
 bin_path = os.path.join("..","..","bin")
 if "linux" in platform.platform().lower():
     bin_path = os.path.join(bin_path,"linux")
@@ -8,6 +9,7 @@ elif "darwin" in platform.platform().lower():
     bin_path = os.path.join(bin_path,"mac")
 else:
     bin_path = os.path.join(bin_path,"win")
+    ext = '.exe'
     
 
 mf_exe_name = os.path.join(bin_path,"mfnwt")
@@ -29,8 +31,15 @@ def freyberg_test():
         return
     import pyemu
 
-    
-
+    ext = ''
+    bin_path = os.path.join("..", "..", "bin")
+    if "linux" in platform.platform().lower():
+        bin_path = os.path.join(bin_path, "linux")
+    elif "darwin" in platform.platform().lower():
+        bin_path = os.path.join(bin_path, "mac")
+    else:
+        bin_path = os.path.join(bin_path, "win")
+        ext = '.exe'
 
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     nam_file = "freyberg.nam"
@@ -47,7 +56,7 @@ def freyberg_test():
     for f in [hds_file, list_file]:
         assert os.path.exists(os.path.join(org_model_ws, f))
 
-    new_model_ws = "template"
+    new_model_ws = "template1"
 
     props = [["upw.hk",None],["upw.vka",None],["upw.ss",None],["rch.rech",None]]
 
@@ -67,7 +76,11 @@ def freyberg_test():
                                          spatial_bc_props=spat_bc_props,
                                          temporal_bc_props=temp_bc_props,
                                          remove_existing=True,
-                                         model_exe_name=mf_exe_name)
+                                         model_exe_name="mfnwt")
+    tmp = mf_exe_name.split(os.sep)
+    tmp = os.path.join(*tmp[1:])+ext
+    assert os.path.exists(tmp),tmp
+    shutil.copy2(tmp,os.path.join(new_model_ws,"mfnwt"+ext))
     ph.pst.control_data.noptmax = 0
     ph.pst.write(os.path.join(new_model_ws,"test.pst"))
     print("{0} {1}".format(pp_exe_name,"test.pst"), new_model_ws)
