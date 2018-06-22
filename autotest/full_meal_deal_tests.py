@@ -40,6 +40,7 @@ def freyberg_test():
 
     m.change_model_ws(org_model_ws)
     m.write_input()
+    print("{0} {1}".format(mf_exe_name,m.name+".nam"),org_model_ws)
     pyemu.os_utils.run("{0} {1}".format(mf_exe_name,m.name+".nam"),cwd=org_model_ws)
     hds_file = "freyberg.hds"
     list_file = "freyberg.list"
@@ -69,6 +70,7 @@ def freyberg_test():
                                          model_exe_name=mf_exe_name)
     ph.pst.control_data.noptmax = 0
     ph.pst.write(os.path.join(new_model_ws,"test.pst"))
+    print("{0} {1}".format(pp_exe_name,"test.pst"), new_model_ws)
     pyemu.os_utils.run("{0} {1}".format(pp_exe_name,"test.pst"),cwd=new_model_ws)
     for ext in ["rec",'rei',"par"]:
         assert os.path.exists(os.path.join(new_model_ws,"test.{0}".format(ext))),ext
@@ -76,6 +78,8 @@ def freyberg_test():
     res = pyemu.pst_utils.read_resfile(os.path.join(new_model_ws,"test.rei"))
     ph.pst.observation_data.loc[res.name,"obsval"] = res.modelled
     ph.pst.write(os.path.join(new_model_ws,"test.pst"))
+    print("{0} {1}".format(pp_exe_name, "test.pst"), new_model_ws)
+
     pyemu.os_utils.run("{0} {1}".format(pp_exe_name,"test.pst"),cwd=new_model_ws)
     for ext in ["rec",'rei',"par","iobj"]:
         assert os.path.exists(os.path.join(new_model_ws,"test.{0}".format(ext))),ext
