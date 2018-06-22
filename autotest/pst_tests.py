@@ -933,15 +933,15 @@ def run_test():
     import os
     import pyemu
 
-        pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
-        # pst.run("pestchek")
-        pst.write(os.path.join("temp", "test.pst"))
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    # pst.run("pestchek")
+    pst.write(os.path.join("temp", "test.pst"))
 
 
     try:
         pst.run("pestchek")
     except:
-        print(error calling pestchek)
+        print("error calling pestchek")
 
 
 def rectify_pgroup_test():
