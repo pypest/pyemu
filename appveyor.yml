@@ -30,7 +30,7 @@ install:
   - conda config --prepend channels conda-forge
   - conda info -a
 
-  - conda conda install --yes python=$PYTHON_VERSION pip numpy scipy pandas nose matplotlib jupyter notebook cartopy
+  - conda install --yes python=$PYTHON_VERSION pip numpy scipy pandas nose matplotlib jupyter notebook cartopy
   - pip install coveralls
   - pip install pyshp
   - pip install nose-timer
