@@ -713,7 +713,7 @@ def from_flopy_reachinput():
     if platform.platform().lower().startswith('win'):
         tempchek = os.path.join("..", "..", "bin", "win", "tempchek.exe")
     else:
-        tempchek = None # os.path.join("..", "..", "bin", "linux", "tempchek")
+        tempchek = None  # os.path.join("..", "..", "bin", "linux", "tempchek")
 
     bd = os.getcwd()
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_reaches")
@@ -750,21 +750,22 @@ def from_flopy_reachinput():
         f.write('single point\n')
         f.flush()
         par[['parnme', 'parval1', 'scale', 'offset']].to_csv(f, sep=' ', header=False, index=False, mode='a')
-    for mult in [spars['mult_file'],rpars['mult_file']]:
-        try:
+    if tempchek is not None:
+        for mult in [spars['mult_file'], rpars['mult_file']]:
             tpl_file = "{}.tpl".format(mult)
-            pyemu.os_utils.run("{} {} {} {}".format(tempchek,
+            try:
+                pyemu.os_utils.run("{} {} {} {}".format(tempchek,
                                                         tpl_file,
                                                         mult,
                                                         par_file))
+            except Exception as e:
+                raise Exception("error running tempchek on template file {0} and data file {1} : {0}".
+                                format(mult, "{}.tpl".format(tpl_file), str(e)))
+        try:
+            pyemu.gw_utils.apply_sfr_parameters(reach_pars=True)
         except Exception as e:
-            raise Exception("error running tempchek on template file {0} and data file {1} : {0}".
-                            format(mult, "{}.tpl".format(tpl_file), str(e)))
-    try:
-        pyemu.gw_utils.apply_sfr_parameters(reach_pars=True)
-    except Exception as e:
-        raise Exception("error applying sfr pars with tempchek par file, check tpl(s) and datafiles: {0}".
-                        format(str(e)))
+            raise Exception("error applying sfr pars with tempchek par file, check tpl(s) and datafiles: {0}".
+                            format(str(e)))
     os.chdir(bd)
 
 
