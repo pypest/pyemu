@@ -13,7 +13,8 @@ import re
 pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,_try_run_inschek,\
     parse_tpl_file,try_process_ins_file
-from pyemu.utils.helpers import run
+from pyemu.utils.os_utils import run
+from pyemu.utils.helpers import write_df_tpl
 from ..pyemu_warnings import PyemuWarning
 PP_FMT = {"name": SFMT, "x": FFMT, "y": FFMT, "zone": IFMT, "tpl": SFMT,
           "parval1": FFMT}
@@ -1242,10 +1243,10 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
     seg_data.loc[:,notpar_cols] = "1.0"
 
     #write the template file
-    with open(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),'w') as f:
-        f.write("ptf ~\n")
-        seg_data.to_csv(f,sep=',')
-
+    #with open(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),'w') as f:
+    #    f.write("ptf ~\n")
+    #    seg_data.to_csv(f,sep=',')
+    write_df_tpl(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),seg_data,sep=',')
 
     #write the config file used by apply_sfr_pars()
     with open(os.path.join(model_ws,"sfr_seg_pars.config"),'w') as f:
@@ -1343,9 +1344,10 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.',par_cols=['strhc1']):
     reach_data.loc[:, notpar_cols] = "1.0"
 
     # write the template file
-    with open(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"), 'w') as f:
-        f.write("ptf ~\n")
-        reach_data.to_csv(f, sep=',',quotechar=' ',quoting=1)
+    #with open(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"), 'w') as f:
+    #    f.write("ptf ~\n")
+    #    reach_data.to_csv(f, sep=',',quotechar=' ',quoting=1)
+    write_df_tpl(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"),reach_data,sep=',')
 
     # write the config file used by apply_sfr_pars()
     with open(os.path.join(model_ws, "sfr_reach_pars.config"), 'w') as f:
@@ -1892,9 +1894,9 @@ def write_hfb_zone_multipliers_template(m):
     with open(tpl_file, 'w') as ofp:
         ofp.write('ptf ~\n')
         [ofp.write('{0}\n'.format(line.strip())) for line in header]
-
+        ofp.flush()
         hfb_in[['lay', 'irow1','icol1','irow2','icol2', 'tpl']].to_csv(ofp, sep=' ', quotechar=' ',
-                header=None, index=None)
+                header=None, index=None, mode='a')
 
     # make a lookup for lining up the necessary files to perform multiplication with the
     # helpers.apply_hfb_pars() function which must be added to the forward run script
