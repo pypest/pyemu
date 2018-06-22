@@ -2184,7 +2184,7 @@ class PstFromFlopyModel(object):
         kl_mlt_df = mlt_df.loc[mlt_df.suffix==self.kl_suffix]
         for prefix in kl_df.prefix.unique():
             prefix_df = kl_df.loc[kl_df.prefix==prefix,:]
-            in_file = os.path.split(prefix_df.loc[:,"in_file"][0])[-1]
+            in_file = os.path.split(prefix_df.loc[:,"in_file"].iloc[0])[-1]
             assert prefix in mlt_df.prefix.values,"{0}:{1}".format(prefix,mlt_df.prefix)
             mlt_df.loc[mlt_df.prefix==prefix,"pp_file"] = in_file
             mlt_df.loc[mlt_df.prefix==prefix,"fac_file"] = os.path.split(fac_file)[-1]
@@ -2193,7 +2193,6 @@ class PstFromFlopyModel(object):
         mlt_df.loc[mlt_df.suffix == self.kl_suffix, "tpl_file"] = np.NaN
         self.par_dfs[self.kl_suffix] = kl_df
         # calc factors for each layer
-
 
 
     def setup_array_pars(self):
@@ -3410,7 +3409,8 @@ def apply_bc_pars():
         #     np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].as_matrix(), fmt=fmts,
         #                header=''.join(headrows), footer=footrows)
         # else:
-        np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].as_matrix(), fmt=fmts)
+        #np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].as_matrix(), fmt=fmts)
+        np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].values, fmt=fmts)
             #with open(os.path.join(model_ext_path,fname),'w') as f:
         #    f.write(df_list.loc[:,names].to_string(header=False,index=False,formatters=fmts)+'\n')
             #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
