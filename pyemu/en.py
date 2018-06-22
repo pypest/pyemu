@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 import copy
 import warnings
-warnings.filterwarnings("ignore",category=UserWarning,module="pandas")
+warnings.filterwarnings("ignore",category=UserWarning)
 from .pyemu_warnings import PyemuWarning
 import math
 import numpy as np

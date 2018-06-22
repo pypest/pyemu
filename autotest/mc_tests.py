@@ -713,7 +713,7 @@ def sparse_draw_test():
 if __name__ == "__main__":
     # sparse_draw_test()
     # binary_ensemble_dev()
-    # to_from_binary_test()
+    to_from_binary_test()
     # ensemble_covariance_test()
     # homegrown_draw_test()
     # change_weights_test()
@@ -721,7 +721,7 @@ if __name__ == "__main__":
     # par_diagonal_draw_test()
     # obs_id_draw_test()
     # diagonal_cov_draw_test()
-    pe_to_csv_test()
+    # pe_to_csv_test()
     # scale_offset_test()
     # mc_test()
     # fixed_par_test()
