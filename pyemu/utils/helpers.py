@@ -1502,7 +1502,7 @@ class PstFromFlopyModel(object):
                 ilist = [ilist]
             for cmd in ilist:
                 self.logger.statement("forward_run line:{0}".format(cmd))
-                alist.append("pyemu.helpers.run('{0}')\n".format(cmd))
+                alist.append("pyemu.os_utils.run('{0}')\n".format(cmd))
 
         # add the model call
 
@@ -1510,9 +1510,9 @@ class PstFromFlopyModel(object):
             model_exe_name = self.m.exe_name
             self.logger.warn("using flopy binary to execute the model:{0}".format(model))
         if redirect_forward_output:
-            line = "pyemu.helpers.run('{0} {1} 1>{1}.stdout 2>{1}.stderr')".format(model_exe_name,self.m.namefile)
+            line = "pyemu.os_utils.run('{0} {1} 1>{1}.stdout 2>{1}.stderr')".format(model_exe_name,self.m.namefile)
         else:
-            line = "pyemu.helpers.run('{0} {1} ')".format(model_exe_name, self.m.namefile)
+            line = "pyemu.os_utils.run('{0} {1} ')".format(model_exe_name, self.m.namefile)
         self.logger.statement("forward_run line:{0}".format(line))
         self.frun_model_lines.append(line)
 

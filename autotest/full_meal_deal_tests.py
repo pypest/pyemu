@@ -112,5 +112,6 @@ def freyberg_test():
     final_phi = df.loc[1,"mean"]
     assert final_phi < init_phi
 
+
 if __name__ == "__main__":
     freyberg_test()
