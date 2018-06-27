@@ -1685,6 +1685,8 @@ def _read_structure_attributes(f):
             variogram_info[line[1]] = float(line[2])
         elif line[0] == "end":
             break
+        elif line[0] == "mean":
+            warning.warn("'mean' attribute not supported, skipping",PyemuWarning)
         else:
             raise Exception("unrecognized line in structure definition:{0}".\
                             format(line[0]))
