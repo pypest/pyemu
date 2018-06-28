@@ -3,6 +3,8 @@ import os
 from datetime import datetime
 import copy
 import warnings
+warnings.filterwarnings("ignore",category=UserWarning)
+from .pyemu_warnings import PyemuWarning
 import math
 import numpy as np
 import pandas as pd
@@ -15,8 +17,6 @@ from pyemu.plot.plot_utils import ensemble_helper
 #                                         "created via a new attribute name - see"+\
 #                                         "https://pandas.pydata.org/pandas-docs/"+\
 #                                         "stable/indexing.html#attribute-access")
-warnings.filterwarnings("ignore",category=UserWarning)
-
 SEED = 358183147 #from random.org on 5 Dec 2016
 #print("setting random seed")
 np.random.seed(SEED)
@@ -540,8 +540,10 @@ class ParameterEnsemble(Ensemble):
 
 
         """
-        kwargs["columns"] = pst.parameter_data.parnme
-        kwargs["mean_values"] = pst.parameter_data.parval1
+        if "columns" not in kwargs:
+            kwargs["columns"] = pst.parameter_data.parnme
+        if "mean_values" not in kwargs:
+            kwargs["mean_values"] = pst.parameter_data.parval1
 
         super(ParameterEnsemble,self).__init__(**kwargs)
         # a flag for current log transform status
@@ -550,9 +552,8 @@ class ParameterEnsemble(Ensemble):
         if "tied" in list(self.pst.parameter_data.partrans.values):
             #raise NotImplementedError("ParameterEnsemble does not " +\
             #                          "support tied parameters")
-            import warnings
             warnings.warn("tied parameters are treated as fixed in "+\
-                         "ParameterEnsemble")
+                         "ParameterEnsemble",PyemuWarning)
         self.pst.parameter_data.index = self.pst.parameter_data.parnme
         self.bound_tol = kwargs.get("bound_tol",0.0)
 
@@ -932,7 +933,8 @@ class ParameterEnsemble(Ensemble):
         return new_pe
 
     @classmethod
-    def from_gaussian_draw(cls,pst,cov,num_reals=1,use_homegrown=True,group_chunks=False):
+    def from_gaussian_draw(cls,pst,cov,num_reals=1,use_homegrown=True,group_chunks=False,
+                           fill_fixed=True,enforce_bounds=False):
         """ instantiate a parameter ensemble from a covariance matrix
 
         Parameters
@@ -949,6 +951,13 @@ class ParameterEnsemble(Ensemble):
         group_chunks : bool
             flag to break up draws by par groups.  Only applies
             to homegrown, full cov case. Default is False
+        fill_fixed : bool
+            flag to fill in fixed parameters from the pst into the
+            ensemble using the parval1 from the pst.  Default is True
+        enforce_bounds : bool
+            flag to enforce parameter bounds from the pst.  realized
+            parameter values that violate bounds are simply changed to the
+            value of the violated bound.  Default is False
 
         Returns
         -------
@@ -978,6 +987,7 @@ class ParameterEnsemble(Ensemble):
         else:
             common_names = cov.row_names
 
+        li = pst.parameter_data.partrans.loc[common_names] == "log"
         if cov.isdiagonal:
             print("making diagonal cov draws")
             print("building mean and std dicts")
@@ -1076,7 +1086,14 @@ class ParameterEnsemble(Ensemble):
                     print("eigen solve for full cov")
                     v, w = np.linalg.eigh(cov.as_2d)
                     #w, v, other = np.linalg.svd(cov.as_2d,full_matrices=True,compute_uv=True)
-
+                    # vdiag = np.diag(v)
+                    for i in range(v.shape[0]):
+                        if v[i] > 1.0e-10:
+                            pass
+                        else:
+                            print("near zero eigen value found", v[i], \
+                                  "at index", i, " of ", v.shape[0])
+                            v[i] = 0.0
                     # form projection matrix
                     print("form projection")
                     a = np.dot(w, np.sqrt(np.diag(v)))
@@ -1103,15 +1120,17 @@ class ParameterEnsemble(Ensemble):
         # parval1 in the control file
         print("handling fixed pars")
         #pe.pst.parameter_data.index = pe.pst.parameter_data.parnme
-        par = pst.parameter_data
-        fixed_vals = par.loc[par.partrans.apply(lambda x: x in ["fixed","tied"]),"parval1"]
-        for fname,fval in zip(fixed_vals.index,fixed_vals.values):
-            #print(fname)
-            df.loc[:,fname] = fval
+        if fill_fixed:
+            par = pst.parameter_data
+            fixed_vals = par.loc[par.partrans.apply(lambda x: x in ["fixed","tied"]),"parval1"]
+            for fname,fval in zip(fixed_vals.index,fixed_vals.values):
+                #print(fname)
+                df.loc[:,fname] = fval
 
-        #print("apply tied")
+            #print("apply tied")
         new_pe = cls.from_dataframe(pst=pst,df=df)
-
+        if enforce_bounds:
+            new_pe.enforce()
         return new_pe
 
     @classmethod
@@ -1271,7 +1290,7 @@ class ParameterEnsemble(Ensemble):
             pdiff = self.loc[real,common_names] - base
             pdiff = np.dot(projection_matrix.x,
                            (self.loc[real,common_names] - base)\
-                           .as_matrix())
+                           .values)
 
             if inplace:
                 self.loc[real,common_names] = base + pdiff
@@ -1307,7 +1326,7 @@ class ParameterEnsemble(Ensemble):
             import warnings
             warnings.warn("deprecation warning: enforce_bounds should be "+\
                           "either 'reset', 'drop', 'scale', or None, not bool"+\
-                          "...resetting to None.")
+                          "...resetting to None.",PyemuWarning)
             enforce_bounds = None
         if enforce_bounds is None:
             return
@@ -1405,20 +1424,22 @@ class ParameterEnsemble(Ensemble):
             the par file prefix
 
         """
-        pfile_count = 1
-        parfile_names = []
-        while True:
-            pfile_name = prefix +"{0:d}.par".format(pfile_count)
-            if not os.path.exists(pfile_name):
-                break
-            parfile_names.append(pfile_name)
-            pfile_count += 1
+        raise Exception("ParameterEnsemble.read_parfiles_prefix() is deprecated.  Use ParameterEnsemble.from_parfiles()")
 
-        if len(parfile_names) == 0:
-            raise Exception("ParameterEnsemble.read_parfiles_prefix() error: " + \
-                            "no parfiles found with prefix {0}".format(prefix))
-
-        return self.read_parfiles(parfile_names)
+        # pfile_count = 1
+        # parfile_names = []
+        # while True:
+        #     pfile_name = prefix +"{0:d}.par".format(pfile_count)
+        #     if not os.path.exists(pfile_name):
+        #         break
+        #     parfile_names.append(pfile_name)
+        #     pfile_count += 1
+        #
+        # if len(parfile_names) == 0:
+        #     raise Exception("ParameterEnsemble.read_parfiles_prefix() error: " + \
+        #                     "no parfiles found with prefix {0}".format(prefix))
+        #
+        # return self.read_parfiles(parfile_names)
 
 
     def read_parfiles(self,parfile_names):
@@ -1436,12 +1457,13 @@ class ParameterEnsemble(Ensemble):
         self.__istransformed
 
         """
-        for pfile in parfile_names:
-            assert os.path.exists(pfile),"ParameterEnsemble.read_parfiles() error: " +\
-                                         "file: {0} not found".format(pfile)
-            df = read_parfile(pfile)
-            self.loc[pfile] = df.loc[:,'parval1']
-        self.loc[:,:] = self.loc[:,:].astype(np.float64)
+        raise Exception("ParameterEnsemble.read_parfiles() is deprecated.  Use ParameterEnsemble.from_parfiles()")
+        # for pfile in parfile_names:
+        #     assert os.path.exists(pfile),"ParameterEnsemble.read_parfiles() error: " +\
+        #                                  "file: {0} not found".format(pfile)
+        #     df = read_parfile(pfile)
+        #     self.loc[pfile] = df.loc[:,'parval1']
+        # self.loc[:,:] = self.loc[:,:].astype(np.float64)
 
     @classmethod
     def from_parfiles(cls,pst,parfile_names,real_names=None):
@@ -1479,8 +1501,9 @@ class ParameterEnsemble(Ensemble):
             #to change scale between par files and pst...
             diff = df.scale - pst.parameter_data.scale
             if diff.apply(np.abs).sum() > 0.0:
-                warnings.warn("differences in scale detected, applying scale in par file")
-                df.loc[:,"parval1"] *= df.scale
+                warnings.warn("differences in scale detected, applying scale in par file",
+                              PyemuWarning)
+                #df.loc[:,"parval1"] *= df.scale
 
             dfs[rname] = df.parval1.values
 
@@ -1497,7 +1520,7 @@ class ParameterEnsemble(Ensemble):
             diff = pset.difference(dset)
             if len(diff) > 0:
                 warnings.warn("the following parameters are not in the par files (getting NaNs) :{0}".
-                             format(','.join(diff)))
+                             format(','.join(diff)),PyemuWarning)
                 blank_df = pd.DataFrame(index=df_all.index,columns=diff)
 
                 df_all = pd.concat([df_all,blank_df],axis=1)
@@ -1505,7 +1528,7 @@ class ParameterEnsemble(Ensemble):
             diff = dset.difference(pset)
             if len(diff) > 0:
                 warnings.warn("the following par file parameters are not in the control (being dropped):{0}".
-                              format(','.join(diff)))
+                              format(','.join(diff)),PyemuWarning)
                 df_all = df_all.loc[:, pst.par_names]
 
         return ParameterEnsemble.from_dataframe(df=df_all,pst=pst)
@@ -1534,7 +1557,7 @@ class ParameterEnsemble(Ensemble):
             self._back_transform(inplace=True)
             retrans = True
         if self.isnull().values.any():
-            warnings.warn("NaN in par ensemble")
+            warnings.warn("NaN in par ensemble",PyemuWarning)
         super(ParameterEnsemble,self).to_csv(*args,**kwargs)
         if retrans:
             self._transform(inplace=True)
@@ -1564,6 +1587,8 @@ class ParameterEnsemble(Ensemble):
         if self.istransformed:
             self._back_transform(inplace=True)
             retrans = True
+        if self.isnull().values.any():
+            warnings.warn("NaN in par ensemble",PyemuWarning)
         self.as_pyemu_matrix().to_binary(filename)
         if retrans:
             self._transform(inplace=True)
@@ -1584,7 +1609,8 @@ class ParameterEnsemble(Ensemble):
         log10 before writing
 
         """
-
+        if self.isnull().values.any():
+            warnings.warn("NaN in par ensemble",PyemuWarning)
         if self.istransformed:
             self._back_transform(inplace=True)
 

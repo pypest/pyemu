@@ -217,7 +217,8 @@ def pnulpar_test():
     mc = pyemu.MonteCarlo(jco=os.path.join("mc","freyberg_ord.jco"))
     par_dir = os.path.join("mc","prior_par_draws")
     par_files = [os.path.join(par_dir,f) for f in os.listdir(par_dir) if f.endswith('.par')]
-    mc.parensemble.read_parfiles(par_files)
+    #mc.parensemble.read_parfiles(par_files)
+    mc.parensemble = pyemu.ParameterEnsemble.from_parfiles(pst=mc.pst,parfile_names=par_files)
     real_num = [int(os.path.split(f)[-1].split('.')[0].split('_')[1]) for f in par_files]
     mc.parensemble.index = real_num
     #print(mc.parensemble)
@@ -230,8 +231,8 @@ def pnulpar_test():
     par_files = [os.path.join(par_dir, f) for f in os.listdir(par_dir) if f.endswith('.par')]
     real_num = [int(os.path.split(f)[-1].split('.')[0].split('_')[1]) for f in par_files]
 
-    en_pnul = pyemu.ParameterEnsemble(mc.pst)
-    en_pnul.read_parfiles(par_files)
+    en_pnul = pyemu.ParameterEnsemble.from_parfiles(pst=mc.pst,parfile_names=par_files)
+    #en_pnul.read_parfiles(par_files)
     en_pnul.index = real_num
     en.sort_index(axis=1, inplace=True)
     en.sort_index(axis=0, inplace=True)
@@ -318,7 +319,7 @@ def pe_to_csv_test():
         mc.parensemble._transform()
     fname = os.path.join("temp","test.csv")
     mc.parensemble.to_csv(fname)
-    df = pd.read_csv(fname)
+    df = pd.read_csv(fname,index_col=0)
     pe = pyemu.ParameterEnsemble.from_dataframe(pst=pst,df=df)
     pe1 = pe.copy()
     pe.enforce()
@@ -712,7 +713,7 @@ def sparse_draw_test():
 if __name__ == "__main__":
     # sparse_draw_test()
     # binary_ensemble_dev()
-    # to_from_binary_test()
+    to_from_binary_test()
     # ensemble_covariance_test()
     # homegrown_draw_test()
     # change_weights_test()
@@ -722,7 +723,7 @@ if __name__ == "__main__":
     # diagonal_cov_draw_test()
     # pe_to_csv_test()
     # scale_offset_test()
-    mc_test()
+    # mc_test()
     # fixed_par_test()
     # uniform_draw_test()
     # gaussian_draw_test()
@@ -731,5 +732,5 @@ if __name__ == "__main__":
     # from_dataframe_test()
     # ensemble_seed_test()
     # pnulpar_test()
-    #enforce_test()
-    #add_base_test()
+    # enforce_test()
+    # add_base_test()

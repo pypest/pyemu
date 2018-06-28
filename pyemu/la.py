@@ -146,7 +146,7 @@ class LinearAnalysis(object):
         try:
             pi = self.pst.prior_information
         except:
-            self.logger.warn("unable to access self.pst: can't tell if " +
+            self.logger.statement("unable to access self.pst: can't tell if " +
                              " any prior information needs to be dropped.")
         if pi is not None:
             self.drop_prior_information()
@@ -158,7 +158,7 @@ class LinearAnalysis(object):
             try:
                 self.adjust_obscov_resfile(resfile=resfile)
             except:
-                self.logger.warn("unable to a find a residuals file for " +\
+                self.logger.statement("unable to a find a residuals file for " +\
                                 " scaling obscov")
                 self.resfile = None
                 self.res = None
@@ -391,13 +391,14 @@ class LinearAnalysis(object):
                 if arg.shape[1] == 1:
                     vecs.append(arg)
                 else:
-                    assert arg.shape[0] == self.jco.shape[1],\
-                    "linear_analysis.__load_predictions(): " +\
-                    "multi-prediction matrix(npar,npred) not aligned " +\
-                    "with jco(nobs,npar): " + str(arg.shape) +\
-                    ' ' + str(self.jco.shape)
-                    #for pred_name in arg.row_names:
-                    #    vecs.append(arg.extract(row_names=pred_name).T)
+                    if self.jco is not None:
+                        assert arg.shape[0] == self.jco.shape[1],\
+                        "linear_analysis.__load_predictions(): " +\
+                        "multi-prediction matrix(npar,npred) not aligned " +\
+                        "with jco(nobs,npar): " + str(arg.shape) +\
+                        ' ' + str(self.jco.shape)
+                        #for pred_name in arg.row_names:
+                        #    vecs.append(arg.extract(row_names=pred_name).T)
                     mat = arg
             elif isinstance(arg, str):
                 if arg.lower() in self.jco.row_names:
@@ -854,7 +855,7 @@ class LinearAnalysis(object):
         """drop regularization and prior information observation from the jco
         """
         if self.pst_arg is None:
-            self.logger.warn("linear_analysis.clean(): not pst object")
+            self.logger.statement("linear_analysis.clean(): not pst object")
             return
         if not self.pst.estimation and self.pst.nprior > 0:
             self.drop_prior_information()
@@ -868,7 +869,7 @@ class LinearAnalysis(object):
             the value to assign to the pst attribute
 
         """
-        self.logger.warn("resetting pst")
+        self.logger.statement("resetting pst")
         self.__pst = None
         self.pst_arg = arg
 
@@ -881,7 +882,7 @@ class LinearAnalysis(object):
             the value to assign to the parcov attribute.  If None,
             the private __parcov attribute is cleared but not reset
         """
-        self.logger.warn("resetting parcov")
+        self.logger.statement("resetting parcov")
         self.__parcov = None
         if arg is not None:
             self.parcov_arg = arg
@@ -896,7 +897,7 @@ class LinearAnalysis(object):
             the value to assign to the obscov attribute.  If None,
             the private __obscov attribute is cleared but not reset
         """
-        self.logger.warn("resetting obscov")
+        self.logger.statement("resetting obscov")
         self.__obscov = None
         if arg is not None:
             self.obscov_arg = arg
@@ -906,7 +907,7 @@ class LinearAnalysis(object):
         """drop the prior information from the jco and pst attributes
         """
         if self.jco is None:
-            self.logger.warn("can't drop prior info, LinearAnalysis.jco is None")
+            self.logger.statement("can't drop prior info, LinearAnalysis.jco is None")
             return
         nprior_str = str(self.pst.nprior)
         self.log("removing " + nprior_str + " prior info from jco, pst, and " +

@@ -4,13 +4,14 @@ the pyemu.Pst object.
 from __future__ import print_function, division
 import os, sys
 import stat
+import warnings
 from datetime import datetime
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
 
 import pyemu
-
+from ..pyemu_warnings import PyemuWarning
 #formatters
 #SFMT = lambda x: "{0:>20s}".format(str(x.decode()))
 def SFMT(item):
@@ -528,9 +529,9 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     new_pst : pyemu.Pst
 
     """
-    import warnings
+
     warnings.warn("pst_from_io_files has moved to pyemu.helpers and is also "+\
-                  "now avaiable as a Pst class method (Pst.from_io_files())")
+                  "now avaiable as a Pst class method (Pst.from_io_files())",PyemuWarning)
     from pyemu import helpers
     return helpers.pst_from_io_files(tpl_files=tpl_files,in_files=in_files,
                               ins_files=ins_files,out_files=out_files,
@@ -553,7 +554,74 @@ def try_run_inschek(pst):
             pst.observation_data.loc[df.index, "obsval"] = df.obsval
 
 
+def try_process_ins_file(ins_file,out_file=None):
+    assert os.path.exists(ins_file),"instruction file {0} not found".format(ins_file)
+    try:
+        obs_names = parse_ins_file(ins_file)
+    except Exception as e:
+        raise Exception("error parsing ins file {0} for obs names: {1}".format(ins_file,str(e)))
+
+    if out_file is None:
+        out_file = ins_file.replace(".ins","")
+    if not os.path.exists(out_file):
+        print("out file {0} not found".format(out_file))
+        return pd.DataFrame({"obsnme":obs_names},index="obsnme")
+    try:
+        f_ins = open(ins_file,'r')
+        f_out = open(out_file,'r')
+
+        header = f_ins.readline().lower().strip().split()
+        assert header[0] == "pif"
+        marker = header[1]
+        icount,ocount = 1,0
+        obsnme,obsval = [],[]
+        for iline in f_ins:
+            iraw = iline.lower().strip().split()
+            if iraw[0][0] != 'l':
+                raise Exception("not support instruction:{0}".format(iraw[0]))
+            num_lines = int(iraw[0][1:])
+            for i in range(num_lines):
+                oline = f_out.readline().lower().strip()
+                ocount += 1
+            if '(' in oline:
+                raise Exception("semi-fixed obs index instructions not supported")
+            elif '[' in oline:
+                raise Exception("fixed obs index instructions not supported")
+            elif marker in oline:
+                raise Exception("marker-based file seeking not supported")
+            oraw = oline.strip().split()
+            if oline[0] in [' ','   ']:
+                oraw.insert(0,'')
+            oc = 0
+            for ir in iraw[1:]:
+                if ir == 'w':
+                    oc += 1
+                    if oc > len(oraw):
+                        raise Exception("out file line {0} too short".format(ocount))
+                elif '!' in ir:
+                    n = ir.replace('!','')
+                    try:
+                        v = float(oraw[oc])
+                    except Exception as e:
+                        raise Exception("error processing ins {0} for obs {1}, string: {2} on line {3} (ins line {4}):{5}".
+                                        format(ir,n,oline,ocount,icount,str(e)))
+                    obsnme.append(n)
+                    obsval.append(v)
+                    oc += 1
+
+        f_ins.close()
+        f_out.close()
+        df = pd.DataFrame({"obsnme":obsnme,"obsval":obsval},index=obsnme)
+
+        return df
+    except Exception as e:
+        print("error processing ins file {0}: {1}".format(ins_file,str(e)))
+        return pd.DataFrame({"obsnme":obs_names},index=obs_names)
+
+
+
 def _try_run_inschek(ins_file,out_file):
+
     try:
         # os.system("inschek {0} {1}".format(ins_file,out_file))
         pyemu.helpers.run("inschek {0} {1}".format(ins_file, out_file))
@@ -787,8 +855,8 @@ def del_rw(action, name, exc):
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
                  port=4004,rel_path=None):
 
-    import warnings
-    warnings.warn("deprecation warning:start_slaves() has moved to the utils.helpers module")
+
+    warnings.warn("deprecation warning:start_slaves() has moved to the utils.helpers module",PyemuWarning)
     from pyemu.utils import start_slaves
     start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=num_slaves,slave_root=slave_root,
                  port=port,rel_path=rel_path)
