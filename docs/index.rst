@@ -42,9 +42,23 @@ Technical Documentation
 References 
 ********** 
 
-.. [DOH15] Doherty, J., 2015. Calibration and
+.. [DOH15] Doherty, John, 2015. Calibration and
    Uncertainty Analysis for Complex Environmental Models:  Brisbane, Australia, Watermark Numerical
    Computing, http://www.pesthomepage.org/Home.php .
+      
+.. [FB16] Fienen, M.N., and Bakker, Mark, 2016, HESS Opinions: Repeatable research--- what hydrologists can learn 
+   from the Duke cancer research scandal: Hydrology and Earth System Sciences, v. 20, no. 9, pg. 3739-3743,
+   https://doi.org/10.5194/hess-20-3739-2016 .
+
+.. [KRP+16] Kluyver, Thomas; Ragan-Kelley, Benjamin; Perez, Fernado; Granger, Brian; Bussonnier, Matthias;
+   Federic, Jonathan; Kelley, Kyle; Hamrick, Jessica; Grout, Jason; Corlay, Sylvain; Ivanov, Paul; Avila, Damian;
+   Aballa, Safia; Willing, Carol; and Jupyter Development Team, 2016, Jupyter Notebooks-- a publishing
+   format for reproducible computational workflows:  in Positioning and Power in Academic
+   Publishing-- Players, Agents, and Agendas. F. Loizides and B. Schmidt (eds). 
+   IOS Press, https://doi.org/10.3233/978-1-61499-649-1-87 and https://jupyter.org .
+   
+.. [PSF18] The Python Software Foundation, 2018, Documentation, The python tutorial, 
+   9. Classes: https://docs.python.org/3.6/tutorial/classes.html .
 
 .. [WFD16] White, J.T., Fienen, M.N., and Doherty, J.E., 2016, A python framework
    for environmental model uncertainty analysis:  Environmental Modeling &
