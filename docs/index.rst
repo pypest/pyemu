@@ -5,6 +5,7 @@
 
 Welcome to pyemu's documentation!
 =================================
+source/pyemu_introduction
 
 .. toctree::
    :maxdepth: 2
