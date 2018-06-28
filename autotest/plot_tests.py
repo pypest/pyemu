@@ -226,11 +226,24 @@ def ensemble_summary_test():
 #     plt.show()
 
 
+def ensemble_change_test():
+    import matplotlib.pyplot as plt
+    pst = pyemu.Pst.from_par_obs_names(par_names=["p1","p2"])
+    cov = pyemu.Cov(np.array([[1.0,0.0],[0.0,1.0]]),names=["p1","p2"])
+    pe1 = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,cov=cov,num_reals=5000)
+    cov *= 0.1
+    pe2 = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,cov=cov,num_reals=5000)
+    pyemu.plot_utils.ensemble_change_summary(pe1,pe2,pst=pst)
+    print(pe1.mean(),pe1.std())
+    print(pe2.mean(),pe2.std())
+    #plt.show()
+
 if __name__ == "__main__":
     #plot_summary_test()
     #pst_plot_test()
     #ensemble_summary_test()
-    ensemble_plot_test()
+    #ensemble_plot_test()
     #ensemble_1to1_test()
     #cov_test()
+    ensemble_change_test()
 
