@@ -96,7 +96,7 @@ Glossary
    simulated equivalent
       A modeled value collocated to correspond in time and space with an observation. 
       To make things confusing, they are often *also* called
-      "observations"!  These are denoted by :math:`f(x)` for a scalar value or :math:`\bf{x}`
+      "observations"!  These are denoted by :math:`f(x)` for a scalar value or :math:`f(\bf{x})`
       for a vector of values in this documentation.
 
    forecasts
