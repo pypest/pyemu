@@ -1,0 +1,389 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>mc &#8212; pyEMU 0.3 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for mc</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;pyEMU Monte Carlo module.  Supports easy Monte Carlo</span>
+<span class="sd">and GLUE analyses.  The MonteCarlo class inherits from</span>
+<span class="sd">pyemu.LinearAnalysis</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">division</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">pyemu.la</span> <span class="k">import</span> <span class="n">LinearAnalysis</span>
+<span class="kn">from</span> <span class="nn">pyemu.en</span> <span class="k">import</span> <span class="n">ObservationEnsemble</span><span class="p">,</span> <span class="n">ParameterEnsemble</span>
+<span class="kn">from</span> <span class="nn">pyemu.mat</span> <span class="k">import</span> <span class="n">Cov</span>
+<span class="c1">#from pyemu.utils.helpers import zero_order_tikhonov</span>
+
+<div class="viewcode-block" id="MonteCarlo"><a class="viewcode-back" href="../source/Monte_carlo.html#mc.MonteCarlo">[docs]</a><span class="k">class</span> <span class="nc">MonteCarlo</span><span class="p">(</span><span class="n">LinearAnalysis</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;LinearAnalysis derived type for monte carlo analysis</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    **kwargs : dict</span>
+<span class="sd">        dictionary of keyword arguments.  See pyemu.LinearAnalysis for</span>
+<span class="sd">        complete definitions</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    parensemble : pyemu.ParameterEnsemble</span>
+<span class="sd">    obsensemble : pyemu.ObservationEnsemble</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    MonteCarlo : MonteCarlo</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    ``&gt;&gt;&gt;import pyemu``</span>
+
+<span class="sd">    ``&gt;&gt;&gt;mc = pyemu.MonteCarlo(pst=&quot;pest.pst&quot;)``</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">MonteCarlo</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> \
+            <span class="s2">&quot;monte carlo requires a pest control file&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parensemble</span> <span class="o">=</span> <span class="n">ParameterEnsemble</span><span class="p">(</span><span class="n">pst</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">obsensemble</span> <span class="o">=</span> <span class="n">ObservationEnsemble</span><span class="p">(</span><span class="n">pst</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">num_reals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; get the number of realizations in the parameter ensemble</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        num_real : int</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parensemble</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+<div class="viewcode-block" id="MonteCarlo.get_nsing"><a class="viewcode-back" href="../source/Monte_carlo.html#mc.MonteCarlo.get_nsing">[docs]</a>    <span class="k">def</span> <span class="nf">get_nsing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">epsilon</span><span class="o">=</span><span class="mf">1.0e-4</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; get the number of solution space dimensions given</span>
+<span class="sd">            a ratio between the largest and smallest singular</span>
+<span class="sd">            values</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        epsilon: float</span>
+<span class="sd">            singular value ratio</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        nsing : float</span>
+<span class="sd">            number of singular components above the epsilon ratio threshold</span>
+<span class="sd">        </span>
+<span class="sd">        Note</span>
+<span class="sd">        -----</span>
+<span class="sd">            If nsing == nadj_par, then None is returned</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xtqx</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">nsing</span> <span class="o">=</span> <span class="n">mx</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">xtqx</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">x</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">xtqx</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">max</span><span class="p">())[:,</span><span class="mi">0</span><span class="p">]),</span><span class="n">epsilon</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">nsing</span> <span class="o">==</span> <span class="n">mx</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;optimal nsing=npar&quot;</span><span class="p">)</span>
+            <span class="n">nsing</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">nsing</span></div>
+
+<div class="viewcode-block" id="MonteCarlo.get_null_proj"><a class="viewcode-back" href="../source/Monte_carlo.html#mc.MonteCarlo.get_null_proj">[docs]</a>    <span class="k">def</span> <span class="nf">get_null_proj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">nsing</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; get a null-space projection matrix of XTQX</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        nsing: int</span>
+<span class="sd">            optional number of singular components to use</span>
+<span class="sd">            If Nonte, then nsing is determined from</span>
+<span class="sd">            call to MonteCarlo.get_nsing()</span>
+<span class="sd">        </span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        v2_proj : pyemu.Matrix</span>
+<span class="sd">            the null-space projection matrix (V2V2^T)</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">nsing</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">nsing</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_nsing</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">nsing</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;nsing is None&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;using </span><span class="si">{0}</span><span class="s2"> singular components&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nsing</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;forming null space projection matrix with &quot;</span> <span class="o">+</span>\
+                 <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> of </span><span class="si">{1}</span><span class="s2"> singular components&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nsing</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+        <span class="n">v2_proj</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">xtqx</span><span class="o">.</span><span class="n">v</span><span class="p">[:,</span><span class="n">nsing</span><span class="p">:]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">xtqx</span><span class="o">.</span><span class="n">v</span><span class="p">[:,</span><span class="n">nsing</span><span class="p">:]</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;forming null space projection matrix with &quot;</span> <span class="o">+</span>\
+                 <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2"> of </span><span class="si">{1}</span><span class="s2"> singular components&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nsing</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+        <span class="k">return</span> <span class="n">v2_proj</span></div>
+
+<div class="viewcode-block" id="MonteCarlo.draw"><a class="viewcode-back" href="../source/Monte_carlo.html#mc.MonteCarlo.draw">[docs]</a>    <span class="k">def</span> <span class="nf">draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_reals</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">par_file</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">obs</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+             <span class="n">enforce_bounds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cov</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">&quot;gaussian&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;draw stochastic realizations of parameters and</span>
+<span class="sd">           optionally observations, filling MonteCarlo.parensemble and</span>
+<span class="sd">           optionally MonteCarlo.obsensemble.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        num_reals : int</span>
+<span class="sd">            number of realization to generate</span>
+<span class="sd">        par_file : str</span>
+<span class="sd">            parameter file to use as mean values. If None,</span>
+<span class="sd">            use MonteCarlo.pst.parameter_data.parval1.</span>
+<span class="sd">            Default is None</span>
+<span class="sd">        obs : bool</span>
+<span class="sd">            add a realization of measurement noise to observation values,</span>
+<span class="sd">            forming MonteCarlo.obsensemble.Default is False</span>
+<span class="sd">        enforce_bounds : str</span>
+<span class="sd">            enforce parameter bounds based on control file information.</span>
+<span class="sd">            options are &#39;reset&#39;, &#39;drop&#39; or None.  Default is None</span>
+<span class="sd">        how : str</span>
+<span class="sd">            type of distribution to draw from. Must be in [&quot;gaussian&quot;,&quot;uniform&quot;]</span>
+<span class="sd">            default is &quot;gaussian&quot;.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        ``&gt;&gt;&gt;import pyemu``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;mc = pyemu.MonteCarlo(pst=&quot;pest.pst&quot;)``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;mc.draw(1000)``</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">par_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">parrep</span><span class="p">(</span><span class="n">par_file</span><span class="p">)</span>
+        <span class="n">how</span> <span class="o">=</span> <span class="n">how</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="n">how</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;gaussian&quot;</span><span class="p">,</span><span class="s2">&quot;uniform&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">cov</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cov</span><span class="p">,</span><span class="n">Cov</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">how</span> <span class="o">==</span> <span class="s2">&quot;uniform&quot;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;MonteCarlo.draw() error: &#39;how&#39;=&#39;uniform&#39;,&quot;</span> <span class="o">+</span>\
+                                <span class="s2">&quot; &#39;cov&#39; arg cannot be passed&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">cov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;generating </span><span class="si">{0:d}</span><span class="s2"> parameter realizations&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num_reals</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">how</span> <span class="o">==</span> <span class="s2">&quot;gaussian&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parensemble</span> <span class="o">=</span> <span class="n">ParameterEnsemble</span><span class="o">.</span><span class="n">from_gaussian_draw</span><span class="p">(</span><span class="n">pst</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="p">,</span><span class="n">cov</span><span class="o">=</span><span class="n">cov</span><span class="p">,</span>
+                                                                    <span class="n">num_reals</span><span class="o">=</span><span class="n">num_reals</span><span class="p">,</span>
+                                                                    <span class="n">use_homegrown</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                                    <span class="n">enforce_bounds</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">how</span> <span class="o">==</span> <span class="s2">&quot;uniform&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parensemble</span> <span class="o">=</span> <span class="n">ParameterEnsemble</span><span class="o">.</span><span class="n">from_uniform_draw</span><span class="p">(</span><span class="n">pst</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="p">,</span><span class="n">num_reals</span><span class="o">=</span><span class="n">num_reals</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;MonteCarlo.draw(): unrecognized &#39;how&#39; arg: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">how</span><span class="p">))</span>
+
+        <span class="c1">#self.parensemble = ParameterEnsemble(pst=self.pst)</span>
+        <span class="c1">#self.obsensemble = ObservationEnsemble(pst=self.pst)</span>
+        <span class="c1">#self.parensemble.draw(cov,num_reals=num_reals, how=how,</span>
+        <span class="c1">#                      enforce_bounds=enforce_bounds)</span>
+        <span class="k">if</span> <span class="n">enforce_bounds</span> <span class="ow">is</span> <span class="ow">not</span>  <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parensemble</span><span class="o">.</span><span class="n">enforce</span><span class="p">(</span><span class="n">enforce_bounds</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;generating </span><span class="si">{0:d}</span><span class="s2"> parameter realizations&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num_reals</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">obs</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;generating </span><span class="si">{0:d}</span><span class="s2"> observation realizations&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num_reals</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">obsensemble</span> <span class="o">=</span> <span class="n">ObservationEnsemble</span><span class="o">.</span><span class="n">from_id_gaussian_draw</span><span class="p">(</span><span class="n">pst</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="p">,</span><span class="n">num_reals</span><span class="o">=</span><span class="n">num_reals</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;generating </span><span class="si">{0:d}</span><span class="s2"> observation realizations&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">num_reals</span><span class="p">))</span></div>
+
+
+
+
+<div class="viewcode-block" id="MonteCarlo.project_parensemble"><a class="viewcode-back" href="../source/Monte_carlo.html#mc.MonteCarlo.project_parensemble">[docs]</a>    <span class="k">def</span> <span class="nf">project_parensemble</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">par_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">nsing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                            <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">enforce_bounds</span><span class="o">=</span><span class="s1">&#39;reset&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; perform the null-space projection operations for null-space monte carlo</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        par_file: str</span>
+<span class="sd">            an optional file of parameter values to use</span>
+<span class="sd">        nsing: int</span>
+<span class="sd">            number of singular values to in forming null subspace matrix</span>
+<span class="sd">        inplace: bool</span>
+<span class="sd">            overwrite the existing parameter ensemble with the</span>
+<span class="sd">            projected values</span>
+<span class="sd">        enforce_bounds: str</span>
+<span class="sd">            how to enforce parameter bounds.  can be None, &#39;reset&#39;, or &#39;drop&#39;.</span>
+<span class="sd">            Default is None</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        par_en : pyemu.ParameterEnsemble</span>
+<span class="sd">            if inplace is False, otherwise None</span>
+
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        to use this method, the MonteCarlo instance must have been constructed</span>
+<span class="sd">        with the ``jco`` argument.</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        ``&gt;&gt;&gt;import pyemu``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;mc = pyemu.MonteCarlo(jco=&quot;pest.jcb&quot;)``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;mc.draw(1000)``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;mc.project_parensemble(par_file=&quot;final.par&quot;,nsing=100)``</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span><span class="s2">&quot;MonteCarlo.project_parensemble()&quot;</span> <span class="o">+</span>\
+                                    <span class="s2">&quot;requires a jacobian attribute&quot;</span>
+        <span class="k">if</span> <span class="n">par_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">par_file</span><span class="p">),</span><span class="s2">&quot;monte_carlo.draw() error: par_file not found:&quot;</span> <span class="o">+</span>\
+                <span class="n">par_file</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parensemble</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">parrep</span><span class="p">(</span><span class="n">par_file</span><span class="p">)</span>
+
+        <span class="c1"># project the ensemble</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;projecting parameter ensemble&quot;</span><span class="p">)</span>
+        <span class="n">en</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parensemble</span><span class="o">.</span><span class="n">project</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_null_proj</span><span class="p">(</span><span class="n">nsing</span><span class="p">),</span><span class="n">inplace</span><span class="o">=</span><span class="n">inplace</span><span class="p">,</span><span class="n">log</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;projecting parameter ensemble&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">en</span></div>
+
+<div class="viewcode-block" id="MonteCarlo.write_psts"><a class="viewcode-back" href="../source/Monte_carlo.html#mc.MonteCarlo.write_psts">[docs]</a>    <span class="k">def</span> <span class="nf">write_psts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">prefix</span><span class="p">,</span><span class="n">existing_jco</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">noptmax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; write parameter and optionally observation realizations</span>
+<span class="sd">            to a series of pest control files</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        prefix: str</span>
+<span class="sd">            pest control file prefix</span>
+
+<span class="sd">        existing_jco: str</span>
+<span class="sd">            filename of an existing jacobian matrix to add to the</span>
+<span class="sd">            pest++ options in the control file.  This is useful for</span>
+<span class="sd">            NSMC since this jco can be used to get the first set of</span>
+<span class="sd">            parameter upgrades for free!  Needs to be the path the jco</span>
+<span class="sd">            file as seen from the location where pest++ will be run</span>
+
+<span class="sd">        noptmax: int</span>
+<span class="sd">            value of NOPTMAX to set in new pest control files</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        ``&gt;&gt;&gt;import pyemu``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;mc = pyemu.MonteCarlo(jco=&quot;pest.jcb&quot;)``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;mc.draw(1000, obs=True)``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;mc.write_psts(&quot;mc_&quot;, existing_jco=&quot;pest.jcb&quot;, noptmax=1)``</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;writing realized pest control files&quot;</span><span class="p">)</span>
+        <span class="c1"># get a copy of the pest control file</span>
+        <span class="n">pst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">par_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">par_names</span><span class="p">,</span><span class="n">obs_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">obs_names</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">noptmax</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pst</span><span class="o">.</span><span class="n">control_data</span><span class="o">.</span><span class="n">noptmax</span> <span class="o">=</span> <span class="n">noptmax</span>
+            <span class="n">pst</span><span class="o">.</span><span class="n">control_data</span><span class="o">.</span><span class="n">noptmax</span> <span class="o">=</span> <span class="n">noptmax</span>
+
+        <span class="k">if</span> <span class="n">existing_jco</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">pst</span><span class="o">.</span><span class="n">pestpp_options</span><span class="p">[</span><span class="s2">&quot;BASE_JACOBIAN&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">existing_jco</span>
+
+        <span class="c1"># set the indices</span>
+        <span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span><span class="n">parnme</span>
+        <span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span><span class="o">.</span><span class="n">obsnme</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parensemble</span><span class="o">.</span><span class="n">istransformed</span><span class="p">:</span>
+            <span class="n">par_en</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parensemble</span><span class="o">.</span><span class="n">_back_transform</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">par_en</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parensemble</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_reals</span><span class="p">):</span>
+            <span class="n">pst_name</span> <span class="o">=</span> <span class="n">prefix</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="si">{0:d}</span><span class="s2">.pst&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;writing realized pest control file &quot;</span> <span class="o">+</span> <span class="n">pst_name</span><span class="p">)</span>
+            <span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">par_en</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span><span class="s2">&quot;parval1&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">par_en</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span>
+
+            <span class="c1"># reset the regularization</span>
+            <span class="c1">#if pst.control_data.pestmode == &quot;regularization&quot;:</span>
+                <span class="c1">#pst.zero_order_tikhonov(parbounds=True)</span>
+                <span class="c1">#zero_order_tikhonov(pst,parbounds=True)</span>
+            <span class="c1"># add the obs noise realization if needed</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">obsensemble</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_reals</span><span class="p">:</span>
+                <span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">obsensemble</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span><span class="s2">&quot;obsval&quot;</span><span class="p">]</span> <span class="o">=</span> \
+                    <span class="bp">self</span><span class="o">.</span><span class="n">obsensemble</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span><span class="o">.</span><span class="n">T</span>
+
+            <span class="c1"># write</span>
+            <span class="n">pst</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">pst_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;writing realized pest control file &quot;</span> <span class="o">+</span> <span class="n">pst_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;writing realized pest control files&quot;</span><span class="p">)</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Jeremy White, Mike Fienen, John Doherty.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
