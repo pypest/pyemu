@@ -156,7 +156,7 @@ Glossary
    regularization
       A preferred condition pertaining to parameters, the deviation from which,
       elicits a penalty added to the objective function. This serves as a
-      balance between the level of fit or "measurement Phi""
+      balance between the level of fit or "measurement Phi"
       :math:`(\mathbf{\Phi_M})` and the coherence with soft knowledge/previous
       conditions/prior knowledge/regularization :math:`(\mathbf{\Phi_R})`. These terms
       can also be interpreted as the likelihood function and prior distribution
