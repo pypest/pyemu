@@ -868,49 +868,47 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
         if sync_bins:
             mx,mn = -1.0e+30,1.0e+30
             for fc,en in ensembles.items():
-                for pc in plot_col:
-                    if pc in en.columns:
-                        emx,emn = en.loc[:,pc].max(),en.loc[:,pc].min()
-                        mx = max(mx,emx)
-                        mn = min(mn,emn)
+                if plot_col in en.columns:
+                    emx, emn = en.loc[:, plot_col].max(), en.loc[:, plot_col].min()
+                    mx = max(mx,emx)
+                    mn = min(mn,emn)
             plot_bins = np.linspace(mn,mx,num=bins)
-            logger.statement("{0} min:{1:5G}, max:{2:5G}".format(pc,mn,mx))
+            logger.statement("{0} min:{1:5G}, max:{2:5G}".format(plot_col, mn, mx))
         else:
             plot_bins=bins
         for fc,en in ensembles.items():
-            for pc in plot_col:
-                if pc in en.columns:
-                    try:
-                        en.loc[:,pc].hist(bins=plot_bins,facecolor=fc,
-                                                edgecolor="none",alpha=0.5,
-                                                normed=True,ax=ax)
-                    except Exception as e:
-                        logger.warn("error plotting histogram for {0}:{1}".
-                                    format(pc,str(e)))
+            if plot_col in en.columns:
+                try:
+                    en.loc[:,plot_col].hist(bins=plot_bins,facecolor=fc,
+                                            edgecolor="none",alpha=0.5,
+                                            normed=True,ax=ax)
+                except Exception as e:
+                    logger.warn("error plotting histogram for {0}:{1}".
+                                format(plot_col,str(e)))
 
-                v = None
-                if deter_vals is not None and pc in deter_vals:
+            v = None
+            if deter_vals is not None and plot_col in deter_vals:
+                ylim = ax.get_ylim()
+                v = deter_vals[plot_col]
+                ax.plot([v,v],ylim,"k--",lw=1.5)
+                ax.set_ylim(ylim)
+
+
+            if std_window is not None:
+                try:
                     ylim = ax.get_ylim()
-                    v = deter_vals[pc]
-                    ax.plot([v,v],ylim,"k--",lw=1.5)
+                    mn, st = en.loc[:,plot_col].mean(), en.loc[:,plot_col].std() * (std_window / 2.0)
+
+                    ax.plot([mn - st, mn - st], ylim, color=fc, lw=1.5,ls='--')
+                    ax.plot([mn + st, mn + st], ylim, color=fc, lw=1.5,ls='--')
                     ax.set_ylim(ylim)
-
-
-                if std_window is not None:
-                    try:
-                        ylim = ax.get_ylim()
-                        mn, st = en.loc[:,pc].mean(), en.loc[:,pc].std() * (std_window / 2.0)
-
-                        ax.plot([mn - st, mn - st], ylim, color=fc, lw=1.5,ls='--')
-                        ax.plot([mn + st, mn + st], ylim, color=fc, lw=1.5,ls='--')
-                        ax.set_ylim(ylim)
-                        if deter_range and v is not None:
-                            xmn = v - st
-                            xmx = v + st
-                            ax.set_xlim(xmn,xmx)
-                    except:
-                        logger.warn("error plotting std window for {0}".
-                                    format(pc))
+                    if deter_range and v is not None:
+                        xmn = v - st
+                        xmx = v + st
+                        ax.set_xlim(xmn,xmx)
+                except:
+                    logger.warn("error plotting std window for {0}".
+                                format(plot_col))
         ax.grid()
 
         ax_count += 1
