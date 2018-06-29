@@ -1199,7 +1199,7 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
     # std_diff = 100 * ((en1_std - en2_std) / en1_std)
 
     mn_diff = -1 * (en2_mn - en1_mn)
-    std_diff = 100 * (1.0 - ((en1_std - en2_std) / en1_std))
+    std_diff = 100 * (((en1_std - en2_std) / en1_std))
 
 
 

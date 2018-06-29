@@ -604,7 +604,10 @@ class Schur(LinearAnalysis):
 
         if base_obslist is None:
             base_obslist = []
-
+        else:
+            if type(base_obslist) != list:
+                self.logger.lraise("Schur.get_added_obs)_importance: base_obslist must be" +
+                                   " type 'list', not {0}".format(str(type(base_obslist))))
         # if needed reset the zero-weight obs in obslist_dict
         if obslist_dict is not None and reset:
             z_obs = []
