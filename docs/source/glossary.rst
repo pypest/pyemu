@@ -88,13 +88,15 @@ Glossary
    observation
       Measured system state values. These values are used to compare with model
       outputs collocated in space and time. The term is often used to mean
-      *both* field measurements and outputs from the model. 
+      *both* field measurements and outputs from the model. These are denoted 
+      by :math:`y` for a scalar value or :math:`\bf{y}`
+      for a vector of values in this documentation.
 
    modeled equivalent 
    simulated equivalent
       A modeled value collocated to correspond in time and space with an observation. 
       To make things confusing, they are often *also* called
-      "observations"!  These are denoted by :math:`f(x)` for a scalar or :math:'\bf{x}'
+      "observations"!  These are denoted by :math:`f(x)` for a scalar value or :math:`\bf{x}`
       for a vector of values in this documentation.
 
    forecasts
@@ -133,6 +135,42 @@ Glossary
       this expected level of error. The reciprocal of weights are also called
       Epistemic Uncertainty terms and in matrix form is denoted by :math:`\bf{Q}^{-1}`.
 
-      
+   residuals
+   
+      The difference between observation values and modeled equivalents
+      :math:`r_i=y_i-f\left(x_i\right)`.
+
+   sensitivity
+      The incremental change of an observation (actually the modeled equivalent)
+      due to an incremental change in a parameter. Typically expressed as a
+      finite-difference approximation of a partial derivative, :math:`\frac{\partial
+      y}{\partial x}`
+
+   Jacobian matrix
+      A matrix of the sensitivity of all observations in an inverse model to all
+      parameters. This is often shown as a matrix by various names :math:`\mathbf{X}`,
+      :math:`\mathbf{J}`, or :math:`\mathbf{H}`. Each element of the matrix is a single
+      sensitivity value  :math:`\frac{\partial y_i}{\partial x_j}` for :math:`i\in NOBS`, :math:`j
+      \in NPAR`.
+
+   regularization
+      A preferred condition pertaining to parameters, the deviation from which,
+      elicits a penalty added to the objective function. This serves as a
+      balance between the level of fit or "measurement Phi"
+      :math:`(\mathbf{\Phi_M})` and the coherence with soft knowledge/previous
+      conditions/prior knowledge/regularization :math:`(\mathbf{\Phi_R})`. These terms
+      can also be interpreted as the likelihood function and prior distribution
+      in Bayes theorem.
+
+   PHIMLIM
+      A PEST input parameter the governs the strength with which regularization
+      is applied to the objective function. A high value of PHIMLIM indicates a
+      strong penalty for deviation from preferred parameter conditions while a
+      low value of PHIMLIM indicates a weak penalty. The reason this "dial"" is
+      listed as a function of PHIM (e.g. :math:`\mathbf{\Phi_M}`) is because it can
+      then be interpreted as a limit on how well we want to fit the observation
+      data. PHIMLIM is actually controlling the value :math:`\gamma` appearing in the
+      definition for :term:`Phi` and formally trading off :math:`\Phi_m` asnd :math:`\Phi_r`.
+
 
 

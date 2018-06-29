@@ -82,10 +82,16 @@ functions <a class="reference internal" href="../index.html#rs16" id="id8">[RS16
 instance or object after <a class="reference internal" href="#term-instantiation"><span class="xref std std-term">instantiation</span></a>.</dd>
 <dt id="term-instantiation">instantiation</dt>
 <dd>Make a class instance, also known as an object, from a class.</dd>
+<dt id="term-jacobian-matrix">Jacobian matrix</dt>
+<dd>A matrix of the sensitivity of all observations in an inverse model to all
+parameters. This is often shown as a matrix by various names <span class="math notranslate nohighlight">\(\mathbf{X}\)</span>,
+<span class="math notranslate nohighlight">\(\mathbf{J}\)</span>, or <span class="math notranslate nohighlight">\(\mathbf{H}\)</span>. Each element of the matrix is a single
+sensitivity value  <span class="math notranslate nohighlight">\(\frac{\partial y_i}{\partial x_j}\)</span> for <span class="math notranslate nohighlight">\(i\in NOBS\)</span>, <span class="math notranslate nohighlight">\(j
+\in NPAR\)</span>.</dd>
 <dt id="term-modeled-equivalent">modeled equivalent<dt id="term-simulated-equivalent">simulated equivalent</dt>
 <dd>A modeled value collocated to correspond in time and space with an observation.
 To make things confusing, they are often <em>also</em> called
-“observations”!  These are denoted by <span class="math notranslate nohighlight">\(f(x)\)</span> for a scalar or :math:’bf{x}’
+“observations”!  These are denoted by <span class="math notranslate nohighlight">\(f(x)\)</span> for a scalar value or <span class="math notranslate nohighlight">\(\bf{x}\)</span>
 for a vector of values in this documentation.</dd>
 <dt id="term-object">object<dt id="term-instance">instance</dt>
 <dd>A programming entity that may store internal data (<a class="reference internal" href="#term-state"><span class="xref std std-term">state</span></a>), have
@@ -93,7 +99,9 @@ functionality (<a class="reference internal" href="#term-behavior"><span class="
 <dt id="term-observation">observation</dt>
 <dd>Measured system state values. These values are used to compare with model
 outputs collocated in space and time. The term is often used to mean
-<em>both</em> field measurements and outputs from the model.</dd>
+<em>both</em> field measurements and outputs from the model. These are denoted
+by <span class="math notranslate nohighlight">\(y\)</span> for a scalar value or <span class="math notranslate nohighlight">\(\bf{y}\)</span>
+for a vector of values in this documentation.</dd>
 <dt id="term-override">override</dt>
 <dd>Implement a new version of a method within a derived class that would have
 otherwise been inherited from the base class customizing the behavior
@@ -118,8 +126,33 @@ renamed <span class="math notranslate nohighlight">\(\Phi_m\)</span> for “meas
 term is named <span class="math notranslate nohighlight">\(\Phi_r\)</span>. A scalar, <span class="math notranslate nohighlight">\(\gamma\)</span>,  parameter controls the
 tradeoff between these two dual components of the total objective function <span class="math notranslate nohighlight">\(\Phi_t\)</span>.</p>
 <div class="last math notranslate nohighlight">
-\[\Phi_t = \Phi_m + \gamma \Phi_r\]</div>
+\[\Phi_t = \Phi_m + \gamma  \Phi_r\]</div>
 </dd>
+<dt id="term-phimlim">PHIMLIM</dt>
+<dd>A PEST input parameter the governs the strength with which regularization
+is applied to the objective function. A high value of PHIMLIM indicates a
+strong penalty for deviation from preferred parameter conditions while a
+low value of PHIMLIM indicates a weak penalty. The reason this “dial”” is
+listed as a function of PHIM (e.g. <span class="math notranslate nohighlight">\(\mathbf{\Phi_M}\)</span>) is because it can
+then be interpreted as a limit on how well we want to fit the observation
+data. PHIMLIM is actually controlling the value <span class="math notranslate nohighlight">\(\gamma\)</span> appearing in the
+definition for <a class="reference internal" href="#term-phi"><span class="xref std std-term">Phi</span></a> and formally trading off <span class="math notranslate nohighlight">\(\Phi_m\)</span> asnd <span class="math notranslate nohighlight">\(\Phi_r\)</span>.</dd>
+<dt id="term-regularization">regularization</dt>
+<dd>A preferred condition pertaining to parameters, the deviation from which,
+elicits a penalty added to the objective function. This serves as a
+balance between the level of fit or “measurement Phi””
+<span class="math notranslate nohighlight">\((\mathbf{\Phi_M})\)</span> and the coherence with soft knowledge/previous
+conditions/prior knowledge/regularization <span class="math notranslate nohighlight">\((\mathbf{\Phi_R})\)</span>. These terms
+can also be interpreted as the likelihood function and prior distribution
+in Bayes theorem.</dd>
+<dt id="term-residuals">residuals</dt>
+<dd>The difference between observation values and modeled equivalents
+<span class="math notranslate nohighlight">\(r_i=y_i-f\left(x_i\right)\)</span>.</dd>
+<dt id="term-sensitivity">sensitivity</dt>
+<dd>The incremental change of an observation (actually the modeled equivalent)
+due to an incremental change in a parameter. Typically expressed as a
+finite-difference approximation of a partial derivative, <span class="math notranslate nohighlight">\(\frac{\partial
+y}{\partial x}\)</span></dd>
 <dt id="term-state">state</dt>
 <dd>The state of the object refers to the current value of all the internal data
 stored in and object <a class="reference internal" href="../index.html#rs16" id="id5">[RS16]</a> .</dd>
