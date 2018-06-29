@@ -50,3 +50,89 @@ Glossary
       Object-oriented python module to build, run, and process MODFLOW models [BPL+16]_ . Because
       of the similar modeling structure, the combination of flopy and pyEMU can be
       very effective in constructing, documenting, and analyzing groundwater-flow models. 
+      
+   inheritance
+      A object-oriented programming technique where one class, referred to as the
+      :term:`derived class` or subclass, extends a second class, known as the :term:`base class`
+      or superclass.  The subclass has all the defined attributes and behavior
+      of the superclass and typically adds additional attributes or methods. Many
+      derived classes :term:`override` methods of the superclass to perform specific
+      functions [RS16]_.
+      
+   override
+      Implement a new version of a method within a derived class that would have
+      otherwise been inherited from the base class customizing the behavior
+      of the method for the derived class [RS16]_.  Overriding allows objects to
+      call a method by the same name but have behavior specific to the 
+      object's type.
+      
+   base class
+      A base class, or superclass, is a class that is extended by another class 
+      in a technique called :term:`inheritance`. Inheritance can make programming
+      efficient by having one version of base attributes and methods that can be
+      tested and then extended by a :term:`derived class`.
+      
+   derived class
+      A derived class, or subclass, inherits attributes and methods from its
+      :term:`base class`.  Derived classes then add attributes and methods as
+      needed.  For example, in pyEMU, the linear analysis base class is inherited by the
+      Monte Carlo derived class.
+      
+   GLUE
+      Generalized Likelihood Uncertainty Estimation [KB09]_ .
+      
+   parameters
+      Variable input values for models, typically representing system properties
+      and forcings. Values to be estimated in the history matching process.
+
+   observation
+      Measured system state values. These values are used to compare with model
+      outputs collocated in space and time. The term is often used to mean
+      *both* field measurements and outputs from the model. 
+
+   modeled equivalent 
+   simulated equivalent
+      A modeled value collocated to correspond in time and space with an observation. 
+      To make things confusing, they are often *also* called
+      "observations"!  These are denoted by :math:`f(x)` for a scalar or :math:'\bf{x}'
+      for a vector of values in this documentation.
+
+   forecasts
+      Model outputs for which field observations are not available. Typically these
+      values are simulated under an uncertain future condition.
+
+   Phi
+      For pyEMU and consistent with PEST and PEST++, Phi refers to the :term:`objective function`, 
+      defined as the weighted sum of squares of residuals. Phi, :math:`\Phi`, is typically calculated as
+ 
+      .. math::
+         \begin{array}{ccc}
+         \Phi=\sum_{i=1}^{n}\left(\frac{y_{i}-f\left(x_{i}\right)}{w_{i}}\right)^{2} & or & \Phi=\left(\mathbf{y}-\mathbf{Jx}\right)^{T}\mathbf{Q}^{-1}\left(\mathbf{y}-\mathbf{Jx}\right)
+         \end{array}
+         
+      When regularization is included, an additional term is added, 
+      quantifying a penalty assessed for parameter sets that violate the preferred 
+      conditions regarding the parameter values. 
+      In such a case, the value of :math:`\Phi` as stated above is 
+      renamed :math:`\Phi_m` for "measurement Phi" and the additional regularization 
+      term is named :math:`\Phi_r`. A scalar, :math:`\gamma`,  parameter controls the 
+      tradeoff between these two dual components of the total objective function :math:`\Phi_t`.
+
+      .. math::
+         \Phi_t = \Phi_m + \gamma  \Phi_r
+
+   weight 
+   epistemic uncertainty
+      A value by which a residual is divided by when constructing the sum of
+      squared residuals. In principal, :math:`w\approx\frac{1}{\sigma}` where :math:`\sigma` is
+      an approximation of the expected error between model output and collocated
+      observation values. While the symbol :math:`\sigma` implies a standard deviation,
+      it is important to note that measurement error only makes up a portion of
+      this error. Other aspects such as structural error (e.g. inadequacy inherent
+      in all models to perfectly simulate the natural world) also contribute to
+      this expected level of error. The reciprocal of weights are also called
+      Epistemic Uncertainty terms and in matrix form is denoted by :math:`\bf{Q}^{-1}`.
+
+      
+
+

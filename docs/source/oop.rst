@@ -26,7 +26,7 @@ attributes, also known as the :term:`state` of the object, to perform tasks.
 
 The Pst class jupyter notebook linked below uses the pyEMU
 class Pst to create an object called *p*.  Attributes of the object
-can then be accessed using p.*attribute*, for example, the parameter_data
+can then be accessed using *p.attribute*, for example, the parameter_data
 are stored in the object as a pandas [MCK10]_ dataframe and can be accessed
 using p.parameter_data
 

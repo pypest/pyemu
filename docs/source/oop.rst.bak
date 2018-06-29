@@ -18,7 +18,7 @@ perform the desired analysis.
 The general workflow for pyEMU is to first create an :term:`instance` (:term:`object`) 
 of a class.  The simplest object will only have attributes,
 or data, associated with it and may be thought of as a data structure.  Many
-pyEMU objects also have :term:`instance method` associated with them which
+pyEMU objects also have :term:`instance methods` associated with them which
 allow the user to either manipulate attributes of the object or use the current
 attributes, also known as the :term:`state` of the object, to perform tasks.
 
