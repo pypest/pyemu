@@ -13,7 +13,8 @@ import re
 pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,_try_run_inschek,\
     parse_tpl_file,try_process_ins_file
-from pyemu.utils.helpers import run
+from pyemu.utils.os_utils import run
+from pyemu.utils.helpers import write_df_tpl
 from ..pyemu_warnings import PyemuWarning
 PP_FMT = {"name": SFMT, "x": FFMT, "y": FFMT, "zone": IFMT, "tpl": SFMT,
           "parval1": FFMT}
@@ -1242,10 +1243,10 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
     seg_data.loc[:,notpar_cols] = "1.0"
 
     #write the template file
-    with open(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),'w') as f:
-        f.write("ptf ~\n")
-        seg_data.to_csv(f,sep=',')
-
+    #with open(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),'w') as f:
+    #    f.write("ptf ~\n")
+    #    seg_data.to_csv(f,sep=',')
+    write_df_tpl(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),seg_data,sep=',')
 
     #write the config file used by apply_sfr_pars()
     with open(os.path.join(model_ws,"sfr_seg_pars.config"),'w') as f:
@@ -1343,9 +1344,10 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.',par_cols=['strhc1']):
     reach_data.loc[:, notpar_cols] = "1.0"
 
     # write the template file
-    with open(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"), 'w') as f:
-        f.write("ptf ~\n")
-        reach_data.to_csv(f, sep=',',quotechar=' ',quoting=1)
+    #with open(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"), 'w') as f:
+    #    f.write("ptf ~\n")
+    #    reach_data.to_csv(f, sep=',',quotechar=' ',quoting=1)
+    write_df_tpl(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"),reach_data,sep=',')
 
     # write the config file used by apply_sfr_pars()
     with open(os.path.join(model_ws, "sfr_reach_pars.config"), 'w') as f:
@@ -1419,7 +1421,7 @@ def apply_sfr_seg_parameters(reach_pars=False):
             for line in f:
                 line = line.strip().split()
                 r_pars[line[0]] = line[1]
-        r_mlt_df = pd.read_csv(r_pars["mult_file"],delim_whitespace=True)
+        r_mlt_df = pd.read_csv(r_pars["mult_file"],sep=',',index_col=0)
         r_idx_cols = ["node", "k", "i", "j", "iseg", "ireach", "reachID", "outreach"]
         r_mlt_cols = r_mlt_df.columns.drop(r_idx_cols)
         r_df = pd.DataFrame.from_records(m.sfr.reach_data)
@@ -1757,14 +1759,16 @@ def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
 
     df.columns = [c.lower().replace("-", "_").replace('.', '_').strip('_') for c in df.columns]
     # get unique observation ids
-    obs_ids = []
-    for col in df.columns:
+    obs_ids = {col:"" for col in df.columns[1:]} # empty dictionary for observation ids
+    for col in df.columns[1:]: # exclude column 1 (TIME)
         colspl = col.split('_')
         if len(colspl) > 1:
-
-            obs_ids.append("{0}{1}".format(colspl[0][0],colspl[-1][0]))
+            # obs name built out of "g"(for gage) "s" or "l"(for gage type) 2 chars from column name - date added later
+            obs_ids[col] = "g{0}{1}{2}".format(gage_type[0], colspl[0][0],colspl[-1][0])
         else:
-            obs_ids.append("{0}".format(col[0:2]))
+            obs_ids[col] = "g{0}{1}".format(gage_type[0], col[0:2])
+    with open("_gage_obs_ids.csv", "w") as f: # write file relating obs names to meaningfull keys!
+        [f.write('{0},{1}\n'.format(key, obs)) for key, obs in obs_ids.items()]
     # find passed times in df
     if times is None:
         times = df.time.unique()
@@ -1798,7 +1802,7 @@ def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
     df_times = df.loc[idx, :]  # Slice by desired times
     # TODO include GAGE No. in obs name (if permissible)
     df.loc[df_times.index, "ins_str"] = df_times.apply(lambda x: "l1 w {}\n".format(
-        ' '.join(["!g{}{}{}!".format(gage_type[0], obs, x.time_str) for obs in obs_ids[1:]])), axis=1)
+        ' w '.join(["!{0}{1}!".format(obs, x.time_str) for key,obs in obs_ids.items()])), axis=1)
     df.index = np.arange(df.shape[0])
     if ins_file is None:
         ins_file = gage_file+".processed.ins"
@@ -1891,9 +1895,9 @@ def write_hfb_zone_multipliers_template(m):
     with open(tpl_file, 'w') as ofp:
         ofp.write('ptf ~\n')
         [ofp.write('{0}\n'.format(line.strip())) for line in header]
-
+        ofp.flush()
         hfb_in[['lay', 'irow1','icol1','irow2','icol2', 'tpl']].to_csv(ofp, sep=' ', quotechar=' ',
-                header=None, index=None)
+                header=None, index=None, mode='a')
 
     # make a lookup for lining up the necessary files to perform multiplication with the
     # helpers.apply_hfb_pars() function which must be added to the forward run script

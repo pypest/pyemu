@@ -1502,7 +1502,7 @@ class PstFromFlopyModel(object):
                 ilist = [ilist]
             for cmd in ilist:
                 self.logger.statement("forward_run line:{0}".format(cmd))
-                alist.append("pyemu.helpers.run('{0}')\n".format(cmd))
+                alist.append("pyemu.os_utils.run('{0}')\n".format(cmd))
 
         # add the model call
 
@@ -1510,9 +1510,9 @@ class PstFromFlopyModel(object):
             model_exe_name = self.m.exe_name
             self.logger.warn("using flopy binary to execute the model:{0}".format(model))
         if redirect_forward_output:
-            line = "pyemu.helpers.run('{0} {1} 1>{1}.stdout 2>{1}.stderr')".format(model_exe_name,self.m.namefile)
+            line = "pyemu.os_utils.run('{0} {1} 1>{1}.stdout 2>{1}.stderr')".format(model_exe_name,self.m.namefile)
         else:
-            line = "pyemu.helpers.run('{0} {1} ')".format(model_exe_name, self.m.namefile)
+            line = "pyemu.os_utils.run('{0} {1} ')".format(model_exe_name, self.m.namefile)
         self.logger.statement("forward_run line:{0}".format(line))
         self.frun_model_lines.append(line)
 
@@ -2184,7 +2184,7 @@ class PstFromFlopyModel(object):
         kl_mlt_df = mlt_df.loc[mlt_df.suffix==self.kl_suffix]
         for prefix in kl_df.prefix.unique():
             prefix_df = kl_df.loc[kl_df.prefix==prefix,:]
-            in_file = os.path.split(prefix_df.loc[:,"in_file"][0])[-1]
+            in_file = os.path.split(prefix_df.loc[:,"in_file"].iloc[0])[-1]
             assert prefix in mlt_df.prefix.values,"{0}:{1}".format(prefix,mlt_df.prefix)
             mlt_df.loc[mlt_df.prefix==prefix,"pp_file"] = in_file
             mlt_df.loc[mlt_df.prefix==prefix,"fac_file"] = os.path.split(fac_file)[-1]
@@ -2193,7 +2193,6 @@ class PstFromFlopyModel(object):
         mlt_df.loc[mlt_df.suffix == self.kl_suffix, "tpl_file"] = np.NaN
         self.par_dfs[self.kl_suffix] = kl_df
         # calc factors for each layer
-
 
 
     def setup_array_pars(self):
@@ -2831,13 +2830,14 @@ class PstFromFlopyModel(object):
             to_csv(os.path.join(self.m.model_ws,"temporal_bc_pars.dat"),sep=' ')
         df.loc[:,"val"] = df.tpl_str
         tpl_name = os.path.join(self.m.model_ws,'temporal_bc_pars.dat.tpl')
-        f_tpl =  open(tpl_name,'w')
-        f_tpl.write("ptf ~\n")
-        f_tpl.flush()
-        f_tpl.write("index ")
-        #df.loc[:,names].to_csv(f_tpl,sep=' ',quotechar=' ')
-        f_tpl.write(df.loc[:,names].to_string(index_names=True))
-        f_tpl.close()
+        #f_tpl =  open(tpl_name,'w')
+        #f_tpl.write("ptf ~\n")
+        #f_tpl.flush()
+        # df.loc[:,names].to_csv(f_tpl,sep=' ',quotechar=' ')
+        #f_tpl.write("index ")
+        #f_tpl.write(df.loc[:,names].to_string(index_names=True))
+        #f_tpl.close()
+        write_df_tpl(tpl_name,df.loc[:,names],sep=' ',index_label="index")
         self.par_dfs["temporal_bc"] = df
 
         if self.temporal_bc_geostruct is None:
@@ -2983,12 +2983,13 @@ class PstFromFlopyModel(object):
                 par_dfs.append(par_df)
 
 
-            with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
-                f.write("ptf ~\n")
+            #with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
+            #    f.write("ptf ~\n")
                 #f.flush()
                 #df.to_csv(f)
-                f.write("index ")
-                f.write(df.to_string(index_names=False)+'\n')
+            #    f.write("index ")
+            #    f.write(df.to_string(index_names=False)+'\n')
+            write_df_tpl(os.path.join(self.m.model_ws,tpl_file),df,sep=' ',index_label="index")
             self.tpl_files.append(tpl_file)
             self.in_files.append(in_file)
 
@@ -3408,7 +3409,8 @@ def apply_bc_pars():
         #     np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].as_matrix(), fmt=fmts,
         #                header=''.join(headrows), footer=footrows)
         # else:
-        np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].as_matrix(), fmt=fmts)
+        #np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].as_matrix(), fmt=fmts)
+        np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].values, fmt=fmts)
             #with open(os.path.join(model_ext_path,fname),'w') as f:
         #    f.write(df_list.loc[:,names].to_string(header=False,index=False,formatters=fmts)+'\n')
             #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
@@ -3839,6 +3841,37 @@ def build_jac_test_csv(pst,num_steps,par_names=None,forward=True):
             last_val = val
     df.index = full_names
     return df
+
+
+def write_df_tpl(filename,df,sep=',',tpl_marker='~',**kwargs):
+    """function write a pandas dataframe to a template file.
+    Parameters
+    ----------
+    filename : str
+        template filename
+    df : pandas.DataFrame
+        dataframe to write
+    sep : char
+        separate to pass to df.to_csv(). default is ','
+    tpl_marker : char
+        template file marker.  default is '~'
+    kwargs : dict
+        additional keyword args to pass to df.to_csv()
+
+    Returns
+    -------
+    None
+
+    Note
+    ----
+    If you don't use this function, make sure that you flush the
+    file handle before df.to_csv() and you pass mode='a' to to_csv()
+
+    """
+    with open(filename,'w') as f:
+        f.write("ptf {0}\n".format(tpl_marker))
+        f.flush()
+        df.to_csv(f,sep=sep,mode='a',**kwargs)
 
 
 
