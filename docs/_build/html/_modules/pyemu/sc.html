@@ -1,0 +1,1090 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>pyemu.sc &#8212; pyEMU 0.3 documentation</title>
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for pyemu.sc</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;module for FOSM-based uncertainty analysis using a</span>
+<span class="sd">linearized form of Bayes equation known as the Schur compliment</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">division</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">pyemu.la</span> <span class="k">import</span> <span class="n">LinearAnalysis</span>
+<span class="kn">from</span> <span class="nn">pyemu.mat</span> <span class="k">import</span> <span class="n">Cov</span><span class="p">,</span> <span class="n">Matrix</span>
+
+<div class="viewcode-block" id="Schur"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.sc.Schur">[docs]</a><span class="k">class</span> <span class="nc">Schur</span><span class="p">(</span><span class="n">LinearAnalysis</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;derived type for prior and posterior uncertainty and data-worth</span>
+<span class="sd">    analysis using Schur compliment</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    **kwargs : dict</span>
+<span class="sd">        keyword arguments to pass to the LinearAnalysis constructor.  See</span>
+<span class="sd">        LinearAnalysis definition for argument types</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">    Same call signature as the base LinearAnalysis class</span>
+
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    ``&gt;&gt;&gt;import pyemu``</span>
+
+<span class="sd">    ``&gt;&gt;&gt;sc = pyemu.Schur(jco=&quot;pest.jcb&quot;)``</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">jco</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__posterior_prediction</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__posterior_parameter</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Schur</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">jco</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">pandas</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get a pandas dataframe of prior and posterior for all predictions</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            pandas.DataFrame : pandas.DataFrame</span>
+<span class="sd">                a dataframe with prior and posterior uncertainty estimates</span>
+<span class="sd">                for all forecasts (predictions)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">names</span><span class="p">,</span><span class="n">prior</span><span class="p">,</span><span class="n">posterior</span> <span class="o">=</span> <span class="p">[],[],[]</span>
+        <span class="k">for</span> <span class="n">iname</span><span class="p">,</span><span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">posterior_parameter</span><span class="o">.</span><span class="n">row_names</span><span class="p">):</span>
+            <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">posterior</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">posterior_parameter</span><span class="p">[</span><span class="n">iname</span><span class="p">,</span> <span class="n">iname</span><span class="p">]</span><span class="o">.</span> <span class="n">x</span><span class="p">)))</span>
+            <span class="n">iprior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="o">.</span><span class="n">row_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="n">prior</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="p">[</span><span class="n">iprior</span><span class="p">,</span> <span class="n">iprior</span><span class="p">]</span><span class="o">.</span><span class="n">x</span><span class="p">)))</span>
+        <span class="k">for</span> <span class="n">pred_name</span><span class="p">,</span> <span class="n">pred_var</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior_prediction</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred_name</span><span class="p">)</span>
+            <span class="n">posterior</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">pred_var</span><span class="p">))</span>
+            <span class="n">prior</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_prediction</span><span class="p">[</span><span class="n">pred_name</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;posterior&quot;</span><span class="p">:</span> <span class="n">posterior</span><span class="p">,</span> <span class="s2">&quot;prior&quot;</span><span class="p">:</span> <span class="n">prior</span><span class="p">},</span>
+                                <span class="n">index</span><span class="o">=</span><span class="n">names</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">posterior_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get the posterior parameter covariance matrix.  If Schur.__posterior_parameter</span>
+<span class="sd">        is None, the posterior parameter covariance matrix is calculated via</span>
+<span class="sd">        Schur compliment before returning</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        posterior_parameter : pyemu.Cov</span>
+<span class="sd">            the posterior parameter covariance matrix</span>
+
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        returns a reference</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        ``&gt;&gt;&gt;import pyemu``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;sc = pyemu.Schur(jco=&quot;pest.jcb&quot;)``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;post_cov = sc.posterior_parameter``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;post_cov.to_ascii(&quot;post.cov&quot;)``</span>
+
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__posterior_parameter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__posterior_parameter</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clean</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Schur&#39;s complement&quot;</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">pinv</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="o">.</span><span class="n">inv</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">xtqx</span> <span class="o">+</span> <span class="n">pinv</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">inv</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">xtqx</span><span class="o">.</span><span class="n">to_binary</span><span class="p">(</span><span class="s2">&quot;xtqx.err.jcb&quot;</span><span class="p">)</span>
+                <span class="n">pinv</span><span class="o">.</span><span class="n">to_ascii</span><span class="p">(</span><span class="s2">&quot;parcov_inv.err.cov&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;error forming schur&#39;s complement: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span>
+                                <span class="nb">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;problemtic xtqx saved to xtqx.err.jcb&quot;</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;problematic inverse parcov saved to parcov_inv.err.cov&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;error forming schur&#39;s complement: </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span>
+                                <span class="nb">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+            <span class="k">assert</span> <span class="n">r</span><span class="o">.</span><span class="n">row_names</span> <span class="o">==</span> <span class="n">r</span><span class="o">.</span><span class="n">col_names</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">__posterior_parameter</span> <span class="o">=</span> <span class="n">Cov</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">row_names</span><span class="o">=</span><span class="n">r</span><span class="o">.</span><span class="n">row_names</span><span class="p">,</span>
+                                             <span class="n">col_names</span><span class="o">=</span><span class="n">r</span><span class="o">.</span><span class="n">col_names</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;Schur&#39;s complement&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__posterior_parameter</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">map_parameter_estimate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; get the posterior expectation for parameters using Bayes linear</span>
+<span class="sd">        estimation</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        post_expt : pandas.DataFrame</span>
+<span class="sd">            a dataframe with prior and posterior parameter expectations</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">res</span>
+        <span class="k">assert</span> <span class="n">res</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="c1"># build the prior expectation parameter vector</span>
+        <span class="n">prior_expt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,[</span><span class="s2">&quot;parval1&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">islog</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span><span class="n">partrans</span> <span class="o">==</span> <span class="s2">&quot;log&quot;</span>
+        <span class="n">prior_expt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">islog</span><span class="p">]</span> <span class="o">=</span> <span class="n">prior_expt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">islog</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">)</span>
+        <span class="n">prior_expt</span> <span class="o">=</span> <span class="n">Matrix</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">prior_expt</span><span class="p">)</span>
+        <span class="n">prior_expt</span><span class="o">.</span><span class="n">col_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;prior_expt&quot;</span><span class="p">]</span>
+        <span class="c1"># build the residual vector</span>
+        <span class="n">res_vec</span> <span class="o">=</span> <span class="n">Matrix</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,[</span><span class="s2">&quot;residual&quot;</span><span class="p">]])</span>
+
+        <span class="c1"># form the terms of Schur&#39;s complement</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">jco</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov</span><span class="p">)</span><span class="o">.</span><span class="n">inv</span>
+        <span class="n">bc</span> <span class="o">=</span> <span class="n">Matrix</span><span class="p">((</span><span class="n">b</span> <span class="o">*</span> <span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">row_names</span><span class="o">=</span><span class="n">b</span><span class="o">.</span><span class="n">row_names</span><span class="p">,</span> <span class="n">col_names</span><span class="o">=</span><span class="n">c</span><span class="o">.</span><span class="n">col_names</span><span class="p">)</span>
+
+        <span class="c1"># calc posterior expectation</span>
+        <span class="n">upgrade</span> <span class="o">=</span> <span class="n">bc</span> <span class="o">*</span> <span class="n">res_vec</span>
+        <span class="n">upgrade</span><span class="o">.</span><span class="n">col_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;prior_expt&quot;</span><span class="p">]</span>
+        <span class="n">post_expt</span> <span class="o">=</span> <span class="n">prior_expt</span> <span class="o">+</span> <span class="n">upgrade</span>
+
+        <span class="c1"># post processing - back log transform</span>
+        <span class="n">post_expt</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">post_expt</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="n">post_expt</span><span class="o">.</span><span class="n">row_names</span><span class="p">,</span>
+                                 <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;post_expt&quot;</span><span class="p">])</span>
+        <span class="n">post_expt</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;prior_expt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prior_expt</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="n">post_expt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">islog</span><span class="p">,:]</span> <span class="o">=</span> <span class="mf">10.0</span><span class="o">**</span><span class="n">post_expt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">islog</span><span class="p">,:]</span>
+        <span class="c1"># unc_sum = self.get_parameter_summary()</span>
+        <span class="c1"># post_expt.loc[:,&quot;standard_deviation&quot;] = unc_sum.post_var.apply(np.sqrt)</span>
+        <span class="n">post_expt</span><span class="o">.</span><span class="n">sort_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">post_expt</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">map_forecast_estimate</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; get the prior and posterior forecast (prediction) expectations.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pandas.DataFrame : pandas.DataFrame</span>
+<span class="sd">            dataframe with prior and posterior forecast expected values</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasts</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="n">islog</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span><span class="n">partrans</span> <span class="o">==</span> <span class="s2">&quot;log&quot;</span>
+        <span class="n">par_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_parameter_estimate</span>
+        <span class="n">par_map</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">islog</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">par_map</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">islog</span><span class="p">,:])</span>
+        <span class="n">par_map</span> <span class="o">=</span> <span class="n">Matrix</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">par_map</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,[</span><span class="s2">&quot;post_expt&quot;</span><span class="p">]])</span>
+        <span class="n">posts</span><span class="p">,</span><span class="n">priors</span> <span class="o">=</span> <span class="p">[],[]</span>
+        <span class="n">post_expt</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span> <span class="n">par_map</span><span class="p">)</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecast_names</span><span class="p">:</span>
+            <span class="c1">#fname = forecast.col_names[0]</span>
+            <span class="n">pr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">res</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">fname</span><span class="p">,</span><span class="s2">&quot;modelled&quot;</span><span class="p">]</span>
+            <span class="n">priors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pr</span><span class="p">)</span>
+            <span class="n">posts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pr</span> <span class="o">+</span> <span class="n">post_expt</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">fname</span><span class="p">,</span><span class="s2">&quot;post_expt&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">priors</span><span class="p">,</span><span class="n">posts</span><span class="p">])</span><span class="o">.</span><span class="n">transpose</span><span class="p">(),</span>
+                            <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;prior_expt&quot;</span><span class="p">,</span><span class="s2">&quot;post_expt&quot;</span><span class="p">],</span>
+                            <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">forecast_names</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">posterior_forecast</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;thin wrapper around posterior_prediction</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior_prediction</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">posterior_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get posterior forecast (prediction) variances</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict : dict</span>
+<span class="sd">            a dictionary of forecast names, posterior variance pairs</span>
+
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        This method is not as easy to use as Schur.get_forecast_summary(), please</span>
+<span class="sd">        use it instead</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">__posterior_prediction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__posterior_prediction</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;propagating posterior to predictions&quot;</span><span class="p">)</span>
+
+                <span class="n">post_cov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="o">.</span><span class="n">T</span> <span class="o">*</span>\
+                            <span class="bp">self</span><span class="o">.</span><span class="n">posterior_parameter</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__posterior_prediction</span> <span class="o">=</span> <span class="p">{</span><span class="n">n</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">n</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span>
+                                          <span class="nb">zip</span><span class="p">(</span><span class="n">post_cov</span><span class="o">.</span><span class="n">row_names</span><span class="p">,</span>
+                                              <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">post_cov</span><span class="o">.</span><span class="n">x</span><span class="p">))}</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;propagating posterior to predictions&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">__posterior_prediction</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__posterior_prediction</span>
+
+<div class="viewcode-block" id="Schur.get_parameter_summary"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.sc.Schur.get_parameter_summary">[docs]</a>    <span class="k">def</span> <span class="nf">get_parameter_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">include_map</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get a summary of the parameter uncertainty</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        include_map : bool</span>
+<span class="sd">            if True, add the prior and posterior expectations</span>
+<span class="sd">            and report standard deviation instead of variance</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pandas.DataFrame : pandas.DataFrame</span>
+<span class="sd">            dataframe of prior,posterior variances and percent</span>
+<span class="sd">            uncertainty reduction of each parameter</span>
+
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        this is the primary method for accessing parameter uncertainty</span>
+<span class="sd">        estimates - use this!</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        ``&gt;&gt;&gt;import matplotlib.pyplot as plt``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;import pyemu``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;sc = pyemu.Schur(jco=&quot;pest.jcb&quot;)``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;sc = pyemu.Schur(jco=&quot;pest.jcb&quot;,forecasts=[&quot;fore1&quot;,&quot;fore2&quot;])``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;par_sum = sc.get_parameter_summary()``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;par_sum.plot(kind=&quot;bar&quot;)``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;plt.show()``</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">prior_mat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">posterior_parameter</span><span class="o">.</span><span class="n">col_names</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">prior_mat</span><span class="o">.</span><span class="n">isdiagonal</span><span class="p">:</span>
+            <span class="n">prior</span> <span class="o">=</span> <span class="n">prior_mat</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">prior</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">prior_mat</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">post</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">posterior_parameter</span><span class="o">.</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">include_map</span><span class="p">:</span>
+            <span class="n">par_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_parameter_estimate</span>
+            <span class="n">prior</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">prior</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="n">prior_mat</span><span class="o">.</span><span class="n">col_names</span><span class="p">)</span>
+            <span class="n">islog</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span><span class="n">partrans</span> <span class="o">==</span> <span class="s2">&quot;log&quot;</span>
+            <span class="n">par_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">islog</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">par_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">islog</span><span class="p">,:])</span>
+            <span class="n">par_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;prior_stdev&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prior</span>
+            <span class="n">post</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">post</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="n">prior</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+            <span class="n">par_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;post_stdev&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">post</span>
+            <span class="n">par_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;is_log&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">islog</span>
+            <span class="k">return</span> <span class="n">par_data</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ureduce</span> <span class="o">=</span> <span class="mf">100.0</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span><span class="n">post</span> <span class="o">/</span> <span class="n">prior</span><span class="p">))</span>
+
+            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;prior_var&quot;</span><span class="p">:</span><span class="n">prior</span><span class="p">,</span><span class="s2">&quot;post_var&quot;</span><span class="p">:</span><span class="n">post</span><span class="p">,</span>
+                                     <span class="s2">&quot;percent_reduction&quot;</span><span class="p">:</span><span class="n">ureduce</span><span class="p">},</span>
+                                    <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">posterior_parameter</span><span class="o">.</span><span class="n">col_names</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Schur.get_forecast_summary"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.sc.Schur.get_forecast_summary">[docs]</a>    <span class="k">def</span> <span class="nf">get_forecast_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">include_map</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get a summary of the forecast uncertainty</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        include_map : bool</span>
+<span class="sd">            if True, add the prior and posterior expectations</span>
+<span class="sd">            and report standard deviation instead of variance</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pandas.DataFrame : pandas.DataFrame</span>
+<span class="sd">                dataframe of prior,posterior variances and percent</span>
+<span class="sd">                uncertainty reduction of each parameter</span>
+
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        this is the primary method for accessing forecast uncertainty</span>
+<span class="sd">        estimates - use this!</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        ``&gt;&gt;&gt;import matplotlib.pyplot as plt``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;import pyemu``</span>
+
+<span class="sd">        This usage assumes you have set the ``++forecasts()`` argument in the</span>
+<span class="sd">        control file:</span>
+
+<span class="sd">        ``&gt;&gt;&gt;sc = pyemu.Schur(jco=&quot;pest.jcb&quot;)``</span>
+
+<span class="sd">        or, you can pass the forecasts directly, assuming the forecasts are</span>
+<span class="sd">        names of zero-weight observations:</span>
+
+<span class="sd">        ``&gt;&gt;&gt;sc = pyemu.Schur(jco=&quot;pest.jcb&quot;,forecasts=[&quot;fore1&quot;,&quot;fore2&quot;])``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;fore_sum = sc.get_forecast_summary()``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;fore_sum.plot(kind=&quot;bar&quot;)``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;plt.show()``</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">sum</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;prior_var&quot;</span><span class="p">:[],</span> <span class="s2">&quot;post_var&quot;</span><span class="p">:[],</span> <span class="s2">&quot;percent_reduction&quot;</span><span class="p">:[]}</span>
+        <span class="k">for</span> <span class="n">forecast</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_forecast</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">pr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_forecast</span><span class="p">[</span><span class="n">forecast</span><span class="p">]</span>
+            <span class="n">pt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior_forecast</span><span class="p">[</span><span class="n">forecast</span><span class="p">]</span>
+            <span class="n">ur</span> <span class="o">=</span> <span class="mf">100.0</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="p">(</span><span class="n">pt</span><span class="o">/</span><span class="n">pr</span><span class="p">))</span>
+            <span class="nb">sum</span><span class="p">[</span><span class="s2">&quot;prior_var&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pr</span><span class="p">)</span>
+            <span class="nb">sum</span><span class="p">[</span><span class="s2">&quot;post_var&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pt</span><span class="p">)</span>
+            <span class="nb">sum</span><span class="p">[</span><span class="s2">&quot;percent_reduction&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ur</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="nb">sum</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_forecast</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">include_map</span><span class="p">:</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;prior_stdev&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;prior_var&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">)</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;post_stdev&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;post_var&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">)</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;percent_reduction&quot;</span><span class="p">)</span>
+            <span class="n">forecast_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">map_forecast_estimate</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;prior_expt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">forecast_map</span><span class="o">.</span><span class="n">prior_expt</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;post_expt&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">forecast_map</span><span class="o">.</span><span class="n">post_expt</span>
+            <span class="k">return</span> <span class="n">df</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="nb">sum</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_forecast</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span></div>
+
+    <span class="k">def</span> <span class="nf">__contribution_from_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter_names</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;private method get the prior and posterior uncertainty reduction as a result of</span>
+<span class="sd">        some parameter becoming perfectly known</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        parameter_names : list</span>
+<span class="sd">            parameter that are perfectly known</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict : dict</span>
+<span class="sd">            dictionary of forecast name,  [prior uncertainty w/o parameter_names,</span>
+<span class="sd">                % posterior uncertainty w/o parameter names]</span>
+
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        this method is used by get_parameter_contribution() method - don&#39;t</span>
+<span class="sd">        call this method directly</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+
+        <span class="c1">#get the prior and posterior for the base case</span>
+        <span class="n">bprior</span><span class="p">,</span><span class="n">bpost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_prediction</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior_prediction</span>
+        <span class="c1">#get the prior and posterior for the conditioned case</span>
+        <span class="n">la_cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_conditional_instance</span><span class="p">(</span><span class="n">parameter_names</span><span class="p">)</span>
+        <span class="n">cprior</span><span class="p">,</span><span class="n">cpost</span> <span class="o">=</span> <span class="n">la_cond</span><span class="o">.</span><span class="n">prior_prediction</span><span class="p">,</span> <span class="n">la_cond</span><span class="o">.</span><span class="n">posterior_prediction</span>
+        <span class="k">return</span> <span class="n">cprior</span><span class="p">,</span><span class="n">cpost</span>
+
+<div class="viewcode-block" id="Schur.get_conditional_instance"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.sc.Schur.get_conditional_instance">[docs]</a>    <span class="k">def</span> <span class="nf">get_conditional_instance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter_names</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; get a new Schur instance that includes conditional update from</span>
+<span class="sd">        some parameters becoming known perfectly</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        parameter_names : list</span>
+<span class="sd">            parameters that are to be treated as notionally perfectly</span>
+<span class="sd">            known</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        la_cond : Schur</span>
+<span class="sd">            a new Schur instance conditional on perfect knowledge</span>
+<span class="sd">            of some parameters</span>
+
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        this method is used by the get_parameter_contribution() method -</span>
+<span class="sd">        don&#39;t call this method directly</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">parameter_names</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">parameter_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">parameter_names</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">iname</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">parameter_names</span><span class="p">):</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">parameter_names</span><span class="p">[</span><span class="n">iname</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+            <span class="k">assert</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">col_names</span><span class="p">,</span>\
+                <span class="s2">&quot;contribution parameter &quot;</span> <span class="o">+</span> <span class="n">name</span> <span class="o">+</span> <span class="s2">&quot; not found jco&quot;</span>
+        <span class="n">keep_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">col_names</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
+                <span class="n">keep_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">keep_names</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Schur.contribution_from_Parameters &quot;</span> <span class="o">+</span>
+                            <span class="s2">&quot;atleast one parameter must remain uncertain&quot;</span><span class="p">)</span>
+        <span class="c1">#get the reduced predictions</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Schur.contribution_from_Parameters &quot;</span> <span class="o">+</span>
+                            <span class="s2">&quot;no predictions have been set&quot;</span><span class="p">)</span>
+        <span class="c1"># cond_preds = []</span>
+        <span class="c1"># for pred in self.predictions:</span>
+        <span class="c1">#     cond_preds.append(pred.get(keep_names, pred.col_names))</span>
+        <span class="n">cond_preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predictions</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">row_names</span><span class="o">=</span><span class="n">keep_names</span><span class="p">)</span>
+        <span class="n">la_cond</span> <span class="o">=</span> <span class="n">Schur</span><span class="p">(</span><span class="n">jco</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">row_names</span><span class="p">,</span> <span class="n">keep_names</span><span class="p">),</span>
+                        <span class="n">parcov</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="o">.</span><span class="n">condition_on</span><span class="p">(</span><span class="n">parameter_names</span><span class="p">),</span>
+                        <span class="n">obscov</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">obscov</span><span class="p">,</span> <span class="n">predictions</span><span class="o">=</span><span class="n">cond_preds</span><span class="p">,</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">la_cond</span></div>
+
+<div class="viewcode-block" id="Schur.get_par_contribution"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.sc.Schur.get_par_contribution">[docs]</a>    <span class="k">def</span> <span class="nf">get_par_contribution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">parlist_dict</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get a dataframe the prior and posterior uncertainty</span>
+<span class="sd">        reduction as a result of some parameter becoming perfectly known</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        parlist_dict : dict</span>
+<span class="sd">            a nested dictionary-list of groups of parameters</span>
+<span class="sd">            that are to be treated as perfectly known.  key values become</span>
+<span class="sd">            row labels in returned dataframe.  If None, each adjustable parameter</span>
+<span class="sd">            is sequentially treated as known and the returned dataframe</span>
+<span class="sd">            has row labels for each adjustable parameter</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pandas.DataFrame : pandas.DataFrame</span>
+<span class="sd">            a dataframe that summarizes the parameter contribution analysis.</span>
+<span class="sd">            The dataframe has index (row labels) of the keys in parlist_dict</span>
+<span class="sd">            and a column labels of forecast names.  The values in the dataframe</span>
+<span class="sd">            are the posterior variance of the forecast conditional on perfect</span>
+<span class="sd">            knowledge of the parameters in the values of parlist_dict</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        ``&gt;&gt;&gt;import pyemu``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;sc = pyemu.Schur(jco=&quot;pest.jcb&quot;)``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;df = sc.get_par_contribution()``</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;calculating contribution from parameters&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">parlist_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">parlist_dict</span> <span class="o">=</span> <span class="p">{}</span><span class="c1">#dict(zip(self.pst.adj_par_names,self.pst.adj_par_names))</span>
+            <span class="c1"># make sure all of the adjustable pars are in the jco</span>
+            <span class="k">for</span> <span class="n">pname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">adj_par_names</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">col_names</span><span class="p">:</span>
+                    <span class="n">parlist_dict</span><span class="p">[</span><span class="n">pname</span><span class="p">]</span> <span class="o">=</span> <span class="n">pname</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">parlist_dict</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">:</span>
+                <span class="n">parlist_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">parlist_dict</span><span class="p">,</span><span class="n">parlist_dict</span><span class="p">))</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">forecast</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_forecast</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">pr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_forecast</span><span class="p">[</span><span class="n">forecast</span><span class="p">]</span>
+            <span class="n">pt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior_forecast</span><span class="p">[</span><span class="n">forecast</span><span class="p">]</span>
+            <span class="c1">#reduce = 100.0 * ((pr - pt) / pr)</span>
+            <span class="n">results</span><span class="p">[(</span><span class="n">forecast</span><span class="p">,</span><span class="s2">&quot;prior&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[</span><span class="n">pr</span><span class="p">]</span>
+            <span class="n">results</span><span class="p">[(</span><span class="n">forecast</span><span class="p">,</span><span class="s2">&quot;post&quot;</span><span class="p">)]</span> <span class="o">=</span> <span class="p">[</span><span class="n">pt</span><span class="p">]</span>
+            <span class="c1">#results[(forecast,&quot;percent_reduce&quot;)] = [reduce]</span>
+        <span class="k">for</span> <span class="n">case_name</span><span class="p">,</span><span class="n">par_list</span> <span class="ow">in</span> <span class="n">parlist_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">par_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">case_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;calculating contribution from: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">par_list</span><span class="p">))</span>
+            <span class="n">case_prior</span><span class="p">,</span><span class="n">case_post</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__contribution_from_parameters</span><span class="p">(</span><span class="n">par_list</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;calculating contribution from: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">par_list</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">forecast</span> <span class="ow">in</span> <span class="n">case_prior</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">pr</span> <span class="o">=</span> <span class="n">case_prior</span><span class="p">[</span><span class="n">forecast</span><span class="p">]</span>
+                <span class="n">pt</span> <span class="o">=</span> <span class="n">case_post</span><span class="p">[</span><span class="n">forecast</span><span class="p">]</span>
+                <span class="c1">#reduce = 100.0 * ((pr - pt) / pr)</span>
+                <span class="n">results</span><span class="p">[(</span><span class="n">forecast</span><span class="p">,</span> <span class="s2">&quot;prior&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pr</span><span class="p">)</span>
+                <span class="n">results</span><span class="p">[(</span><span class="n">forecast</span><span class="p">,</span> <span class="s2">&quot;post&quot;</span><span class="p">)]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pt</span><span class="p">)</span>
+                <span class="c1">#results[(forecast, &quot;percent_reduce&quot;)].append(reduce)</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">results</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="n">names</span><span class="p">)</span>
+        <span class="c1">#base = df.loc[&quot;base&quot;,df.columns.get_level_values(1)==&quot;post&quot;]</span>
+        <span class="c1">#df = 1.0 - (df.loc[:,df.columns.get_level_values(1)==&quot;post&quot;] / base)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">xs</span><span class="p">(</span><span class="s2">&quot;post&quot;</span><span class="p">,</span><span class="n">level</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">drop_level</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;calculating contribution from parameters&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="Schur.get_par_group_contribution"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.sc.Schur.get_par_group_contribution">[docs]</a>    <span class="k">def</span> <span class="nf">get_par_group_contribution</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get the forecast uncertainty contribution from each parameter</span>
+<span class="sd">        group.  Just some sugar for get_contribution_dataframe() - this method</span>
+<span class="sd">        automatically constructs the parlist_dict argument where the keys are the</span>
+<span class="sd">        group names and the values are the adjustable parameters in the groups</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pandas.DataFrame : pandas.DataFrame</span>
+<span class="sd">            a dataframe that summarizes the parameter contribution analysis.</span>
+<span class="sd">            The dataframe has index (row labels) that are the parameter groups</span>
+<span class="sd">            and a column labels of forecast names.  The values in the dataframe</span>
+<span class="sd">            are the posterior variance of the forecast conditional on perfect</span>
+<span class="sd">            knowledge of the adjustable parameters in each parameter groups</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pargrp_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">par</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span>
+        <span class="n">groups</span> <span class="o">=</span> <span class="n">par</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;pargp&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">groups</span>
+        <span class="k">for</span> <span class="n">grp</span><span class="p">,</span><span class="n">idxs</span> <span class="ow">in</span> <span class="n">groups</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="c1">#pargrp_dict[grp] = list(par.loc[idxs,&quot;parnme&quot;])</span>
+            <span class="n">pargrp_dict</span><span class="p">[</span><span class="n">grp</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">pname</span> <span class="k">for</span> <span class="n">pname</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">par</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idxs</span><span class="p">,</span><span class="s2">&quot;parnme&quot;</span><span class="p">])</span>
+                                <span class="k">if</span> <span class="n">pname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">col_names</span> <span class="ow">and</span> <span class="n">pname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="o">.</span><span class="n">row_names</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_par_contribution</span><span class="p">(</span><span class="n">pargrp_dict</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Schur.get_added_obs_importance"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.sc.Schur.get_added_obs_importance">[docs]</a>    <span class="k">def</span> <span class="nf">get_added_obs_importance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">obslist_dict</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">base_obslist</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                 <span class="n">reset_zero_weight</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get a dataframe fo the posterior uncertainty</span>
+<span class="sd">        as a results of added some observations</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        obslist_dict : dict</span>
+<span class="sd">            a nested dictionary-list of groups of observations</span>
+<span class="sd">            that are to be treated as gained.  key values become</span>
+<span class="sd">            row labels in returned dataframe. If None, then every zero-weighted</span>
+<span class="sd">            observation is tested sequentially. Default is None</span>
+<span class="sd">        base_obslist : list</span>
+<span class="sd">            observation names to treat as the &quot;existing&quot; observations.</span>
+<span class="sd">            The values of obslist_dict will be added to this list during</span>
+<span class="sd">            each test.  If None, then the values in obslist_dict will</span>
+<span class="sd">            be treated as the entire calibration dataset.  That is, there</span>
+<span class="sd">            are no existing data. Default is None.  Standard practice would</span>
+<span class="sd">            be to pass this argument as Schur.pst.nnz_obs_names.</span>
+<span class="sd">        reset_zero_weight : (boolean or float)</span>
+<span class="sd">            a flag to reset observations with zero weight in either</span>
+<span class="sd">            obslist_dict or base_obslist. The value of reset_zero_weights</span>
+<span class="sd">            can be cast to a float,then that value will be assigned to</span>
+<span class="sd">            zero weight obs.  Otherwise, zero weight obs will be given a</span>
+<span class="sd">            weight of 1.0.  Default is False.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pandas.DataFrame : pandas.DataFrame</span>
+<span class="sd">            dataframe with row labels (index) of obslist_dict.keys() and</span>
+<span class="sd">            columns of forecast_name.  The values in the dataframe are the</span>
+<span class="sd">            posterior variance of the forecasts resulting from notional inversion</span>
+<span class="sd">            using the observations in obslist_dict[key value] plus the observations</span>
+<span class="sd">            in base_obslist (if any)</span>
+
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        all observations listed in obslist_dict and base_obslist with zero</span>
+<span class="sd">        weights will be dropped unless reset_zero_weight is set</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        ``&gt;&gt;&gt;import pyemu``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;sc = pyemu.Schur(jco=&quot;pest.jcb&quot;)``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;df = sc.get_added_obs_importance(base_obslist=sc.pst.nnz_obs_names,reset_zero=True)``</span>
+
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">obslist_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">obslist_dict</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">:</span>
+                <span class="n">obslist_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">obslist_dict</span><span class="p">,</span><span class="n">obslist_dict</span><span class="p">))</span>
+
+        <span class="n">reset</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">reset_zero_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov</span><span class="o">.</span><span class="n">isdiagonal</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;cannot reset weights for non-&quot;</span><span class="o">+</span>\
+                                          <span class="s2">&quot;diagonal obscov&quot;</span><span class="p">)</span>
+            <span class="n">reset</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">weight</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">reset_zero_weight</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">weight</span> <span class="o">=</span> <span class="mf">1.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">statement</span><span class="p">(</span><span class="s2">&quot;resetting zero weights to </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">weight</span><span class="p">))</span>
+            <span class="c1"># make copies of the original obscov and pst</span>
+            <span class="c1">#org_obscov = self.obscov.get(self.obscov.row_names)</span>
+            <span class="n">org_obscov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">org_pst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+        <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span>
+        <span class="n">obs</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">obsnme</span>
+
+        <span class="c1"># if we don&#39;t care about grouping obs, then just reset all weights at once</span>
+        <span class="k">if</span> <span class="n">base_obslist</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">obslist_dict</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">reset</span><span class="p">:</span>
+            <span class="n">onames</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">zero_weight_obs_names</span>
+                      <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">obs_names</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov</span><span class="o">.</span><span class="n">row_names</span><span class="p">]</span>
+            <span class="n">obs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">onames</span><span class="p">,</span><span class="s2">&quot;weight&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">weight</span>
+
+        <span class="c1"># if needed reset the zero-weight obs in base_obslist</span>
+        <span class="k">if</span> <span class="n">base_obslist</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">reset</span><span class="p">:</span>
+            <span class="c1"># check for zero</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;resetting zero weight obs in base_obslist&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">adjust_weights_by_list</span><span class="p">(</span><span class="n">base_obslist</span><span class="p">,</span> <span class="n">weight</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;resetting zero weight obs in base_obslist&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">base_obslist</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">base_obslist</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># if needed reset the zero-weight obs in obslist_dict</span>
+        <span class="k">if</span> <span class="n">obslist_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">reset</span><span class="p">:</span>
+            <span class="n">z_obs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">case</span><span class="p">,</span><span class="n">obslist</span> <span class="ow">in</span> <span class="n">obslist_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+                    <span class="n">obslist_dict</span><span class="p">[</span><span class="n">case</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">obslist</span><span class="p">]</span>
+                    <span class="n">obslist</span> <span class="o">=</span> <span class="p">[</span><span class="n">obslist</span><span class="p">]</span>
+                <span class="n">inboth</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">base_obslist</span><span class="p">)</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">obslist</span><span class="p">))</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">inboth</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;observation(s) listed in both &quot;</span><span class="o">+</span>\
+                                    <span class="s2">&quot;base_obslist and obslist_dict: &quot;</span><span class="o">+</span>\
+                                    <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">inboth</span><span class="p">))</span>
+                <span class="n">z_obs</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;resetting zero weight obs in obslist_dict&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">adjust_weights_by_list</span><span class="p">(</span><span class="n">z_obs</span><span class="p">,</span> <span class="n">weight</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;resetting zero weight obs in obslist_dict&quot;</span><span class="p">)</span>
+
+        <span class="c1"># for a comprehensive obslist_dict</span>
+        <span class="k">if</span> <span class="n">obslist_dict</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">reset</span><span class="p">:</span>
+            <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span>
+            <span class="n">obs</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">obsnme</span>
+            <span class="n">onames</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">zero_weight_obs_names</span>
+                      <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">obs_names</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov</span><span class="o">.</span><span class="n">row_names</span><span class="p">]</span>
+            <span class="n">obs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">onames</span><span class="p">,</span><span class="s2">&quot;weight&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">weight</span>
+
+        <span class="k">if</span> <span class="n">obslist_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">obslist_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">nnz_obs_names</span> <span class="k">if</span> <span class="n">name</span>\
+                            <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">obs_names</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov</span><span class="o">.</span><span class="n">row_names</span><span class="p">}</span>
+
+        <span class="c1"># reset the obs cov from the newly adjusted weights</span>
+        <span class="k">if</span> <span class="n">reset</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;resetting self.obscov&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset_obscov</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;resetting self.obscov&quot;</span><span class="p">)</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">base_obslist</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">base_obslist</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">statement</span><span class="p">(</span><span class="s2">&quot;no base observation passed, &#39;base&#39; case&quot;</span><span class="o">+</span>
+                                  <span class="s2">&quot; is just the prior of the forecasts&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">forecast</span><span class="p">,</span><span class="n">pr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_forecast</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">results</span><span class="p">[</span><span class="n">forecast</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">pr</span><span class="p">]</span>
+            <span class="c1"># reset base obslist for use later</span>
+            <span class="n">base_obslist</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">base_posterior</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">par_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">par_names</span><span class="p">,</span>
+                                      <span class="n">obs_names</span><span class="o">=</span><span class="n">base_obslist</span><span class="p">)</span><span class="o">.</span><span class="n">posterior_forecast</span>
+            <span class="k">for</span> <span class="n">forecast</span><span class="p">,</span><span class="n">pt</span> <span class="ow">in</span> <span class="n">base_posterior</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">results</span><span class="p">[</span><span class="n">forecast</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">pt</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">case_name</span><span class="p">,</span><span class="n">obslist</span> <span class="ow">in</span> <span class="n">obslist_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">case_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+                <span class="n">obslist</span> <span class="o">=</span> <span class="p">[</span><span class="n">obslist</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;calculating importance of observations by adding: &quot;</span> <span class="o">+</span>
+                     <span class="nb">str</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="c1"># this case is the combination of the base obs plus whatever unique</span>
+            <span class="c1"># obs names in obslist</span>
+            <span class="n">case_obslist</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">base_obslist</span><span class="p">)</span>
+            <span class="n">dedup_obslist</span> <span class="o">=</span> <span class="p">[</span><span class="n">oname</span> <span class="k">for</span> <span class="n">oname</span> <span class="ow">in</span> <span class="n">obslist</span> <span class="k">if</span> <span class="n">oname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">case_obslist</span><span class="p">]</span>
+            <span class="n">case_obslist</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">dedup_obslist</span><span class="p">)</span>
+            <span class="c1">#print(self.pst.observation_data.loc[case_obslist,:])</span>
+            <span class="n">case_post</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">par_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">par_names</span><span class="p">,</span>
+                                 <span class="n">obs_names</span><span class="o">=</span><span class="n">case_obslist</span><span class="p">)</span><span class="o">.</span><span class="n">posterior_forecast</span>
+            <span class="k">for</span> <span class="n">forecast</span><span class="p">,</span><span class="n">pt</span> <span class="ow">in</span> <span class="n">case_post</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">results</span><span class="p">[</span><span class="n">forecast</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pt</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;calculating importance of observations by adding: &quot;</span> <span class="o">+</span>
+                     <span class="nb">str</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">results</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="n">names</span><span class="p">)</span>
+
+
+        <span class="k">if</span> <span class="n">reset</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset_obscov</span><span class="p">(</span><span class="n">org_obscov</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset_pst</span><span class="p">(</span><span class="n">org_pst</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="Schur.get_removed_obs_importance"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.sc.Schur.get_removed_obs_importance">[docs]</a>    <span class="k">def</span> <span class="nf">get_removed_obs_importance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">obslist_dict</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                   <span class="n">reset_zero_weight</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;get a dataframe the posterior uncertainty</span>
+<span class="sd">        as a result of losing some observations</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        obslist_dict : dict</span>
+<span class="sd">            dictionary of groups of observations</span>
+<span class="sd">            that are to be treated as lost.  key values become</span>
+<span class="sd">            row labels in returned dataframe. If None, then test every</span>
+<span class="sd">            (nonzero weight - see reset_zero_weight) observation</span>
+<span class="sd">        reset_zero_weight : bool or float</span>
+<span class="sd">            a flag to reset observations with zero weight in obslist_dict.</span>
+<span class="sd">            If the value of reset_zero_weights can be cast to a float,</span>
+<span class="sd">            then that value will be assigned to zero weight obs.  Otherwise,</span>
+<span class="sd">            zero weight obs will be given a weight of 1.0</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pandas.DataFrame : pandas.DataFrame</span>
+<span class="sd">            a dataframe with index of obslist_dict.keys() and columns</span>
+<span class="sd">            of forecast names.  The values in the dataframe are the posterior</span>
+<span class="sd">            variances of the forecasts resulting from losing the information</span>
+<span class="sd">            contained in obslist_dict[key value]</span>
+
+<span class="sd">        Note</span>
+<span class="sd">        ----</span>
+<span class="sd">        all observations listed in obslist_dict with zero</span>
+<span class="sd">        weights will be dropped unless reset_zero_weight is set</span>
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        ``&gt;&gt;&gt;import pyemu``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;sc = pyemu.Schur(jco=&quot;pest.jcb&quot;)``</span>
+
+<span class="sd">        ``df = sc.get_removed_obs_importance()``</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+
+        <span class="k">if</span> <span class="n">obslist_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">obslist_dict</span><span class="p">)</span> <span class="o">==</span> <span class="nb">list</span><span class="p">:</span>
+                <span class="n">obslist_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">obslist_dict</span><span class="p">,</span><span class="n">obslist_dict</span><span class="p">))</span>
+
+        <span class="k">elif</span> <span class="n">reset_zero_weight</span> <span class="ow">is</span> <span class="kc">False</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">nnz_obs</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;not resetting weights and there are no non-zero weight obs to remove&quot;</span><span class="p">)</span>
+
+        <span class="n">reset</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">reset_zero_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov</span><span class="o">.</span><span class="n">isdiagonal</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;cannot reset weights for non-&quot;</span><span class="o">+</span>\
+                                          <span class="s2">&quot;diagonal obscov&quot;</span><span class="p">)</span>
+            <span class="n">reset</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">weight</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">reset_zero_weight</span><span class="p">)</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">weight</span> <span class="o">=</span> <span class="mf">1.0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">statement</span><span class="p">(</span><span class="s2">&quot;resetting zero weights to </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">weight</span><span class="p">))</span>
+            <span class="c1"># make copies of the original obscov and pst</span>
+            <span class="n">org_obscov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obscov</span><span class="o">.</span><span class="n">row_names</span><span class="p">)</span>
+            <span class="n">org_pst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;calculating importance of observations&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">reset</span> <span class="ow">and</span> <span class="n">obslist_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span>
+            <span class="n">onames</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">zero_weight_obs_names</span>
+                      <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">obs_names</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">obscov</span><span class="o">.</span><span class="n">row_names</span><span class="p">]</span>
+            <span class="n">obs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">onames</span><span class="p">,</span><span class="s2">&quot;weight&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">weight</span>
+
+        <span class="k">if</span> <span class="n">obslist_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">obslist_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">nnz_obs_names</span><span class="p">,</span>
+                                        <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">nnz_obs_names</span><span class="p">))</span>
+
+
+        <span class="k">elif</span> <span class="n">reset</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span><span class="o">.</span><span class="n">obsnme</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span><span class="n">obslist</span> <span class="ow">in</span> <span class="n">obslist_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;resetting weights in obs in group </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">adjust_weights_by_list</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span><span class="n">weight</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;resetting weights in obs in group </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">case</span><span class="p">,</span><span class="n">obslist</span> <span class="ow">in</span> <span class="n">obslist_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+                <span class="n">obslist</span> <span class="o">=</span> <span class="p">[</span><span class="n">obslist</span><span class="p">]</span>
+            <span class="n">obslist_dict</span><span class="p">[</span><span class="n">case</span><span class="p">]</span> <span class="o">=</span> <span class="n">obslist</span>
+
+
+        <span class="k">if</span> <span class="n">reset</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;resetting self.obscov&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset_obscov</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;resetting self.obscov&quot;</span><span class="p">)</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">forecast</span><span class="p">,</span><span class="n">pt</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">posterior_forecast</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">results</span><span class="p">[</span><span class="n">forecast</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">pt</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">case_name</span><span class="p">,</span><span class="n">obslist</span> <span class="ow">in</span> <span class="n">obslist_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obslist</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+                <span class="n">obslist</span> <span class="o">=</span> <span class="p">[</span><span class="n">obslist</span><span class="p">]</span>
+            <span class="n">names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">case_name</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;calculating importance of observations by removing: &quot;</span> <span class="o">+</span>
+                     <span class="nb">str</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="c1"># check for missing names</span>
+            <span class="n">missing_onames</span> <span class="o">=</span> <span class="p">[</span><span class="n">oname</span> <span class="k">for</span> <span class="n">oname</span> <span class="ow">in</span> <span class="n">obslist</span> <span class="k">if</span> <span class="n">oname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">obs_names</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">missing_onames</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;case </span><span class="si">{0}</span><span class="s2"> has observation names &quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">case_name</span><span class="p">)</span> <span class="o">+</span> \
+                                <span class="s2">&quot;not found: &quot;</span> <span class="o">+</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing_onames</span><span class="p">))</span>
+            <span class="c1"># find the set difference between obslist and jco obs names</span>
+            <span class="c1">#diff_onames = [oname for oname in self.jco.obs_names if oname not in obslist]</span>
+            <span class="n">diff_onames</span> <span class="o">=</span> <span class="p">[</span><span class="n">oname</span> <span class="k">for</span> <span class="n">oname</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">nnz_obs_names</span> <span class="k">if</span> <span class="n">oname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">obslist</span> <span class="ow">and</span> <span class="n">oname</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecast_names</span><span class="p">]</span>
+
+
+            <span class="c1"># calculate the increase in forecast variance by not using the obs</span>
+            <span class="c1"># in obslist</span>
+            <span class="n">case_post</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">par_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">par_names</span><span class="p">,</span>
+                                 <span class="n">obs_names</span><span class="o">=</span><span class="n">diff_onames</span><span class="p">)</span><span class="o">.</span><span class="n">posterior_forecast</span>
+
+            <span class="k">for</span> <span class="n">forecast</span><span class="p">,</span><span class="n">pt</span> <span class="ow">in</span> <span class="n">case_post</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">results</span><span class="p">[</span><span class="n">forecast</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pt</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">results</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="n">names</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;calculating importance of observations by removing: &quot;</span> <span class="o">+</span>
+                     <span class="nb">str</span><span class="p">(</span><span class="n">obslist</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">reset</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset_obscov</span><span class="p">(</span><span class="n">org_obscov</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset_pst</span><span class="p">(</span><span class="n">org_pst</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="Schur.obs_group_importance"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.sc.Schur.obs_group_importance">[docs]</a>    <span class="k">def</span> <span class="nf">obs_group_importance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">obsgrp_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">obs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span>
+        <span class="n">obs</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">obsnme</span>
+        <span class="n">obs</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">jco</span><span class="o">.</span><span class="n">row_names</span><span class="p">,:]</span>
+        <span class="n">groups</span> <span class="o">=</span> <span class="n">obs</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s2">&quot;obgnme&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">groups</span>
+        <span class="k">for</span> <span class="n">grp</span><span class="p">,</span> <span class="n">idxs</span> <span class="ow">in</span> <span class="n">groups</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">obsgrp_dict</span><span class="p">[</span><span class="n">grp</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">obs</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">idxs</span><span class="p">,</span><span class="s2">&quot;obsnme&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">obsgrp_dict</span></div>
+        
+<div class="viewcode-block" id="Schur.get_removed_obs_group_importance"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.sc.Schur.get_removed_obs_group_importance">[docs]</a>    <span class="k">def</span> <span class="nf">get_removed_obs_group_importance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_removed_obs_importance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_group_importance</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Schur.get_added_obs_group_importance"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.sc.Schur.get_added_obs_group_importance">[docs]</a>    <span class="k">def</span> <span class="nf">get_added_obs_group_importance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_added_obs_importance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">obs_group_importance</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="Schur.next_most_important_added_obs"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.sc.Schur.next_most_important_added_obs">[docs]</a>    <span class="k">def</span> <span class="nf">next_most_important_added_obs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">forecast</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">niter</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">obslist_dict</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                      <span class="n">base_obslist</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                      <span class="n">reset_zero_weight</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;find the most important observation(s) by sequentially evaluating</span>
+<span class="sd">        the importance of the observations in obslist_dict. The most important observations</span>
+<span class="sd">        from each iteration is added to base_obslist and removed obslist_dict for the</span>
+<span class="sd">        next iteration.  In this way, the added observation importance values include</span>
+<span class="sd">        the conditional information from the last iteration.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        forecast : str</span>
+<span class="sd">            name of the forecast to use in the ranking process.  If</span>
+<span class="sd">            more than one forecast has been listed, this argument is required</span>
+<span class="sd">        niter : int</span>
+<span class="sd">            number of sequential iterations</span>
+<span class="sd">        obslist_dict dict:</span>
+<span class="sd">            nested dictionary-list of  groups of observations</span>
+<span class="sd">            that are to be treated as gained.  key values become</span>
+<span class="sd">            row labels in result dataframe. If None, then test every observation</span>
+<span class="sd">            individually</span>
+<span class="sd">        base_obslist : list</span>
+<span class="sd">            observation names to treat as the &quot;existing&quot; observations.</span>
+<span class="sd">            The values of obslist_dict will be added to this list during testing.</span>
+<span class="sd">            If None, then each list in the values of obslist_dict will be</span>
+<span class="sd">            treated as an individual calibration dataset.</span>
+<span class="sd">        reset_zero_weight : (boolean or float)</span>
+<span class="sd">            a flag to reset observations with zero weight in either</span>
+<span class="sd">            obslist_dict or base_obslist. If the value of reset_zero_weights</span>
+<span class="sd">            can be cast to a float,then that value will be assigned to</span>
+<span class="sd">            zero weight obs.  Otherwise, zero weight obs will be given a weight of 1.0</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pandas.DataFrame : pandas.DataFrame</span>
+<span class="sd">            DataFrame with columns of best obslist_dict key for each iteration.</span>
+<span class="sd">            Columns of forecast variance percent reduction for this iteration,</span>
+<span class="sd">            (percent reduction compared to initial base case)</span>
+
+
+<span class="sd">        Example</span>
+<span class="sd">        -------</span>
+<span class="sd">        ``&gt;&gt;&gt;import pyemu``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;sc = pyemu.Schur(jco=&quot;pest.jcb&quot;)``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;df = sc.next_most_added_importance_obs(forecast=&quot;fore1&quot;,``</span>
+
+<span class="sd">        ``&gt;&gt;&gt;      base_obslist=sc.pst.nnz_obs_names,reset_zero=True``</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+
+        <span class="k">if</span> <span class="n">forecast</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasts</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span><span class="s2">&quot;forecast arg list one and only one&quot;</span> <span class="o">+</span>\
+                                            <span class="s2">&quot; forecast&quot;</span>
+            <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">col_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1">#elif forecast not in self.prediction_arg:</span>
+        <span class="c1">#    raise Exception(&quot;forecast {0} not found&quot;.format(forecast))</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">forecast</span> <span class="o">=</span> <span class="n">forecast</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="n">found</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">fore</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasts</span><span class="o">.</span><span class="n">col_names</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">fore</span> <span class="o">==</span> <span class="n">forecast</span><span class="p">:</span>
+                    <span class="n">found</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="k">break</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;forecast </span><span class="si">{0}</span><span class="s2"> not found&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">forecast</span><span class="p">))</span>
+
+
+
+
+        <span class="k">if</span> <span class="n">base_obslist</span><span class="p">:</span>
+            <span class="n">obs_being_used</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">base_obslist</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">obs_being_used</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">best_case</span><span class="p">,</span> <span class="n">best_results</span> <span class="o">=</span> <span class="p">[],[]</span>
+        <span class="k">for</span> <span class="n">iiter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">niter</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;next most important added obs iteration </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">iiter</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_added_obs_importance</span><span class="p">(</span><span class="n">obslist_dict</span><span class="o">=</span><span class="n">obslist_dict</span><span class="p">,</span>
+                                                   <span class="n">base_obslist</span><span class="o">=</span><span class="n">obs_being_used</span><span class="p">,</span>
+                                                   <span class="n">reset_zero_weight</span><span class="o">=</span><span class="n">reset_zero_weight</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">iiter</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">init_base</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">,</span><span class="n">forecast</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="n">fore_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="n">forecast</span><span class="p">]</span>
+            <span class="n">fore_diff_df</span> <span class="o">=</span> <span class="n">fore_df</span> <span class="o">-</span> <span class="n">fore_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">]</span>
+            <span class="n">fore_diff_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">iter_best_name</span> <span class="o">=</span> <span class="n">fore_diff_df</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">iter_best_result</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">iter_best_name</span><span class="p">,</span><span class="n">forecast</span><span class="p">]</span>
+            <span class="n">iter_base_result</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">,</span><span class="n">forecast</span><span class="p">]</span>
+            <span class="n">diff_percent_init</span> <span class="o">=</span> <span class="mf">100.0</span> <span class="o">*</span> <span class="p">(</span><span class="n">init_base</span> <span class="o">-</span>
+                                              <span class="n">iter_best_result</span><span class="p">)</span> <span class="o">/</span> <span class="n">init_base</span>
+            <span class="n">diff_percent_iter</span> <span class="o">=</span> <span class="mf">100.0</span> <span class="o">*</span> <span class="p">(</span><span class="n">iter_base_result</span> <span class="o">-</span>
+                                              <span class="n">iter_best_result</span><span class="p">)</span> <span class="o">/</span> <span class="n">iter_base_result</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;next most important added obs iteration </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">iiter</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+
+
+            <span class="n">best_results</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">iter_best_name</span><span class="p">,</span><span class="n">iter_best_result</span><span class="p">,</span>
+                                 <span class="n">diff_percent_iter</span><span class="p">,</span><span class="n">diff_percent_init</span><span class="p">])</span>
+            <span class="n">best_case</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">iter_best_name</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">iter_best_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;base&quot;</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="k">if</span> <span class="n">obslist_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">onames</span> <span class="o">=</span> <span class="p">[</span><span class="n">iter_best_name</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">onames</span> <span class="o">=</span> <span class="n">obslist_dict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">iter_best_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">onames</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+                <span class="n">onames</span> <span class="o">=</span> <span class="p">[</span><span class="n">onames</span><span class="p">]</span>
+            <span class="n">obs_being_used</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">onames</span><span class="p">)</span>
+        <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;best_obs&quot;</span><span class="p">,</span><span class="n">forecast</span><span class="o">+</span><span class="s2">&quot;_variance&quot;</span><span class="p">,</span>
+                   <span class="s2">&quot;unc_reduce_iter_base&quot;</span><span class="p">,</span><span class="s2">&quot;unc_reduce_initial_base&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">best_results</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="n">best_case</span><span class="p">,</span><span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Schur.next_most_par_contribution"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.sc.Schur.next_most_par_contribution">[docs]</a>    <span class="k">def</span> <span class="nf">next_most_par_contribution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">niter</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span><span class="n">forecast</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">parlist_dict</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;find the largest parameter(s) contribution for prior and posterior</span>
+<span class="sd">        forecast  by sequentially evaluating the contribution of parameters in</span>
+<span class="sd">        parlist_dict.  The largest contributing parameters from each iteration are</span>
+<span class="sd">        treated as known perfectly for the remaining iterations.  In this way, the</span>
+<span class="sd">        next iteration seeks the next most influential group of parameters.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        forecast : str</span>
+<span class="sd">            name of the forecast to use in the ranking process.  If</span>
+<span class="sd">            more than one forecast has been listed, this argument is required</span>
+<span class="sd">        parlist_dict : dict</span>
+<span class="sd">            a nested dictionary-list of groups of parameters</span>
+<span class="sd">            that are to be treated as perfectly known.  key values become</span>
+<span class="sd">            row labels in dataframe</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        pandas.DataFrame : pandas.DataFrame</span>
+<span class="sd">            a dataframe with index of iteration number and columns</span>
+<span class="sd">            of parlist_dict keys.  The values are the results of the knowing</span>
+<span class="sd">            each parlist_dict entry expressed as posterior variance reduction</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">forecast</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecasts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span><span class="s2">&quot;forecast arg list one and only one&quot;</span> <span class="o">+</span>\
+                                            <span class="s2">&quot; forecast&quot;</span>
+        <span class="k">elif</span> <span class="n">forecast</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">prediction_arg</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;forecast </span><span class="si">{0}</span><span class="s2"> not found&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">forecast</span><span class="p">))</span>
+        <span class="n">org_parcov</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">row_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="o">.</span><span class="n">row_names</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">parlist_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">parlist_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">adj_par_names</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">adj_par_names</span><span class="p">))</span>
+
+        <span class="n">base_prior</span><span class="p">,</span><span class="n">base_post</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_forecast</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">posterior_forecast</span>
+        <span class="n">iter_results</span> <span class="o">=</span> <span class="p">[</span><span class="n">base_post</span><span class="p">[</span><span class="n">forecast</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()]</span>
+        <span class="n">iter_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">iiter</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">niter</span><span class="p">):</span>
+            <span class="n">iter_contrib</span> <span class="o">=</span> <span class="p">{</span><span class="n">forecast</span><span class="p">:[</span><span class="n">base_post</span><span class="p">[</span><span class="n">forecast</span><span class="p">]]}</span>
+            <span class="n">iter_case_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;next most par iteration </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">iiter</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+
+            <span class="k">for</span> <span class="n">case</span><span class="p">,</span><span class="n">parlist</span> <span class="ow">in</span> <span class="n">parlist_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">iter_case_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">case</span><span class="p">)</span>
+                <span class="n">la_cond</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_conditional_instance</span><span class="p">(</span><span class="n">parlist</span><span class="p">)</span>
+                <span class="n">iter_contrib</span><span class="p">[</span><span class="n">forecast</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">la_cond</span><span class="o">.</span><span class="n">posterior_forecast</span><span class="p">[</span><span class="n">forecast</span><span class="p">])</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">iter_contrib</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="n">iter_case_names</span><span class="p">)</span>
+            <span class="n">df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="n">forecast</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">iter_best</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">statement</span><span class="p">(</span><span class="s2">&quot;next best iter </span><span class="si">{0}</span><span class="s2">: </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">iiter</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">iter_best</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;next most par iteration </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">iiter</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">iter_best</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;base&quot;</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">iter_results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">iter_best</span><span class="p">,</span><span class="n">forecast</span><span class="p">])</span>
+            <span class="n">iter_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">iter_best</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reset_parcov</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parcov</span><span class="o">.</span><span class="n">condition_on</span><span class="p">(</span><span class="n">parlist_dict</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">iter_best</span><span class="p">)))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">reset_parcov</span><span class="p">(</span><span class="n">org_parcov</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">iter_results</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="n">iter_names</span><span class="p">)</span></div></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Jeremy White, Mike Fienen, John Doherty.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
