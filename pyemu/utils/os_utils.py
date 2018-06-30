@@ -4,6 +4,7 @@ import platform
 import shutil
 import subprocess as sp
 import warnings
+import socket
 import time
 from datetime import datetime
 from ..pyemu_warnings import PyemuWarning
