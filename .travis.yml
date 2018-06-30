@@ -54,7 +54,7 @@ install:
   - pip install coveralls
   - pip install pyshp
   - pip install nose-timer
-  - pip intall nbsphinx
+  - pip install nbsphinx
   - pip install git+https://github.com/modflowpy/flopy.git@develop
   - pip install https://github.com/modflowpy/pymake/zipball/master
   - python setup.py install
