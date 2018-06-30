@@ -15,7 +15,7 @@ def remove_readonly(func, path, excinfo):
     func(path)
 
 def run(cmd_str,cwd='.',verbose=False):
-    """ an OS agnostic function to execute command
+    """ an OS agnostic function to execute a command line
 
     Parameters
     ----------
@@ -30,7 +30,7 @@ def run(cmd_str,cwd='.',verbose=False):
 
     Note
     ----
-    uses platform to detect OS and adds .exe or ./ as appropriate
+    uses platform to detect OS and adds .exe suffix or ./ prefix as appropriate
 
     for Windows, if os.system returns non-zero, raises exception
 
@@ -62,7 +62,7 @@ def run(cmd_str,cwd='.',verbose=False):
 
     except Exception as e:
         os.chdir(bwd)
-        raise Exception("run() raised :{0}".format(str(e)))
+        raise Exception("run() error preprocessing command line :{0}".format(str(e)))
     if verbose:
         print("run():{0}".format(cmd_str))
 
