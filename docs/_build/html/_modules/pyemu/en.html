@@ -57,7 +57,7 @@
 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="Ensemble"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.Ensemble">[docs]</a><span class="k">class</span> <span class="nc">Ensemble</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+<div class="viewcode-block" id="Ensemble"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.Ensemble">[docs]</a><span class="k">class</span> <span class="nc">Ensemble</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; The base class type for handling parameter and observation ensembles.</span>
 <span class="sd">        It is directly derived from pandas.DataFrame.  This class should not be</span>
 <span class="sd">        instantiated directly.</span>
@@ -75,7 +75,7 @@
 <span class="sd">    Ensemble : Ensemble</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Ensemble.__init__"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.Ensemble.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;constructor for base Ensemble type.  &#39;columns&#39; and &#39;mean_values&#39;</span>
 <span class="sd">          must be in the kwargs</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -88,9 +88,9 @@
 
         <span class="k">if</span> <span class="n">mean_values</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Ensemble requires &#39;mean_values&#39; kwarg&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_mean_values</span> <span class="o">=</span> <span class="n">mean_values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_mean_values</span> <span class="o">=</span> <span class="n">mean_values</span></div>
 
-<div class="viewcode-block" id="Ensemble.as_pyemu_matrix"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.Ensemble.as_pyemu_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">as_pyemu_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">typ</span><span class="o">=</span><span class="n">Matrix</span><span class="p">):</span>
+<div class="viewcode-block" id="Ensemble.as_pyemu_matrix"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.Ensemble.as_pyemu_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">as_pyemu_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">typ</span><span class="o">=</span><span class="n">Matrix</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a pyemu.Matrix from the Ensemble.</span>
 
@@ -108,7 +108,7 @@
         <span class="k">return</span> <span class="n">typ</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span><span class="n">row_names</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">),</span>
                       <span class="n">col_names</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="Ensemble.drop"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.Ensemble.drop">[docs]</a>    <span class="k">def</span> <span class="nf">drop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">arg</span><span class="p">):</span>
+<div class="viewcode-block" id="Ensemble.drop"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.Ensemble.drop">[docs]</a>    <span class="k">def</span> <span class="nf">drop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">arg</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; overload of pandas.DataFrame.drop()</span>
 
 <span class="sd">        Parameters</span>
@@ -124,7 +124,7 @@
         <span class="n">df</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Ensemble</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span><span class="n">data</span><span class="o">=</span><span class="n">df</span><span class="p">,</span><span class="n">pst</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Ensemble.dropna"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.Ensemble.dropna">[docs]</a>    <span class="k">def</span> <span class="nf">dropna</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="Ensemble.dropna"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.Ensemble.dropna">[docs]</a>    <span class="k">def</span> <span class="nf">dropna</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;overload of pandas.DataFrame.dropna()</span>
 
 <span class="sd">        Parameters</span>
@@ -142,7 +142,7 @@
         <span class="n">df</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">Ensemble</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)(</span><span class="n">data</span><span class="o">=</span><span class="n">df</span><span class="p">,</span><span class="n">pst</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Ensemble.draw"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.Ensemble.draw">[docs]</a>    <span class="k">def</span> <span class="nf">draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cov</span><span class="p">,</span><span class="n">num_reals</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">names</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Ensemble.draw"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.Ensemble.draw">[docs]</a>    <span class="k">def</span> <span class="nf">draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cov</span><span class="p">,</span><span class="n">num_reals</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">names</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; draw random realizations from a multivariate</span>
 <span class="sd">            Gaussian distribution</span>
 
@@ -201,7 +201,7 @@
     <span class="c1">#     &quot;&quot;&quot;</span>
     <span class="c1">#     raise Exception(&quot;Ensemble.enforce() must overloaded by derived types&quot;)</span>
 
-<div class="viewcode-block" id="Ensemble.plot"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.Ensemble.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bins</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;0.5&#39;</span><span class="p">,</span><span class="n">plot_cols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="Ensemble.plot"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.Ensemble.plot">[docs]</a>    <span class="k">def</span> <span class="nf">plot</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">bins</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span><span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;0.5&#39;</span><span class="p">,</span><span class="n">plot_cols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                     <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;ensemble.pdf&quot;</span><span class="p">,</span><span class="n">func_dict</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;plot ensemble histograms to multipage pdf</span>
@@ -250,7 +250,7 @@
         <span class="k">return</span> <span class="n">Ensemble</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">diff</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="Ensemble.from_dataframe"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.Ensemble.from_dataframe">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Ensemble.from_dataframe"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.Ensemble.from_dataframe">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_dataframe</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;class method constructor to create an Ensemble from</span>
 <span class="sd">        a pandas.DataFrame</span>
@@ -274,7 +274,7 @@
                 <span class="n">mean_values</span><span class="o">=</span><span class="n">mean_values</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">e</span></div>
 
-<div class="viewcode-block" id="Ensemble.reseed"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.Ensemble.reseed">[docs]</a>    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="Ensemble.reseed"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.Ensemble.reseed">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">reseed</span><span class="p">():</span>
         <span class="sd">&quot;&quot;&quot;method to reset the numpy.random seed using the pyemu.en</span>
 <span class="sd">        SEED global variable</span>
@@ -282,7 +282,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="Ensemble.copy"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.Ensemble.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="Ensemble.copy"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.Ensemble.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;make a deep copy of self</span>
 
 <span class="sd">        Returns</span>
@@ -295,7 +295,7 @@
 
 
 
-<div class="viewcode-block" id="Ensemble.covariance_matrix"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.Ensemble.covariance_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">covariance_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">localizer</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="Ensemble.covariance_matrix"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.Ensemble.covariance_matrix">[docs]</a>    <span class="k">def</span> <span class="nf">covariance_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">localizer</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;calculate the approximate covariance matrix implied by the ensemble using</span>
 <span class="sd">        mean-differencing operation at the core of EnKF</span>
 
@@ -328,7 +328,7 @@
 
 
 
-<div class="viewcode-block" id="ObservationEnsemble"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ObservationEnsemble">[docs]</a><span class="k">class</span> <span class="nc">ObservationEnsemble</span><span class="p">(</span><span class="n">Ensemble</span><span class="p">):</span>
+<div class="viewcode-block" id="ObservationEnsemble"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ObservationEnsemble">[docs]</a><span class="k">class</span> <span class="nc">ObservationEnsemble</span><span class="p">(</span><span class="n">Ensemble</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Ensemble derived type for observations.  This class is primarily used to</span>
 <span class="sd">    generate realizations of observation noise.  These are typically generated from</span>
 <span class="sd">    the weights listed in the control file.  However, a general covariance matrix can</span>
@@ -338,7 +338,7 @@
 <span class="sd">        Does not generate noise realizations for observations with zero weight</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pst</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ObservationEnsemble.__init__"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ObservationEnsemble.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pst</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;ObservationEnsemble constructor.</span>
 
 <span class="sd">        Parameters</span>
@@ -360,9 +360,9 @@
         <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;mean_values&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span><span class="o">.</span><span class="n">obsval</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">ObservationEnsemble</span><span class="p">,</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pst</span> <span class="o">=</span> <span class="n">pst</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span><span class="o">.</span><span class="n">obsnme</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span><span class="o">.</span><span class="n">obsnme</span></div>
 
-<div class="viewcode-block" id="ObservationEnsemble.copy"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ObservationEnsemble.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ObservationEnsemble.copy"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ObservationEnsemble.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;overload of Ensemble.copy()</span>
 
 <span class="sd">        Returns</span>
@@ -401,7 +401,7 @@
         <span class="k">return</span> <span class="n">vals</span>
 
 
-<div class="viewcode-block" id="ObservationEnsemble.draw"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ObservationEnsemble.draw">[docs]</a>    <span class="k">def</span> <span class="nf">draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cov</span><span class="p">,</span><span class="n">num_reals</span><span class="p">):</span>
+<div class="viewcode-block" id="ObservationEnsemble.draw"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ObservationEnsemble.draw">[docs]</a>    <span class="k">def</span> <span class="nf">draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cov</span><span class="p">,</span><span class="n">num_reals</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; draw realizations of observation noise and add to mean_values</span>
 <span class="sd">        Note: only draws noise realizations for non-zero weighted observations</span>
 <span class="sd">        zero-weighted observations are set to mean value for all realizations</span>
@@ -433,7 +433,7 @@
         <span class="k">return</span> <span class="n">ObservationEnsemble</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
                         <span class="n">pst</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">obs_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">nnz_obs_names</span><span class="p">))</span>
 
-<div class="viewcode-block" id="ObservationEnsemble.from_id_gaussian_draw"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ObservationEnsemble.from_id_gaussian_draw">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="ObservationEnsemble.from_id_gaussian_draw"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ObservationEnsemble.from_id_gaussian_draw">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_id_gaussian_draw</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">pst</span><span class="p">,</span><span class="n">num_reals</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; this is an experiemental method to help speed up independent draws</span>
 <span class="sd">        for a really large (&gt;1E6) ensemble sizes.</span>
@@ -467,7 +467,7 @@
         <span class="n">new_oe</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">pst</span><span class="o">=</span><span class="n">pst</span><span class="p">,</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">new_oe</span></div>
 
-<div class="viewcode-block" id="ObservationEnsemble.to_binary"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ObservationEnsemble.to_binary">[docs]</a>    <span class="k">def</span> <span class="nf">to_binary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+<div class="viewcode-block" id="ObservationEnsemble.to_binary"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ObservationEnsemble.to_binary">[docs]</a>    <span class="k">def</span> <span class="nf">to_binary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;write the observation ensemble to a jco-style binary file.  The</span>
 <span class="sd">        ensemble is transposed in the binary file so that the 20-char obs</span>
 <span class="sd">        names are carried</span>
@@ -490,7 +490,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">as_pyemu_matrix</span><span class="p">()</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">to_binary</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="ObservationEnsemble.from_binary"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ObservationEnsemble.from_binary">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="ObservationEnsemble.from_binary"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ObservationEnsemble.from_binary">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_binary</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">pst</span><span class="p">,</span><span class="n">filename</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;instantiate an observation obsemble from a jco-type file</span>
 
@@ -532,7 +532,7 @@
         <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">phi_vec</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="ObservationEnsemble.add_base"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ObservationEnsemble.add_base">[docs]</a>    <span class="k">def</span> <span class="nf">add_base</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ObservationEnsemble.add_base"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ObservationEnsemble.add_base">[docs]</a>    <span class="k">def</span> <span class="nf">add_base</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; add &quot;base&quot; control file values as a realization</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -541,7 +541,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">,:]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">observation_data</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span><span class="s2">&quot;obsval&quot;</span><span class="p">]</span></div></div>
 
 
-<div class="viewcode-block" id="ParameterEnsemble"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble">[docs]</a><span class="k">class</span> <span class="nc">ParameterEnsemble</span><span class="p">(</span><span class="n">Ensemble</span><span class="p">):</span>
+<div class="viewcode-block" id="ParameterEnsemble"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble">[docs]</a><span class="k">class</span> <span class="nc">ParameterEnsemble</span><span class="p">(</span><span class="n">Ensemble</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Ensemble derived type for parameters</span>
 <span class="sd">        implements bounds enforcement, log10 transformation,</span>
 <span class="sd">        fixed parameters and null-space projection</span>
@@ -570,7 +570,7 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pst</span><span class="p">,</span><span class="n">istransformed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ParameterEnsemble.__init__"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pst</span><span class="p">,</span><span class="n">istransformed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; ParameterEnsemble constructor.</span>
 
 
@@ -590,9 +590,9 @@
             <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;tied parameters are treated as fixed in &quot;</span><span class="o">+</span>\
                          <span class="s2">&quot;ParameterEnsemble&quot;</span><span class="p">,</span><span class="n">PyemuWarning</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span><span class="n">parnme</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">bound_tol</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;bound_tol&quot;</span><span class="p">,</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bound_tol</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;bound_tol&quot;</span><span class="p">,</span><span class="mf">0.0</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="ParameterEnsemble.dropna"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.dropna">[docs]</a>    <span class="k">def</span> <span class="nf">dropna</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ParameterEnsemble.dropna"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.dropna">[docs]</a>    <span class="k">def</span> <span class="nf">dropna</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;overload of pandas.DataFrame.dropna()</span>
 
 <span class="sd">        Parameters</span>
@@ -613,7 +613,7 @@
             <span class="n">pe</span><span class="o">.</span><span class="n">__istransformed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">istransformed</span>
             <span class="k">return</span> <span class="n">pe</span></div>
 
-<div class="viewcode-block" id="ParameterEnsemble.copy"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ParameterEnsemble.copy"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; overload of Ensemble.copy()</span>
 
 <span class="sd">        Returns</span>
@@ -741,7 +741,7 @@
 
 
 
-<div class="viewcode-block" id="ParameterEnsemble.draw"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.draw">[docs]</a>    <span class="k">def</span> <span class="nf">draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cov</span><span class="p">,</span><span class="n">num_reals</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">how</span><span class="o">=</span><span class="s2">&quot;normal&quot;</span><span class="p">,</span><span class="n">enforce_bounds</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="ParameterEnsemble.draw"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.draw">[docs]</a>    <span class="k">def</span> <span class="nf">draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">cov</span><span class="p">,</span><span class="n">num_reals</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">how</span><span class="o">=</span><span class="s2">&quot;normal&quot;</span><span class="p">,</span><span class="n">enforce_bounds</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;draw realizations of parameter values</span>
 
 <span class="sd">        Parameters</span>
@@ -811,7 +811,7 @@
                                     <span class="bp">self</span><span class="o">.</span><span class="n">pst</span><span class="o">.</span><span class="n">parameter_data</span><span class="o">.</span>\
                                          <span class="n">loc</span><span class="p">[</span><span class="n">pname</span><span class="p">,</span><span class="s2">&quot;parval1&quot;</span><span class="p">]</span>
 
-<div class="viewcode-block" id="ParameterEnsemble.from_uniform_draw"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.from_uniform_draw">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="ParameterEnsemble.from_uniform_draw"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.from_uniform_draw">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_uniform_draw</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">pst</span><span class="p">,</span><span class="n">num_reals</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; this is an experiemental method to help speed up uniform draws</span>
 <span class="sd">        for a really large (&gt;1E6) ensemble sizes.  WARNING: this constructor</span>
@@ -866,7 +866,7 @@
         <span class="k">return</span> <span class="n">new_pe</span></div>
 
 
-<div class="viewcode-block" id="ParameterEnsemble.from_sparse_gaussian_draw"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.from_sparse_gaussian_draw">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="ParameterEnsemble.from_sparse_gaussian_draw"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.from_sparse_gaussian_draw">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_sparse_gaussian_draw</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">pst</span><span class="p">,</span><span class="n">cov</span><span class="p">,</span><span class="n">num_reals</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; instantiate a parameter ensemble from a sparse covariance matrix.</span>
 <span class="sd">        This is an advanced user method that assumes you know what you are doing</span>
@@ -967,7 +967,7 @@
 
         <span class="k">return</span> <span class="n">new_pe</span></div>
 
-<div class="viewcode-block" id="ParameterEnsemble.from_gaussian_draw"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.from_gaussian_draw">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="ParameterEnsemble.from_gaussian_draw"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.from_gaussian_draw">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_gaussian_draw</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">pst</span><span class="p">,</span><span class="n">cov</span><span class="p">,</span><span class="n">num_reals</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">use_homegrown</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">group_chunks</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                            <span class="n">fill_fixed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">enforce_bounds</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; instantiate a parameter ensemble from a covariance matrix</span>
@@ -1168,7 +1168,7 @@
             <span class="n">new_pe</span><span class="o">.</span><span class="n">enforce</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">new_pe</span></div>
 
-<div class="viewcode-block" id="ParameterEnsemble.from_binary"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.from_binary">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="ParameterEnsemble.from_binary"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.from_binary">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_binary</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">pst</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;instantiate an parameter obsemble from a jco-type file</span>
 
@@ -1272,7 +1272,7 @@
 
 
 
-<div class="viewcode-block" id="ParameterEnsemble.project"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.project">[docs]</a>    <span class="k">def</span> <span class="nf">project</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">projection_matrix</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">log</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="ParameterEnsemble.project"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.project">[docs]</a>    <span class="k">def</span> <span class="nf">project</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">projection_matrix</span><span class="p">,</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">log</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                 <span class="n">enforce_bounds</span><span class="o">=</span><span class="s2">&quot;reset&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; project the ensemble using the null-space Monte Carlo method</span>
 
@@ -1346,7 +1346,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="n">istransformed</span><span class="p">]</span> <span class="o">=</span> <span class="mf">10.0</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="n">istransformed</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__istransformed</span> <span class="o">=</span> <span class="kc">False</span></div>
 
-<div class="viewcode-block" id="ParameterEnsemble.enforce"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.enforce">[docs]</a>    <span class="k">def</span> <span class="nf">enforce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">enforce_bounds</span><span class="o">=</span><span class="s2">&quot;reset&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="ParameterEnsemble.enforce"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.enforce">[docs]</a>    <span class="k">def</span> <span class="nf">enforce</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">enforce_bounds</span><span class="o">=</span><span class="s2">&quot;reset&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; entry point for bounds enforcement.  This gets called for the</span>
 <span class="sd">        draw method(s), so users shouldn&#39;t need to call this</span>
 
@@ -1377,7 +1377,7 @@
                             <span class="s2">&quot;</span><span class="si">{0}</span><span class="s2">, should be &#39;reset&#39; or &#39;drop&#39;&quot;</span><span class="o">.</span>\
                             <span class="nb">format</span><span class="p">(</span><span class="n">enforce_bounds</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="ParameterEnsemble.enfore_scale"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.enfore_scale">[docs]</a>    <span class="k">def</span> <span class="nf">enfore_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ParameterEnsemble.enfore_scale"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.enfore_scale">[docs]</a>    <span class="k">def</span> <span class="nf">enfore_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        enforce parameter bounds on the ensemble by finding the</span>
 <span class="sd">        scaling factor needed to bring the most violated parameter back in bounds</span>
@@ -1412,7 +1412,7 @@
         <span class="c1">#                     (lb - self.loc[id,:]).max() &gt; 0.0:</span>
         <span class="c1">#         raise Exception()</span>
 
-<div class="viewcode-block" id="ParameterEnsemble.enforce_drop"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.enforce_drop">[docs]</a>    <span class="k">def</span> <span class="nf">enforce_drop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ParameterEnsemble.enforce_drop"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.enforce_drop">[docs]</a>    <span class="k">def</span> <span class="nf">enforce_drop</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; enforce parameter bounds on the ensemble by dropping</span>
 <span class="sd">        violating realizations</span>
 
@@ -1430,7 +1430,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="ParameterEnsemble.enforce_reset"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.enforce_reset">[docs]</a>    <span class="k">def</span> <span class="nf">enforce_reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ParameterEnsemble.enforce_reset"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.enforce_reset">[docs]</a>    <span class="k">def</span> <span class="nf">enforce_reset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;enforce parameter bounds on the ensemble by resetting</span>
 <span class="sd">        violating vals to bound</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1449,7 +1449,7 @@
             <span class="n">val_arr</span><span class="p">[</span><span class="n">val_arr</span><span class="p">[:,</span> <span class="n">iname</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">lb</span><span class="p">[</span><span class="n">name</span><span class="p">],</span><span class="n">iname</span><span class="p">]</span> <span class="o">=</span> <span class="n">lb</span><span class="p">[</span><span class="n">name</span><span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="ParameterEnsemble.read_parfiles_prefix"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.read_parfiles_prefix">[docs]</a>    <span class="k">def</span> <span class="nf">read_parfiles_prefix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">prefix</span><span class="p">):</span>
+<div class="viewcode-block" id="ParameterEnsemble.read_parfiles_prefix"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.read_parfiles_prefix">[docs]</a>    <span class="k">def</span> <span class="nf">read_parfiles_prefix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">prefix</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; thin wrapper around read_parfiles using the pnulpar prefix concept.  Used to</span>
 <span class="sd">        fill ParameterEnsemble from PEST-type par files</span>
 
@@ -1477,7 +1477,7 @@
         <span class="c1"># return self.read_parfiles(parfile_names)</span>
 
 
-<div class="viewcode-block" id="ParameterEnsemble.read_parfiles"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.read_parfiles">[docs]</a>    <span class="k">def</span> <span class="nf">read_parfiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">parfile_names</span><span class="p">):</span>
+<div class="viewcode-block" id="ParameterEnsemble.read_parfiles"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.read_parfiles">[docs]</a>    <span class="k">def</span> <span class="nf">read_parfiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">parfile_names</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; read the ParameterEnsemble realizations from par files.  Used to fill</span>
 <span class="sd">        the ParameterEnsemble with realizations from PEST-type par files</span>
 
@@ -1500,7 +1500,7 @@
         <span class="c1">#     self.loc[pfile] = df.loc[:,&#39;parval1&#39;]</span>
         <span class="c1"># self.loc[:,:] = self.loc[:,:].astype(np.float64)</span>
 
-<div class="viewcode-block" id="ParameterEnsemble.from_parfiles"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.from_parfiles">[docs]</a>    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="ParameterEnsemble.from_parfiles"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.from_parfiles">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_parfiles</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span><span class="n">pst</span><span class="p">,</span><span class="n">parfile_names</span><span class="p">,</span><span class="n">real_names</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; create a parameter ensemble from parfiles.  Accepts parfiles with less than the</span>
 <span class="sd">        parameters in the control (get NaNs in the ensemble) or extra parameters in the</span>
@@ -1569,7 +1569,7 @@
         <span class="k">return</span> <span class="n">ParameterEnsemble</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df_all</span><span class="p">,</span><span class="n">pst</span><span class="o">=</span><span class="n">pst</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="ParameterEnsemble.to_csv"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.to_csv">[docs]</a>    <span class="k">def</span> <span class="nf">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<div class="viewcode-block" id="ParameterEnsemble.to_csv"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.to_csv">[docs]</a>    <span class="k">def</span> <span class="nf">to_csv</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="o">*</span><span class="n">args</span><span class="p">,</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;overload of pandas.DataFrame.to_csv() to account</span>
 <span class="sd">        for parameter transformation so that the saved</span>
 <span class="sd">        ParameterEnsemble csv is not in Log10 space</span>
@@ -1598,7 +1598,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_transform</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="ParameterEnsemble.to_binary"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.to_binary">[docs]</a>    <span class="k">def</span> <span class="nf">to_binary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">filename</span><span class="p">):</span>
+<div class="viewcode-block" id="ParameterEnsemble.to_binary"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.to_binary">[docs]</a>    <span class="k">def</span> <span class="nf">to_binary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">filename</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;write the parameter ensemble to a jco-style binary file</span>
 
 <span class="sd">        Parameters</span>
@@ -1629,7 +1629,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_transform</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="ParameterEnsemble.to_parfiles"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.to_parfiles">[docs]</a>    <span class="k">def</span> <span class="nf">to_parfiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">prefix</span><span class="p">):</span>
+<div class="viewcode-block" id="ParameterEnsemble.to_parfiles"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.to_parfiles">[docs]</a>    <span class="k">def</span> <span class="nf">to_parfiles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">prefix</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">            write the parameter ensemble to PEST-style parameter files</span>
 
@@ -1658,7 +1658,7 @@
             <span class="n">write_parfile</span><span class="p">(</span><span class="n">par_df</span><span class="p">,</span><span class="n">par_file</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="ParameterEnsemble.add_base"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.en.ParameterEnsemble.add_base">[docs]</a>    <span class="k">def</span> <span class="nf">add_base</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="ParameterEnsemble.add_base"><a class="viewcode-back" href="../../source/ensembles.html#pyemu.en.ParameterEnsemble.add_base">[docs]</a>    <span class="k">def</span> <span class="nf">add_base</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; add &quot;base&quot; control file values as a realization</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>

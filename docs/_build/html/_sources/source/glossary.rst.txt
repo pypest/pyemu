@@ -266,7 +266,7 @@ Glossary
       :math:`\mathbf{D_{obs}}`, and the simulated equivalent values,
       :math:`\mathbf{D_{sim}}`. Note that these three matrices are made up of column
       vectors representing all of the :math:`\boldsymbol{\theta}`, :math:`\mathbf{d_{obs}}`,
-      and :math:`\mathbf{d_{sim}}` vectors where :math:`\mathbf{d_{sim}}`.
+      and :math:`\mathbf{d_{sim}}` vectors.
 
    Bayes' Theorem
       .. math::
