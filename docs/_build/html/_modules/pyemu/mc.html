@@ -45,7 +45,7 @@
 <span class="kn">from</span> <span class="nn">pyemu.mat</span> <span class="k">import</span> <span class="n">Cov</span>
 <span class="c1">#from pyemu.utils.helpers import zero_order_tikhonov</span>
 
-<div class="viewcode-block" id="MonteCarlo"><a class="viewcode-back" href="../../source/Monte_carlo_page.html#pyemu.mc.MonteCarlo">[docs]</a><span class="k">class</span> <span class="nc">MonteCarlo</span><span class="p">(</span><span class="n">LinearAnalysis</span><span class="p">):</span>
+<div class="viewcode-block" id="MonteCarlo"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.mc.MonteCarlo">[docs]</a><span class="k">class</span> <span class="nc">MonteCarlo</span><span class="p">(</span><span class="n">LinearAnalysis</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;LinearAnalysis derived type for monte carlo analysis</span>
 
 <span class="sd">    Parameters</span>
@@ -97,7 +97,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parensemble</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
-<div class="viewcode-block" id="MonteCarlo.get_nsing"><a class="viewcode-back" href="../../source/Monte_carlo_page.html#pyemu.mc.MonteCarlo.get_nsing">[docs]</a>    <span class="k">def</span> <span class="nf">get_nsing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">epsilon</span><span class="o">=</span><span class="mf">1.0e-4</span><span class="p">):</span>
+<div class="viewcode-block" id="MonteCarlo.get_nsing"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.mc.MonteCarlo.get_nsing">[docs]</a>    <span class="k">def</span> <span class="nf">get_nsing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">epsilon</span><span class="o">=</span><span class="mf">1.0e-4</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; get the number of solution space dimensions given</span>
 <span class="sd">        a ratio between the largest and smallest singular values</span>
 
@@ -124,7 +124,7 @@
             <span class="n">nsing</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="n">nsing</span></div>
 
-<div class="viewcode-block" id="MonteCarlo.get_null_proj"><a class="viewcode-back" href="../../source/Monte_carlo_page.html#pyemu.mc.MonteCarlo.get_null_proj">[docs]</a>    <span class="k">def</span> <span class="nf">get_null_proj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">nsing</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="MonteCarlo.get_null_proj"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.mc.MonteCarlo.get_null_proj">[docs]</a>    <span class="k">def</span> <span class="nf">get_null_proj</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">nsing</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; get a null-space projection matrix of XTQX</span>
 
 <span class="sd">        Parameters</span>
@@ -154,7 +154,7 @@
 
         <span class="k">return</span> <span class="n">v2_proj</span></div>
 
-<div class="viewcode-block" id="MonteCarlo.draw"><a class="viewcode-back" href="../../source/Monte_carlo_page.html#pyemu.mc.MonteCarlo.draw">[docs]</a>    <span class="k">def</span> <span class="nf">draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_reals</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">par_file</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">obs</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<div class="viewcode-block" id="MonteCarlo.draw"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.mc.MonteCarlo.draw">[docs]</a>    <span class="k">def</span> <span class="nf">draw</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num_reals</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">par_file</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">obs</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
              <span class="n">enforce_bounds</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cov</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">&quot;gaussian&quot;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;draw stochastic realizations of parameters and</span>
 <span class="sd">           optionally observations, filling MonteCarlo.parensemble and</span>
@@ -230,7 +230,7 @@
 
 
 
-<div class="viewcode-block" id="MonteCarlo.project_parensemble"><a class="viewcode-back" href="../../source/Monte_carlo_page.html#pyemu.mc.MonteCarlo.project_parensemble">[docs]</a>    <span class="k">def</span> <span class="nf">project_parensemble</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">par_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">nsing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="MonteCarlo.project_parensemble"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.mc.MonteCarlo.project_parensemble">[docs]</a>    <span class="k">def</span> <span class="nf">project_parensemble</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">par_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">nsing</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                             <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">enforce_bounds</span><span class="o">=</span><span class="s1">&#39;reset&#39;</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; perform the null-space projection operations for null-space monte carlo</span>
 
@@ -281,7 +281,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;projecting parameter ensemble&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">en</span></div>
 
-<div class="viewcode-block" id="MonteCarlo.write_psts"><a class="viewcode-back" href="../../source/Monte_carlo_page.html#pyemu.mc.MonteCarlo.write_psts">[docs]</a>    <span class="k">def</span> <span class="nf">write_psts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">prefix</span><span class="p">,</span><span class="n">existing_jco</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">noptmax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="MonteCarlo.write_psts"><a class="viewcode-back" href="../../source/pyemu.html#pyemu.mc.MonteCarlo.write_psts">[docs]</a>    <span class="k">def</span> <span class="nf">write_psts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">prefix</span><span class="p">,</span><span class="n">existing_jco</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">noptmax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; write parameter and optionally observation realizations</span>
 <span class="sd">            to a series of pest control files</span>
 
