@@ -24,7 +24,7 @@ attributes, also known as the :term:`state` of the object, to perform tasks.
 
 .. rubric:: For example
 
-The Pst class jupyter notebook linked below uses the pyEMU
+The jupyter notebook linked below uses the pyEMU
 Pst Class (in the pyemu.pst module, pst_handler submodule) to create an object called *p*.  
 
 Attributes of the object
