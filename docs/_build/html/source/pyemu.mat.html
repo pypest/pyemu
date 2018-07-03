@@ -1,0 +1,1572 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>pyemu.mat package &#8212; pyEMU 0.3 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="pyemu-mat-package">
+<h1>pyemu.mat package<a class="headerlink" href="#pyemu-mat-package" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="module-pyemu.mat.mat_handler">
+<span id="pyemu-mat-mat-handler-module"></span><h2>pyemu.mat.mat_handler module<a class="headerlink" href="#module-pyemu.mat.mat_handler" title="Permalink to this headline">¶</a></h2>
+<p>Matrix, Jco and Cov classes for easy linear algebra</p>
+<dl class="function">
+<dt id="pyemu.mat.mat_handler.save_coo">
+<code class="descclassname">pyemu.mat.mat_handler.</code><code class="descname">save_coo</code><span class="sig-paren">(</span><em>x</em>, <em>row_names</em>, <em>col_names</em>, <em>filename</em>, <em>chunk=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#save_coo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.save_coo" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a PEST-compatible binary file.  The data format is
+[int,int,float] for i,j,value.  It is autodetected during
+the read with Matrix.from_binary().</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>x</strong> (<em>numpy.sparse</em>) – coo sparse matrix</li>
+<li><strong>row_names</strong> (<em>list</em>) – list of row_names</li>
+<li><strong>col_names</strong> (<em>list</em>) – list of col_names</li>
+<li><strong>filename</strong> (<em>str</em>) – filename to save binary file</li>
+<li><strong>droptol</strong> (<em>float</em>) – absolute value tolerance to make values smaller than zero.  Default is None</li>
+<li><strong>chunk</strong> (<em>int</em>) – number of elements to write in a single pass.  Default is None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyemu.mat.mat_handler.concat">
+<code class="descclassname">pyemu.mat.mat_handler.</code><code class="descname">concat</code><span class="sig-paren">(</span><em>mats</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#concat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.concat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Concatenate Matrix objects.  Tries either axis.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mats</strong> (<em>list</em>) – list of Matrix objects</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>Matrix</strong></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="pyemu.mat.mat_handler.get_common_elements">
+<code class="descclassname">pyemu.mat.mat_handler.</code><code class="descname">get_common_elements</code><span class="sig-paren">(</span><em>list1</em>, <em>list2</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#get_common_elements"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.get_common_elements" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>find the common elements in two lists.  used to support auto align</dt>
+<dd>might be faster with sets</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>list1</strong> (<em>list</em>) – a list of objects</li>
+<li><strong>list2</strong> (<em>list</em>) – a list of objects</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>list</strong> – list of common objects shared by list1 and list2</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="pyemu.mat.mat_handler.Matrix">
+<em class="property">class </em><code class="descclassname">pyemu.mat.mat_handler.</code><code class="descname">Matrix</code><span class="sig-paren">(</span><em>x=None</em>, <em>row_names=[]</em>, <em>col_names=[]</em>, <em>isdiagonal=False</em>, <em>autoalign=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>a class for easy linear algebra</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>x</strong> (<em>numpy.ndarray</em>) – Matrix entries</li>
+<li><strong>row_names</strong> (<em>list</em>) – list of row names</li>
+<li><strong>col_names</strong> (<em>list</em>) – list of column names</li>
+<li><strong>isdigonal</strong> (<em>bool</em>) – to determine if the Matrix is diagonal</li>
+<li><strong>autoalign</strong> (<em>bool</em>) – used to control the autoalignment of Matrix objects
+during linear algebra operations</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>Matrix</strong></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.binary_header_dt">
+<code class="descname">binary_header_dt</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.binary_header_dt" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.dtype</em> – the header info in the PEST binary file type</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.binary_rec_dt">
+<code class="descname">binary_rec_dt</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.binary_rec_dt" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>numpy.dtype</em> – the record info in the PEST binary file type</p>
+</dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">to_ascii : write a PEST-style ASCII matrix format file</code></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt>
+<code class="descname">to_binary : write a PEST-stle compressed binary format file</code></dt>
+<dd></dd></dl>
+
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">this class makes heavy use of property decorators to encapsulate
+private attributes</p>
+</div>
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.integer">
+<code class="descname">integer</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.integer" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.int32</span></code></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.double">
+<code class="descname">double</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.double" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.float64</span></code></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.char">
+<code class="descname">char</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.char" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.uint8</span></code></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">binary_header_dt</code><em class="property"> = dtype([('itemp1', '&lt;i4'), ('itemp2', '&lt;i4'), ('icount', '&lt;i4')])</em></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt>
+<code class="descname">binary_rec_dt</code><em class="property"> = dtype([('j', '&lt;i4'), ('dtemp', '&lt;f8')])</em></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.coo_rec_dt">
+<code class="descname">coo_rec_dt</code><em class="property"> = dtype([('i', '&lt;i4'), ('j', '&lt;i4'), ('dtemp', '&lt;f8')])</em><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.coo_rec_dt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.par_length">
+<code class="descname">par_length</code><em class="property"> = 12</em><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.par_length" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.obs_length">
+<code class="descname">obs_length</code><em class="property"> = 20</em><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.obs_length" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.new_par_length">
+<code class="descname">new_par_length</code><em class="property"> = 100</em><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.new_par_length" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.new_obs_length">
+<code class="descname">new_obs_length</code><em class="property"> = 100</em><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.new_obs_length" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.reset_x">
+<code class="descname">reset_x</code><span class="sig-paren">(</span><em>x</em>, <em>copy=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.reset_x"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.reset_x" title="Permalink to this definition">¶</a></dt>
+<dd><p>reset self.__x private attribute</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>x</strong> (<em>numpy.ndarray</em>) – </li>
+<li><strong>copy</strong> (<em>bool</em>) – flag to make a copy of ‘x’. Defaule is True</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">makes a copy of ‘x’ argument</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.hadamard_product">
+<code class="descname">hadamard_product</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.hadamard_product"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.hadamard_product" title="Permalink to this definition">¶</a></dt>
+<dd><p>Overload of numpy.ndarray.__mult__(): element-wise multiplication.
+Tries to speedup by checking for scalars of diagonal matrices on
+either side of operator</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<em>scalar</em><em>,</em><em>numpy.ndarray</em><em>,</em><em>Matrix object</em>) – the thing for element-wise multiplication</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>Matrix</strong></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.mult_isaligned">
+<code class="descname">mult_isaligned</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.mult_isaligned"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.mult_isaligned" title="Permalink to this definition">¶</a></dt>
+<dd><p>check if matrices are aligned for dot product multiplication</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<em>(</em><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix"><em>Matrix</em></a><em>)</em>) – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>bool</strong> – True if aligned, False if not aligned</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.element_isaligned">
+<code class="descname">element_isaligned</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.element_isaligned"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.element_isaligned" title="Permalink to this definition">¶</a></dt>
+<dd><p>check if matrices are aligned for element-wise operations</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix"><em>Matrix</em></a>) – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>bool</strong> – True if aligned, False if not aligned</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">bool</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.newx">
+<code class="descname">newx</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.newx" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a copy of x</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>numpy.ndarray</strong></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.x">
+<code class="descname">x</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.x" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a reference to x</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>numpy.ndarray</strong></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.as_2d">
+<code class="descname">as_2d</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.as_2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a 2D representation of x.  If not self.isdiagonal, simply
+return reference to self.x, otherwise, constructs and returns
+a 2D, diagonal ndarray</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>numpy.ndarray</strong></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.shape">
+<code class="descname">shape</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.shape" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the implied, 2D shape of self</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>tuple</strong> – length 2 tuple of ints</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">tuple</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.ncol">
+<code class="descname">ncol</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.ncol" title="Permalink to this definition">¶</a></dt>
+<dd><p>length of second dimension</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>int</strong> – number of columns</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.nrow">
+<code class="descname">nrow</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.nrow" title="Permalink to this definition">¶</a></dt>
+<dd><p>length of first dimensions</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>int</strong> – number of rows</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.T">
+<code class="descname">T</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.T" title="Permalink to this definition">¶</a></dt>
+<dd><p>wrapper function for Matrix.transpose() method</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.transpose">
+<code class="descname">transpose</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.transpose" title="Permalink to this definition">¶</a></dt>
+<dd><p>transpose operation of self</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>Matrix</strong> – transpose of self</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.inv">
+<code class="descname">inv</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.inv" title="Permalink to this definition">¶</a></dt>
+<dd><p>inversion operation of self</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>Matrix</strong> – inverse of self</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.get_maxsing">
+<code class="descname">get_maxsing</code><span class="sig-paren">(</span><em>eigthresh=1e-05</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.get_maxsing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.get_maxsing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the number of singular components with a singular
+value ratio greater than or equal to eigthresh</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>eigthresh</strong> (<em>float</em>) – the ratio of the largest to smallest singular value</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>int</strong> – number of singular components</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.pseudo_inv_components">
+<code class="descname">pseudo_inv_components</code><span class="sig-paren">(</span><em>maxsing=None</em>, <em>eigthresh=1e-05</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.pseudo_inv_components"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.pseudo_inv_components" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the truncated SVD components</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>maxsing</strong> (<em>int</em>) – the number of singular components to use.  If None,
+maxsing is calculated using Matrix.get_maxsing() and eigthresh</li>
+<li><strong>eigthresh</strong> (<em>float</em>) – the ratio of largest to smallest singular components to use
+for truncation.  Ignored if maxsing is not None</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last"><ul class="simple">
+<li><strong>u</strong> (<em>Matrix</em>) – truncated left singular vectors</li>
+<li><strong>s</strong> (<em>Matrix</em>) – truncated singular value matrix</li>
+<li><strong>v</strong> (<em>Matrix</em>) – truncated right singular vectors</li>
+</ul>
+</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.pseudo_inv">
+<code class="descname">pseudo_inv</code><span class="sig-paren">(</span><em>maxsing=None</em>, <em>eigthresh=1e-05</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.pseudo_inv"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.pseudo_inv" title="Permalink to this definition">¶</a></dt>
+<dd><p>The pseudo inverse of self.  Formed using truncated singular
+value decomposition and Matrix.pseudo_inv_components</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>maxsing</strong> (<em>int</em>) – the number of singular components to use.  If None,
+maxsing is calculated using Matrix.get_maxsing() and eigthresh</li>
+<li><strong>eigthresh</strong> (<em>float</em>) – the ratio of largest to smallest singular components to use
+for truncation.  Ignored if maxsing is not None</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>Matrix</strong></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.sqrt">
+<code class="descname">sqrt</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.sqrt" title="Permalink to this definition">¶</a></dt>
+<dd><p>square root operation</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>Matrix</strong> – square root of self</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.full_s">
+<code class="descname">full_s</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.full_s" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the full singular value matrix of self</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>Matrix</strong></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.s">
+<code class="descname">s</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.s" title="Permalink to this definition">¶</a></dt>
+<dd><p>the singular value (diagonal) Matrix</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>Matrix</strong></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.u">
+<code class="descname">u</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.u" title="Permalink to this definition">¶</a></dt>
+<dd><p>the left singular vector Matrix</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>Matrix</strong></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.v">
+<code class="descname">v</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.v" title="Permalink to this definition">¶</a></dt>
+<dd><p>the right singular vector Matrix</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>Matrix</strong></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Matrix.zero2d">
+<code class="descname">zero2d</code><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.zero2d" title="Permalink to this definition">¶</a></dt>
+<dd><p>get an 2D instance of self with all zeros</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>Matrix</strong></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="pyemu.mat.mat_handler.Matrix.find_rowcol_indices">
+<em class="property">static </em><code class="descname">find_rowcol_indices</code><span class="sig-paren">(</span><em>names</em>, <em>row_names</em>, <em>col_names</em>, <em>axis=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.find_rowcol_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.find_rowcol_indices" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.indices">
+<code class="descname">indices</code><span class="sig-paren">(</span><em>names</em>, <em>axis=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.indices" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>get the row and col indices of names. If axis is None, two ndarrays</dt>
+<dd>are returned, corresponding the indices of names for each axis</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>names</strong> (<em>iterable</em>) – column and/or row names</li>
+<li><strong>axis</strong> (<em>(</em><em>int</em><em>) </em><em>(</em><em>optional</em><em>)</em>) – the axis to search.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>numpy.ndarray</strong> – indices of names.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.old_indices">
+<code class="descname">old_indices</code><span class="sig-paren">(</span><em>names</em>, <em>axis=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.old_indices"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.old_indices" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>get the row and col indices of names. If axis is None, two ndarrays</dt>
+<dd>are returned, corresponding the indices of names for each axis</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>names</strong> (<em>iterable</em>) – column and/or row names</li>
+<li><strong>axis</strong> (<em>(</em><em>int</em><em>) </em><em>(</em><em>optional</em><em>)</em>) – the axis to search.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>numpy.ndarray</strong> – indices of names.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">numpy.ndarray</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.align">
+<code class="descname">align</code><span class="sig-paren">(</span><em>names</em>, <em>axis=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.align"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.align" title="Permalink to this definition">¶</a></dt>
+<dd><p>reorder self by names.  If axis is None, reorder both indices</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>names</strong> (<em>iterable</em>) – names in rowS andor columnS</li>
+<li><strong>axis</strong> (<em>(</em><em>int</em><em>)</em>) – the axis to reorder. if None, reorder both axes</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>row_names=None</em>, <em>col_names=None</em>, <em>drop=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>get a new Matrix instance ordered on row_names or col_names</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>row_names</strong> (<em>iterable</em>) – row_names for new Matrix</li>
+<li><strong>col_names</strong> (<em>iterable</em>) – col_names for new Matrix</li>
+<li><strong>drop</strong> (<em>bool</em>) – flag to remove row_names and/or col_names</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>Matrix</strong></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.copy">
+<code class="descname">copy</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.copy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.copy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.drop">
+<code class="descname">drop</code><span class="sig-paren">(</span><em>names</em>, <em>axis</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.drop"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.drop" title="Permalink to this definition">¶</a></dt>
+<dd><p>drop elements from self in place</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>names</strong> (<em>iterable</em>) – names to drop</li>
+<li><strong>axis</strong> (<em>(</em><em>int</em><em>)</em>) – the axis to drop from. must be in [0,1]</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.extract">
+<code class="descname">extract</code><span class="sig-paren">(</span><em>row_names=None</em>, <em>col_names=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.extract"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.extract" title="Permalink to this definition">¶</a></dt>
+<dd><p>wrapper method that Matrix.gets() then Matrix.drops() elements.
+one of row_names or col_names must be not None.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>row_names</strong> (<em>iterable</em>) – row names to extract</li>
+<li><strong>col_names</strong> (<em>(</em><em>enumerate</em><em>)</em>) – col_names to extract</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>Matrix</strong></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.get_diagonal_vector">
+<code class="descname">get_diagonal_vector</code><span class="sig-paren">(</span><em>col_name='diag'</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.get_diagonal_vector"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.get_diagonal_vector" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a new Matrix instance that is the diagonal of self.  The
+shape of the new matrix is (self.shape[0],1).  Self must be square</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>col_name</strong> – str
+the name of the column in the new Matrix</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Matrix</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.to_coo">
+<code class="descname">to_coo</code><span class="sig-paren">(</span><em>filename</em>, <em>droptol=None</em>, <em>chunk=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.to_coo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.to_coo" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a PEST-compatible binary file.  The data format is
+[int,int,float] for i,j,value.  It is autodetected during
+the read with Matrix.from_binary().</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>filename</strong> (<em>str</em>) – filename to save binary file</li>
+<li><strong>droptol</strong> (<em>float</em>) – absolute value tolerance to make values smaller than zero.  Default is None</li>
+<li><strong>chunk</strong> (<em>int</em>) – number of elements to write in a single pass.  Default is None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.to_binary">
+<code class="descname">to_binary</code><span class="sig-paren">(</span><em>filename</em>, <em>droptol=None</em>, <em>chunk=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.to_binary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.to_binary" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a PEST-compatible binary file.  The format is the same
+as the format used to storage a PEST Jacobian matrix</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>filename</strong> (<em>str</em>) – filename to save binary file</li>
+<li><strong>droptol</strong> (<em>float</em>) – absolute value tolerance to make values smaller than zero.  Default is None</li>
+<li><strong>chunk</strong> (<em>int</em>) – number of elements to write in a single pass.  Default is None</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.mat.mat_handler.Matrix.from_binary">
+<em class="property">classmethod </em><code class="descname">from_binary</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.from_binary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.from_binary" title="Permalink to this definition">¶</a></dt>
+<dd><p>class method load from PEST-compatible binary file into a
+Matrix instance</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<em>str</em>) – filename to read</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>Matrix</strong></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="pyemu.mat.mat_handler.Matrix.read_binary">
+<em class="property">static </em><code class="descname">read_binary</code><span class="sig-paren">(</span><em>filename</em>, <em>sparse=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.read_binary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.read_binary" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.mat.mat_handler.Matrix.from_fortranfile">
+<em class="property">classmethod </em><code class="descname">from_fortranfile</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.from_fortranfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.from_fortranfile" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>a binary load method to accommodate one of the many</dt>
+<dd>bizarre fortran binary writing formats</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<em>str</em>) – name of the binary matrix file</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>Matrix</strong></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.to_ascii">
+<code class="descname">to_ascii</code><span class="sig-paren">(</span><em>out_filename</em>, <em>icode=2</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.to_ascii"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.to_ascii" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a PEST-compatible ASCII Matrix/vector file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>out_filename</strong> (<em>str</em>) – output filename</li>
+<li><strong>icode</strong> (<em>(</em><em>int</em><em>)</em>) – PEST-style info code for Matrix style</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.mat.mat_handler.Matrix.from_ascii">
+<em class="property">classmethod </em><code class="descname">from_ascii</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.from_ascii"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.from_ascii" title="Permalink to this definition">¶</a></dt>
+<dd><p>load a pest-compatible ASCII Matrix/vector file into a
+Matrix instance</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<em>str</em>) – name of the file to read</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="pyemu.mat.mat_handler.Matrix.read_ascii">
+<em class="property">static </em><code class="descname">read_ascii</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.read_ascii"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.read_ascii" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.df">
+<code class="descname">df</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.df"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.df" title="Permalink to this definition">¶</a></dt>
+<dd><p>wrapper of Matrix.to_dataframe()</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.mat.mat_handler.Matrix.from_dataframe">
+<em class="property">classmethod </em><code class="descname">from_dataframe</code><span class="sig-paren">(</span><em>df</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.from_dataframe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.from_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>class method to create a new Matrix instance from a</dt>
+<dd>pandas.DataFrame</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>df</strong> (<em>pandas.DataFrame</em>) – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>Matrix</strong></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.mat.mat_handler.Matrix.from_names">
+<em class="property">classmethod </em><code class="descname">from_names</code><span class="sig-paren">(</span><em>row_names</em>, <em>col_names</em>, <em>isdiagonal=False</em>, <em>autoalign=True</em>, <em>random=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.from_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.from_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>class method to create a new Matrix instance from
+row names and column names, filled with trash</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>row_names</strong> (<em>iterable</em>) – row names for the new matrix</li>
+<li><strong>col_names</strong> (<em>iterable</em>) – col_names for the new matrix</li>
+<li><strong>isdiagonal</strong> (<em>bool</em>) – flag for diagonal matrix. Default is False</li>
+<li><strong>autoalign</strong> (<em>bool</em>) – flag for autoaligning new matrix
+during linear algebra calcs. Default
+is True</li>
+<li><strong>random</strong> (<em>bool</em>) – flag for contents of the trash matrix.
+If True, fill with random numbers, if False, fill with zeros
+Default is False</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>mat</strong> – the new Matrix instance</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.to_dataframe">
+<code class="descname">to_dataframe</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.to_dataframe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.to_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><p>return a pandas.DataFrame representation of the Matrix object</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>pandas.DataFrame</strong></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">pandas.DataFrame</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.to_sparse">
+<code class="descname">to_sparse</code><span class="sig-paren">(</span><em>trunc=0.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.to_sparse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.to_sparse" title="Permalink to this definition">¶</a></dt>
+<dd><p>get the COO sparse Matrix representation of the Matrix</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>scipy.sparse.Matrix</strong></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">scipy.sparse.Matrix</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Matrix.extend">
+<code class="descname">extend</code><span class="sig-paren">(</span><em>other</em>, <em>inplace=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Matrix.extend"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Matrix.extend" title="Permalink to this definition">¶</a></dt>
+<dd><p>extend self with the elements of other.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>other</strong> (<em>(</em><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix"><em>Matrix</em></a><em>)</em>) – the Matrix to extend self by</li>
+<li><strong>inplace</strong> (<em>bool</em>) – inplace = True not implemented</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>Matrix</strong> – if not inplace</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyemu.mat.mat_handler.Jco">
+<em class="property">class </em><code class="descclassname">pyemu.mat.mat_handler.</code><code class="descname">Jco</code><span class="sig-paren">(</span><em>x=None</em>, <em>row_names=[]</em>, <em>col_names=[]</em>, <em>isdiagonal=False</em>, <em>autoalign=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Jco"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Jco" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyemu.mat.mat_handler.Matrix</span></code></a></p>
+<p>a thin wrapper class to get more intuitive attribute names.  Functions
+exactly like Matrix</p>
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Jco.par_names">
+<code class="descname">par_names</code><a class="headerlink" href="#pyemu.mat.mat_handler.Jco.par_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>thin wrapper around Matrix.col_names</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>list</strong> – parameter names</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Jco.obs_names">
+<code class="descname">obs_names</code><a class="headerlink" href="#pyemu.mat.mat_handler.Jco.obs_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>thin wrapper around Matrix.row_names</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>list</strong> – observation names</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Jco.npar">
+<code class="descname">npar</code><a class="headerlink" href="#pyemu.mat.mat_handler.Jco.npar" title="Permalink to this definition">¶</a></dt>
+<dd><p>number of parameters in the Jco</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>int</strong> – number of parameters (columns)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Jco.nobs">
+<code class="descname">nobs</code><a class="headerlink" href="#pyemu.mat.mat_handler.Jco.nobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>number of observations in the Jco</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>int</strong> – number of observations (rows)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Jco.replace_cols">
+<code class="descname">replace_cols</code><span class="sig-paren">(</span><em>other</em>, <em>parnames=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Jco.replace_cols"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Jco.replace_cols" title="Permalink to this definition">¶</a></dt>
+<dd><p>Replaces columns in one Matrix with columns from another.
+Intended for Jacobian matrices replacing parameters.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>other</strong> (<a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix"><em>Matrix</em></a>) – Matrix to use for replacing columns in self</li>
+<li><strong>parnames</strong> (<em>list</em>) – parameter (column) names to use in other.  If None, all
+columns in other are used</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.mat.mat_handler.Jco.from_pst">
+<em class="property">classmethod </em><code class="descname">from_pst</code><span class="sig-paren">(</span><em>pst</em>, <em>random=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Jco.from_pst"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Jco.from_pst" title="Permalink to this definition">¶</a></dt>
+<dd><p>construct a new empty Jco from a control file filled
+with trash</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>pst</strong> (<a class="reference internal" href="pyemu.pst.html#pyemu.pst.pst_handler.Pst" title="pyemu.pst.pst_handler.Pst"><em>Pst</em></a>) – a control file instance.  If type is ‘str’,
+Pst is loaded from filename</li>
+<li><strong>random</strong> (<em>bool</em>) – flag for contents of the trash matrix.
+If True, fill with random numbers, if False, fill with zeros
+Default is False</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>jco</strong> – the new Jco instance</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#pyemu.mat.mat_handler.Jco" title="pyemu.mat.mat_handler.Jco">Jco</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyemu.mat.mat_handler.Cov">
+<em class="property">class </em><code class="descclassname">pyemu.mat.mat_handler.</code><code class="descname">Cov</code><span class="sig-paren">(</span><em>x=None</em>, <em>names=[]</em>, <em>row_names=[]</em>, <em>col_names=[]</em>, <em>isdiagonal=False</em>, <em>autoalign=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Cov"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Cov" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix"><code class="xref py py-class docutils literal notranslate"><span class="pre">pyemu.mat.mat_handler.Matrix</span></code></a></p>
+<p>a subclass of Matrix for handling diagonal or dense Covariance matrices
+todo:block diagonal</p>
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Cov.identity">
+<code class="descname">identity</code><a class="headerlink" href="#pyemu.mat.mat_handler.Cov.identity" title="Permalink to this definition">¶</a></dt>
+<dd><p>get an identity Matrix like self</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>Cov</strong></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Cov" title="pyemu.mat.mat_handler.Cov">Cov</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Cov.zero">
+<code class="descname">zero</code><a class="headerlink" href="#pyemu.mat.mat_handler.Cov.zero" title="Permalink to this definition">¶</a></dt>
+<dd><p>get an instance of self with all zeros</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>Cov</strong></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Cov" title="pyemu.mat.mat_handler.Cov">Cov</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Cov.condition_on">
+<code class="descname">condition_on</code><span class="sig-paren">(</span><em>conditioning_elements</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Cov.condition_on"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Cov.condition_on" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>get a new Covariance object that is conditional on knowing some</dt>
+<dd>elements.  uses Schur’s complement for conditional Covariance
+propagation</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>conditioning_elements</strong> (<em>iterable</em>) – names of elements to condition on</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>Cov</strong></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Cov" title="pyemu.mat.mat_handler.Cov">Cov</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Cov.draw">
+<code class="descname">draw</code><span class="sig-paren">(</span><em>mean=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Cov.draw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Cov.draw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain a random draw from a covariance matrix either with mean==1
+or with specified mean vector</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mean</strong> (<em>scalar of enumerable of length self.shape</em><em>[</em><em>0</em><em>]</em>) – mean values. either a scalar applied to to the entire
+vector of length N or an N-length vector</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>numpy.nparray</strong> – A vector of conditioned values, sampled
+using the covariance matrix (self) and applied to the mean</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">numpy.ndarray</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.Cov.names">
+<code class="descname">names</code><a class="headerlink" href="#pyemu.mat.mat_handler.Cov.names" title="Permalink to this definition">¶</a></dt>
+<dd><p>wrapper for getting row_names.  row_names == col_names for Cov</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>list</strong> – names</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">list</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Cov.replace">
+<code class="descname">replace</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Cov.replace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Cov.replace" title="Permalink to this definition">¶</a></dt>
+<dd><p>replace elements in the covariance matrix with elements from other.
+if other is not diagonal, then self becomes non diagonal</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<a class="reference internal" href="#pyemu.mat.mat_handler.Cov" title="pyemu.mat.mat_handler.Cov"><em>Cov</em></a>) – the Cov to replace elements in self with</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">operates in place</p>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Cov.to_uncfile">
+<code class="descname">to_uncfile</code><span class="sig-paren">(</span><em>unc_file</em>, <em>covmat_file='Cov.mat'</em>, <em>var_mult=1.0</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Cov.to_uncfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Cov.to_uncfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>write a PEST-compatible uncertainty file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>unc_file</strong> (<em>str</em>) – filename of the uncertainty file</li>
+<li><strong>covmat_file</strong> (<em>str Covariance Matrix filename. Default is</em>) – </li>
+<li><strong>If None</strong><strong>, </strong><strong>and Cov.isdiaonal</strong><strong>, </strong><strong>then a standard deviation</strong> (<em>&quot;Cov.mat&quot;.</em>) – </li>
+<li><strong>of the uncertainty file is written.  Exception raised if None</strong> (<em>form</em>) – </li>
+<li><strong>not Cov.isdiagonal</strong> (<em>and</em>) – </li>
+<li><strong>var_mult</strong> (<em>float</em>) – variance multiplier for the covmat_file entry</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.mat.mat_handler.Cov.from_obsweights">
+<em class="property">classmethod </em><code class="descname">from_obsweights</code><span class="sig-paren">(</span><em>pst_file</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Cov.from_obsweights"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Cov.from_obsweights" title="Permalink to this definition">¶</a></dt>
+<dd><p>instantiates a  Cov instance from observation weights in
+a PEST control file.  Calls Cov.from_observation_data()</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>pst_file</strong> (<em>str</em>) – pest control file name</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>Cov</strong></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Cov" title="pyemu.mat.mat_handler.Cov">Cov</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.mat.mat_handler.Cov.from_observation_data">
+<em class="property">classmethod </em><code class="descname">from_observation_data</code><span class="sig-paren">(</span><em>pst</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Cov.from_observation_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Cov.from_observation_data" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>instantiates a  Cov from a pandas dataframe</dt>
+<dd>of pyemu.Pst.observation_data</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>pst</strong> (<em>pyemu.Pst</em>) – </td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>Cov</strong></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Cov" title="pyemu.mat.mat_handler.Cov">Cov</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.mat.mat_handler.Cov.from_parbounds">
+<em class="property">classmethod </em><code class="descname">from_parbounds</code><span class="sig-paren">(</span><em>pst_file</em>, <em>sigma_range=4.0</em>, <em>scale_offset=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Cov.from_parbounds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Cov.from_parbounds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiates a  Cov from a pest control file parameter data section.
+Calls Cov.from_parameter_data()</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>pst_file</strong> (<em>str</em>) – pest control file name</li>
+<li><strong>sigma_range</strong> (<em>float</em>) – defines range of upper bound - lower bound in terms of standard
+deviation (sigma). For example, if sigma_range = 4, the bounds
+represent 4 * sigma.  Default is 4.0, representing approximately
+95% confidence of implied normal distribution</li>
+<li><strong>scale_offset</strong> (<em>bool</em>) – flag to apply scale and offset to parameter upper and lower
+bounds before calculating varaince.  Default is True</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>Cov</strong></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#pyemu.mat.mat_handler.Cov" title="pyemu.mat.mat_handler.Cov">Cov</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.mat.mat_handler.Cov.from_parameter_data">
+<em class="property">classmethod </em><code class="descname">from_parameter_data</code><span class="sig-paren">(</span><em>pst</em>, <em>sigma_range=4.0</em>, <em>scale_offset=True</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Cov.from_parameter_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Cov.from_parameter_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>load Covariances from a pandas dataframe of
+pyemu.Pst.parameter_data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>pst</strong> (<em>(</em><em>pyemu.Pst</em><em>)</em>) – </li>
+<li><strong>sigma_range</strong> (<em>float</em>) – defines range of upper bound - lower bound in terms of standard
+deviation (sigma). For example, if sigma_range = 4, the bounds
+represent 4 * sigma.  Default is 4.0, representing approximately
+95% confidence of implied normal distribution</li>
+<li><strong>scale_offset</strong> (<em>bool</em>) – flag to apply scale and offset to parameter upper and lower
+bounds before calculating varaince.  Default is True</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><strong>Cov</strong></p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#pyemu.mat.mat_handler.Cov" title="pyemu.mat.mat_handler.Cov">Cov</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.mat.mat_handler.Cov.from_uncfile">
+<em class="property">classmethod </em><code class="descname">from_uncfile</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Cov.from_uncfile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Cov.from_uncfile" title="Permalink to this definition">¶</a></dt>
+<dd><p>instaniates a Cov from a PEST-compatible uncertainty file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<em>str</em>) – uncertainty file name</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>Cov</strong></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Cov" title="pyemu.mat.mat_handler.Cov">Cov</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="pyemu.mat.mat_handler.Cov.get_uncfile_dimensions">
+<em class="property">static </em><code class="descname">get_uncfile_dimensions</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Cov.get_uncfile_dimensions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Cov.get_uncfile_dimensions" title="Permalink to this definition">¶</a></dt>
+<dd><p>quickly read an uncertainty file to find the dimensions</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filename</strong> (<em>str</em>) – uncertainty filename</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>nentries</strong> – number of elements in file</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.mat.mat_handler.Cov.identity_like">
+<em class="property">classmethod </em><code class="descname">identity_like</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Cov.identity_like"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Cov.identity_like" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an identity matrix Cov instance like other</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>other</strong> (<a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix"><em>Matrix</em></a>) – must be square</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><strong>Cov</strong></td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Cov" title="pyemu.mat.mat_handler.Cov">Cov</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.Cov.to_pearson">
+<code class="descname">to_pearson</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#Cov.to_pearson"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.Cov.to_pearson" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert Cov instance to Pearson correlation coefficient
+matrix</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>Matrix</strong> – this is on purpose so that it is clear the returned
+instance is not a Cov</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mat.mat_handler.Matrix" title="pyemu.mat.mat_handler.Matrix">Matrix</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyemu.mat.mat_handler.SparseMatrix">
+<em class="property">class </em><code class="descclassname">pyemu.mat.mat_handler.</code><code class="descname">SparseMatrix</code><span class="sig-paren">(</span><em>x</em>, <em>row_names</em>, <em>col_names</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#SparseMatrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.SparseMatrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Note: less rigid about references since this class is for big matrices and
+don’t want to be making copies</p>
+<dl class="attribute">
+<dt id="pyemu.mat.mat_handler.SparseMatrix.shape">
+<code class="descname">shape</code><a class="headerlink" href="#pyemu.mat.mat_handler.SparseMatrix.shape" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.mat.mat_handler.SparseMatrix.from_binary">
+<em class="property">classmethod </em><code class="descname">from_binary</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#SparseMatrix.from_binary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.SparseMatrix.from_binary" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.SparseMatrix.to_coo">
+<code class="descname">to_coo</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#SparseMatrix.to_coo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.SparseMatrix.to_coo" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.mat.mat_handler.SparseMatrix.from_coo">
+<em class="property">classmethod </em><code class="descname">from_coo</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#SparseMatrix.from_coo"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.SparseMatrix.from_coo" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.SparseMatrix.to_matrix">
+<code class="descname">to_matrix</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#SparseMatrix.to_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.SparseMatrix.to_matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="pyemu.mat.mat_handler.SparseMatrix.from_matrix">
+<em class="property">classmethod </em><code class="descname">from_matrix</code><span class="sig-paren">(</span><em>matrix</em>, <em>droptol=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#SparseMatrix.from_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.SparseMatrix.from_matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.SparseMatrix.block_extend_ip">
+<code class="descname">block_extend_ip</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#SparseMatrix.block_extend_ip"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.SparseMatrix.block_extend_ip" title="Permalink to this definition">¶</a></dt>
+<dd><p>designed for combining dense martrices into a sparse block diagonal matrix.
+other must not have any rows or columns in common with self</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.SparseMatrix.get_matrix">
+<code class="descname">get_matrix</code><span class="sig-paren">(</span><em>row_names</em>, <em>col_names</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#SparseMatrix.get_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.SparseMatrix.get_matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="pyemu.mat.mat_handler.SparseMatrix.get_sparse_matrix">
+<code class="descname">get_sparse_matrix</code><span class="sig-paren">(</span><em>row_names</em>, <em>col_names</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mat/mat_handler.html#SparseMatrix.get_sparse_matrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mat.mat_handler.SparseMatrix.get_sparse_matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-pyemu.mat">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-pyemu.mat" title="Permalink to this headline">¶</a></h2>
+<p>This module contains classes for handling matrices in a linear algebra setting.
+The primary objects are the Matrix() and Cov().  These objects overload most numerical
+operators to autoalign the elements based on row and column names.</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">pyemu.mat package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-pyemu.mat.mat_handler">pyemu.mat.mat_handler module</a></li>
+<li><a class="reference internal" href="#module-pyemu.mat">Module contents</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/source/pyemu.mat.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Jeremy White, Mike Fienen, John Doherty.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="../_sources/source/pyemu.mat.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

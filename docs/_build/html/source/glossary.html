@@ -1,0 +1,364 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Glossary &#8212; pyEMU 0.3 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="The Pst class" href="pst_demo.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="glossary">
+<h1>Glossary<a class="headerlink" href="#glossary" title="Permalink to this headline">¶</a></h1>
+<dl class="glossary docutils">
+<dt id="term-attributes">attributes</dt>
+<dd>Internal data stored by an object.</dd>
+<dt id="term-base-class">base class</dt>
+<dd>A base class, or superclass, is a class that is extended by another class
+in a technique called <a class="reference internal" href="#term-inheritance"><span class="xref std std-term">inheritance</span></a>. Inheritance can make programming
+efficient by having one version of base attributes and methods that can be
+tested and then extended by a <a class="reference internal" href="#term-derived-class"><span class="xref std std-term">derived class</span></a>.</dd>
+<dt id="term-bayes-theorem">Bayes’ Theorem</dt>
+<dd><div class="first math notranslate nohighlight">
+\[\begin{equation}
+P\left(\boldsymbol{\theta}|\boldsymbol{d}\right) =
+\frac{\mathcal{L}\left(\textbf{d}|\boldsymbol{\theta}\right) P\left(\boldsymbol{\theta}\right)}
+{P\left(\textbf{d}\right)} \ldots
+\underbrace{P\left(\boldsymbol{\theta}|\textbf{d}\right)}_{\text{posterior pdf}} \propto
+\underbrace{\mathcal{L}\left(\boldsymbol{d}|\boldsymbol{\theta}\right)}_{\text{likelihood function}}
+\quad
+\underbrace{P\left(\boldsymbol{\theta}\right)}_{\text{prior pdf}}
+\end{equation}\]</div>
+<p class="last">where <span class="math notranslate nohighlight">\(\boldsymbol{\theta}\)</span> is a vector of parameters,
+and <span class="math notranslate nohighlight">\(\mathbf{d}\)</span> is a vector of observations It is computationally
+expedient to assume that these quantities can be characterized by
+multivariate Gaussian distributions and, thus, characterized only by their
+first two moments — mean and covariance.</p>
+</dd>
+<dt id="term-behavior">behavior</dt>
+<dd>Object behavior refers to the set of actions an object can perform often reporting
+or modifying its internal <a class="reference internal" href="#term-state"><span class="xref std std-term">state</span></a> <a class="reference internal" href="../index.html#rs16" id="id6">[RS16]</a> .</dd>
+<dt id="term-class">class</dt>
+<dd>Classes <a class="reference internal" href="../index.html#psf18" id="id2">[PSF18]</a> <a class="reference internal" href="../index.html#rs16" id="id3">[RS16]</a> are the building blocks for object-oriented programs. The class
+defines both attributes (<a class="reference internal" href="#term-state"><span class="xref std std-term">state</span></a>) and functionality (<a class="reference internal" href="#term-behavior"><span class="xref std std-term">behavior</span></a>) of an <a class="reference internal" href="#term-object"><span class="xref std std-term">object</span></a>.</dd>
+<dt id="term-client-code">client code</dt>
+<dd>In the case of pyEMU, client code is a python script that uses the class definitions to
+make a desired <a class="reference internal" href="#term-instance"><span class="xref std std-term">instance</span></a> (also know as an <a class="reference internal" href="#term-object"><span class="xref std std-term">object</span></a>) and to use the <a class="reference internal" href="#term-attributes"><span class="xref std std-term">attributes</span></a>
+and <a class="reference internal" href="#term-instance-methods"><span class="xref std std-term">instance methods</span></a> to build the desired analysis.  The client code
+can be developed as a traditional python script or within a Jupyter notebook <a class="reference internal" href="../index.html#krp-16" id="id4">[KRP+16]</a>.
+Jupyter notebooks are used extensively in this documentation to illustrate features of
+pyEMU.</dd>
+<dt id="term-derived-class">derived class</dt>
+<dd>A derived class, or subclass, inherits attributes and methods from its
+<a class="reference internal" href="#term-base-class"><span class="xref std std-term">base class</span></a>.  Derived classes then add attributes and methods as
+needed.  For example, in pyEMU, the linear analysis base class is inherited by the
+Monte Carlo derived class.</dd>
+<dt id="term-flopy">FloPY</dt>
+<dd>Object-oriented python module to build, run, and process MODFLOW models <a class="reference internal" href="../index.html#bpl-16" id="id7">[BPL+16]</a> . Because
+of the similar modeling structure, the combination of flopy and pyEMU can be
+very effective in constructing, documenting, and analyzing groundwater-flow models.</dd>
+<dt id="term-forecasts">forecasts</dt>
+<dd>Model outputs for which field observations are not available. Typically these
+values are simulated under an uncertain future condition.</dd>
+<dt id="term-fosm">FOSM<dt id="term-linear-uncertainty-analysis">linear uncertainty analysis</dt>
+<dd>First Order Second Moment (FOSM) is a technique to use an assumption of Gaussian
+distributions to, analytically, calculate the covariance of model outputs
+considering both the prior covariance and the likelihood function. In
+other words, it’s an analytical calculation of the posterior covariance of
+parameters using Bayes’ Theoerem. The equation for this calculation is the
+Schur Complement. The key advantage of this is that we really only need a
+few quantities — a Jacobian Matrix <span class="math notranslate nohighlight">\(\mathbf{J}\)</span>, the prior covariance of
+parameters <span class="math notranslate nohighlight">\(\boldsymbol{\Sigma_\theta}\)</span>, and the observation covariance
+<span class="math notranslate nohighlight">\(\boldsymbol{\Sigma_\epsilon}\)</span>.</dd>
+<dt id="term-gaussian-multivariate">Gaussian (multivariate)</dt>
+<dd><p class="first">The equation for Gaussian (Normal) distribution for a single variable (<span class="math notranslate nohighlight">\(x\)</span>) is</p>
+<div class="math notranslate nohighlight">
+\[\begin{equation}
+f(x|\mu,\sigma^2)=\frac{1}{\sqrt{2\pi\sigma^2}}e^{-\frac{1}{2}\frac{\left(x-\mu\right)^2}{\sigma^2}}
+\end{equation}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mu\)</span> is the mean and <span class="math notranslate nohighlight">\(\sigma\)</span> is the standard deviation
+The equation for a multivariate Gaussian for a vector of <span class="math notranslate nohighlight">\(k\)</span> variables (<span class="math notranslate nohighlight">\(\mathbf{x}\)</span>) is</p>
+<div class="math notranslate nohighlight">
+\[\begin{equation}
+f(\mathbf{x} | \mathbf{\mu},\mathbf{\Sigma})=\frac{1}{\sqrt{(2\pi)^k\left|\mathbf{\Sigma}\right|}}e^{-\frac{1}{2}\left( \left(\mathbf{x}-\mathbf{\mu} \right)^T  \mathbf{\Sigma}^{-1}\left(\mathbf{x}-\mathbf{\mu} \right)\right)}
+\end{equation}\]</div>
+<p class="last">here <span class="math notranslate nohighlight">\(\mu\)</span> is a <span class="math notranslate nohighlight">\(k\)</span>-length vector of mean values, <span class="math notranslate nohighlight">\(\mathbf{\Sigma}\)</span> is
+he covariance matrix, and <span class="math notranslate nohighlight">\(\left|\mathbf{\Sigma}\right|\)</span> is the determinant of
+he covariance matrix.  These quantities are often abbreviated
+s <span class="math notranslate nohighlight">\(\mathcal{N}\left( \mu, \sigma \right)\)</span>
+nd <span class="math notranslate nohighlight">\(\mathcal{N}\left(\boldsymbol{\mu}, \boldsymbol{\Sigma} \right)\)</span>
+or univariate and multivariate Gaussian distributions, respectively.</p>
+</dd>
+<dt id="term-glue">GLUE</dt>
+<dd>Generalized Likelihood Uncertainty Estimation <a class="reference internal" href="../index.html#kb09" id="id10">[KB09]</a> .</dd>
+<dt id="term-inheritance">inheritance</dt>
+<dd>A object-oriented programming technique where one class, referred to as the
+<a class="reference internal" href="#term-derived-class"><span class="xref std std-term">derived class</span></a> or subclass, extends a second class, known as the <a class="reference internal" href="#term-base-class"><span class="xref std std-term">base class</span></a>
+or superclass.  The subclass has all the defined attributes and behavior
+of the superclass and typically adds additional attributes or methods. Many
+derived classes <a class="reference internal" href="#term-override"><span class="xref std std-term">override</span></a> methods of the superclass to perform specific
+functions <a class="reference internal" href="../index.html#rs16" id="id8">[RS16]</a>.</dd>
+<dt id="term-instance-methods">instance methods</dt>
+<dd>Functions defined in a class that become associated with a particular
+instance or object after <a class="reference internal" href="#term-instantiation"><span class="xref std std-term">instantiation</span></a>.</dd>
+<dt id="term-instantiation">instantiation</dt>
+<dd>Make a class instance, also known as an object, from a class.</dd>
+<dt id="term-jacobian-matrix">Jacobian matrix</dt>
+<dd>A matrix of the sensitivity of all observations in an inverse model to all
+parameters. This is often shown as a matrix by various names <span class="math notranslate nohighlight">\(\mathbf{X}\)</span>,
+<span class="math notranslate nohighlight">\(\mathbf{J}\)</span>, or <span class="math notranslate nohighlight">\(\mathbf{H}\)</span>. Each element of the matrix is a single
+sensitivity value  <span class="math notranslate nohighlight">\(\frac{\partial f(x_i)}{\partial x_j}\)</span> for <span class="math notranslate nohighlight">\(i\in NOBS\)</span>, <span class="math notranslate nohighlight">\(j
+\in NPAR\)</span>.</dd>
+<dt id="term-likelihood-multivariate-distribution">likelihood (multivariate distribution)</dt>
+<dd>This is a function describing how much is learned from the model. It is
+characterized by the misfit between modeled equivalents and observations.</dd>
+<dt id="term-measurement-noise-error">measurement noise/error</dt>
+<dd>Measurement noise is a contribution to Epistemic Uncertainty. This is the
+expected error of repeated measurements due to things like instrument
+error and also can be compounded by error of surveying a datum, location
+of an observation on a map, and other factors.</dd>
+<dt id="term-modeled-equivalent">modeled equivalent<dt id="term-simulated-equivalent">simulated equivalent</dt>
+<dd>A modeled value collocated to correspond in time and space with an observation.
+To make things confusing, they are often <em>also</em> called
+“observations”!  These are denoted by <span class="math notranslate nohighlight">\(f(x)\)</span> for a scalar value or <span class="math notranslate nohighlight">\(f\left( \bf{x} \right)\)</span>
+for a vector of values in this documentation.  Note that in addition to
+<span class="math notranslate nohighlight">\(f(x)\)</span>, authors use several different alternate
+notations to distinguish an observation from a
+corresponding modeled equivalent including subscripts, <span class="math notranslate nohighlight">\(y\)</span> and <span class="math notranslate nohighlight">\(y_m\)</span>,
+superscripts, <span class="math notranslate nohighlight">\(y\)</span> and <span class="math notranslate nohighlight">\(y^\prime\)</span>, or diacritic marks, <span class="math notranslate nohighlight">\(y\)</span> and <span class="math notranslate nohighlight">\(\hat{y}\)</span>.</dd>
+<dt id="term-monte-carlo-ensemble">Monte Carlo ensemble</dt>
+<dd>A group of realizations of parameters, <span class="math notranslate nohighlight">\(\mathbf{\Theta}\)</span>, observations,
+<span class="math notranslate nohighlight">\(\mathbf{D_{obs}}\)</span>, and the simulated equivalent values,
+<span class="math notranslate nohighlight">\(\mathbf{D_{sim}}\)</span>. Note that these three matrices are made up of column
+vectors representing all of the <span class="math notranslate nohighlight">\(\boldsymbol{\theta}\)</span>, <span class="math notranslate nohighlight">\(\mathbf{d_{obs}}\)</span>,
+and <span class="math notranslate nohighlight">\(\mathbf{d_{sim}}\)</span> vectors.</dd>
+<dt id="term-monte-carlo-observation-realization">Monte Carlo observation realization</dt>
+<dd>A set of observation values, often but not required to be a multi-Gaussian
+distribution, sampled using the mean values of measured observations and
+variance from the observation weight covariance matrix. Can be identified
+as <span class="math notranslate nohighlight">\(\boldsymbol{d_{obs}}\)</span>.</dd>
+<dt id="term-monte-carlo-parameter-realization">Monte Carlo parameter realization</dt>
+<dd>A set of parameter values, often but not required to be a multi-Gaussian
+distribution, sampled from the mean values of specified parameter values
+(either starting values or, in some cases, optimal values following
+parameter estimation) with covariance from a set of variance values, or a
+covariance matrix. Can be identified as <span class="math notranslate nohighlight">\(\mathbf{\theta}\)</span>.</dd>
+<dt id="term-nobs"><em>NOBS</em></dt>
+<dd>For PEST and PEST++, number of observations.</dd>
+<dt id="term-npar"><em>NPAR</em></dt>
+<dd>For PEST and PEST++, number of parameters.</dd>
+<dt id="term-object">object<dt id="term-instance">instance</dt>
+<dd>A programming entity that may store internal data (<a class="reference internal" href="#term-state"><span class="xref std std-term">state</span></a>), have
+functionality (<a class="reference internal" href="#term-behavior"><span class="xref std std-term">behavior</span></a>) or both <a class="reference internal" href="../index.html#rs16" id="id1">[RS16]</a> .</dd>
+<dt id="term-objective-function">objective function</dt>
+<dd>Equation quantifying how well as simulation matches observations.  Inverse
+modeling is the process of calibrating a numerical model by mathematically
+seeking the minimum of an objective function. (see <a class="reference internal" href="#term-phi"><span class="xref std std-term">Phi</span></a>)</dd>
+<dt id="term-observation">observation</dt>
+<dd>Measured system state values. These values are used to compare with model
+outputs collocated in space and time. The term is often used to mean
+<em>both</em> field measurements and outputs from the model. These are denoted
+by <span class="math notranslate nohighlight">\(y\)</span> for a scalar value or <span class="math notranslate nohighlight">\(\bf{y}\)</span>
+for a vector of values in this documentation.</dd>
+<dt id="term-override">override</dt>
+<dd>Implement a new version of a method within a derived class that would have
+otherwise been inherited from the base class customizing the behavior
+of the method for the derived class <a class="reference internal" href="../index.html#rs16" id="id9">[RS16]</a>.  Overriding allows objects to
+call a method by the same name but have behavior specific to the
+object’s type.</dd>
+<dt id="term-parameter-covariance-matrix">parameter covariance matrix</dt>
+<dd>The uncertainty of parameters can be expressed as a matrix as well. This
+is formed also as a diagonal matrix from the bounds around parameter
+values (assuming that the range between the bounds indicates <span class="math notranslate nohighlight">\(4\sigma\)</span>
+(e.g. 95 percent of a normal distribution).) In pyEMU, some functions
+accept a <em>sigma_range</em> argument which can override the <span class="math notranslate nohighlight">\(4\sigma\)</span>
+assumption. In many cases of our applications, parameters are spatially
+distributed (e.g. hydraulic conductivity fields) so a covariance matrix
+with off-diagonal terms can be formed to characterize not only their
+variance but also their correlation/covariance. We often use
+geostatistical variograms to characterize the covariance of parameters.
+The parameter covariance matrix is often identified as <span class="math notranslate nohighlight">\(C(\mathbf{p})\)</span>,
+<span class="math notranslate nohighlight">\(\mathbf{\Sigma_\theta}\)</span>, or <span class="math notranslate nohighlight">\(\mathbf{R}\)</span>.</dd>
+<dt id="term-parameters">parameters</dt>
+<dd>Variable input values for models, typically representing system properties
+and forcings. Values to be estimated in the history matching process.</dd>
+<dt id="term-phi">Phi</dt>
+<dd><p class="first">For pyEMU and consistent with PEST and PEST++, Phi refers to the <a class="reference internal" href="#term-objective-function"><span class="xref std std-term">objective function</span></a>,
+defined as the weighted sum of squares of residuals. Phi, <span class="math notranslate nohighlight">\(\Phi\)</span>, is typically calculated as</p>
+<div class="math notranslate nohighlight">
+\[\begin{array}{ccc}
+\Phi=\sum_{i=1}^{n}\left(\frac{y_{i}-f\left(x_{i}\right)}{w_{i}}\right)^{2} &amp; or &amp; \Phi=\left(\mathbf{y}-\mathbf{Jx}\right)^{T}\mathbf{Q}^{-1}\left(\mathbf{y}-\mathbf{Jx}\right)
+\end{array}\]</div>
+<p>When regularization is included, an additional term is added,
+quantifying a penalty assessed for parameter sets that violate the preferred
+conditions regarding the parameter values.
+In such a case, the value of <span class="math notranslate nohighlight">\(\Phi\)</span> as stated above is
+renamed <span class="math notranslate nohighlight">\(\Phi_m\)</span> for “measurement Phi” and the additional regularization
+term is named <span class="math notranslate nohighlight">\(\Phi_r\)</span>. A scalar, <span class="math notranslate nohighlight">\(\gamma\)</span>,  parameter controls the
+tradeoff between these two dual components of the total objective function <span class="math notranslate nohighlight">\(\Phi_t\)</span>.</p>
+<div class="last math notranslate nohighlight">
+\[\Phi_t = \Phi_m + \gamma  \Phi_r\]</div>
+</dd>
+<dt id="term-phimlim">PHIMLIM</dt>
+<dd>A PEST input parameter the governs the strength with which regularization
+is applied to the objective function. A high value of PHIMLIM indicates a
+strong penalty for deviation from preferred parameter conditions while a
+low value of PHIMLIM indicates a weak penalty. The reason this “dial”” is
+listed as a function of PHIM (e.g. <span class="math notranslate nohighlight">\(\mathbf{\Phi_M}\)</span>) is because it can
+then be interpreted as a limit on how well we want to fit the observation
+data. PHIMLIM is actually controlling the value <span class="math notranslate nohighlight">\(\gamma\)</span> appearing in the
+definition for <a class="reference internal" href="#term-phi"><span class="xref std std-term">Phi</span></a> and formally trading off <span class="math notranslate nohighlight">\(\Phi_m\)</span> asnd <span class="math notranslate nohighlight">\(\Phi_r\)</span>.</dd>
+<dt id="term-posterior-multivariate-distribution">posterior (multivariate distribution)</dt>
+<dd>The posterior distribution is the updated distribution (mean and
+covariance) of parameter values <span class="math notranslate nohighlight">\(\boldsymbol{\theta}\)</span>  updated from their
+prior by an experiment (encapsulated in the likelihood function). In other
+words, information gleaned from observations <span class="math notranslate nohighlight">\(\mathbf{d}\)</span> is used to
+update the initial values of the parameters.</dd>
+<dt id="term-prior-multivariate-distribution">prior (multivariate distribution)</dt>
+<dd>This distribution represents what we know about parameter values prior to
+any modeling. It is also called “soft knowledge” or “expert
+knowledge”. This information is more than just starting values, but also
+encapsulates the understanding of uncertainty (characterized through the
+covariance) based on direct estimation of parameters (e.g. pumping tests,
+geologic maps, and grain size analysis, for example). In one
+interpretation of the objective function, this is also where the
+regularization information is contained.</dd>
+<dt id="term-regularization">regularization</dt>
+<dd>A preferred condition pertaining to parameters, the deviation from which,
+elicits a penalty added to the objective function. This serves as a
+balance between the level of fit or “measurement Phi”
+<span class="math notranslate nohighlight">\((\mathbf{\Phi_M})\)</span> and the coherence with soft knowledge/previous
+conditions/prior knowledge/regularization <span class="math notranslate nohighlight">\((\mathbf{\Phi_R})\)</span>. These terms
+can also be interpreted as the likelihood function and prior distribution
+in Bayes theorem.</dd>
+<dt id="term-residuals">residuals</dt>
+<dd>The difference between observation values and modeled equivalents
+<span class="math notranslate nohighlight">\(r_i=y_i-f\left(x_i\right)\)</span>.</dd>
+<dt id="term-schur-complement">Schur complement</dt>
+<dd><p class="first">The formula used to propagate uncertainty from a prior through a
+“notional” calibration (via the Jacobian) to the posterior update.</p>
+<div class="last math notranslate nohighlight">
+\[\begin{split}\begin{equation}
+\underbrace{\overline{\boldsymbol{\Sigma}}_{\boldsymbol{\theta}}}_{\substack{\text{what we} \\ \text{know now}}} = \underbrace{\boldsymbol{\Sigma}_{\boldsymbol{\theta}}}_{\substack{\text{what we} \\ \text{knew}}} - \underbrace{\boldsymbol{\Sigma}_{\boldsymbol{\theta}}\bf{J}^T\left[\bf{J}\boldsymbol{\Sigma}_{\boldsymbol{\theta}}\bf{J}^T + \boldsymbol{\Sigma}_{\boldsymbol{\epsilon}}\right]^{-1}\bf{J}\boldsymbol{\Sigma}_{\boldsymbol{\theta}}}_{\text{what we learned}}
+\end{equation}\end{split}\]</div>
+</dd>
+<dt id="term-sensitivity">sensitivity</dt>
+<dd>The incremental change of an observation (actually the modeled equivalent)
+due to an incremental change in a parameter. Typically expressed as a
+finite-difference approximation of a partial derivative, <span class="math notranslate nohighlight">\(\frac{\partial
+f(x)}{\partial x}\)</span>.</dd>
+<dt id="term-state">state</dt>
+<dd>The state of the object refers to the current value of all the internal data
+stored in and object <a class="reference internal" href="../index.html#rs16" id="id5">[RS16]</a> .</dd>
+<dt id="term-static-methods">static methods<dt id="term-helper-methods">helper methods</dt>
+<dd>Functions that are defined for the python module and available to the script. They
+are not tied to specified objects.  pyEMU has a number of helper methods including
+functions to plot results, read or write specific data types, and interact with the
+<a class="reference internal" href="#term-flopy"><span class="xref std std-term">FloPY</span></a> module in analysis of MODFLOW models.</dd>
+<dt id="term-structural-model-error">structural (model) error</dt>
+<dd>Epistemic uncertainty is actually dominated by structural error relative
+to measurement noise. The structural error is the expected misfit between
+measured and modeled values at observation locations due to model
+inadequacy (including everything from model simplification due to the
+necessity of discretizing the domain, processes that are missing from the
+model, etc.).</dd>
+<dt id="term-weight">weight<dt id="term-epistemic-uncertainty">epistemic uncertainty</dt>
+<dd>A value by which a residual is divided by when constructing the sum of
+squared residuals. In principal, <span class="math notranslate nohighlight">\(w_i\approx\frac{1}{\sigma_i}\)</span> where <span class="math notranslate nohighlight">\(\sigma_i\)</span> is
+an approximation of the expected error between model output and collocated
+observation values. While the symbol <span class="math notranslate nohighlight">\(\sigma\)</span> implies a standard deviation,
+it is important to note that measurement error only makes up a portion of
+this error. Other aspects such as structural error (e.g. inadequacy inherent
+in all models to perfectly simulate the natural world) also contribute to
+this expected level of error. The reciprocal of weights are also called
+Epistemic Uncertainty terms.</dd>
+<dt id="term-weight-covariance-matrix-correlation-matrix">weight covariance matrix (correlation matrix)</dt>
+<dd>In practice, this is usually a <span class="math notranslate nohighlight">\(NOBS\times NOBS\)</span> diagonal matrix with
+values of weights on the diagonal representing the inverse of the
+observation covariance. This implies a lack of correlation among the
+observations. A full covariance matrix would indicate correlation among
+the observations which, in reality, is present but, in practice, is rarely
+characterized. The weight matrix is often identified as <span class="math notranslate nohighlight">\(\mathbf{Q}^{-1}\)</span>
+or <span class="math notranslate nohighlight">\(\mathbf{\Sigma_\epsilon}^{-1}\)</span>.</dd>
+</dl>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="pst_demo.html" title="previous chapter">The Pst class</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/source/glossary.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Jeremy White, Mike Fienen, John Doherty.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+      |
+      <a href="../_sources/source/glossary.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -61,7 +61,7 @@ napoleon_use_rtype = True
 napoleon_use_keyword = True
 
 # Inheritance diagram options can be changed here
-inheritance_node_attrs = dict(shape='rectangle', fontsize=12)
+inheritance_node_attrs = dict(shape='rectangle', fontsize=14)
 inheritance_graph_attrs = dict(rankdir="TB", size='""')
 
 # Add any paths that contain templates here, relative to this directory.

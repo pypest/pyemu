@@ -1,0 +1,10 @@
+<map id="inheritance7a93c337f3" name="inheritance7a93c337f3">
+<area shape="rect" id="node1" title="baseclass for various pandas objects" alt="" coords="330,84,629,115"/>
+<area shape="rect" id="node5" title="N&#45;dimensional analogue of DataFrame. Store multi&#45;dimensional in a" alt="" coords="175,163,458,193"/>
+<area shape="rect" id="node2" title="implements string methods so long as object defines a `__unicode__`" alt="" coords="344,5,615,36"/>
+<area shape="rect" id="node3" title="mixin implementing the selection &amp; aggregation interface on a group&#45;like" alt="" coords="5,84,305,115"/>
+<area shape="rect" id="node4" title="Two&#45;dimensional size&#45;mutable, potentially heterogeneous tabular data" alt="" coords="177,241,457,272"/>
+<area shape="rect" id="node6" href="pyemu.html#pyemu.en.Ensemble" target="_top" title="The base class type for handling parameter and observation ensembles." alt="" coords="219,320,415,351"/>
+<area shape="rect" id="node7" href="pyemu.html#pyemu.en.ObservationEnsemble" target="_top" title="Ensemble derived type for observations. &#160;This class is primarily used to" alt="" coords="10,399,309,429"/>
+<area shape="rect" id="node8" href="pyemu.html#pyemu.en.ParameterEnsemble" target="_top" title="Ensemble derived type for parameters" alt="" coords="333,399,617,429"/>
+</map>

@@ -28,6 +28,7 @@ Contents
    :maxdepth: 1
 
    source/Monte_carlo_page
+   source/ensembles
    source/oop
    source/glossary
    

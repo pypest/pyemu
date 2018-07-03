@@ -1035,7 +1035,7 @@ def read_pestpp_runstorage(filename,irun=0):
 
 
 def jco_from_pestpp_runstorage(rnj_filename,pst_filename):
-    """ read pars and obs from a pest++ serialized run storage file (e.g., *.rnj) and return 
+    """ read pars and obs from a pest++ serialized run storage file (e.g., .rnj) and return 
     pyemu.Jco.  This can then be passed to Jco.to_binary or Jco.to_coo, etc., to write jco file
     in a subsequent step to avoid memory resource issues associated with very large problems.
 
@@ -1056,7 +1056,7 @@ def jco_from_pestpp_runstorage(rnj_filename,pst_filename):
     TODO:
     0. Check rnj file contains transformed par vals (i.e., in model input space)
     1. Currently only returns pyemu.Jco; doesn't write jco file due to memory issues 
-        associated with very large problems
+       associated with very large problems
     3. Compare rnj and jco from Freyberg problem in autotests
 
     """
