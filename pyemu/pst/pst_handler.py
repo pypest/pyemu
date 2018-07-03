@@ -298,6 +298,19 @@ class Pst(object):
         self.control_data.npar = self.parameter_data.shape[0]
         return self.control_data.npar
 
+    @property
+    def pars_in_groups(self):
+        """
+        return a dictionary of  parameter names in each parameter group.
+
+        Returns:
+            dictionary
+        """
+        pargp = self.par_groups
+        allpars = dict()
+        for cpg in pargp:
+            allpars[cpg] = [i for i in self.parameter_data.loc[self.parameter_data.pargp == cpg, 'parnme']]
+        return allpars
 
     @property
     def forecast_names(self):
