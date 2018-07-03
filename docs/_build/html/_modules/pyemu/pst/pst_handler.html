@@ -74,7 +74,12 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">load</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">resfile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">flex</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">parameter_data</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="sd">&quot;&quot;&quot;pandas.DataFrame:  parameter data loaded from pst control file&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">observation_data</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="sd">&quot;&quot;&quot;pandas.DataFrame:  observation data loaded from pst control file&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prior_information</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="sd">&quot;&quot;&quot;pandas.DataFrame:  prior_information data loaded from pst control file&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">filename</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">resfile</span> <span class="o">=</span> <span class="n">resfile</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__res</span> <span class="o">=</span> <span class="kc">None</span>
@@ -87,8 +92,11 @@
             <span class="bp">self</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
         <span class="c1">#self.tied = None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">control_data</span> <span class="o">=</span> <span class="n">ControlData</span><span class="p">()</span>
+        <span class="sd">&quot;&quot;&quot;pyemu.pst.pst_controldata.ControlData:  control data object loaded from pst control file&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">svd_data</span> <span class="o">=</span> <span class="n">SvdData</span><span class="p">()</span>
+        <span class="sd">&quot;&quot;&quot;pyemu.pst.pst_controldata.SvdData: singular value decomposition (SVD) object loaded from pst control file&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">reg_data</span> <span class="o">=</span> <span class="n">RegData</span><span class="p">()</span>
+        <span class="sd">&quot;&quot;&quot;pyemu.pst.pst_controldata.RegData: regularization data object loaded from pst control file&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">load</span><span class="p">:</span>
             <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">),</span>\
                 <span class="s2">&quot;pst file not found:</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>

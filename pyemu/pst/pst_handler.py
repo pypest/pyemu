@@ -39,7 +39,12 @@ class Pst(object):
     """
     def __init__(self, filename, load=True, resfile=None,flex=False):
 
-
+        self.parameter_data = None
+        """pandas.DataFrame:  parameter data loaded from pst control file"""
+        self.observation_data = None
+        """pandas.DataFrame:  observation data loaded from pst control file"""
+        self.prior_information = None
+        """pandas.DataFrame:  prior_information data loaded from pst control file"""
         self.filename = filename
         self.resfile = resfile
         self.__res = None
@@ -52,8 +57,11 @@ class Pst(object):
             self.__setattr__(key,copy.copy(value))
         #self.tied = None
         self.control_data = ControlData()
+        """pyemu.pst.pst_controldata.ControlData:  control data object loaded from pst control file"""
         self.svd_data = SvdData()
+        """pyemu.pst.pst_controldata.SvdData: singular value decomposition (SVD) object loaded from pst control file"""
         self.reg_data = RegData()
+        """pyemu.pst.pst_controldata.RegData: regularization data object loaded from pst control file"""
         if load:
             assert os.path.exists(filename),\
                 "pst file not found:{0}".format(filename)

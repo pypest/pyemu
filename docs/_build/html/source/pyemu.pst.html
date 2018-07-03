@@ -226,6 +226,42 @@ with the control file base name is sought.  Default is None</li>
 </tr>
 </tbody>
 </table>
+<dl class="attribute">
+<dt id="pyemu.pst.pst_handler.Pst.parameter_data">
+<code class="descname">parameter_data</code><em class="property"> = None</em><a class="headerlink" href="#pyemu.pst.pst_handler.Pst.parameter_data" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>pandas.DataFrame</em> – parameter data loaded from pst control file</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.pst.pst_handler.Pst.observation_data">
+<code class="descname">observation_data</code><em class="property"> = None</em><a class="headerlink" href="#pyemu.pst.pst_handler.Pst.observation_data" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>pandas.DataFrame</em> – observation data loaded from pst control file</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.pst.pst_handler.Pst.prior_information">
+<code class="descname">prior_information</code><em class="property"> = None</em><a class="headerlink" href="#pyemu.pst.pst_handler.Pst.prior_information" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>pandas.DataFrame</em> – prior_information data loaded from pst control file</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.pst.pst_handler.Pst.control_data">
+<code class="descname">control_data</code><em class="property"> = None</em><a class="headerlink" href="#pyemu.pst.pst_handler.Pst.control_data" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>pyemu.pst.pst_controldata.ControlData</em> – control data object loaded from pst control file</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.pst.pst_handler.Pst.svd_data">
+<code class="descname">svd_data</code><em class="property"> = None</em><a class="headerlink" href="#pyemu.pst.pst_handler.Pst.svd_data" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>pyemu.pst.pst_controldata.SvdData</em> – singular value decomposition (SVD) object loaded from pst control file</p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="pyemu.pst.pst_handler.Pst.reg_data">
+<code class="descname">reg_data</code><em class="property"> = None</em><a class="headerlink" href="#pyemu.pst.pst_handler.Pst.reg_data" title="Permalink to this definition">¶</a></dt>
+<dd><p><em>pyemu.pst.pst_controldata.RegData</em> – regularization data object loaded from pst control file</p>
+</dd></dl>
+
 <dl class="classmethod">
 <dt id="pyemu.pst.pst_handler.Pst.from_par_obs_names">
 <em class="property">classmethod </em><code class="descname">from_par_obs_names</code><span class="sig-paren">(</span><em>par_names=['par1'], obs_names=['obs1']</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/pst/pst_handler.html#Pst.from_par_obs_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.pst.pst_handler.Pst.from_par_obs_names" title="Permalink to this definition">¶</a></dt>
