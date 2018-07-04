@@ -639,7 +639,10 @@
 
         <span class="k">if</span> <span class="n">base_obslist</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">base_obslist</span> <span class="o">=</span> <span class="p">[]</span>
-
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">base_obslist</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">list</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">lraise</span><span class="p">(</span><span class="s2">&quot;Schur.get_added_obs)_importance: base_obslist must be&quot;</span> <span class="o">+</span>
+                                   <span class="s2">&quot; type &#39;list&#39;, not </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">base_obslist</span><span class="p">))))</span>
         <span class="c1"># if needed reset the zero-weight obs in obslist_dict</span>
         <span class="k">if</span> <span class="n">obslist_dict</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">reset</span><span class="p">:</span>
             <span class="n">z_obs</span> <span class="o">=</span> <span class="p">[]</span>

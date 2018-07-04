@@ -1720,6 +1720,7 @@ def modflow_sfr_gag_to_instruction_file(gage_output_file, ins_file=None):
     if df is not None:
         return df, ins_file, gage_output_file
     else:
+        print("Inschek didn't run so nothing returned")
         return None
 
 def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):

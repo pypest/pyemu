@@ -27,7 +27,7 @@ Contents
 .. toctree::
    :maxdepth: 1
 
-   source/Monte_carlo
+   source/Monte_carlo_page
    source/oop
    source/glossary
    

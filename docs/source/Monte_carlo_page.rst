@@ -9,12 +9,16 @@ the parameter definitions, and then using the PEST++ program
 
 .. rubric:: Workflow Overview
 
-blah blah blah
+blah blah  blah Uses :ref:`Ensembles`.
    
-   
+.. rubric:: Inheritance
+
+.. inheritance-diagram:: pyemu.mc
+
 .. rubric:: Module Documentation
 
-.. automodule:: mc
+.. automodule:: pyemu.mc
    :members:
-   
+   :show-inheritance:
+   :noindex:
    

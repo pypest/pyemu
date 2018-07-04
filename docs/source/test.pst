@@ -3,7 +3,7 @@ pcf
              restart          estimation
         10        10         2         8         3         0
          3         5              single               point         1         0         0          noobsreref
-   1.000000E+01   2.000000E+00   1.000000E-01   3.000000E-02       100       999          lamforgive        noderforgive
+   1.000000E+01   2.000000E+00   1.000000E-01   3.000000E-02        10       999          lamforgive        noderforgive
    3.000000E+00   3.000000E+00   1.000000E-03         0         0
    3.000000E-01         1   1.100000E+00               noaui          nosenreuse        noboundscale
         -1   5.000000E-03         4         4   1.000000E-03         4   0.000000E+00         1  -1.000000E+00
@@ -16,7 +16,7 @@ pcf
 p                       relative              1.0000000000E-02       0.0  switch                2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller              
 m                       relative              1.0000000000E-02       0.0  switch                2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller
 * parameter data
-global_k               log                    factor                2.0000000000E+02      1.5000000000E+02      2.5000000000E+02       m                     1.0000000000E+00      0.0000000000E+00      1          
+global_k               log                    factor                2.2500000000E+02      1.5000000000E+02      2.5000000000E+02       m                     1.0000000000E+00      0.0000000000E+00      1          
 mult1                  log                    factor                1.0000000000E+00      7.5000000000E-01      1.2500000000E+00       m                     1.0000000000E+00      0.0000000000E+00      1          
 mult2                  log                    factor                1.0000000000E+00      5.0000000000E-01      2.0000000000E+00       m                     1.0000000000E+00      0.0000000000E+00      1          
 kr01c01                log                    factor                1.0000000000E+00      1.0000000000E-01      1.0000000000E+01       p                     1.0000000000E+00      0.0000000000E+00      1          
@@ -27,20 +27,20 @@ kr01c05                log                    factor                1.0000000000
 kr01c06                log                    factor                1.0000000000E+00      1.0000000000E-01      1.0000000000E+01       p                     1.0000000000E+00      0.0000000000E+00      1          
 kr01c07                log                    factor                1.0000000000E+00      1.0000000000E-01      1.0000000000E+01       p                     1.0000000000E+00      0.0000000000E+00      1
 * observation groups
-conc                 
-regul_m              
+head                 
 regul_p              
+regul_m              
 * observation data
-c_obs12_2             4.3259300000E-01      0.0000000000E+00       conc                 
-c_obs13_1             8.4528300000E-06      1.0000000000E+02       conc                 
-c_obs13_2             8.3388800000E-01      0.0000000000E+00       conc                 
-c_obs14_1             4.9694300000E-01      2.0123030000E+01       conc                 
-c_obs14_2             9.6663100000E-01      0.0000000000E+00       conc                 
-c_obs15_1             9.0283500000E-01      1.1076220000E+01       conc                 
-c_obs15_2             9.9963100000E-01      0.0000000000E+00       conc                 
-pd_one                7.0193100000E+00      0.0000000000E+00       conc                 
-pd_ten                7.3119000000E+00      0.0000000000E+00       conc                 
-pd_half               7.8932200000E+00      0.0000000000E+00       conc
+h_obs01_1             5.1396200000E-02      2.5000000000E+01       head                 
+h_obs01_2             2.2156200000E-02      0.0000000000E+00       head                 
+h_obs02_1             4.6879400000E-02      1.5214580000E+02       head                 
+h_obs02_2             2.0852800000E-02      0.0000000000E+00       head                 
+h_obs03_1             3.6584100000E-02      1.5214580000E+02       head                 
+h_obs03_2             1.9502200000E-02      0.0000000000E+00       head                 
+h_obs04_1             2.7541600000E-02      1.5214580000E+02       head                 
+h_obs04_2             1.6946400000E-02      0.0000000000E+00       head                 
+h_obs05_1             2.6381600000E-02      1.5214580000E+02       head                 
+h_obs05_2             7.5455700000E-03      0.0000000000E+00       head
 * model command line
 model.bat
 * model input/output
@@ -62,10 +62,10 @@ kr01c05               1.0 * log(kr01c05) = 0.0    1.0000000000E+00     regul_p
 kr01c06               1.0 * log(kr01c06) = 0.0    1.0000000000E+00     regul_p              
 kr01c07               1.0 * log(kr01c07) = 0.0    1.0000000000E+00     regul_p              
 ++N_ITER_BASE(1)
-++N_ITER_SUPER(4)
-++SUPER_EIGTHRES(1.0e-8)
-++MAX_N_SUPER(77)
 ++AUTO_NORM(4)
-++OVERDUE_RESCHED_FAC(1.15)
 ++OVERDUE_GIVEUP_FAC(1.5)
 ++forecasts(pd_ten,c_obs10_2)
+++SUPER_EIGTHRES(1.0e-8)
+++OVERDUE_RESCHED_FAC(1.15)
+++N_ITER_SUPER(4)
+++MAX_N_SUPER(77)

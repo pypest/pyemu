@@ -2077,28 +2077,36 @@ complete definitions</td>
 <dl class="attribute">
 <dt id="pyemu.mc.MonteCarlo.parensemble">
 <code class="descname">parensemble</code><a class="headerlink" href="#pyemu.mc.MonteCarlo.parensemble" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>pyemu.ParameterEnsemble</em></p>
+<dd><p><em>pyemu.ParameterEnsemble</em> – pyemu object derived from a pandas dataframe, the ensemble
+of parameters from the PEST control file with associated
+starting value and bounds.  Object also exposes methods
+relevant to the dataframe and parameters– see documentation.</p>
 </dd></dl>
 
 <dl class="attribute">
 <dt id="pyemu.mc.MonteCarlo.obsensemble">
 <code class="descname">obsensemble</code><a class="headerlink" href="#pyemu.mc.MonteCarlo.obsensemble" title="Permalink to this definition">¶</a></dt>
-<dd><p><em>pyemu.ObservationEnsemble</em></p>
+<dd><p><em>pyemu.ObservationEnsemble</em> – pyemu object derived from a pandas dataframe, the ensemble
+of observations from the PEST control file with associated
+starting weights.  Object also exposes methods
+relevant to the dataframe and observations– see documentation.</p>
 </dd></dl>
 
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><strong>MonteCarlo</strong></td>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">pyEMU MonteCarlo object</td>
 </tr>
 <tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#pyemu.mc.MonteCarlo" title="pyemu.mc.MonteCarlo">MonteCarlo</a></td>
 </tr>
 </tbody>
 </table>
-<p class="rubric">Example</p>
+<div class="admonition-example admonition">
+<p class="first admonition-title">Example</p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc</span> <span class="pre">=</span> <span class="pre">pyemu.MonteCarlo(pst=&quot;pest.pst&quot;)</span></code></p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc</span> <span class="pre">=</span> <span class="pre">pyemu.MonteCarlo(pst=&quot;pest.pst&quot;)</span></code></p>
+</div>
 <dl class="attribute">
 <dt id="pyemu.mc.MonteCarlo.num_reals">
 <code class="descname">num_reals</code><a class="headerlink" href="#pyemu.mc.MonteCarlo.num_reals" title="Permalink to this definition">¶</a></dt>
@@ -2118,11 +2126,8 @@ complete definitions</td>
 <dl class="method">
 <dt id="pyemu.mc.MonteCarlo.get_nsing">
 <code class="descname">get_nsing</code><span class="sig-paren">(</span><em>epsilon=0.0001</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/mc.html#MonteCarlo.get_nsing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.mc.MonteCarlo.get_nsing" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="docutils">
-<dt>get the number of solution space dimensions given</dt>
-<dd>a ratio between the largest and smallest singular
-values</dd>
-</dl>
+<dd><p>get the number of solution space dimensions given
+a ratio between the largest and smallest singular values</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
@@ -2189,10 +2194,12 @@ default is “gaussian”.</li>
 </tr>
 </tbody>
 </table>
-<p class="rubric">Example</p>
+<div class="admonition-example admonition">
+<p class="first admonition-title">Example</p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc</span> <span class="pre">=</span> <span class="pre">pyemu.MonteCarlo(pst=&quot;pest.pst&quot;)</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc.draw(1000)</span></code></p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc.draw(1000)</span></code></p>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -2226,11 +2233,13 @@ Default is None</li>
 <p class="last">to use this method, the MonteCarlo instance must have been constructed
 with the <code class="docutils literal notranslate"><span class="pre">jco</span></code> argument.</p>
 </div>
-<p class="rubric">Example</p>
+<div class="admonition-example admonition">
+<p class="first admonition-title">Example</p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc</span> <span class="pre">=</span> <span class="pre">pyemu.MonteCarlo(jco=&quot;pest.jcb&quot;)</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc.draw(1000)</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc.project_parensemble(par_file=&quot;final.par&quot;,nsing=100)</span></code></p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc.project_parensemble(par_file=&quot;final.par&quot;,nsing=100)</span></code></p>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -2257,11 +2266,13 @@ file as seen from the location where pest++ will be run</li>
 </tr>
 </tbody>
 </table>
-<p class="rubric">Example</p>
+<div class="admonition-example admonition">
+<p class="first admonition-title">Example</p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc</span> <span class="pre">=</span> <span class="pre">pyemu.MonteCarlo(jco=&quot;pest.jcb&quot;)</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc.draw(1000,</span> <span class="pre">obs=True)</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc.write_psts(&quot;mc_&quot;,</span> <span class="pre">existing_jco=&quot;pest.jcb&quot;,</span> <span class="pre">noptmax=1)</span></code></p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;mc.write_psts(&quot;mc_&quot;,</span> <span class="pre">existing_jco=&quot;pest.jcb&quot;,</span> <span class="pre">noptmax=1)</span></code></p>
+</div>
 </dd></dl>
 
 </dd></dl>
@@ -2290,9 +2301,11 @@ LinearAnalysis definition for argument types</td>
 <p class="first admonition-title">Note</p>
 <p class="last">Same call signature as the base LinearAnalysis class</p>
 </div>
-<p class="rubric">Example</p>
+<div class="admonition-example admonition">
+<p class="first admonition-title">Example</p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;sc</span> <span class="pre">=</span> <span class="pre">pyemu.Schur(jco=&quot;pest.jcb&quot;)</span></code></p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;sc</span> <span class="pre">=</span> <span class="pre">pyemu.Schur(jco=&quot;pest.jcb&quot;)</span></code></p>
+</div>
 <dl class="attribute">
 <dt id="pyemu.sc.Schur.pandas">
 <code class="descname">pandas</code><a class="headerlink" href="#pyemu.sc.Schur.pandas" title="Permalink to this definition">¶</a></dt>
@@ -2334,11 +2347,13 @@ Schur compliment before returning</p>
 <p class="first admonition-title">Note</p>
 <p class="last">returns a reference</p>
 </div>
-<p class="rubric">Example</p>
+<div class="admonition-example admonition">
+<p class="first admonition-title">Example</p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;sc</span> <span class="pre">=</span> <span class="pre">pyemu.Schur(jco=&quot;pest.jcb&quot;)</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;post_cov</span> <span class="pre">=</span> <span class="pre">sc.posterior_parameter</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;post_cov.to_ascii(&quot;post.cov&quot;)</span></code></p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;post_cov.to_ascii(&quot;post.cov&quot;)</span></code></p>
+</div>
 </dd></dl>
 
 <dl class="attribute">
@@ -2424,14 +2439,16 @@ uncertainty reduction of each parameter</td>
 <p class="last">this is the primary method for accessing parameter uncertainty
 estimates - use this!</p>
 </div>
-<p class="rubric">Example</p>
+<div class="admonition-example admonition">
+<p class="first admonition-title">Example</p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">matplotlib.pyplot</span> <span class="pre">as</span> <span class="pre">plt</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;sc</span> <span class="pre">=</span> <span class="pre">pyemu.Schur(jco=&quot;pest.jcb&quot;)</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;sc</span> <span class="pre">=</span> <span class="pre">pyemu.Schur(jco=&quot;pest.jcb&quot;,forecasts=[&quot;fore1&quot;,&quot;fore2&quot;])</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;par_sum</span> <span class="pre">=</span> <span class="pre">sc.get_parameter_summary()</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;par_sum.plot(kind=&quot;bar&quot;)</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;plt.show()</span></code></p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;plt.show()</span></code></p>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -2457,7 +2474,8 @@ uncertainty reduction of each parameter</td>
 <p class="last">this is the primary method for accessing forecast uncertainty
 estimates - use this!</p>
 </div>
-<p class="rubric">Example</p>
+<div class="admonition-example admonition">
+<p class="first admonition-title">Example</p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">matplotlib.pyplot</span> <span class="pre">as</span> <span class="pre">plt</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
 <p>This usage assumes you have set the <code class="docutils literal notranslate"><span class="pre">++forecasts()</span></code> argument in the
@@ -2468,7 +2486,8 @@ names of zero-weight observations:</p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;sc</span> <span class="pre">=</span> <span class="pre">pyemu.Schur(jco=&quot;pest.jcb&quot;,forecasts=[&quot;fore1&quot;,&quot;fore2&quot;])</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;fore_sum</span> <span class="pre">=</span> <span class="pre">sc.get_forecast_summary()</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;fore_sum.plot(kind=&quot;bar&quot;)</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;plt.show()</span></code></p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;plt.show()</span></code></p>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -2522,10 +2541,12 @@ knowledge of the parameters in the values of parlist_dict</td>
 </tr>
 </tbody>
 </table>
-<p class="rubric">Example</p>
+<div class="admonition-example admonition">
+<p class="first admonition-title">Example</p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;sc</span> <span class="pre">=</span> <span class="pre">pyemu.Schur(jco=&quot;pest.jcb&quot;)</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;df</span> <span class="pre">=</span> <span class="pre">sc.get_par_contribution()</span></code></p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;df</span> <span class="pre">=</span> <span class="pre">sc.get_par_contribution()</span></code></p>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -2596,10 +2617,12 @@ in base_obslist (if any)</p>
 <p class="last">all observations listed in obslist_dict and base_obslist with zero
 weights will be dropped unless reset_zero_weight is set</p>
 </div>
-<p class="rubric">Example</p>
+<div class="admonition-example admonition">
+<p class="first admonition-title">Example</p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;sc</span> <span class="pre">=</span> <span class="pre">pyemu.Schur(jco=&quot;pest.jcb&quot;)</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;df</span> <span class="pre">=</span> <span class="pre">sc.get_added_obs_importance(base_obslist=sc.pst.nnz_obs_names,reset_zero=True)</span></code></p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;df</span> <span class="pre">=</span> <span class="pre">sc.get_added_obs_importance(base_obslist=sc.pst.nnz_obs_names,reset_zero=True)</span></code></p>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -2639,10 +2662,12 @@ contained in obslist_dict[key value]</p>
 <p class="last">all observations listed in obslist_dict with zero
 weights will be dropped unless reset_zero_weight is set</p>
 </div>
-<p class="rubric">Example</p>
+<div class="admonition-example admonition">
+<p class="first admonition-title">Example</p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;sc</span> <span class="pre">=</span> <span class="pre">pyemu.Schur(jco=&quot;pest.jcb&quot;)</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">df</span> <span class="pre">=</span> <span class="pre">sc.get_removed_obs_importance()</span></code></p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">df</span> <span class="pre">=</span> <span class="pre">sc.get_removed_obs_importance()</span></code></p>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -2701,11 +2726,13 @@ Columns of forecast variance percent reduction for this iteration,
 </tr>
 </tbody>
 </table>
-<p class="rubric">Example</p>
+<div class="admonition-example admonition">
+<p class="first admonition-title">Example</p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;sc</span> <span class="pre">=</span> <span class="pre">pyemu.Schur(jco=&quot;pest.jcb&quot;)</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;df</span> <span class="pre">=</span> <span class="pre">sc.next_most_added_importance_obs(forecast=&quot;fore1&quot;,</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;</span>&#160;&#160;&#160;&#160;&#160; <span class="pre">base_obslist=sc.pst.nnz_obs_names,reset_zero=True</span></code></p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;</span>&#160;&#160;&#160;&#160;&#160; <span class="pre">base_obslist=sc.pst.nnz_obs_names,reset_zero=True</span></code></p>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -2871,9 +2898,11 @@ realizations are kept. Default is None</li>
 </tr>
 </tbody>
 </table>
-<p class="rubric">Example</p>
+<div class="admonition-example admonition">
+<p class="first admonition-title">Example</p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;es</span> <span class="pre">=</span> <span class="pre">pyemu.EnsembleSmoother(pst=&quot;pest.pst&quot;)</span></code></p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;es</span> <span class="pre">=</span> <span class="pre">pyemu.EnsembleSmoother(pst=&quot;pest.pst&quot;)</span></code></p>
+</div>
 <dl class="method">
 <dt id="pyemu.smoother.EnsembleSmoother.initialize">
 <code class="descname">initialize</code><span class="sig-paren">(</span><em>num_reals=1</em>, <em>init_lambda=None</em>, <em>enforce_bounds='reset'</em>, <em>parensemble=None</em>, <em>obsensemble=None</em>, <em>restart_obsensemble=None</em>, <em>regul_factor=0.0</em>, <em>use_approx_prior=True</em>, <em>build_empirical_prior=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/smoother.html#EnsembleSmoother.initialize"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.smoother.EnsembleSmoother.initialize" title="Permalink to this definition">¶</a></dt>
@@ -2915,10 +2944,12 @@ If True and parensemble is None, an exception is raised</li>
 </tr>
 </tbody>
 </table>
-<p class="rubric">Example</p>
+<div class="admonition-example admonition">
+<p class="first admonition-title">Example</p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;es</span> <span class="pre">=</span> <span class="pre">pyemu.EnsembleSmoother(pst=&quot;pest.pst&quot;)</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;es.initialize(num_reals=100)</span></code></p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;es.initialize(num_reals=100)</span></code></p>
+</div>
 </dd></dl>
 
 <dl class="method">
@@ -2961,11 +2992,13 @@ debugging and testing on travis. Default is False</li>
 </tr>
 </tbody>
 </table>
-<p class="rubric">Example</p>
+<div class="admonition-example admonition">
+<p class="first admonition-title">Example</p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;es</span> <span class="pre">=</span> <span class="pre">pyemu.EnsembleSmoother(pst=&quot;pest.pst&quot;)</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;es.initialize(num_reals=100)</span></code></p>
-<p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)</span></code></p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;es.update(lambda_mults=[0.1,1.0,10.0],run_subset=30)</span></code></p>
+</div>
 </dd></dl>
 
 </dd></dl>
