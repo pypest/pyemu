@@ -1203,10 +1203,12 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
     for par_col in par_cols:
         if par_col not in seg_data.columns:
             missing.append(par_col)
+            par_cols.remove(par_col)
         # look across all kper in multiindex df to check for values entry - fill with absmax should capture entries
-        seg_data.loc[:,par_col] = seg_data_all_kper.loc[:, (slice(None),par_col)].abs().max(level=1,axis=1)
+        else:
+            seg_data.loc[:,par_col] = seg_data_all_kper.loc[:, (slice(None),par_col)].abs().max(level=1,axis=1)
     if len(missing) > 0:
-        raise Exception("the following par_cols were not found: {0}".format(','.join(missing)))
+        warnings.warn("the following par_cols were not found: {0}".format(','.join(missing)),PyemuWarning)
 
     seg_data = seg_data[seg_data_col_order] # reset column orders to inital
     seg_data_org = seg_data.copy()
@@ -1246,7 +1248,7 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
     #with open(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),'w') as f:
     #    f.write("ptf ~\n")
     #    seg_data.to_csv(f,sep=',')
-    write_df_tpl(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),seg_data,sep=',')
+    write_df_tpl(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"), seg_data, sep=',')
 
     #write the config file used by apply_sfr_pars()
     with open(os.path.join(model_ws,"sfr_seg_pars.config"),'w') as f:
@@ -1268,7 +1270,7 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
     df.loc[hpars, "parlbnd"] = 0.01
     return df
 
-def setup_sfr_reach_parameters(nam_file,model_ws='.',par_cols=['strhc1']):
+def setup_sfr_reach_parameters(nam_file,model_ws='.', par_cols=['strhc1']):
     """Setup multiplier paramters for reach data, when reachinput option is specififed in sfr.
     Similare to setup_sfr_seg_parameters() method will apply params to sfr reachdata
     Can load the dis, bas, and sfr files with flopy using model_ws. Or can pass a model object (SFR loading can be slow)
@@ -1320,10 +1322,18 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.',par_cols=['strhc1']):
     # generate template file with pars in par_cols
     #process par cols
     tpl_str,pvals = [],[]
-    par_cols=["strhc1"]
+    # par_cols=["strhc1"]
     idx_cols=["node", "k", "i", "j", "iseg", "ireach", "reachID", "outreach"]
     #the data cols not to parameterize
     notpar_cols = [c for c in reach_data.columns if c not in par_cols+idx_cols]
+    # make sure all par cols are found and search of any data in kpers
+    missing = []
+    for par_col in par_cols:
+        if par_col not in reach_data.columns:
+            missing.append(par_col)
+            par_cols.remove(par_col)
+    if len(missing) > 0:
+        warnings.warn("the following par_cols were not found: {0}".format(','.join(missing)), PyemuWarning)
     for par_col in par_cols:
         if par_col == "strhc1":
             prefix = 'strk' # shorten par

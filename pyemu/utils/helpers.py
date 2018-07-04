@@ -1537,7 +1537,10 @@ class PstFromFlopyModel(object):
         self.setup_array_pars()
 
         if sfr_pars:
-            self.setup_sfr_pars()
+            if isinstance(sfr_pars, list):
+                self.setup_sfr_pars(sfr_pars)
+            else:
+                self.setup_sfr_pars()
 
         if hfb_pars:
             self.setup_hfb_pars()
@@ -1590,18 +1593,20 @@ class PstFromFlopyModel(object):
         self.frun_post_lines.append("pyemu.gw_utils.apply_sfr_obs()")
 
 
-    def setup_sfr_pars(self):
+    def setup_sfr_pars(self, par_cols=None):
         """setup multiplier parameters for sfr segment data
         Adding support for reachinput (and isfropt = 1)"""
         assert self.m.sfr is not None,"can't find sfr package..."
+        if isinstance(par_cols,str):
+            par_cols = [par_cols]
         par_dfs = {}
-        df = pyemu.gw_utils.setup_sfr_seg_parameters(self.m)  # self.m.namefile,self.m.model_ws) # now just pass model
+        df = pyemu.gw_utils.setup_sfr_seg_parameters(self.m, par_cols=par_cols.copy()) # now just pass model
         # self.par_dfs["sfr"] = df
         par_dfs["sfr"] = [df] # may need df for both segs and reaches
         self.tpl_files.append("sfr_seg_pars.dat.tpl")
         self.in_files.append("sfr_seg_pars.dat")
         if self.m.sfr.reachinput: # setup reaches
-            df = pyemu.gw_utils.setup_sfr_reach_parameters(self.m)
+            df = pyemu.gw_utils.setup_sfr_reach_parameters(self.m, par_cols=par_cols.copy())
             par_dfs["sfr"].append(df)
             self.tpl_files.append("sfr_reach_pars.dat.tpl")
             self.in_files.append("sfr_reach_pars.dat")
