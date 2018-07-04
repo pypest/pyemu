@@ -768,12 +768,13 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
     ----------
     ensemble : varies
         the ensemble argument can be a pandas.DataFrame or derived type or a str, which
-        is treated as a fileanme.  Optionally, ensemble can be a list of these types or
+        is treated as a filename.  Optionally, ensemble can be a list of these types or
         a dict, in which case, the keys are treated as facecolor str (e.g., 'b', 'y', etc).
     facecolor : str
         the histogram facecolor.  Only applies if ensemble is a single thing
     plot_cols : enumerable
-        a collection of columns from the ensemble(s) to plot.  If None,
+        a collection of columns (in form of a list of parameters, or a dict with keys for 
+        parsing plot axes and values of parameters) from the ensemble(s) to plot.  If None,
         (the union of) all cols are plotted. Default is None
     filename : str
         the name of the pdf to create.  If None, return figs without saving.  Default is None.
@@ -813,11 +814,11 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
         cols = set(en.columns)
         all_cols.update(cols)
     if plot_cols is None:
-        plot_cols = dict(zip(all_cols,all_cols))
+        plot_cols = {i: [v] for i, v in (zip(plot_cols, plot_cols))}
     else:
         if isinstance(plot_cols,list):
             splot_cols = set(plot_cols)
-            plot_cols = dict(zip(plot_cols,plot_cols))
+            plot_cols = {i: [v] for i, v in (zip(plot_cols, plot_cols))}
         elif isinstance(plot_cols,dict):
             splot_cols = []
             for label,pcols in plot_cols.items():
@@ -868,47 +869,49 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
         if sync_bins:
             mx,mn = -1.0e+30,1.0e+30
             for fc,en in ensembles.items():
-                if plot_col in en.columns:
-                    emx, emn = en.loc[:, plot_col].max(), en.loc[:, plot_col].min()
-                    mx = max(mx,emx)
-                    mn = min(mn,emn)
+                for pc in plot_col:
+                    if pc in en.columns:
+                        emx,emn = en.loc[:,pc].max(),en.loc[:,pc].min()
+                        mx = max(mx,emx)
+                        mn = min(mn,emn)
             plot_bins = np.linspace(mn,mx,num=bins)
-            logger.statement("{0} min:{1:5G}, max:{2:5G}".format(plot_col, mn, mx))
+            logger.statement("{0} min:{1:5G}, max:{2:5G}".format(pc,mn,mx))
         else:
             plot_bins=bins
         for fc,en in ensembles.items():
-            if plot_col in en.columns:
-                try:
-                    en.loc[:,plot_col].hist(bins=plot_bins,facecolor=fc,
-                                            edgecolor="none",alpha=0.5,
-                                            normed=True,ax=ax)
-                except Exception as e:
-                    logger.warn("error plotting histogram for {0}:{1}".
-                                format(plot_col,str(e)))
+            for pc in plot_col:
+                if pc in en.columns:
+                    try:
+                        en.loc[:,pc].hist(bins=plot_bins,facecolor=fc,
+                                                edgecolor="none",alpha=0.5,
+                                                normed=True,ax=ax)
+                    except Exception as e:
+                        logger.warn("error plotting histogram for {0}:{1}".
+                                    format(pc,str(e)))
 
-            v = None
-            if deter_vals is not None and plot_col in deter_vals:
-                ylim = ax.get_ylim()
-                v = deter_vals[plot_col]
-                ax.plot([v,v],ylim,"k--",lw=1.5)
-                ax.set_ylim(ylim)
-
-
-            if std_window is not None:
-                try:
+                v = None
+                if deter_vals is not None and pc in deter_vals:
                     ylim = ax.get_ylim()
-                    mn, st = en.loc[:,plot_col].mean(), en.loc[:,plot_col].std() * (std_window / 2.0)
-
-                    ax.plot([mn - st, mn - st], ylim, color=fc, lw=1.5,ls='--')
-                    ax.plot([mn + st, mn + st], ylim, color=fc, lw=1.5,ls='--')
+                    v = deter_vals[pc]
+                    ax.plot([v,v],ylim,"k--",lw=1.5)
                     ax.set_ylim(ylim)
-                    if deter_range and v is not None:
-                        xmn = v - st
-                        xmx = v + st
-                        ax.set_xlim(xmn,xmx)
-                except:
-                    logger.warn("error plotting std window for {0}".
-                                format(plot_col))
+
+
+                if std_window is not None:
+                    try:
+                        ylim = ax.get_ylim()
+                        mn, st = en.loc[:,pc].mean(), en.loc[:,pc].std() * (std_window / 2.0)
+
+                        ax.plot([mn - st, mn - st], ylim, color=fc, lw=1.5,ls='--')
+                        ax.plot([mn + st, mn + st], ylim, color=fc, lw=1.5,ls='--')
+                        ax.set_ylim(ylim)
+                        if deter_range and v is not None:
+                            xmn = v - st
+                            xmx = v + st
+                            ax.set_xlim(xmn,xmx)
+                    except:
+                        logger.warn("error plotting std window for {0}".
+                                    format(pc))
         ax.grid()
 
         ax_count += 1
