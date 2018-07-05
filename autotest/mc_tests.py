@@ -710,10 +710,27 @@ def sparse_draw_test():
     assert d.apply(np.abs).max() < 0.05
 
 
+def triangular_draw_test():
+    import os
+    import matplotlib.pyplot as plt
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    pst.parameter_data.loc[:,"partrans"] = "none"
+    pe = pyemu.ParameterEnsemble.from_triangular_draw(pst,1000)
+    #print(pst.par_names)
+    #pe.iloc[:,0].hist()
+
+    #plt.show()
+
+
+
+
 if __name__ == "__main__":
+    triangular_draw_test()
     # sparse_draw_test()
     # binary_ensemble_dev()
-    to_from_binary_test()
+    #to_from_binary_test()
     # ensemble_covariance_test()
     # homegrown_draw_test()
     # change_weights_test()
