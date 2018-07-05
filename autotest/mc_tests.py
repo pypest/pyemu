@@ -724,10 +724,24 @@ def triangular_draw_test():
     #plt.show()
 
 
+def invest():
 
+    import os
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    import pyemu
+
+    df = pd.read_csv(os.path.join("temp", "sweep_in.csv"), index_col=0)
+    print(df.shape)
+    #df = df.loc[:, df.std() != 0]
+    print(df.shape)
+
+    pyemu.plot.plot_utils.ensemble_helper(df.iloc[:, [0, 1]])
+    plt.show()
 
 if __name__ == "__main__":
-    triangular_draw_test()
+    invest()
+    #triangular_draw_test()
     # sparse_draw_test()
     # binary_ensemble_dev()
     #to_from_binary_test()
