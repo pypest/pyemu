@@ -814,7 +814,7 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
         cols = set(en.columns)
         all_cols.update(cols)
     if plot_cols is None:
-        plot_cols = {i: [v] for i, v in (zip(plot_cols, plot_cols))}
+        plot_cols = {i: [v] for i, v in (zip(all_cols, all_cols))}
     else:
         if isinstance(plot_cols,list):
             splot_cols = set(plot_cols)
