@@ -1130,7 +1130,7 @@ def apply_sft_obs():
     return df
 
 
-def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hcond1","hcond2", "pptsw"],
+def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff", "hcond1", "hcond2", "pptsw"],
                              tie_hcond=True):
     """Setup multiplier parameters for SFR segment data.  Just handles the
     standard input case, not all the cryptic SFR options.  Loads the dis, bas, and sfr files
@@ -1168,7 +1168,8 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
         import flopy
     except Exception as e:
         return
-
+    if par_cols is None:
+        par_cols = ["flow", "runoff", "hcond1", "hcond2", "pptsw"]
     if tie_hcond:
         if "hcond1" not in par_cols or "hcond2" not in par_cols:
             tie_hcond = False
@@ -1200,75 +1201,81 @@ def setup_sfr_seg_parameters(nam_file,model_ws='.',par_cols=["flow","runoff","hc
 
     #make sure all par cols are found and search of any data in kpers
     missing = []
+    cols = par_cols.copy()
     for par_col in par_cols:
         if par_col not in seg_data.columns:
             missing.append(par_col)
+            cols.remove(par_col)
         # look across all kper in multiindex df to check for values entry - fill with absmax should capture entries
-        seg_data.loc[:,par_col] = seg_data_all_kper.loc[:, (slice(None),par_col)].abs().max(level=1,axis=1)
+        else:
+            seg_data.loc[:, par_col] = seg_data_all_kper.loc[:, (slice(None), par_col)].abs().max(level=1, axis=1)
     if len(missing) > 0:
-        raise Exception("the following par_cols were not found: {0}".format(','.join(missing)))
-
-    seg_data = seg_data[seg_data_col_order] # reset column orders to inital
+        warnings.warn("the following par_cols were not found in segment data: {0}".format(','.join(missing)), PyemuWarning)
+        if len(missing) >= len(par_cols):
+            warnings.warn("None of the passed par_cols ({0}) were found in segment data.".
+                          format(','.join(par_cols)), PyemuWarning)
+    seg_data = seg_data[seg_data_col_order]  # reset column orders to inital
     seg_data_org = seg_data.copy()
     seg_data.to_csv(os.path.join(model_ws, "sfr_seg_pars.dat"), sep=',')
 
     #the data cols not to parameterize
     # better than a column indexer as pandas can change column orders
     idx_cols=['nseg', 'icalc', 'outseg', 'iupseg', 'iprior', 'nstrpts']
-    notpar_cols = [c for c in seg_data.columns if c not in par_cols+idx_cols]
+    notpar_cols = [c for c in seg_data.columns if c not in cols+idx_cols]
 
     #process par cols
-    tpl_str,pvals = [],[]
-    for par_col in par_cols:
+    tpl_str, pvals = [], []
+    for par_col in cols:
         prefix = par_col
         if tie_hcond and par_col == 'hcond2':
             prefix = 'hcond1'
-        if seg_data.loc[:,par_col].sum() == 0.0:
+        if seg_data.loc[:, par_col].sum() == 0.0:
             print("all zeros for {0}...skipping...".format(par_col))
             #seg_data.loc[:,par_col] = 1
         else:
-            seg_data.loc[:,par_col] = seg_data.apply(lambda x: "~    {0}_{1:04d}   ~".
-                                                     format(prefix,int(x.nseg)) if float(x[par_col]) != 0.0\
-                                                     else "1.0",axis=1)
+            seg_data.loc[:, par_col] = seg_data.apply(lambda x: "~    {0}_{1:04d}   ~".
+                                                      format(prefix, int(x.nseg)) if float(x[par_col]) != 0.0
+                                                      else "1.0", axis=1)
 
-            org_vals = seg_data_org.loc[seg_data_org.loc[:,par_col] != 0.0,par_col]
-            pnames = seg_data.loc[org_vals.index,par_col]
+            org_vals = seg_data_org.loc[seg_data_org.loc[:, par_col] != 0.0, par_col]
+            pnames = seg_data.loc[org_vals.index, par_col]
             pvals.extend(list(org_vals.values))
             tpl_str.extend(list(pnames.values))
 
     pnames = [t.replace('~','').strip() for t in tpl_str]
     df = pd.DataFrame({"parnme":pnames,"org_value":pvals,"tpl_str":tpl_str},index=pnames)
     df.drop_duplicates(inplace=True)
-    #set not par cols to 1.0
-    seg_data.loc[:,notpar_cols] = "1.0"
+    if df.empty:
+        warnings.warn("No sfr segment parameters have been set up, either none of {0} were found or all were zero.".
+                      format(','.join(par_cols)), PyemuWarning)
+    else:
+        # set not par cols to 1.0
+        seg_data.loc[:, notpar_cols] = "1.0"
 
-    #write the template file
-    #with open(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),'w') as f:
-    #    f.write("ptf ~\n")
-    #    seg_data.to_csv(f,sep=',')
-    write_df_tpl(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"),seg_data,sep=',')
+        #write the template file
+        write_df_tpl(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"), seg_data, sep=',')
 
-    #write the config file used by apply_sfr_pars()
-    with open(os.path.join(model_ws,"sfr_seg_pars.config"),'w') as f:
-        f.write("nam_file {0}\n".format(nam_file))
-        f.write("model_ws {0}\n".format(model_ws))
-        f.write("mult_file sfr_seg_pars.dat\n")
-        f.write("sfr_filename {0}".format(m.sfr.file_name[0]))
+        #write the config file used by apply_sfr_pars()
+        with open(os.path.join(model_ws,"sfr_seg_pars.config"),'w') as f:
+            f.write("nam_file {0}\n".format(nam_file))
+            f.write("model_ws {0}\n".format(model_ws))
+            f.write("mult_file sfr_seg_pars.dat\n")
+            f.write("sfr_filename {0}".format(m.sfr.file_name[0]))
 
-    #make sure the tpl file exists and has the same num of pars
-    parnme = parse_tpl_file(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"))
-    assert len(parnme) == df.shape[0]
+        #make sure the tpl file exists and has the same num of pars
+        parnme = parse_tpl_file(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"))
+        assert len(parnme) == df.shape[0]
 
-    #set some useful par info
-    df.loc[:,"pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
-    df.loc[:,"parubnd"] = 1.25
-    df.loc[:,"parlbnd"] = 0.75
-    hpars = df.loc[df.pargp.apply(lambda x: x.startswith("hcond")),"parnme"]
-    df.loc[hpars,"parubnd"] = 100.0
-    df.loc[hpars, "parlbnd"] = 0.01
+        #set some useful par info
+        df.loc[:,"pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
+        df.loc[:,"parubnd"] = 1.25
+        df.loc[:,"parlbnd"] = 0.75
+        hpars = df.loc[df.pargp.apply(lambda x: x.startswith("hcond")),"parnme"]
+        df.loc[hpars,"parubnd"] = 100.0
+        df.loc[hpars, "parlbnd"] = 0.01
     return df
 
-def setup_sfr_reach_parameters(nam_file,model_ws='.',par_cols=['strhc1']):
+def setup_sfr_reach_parameters(nam_file,model_ws='.', par_cols=['strhc1']):
     """Setup multiplier paramters for reach data, when reachinput option is specififed in sfr.
     Similare to setup_sfr_seg_parameters() method will apply params to sfr reachdata
     Can load the dis, bas, and sfr files with flopy using model_ws. Or can pass a model object (SFR loading can be slow)
@@ -1302,7 +1309,8 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.',par_cols=['strhc1']):
         import flopy
     except Exception as e:
         return
-
+    if par_cols is None:
+        par_cols = ['strhc1']
     if isinstance(nam_file,flopy.modflow.mf.Modflow) and nam_file.sfr is not None:
         # flopy MODFLOW model has been passed and has SFR loaded
         m = nam_file
@@ -1310,7 +1318,7 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.',par_cols=['strhc1']):
         model_ws = m.model_ws
     else:
         # if model has not been passed or SFR not loaded # load MODFLOW model
-        m = flopy.modflow.Modflow.load(nam_file,load_only=["sfr"],model_ws=model_ws,check=False,forgive=False)
+        m = flopy.modflow.Modflow.load(nam_file, load_only=["sfr"], model_ws=model_ws, check=False, forgive=False)
     # get reachdata as dataframe
     reach_data = pd.DataFrame.from_records(m.sfr.reach_data)
     # write inital reach_data as csv
@@ -1320,13 +1328,26 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.',par_cols=['strhc1']):
     # generate template file with pars in par_cols
     #process par cols
     tpl_str,pvals = [],[]
-    par_cols=["strhc1"]
+    # par_cols=["strhc1"]
     idx_cols=["node", "k", "i", "j", "iseg", "ireach", "reachID", "outreach"]
     #the data cols not to parameterize
     notpar_cols = [c for c in reach_data.columns if c not in par_cols+idx_cols]
+    # make sure all par cols are found and search of any data in kpers
+    missing = []
+    cols = par_cols.copy()
     for par_col in par_cols:
+        if par_col not in reach_data.columns:
+            missing.append(par_col)
+            cols.remove(par_col)
+    if len(missing) > 0:
+        warnings.warn("the following par_cols were not found in reach data: {0}".format(','.join(missing)),
+                      PyemuWarning)
+        if len(missing) >= len(par_cols):
+            warnings.warn("None of the passed par_cols ({0}) were found in reach data.".
+                          format(','.join(par_cols)), PyemuWarning)
+    for par_col in cols:
         if par_col == "strhc1":
-            prefix = 'strk' # shorten par
+            prefix = 'strk'  # shorten par
         else:
             prefix = par_col
         reach_data.loc[:, par_col] = reach_data.apply(
@@ -1339,34 +1360,34 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.',par_cols=['strhc1']):
     pnames = [t.replace('~','').strip() for t in tpl_str]
     df = pd.DataFrame({"parnme":pnames,"org_value":pvals,"tpl_str":tpl_str},index=pnames)
     df.drop_duplicates(inplace=True)
+    if df.empty:
+        warnings.warn("No sfr reach parameters have been set up, either none of {0} were found or all were zero.".
+                      format(','.join(par_cols)), PyemuWarning)
+    else:
+        # set not par cols to 1.0
+        reach_data.loc[:, notpar_cols] = "1.0"
 
-    # set not par cols to 1.0
-    reach_data.loc[:, notpar_cols] = "1.0"
+        # write the template file
+        write_df_tpl(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"),reach_data,sep=',')
 
-    # write the template file
-    #with open(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"), 'w') as f:
-    #    f.write("ptf ~\n")
-    #    reach_data.to_csv(f, sep=',',quotechar=' ',quoting=1)
-    write_df_tpl(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"),reach_data,sep=',')
+        # write the config file used by apply_sfr_pars()
+        with open(os.path.join(model_ws, "sfr_reach_pars.config"), 'w') as f:
+            f.write("nam_file {0}\n".format(nam_file))
+            f.write("model_ws {0}\n".format(model_ws))
+            f.write("mult_file sfr_reach_pars.dat\n")
+            f.write("sfr_filename {0}".format(m.sfr.file_name[0]))
 
-    # write the config file used by apply_sfr_pars()
-    with open(os.path.join(model_ws, "sfr_reach_pars.config"), 'w') as f:
-        f.write("nam_file {0}\n".format(nam_file))
-        f.write("model_ws {0}\n".format(model_ws))
-        f.write("mult_file sfr_reach_pars.dat\n")
-        f.write("sfr_filename {0}".format(m.sfr.file_name[0]))
+        # make sure the tpl file exists and has the same num of pars
+        parnme = parse_tpl_file(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"))
+        assert len(parnme) == df.shape[0]
 
-    # make sure the tpl file exists and has the same num of pars
-    parnme = parse_tpl_file(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"))
-    assert len(parnme) == df.shape[0]
-
-    # set some useful par info
-    df.loc[:, "pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
-    df.loc[:, "parubnd"] = 1.25
-    df.loc[:, "parlbnd"] = 0.75
-    hpars = df.loc[df.pargp.apply(lambda x: x.startswith("strk")), "parnme"]
-    df.loc[hpars, "parubnd"] = 100.0
-    df.loc[hpars, "parlbnd"] = 0.01
+        # set some useful par info
+        df.loc[:, "pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
+        df.loc[:, "parubnd"] = 1.25
+        df.loc[:, "parlbnd"] = 0.75
+        hpars = df.loc[df.pargp.apply(lambda x: x.startswith("strk")), "parnme"]
+        df.loc[hpars, "parubnd"] = 100.0
+        df.loc[hpars, "parlbnd"] = 0.01
     return df
 
 

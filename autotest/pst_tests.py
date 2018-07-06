@@ -614,7 +614,34 @@ def from_flopy():
                                              hds_kperk=[0, 0], remove_existing=True,
                                              model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True)
     pe = helper.draw(100)
-    bd = os.getcwd()
+
+    # go again testing passing list to sfr_pars
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
+                                             hds_kperk=[0, 0], remove_existing=True,
+                                             model_exe_name="mfnwt", sfr_pars=['flow', 'not_a_par'], sfr_obs=True)
+    try:
+        pe = helper.draw(100)
+    except:
+        pass
+    else:
+        raise Exception()
+
+
+
+    # go again passing bumph to sfr_par
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
+                                             hds_kperk=[0, 0], remove_existing=True,
+                                             model_exe_name="mfnwt", sfr_pars=['not_a_par0', 'not_a_par1'], sfr_obs=True)
+    try:
+        pe = helper.draw(100)
+    except:
+        pass
+    else:
+        raise Exception()
 
     pp_props = [["upw.ss", [0, 1]], ["upw.ss", 1], ["upw.ss", 2], ["extra.prsity", 0], \
                 ["rch.rech", 0], ["rch.rech", [1, 2]]]
@@ -721,52 +748,99 @@ def from_flopy_reachinput():
     new_model_ws = "temp_pst_from_flopy_reaches"
 
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
-
-    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
-                                             hds_kperk=[0, 0], remove_existing=True,
-                                             model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True)
-    os.chdir(new_model_ws)
-    with open("sfr_seg_pars.config", 'r') as f:
-        spars = {}
-        for line in f:
-            line = line.strip().split()
-            spars[line[0]] = line[1]
-    with open("sfr_reach_pars.config", 'r') as f:
-        rpars = {}
-        for line in f:
-            line = line.strip().split()
-            rpars[line[0]] = line[1]
-    # actually write out files to check template file
-    helper.pst.write_input_files()
-    try:
-        pyemu.gw_utils.apply_sfr_parameters(reach_pars=True)
-    except Exception as e:
-        raise Exception("error applying sfr pars, check tpl(s) and datafiles: {0}".format(str(e)))
-
-    # test using tempchek for writing tpl file
-    par = helper.pst.parameter_data
-    par_file = "{}.par".format(rpars['nam_file'])
-    with open(par_file, 'w') as f:
-        f.write('single point\n')
-        f.flush()
-        par[['parnme', 'parval1', 'scale', 'offset']].to_csv(f, sep=' ', header=False, index=False, mode='a')
-    if tempchek is not None:
-        for mult in [spars['mult_file'], rpars['mult_file']]:
-            tpl_file = "{}.tpl".format(mult)
-            try:
-                pyemu.os_utils.run("{} {} {} {}".format(tempchek,
-                                                        tpl_file,
-                                                        mult,
-                                                        par_file))
-            except Exception as e:
-                raise Exception("error running tempchek on template file {0} and data file {1} : {0}".
-                                format(mult, "{}.tpl".format(tpl_file), str(e)))
+    # test passing different arguments
+    args_to_test = [True,
+                    ["strhc1", "flow"],
+                    ["flow", "runoff"],
+                    ["not_a_par", "not_a_par2"],
+                    "strhc1"]
+    for i, sfr_par in enumerate(args_to_test):  # if i=2 no reach pars, i==3 no pars, i=4 no seg pars
+        for f in ["sfr_reach_pars.config", "sfr_seg_pars.config"]:  # clean up
+            if os.path.exists(f):
+                os.remove(f)
+        helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
+                                                 hds_kperk=[0, 0], remove_existing=True,
+                                                 model_exe_name="mfnwt", sfr_pars=sfr_par, sfr_obs=True)
+        os.chdir(new_model_ws)
+        mult_files = []
+        try:  # read seg pars config file
+            spars = {}
+            with open("sfr_seg_pars.config", 'r') as f:
+                for line in f:
+                    line = line.strip().split()
+                    spars[line[0]] = line[1]
+            mult_files.append(spars["mult_file"])
+        except:
+            if i in [3, 4]:  # for scenario 3 or 4 not expecting any seg pars
+                pass
+            else:
+                raise Exception()
+        try:  # read reach pars config file
+            rpars = {}
+            with open("sfr_reach_pars.config", 'r') as f:
+                for line in f:
+                    line = line.strip().split()
+                    rpars[line[0]] = line[1]
+            mult_files.append(rpars["mult_file"])
+        except:
+            if i in [2, 3]:  # for scenario 2 or 3 not expecting any reach pars
+                pass
+            else:
+                raise Exception()
         try:
-            pyemu.gw_utils.apply_sfr_parameters(reach_pars=True)
-        except Exception as e:
-            raise Exception("error applying sfr pars with tempchek par file, check tpl(s) and datafiles: {0}".
-                            format(str(e)))
-    os.chdir(bd)
+            # actually write out files to check template file
+            helper.pst.write_input_files()
+            try:
+                pyemu.gw_utils.apply_sfr_parameters(reach_pars=True)
+            except Exception as e:
+                if i == 2:
+                    pass
+                    try:
+                        pyemu.gw_utils.apply_sfr_parameters(reach_pars=False)
+                    except Exception as e:
+                        raise Exception("error applying sfr pars, check tpl(s) and datafiles: {0}".format(str(e)))
+                else:
+                    raise Exception("error applying sfr pars, check tpl(s) and datafiles: {0}".format(str(e)))
+
+            # test using tempchek for writing tpl file
+            par = helper.pst.parameter_data
+            if rpars == {}:
+                par_file = "{}.par".format(spars['nam_file'])
+            else:
+                par_file = "{}.par".format(rpars['nam_file'])
+            with open(par_file, 'w') as f:
+                f.write('single point\n')
+                f.flush()
+                par[['parnme', 'parval1', 'scale', 'offset']].to_csv(f, sep=' ', header=False, index=False, mode='a')
+            if tempchek is not None:
+                for mult in mult_files:
+                    tpl_file = "{}.tpl".format(mult)
+                    try:
+                        pyemu.os_utils.run("{} {} {} {}".format(tempchek, tpl_file, mult, par_file))
+                    except Exception as e:
+                        raise Exception("error running tempchek on template file {0} and data file {1} : {0}".
+                                        format(mult, "{}.tpl".format(tpl_file), str(e)))
+                try:
+                    pyemu.gw_utils.apply_sfr_parameters(reach_pars=True)
+                except Exception as e:
+                    if i == 2:
+                        pass
+                        try:
+                            pyemu.gw_utils.apply_sfr_parameters(reach_pars=False)
+                        except Exception as e:
+                            raise Exception(
+                                "error applying sfr pars with tempchek par file, check tpl(s) and datafiles: {0}".
+                                    format(str(e)))
+                    else:
+                        raise Exception(
+                            "error applying sfr pars with tempchek par file, check tpl(s) and datafiles: {0}".
+                                format(str(e)))
+        except:
+            if i == 3:  # scenario 3 should not set up any parameters
+                pass
+            else:
+                raise Exception()
+        os.chdir(bd)
 
 
 def run_array_pars():
