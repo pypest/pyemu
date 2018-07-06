@@ -122,7 +122,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
     full_cov = pyemu.Cov.from_parameter_data(pst, sigma_range=sigma_range)
     full_cov_dict = {n: float(v) for n, v in zip(full_cov.col_names, full_cov.x)}
 
-    par_org = pst.parameter_data.copy
+    # par_org = pst.parameter_data.copy  # not sure about the need or function of this line? (BH)
     par = pst.parameter_data
     par_ens = []
     pars_in_cov = set()
@@ -1596,24 +1596,33 @@ class PstFromFlopyModel(object):
     def setup_sfr_pars(self, par_cols=None):
         """setup multiplier parameters for sfr segment data
         Adding support for reachinput (and isfropt = 1)"""
-        assert self.m.sfr is not None,"can't find sfr package..."
-        if isinstance(par_cols,str):
+        assert self.m.sfr is not None, "can't find sfr package..."
+        if isinstance(par_cols, str):
             par_cols = [par_cols]
         par_dfs = {}
-        df = pyemu.gw_utils.setup_sfr_seg_parameters(self.m, par_cols=par_cols.copy()) # now just pass model
+        df = pyemu.gw_utils.setup_sfr_seg_parameters(self.m, par_cols=par_cols)  # now just pass model
         # self.par_dfs["sfr"] = df
-        par_dfs["sfr"] = [df] # may need df for both segs and reaches
-        self.tpl_files.append("sfr_seg_pars.dat.tpl")
-        self.in_files.append("sfr_seg_pars.dat")
-        if self.m.sfr.reachinput: # setup reaches
-            df = pyemu.gw_utils.setup_sfr_reach_parameters(self.m, par_cols=par_cols.copy())
-            par_dfs["sfr"].append(df)
-            self.tpl_files.append("sfr_reach_pars.dat.tpl")
-            self.in_files.append("sfr_reach_pars.dat")
-            self.frun_pre_lines.append("pyemu.gw_utils.apply_sfr_parameters(reach_pars=True)")
+        if df.empty:
+            warnings.warn("No sfr segment parameters have been set up", PyemuWarning)
+            par_dfs["sfr"] = []
         else:
+            par_dfs["sfr"] = [df]  # may need df for both segs and reaches
+            self.tpl_files.append("sfr_seg_pars.dat.tpl")
+            self.in_files.append("sfr_seg_pars.dat")
             self.frun_pre_lines.append("pyemu.gw_utils.apply_sfr_seg_parameters()")
-        self.par_dfs["sfr"] = pd.concat(par_dfs["sfr"])
+        if self.m.sfr.reachinput:  # setup reaches
+            df = pyemu.gw_utils.setup_sfr_reach_parameters(self.m, par_cols=par_cols)
+            if df.empty:
+                warnings.warn("No sfr reach parameters have been set up", PyemuWarning)
+            else:
+                self.tpl_files.append("sfr_reach_pars.dat.tpl")
+                self.in_files.append("sfr_reach_pars.dat")
+                self.frun_pre_lines.append("pyemu.gw_utils.apply_sfr_parameters(reach_pars=True)")
+        if len(par_dfs["sfr"]) > 0:
+            self.par_dfs["sfr"] = pd.concat(par_dfs["sfr"])
+        else:
+            warnings.warn("No sfr parameters have been set up!", PyemuWarning)
+
 
 
     def setup_hfb_pars(self):
