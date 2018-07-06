@@ -1291,6 +1291,9 @@ class PstFromFlopyModel(object):
         iterable is for zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
         would setup grid-based multiplier parameters in every active model cell
         for recharge for stress period 1,5,11,and 16.
+    sfr_pars : bool or list
+        setup parameters for the stream flow routing modflow package.
+        If list is passed it defiend the parameters to set up.
     grid_geostruct : pyemu.geostats.GeoStruct
         the geostatistical structure to build the prior parameter covariance matrix
         elements for grid-based parameters.  If None, a generic GeoStruct is created
