@@ -778,9 +778,7 @@ class ParameterEnsemble(Ensemble):
 
     @classmethod
     def from_uniform_draw(cls,pst,num_reals):
-        """ this is an experiemental method to help speed up uniform draws
-        for a really large (>1E6) ensemble sizes.  WARNING: this constructor
-        transforms the pe argument
+        """ instantiate a parameter ensemble from uniform draws
 
         Parameters
         ----------
@@ -811,9 +809,10 @@ class ParameterEnsemble(Ensemble):
         #              for i in range(num_reals)]
         real_names = np.arange(num_reals,dtype=np.int64)
         arr = np.empty((num_reals,len(ub)))
+        adj_par_names = set(pst.adj_par_names)
         for i,pname in enumerate(pst.parameter_data.parnme):
-            print(pname,lb[pname],ub[pname])
-            if pname in pst.adj_par_names:
+            #print(pname,lb[pname],ub[pname])
+            if pname in adj_par_names:
                 arr[:,i] = np.random.uniform(lb[pname],
                                                       ub[pname],
                                                       size=num_reals)
@@ -828,6 +827,68 @@ class ParameterEnsemble(Ensemble):
 
         new_pe = cls.from_dataframe(pst=pst,df=pd.DataFrame(data=arr,columns=pst.par_names))
         #new_pe._applied_tied()
+        return new_pe
+
+    @classmethod
+    def from_triangular_draw(cls, pst, num_reals):
+        """instantiate a parameter ensemble from triangular distribution
+
+        Parameters
+        ----------
+        pst : pyemu.Pst
+            a control file instance
+        num_reals : int
+            number of realizations to generate
+
+        Returns
+        -------
+        ParameterEnsemble : ParameterEnsemble
+
+
+        Note
+        ----
+        """
+
+        li = pst.parameter_data.partrans == "log"
+        ub = pst.parameter_data.parubnd.copy()
+        ub.loc[li] = ub.loc[li].apply(np.log10)
+
+        lb = pst.parameter_data.parlbnd.copy()
+        lb.loc[li] = lb.loc[li].apply(np.log10)
+
+        pv = pst.parameter_data.parval1.copy()
+        pv.loc[li] = pv[li].apply(np.log10)
+
+        ub = ub.to_dict()
+        lb = lb.to_dict()
+        pv = pv.to_dict()
+
+        # set up some column names
+        # real_names = ["{0:d}".format(i)
+        #              for i in range(num_reals)]
+        real_names = np.arange(num_reals, dtype=np.int64)
+        arr = np.empty((num_reals, len(ub)))
+        adj_par_names = set(pst.adj_par_names)
+        for i, pname in enumerate(pst.parameter_data.parnme):
+            #print(pname, lb[pname], ub[pname])
+            if pname in adj_par_names:
+                arr[:,i] = np.random.triangular(lb[pname],
+                                                pv[pname],
+                                                ub[pname],
+                                                size=num_reals)
+            else:
+                arr[:, i] = np.zeros((num_reals)) + \
+                            pe.pst.parameter_data. \
+                                loc[pname, "parval1"]
+
+
+        print("back transforming")
+
+        df = pd.DataFrame(arr, index=real_names, columns=pst.par_names)
+        df.loc[:, li] = 10.0 ** df.loc[:, li]
+
+        new_pe = cls.from_dataframe(pst=pst, df=pd.DataFrame(data=arr, columns=pst.par_names))
+        # new_pe._applied_tied()
         return new_pe
 
 
