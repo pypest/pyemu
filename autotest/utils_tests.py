@@ -725,6 +725,10 @@ def mtlist_budget_test():
     frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(list_filename,start_datetime='1-1-1970')
     assert len(ins_files) == 2
 
+    frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(list_filename,start_datetime='1-1-1970',
+                                                                     gw_prefix='')
+    assert len(ins_files) == 2
+
     frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(list_filename, start_datetime=None)
     assert len(ins_files) == 2
 
@@ -1287,7 +1291,7 @@ if __name__ == "__main__":
     #sfr_obs_test()
     #gage_obs_test()
     #setup_pp_test()
-    sfr_helper_test()
+    # sfr_helper_test()
     # gw_sft_ins_test()
     # par_knowledge_test()
     # grid_obs_test()
@@ -1302,8 +1306,8 @@ if __name__ == "__main__":
     # geostat_prior_builder_test()
     # geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
-    #mflist_budget_test()
-    #mtlist_budget_test()
+    mflist_budget_test()
+    mtlist_budget_test()
     # tpl_to_dataframe_test()
     # kl_test()
     # hfb_test()
