@@ -26,6 +26,7 @@ addons:
       - libnetcdf-dev
       - gdal-bin
       - libgdal-dev
+      - liblapack-dev
 env:
   global:
     - NO_NET=1
