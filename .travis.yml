@@ -52,10 +52,11 @@ before_install:
   - "export DISPLAY=:99.0"
   - "sh -e /etc/init.d/xvfb start"
 install:
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas nose matplotlib jupyter notebook cartopy
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy scipy pandas nose matplotlib jupyter notebook cartopy sphinx
   - pip install coveralls
   - pip install pyshp
   - pip install nose-timer
+  - pip install nbsphinx
   - pip install git+https://github.com/modflowpy/flopy.git@develop
   - pip install https://github.com/modflowpy/pymake/zipball/master
   - python setup.py install
@@ -63,6 +64,9 @@ script:
   - export PYTHONPATH=$PYTHONPATH:.
   - nosetests -v --with-id --nocapture --with-timer -w ./autotest --with-coverage --cover-package=pyemu
 after_success:
+  - cd docs
+  - make html
+  - cd ..
   - coveralls
 
 

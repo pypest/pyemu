@@ -22,11 +22,20 @@ class MonteCarlo(LinearAnalysis):
     Attributes
     ----------
     parensemble : pyemu.ParameterEnsemble
+        pyemu object derived from a pandas dataframe, the ensemble
+        of parameters from the PEST control file with associated 
+        starting value and bounds.  Object also exposes methods
+        relevant to the dataframe and parameters-- see documentation.
     obsensemble : pyemu.ObservationEnsemble
-
+        pyemu object derived from a pandas dataframe, the ensemble
+        of observations from the PEST control file with associated 
+        starting weights.  Object also exposes methods
+        relevant to the dataframe and observations-- see documentation.
+        
     Returns
     -------
-    MonteCarlo : MonteCarlo
+    MonteCarlo
+       pyEMU MonteCarlo object
 
     Example
     -------
@@ -55,8 +64,7 @@ class MonteCarlo(LinearAnalysis):
 
     def get_nsing(self,epsilon=1.0e-4):
         """ get the number of solution space dimensions given
-            a ratio between the largest and smallest singular
-            values
+        a ratio between the largest and smallest singular values
 
         Parameters
         ----------

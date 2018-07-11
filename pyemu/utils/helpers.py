@@ -122,7 +122,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
     full_cov = pyemu.Cov.from_parameter_data(pst, sigma_range=sigma_range)
     full_cov_dict = {n: float(v) for n, v in zip(full_cov.col_names, full_cov.x)}
 
-    par_org = pst.parameter_data.copy
+    # par_org = pst.parameter_data.copy  # not sure about the need or function of this line? (BH)
     par = pst.parameter_data
     par_ens = []
     pars_in_cov = set()
@@ -1035,7 +1035,7 @@ def read_pestpp_runstorage(filename,irun=0):
 
 
 def jco_from_pestpp_runstorage(rnj_filename,pst_filename):
-    """ read pars and obs from a pest++ serialized run storage file (e.g., *.rnj) and return 
+    """ read pars and obs from a pest++ serialized run storage file (e.g., .rnj) and return 
     pyemu.Jco.  This can then be passed to Jco.to_binary or Jco.to_coo, etc., to write jco file
     in a subsequent step to avoid memory resource issues associated with very large problems.
 
@@ -1056,7 +1056,7 @@ def jco_from_pestpp_runstorage(rnj_filename,pst_filename):
     TODO:
     0. Check rnj file contains transformed par vals (i.e., in model input space)
     1. Currently only returns pyemu.Jco; doesn't write jco file due to memory issues 
-        associated with very large problems
+       associated with very large problems
     3. Compare rnj and jco from Freyberg problem in autotests
 
     """
@@ -1291,6 +1291,9 @@ class PstFromFlopyModel(object):
         iterable is for zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
         would setup grid-based multiplier parameters in every active model cell
         for recharge for stress period 1,5,11,and 16.
+    sfr_pars : bool or list
+        setup parameters for the stream flow routing modflow package.
+        If list is passed it defiend the parameters to set up.
     grid_geostruct : pyemu.geostats.GeoStruct
         the geostatistical structure to build the prior parameter covariance matrix
         elements for grid-based parameters.  If None, a generic GeoStruct is created
@@ -1537,7 +1540,10 @@ class PstFromFlopyModel(object):
         self.setup_array_pars()
 
         if sfr_pars:
-            self.setup_sfr_pars()
+            if isinstance(sfr_pars, list):
+                self.setup_sfr_pars(sfr_pars)
+            else:
+                self.setup_sfr_pars()
 
         if hfb_pars:
             self.setup_hfb_pars()
@@ -1590,25 +1596,36 @@ class PstFromFlopyModel(object):
         self.frun_post_lines.append("pyemu.gw_utils.apply_sfr_obs()")
 
 
-    def setup_sfr_pars(self):
+    def setup_sfr_pars(self, par_cols=None):
         """setup multiplier parameters for sfr segment data
         Adding support for reachinput (and isfropt = 1)"""
-        assert self.m.sfr is not None,"can't find sfr package..."
+        assert self.m.sfr is not None, "can't find sfr package..."
+        if isinstance(par_cols, str):
+            par_cols = [par_cols]
         par_dfs = {}
-        df = pyemu.gw_utils.setup_sfr_seg_parameters(self.m)  # self.m.namefile,self.m.model_ws) # now just pass model
+        df = pyemu.gw_utils.setup_sfr_seg_parameters(self.m, par_cols=par_cols)  # now just pass model
         # self.par_dfs["sfr"] = df
-        par_dfs["sfr"] = [df] # may need df for both segs and reaches
-        self.tpl_files.append("sfr_seg_pars.dat.tpl")
-        self.in_files.append("sfr_seg_pars.dat")
-        if self.m.sfr.reachinput: # setup reaches
-            df = pyemu.gw_utils.setup_sfr_reach_parameters(self.m)
-            par_dfs["sfr"].append(df)
-            self.tpl_files.append("sfr_reach_pars.dat.tpl")
-            self.in_files.append("sfr_reach_pars.dat")
-            self.frun_pre_lines.append("pyemu.gw_utils.apply_sfr_parameters(reach_pars=True)")
+        if df.empty:
+            warnings.warn("No sfr segment parameters have been set up", PyemuWarning)
+            par_dfs["sfr"] = []
         else:
+            par_dfs["sfr"] = [df]  # may need df for both segs and reaches
+            self.tpl_files.append("sfr_seg_pars.dat.tpl")
+            self.in_files.append("sfr_seg_pars.dat")
             self.frun_pre_lines.append("pyemu.gw_utils.apply_sfr_seg_parameters()")
-        self.par_dfs["sfr"] = pd.concat(par_dfs["sfr"])
+        if self.m.sfr.reachinput:  # setup reaches
+            df = pyemu.gw_utils.setup_sfr_reach_parameters(self.m, par_cols=par_cols)
+            if df.empty:
+                warnings.warn("No sfr reach parameters have been set up", PyemuWarning)
+            else:
+                self.tpl_files.append("sfr_reach_pars.dat.tpl")
+                self.in_files.append("sfr_reach_pars.dat")
+                self.frun_pre_lines.append("pyemu.gw_utils.apply_sfr_parameters(reach_pars=True)")
+        if len(par_dfs["sfr"]) > 0:
+            self.par_dfs["sfr"] = pd.concat(par_dfs["sfr"])
+        else:
+            warnings.warn("No sfr parameters have been set up!", PyemuWarning)
+
 
 
     def setup_hfb_pars(self):

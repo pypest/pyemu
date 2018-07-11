@@ -768,12 +768,13 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
     ----------
     ensemble : varies
         the ensemble argument can be a pandas.DataFrame or derived type or a str, which
-        is treated as a fileanme.  Optionally, ensemble can be a list of these types or
+        is treated as a filename.  Optionally, ensemble can be a list of these types or
         a dict, in which case, the keys are treated as facecolor str (e.g., 'b', 'y', etc).
     facecolor : str
         the histogram facecolor.  Only applies if ensemble is a single thing
     plot_cols : enumerable
-        a collection of columns from the ensemble(s) to plot.  If None,
+        a collection of columns (in form of a list of parameters, or a dict with keys for 
+        parsing plot axes and values of parameters) from the ensemble(s) to plot.  If None,
         (the union of) all cols are plotted. Default is None
     filename : str
         the name of the pdf to create.  If None, return figs without saving.  Default is None.
@@ -813,11 +814,11 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
         cols = set(en.columns)
         all_cols.update(cols)
     if plot_cols is None:
-        plot_cols = dict(zip(all_cols,all_cols))
+        plot_cols = {i: [v] for i, v in (zip(all_cols, all_cols))}
     else:
         if isinstance(plot_cols,list):
             splot_cols = set(plot_cols)
-            plot_cols = dict(zip(plot_cols,plot_cols))
+            plot_cols = {i: [v] for i, v in (zip(plot_cols, plot_cols))}
         elif isinstance(plot_cols,dict):
             splot_cols = []
             for label,pcols in plot_cols.items():
@@ -1199,7 +1200,7 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
     # std_diff = 100 * ((en1_std - en2_std) / en1_std)
 
     mn_diff = -1 * (en2_mn - en1_mn)
-    std_diff = 100 * (1.0 - ((en1_std - en2_std) / en1_std))
+    std_diff = 100 * (((en1_std - en2_std) / en1_std))
 
 
 
