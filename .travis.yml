@@ -43,7 +43,8 @@ before_install:
   - export CXX="g++"
   - git clone -b develop --depth 1 https://github.com/dwelter/pestpp
   - cd pestpp/src
-  - bindir=../../../../bin/linux COMPILER=gcc6 CXX=g++-6 FC=gfortran-6 STATIC=no make -j 20 install
+  - bindir=../../../../bin/linux COMPILER=gcc CXX=g++ FC=gfortran STATIC=no make -j 20 install
+  - cd ../../
   - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
