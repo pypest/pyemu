@@ -62,7 +62,7 @@ install:
   - #pip install git+https://github.com/modflowpy/flopy.git@develop
   - git clone -b develop --depth 1 https://github.com/modflowpy/flopy.git
   - cd flopy
-  - python setup install
+  - python setup.py install
   - cd ..
   - pip install https://github.com/modflowpy/pymake/zipball/master
   - python setup.py install
