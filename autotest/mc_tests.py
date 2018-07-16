@@ -739,8 +739,70 @@ def invest():
     pyemu.plot.plot_utils.ensemble_helper(df.iloc[:, [0, 1]])
     plt.show()
 
+
+def mixed_par_draw_test():
+    import os
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+
+    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst, {})
+    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst, {},default="uniform")
+    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst, {}, default="triangular")
+
+    how = {}
+    for p in pst.par_names[:10]:
+        how[p] = "gaussian"
+    for p in pst.par_names[12:30]:
+        how[p] = "uniform"
+    for p in pst.par_names[40:100]:
+        how[p] = "triangular"
+    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst,how)
+
+    how = {p:"uniform" for p in pst.par_names}
+    how["junk"] = "uniform"
+    try:
+        pe = pyemu.ParameterEnsemble.from_mixed_draws(pst,how)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    try:
+        pe = pyemu.ParameterEnsemble.from_mixed_draws(pst,{p:"junk" for p in pst.par_names})
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    try:
+        pe = pyemu.ParameterEnsemble.from_mixed_draws(pst,{},default="junk")
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    cov = pyemu.Cov.from_parameter_data(pst)
+    cov.drop(pst.par_names[:2],0)
+    how = {p:"gaussian" for p in pst.par_names}
+    try:
+        pe = pyemu.ParameterEnsemble.from_mixed_draws(pst, how,cov=cov)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    how = {p: "uniform" for p in pst.par_names}
+    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst, how, cov=cov)
+
+
+    #cov.drop(pst.par_names[:2], 0)
+
+
 if __name__ == "__main__":
-    invest()
+    mixed_par_draw_test()
     #triangular_draw_test()
     # sparse_draw_test()
     # binary_ensemble_dev()
