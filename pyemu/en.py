@@ -1232,10 +1232,6 @@ class ParameterEnsemble(Ensemble):
         par_org = pst.parameter_data.copy()
         pset = set(pst.par_names)
         hset = set(how_dict.keys())
-        covered,dups = set(),set()
-        for pname in panmes:
-            if pname in covered:
-                dups.
         missing = pset.difference(hset)
         #assert len(missing) == 0,"ParameterEnsemble.from_mixed_draws() error: the following par names are not in " +\
         #    " in how_dict: {0}".format(','.join(missing))
@@ -1299,10 +1295,15 @@ class ParameterEnsemble(Ensemble):
 
 
 
-
-
+        df = pd.DataFrame(index=np.arange(num_reals),columns=par_org.parnme.values)
+        df.loc[:,:] = np.NaN
+        for pe in pes:
+            df.loc[pe.index,pe.columns] = pe
+        print(df.shape)
+        if df.shape != df.dropna().shape:
+            raise Exception("ParameterEnsemble.from_mixed_draws() error: NaNs in final parameter ensemble")
         pst.parameter_data = par_org
-
+        return ParameterEnsemble.from_dataframe(df=df,pst=pst)
 
 
 

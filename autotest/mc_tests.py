@@ -747,10 +747,20 @@ def mixed_par_draw_test():
     import pyemu
 
     pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    pname = pst.par_names[0]
+    pst.parameter_data.loc[pname,"partrans"] = "none"
+    npar = pst.npar
+    num_reals = 10000
+    pe1 = pyemu.ParameterEnsemble.from_mixed_draws(pst, {}, num_reals=num_reals)
 
-    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst, {})
-    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst, {},default="uniform")
-    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst, {}, default="triangular")
+    pe2 = pyemu.ParameterEnsemble.from_mixed_draws(pst, {},default="uniform",num_reals=num_reals)
+    pe3 = pyemu.ParameterEnsemble.from_mixed_draws(pst, {}, default="triangular", num_reals=num_reals)
+
+    # ax = plt.subplot(111)
+    # pe1.loc[:,pname].hist(ax=ax,alpha=0.5,bins=25)
+    # pe2.loc[:, pname].hist(ax=ax,alpha=0.5,bins=25)
+    # pe3.loc[:, pname].hist(ax=ax,alpha=0.5,bins=25)
+    # plt.show()
 
     how = {}
     for p in pst.par_names[:10]:
@@ -799,7 +809,7 @@ def mixed_par_draw_test():
 
 
     #cov.drop(pst.par_names[:2], 0)
-
+    assert pst.npar == npar
 
 if __name__ == "__main__":
     mixed_par_draw_test()
