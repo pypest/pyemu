@@ -59,7 +59,11 @@ install:
   - pip install pyshp
   - pip install nose-timer
   - pip install nbsphinx
-  - pip install git+https://github.com/modflowpy/flopy.git@develop
+  - #pip install git+https://github.com/modflowpy/flopy.git@develop
+  - git clone https://github.com/modflowpy/flopy.git@develop
+  - cd flopy
+  - python setup install
+  - cd ..
   - pip install https://github.com/modflowpy/pymake/zipball/master
   - python setup.py install
 script:
