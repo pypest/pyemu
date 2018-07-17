@@ -878,7 +878,7 @@ class ParameterEnsemble(Ensemble):
                                                 size=num_reals)
             else:
                 arr[:, i] = np.zeros((num_reals)) + \
-                            pe.pst.parameter_data. \
+                            pst.parameter_data. \
                                 loc[pname, "parval1"]
 
 
