@@ -818,9 +818,9 @@ class ParameterEnsemble(Ensemble):
                                                       size=num_reals)
             else:
                 arr[:,i] = np.zeros((num_reals)) + \
-                                    pe.pst.parameter_data.\
+                                    pst.parameter_data.\
                                          loc[pname,"parval1"]
-        print("back transforming")
+        #print("back transforming")
 
         df = pd.DataFrame(arr,index=real_names,columns=pst.par_names)
         df.loc[:,li] = 10.0**df.loc[:,li]
@@ -878,11 +878,11 @@ class ParameterEnsemble(Ensemble):
                                                 size=num_reals)
             else:
                 arr[:, i] = np.zeros((num_reals)) + \
-                            pe.pst.parameter_data. \
+                            pst.parameter_data. \
                                 loc[pname, "parval1"]
 
 
-        print("back transforming")
+        #print("back transforming")
 
         df = pd.DataFrame(arr, index=real_names, columns=pst.par_names)
         df.loc[:, li] = 10.0 ** df.loc[:, li]
@@ -1050,14 +1050,14 @@ class ParameterEnsemble(Ensemble):
 
         li = pst.parameter_data.partrans.loc[common_names] == "log"
         if cov.isdiagonal:
-            print("making diagonal cov draws")
-            print("building mean and std dicts")
+            #print("making diagonal cov draws")
+            #print("building mean and std dicts")
             arr = np.zeros((num_reals,len(vals)))
             stds = {pname:std for pname,std in zip(common_names,np.sqrt(cov.x.flatten()))}
             means = {pname:val for pname,val in zip(common_names,vals)}
-            print("numpy draw")
+            #print("numpy draw")
             arr = np.random.randn(num_reals,len(common_names))
-            print("post-processing")
+            #print("post-processing")
             adj_pars = set(pst.adj_par_names)
             for i,pname in enumerate(common_names):
                 if pname in adj_pars:
@@ -1068,7 +1068,7 @@ class ParameterEnsemble(Ensemble):
                     arr[:,i] = (arr[:,i] * stds[pname]) + means[pname]
                 else:
                     arr[:,i] = means[pname]
-            print("build df")
+            #print("build df")
             df = pd.DataFrame(data=arr,columns=common_names,index=real_names)
         else:
             if use_homegrown:
@@ -1091,14 +1091,14 @@ class ParameterEnsemble(Ensemble):
                     #print("algning cov")
                     #cov.align(list(par_cov.parnme))
                     pargps = par_cov.pargp.unique()
-                    print("reserving reals matrix")
+                    #print("reserving reals matrix")
                     reals = np.zeros((num_reals,cov.shape[0]))
 
                     for ipg,pargp in enumerate(pargps):
                         pnames = list(par_cov.loc[par_cov.pargp==pargp,"parnme"])
                         idxs = par_cov.loc[par_cov.pargp == pargp, "idxs"]
-                        print("{0} of {1} drawing for par group '{2}' with {3} pars "
-                              .format(ipg+1,len(pargps),pargp, len(idxs)))
+                        #print("{0} of {1} drawing for par group '{2}' with {3} pars "
+                        #      .format(ipg+1,len(pargps),pargp, len(idxs)))
 
                         s,e = idxs[0],idxs[-1]
                         #print("generating snv matrix")
@@ -1113,9 +1113,9 @@ class ParameterEnsemble(Ensemble):
                                 cov_pg.inv
                             except:
                                 covname = "trouble_{0}.cov".format(pargp)
-                                print('saving toubled cov matrix to {0}'.format(covname))
+                                #print('saving toubled cov matrix to {0}'.format(covname))
                                 cov_pg.to_ascii(covname)
-                                print(cov_pg.get_diagonal_vector())
+                                #print(cov_pg.get_diagonal_vector())
                                 raise Exception("error inverting cov for par group '{0}',"+\
                                                 "saved trouble cov to {1}".
                                                 format(pargp,covname))
@@ -1141,10 +1141,10 @@ class ParameterEnsemble(Ensemble):
                                 reals[i,idxs] =  pg_vals + np.dot(a,snv[i,:])
                 else:
 
-                    print("generating snv matrix")
+                    #print("generating snv matrix")
                     snv = np.random.randn(num_reals, cov.shape[0])
 
-                    print("eigen solve for full cov")
+                    #print("eigen solve for full cov")
                     v, w = np.linalg.eigh(cov.as_2d)
                     #w, v, other = np.linalg.svd(cov.as_2d,full_matrices=True,compute_uv=True)
                     # vdiag = np.diag(v)
@@ -1156,7 +1156,7 @@ class ParameterEnsemble(Ensemble):
                                   "at index", i, " of ", v.shape[0])
                             v[i] = 0.0
                     # form projection matrix
-                    print("form projection")
+                    #print("form projection")
                     a = np.dot(w, np.sqrt(np.diag(v)))
                     #print(a)
                     # project...
@@ -1169,7 +1169,7 @@ class ParameterEnsemble(Ensemble):
 
             #vals = pe.mean_values
             else:
-                print("making full cov draws with numpy")
+                #print("making full cov draws with numpy")
                 df = pd.DataFrame(data=np.random.multivariate_normal(vals, cov.as_2d,num_reals),
                                   columns = common_names,index=real_names)
             #print(df.shape,cov.shape)
@@ -1179,7 +1179,7 @@ class ParameterEnsemble(Ensemble):
 
         # replace the realizations for fixed parameters with the original
         # parval1 in the control file
-        print("handling fixed pars")
+        #print("handling fixed pars")
         #pe.pst.parameter_data.index = pe.pst.parameter_data.parnme
         if fill_fixed:
             par = pst.parameter_data
@@ -1193,6 +1193,120 @@ class ParameterEnsemble(Ensemble):
         if enforce_bounds:
             new_pe.enforce()
         return new_pe
+
+
+    @classmethod
+    def from_mixed_draws(cls,pst,how_dict,default="gaussian",num_reals=100,cov=None,sigma_range=6,
+                         enforce_bounds=True):
+        """instaniate a parameter ensemble from stochastic draws using a mixture of
+        distributions.  Available distributions include (log) "uniform", (log) "triangular",
+        and (log) "gaussian". log transformation is respected.
+
+        Parameters
+        ----------
+        pst : pyemu.Pst
+            a Pst instance
+        how_dict : dict
+            a dictionary of parnme keys and 'how' values, where "how" can be "uniform",
+            "triangular", or "gaussian".
+        default : str
+            the default distribution to use for parameter not listed in how_dict
+        num_reals : int
+            number of realizations to draw
+        cov : pyemu.Cov
+            an optional Cov instance to use for drawing from gaussian distribution.  If None,
+            and "gaussian" is listed in how_dict (or default), then a diagonal covariance matrix
+            is constructed from the parameter bounds in the pst.  Default is None
+        sigma_range : float
+             the number of standard deviations implied by the bounds in the pst.  Only used if
+             "gaussian" is in how_dict (or default) and cov is None.  Default is 6.
+        enforce_bounds : boolean
+            flag to enforce parameter bounds in resulting ParameterEnsemble.
+            Only matters if "gaussian" is in values of how_dict.  Default is True.
+
+        """
+
+        # error checking
+        accept = {"uniform", "triangular", "gaussian"}
+        assert default in accept,"ParameterEnsemble.from_mixed_draw() error: 'default' must be in {0}".format(accept)
+        par_org = pst.parameter_data.copy()
+        pset = set(pst.par_names)
+        hset = set(how_dict.keys())
+        missing = pset.difference(hset)
+        #assert len(missing) == 0,"ParameterEnsemble.from_mixed_draws() error: the following par names are not in " +\
+        #    " in how_dict: {0}".format(','.join(missing))
+        if len(missing) > 0:
+            print("{0} par names missing in how_dict, these parameters will be sampled using {1} (the 'default')".\
+                  format(len(missing),default))
+            for m in missing:
+                how_dict[m] = default
+        missing = hset.difference(pset)
+        assert len(missing) == 0, "ParameterEnsemble.from_mixed_draws() error: the following par names are not in " + \
+                                  " in the pst: {0}".format(','.join(missing))
+
+        unknown_draw = []
+        for pname,how in how_dict.items():
+            if how not in accept:
+                unknown_draw.append("{0}:{1}".format(pname,how))
+        if len(unknown_draw) > 0:
+            raise Exception("ParameterEnsemble.from_mixed_draws() error: the following hows are not recognized:{0}"\
+                            .format(','.join(unknown_draw)))
+
+
+        # work out 'how' grouping
+        how_groups = {how:[] for how in accept}
+        for pname,how in how_dict.items():
+            how_groups[how].append(pname)
+
+        # gaussian
+        pes = []
+        if len(how_groups["gaussian"]) > 0:
+            gset = set(how_groups["gaussian"])
+            par_gaussian = par_org.loc[gset, :]
+            pst.parameter_data = par_gaussian
+
+            if cov is not None:
+                cset = set(cov.row_names)
+                #gset = set(how_groups["gaussian"])
+                diff = gset.difference(cset)
+                assert len(diff) == 0,"ParameterEnsemble.from_mixed_draws() error: the 'cov' is not compatible with " +\
+                        " the parameters listed as 'gaussian' in how_dict, the following are not in the cov:{0}".\
+                        format(','.join(diff))
+            else:
+
+                cov = Cov.from_parameter_data(pst,sigma_range=sigma_range)
+            pe_gauss = ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=num_reals,
+                                                            enforce_bounds=enforce_bounds)
+            pes.append(pe_gauss)
+
+        if len(how_groups["uniform"]) > 0:
+            par_uniform = par_org.loc[how_groups["uniform"],:]
+            pst.parameter_data = par_uniform
+            pe_uniform = ParameterEnsemble.from_uniform_draw(pst,num_reals=num_reals)
+            pes.append(pe_uniform)
+
+        if len(how_groups["triangular"]) > 0:
+            par_tri = par_org.loc[how_groups["triangular"],:]
+            pst.parameter_data = par_tri
+            pe_tri = ParameterEnsemble.from_triangular_draw(pst,num_reals=num_reals)
+            pes.append(pe_tri)
+
+
+
+
+
+        df = pd.DataFrame(index=np.arange(num_reals),columns=par_org.parnme.values)
+        df.loc[:,:] = np.NaN
+        for pe in pes:
+            df.loc[pe.index,pe.columns] = pe
+        print(df.shape)
+        if df.shape != df.dropna().shape:
+            raise Exception("ParameterEnsemble.from_mixed_draws() error: NaNs in final parameter ensemble")
+        pst.parameter_data = par_org
+        return ParameterEnsemble.from_dataframe(df=df,pst=pst)
+
+
+
 
     @classmethod
     def from_binary(cls, pst, filename):
