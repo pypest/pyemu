@@ -750,7 +750,7 @@ def mixed_par_draw_test():
     pname = pst.par_names[0]
     pst.parameter_data.loc[pname,"partrans"] = "none"
     npar = pst.npar
-    num_reals = 10000
+    num_reals = 100
     pe1 = pyemu.ParameterEnsemble.from_mixed_draws(pst, {}, num_reals=num_reals)
 
     pe2 = pyemu.ParameterEnsemble.from_mixed_draws(pst, {},default="uniform",num_reals=num_reals)
@@ -763,14 +763,18 @@ def mixed_par_draw_test():
     # plt.show()
 
     how = {}
+
     for p in pst.par_names[:10]:
         how[p] = "gaussian"
     for p in pst.par_names[12:30]:
         how[p] = "uniform"
     for p in pst.par_names[40:100]:
         how[p] = "triangular"
-    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst,how)
+    for pnames in how.keys():
+        pst.parameter_data.loc[::3,"partrans"] = "fixed"
 
+    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst,how)
+    pst.parameter_data.loc[pname, "partrans"] = "none"
     how = {p:"uniform" for p in pst.par_names}
     how["junk"] = "uniform"
     try:
