@@ -19,7 +19,7 @@ init:
 
 install:
   - git clone -b develop --depth 1 https://github.com/dwelter/pestpp
-  - copy /Y pestpp/exe/windows/x64/Release/*.* bin/
+  - copy /Y pestpp\exe\windows\x64/Release\*.* bin\
   - set PATH=%CONDA_INSTALL_LOCN%;%CONDA_INSTALL_LOCN%\scripts;%PATH%;
   - set PYTHONUNBUFFERED=1
   # for msinttypes and newer stuff
