@@ -1282,7 +1282,7 @@ def hfb_test():
 if __name__ == "__main__":
     #master_and_slaves()
     #plot_id_bar_test()
-    #pst_from_parnames_obsnames_test()
+    pst_from_parnames_obsnames_test()
     #write_jactest_test()
     #sfr_obs_test()
     #gage_obs_test()
