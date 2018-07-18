@@ -446,10 +446,16 @@ def apply_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",
     except Exception as e:
         raise Exception("error import flopy: {0}".format(str(e)))
     mt = flopy.utils.MtListBudget(list_filename)
-    gw,sw = mt.parse(start_datetime=start_datetime,diff=True)
-    gw.to_csv(gw_filename,sep=' ',index_label="datetime",date_format="%Y%m%d")
+    gw, sw = mt.parse(start_datetime=start_datetime, diff=True)
+    gw = gw.drop([col for col in gw.columns
+                  for drop_col in ["kper", "kstp", "tkstp"]
+                  if (col.lower().startswith(drop_col))], axis=1)
+    gw.to_csv(gw_filename, sep=' ', index_label="datetime", date_format="%Y%m%d")
     if sw is not None:
-        sw.to_csv(sw_filename,sep=' ',index_label="datetime",date_format="%Y%m%d")
+        sw = sw.drop([col for col in sw.columns
+                      for drop_col in ["kper", "kstp", "tkstp"]
+                      if (col.lower().startswith(drop_col))], axis=1)
+        sw.to_csv(sw_filename, sep=' ', index_label="datetime", date_format="%Y%m%d")
     return gw, sw
 
 def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
@@ -723,7 +729,7 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
         df = apply_hds_timeseries(config_file)
     except Exception as e:
         os.chdir(bd)
-        raise Exception("error in apply_sfr_obs(): {0}".format(str(e)))
+        raise Exception("error in apply_hds_timeseries(): {0}".format(str(e)))
     os.chdir(bd)
 
     #df = _try_run_inschek(ins_file,ins_file.replace(".ins",""))

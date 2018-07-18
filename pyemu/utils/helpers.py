@@ -13,6 +13,7 @@ import copy
 import numpy as np
 import scipy.sparse
 import pandas as pd
+import time
 pd.options.display.max_colwidth = 100
 from ..pyemu_warnings import PyemuWarning
 try:
@@ -1722,6 +1723,7 @@ class PstFromFlopyModel(object):
             else:
                 self.logger.warn("removing existing 'new_model_ws")
                 shutil.rmtree(new_model_ws,onerror=remove_readonly)
+                time.sleep(1)
         self.m.change_model_ws(new_model_ws,reset_external=True)
         self.m.exe_name = self.m.exe_name.replace(".exe",'')
         self.m.exe = self.m.version
