@@ -481,8 +481,8 @@ def from_flopy_kl_test():
     for k in range(m.nlay):
         for kper in range(m.nper):
             hds_kperk.append([kper, k])
-    temp_bc_props = [["wel.flux", None]]
-    spat_bc_props = [["riv.cond", 0], ["riv.stage", 0]]
+    temp_list_props = [["wel.flux", None]]
+    spat_list_props = [["riv.cond", 0], ["riv.stage", 0]]
     kl_props = [["upw.hk", 0], ["upw.vka", 0], ["rch.rech", 0]]
     ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
                                          org_model_ws=org_model_ws,
@@ -523,14 +523,14 @@ def from_flopy():
     for k in range(m.nlay):
         for kper in range(m.nper):
             hds_kperk.append([kper, k])
-    temp_bc_props = [["wel.flux", None]]
-    spat_bc_props = [["riv.cond", 0], ["riv.stage", 0]]
+    temp_list_props = [["wel.flux", None]]
+    spat_list_props = [["riv.cond", 0], ["riv.stage", 0]]
     ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
                                          org_model_ws=org_model_ws,
                                          zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
                                          remove_existing=True,
-                                         model_exe_name="mfnwt", temporal_bc_props=temp_bc_props,
-                                         spatial_bc_props=spat_bc_props, hfb_pars=True)
+                                         model_exe_name="mfnwt", temporal_list_props=temp_list_props,
+                                         spatial_list_props=spat_list_props, hfb_pars=True)
 
     par = ph.pst.parameter_data
     pe = ph.draw(100)
@@ -539,7 +539,7 @@ def from_flopy():
 
     os.chdir(new_model_ws)
     ph.pst.write_input_files()
-    pyemu.helpers.apply_bc_pars()
+    pyemu.helpers.apply_list_pars()
     os.chdir("..")
 
     ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
@@ -547,14 +547,14 @@ def from_flopy():
                                          zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
                                          remove_existing=True,
                                          model_exe_name="mfnwt",
-                                         spatial_bc_props=spat_bc_props)
+                                         spatial_list_props=spat_list_props)
     pe = ph.draw(100)
 
     ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
                                          org_model_ws=org_model_ws,
                                          zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
                                          remove_existing=True,
-                                         model_exe_name="mfnwt", temporal_bc_props=temp_bc_props)
+                                         model_exe_name="mfnwt", temporal_list_props=temp_list_props)
     pe = ph.draw(100)
     ph.pst.parameter_data.loc["rech0_zn1", "parval1"] = 2.0
 
@@ -671,12 +671,12 @@ def from_flopy():
                                              zone_props=zone_props, hds_kperk=[0, 0], remove_existing=True)
     pe = helper.draw(100)
     # kper-level multipliers for boundary conditions
-    bc_props = []
+    list_props = []
     for iper in range(m.nper):
-        bc_props.append(["wel.flux", iper])
-        # bc_props.append(["drn.elev",iper])
+        list_props.append(["wel.flux", iper])
+        # list_props.append(["drn.elev",iper])
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
-                                             bc_props=bc_props, hds_kperk=[0, 0], remove_existing=True)
+                                             temporal_list_props=list_props, hds_kperk=[0, 0], remove_existing=True)
 
     pe = helper.draw(100)
     zn_arr = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "hk.zones"), dtype=int)
@@ -688,8 +688,8 @@ def from_flopy():
                                              const_props=const_props,
                                              grid_props=grid_props,
                                              zone_props=zone_props,
-                                             temporal_bc_props=bc_props,
-                                             spatial_bc_props=bc_props,
+                                             temporal_list_props=list_props,
+                                             spatial_list_props=list_props,
                                              remove_existing=True,
                                              obssim_smp_pairs=obssim_smp_pairs,
                                              pp_space=4,
@@ -1121,14 +1121,14 @@ def pst_from_flopy_geo_draw_test():
     for k in range(m.nlay):
         for kper in range(m.nper):
             hds_kperk.append([kper, k])
-    temp_bc_props = [["wel.flux", None]]
-    spat_bc_props = [["riv.cond", 0], ["riv.stage", 0]]
+    temp_list_props = [["wel.flux", None]]
+    spat_list_props = [["riv.cond", 0], ["riv.stage", 0]]
     ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
                                          org_model_ws=org_model_ws,
                                          zone_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
                                          remove_existing=True,
-                                         model_exe_name="mfnwt", temporal_bc_props=temp_bc_props,
-                                         spatial_bc_props=spat_bc_props)
+                                         model_exe_name="mfnwt", temporal_list_props=temp_list_props,
+                                         spatial_list_props=spat_list_props)
 
     num_reals = 100000
     pe1 = ph.draw(num_reals=num_reals, sigma_range=6)
@@ -1148,7 +1148,7 @@ def pst_from_flopy_geo_draw_test():
 
 
 if __name__ == "__main__":
-    # pst_from_flopy_geo_draw_test()
+    pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
     # res_stats_test()
@@ -1157,9 +1157,9 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    # from_flopy()
+    from_flopy()
     # add_obs_test()
-    # from_flopy_kl_test()
+    from_flopy_kl_test()
     from_flopy_test_reachinput_test()
     # plot_flopy_par_ensemble_test()
     # add_pi_test()

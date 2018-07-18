@@ -1287,7 +1287,7 @@ if __name__ == "__main__":
     #sfr_obs_test()
     #gage_obs_test()
     #setup_pp_test()
-    sfr_helper_test()
+    #sfr_helper_test()
     # gw_sft_ins_test()
     # par_knowledge_test()
     # grid_obs_test()
