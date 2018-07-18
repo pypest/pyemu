@@ -739,8 +739,84 @@ def invest():
     pyemu.plot.plot_utils.ensemble_helper(df.iloc[:, [0, 1]])
     plt.show()
 
+
+def mixed_par_draw_test():
+    import os
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    pname = pst.par_names[0]
+    pst.parameter_data.loc[pname,"partrans"] = "none"
+    npar = pst.npar
+    num_reals = 100
+    pe1 = pyemu.ParameterEnsemble.from_mixed_draws(pst, {}, num_reals=num_reals)
+
+    pe2 = pyemu.ParameterEnsemble.from_mixed_draws(pst, {},default="uniform",num_reals=num_reals)
+    pe3 = pyemu.ParameterEnsemble.from_mixed_draws(pst, {}, default="triangular", num_reals=num_reals)
+
+    # ax = plt.subplot(111)
+    # pe1.loc[:,pname].hist(ax=ax,alpha=0.5,bins=25)
+    # pe2.loc[:, pname].hist(ax=ax,alpha=0.5,bins=25)
+    # pe3.loc[:, pname].hist(ax=ax,alpha=0.5,bins=25)
+    # plt.show()
+
+    how = {}
+
+    for p in pst.par_names[:10]:
+        how[p] = "gaussian"
+    for p in pst.par_names[12:30]:
+        how[p] = "uniform"
+    for p in pst.par_names[40:100]:
+        how[p] = "triangular"
+    for pnames in how.keys():
+        pst.parameter_data.loc[::3,"partrans"] = "fixed"
+
+    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst,how)
+    pst.parameter_data.loc[pname, "partrans"] = "none"
+    how = {p:"uniform" for p in pst.par_names}
+    how["junk"] = "uniform"
+    try:
+        pe = pyemu.ParameterEnsemble.from_mixed_draws(pst,how)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    try:
+        pe = pyemu.ParameterEnsemble.from_mixed_draws(pst,{p:"junk" for p in pst.par_names})
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    try:
+        pe = pyemu.ParameterEnsemble.from_mixed_draws(pst,{},default="junk")
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    cov = pyemu.Cov.from_parameter_data(pst)
+    cov.drop(pst.par_names[:2],0)
+    how = {p:"gaussian" for p in pst.par_names}
+    try:
+        pe = pyemu.ParameterEnsemble.from_mixed_draws(pst, how,cov=cov)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    how = {p: "uniform" for p in pst.par_names}
+    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst, how, cov=cov)
+
+
+    #cov.drop(pst.par_names[:2], 0)
+    assert pst.npar == npar
+
 if __name__ == "__main__":
-    invest()
+    mixed_par_draw_test()
     #triangular_draw_test()
     # sparse_draw_test()
     # binary_ensemble_dev()
