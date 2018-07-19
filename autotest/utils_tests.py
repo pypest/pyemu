@@ -1033,7 +1033,7 @@ def grid_obs_test():
     diff = df1.obsval - df2.obsval
     assert diff.max() < 1.0e-6
 
-    pyemu.gw_utils.setup_hds_obs(ucn_file, skip=1.e30)
+    pyemu.gw_utils.setup_hds_obs(ucn_file, skip=1.e30, prefix='ucn')
     df1 = pd.read_csv(ucn_out_file, delim_whitespace=True)
     pyemu.gw_utils.apply_hds_obs(ucn_file)
     df2 = pd.read_csv(ucn_out_file, delim_whitespace=True)
