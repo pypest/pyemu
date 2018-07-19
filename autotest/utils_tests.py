@@ -997,16 +997,34 @@ def grid_obs_test():
         return
     import pyemu
 
+    m_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     org_hds_file = os.path.join("..","examples","Freyberg_Truth","freyberg.hds")
+    org_multlay_hds_file = os.path.join(m_ws, "freyberg.hds")  # 3 layer version
+    org_ucn_file = os.path.join(m_ws, "MT3D001.UCN")  # mt example
     hds_file = os.path.join("temp","freyberg.hds")
+    multlay_hds_file = os.path.join("temp", "freyberg_3lay.hds")
+    ucn_file = os.path.join("temp", "MT3D001.UCN")
     out_file = hds_file+".dat"
+    multlay_out_file = multlay_hds_file+".dat"
+    ucn_out_file = ucn_file+".dat"
     shutil.copy2(org_hds_file,hds_file)
+    shutil.copy2(org_multlay_hds_file, multlay_hds_file)
+    shutil.copy2(org_ucn_file, ucn_file)
+
     pyemu.gw_utils.setup_hds_obs(hds_file)
     df1 = pd.read_csv(out_file,delim_whitespace=True)
     pyemu.gw_utils.apply_hds_obs(hds_file)
     df2 = pd.read_csv(out_file,delim_whitespace=True)
     diff = df1.obsval - df2.obsval
-    assert diff.max() < 1.0e-6,diff.max()
+    assert abs(diff.max()) < 1.0e-6, abs(diff.max())
+
+    pyemu.gw_utils.setup_hds_obs(multlay_hds_file)
+    df1 = pd.read_csv(multlay_out_file,delim_whitespace=True)
+    assert len(df1) == 3*len(df2), "{} != 3*{}".format(len(df1), len(df2))
+    pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
+    df2 = pd.read_csv(multlay_out_file,delim_whitespace=True)
+    diff = df1.obsval - df2.obsval
+    assert np.allclose(df1.obsval,df2.obsval), abs(diff.max())
 
     pyemu.gw_utils.setup_hds_obs(hds_file,skip=-999)
     df1 = pd.read_csv(out_file,delim_whitespace=True)
@@ -1015,7 +1033,14 @@ def grid_obs_test():
     diff = df1.obsval - df2.obsval
     assert diff.max() < 1.0e-6
 
-    skip = lambda x : x < -888.0
+    pyemu.gw_utils.setup_hds_obs(ucn_file, skip=1.e30)
+    df1 = pd.read_csv(ucn_out_file, delim_whitespace=True)
+    pyemu.gw_utils.apply_hds_obs(ucn_file)
+    df2 = pd.read_csv(ucn_out_file, delim_whitespace=True)
+    diff = df1.obsval - df2.obsval
+    assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
+
+    # skip = lambda x : x < -888.0
     skip = lambda x: x if x > -888.0 else np.NaN
     pyemu.gw_utils.setup_hds_obs(hds_file,skip=skip)
     df1 = pd.read_csv(out_file,delim_whitespace=True)
@@ -1032,6 +1057,61 @@ def grid_obs_test():
     df2 = pd.read_csv(out_file,delim_whitespace=True)
     diff = df1.obsval - df2.obsval
     assert diff.max() < 1.0e-6
+
+    kperk_pairs = [(0, 0), (0, 1), (0, 2)]
+    pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
+                                 skip=skip)
+    df1 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    assert len(df1) == 3*len(df2), "{} != 3*{}".format(len(df1), len(df2))
+    pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
+    df2 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    diff = df1.obsval - df2.obsval
+    assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
+
+    kperk_pairs = [(0, 0), (0, 1), (0, 2), (2, 0), (2, 1), (2, 2)]
+    pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
+                                 skip=skip)
+    df1 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    assert len(df1) == 2 * len(df2), "{} != 2*{}".format(len(df1), len(df2))
+    pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
+    df2 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    diff = df1.obsval - df2.obsval
+    assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
+
+    m = flopy.modflow.Modflow.load("freyberg.nam", model_ws=m_ws, load_only=[])
+    kperk_pairs = [(0, 0), (0, 1), (0, 2)]
+    skipmask = m.bas6.ibound.array
+    pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
+                                 skip=skipmask)
+    df1 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
+    df2 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    assert len(df1) == len(df2) == np.abs(skipmask).sum(), \
+        "array skip failing, expecting {0} obs but returned {1}".format(np.abs(skipmask).sum(), len(df1))
+    diff = df1.obsval - df2.obsval
+    assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
+
+    kperk_pairs = [(0, 0), (0, 1), (0, 2), (2, 0), (2, 1), (2, 2)]
+    skipmask = m.bas6.ibound.array[0]
+    pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
+                                 skip=skipmask)
+    df1 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
+    df2 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    assert len(df1) == len(df2) == 2 * m.nlay * np.abs(skipmask).sum(), "array skip failing"
+    diff = df1.obsval - df2.obsval
+    assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
+
+    kperk_pairs = [(0, 0), (0, 1), (0, 2), (2, 0), (2, 1), (2, 2)]
+    skipmask = m.bas6.ibound.array
+    pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
+                                 skip=skipmask)
+    df1 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
+    df2 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    assert len(df1) == len(df2) == 2 * np.abs(skipmask).sum(), "array skip failing"
+    diff = df1.obsval - df2.obsval
+    assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
 
 
 def par_knowledge_test():
@@ -1294,7 +1374,7 @@ if __name__ == "__main__":
     # sfr_helper_test()
     # gw_sft_ins_test()
     # par_knowledge_test()
-    # grid_obs_test()
+    grid_obs_test()
     # hds_timeseries_test()
     # plot_summary_test()
     # load_sgems_expvar_test()
@@ -1306,8 +1386,8 @@ if __name__ == "__main__":
     # geostat_prior_builder_test()
     # geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
-    mflist_budget_test()
-    mtlist_budget_test()
+    # mflist_budget_test()
+    # mtlist_budget_test()
     # tpl_to_dataframe_test()
     # kl_test()
     # hfb_test()
