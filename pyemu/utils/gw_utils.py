@@ -446,10 +446,16 @@ def apply_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",
     except Exception as e:
         raise Exception("error import flopy: {0}".format(str(e)))
     mt = flopy.utils.MtListBudget(list_filename)
-    gw,sw = mt.parse(start_datetime=start_datetime,diff=True)
-    gw.to_csv(gw_filename,sep=' ',index_label="datetime",date_format="%Y%m%d")
+    gw, sw = mt.parse(start_datetime=start_datetime, diff=True)
+    gw = gw.drop([col for col in gw.columns
+                  for drop_col in ["kper", "kstp", "tkstp"]
+                  if (col.lower().startswith(drop_col))], axis=1)
+    gw.to_csv(gw_filename, sep=' ', index_label="datetime", date_format="%Y%m%d")
     if sw is not None:
-        sw.to_csv(sw_filename,sep=' ',index_label="datetime",date_format="%Y%m%d")
+        sw = sw.drop([col for col in sw.columns
+                      for drop_col in ["kper", "kstp", "tkstp"]
+                      if (col.lower().startswith(drop_col))], axis=1)
+        sw.to_csv(sw_filename, sep=' ', index_label="datetime", date_format="%Y%m%d")
     return gw, sw
 
 def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
@@ -723,7 +729,7 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
         df = apply_hds_timeseries(config_file)
     except Exception as e:
         os.chdir(bd)
-        raise Exception("error in apply_sfr_obs(): {0}".format(str(e)))
+        raise Exception("error in apply_hds_timeseries(): {0}".format(str(e)))
     os.chdir(bd)
 
     #df = _try_run_inschek(ins_file,ins_file.replace(".ins",""))
@@ -800,8 +806,10 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
     skip : variable
         a value or function used to determine which values
         to skip when setting up observations.  If np.scalar(skip)
-        is True, then values equal to skip will not be used.  If not
-        np.scalar(skip), then skip will be treated as a lambda function that
+        is True, then values equal to skip will not be used.
+        If skip can also be a np.ndarry with dimensions equal to the model.
+        Obscervations are set up only for cells with Non-zero values in the array.
+        If not np.ndarray or np.scalar(skip), then skip will be treated as a lambda function that
         returns np.NaN if the value should be skipped.
     prefix : str
         the prefix to use for the observation names. default is "hds".
@@ -882,6 +890,21 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
         for col in data_cols:
             if np.isscalar(skip):
                 df.loc[df.loc[:,col]==skip,col] = np.NaN
+            elif isinstance(skip, np.ndarray):
+                assert skip.ndim >= 2, "skip passed as {}D array, At least 2D (<= 4D) array required".format(skip.ndim)
+                assert skip.shape[-2:] == (hds.nrow, hds.ncol), \
+                    "Array dimensions of arg. skip needs to match model dimensions ({0},{1}). ({2},{3}) passed".\
+                        format(hds.nrow, hds.ncol, skip.shape[-2], skip.shape[-1])
+                if skip.ndim == 2:
+                    print("2D array passed for skip, assuming constant for all layers and kper")
+                    skip = np.tile(skip, (len(kpers), hds.nlay, 1, 1))
+                if skip.ndim == 3:
+                    print("3D array passed for skip, assuming constant for all kper")
+                    skip = np.tile(skip, (len(kpers), 1, 1, 1))
+                kper, k = [int(c) for c in col.split('_')]
+                df.loc[df.index.map(
+                    lambda x: skip[kper, k, int(x.split('_')[0].strip('i')), int(x.split('_')[1].strip('j'))] == 0),
+                    col] = np.NaN
             else:
                 df.loc[:,col] = df.loc[:,col].apply(skip)
 
