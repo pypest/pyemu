@@ -1668,17 +1668,21 @@ def load_sfr_out(sfr_out_file):
                 sfr_dict[kper] = df
     return sfr_dict
 
-def modflow_sfr_gag_to_instruction_file(gage_output_file, ins_file=None):
+def modflow_sfr_gag_to_instruction_file(gage_output_file, ins_file=None, parse_filename=False):
     """writes an instruction file for an SFR gage output file to read Flow only at all times
 
         Parameters
         ----------
             gage_output_file : str
-                the gage output filename (ASCII)
+                the gage output filename (ASCII).
 
             ins_file : str
                 the name of the instruction file to create.  If None, the name
                 is <gage_output_file>.ins.  Default is None
+
+            parse_filename : bool
+                if True, get the gage_num parameter by parsing the gage output file filename
+                if False, get the gage number from the file itself
 
         Returns
         -------
@@ -1693,7 +1697,9 @@ def modflow_sfr_gag_to_instruction_file(gage_output_file, ins_file=None):
 
         Note
         ----
-            setups up observations for gage outputs only for the Flow column.
+            sets up observations for gage outputs only for the Flow column.
+
+            if parse_namefile is true, only text up to first '.' is used as the gage_num
 
         TODO : allow other observation types and align explicitly with times - now returns all values
         """
@@ -1705,10 +1711,13 @@ def modflow_sfr_gag_to_instruction_file(gage_output_file, ins_file=None):
     indat = [line.strip() for line in open(gage_output_file, 'r').readlines()]
     header = [i for i in indat if i.startswith('"')]
     # yank out the gage number to identify the observation names
-    gage_num = int(re.sub("[^0-9]", "", indat[0].lower().split("gage no.")[-1].strip().split()[0]))
+    if parse_filename:
+        gage_num = os.path.basename(gage_output_file).split('.')[0]
+    else:
+        gage_num = re.sub("[^0-9]", "", indat[0].lower().split("gage no.")[-1].strip().split()[0])
 
     # get the column names
-    cols = [i for i in header if 'data' in i.lower()][0].lower().replace('"', '').replace('data:', '').split()
+    cols = [i.lower() for i in header if 'data' in i.lower()][0].lower().replace('"', '').replace('data:', '').split()
 
     # make sure "Flow" is included in the columns
     if 'flow' not in cols:
@@ -1718,7 +1727,7 @@ def modflow_sfr_gag_to_instruction_file(gage_output_file, ins_file=None):
     flowidx = np.where(np.array(cols) == 'flow')[0][0]
 
     # write out the instruction file lines
-    inslines = ['l1 ' + (flowidx + 1) * 'w ' + '!g{0:d}_{1:d}!'.format(gage_num, j)
+    inslines = ['l1 ' + (flowidx + 1) * 'w ' + '!g{0}_{1:d}!'.format(gage_num, j)
                 for j in range(len(indat) - len(header))]
     inslines[0] = inslines[0].replace('l1', 'l{0:d}'.format(len(header) + 1))
 
