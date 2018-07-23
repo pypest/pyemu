@@ -18,6 +18,8 @@ init:
   - echo %PYTHON_VERSION% %CONDA_INSTALL_LOCN%
 
 install:
+  - git clone -b develop --depth 1 https://github.com/dwelter/pestpp
+  - copy /Y pestpp\exe\windows\x64\Release\*.* bin\
   - set PATH=%CONDA_INSTALL_LOCN%;%CONDA_INSTALL_LOCN%\scripts;%PATH%;
   - set PYTHONUNBUFFERED=1
   # for msinttypes and newer stuff
@@ -39,7 +41,8 @@ install:
 
 test_script:
   - python setup.py install
-  - nosetests -v --with-id --nocapture --with-timer -w ./autotest 
+  - nosetests -v --with-id --nocapture --with-timer -w autotest full_meal_deal_tests.py
+  - nosetests -v --with-id --nocapture --with-timer -w autotest utils_tests.py
 
 after_test:
  - echo "done"

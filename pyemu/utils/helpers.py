@@ -13,6 +13,7 @@ import copy
 import numpy as np
 import scipy.sparse
 import pandas as pd
+import time
 pd.options.display.max_colwidth = 100
 from ..pyemu_warnings import PyemuWarning
 try:
@@ -1264,23 +1265,23 @@ class PstFromFlopyModel(object):
         iterable is for zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
         would setup constant (uniform) multiplier parameters for recharge for stress
         period 1,5,11,and 16.
-    temporal_bc_props : list
-        boundary condition stress-period level multiplier parameters.
-        A nested list of boundary condition elements to parameterize using
+    temporal_list_props : list
+        list-type input stress-period level multiplier parameters.
+        A nested list of list-type input elements to parameterize using
         name, iterable pairs.  The iterable is zero-based stress-period indices.
         For example, to setup multipliers for WEL flux and for RIV conductance,
-        bc_props = [["wel.flux",[0,1,2]],["riv.cond",None]] would setup
+        temporal_list_props = [["wel.flux",[0,1,2]],["riv.cond",None]] would setup
         multiplier parameters for well flux for stress periods 1,2 and 3 and
         would setup one single river conductance multiplier parameter that is applied
         to all stress periods
-    spatial_bc_props : list
-        boundary condition spatial multiplier parameters.
-        A nested list of boundary condition elements to parameterize using
+    spatial_list_props : list
+        lkst-type input spatial multiplier parameters.
+        A nested list of list-type elements to parameterize using
         names (e.g. [["riv.cond",0],["wel.flux",1] to setup up cell-based parameters for
-        each boundary condition element listed.  These multipler parameters are applied across
+        each list-type element listed.  These multipler parameters are applied across
         all stress periods.  For this to work, there must be the same number of entries
-        for all stress periods.  If more than one BC of the same type is in a single
-        cell, only one parameter is used to multiply all BCs in the same cell.
+        for all stress periods.  If more than one list element of the same type is in a single
+        cell, only one parameter is used to multiply all lists in the same cell.
     grid_props : list
         grid-based (every active model cell) multiplier parameters.
         A nested list of grid-scale model properties to parameterize using
@@ -1325,16 +1326,16 @@ class PstFromFlopyModel(object):
         2.0.  For parameters not found in par_bounds_dict,
         pyemu.helpers.wildass_guess_par_bounds_dict is
         used to set somewhat meaningful bounds.  Default is None
-    temporal_bc_geostruct : pyemu.geostats.GeoStruct
+    temporal_list_geostruct : pyemu.geostats.GeoStruct
         the geostastical struture to build the prior parameter covariance matrix
-        for time-varying boundary condition multiplier parameters.  This GeoStruct
+        for time-varying list-type multiplier parameters.  This GeoStruct
         express the time correlation so that the 'a' parameter is the length of
         time that boundary condition multiplier parameters are correlated across.
         If None, then a generic GeoStruct is created that uses an 'a' parameter
         of 3 stress periods.  Default is None
-    spatial_bc_geostruct : pyemu.geostats.GeoStruct
+    spatial_list_geostruct : pyemu.geostats.GeoStruct
         the geostastical struture to build the prior parameter covariance matrix
-        for spatially-varying boundary condition multiplier parameters.
+        for spatially-varying list-type multiplier parameters.
         If None, a generic GeoStruct is created using an "a" parameter that
         is 10 times the max cell size.  Default is None.
     remove_existing : bool
@@ -1382,11 +1383,10 @@ class PstFromFlopyModel(object):
     sfr_obs : bool
         flag to include observations of flow and aquifer exchange from
         the sfr ASCII output file
-    all_wells : bool [DEPRECATED - now use spatial_bc_pars]
     hfb_pars : bool
         add HFB parameters.  uses pyemu.gw_utils.write_hfb_template().  the resulting
         HFB pars have parval1 equal to the values in the original file and use the
-        spatial_bc_geostruct to build geostatistical covariates between parameters
+        spatial_list_geostruct to build geostatistical covariates between parameters
 
     Returns
     -------
@@ -1405,16 +1405,17 @@ class PstFromFlopyModel(object):
     """
 
     def __init__(self,model,new_model_ws,org_model_ws=None,pp_props=[],const_props=[],
-                 temporal_bc_props=[],grid_props=[],grid_geostruct=None,pp_space=None,
+                 temporal_bc_props=[],temporal_list_props=[],grid_props=[],
+                 grid_geostruct=None,pp_space=None,
                  zone_props=[],pp_geostruct=None,par_bounds_dict=None,sfr_pars=False,
-                 temporal_bc_geostruct=None,remove_existing=False,k_zone_dict=None,
+                 temporal_list_geostruct=None,remove_existing=False,k_zone_dict=None,
                  mflist_waterbudget=True,mfhyd=True,hds_kperk=[],use_pp_zones=False,
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
                  external_ins_out_pairs=None,extra_pre_cmds=None,
                  extra_model_cmds=None,extra_post_cmds=None,redirect_forward_output=True,
                  tmp_files=None,model_exe_name=None,build_prior=True,
-                 sfr_obs=False, all_wells=False,bc_props=[],
-                 spatial_bc_props=[],spatial_bc_geostruct=None,
+                 sfr_obs=False,
+                 spatial_bc_props=[],spatial_list_props=[],spatial_list_geostruct=None,
                  hfb_pars=False, kl_props=None,kl_num_eig=100, kl_geostruct=None):
 
         self.logger = pyemu.logger.Logger("PstFromFlopyModel.log")
@@ -1428,8 +1429,8 @@ class PstFromFlopyModel(object):
         self.kl_suffix = "_kl"
         self.arr_org = "arr_org"
         self.arr_mlt = "arr_mlt"
-        self.bc_org = "bc_org"
-        self.bc_mlt = "bc_mlt"
+        self.list_org = "list_org"
+        self.list_mlt = "list_mlt"
         self.forward_run_file = "forward_run.py"
 
         self.remove_existing = remove_existing
@@ -1457,18 +1458,32 @@ class PstFromFlopyModel(object):
         self.kl_geostruct = kl_geostruct
         self.kl_num_eig = kl_num_eig
 
-        if len(bc_props) > 0:
-            if len(temporal_bc_props) > 0:
-                self.logger.lraise("bc_props and temporal_bc_props. "+\
-                                   "bc_props is deprecated and replaced by temporal_bc_props")
-            self.logger.warn("bc_props is deprecated and replaced by temporal_bc_props")
-            temporal_bc_props = bc_props
+        if len(temporal_bc_props) > 0:
+            if len(temporal_list_props) > 0:
+                self.logger.lraise("temporal_bc_props and temporal_list_props. "+\
+                                   "temporal_bc_props is deprecated and replaced by temporal_list_props")
+            self.logger.warn("temporal_bc_props is deprecated and replaced by temporal_list_props")
+            temporal_list_props = temporal_bc_props
+        if len(spatial_bc_props) > 0:
+            if len(spatial_list_props) > 0:
+                self.logger.lraise("spatial_bc_props and spatial_list_props. "+\
+                                   "spatial_bc_props is deprecated and replaced by spatial_list_props")
+            self.logger.warn("spatial_bc_props is deprecated and replaced by spatial_list_props")
+            spatial_list_props = spatial_bc_props
+            
+        self.temporal_list_props = temporal_list_props
+        self.temporal_list_geostruct = temporal_list_geostruct
+        if self.temporal_list_geostruct is None:
+            v = pyemu.geostats.ExpVario(contribution=1.0,a=180.0) # 180 correlation length
+            self.temporal_list_geostruct = pyemu.geostats.GeoStruct(variograms=v)
 
-        self.temporal_bc_props = temporal_bc_props
-        self.temporal_bc_geostruct = temporal_bc_geostruct
-        self.spatial_bc_props = spatial_bc_props
-        self.spatial_bc_geostruct = spatial_bc_geostruct
-
+        self.spatial_list_props = spatial_list_props
+        self.spatial_list_geostruct = spatial_list_geostruct
+        if self.spatial_list_geostruct is None:
+            dist = 10 * float(max(self.m.dis.delr.array.max(),
+                                  self.m.dis.delc.array.max()))
+            v = pyemu.geostats.ExpVario(contribution=1.0, a=dist)
+            self.spatial_list_geostruct = pyemu.geostats.GeoStruct(variograms=v)
 
         self.obssim_smp_pairs = obssim_smp_pairs
         self.hds_kperk = hds_kperk
@@ -1521,7 +1536,6 @@ class PstFromFlopyModel(object):
 
         self.tpl_files,self.in_files = [],[]
         self.ins_files,self.out_files = [],[]
-        self.all_wells = all_wells
         self.setup_mult_dirs()
 
         self.mlt_files = []
@@ -1530,13 +1544,8 @@ class PstFromFlopyModel(object):
         self.mlt_counter = {}
         self.par_dfs = {}
         self.mlt_dfs = []
-        if self.all_wells:
-            #self.setup_all_wells()
-            self.logger.lraise("all_wells has been deprecated and replaced with"+\
-                               " spatial_bc_pars.")
-        self.setup_bc_pars()
 
-
+        self.setup_list_pars()
         self.setup_array_pars()
 
         if sfr_pars:
@@ -1657,10 +1666,10 @@ class PstFromFlopyModel(object):
             set_dirs.append(self.arr_org)
             set_dirs.append(self.arr_mlt)
  #       if len(self.bc_props) > 0:
-        if len(self.temporal_bc_props) > 0 or len(self.spatial_bc_props) > 0:
-            set_dirs.append(self.bc_org)
-        if len(self.spatial_bc_props):
-            set_dirs.append(self.bc_mlt)
+        if len(self.temporal_list_props) > 0 or len(self.spatial_list_props) > 0:
+            set_dirs.append(self.list_org)
+        if len(self.spatial_list_props):
+            set_dirs.append(self.list_mlt)
 
         for d in set_dirs:
             d = os.path.join(self.m.model_ws,d)
@@ -1722,6 +1731,7 @@ class PstFromFlopyModel(object):
             else:
                 self.logger.warn("removing existing 'new_model_ws")
                 shutil.rmtree(new_model_ws,onerror=remove_readonly)
+                time.sleep(1)
         self.m.change_model_ws(new_model_ws,reset_external=True)
         self.m.exe_name = self.m.exe_name.replace(".exe",'')
         self.m.exe = self.m.version
@@ -2378,8 +2388,8 @@ class PstFromFlopyModel(object):
                 gr_dfs.append(p_df)
             #gr_dfs = [gr_df.loc[gr_df.pargp==pargp,:].copy() for pargp in gr_df.pargp.unique()]
             struct_dict[self.grid_geostruct] = gr_dfs
-        if "temporal_bc" in self.par_dfs.keys():
-            bc_df = self.par_dfs["temporal_bc"]
+        if "temporal_list" in self.par_dfs.keys():
+            bc_df = self.par_dfs["temporal_list"]
             bc_df.loc[:,"y"] = 0
             bc_df.loc[:,"x"] = bc_df.timedelta.apply(lambda x: x.days)
             bc_dfs = []
@@ -2389,16 +2399,16 @@ class PstFromFlopyModel(object):
                 #print(p_df)
                 bc_dfs.append(p_df)
             #bc_dfs = [bc_df.loc[bc_df.pargp==pargp,:].copy() for pargp in bc_df.pargp.unique()]
-            struct_dict[self.temporal_bc_geostruct] = bc_dfs
-        if "spatial_bc" in self.par_dfs.keys():
-            bc_df = self.par_dfs["spatial_bc"]
+            struct_dict[self.temporal_list_geostruct] = bc_dfs
+        if "spatial_list" in self.par_dfs.keys():
+            bc_df = self.par_dfs["spatial_list"]
             bc_dfs = []
             for pargp in bc_df.pargp.unique():
                 gp_df = bc_df.loc[bc_df.pargp==pargp,:]
                 #p_df = gp_df.drop_duplicates(subset="parnme")
                 #print(p_df)
                 bc_dfs.append(gp_df)
-            struct_dict[self.spatial_bc_geostruct] = bc_dfs
+            struct_dict[self.spatial_list_geostruct] = bc_dfs
         pe = geostatistical_draws(self.pst,struct_dict=struct_dict,num_reals=num_reals,
                              sigma_range=sigma_range)
 
@@ -2461,8 +2471,8 @@ class PstFromFlopyModel(object):
                 gr_dfs.append(p_df)
             #gr_dfs = [gr_df.loc[gr_df.pargp==pargp,:].copy() for pargp in gr_df.pargp.unique()]
             struct_dict[self.grid_geostruct] = gr_dfs
-        if "temporal_bc" in self.par_dfs.keys():
-            bc_df = self.par_dfs["temporal_bc"]
+        if "temporal_list" in self.par_dfs.keys():
+            bc_df = self.par_dfs["temporal_list"]
             bc_df.loc[:,"y"] = 0
             bc_df.loc[:,"x"] = bc_df.timedelta.apply(lambda x: x.days)
             bc_dfs = []
@@ -2472,21 +2482,21 @@ class PstFromFlopyModel(object):
                 #print(p_df)
                 bc_dfs.append(p_df)
             #bc_dfs = [bc_df.loc[bc_df.pargp==pargp,:].copy() for pargp in bc_df.pargp.unique()]
-            struct_dict[self.temporal_bc_geostruct] = bc_dfs
-        if "spatial_bc" in self.par_dfs.keys():
-            bc_df = self.par_dfs["spatial_bc"]
+            struct_dict[self.temporal_list_geostruct] = bc_dfs
+        if "spatial_list" in self.par_dfs.keys():
+            bc_df = self.par_dfs["spatial_list"]
             bc_dfs = []
             for pargp in bc_df.pargp.unique():
                 gp_df = bc_df.loc[bc_df.pargp==pargp,:]
                 #p_df = gp_df.drop_duplicates(subset="parnme")
                 #print(p_df)
                 bc_dfs.append(gp_df)
-            struct_dict[self.spatial_bc_geostruct] = bc_dfs
+            struct_dict[self.spatial_list_geostruct] = bc_dfs
         if "hfb" in self.par_dfs.keys():
-            if self.spatial_bc_geostruct in struct_dict.keys():
-                struct_dict[self.spatial_bc_geostruct].append(self.par_dfs["hfb"])
+            if self.spatial_list_geostruct in struct_dict.keys():
+                struct_dict[self.spatial_list_geostruct].append(self.par_dfs["hfb"])
             else:
-                struct_dict[self.spatial_bc_geostruct] = [self.par_dfs["hfb"]]
+                struct_dict[self.spatial_list_geostruct] = [self.par_dfs["hfb"]]
 
         if len(struct_dict) > 0:
             if sparse:
@@ -2777,48 +2787,46 @@ class PstFromFlopyModel(object):
             self.logger.lraise("unrecognized attr:{0}".format(attrname))
 
 
-    def setup_bc_pars(self):
-        tdf = self.setup_temporal_bc_pars()
-        sdf = self.setup_spatial_bc_pars()
+    def setup_list_pars(self):
+        """ main entry point for setting up list multiplier
+                parameters
+
+                """
+        tdf = self.setup_temporal_list_pars()
+        sdf = self.setup_spatial_list_pars()
         if tdf is None and sdf is None:
             return
         os.chdir(self.m.model_ws)
         try:
-            apply_bc_pars()
+            apply_list_pars()
         except Exception as e:
             os.chdir("..")
-            self.logger.lraise("error test running apply_bc_pars():{0}".format(str(e)))
+            self.logger.lraise("error test running apply_list_pars():{0}".format(str(e)))
         os.chdir('..')
-        line = "pyemu.helpers.apply_bc_pars()\n"
+        line = "pyemu.helpers.apply_list_pars()\n"
         self.logger.statement("forward_run line:{0}".format(line))
         self.frun_pre_lines.append(line)
 
-    def setup_temporal_bc_pars(self):
-        """ main entry point for setting up boundary condition multiplier
-        parameters
-
-        """
-        if len(self.temporal_bc_props) == 0:
+    def setup_temporal_list_pars(self):
+        
+        if len(self.temporal_list_props) == 0:
             return
-        self.log("processing temporal_bc_props")
-        # if not isinstance(self.bc_prop_dict,dict):
-        #     self.logger.lraise("bc_prop_dict must be 'dict', not {0}".
-        #                        format(str(type(self.bc_prop_dict))))
+        self.log("processing temporal_list_props")
         bc_filenames = []
         bc_cols = []
         bc_pak = []
         bc_k = []
         bc_dtype_names = []
         bc_parnme = []
-        if len(self.temporal_bc_props) == 2:
-            if not isinstance(self.temporal_bc_props[0],list):
-                self.temporal_bc_props = [self.temporal_bc_props]
-        for pakattr,k_org in self.temporal_bc_props:
+        if len(self.temporal_list_props) == 2:
+            if not isinstance(self.temporal_list_props[0],list):
+                self.temporal_list_props = [self.temporal_list_props]
+        for pakattr,k_org in self.temporal_list_props:
             pak,attr,col = self.parse_pakattr(pakattr)
             k_parse = self.parse_k(k_org,np.arange(self.m.nper))
             c = self.get_count(pakattr)
             for k in k_parse:
-                bc_filenames.append(self.bc_helper(k,pak,attr,col))
+                bc_filenames.append(self.list_helper(k,pak,attr,col))
                 bc_cols.append(col)
                 pak_name = pak.name[0].lower()
                 bc_pak.append(pak_name)
@@ -2839,14 +2847,14 @@ class PstFromFlopyModel(object):
         #df.loc[:,"kper"] = df.kper.apply(np.int)
         #df.loc[:,"parnme"] = df.apply(lambda x: "{0}{1}_{2:03d}".format(x.pak,x.col,x.kper),axis=1)
         df.loc[:,"tpl_str"] = df.parnme.apply(lambda x: "~   {0}   ~".format(x))
-        df.loc[:,"bc_org"] = self.bc_org
+        df.loc[:,"list_org"] = self.list_org
         df.loc[:,"model_ext_path"] = self.m.external_path
         df.loc[:,"pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
-        names = ["filename","dtype_names","bc_org","model_ext_path","col","kper","pak","val"]
+        names = ["filename","dtype_names","list_org","model_ext_path","col","kper","pak","val"]
         df.loc[:,names].\
-            to_csv(os.path.join(self.m.model_ws,"temporal_bc_pars.dat"),sep=' ')
+            to_csv(os.path.join(self.m.model_ws,"temporal_list_pars.dat"),sep=' ')
         df.loc[:,"val"] = df.tpl_str
-        tpl_name = os.path.join(self.m.model_ws,'temporal_bc_pars.dat.tpl')
+        tpl_name = os.path.join(self.m.model_ws,'temporal_list_pars.dat.tpl')
         #f_tpl =  open(tpl_name,'w')
         #f_tpl.write("ptf ~\n")
         #f_tpl.flush()
@@ -2855,19 +2863,17 @@ class PstFromFlopyModel(object):
         #f_tpl.write(df.loc[:,names].to_string(index_names=True))
         #f_tpl.close()
         write_df_tpl(tpl_name,df.loc[:,names],sep=' ',index_label="index")
-        self.par_dfs["temporal_bc"] = df
+        self.par_dfs["temporal_list"] = df
 
-        if self.temporal_bc_geostruct is None:
-            v = pyemu.geostats.ExpVario(contribution=1.0,a=180.0) # 180 correlation length
-            self.temporal_bc_geostruct = pyemu.geostats.GeoStruct(variograms=v)
-        self.log("processing temporal_bc_props")
+
+        self.log("processing temporal_list_props")
         return True
 
-    def setup_spatial_bc_pars(self):
-        """helper to setup crazy numbers of well flux multipliers"""
-        if len(self.spatial_bc_props) == 0:
+    def setup_spatial_list_pars(self):
+        
+        if len(self.spatial_list_props) == 0:
             return
-        self.log("processing spatial_bc_props")
+        self.log("processing spatial_list_props")
 
         bc_filenames = []
         bc_cols = []
@@ -2875,40 +2881,33 @@ class PstFromFlopyModel(object):
         bc_k = []
         bc_dtype_names = []
         bc_parnme = []
-        if len(self.spatial_bc_props) == 2:
-            if not isinstance(self.spatial_bc_props[0], list):
-                self.spatial_bc_props = [self.spatial_bc_props]
-        for pakattr, k_org in self.spatial_bc_props:
+        if len(self.spatial_list_props) == 2:
+            if not isinstance(self.spatial_list_props[0], list):
+                self.spatial_list_props = [self.spatial_list_props]
+        for pakattr, k_org in self.spatial_list_props:
             pak, attr, col = self.parse_pakattr(pakattr)
             k_parse = self.parse_k(k_org, np.arange(self.m.nlay))
             if len(k_parse) > 1:
-                self.logger.lraise("spatial_bc_pars error: each set of spatial bc pars can only be applied "+\
+                self.logger.lraise("spatial_list_pars error: each set of spatial list pars can only be applied "+\
                                    "to a single layer (e.g. [wel.flux,0].\n"+\
                                    "You passed [{0},{1}], implying broadcasting to layers {2}".
                                    format(pakattr,k_org,k_parse))
             # # horrible special case for HFB since it cannot vary over time
             #if type(pak) != flopy.modflow.mfhfb.ModflowHfb:
             for k in range(self.m.nper):
-                bc_filenames.append(self.bc_helper(k, pak, attr, col))
+                bc_filenames.append(self.list_helper(k, pak, attr, col))
                 bc_cols.append(col)
                 pak_name = pak.name[0].lower()
                 bc_pak.append(pak_name)
                 bc_k.append(k_parse[0])
-                #bc_dtype_names.append(list(attr.dtype.names))
                 bc_dtype_names.append(','.join(attr.dtype.names))
-            # else:
-            # bc_filenames.append(self.bc_helper(k, pak, attr, col))
-            # bc_cols.append(col)
-            # pak_name = pak.name[0].lower()
-            # bc_pak.append(pak_name)
-            # bc_k.append(k_parse[0])
-            # bc_dtype_names.append(','.join(attr.dtype.names))
+
 
         info_df = pd.DataFrame({"filename": bc_filenames, "col": bc_cols,
                            "k": bc_k, "pak": bc_pak,
                            "dtype_names": bc_dtype_names})
-        info_df.loc[:,"bc_mlt"] = self.bc_mlt
-        info_df.loc[:,"bc_org"] = self.bc_org
+        info_df.loc[:,"list_mlt"] = self.list_mlt
+        info_df.loc[:,"list_org"] = self.list_org
         info_df.loc[:,"model_ext_path"] = self.m.external_path
 
         # check that all files for a given package have the same number of entries
@@ -2940,8 +2939,8 @@ class PstFromFlopyModel(object):
                 pak_dfs[pak] = fdf
             info_df.loc[info_df.pak==pak,"itmp"] = itmp
             if np.unique(np.array(itmp)).shape[0] != 1:
-                info_df.to_csv("spatial_bc_trouble.csv")
-                self.logger.lraise("spatial_bc_pars() error: must have same number of "+\
+                info_df.to_csv("spatial_list_trouble.csv")
+                self.logger.lraise("spatial_list_pars() error: must have same number of "+\
                                    "entries for every stress period for {0}".format(pak))
 
         # make the pak dfs have unique model indices
@@ -2952,7 +2951,7 @@ class PstFromFlopyModel(object):
             #     df.loc[:, "idx"] = df.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
             #                                                                                                  x.irow2, x.icol2), axis=1)
             if df.idx.unique().shape[0] != df.shape[0]:
-                self.logger.warn("duplicate entries in bc pak {0}...collapsing".format(pak))
+                self.logger.warn("duplicate entries in list pak {0}...collapsing".format(pak))
                 df.drop_duplicates(subset="idx",inplace=True)
             df.index = df.idx
             pak_dfs[pak] = df
@@ -2965,7 +2964,7 @@ class PstFromFlopyModel(object):
             for col in df.columns:
                 if col not in ['k','i','j','inode', 'irow1','icol1','irow2','icol2']:
                     df.loc[:,col] = 1.0
-            in_file = os.path.join(self.bc_mlt,pak+".csv")
+            in_file = os.path.join(self.list_mlt,pak+".csv")
             tpl_file = os.path.join(pak + ".csv.tpl")
             # save an all "ones" mult df for testing
             df.to_csv(os.path.join(self.m.model_ws,in_file), sep=' ')
@@ -2991,7 +2990,7 @@ class PstFromFlopyModel(object):
                 par_df = pd.DataFrame({"parnme": names,"x":x,"y":y,"k":df.k.values}, index=names)
                 par_df = par_df.loc[par_df.k.apply(lambda x: x in k_vals)]
                 if par_df.shape[0] == 0:
-                    self.logger.lraise("no parameters found for spatial bc k,pak,attr {0}, {1}, {2}".
+                    self.logger.lraise("no parameters found for spatial list k,pak,attr {0}, {1}, {2}".
                                        format(k_vals,pak,col))
 
                 par_df.loc[:,"pargp"] = df.k.apply(lambda x : "{0}{1}_k{2:02.0f}".format(pak,col,int(x))).values
@@ -3011,60 +3010,18 @@ class PstFromFlopyModel(object):
             self.in_files.append(in_file)
 
         par_df = pd.concat(par_dfs)
-        self.par_dfs["spatial_bc"] = par_df
-        info_df.to_csv(os.path.join(self.m.model_ws,"spatial_bc_pars.dat"),sep=' ')
-        if self.spatial_bc_geostruct is None:
-            dist = 10 * float(max(self.m.dis.delr.array.max(),
-                                  self.m.dis.delc.array.max()))
-            v = pyemu.geostats.ExpVario(contribution=1.0, a=dist)
-            self.spatial_bc_geostruct = pyemu.geostats.GeoStruct(variograms=v)
-        self.log("processing spatial_bc_props")
+        self.par_dfs["spatial_list"] = par_df
+        info_df.to_csv(os.path.join(self.m.model_ws,"spatial_list_pars.dat"),sep=' ')
+
+        self.log("processing spatial_list_props")
         return True
 
 
-    # def setup_all_wells(self):
-    #     """helper to setup crazy numbers of well flux multipliers"""
-    #     self.log("setup all wells parameterization")
-    #     if self.m.wel is None:
-    #         self.logger.lraise("setup_all_wells() requires a wel pak")
-    #     pak, attr, col = self.parse_pakattr("wel.flux")
-    #     k_parse = self.parse_k(np.arange(self.m.nper), np.arange(self.m.nper))
-    #     bc_filenames = []
-    #     for k in k_parse:
-    #         bc_filenames.append(self.bc_helper(k, pak, attr, col))
-    #     parnme = []
-    #     for bc_filename in bc_filenames:
-    #         bc_filename = os.path.split(bc_filename)[-1]
-    #         kper = int(bc_filename.split('.')[0].split('_')[1])
-    #         df = pd.read_csv(os.path.join(self.m.model_ws,self.bc_org,bc_filename),
-    #                          delim_whitespace=True,header=None,names=['l','r','c','flux'])
-    #         mlt_file = os.path.join(self.m.model_ws, self.bc_mlt, bc_filename)
-    #         df.loc[:,"flux"] = 1.0
-    #         df.to_csv(mlt_file,sep=' ',index=False,header=False)
-    #         df.loc[:,"parnme"] = ["wf{0:04d}_{1:03d}".format(i,kper) for i in range(df.shape[0])]
-    #         parnme.extend(list(df.parnme))
-    #         df.loc[:,"tpl_str"] = df.parnme.apply(lambda x: "~  {0}   ~".format(x))
-    #         tpl_file = os.path.join(self.m.model_ws,bc_filename+".tpl")
-    #
-    #
-    #         self.logger.statement("writing tpl file "+tpl_file)
-    #         with open(tpl_file,'w') as f:
-    #             f.write("ptf ~\n")
-    #             f.write(df.loc[:,['l','r','c','tpl_str']].to_string(index=False,header=False)+'\n')
-    #         self.tpl_files.append(os.path.split(tpl_file)[-1])
-    #         self.in_files.append(os.path.join(self.bc_mlt, bc_filename))
-    #
-    #     df = pd.DataFrame({"parnme":parnme}, index=parnme)
-    #     df.loc[:,"parubnd"] = 1.2
-    #     df.loc[:,"parlbnd"] = 0.8
-    #     df.loc[:,"pargp"] = df.parnme.apply(lambda x: "wflux_{0}".format(x.split('_')[-1]))
-    #     self.par_dfs["wel_flux"] = df
-    #     self.frun_pre_lines.append("pyemu.helpers.apply_all_wells()")
-    #     self.log("setup all wells parameterization")
+ 
 
 
-    def bc_helper(self,k,pak,attr,col):
-        """ helper to setup boundary condition multiplier parameters for a given
+    def list_helper(self,k,pak,attr,col):
+        """ helper to setup list multiplier parameters for a given
         k, pak, attr set.
 
         Parameters
@@ -3086,7 +3043,7 @@ class PstFromFlopyModel(object):
         filename = attr.get_filename(k)
         filename_model = os.path.join(self.m.external_path,filename)
         shutil.copy2(os.path.join(self.m.model_ws,filename_model),
-                     os.path.join(self.m.model_ws,self.bc_org,filename))
+                     os.path.join(self.m.model_ws,self.list_org,filename))
         return filename_model
 
 
@@ -3305,34 +3262,34 @@ def apply_array_pars(arr_par_file="arr_pars.csv"):
 
         np.savetxt(model_file,org_arr,fmt="%15.6E",delimiter='')
 
-def apply_bc_pars():
+def apply_list_pars():
     """ a function to apply boundary condition multiplier parameters.  Used to implement
     the parameterization constructed by PstFromFlopyModel during a forward run
 
     Note
     ----
-    requires "bc_pars.csv"
+    requires either "temporal_list_pars.csv" or "spatial_list_pars.csv"
 
     should be added to the forward_run.py script
 
     """
-    temp_file = "temporal_bc_pars.dat"
-    spat_file = "spatial_bc_pars.dat"
+    temp_file = "temporal_list_pars.dat"
+    spat_file = "spatial_list_pars.dat"
 
     temp_df,spat_df = None,None
     if os.path.exists(temp_file):
         temp_df = pd.read_csv(temp_file, delim_whitespace=True)
         temp_df.loc[:,"split_filename"] = temp_df.filename.apply(lambda x: os.path.split(x)[-1])
-        org_dir = temp_df.bc_org.iloc[0]
+        org_dir = temp_df.list_org.iloc[0]
         model_ext_path = temp_df.model_ext_path.iloc[0]
     if os.path.exists(spat_file):
         spat_df = pd.read_csv(spat_file, delim_whitespace=True)
         spat_df.loc[:,"split_filename"] = spat_df.filename.apply(lambda x: os.path.split(x)[-1])
-        mlt_dir = spat_df.bc_mlt.iloc[0]
-        org_dir = spat_df.bc_org.iloc[0]
+        mlt_dir = spat_df.list_mlt.iloc[0]
+        org_dir = spat_df.list_org.iloc[0]
         model_ext_path = spat_df.model_ext_path.iloc[0]
     if temp_df is None and spat_df is None:
-        raise Exception("apply_bc_pars() - no key dfs found, nothing to do...")
+        raise Exception("apply_list_pars() - no key dfs found, nothing to do...")
     # load the spatial mult dfs
     sp_mlts = {}
     if spat_df is not None:
@@ -3348,7 +3305,7 @@ def apply_bc_pars():
             if pak in sp_mlts.keys():
                 raise Exception("duplicate multplier csv for pak {0}".format(pak))
             if df.shape[0] == 0:
-                raise Exception("empty dataframe for spatial bc file: {0}".format(f))
+                raise Exception("empty dataframe for spatial list file: {0}".format(f))
             sp_mlts[pak] = df
 
     org_files = os.listdir(org_dir)
@@ -3375,20 +3332,6 @@ def apply_bc_pars():
                 names = spat_df_fname.dtype_names.iloc[0].split(',')
         if names is not None:
 
-            # if pak == 'hfb6':
-            #     # ugh - need to yank out the header rows if HFB6
-            #     tmpfn = spat_df.loc[spat_df.pak == pak, :].filename.values[0]
-            #     skiprows = sum(
-            #         [1 if i.strip().startswith('#') else 0
-            #          for i in open(os.path.join(org_dir, tmpfn), 'r').readlines()]) + 1
-            #     headrows = ['{}\n'.format(i.strip()) for i in open(os.path.join(org_dir, tmpfn), 'r').readlines()[:skiprows]]
-            #     df_list = pd.read_csv(os.path.join(org_dir, fname),
-            #                           delim_whitespace=True, header=None, names=names, skiprows=skiprows).dropna()
-            #     df_list.loc[:, "idx"] = df_list.apply(
-            #         lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}{2:04.0f}{2:04.0f}".format(x.k, x.irow1, x.icol1,
-            #                                                                          x.irow2, x.icol2), axis=1)
-            #     footrows = '{}\n'.format(open(os.path.join(org_dir, fname), 'r').readlines()[-1].strip())
-            # else:
             df_list = pd.read_csv(os.path.join(org_dir, fname),
                                   delim_whitespace=True, header=None, names=names)
             df_list.loc[:, "idx"] = df_list.apply(lambda x: "{0:02.0f}{1:04.0f}{2:04.0f}".format(x.k-1, x.i-1, x.j-1), axis=1)
@@ -3411,49 +3354,13 @@ def apply_bc_pars():
                 temp_df_fname = temp_df.loc[temp_df.split_filename == fname, :]
                 for col,val in zip(temp_df_fname.col,temp_df_fname.val):
                      df_list.loc[:,col] *= val
-            #fmts = {}
             fmts = ''
             for name in names:
                 if name in ["i","j","k","inode",'irow1','icol1','irow2','icol2']:
-                    #fmts[name] = pyemu.pst_utils.IFMT
-                    #fmts[name] = lambda x: " {0:>9.0f}".format(x)
                     fmts += " %9d"
                 else:
-                    #fmts[name] = pyemu.pst_utils.FFMT
-                    #fmts[name] = lambda x: " {0:>9G}".format(x)
                     fmts += " %9G"
-        # if pak == 'hfb6':
-        #     np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].as_matrix(), fmt=fmts,
-        #                header=''.join(headrows), footer=footrows)
-        # else:
-        #np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].as_matrix(), fmt=fmts)
         np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].values, fmt=fmts)
-            #with open(os.path.join(model_ext_path,fname),'w') as f:
-        #    f.write(df_list.loc[:,names].to_string(header=False,index=False,formatters=fmts)+'\n')
-            #df_list.to_csv(os.path.join(model_ext_path,fname),index=False,header=False)
-
-# def apply_all_wells():
-#
-#     mlt_dir = "bc_mlt"
-#     org_dir = "bc_org"
-#     names = ["l","r","c","flux"]
-#     fmt = {"flux": pyemu.pst_utils.FFMT}
-#     for c in names[:-1]:
-#         fmt[c] = pyemu.pst_utils.IFMT
-#     if not os.path.exists(mlt_dir) or not os.path.exists(org_dir):
-#         return
-#     mlt_files = os.listdir(mlt_dir)
-#     for f in mlt_files:
-#         if not "wel" in f.lower():
-#             continue
-#         org_file = os.path.join(org_dir,f)
-#         mlt_file = os.path.join(mlt_dir,f)
-#         df_org = pd.read_csv(org_file,header=None,delim_whitespace=True,names=names)
-#         df_mlt = pd.read_csv(mlt_file,header=None,delim_whitespace=True,names=names)
-#         assert df_org.shape == df_mlt.shape
-#         df_org.iloc[:,-1] *= df_mlt.iloc[:,-1]
-#         with open(f,'w') as fi:
-#             fi.write(df_org.to_string(index=False,header=False,formatters=fmt)+'\n')
 
 def apply_hfb_pars():
     """ a function to apply HFB multiplier parameters.  Used to implement
