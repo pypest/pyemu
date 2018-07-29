@@ -990,7 +990,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
                       silent_master=silent_master)
 
 
-def read_pestpp_runstorage(filename,irun=0):
+def read_pestpp_runstorage(filename,irun=0,with_metadata=False):
     """read pars and obs from a specific run in a pest++ serialized run storage file into
     pandas.DataFrame(s)
 
@@ -999,7 +999,9 @@ def read_pestpp_runstorage(filename,irun=0):
     filename : str
         the name of the run storage file
     irun : int
-        the run id to process.  Default is 0
+        the run id to process. If 'all', then all runs are read. Default is 0
+    with_metadata : bool
+        flag to return run stats and info txt as well
 
     Returns
     -------
@@ -1007,6 +1009,8 @@ def read_pestpp_runstorage(filename,irun=0):
         parameter information
     obs_df : pandas.DataFrame
         observation information
+    metadata : pandas.DataFrame
+        run status and info txt.
 
     """
 
@@ -1058,29 +1062,29 @@ def read_pestpp_runstorage(filename,irun=0):
         par_dfs,obs_dfs = [],[]
         r_stats, txts = [],[]
         for irun in range(n_runs):
-            print(irun)
+            #print(irun)
             r_status, info_txt, par_df, obs_df = _read_run(irun)
             par_dfs.append(par_df)
             obs_dfs.append(obs_df)
             r_stats.append(r_status)
             txts.append(info_txt)
         par_df = pd.concat(par_dfs,axis=1).T
+        par_df.index = np.arange(n_runs)
         obs_df = pd.concat(obs_dfs, axis=1).T
+        obs_df.index = np.arange(n_runs)
         meta_data = pd.DataFrame({"r_status":r_stats,"info_txt":txts})
         meta_data.loc[:,"status"] = meta_data.r_status.apply(status_str)
-        print(par_df.shape)
-        print(obs_df.shape)
 
     else:
         assert irun <= n_runs
         r_status,info_txt,par_df,obs_df = _read_run(irun)
-
-
-
-
-
+        meta_data = pd.DataFrame({"r_status": [r_status], "info_txt": [info_txt]})
+        meta_data.loc[:, "status"] = meta_data.r_status.apply(status_str)
     f.close()
-    return par_df,obs_df
+    if with_metadata:
+        return par_df,obs_df,meta_data
+    else:
+        return par_df,obs_df
 
 
 

@@ -1365,13 +1365,24 @@ def hfb_test():
 
 def read_runstor_test():
     import os
+    import numpy as np
+    import pandas as pd
     import pyemu
     d = os.path.join("utils","runstor")
     pst = pyemu.Pst(os.path.join(d,"pest.pst"))
 
     par_df,obs_df = pyemu.helpers.read_pestpp_runstorage(os.path.join(d,"pest.rns"),"all")
-
-
+    par_df2 = pd.read_csv(os.path.join(d,"sweep_in.csv"),index_col=0)
+    obs_df2 = pd.read_csv(os.path.join(d,"sweep_out.csv"),index_col=0)
+    obs_df2.columns = obs_df2.columns.str.lower()
+    obs_df2 = obs_df2.loc[:,obs_df.columns]
+    par_df2 = par_df2.loc[:,par_df.columns]
+    pdif = np.abs(par_df.values - par_df2.values).max()
+    odif = np.abs(obs_df.values - obs_df2.values).max()
+    print(pdif,odif)
+    assert pdif < 1.0e-6,pdif
+    assert odif < 1.0e-6,odif
+   
     try:
         pyemu.helpers.read_pestpp_runstorage(os.path.join(d, "pest.rns"), "junk")
     except:
