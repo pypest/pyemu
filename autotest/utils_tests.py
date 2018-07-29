@@ -1363,10 +1363,32 @@ def hfb_test():
     assert df.shape[0] == m.hfb6.hfb_data.shape[0]
 
 
+def long_names():
+    import os
+    import pyemu
+    with open(os.path.join("temp","long_in.dat.tpl"),'w') as f:
+        f.write("ptf ~\n")
+        f.write(" ~    reallyreallyreallylongparname  ~\n")
+    with open(os.path.join("temp","long_out.dat.ins"),'w') as f:
+        f.write("pif ~\n")
+        f.write("l1  w  !reallyreallyreallyreallylonngobsname!\n")
+    with open(os.path.join("temp","forward.py"),'w') as f:
+        f.write("f = open('long_out.dat','w')\n")
+        f.write("f.write('1.0000')\n")
+    os.chdir("temp")
+    pst = pyemu.Pst.from_io_files(['long_in.dat.tpl'],['long_in.dat'],['long_out.dat.ins'],['long_out.dat'])
+
+    os.chdir("..")
+    pst.model_command = "forward.py"
+    pst.control_data.noptmax = 0
+    pst.write(os.path.join("temp","test.pst"))
+    pyemu.os_utils.run("pestpp test.pst",cwd="temp")
+
 if __name__ == "__main__":
+    long_names()
     #master_and_slaves()
     #plot_id_bar_test()
-    pst_from_parnames_obsnames_test()
+    #pst_from_parnames_obsnames_test()
     #write_jactest_test()
     #sfr_obs_test()
     #gage_obs_test()
@@ -1374,7 +1396,7 @@ if __name__ == "__main__":
     #sfr_helper_test()
     # gw_sft_ins_test()
     # par_knowledge_test()
-    grid_obs_test()
+    #grid_obs_test()
     # hds_timeseries_test()
     # plot_summary_test()
     # load_sgems_expvar_test()
