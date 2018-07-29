@@ -1012,27 +1012,76 @@ def read_pestpp_runstorage(filename,irun=0):
 
     header_dtype = np.dtype([("n_runs",np.int64),("run_size",np.int64),("p_name_size",np.int64),
                       ("o_name_size",np.int64)])
-    with open(filename,'rb') as f:
-        header = np.fromfile(f,dtype=header_dtype,count=1)
-        p_name_size,o_name_size = header["p_name_size"][0],header["o_name_size"][0]
-        par_names = struct.unpack('{0}s'.format(p_name_size),
-                                f.read(p_name_size))[0].strip().lower().decode().split('\0')[:-1]
-        obs_names = struct.unpack('{0}s'.format(o_name_size),
-                                f.read(o_name_size))[0].strip().lower().decode().split('\0')[:-1]
-        n_runs,run_size = header["n_runs"],header["run_size"][0]
-        assert irun <= n_runs
-        run_start = f.tell()
-        f.seek(run_start + (irun * run_size))
-        r_status = np.fromfile(f,dtype=np.int8,count=1)
-        info_txt = struct.unpack("41s",f.read(41))[0].strip().lower().decode()
-        par_vals = np.fromfile(f,dtype=np.float64,count=len(par_names)+1)[1:]
-        obs_vals = np.fromfile(f,dtype=np.float64,count=len(obs_names)+1)[:-1]
-    par_df = pd.DataFrame({"parnme":par_names,"parval1":par_vals})
 
-    par_df.index = par_df.pop("parnme")
-    obs_df = pd.DataFrame({"obsnme":obs_names,"obsval":obs_vals})
-    obs_df.index = obs_df.pop("obsnme")
+    try:
+        irun = int(irun)
+    except:
+        if irun.lower() == "all":
+            irun = irun.lower()
+        else:
+            raise Exception("unrecognized 'irun': should be int or 'all', not '{0}'".
+                            format(irun))
+    def status_str(r_status):
+        if r_status == 0:
+            return "not completed"
+        if r_status == 1:
+            return "completed"
+        if r_status == -100:
+            return "canceled"
+        else:
+            return "failed"
+    assert os.path.exists(filename)
+    f = open(filename,"rb")
+    header = np.fromfile(f,dtype=header_dtype,count=1)
+    p_name_size,o_name_size = header["p_name_size"][0],header["o_name_size"][0]
+    par_names = struct.unpack('{0}s'.format(p_name_size),
+                            f.read(p_name_size))[0].strip().lower().decode().split('\0')[:-1]
+    obs_names = struct.unpack('{0}s'.format(o_name_size),
+                            f.read(o_name_size))[0].strip().lower().decode().split('\0')[:-1]
+    n_runs,run_size = header["n_runs"][0],header["run_size"][0]
+    run_start = f.tell()
+
+    def _read_run(irun):
+        f.seek(run_start + (irun * run_size))
+        r_status = np.fromfile(f, dtype=np.int8, count=1)
+        info_txt = struct.unpack("41s", f.read(41))[0].strip().lower().decode()
+        par_vals = np.fromfile(f, dtype=np.float64, count=len(par_names) + 1)[1:]
+        obs_vals = np.fromfile(f, dtype=np.float64, count=len(obs_names) + 1)[:-1]
+        par_df = pd.DataFrame({"parnme": par_names, "parval1": par_vals})
+
+        par_df.index = par_df.pop("parnme")
+        obs_df = pd.DataFrame({"obsnme": obs_names, "obsval": obs_vals})
+        obs_df.index = obs_df.pop("obsnme")
+        return r_status,info_txt,par_df,obs_df
+
+    if irun == "all":
+        par_dfs,obs_dfs = [],[]
+        r_stats, txts = [],[]
+        for irun in range(n_runs):
+            print(irun)
+            r_status, info_txt, par_df, obs_df = _read_run(irun)
+            par_dfs.append(par_df)
+            obs_dfs.append(obs_df)
+            r_stats.append(r_status)
+            txts.append(info_txt)
+        par_df = pd.concat(par_dfs,axis=1).T
+        obs_df = pd.concat(obs_dfs, axis=1).T
+        meta_data = pd.DataFrame({"r_status":r_stats,"info_txt":txts})
+        meta_data.loc[:,"status"] = meta_data.r_status.apply(status_str)
+        print(par_df.shape)
+        print(obs_df.shape)
+
+    else:
+        assert irun <= n_runs
+        r_status,info_txt,par_df,obs_df = _read_run(irun)
+
+
+
+
+
+    f.close()
     return par_df,obs_df
+
 
 
 def jco_from_pestpp_runstorage(rnj_filename,pst_filename):

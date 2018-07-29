@@ -1363,28 +1363,25 @@ def hfb_test():
     assert df.shape[0] == m.hfb6.hfb_data.shape[0]
 
 
-def long_names():
+def read_runstor_test():
     import os
     import pyemu
-    with open(os.path.join("temp","long_in.dat.tpl"),'w') as f:
-        f.write("ptf ~\n")
-        f.write(" ~    reallyreallyreallylongparname  ~\n")
-    with open(os.path.join("temp","long_out.dat.ins"),'w') as f:
-        f.write("pif ~\n")
-        f.write("l1  w  !reallyreallyreallyreallylonngobsname!\n")
-    with open(os.path.join("temp","forward.py"),'w') as f:
-        f.write("f = open('long_out.dat','w')\n")
-        f.write("f.write('1.0000')\n")
-    os.chdir("temp")
-    pst = pyemu.Pst.from_io_files(['long_in.dat.tpl'],['long_in.dat'],['long_out.dat.ins'],['long_out.dat'])
+    d = os.path.join("utils","runstor")
+    pst = pyemu.Pst(os.path.join(d,"pest.pst"))
 
-    os.chdir("..")
-    pst.model_command = "forward.py"
-    pst.control_data.noptmax = 0
-    pst.write(os.path.join("temp","test.pst"))
-    pyemu.os_utils.run("pestpp test.pst",cwd="temp")
+    par_df,obs_df = pyemu.helpers.read_pestpp_runstorage(os.path.join(d,"pest.rns"),"all")
+
+
+    try:
+        pyemu.helpers.read_pestpp_runstorage(os.path.join(d, "pest.rns"), "junk")
+    except:
+        pass
+    else:
+        raise Exception()
+
 
 if __name__ == "__main__":
+    read_runstor_test()
     #long_names()
     #master_and_slaves()
     #plot_id_bar_test()
@@ -1411,7 +1408,7 @@ if __name__ == "__main__":
     # mflist_budget_test()
     # mtlist_budget_test()
     # tpl_to_dataframe_test()
-    kl_test()
+    # kl_test()
     # hfb_test()
     #more_kl_test()
     #zero_order_regul_test()
