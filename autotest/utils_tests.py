@@ -359,7 +359,7 @@ def setup_pp_test():
     except:
         return
     model_ws = os.path.join("..","examples","Freyberg","extra_crispy")
-    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws)
+    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False)
 
     pp_dir = os.path.join("utils")
     ml.export(os.path.join("temp","test_unrot_grid.shp"))
@@ -519,7 +519,7 @@ def  kl_test():
         print("flopy not imported...")
         return
     model_ws = os.path.join("..","verification","Freyberg","extra_crispy")
-    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws)
+    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False)
     str_file = os.path.join("..","verification","Freyberg","structure.dat")
     arr_tru = np.loadtxt(os.path.join("..","verification",
                                                  "Freyberg","extra_crispy",
@@ -1385,7 +1385,7 @@ def long_names():
     pyemu.os_utils.run("pestpp test.pst",cwd="temp")
 
 if __name__ == "__main__":
-    long_names()
+    #long_names()
     #master_and_slaves()
     #plot_id_bar_test()
     #pst_from_parnames_obsnames_test()
@@ -1411,7 +1411,7 @@ if __name__ == "__main__":
     # mflist_budget_test()
     # mtlist_budget_test()
     # tpl_to_dataframe_test()
-    # kl_test()
+    kl_test()
     # hfb_test()
     #more_kl_test()
     #zero_order_regul_test()
