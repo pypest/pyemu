@@ -359,7 +359,7 @@ def setup_pp_test():
     except:
         return
     model_ws = os.path.join("..","examples","Freyberg","extra_crispy")
-    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws)
+    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False)
 
     pp_dir = os.path.join("utils")
     ml.export(os.path.join("temp","test_unrot_grid.shp"))
@@ -519,7 +519,7 @@ def  kl_test():
         print("flopy not imported...")
         return
     model_ws = os.path.join("..","verification","Freyberg","extra_crispy")
-    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws)
+    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False)
     str_file = os.path.join("..","verification","Freyberg","structure.dat")
     arr_tru = np.loadtxt(os.path.join("..","verification",
                                                  "Freyberg","extra_crispy",
@@ -1363,10 +1363,40 @@ def hfb_test():
     assert df.shape[0] == m.hfb6.hfb_data.shape[0]
 
 
+def read_runstor_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    d = os.path.join("utils","runstor")
+    pst = pyemu.Pst(os.path.join(d,"pest.pst"))
+
+    par_df,obs_df = pyemu.helpers.read_pestpp_runstorage(os.path.join(d,"pest.rns"),"all")
+    par_df2 = pd.read_csv(os.path.join(d,"sweep_in.csv"),index_col=0)
+    obs_df2 = pd.read_csv(os.path.join(d,"sweep_out.csv"),index_col=0)
+    obs_df2.columns = obs_df2.columns.str.lower()
+    obs_df2 = obs_df2.loc[:,obs_df.columns]
+    par_df2 = par_df2.loc[:,par_df.columns]
+    pdif = np.abs(par_df.values - par_df2.values).max()
+    odif = np.abs(obs_df.values - obs_df2.values).max()
+    print(pdif,odif)
+    assert pdif < 1.0e-6,pdif
+    assert odif < 1.0e-6,odif
+   
+    try:
+        pyemu.helpers.read_pestpp_runstorage(os.path.join(d, "pest.rns"), "junk")
+    except:
+        pass
+    else:
+        raise Exception()
+
+
 if __name__ == "__main__":
+    read_runstor_test()
+    #long_names()
     #master_and_slaves()
     #plot_id_bar_test()
-    pst_from_parnames_obsnames_test()
+    #pst_from_parnames_obsnames_test()
     #write_jactest_test()
     #sfr_obs_test()
     #gage_obs_test()
@@ -1374,7 +1404,7 @@ if __name__ == "__main__":
     #sfr_helper_test()
     # gw_sft_ins_test()
     # par_knowledge_test()
-    grid_obs_test()
+    #grid_obs_test()
     # hds_timeseries_test()
     # plot_summary_test()
     # load_sgems_expvar_test()

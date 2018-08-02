@@ -623,8 +623,7 @@ def try_process_ins_file(ins_file,out_file=None):
 def _try_run_inschek(ins_file,out_file):
 
     try:
-        # os.system("inschek {0} {1}".format(ins_file,out_file))
-        pyemu.helpers.run("inschek {0} {1}".format(ins_file, out_file))
+        pyemu.os_utils.run("inschek {0} {1}".format(ins_file, out_file))
         obf_file = ins_file.replace(".ins", ".obf")
         df = pd.read_csv(obf_file, delim_whitespace=True,
                          skiprows=0, index_col=0, names=["obsval"])
