@@ -1912,13 +1912,13 @@ def write_hfb_zone_multipliers_template(m):
     hfb_file = os.path.join(m.model_ws, m.hfb6.file_name[0])
 
     # this will use multipliers, so need to copy down the original
-    if not os.path.exists('hfb6_org'):
-        os.mkdir('hfb6_org')
+    if not os.path.exists(os.path.join(m.model_ws, 'hfb6_org')):
+        os.mkdir(os.path.join(m.model_ws, 'hfb6_org'))
     # copy down the original file
-    shutil.copy2(os.path.join(m.model_ws, m.hfb6.file_name[0]), os.path.join('hfb6_org', m.hfb6.file_name[0]))
+    shutil.copy2(os.path.join(m.model_ws, m.hfb6.file_name[0]), os.path.join(m.model_ws,'hfb6_org', m.hfb6.file_name[0]))
 
-    if not os.path.exists('hfb6_mlt'):
-        os.mkdir('hfb6_mlt')
+    if not os.path.exists(os.path.join(m.model_ws, 'hfb6_mlt')):
+        os.mkdir(os.path.join(m.model_ws, 'hfb6_mlt'))
 
     # read in the model file
     hfb_file_contents = open(hfb_file, 'r').readlines()
@@ -1944,7 +1944,7 @@ def write_hfb_zone_multipliers_template(m):
     assert 'blank' not in hfb_in.tpl
 
     # write out the TPL file
-    tpl_file = "hfb6.mlt.tpl"
+    tpl_file = os.path.join(m.model_ws, "hfb6.mlt.tpl")
     with open(tpl_file, 'w') as ofp:
         ofp.write('ptf ~\n')
         [ofp.write('{0}\n'.format(line.strip())) for line in header]
@@ -1954,10 +1954,10 @@ def write_hfb_zone_multipliers_template(m):
 
     # make a lookup for lining up the necessary files to perform multiplication with the
     # helpers.apply_hfb_pars() function which must be added to the forward run script
-    with open('hfb6_pars.csv', 'w') as ofp:
+    with open(os.path.join(m.model_ws, 'hfb6_pars.csv'), 'w') as ofp:
         ofp.write('org_file,mlt_file,model_file\n')
-        ofp.write('{0},{1},{2}\n'.format(os.path.join('hfb6_org', m.hfb6.file_name[0]),
-                                         os.path.join('hfb6_mlt', tpl_file.replace('.tpl','')),
+        ofp.write('{0},{1},{2}\n'.format(os.path.join(m.model_ws, 'hfb6_org', m.hfb6.file_name[0]),
+                                         os.path.join(m.model_ws, 'hfb6_mlt', tpl_file.replace('.tpl','')),
                                          hfb_file))
 
     return hfb_mults, tpl_file

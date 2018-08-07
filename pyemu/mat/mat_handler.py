@@ -2468,7 +2468,7 @@ class Cov(Matrix):
         if not pst_file.endswith(".pst"):
             pst_file += ".pst"
         new_pst = Pst(pst_file)
-        return Cov.from_parameter_data(new_pst, sigma_range)
+        return Cov.from_parameter_data(new_pst, sigma_range, scale_offset)
 
     @classmethod
     def from_parameter_data(cls, pst, sigma_range = 4.0, scale_offset=True):

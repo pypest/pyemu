@@ -3489,8 +3489,11 @@ def plot_flopy_par_ensemble(pst,pe,num_reals=None,model=None,fig_axes_generator=
     try:
         import matplotlib.pyplot as plt
     except Exception as e:
-        raise Exception("error import matplotlib: {0}".format(str(e)))
-    from matplotlib.backends.backend_pdf import PdfPages
+        raise Exception("error importing matplotlib: {0}".format(str(e)))
+    try:
+        from matplotlib.backends.backend_pdf import PdfPages
+    except Exception as e:
+        raise Exception("error importing matplotlib: {0}".format(str(e)))
     assert os.path.exists("arr_pars.csv"),"couldn't find arr_pars.csv, can't continue"
     df = pd.read_csv("arr_pars.csv")
     if isinstance(pst,str):
