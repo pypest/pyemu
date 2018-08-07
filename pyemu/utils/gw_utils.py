@@ -1346,7 +1346,7 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.', par_cols=['strhc1']):
     reach_data = pd.DataFrame.from_records(m.sfr.reach_data)
     # write inital reach_data as csv
     reach_data_orig = reach_data.copy()
-    reach_data.to_csv(os.path.join(m.model_ws, "sfr_reach_pars.dat"), sep=' ')
+    reach_data.to_csv(os.path.join(m.model_ws, "sfr_reach_pars.dat"), sep=',')
 
     # generate template file with pars in par_cols
     #process par cols
