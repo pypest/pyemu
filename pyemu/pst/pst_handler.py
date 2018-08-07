@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
 import pyemu
+from ..pyemu_warnings import PyemuWarning
 from pyemu.pst.pst_controldata import ControlData, SvdData, RegData
 from pyemu.pst import pst_utils
 from pyemu.plot import plot_utils
@@ -38,7 +39,12 @@ class Pst(object):
     """
     def __init__(self, filename, load=True, resfile=None,flex=False):
 
-
+        self.parameter_data = None
+        """pandas.DataFrame:  parameter data loaded from pst control file"""
+        self.observation_data = None
+        """pandas.DataFrame:  observation data loaded from pst control file"""
+        self.prior_information = None
+        """pandas.DataFrame:  prior_information data loaded from pst control file"""
         self.filename = filename
         self.resfile = resfile
         self.__res = None
@@ -51,8 +57,11 @@ class Pst(object):
             self.__setattr__(key,copy.copy(value))
         #self.tied = None
         self.control_data = ControlData()
+        """pyemu.pst.pst_controldata.ControlData:  control data object loaded from pst control file"""
         self.svd_data = SvdData()
+        """pyemu.pst.pst_controldata.SvdData: singular value decomposition (SVD) object loaded from pst control file"""
         self.reg_data = RegData()
+        """pyemu.pst.pst_controldata.RegData: regularization data object loaded from pst control file"""
         if load:
             assert os.path.exists(filename),\
                 "pst file not found:{0}".format(filename)
@@ -297,6 +306,19 @@ class Pst(object):
         self.control_data.npar = self.parameter_data.shape[0]
         return self.control_data.npar
 
+    @property
+    def pars_in_groups(self):
+        """
+        return a dictionary of  parameter names in each parameter group.
+
+        Returns:
+            dictionary
+        """
+        pargp = self.par_groups
+        allpars = dict()
+        for cpg in pargp:
+            allpars[cpg] = [i for i in self.parameter_data.loc[self.parameter_data.pargp == cpg, 'parnme']]
+        return allpars
 
     @property
     def forecast_names(self):
@@ -975,7 +997,7 @@ class Pst(object):
             values.append('')
         for key, value in zip(keys, values):
             if key in self.pestpp_options:
-                print("Pst.load() warning: duplicate pest++ option found:" + str(key))
+                print("Pst.load() warning: duplicate pest++ option found:" + str(key),PyemuWarning)
             self.pestpp_options[key] = value
 
     def _update_control_section(self):
@@ -1164,6 +1186,27 @@ class Pst(object):
                                                   header=False,
                                                   index=False) + '\n')
 
+    def sanity_checks(self):
+
+        dups = self.parameter_data.parnme.value_counts()
+        dups = dups.loc[dups>1]
+        if dups.shape[0] > 0:
+            warnings.warn("duplicate parameter names: {0}".format(','.join(list(dups.index))),PyemuWarning)
+        dups = self.observation_data.obsnme.value_counts()
+        dups = dups.loc[dups>1]
+        if dups.shape[0] > 0:
+            warnings.warn("duplicate observation names: {0}".format(','.join(list(dups.index))),PyemuWarning)
+
+        if self.npar_adj == 0:
+            warnings.warn("no adjustable pars",PyemuWarning)
+
+        if self.nnz_obs == 0:
+            warnings.warn("no non-zero weight obs",PyemuWarning)
+
+        print("noptmax: {0}".format(self.control_data.noptmax))
+
+
+
     def write(self,new_filename,update_regul=False):
         """write a pest control file
 
@@ -1181,6 +1224,7 @@ class Pst(object):
         self.rectify_pgroups()
         self.rectify_pi()
         self._update_control_section()
+        self.sanity_checks()
 
         f_out = open(new_filename, 'w')
         if self.with_comments:
@@ -1205,7 +1249,7 @@ class Pst(object):
 
         self._write_df("* parameter groups", f_out, self.parameter_groups,
                        self.pargp_format, self.pargp_fieldnames)
-
+        self.parameter_groups.loc[:,"pargpnme"] = pargpnme
 
         self._write_df("* parameter data",f_out, self.parameter_data,
                        self.par_format, self.par_fieldnames)
@@ -1243,7 +1287,8 @@ class Pst(object):
 
         if self.nprior > 0:
             if self.prior_information.isnull().values.any():
-                print("WARNING: NaNs in prior_information dataframe")
+                #print("WARNING: NaNs in prior_information dataframe")
+                warnings.warn("NaNs in prior_information dataframe",PyemuWarning)
             f_out.write("* prior information\n")
             #self.prior_information.index = self.prior_information.pop("pilbl")
             max_eq_len = self.prior_information.equation.apply(lambda x:len(x)).max()
@@ -1359,8 +1404,8 @@ class Pst(object):
         new_pst.output_files = self.output_files
 
         if self.tied is not None:
-            print("Pst.get() warning: not checking for tied parameter " +
-                  "compatibility in new Pst instance")
+            warnings.warn("Pst.get() not checking for tied parameter " +
+                  "compatibility in new Pst instance",PyemuWarning)
             #new_pst.tied = self.tied.copy()
         new_pst.other_lines = self.other_lines
         new_pst.pestpp_options = self.pestpp_options
@@ -1526,7 +1571,7 @@ class Pst(object):
                 weight_mult = np.sqrt(target_phis[item] / actual_phi)
                 self.observation_data.loc[obs_idxs[item], "weight"] *= weight_mult
             else:
-                print("Pst.__reset_weights() warning: phi group {0} has zero phi, skipping...".format(item))
+                ("Pst.__reset_weights() warning: phi group {0} has zero phi, skipping...".format(item))
 
     def adjust_weights_by_list(self,obslist,weight):
         """reset the weight for a list of observation names.  Supports the
@@ -1804,7 +1849,7 @@ class Pst(object):
         new_parnme = [p for p in parnme if p not in self.parameter_data.parnme]
 
         if len(new_parnme) == 0:
-            warnings.warn("no new parameters found in template file {0}".format(template_file))
+            warnings.warn("no new parameters found in template file {0}".format(template_file),PyemuWarning)
             new_par_data = None
         else:
             # extend pa
@@ -2008,7 +2053,7 @@ class Pst(object):
 
 
     def write_par_summary_table(self,filename=None,group_names=None,
-                                sigma_range = 4.0,caption=None):
+                                sigma_range = 4.0):
         """write a stand alone parameter summary latex table
 
 
@@ -2022,8 +2067,6 @@ class Pst(object):
         sigma_range : float
             number of standard deviations represented by parameter bounds.  Default
             is 4.0, implying 95% confidence bounds
-        caption : str
-            table caption.  Default is None
 
         Returns
         -------
@@ -2078,23 +2121,21 @@ class Pst(object):
 
         preamble = '\\documentclass{article}\n\\usepackage{booktabs}\n'+ \
                     '\\usepackage{pdflscape}\n\\usepackage{longtable}\n' + \
-                    '\\usepackage{booktabs}\n\\begin{document}\n\\begin{center}\n'+\
-                    '\\begin{table}\n'
+                    '\\usepackage{booktabs}\n\\usepackage{nopageno}\n\\begin{document}\n'
 
         if filename is None:
             filename = self.filename.replace(".pst",".par.tex")
 
         with open(filename,'w') as f:
             f.write(preamble)
-            if caption is not None:
-                f.write("\\caption{"+caption+"}\n")
+            f.write("\\begin{center}\nParameter Summary\n\\end{center}\n")
+            f.write("\\begin{center}\n\\begin{landscape}\n")
             pargp_df.to_latex(f, index=False, longtable=True)
-            f.write("\\end{table}\n")
+            f.write("\\end{landscape}\n")
             f.write("\\end{center}\n")
             f.write("\\end{document}\n")
 
-    def write_obs_summary_table(self,filename=None,group_names=None,
-                               caption=None):
+    def write_obs_summary_table(self,filename=None,group_names=None):
         """write a stand alone observation summary latex table
 
 
@@ -2105,8 +2146,6 @@ class Pst(object):
                 group_names: dict
                     par group names : table names for example {"w0":"well stress period 1"}.
                     Default is None
-                caption : str
-                    table caption. Default is None
 
                 Returns
                 -------
@@ -2156,8 +2195,7 @@ class Pst(object):
 
         preamble = '\\documentclass{article}\n\\usepackage{booktabs}\n' + \
                    '\\usepackage{pdflscape}\n\\usepackage{longtable}\n' + \
-                   '\\usepackage{booktabs}\n\\begin{document}\n\\begin{center}\n' + \
-                   '\\begin{table}\n'
+                   '\\usepackage{booktabs}\n\\usepackage{nopageno}\n\\begin{document}\n'
 
         if filename is None:
             filename = self.filename.replace(".pst", ".obs.tex")
@@ -2165,11 +2203,12 @@ class Pst(object):
         with open(filename, 'w') as f:
 
             f.write(preamble)
+
+            f.write("\\begin{center}\nObservation Summary\n\\end{center}\n")
+            f.write("\\begin{center}\n\\begin{landscape}\n")
             f.write("\\setlength{\\LTleft}{-4.0cm}\n")
-            if caption is not None:
-                f.write("\\caption{"+caption+"}\n")
             obsg_df.to_latex(f, index=False, longtable=True)
-            f.write("\\end{table}\n")
+            f.write("\\end{landscape}\n")
             f.write("\\end{center}\n")
             f.write("\\end{document}\n")
 

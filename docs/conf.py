@@ -21,7 +21,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../'))
-#sys.path.insert(0, os.path.abspath('../pyemu/'))
+sys.path.insert(0, os.path.abspath('../pyemu/'))
 
 
 # -- General configuration ------------------------------------------------
@@ -41,7 +41,10 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
-    'sphinx.ext.napoleon']
+    'sphinx.ext.napoleon',
+    'nbsphinx',
+    'IPython.sphinxext.ipython_console_highlighting',
+    'sphinx.ext.inheritance_diagram']
 
 # Napoleon settings
 napoleon_google_docstring = True
@@ -49,13 +52,17 @@ napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = False
 napoleon_include_private_with_doc = False
 napoleon_include_special_with_doc = False
-napoleon_use_admonition_for_examples = False
+napoleon_use_admonition_for_examples = True
 napoleon_use_admonition_for_notes = False
 napoleon_use_admonition_for_references = False
 napoleon_use_ivar = False
 napoleon_use_param = True
 napoleon_use_rtype = True
 napoleon_use_keyword = True
+
+# Inheritance diagram options can be changed here
+inheritance_node_attrs = dict(shape='rectangle', fontsize=12)
+inheritance_graph_attrs = dict(rankdir="TB", size='""')
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -93,7 +100,7 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = []
+exclude_patterns = ['_build', '**.ipynb_checkpoints']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -113,7 +120,7 @@ html_theme = 'alabaster'
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {'show_related': True}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

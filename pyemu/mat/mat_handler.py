@@ -12,7 +12,7 @@ from scipy.io import FortranFile
 import scipy.sparse
 
 from pyemu.pst.pst_handler import Pst
-
+from ..pyemu_warnings import PyemuWarning
 
 def save_coo(x, row_names, col_names,  filename, chunk=None):
     """write a PEST-compatible binary file.  The data format is
@@ -47,17 +47,17 @@ def save_coo(x, row_names, col_names,  filename, chunk=None):
     data.tofile(f)
 
     for name in col_names:
-        if len(name) > Matrix.par_length:
-            name = name[:Matrix.par_length - 1]
-        elif len(name) < Matrix.par_length:
-            for i in range(len(name), Matrix.par_length):
+        if len(name) > Matrix.new_par_length:
+            name = name[:Matrix.new_par_length - 1]
+        elif len(name) < Matrix.new_par_length:
+            for i in range(len(name), Matrix.new_par_length):
                 name = name + ' '
         f.write(name.encode())
     for name in row_names:
-        if len(name) > Matrix.obs_length:
-            name = name[:Matrix.obs_length - 1]
-        elif len(name) < Matrix.obs_length:
-            for i in range(len(name), Matrix.obs_length):
+        if len(name) > Matrix.new_obs_length:
+            name = name[:Matrix.new_obs_length - 1]
+        elif len(name) < Matrix.new_obs_length:
+            for i in range(len(name), Matrix.new_obs_length):
                 name = name + ' '
         f.write(name.encode())
     f.close()
@@ -198,6 +198,8 @@ class Matrix(object):
 
     par_length = 12
     obs_length = 20
+    new_par_length = 100
+    new_obs_length = 100
 
     def __init__(self, x=None, row_names=[], col_names=[], isdiagonal=False,
                  autoalign=True):
@@ -591,7 +593,7 @@ class Matrix(object):
                 return type(self)(x=np.dot(np.diag(self.__x.flatten()).transpose(),
                                            other))
             else:
-                return type(self)(x=np.dot(self.__x, other))
+                return type(self)(x=np.atleast_2d(np.dot(self.__x, other)))
         elif isinstance(other, Matrix):
             if self.autoalign and other.autoalign\
                and not self.mult_isaligned(other):
@@ -1200,7 +1202,7 @@ class Matrix(object):
             indices of names.
 
         """
-        warnings.warn("Matrix.old_indices() is deprecated - only here for testing. Use Matrix.indices()")
+        warnings.warn("Matrix.old_indices() is deprecated - only here for testing. Use Matrix.indices()",PyemuWarning)
         row_idxs, col_idxs = [], []
         for name in names:
             if name.lower() not in self.col_names \
@@ -1520,17 +1522,17 @@ class Matrix(object):
 
 
         for name in self.col_names:
-            if len(name) > self.par_length:
-                name = name[:self.par_length - 1]
-            elif len(name) < self.par_length:
-                for i in range(len(name), self.par_length):
+            if len(name) > self.new_par_length:
+                name = name[:self.new_par_length - 1]
+            elif len(name) < self.new_par_length:
+                for i in range(len(name), self.new_par_length):
                     name = name + ' '
             f.write(name.encode())
         for name in self.row_names:
-            if len(name) > self.obs_length:
-                name = name[:self.obs_length - 1]
-            elif len(name) < self.obs_length:
-                for i in range(len(name), self.obs_length):
+            if len(name) > self.new_obs_length:
+                name = name[:self.new_obs_length - 1]
+            elif len(name) < self.new_obs_length:
+                for i in range(len(name), self.new_obs_length):
                     name = name + ' '
             f.write(name.encode())
         f.close()
@@ -1628,7 +1630,7 @@ class Matrix(object):
         """
         x,row_names,col_names = Matrix.read_binary(filename)
         if np.any(np.isnan(x)):
-            warnings.warn("Matrix.from_binary(): nans in matrix")
+            warnings.warn("Matrix.from_binary(): nans in matrix",PyemuWarning)
         return cls(x=x, row_names=row_names, col_names=col_names)
 
     @staticmethod
@@ -1659,6 +1661,20 @@ class Matrix(object):
                 x = np.zeros((nrow, ncol))
                 x[data['i'], data['j']] = data["dtemp"]
                 data = x
+            # read obs and parameter names
+            col_names = []
+            row_names = []
+            for j in range(ncol):
+                name = struct.unpack(str(Matrix.new_par_length) + "s",
+                                     f.read(Matrix.new_par_length))[0] \
+                    .strip().lower().decode()
+                col_names.append(name)
+            for i in range(nrow):
+                name = struct.unpack(str(Matrix.new_obs_length) + "s",
+                                     f.read(Matrix.new_obs_length))[0] \
+                    .strip().lower().decode()
+                row_names.append(name)
+            f.close()
         else:
 
             # read all data records
@@ -1672,20 +1688,20 @@ class Matrix(object):
                 x = np.zeros((nrow, ncol))
                 x[irows - 1, icols - 1] = data["dtemp"]
                 data = x
-        # read obs and parameter names
-        col_names = []
-        row_names = []
-        for j in range(ncol):
-            name = struct.unpack(str(Matrix.par_length) + "s",
-                                 f.read(Matrix.par_length))[0]\
-                                  .strip().lower().decode()
-            col_names.append(name)
-        for i in range(nrow):
-            name = struct.unpack(str(Matrix.obs_length) + "s",
-                                 f.read(Matrix.obs_length))[0]\
-                                  .strip().lower().decode()
-            row_names.append(name)
-        f.close()
+            # read obs and parameter names
+            col_names = []
+            row_names = []
+            for j in range(ncol):
+                name = struct.unpack(str(Matrix.par_length) + "s",
+                                     f.read(Matrix.par_length))[0]\
+                                      .strip().lower().decode()
+                col_names.append(name)
+            for i in range(nrow):
+                name = struct.unpack(str(Matrix.obs_length) + "s",
+                                     f.read(Matrix.obs_length))[0]\
+                                      .strip().lower().decode()
+                row_names.append(name)
+            f.close()
         assert len(row_names) == data.shape[0],\
           "Matrix.read_binary() len(row_names) (" + str(len(row_names)) +\
           ") != x.shape[0] (" + str(data.shape[0]) + ")"
@@ -2566,7 +2582,8 @@ class Cov(Matrix):
                         if line2.strip().lower().startswith("end"):
                             break
                         if line2.startswith('file'):
-                            cov = Matrix.from_ascii(line2.split()[1])
+                            filename = line2.split()[1].replace("'",'').replace('"','')
+                            cov = Matrix.from_ascii(filename)
 
                         elif line2.startswith('variance_multiplier'):
                             var = float(line2.split()[1])
@@ -2631,7 +2648,8 @@ class Cov(Matrix):
                         if line2.strip().lower().startswith("end"):
                             break
                         if line2.startswith('file'):
-                            cov = Matrix.from_ascii(line2.split()[1])
+                            filename = line2.split()[1].replace("'", '').replace('"', '')
+                            cov = Matrix.from_ascii(filename)
                             nentries += len(cov.row_names)
                         elif line2.startswith('variance_multiplier'):
                             var = float(line2.split()[1])

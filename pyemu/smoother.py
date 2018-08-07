@@ -9,6 +9,7 @@ import shutil
 import threading
 import time
 import warnings
+
 import numpy as np
 import pandas as pd
 import pyemu
@@ -338,7 +339,7 @@ class EnsembleMethod(object):
             try:
                 #os.system("sweep {0} /h :{1} 1>{2} 2>{3}". \
                 #          format(self.pst.filename, self.port, master_stdout, master_stderr))
-                pyemu.helpers.run("sweep {0} /h :{1} 1>{2} 2>{3}". \
+                pyemu.helpers.run("pestpp-swp {0} /h :{1} 1>{2} 2>{3}". \
                           format(self.pst.filename, self.port, master_stdout, master_stderr))
 
             except Exception as e:
@@ -405,11 +406,11 @@ class EnsembleMethod(object):
         parensemble.to_csv(self.sweep_in_csv)
         if self.num_slaves > 0:
             master_thread = self._get_master_thread()
-            pyemu.utils.start_slaves(self.slave_dir,"sweep",self.pst.filename,
+            pyemu.utils.start_slaves(self.slave_dir,"pestpp-swp",self.pst.filename,
                                      self.num_slaves,slave_root='..',port=self.port)
             master_thread.join()
         else:
-            os.system("sweep {0}".format(self.pst.filename))
+            os.system("pestpp-swp {0}".format(self.pst.filename))
 
         self.logger.log("evaluating ensemble of size {0} locally with sweep".\
                         format(parensemble.shape[0]))
@@ -466,8 +467,6 @@ class EnsembleSmoother(EnsembleMethod):
         super(EnsembleSmoother,self).__init__(pst=pst,parcov=parcov,obscov=obscov,num_slaves=num_slaves,
                                               submit_file=submit_file,verbose=verbose,port=port,
                                               slave_dir=slave_dir)
-        warnings.warn("pyemu's EnsembleSmoother is for prototyping only.  Use PESTPP-IES for a production " +
-                         "implementation of iterative ensemble smoother")
         self.logger.warn("pyemu's EnsembleSmoother is for prototyping only.  Use PESTPP-IES for a production " +
                       "implementation of iterative ensemble smoother")
         #self.use_approx_prior = bool(use_approx_prior)

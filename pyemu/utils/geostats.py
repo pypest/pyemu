@@ -14,6 +14,7 @@ import scipy.sparse
 import pandas as pd
 from pyemu.mat.mat_handler import Cov,SparseMatrix
 from pyemu.utils.pp_utils import pp_file_to_dataframe
+from ..pyemu_warnings import PyemuWarning
 
 EPSILON = 1.0e-7
 
@@ -572,7 +573,7 @@ class OrdinaryKrige(object):
         #check for duplicates in point data
         unique_name = point_data.name.unique()
         if len(unique_name) != point_data.shape[0]:
-            warnings.warn("duplicates detected in point_data..attempting to rectify")
+            warnings.warn("duplicates detected in point_data..attempting to rectify",PyemuWarning)
             ux_std = point_data.groupby(point_data.name).std()['x']
             if ux_std.max() > 0.0:
                 raise Exception("duplicate point_info entries with name {0} have different x values"
@@ -626,7 +627,7 @@ class OrdinaryKrige(object):
             if dist.min() < EPSILON**2:
                 print(iname,ix,iy)
                 warnings.warn("points {0} and {1} are too close. This will cause a singular kriging matrix ".\
-                              format(iname,dist.idxmin()))
+                              format(iname,dist.idxmin()),PyemuWarning)
                 drop_idxs = dist.loc[dist<=EPSILON**2]
                 drop.extend([pt for pt in list(drop_idxs.index) if pt not in drop])
         if rectify and len(drop) > 0:
@@ -745,14 +746,14 @@ class OrdinaryKrige(object):
         if zone_array is not None:
             assert zone_array.shape == x.shape
             if "zone" not in self.point_data.columns:
-                warnings.warn("'zone' columns not in point_data, assigning generic zone")
+                warnings.warn("'zone' columns not in point_data, assigning generic zone",PyemuWarning)
                 self.point_data.loc[:,"zone"] = 1
             pt_data_zones = self.point_data.zone.unique()
             dfs = []
             for pt_data_zone in pt_data_zones:
                 if pt_data_zone not in zone_array:
                     warnings.warn("pt zone {0} not in zone array {1}, skipping".\
-                                  format(pt_data_zone,np.unique(zone_array)))
+                                  format(pt_data_zone,np.unique(zone_array)),PyemuWarning)
                     continue
                 xzone,yzone = x.copy(),y.copy()
                 xzone[zone_array!=pt_data_zone] = np.NaN
@@ -1684,6 +1685,8 @@ def _read_structure_attributes(f):
             variogram_info[line[1]] = float(line[2])
         elif line[0] == "end":
             break
+        elif line[0] == "mean":
+            warning.warn("'mean' attribute not supported, skipping",PyemuWarningF)
         else:
             raise Exception("unrecognized line in structure definition:{0}".\
                             format(line[0]))

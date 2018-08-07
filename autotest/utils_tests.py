@@ -359,7 +359,7 @@ def setup_pp_test():
     except:
         return
     model_ws = os.path.join("..","examples","Freyberg","extra_crispy")
-    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws)
+    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False)
 
     pp_dir = os.path.join("utils")
     ml.export(os.path.join("temp","test_unrot_grid.shp"))
@@ -424,7 +424,7 @@ def pp_to_shapefile_test():
         return
     pp_file = os.path.join("utils","points1.dat")
     shp_file = os.path.join("temp","points1.dat.shp")
-    pyemu.gw_utils.write_pp_shapfile(pp_file)
+    pyemu.pp_utils.write_pp_shapfile(pp_file)
 
 def write_tpl_test():
     import os
@@ -507,58 +507,54 @@ def zero_order_regul_test():
 
 
 
-def kl_test():
+def  kl_test():
     import os
     import numpy as np
     import pandas as pd
     import pyemu
+    import matplotlib.pyplot as plt
     try:
         import flopy
     except:
         print("flopy not imported...")
         return
     model_ws = os.path.join("..","verification","Freyberg","extra_crispy")
-    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws)
+    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False)
     str_file = os.path.join("..","verification","Freyberg","structure.dat")
-    arr_dict = {"test":np.ones((ml.nrow,ml.ncol))}
-    arr_dict["hk_tru"] = np.loadtxt(os.path.join("..","verification",
+    arr_tru = np.loadtxt(os.path.join("..","verification",
                                                  "Freyberg","extra_crispy",
-                                                 "hk.truth.ref"))
+                                                 "hk.truth.ref")) + 20
     basis_file = os.path.join("utils","basis.jco")
     tpl_file = os.path.join("utils","test.tpl")
-    back_dict = pyemu.utils.helpers.kl_setup(num_eig=800,sr=ml.sr,
+    factors_file = os.path.join("temp","factors.dat")
+    num_eig = 100
+    prefixes = ["hk1"]
+    df = pyemu.utils.helpers.kl_setup(num_eig=num_eig, sr=ml.sr,
                                              struct=str_file,
-                                             array_dict=arr_dict,
+                                             factors_file=factors_file,
                                              basis_file=basis_file,
-                                             tpl_file=tpl_file)
-    for name in back_dict.keys():
-        diff = np.abs((arr_dict[name] - back_dict[name])).sum()
-        print(diff)
-        assert np.abs(diff) < 1.0e-2
-    df = pd.read_csv(tpl_file,skiprows=1)
-    df.loc[:,"new_val"] = df.org_val
-    df.to_csv(tpl_file.replace(".tpl",".csv"),index=False)
-    #kl_appy(par_file, basis_file,par_to_file_dict)
-    par_to_file_dict = {"test":os.path.join("temp","test.ref"),\
-                        "hk_tru":os.path.join("temp","hk_tru.ref")}
-    pyemu.utils.helpers.kl_apply(tpl_file.replace(".tpl",".csv"),basis_file,
-                                 par_to_file_dict,(ml.nrow,ml.ncol))
-    #import matplotlib.pyplot as plt
-    for par,filename in par_to_file_dict.items():
-        arr = np.loadtxt(filename)
-        arr1 = arr_dict[par]
-        # mx = max(arr.max(),arr1.max())
-        # mn = min(arr.min(),arr1.min())
-        # fig = plt.figure()
-        # ax1,ax2 = plt.subplot(211),plt.subplot(212)
-        # c1 = ax1.imshow(arr,vmin=mn,vmax=mx)
-        # plt.colorbar(c1,ax=ax1)
-        # c2 = ax2.imshow(arr_dict[par],vmin=mn,vmax=mx)
-        # plt.colorbar(c2,ax=ax2)
-        # plt.show()
-        diff = np.abs((arr - arr1)).sum()
-        print(diff)
-        assert np.abs(diff) < 1.0e-2
+                                            prefixes=prefixes,islog=False)
+
+    basis = pyemu.Matrix.from_binary(basis_file)
+    basis = basis[:,:num_eig]
+    arr_tru = np.atleast_2d(arr_tru.flatten()).transpose()
+    proj = np.dot(basis.T.x,arr_tru)[:num_eig]
+    #proj.autoalign = False
+    back = np.dot(basis.x, proj)
+
+    back = back.reshape(ml.nrow,ml.ncol)
+    df.parval1 = proj
+    arr = pyemu.geostats.fac2real(df,factors_file,out_file=None)
+    fig = plt.figure(figsize=(10, 10))
+    ax1, ax2 = plt.subplot(121),plt.subplot(122)
+    mn,mx = arr_tru.min(),arr_tru.max()
+    print(arr.max(), arr.min())
+    print(back.max(),back.min())
+    diff = np.abs(back - arr)
+    print(diff.max())
+    assert diff.max() < 1.0e-5
+
+
 
 def ok_test():
     import os
@@ -710,10 +706,11 @@ def mflist_budget_test():
         print("no flopy...")
         return
     model_ws = os.path.join("..","examples","Freyberg_transient")
-    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False)
+    ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False,load_only=[])
     list_filename = os.path.join(model_ws,"freyberg.list")
     assert os.path.exists(list_filename)
-    pyemu.gw_utils.setup_mflist_budget_obs(list_filename,start_datetime=ml.start_datetime)
+    df = pyemu.gw_utils.setup_mflist_budget_obs(list_filename,start_datetime=ml.start_datetime)
+    print(df)
 
 def mtlist_budget_test():
     import pyemu
@@ -726,6 +723,10 @@ def mtlist_budget_test():
     list_filename = os.path.join("utils","mt3d.list")
     assert os.path.exists(list_filename)
     frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(list_filename,start_datetime='1-1-1970')
+    assert len(ins_files) == 2
+
+    frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(list_filename,start_datetime='1-1-1970',
+                                                                     gw_prefix='')
     assert len(ins_files) == 2
 
     frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(list_filename, start_datetime=None)
@@ -773,6 +774,39 @@ def geostat_prior_builder_test():
     d = (cov - scov).x
     #print(d)
     print(d.max())
+
+
+def geostat_draws_test():
+    import os
+    import numpy as np
+    import pyemu
+    pst_file = os.path.join("pst","pest.pst")
+    pst = pyemu.Pst(pst_file)
+
+    tpl_file = os.path.join("utils", "pp_locs.tpl")
+    str_file = os.path.join("utils", "structure.dat")
+
+
+    pe = pyemu.helpers.geostatistical_draws(pst_file,{str_file:tpl_file})
+    assert (pe.shape == pe.dropna().shape)
+
+
+    df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
+    df.loc[:,"zone"] = np.arange(df.shape[0])
+    gs = pyemu.geostats.read_struct_file(str_file)
+    pe = pyemu.helpers.geostatistical_draws(pst_file,{gs:df},
+                                               sigma_range=4)
+
+    ttpl_file = os.path.join("temp", "temp.dat.tpl")
+    with open(ttpl_file, 'w') as f:
+        f.write("ptf ~\n ~ temp1  ~\n")
+    pst.add_parameters(ttpl_file, ttpl_file.replace(".tpl", ""))
+
+    pst.parameter_data.loc["temp1", "parubnd"] = 1.1
+    pst.parameter_data.loc["temp1", "parlbnd"] = 0.9
+
+    pe = pyemu.helpers.geostatistical_draws(pst, {str_file: tpl_file})
+    assert (pe.shape == pe.dropna().shape)
 
 
 # def linearuniversal_krige_test():
@@ -860,7 +894,7 @@ def read_hydmod_test():
     df = pd.read_csv(os.path.join('temp', 'freyberg.hyd.bin.dat'), delim_whitespace=True)
     dftrue = pd.read_csv(os.path.join('utils', 'freyberg.hyd.bin.dat.true'), delim_whitespace=True)
 
-    assert np.allclose(df.obsval.as_matrix(), dftrue.obsval.as_matrix())
+    assert np.allclose(df.obsval.values, dftrue.obsval.values)
 
 def make_hydmod_insfile_test():
     import os
@@ -963,16 +997,34 @@ def grid_obs_test():
         return
     import pyemu
 
+    m_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     org_hds_file = os.path.join("..","examples","Freyberg_Truth","freyberg.hds")
+    org_multlay_hds_file = os.path.join(m_ws, "freyberg.hds")  # 3 layer version
+    org_ucn_file = os.path.join(m_ws, "MT3D001.UCN")  # mt example
     hds_file = os.path.join("temp","freyberg.hds")
+    multlay_hds_file = os.path.join("temp", "freyberg_3lay.hds")
+    ucn_file = os.path.join("temp", "MT3D001.UCN")
     out_file = hds_file+".dat"
+    multlay_out_file = multlay_hds_file+".dat"
+    ucn_out_file = ucn_file+".dat"
     shutil.copy2(org_hds_file,hds_file)
+    shutil.copy2(org_multlay_hds_file, multlay_hds_file)
+    shutil.copy2(org_ucn_file, ucn_file)
+
     pyemu.gw_utils.setup_hds_obs(hds_file)
     df1 = pd.read_csv(out_file,delim_whitespace=True)
     pyemu.gw_utils.apply_hds_obs(hds_file)
     df2 = pd.read_csv(out_file,delim_whitespace=True)
     diff = df1.obsval - df2.obsval
-    assert diff.max() < 1.0e-6,diff.max()
+    assert abs(diff.max()) < 1.0e-6, abs(diff.max())
+
+    pyemu.gw_utils.setup_hds_obs(multlay_hds_file)
+    df1 = pd.read_csv(multlay_out_file,delim_whitespace=True)
+    assert len(df1) == 3*len(df2), "{} != 3*{}".format(len(df1), len(df2))
+    pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
+    df2 = pd.read_csv(multlay_out_file,delim_whitespace=True)
+    diff = df1.obsval - df2.obsval
+    assert np.allclose(df1.obsval,df2.obsval), abs(diff.max())
 
     pyemu.gw_utils.setup_hds_obs(hds_file,skip=-999)
     df1 = pd.read_csv(out_file,delim_whitespace=True)
@@ -981,7 +1033,14 @@ def grid_obs_test():
     diff = df1.obsval - df2.obsval
     assert diff.max() < 1.0e-6
 
-    skip = lambda x : x < -888.0
+    pyemu.gw_utils.setup_hds_obs(ucn_file, skip=1.e30, prefix='ucn')
+    df1 = pd.read_csv(ucn_out_file, delim_whitespace=True)
+    pyemu.gw_utils.apply_hds_obs(ucn_file)
+    df2 = pd.read_csv(ucn_out_file, delim_whitespace=True)
+    diff = df1.obsval - df2.obsval
+    assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
+
+    # skip = lambda x : x < -888.0
     skip = lambda x: x if x > -888.0 else np.NaN
     pyemu.gw_utils.setup_hds_obs(hds_file,skip=skip)
     df1 = pd.read_csv(out_file,delim_whitespace=True)
@@ -998,6 +1057,61 @@ def grid_obs_test():
     df2 = pd.read_csv(out_file,delim_whitespace=True)
     diff = df1.obsval - df2.obsval
     assert diff.max() < 1.0e-6
+
+    kperk_pairs = [(0, 0), (0, 1), (0, 2)]
+    pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
+                                 skip=skip)
+    df1 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    assert len(df1) == 3*len(df2), "{} != 3*{}".format(len(df1), len(df2))
+    pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
+    df2 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    diff = df1.obsval - df2.obsval
+    assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
+
+    kperk_pairs = [(0, 0), (0, 1), (0, 2), (2, 0), (2, 1), (2, 2)]
+    pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
+                                 skip=skip)
+    df1 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    assert len(df1) == 2 * len(df2), "{} != 2*{}".format(len(df1), len(df2))
+    pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
+    df2 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    diff = df1.obsval - df2.obsval
+    assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
+
+    m = flopy.modflow.Modflow.load("freyberg.nam", model_ws=m_ws, load_only=[])
+    kperk_pairs = [(0, 0), (0, 1), (0, 2)]
+    skipmask = m.bas6.ibound.array
+    pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
+                                 skip=skipmask)
+    df1 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
+    df2 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    assert len(df1) == len(df2) == np.abs(skipmask).sum(), \
+        "array skip failing, expecting {0} obs but returned {1}".format(np.abs(skipmask).sum(), len(df1))
+    diff = df1.obsval - df2.obsval
+    assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
+
+    kperk_pairs = [(0, 0), (0, 1), (0, 2), (2, 0), (2, 1), (2, 2)]
+    skipmask = m.bas6.ibound.array[0]
+    pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
+                                 skip=skipmask)
+    df1 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
+    df2 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    assert len(df1) == len(df2) == 2 * m.nlay * np.abs(skipmask).sum(), "array skip failing"
+    diff = df1.obsval - df2.obsval
+    assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
+
+    kperk_pairs = [(0, 0), (0, 1), (0, 2), (2, 0), (2, 1), (2, 2)]
+    skipmask = m.bas6.ibound.array
+    pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
+                                 skip=skipmask)
+    df1 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    pyemu.gw_utils.apply_hds_obs(multlay_hds_file)
+    df2 = pd.read_csv(multlay_out_file, delim_whitespace=True)
+    assert len(df1) == len(df2) == 2 * np.abs(skipmask).sum(), "array skip failing"
+    diff = df1.obsval - df2.obsval
+    assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
 
 
 def par_knowledge_test():
@@ -1053,10 +1167,40 @@ def sfr_helper_test():
     df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters("supply2.nam",model_ws="utils")
     print(df_sfr)
     os.chdir("utils")
+
+    # change the name of the sfr file that will be created
+    pars = {}
+    with open("sfr_seg_pars.config") as f:
+        for line in f:
+            line = line.strip().split()
+            pars[line[0]] = line[1]
+    pars["sfr_filename"] = "test.sfr"
+    with open("sfr_seg_pars.config", 'w') as f:
+        for k, v in pars.items():
+            f.write("{0} {1}\n".format(k, v))
+
     # change some hcond1 values
-    df = pd.read_csv("sfr_seg_pars.dat",delim_whitespace=True)
+    df = pd.read_csv("sfr_seg_pars.dat", delim_whitespace=False,index_col=0)
+    df.loc[:, "hcond1"] = 1.0
+    df.to_csv("sfr_seg_pars.dat", sep=',')
+
+    # make sure the hcond1 mult worked...
+    sd1 = pyemu.gw_utils.apply_sfr_seg_parameters().segment_data[0]
+    m1 = flopy.modflow.Modflow.load("supply2.nam", load_only=["sfr"], check=False)
+    sd2 = m1.sfr.segment_data[0]
+
+    sd1 = pd.DataFrame.from_records(sd1)
+    sd2 = pd.DataFrame.from_records(sd2)
+
+    # print(sd1.hcond1)
+    # print(sd2.hcond2)
+
+    assert sd1.hcond1.sum() == sd2.hcond1.sum()
+
+    # change some hcond1 values
+    df = pd.read_csv("sfr_seg_pars.dat",delim_whitespace=False,index_col=0)
     df.loc[:,"hcond1"] = 0.5
-    df.to_csv("sfr_seg_pars.dat",sep=' ')
+    df.to_csv("sfr_seg_pars.dat",sep=',')
 
     #change the name of the sfr file that will be created
     pars = {}
@@ -1097,6 +1241,29 @@ def sfr_obs_test():
     m = flopy.modflow.Modflow.load("freyberg.nam",model_ws="utils",load_only=[],check=False)
     pyemu.gw_utils.setup_sfr_obs(sfr_file,model=m)
     pyemu.gw_utils.setup_sfr_obs(sfr_file, seg_group_dict={"obs1": [1, 4], "obs2": [16, 17, 18, 19, 22, 23]},model=m)
+
+
+def gage_obs_test():
+    import os
+    import pyemu
+    import numpy as np
+
+    bd = os.getcwd()
+    os.chdir("utils")
+
+    gage_file = "RmSouth_pred_7d.gage1.go"
+    gage = pyemu.gw_utils.setup_gage_obs(gage_file, start_datetime='2007-04-11')
+    if gage is not None:
+        print(gage[1], gage[2])
+
+    times = np.concatenate(([0], np.arange(7., 7. * 404, 7.)))
+    gage = pyemu.gw_utils.setup_gage_obs(gage_file, start_datetime='2007-04-11', times=times)
+    if gage is not None:
+        print(gage[1], gage[2])
+    pyemu.gw_utils.apply_gage_obs()
+
+    os.chdir(bd)
+
 
 def pst_from_parnames_obsnames_test():
     import pyemu
@@ -1145,30 +1312,115 @@ def plot_id_bar_test():
     pyemu.plot_utils.plot_id_bar(id_df)
     #plt.show()
 
+
+def jco_from_pestpp_runstorage_test():
+    import os
+    import pyemu
+
+    jco_file = os.path.join("utils","pest.jcb")
+    jco = pyemu.Jco.from_binary(jco_file)
+
+    rnj_file = jco_file.replace(".jcb",".rnj")
+    pst_file = jco_file.replace(".jcb",".pst")
+    jco2 = pyemu.helpers.jco_from_pestpp_runstorage(rnj_file,pst_file)
+    diff = (jco - jco2).to_dataframe()
+    print(diff)
+
+
+def hfb_test():
+    import os
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+
+    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    try:
+        pyemu.gw_utils.write_hfb_template(m)
+    except:
+        pass
+    else:
+        raise Exception()
+
+    hfb_data = []
+    jcol1, jcol2 = 14,15
+    for i in range(m.nrow):
+        hfb_data.append([0,i,jcol1,i,jcol2,0.001])
+    flopy.modflow.ModflowHfb(m,0,0,len(hfb_data),hfb_data=hfb_data)
+    m.change_model_ws("temp")
+    m.write_input()
+    m.exe_name = "mfnwt"
+    try:
+        m.run_model()
+    except:
+        pass
+
+    tpl_file,df = pyemu.gw_utils.write_hfb_template(m)
+    assert os.path.exists(tpl_file)
+    assert df.shape[0] == m.hfb6.hfb_data.shape[0]
+
+
+def read_runstor_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    d = os.path.join("utils","runstor")
+    pst = pyemu.Pst(os.path.join(d,"pest.pst"))
+
+    par_df,obs_df = pyemu.helpers.read_pestpp_runstorage(os.path.join(d,"pest.rns"),"all")
+    par_df2 = pd.read_csv(os.path.join(d,"sweep_in.csv"),index_col=0)
+    obs_df2 = pd.read_csv(os.path.join(d,"sweep_out.csv"),index_col=0)
+    obs_df2.columns = obs_df2.columns.str.lower()
+    obs_df2 = obs_df2.loc[:,obs_df.columns]
+    par_df2 = par_df2.loc[:,par_df.columns]
+    pdif = np.abs(par_df.values - par_df2.values).max()
+    odif = np.abs(obs_df.values - obs_df2.values).max()
+    print(pdif,odif)
+    assert pdif < 1.0e-6,pdif
+    assert odif < 1.0e-6,odif
+   
+    try:
+        pyemu.helpers.read_pestpp_runstorage(os.path.join(d, "pest.rns"), "junk")
+    except:
+        pass
+    else:
+        raise Exception()
+
+
 if __name__ == "__main__":
+    read_runstor_test()
+    #long_names()
     #master_and_slaves()
     #plot_id_bar_test()
     #pst_from_parnames_obsnames_test()
     #write_jactest_test()
     #sfr_obs_test()
+    #gage_obs_test()
     #setup_pp_test()
     #sfr_helper_test()
-    #gw_sft_ins_test()
+    # gw_sft_ins_test()
     # par_knowledge_test()
     #grid_obs_test()
-    #hds_timeseries_test()
-    #plot_summary_test()
+    # hds_timeseries_test()
+    # plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
     # make_hydmod_insfile_test()
     # gslib_2_dataframe_test()
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
-    #geostat_prior_builder_test()
-    #mflist_budget_test()
-    #mtlist_budget_test()
+    # geostat_prior_builder_test()
+    # geostat_draws_test()
+    #jco_from_pestpp_runstorage_test()
+    # mflist_budget_test()
+    # mtlist_budget_test()
     # tpl_to_dataframe_test()
-    #kl_test()
+    # kl_test()
+    # hfb_test()
     #more_kl_test()
     #zero_order_regul_test()
     # first_order_pearson_regul_test()
@@ -1193,7 +1445,7 @@ if __name__ == "__main__":
     # struct_file_test()
     # covariance_matrix_test()
     # add_pi_obj_func_test()
-    ok_test()
+    # ok_test()
     # ok_grid_test()
     # ok_grid_zone_test()
     # ppk2fac_verf_test()

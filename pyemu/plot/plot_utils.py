@@ -595,7 +595,7 @@ def res_phi_pie(pst,logger=None, **kwargs):
     else:
         fig = plt.figure(figsize=figsize)
         ax = plt.subplot(1,1,1,aspect="equal")
-    labels = ["{0}\n{1:4G}({2:3.1f}%)".format(k,v,100. * (v / pst.phi)) for k,v in phi_comps.items()]
+    labels = ["{0}\n{1:4G}\n({2:3.1f}%)".format(k,v,100. * (v / pst.phi)) for k,v in phi_comps.items()]
     ax.pie([float(v) for v in norm_phi_comps.values()],labels=labels)
     logger.log("plot res_phi_pie")
     if "filename" in kwargs:
@@ -760,7 +760,7 @@ def pst_prior(pst,logger=None, filename=None, **kwargs):
 
 def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                     filename=None,func_dict = None,
-                    sync_bins=True,deter_vals=None,std_window=4.0,
+                    sync_bins=True,deter_vals=None,std_window=None,
                     deter_range=False,**kwargs):
     """helper function to plot ensemble histograms
 
@@ -768,12 +768,13 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
     ----------
     ensemble : varies
         the ensemble argument can be a pandas.DataFrame or derived type or a str, which
-        is treated as a fileanme.  Optionally, ensemble can be a list of these types or
+        is treated as a filename.  Optionally, ensemble can be a list of these types or
         a dict, in which case, the keys are treated as facecolor str (e.g., 'b', 'y', etc).
     facecolor : str
         the histogram facecolor.  Only applies if ensemble is a single thing
     plot_cols : enumerable
-        a collection of columns from the ensemble(s) to plot.  If None,
+        a collection of columns (in form of a list of parameters, or a dict with keys for 
+        parsing plot axes and values of parameters) from the ensemble(s) to plot.  If None,
         (the union of) all cols are plotted. Default is None
     filename : str
         the name of the pdf to create.  If None, return figs without saving.  Default is None.
@@ -785,6 +786,12 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
         one ensemble is being plotted.  Default is True
     deter_vals : dict
         dict of deterministic values to plot as a vertical line. key is ensemble columnn name
+    std_window : float
+        the number of standard deviations around the mean to mark as vertical lines.  If None,
+        nothing happens.  Default is None
+    deter_range : bool
+        flag to set xlims to deterministic value +/- std window.  If True, std_window must not be None.
+        Default is False
 
     """
     logger = pyemu.Logger("ensemble_helper.log")
@@ -807,9 +814,20 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
         cols = set(en.columns)
         all_cols.update(cols)
     if plot_cols is None:
-        plot_cols = all_cols
+        plot_cols = {i: [v] for i, v in (zip(all_cols, all_cols))}
     else:
-        splot_cols = set(plot_cols)
+        if isinstance(plot_cols,list):
+            splot_cols = set(plot_cols)
+            plot_cols = {i: [v] for i, v in (zip(plot_cols, plot_cols))}
+        elif isinstance(plot_cols,dict):
+            splot_cols = []
+            for label,pcols in plot_cols.items():
+                splot_cols.extend(list(pcols))
+            splot_cols = set(splot_cols)
+        else:
+            logger.lraise("unrecognized plot_cols type: {0}, should be list or dict".
+                          format(type(plot_cols)))
+
         missing = splot_cols - all_cols
         if len(missing) > 0:
             logger.lraise("the following plot_cols are missing: {0}".
@@ -823,15 +841,19 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
     else:
         plt.figtext(0.5, 0.5, "pyemu.plot_utils.ensemble_helper()\n at {0}"
                     .format(str(datetime.now())), ha="center")
-    plot_cols = list(plot_cols)
-    plot_cols.sort()
+    #plot_cols = list(plot_cols)
+    #plot_cols.sort()
+    labels = list(plot_cols.keys())
+    labels.sort()
     logger.statement("saving pdf to {0}".format(filename))
     figs = []
 
     ax_count = 0
 
-    for plot_col in plot_cols:
-        logger.log("plotting reals for {0}".format(plot_col))
+    #for label,plot_col in plot_cols.items():
+    for label in labels:
+        plot_col = plot_cols[label]
+        logger.log("plotting reals for {0}".format(label))
         if ax_count % (nr * nc) == 0:
             plt.tight_layout()
             #pdf.savefig()
@@ -843,52 +865,53 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
             ax_count = 0
 
         ax = axes[ax_count]
-        ax.set_title("{0}) {1}".format(abet[ax_count],plot_col),loc="left")
+        ax.set_title("{0}) {1}".format(abet[ax_count],label),loc="left")
         if sync_bins:
             mx,mn = -1.0e+30,1.0e+30
             for fc,en in ensembles.items():
-                if plot_col in en.columns:
-                    emx,emn = en.loc[:,plot_col].max(),en.loc[:,plot_col].min()
-                    mx = max(mx,emx)
-                    mn = min(mn,emn)
+                for pc in plot_col:
+                    if pc in en.columns:
+                        emx,emn = en.loc[:,pc].max(),en.loc[:,pc].min()
+                        mx = max(mx,emx)
+                        mn = min(mn,emn)
             plot_bins = np.linspace(mn,mx,num=bins)
-            logger.statement("{0} min:{1:5G}, max:{2:5G}".format(plot_col,mn,mx))
+            logger.statement("{0} min:{1:5G}, max:{2:5G}".format(pc,mn,mx))
         else:
             plot_bins=bins
         for fc,en in ensembles.items():
+            for pc in plot_col:
+                if pc in en.columns:
+                    try:
+                        en.loc[:,pc].hist(bins=plot_bins,facecolor=fc,
+                                                edgecolor="none",alpha=0.5,
+                                                normed=True,ax=ax)
+                    except Exception as e:
+                        logger.warn("error plotting histogram for {0}:{1}".
+                                    format(pc,str(e)))
 
-            if plot_col in en.columns:
-                try:
-                    en.loc[:,plot_col].hist(bins=plot_bins,facecolor=fc,
-                                            edgecolor="none",alpha=0.5,
-                                            normed=True,ax=ax)
-                except Exception as e:
-                    logger.warn("error plotting histogram for {0}:{1}".
-                                format(plot_col,str(e)))
-
-            v = None
-            if deter_vals is not None and plot_col in deter_vals:
-                ylim = ax.get_ylim()
-                v = deter_vals[plot_col]
-                ax.plot([v,v],ylim,"k--",lw=1.5)
-                ax.set_ylim(ylim)
-
-
-            if std_window is not None:
-                try:
+                v = None
+                if deter_vals is not None and pc in deter_vals:
                     ylim = ax.get_ylim()
-                    mn, st = en.loc[:,plot_col].mean(), en.loc[:,plot_col].std() * (std_window / 2.0)
-
-                    ax.plot([mn - st, mn - st], ylim, color=fc, lw=1.5,ls='--')
-                    ax.plot([mn + st, mn + st], ylim, color=fc, lw=1.5,ls='--')
+                    v = deter_vals[pc]
+                    ax.plot([v,v],ylim,"k--",lw=1.5)
                     ax.set_ylim(ylim)
-                    if deter_range and v is not None:
-                        xmn = v - st
-                        xmx = v + st
-                        ax.set_xlim(xmn,xmx)
-                except:
-                    logger.warn("error plotting std window for {0}".
-                                format(plot_col))
+
+
+                if std_window is not None:
+                    try:
+                        ylim = ax.get_ylim()
+                        mn, st = en.loc[:,pc].mean(), en.loc[:,pc].std() * (std_window / 2.0)
+
+                        ax.plot([mn - st, mn - st], ylim, color=fc, lw=1.5,ls='--')
+                        ax.plot([mn + st, mn + st], ylim, color=fc, lw=1.5,ls='--')
+                        ax.set_ylim(ylim)
+                        if deter_range and v is not None:
+                            xmn = v - st
+                            xmx = v + st
+                            ax.set_xlim(xmn,xmx)
+                    except:
+                        logger.warn("error plotting std window for {0}".
+                                    format(pc))
         ax.grid()
 
         ax_count += 1
@@ -970,7 +993,7 @@ def _process_ensemble_arg(ensemble,facecolor, logger):
 
     return ensembles
 
-def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,**kwargs):
+def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,skip_groups=[],**kwargs):
     """helper function to plot ensemble 1-to-1 plots sbowing the simulated range
 
     Parameters
@@ -997,6 +1020,8 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,**
         raise NotImplementedError()
     else:
         grouper = obs.groupby(obs.obgnme).groups
+        for skip_group in skip_groups:
+            grouper.pop(skip_group)
 
     fig = plt.figure(figsize=figsize)
     if "fig_title" in kwargs:
@@ -1150,14 +1175,6 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
     if len(d) != 0:
         logger.lraise("ensemble1 does not have the same columns as ensemble2: {0}".
                       format(','.join(d)))
-
-    en1_mn,en1_std = ensemble1.mean(axis=0),ensemble1.std(axis=0)
-    en2_mn, en2_std = ensemble2.mean(axis=0), ensemble2.std(axis=0)
-
-    mn_diff = 100.0 * ((en1_mn - en2_mn) / en1_mn)
-    std_diff = 100 * (( en1_std - en2_std)/ en1_std)
-
-
     if "grouper" in kwargs:
         raise NotImplementedError()
     else:
@@ -1166,12 +1183,30 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
             par = pst.parameter_data.loc[pst.adj_par_names,:]
             grouper = par.groupby(par.pargp).groups
             grouper["all"] = pst.adj_par_names
+            li = par.partrans == "log"
+            ensemble1.loc[:,li] = ensemble1.loc[:,li].apply(np.log10)
+            ensemble2.loc[:, li] = ensemble2.loc[:, li].apply(np.log10)
         elif len(en_cols.symmetric_difference(set(pst.obs_names))) == 0:
             obs = pst.observation_data.loc[pst.nnz_obs_names,:]
             grouper = obs.groupby(obs.obgnme).groups
             grouper["all"] = pst.nnz_obs_names
         else:
             logger.lraise("could not match ensemble cols with par or obs...")
+
+    en1_mn, en1_std = ensemble1.mean(axis=0), ensemble1.std(axis=0)
+    en2_mn, en2_std = ensemble2.mean(axis=0), ensemble2.std(axis=0)
+
+    # mn_diff = 100.0 * ((en1_mn - en2_mn) / en1_mn)
+    # std_diff = 100 * ((en1_std - en2_std) / en1_std)
+
+    mn_diff = -1 * (en2_mn - en1_mn)
+    std_diff = 100 * (((en1_std - en2_std) / en1_std))
+
+
+
+    #diff = ensemble1 - ensemble2
+    #mn_diff = diff.mean(axis=0)
+    #std_diff = diff.std(axis=0)
 
 
     fig = plt.figure(figsize=figsize)
@@ -1209,15 +1244,18 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
 
         ax = axes[ax_count]
         mn_g.hist(ax=ax,facecolor=facecolor,alpha=0.5,edgecolor=None,bins=bins)
+        #mx = max(mn_g.max(), mn_g.min(),np.abs(mn_g.max()),np.abs(mn_g.min())) * 1.2
+        #ax.set_xlim(-mx,mx)
+
         #std_g.hist(ax=ax,facecolor='b',alpha=0.5,edgecolor=None)
 
 
 
         #ax.set_xlim(xlim)
         ax.set_yticklabels([])
-        ax.set_xlabel("mean percent change",labelpad=0.1)
-        ax.set_title("{0}) mean change group:{1}, {2} entries".
-                     format(abet[ax_count], g, mn_g.shape[0]), loc="left")
+        ax.set_xlabel("mean change",labelpad=0.1)
+        ax.set_title("{0}) mean change group:{1}, {2} entries\nmax:{3:10G}, min:{4:10G}".
+                     format(abet[ax_count], g, mn_g.shape[0],mn_g.max(),mn_g.min()), loc="left")
         ax.grid()
         ax_count += 1
 
@@ -1229,9 +1267,9 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
 
         # ax.set_xlim(xlim)
         ax.set_yticklabels([])
-        ax.set_xlabel("sigma percent change", labelpad=0.1)
-        ax.set_title("{0}) sigma change group:{1}, {2} entries".
-                     format(abet[ax_count], g, mn_g.shape[0]), loc="left")
+        ax.set_xlabel("sigma percent reduction", labelpad=0.1)
+        ax.set_title("{0}) sigma change group:{1}, {2} entries\nmax:{3:10G}, min:{4:10G}".
+                     format(abet[ax_count], g, mn_g.shape[0], std_g.max(), std_g.min()), loc="left")
         ax.grid()
         ax_count += 1
 
@@ -1426,7 +1464,8 @@ def plot_jac_test(csvin, csvout, targetobs=None, filetype=None, maxoutputpages=1
     num_obs_plotted = np.min(np.array([maxoutputpages*32, len(targetobs)]))
     if num_obs_plotted < len(targetobs):
         # get random sample
-        obs_plotted = np.random.choice(len(targetobs), num_obs_plotted, replace=False)
+        index_plotted = np.random.choice(len(targetobs), num_obs_plotted, replace=False)
+        obs_plotted = [targetobs[x] for x in index_plotted]
         real_pages = maxoutputpages
     else:
         obs_plotted = targetobs
@@ -1440,7 +1479,7 @@ def plot_jac_test(csvin, csvout, targetobs=None, filetype=None, maxoutputpages=1
             for row in range(0, 8):
                 for col in range(0, 4):
                     count = 32 * page + 4 * row + col
-                    if count < len(targetobs):
+                    if count < num_obs_plotted:
                         axes[row, col].scatter(group['increment'], group[obs_plotted[count]])
                         axes[row, col].plot(group['increment'], group[obs_plotted[count]], 'r')
                         axes[row, col].set_title(obs_plotted[count])
@@ -1454,3 +1493,4 @@ def plot_jac_test(csvin, csvout, targetobs=None, filetype=None, maxoutputpages=1
                 plt.show()
             else:
                 plt.savefig(os.path.join(figures_dir, "{0}_jactest_{1}.{2}".format(param, page, filetype)))
+            plt.close()

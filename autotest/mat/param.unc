@@ -1,5 +1,5 @@
 START COVARIANCE_MATRIX
-  file mat/cov_kx.mat
+  file "mat/cov_kx.mat"
 END COVARIANCE_MATRIX
 
 START COVARIANCE_MATRIX

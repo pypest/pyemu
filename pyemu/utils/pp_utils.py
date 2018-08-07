@@ -5,6 +5,7 @@ import pandas as pd
 pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config
 from pyemu.utils.helpers import run
+from ..pyemu_warnings import PyemuWarning
 PP_FMT = {"name": SFMT, "x": FFMT, "y": FFMT, "zone": IFMT, "tpl": SFMT,
           "parval1": FFMT}
 PP_NAMES = ["name","x","y","zone","parval1"]
