@@ -84,6 +84,8 @@ class LinearAnalysis(object):
                 pst_case = jco.replace(".jco", ".pst").replace(".jcb",".pst")
                 if os.path.exists(pst_case):
                     pst = pst_case
+            else:
+                raise Exception('If jco is not a filename, must pass pst filename')
         self.pst_arg = pst
         if parcov is None and pst is not None:
             parcov = pst
