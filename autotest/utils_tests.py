@@ -943,8 +943,6 @@ def plot_summary_test():
         plt.close(fig)
 
 
-
-
 def hds_timeseries_test():
     import os
     import shutil
@@ -985,6 +983,7 @@ def hds_timeseries_test():
     # pyemu.gw_utils.apply_hds_obs(hds_file)
     # df2 = pd.read_csv(out_file, delim_whitespace=True)
     # diff = df1.obsval - df2.obsval
+
 
 def grid_obs_test():
     import os
@@ -1113,6 +1112,39 @@ def grid_obs_test():
     diff = df1.obsval - df2.obsval
     assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
 
+
+def postprocess_inactive_conc_test():
+    import os
+    import shutil
+    import numpy as np
+    import pandas as pd
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+    bd = os.getcwd()
+    model_ws = os.path.join("..", "examples", "Freyberg_transient")
+
+    org_hds_file = os.path.join("utils", "MT3D001.UCN")
+    hds_file = os.path.join("temp", "MT3D001.UCN")
+    shutil.copy2(org_hds_file, hds_file)
+    kij_dict = {"test1": [0, 0, 0], "test2": (1, 1, 1), "inact": [0, 81, 35]}
+
+    m = flopy.modflow.Modflow.load("freyberg.nam", model_ws=model_ws, load_only=[], check=False)
+    frun_line, df = pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, model=m, include_path=True, prefix="hds",
+                                                        postprocess_inact=1E30)
+    os.chdir("temp")
+    df0 = pd.read_csv("{0}_timeseries.processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True)
+    df1 = pd.read_csv("{0}_timeseries.post_processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True)
+    eval(frun_line)
+    df2 = pd.read_csv("{0}_timeseries.processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True)
+    df3 = pd.read_csv("{0}_timeseries.post_processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True)
+    assert np.allclose(df0, df2)
+    assert np.allclose(df2.test1, df3.test1)
+    assert np.allclose(df2.test2, df3.test2)
+    assert np.allclose(df3, df1)
+    os.chdir(bd)
 
 def par_knowledge_test():
     import os
@@ -1392,7 +1424,7 @@ def read_runstor_test():
 
 
 if __name__ == "__main__":
-    read_runstor_test()
+    # read_runstor_test()
     #long_names()
     #master_and_slaves()
     #plot_id_bar_test()
@@ -1404,8 +1436,9 @@ if __name__ == "__main__":
     #sfr_helper_test()
     # gw_sft_ins_test()
     # par_knowledge_test()
-    #grid_obs_test()
+    # grid_obs_test()
     # hds_timeseries_test()
+    postprocess_inactive_conc_test()
     # plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()

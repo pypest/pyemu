@@ -6,13 +6,15 @@ from datetime import datetime
 import string
 from pyemu.logger import Logger
 font = {'size'   : 6}
-import matplotlib
-matplotlib.rc("font",**font)
+try:
+    import matplotlib
+    matplotlib.rc("font",**font)
 
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
-from matplotlib.gridspec import GridSpec
-
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_pdf import PdfPages
+    from matplotlib.gridspec import GridSpec
+except Exception as e:
+    raise Exception("error importing matplotlib: {0}".format(str(e)))
 
 import pyemu
 figsize=(8,10.5)
