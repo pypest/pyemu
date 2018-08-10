@@ -632,6 +632,7 @@ def to_from_binary_test():
     pe1 = pyemu.ParameterEnsemble.from_binary(mc.pst,pe_name)
     oe1 = pyemu.ObservationEnsemble.from_binary(mc.pst,oe_name)
     pe1.index = pe1.index.map(np.int)
+    oe1.index = oe1.index.map(np.int)
     d = (oe - oe1).apply(np.abs)
     assert d.max().max() == 0.0
     d = (pe - pe1).apply(np.abs)
@@ -820,7 +821,7 @@ if __name__ == "__main__":
     #triangular_draw_test()
     # sparse_draw_test()
     # binary_ensemble_dev()
-    #to_from_binary_test()
+    # to_from_binary_test()
     # ensemble_covariance_test()
     # homegrown_draw_test()
     # change_weights_test()
