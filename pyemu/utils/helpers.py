@@ -26,16 +26,16 @@ from pyemu.utils.os_utils import run, start_slaves
 
 def remove_readonly(func, path, excinfo):
     """remove readonly dirs, apparently only a windows issue
-    add to all rmtree calls: shutil.rmtree(*,onerror=remove_readonly), wk
+    add to all rmtree calls: shutil.rmtree(<tree>,onerror=remove_readonly), wk
 
     Parameters
     ----------
-        func : object
-            func
-        path : str
-            path
-        excinfo : object
-            info
+    func : object
+        func
+    path : str
+        path
+    excinfo : object
+        info
 
     """
     os.chmod(path, 128) #stat.S_IWRITE==128==normal
@@ -1105,13 +1105,14 @@ def jco_from_pestpp_runstorage(rnj_filename,pst_filename):
     jco_cols : pyemu.Jco
 
 
-    Notes
-    -------
-    TODO:
-    0. Check rnj file contains transformed par vals (i.e., in model input space)
-    1. Currently only returns pyemu.Jco; doesn't write jco file due to memory issues 
-       associated with very large problems
-    3. Compare rnj and jco from Freyberg problem in autotests
+    TODO
+    ----
+    Check rnj file contains transformed par vals (i.e., in model input space)
+
+    Currently only returns pyemu.Jco; doesn't write jco file due to memory
+    issues associated with very large problems
+
+    Compare rnj and jco from Freyberg problem in autotests
 
     """
 

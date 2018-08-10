@@ -845,8 +845,6 @@ class ParameterEnsemble(Ensemble):
         ParameterEnsemble : ParameterEnsemble
 
 
-        Note
-        ----
         """
 
         li = pst.parameter_data.partrans == "log"
