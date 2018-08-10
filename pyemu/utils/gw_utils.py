@@ -607,7 +607,7 @@ def _write_mflist_ins(ins_filename,df,prefix):
 
 
 def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
-                         model=None):
+                         model=None, postprocess_inact=None):
     """a function to setup extracting time-series from a binary modflow
     head save (or equivalent format - ucn, sub, etc).  Writes
     an instruction file and a _set_ csv
@@ -627,6 +627,8 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
         a flopy model.  If passed, the observation names will have the datetime of the
         observation appended to them.  If None, the observation names will have the
         stress period appended to them. Default is None.
+    postprocess_inact : float
+        Inactive flag in heads/ucn file e.g. mt.btn.cinit
 
     Returns
     -------
@@ -717,8 +719,8 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
                     obsnme = "{0}_{1}".format(site, t)
                 f.write(" !{0}!".format(obsnme))
             f.write('\n')
-
-
+    if postprocess_inact is not None:
+        _setup_postprocess_hds_timeseries(hds_file, df, config_file, prefix=prefix, model=model)
     bd = '.'
     if include_path:
         bd = os.getcwd()
@@ -726,7 +728,7 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
         os.chdir(pth)
     config_file = os.path.split(config_file)[-1]
     try:
-        df = apply_hds_timeseries(config_file)
+        df = apply_hds_timeseries(config_file, postprocess_inact=postprocess_inact)
     except Exception as e:
         os.chdir(bd)
         raise Exception("error in apply_hds_timeseries(): {0}".format(str(e)))
@@ -740,11 +742,11 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
             df.loc[:,"obgnme"] = df.index.map(lambda x: '_'.join(x.split('_')[:2]))
         else:
             df.loc[:, "obgnme"] = df.index.map(lambda x: x.split('_')[0])
-    frun_line = "pyemu.gw_utils.apply_hds_timeseries('{0}')\n".format(config_file)
+    frun_line = "pyemu.gw_utils.apply_hds_timeseries('{0}',{1})\n".format(config_file, postprocess_inact)
     return frun_line,df
 
 
-def apply_hds_timeseries(config_file=None):
+def apply_hds_timeseries(config_file=None, postprocess_inact=None):
 
     import flopy
 
@@ -784,8 +786,88 @@ def apply_hds_timeseries(config_file=None):
     df = pd.concat(dfs,axis=1)
     #print(df)
     df.to_csv(hds_file+"_timeseries.processed",sep=' ')
+    if postprocess_inact is not None:
+        _apply_postprocess_hds_timeseries(config_file, postprocess_inact)
     return df
 
+
+def _setup_postprocess_hds_timeseries(hds_file, df, config_file, prefix=None, model=None):
+    """Dirty function to post process concentrations in inactive/dry cells"""
+    warnings.warn(
+        "Setting up post processing of hds or ucn timeseries obs. "
+        "Prepending 'pp' to obs name may cause length to exceed 20 chars", PyemuWarning)
+    if model is not None:
+        t_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
+    else:
+        t_str = df.index.map(lambda x: "{0:08.2f}".format(x))
+    if prefix is not None:
+        prefix = "pp{0}".format(prefix)
+    else:
+        prefix = "pp"
+    ins_file = hds_file+"_timeseries.post_processed.ins"
+    print("writing instruction file to {0}".format(ins_file))
+    with open(ins_file,'w') as f:
+        f.write('pif ~\n')
+        f.write("l1 \n")
+        for t in t_str:
+            f.write("l1 w ")
+            for site in df.columns:
+                obsnme = "{0}{1}_{2}".format(prefix, site, t)
+                f.write(" !{0}!".format(obsnme))
+            f.write('\n')
+    frun_line = "pyemu.gw_utils._apply_postprocess_hds_timeseries('{0}')\n".format(config_file)
+    return frun_line
+
+
+def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
+
+    import flopy
+
+    if config_file is None:
+        config_file = "hds_timeseries.config"
+
+    assert os.path.exists(config_file), config_file
+    with open(config_file,'r') as f:
+        line = f.readline()
+        hds_file,start_datetime,time_units = line.strip().split(',')
+        site_df = pd.read_csv(f)
+
+    #print(site_df)
+
+    assert os.path.exists(hds_file), "head save file not found"
+    if hds_file.lower().endswith(".ucn"):
+        try:
+            hds = flopy.utils.UcnFile(hds_file)
+        except Exception as e:
+            raise Exception("error instantiating UcnFile:{0}".format(str(e)))
+    else:
+        try:
+            hds = flopy.utils.HeadFile(hds_file)
+        except Exception as e:
+            raise Exception("error instantiating HeadFile:{0}".format(str(e)))
+
+    nlay, nrow, ncol = hds.nlay, hds.nrow, hds.ncol
+
+    dfs = []
+    for site, k, i, j in zip(site_df.site, site_df.k, site_df.i, site_df.j):
+        assert k >= 0 and k < nlay
+        assert i >= 0 and i < nrow
+        assert j >= 0 and j < ncol
+        df = pd.DataFrame(data=hds.get_ts((k, i, j)), columns=["totim", site])
+        df.index = df.pop("totim")
+        inact_obs = df[site].apply(lambda x: np.isclose(x, cinact))
+        if inact_obs.sum() > 0:
+            assert k+1 < nlay, "Inactive observation in lowest layer"
+            df_lower = pd.DataFrame(data=hds.get_ts((k+1, i, j)), columns=["totim", site])
+            df_lower.index = df_lower.pop("totim")
+            df.loc[inact_obs] = df_lower.loc[inact_obs]
+            print("{0} observation(s) post-processed for site {1} at kij ({2},{3},{4})".
+                  format(inact_obs.sum(), site, k, i, j))
+        dfs.append(df)
+    df = pd.concat(dfs, axis=1)
+    #print(df)
+    df.to_csv(hds_file+"_timeseries.post_processed", sep=' ')
+    return df
 
 def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
     """a function to setup using all values from a
