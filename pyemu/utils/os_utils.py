@@ -15,6 +15,45 @@ def remove_readonly(func, path, excinfo):
     os.chmod(path, 128) #stat.S_IWRITE==128==normal
     func(path)
 
+
+def run_sweep(pe,template_dir,pst_name=None,num_slaves=10,local=True,
+              binary=False,master_dir="master_runsweep",cleanup=True):
+
+    if pst_name is not  None:
+        assert os.path.exists(os.path.join(template_dir,pst_name))
+    else:
+        pst_files = [f for f in os.listdir(template_dir) if f.lower().endswith(".pst")]
+        if len(pst_files) > 1:
+            raise Exception("run_sweep() error: 'pst_name' is None "+
+                            "but more than one '.pst' file found in 'template_dir'")
+        if len(pst_files) == 0:
+            raise Exception("run_sweep() error: 'pst_name' is None and"+\
+                            " no '.pst' files in 'template_dir'")
+        pst_file = pst_files[0]
+
+
+    # todo: add autodetect to pestpp-swp for sweep_in.jcb
+    if binary:
+        raise NotImplementedError("pestpp-swp doesn't support autodetect for binary yet")
+        pe.to_binary(os.path.join(template_dir,"sweep_in.jcb"))
+    if not binary:
+        pe.to_csv(os.path.join(template_dir,"sweep_in.csv"))
+    if not local:
+        raise NotImplementedError("condor not supported yet")
+    else:
+        start_slaves(template_dir,"pestpp-swp",pst_name,num_slaves=num_slaves,slave_root=".",
+                     master_dir=master_dir)
+
+    assert os.path.exists(master_dir,"sweep_out.csv")
+    df = pd.read_csv(os.path.join(master_dir,"sweep_out.csv"),index_col=0)
+    df.columns = df.columns.map(str.lower)
+    if cleanup:
+        shutil.rmtree(master_dir)
+        
+    return df
+
+
+
 def run(cmd_str,cwd='.',verbose=False):
     """ an OS agnostic function to execute a command line
 
