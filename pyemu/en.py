@@ -472,7 +472,7 @@ class ObservationEnsemble(Ensemble):
 
         """
         m = Matrix.from_binary(filename)
-        return ObservationEnsemble(data=m.T.x,pst=pst)
+        return ObservationEnsemble(data=m.T.x,pst=pst, index=m.col_names)
 
 
     @property
