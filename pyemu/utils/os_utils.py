@@ -10,6 +10,19 @@ from datetime import datetime
 import pandas as pd
 from ..pyemu_warnings import PyemuWarning
 
+ext = ''
+bin_path = os.path.join("..","bin")
+if "linux" in platform.platform().lower():
+    bin_path = os.path.join(bin_path,"linux")
+elif "darwin" in platform.platform().lower():
+    bin_path = os.path.join(bin_path,"mac")
+else:
+    bin_path = os.path.join(bin_path,"win")
+    ext = '.exe'
+
+bin_path = os.path.abspath(bin_path)
+os.environ["PATH"] += os.pathsep + bin_path
+
 def remove_readonly(func, path, excinfo):
     """remove readonly dirs, apparently only a windows issue
     add to all rmtree calls: shutil.rmtree(**,onerror=remove_readonly), wk"""
@@ -45,6 +58,7 @@ def run_sweep(pe,slave_dir,pst_name=None,num_slaves=10,exe_name="pestpp-swp",loc
     if not local:
         raise NotImplementedError("condor not supported yet")
     else:
+        print(os.getenv("PATH"))
         start_slaves(slave_dir,exe_name,pst_name,num_slaves=num_slaves,slave_root=".",
                      master_dir=master_dir)
 

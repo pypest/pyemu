@@ -275,7 +275,7 @@ def run_sweep_test():
     except Exception as e:
         os.chdir(bd)
         raise Exception(str(e))
-    
+
     assert mc.obsensemble.shape == oe.shape
 
 
