@@ -7,6 +7,7 @@ import warnings
 import socket
 import time
 from datetime import datetime
+import pandas as pd
 from ..pyemu_warnings import PyemuWarning
 
 def remove_readonly(func, path, excinfo):
@@ -16,20 +17,23 @@ def remove_readonly(func, path, excinfo):
     func(path)
 
 
-def run_sweep(pe,template_dir,pst_name=None,num_slaves=10,local=True,
+def run_sweep(pe,template_dir,pst_name=None,num_slaves=10,exe_name="pestpp-swp",local=True,
               binary=False,master_dir="master_runsweep",cleanup=True):
 
     if pst_name is not  None:
         assert os.path.exists(os.path.join(template_dir,pst_name))
     else:
-        pst_files = [f for f in os.listdir(template_dir) if f.lower().endswith(".pst")]
-        if len(pst_files) > 1:
-            raise Exception("run_sweep() error: 'pst_name' is None "+
-                            "but more than one '.pst' file found in 'template_dir'")
-        if len(pst_files) == 0:
-            raise Exception("run_sweep() error: 'pst_name' is None and"+\
-                            " no '.pst' files in 'template_dir'")
-        pst_file = pst_files[0]
+        # pst_files = [f for f in os.listdir(template_dir) if f.lower().endswith(".pst")]
+        # if len(pst_files) > 1:
+        #     raise Exception("run_sweep() error: 'pst_name' is None "+
+        #                     "but more than one '.pst' file found in 'template_dir'")
+        # if len(pst_files) == 0:
+        #     raise Exception("run_sweep() error: 'pst_name' is None and"+\
+        #                     " no '.pst' files in 'template_dir'")
+        # pst_file = pst_files[0]
+        pst = pe.pst
+        pst.write(os.path.join(template_dir,"master_runsweep.pst"))
+        pst_name = "master_runsweep.pst"
 
 
     # todo: add autodetect to pestpp-swp for sweep_in.jcb
@@ -41,15 +45,16 @@ def run_sweep(pe,template_dir,pst_name=None,num_slaves=10,local=True,
     if not local:
         raise NotImplementedError("condor not supported yet")
     else:
-        start_slaves(template_dir,"pestpp-swp",pst_name,num_slaves=num_slaves,slave_root=".",
+        start_slaves(template_dir,exe_name,pst_name,num_slaves=num_slaves,slave_root=".",
                      master_dir=master_dir)
 
-    assert os.path.exists(master_dir,"sweep_out.csv")
-    df = pd.read_csv(os.path.join(master_dir,"sweep_out.csv"),index_col=0)
+    out_file = os.path.join(master_dir,"sweep_out.csv")
+    assert os.path.exists(out_file)
+    df = pd.read_csv(out_file,index_col=0)
     df.columns = df.columns.map(str.lower)
     if cleanup:
         shutil.rmtree(master_dir)
-        
+
     return df
 
 

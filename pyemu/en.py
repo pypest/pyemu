@@ -12,6 +12,7 @@ import pandas as pd
 from pyemu.mat.mat_handler import get_common_elements,Matrix,Cov,SparseMatrix
 from pyemu.pst.pst_utils import write_parfile,read_parfile
 from pyemu.plot.plot_utils import ensemble_helper
+from .utils.os_utils import run_sweep
 
 #warnings.filterwarnings("ignore",message="Pandas doesn't allow columns to be "+\
 #                                         "created via a new attribute name - see"+\
@@ -1803,4 +1804,9 @@ class ParameterEnsemble(Ensemble):
         if "base" in self.index:
             raise Exception("'base' already in index")
         self.loc["base",:] = self.pst.parameter_data.loc[self.columns,"parval1"]
-        
+
+
+    def run(self,template_dir, num_slaves=10):
+        df = run_sweep(self,template_dir=template_dir,num_slaves=num_slaves)
+        return ObservationEnsemble.from_dataframe(pst=self.pst,df=df)
+
