@@ -17,11 +17,11 @@ def remove_readonly(func, path, excinfo):
     func(path)
 
 
-def run_sweep(pe,template_dir,pst_name=None,num_slaves=10,exe_name="pestpp-swp",local=True,
+def run_sweep(pe,slave_dir,pst_name=None,num_slaves=10,exe_name="pestpp-swp",local=True,
               binary=False,master_dir="master_runsweep",cleanup=True):
 
     if pst_name is not  None:
-        assert os.path.exists(os.path.join(template_dir,pst_name))
+        assert os.path.exists(os.path.join(slave_dir,pst_name))
     else:
         # pst_files = [f for f in os.listdir(template_dir) if f.lower().endswith(".pst")]
         # if len(pst_files) > 1:
@@ -32,20 +32,20 @@ def run_sweep(pe,template_dir,pst_name=None,num_slaves=10,exe_name="pestpp-swp",
         #                     " no '.pst' files in 'template_dir'")
         # pst_file = pst_files[0]
         pst = pe.pst
-        pst.write(os.path.join(template_dir,"master_runsweep.pst"))
+        pst.write(os.path.join(slave_dir,"master_runsweep.pst"))
         pst_name = "master_runsweep.pst"
 
 
     # todo: add autodetect to pestpp-swp for sweep_in.jcb
     if binary:
         raise NotImplementedError("pestpp-swp doesn't support autodetect for binary yet")
-        pe.to_binary(os.path.join(template_dir,"sweep_in.jcb"))
+        pe.to_binary(os.path.join(slave_dir,"sweep_in.jcb"))
     if not binary:
-        pe.to_csv(os.path.join(template_dir,"sweep_in.csv"))
+        pe.to_csv(os.path.join(slave_dir,"sweep_in.csv"))
     if not local:
         raise NotImplementedError("condor not supported yet")
     else:
-        start_slaves(template_dir,exe_name,pst_name,num_slaves=num_slaves,slave_root=".",
+        start_slaves(slave_dir,exe_name,pst_name,num_slaves=num_slaves,slave_root=".",
                      master_dir=master_dir)
 
     out_file = os.path.join(master_dir,"sweep_out.csv")
