@@ -259,13 +259,25 @@ def run_sweep_test():
     assert os.path.exists(tmp), tmp
     shutil.copy2(tmp, os.path.join(new_model_ws, "mfnwt" + ext))
     pe = ph.draw(20)
-    oe = pe.run(slave_dir=new_model_ws)
-    print(oe.shape)
+    bd = os.getcwd()
+    try:
+        oe = pe.run(slave_dir=new_model_ws)
+        print(oe.shape)
+    except Exception as e:
+        os.chdir(bd)
+        raise Exception(str(e))
 
     mc = pyemu.MonteCarlo(pst=ph.pst)
     mc.draw(20)
-    mc.run(slave_dir=new_model_ws)
+    try:
+        mc.run(slave_dir=new_model_ws)
+
+    except Exception as e:
+        os.chdir(bd)
+        raise Exception(str(e))
+    
     assert mc.obsensemble.shape == oe.shape
+
 
 if __name__ == "__main__":
     #freyberg_test()
