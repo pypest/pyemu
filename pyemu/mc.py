@@ -8,6 +8,7 @@ import numpy as np
 from pyemu.la import LinearAnalysis
 from pyemu.en import ObservationEnsemble, ParameterEnsemble
 from pyemu.mat import Cov
+from pyemu.utils.os_utils import run_sweep
 #from pyemu.utils.helpers import zero_order_tikhonov
 
 class MonteCarlo(LinearAnalysis):
@@ -314,3 +315,6 @@ class MonteCarlo(LinearAnalysis):
             pst.write(pst_name)
             self.log("writing realized pest control file " + pst_name)
         self.log("writing realized pest control files")
+
+    def run(self,slave_dir,num_slaves=10):
+        self.obsensemble = self.parensemble.run(slave_dir,num_slaves=num_slaves)
