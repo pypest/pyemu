@@ -2516,9 +2516,11 @@ class Cov(Matrix):
                                 "variance for parameter {0} is nan".\
                                 format(row["parnme"]))
             if (var == 0.0):
-                raise Exception("Cov.from_parameter_data() error: " +\
-                                "variance for parameter {0} is 0.0".\
-                                format(row["parnme"]))
+                s = "Cov.from_parameter_data() error: " +\
+                                "variance for parameter {0} is 0.0.".format(row["parnme"])
+                s += "  This might be from enforcement of scale/offset and log transform."
+                s += "  Try changing 'scale_offset' arg"
+                raise Exception(s)
             x[idx] = var
             names.append(row["parnme"].lower())
             idx += 1
