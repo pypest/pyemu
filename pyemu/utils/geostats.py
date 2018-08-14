@@ -1694,7 +1694,7 @@ def _read_structure_attributes(f):
         elif line[0] == "end":
             break
         elif line[0] == "mean":
-            warning.warn("'mean' attribute not supported, skipping",PyemuWarningF)
+            warnings.warn("'mean' attribute not supported, skipping",PyemuWarningF)
         else:
             raise Exception("unrecognized line in structure definition:{0}".\
                             format(line[0]))
