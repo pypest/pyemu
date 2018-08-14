@@ -12,6 +12,7 @@ import pandas as pd
 from pyemu.mat.mat_handler import get_common_elements,Matrix,Cov,SparseMatrix
 from pyemu.pst.pst_utils import write_parfile,read_parfile
 from pyemu.plot.plot_utils import ensemble_helper
+from .utils.os_utils import run_sweep
 
 #warnings.filterwarnings("ignore",message="Pandas doesn't allow columns to be "+\
 #                                         "created via a new attribute name - see"+\
@@ -472,7 +473,7 @@ class ObservationEnsemble(Ensemble):
 
         """
         m = Matrix.from_binary(filename)
-        return ObservationEnsemble(data=m.T.x,pst=pst)
+        return ObservationEnsemble(data=m.T.x,pst=pst, index=m.col_names)
 
 
     @property
@@ -845,8 +846,6 @@ class ParameterEnsemble(Ensemble):
         ParameterEnsemble : ParameterEnsemble
 
 
-        Note
-        ----
         """
 
         li = pst.parameter_data.partrans == "log"
@@ -1805,4 +1804,9 @@ class ParameterEnsemble(Ensemble):
         if "base" in self.index:
             raise Exception("'base' already in index")
         self.loc["base",:] = self.pst.parameter_data.loc[self.columns,"parval1"]
-        
+
+
+    def run(self,slave_dir, num_slaves=10):
+        df = run_sweep(self,slave_dir=slave_dir,num_slaves=num_slaves)
+        return ObservationEnsemble.from_dataframe(pst=self.pst,df=df)
+

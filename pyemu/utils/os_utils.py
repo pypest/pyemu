@@ -7,13 +7,71 @@ import warnings
 import socket
 import time
 from datetime import datetime
+import pandas as pd
 from ..pyemu_warnings import PyemuWarning
+
+ext = ''
+bin_path = os.path.join("..","bin")
+if "linux" in platform.platform().lower():
+    bin_path = os.path.join(bin_path,"linux")
+elif "darwin" in platform.platform().lower():
+    bin_path = os.path.join(bin_path,"mac")
+else:
+    bin_path = os.path.join(bin_path,"win")
+    ext = '.exe'
+
+bin_path = os.path.abspath(bin_path)
+os.environ["PATH"] += os.pathsep + bin_path
 
 def remove_readonly(func, path, excinfo):
     """remove readonly dirs, apparently only a windows issue
     add to all rmtree calls: shutil.rmtree(**,onerror=remove_readonly), wk"""
     os.chmod(path, 128) #stat.S_IWRITE==128==normal
     func(path)
+
+
+def run_sweep(pe,slave_dir,pst_name=None,num_slaves=10,exe_name="pestpp-swp",local=True,
+              binary=False,master_dir="master_runsweep",cleanup=True):
+
+    if pst_name is not  None:
+        assert os.path.exists(os.path.join(slave_dir,pst_name))
+    else:
+        # pst_files = [f for f in os.listdir(template_dir) if f.lower().endswith(".pst")]
+        # if len(pst_files) > 1:
+        #     raise Exception("run_sweep() error: 'pst_name' is None "+
+        #                     "but more than one '.pst' file found in 'template_dir'")
+        # if len(pst_files) == 0:
+        #     raise Exception("run_sweep() error: 'pst_name' is None and"+\
+        #                     " no '.pst' files in 'template_dir'")
+        # pst_file = pst_files[0]
+        pst = pe.pst
+        pst.write(os.path.join(slave_dir,"master_runsweep.pst"))
+        pst_name = "master_runsweep.pst"
+
+
+    # todo: add autodetect to pestpp-swp for sweep_in.jcb
+    if binary:
+        raise NotImplementedError("pestpp-swp doesn't support autodetect for binary yet")
+        pe.to_binary(os.path.join(slave_dir,"sweep_in.jcb"))
+    if not binary:
+        pe.to_csv(os.path.join(slave_dir,"sweep_in.csv"))
+    if not local:
+        raise NotImplementedError("condor not supported yet")
+    else:
+        print(os.getenv("PATH"))
+        start_slaves(slave_dir,exe_name,pst_name,num_slaves=num_slaves,slave_root=".",
+                     master_dir=master_dir)
+
+    out_file = os.path.join(master_dir,"sweep_out.csv")
+    assert os.path.exists(out_file)
+    df = pd.read_csv(out_file,index_col=0)
+    df.columns = df.columns.map(str.lower)
+    if cleanup:
+        shutil.rmtree(master_dir)
+
+    return df
+
+
 
 def run(cmd_str,cwd='.',verbose=False):
     """ an OS agnostic function to execute a command line
