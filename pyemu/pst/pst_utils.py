@@ -946,7 +946,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
     row_visit = {}
     only_rlabels = []
     for rname in df.index:
-        rname = rname.lower()
+        rname = str(rname).strip().lower()
 
         if rname in row_visit:
             rsuffix = str(int(row_visit[rname] + 1))
@@ -965,7 +965,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
     col_visit = {}
     only_clabels = []
     for cname in df.columns:
-        cname = cname.lower()
+        cname = str(cname).strip().lower()
         if cname in col_visit:
             csuffix = str(int(col_visit[cname]+1))
             col_visit[cname] += 1
@@ -983,19 +983,22 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
         ins_filename = csv_filename + ".ins"
     row_visit, col_visit = {},{}
     onames = []
+    ovals = []
     with open(ins_filename,'w') as f:
         f.write("pif ~\nl1\n")
-        for rlabel in rlabels:
-            f.write("l1 !dum! ")
-            for clabel in clabels:
+        for i,rlabel in enumerate(rlabels):
+            f.write("l1 w ") #skip the row (index) label
+            for j,clabel in enumerate(clabels):
                 if rlabel in only_rlabels and clabel in only_clabels:
                     oname = rlabel+"_"+clabel
                     onames.append(oname)
+                    ovals.append(df.iloc[i,j])
                 else:
                     oname = "dum"
                 f.write(" !{0}! ".format(oname))
             f.write('\n')
-    return onames
+    odf = pd.DataFrame({"obsnme":onames,"obsval":ovals},index=onames)
+    return odf
 
 
 
