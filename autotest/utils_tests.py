@@ -456,7 +456,7 @@ def smp_to_ins_test():
         pass
     else:
         raise Exception("should have failed")
-    pyemu.pst_utils.smp_to_ins(smp,ins,True)
+    pyemu.smp_utils.smp_to_ins(smp,ins,True)
 
 def master_and_slaves():
     import shutil
@@ -1423,56 +1423,61 @@ def read_runstor_test():
         raise Exception()
 
 
-def csv_to_ins_test():
+
+def smp_test():
     import os
-    import pandas as pd
+    from pyemu.utils import smp_to_dataframe, dataframe_to_smp, \
+        smp_to_ins
+    from pyemu.pst.pst_utils import parse_ins_file
+
+    smp_filename = os.path.join("misc", "gainloss.smp")
+    df = smp_to_dataframe(smp_filename)
+    print(df.dtypes)
+    dataframe_to_smp(df, smp_filename + ".test")
+    smp_to_ins(smp_filename)
+    obs_names = parse_ins_file(smp_filename + ".ins")
+    print(len(obs_names))
+
+    smp_filename = os.path.join("misc", "sim_hds_v6.smp")
+    df = smp_to_dataframe(smp_filename)
+    print(df.dtypes)
+    dataframe_to_smp(df, smp_filename + ".test")
+    smp_to_ins(smp_filename)
+    obs_names = parse_ins_file(smp_filename + ".ins")
+    print(len(obs_names))
+
+
+def smp_dateparser_test():
+    import os
     import pyemu
+    from pyemu.utils import smp_to_dataframe, dataframe_to_smp, \
+        smp_to_ins
 
-    cnames = ["col{0}".format(i) for i in range(100)]
-    rnames = ["row{0}".format(i) for i in range(100)]
-    df = pd.DataFrame(index=rnames,columns=cnames)
 
-    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
-                                            only_cols=cnames[0])
-    assert len(names) == df.shape[0], names
 
-    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
-                                            only_cols=cnames[0:2])
-    assert len(names) == df.shape[0]*2, names
+    smp_filename = os.path.join("misc", "gainloss.smp")
+    df = smp_to_dataframe(smp_filename, datetime_format="%d/%m/%Y %H:%M:%S")
+    print(df.dtypes)
+    dataframe_to_smp(df, smp_filename + ".test")
+    smp_to_ins(smp_filename)
+    obs_names = pyemu.pst_utils.parse_ins_file(smp_filename + ".ins")
+    print(len(obs_names))
 
-    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
-                                            only_rows=rnames[0])
-    assert len(names) == df.shape[1], names
-
-    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
-                                            only_rows=rnames[0:2])
-    assert len(names) == df.shape[1] * 2, names
-
-    names = pyemu.pst_utils.csv_to_ins_file(df,ins_filename=os.path.join("temp","temp.csv.ins"))
-    assert len(names) == df.shape[0] * df.shape[1]
-
-    df.columns = ["col" for i in range(df.shape[1])]
-    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"))
-    assert len(names) == df.shape[0] * df.shape[1]
-
-    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
-                                            only_cols="col")
-    assert len(names) == df.shape[0] * df.shape[1]
-
-    df.index = ["row" for i in range(df.shape[0])]
-    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"))
-    assert len(names) == df.shape[0] * df.shape[1]
-
-    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
-                                            only_cols="col",only_rows="row")
-    assert len(names) == df.shape[0] * df.shape[1]
-
+    smp_filename = os.path.join("misc", "sim_hds_v6.smp")
+    df = smp_to_dataframe(smp_filename)
+    print(df.dtypes)
+    dataframe_to_smp(df, smp_filename + ".test")
+    smp_to_ins(smp_filename)
+    obs_names = pyemu.pst_utils.parse_ins_file(smp_filename + ".ins")
+    print(len(obs_names))
 
 
 
 if __name__ == "__main__":
-    csv_to_ins_test()
-    # read_runstor_test()
+    smp_test()
+    smp_dateparser_test()
+    smp_to_ins_test()
+    #read_runstor_test()
     #long_names()
     #master_and_slaves()
     #plot_id_bar_test()

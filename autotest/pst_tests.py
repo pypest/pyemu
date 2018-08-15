@@ -196,48 +196,6 @@ def comments_test():
     assert pst2.parameter_data.dropna().shape[0] == 0
 
 
-def smp_test():
-    import os
-    from pyemu.pst.pst_utils import smp_to_dataframe, dataframe_to_smp, \
-        parse_ins_file, smp_to_ins
-
-    smp_filename = os.path.join("misc", "gainloss.smp")
-    df = smp_to_dataframe(smp_filename)
-    print(df.dtypes)
-    dataframe_to_smp(df, smp_filename + ".test")
-    smp_to_ins(smp_filename)
-    obs_names = parse_ins_file(smp_filename + ".ins")
-    print(len(obs_names))
-
-    smp_filename = os.path.join("misc", "sim_hds_v6.smp")
-    df = smp_to_dataframe(smp_filename)
-    print(df.dtypes)
-    dataframe_to_smp(df, smp_filename + ".test")
-    smp_to_ins(smp_filename)
-    obs_names = parse_ins_file(smp_filename + ".ins")
-    print(len(obs_names))
-
-
-def smp_dateparser_test():
-    import os
-    from pyemu.pst.pst_utils import smp_to_dataframe, dataframe_to_smp, \
-        parse_ins_file, smp_to_ins
-
-    smp_filename = os.path.join("misc", "gainloss.smp")
-    df = smp_to_dataframe(smp_filename, datetime_format="%d/%m/%Y %H:%M:%S")
-    print(df.dtypes)
-    dataframe_to_smp(df, smp_filename + ".test")
-    smp_to_ins(smp_filename)
-    obs_names = parse_ins_file(smp_filename + ".ins")
-    print(len(obs_names))
-
-    smp_filename = os.path.join("misc", "sim_hds_v6.smp")
-    df = smp_to_dataframe(smp_filename)
-    print(df.dtypes)
-    dataframe_to_smp(df, smp_filename + ".test")
-    smp_to_ins(smp_filename)
-    obs_names = parse_ins_file(smp_filename + ".ins")
-    print(len(obs_names))
 
 
 def tied_test():
@@ -1147,8 +1105,54 @@ def pst_from_flopy_geo_draw_test():
     assert diff_sd.apply(np.abs).max() < 0.1
 
 
+def csv_to_ins_test():
+    import os
+    import pandas as pd
+    import pyemu
+
+    cnames = ["col{0}".format(i) for i in range(100)]
+    rnames = ["row{0}".format(i) for i in range(100)]
+    df = pd.DataFrame(index=rnames,columns=cnames)
+
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_cols=cnames[0])
+    assert len(names) == df.shape[0], names
+
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_cols=cnames[0:2])
+    assert len(names) == df.shape[0]*2, names
+
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_rows=rnames[0])
+    assert len(names) == df.shape[1], names
+
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_rows=rnames[0:2])
+    assert len(names) == df.shape[1] * 2, names
+
+    names = pyemu.pst_utils.csv_to_ins_file(df,ins_filename=os.path.join("temp","temp.csv.ins"))
+    assert len(names) == df.shape[0] * df.shape[1]
+
+    df.columns = ["col" for i in range(df.shape[1])]
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"))
+    assert len(names) == df.shape[0] * df.shape[1]
+
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_cols="col")
+    assert len(names) == df.shape[0] * df.shape[1]
+
+    df.index = ["row" for i in range(df.shape[0])]
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"))
+    assert len(names) == df.shape[0] * df.shape[1]
+
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_cols="col",only_rows="row")
+    assert len(names) == df.shape[0] * df.shape[1]
+
+
 if __name__ == "__main__":
-    pst_from_flopy_geo_draw_test()
+    csv_to_ins_test()
+    # pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
     # res_stats_test()
@@ -1157,10 +1161,10 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    from_flopy()
+    #from_flopy()
     # add_obs_test()
-    from_flopy_kl_test()
-    from_flopy_test_reachinput_test()
+    #from_flopy_kl_test()
+    #from_flopy_test_reachinput_test()
     # plot_flopy_par_ensemble_test()
     # add_pi_test()
     # regdata_test()
