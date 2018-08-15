@@ -1431,7 +1431,42 @@ def csv_to_ins_test():
     cnames = ["col{0}".format(i) for i in range(100)]
     rnames = ["row{0}".format(i) for i in range(100)]
     df = pd.DataFrame(index=rnames,columns=cnames)
+
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_cols=cnames[0])
+    assert len(names) == df.shape[0], names
+
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_cols=cnames[0:2])
+    assert len(names) == df.shape[0]*2, names
+
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_rows=rnames[0])
+    assert len(names) == df.shape[1], names
+
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_rows=rnames[0:2])
+    assert len(names) == df.shape[1] * 2, names
+
     names = pyemu.pst_utils.csv_to_ins_file(df,ins_filename=os.path.join("temp","temp.csv.ins"))
+    assert len(names) == df.shape[0] * df.shape[1]
+
+    df.columns = ["col" for i in range(df.shape[1])]
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"))
+    assert len(names) == df.shape[0] * df.shape[1]
+
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_cols="col")
+    assert len(names) == df.shape[0] * df.shape[1]
+
+    df.index = ["row" for i in range(df.shape[0])]
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"))
+    assert len(names) == df.shape[0] * df.shape[1]
+
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_cols="col",only_rows="row")
+    assert len(names) == df.shape[0] * df.shape[1]
+
 
 
 
