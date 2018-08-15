@@ -916,6 +916,60 @@ def clean_missing_exponent(pst_filename,clean_filename="clean.pst"):
         for line in lines:
             f.write(line+'\n')
 
+def csv_to_ins_file(csv_filename,ins_filename=None):
+
+    if isinstance(csv_filename,str):
+        df = pd.read_csv(csv_filename,index_col=0)
+        df.columns = df.columns.map(str.lower)
+        df.index = df.index.map(lambda x: str(x).lower())
+    else:
+        df = csv_filename
+    rlabels = []
+    row_visit = {}
+    for rname in df.index:
+        rname = rname.lower()
+
+        if rname in row_visit:
+            rsuffix = str(int(row_visit[rname] + 1))
+            row_visit[rname] += 1
+        else:
+            row_visit[rname] = 1
+            rsuffix = ''
+        rlabels.append(rname+rsuffix)
+
+    clabels = []
+    col_visit = {}
+    for cname in df.columns:
+        cname = cname.lower()
+        if cname in col_visit:
+            csuffix = str(int(col_visit[cname]+1))
+            col_visit[cname] += 1
+        else:
+            col_visit[cname] = 1
+            csuffix = ''
+        clabels.append(cname+csuffix)
+
+
+
+    if ins_filename is None:
+        if not isinstance(csv_filename,str):
+            raise Exception("ins_filename is None but csv_filename is not string")
+    row_visit, col_visit = {},{}
+    onames = []
+    with open(ins_filename,'w') as f:
+         f.write("pif\nl1")
+         for rlabel in rlabels:
+             f.write(" !dum! ")
+             for clabel in clabels:
+                 oname = rlabel+"_"+clabel
+                 f.write(" !{0}! ".format(oname))
+                 onames.append(oname)
+             f.write(oname)
+
+    return onames
+
+
+
 
 
 

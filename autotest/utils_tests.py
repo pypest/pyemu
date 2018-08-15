@@ -1423,7 +1423,20 @@ def read_runstor_test():
         raise Exception()
 
 
+def csv_to_ins_test():
+    import os
+    import pandas as pd
+    import pyemu
+
+    cnames = ["col{0}".format(i) for i in range(100)]
+    rnames = ["row{0}".format(i) for i in range(100)]
+    df = pd.DataFrame(index=rnames,columns=cnames)
+    names = pyemu.pst_utils.csv_to_ins_file(df,ins_filename=os.path.join("temp","temp.csv.ins"))
+
+
+
 if __name__ == "__main__":
+    csv_to_ins_test()
     # read_runstor_test()
     #long_names()
     #master_and_slaves()
@@ -1438,7 +1451,7 @@ if __name__ == "__main__":
     # par_knowledge_test()
     # grid_obs_test()
     # hds_timeseries_test()
-    postprocess_inactive_conc_test()
+    # postprocess_inactive_conc_test()
     # plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
