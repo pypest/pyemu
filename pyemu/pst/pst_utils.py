@@ -980,10 +980,11 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
     if ins_filename is None:
         if not isinstance(csv_filename,str):
             raise Exception("ins_filename is None but csv_filename is not string")
+        ins_filename = csv_filename + ".ins"
     row_visit, col_visit = {},{}
     onames = []
     with open(ins_filename,'w') as f:
-        f.write("pif\nl1\n")
+        f.write("pif ~\nl1\n")
         for rlabel in rlabels:
             f.write("l1 !dum! ")
             for clabel in clabels:
