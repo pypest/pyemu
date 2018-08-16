@@ -3966,6 +3966,7 @@ class PstFrom(object):
                   extra_post_cmds=None, redirect_forward_output=True,
                  tmp_files=None,build_prior=True,kl_pars=None, kl_num_eig=100, kl_geostruct=None):
 
+        raise NotImplementedError("still a work in progress")
         self.logger = pyemu.logger.Logger("PstFrom.log")
         self.log = self.logger.log
 
