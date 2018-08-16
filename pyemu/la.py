@@ -482,7 +482,9 @@ class LinearAnalysis(object):
         except:
             fnames = []
         if len(fnames) > 0:
-            raise Exception("forecasts with non-zero weight in pst: {0}".format(','.join(fnames)))
+            self.logger.warn("forecasts with non-zero weight in pst: {0}...".format(','.join(fnames)) +
+                             "\n -> re-setting these forecast weights to zero...")
+            self.pst.observation_data.loc[fnames,"weight"] = 0.0
         self.log("loading forecasts")
         self.logger.statement("forecast names: {0}".format(','.join(mat.col_names)))
         return self.__predictions
