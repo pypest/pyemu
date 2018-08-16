@@ -1546,6 +1546,7 @@ class PstFromFlopyModel(object):
         self.frun_model_lines = []
         self.frun_post_lines = []
         self.tmp_files = []
+        self.extra_forward_imports = []
         if tmp_files is not None:
             if not isinstance(tmp_files,list):
                 tmp_files = [tmp_files]
@@ -2740,6 +2741,8 @@ class PstFromFlopyModel(object):
         with open(os.path.join(self.m.model_ws,self.forward_run_file),'w') as f:
             f.write("import os\nimport numpy as np\nimport pandas as pd\nimport flopy\n")
             f.write("import pyemu\n")
+            for ex_imp in self.extra_forward_imports:
+                f.write('import {0}\n'.format(ex_imp))
             for tmp_file in self.tmp_files:
                 f.write("try:\n")
                 f.write("   os.remove('{0}')\n".format(tmp_file))
