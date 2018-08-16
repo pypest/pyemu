@@ -3159,7 +3159,7 @@ class PstFromFlopyModel(object):
             new_sim_smp = os.path.join(self.m.model_ws,
                                               os.path.split(sim_smp)[-1])
             shutil.copy2(sim_smp,new_sim_smp)
-            pyemu.pst_utils.smp_to_ins(new_sim_smp)
+            pyemu.smp_utils.smp_to_ins(new_sim_smp)
 
     def setup_hob(self):
         """ setup observations from the MODFLOW HOB package
@@ -3956,14 +3956,14 @@ class PstFrom(object):
 
     """
 
-    def __init__(self, new_d, org_d=None, pp_pars=[], const_pars=[],
+    def __init__(self, new_d,  model_run_command, org_d=None, pp_pars=[], const_pars=[],
                  list_pars={}, partial_list_pars={}, grid_pars=[],
                  grid_geostruct=None, pp_space=None,
                  zone_pars=[], pp_geostruct=None, par_bounds_dict=None,
                  remove_existing=False, zone_dict=None,
                  grid_obs=[], list_obs={},external_tpl_in_pairs=None,
-                 external_ins_out_pairs=None, model_run_command=None,extra_pre_cmds=None,
-                 extra_model_cmds=None, extra_post_cmds=None, redirect_forward_output=True,
+                 external_ins_out_pairs=None,extra_pre_cmds=None,
+                  extra_post_cmds=None, redirect_forward_output=True,
                  tmp_files=None,build_prior=True,kl_pars=None, kl_num_eig=100, kl_geostruct=None):
 
         self.logger = pyemu.logger.Logger("PstFrom.log")
@@ -3989,52 +3989,29 @@ class PstFrom(object):
 
         self.arr_mult_dfs = []
         self.par_bounds_dict = par_bounds_dict
-        self.pp_props = pp_props
+        self.pp_pars = pp_pars
         self.pp_space = pp_space
         self.pp_geostruct = pp_geostruct
         self.use_pp_zones = use_pp_zones
 
-        self.const_props = const_props
+        self.const_pars = const_pars
 
-        self.grid_props = grid_props
+        self.grid_pars = grid_pars
         self.grid_geostruct = grid_geostruct
 
-        self.zone_props = zone_props
+        self.zone_pars = zone_pars
 
-        self.kl_props = kl_props
+        self.kl_pars = kl_pars
         self.kl_geostruct = kl_geostruct
         self.kl_num_eig = kl_num_eig
 
-        if len(temporal_bc_props) > 0:
-            if len(temporal_list_props) > 0:
-                self.logger.lraise("temporal_bc_props and temporal_list_props. " + \
-                                   "temporal_bc_props is deprecated and replaced by temporal_list_props")
-            self.logger.warn("temporal_bc_props is deprecated and replaced by temporal_list_props")
-            temporal_list_props = temporal_bc_props
-        if len(spatial_bc_props) > 0:
-            if len(spatial_list_props) > 0:
-                self.logger.lraise("spatial_bc_props and spatial_list_props. " + \
-                                   "spatial_bc_props is deprecated and replaced by spatial_list_props")
-            self.logger.warn("spatial_bc_props is deprecated and replaced by spatial_list_props")
-            spatial_list_props = spatial_bc_props
+        self.list_pars = list_pars
+        self.partial_list_pars = partial_list_pars
 
-        self.temporal_list_props = temporal_list_props
-        self.temporal_list_geostruct = temporal_list_geostruct
-        if self.temporal_list_geostruct is None:
-            v = pyemu.geostats.ExpVario(contribution=1.0, a=180.0)  # 180 correlation length
-            self.temporal_list_geostruct = pyemu.geostats.GeoStruct(variograms=v)
-
-        self.spatial_list_props = spatial_list_props
-        self.spatial_list_geostruct = spatial_list_geostruct
-        if self.spatial_list_geostruct is None:
-            dist = 10 * float(max(self.m.dis.delr.array.max(),
-                                  self.m.dis.delc.array.max()))
-            v = pyemu.geostats.ExpVario(contribution=1.0, a=dist)
-            self.spatial_list_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+        self.grid_obs = grid_obs
+        self.list_obs = list_obs
 
         self.obssim_smp_pairs = obssim_smp_pairs
-        self.hds_kperk = hds_kperk
-        self.sfr_obs = sfr_obs
         self.frun_pre_lines = []
         self.frun_model_lines = []
         self.frun_post_lines = []
@@ -4044,9 +4021,8 @@ class PstFrom(object):
                 tmp_files = [tmp_files]
             self.tmp_files.extend(tmp_files)
 
-
-        for alist, ilist in zip([self.frun_pre_lines, self.frun_model_lines, self.frun_post_lines],
-                                [extra_pre_cmds, extra_model_cmds, extra_post_cmds]):
+        for alist, ilist in zip([self.frun_pre_lines, self.frun_post_lines],
+                                [extra_pre_cmds, extra_post_cmds]):
             if ilist is None:
                 continue
 
@@ -4077,18 +4053,22 @@ class PstFrom(object):
         self.mlt_counter = {}
         self.par_dfs = {}
         self.mlt_dfs = []
-
+        self.array_shape_dict = {}
+        self.list_shape_dict = {}
         self.setup_list_pars()
         self.setup_array_pars()
 
         self.setup_observations()
+
         self.build_pst()
+
         if build_prior:
             self.parcov = self.build_prior()
         else:
             self.parcov = None
+
         self.log("saving intermediate _setup_<> dfs into {0}".
-                 format(self.m.model_ws))
+                 format(self.new_d))
         for tag, df in self.par_dfs.items():
             df.to_csv(os.path.join(new_d, "_setup_par_{0}_{1}.csv".
                                    format(tag.replace(" ", '_'), self.pst_name)))
@@ -4097,7 +4077,6 @@ class PstFrom(object):
                                    format(tag.replace(" ", '_'), self.pst_name)))
 
         self.logger.statement("all done")
-
 
 
 
@@ -4110,21 +4089,20 @@ class PstFrom(object):
         set_dirs = []
         #        if len(self.pp_props) > 0 or len(self.zone_props) > 0 or \
         #                        len(self.grid_props) > 0:
-        if self.pp_props is not None or \
-                        self.zone_props is not None or \
-                        self.grid_props is not None or \
-                        self.const_props is not None or \
-                        self.kl_props is not None:
+        if self.pp_pars is not None or \
+            self.zone_pars is not None or \
+            self.grid_pars is not None or \
+            self.const_pars is not None or \
+            self.kl_pars is not None:
             set_dirs.append(self.arr_org)
             set_dirs.append(self.arr_mlt)
-            #       if len(self.bc_props) > 0:
-        if len(self.temporal_list_props) > 0 or len(self.spatial_list_props) > 0:
+
+        if len(self.list_pars) > 0 or len(self.partial_list_pars) > 0:
             set_dirs.append(self.list_org)
-        if len(self.spatial_list_props):
             set_dirs.append(self.list_mlt)
 
         for d in set_dirs:
-            d = os.path.join(self.m.model_ws, d)
+            d = os.path.join(self.new_d, d)
             self.log("setting up '{0}' dir".format(d))
             if os.path.exists(d):
                 if self.remove_existing:
@@ -4165,21 +4143,42 @@ class PstFrom(object):
             # print(name,c)
         return c
 
+
+    def _prep_array_file(self,filename):
+        if not os.path.exists(filename):
+            self.logger.lraise("array file {0} not found".format(filename))
+        try:
+            arr = np.loadtxt(filename)
+        except Exception as e:
+            self.logger.lraise("error loading array file {0} with numpy.loadtxt(): {1}".format(filename,str(e)))
+
+        if filename in self.array_shape_dict:
+            if self.array_shape_dict[filename] != arr.shape:
+                self.logger.lraise("array file {0} shape != existing entry in array shapes")
+        else:
+            self.array_shape_dict[filename] = arr.shape
+
+        org_path = os.path.join(self.arr_org,os.path.split(filename)[-1])
+        self.logger.statement("saving array file {0} into org dir as {1}".format(filename,org_path))
+        np.savetxt(org_path,arr)
+        return org_path
+
+
     def prep_mlt_arrays(self):
         """  prepare multipler arrays.  Copies existing model input arrays and
         writes generic (ones) multiplier arrays
 
         """
-        par_props = [self.pp_props, self.grid_props,
-                     self.zone_props, self.const_props,
-                     self.kl_props]
+        pars = [self.pp_pars, self.grid_pars,
+                     self.zone_pars, self.const_pars,
+                     self.kl_pars]
         par_suffixs = [self.pp_suffix, self.gr_suffix,
                        self.zn_suffix, self.cn_suffix,
                        self.kl_suffix]
 
         # Need to remove props and suffixes for which no info was provided (e.g. still None)
         del_idx = []
-        for i, cp in enumerate(par_props):
+        for i, cp in enumerate(par_pars):
             if cp is None:
                 del_idx.append(i)
         for i in del_idx[::-1]:
@@ -4187,52 +4186,57 @@ class PstFrom(object):
             del (par_suffixs[i])
 
         mlt_dfs = []
-        for par_prop, suffix in zip(par_props, par_suffixs):
-            if len(par_prop) == 2:
-                if not isinstance(par_prop[0], list):
-                    par_prop = [par_prop]
+        for par_prop, suffix in zip(pars, par_suffixs):
+            if not isinstance(par_prop, list):
+                par_prop = [par_prop]
             if len(par_prop) == 0:
                 continue
-            for pakattr, k_org in par_prop:
-                attr_name = pakattr.split('.')[1]
-                pak, attr = self.parse_pakattr(pakattr)
-                ks = np.arange(self.m.nlay)
-                if isinstance(attr, flopy.utils.Transient2d):
-                    ks = np.arange(self.m.nper)
-                try:
-                    k_parse = self.parse_k(k_org, ks)
-                except Exception as e:
-                    self.logger.lraise("error parsing k {0}:{1}".
-                                       format(k_org, str(e)))
+            for filenames in par_prop:
                 org, mlt, mod, layer = [], [], [], []
-                c = self.get_count(attr_name)
-                mlt_prefix = "{0}{1}".format(attr_name, c)
-                mlt_name = os.path.join(self.arr_mlt, "{0}.dat{1}"
-                                        .format(mlt_prefix, suffix))
-                for k in k_parse:
-                    # horrible kludge to avoid passing int64 to flopy
-                    # this gift may give again...
-                    if type(k) is np.int64:
-                        k = int(k)
-                    if isinstance(attr, flopy.utils.Util2d):
-                        fname = self.write_u2d(attr)
 
-                        layer.append(k)
-                    elif isinstance(attr, flopy.utils.Util3d):
-                        fname = self.write_u2d(attr[k])
-                        layer.append(k)
-                    elif isinstance(attr, flopy.utils.Transient2d):
-                        fname = self.write_u2d(attr.transient_2ds[k])
-                        layer.append(0)  # big assumption here
-                    mod.append(os.path.join(self.m.external_path, fname))
+                if isinstance(filenames,str):
+                    filenames = [filenames]
+
+                #use the first filename in the list as par name base
+                filename = os.path.split(filenames[0])[-1]
+                c = self.get_count(filename)
+                mlt_prefix = "file:{0}_count:{1}_".format(filename, c)
+                mlt_name = os.path.join(self.arr_mlt, "{0}{1}"
+                                        .format(mlt_prefix, suffix))
+
+                for filename in filenames:
+                    org_path = self._prep_array_file(filename)
+                    mod.append(os.path.split(filename)[-1])
                     mlt.append(mlt_name)
-                    org.append(os.path.join(self.arr_org, fname))
+                    org.append(os.path.join(self.arr_org, filename))
+
+                # for k in k_parse:
+                #     # horrible kludge to avoid passing int64 to flopy
+                #     # this gift may give again...
+                #     if type(k) is np.int64:
+                #         k = int(k)
+                #     if isinstance(attr, flopy.utils.Util2d):
+                #         fname = self.write_u2d(attr)
+                #
+                #         layer.append(k)
+                #     elif isinstance(attr, flopy.utils.Util3d):
+                #         fname = self.write_u2d(attr[k])
+                #         layer.append(k)
+                #     elif isinstance(attr, flopy.utils.Transient2d):
+                #         fname = self.write_u2d(attr.transient_2ds[k])
+                #         layer.append(0)  # big assumption here
+                #     mod.append(os.path.join(self.m.external_path, fname))
+                #     mlt.append(mlt_name)
+                #     org.append(os.path.join(self.arr_org, fname))
                 df = pd.DataFrame({"org_file": org, "mlt_file": mlt, "model_file": mod, "layer": layer})
                 df.loc[:, "suffix"] = suffix
                 df.loc[:, "prefix"] = mlt_prefix
                 mlt_dfs.append(df)
         if len(mlt_dfs) > 0:
             mlt_df = pd.concat(mlt_dfs, ignore_index=True)
+            mlt_df.loc[:,"shape"] = mlt_df.org_file.apply(lambda x : self.array_shape_dict[x])
+
+
             return mlt_df
 
 
@@ -5482,7 +5486,7 @@ class PstFrom(object):
             new_sim_smp = os.path.join(self.m.model_ws,
                                        os.path.split(sim_smp)[-1])
             shutil.copy2(sim_smp, new_sim_smp)
-            pyemu.pst_utils.smp_to_ins(new_sim_smp)
+            pyemu.smp_utils.smp_to_ins(new_sim_smp)
 
     def setup_hob(self):
         """ setup observations from the MODFLOW HOB package
