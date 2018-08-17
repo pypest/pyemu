@@ -2261,22 +2261,31 @@ class PstFromFlopyModel(object):
             if suffix == self.cn_suffix:
                 self.log("writing const tpl:{0}".format(tpl_file))
                 #df = self.write_const_tpl(name,tpl_file,self.m.bas6.ibound[layer].array)
-                df = write_const_tpl(name, os.path.join(self.m.model_ws, tpl_file), self.cn_suffix,
+                try:
+                    df = write_const_tpl(name, os.path.join(self.m.model_ws, tpl_file), self.cn_suffix,
                                     self.m.bas6.ibound[layer].array, (self.m.nrow, self.m.ncol), self.m.sr)
+                except Exception as e:
+                    self.logger.lraise("error writing const template: {0}".format(str(e)))
                 self.log("writing const tpl:{0}".format(tpl_file))
 
             elif suffix == self.gr_suffix:
                 self.log("writing grid tpl:{0}".format(tpl_file))
                 #df = self.write_grid_tpl(name,tpl_file,self.m.bas6.ibound[layer].array)
-                df = write_grid_tpl(name, os.path.join(self.m.model_ws, tpl_file), self.gr_suffix,
+                try:
+                    df = write_grid_tpl(name, os.path.join(self.m.model_ws, tpl_file), self.gr_suffix,
                                     self.m.bas6.ibound[layer].array, (self.m.nrow, self.m.ncol), self.m.sr)
+                except Exception as e:
+                    self.logger.lraise("error writing grid template: {0}".format(str(e)))
                 self.log("writing grid tpl:{0}".format(tpl_file))
 
             elif suffix == self.zn_suffix:
                 self.log("writing zone tpl:{0}".format(tpl_file))
                 #df = self.write_zone_tpl(self.m, name, tpl_file, self.k_zone_dict[layer], self.zn_suffix, self.logger)
-                df = write_zone_tpl(name,os.path.join(self.m.model_ws,tpl_file),self.zn_suffix,
-                                    self.k_zone_dict[layer],(self.m.nrow,self.m.ncol),self.m.sr)
+                try:
+                    df = write_zone_tpl(name,os.path.join(self.m.model_ws,tpl_file),self.zn_suffix,
+                                        self.k_zone_dict[layer],(self.m.nrow,self.m.ncol),self.m.sr)
+                except Exception as e:
+                    self.logger.lraise("error writing zone template: {0}".format(str(e)))
                 self.log("writing zone tpl:{0}".format(tpl_file))
 
             if df is None:
@@ -2588,6 +2597,7 @@ class PstFromFlopyModel(object):
             for col in par.columns:
                 if col in df.columns:
                     par.loc[df.parnme,col] = df.loc[:,col]
+
         par.loc[:,"parubnd"] = 10.0
         par.loc[:,"parlbnd"] = 0.1
 
@@ -3436,18 +3446,18 @@ def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_r
                 if zn_array[i, j] < 1:
                     pname = " 1.0  "
                 else:
-                    pname = "{0}{1}".format(name, self.cn_suffix)
+                    pname = "{0}{1}".format(name, suffix)
                     if len(pname) > 12:
-                        self.logger.lraise("zone pname too long:{0}". \
+                        raise("zone pname too long:{0}". \
                                            format(pname))
                     parnme.append(pname)
-                pname = " ~   {0}    ~".format(pname)
+                    pname = " ~   {0}    ~".format(pname)
                 f.write(pname)
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme}, index=parnme)
-
-    df.loc[:, "pargp"] = "{0}_{1}".format(name, suffix)
-    df.loc[:, "tpl"] = os.path.split(tpl_file)[-1]
+    # df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
+    df.loc[:, "pargp"] = "{0}_{1}".format(name, suffix.replace('_', ''))
+    df.loc[:, "tpl"] = tpl_file
     return df
 
 
@@ -3484,18 +3494,18 @@ def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_re
                 else:
                     pname = "{0}{1:03d}{2:03d}".format(name, i, j)
                     if len(pname) > 12:
-                        self.logger.lraise("grid pname too long:{0}". \
+                        raise("grid pname too long:{0}". \
                                            format(pname))
                     parnme.append(pname)
                     pname = ' ~     {0}   ~ '.format(pname)
-                    x.append(self.m.sr.xcentergrid[i, j])
-                y.append(self.m.sr.ycentergrid[i, j])
+                    x.append(spatial_reference.xcentergrid[i, j])
+                    y.append(spatial_reference.ycentergrid[i, j])
 
                 f.write(pname)
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme, "x": x, "y": y}, index=parnme)
-    df.loc[:, "pargp"] = "{0}_{1}".format(name,suffix)
-    df.loc[:, "tpl"] = os.path.split(tpl_file)[-1]
+    df.loc[:, "pargp"] = "{0}{1}".format(suffix.replace('_', ''), name)
+    df.loc[:, "tpl"] = tpl_file
     return df
 
 
@@ -3537,22 +3547,20 @@ def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_re
                 else:
                     pname = "{0}_zn{1}".format(name, zn_array[i, j])
                     if len(pname) > 12:
-                        if logger is not None:
-                            logger.lraise("zone pname too long:{0}". \
+                        raise("zone pname too long:{0}". \
                                           format(pname))
-                parnme.append(pname)
+                    parnme.append(pname)
+                    pname = " ~   {0}    ~".format(pname)
                 f.write(pname)
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme}, index=parnme)
-    df.loc[:, "pargp"] = "{0}_{1}".format(name,suffix)
+    df.loc[:, "pargp"] = "{0}{1}".format(suffix.replace("_", ''), name)
     return df
 
 
 def _istextfile(filename, blocksize=512):
-
-
     warnings.warn("_istextfile() has moved to os_utils",PyemuWarning)
-    return pyemu.os_utils._istextfile()
+    return pyemu.os_utils._istextfile(filename,blocksize=blocksize)
 
 
 def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
