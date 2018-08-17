@@ -1896,6 +1896,88 @@ class PstFromFlopyModel(object):
                    u2d.array,fmt="%15.6E")
         return filename
 
+    def write_const_tpl(self,name,tpl_file,zn_array):
+        """ write a template file a for a constant (uniform) multiplier parameter
+
+        Parameters
+        ----------
+        name : str
+            the base parameter name
+        tpl_file : str
+            the template file to write
+        zn_array : numpy.ndarray
+            an array used to skip inactive cells
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            a dataframe with parameter information
+
+        """
+        parnme = []
+        with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
+            f.write("ptf ~\n")
+            for i in range(self.m.nrow):
+                for j in range(self.m.ncol):
+                    if zn_array[i,j] < 1:
+                        pname = " 1.0  "
+                    else:
+                        pname = "{0}{1}".format(name,self.cn_suffix)
+                        if len(pname) > 12:
+                            self.logger.lraise("zone pname too long:{0}".\
+                                               format(pname))
+                        parnme.append(pname)
+                        pname = " ~   {0}    ~".format(pname)
+                    f.write(pname)
+                f.write("\n")
+        df = pd.DataFrame({"parnme":parnme},index=parnme)
+        #df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
+        df.loc[:,"pargp"] = "{0}_{1}".format(name,self.cn_suffix.replace('_',''))
+        df.loc[:,"tpl"] = tpl_file
+        return df
+
+    def write_grid_tpl(self,name,tpl_file,zn_array):
+        """ write a template file a for grid-based multiplier parameters
+
+        Parameters
+        ----------
+        name : str
+            the base parameter name
+        tpl_file : str
+            the template file to write
+        zn_array : numpy.ndarray
+            an array used to skip inactive cells
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            a dataframe with parameter information
+
+        """
+        parnme,x,y = [],[],[]
+        with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
+            f.write("ptf ~\n")
+            for i in range(self.m.nrow):
+                for j in range(self.m.ncol):
+                    if zn_array[i,j] < 1:
+                        pname = ' 1.0 '
+                    else:
+                        pname = "{0}{1:03d}{2:03d}".format(name,i,j)
+                        if len(pname) > 12:
+                            self.logger.lraise("grid pname too long:{0}".\
+                                               format(pname))
+                        parnme.append(pname)
+                        pname = ' ~     {0}   ~ '.format(pname)
+                        x.append(self.m.sr.xcentergrid[i,j])
+                        y.append(self.m.sr.ycentergrid[i,j])
+                    f.write(pname)
+                f.write("\n")
+        df = pd.DataFrame({"parnme":parnme,"x":x,"y":y},index=parnme)
+        df.loc[:,"pargp"] = "{0}{1}".format(self.gr_suffix.replace('_',''),name)
+        df.loc[:,"tpl"] = tpl_file
+        return df
+
+
 
     def grid_prep(self):
         """ prepare grid-based parameterizations
@@ -3351,13 +3433,15 @@ def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_r
         f.write("ptf ~\n")
         for i in range(shape[0]):
             for j in range(shape[1]):
-                if zn_array is not None and zn_array[i, j] == 0:
+                if zn_array[i, j] < 1:
                     pname = " 1.0  "
                 else:
-                    pname = "{0}_{1}_i:{2}_j:{3}".format(name, suffix,i,j)
-
+                    pname = "{0}{1}".format(name, self.cn_suffix)
+                    if len(pname) > 12:
+                        self.logger.lraise("zone pname too long:{0}". \
+                                           format(pname))
                     parnme.append(pname)
-                    pname = " ~  {0}   ~".format(pname)
+                pname = " ~   {0}    ~".format(pname)
                 f.write(pname)
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme}, index=parnme)
@@ -3395,17 +3479,17 @@ def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_re
         f.write("ptf ~\n")
         for i in range(shape[0]):
             for j in range(shape[1]):
-                if zn_array is not None and zn_array[i, j] == 0:
+                if zn_array[i, j] < 1:
                     pname = ' 1.0 '
                 else:
-                    pname = "{0}_{1}_i:{2}_j:{3}".format(name, suffix, i, j)
+                    pname = "{0}{1:03d}{2:03d}".format(name, i, j)
+                    if len(pname) > 12:
+                        self.logger.lraise("grid pname too long:{0}". \
+                                           format(pname))
                     parnme.append(pname)
-                    pname = ' ~   {0}  ~ '.format(pname)
-                    if spatial_reference:
-                        x.append(spatial_reference.xcentergrid[i, j])
-                        y.append(spatial_reference.ycentergrid[i, j])
-                    if zn_array is not None:
-                        pname += "_zone:{0}".format(zn_array[i,j])
+                    pname = ' ~     {0}   ~ '.format(pname)
+                    x.append(self.m.sr.xcentergrid[i, j])
+                y.append(self.m.sr.ycentergrid[i, j])
 
                 f.write(pname)
             f.write("\n")
@@ -3448,13 +3532,15 @@ def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_re
         f.write("ptf ~\n")
         for i in range(shape[0]):
             for j in range(shape[1]):
-                if zn_array is not None and zn_array[i, j] == 0:
+                if zn_array[i, j] < 1:
                     pname = " 1.0  "
                 else:
-                    pname = "{0}_zone:{1}".format(name, zn_array[i, j])
-
-                    parnme.append(pname)
-                    pname = " ~   {0}    ~".format(pname)
+                    pname = "{0}_zn{1}".format(name, zn_array[i, j])
+                    if len(pname) > 12:
+                        if logger is not None:
+                            logger.lraise("zone pname too long:{0}". \
+                                          format(pname))
+                parnme.append(pname)
                 f.write(pname)
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme}, index=parnme)
