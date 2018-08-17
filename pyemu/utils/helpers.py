@@ -1896,130 +1896,6 @@ class PstFromFlopyModel(object):
                    u2d.array,fmt="%15.6E")
         return filename
 
-    def write_const_tpl(self,name,tpl_file,zn_array):
-        """ write a template file a for a constant (uniform) multiplier parameter
-
-        Parameters
-        ----------
-        name : str
-            the base parameter name
-        tpl_file : str
-            the template file to write
-        zn_array : numpy.ndarray
-            an array used to skip inactive cells
-
-        Returns
-        -------
-        df : pandas.DataFrame
-            a dataframe with parameter information
-
-        """
-        parnme = []
-        with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
-            f.write("ptf ~\n")
-            for i in range(self.m.nrow):
-                for j in range(self.m.ncol):
-                    if zn_array[i,j] < 1:
-                        pname = " 1.0  "
-                    else:
-                        pname = "{0}{1}".format(name,self.cn_suffix)
-                        if len(pname) > 12:
-                            self.logger.lraise("zone pname too long:{0}".\
-                                               format(pname))
-                        parnme.append(pname)
-                        pname = " ~   {0}    ~".format(pname)
-                    f.write(pname)
-                f.write("\n")
-        df = pd.DataFrame({"parnme":parnme},index=parnme)
-        #df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
-        df.loc[:,"pargp"] = "{0}_{1}".format(name,self.cn_suffix.replace('_',''))
-        df.loc[:,"tpl"] = tpl_file
-        return df
-
-    def write_grid_tpl(self,name,tpl_file,zn_array):
-        """ write a template file a for grid-based multiplier parameters
-
-        Parameters
-        ----------
-        name : str
-            the base parameter name
-        tpl_file : str
-            the template file to write
-        zn_array : numpy.ndarray
-            an array used to skip inactive cells
-
-        Returns
-        -------
-        df : pandas.DataFrame
-            a dataframe with parameter information
-
-        """
-        parnme,x,y = [],[],[]
-        with open(os.path.join(self.m.model_ws,tpl_file),'w') as f:
-            f.write("ptf ~\n")
-            for i in range(self.m.nrow):
-                for j in range(self.m.ncol):
-                    if zn_array[i,j] < 1:
-                        pname = ' 1.0 '
-                    else:
-                        pname = "{0}{1:03d}{2:03d}".format(name,i,j)
-                        if len(pname) > 12:
-                            self.logger.lraise("grid pname too long:{0}".\
-                                               format(pname))
-                        parnme.append(pname)
-                        pname = ' ~     {0}   ~ '.format(pname)
-                        x.append(self.m.sr.xcentergrid[i,j])
-                        y.append(self.m.sr.ycentergrid[i,j])
-                    f.write(pname)
-                f.write("\n")
-        df = pd.DataFrame({"parnme":parnme,"x":x,"y":y},index=parnme)
-        df.loc[:,"pargp"] = "{0}{1}".format(self.gr_suffix.replace('_',''),name)
-        df.loc[:,"tpl"] = tpl_file
-        return df
-
-    @staticmethod
-    def write_zone_tpl(model, name, tpl_file, zn_array, zn_suffix, logger=None):
-        """ write a template file a for zone-based multiplier parameters
-
-        Parameters
-        ----------
-        model : flopy model object
-            model from which to obtain workspace information, nrow, and ncol
-        name : str
-            the base parameter name
-        tpl_file : str
-            the template file to write
-        zn_array : numpy.ndarray
-            an array used to skip inactive cells
-
-        logger : a logger object
-            optional - a logger object to document errors, etc.
-        Returns
-        -------
-        df : pandas.DataFrame
-            a dataframe with parameter information
-
-        """
-        parnme = []
-        with open(os.path.join(model.model_ws, tpl_file), 'w') as f:
-            f.write("ptf ~\n")
-            for i in range(model.nrow):
-                for j in range(model.ncol):
-                    if zn_array[i,j] < 1:
-                        pname = " 1.0  "
-                    else:
-                        pname = "{0}_zn{1}".format(name, zn_array[i, j])
-                        if len(pname) > 12:
-                            if logger is not None:
-                                logger.lraise("zone pname too long:{0}".\
-                                               format(pname))
-                        parnme.append(pname)
-                        pname = " ~   {0}    ~".format(pname)
-                    f.write(pname)
-                f.write("\n")
-        df = pd.DataFrame({"parnme":parnme}, index=parnme)
-        df.loc[:, "pargp"] = "{0}{1}".format(zn_suffix.replace("_",''), name)
-        return df
 
     def grid_prep(self):
         """ prepare grid-based parameterizations
@@ -2302,17 +2178,23 @@ class PstFromFlopyModel(object):
             df = None
             if suffix == self.cn_suffix:
                 self.log("writing const tpl:{0}".format(tpl_file))
-                df = self.write_const_tpl(name,tpl_file,self.m.bas6.ibound[layer].array)
+                #df = self.write_const_tpl(name,tpl_file,self.m.bas6.ibound[layer].array)
+                df = write_const_tpl(name, os.path.join(self.m.model_ws, tpl_file), self.cn_suffix,
+                                    self.m.bas6.ibound[layer].array, (self.m.nrow, self.m.ncol), self.m.sr)
                 self.log("writing const tpl:{0}".format(tpl_file))
 
             elif suffix == self.gr_suffix:
                 self.log("writing grid tpl:{0}".format(tpl_file))
-                df = self.write_grid_tpl(name,tpl_file,self.m.bas6.ibound[layer].array)
+                #df = self.write_grid_tpl(name,tpl_file,self.m.bas6.ibound[layer].array)
+                df = write_grid_tpl(name, os.path.join(self.m.model_ws, tpl_file), self.gr_suffix,
+                                    self.m.bas6.ibound[layer].array, (self.m.nrow, self.m.ncol), self.m.sr)
                 self.log("writing grid tpl:{0}".format(tpl_file))
 
             elif suffix == self.zn_suffix:
                 self.log("writing zone tpl:{0}".format(tpl_file))
-                df = self.write_zone_tpl(self.m, name, tpl_file, self.k_zone_dict[layer], self.zn_suffix, self.logger)
+                #df = self.write_zone_tpl(self.m, name, tpl_file, self.k_zone_dict[layer], self.zn_suffix, self.logger)
+                df = write_zone_tpl(name,os.path.join(self.m.model_ws,tpl_file),self.zn_suffix,
+                                    self.k_zone_dict[layer],(self.m.nrow,self.m.ncol),self.m.sr)
                 self.log("writing zone tpl:{0}".format(tpl_file))
 
             if df is None:
@@ -3439,206 +3321,152 @@ def apply_hfb_pars():
         hfb_org[['lay', 'irow1','icol1','irow2','icol2', 'hydchr']].to_csv(ofp, sep=' ',
                 header=None, index=None)
 
-def plot_flopy_par_ensemble(pst,pe,num_reals=None,model=None,fig_axes_generator=None,
-                            pcolormesh_transform=None):
-    """function to plot ensemble of parameter values for a flopy/modflow model.  Assumes
-    the FlopytoPst helper was used to setup the model and the forward run.
+def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None):
+    """ write a constant (uniform) template file
 
     Parameters
     ----------
-        pst : Pst instance
+    name : str
+        the base parameter name
+    tpl_file : str
+        the template file to write - include path
+    zn_array : numpy.ndarray
+        an array used to skip inactive cells
 
-        pe : ParameterEnsemble instance
-
-        num_reals : int
-            number of realizations to process.  If None, all realizations are processed.
-            default is None
-        model : flopy.mbase
-            model instance used for masking inactive areas and also geo-locating plots.  If None,
-            generic plots are made.  Default is None.
-        fig_axes_generator : function
-            a function that returns a pyplot.figure and list of pyplot.axes instances for plots.
-            If None, a generic 8.5inX11in figure with 3 rows and 2 cols is used.
-        pcolormesh_transform : cartopy.csr.CRS
-            transform to map pcolormesh plot into correct location.  Requires model arg
-
-
-    Note
-    ----
-        Needs "arr_pars.csv" to run
-
-    Todo
-    ----
-        add better support for log vs nonlog- currently just logging everything
-        add support for cartopy basemap and stamen tiles
+    Returns
+    -------
+    df : pandas.DataFrame
+        a dataframe with parameter information
 
     """
-    try:
-        import matplotlib.pyplot as plt
-    except Exception as e:
-        raise Exception("error importing matplotlib: {0}".format(str(e)))
-    try:
-        from matplotlib.backends.backend_pdf import PdfPages
-    except Exception as e:
-        raise Exception("error importing matplotlib: {0}".format(str(e)))
-    assert os.path.exists("arr_pars.csv"),"couldn't find arr_pars.csv, can't continue"
-    df = pd.read_csv("arr_pars.csv")
-    if isinstance(pst,str):
-        pst = pyemu.Pst(pst)
-    if isinstance(pe,str):
-        pe = pd.read_csv(pe,index_col=0)
-    if num_reals is None:
-        num_reals = pe.shape[0]
-    arr_dict,arr_mx,arr_mn = {},{},{}
-
-    islog = True
-
-    ib,sr = None,None
-    if model is not None:
-        if isinstance(model,str):
-            model = flopy.modflow.Modflow.load(model,load_only=[],verbose=False,check=False)
-        if model.bas6 is not None:
-            ib = {k:model.bas6.ibound[k].array for k in range(model.nlay)}
-            sr = model.sr
-        if model.btn is not None:
-            raise NotImplementedError()
-
-    for i in range(num_reals):
-        print(datetime.now(),"processing realization number {0} of {1}".format(i+1,num_reals))
-        pst.parameter_data.loc[pe.columns,"parval1"] = pe.iloc[i,:]
-        pst.write_input_files()
-        apply_array_pars()
-        for model_file,k in zip(df.model_file,df.layer):
-            arr = np.loadtxt(model_file)
-            if islog:
-                arr = np.log10(arr)
-
-            if ib is not None:
-                arr = np.ma.masked_where(ib[k]<1,arr)
-            arr = np.ma.masked_invalid(arr)
-            if model_file not in arr_dict.keys():
-                arr_dict[model_file] = []
-                arr_mx[model_file] = -1.0e+10
-                arr_mn[model_file] = 1.0e+10
-            arr_mx[model_file] = max(arr_mx[model_file],arr.max())
-            arr_mn[model_file] = min(arr_mn[model_file],arr.min())
-
-            arr_dict[model_file].append(arr)
 
 
+    if shape is None and zn_array is None:
+        raise Exception("must pass either zn_array or shape")
+    elif shape is None:
+        shape = zn_array.shape
 
-
-    def _get_fig_and_axes():
-        nrow, ncol = 3, 2
-        fig = plt.figure(figsize=(8.5, 11))
-        axes = [plt.subplot(nrow, ncol, ii + 1) for ii in range(nrow * ncol)]
-        [ax.set_xticklabels([]) for ax in axes]
-        [ax.set_yticklabels([]) for ax in axes]
-        return fig,axes
-
-    if fig_axes_generator is None:
-        fig_axes_generator = _get_fig_and_axes
-
-    for model_file,arrs in arr_dict.items():
-        k = df.loc[df.model_file==model_file,"layer"].values[0]
-        print("plotting arrays for {0}".format(model_file))
-        mx,mn = arr_mx[model_file],arr_mn[model_file]
-        with PdfPages(model_file+".pdf") as pdf:
-            fig,axes = fig_axes_generator()
-            ax_count = 0
-            for i,arr in enumerate(arrs):
-
-                if ax_count >= len(axes):
-
-                    pdf.savefig()
-                    plt.close(fig)
-                    fig, axes = fig_axes_generator()
-                    ax_count = 0
-                    #ax = plt.subplot(111)
-                if sr is not None:
-                    p = axes[ax_count].pcolormesh(sr.xcentergrid,sr.ycentergrid,arr,vmax=mx,vmin=mn,
-                                                  transform=pcolormesh_transform)
+    parnme = []
+    with open(tpl_file, 'w') as f:
+        f.write("ptf ~\n")
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                if zn_array is not None and zn_array[i, j] == 0:
+                    pname = " 1.0  "
                 else:
-                    p = axes[ax_count].imshow(arr,vmax=mx,vmin=mn)
-                plt.colorbar(p,ax=axes[ax_count])
-                if islog:
-                    arr = 10.*arr
-                axes[ax_count].set_title("real index:{0}, max:{1:5.2E}, min:{2:5.2E}".\
-                                         format(i,arr.max(),arr.min()),fontsize=6)
+                    pname = "{0}_{1}_i:{2}_j:{3}".format(name, suffix,i,j)
 
-                ax_count += 1
-            stack = np.array(arrs)
-            arr_dict = {}
-            for lab,arr in zip(["mean","std"],[np.nanmean(stack,axis=0),np.nanstd(stack,axis=0)]):
-                if ib is not None:
-                    arr = np.ma.masked_where(ib[k]<1,arr)
-                arr = np.ma.masked_invalid(arr)
-                arr_dict[lab] = arr
-                if ax_count >= len(axes):
+                    parnme.append(pname)
+                    pname = " ~  {0}   ~".format(pname)
+                f.write(pname)
+            f.write("\n")
+    df = pd.DataFrame({"parnme": parnme}, index=parnme)
 
-                    pdf.savefig()
-                    plt.close(fig)
-                    fig, axes = fig_axes_generator()
-                    ax_count = 0
-                if sr is not None:
-                    p = axes[ax_count].pcolormesh(sr.xcentergrid,sr.ycentergrid,arr,
-                                                  transform=pcolormesh_transform)
+    df.loc[:, "pargp"] = "{0}_{1}".format(name, suffix)
+    df.loc[:, "tpl"] = os.path.split(tpl_file)[-1]
+    return df
+
+
+def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None):
+    """ write a grid-based template file
+    Parameters
+    ----------
+    name : str
+        the base parameter name
+    tpl_file : str
+        the template file to write - include path
+    zn_array : numpy.ndarray
+        an array used to skip inactive cells
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        a dataframe with parameter information
+
+    """
+
+    if shape is None and zn_array is None:
+        raise Exception("must pass either zn_array or shape")
+    elif shape is None:
+        shape = zn_array.shape
+
+    parnme, x, y = [], [], []
+    with open(tpl_file, 'w') as f:
+        f.write("ptf ~\n")
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                if zn_array is not None and zn_array[i, j] == 0:
+                    pname = ' 1.0 '
                 else:
-                    p = axes[ax_count].imshow(arr)
-                plt.colorbar(p,ax=axes[ax_count])
-                axes[ax_count].set_title("{0}, max:{1:5.2E}, min:{2:5.2E}".format(lab,arr.max(),arr.min()),fontsize=6)
-                ax_count += 1
-            pdf.savefig()
-            plt.close("all")
-            if sr is not None:
-                for i,arr in enumerate(arrs):
-                    arr_dict[str(i)] = arr
-                flopy.export.shapefile_utils.write_grid_shapefile(model_file+".shp",sr,array_dict=arr_dict)
+                    pname = "{0}_{1}_i:{2}_j:{3}".format(name, suffix, i, j)
+                    parnme.append(pname)
+                    pname = ' ~   {0}  ~ '.format(pname)
+                    if spatial_reference:
+                        x.append(spatial_reference.xcentergrid[i, j])
+                        y.append(spatial_reference.ycentergrid[i, j])
+                    if zn_array is not None:
+                        pname += "_zone:{0}".format(zn_array[i,j])
 
-    return
+                f.write(pname)
+            f.write("\n")
+    df = pd.DataFrame({"parnme": parnme, "x": x, "y": y}, index=parnme)
+    df.loc[:, "pargp"] = "{0}_{1}".format(name,suffix)
+    df.loc[:, "tpl"] = os.path.split(tpl_file)[-1]
+    return df
+
+
+def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None):
+    """ write a zone template file
+
+    Parameters
+    ----------
+    model : flopy model object
+        model from which to obtain workspace information, nrow, and ncol
+    name : str
+        the base parameter name
+    tpl_file : str
+        the template file to write
+    zn_array : numpy.ndarray
+        an array used to skip inactive cells
+
+    logger : a logger object
+        optional - a logger object to document errors, etc.
+    Returns
+    -------
+    df : pandas.DataFrame
+        a dataframe with parameter information
+
+    """
+
+    if shape is None and zn_array is None:
+        raise Exception("must pass either zn_array or shape")
+    elif shape is None:
+        shape = zn_array.shape
+
+    parnme = []
+    with open(tpl_file, 'w') as f:
+        f.write("ptf ~\n")
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                if zn_array is not None and zn_array[i, j] == 0:
+                    pname = " 1.0  "
+                else:
+                    pname = "{0}_zone:{1}".format(name, zn_array[i, j])
+
+                    parnme.append(pname)
+                    pname = " ~   {0}    ~".format(pname)
+                f.write(pname)
+            f.write("\n")
+    df = pd.DataFrame({"parnme": parnme}, index=parnme)
+    df.loc[:, "pargp"] = "{0}_{1}".format(name,suffix)
+    return df
 
 
 def _istextfile(filename, blocksize=512):
 
 
-    """
-        Function found from:
-        https://eli.thegreenplace.net/2011/10/19/perls-guess-if-file-is-text-or-binary-implemented-in-python
-
-        Returns True if file is most likely a text file
-        Returns False if file is most likely a binary file
-
-        Uses heuristics to guess whether the given file is text or binary,
-        by reading a single block of bytes from the file.
-        If more than 30% of the chars in the block are non-text, or there
-        are NUL ('\x00') bytes in the block, assume this is a binary file.
-    """
-
-    import sys
-    PY3 = sys.version_info[0] == 3
-
-    # A function that takes an integer in the 8-bit range and returns
-    # a single-character byte object in py3 / a single-character string
-    # in py2.
-    #
-    int2byte = (lambda x: bytes((x,))) if PY3 else chr
-
-    _text_characters = (
-        b''.join(int2byte(i) for i in range(32, 127)) +
-        b'\n\r\t\f\b')
-    block = open(filename,'rb').read(blocksize)
-    if b'\x00' in block:
-        # Files with null bytes are binary
-        return False
-    elif not block:
-        # An empty file is considered a valid text file
-        return True
-
-    # Use translate's 'deletechars' argument to efficiently remove all
-    # occurrences of _text_characters from the block
-    nontext = block.translate(None, _text_characters)
-    return float(len(nontext)) / len(block) <= 0.30
-
+    warnings.warn("_istextfile() has moved to os_utils",PyemuWarning)
+    return pyemu.os_utils._istextfile()
 
 
 def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
@@ -3839,1244 +3667,5 @@ def write_df_tpl(filename,df,sep=',',tpl_marker='~',**kwargs):
         f.write("ptf {0}\n".format(tpl_marker))
         f.flush()
         df.to_csv(f,sep=sep,mode='a',**kwargs)
-
-
-class PstFrom(object):
-    """ a monster helper class to setup multiplier parameters and observations
-     for existing ASCII grid-type and list-type files. Assumes forgiving modern
-     ASCII input and output (free format/(multi)whitespace delim).  Supported list-type
-     files include CSV, and TSV/SSV.
-
-    Parameters
-    ----------
-
-    new_d : str
-        a directory where the new input files and PEST(++)
-        files will be written
-    org_d : str
-        directory to existing files.
-    pp_pars : list
-        a list of grid-type file names to setup pilot point multiplier parameters for. Requires
-        spatial reference.
-    const_pars : list
-        a list of grid-type file names to setup constant (uniform) multiplier parameters for.
-
-    list_pars : dict
-        a dictionary of keys of file name and values of list of either (zero-based) column indices
-        or list of (str) column names.  If values are list of str, then file must have a header row.
-        TODO: support a file_name "tag" and find all files with this tag in the filename - so
-        we can setup the "broadcast" across
-    partial_list_pars : list
-        a dictionary of keys of file name "tag" and values of list of either (zero-based) column indices
-        or list of (str) column names.  If values are list of str, then file must have a header row.
-        The file name "tag" is a partial file name; all files containing the tag will be parameterized with the same
-        parameter values (e.g. "broadcasting").  All files must have the same number of rows
-    grid_pars : list
-        a list of grid-type file names to setup grid-based (every entry) multiplier parameters for.
-
-    kl_pars : list
-        a list of grid-type file names to setup Karhuenen-Loeve multiplier parameters for.  Requires spatial_reference
-    grid_geostruct : pyemu.geostats.GeoStruct
-        the geostatistical structure to build the prior parameter covariance matrix
-        elements for grid-based parameters.  If None, a generic GeoStruct is created
-        using an "a" parameter that is 10 times the max cell size.  Default is None.  Requires
-        spatial reference.
-    pp_space : int
-        number of grid cells between pilot points.  If None, use the default
-        in pyemu.pp_utils.setup_pilot_points_grid.  Default is None.
-    zone_pars : list
-        a list of grid-type file names to setup zone-based multiplier parameters for. requires zone_dict
-
-    pp_geostruct : pyemu.geostats.GeoStruct
-        the geostatistical structure to use for building the prior parameter
-        covariance matrix for pilot point parameters.  If None, a generic
-        GeoStruct is created using pp_space and grid-spacing information.
-        Default is None.  Requires spatial reference
-    par_bounds_dict : dict
-        a dictionary of file name, upper-lower bound pairs. TODO: what about different par types?
-
-    remove_existing : bool
-        a flag to remove an existing new_d directory.  If False and
-        new_d exists, an exception is raised.  If True and new_d
-        exists, the directory is destroyed - user beware! Default is False.
-    zone_dict : dict
-        a dictionary of grid-type file names, zone array pairs.  Values != 0 are used to define grid locations
-        that a suitable for parameterization/observations.  TODO: what about different par types?
-
-    grid_obs : list
-        list of grid-type file names to make instruction files for.  Uses whitespace delim style
-        instructions.
-
-    list_obs : dict
-        dict of list-type file names and column labels (indices or str) to write instruction files for.  Uses
-        whitepsace delim style instructions.  TODO: add comma as a delim to 'w' instruction.
-
-    external_tpl_in_pairs : list
-        a list of existing template file, model input file pairs to parse parameters
-        from and include in the control file.  Default is []
-    external_ins_out_pairs : list
-        a list of existing instruction file, model output file pairs to parse
-        observations from and include in the control file.  Default is []
-
-    model_commands : str or list of str
-        model run commands to add to forward_run.py.  Commands are executed with
-        pyemu.os_utils.run()
-
-    extra_pre_cmds : list
-        a list of preprocessing commands to add to the forward_run.py script
-        Commands are executed with pyemu.os_utils.run(). Default
-        is None.
-
-    extra_post_cmds : list
-        a list of post-processing commands to add to the forward_run.py script.
-        Commands are executed with pyemu.os_utils.run()
-        Default is None.
-    tmp_files : list
-        a list of temporary files that should be removed at the start of the forward
-        run script.  Default is [].
-
-    build_prior : bool
-        flag to build prior covariance matrix. Default is True
-    spatial_reference : ???
-        the spatial reference information about the models location in space.
-
-    Returns
-    -------
-    PstFrom : PstFrom
-
-    Attributes
-    ----------
-    pst : pyemu.Pst
-
-
-    Note
-    ----
-    works a lot better if TEMPCHEK, INSCHEK and PESTCHEK are available in the
-    system path variable
-
-    """
-
-    def __init__(self, new_d,  model_run_command, org_d=None, pp_pars=[], const_pars=[],
-                 list_pars={}, partial_list_pars={}, grid_pars=[],
-                 grid_geostruct=None, pp_space=None,
-                 zone_pars=[], pp_geostruct=None, par_bounds_dict=None,
-                 remove_existing=False, zone_dict=None,
-                 grid_obs=[], list_obs={},external_tpl_in_pairs=None,
-                 external_ins_out_pairs=None,extra_pre_cmds=None,
-                  extra_post_cmds=None, redirect_forward_output=True,
-                 tmp_files=None,build_prior=True,kl_pars=None, kl_num_eig=100, kl_geostruct=None):
-
-        raise NotImplementedError("still a work in progress")
-        self.logger = pyemu.logger.Logger("PstFrom.log")
-        self.log = self.logger.log
-
-        self.logger.echo = True
-        self.zn_suffix = "_zn"
-        self.gr_suffix = "_gr"
-        self.pp_suffix = "_pp"
-        self.cn_suffix = "_cn"
-        self.kl_suffix = "_kl"
-        self.arr_org = "arr_org"
-        self.arr_mlt = "arr_mlt"
-        self.list_org = "list_org"
-        self.list_mlt = "list_mlt"
-        self.forward_run_file = "forward_run.py"
-
-        self.remove_existing = remove_existing
-        self.external_tpl_in_pairs = external_tpl_in_pairs
-        self.external_ins_out_pairs = external_ins_out_pairs
-
-        self.add_external()
-
-        self.arr_mult_dfs = []
-        self.par_bounds_dict = par_bounds_dict
-        self.pp_pars = pp_pars
-        self.pp_space = pp_space
-        self.pp_geostruct = pp_geostruct
-        self.use_pp_zones = use_pp_zones
-
-        self.const_pars = const_pars
-
-        self.grid_pars = grid_pars
-        self.grid_geostruct = grid_geostruct
-
-        self.zone_pars = zone_pars
-
-        self.kl_pars = kl_pars
-        self.kl_geostruct = kl_geostruct
-        self.kl_num_eig = kl_num_eig
-
-        self.list_pars = list_pars
-        self.partial_list_pars = partial_list_pars
-
-        self.grid_obs = grid_obs
-        self.list_obs = list_obs
-
-        self.obssim_smp_pairs = obssim_smp_pairs
-        self.frun_pre_lines = []
-        self.frun_model_lines = []
-        self.frun_post_lines = []
-        self.tmp_files = []
-        if tmp_files is not None:
-            if not isinstance(tmp_files, list):
-                tmp_files = [tmp_files]
-            self.tmp_files.extend(tmp_files)
-
-        for alist, ilist in zip([self.frun_pre_lines, self.frun_post_lines],
-                                [extra_pre_cmds, extra_post_cmds]):
-            if ilist is None:
-                continue
-
-            if not isinstance(ilist, list):
-                ilist = [ilist]
-            for cmd in ilist:
-                self.logger.statement("forward_run line:{0}".format(cmd))
-                alist.append("pyemu.os_utils.run('{0}')\n".format(cmd))
-
-        # add the model call
-        if isinstance(model_run_command,str):
-            model_run_command = [model_run_command]
-        for command in model_run_command:
-            if redirect_forward_output:
-                line = "pyemu.os_utils.run('{0} 1>{1}.stdout 2>{1}.stderr')".format(command)
-            else:
-                line = "pyemu.os_utils.run('{0} ')".format(command)
-            self.logger.statement("forward_run line:{0}".format(line))
-            self.frun_model_lines.append(line)
-
-        self.tpl_files, self.in_files = [], []
-        self.ins_files, self.out_files = [], []
-        self.setup_mult_dirs()
-
-        self.mlt_files = []
-        self.org_files = []
-        self.m_files = []
-        self.mlt_counter = {}
-        self.par_dfs = {}
-        self.mlt_dfs = []
-        self.array_shape_dict = {}
-        self.list_shape_dict = {}
-        self.setup_list_pars()
-        self.setup_array_pars()
-
-        self.setup_observations()
-
-        self.build_pst()
-
-        if build_prior:
-            self.parcov = self.build_prior()
-        else:
-            self.parcov = None
-
-        self.log("saving intermediate _setup_<> dfs into {0}".
-                 format(self.new_d))
-        for tag, df in self.par_dfs.items():
-            df.to_csv(os.path.join(new_d, "_setup_par_{0}_{1}.csv".
-                                   format(tag.replace(" ", '_'), self.pst_name)))
-        for tag, df in self.obs_dfs.items():
-            df.to_csv(os.path.join(new_d, "_setup_obs_{0}_{1}.csv".
-                                   format(tag.replace(" ", '_'), self.pst_name)))
-
-        self.logger.statement("all done")
-
-
-
-    def setup_mult_dirs(self):
-        """ setup the directories to use for multiplier parameterization.  Directories
-        are make within the PstFromFlopyModel.m.model_ws directory
-
-        """
-        # setup dirs to hold the original and multiplier model input quantities
-        set_dirs = []
-        #        if len(self.pp_props) > 0 or len(self.zone_props) > 0 or \
-        #                        len(self.grid_props) > 0:
-        if self.pp_pars is not None or \
-            self.zone_pars is not None or \
-            self.grid_pars is not None or \
-            self.const_pars is not None or \
-            self.kl_pars is not None:
-            set_dirs.append(self.arr_org)
-            set_dirs.append(self.arr_mlt)
-
-        if len(self.list_pars) > 0 or len(self.partial_list_pars) > 0:
-            set_dirs.append(self.list_org)
-            set_dirs.append(self.list_mlt)
-
-        for d in set_dirs:
-            d = os.path.join(self.new_d, d)
-            self.log("setting up '{0}' dir".format(d))
-            if os.path.exists(d):
-                if self.remove_existing:
-                    shutil.rmtree(d, onerror=remove_readonly)
-                else:
-                    raise Exception("dir '{0}' already exists".
-                                    format(d))
-            os.mkdir(d)
-            self.log("setting up '{0}' dir".format(d))
-
-
-
-    def get_count(self, name):
-        """ get the latest counter for a certain parameter type.
-
-        Parameters
-        ----------
-        name : str
-            the parameter type
-
-        Returns
-        -------
-        count : int
-            the latest count for a parameter type
-
-        Note
-        ----
-        calling this function increments the counter for the passed
-        parameter type
-
-        """
-        if name not in self.mlt_counter:
-            self.mlt_counter[name] = 1
-            c = 0
-        else:
-            c = self.mlt_counter[name]
-            self.mlt_counter[name] += 1
-            # print(name,c)
-        return c
-
-
-    def _prep_array_file(self,filename):
-        if not os.path.exists(filename):
-            self.logger.lraise("array file {0} not found".format(filename))
-        try:
-            arr = np.loadtxt(filename)
-        except Exception as e:
-            self.logger.lraise("error loading array file {0} with numpy.loadtxt(): {1}".format(filename,str(e)))
-
-        if filename in self.array_shape_dict:
-            if self.array_shape_dict[filename] != arr.shape:
-                self.logger.lraise("array file {0} shape != existing entry in array shapes")
-        else:
-            self.array_shape_dict[filename] = arr.shape
-
-        org_path = os.path.join(self.arr_org,os.path.split(filename)[-1])
-        self.logger.statement("saving array file {0} into org dir as {1}".format(filename,org_path))
-        np.savetxt(org_path,arr)
-        return org_path
-
-
-    def prep_mlt_arrays(self):
-        """  prepare multipler arrays.  Copies existing model input arrays and
-        writes generic (ones) multiplier arrays
-
-        """
-        pars = [self.pp_pars, self.grid_pars,
-                     self.zone_pars, self.const_pars,
-                     self.kl_pars]
-        par_suffixs = [self.pp_suffix, self.gr_suffix,
-                       self.zn_suffix, self.cn_suffix,
-                       self.kl_suffix]
-
-        # Need to remove props and suffixes for which no info was provided (e.g. still None)
-        del_idx = []
-        for i, cp in enumerate(par_pars):
-            if cp is None:
-                del_idx.append(i)
-        for i in del_idx[::-1]:
-            del (par_props[i])
-            del (par_suffixs[i])
-
-        mlt_dfs = []
-        for par_prop, suffix in zip(pars, par_suffixs):
-            if not isinstance(par_prop, list):
-                par_prop = [par_prop]
-            if len(par_prop) == 0:
-                continue
-            for filenames in par_prop:
-                org, mlt, mod, layer = [], [], [], []
-
-                if isinstance(filenames,str):
-                    filenames = [filenames]
-
-                #use the first filename in the list as par name base
-                filename = os.path.split(filenames[0])[-1]
-                c = self.get_count(filename)
-                mlt_prefix = "file:{0}_count:{1}_".format(filename, c)
-                mlt_name = os.path.join(self.arr_mlt, "{0}{1}"
-                                        .format(mlt_prefix, suffix))
-
-                for filename in filenames:
-                    org_path = self._prep_array_file(filename)
-                    mod.append(os.path.split(filename)[-1])
-                    mlt.append(mlt_name)
-                    org.append(os.path.join(self.arr_org, filename))
-
-                # for k in k_parse:
-                #     # horrible kludge to avoid passing int64 to flopy
-                #     # this gift may give again...
-                #     if type(k) is np.int64:
-                #         k = int(k)
-                #     if isinstance(attr, flopy.utils.Util2d):
-                #         fname = self.write_u2d(attr)
-                #
-                #         layer.append(k)
-                #     elif isinstance(attr, flopy.utils.Util3d):
-                #         fname = self.write_u2d(attr[k])
-                #         layer.append(k)
-                #     elif isinstance(attr, flopy.utils.Transient2d):
-                #         fname = self.write_u2d(attr.transient_2ds[k])
-                #         layer.append(0)  # big assumption here
-                #     mod.append(os.path.join(self.m.external_path, fname))
-                #     mlt.append(mlt_name)
-                #     org.append(os.path.join(self.arr_org, fname))
-                df = pd.DataFrame({"org_file": org, "mlt_file": mlt, "model_file": mod, "layer": layer})
-                df.loc[:, "suffix"] = suffix
-                df.loc[:, "prefix"] = mlt_prefix
-                mlt_dfs.append(df)
-        if len(mlt_dfs) > 0:
-            mlt_df = pd.concat(mlt_dfs, ignore_index=True)
-            mlt_df.loc[:,"shape"] = mlt_df.org_file.apply(lambda x : self.array_shape_dict[x])
-
-
-            return mlt_df
-
-
-    @staticmethod
-    def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None):
-        """ write a template file a for a constant (uniform) multiplier parameter
-
-        Parameters
-        ----------
-        name : str
-            the base parameter name
-        tpl_file : str
-            the template file to write - include path
-        zn_array : numpy.ndarray
-            an array used to skip inactive cells
-
-        Returns
-        -------
-        df : pandas.DataFrame
-            a dataframe with parameter information
-
-        """
-
-
-        if shape is None and zn_array is None:
-            raise Exception("must pass either zn_array or shape")
-        elif shape is None:
-            shape = zn_array.shape
-
-        parnme = []
-        with open(tpl_file, 'w') as f:
-            f.write("ptf ~\n")
-            for i in range(shape[0]):
-                for j in range(shape[1]):
-                    if zn_array is not None and zn_array[i, j] == 0:
-                        pname = " 1.0  "
-                    else:
-                        pname = "{0}_{1}_i:{2}_j:{3}".format(name, suffix,i,j)
-
-                        parnme.append(pname)
-                        pname = " ~  {0}   ~".format(pname)
-                    f.write(pname)
-                f.write("\n")
-        df = pd.DataFrame({"parnme": parnme}, index=parnme)
-
-        df.loc[:, "pargp"] = "{0}_{1}".format(name, suffix)
-        df.loc[:, "tpl"] = os.path.split(tpl_file)[-1]
-        return df
-
-    @staticmethod
-    def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None):
-        """ write a template file a for grid-based multiplier parameters
-
-        Parameters
-        ----------
-        name : str
-            the base parameter name
-        tpl_file : str
-            the template file to write - include path
-        zn_array : numpy.ndarray
-            an array used to skip inactive cells
-
-        Returns
-        -------
-        df : pandas.DataFrame
-            a dataframe with parameter information
-
-        """
-
-        if shape is None and zn_array is None:
-            raise Exception("must pass either zn_array or shape")
-        elif shape is None:
-            shape = zn_array.shape
-
-        parnme, x, y = [], [], []
-        with open(tpl_file, 'w') as f:
-            f.write("ptf ~\n")
-            for i in range(shape[0]):
-                for j in range(shape[1]):
-                    if zn_array is not None and zn_array[i, j] == 0:
-                        pname = ' 1.0 '
-                    else:
-                        pname = "{0}_{1}_i:{2}_j:{3}".format(name, suffix, i, j)
-                        parnme.append(pname)
-                        pname = ' ~   {0}  ~ '.format(pname)
-                        if spatial_reference:
-                            x.append(self.spatial_reference.xcentergrid[i, j])
-                            y.append(self.spatial_reference.ycentergrid[i, j])
-                        if zn_array is not None:
-                            pname += "_zone:{0}".format(zn_array[i,j])
-
-                    f.write(pname)
-                f.write("\n")
-        df = pd.DataFrame({"parnme": parnme, "x": x, "y": y}, index=parnme)
-        df.loc[:, "pargp"] = "{0}_{1}".format(name,suffix)
-        df.loc[:, "tpl"] = os.path.split(tpl_file)[-1]
-        return df
-
-    @staticmethod
-    def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None):
-        """ write a template file a for zone-based multiplier parameters
-
-        Parameters
-        ----------
-        model : flopy model object
-            model from which to obtain workspace information, nrow, and ncol
-        name : str
-            the base parameter name
-        tpl_file : str
-            the template file to write
-        zn_array : numpy.ndarray
-            an array used to skip inactive cells
-
-        logger : a logger object
-            optional - a logger object to document errors, etc.
-        Returns
-        -------
-        df : pandas.DataFrame
-            a dataframe with parameter information
-
-        """
-
-        if shape is None and zn_array is None:
-            raise Exception("must pass either zn_array or shape")
-        elif shape is None:
-            shape = zn_array.shape
-
-        parnme = []
-        with open(tpl_file, 'w') as f:
-            f.write("ptf ~\n")
-            for i in range(model.nrow):
-                for j in range(model.ncol):
-                    if zn_array is not None and zn_array[i, j] == 0:
-                        pname = " 1.0  "
-                    else:
-                        pname = "{0}_zone:{1}".format(name, zn_array[i, j])
-
-                        parnme.append(pname)
-                        pname = " ~   {0}    ~".format(pname)
-                    f.write(pname)
-                f.write("\n")
-        df = pd.DataFrame({"parnme": parnme}, index=parnme)
-        df.loc[:, "pargp"] = "{0}_{1}".format(name,suffix)
-        return df
-
-    def grid_prep(self):
-        """ prepare grid-based parameterizations
-
-        """
-        if len(self.grid_pars) == 0:
-            return
-
-        if self.grid_geostruct is None:
-            self.logger.warn("grid_geostruct is None," \
-                             " using ExpVario with contribution=1 and a=(max(delc,delr)*10")
-            dist = 2000.0 # wild-ass guess
-            v = pyemu.geostats.ExpVario(contribution=1.0, a=dist)
-            self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v)
-
-    def pp_prep(self, mlt_df):
-        """ prepare pilot point based parameterizations
-
-        Parameters
-        ----------
-        mlt_df : pandas.DataFrame
-            a dataframe with multiplier array information
-
-        Note
-        ----
-        calls pyemu.pp_utils.setup_pilot_points_grid()
-
-
-        """
-        if len(self.pp_pars) == 0:
-            return
-        if self.spatial_reference is None:
-            raise Exception("pilot points requires spatial reference")
-        if self.pp_space is None:
-            self.logger.warn("pp_space is None, using 10...\n")
-            self.pp_space = 10
-        if self.pp_geostruct is None:
-            self.logger.warn("pp_geostruct is None," \
-                             " using ExpVario with contribution=1 and a=(pp_space*max(delr,delc))")
-            pp_dist = 2000.0 #wild ass guess
-            v = pyemu.geostats.ExpVario(contribution=1.0, a=pp_dist)
-            self.pp_geostruct = pyemu.geostats.GeoStruct(variograms=v)
-
-        pp_df = mlt_df.loc[mlt_df.suffix == self.pp_suffix, :]
-        raise NotImplementedError(" needs more work here")
-        # todo: instead of layers, what? maybe by unique zone arrays?  need to track
-        # which zone arrays are applied to what filenames
-        layers = pp_df.layer.unique()
-        pp_dict = {l: list(pp_df.loc[pp_df.layer == l, "prefix"].unique()) for l in layers}
-        # big assumption here - if prefix is listed more than once, use the lowest layer index
-        for i, l in enumerate(layers):
-            p = set(pp_dict[l])
-            for ll in layers[i + 1:]:
-                pp = set(pp_dict[ll])
-                d = pp - p
-                pp_dict[ll] = list(d)
-
-        pp_array_file = {p: m for p, m in zip(pp_df.prefix, pp_df.mlt_file)}
-        self.logger.statement("pp_dict: {0}".format(str(pp_dict)))
-
-        self.log("calling setup_pilot_point_grid()")
-        if self.use_pp_zones:
-            ib = self.k_zone_dict
-        else:
-            ib = {k: self.m.bas6.ibound[k].array for k in range(self.m.nlay)}
-
-            for k, i in ib.items():
-                if np.any(i < 0):
-                    u, c = np.unique(i[i > 0], return_counts=True)
-                    counts = dict(zip(u, c))
-                    mx = -1.0e+10
-                    imx = None
-                    for u, c in counts.items():
-                        if c > mx:
-                            mx = c
-                            imx = u
-                    self.logger.warn("resetting negative ibound values for PP zone" + \
-                                     "array in layer {0} : {1}".format(k + 1, u))
-                    i[i < 0] = u
-        pp_df = pyemu.pp_utils.setup_pilotpoints_grid(self.m,
-                                                      ibound=ib,
-                                                      use_ibound_zones=self.use_pp_zones,
-                                                      prefix_dict=pp_dict,
-                                                      every_n_cell=self.pp_space,
-                                                      pp_dir=self.m.model_ws,
-                                                      tpl_dir=self.m.model_ws,
-                                                      shapename=os.path.join(
-                                                          self.m.model_ws, "pp.shp"))
-        self.logger.statement("{0} pilot point parameters created".
-                              format(pp_df.shape[0]))
-        self.logger.statement("pilot point 'pargp':{0}".
-                              format(','.join(pp_df.pargp.unique())))
-        self.log("calling setup_pilot_point_grid()")
-
-        # calc factors for each layer
-        pargp = pp_df.pargp.unique()
-        pp_dfs_k = {}
-        fac_files = {}
-        pp_df.loc[:, "fac_file"] = np.NaN
-        for pg in pargp:
-            ks = pp_df.loc[pp_df.pargp == pg, "k"].unique()
-            if len(ks) == 0:
-                self.logger.lraise("something is wrong in fac calcs for par group {0}".format(pg))
-            if len(ks) == 1:
-                ib_k = ib[ks[0]]
-            if len(ks) != 1:
-                # self.logger.lraise("something is wrong in fac calcs for par group {0}".format(pg))
-                self.logger.warn("multiple k values for {0},forming composite zone array...".format(pg))
-                ib_k = np.zeros((self.m.nrow, self.m.ncol))
-                for k in ks:
-                    t = ib[k].copy()
-                    t[t < 1] = 0
-                    ib_k[t > 0] = t[t > 0]
-            k = int(ks[0])
-            if k not in pp_dfs_k.keys():
-                self.log("calculating factors for k={0}".format(k))
-
-                fac_file = os.path.join(self.m.model_ws, "pp_k{0}.fac".format(k))
-                var_file = fac_file.replace(".fac", ".var.dat")
-                self.logger.statement("saving krige variance file:{0}"
-                                      .format(var_file))
-                self.logger.statement("saving krige factors file:{0}" \
-                                      .format(fac_file))
-                pp_df_k = pp_df.loc[pp_df.pargp == pg]
-                ok_pp = pyemu.geostats.OrdinaryKrige(self.pp_geostruct, pp_df_k)
-                ok_pp.calc_factors_grid(self.m.sr, var_filename=var_file,
-                                        zone_array=ib_k)
-                ok_pp.to_grid_factors_file(fac_file)
-                fac_files[k] = fac_file
-                self.log("calculating factors for k={0}".format(k))
-                pp_dfs_k[k] = pp_df_k
-
-        for k, fac_file in fac_files.items():
-            # pp_files = pp_df.pp_filename.unique()
-            fac_file = os.path.split(fac_file)[-1]
-            pp_prefixes = pp_dict[k]
-            for pp_prefix in pp_prefixes:
-                self.log("processing pp_prefix:{0}".format(pp_prefix))
-                if pp_prefix not in pp_array_file.keys():
-                    self.logger.lraise("{0} not in self.pp_array_file.keys()".
-                                       format(pp_prefix, ','.
-                                              join(pp_array_file.keys())))
-
-                out_file = os.path.join(self.arr_mlt, os.path.split(pp_array_file[pp_prefix])[-1])
-
-                pp_files = pp_df.loc[pp_df.pp_filename.apply(lambda x: pp_prefix in x), "pp_filename"]
-                if pp_files.unique().shape[0] != 1:
-                    self.logger.lraise("wrong number of pp_files found:{0}".format(','.join(pp_files)))
-                pp_file = os.path.split(pp_files.iloc[0])[-1]
-                pp_df.loc[pp_df.pargp == pp_prefix, "fac_file"] = fac_file
-                pp_df.loc[pp_df.pargp == pp_prefix, "pp_file"] = pp_file
-                pp_df.loc[pp_df.pargp == pp_prefix, "out_file"] = out_file
-
-        pp_df.loc[:, "pargp"] = pp_df.pargp.apply(lambda x: "pp_{0}".format(x))
-        out_files = mlt_df.loc[mlt_df.mlt_file.
-                                   apply(lambda x: x.endswith(self.pp_suffix)), "mlt_file"]
-        # mlt_df.loc[:,"fac_file"] = np.NaN
-        # mlt_df.loc[:,"pp_file"] = np.NaN
-        for out_file in out_files:
-            pp_df_pf = pp_df.loc[pp_df.out_file == out_file, :]
-            fac_files = pp_df_pf.fac_file
-            if fac_files.unique().shape[0] != 1:
-                self.logger.lraise("wrong number of fac files:{0}".format(str(fac_files.unique())))
-            fac_file = fac_files.iloc[0]
-            pp_files = pp_df_pf.pp_file
-            if pp_files.unique().shape[0] != 1:
-                self.logger.lraise("wrong number of pp files:{0}".format(str(pp_files.unique())))
-            pp_file = pp_files.iloc[0]
-            mlt_df.loc[mlt_df.mlt_file == out_file, "fac_file"] = fac_file
-            mlt_df.loc[mlt_df.mlt_file == out_file, "pp_file"] = pp_file
-        self.par_dfs[self.pp_suffix] = pp_df
-
-        mlt_df.loc[mlt_df.suffix == self.pp_suffix, "tpl_file"] = np.NaN
-
-    def kl_prep(self, mlt_df):
-        """ prepare KL based parameterizations
-
-        Parameters
-        ----------
-        mlt_df : pandas.DataFrame
-            a dataframe with multiplier array information
-
-        Note
-        ----
-        calls pyemu.helpers.setup_kl()
-
-
-        """
-        if len(self.kl_props) == 0:
-            return
-
-        if self.kl_geostruct is None:
-            self.logger.warn("kl_geostruct is None," \
-                             " using ExpVario with contribution=1 and a=(10.0*max(delr,delc))")
-            kl_dist = 2000.0 #wild ass guess
-            v = pyemu.geostats.ExpVario(contribution=1.0, a=kl_dist)
-            self.kl_geostruct = pyemu.geostats.GeoStruct(variograms=v)
-
-        kl_df = mlt_df.loc[mlt_df.suffix == self.kl_suffix, :]
-        raise NotADirectoryError("need more work here")
-        # todo: use same strategy as pilot points here...
-
-        layers = kl_df.layer.unique()
-        # kl_dict = {l:list(kl_df.loc[kl_df.layer==l,"prefix"].unique()) for l in layers}
-        # big assumption here - if prefix is listed more than once, use the lowest layer index
-        # for i,l in enumerate(layers):
-        #    p = set(kl_dict[l])
-        #    for ll in layers[i+1:]:
-        #        pp = set(kl_dict[ll])
-        #        d = pp - p
-        #        kl_dict[ll] = list(d)
-        kl_prefix = list(kl_df.loc[:, "prefix"])
-
-        kl_array_file = {p: m for p, m in zip(kl_df.prefix, kl_df.mlt_file)}
-        self.logger.statement("kl_prefix: {0}".format(str(kl_prefix)))
-
-        fac_file = os.path.join(self.m.model_ws, "kl.fac")
-
-        self.log("calling kl_setup() with factors file {0}".format(fac_file))
-
-        kl_df = kl_setup(self.kl_num_eig, self.m.sr, self.kl_geostruct, kl_prefix,
-                         factors_file=fac_file, basis_file=fac_file + ".basis.jcb",
-                         tpl_dir=self.m.model_ws)
-        self.logger.statement("{0} kl parameters created".
-                              format(kl_df.shape[0]))
-        self.logger.statement("kl 'pargp':{0}".
-                              format(','.join(kl_df.pargp.unique())))
-
-        self.log("calling kl_setup() with factors file {0}".format(fac_file))
-        kl_mlt_df = mlt_df.loc[mlt_df.suffix == self.kl_suffix]
-        for prefix in kl_df.prefix.unique():
-            prefix_df = kl_df.loc[kl_df.prefix == prefix, :]
-            in_file = os.path.split(prefix_df.loc[:, "in_file"].iloc[0])[-1]
-            assert prefix in mlt_df.prefix.values, "{0}:{1}".format(prefix, mlt_df.prefix)
-            mlt_df.loc[mlt_df.prefix == prefix, "pp_file"] = in_file
-            mlt_df.loc[mlt_df.prefix == prefix, "fac_file"] = os.path.split(fac_file)[-1]
-
-        print(kl_mlt_df)
-        mlt_df.loc[mlt_df.suffix == self.kl_suffix, "tpl_file"] = np.NaN
-        self.par_dfs[self.kl_suffix] = kl_df
-        # calc factors for each layer
-
-    def setup_array_pars(self):
-        """ main entry point for setting up array multipler parameters
-
-        """
-        mlt_df = self.prep_mlt_arrays()
-        if mlt_df is None:
-            return
-        mlt_df.loc[:, "tpl_file"] = mlt_df.mlt_file.apply(lambda x: os.path.split(x)[-1] + ".tpl")
-        # mlt_df.loc[mlt_df.tpl_file.apply(lambda x:pd.notnull(x.pp_file)),"tpl_file"] = np.NaN
-        mlt_files = mlt_df.mlt_file.unique()
-        # for suffix,tpl_file,layer,name in zip(self.mlt_df.suffix,
-        #                                 self.mlt_df.tpl,self.mlt_df.layer,
-        #                                     self.mlt_df.prefix):
-        par_dfs = {}
-        for mlt_file in mlt_files:
-            suffixes = mlt_df.loc[mlt_df.mlt_file == mlt_file, "suffix"]
-            if suffixes.unique().shape[0] != 1:
-                self.logger.lraise("wrong number of suffixes for {0}" \
-                                   .format(mlt_file))
-            suffix = suffixes.iloc[0]
-
-            tpl_files = mlt_df.loc[mlt_df.mlt_file == mlt_file, "tpl_file"]
-            if tpl_files.unique().shape[0] != 1:
-                self.logger.lraise("wrong number of tpl_files for {0}" \
-                                   .format(mlt_file))
-            tpl_file = tpl_files.iloc[0]
-            #layers = mlt_df.loc[mlt_df.mlt_file == mlt_file, "layer"]
-            # if layers.unique().shape[0] != 1:
-            #    self.logger.lraise("wrong number of layers for {0}"\
-            #                       .format(mlt_file))
-            #layer = layers.iloc[0]
-
-            names = mlt_df.loc[mlt_df.mlt_file == mlt_file, "prefix"]
-            if names.unique().shape[0] != 1:
-                self.logger.lraise("wrong number of names for {0}" \
-                                   .format(mlt_file))
-            name = names.iloc[0]
-
-            shape = self.array_shape_dict[mlt_file]
-
-            # ib = self.k_zone_dict[layer]
-            df = None
-            if suffix == self.cn_suffix:
-                self.log("writing const tpl:{0}".format(tpl_file))
-                df = PstFrom.write_const_tpl(name, tpl_file, self.cn_suffix ,None,shape,self.spatial_reference)
-                self.log("writing const tpl:{0}".format(tpl_file))
-
-            elif suffix == self.gr_suffix:
-                self.log("writing grid tpl:{0}".format(tpl_file))
-                df = self.write_grid_tpl(name, tpl_file, self.gr_suffix, None, shape, self.spatial_reference)
-                self.log("writing grid tpl:{0}".format(tpl_file))
-
-            elif suffix == self.zn_suffix:
-                self.log("writing zone tpl:{0}".format(tpl_file))
-                df = self.write_zone_tpl(name, tpl_file, self.zn_suffix, None, shape, self.spatial_reference)
-                self.log("writing zone tpl:{0}".format(tpl_file))
-
-            if df is None:
-                continue
-            if suffix not in par_dfs:
-                par_dfs[suffix] = [df]
-            else:
-                par_dfs[suffix].append(df)
-        for suf, dfs in par_dfs.items():
-            self.par_dfs[suf] = pd.concat(dfs)
-
-        if self.pp_suffix in mlt_df.suffix.values:
-            self.log("setting up pilot point process")
-            self.pp_prep(mlt_df)
-            self.log("setting up pilot point process")
-
-        if self.gr_suffix in mlt_df.suffix.values:
-            self.log("setting up grid process")
-            self.grid_prep()
-            self.log("setting up grid process")
-
-        if self.kl_suffix in mlt_df.suffix.values:
-            self.log("setting up kl process")
-            self.kl_prep(mlt_df)
-            self.log("setting up kl process")
-
-        mlt_df.to_csv(os.path.join(self.m.model_ws, "arr_pars.csv"))
-        ones = np.ones((self.m.nrow, self.m.ncol))
-        for mlt_file in mlt_df.mlt_file.unique():
-            self.log("save test mlt array {0}".format(mlt_file))
-            np.savetxt(os.path.join(self.m.model_ws, mlt_file),
-                       ones, fmt="%15.6E")
-            self.log("save test mlt array {0}".format(mlt_file))
-            tpl_files = mlt_df.loc[mlt_df.mlt_file == mlt_file, "tpl_file"]
-            if tpl_files.unique().shape[0] != 1:
-                self.logger.lraise("wrong number of tpl_files for {0}" \
-                                   .format(mlt_file))
-            tpl_file = tpl_files.iloc[0]
-            if pd.notnull(tpl_file):
-                self.tpl_files.append(tpl_file)
-                self.in_files.append(mlt_file)
-
-        # for tpl_file,mlt_file in zip(mlt_df.tpl_file,mlt_df.mlt_file):
-        #     if pd.isnull(tpl_file):
-        #         continue
-        #     self.tpl_files.append(tpl_file)
-        #     self.in_files.append(mlt_file)
-
-        os.chdir(self.new_d)
-        try:
-            apply_array_pars()
-        except Exception as e:
-            os.chdir("..")
-            self.logger.lraise("error test running apply_array_pars():{0}".
-                               format(str(e)))
-        os.chdir("..")
-        line = "pyemu.helpers.apply_array_pars()\n"
-        self.logger.statement("forward_run line:{0}".format(line))
-        self.frun_pre_lines.append(line)
-
-    def setup_observations(self):
-        """ main entry point for setting up observations
-
-        """
-        obs_methods = [self.setup_smp, self.setup_grid_obs, self.setup_list_obs]
-        obs_types = ["smp_files", "grid_obs", "list_obs"]
-        self.obs_dfs = {}
-        for obs_method, obs_type in zip(obs_methods, obs_types):
-            self.log("processing obs type {0}".format(obs_type))
-            df = obs_method()
-            self.log("processing obs type {0}".format(obs_type))
-            self.obs_df[obs_type] = df
-
-    def setup_grid_obs(self):
-        pass
-
-    def setup_list_obs(self):
-        pass
-
-    def draw(self, num_reals=100, sigma_range=6):
-        """ draw like a boss!
-
-        Parameters
-        ----------
-            num_reals : int
-                number of realizations to generate. Default is 100
-            sigma_range : float
-                number of standard deviations represented by the parameter bounds.  Default
-                is 6.
-
-        Returns
-        -------
-            cov : pyemu.Cov
-            a full covariance matrix
-
-        """
-
-        self.log("drawing realizations")
-        struct_dict = {}
-        if self.pp_suffix in self.par_dfs.keys():
-            pp_df = self.par_dfs[self.pp_suffix]
-            pp_dfs = []
-            for pargp in pp_df.pargp.unique():
-                gp_df = pp_df.loc[pp_df.pargp == pargp, :]
-                p_df = gp_df.drop_duplicates(subset="parnme")
-                pp_dfs.append(p_df)
-            # pp_dfs = [pp_df.loc[pp_df.pargp==pargp,:].copy() for pargp in pp_df.pargp.unique()]
-            struct_dict[self.pp_geostruct] = pp_dfs
-        if self.gr_suffix in self.par_dfs.keys():
-            gr_df = self.par_dfs[self.gr_suffix]
-            gr_dfs = []
-            for pargp in gr_df.pargp.unique():
-                gp_df = gr_df.loc[gr_df.pargp == pargp, :]
-                p_df = gp_df.drop_duplicates(subset="parnme")
-                gr_dfs.append(p_df)
-            # gr_dfs = [gr_df.loc[gr_df.pargp==pargp,:].copy() for pargp in gr_df.pargp.unique()]
-            struct_dict[self.grid_geostruct] = gr_dfs
-
-        pe = geostatistical_draws(self.pst, struct_dict=struct_dict, num_reals=num_reals,
-                                  sigma_range=sigma_range)
-
-        self.log("drawing realizations")
-        return pe
-
-    def build_prior(self, fmt="ascii", filename=None, droptol=None, chunk=None, sparse=False,
-                    sigma_range=6):
-        """ build a prior parameter covariance matrix.
-
-        Parameters
-        ----------
-            fmt : str
-                the format to save the cov matrix.  Options are "ascii","binary","uncfile", "coo".
-                default is "ascii"
-            filename : str
-                the filename to save the prior cov matrix to.  If None, the name is formed using
-                model nam_file name.  Default is None.
-            droptol : float
-                tolerance for dropping near-zero values when writing compressed binary.
-                Default is None
-            chunk : int
-                chunk size to write in a single pass - for binary only
-            sparse : bool
-                flag to build a pyemu.SparseMatrix format cov matrix.  Default is False
-            sigma_range : float
-                number of standard deviations represented by the parameter bounds.  Default
-                is 6.
-
-        Returns
-        -------
-            cov : pyemu.Cov
-            a full covariance matrix
-
-        """
-
-        fmt = fmt.lower()
-        acc_fmts = ["ascii", "binary", "uncfile", "none", "coo"]
-        if fmt not in acc_fmts:
-            self.logger.lraise("unrecognized prior save 'fmt':{0}, options are: {1}".
-                               format(fmt, ','.join(acc_fmts)))
-
-        self.log("building prior covariance matrix")
-        struct_dict = {}
-        if self.pp_suffix in self.par_dfs.keys():
-            pp_df = self.par_dfs[self.pp_suffix]
-            pp_dfs = []
-            for pargp in pp_df.pargp.unique():
-                gp_df = pp_df.loc[pp_df.pargp == pargp, :]
-                p_df = gp_df.drop_duplicates(subset="parnme")
-                pp_dfs.append(p_df)
-            # pp_dfs = [pp_df.loc[pp_df.pargp==pargp,:].copy() for pargp in pp_df.pargp.unique()]
-            struct_dict[self.pp_geostruct] = pp_dfs
-        if self.gr_suffix in self.par_dfs.keys():
-            gr_df = self.par_dfs[self.gr_suffix]
-            gr_dfs = []
-            for pargp in gr_df.pargp.unique():
-                gp_df = gr_df.loc[gr_df.pargp == pargp, :]
-                p_df = gp_df.drop_duplicates(subset="parnme")
-                gr_dfs.append(p_df)
-            # gr_dfs = [gr_df.loc[gr_df.pargp==pargp,:].copy() for pargp in gr_df.pargp.unique()]
-            struct_dict[self.grid_geostruct] = gr_dfs
-        if len(struct_dict) > 0:
-            if sparse:
-                cov = pyemu.helpers.sparse_geostatistical_prior_builder(self.pst,
-                                                                        struct_dict=struct_dict,
-                                                                        sigma_range=sigma_range)
-
-            else:
-                cov = pyemu.helpers.geostatistical_prior_builder(self.pst,
-                                                                 struct_dict=struct_dict,
-                                                                 sigma_range=sigma_range)
-        else:
-            cov = pyemu.Cov.from_parameter_data(self.pst, sigma_range=sigma_range)
-
-        if filename is None:
-            filename = os.path.join(self.m.model_ws, self.pst_name + ".prior.cov")
-        if fmt != "none":
-            self.logger.statement("saving prior covariance matrix to file {0}".format(filename))
-        if fmt == 'ascii':
-            cov.to_ascii(filename)
-        elif fmt == 'binary':
-            cov.to_binary(filename, droptol=droptol, chunk=chunk)
-        elif fmt == 'uncfile':
-            cov.to_uncfile(filename)
-        elif fmt == 'coo':
-            cov.to_coo(filename, droptol=droptol, chunk=chunk)
-        self.log("building prior covariance matrix")
-        return cov
-
-    def build_pst(self, filename=None):
-        """ build the pest control file using the parameterizations and
-        observations.
-
-        Parameters
-        ----------
-            filename : str
-                the filename to save the pst to.  If None, the name if formed from
-                the model namfile name.  Default is None.
-
-        Note
-        ----
-        calls pyemu.Pst.from_io_files
-
-        calls PESTCHEK
-
-        """
-        self.logger.statement("changing dir in to {0}".format(self.m.model_ws))
-        os.chdir(self.m.model_ws)
-        tpl_files = copy.deepcopy(self.tpl_files)
-        in_files = copy.deepcopy(self.in_files)
-        try:
-            files = os.listdir('.')
-            new_tpl_files = [f for f in files if f.endswith(".tpl") and f not in tpl_files]
-            new_in_files = [f.replace(".tpl", '') for f in new_tpl_files]
-            tpl_files.extend(new_tpl_files)
-            in_files.extend(new_in_files)
-            ins_files = [f for f in files if f.endswith(".ins")]
-            out_files = [f.replace(".ins", '') for f in ins_files]
-            for tpl_file, in_file in zip(tpl_files, in_files):
-                if tpl_file not in self.tpl_files:
-                    self.tpl_files.append(tpl_file)
-                    self.in_files.append(in_file)
-
-            for ins_file, out_file in zip(ins_files, out_files):
-                if ins_file not in self.ins_files:
-                    self.ins_files.append(ins_file)
-                    self.out_files.append(out_file)
-            self.log("instantiating control file from i/o files")
-            pst = pyemu.Pst.from_io_files(tpl_files=self.tpl_files,
-                                          in_files=self.in_files,
-                                          ins_files=self.ins_files,
-                                          out_files=self.out_files)
-
-            self.log("instantiating control file from i/o files")
-        except Exception as e:
-            os.chdir("..")
-            self.logger.lraise("error build Pst:{0}".format(str(e)))
-        os.chdir('..')
-        # more customization here
-        par = pst.parameter_data
-        for name, df in self.par_dfs.items():
-            if "parnme" not in df.columns:
-                continue
-            df.index = df.parnme
-            for col in par.columns:
-                if col in df.columns:
-                    par.loc[df.parnme, col] = df.loc[:, col]
-        par.loc[:, "parubnd"] = 10.0
-        par.loc[:, "parlbnd"] = 0.1
-
-        for name, df in self.par_dfs.items():
-            if "parnme" not in df:
-                continue
-            df.index = df.parnme
-            for col in ["parubnd", "parlbnd", "pargp"]:
-                if col in df.columns:
-                    par.loc[df.index, col] = df.loc[:, col]
-
-        for tag, [lw, up] in wildass_guess_par_bounds_dict.items():
-            par.loc[par.parnme.apply(lambda x: x.startswith(tag)), "parubnd"] = up
-            par.loc[par.parnme.apply(lambda x: x.startswith(tag)), "parlbnd"] = lw
-
-        if self.par_bounds_dict is not None:
-            for tag, [lw, up] in self.par_bounds_dict.items():
-                par.loc[par.parnme.apply(lambda x: x.startswith(tag)), "parubnd"] = up
-                par.loc[par.parnme.apply(lambda x: x.startswith(tag)), "parlbnd"] = lw
-
-        obs = pst.observation_data
-        for name, df in self.obs_dfs.items():
-            if "obsnme" not in df.columns:
-                continue
-            df.index = df.obsnme
-            for col in df.columns:
-                if col in obs.columns:
-                    obs.loc[df.obsnme, col] = df.loc[:, col]
-
-        self.pst_name = self.m.name + ".pst"
-        pst.model_command = ["python forward_run.py"]
-        pst.control_data.noptmax = 0
-        self.log("writing forward_run.py")
-        self.write_forward_run()
-        self.log("writing forward_run.py")
-
-        if filename is None:
-            filename = os.path.join(self.m.model_ws, self.pst_name)
-        self.logger.statement("writing pst {0}".format(filename))
-
-        pst.write(filename)
-        self.pst = pst
-
-        self.log("running pestchek on {0}".format(self.pst_name))
-        os.chdir(self.m.model_ws)
-        try:
-            pyemu.os_utils.run("pestchek {0} >pestchek.stdout".format(self.pst_name))
-        except Exception as e:
-            self.logger.warn("error running pestchek:{0}".format(str(e)))
-        for line in open("pestchek.stdout"):
-            self.logger.statement("pestcheck:{0}".format(line.strip()))
-        os.chdir("..")
-        self.log("running pestchek on {0}".format(self.pst_name))
-
-    def add_external(self):
-        """ add external (existing) template files and instruction files to the
-        Pst instance.  Should be called before calling build_pst()
-
-        """
-        if self.external_tpl_in_pairs is not None:
-            if not isinstance(self.external_tpl_in_pairs, list):
-                external_tpl_in_pairs = [self.external_tpl_in_pairs]
-            for tpl_file, in_file in self.external_tpl_in_pairs:
-                if not os.path.exists(tpl_file):
-                    self.logger.lraise("couldn't find external tpl file:{0}". \
-                                       format(tpl_file))
-                self.logger.statement("external tpl:{0}".format(tpl_file))
-                shutil.copy2(tpl_file, os.path.join(self.new_d,
-                                                    os.path.split(tpl_file)[-1]))
-                if os.path.exists(in_file):
-                    shutil.copy2(in_file, os.path.join(self.new_d,
-                                                       os.path.split(in_file)[-1]))
-
-        if self.external_ins_out_pairs is not None:
-            if not isinstance(self.external_ins_out_pairs, list):
-                external_ins_out_pairs = [self.external_ins_out_pairs]
-            for ins_file, out_file in self.external_ins_out_pairs:
-                if not os.path.exists(ins_file):
-                    self.logger.lraise("couldn't find external ins file:{0}". \
-                                       format(ins_file))
-                self.logger.statement("external ins:{0}".format(ins_file))
-                shutil.copy2(ins_file, os.path.join(self.new_d,
-                                                    os.path.split(ins_file)[-1]))
-                if os.path.exists(out_file):
-                    shutil.copy2(out_file, os.path.join(self.new_d,
-                                                        os.path.split(out_file)[-1]))
-                    self.logger.warn("obs listed in {0} will have values listed in {1}"
-                                     .format(ins_file, out_file))
-                else:
-                    self.logger.warn("obs listed in {0} will have generic values")
-
-    def write_forward_run(self):
-        """ write the forward run script forward_run.py
-
-        """
-        with open(os.path.join(self.m.model_ws, self.forward_run_file), 'w') as f:
-            f.write("import os\nimport numpy as np\nimport pandas as pd\nimport flopy\n")
-            f.write("import pyemu\n")
-            for tmp_file in self.tmp_files:
-                f.write("try:\n")
-                f.write("   os.remove('{0}')\n".format(tmp_file))
-                f.write("except Exception as e:\n")
-                f.write("   print('error removing tmp file:{0}')\n".format(tmp_file))
-            for line in self.frun_pre_lines:
-                f.write(line + '\n')
-            for line in self.frun_model_lines:
-                f.write(line + '\n')
-            for line in self.frun_post_lines:
-                f.write(line + '\n')
-
-
-
-    def setup_list_pars(self):
-        """ main entry point for setting up list multiplier
-                parameters
-
-                """
-
-        # todo - all that shit here with csv files
-        # - parse dict keys as filenames and values as either indices of columns or column names
-
-        os.chdir(self.m.model_ws)
-        try:
-            apply_list_pars()
-        except Exception as e:
-            os.chdir("..")
-            self.logger.lraise("error test running apply_list_pars():{0}".format(str(e)))
-        os.chdir('..')
-        line = "pyemu.helpers.apply_list_pars()\n"
-        self.logger.statement("forward_run line:{0}".format(line))
-        self.frun_pre_lines.append(line)
-
-
 
 

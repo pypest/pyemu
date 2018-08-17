@@ -330,84 +330,6 @@ def regdata_test():
     assert pst_new.reg_data.phimlim == phimlim
 
 
-def plot_flopy_par_ensemble_test():
-    import shutil
-    import numpy as np
-    try:
-        import flopy
-    except:
-        return
-    try:
-        import matplotlib.pyplot as plt
-    except:
-        print("error importing pyplot")
-        return
-    try:
-        import shapely
-    except:
-        print("error importing shapely")
-        return
-
-    import pyemu
-    bd = os.getcwd()
-    try:
-        org_model_ws = os.path.join("..", "examples", "Freyberg_transient")
-        nam_file = "freyberg.nam"
-
-        new_model_ws = "temp_pst_from_flopy"
-        pp_props = [["upw.hk", 0], ["upw.hk", 1]]
-        helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
-                                                 grid_props=pp_props, remove_existing=True,
-                                                 model_exe_name="mfnwt")
-
-        pst = pyemu.Pst(os.path.join(new_model_ws, "freyberg.pst"))
-        mc = pyemu.MonteCarlo(pst=pst)
-        os.chdir(new_model_ws)
-        cov = pyemu.Cov.from_ascii("freyberg.pst.prior.cov")
-        mc.draw(100, cov=cov)
-        # pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None, model=helper.m)
-        # pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None)
-
-        import cartopy.crs as ccrs
-        import cartopy.io.img_tiles as cimgt
-
-        import pyproj
-        # except:
-        #     return
-
-        stamen_terrain = cimgt.StamenTerrain()
-        zoom = 10
-
-        def fig_ax_gen():
-            fig = plt.figure(figsize=(20, 20))
-            nrow, ncol = 5, 4
-
-            axes = []
-            for i in range(nrow * ncol):
-                # print(i)
-                ax = plt.subplot(nrow, ncol, i + 1, projection=stamen_terrain.crs)
-                ax.set_extent([-97.775, -97.625, 30.2, 30.35])
-                # ax.set_extent([175.2, 176.2, -37, -38.2])
-                ax.add_image(stamen_terrain, zoom)
-                # plt.show()
-                axes.append(ax)
-
-                # break
-            return fig, axes
-
-        # fig,axes = fig_ax_gen()
-        # plt.show()
-        # return
-        pcolormesh_trans = ccrs.UTM(zone=14)
-        pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None, fig_axes_generator=fig_ax_gen,
-                                              pcolormesh_transform=pcolormesh_trans, model="freyberg.nam")
-
-        os.chdir("..")
-    except Exception as e:
-        os.chdir(bd)
-        raise Exception(str(e))
-
-
 def from_flopy_kl_test():
     import shutil
     import numpy as np
@@ -1151,7 +1073,7 @@ def csv_to_ins_test():
 
 
 if __name__ == "__main__":
-    csv_to_ins_test()
+    #csv_to_ins_test()
     # pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
@@ -1161,11 +1083,11 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    #from_flopy()
+    from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
     #from_flopy_test_reachinput_test()
-    # plot_flopy_par_ensemble_test()
+
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
