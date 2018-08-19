@@ -1029,17 +1029,19 @@ def pst_from_flopy_geo_draw_test():
 
 def csv_to_ins_test():
     import os
+    import numpy as np
     import pandas as pd
     import pyemu
 
-    cnames = ["col{0}".format(i) for i in range(100)]
-    rnames = ["row{0}".format(i) for i in range(100)]
+    cnames = ["col{0}".format(i) for i in range(10)]
+    rnames = ["row{0}".format(i) for i in range(10)]
     df = pd.DataFrame(index=rnames,columns=cnames)
-
+    df.loc[:,:] = np.random.random(df.shape)
+    df.to_csv(os.path.join("temp", "temp.csv"))
     names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
                                             only_cols=cnames[0])
     assert len(names) == df.shape[0], names
-
+    
     names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
                                             only_cols=cnames[0:2])
     assert len(names) == df.shape[0]*2, names
@@ -1073,7 +1075,7 @@ def csv_to_ins_test():
 
 
 if __name__ == "__main__":
-    #csv_to_ins_test()
+    csv_to_ins_test()
     # pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
@@ -1083,7 +1085,7 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    from_flopy()
+    #from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
     #from_flopy_test_reachinput_test()

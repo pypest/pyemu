@@ -745,7 +745,8 @@ def clean_missing_exponent(pst_filename,clean_filename="clean.pst"):
         for line in lines:
             f.write(line+'\n')
 
-def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None):
+def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None,
+                    marker='~',includes_header=True,includes_index=True):
 
     # process the csv_filename in case it is a dataframe
     if isinstance(csv_filename,str):
@@ -816,7 +817,8 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
     with open(ins_filename,'w') as f:
         f.write("pif ~\nl1\n")
         for i,rlabel in enumerate(rlabels):
-            f.write("l1 w ") #skip the row (index) label
+            if includes_header:
+                f.write("l1 ") #skip the row (index) label
             for j,clabel in enumerate(clabels):
                 if rlabel in only_rlabels and clabel in only_clabels:
                     oname = rlabel+"_"+clabel
@@ -824,6 +826,11 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
                     ovals.append(df.iloc[i,j])
                 else:
                     oname = "dum"
+                if j == 0:
+                    if includes_index:
+                        f.write(" {0},{0} ".format(marker))
+                else:
+                    f.write(" {0},{0} ".format(marker))
                 f.write(" !{0}! ".format(oname))
             f.write('\n')
     odf = pd.DataFrame({"obsnme":onames,"obsval":ovals},index=onames)
