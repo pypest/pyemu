@@ -456,7 +456,7 @@ def smp_to_ins_test():
         pass
     else:
         raise Exception("should have failed")
-    pyemu.pst_utils.smp_to_ins(smp,ins,True)
+    pyemu.smp_utils.smp_to_ins(smp,ins,True)
 
 def master_and_slaves():
     import shutil
@@ -1423,8 +1423,62 @@ def read_runstor_test():
         raise Exception()
 
 
+
+def smp_test():
+    import os
+    from pyemu.utils import smp_to_dataframe, dataframe_to_smp, \
+        smp_to_ins
+    from pyemu.pst.pst_utils import parse_ins_file
+
+    smp_filename = os.path.join("misc", "gainloss.smp")
+    df = smp_to_dataframe(smp_filename)
+    print(df.dtypes)
+    dataframe_to_smp(df, smp_filename + ".test")
+    smp_to_ins(smp_filename)
+    obs_names = parse_ins_file(smp_filename + ".ins")
+    print(len(obs_names))
+
+    smp_filename = os.path.join("misc", "sim_hds_v6.smp")
+    df = smp_to_dataframe(smp_filename)
+    print(df.dtypes)
+    dataframe_to_smp(df, smp_filename + ".test")
+    smp_to_ins(smp_filename)
+    obs_names = parse_ins_file(smp_filename + ".ins")
+    print(len(obs_names))
+
+
+def smp_dateparser_test():
+    import os
+    import pyemu
+    from pyemu.utils import smp_to_dataframe, dataframe_to_smp, \
+        smp_to_ins
+
+
+
+    smp_filename = os.path.join("misc", "gainloss.smp")
+    df = smp_to_dataframe(smp_filename, datetime_format="%d/%m/%Y %H:%M:%S")
+    print(df.dtypes)
+    dataframe_to_smp(df, smp_filename + ".test")
+    smp_to_ins(smp_filename)
+    obs_names = pyemu.pst_utils.parse_ins_file(smp_filename + ".ins")
+    print(len(obs_names))
+
+    smp_filename = os.path.join("misc", "sim_hds_v6.smp")
+    df = smp_to_dataframe(smp_filename)
+    print(df.dtypes)
+    dataframe_to_smp(df, smp_filename + ".test")
+    smp_to_ins(smp_filename)
+    obs_names = pyemu.pst_utils.parse_ins_file(smp_filename + ".ins")
+    print(len(obs_names))
+
+
+
+
 if __name__ == "__main__":
-    # read_runstor_test()
+    smp_test()
+    smp_dateparser_test()
+    smp_to_ins_test()
+    #read_runstor_test()
     #long_names()
     #master_and_slaves()
     #plot_id_bar_test()
@@ -1438,7 +1492,7 @@ if __name__ == "__main__":
     # par_knowledge_test()
     # grid_obs_test()
     # hds_timeseries_test()
-    postprocess_inactive_conc_test()
+    # postprocess_inactive_conc_test()
     # plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()

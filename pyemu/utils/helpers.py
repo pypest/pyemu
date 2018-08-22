@@ -24,22 +24,7 @@ except:
 import pyemu
 from pyemu.utils.os_utils import run, start_slaves
 
-def remove_readonly(func, path, excinfo):
-    """remove readonly dirs, apparently only a windows issue
-    add to all rmtree calls: shutil.rmtree(<tree>,onerror=remove_readonly), wk
 
-    Parameters
-    ----------
-    func : object
-        func
-    path : str
-        path
-    excinfo : object
-        info
-
-    """
-    os.chmod(path, 128) #stat.S_IWRITE==128==normal
-    func(path)
 
 def run(cmd_str,cwd='.',verbose=False):
     """ an OS agnostic function to execute command
@@ -1801,7 +1786,7 @@ class PstFromFlopyModel(object):
                 self.logger.lraise("'new_model_ws' already exists")
             else:
                 self.logger.warn("removing existing 'new_model_ws")
-                shutil.rmtree(new_model_ws,onerror=remove_readonly)
+                shutil.rmtree(new_model_ws,onerror=pyemu.os_utils.remove_readonly)
                 time.sleep(1)
         self.m.change_model_ws(new_model_ws,reset_external=True)
         self.m.exe_name = self.m.exe_name.replace(".exe",'')
@@ -2009,49 +1994,7 @@ class PstFromFlopyModel(object):
         df.loc[:,"tpl"] = tpl_file
         return df
 
-    @staticmethod
-    def write_zone_tpl(model, name, tpl_file, zn_array, zn_suffix, logger=None):
-        """ write a template file a for zone-based multiplier parameters
 
-        Parameters
-        ----------
-        model : flopy model object
-            model from which to obtain workspace information, nrow, and ncol
-        name : str
-            the base parameter name
-        tpl_file : str
-            the template file to write
-        zn_array : numpy.ndarray
-            an array used to skip inactive cells
-
-        logger : a logger object
-            optional - a logger object to document errors, etc.
-        Returns
-        -------
-        df : pandas.DataFrame
-            a dataframe with parameter information
-
-        """
-        parnme = []
-        with open(os.path.join(model.model_ws, tpl_file), 'w') as f:
-            f.write("ptf ~\n")
-            for i in range(model.nrow):
-                for j in range(model.ncol):
-                    if zn_array[i,j] < 1:
-                        pname = " 1.0  "
-                    else:
-                        pname = "{0}_zn{1}".format(name, zn_array[i, j])
-                        if len(pname) > 12:
-                            if logger is not None:
-                                logger.lraise("zone pname too long:{0}".\
-                                               format(pname))
-                        parnme.append(pname)
-                        pname = " ~   {0}    ~".format(pname)
-                    f.write(pname)
-                f.write("\n")
-        df = pd.DataFrame({"parnme":parnme}, index=parnme)
-        df.loc[:, "pargp"] = "{0}{1}".format(zn_suffix.replace("_",''), name)
-        return df
 
     def grid_prep(self):
         """ prepare grid-based parameterizations
@@ -2350,12 +2293,22 @@ class PstFromFlopyModel(object):
             df = None
             if suffix == self.cn_suffix:
                 self.log("writing const tpl:{0}".format(tpl_file))
-                df = self.write_const_tpl(name,tpl_file,self.m.bas6.ibound[layer].array)
+                #df = self.write_const_tpl(name,tpl_file,self.m.bas6.ibound[layer].array)
+                try:
+                    df = write_const_tpl(name, os.path.join(self.m.model_ws, tpl_file), self.cn_suffix,
+                                    self.m.bas6.ibound[layer].array, (self.m.nrow, self.m.ncol), self.m.sr)
+                except Exception as e:
+                    self.logger.lraise("error writing const template: {0}".format(str(e)))
                 self.log("writing const tpl:{0}".format(tpl_file))
 
             elif suffix == self.gr_suffix:
                 self.log("writing grid tpl:{0}".format(tpl_file))
-                df = self.write_grid_tpl(name,tpl_file,self.m.bas6.ibound[layer].array)
+                #df = self.write_grid_tpl(name,tpl_file,self.m.bas6.ibound[layer].array)
+                try:
+                    df = write_grid_tpl(name, os.path.join(self.m.model_ws, tpl_file), self.gr_suffix,
+                                    self.m.bas6.ibound[layer].array, (self.m.nrow, self.m.ncol), self.m.sr)
+                except Exception as e:
+                    self.logger.lraise("error writing grid template: {0}".format(str(e)))
                 self.log("writing grid tpl:{0}".format(tpl_file))
 
             elif suffix == self.zn_suffix:
@@ -2365,7 +2318,12 @@ class PstFromFlopyModel(object):
                                        if p.split('.')[-1] == attr_name)  # get dict relating to parameter prefix
                 else:
                     k_zone_dict = self.k_zone_dict
-                df = self.write_zone_tpl(self.m, name, tpl_file, k_zone_dict[layer], self.zn_suffix, self.logger)
+                #df = self.write_zone_tpl(self.m, name, tpl_file, self.k_zone_dict[layer], self.zn_suffix, self.logger)
+                try:
+                    df = write_zone_tpl(name,os.path.join(self.m.model_ws,tpl_file),self.zn_suffix,
+                                        self.k_zone_dict[layer],(self.m.nrow,self.m.ncol),self.m.sr)
+                except Exception as e:
+                    self.logger.lraise("error writing zone template: {0}".format(str(e)))
                 self.log("writing zone tpl:{0}".format(tpl_file))
 
             if df is None:
@@ -2677,6 +2635,7 @@ class PstFromFlopyModel(object):
             for col in par.columns:
                 if col in df.columns:
                     par.loc[df.parnme,col] = df.loc[:,col]
+
         par.loc[:,"parubnd"] = 10.0
         par.loc[:,"parlbnd"] = 0.1
 
@@ -3214,7 +3173,7 @@ class PstFromFlopyModel(object):
             new_sim_smp = os.path.join(self.m.model_ws,
                                               os.path.split(sim_smp)[-1])
             shutil.copy2(sim_smp,new_sim_smp)
-            pyemu.pst_utils.smp_to_ins(new_sim_smp)
+            pyemu.smp_utils.smp_to_ins(new_sim_smp)
 
     def setup_hob(self):
         """ setup observations from the MODFLOW HOB package
@@ -3494,206 +3453,154 @@ def apply_hfb_pars():
         hfb_org[['lay', 'irow1','icol1','irow2','icol2', 'hydchr']].to_csv(ofp, sep=' ',
                 header=None, index=None)
 
-def plot_flopy_par_ensemble(pst,pe,num_reals=None,model=None,fig_axes_generator=None,
-                            pcolormesh_transform=None):
-    """function to plot ensemble of parameter values for a flopy/modflow model.  Assumes
-    the FlopytoPst helper was used to setup the model and the forward run.
+def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None):
+    """ write a constant (uniform) template file
 
     Parameters
     ----------
-        pst : Pst instance
+    name : str
+        the base parameter name
+    tpl_file : str
+        the template file to write - include path
+    zn_array : numpy.ndarray
+        an array used to skip inactive cells
 
-        pe : ParameterEnsemble instance
-
-        num_reals : int
-            number of realizations to process.  If None, all realizations are processed.
-            default is None
-        model : flopy.mbase
-            model instance used for masking inactive areas and also geo-locating plots.  If None,
-            generic plots are made.  Default is None.
-        fig_axes_generator : function
-            a function that returns a pyplot.figure and list of pyplot.axes instances for plots.
-            If None, a generic 8.5inX11in figure with 3 rows and 2 cols is used.
-        pcolormesh_transform : cartopy.csr.CRS
-            transform to map pcolormesh plot into correct location.  Requires model arg
-
-
-    Note
-    ----
-        Needs "arr_pars.csv" to run
-
-    Todo
-    ----
-        add better support for log vs nonlog- currently just logging everything
-        add support for cartopy basemap and stamen tiles
+    Returns
+    -------
+    df : pandas.DataFrame
+        a dataframe with parameter information
 
     """
-    try:
-        import matplotlib.pyplot as plt
-    except Exception as e:
-        raise Exception("error importing matplotlib: {0}".format(str(e)))
-    try:
-        from matplotlib.backends.backend_pdf import PdfPages
-    except Exception as e:
-        raise Exception("error importing matplotlib: {0}".format(str(e)))
-    assert os.path.exists("arr_pars.csv"),"couldn't find arr_pars.csv, can't continue"
-    df = pd.read_csv("arr_pars.csv")
-    if isinstance(pst,str):
-        pst = pyemu.Pst(pst)
-    if isinstance(pe,str):
-        pe = pd.read_csv(pe,index_col=0)
-    if num_reals is None:
-        num_reals = pe.shape[0]
-    arr_dict,arr_mx,arr_mn = {},{},{}
-
-    islog = True
-
-    ib,sr = None,None
-    if model is not None:
-        if isinstance(model,str):
-            model = flopy.modflow.Modflow.load(model,load_only=[],verbose=False,check=False)
-        if model.bas6 is not None:
-            ib = {k:model.bas6.ibound[k].array for k in range(model.nlay)}
-            sr = model.sr
-        if model.btn is not None:
-            raise NotImplementedError()
-
-    for i in range(num_reals):
-        print(datetime.now(),"processing realization number {0} of {1}".format(i+1,num_reals))
-        pst.parameter_data.loc[pe.columns,"parval1"] = pe.iloc[i,:]
-        pst.write_input_files()
-        apply_array_pars()
-        for model_file,k in zip(df.model_file,df.layer):
-            arr = np.loadtxt(model_file)
-            if islog:
-                arr = np.log10(arr)
-
-            if ib is not None:
-                arr = np.ma.masked_where(ib[k]<1,arr)
-            arr = np.ma.masked_invalid(arr)
-            if model_file not in arr_dict.keys():
-                arr_dict[model_file] = []
-                arr_mx[model_file] = -1.0e+10
-                arr_mn[model_file] = 1.0e+10
-            arr_mx[model_file] = max(arr_mx[model_file],arr.max())
-            arr_mn[model_file] = min(arr_mn[model_file],arr.min())
-
-            arr_dict[model_file].append(arr)
 
 
+    if shape is None and zn_array is None:
+        raise Exception("must pass either zn_array or shape")
+    elif shape is None:
+        shape = zn_array.shape
 
-
-    def _get_fig_and_axes():
-        nrow, ncol = 3, 2
-        fig = plt.figure(figsize=(8.5, 11))
-        axes = [plt.subplot(nrow, ncol, ii + 1) for ii in range(nrow * ncol)]
-        [ax.set_xticklabels([]) for ax in axes]
-        [ax.set_yticklabels([]) for ax in axes]
-        return fig,axes
-
-    if fig_axes_generator is None:
-        fig_axes_generator = _get_fig_and_axes
-
-    for model_file,arrs in arr_dict.items():
-        k = df.loc[df.model_file==model_file,"layer"].values[0]
-        print("plotting arrays for {0}".format(model_file))
-        mx,mn = arr_mx[model_file],arr_mn[model_file]
-        with PdfPages(model_file+".pdf") as pdf:
-            fig,axes = fig_axes_generator()
-            ax_count = 0
-            for i,arr in enumerate(arrs):
-
-                if ax_count >= len(axes):
-
-                    pdf.savefig()
-                    plt.close(fig)
-                    fig, axes = fig_axes_generator()
-                    ax_count = 0
-                    #ax = plt.subplot(111)
-                if sr is not None:
-                    p = axes[ax_count].pcolormesh(sr.xcentergrid,sr.ycentergrid,arr,vmax=mx,vmin=mn,
-                                                  transform=pcolormesh_transform)
+    parnme = []
+    with open(tpl_file, 'w') as f:
+        f.write("ptf ~\n")
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                if zn_array[i, j] < 1:
+                    pname = " 1.0  "
                 else:
-                    p = axes[ax_count].imshow(arr,vmax=mx,vmin=mn)
-                plt.colorbar(p,ax=axes[ax_count])
-                if islog:
-                    arr = 10.*arr
-                axes[ax_count].set_title("real index:{0}, max:{1:5.2E}, min:{2:5.2E}".\
-                                         format(i,arr.max(),arr.min()),fontsize=6)
+                    pname = "{0}{1}".format(name, suffix)
+                    if len(pname) > 12:
+                        raise("zone pname too long:{0}". \
+                                           format(pname))
+                    parnme.append(pname)
+                    pname = " ~   {0}    ~".format(pname)
+                f.write(pname)
+            f.write("\n")
+    df = pd.DataFrame({"parnme": parnme}, index=parnme)
+    # df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
+    df.loc[:, "pargp"] = "{0}_{1}".format(name, suffix.replace('_', ''))
+    df.loc[:, "tpl"] = tpl_file
+    return df
 
-                ax_count += 1
-            stack = np.array(arrs)
-            arr_dict = {}
-            for lab,arr in zip(["mean","std"],[np.nanmean(stack,axis=0),np.nanstd(stack,axis=0)]):
-                if ib is not None:
-                    arr = np.ma.masked_where(ib[k]<1,arr)
-                arr = np.ma.masked_invalid(arr)
-                arr_dict[lab] = arr
-                if ax_count >= len(axes):
 
-                    pdf.savefig()
-                    plt.close(fig)
-                    fig, axes = fig_axes_generator()
-                    ax_count = 0
-                if sr is not None:
-                    p = axes[ax_count].pcolormesh(sr.xcentergrid,sr.ycentergrid,arr,
-                                                  transform=pcolormesh_transform)
+def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None):
+    """ write a grid-based template file
+    Parameters
+    ----------
+    name : str
+        the base parameter name
+    tpl_file : str
+        the template file to write - include path
+    zn_array : numpy.ndarray
+        an array used to skip inactive cells
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        a dataframe with parameter information
+
+    """
+
+    if shape is None and zn_array is None:
+        raise Exception("must pass either zn_array or shape")
+    elif shape is None:
+        shape = zn_array.shape
+
+    parnme, x, y = [], [], []
+    with open(tpl_file, 'w') as f:
+        f.write("ptf ~\n")
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                if zn_array[i, j] < 1:
+                    pname = ' 1.0 '
                 else:
-                    p = axes[ax_count].imshow(arr)
-                plt.colorbar(p,ax=axes[ax_count])
-                axes[ax_count].set_title("{0}, max:{1:5.2E}, min:{2:5.2E}".format(lab,arr.max(),arr.min()),fontsize=6)
-                ax_count += 1
-            pdf.savefig()
-            plt.close("all")
-            if sr is not None:
-                for i,arr in enumerate(arrs):
-                    arr_dict[str(i)] = arr
-                flopy.export.shapefile_utils.write_grid_shapefile(model_file+".shp",sr,array_dict=arr_dict)
+                    pname = "{0}{1:03d}{2:03d}".format(name, i, j)
+                    if len(pname) > 12:
+                        raise("grid pname too long:{0}". \
+                                           format(pname))
+                    parnme.append(pname)
+                    pname = ' ~     {0}   ~ '.format(pname)
+                    x.append(spatial_reference.xcentergrid[i, j])
+                    y.append(spatial_reference.ycentergrid[i, j])
 
-    return
+                f.write(pname)
+            f.write("\n")
+    df = pd.DataFrame({"parnme": parnme, "x": x, "y": y}, index=parnme)
+    df.loc[:, "pargp"] = "{0}{1}".format(suffix.replace('_', ''), name)
+    df.loc[:, "tpl"] = tpl_file
+    return df
+
+
+def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None):
+    """ write a zone template file
+
+    Parameters
+    ----------
+    model : flopy model object
+        model from which to obtain workspace information, nrow, and ncol
+    name : str
+        the base parameter name
+    tpl_file : str
+        the template file to write
+    zn_array : numpy.ndarray
+        an array used to skip inactive cells
+
+    logger : a logger object
+        optional - a logger object to document errors, etc.
+    Returns
+    -------
+    df : pandas.DataFrame
+        a dataframe with parameter information
+
+    """
+
+    if shape is None and zn_array is None:
+        raise Exception("must pass either zn_array or shape")
+    elif shape is None:
+        shape = zn_array.shape
+
+    parnme = []
+    with open(tpl_file, 'w') as f:
+        f.write("ptf ~\n")
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                if zn_array[i, j] < 1:
+                    pname = " 1.0  "
+                else:
+                    pname = "{0}_zn{1}".format(name, zn_array[i, j])
+                    if len(pname) > 12:
+                        raise("zone pname too long:{0}". \
+                                          format(pname))
+                    parnme.append(pname)
+                    pname = " ~   {0}    ~".format(pname)
+                f.write(pname)
+            f.write("\n")
+    df = pd.DataFrame({"parnme": parnme}, index=parnme)
+    df.loc[:, "pargp"] = "{0}{1}".format(suffix.replace("_", ''), name)
+    return df
 
 
 def _istextfile(filename, blocksize=512):
-
-
-    """
-        Function found from:
-        https://eli.thegreenplace.net/2011/10/19/perls-guess-if-file-is-text-or-binary-implemented-in-python
-
-        Returns True if file is most likely a text file
-        Returns False if file is most likely a binary file
-
-        Uses heuristics to guess whether the given file is text or binary,
-        by reading a single block of bytes from the file.
-        If more than 30% of the chars in the block are non-text, or there
-        are NUL ('\x00') bytes in the block, assume this is a binary file.
-    """
-
-    import sys
-    PY3 = sys.version_info[0] == 3
-
-    # A function that takes an integer in the 8-bit range and returns
-    # a single-character byte object in py3 / a single-character string
-    # in py2.
-    #
-    int2byte = (lambda x: bytes((x,))) if PY3 else chr
-
-    _text_characters = (
-        b''.join(int2byte(i) for i in range(32, 127)) +
-        b'\n\r\t\f\b')
-    block = open(filename,'rb').read(blocksize)
-    if b'\x00' in block:
-        # Files with null bytes are binary
-        return False
-    elif not block:
-        # An empty file is considered a valid text file
-        return True
-
-    # Use translate's 'deletechars' argument to efficiently remove all
-    # occurrences of _text_characters from the block
-    nontext = block.translate(None, _text_characters)
-    return float(len(nontext)) / len(block) <= 0.30
-
+    warnings.warn("_istextfile() has moved to os_utils",PyemuWarning)
+    return pyemu.os_utils._istextfile(filename,blocksize=blocksize)
 
 
 def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
@@ -3894,12 +3801,5 @@ def write_df_tpl(filename,df,sep=',',tpl_marker='~',**kwargs):
         f.write("ptf {0}\n".format(tpl_marker))
         f.flush()
         df.to_csv(f,sep=sep,mode='a',**kwargs)
-
-
-
-
-
-
-
 
 
