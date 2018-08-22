@@ -707,6 +707,48 @@ def from_flopy():
     cov = helper.build_prior(fmt="none", sparse=True)
     cov.to_coo(os.path.join("temp", "cov.coo"))
 
+    from_flopy_zone_pars()
+
+
+def from_flopy_zone_pars():
+    import numpy as np
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    m.change_model_ws(org_model_ws)
+    m.write_input()
+
+    new_model_ws = "temp_pst_from_flopy"
+    grid_props = [["upw.ss", [0, 1]], ["upw.ss", 1], ["upw.ss", 2], ["extra.pr", 0],
+                ["rch.rech", 0], ["rch.rech", [1, 2]]]
+    const_props = [["rch.rech", i] for i in range(m.nper)]
+    grid_props = grid_props.extend(["extra.pr", 0])
+    pp_props = [["upw.hk", [0, 1]], ["extra.pr", 1], ["upw.ss", 1]]
+    zone_props = [["extra.pr", 0], ["extra.pr", 2], ["upw.vka", 1], ["upw.vka", 2]]
+
+    zn_arr = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "hk.zones"), dtype=int)
+    zn_arr2 = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "rand.zones"), dtype=int)
+    k_zone_dict = {k: zn_arr for k in range(3)} # {"upw.vka": {k: zn_arr for k in range(3)}, "extra.pr": {k: zn_arr2 for k in range(3)}}
+
+    obssim_smp_pairs = None
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
+                                             const_props=const_props,
+                                             grid_props=grid_props,
+                                             zone_props=zone_props,
+                                             pp_props=pp_props,
+                                             remove_existing=True,
+                                             obssim_smp_pairs=obssim_smp_pairs,
+                                             pp_space=4,
+                                             use_pp_zones=True,
+                                             k_zone_dict=k_zone_dict,
+                                             hds_kperk=[0, 0], build_prior=False)
+    pst = helper.pst
+
 
 def from_flopy_test():
     bd = os.getcwd()
@@ -1148,8 +1190,8 @@ def pst_from_flopy_geo_draw_test():
 
 
 if __name__ == "__main__":
-    pst_from_flopy_geo_draw_test()
-    #try_process_ins_test()
+    # pst_from_flopy_geo_draw_test()
+    # try_process_ins_test()
     # write_tables_test()
     # res_stats_test()
     # test_write_input_files()
@@ -1157,10 +1199,11 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    from_flopy()
+    # from_flopy()
+    from_flopy_zone_pars()
     # add_obs_test()
-    from_flopy_kl_test()
-    from_flopy_test_reachinput_test()
+    # from_flopy_kl_test()
+    # from_flopy_test_reachinput_test()
     # plot_flopy_par_ensemble_test()
     # add_pi_test()
     # regdata_test()

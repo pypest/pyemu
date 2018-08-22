@@ -76,7 +76,6 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
     else:
         assert sr is not None,"if 'ml' is not passed, 'sr' must be passed"
         if ibound is None:
-
             print("ibound not passed, using array of ones")
             ibound = {k:np.ones((sr.nrow,sr.ncol)) for k in prefix_dict.keys()}
         #assert ibound is not None,"if 'ml' is not pass, 'ibound' must be passed"
@@ -85,8 +84,7 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
         xcentergrid = sr.xcentergrid
         ycentergrid = sr.ycentergrid
     except Exception as e:
-        raise Exception("error getting xcentergrid and/or ycentergrid from 'sr':{0}".\
-                        format(str(e)))
+        raise Exception("error getting xcentergrid and/or ycentergrid from 'sr':{0}".format(str(e)))
     start = int(float(every_n_cell) / 2.0)
 
     #build a generic prefix_dict

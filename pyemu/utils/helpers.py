@@ -1397,9 +1397,12 @@ class PstFromFlopyModel(object):
         new_model_ws exists, an exception is raised.  If True and new_model_ws
         exists, the directory is destroyed - user beware! Default is False.
     k_zone_dict : dict
-        a dictionary of zero-based layer index, zone array pairs.  Used to
+        a dictionary of zero-based layer index, zone array pairs. e.g. {lay: np.2darray}  Used to
         override using ibound zones for zone-based parameterization.  If None,
-        use ibound values greater than zero as zones.
+        use ibound values greater than zero as zones. Alternatively a dictionary of dictionaries
+        can be passed to allow different zones to be defined for different parameters.
+        e.g. {"upw.hk" {lay: np.2darray}, "extra.rc11" {lay: np.2darray}}
+        or {"hk" {lay: np.2darray}, "rc11" {lay: np.2darray}}
     use_pp_zones : bool
          a flag to use ibound zones (or k_zone_dict, see above) as pilot
          point zones.  If False, ibound values greater than zero are treated as
@@ -1553,15 +1556,27 @@ class PstFromFlopyModel(object):
             self.tmp_files.extend(tmp_files)
 
         if k_zone_dict is None:
-            self.k_zone_dict = {k:self.m.bas6.ibound[k].array for k in np.arange(self.m.nlay)}
+            self.k_zone_dict = {k: self.m.bas6.ibound[k].array for k in np.arange(self.m.nlay)}
         else:
-            for k,arr in k_zone_dict.items():
-                if k not in np.arange(self.m.nlay):
-                    self.logger.lraise("k_zone_dict layer index not in nlay:{0}".
-                                       format(k))
-                if arr.shape != (self.m.nrow,self.m.ncol):
-                    self.logger.lraise("k_zone_dict arr for k {0} has wrong shape:{1}".
-                                       format(k,arr.shape))
+            # check if k_zone_dict is a dictionary of dictionaries
+            if np.all([isinstance(v, dict) for v in k_zone_dict.values()]):
+                # loop over outer keys
+                for par_key in k_zone_dict.keys():
+                    for k, arr in k_zone_dict[par_key].items():
+                        if k not in np.arange(self.m.nlay):
+                            self.logger.lraise("k_zone_dict for par {1}, layer index not in nlay:{0}".
+                                               format(k, par_key))
+                        if arr.shape != (self.m.nrow, self.m.ncol):
+                            self.logger.lraise("k_zone_dict arr for k {0} for par{2} has wrong shape:{1}".
+                                               format(k, arr.shape, par_key))
+            else:
+                for k, arr in k_zone_dict.items():
+                    if k not in np.arange(self.m.nlay):
+                        self.logger.lraise("k_zone_dict layer index not in nlay:{0}".
+                                           format(k))
+                    if arr.shape != (self.m.nrow, self.m.ncol):
+                        self.logger.lraise("k_zone_dict arr for k {0} has wrong shape:{1}".
+                                           format(k, arr.shape))
             self.k_zone_dict = k_zone_dict
 
         # add any extra commands to the forward run lines
@@ -1888,6 +1903,7 @@ class PstFromFlopyModel(object):
                 df = pd.DataFrame({"org_file":org,"mlt_file":mlt,"model_file":mod,"layer":layer})
                 df.loc[:,"suffix"] = suffix
                 df.loc[:,"prefix"] = mlt_prefix
+                df.loc[:,"attr_name"] = attr_name
                 mlt_dfs.append(df)
         if len(mlt_dfs) > 0:
             mlt_df = pd.concat(mlt_dfs,ignore_index=True)
@@ -2096,7 +2112,18 @@ class PstFromFlopyModel(object):
 
         self.log("calling setup_pilot_point_grid()")
         if self.use_pp_zones:
-            ib = self.k_zone_dict
+            # check if k_zone_dict is a dictionary of dictionaries
+            if np.all([isinstance(v, dict) for v in self.k_zone_dict.values()]):
+                ib = {attr: {} for attr in pp_df.attr_name.unique()}
+                for attr in ib.keys():
+                    if attr in [p.split('.')[-1] for p in self.k_zone_dict.keys()]:
+                        ib[attr] = next(k_dict for p, k_dict in self.k_zone_dict.items() if p.split('.')[-1] == attr)
+                    else:
+                        warnings.warn("Dictionary of dictionaries passed as zones, {0} not in keys: {1}. \
+                        Using ibound for zones".format(attr, self.k_zone_dict.keys()), PyemuWarning)
+                        ib[attr] = {k: self.m.bas6.ibound[k].array for k in range(self.m.nlay)}
+            else:
+                ib = self.k_zone_dict
         else:
             ib = {k:self.m.bas6.ibound[k].array for k in range(self.m.nlay)}
 
@@ -2314,6 +2341,11 @@ class PstFromFlopyModel(object):
                 self.logger.lraise("wrong number of names for {0}"\
                                    .format(mlt_file))
             name = names.iloc[0]
+            attr_names = mlt_df.loc[mlt_df.mlt_file == mlt_file, "attr_name"]
+            if attr_names.unique().shape[0] != 1:
+                self.logger.lraise("wrong number of attr_names for {0}".format(mlt_file))
+            attr_name = attr_names.iloc[0]
+
             #ib = self.k_zone_dict[layer]
             df = None
             if suffix == self.cn_suffix:
@@ -2328,7 +2360,12 @@ class PstFromFlopyModel(object):
 
             elif suffix == self.zn_suffix:
                 self.log("writing zone tpl:{0}".format(tpl_file))
-                df = self.write_zone_tpl(self.m, name, tpl_file, self.k_zone_dict[layer], self.zn_suffix, self.logger)
+                if np.all([isinstance(v, dict) for v in self.k_zone_dict.values()]):  # check is dict of dicts
+                    k_zone_dict = next(k_dict for p, k_dict in self.k_zone_dict.items()
+                                       if p.split('.')[-1] == attr_name)  # get dict relating to parameter prefix
+                else:
+                    k_zone_dict = self.k_zone_dict
+                df = self.write_zone_tpl(self.m, name, tpl_file, k_zone_dict[layer], self.zn_suffix, self.logger)
                 self.log("writing zone tpl:{0}".format(tpl_file))
 
             if df is None:
