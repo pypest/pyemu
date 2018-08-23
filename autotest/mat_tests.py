@@ -615,7 +615,7 @@ def sparse_get_sparse_test():
 
 if __name__ == "__main__":
     # cov_scale_offset_test()
-    # coo_tests()
+    coo_tests()
     # indices_test()
     # mat_test()
     # load_jco_test()
@@ -630,7 +630,7 @@ if __name__ == "__main__":
     # sigma_range_test()
     # cov_replace_test()
     # from_names_test()
-    from_uncfile_test()
+    #from_uncfile_test()
     # copy_test()
     # sparse_constructor_test()
     # sparse_extend_test()
