@@ -471,7 +471,7 @@ class ObservationEnsemble(Ensemble):
         The ensemble is transposed in the binary file
 
         """
-        self.as_pyemu_matrix().T.to_binary(filename)
+        self.as_pyemu_matrix().to_coo(filename)
 
 
     @classmethod
@@ -491,7 +491,7 @@ class ObservationEnsemble(Ensemble):
 
         """
         m = Matrix.from_binary(filename)
-        return ObservationEnsemble(data=m.T.x,pst=pst, index=m.col_names)
+        return ObservationEnsemble(data=m.x,pst=pst, index=m.row_names)
 
 
     @property
@@ -1781,7 +1781,7 @@ class ParameterEnsemble(Ensemble):
             retrans = True
         if self.isnull().values.any():
             warnings.warn("NaN in par ensemble",PyemuWarning)
-        self.as_pyemu_matrix().to_binary(filename)
+        self.as_pyemu_matrix().to_coo(filename)
         if retrans:
             self._transform(inplace=True)
 
