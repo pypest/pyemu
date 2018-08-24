@@ -1041,7 +1041,7 @@ def csv_to_ins_test():
     names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
                                             only_cols=cnames[0])
     assert len(names) == df.shape[0], names
-    
+
     names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
                                             only_cols=cnames[0:2])
     assert len(names) == df.shape[0]*2, names
