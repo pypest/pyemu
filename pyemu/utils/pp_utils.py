@@ -80,6 +80,16 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
             ibound = {k:np.ones((sr.nrow,sr.ncol)) for k in prefix_dict.keys()}
         #assert ibound is not None,"if 'ml' is not pass, 'ibound' must be passed"
 
+    if isinstance(ibound, np.ndarray):
+        assert np.ndim(ibound) == 2 or np.ndim(ibound) == 3, \
+            "ibound needs to be either 3d np.ndarry or k_dict of 2d arrays. " \
+            "Array of {0} dimensions passed".format(np.ndim(ibound))
+        if np.ndim(ibound) == 2:
+            ibound = {0: ibound}
+        else:
+            ibound = {k: arr for k, arr in enumerate(ibound)}
+
+
     try:
         xcentergrid = sr.xcentergrid
         ycentergrid = sr.ycentergrid
