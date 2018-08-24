@@ -816,8 +816,43 @@ def mixed_par_draw_test():
     #cov.drop(pst.par_names[:2], 0)
     assert pst.npar == npar
 
+
+def ensemble_deviations_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+
+    pe = pyemu.ParameterEnsemble.from_uniform_draw(pst,num_reals=10)
+    dev = pe.get_deviations()
+    assert dev.shape == pe.shape
+    assert type(dev) == type(pe)
+
+    oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst=pst,num_reals=10)
+    dev = oe.get_deviations()
+    assert dev.shape == oe.shape
+    assert type(dev) == type(oe)
+
+    df = pd.DataFrame(index=np.arange(10), columns=pst.par_names)
+    df.loc[:,:]= 1.0
+    pe = pyemu.ParameterEnsemble.from_dataframe(pst=pst,df=df)
+    dev = pe.get_deviations()
+    assert dev.max().max() == 0.0
+    assert dev.min().min() == 0.0
+
+    df = pd.DataFrame(index=np.arange(10), columns=pst.obs_names)
+    df.loc[:, :] = 1.0
+    oe = pyemu.ObservationEnsemble.from_dataframe(pst=pst, df=df)
+    dev = oe.get_deviations()
+    assert dev.max().max() == 0.0
+    assert dev.min().min() == 0.0
+
+
 if __name__ == "__main__":
-    mixed_par_draw_test()
+    ensemble_deviations_test()
+    #mixed_par_draw_test()
     #triangular_draw_test()
     # sparse_draw_test()
     # binary_ensemble_dev()

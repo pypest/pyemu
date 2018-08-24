@@ -198,8 +198,8 @@ class Matrix(object):
 
     par_length = 12
     obs_length = 20
-    new_par_length = 100
-    new_obs_length = 100
+    new_par_length = 200
+    new_obs_length = 200
 
     def __init__(self, x=None, row_names=[], col_names=[], isdiagonal=False,
                  autoalign=True):
@@ -1469,7 +1469,7 @@ class Matrix(object):
 
 
     def to_coo(self,filename,droptol=None,chunk=None):
-        """write a PEST-compatible binary file.  The data format is
+        """write a new format binary file.  The data format is
         [int,int,float] for i,j,value.  It is autodetected during
         the read with Matrix.from_binary().
 
@@ -1523,6 +1523,8 @@ class Matrix(object):
 
         for name in self.col_names:
             if len(name) > self.new_par_length:
+                warnings.warn("par name '{0}' greater than {1} chars"\
+                              .format(name,self.new_par_length))
                 name = name[:self.new_par_length - 1]
             elif len(name) < self.new_par_length:
                 for i in range(len(name), self.new_par_length):
@@ -1530,6 +1532,8 @@ class Matrix(object):
             f.write(name.encode())
         for name in self.row_names:
             if len(name) > self.new_obs_length:
+                warnings.warn("obs name '{0}' greater than {1} chars"\
+                              .format(name, self.new_obs_length))
                 name = name[:self.new_obs_length - 1]
             elif len(name) < self.new_obs_length:
                 for i in range(len(name), self.new_obs_length):
@@ -1598,6 +1602,7 @@ class Matrix(object):
 
         for name in self.col_names:
             if len(name) > self.par_length:
+                warnings.warn("par name '{0}' greater than {1} chars".format(name, self.par_length))
                 name = name[:self.par_length - 1]
             elif len(name) < self.par_length:
                 for i in range(len(name), self.par_length):
@@ -1605,6 +1610,7 @@ class Matrix(object):
             f.write(name.encode())
         for name in self.row_names:
             if len(name) > self.obs_length:
+                warnings.warn("obs name '{0}' greater than {1} chars".format(name, self.obs_length))
                 name = name[:self.obs_length - 1]
             elif len(name) < self.obs_length:
                 for i in range(len(name), self.obs_length):
@@ -1652,7 +1658,7 @@ class Matrix(object):
             # raise TypeError('Matrix.from_binary(): Jco produced by ' +
             #                 'deprecated version of PEST,' +
             #                 'Use JcoTRANS to convert to new format')
-            print("'COO' format detected...")
+            print("new binary format detected...")
 
             data = np.fromfile(f, Matrix.coo_rec_dt, icount)
             if sparse:

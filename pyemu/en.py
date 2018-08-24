@@ -293,6 +293,24 @@ class Ensemble(pd.DataFrame):
         return delta.T * delta
 
 
+    def get_deviations(self):
+        """get the deviations of the ensemble value from the mean vector
+
+        Returns
+        -------
+            en : pyemu.Ensemble
+                Ensemble of deviations from the mean
+        """
+
+        mean_vec = self.mean()
+
+        df = self.loc[:,:].copy()
+        for col in df.columns:
+            df.loc[:,col] -= mean_vec[col]
+        return type(self).from_dataframe(pst=self.pst,df=df)
+
+
+
 
 class ObservationEnsemble(Ensemble):
     """ Ensemble derived type for observations.  This class is primarily used to
