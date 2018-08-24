@@ -2057,16 +2057,20 @@ class PstFromFlopyModel(object):
         if self.use_pp_zones:
             # check if k_zone_dict is a dictionary of dictionaries
             if np.all([isinstance(v, dict) for v in self.k_zone_dict.values()]):
-                ib = {attr: {} for attr in pp_df.attr_name.unique()}
-                for attr in ib.keys():
-                    if attr in [p.split('.')[-1] for p in self.k_zone_dict.keys()]:
-                        ib[attr] = next(k_dict for p, k_dict in self.k_zone_dict.items() if p.split('.')[-1] == attr)
-                    else:
-                        warnings.warn("Dictionary of dictionaries passed as zones, {0} not in keys: {1}. \
-                        Using ibound for zones".format(attr, self.k_zone_dict.keys()), PyemuWarning)
-                        ib[attr] = {k: self.m.bas6.ibound[k].array for k in range(self.m.nlay)}
+                ib = {p.split('.')[-1]: k_dict for p, k_dict in self.k_zone_dict.items()}
+                for attr in pp_df.attr_name.unique():
+                    if attr not in [p.split('.')[-1] for p in ib.keys()]:
+                        if 'general_zn' not in ib.keys():
+                            warnings.warn("Dictionary of dictionaries passed as zones, {0} not in keys: {1}. "
+                                          "Will use ibound for zones".format(attr, ib.keys()), PyemuWarning)
+                        else:
+                            self.logger.statement(
+                                "Dictionary of dictionaries passed as pp zones, "
+                                "using 'general_zn' for {0}".format(attr))
+                    if 'general_zn' not in ib.keys():
+                        ib['general_zn'] = {k: self.m.bas6.ibound[k].array for k in range(self.m.nlay)}
             else:
-                ib = self.k_zone_dict
+                ib = {'general_zn': self.k_zone_dict}
         else:
             ib = {k:self.m.bas6.ibound[k].array for k in range(self.m.nlay)}
 
@@ -2083,6 +2087,7 @@ class PstFromFlopyModel(object):
                     self.logger.warn("resetting negative ibound values for PP zone"+ \
                                      "array in layer {0} : {1}".format(k+1,u))
                     i[i<0] = u
+            ib = {'general_zn': ib}
         pp_df = pyemu.pp_utils.setup_pilotpoints_grid(self.m,
                                          ibound=ib,
                                          use_ibound_zones=self.use_pp_zones,
@@ -2102,15 +2107,24 @@ class PstFromFlopyModel(object):
         pargp = pp_df.pargp.unique()
         pp_dfs_k = {}
         fac_files = {}
+        pp_processed = set()
         pp_df.loc[:,"fac_file"] = np.NaN
         for pg in pargp:
             ks = pp_df.loc[pp_df.pargp==pg,"k"].unique()
             if len(ks) == 0:
                 self.logger.lraise("something is wrong in fac calcs for par group {0}".format(pg))
             if len(ks) == 1:
-
-                ib_k = ib[ks[0]]
-            if len(ks) != 1:
+                if np.all([isinstance(v, dict) for v in ib.values()]):  # check is dict of dicts
+                    if np.any([pg.startswith(p) for p in ib.keys()]):
+                        p = next(p for p in ib.keys() if pg.startswith(p))
+                        # get dict relating to parameter prefix
+                        ib_k = ib[p][ks[0]]
+                    else:
+                        p = 'general_zn'
+                        ib_k = ib[p][ks[0]]
+                else:
+                    ib_k = ib[ks[0]]
+            if len(ks) != 1:  # TODO
                 #self.logger.lraise("something is wrong in fac calcs for par group {0}".format(pg))
                 self.logger.warn("multiple k values for {0},forming composite zone array...".format(pg))
                 ib_k = np.zeros((self.m.nrow,self.m.ncol))
@@ -2119,45 +2133,49 @@ class PstFromFlopyModel(object):
                     t[t<1] = 0
                     ib_k[t>0] = t[t>0]
             k = int(ks[0])
-            if k not in pp_dfs_k.keys():
-                self.log("calculating factors for k={0}".format(k))
+            kattr_id = "{}_{}".format(k, p)
+            kp_id = "{}_{}".format(k, pg)
+            if kp_id not in pp_dfs_k.keys():
+                self.log("calculating factors for p={0}, k={1}".format(pg, k))
+                fac_file = os.path.join(self.m.model_ws, "pp_k{0}.fac".format(kattr_id))
+                var_file = fac_file.replace("{0}.fac", ".var.dat")
+                pp_df_k = pp_df.loc[pp_df.pargp == pg]
+                if kattr_id not in pp_processed:
+                    self.logger.statement("saving krige variance file:{0}"
+                                          .format(var_file))
+                    self.logger.statement("saving krige factors file:{0}"
+                                          .format(fac_file))
+                    ok_pp = pyemu.geostats.OrdinaryKrige(self.pp_geostruct, pp_df_k)
+                    ok_pp.calc_factors_grid(self.m.sr, var_filename=var_file, zone_array=ib_k)
+                    ok_pp.to_grid_factors_file(fac_file)
+                    pp_processed.add(kattr_id)
+                fac_files[kp_id] = fac_file
+                self.log("calculating factors for p={0}, k={1}".format(pg, k))
+                pp_dfs_k[kp_id] = pp_df_k
 
-                fac_file = os.path.join(self.m.model_ws,"pp_k{0}.fac".format(k))
-                var_file = fac_file.replace(".fac",".var.dat")
-                self.logger.statement("saving krige variance file:{0}"
-                                      .format(var_file))
-                self.logger.statement("saving krige factors file:{0}"\
-                                      .format(fac_file))
-                pp_df_k = pp_df.loc[pp_df.pargp==pg]
-                ok_pp = pyemu.geostats.OrdinaryKrige(self.pp_geostruct,pp_df_k)
-                ok_pp.calc_factors_grid(self.m.sr,var_filename=var_file,
-                                        zone_array=ib_k)
-                ok_pp.to_grid_factors_file(fac_file)
-                fac_files[k] = fac_file
-                self.log("calculating factors for k={0}".format(k))
-                pp_dfs_k[k] = pp_df_k
-
-        for k,fac_file in fac_files.items():
+        for kp_id, fac_file in fac_files.items():
+            k = int(kp_id.split('_')[0])
+            pp_prefix = kp_id.split('_', 1)[-1]
             #pp_files = pp_df.pp_filename.unique()
             fac_file = os.path.split(fac_file)[-1]
-            pp_prefixes = pp_dict[k]
-            for pp_prefix in pp_prefixes:
-                self.log("processing pp_prefix:{0}".format(pp_prefix))
-                if pp_prefix not in pp_array_file.keys():
-                    self.logger.lraise("{0} not in self.pp_array_file.keys()".
-                                       format(pp_prefix,','.
-                                              join(pp_array_file.keys())))
+            # pp_prefixes = pp_dict[k]
+            # for pp_prefix in pp_prefixes:
+            self.log("processing pp_prefix:{0}".format(pp_prefix))
+            if pp_prefix not in pp_array_file.keys():
+                self.logger.lraise("{0} not in self.pp_array_file.keys()".
+                                   format(pp_prefix,','.
+                                          join(pp_array_file.keys())))
 
 
-                out_file = os.path.join(self.arr_mlt,os.path.split(pp_array_file[pp_prefix])[-1])
+            out_file = os.path.join(self.arr_mlt,os.path.split(pp_array_file[pp_prefix])[-1])
 
-                pp_files = pp_df.loc[pp_df.pp_filename.apply(lambda x: pp_prefix in x),"pp_filename"]
-                if pp_files.unique().shape[0] != 1:
-                    self.logger.lraise("wrong number of pp_files found:{0}".format(','.join(pp_files)))
-                pp_file = os.path.split(pp_files.iloc[0])[-1]
-                pp_df.loc[pp_df.pargp==pp_prefix,"fac_file"] = fac_file
-                pp_df.loc[pp_df.pargp==pp_prefix,"pp_file"] = pp_file
-                pp_df.loc[pp_df.pargp==pp_prefix,"out_file"] = out_file
+            pp_files = pp_df.loc[pp_df.pp_filename.apply(lambda x: pp_prefix in x),"pp_filename"]
+            if pp_files.unique().shape[0] != 1:
+                self.logger.lraise("wrong number of pp_files found:{0}".format(','.join(pp_files)))
+            pp_file = os.path.split(pp_files.iloc[0])[-1]
+            pp_df.loc[pp_df.pargp==pp_prefix,"fac_file"] = fac_file
+            pp_df.loc[pp_df.pargp==pp_prefix,"pp_file"] = pp_file
+            pp_df.loc[pp_df.pargp==pp_prefix,"out_file"] = out_file
 
         pp_df.loc[:,"pargp"] = pp_df.pargp.apply(lambda x: "pp_{0}".format(x))
         out_files = mlt_df.loc[mlt_df.mlt_file.
@@ -2314,14 +2332,20 @@ class PstFromFlopyModel(object):
             elif suffix == self.zn_suffix:
                 self.log("writing zone tpl:{0}".format(tpl_file))
                 if np.all([isinstance(v, dict) for v in self.k_zone_dict.values()]):  # check is dict of dicts
-                    k_zone_dict = next(k_dict for p, k_dict in self.k_zone_dict.items()
-                                       if p.split('.')[-1] == attr_name)  # get dict relating to parameter prefix
+                    if attr_name in [p.split('.')[-1] for p in self.k_zone_dict.keys()]:
+                        k_zone_dict = next(k_dict for p, k_dict in self.k_zone_dict.items()
+                                           if p.split('.')[-1] == attr_name)  # get dict relating to parameter prefix
+                    else:
+                        assert 'general_zn' in self.k_zone_dict.keys(), \
+                            "Neither {0} nor 'general_zn' are in k_zone_dict keys: {1}".format(attr_name,
+                                                                                               k_zone_dict.keys())
+                        k_zone_dict = self.k_zone_dict['general_zn']
                 else:
                     k_zone_dict = self.k_zone_dict
                 #df = self.write_zone_tpl(self.m, name, tpl_file, self.k_zone_dict[layer], self.zn_suffix, self.logger)
                 try:
-                    df = write_zone_tpl(name,os.path.join(self.m.model_ws,tpl_file),self.zn_suffix,
-                                        self.k_zone_dict[layer],(self.m.nrow,self.m.ncol),self.m.sr)
+                    df = write_zone_tpl(name, os.path.join(self.m.model_ws, tpl_file), self.zn_suffix,
+                                        k_zone_dict[layer], (self.m.nrow, self.m.ncol), self.m.sr)
                 except Exception as e:
                     self.logger.lraise("error writing zone template: {0}".format(str(e)))
                 self.log("writing zone tpl:{0}".format(tpl_file))

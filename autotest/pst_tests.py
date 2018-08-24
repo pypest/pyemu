@@ -608,13 +608,14 @@ def from_flopy_zone_pars():
                 ["rch.rech", 0], ["rch.rech", [1, 2]]]
     const_props = [["rch.rech", i] for i in range(m.nper)]
     grid_props = grid_props.extend(["extra.pr", 0])
-    pp_props = [["upw.hk", [0, 1]], ["extra.pr", 1], ["upw.ss", 1]]
     zone_props = [["extra.pr", 0], ["extra.pr", 2], ["upw.vka", 1], ["upw.vka", 2]]
 
     zn_arr = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "hk.zones"), dtype=int)
     zn_arr2 = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "rand.zones"), dtype=int)
-    k_zone_dict = {k: zn_arr for k in range(3)} # {"upw.vka": {k: zn_arr for k in range(3)}, "extra.pr": {k: zn_arr2 for k in range(3)}}
 
+    pp_props = [["upw.hk", [0, 1]], ["extra.pr", 1], ["upw.ss", 1], ["upw.ss", 2], ["upw.vka", 2]]
+    k_zone_dict = {"upw.hk": {k: zn_arr for k in range(3)}, "extra.pr": {k: zn_arr2 for k in range(3)},
+                   "general_zn": {k: zn_arr for k in range(3)}}
     obssim_smp_pairs = None
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              const_props=const_props,
@@ -627,7 +628,20 @@ def from_flopy_zone_pars():
                                              use_pp_zones=True,
                                              k_zone_dict=k_zone_dict,
                                              hds_kperk=[0, 0], build_prior=False)
-    pst = helper.pst
+
+    k_zone_dict = {"upw.vka": {k: zn_arr for k in range(3)}, "extra.pr": {k: zn_arr2 for k in range(3)}}
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
+                                             const_props=const_props,
+                                             grid_props=grid_props,
+                                             zone_props=zone_props,
+                                             pp_props=pp_props,
+                                             remove_existing=True,
+                                             obssim_smp_pairs=obssim_smp_pairs,
+                                             pp_space=4,
+                                             use_pp_zones=True,
+                                             k_zone_dict=k_zone_dict,
+                                             hds_kperk=[0, 0], build_prior=False)
+
 
 
 def from_flopy_test():
@@ -1117,7 +1131,7 @@ def csv_to_ins_test():
 
 
 if __name__ == "__main__":
-    csv_to_ins_test()
+    # csv_to_ins_test()
     # pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
