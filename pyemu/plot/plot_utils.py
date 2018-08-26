@@ -949,7 +949,7 @@ def _process_ensemble_arg(ensemble,facecolor, logger):
 
         logger.log('loading ensemble from csv file {0}'.format(ensemble))
         en = pd.read_csv(ensemble, index_col=0)
-        en.columns = en.columns.map(str.lower)
+        en.columns = en.columns.str.lower()
         logger.statement("{0} shape: {1}".format(ensemble, en.shape))
         ensembles[facecolor] = en
         logger.log('loading ensemble from csv file {0}'.format(ensemble))
