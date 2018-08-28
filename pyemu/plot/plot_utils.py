@@ -949,7 +949,6 @@ def _process_ensemble_arg(ensemble,facecolor, logger):
 
         logger.log('loading ensemble from csv file {0}'.format(ensemble))
         en = pd.read_csv(ensemble, index_col=0)
-        en.columns = en.columns.map(str.lower)
         logger.statement("{0} shape: {1}".format(ensemble, en.shape))
         ensembles[facecolor] = en
         logger.log('loading ensemble from csv file {0}'.format(ensemble))
@@ -967,7 +966,6 @@ def _process_ensemble_arg(ensemble,facecolor, logger):
             if isinstance(en_arg, str):
                 logger.log("loading ensemble from csv file {0}".format(en_arg))
                 en = pd.read_csv(en_arg, index_col=0)
-                en.columns = en.columns.map(str.lower)
                 logger.log("loading ensemble from csv file {0}".format(en_arg))
                 logger.statement("ensemble {0} gets facecolor {1}".format(en_arg, fc))
 
@@ -984,14 +982,15 @@ def _process_ensemble_arg(ensemble,facecolor, logger):
             elif isinstance(en_arg, str):
                 logger.log("loading ensemble from csv file {0}".format(en_arg))
                 en = pd.read_csv(en_arg, index_col=0)
-                en.columns = en.columns.map(str.lower)
                 logger.log("loading ensemble from csv file {0}".format(en_arg))
                 ensembles[fc] = en
             else:
                 logger.lraise("unrecognized ensemble list arg:{0}".format(en_arg))
-
-    else:
-        raise Exception("unrecognized 'ensemble' arg")
+    try:
+        for fc in ensembles:
+            ensembles[fc].columns = ensembles[fc].columns.str.lower()
+    except:
+        logger.lraise("error processing ensemble")
 
     return ensembles
 
