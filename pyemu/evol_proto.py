@@ -11,6 +11,7 @@ class ParetoObjFunc(object):
 
         self.logger = logger
         self.pst = pst
+        self.max_distance = 1.0e+30
         obs = pst.observation_data
         pi = pst.prior_information
         self.obs_dict, self.pi_dict = {}, {}
@@ -108,7 +109,30 @@ class ParetoObjFunc(object):
         crowd_distance : pandas.DataFrame
             dataframe with index of obs_df and value of crowd distance
         """
-        pass
+
+        # initialize the distance container
+        crowd_distance = pd.DataFrame(data=0.0,index=obs_df.index,columns=["crowd_distance"])
+
+        for name,direction in self.obs_dict.items():
+            # make a copy - wasteful, but easier
+            obj_df = obs_df.loc[:,name].copy()
+
+            # sort so that largest values are first
+            obj_df.sort_values(ascending=False,inplace=True)
+
+            # set the ends so they are always retained
+            crowd_distance.loc[obj_df.index[0]] += self.max_distance
+            crowd_distance.loc[obj_df.index[-1]] += self.max_distance
+
+            # process the vector
+            i = 1
+            for idx in obj_df.index[1:-1]:
+                crowd_distance.loc[idx] += obj_df.iloc[i-1] - obj_df.iloc[i+1]
+                i += 1
+
+        return crowd_distance
+
+
 
 
 
