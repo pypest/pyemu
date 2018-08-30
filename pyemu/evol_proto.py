@@ -36,18 +36,8 @@ class ParetoObjFunc(object):
             else:
                 self.logger.lraise("objective function not found:{0}".format(name))
 
-        def is_less_const(oname):
-            constraint_tags = ["l_","less"]
-            return True in [True for c in constraint_tags if oname.startswith(c)]
-
-        def is_greater_const(oname):
-            constraint_tags = ["g_","greater"]
-            return True in [True for c in constraint_tags if oname.startswith(c)]
-
-        self.less_obs = obs.loc[obs.obgnme.apply(lambda x: is_less_const(x)),"obsnme"]
-        self.greater_obs = obs.loc[obs.obgnme.apply(lambda x: is_greater_const(x)), "obsnme"]
-        self.less_pi = pi.loc[pi.obgnme.apply(lambda x: is_less_const(x)), "pilbl"]
-        self.greater_pi = pi.loc[pi.obgnme.apply(lambda x: is_greater_const(x)), "pilbl"]
+        if len(self.pi_dict) > 0:
+            self.logger.lraise("pi obj function not yet supported")
 
         self.logger.statement("{0} obs objective functions registered".\
                               format(len(self.obs_dict)))
@@ -61,25 +51,34 @@ class ParetoObjFunc(object):
             self.logger.statement("pi obj function: {0}, direction: {1}". \
                                   format(name, direction))
 
-    def is_feasible(self, obs_df, par_df):
-        """identify which candidate solutions in obs_df and par_df (rows)
-        are feasible with respect obs constraints (obs_df) and prior
-        information constraints (par_df)
+    def is_feasible(self, obs_df):
+        """identify which candidate solutions in obs_df (rows)
+        are feasible with respect obs constraints (obs_df)
 
         Parameters
         ----------
         obs_df : pandas.DataFrame
             a dataframe with columns of obs names and rows of realizations
-        par_df : pandas.DataFrame
-            a dataframe with columns of par names and rows of realizations
+
 
         Returns
         -------
-        is_feasible : pandas.DataFrame
-            dataframe with obs_df.index, par_df.index and bool series
+        is_feasible : pandas.Series
+            series with obs_df.index and bool values
 
         """
-        pass
+        # todo deal with pi eqs
+
+        is_feasible = pd.Series(data=True, index=obs_df.index)
+        for lt_obs in self.pst.less_than_obs_constraints:
+            val = self.pst.observation_data.loc[lt_obs,"obsval"]
+            is_feasible.loc[obs_df.loc[:,lt_obs]>=val] = False
+        for gt_obs in self.pst.greater_than_obs_constraints:
+            val = self.pst.observation_data.loc[gt_obs,"obsval"]
+            is_feasible.loc[obs_df.loc[:,gt_obs] <= val] = False
+        return is_feasible
+
+
 
     def is_dominated(self, obs_df):
         """identify which candidate solutions are pareto dominated
@@ -91,8 +90,8 @@ class ParetoObjFunc(object):
 
         Returns
         -------
-        is_dominated : pandas.DataFrame
-            dataframe with index of obs_df and bool series
+        is_dominated : pandas.Series
+            series with index of obs_df and bool series
         """
         pass
 
@@ -106,12 +105,12 @@ class ParetoObjFunc(object):
 
         Returns
         -------
-        crowd_distance : pandas.DataFrame
-            dataframe with index of obs_df and value of crowd distance
+        crowd_distance : pandas.Series
+            series with index of obs_df and values of crowd distance
         """
 
         # initialize the distance container
-        crowd_distance = pd.DataFrame(data=0.0,index=obs_df.index,columns=["crowd_distance"])
+        crowd_distance = pd.Series(data=0.0,index=obs_df.index)
 
         for name,direction in self.obs_dict.items():
             # make a copy - wasteful, but easier
