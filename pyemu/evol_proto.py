@@ -6,7 +6,7 @@ import pyemu
 from pyemu.smoother import EnsembleMethod
 
 
-def ParetoObjFunc(object):
+class ParetoObjFunc(object):
     def __init__(self, pst, obj_function_dict, logger):
 
         self.logger = logger
@@ -14,7 +14,7 @@ def ParetoObjFunc(object):
         obs = pst.observation_data
         pi = pst.prior_information
         self.obs_dict, self.pi_dict = {}, {}
-        for name,direction in obj_function_dict:
+        for name,direction in obj_function_dict.items():
 
             if name in obs.obsnme:
                 if direction.lower().startswith("max"):
@@ -46,14 +46,19 @@ def ParetoObjFunc(object):
         self.less_obs = obs.loc[obs.obgnme.apply(lambda x: is_less_const(x)),"obsnme"]
         self.greater_obs = obs.loc[obs.obgnme.apply(lambda x: is_greater_const(x)), "obsnme"]
         self.less_pi = pi.loc[pi.obgnme.apply(lambda x: is_less_const(x)), "pilbl"]
-        self.greater_pi = obs.loc[pi.obgnme.apply(lambda x: is_greater_const(x)), "pilbl"]
+        self.greater_pi = pi.loc[pi.obgnme.apply(lambda x: is_greater_const(x)), "pilbl"]
 
-        self.logger.statement("{0} objective functions registered".\
-                              format(len(self.obj_function_dict)))
-        for name,direction in self.obj_function_dict:
-            self.logger.statement("obj function: {0}, direction: {1}".\
+        self.logger.statement("{0} obs objective functions registered".\
+                              format(len(self.obs_dict)))
+        for name,direction in self.obs_dict.items():
+            self.logger.statement("obs obj function: {0}, direction: {1}".\
                                   format(name,direction))
 
+        self.logger.statement("{0} pi objective functions registered". \
+                              format(len(self.pi_dict)))
+        for name, direction in self.pi_dict.items():
+            self.logger.statement("pi obj function: {0}, direction: {1}". \
+                                  format(name, direction))
 
     def is_feasible(self, obs_df, par_df):
         """identify which candidate solutions in obs_df and par_df (rows)
@@ -107,7 +112,7 @@ def ParetoObjFunc(object):
 
 
 
-def EvolAlg(EnsembleMethod):
+class EvolAlg(EnsembleMethod):
     def __init__(self, pst, parcov = None, obscov = None, num_slaves = 0, use_approx_prior = True,
                  submit_file = None, verbose = False, port = 4004, slave_dir = "template"):
         super(EvolAlg, self).__init__(pst=pst, parcov=parcov, obscov=obscov, num_slaves=num_slaves,
@@ -117,7 +122,7 @@ def EvolAlg(EnsembleMethod):
 
     def initialize(self,obj_function_names):
 
-        self.obj_func = ParetoObjFunc(pst,obj_function_names, self.logger)
+        self.obj_func = ParetoObjFunc(self.pst,obj_function_names, self.logger)
         pass
 
     def update(self):
