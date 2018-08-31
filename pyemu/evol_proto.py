@@ -80,8 +80,8 @@ class ParetoObjFunc(object):
 
 
 
-    def is_dominated(self, obs_df):
-        """identify which candidate solutions are pareto dominated
+    def is_nondominated(self, obs_df):
+        """identify which candidate solutions are pareto non-dominated
 
         Parameters
         ----------
@@ -93,7 +93,38 @@ class ParetoObjFunc(object):
         is_dominated : pandas.Series
             series with index of obs_df and bool series
         """
-        pass
+        signs = []
+        obj_names = list(self.obs_dict.keys())
+        for obj in obj_names:
+            if self.obs_dict[obj] == "max":
+                signs.append(1.0)
+            else:
+                signs.append(-1.0)
+        signs = np.array(signs)
+
+        obj_df = obs_df.loc[:,obj_names]
+
+        def dominates(idx1,idx2):
+            r1 = obj_df.loc[idx1,:]
+            r2 = obj_df.loc[idx2,:]
+            d = signs * (obj_df.loc[idx1,:] -  obj_df.loc[idx2,:])
+            if np.all(d >= 0.0) and np.any(d > 0.0):
+                return True
+            return False
+
+        is_nondom = []
+        for i,iidx in enumerate(obj_df.index):
+            ind = True
+            for jidx in obj_df.index:
+                if iidx == jidx:
+                    continue
+                if dominates(jidx,iidx):
+                    ind = False
+                    break
+            is_nondom.append(ind)
+        is_nondom = pd.Series(data=is_nondom,index=obs_df.index,dtype=bool)
+        return is_nondom
+
 
     def crowd_distance(self,obs_df):
         """determine the crowding distance for each candidate solution
