@@ -1214,7 +1214,7 @@ class ParameterEnsemble(Ensemble):
 
     @classmethod
     def from_mixed_draws(cls,pst,how_dict,default="gaussian",num_reals=100,cov=None,sigma_range=6,
-                         enforce_bounds=True):
+                         enforce_bounds=True,partial=False):
         """instaniate a parameter ensemble from stochastic draws using a mixture of
         distributions.  Available distributions include (log) "uniform", (log) "triangular",
         and (log) "gaussian". log transformation is respected.
@@ -1252,7 +1252,7 @@ class ParameterEnsemble(Ensemble):
         missing = pset.difference(hset)
         #assert len(missing) == 0,"ParameterEnsemble.from_mixed_draws() error: the following par names are not in " +\
         #    " in how_dict: {0}".format(','.join(missing))
-        if len(missing) > 0:
+        if not partial and len(missing) > 0:
             print("{0} par names missing in how_dict, these parameters will be sampled using {1} (the 'default')".\
                   format(len(missing),default))
             for m in missing:
@@ -1317,7 +1317,9 @@ class ParameterEnsemble(Ensemble):
         for pe in pes:
             df.loc[pe.index,pe.columns] = pe
         print(df.shape)
-        if df.shape != df.dropna().shape:
+        if partial:
+            df = df.dropna(axis=1)
+        elif df.shape != df.dropna().shape:
             raise Exception("ParameterEnsemble.from_mixed_draws() error: NaNs in final parameter ensemble")
         pst.parameter_data = par_org
         return ParameterEnsemble.from_dataframe(df=df,pst=pst)

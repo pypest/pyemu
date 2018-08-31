@@ -29,19 +29,23 @@ def tenpar_test():
     par = pst.parameter_data
     #par.loc[:,"partrans"] = "none"
 
-    ea = evol_proto.EvolAlg(pst,num_slaves=10,port=4005,verbose=True)
+    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst,how_dict={p:"uniform" for p in pst.adj_par_names[:2]},
+                                                  num_reals=100,
+                                                  partial=False)
+
+    ea = evol_proto.EvolAlg(pst,num_slaves=20,port=4005,verbose=True)
     obj_dict = {}
     obj_dict[obj_names[0]] = "min"
     obj_dict[obj_names[1]] = "max"
-    ea.initialize(obj_dict,num_reals=500)
+    ea.initialize(obj_dict,par_ensemble=pe,num_dv_reals=100,risk=0.51,dv_names=pst.adj_par_names[2:])
 
     #oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst=pst,num_reals=500)
-    oe = ea.oe
+    oe = ea.obs_ensemble
     # call the nondominated sorting
-    is_nondom = ea.obj_func.is_nondominated(oe)
+    is_nondom = ea.obj_func.is_nondominated_continuous(oe)
     obj = oe.loc[:,obj_names]
     obj.loc[is_nondom,"is_nondom"] = is_nondom
-    print(obj)
+    #print(obj)
     import matplotlib.pyplot as plt
     plt.scatter(obj.iloc[:,0],obj.iloc[:,1],color="0.5",marker='.',alpha=0.5)
     ind = obj.loc[is_nondom,:]
@@ -66,8 +70,8 @@ def tenpar_test():
     # test that the end members are getting max distance
     crowd_distance = ea.obj_func.crowd_distance(oe)
     for name,direction in ea.obj_func.obs_dict.items():
-        assert crowd_distance.loc[oe.loc[:,name].idxmax()] == ea.obj_func.max_distance
-        assert crowd_distance.loc[oe.loc[:, name].idxmin()] == ea.obj_func.max_distance
+        assert crowd_distance.loc[oe.loc[:,name].idxmax()] >= ea.obj_func.max_distance,crowd_distance.loc[oe.loc[:,name].idxmax()]
+        assert crowd_distance.loc[oe.loc[:, name].idxmin()] >= ea.obj_func.max_distance,crowd_distance.loc[oe.loc[:, name].idxmin()]
 
     os.chdir(os.path.join("..",".."))
 

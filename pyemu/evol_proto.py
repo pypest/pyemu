@@ -7,7 +7,7 @@ from pyemu.smoother import EnsembleMethod
 
 
 class ParetoObjFunc(object):
-    # todo extend is_feasible to support stack-based OUU risk eval
+
     def __init__(self, pst, obj_function_dict, logger):
 
         self.logger = logger
@@ -300,50 +300,160 @@ class EvolAlg(EnsembleMethod):
                                       slave_dir=slave_dir)
 
 
-    def initialize(self,obj_func_dict,num_reals=100,dec_vars=None,pe=None,risk=0.5):
+    def initialize(self,obj_func_dict,num_par_reals=100,num_dv_reals=100,
+                   dv_ensemble=None,par_ensemble=None,risk=0.5,
+                   dv_names=None,par_names=None):
+        #todo - important! make sure (if needed) par_ensemble is full (npar) shape
 
         self.risk = risk
-        if risk != 0.5:
-            self.logger.lraise("risk not implmented")
-
-        self.obj_func = ParetoObjFunc(self.pst,obj_func_dict, self.logger)
-
-        if dec_vars is not None:
-            diff = set(dec_vars) - set(self.pst.adj_par_names)
-            if len(diff) > 0:
-                self.logger.lraise("the following dec var names were not "+\
-                                   "found in the adjustable parameters: {0}".\
-                                   format(",".join(diff)))
-            self.dec_vars = dec_vars
-            self.pars = list(set(self.pst.par_names) - set(dec_vars))
-
-        else:
-            self.dec_vars = self.pst.adj_par_names
-            self.pars = []
-
-        if pe is not None:
-            #todo check for compatibility
-            self.pe_base = pe
-        else:
-            how = {p:"uniform" for p in self.dec_vars}
-            for p in self.pars:
-                how[p] = "guassian"
-
-            self.pe_base = pyemu.ParameterEnsemble.from_mixed_draws(self.pst,how_dict=how,
-                                                                    num_reals=num_reals,cov=self.parcov)
-        #todo if risk != 0.5, check for and extract non-dec var pars - these will be used as the stack
         if risk != 0.5:
             if risk > 1.0 or risk < 0.0:
                 self.logger.lraise("risk not in 0.0:1.0 range")
 
-        failed_runs, self.oe_base = self._calc_obs(self.pe_base)
+        self.obj_func = ParetoObjFunc(self.pst,obj_func_dict, self.logger)
 
-        self.oe = self.oe_base.copy()
-        self.pe = self.pe_base.copy()
+        self.par_ensemble_base = None
+
+        # all adjustable pars are dec vars
+        if dv_ensemble is None and par_ensemble is None:
+
+            if dv_names is not None:
+                aset = set(self.pst.adj_par_names)
+                dvset = set(dv_ensemble.columns)
+                diff = dvset - aset
+                if len(diff) > 0:
+                    self.logger.lraise("the following dv_names were not " + \
+                                       "found in the adjustable parameters: {0}". \
+                                       format(",".join(diff)))
+                how = {p: "uniform" for p in dv_names}
+            else:
+                if risk != 0.5:
+                    self.logger.lraise("risk != 0.5 but all adjustable pars are dec vars")
+                how = {p: "uniform" for p in self.pst.adj_par_names}
+
+            self.dv_ensemble_base = pyemu.ParameterEnsemble.from_mixed_draws(self.pst, how_dict=how,
+                                                                    num_reals=num_dv_reals, cov=self.parcov)
+            if risk != 0.5:
+                aset = set(self.pst.adj_par_names)
+                dvset = set(dv_ensemble.columns)
+                diff = aset - dvset
+                if len(diff) > 0:
+                    self.logger.lraise("risk!=0.5 but all adjustable parameters are dec vars")
+                self.par_ensemble_base = pyemu.ParameterEnsemble.from_gaussian_draw(self.pst,
+                                                                                    num_reals=num_par_reals,
+                                                                                    cov=self.parcov)
+            else:
+                self.par_ensemble_base = None
+
+        # dv_ensemble supplied, but not pars, so check if any adjustable pars are not
+        # in dv_ensemble, and if so, draw reals for them
+        elif dv_ensemble is not None:
+            aset = set(self.pst.adj_par_names)
+            dvset = set(dv_ensemble.columns)
+            diff = dvset - aset
+            if len(diff) > 0:
+                self.logger.lraise("the following dv_ensemble names were not " + \
+                                   "found in the adjustable parameters: {0}". \
+                                   format(",".join(diff)))
+            self.dv_ensemble_base = dv_ensemble
+            if risk != 0.5:
+                if par_names is not None:
+                    pset = set(par_names)
+                    diff = pset - aset
+                    if len(diff) > 0:
+                        self.logger.lraise("the following par_names were not " + \
+                                           "found in the adjustable parameters: {0}". \
+                                           format(",".join(diff)))
+                        how = {p: "gaussian" for p in par_names}
+                else:
+                    adj_pars = aset - dvset
+                    if len(adj_pars) == 0:
+                        self.logger.lraise("risk!=0.5 but all adjustable pars are dec vars")
+                    how = {p:"gaussian" for p in adj_pars}
+                self.par_ensemble_base = pyemu.ParameterEnsemble.from_mixed_draws(self.pst,how_dict=how,
+                                         num_reals=num_par_reals,cov=self.parcov)
+
+
+        # par ensemble supplied but not dv_ensmeble, so check for any adjustable pars
+        # that are not in par_ensemble and draw reals.  Must be at least one...
+        elif par_ensemble is not None:
+            aset = set(self.pst.par_names)
+            pset = set(par_ensemble.columns)
+            diff = aset - pset
+            if len(diff) > 0:
+                self.logger.lraise("the following par_ensemble names were not " + \
+                                   "found in the pst par names: {0}". \
+                                   format(",".join(diff)))
+            self.par_ensemble_base = par_ensemble
+
+            # aset = set(self.pst.adj_par_names)
+            # adj_pars = aset - pset
+            # if len(adj_pars) == 0:
+            #     self.logger.lraise("all adjustable pars listed in par_ensemble, no dec vars available")
+            if dv_names is None:
+                self.logger.lraise("dv_names must be passed if dv_ensemble is None and par_ensmeble is not None")
+
+            dvset = set(dv_names)
+            diff = dvset - aset
+            if len(diff) > 0:
+                self.logger.lraise("the following dv_names were not " + \
+                                   "found in the adjustable parameters: {0}". \
+                                   format(",".join(diff)))
+            how = {p: "uniform" for p in dv_names}
+            self.dv_ensemble_base = pyemu.ParameterEnsemble.from_mixed_draws(self.pst, how_dict=how,
+                                                                             num_reals=num_dv_reals,
+                                                                             cov=self.parcov,partial=True)
+
+        # both par_ensemble and dv_ensemble were passed, so check
+        # for compatibility
+        else:
+            aset = set(self.pst.adj_par_names)
+            ppset = set(self.pst.par_names)
+            dvset = set(dv_ensemble.columns)
+            pset = set(par_ensemble.columns)
+            diff = ppset - aset
+            if len(diff) > 0:
+                self.logger.lraise("the following par_ensemble names were not " + \
+                                   "found in the pst par names: {0}". \
+                                   format(",".join(diff)))
+            if len(diff) > 0:
+                self.logger.lraise("the following dv_ensemble names were not " + \
+                                   "found in the adjustable parameters: {0}". \
+                                   format(",".join(diff)))
+
+            self.par_ensemble_base = par_ensemble
+            self.dv_ensemble_base = dv_ensemble
+
+
+        self.obs_ensemble_base = self.calc_obs_stack(self.dv_ensemble_base)
+        self.obs_ensemble = self.obs_ensemble_base.copy()
+        self.dv_ensemble = self.dv_ensemble_base.copy()
 
         self._initialized = True
 
 
+    def calc_obs_stack(self,dv_ensemble):
+        if self.par_ensemble_base is None:
+            failed_runs, oe = self._calc_obs(dv_ensemble)
+        else:
+            df_base = pd.DataFrame(self.par_ensemble_base.loc[:,:])
+            dfs = []
+            for i in range(dv_ensemble.shape[0]):
+                solution = dv_ensemble.loc[i,:]
+                df = df_base.copy()
+                #for dv,val in zip(solution.index,solution.values):
+                #    df.loc[:,dv] = solution[dv]
+                df.loc[:,solution.index] = solution.values
+
+                dfs.append(df)
+            df = pd.concat(dfs)
+            failed_runs, oe = self._calc_obs(df)
+            # this is a hack for now, need think more about indexing for
+            # the stacked ensemble
+            oe.index = np.arange(oe.shape[0])
+
+
+        return oe
 
     def update(self):
         if not self._initialized:
