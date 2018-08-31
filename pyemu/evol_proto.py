@@ -7,6 +7,7 @@ from pyemu.smoother import EnsembleMethod
 
 
 class ParetoObjFunc(object):
+    # todo extend is_feasible to support stack-based OUU risk eval
     def __init__(self, pst, obj_function_dict, logger):
 
         self.logger = logger
@@ -299,13 +300,54 @@ class EvolAlg(EnsembleMethod):
                                       slave_dir=slave_dir)
 
 
-    def initialize(self,obj_function_names):
+    def initialize(self,obj_func_dict,num_reals=100,dec_vars=None,pe=None,risk=0.5):
 
-        self.obj_func = ParetoObjFunc(self.pst,obj_function_names, self.logger)
-        pass
+        self.risk = risk
+        if risk != 0.5:
+            self.logger.lraise("risk not implmented")
+
+        self.obj_func = ParetoObjFunc(self.pst,obj_func_dict, self.logger)
+
+        if dec_vars is not None:
+            diff = set(dec_vars) - set(self.pst.adj_par_names)
+            if len(diff) > 0:
+                self.logger.lraise("the following dec var names were not "+\
+                                   "found in the adjustable parameters: {0}".\
+                                   format(",".join(diff)))
+            self.dec_vars = dec_vars
+            self.pars = list(set(self.pst.par_names) - set(dec_vars))
+
+        else:
+            self.dec_vars = self.pst.adj_par_names
+            self.pars = []
+
+        if pe is not None:
+            #todo check for compatibility
+            self.pe_base = pe
+        else:
+            how = {p:"uniform" for p in self.dec_vars}
+            for p in self.pars:
+                how[p] = "guassian"
+
+            self.pe_base = pyemu.ParameterEnsemble.from_mixed_draws(self.pst,how_dict=how,
+                                                                    num_reals=num_reals,cov=self.parcov)
+        #todo if risk != 0.5, check for and extract non-dec var pars - these will be used as the stack
+        if risk != 0.5:
+            if risk > 1.0 or risk < 0.0:
+                self.logger.lraise("risk not in 0.0:1.0 range")
+
+        failed_runs, self.oe_base = self._calc_obs(self.pe_base)
+
+        self.oe = self.oe_base.copy()
+        self.pe = self.pe_base.copy()
+
+        self._initialized = True
+
+
 
     def update(self):
-        pass
+        if not self._initialized:
+            self.logger.lraise("not initialized")
 
 
 

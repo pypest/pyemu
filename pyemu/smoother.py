@@ -258,8 +258,9 @@ class EnsembleMethod(object):
         self.parcov = parcov
         self.obscov = obscov
 
-        self.__initialized = False
+        self._initialized = False
         self.iter_num = 0
+        self.total_runs = 0
         self.raw_sweep_out = None
 
     def initialize(self,*args,**kwargs):
@@ -339,7 +340,7 @@ class EnsembleMethod(object):
             try:
                 #os.system("sweep {0} /h :{1} 1>{2} 2>{3}". \
                 #          format(self.pst.filename, self.port, master_stdout, master_stderr))
-                pyemu.helpers.run("pestpp-swp {0} /h :{1} 1>{2} 2>{3}". \
+                pyemu.os_utils.run("pestpp-swp {0} /h :{1} 1>{2} 2>{3}". \
                           format(self.pst.filename, self.port, master_stdout, master_stderr))
 
             except Exception as e:
@@ -745,7 +746,7 @@ class EnsembleSmoother(EnsembleMethod):
             np.savetxt(self.pst.filename.replace(".pst",'.') + "0.am_s_inv.dat", s.inv.as_2d, fmt="%15.6e")
             np.savetxt(self.pst.filename.replace(".pst",'.') + "0.am.dat", self.Am.x, fmt="%15.6e")
 
-        self.__initialized = True
+        self._initialized = True
 
     def get_localizer(self):
         """ get an empty/generic localizer matrix that can be filled
@@ -824,7 +825,7 @@ class EnsembleSmoother(EnsembleMethod):
         self.logger.statement("{0} active realizations".format(self.obsensemble.shape[0]))
         if self.obsensemble.shape[0] < 2:
             self.logger.lraise("at least active 2 realizations (really like 300) are needed to update")
-        if not self.__initialized:
+        if not self._initialized:
             #raise Exception("must call initialize() before update()")
             self.logger.lraise("must call initialize() before update()")
 
