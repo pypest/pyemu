@@ -81,7 +81,8 @@ class ParetoObjFunc(object):
 
 
     def is_nondominated_pathetic(self, obs_df):
-        """identify which candidate solutions are pareto non-dominated
+        """identify which candidate solutions are pareto non-dominated -
+        super patheically slow...
 
         Parameters
         ----------
@@ -125,8 +126,9 @@ class ParetoObjFunc(object):
         is_nondom = pd.Series(data=is_nondom,index=obs_df.index,dtype=bool)
         return is_nondom
 
-    def is_nondominated_continous(self, obs_df):
-        """identify which candidate solutions are pareto non-dominated
+    def is_nondominated_continuous(self, obs_df):
+        """identify which candidate solutions are pareto non-dominated continuously updated,
+        but still slow
 
         Parameters
         ----------
@@ -187,7 +189,7 @@ class ParetoObjFunc(object):
 
 
     def is_nondominated(self, obs_df):
-        """identify which candidate solutions are pareto non-dominated
+        """identify which candidate solutions are pareto non-dominated using Kungs algorithm
 
         Parameters
         ----------
@@ -287,9 +289,6 @@ class ParetoObjFunc(object):
                 i += 1
 
         return crowd_distance
-
-
-
 
 
 class EvolAlg(EnsembleMethod):
