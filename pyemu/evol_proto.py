@@ -80,7 +80,7 @@ class ParetoObjFunc(object):
 
 
 
-    def is_nondominated(self, obs_df):
+    def is_nondominated_pathetic(self, obs_df):
         """identify which candidate solutions are pareto non-dominated
 
         Parameters
@@ -123,6 +123,132 @@ class ParetoObjFunc(object):
                     break
             is_nondom.append(ind)
         is_nondom = pd.Series(data=is_nondom,index=obs_df.index,dtype=bool)
+        return is_nondom
+
+    def is_nondominated_continous(self, obs_df):
+        """identify which candidate solutions are pareto non-dominated
+
+        Parameters
+        ----------
+        obs_df : pandas.DataFrame
+            dataframe with columns of observation names and rows of realizations
+
+        Returns
+        -------
+        is_dominated : pandas.Series
+            series with index of obs_df and bool series
+        """
+        signs = []
+        obj_names = list(self.obs_dict.keys())
+        for obj in obj_names:
+            if self.obs_dict[obj] == "max":
+                signs.append(1.0)
+            else:
+                signs.append(-1.0)
+        signs = np.array(signs)
+
+        obj_df = obs_df.loc[:,obj_names]
+
+        def dominates(idx1,idx2):
+            r1 = obj_df.loc[idx1,:]
+            r2 = obj_df.loc[idx2,:]
+            d = signs * (obj_df.loc[idx1,:] -  obj_df.loc[idx2,:])
+            if np.all(d >= 0.0) and np.any(d > 0.0):
+                return True
+            return False
+
+        P = list(obj_df.index)
+        PP = set()
+        PP.add(P[0])
+
+        iidx = 1
+        while iidx < len(P):
+            jidx = 0
+            drop = []
+            keep = True
+            for jidx in PP:
+                if dominates(iidx,jidx):
+                    drop.append(jidx)
+                elif dominates(jidx,iidx):
+                    keep = False
+                    break
+            for d in drop:
+                PP.remove(d)
+            if keep:
+                PP.add(iidx)
+            iidx += 1
+
+
+
+
+        is_nondom = pd.Series(data=False,index=obs_df.index,dtype=bool)
+        is_nondom.loc[PP] = True
+        return is_nondom
+
+
+    def is_nondominated(self, obs_df):
+        """identify which candidate solutions are pareto non-dominated
+
+        Parameters
+        ----------
+        obs_df : pandas.DataFrame
+            dataframe with columns of observation names and rows of realizations
+
+        Returns
+        -------
+        is_dominated : pandas.Series
+            series with index of obs_df and bool series
+        """
+        signs = []
+        obj_names = list(self.obs_dict.keys())
+        for obj in obj_names:
+            if self.obs_dict[obj] == "max":
+                signs.append(1.0)
+            else:
+                signs.append(-1.0)
+        signs = np.array(signs)
+
+        obj_df = obs_df.loc[:,obj_names]
+
+        def dominates(idx1,idx2):
+            r1 = obj_df.loc[idx1,:]
+            r2 = obj_df.loc[idx2,:]
+            d = signs * (obj_df.loc[idx1,:] -  obj_df.loc[idx2,:])
+            if np.all(d >= 0.0) and np.any(d > 0.0):
+                return True
+            return False
+        ascending = False
+        if self.obs_dict[obj_names[0]] == "min":
+            ascending = True
+
+        obj_df.sort_values(by=obj_names[0],ascending=ascending,inplace=True)
+        P = list(obj_df.index)
+
+        def front(p):
+            if len(p) == 1:
+                return p
+            p = list(obj_df.loc[p,:].sort_values(by=obj_names[0],ascending=ascending).index)
+            half = int(len(p) / 2)
+            T = front(p[:half])
+            B = front(p[half:])
+            M = []
+            i = 0
+            while i < len(B):
+                j = 0
+                while j < len(T):
+                    if dominates(T[j],B[i]):
+                        break
+                    j += 1
+                if (j == len(T)):
+                    M.append(B[i])
+                i += 1
+            T.extend(M)
+            return T
+
+
+        PP = front(P)
+        is_nondom = pd.Series(data=False,index=obs_df.index,dtype=bool)
+        is_nondom.loc[PP] = True
         return is_nondom
 
 
