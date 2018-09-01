@@ -41,8 +41,18 @@ def tenpar_test():
     obj_dict[obj_names[1]] = "max"
     ea.initialize(obj_dict,par_ensemble=pe,num_dv_reals=10,risk=0.5,dv_names=pst.adj_par_names[2:])
 
-    oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst=pst,num_reals=500)
-    ea.obj_func.get_risk_shifted_value(risk=0.5,series=oe.loc[:,oe.columns[0]])
+    oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst=pst,num_reals=50)
+    val = ea.obj_func.get_risk_shifted_value(risk=0.95,series=oe.loc[:,oe.columns[0]])
+
+    import matplotlib.pyplot as plt
+    ax = plt.subplot(111)
+    oe.iloc[:,0].hist(ax=ax)
+    ylim = ax.get_ylim()
+    ax.plot([val,val],ylim)
+    ax.set_ylim(ylim)
+    plt.show()
+
+
     return
     #oe = ea.obs_ensemble
     # call the nondominated sorting

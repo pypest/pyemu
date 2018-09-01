@@ -293,12 +293,37 @@ class ParetoObjFunc(object):
 
 
     def get_risk_shifted_value(self,risk,series):
-        if series.name in self.obs_dict.keys():
-            d = self.obs_dict[series.name]
-        elif series.name in self.pst.less_than_obs_constraints:
+        n = series.name
+
+        if n in self.obs_dict.keys():
+            d = self.obs_dict[n]
+            t = "obj"
+        elif n in self.pst.less_than_obs_constraints:
             d = "min"
-        elif series.name in self.pst.greater_than_obs_constraints:
+            t = "lt_obs"
+        elif n in self.pst.greater_than_obs_constraints:
             d = "max"
+            t = "gt_obs"
+        else:
+            self.logger.lraise("series is not an obs obj func or obs inequality contraint:{0}".\
+                               format(n))
+
+        ascending = True
+        if d == "min":
+            ascending = False
+        s = series.shape[0]
+        shift = int(s * risk)
+        if shift >= s:
+            shift = s - 1
+
+        cdf = series.sort_values(ascending=ascending).apply(np.cumsum)
+        val = float(cdf.iloc[shift])
+        #print(cdf)
+        #print(shift,cdf.iloc[shift])
+        self.logger.statement("risk-shift for {0}->type:{1}dir:{2},shift:{3},val:{4}".format(n,t,d,shift,val))
+        return val
+
+
 
 
 class EvolAlg(EnsembleMethod):
@@ -473,17 +498,15 @@ class EvolAlg(EnsembleMethod):
             # is_nondom = self.obj_func.is_nondominated_continuous(oe)
             # cd = self.obj_func.crowd_distance(oe)
 
+            #todo add logging here to report failes, infeas, nondom, etc
+
             pe_reals = self.par_ensemble_base.shape[0]
             for i,sol in enumerate(dv_ensemble.index):
                 start = i * pe_reals
                 end = start + pe_reals
                 oe_sol = oe.iloc[start:end,:]
-
-
-
-
-
-
+                oe_sol = oe_sol.loc[oe_sol.failed==0,:]
+                
 
         return oe
 
