@@ -52,7 +52,7 @@ class ParetoObjFunc(object):
             self.logger.statement("pi obj function: {0}, direction: {1}". \
                                   format(name, direction))
 
-    def is_feasible(self, obs_df):
+    def is_feasible(self, obs_df, risk=0.5):
         """identify which candidate solutions in obs_df (rows)
         are feasible with respect obs constraints (obs_df)
 
@@ -60,6 +60,9 @@ class ParetoObjFunc(object):
         ----------
         obs_df : pandas.DataFrame
             a dataframe with columns of obs names and rows of realizations
+        risk : float
+            risk value. If != 0.5, then risk shifting is used.  Otherwise, the
+            obsval in Pst is used.  Default is 0.5.
 
 
         Returns
@@ -72,10 +75,16 @@ class ParetoObjFunc(object):
 
         is_feasible = pd.Series(data=True, index=obs_df.index)
         for lt_obs in self.pst.less_than_obs_constraints:
-            val = self.pst.observation_data.loc[lt_obs,"obsval"]
+            if risk != 0.5:
+                val = self.get_risk_shifted_value(risk,obs_df.loc[lt_obs])
+            else:
+                val = self.pst.observation_data.loc[lt_obs,"obsval"]
             is_feasible.loc[obs_df.loc[:,lt_obs]>=val] = False
         for gt_obs in self.pst.greater_than_obs_constraints:
-            val = self.pst.observation_data.loc[gt_obs,"obsval"]
+            if risk != 0.5:
+                val = self.get_risk_shifted_value(risk,obs_df.loc[gt_obs])
+            else:
+                val = self.pst.observation_data.loc[gt_obs,"obsval"]
             is_feasible.loc[obs_df.loc[:,gt_obs] <= val] = False
         return is_feasible
 
@@ -337,7 +346,8 @@ class EvolAlg(EnsembleMethod):
     def initialize(self,obj_func_dict,num_par_reals=100,num_dv_reals=100,
                    dv_ensemble=None,par_ensemble=None,risk=0.5,
                    dv_names=None,par_names=None):
-        #todo - important! make sure (if needed) par_ensemble is full (npar) shape
+        # todo : setup a run results store for all candidate solutions?  or maybe
+        # just nondom, feasible solutions?
 
 
         if risk != 0.5:
@@ -506,9 +516,11 @@ class EvolAlg(EnsembleMethod):
                 end = start + pe_reals
                 oe_sol = oe.iloc[start:end,:]
                 oe_sol = oe_sol.loc[oe_sol.failed==0,:]
-                
+                # todo calc risk-shifted infeas
+                # todo calc risk-shifted obj functions
 
         return oe
+
 
     def update(self):
         if not self._initialized:
