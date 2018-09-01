@@ -1240,6 +1240,8 @@ class ParameterEnsemble(Ensemble):
         enforce_bounds : boolean
             flag to enforce parameter bounds in resulting ParameterEnsemble.
             Only matters if "gaussian" is in values of how_dict.  Default is True.
+        partial : bool
+            flag to allow a partial ensemble (not all pars included). Default is False
 
         """
 

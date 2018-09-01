@@ -292,6 +292,15 @@ class ParetoObjFunc(object):
         return crowd_distance
 
 
+    def get_risk_shifted_value(self,risk,series):
+        if series.name in self.obs_dict.keys():
+            d = self.obs_dict[series.name]
+        elif series.name in self.pst.less_than_obs_constraints:
+            d = "min"
+        elif series.name in self.pst.greater_than_obs_constraints:
+            d = "max"
+
+
 class EvolAlg(EnsembleMethod):
     def __init__(self, pst, parcov = None, obscov = None, num_slaves = 0, use_approx_prior = True,
                  submit_file = None, verbose = False, port = 4004, slave_dir = "template"):
@@ -305,12 +314,13 @@ class EvolAlg(EnsembleMethod):
                    dv_names=None,par_names=None):
         #todo - important! make sure (if needed) par_ensemble is full (npar) shape
 
-        self.risk = risk
+
         if risk != 0.5:
             if risk > 1.0 or risk < 0.0:
                 self.logger.lraise("risk not in 0.0:1.0 range")
-
+        self.risk = risk
         self.obj_func = ParetoObjFunc(self.pst,obj_func_dict, self.logger)
+        return
 
         self.par_ensemble_base = None
 
@@ -319,7 +329,7 @@ class EvolAlg(EnsembleMethod):
 
             if dv_names is not None:
                 aset = set(self.pst.adj_par_names)
-                dvset = set(dv_ensemble.columns)
+                dvset = set(dv_names)
                 diff = dvset - aset
                 if len(diff) > 0:
                     self.logger.lraise("the following dv_names were not " + \
@@ -335,7 +345,7 @@ class EvolAlg(EnsembleMethod):
                                                                     num_reals=num_dv_reals, cov=self.parcov)
             if risk != 0.5:
                 aset = set(self.pst.adj_par_names)
-                dvset = set(dv_ensemble.columns)
+                dvset = set(self.dv_ensemble_base.columns)
                 diff = aset - dvset
                 if len(diff) > 0:
                     self.logger.lraise("risk!=0.5 but all adjustable parameters are dec vars")
@@ -425,32 +435,54 @@ class EvolAlg(EnsembleMethod):
             self.dv_ensemble_base = dv_ensemble
 
 
-        self.obs_ensemble_base = self.calc_obs_stack(self.dv_ensemble_base)
+        self.obs_ensemble_base = self._calc_obs(self.dv_ensemble_base)
         self.obs_ensemble = self.obs_ensemble_base.copy()
         self.dv_ensemble = self.dv_ensemble_base.copy()
 
         self._initialized = True
 
 
-    def calc_obs_stack(self,dv_ensemble):
-        if self.par_ensemble_base is None:
-            failed_runs, oe = self._calc_obs(dv_ensemble)
+    def _calc_obs(self,dv_ensemble):
+
+        if self.par_ensemble_base is not  None:
+            failed_runs, oe = super(EvolAlg,self)._calc_obs(dv_ensemble)
+            is_feas = self.obj_func.is_feasible(oe)
+            is_nondom = self.obj_func.is_nondominated_continuous(oe)
+            oe.loc[is_feas.index,"feasible"] = is_feas
+            oe.loc[is_nondom.index,"nondominated"] = is_nondom
+            oe.loc[:,"failed"] = failed_runs
+
         else:
+            # make a copy of the org par ensemble but as a df instance
             df_base = pd.DataFrame(self.par_ensemble_base.loc[:,:])
+            # stack up the par ensembles for each solution
             dfs = []
             for i in range(dv_ensemble.shape[0]):
                 solution = dv_ensemble.loc[i,:]
                 df = df_base.copy()
-                #for dv,val in zip(solution.index,solution.values):
-                #    df.loc[:,dv] = solution[dv]
                 df.loc[:,solution.index] = solution.values
-
                 dfs.append(df)
             df = pd.concat(dfs)
-            failed_runs, oe = self._calc_obs(df)
-            # this is a hack for now, need think more about indexing for
-            # the stacked ensemble
-            oe.index = np.arange(oe.shape[0])
+            # reset with a range index
+            org_index = df.index.copy()
+            df.index = np.arange(df.shape[0])
+            failed_runs, oe = super(EvolAlg,self)._calc_obs(df)
+            if oe.shape[0] != dv_ensemble.shape[0] * self.par_ensemble_base.shape[0]:
+                self.logger.lraise("wrong number of runs back from stack eval")
+            # is_feas = self.obj_func.is_feasible(oe)
+            # is_nondom = self.obj_func.is_nondominated_continuous(oe)
+            # cd = self.obj_func.crowd_distance(oe)
+
+            pe_reals = self.par_ensemble_base.shape[0]
+            for i,sol in enumerate(dv_ensemble.index):
+                start = i * pe_reals
+                end = start + pe_reals
+                oe_sol = oe.iloc[start:end,:]
+
+
+
+
+
 
 
         return oe
