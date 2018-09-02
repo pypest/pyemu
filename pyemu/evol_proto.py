@@ -332,6 +332,27 @@ class ParetoObjFunc(object):
         self.logger.statement("risk-shift for {0}->type:{1}dir:{2},shift:{3},val:{4}".format(n,t,d,shift,val))
         return val
 
+    def reduce_stack_with_risk_shift(self,oe,num_reals,risk):
+
+        stochastic_cols = list(self.obs_dict.keys())
+        stochastic_cols.extend(self.pst.less_than_obs_constraints)
+        stochastic_cols.extend(self.pst.greater_than_obs_constraints)
+        stochastic_cols = set(stochastic_cols)
+
+        vvals = []
+        for i in range(0,oe.shape[0],num_reals):
+            oes = oe.iloc[i:i+num_reals]
+            vals = []
+            for col in oes.columns:
+                if col in stochastic_cols:
+                    val = self.get_risk_shifted_value(risk=risk,series=oes.loc[:,col])
+                # otherwise, just fill with the mean value
+                else:
+                    val = oes.loc[:,col].mean()
+                vals.append(val)
+            vvals.append(vals)
+        df = pd.DataFrame(data=vvals,columns=oe.columns)
+        return df
 
 
 
@@ -355,7 +376,6 @@ class EvolAlg(EnsembleMethod):
                 self.logger.lraise("risk not in 0.0:1.0 range")
         self.risk = risk
         self.obj_func = ParetoObjFunc(self.pst,obj_func_dict, self.logger)
-        return
 
         self.par_ensemble_base = None
 
@@ -479,14 +499,10 @@ class EvolAlg(EnsembleMethod):
 
     def _calc_obs(self,dv_ensemble):
 
-        if self.par_ensemble_base is not  None:
-            failed_runs, oe = super(EvolAlg,self)._calc_obs(dv_ensemble)
-            is_feas = self.obj_func.is_feasible(oe)
-            is_nondom = self.obj_func.is_nondominated_continuous(oe)
-            oe.loc[is_feas.index,"feasible"] = is_feas
-            oe.loc[is_nondom.index,"nondominated"] = is_nondom
-            oe.loc[:,"failed"] = failed_runs
+        # todo - deal with failed runs
 
+        if self.par_ensemble_base is None:
+            failed_runs, oe = super(EvolAlg,self)._calc_obs(dv_ensemble)
         else:
             # make a copy of the org par ensemble but as a df instance
             df_base = pd.DataFrame(self.par_ensemble_base.loc[:,:])
@@ -504,20 +520,15 @@ class EvolAlg(EnsembleMethod):
             failed_runs, oe = super(EvolAlg,self)._calc_obs(df)
             if oe.shape[0] != dv_ensemble.shape[0] * self.par_ensemble_base.shape[0]:
                 self.logger.lraise("wrong number of runs back from stack eval")
-            # is_feas = self.obj_func.is_feasible(oe)
-            # is_nondom = self.obj_func.is_nondominated_continuous(oe)
-            # cd = self.obj_func.crowd_distance(oe)
 
-            #todo add logging here to report failes, infeas, nondom, etc
 
             pe_reals = self.par_ensemble_base.shape[0]
-            for i,sol in enumerate(dv_ensemble.index):
-                start = i * pe_reals
-                end = start + pe_reals
-                oe_sol = oe.iloc[start:end,:]
-                oe_sol = oe_sol.loc[oe_sol.failed==0,:]
-                # todo calc risk-shifted infeas
-                # todo calc risk-shifted obj functions
+            df = self.obj_func.reduce_stack_with_risk_shift(oe,pe_reals,risk=self.risk)
+            # big assumption the run results are in the same order
+            df.index = dv_ensemble.index
+            oe = pyemu.ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
+
+
 
         return oe
 

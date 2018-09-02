@@ -31,30 +31,39 @@ def tenpar_test():
     par = pst.parameter_data
     #par.loc[:,"partrans"] = "none"
 
-    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst,how_dict={p:"uniform" for p in pst.adj_par_names[:2]},
-                                                  num_reals=5,
-                                                  partial=False)
 
-    ea = evol_proto.EvolAlg(pst,num_slaves=20,port=4005,verbose=True)
+
+
     obj_dict = {}
     obj_dict[obj_names[0]] = "min"
     obj_dict[obj_names[1]] = "max"
-    ea.initialize(obj_dict,par_ensemble=pe,num_dv_reals=10,risk=0.5,dv_names=pst.adj_par_names[2:])
-
-    oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst=pst,num_reals=50)
-    val = ea.obj_func.get_risk_shifted_value(risk=0.95,series=oe.loc[:,oe.columns[0]])
-
-    import matplotlib.pyplot as plt
-    ax = plt.subplot(111)
-    oe.iloc[:,0].hist(ax=ax)
-    ylim = ax.get_ylim()
-    ax.plot([val,val],ylim)
-    ax.set_ylim(ylim)
-    plt.show()
 
 
-    return
-    #oe = ea.obs_ensemble
+    # testing for reduce method
+    # oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst=pst, num_reals=5000)
+    # logger = pyemu.Logger("temp.log")
+    # obj_func = evol_proto.ParetoObjFunc(pst,obj_dict,logger)
+    # df = obj_func.reduce_stack_with_risk_shift(oe,50,0.05)
+    #
+    # import matplotlib.pyplot as plt
+    # ax = plt.subplot(111)
+    # oe.iloc[:, -1].hist(ax=ax)
+    # ylim = ax.get_ylim()
+    # val = df.iloc[0,-1]
+    # ax.plot([val, val], ylim)
+    # ax.set_ylim(ylim)
+    # plt.show()
+    # print(df.shape)
+    # return
+
+    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[:2]},
+                                                  num_reals=5,
+                                                  partial=False)
+    ea = evol_proto.EvolAlg(pst, num_slaves=20, port=4005, verbose=True)
+    ea.initialize(obj_dict,par_ensemble=pe,num_dv_reals=10,risk=0.25,dv_names=pst.adj_par_names[2:])
+
+    oe = ea.obs_ensemble
+
     # call the nondominated sorting
     is_nondom = ea.obj_func.is_nondominated_continuous(oe)
     obj = oe.loc[:,obj_names]
