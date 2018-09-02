@@ -57,29 +57,33 @@ def tenpar_test():
     # return
 
     pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[:2]},
-                                                  num_reals=5,
+                                                  num_reals=100,
                                                   partial=False)
     ea = evol_proto.EvolAlg(pst, num_slaves=20, port=4005, verbose=True)
-    ea.initialize(obj_dict,par_ensemble=pe,num_dv_reals=10,risk=0.25,dv_names=pst.adj_par_names[2:])
 
-    oe = ea.obs_ensemble
-
-    # call the nondominated sorting
-    is_nondom = ea.obj_func.is_nondominated_continuous(oe)
-    obj = oe.loc[:,obj_names]
-    obj.loc[is_nondom,"is_nondom"] = is_nondom
-    #print(obj)
     import matplotlib.pyplot as plt
-    plt.scatter(obj.iloc[:,0],obj.iloc[:,1],color="0.5",marker='.',alpha=0.5)
-    ind = obj.loc[is_nondom,:]
-    plt.scatter(ind.iloc[:, 0], ind.iloc[:, 1], color="m", marker='.',s=20,alpha=0.5)
-    isfeas = ea.obj_func.is_feasible(oe)
+    ax = plt.subplot(111)
+    colors = ['r','y','g','b','m']
+    risks = [0.05,0.25,0.5,0.75,0.95]
+    for risk,color in zip(risks,colors):
+        ea.initialize(obj_dict,par_ensemble=pe,num_dv_reals=100,risk=risk,dv_names=pst.adj_par_names[2:])
+        oe = ea.obs_ensemble
+        # call the nondominated sorting
+        is_nondom = ea.obj_func.is_nondominated_continuous(oe)
+        obj = oe.loc[:,obj_names]
+        obj.loc[is_nondom,"is_nondom"] = is_nondom
+        #print(obj)
 
-    isf = obj.loc[isfeas,:]
-    plt.scatter(isf.iloc[:, 0], isf.iloc[:, 1], color="g", marker='.', s=30, alpha=0.5)
-    both = [True if s and d else False for s,d in zip(is_nondom,isfeas)]
-    both = obj.loc[both,:]
-    plt.scatter(both.iloc[:, 0], both.iloc[:, 1], color="r", marker='.', s=90,alpha=0.5)
+        plt.scatter(obj.iloc[:,0],obj.iloc[:,1],color=color,marker='.',alpha=0.25)
+        ind = obj.loc[is_nondom,:]
+        #plt.scatter(ind.iloc[:, 0], ind.iloc[:, 1], color="m", marker='.',s=20,alpha=0.5)
+        isfeas = ea.obj_func.is_feasible(oe)
+
+        isf = obj.loc[isfeas,:]
+        #plt.scatter(isf.iloc[:, 0], isf.iloc[:, 1], color="g", marker='.', s=30, alpha=0.5)
+        both = [True if s and d else False for s,d in zip(is_nondom,isfeas)]
+        both = obj.loc[both,:]
+        plt.scatter(both.iloc[:, 0], both.iloc[:, 1], color=color, marker='+', s=90,alpha=0.5)
     plt.show()
 
 

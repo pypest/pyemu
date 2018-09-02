@@ -317,9 +317,9 @@ class ParetoObjFunc(object):
             self.logger.lraise("series is not an obs obj func or obs inequality contraint:{0}".\
                                format(n))
 
-        ascending = True
+        ascending = False
         if d == "min":
-            ascending = False
+            ascending = True
         s = series.shape[0]
         shift = int(s * risk)
         if shift >= s:
