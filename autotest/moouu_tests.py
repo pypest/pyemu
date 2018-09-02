@@ -3,7 +3,7 @@ import sys
 
 sys.path.append(os.path.join("..","pyemu"))
 
-import evol_proto
+from pyemu.prototypes.moouu import EvolAlg
 
 
 if not os.path.exists("temp1"):
@@ -31,9 +31,6 @@ def tenpar_test():
     par = pst.parameter_data
     #par.loc[:,"partrans"] = "none"
 
-
-
-
     obj_dict = {}
     obj_dict[obj_names[0]] = "min"
     obj_dict[obj_names[1]] = "max"
@@ -57,12 +54,12 @@ def tenpar_test():
     # return
 
     pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[:2]},
-                                                  num_reals=50,
+                                                  num_reals=1,
                                                   partial=False)
-    ea = evol_proto.EvolAlg(pst, num_slaves=20, port=4005, verbose=True)
+    ea = EvolAlg(pst, num_slaves=20, port=4005, verbose=True)
 
     dv = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[2:]},
-                                                  num_reals=50,
+                                                  num_reals=10,
                                                   partial=True)
 
     import matplotlib.pyplot as plt

@@ -14,13 +14,13 @@ from .ev import ErrVar
 from .en import Ensemble, ParameterEnsemble, ObservationEnsemble
 from .mc import MonteCarlo
 #from .inf import Influence
-from .smoother import EnsembleSmoother
 from .mat import Matrix, Jco, Cov, SparseMatrix
 from .pst import Pst, pst_utils
 from .utils import helpers, gw_utils, optimization,geostats, pp_utils, os_utils, smp_utils
 from .plot import plot_utils
 from .logger import Logger
 
+import prototypes
 
 from ._version import get_versions
 __version__ = get_versions()['version']

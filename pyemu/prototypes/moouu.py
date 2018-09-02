@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 import pyemu
-from pyemu.smoother import EnsembleMethod
+from .ensemble_method import EnsembleMethod
 
 
 class ParetoObjFunc(object):
