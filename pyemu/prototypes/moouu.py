@@ -52,6 +52,8 @@ class ParetoObjFunc(object):
             self.logger.statement("pi obj function: {0}, direction: {1}". \
                                   format(name, direction))
 
+        self.is_nondominated = self.is_nondominated_kung
+
     def is_feasible(self, obs_df, risk=0.5):
         """identify which candidate solutions in obs_df (rows)
         are feasible with respect obs constraints (obs_df)
@@ -198,7 +200,7 @@ class ParetoObjFunc(object):
         return is_nondom
 
 
-    def is_nondominated(self, obs_df):
+    def is_nondominated_kung(self, obs_df):
         """identify which candidate solutions are pareto non-dominated using Kungs algorithm
 
         Parameters

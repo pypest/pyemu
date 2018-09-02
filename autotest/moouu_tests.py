@@ -20,12 +20,17 @@ def tenpar_test():
     [os.remove(csv_file) for csv_file in csv_files]
     pst = pyemu.Pst("10par_xsec.pst")
     obj_names = pst.nnz_obs_names
-    pst.observation_data.loc[pst.obs_names[0],"obgnme"] = "greaterthan"
-    pst.observation_data.loc[pst.obs_names[0], "weight"] = 1.0
-    pst.observation_data.loc[pst.obs_names[0], "obsval"] *= 0.85
-    pst.observation_data.loc[pst.obs_names[-1], "obgnme"] = "greaterthan"
-    pst.observation_data.loc[pst.obs_names[-1], "weight"] = 1.0
-    pst.observation_data.loc[pst.obs_names[-1], "obsval"] *= 0.85
+    # pst.observation_data.loc[pst.obs_names[0],"obgnme"] = "greaterthan"
+    # pst.observation_data.loc[pst.obs_names[0], "weight"] = 1.0
+    # pst.observation_data.loc[pst.obs_names[0], "obsval"] *= 0.85
+    # pst.observation_data.loc[pst.obs_names[-1], "obgnme"] = "greaterthan"
+    # pst.observation_data.loc[pst.obs_names[-1], "weight"] = 1.0
+    # pst.observation_data.loc[pst.obs_names[-1], "obsval"] *= 0.85
+
+    pst.observation_data.loc["h01_10", "obgnme"] = "greaterthan"
+    pst.observation_data.loc["h01_10", "weight"] = 1.0
+    #pst.observation_data.loc["h01_10", "obsval"] *= 0.85
+
 
     par = pst.parameter_data
     #par.loc[:,"partrans"] = "none"
@@ -53,7 +58,7 @@ def tenpar_test():
     # return
 
     pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[:2]},
-                                                  num_reals=1,
+                                                  num_reals=10,
                                                   partial=False)
     ea = EvolAlg(pst, num_slaves=20, port=4005, verbose=True)
 
@@ -74,7 +79,10 @@ def tenpar_test():
         obj.loc[is_nondom,"is_nondom"] = is_nondom
         #print(obj)
 
-        plt.scatter(obj.iloc[:,0],obj.iloc[:,1],color=color,marker='.',alpha=0.25)
+        stack = ea.last_stack
+        plt.scatter(stack.iloc[:, 0], stack.iloc[:, 1], color="0.5", marker='.',s=20, alpha=0.25)
+
+        plt.scatter(obj.iloc[:,0],obj.iloc[:,1],color=color,marker='.',alpha=0.25,s=40)
         ind = obj.loc[is_nondom,:]
         #plt.scatter(ind.iloc[:, 0], ind.iloc[:, 1], color="m", marker='.',s=20,alpha=0.5)
         isfeas = ea.obj_func.is_feasible(oe)
@@ -85,7 +93,7 @@ def tenpar_test():
         both = obj.loc[both,:]
         plt.scatter(both.iloc[:, 0], both.iloc[:, 1], color=color, marker='+', s=90,alpha=0.5)
     plt.savefig("risk_compare.pdf")
-    plt.show()
+    #plt.show()
 
 
     # test the infeas calcs
