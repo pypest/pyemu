@@ -410,9 +410,28 @@ class EvolAlg(EnsembleMethod):
             else:
                 self.par_ensemble_base = None
 
+        elif par_ensemble is not None and dv_ensemble is not None:
+            aset = set(self.pst.adj_par_names)
+            ppset = set(self.pst.par_names)
+            dvset = set(dv_ensemble.columns)
+            pset = set(par_ensemble.columns)
+            diff = ppset - aset
+            if len(diff) > 0:
+                self.logger.lraise("the following par_ensemble names were not " + \
+                                   "found in the pst par names: {0}". \
+                                   format(",".join(diff)))
+            if len(diff) > 0:
+                self.logger.lraise("the following dv_ensemble names were not " + \
+                                   "found in the adjustable parameters: {0}". \
+                                   format(",".join(diff)))
+
+            self.par_ensemble_base = par_ensemble
+            self.dv_ensemble_base = dv_ensemble
+
+
         # dv_ensemble supplied, but not pars, so check if any adjustable pars are not
         # in dv_ensemble, and if so, draw reals for them
-        elif dv_ensemble is not None:
+        elif dv_ensemble is not None and par_ensemble is None:
             aset = set(self.pst.adj_par_names)
             dvset = set(dv_ensemble.columns)
             diff = dvset - aset
@@ -441,7 +460,7 @@ class EvolAlg(EnsembleMethod):
 
         # par ensemble supplied but not dv_ensmeble, so check for any adjustable pars
         # that are not in par_ensemble and draw reals.  Must be at least one...
-        elif par_ensemble is not None:
+        elif par_ensemble is not None and dv_ensemble is not None:
             aset = set(self.pst.par_names)
             pset = set(par_ensemble.columns)
             diff = aset - pset
@@ -471,23 +490,6 @@ class EvolAlg(EnsembleMethod):
 
         # both par_ensemble and dv_ensemble were passed, so check
         # for compatibility
-        else:
-            aset = set(self.pst.adj_par_names)
-            ppset = set(self.pst.par_names)
-            dvset = set(dv_ensemble.columns)
-            pset = set(par_ensemble.columns)
-            diff = ppset - aset
-            if len(diff) > 0:
-                self.logger.lraise("the following par_ensemble names were not " + \
-                                   "found in the pst par names: {0}". \
-                                   format(",".join(diff)))
-            if len(diff) > 0:
-                self.logger.lraise("the following dv_ensemble names were not " + \
-                                   "found in the adjustable parameters: {0}". \
-                                   format(",".join(diff)))
-
-            self.par_ensemble_base = par_ensemble
-            self.dv_ensemble_base = dv_ensemble
 
 
         self.obs_ensemble_base = self._calc_obs(self.dv_ensemble_base)

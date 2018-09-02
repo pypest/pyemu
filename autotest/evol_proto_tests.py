@@ -57,16 +57,20 @@ def tenpar_test():
     # return
 
     pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[:2]},
-                                                  num_reals=100,
+                                                  num_reals=50,
                                                   partial=False)
     ea = evol_proto.EvolAlg(pst, num_slaves=20, port=4005, verbose=True)
+
+    dv = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[2:]},
+                                                  num_reals=50,
+                                                  partial=True)
 
     import matplotlib.pyplot as plt
     ax = plt.subplot(111)
     colors = ['r','y','g','b','m']
-    risks = [0.05,0.25,0.5,0.75,0.95]
+    risks = [0.05,0.25,0.51,0.75,0.95]
     for risk,color in zip(risks,colors):
-        ea.initialize(obj_dict,par_ensemble=pe,num_dv_reals=100,risk=risk,dv_names=pst.adj_par_names[2:])
+        ea.initialize(obj_dict,par_ensemble=pe,dv_ensemble=dv,risk=risk,dv_names=pst.adj_par_names[2:])
         oe = ea.obs_ensemble
         # call the nondominated sorting
         is_nondom = ea.obj_func.is_nondominated_continuous(oe)
@@ -84,6 +88,7 @@ def tenpar_test():
         both = [True if s and d else False for s,d in zip(is_nondom,isfeas)]
         both = obj.loc[both,:]
         plt.scatter(both.iloc[:, 0], both.iloc[:, 1], color=color, marker='+', s=90,alpha=0.5)
+    plt.savefig("risk_compare.pdf")
     plt.show()
 
 
