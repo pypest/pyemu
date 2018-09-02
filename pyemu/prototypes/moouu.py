@@ -329,7 +329,7 @@ class ParetoObjFunc(object):
         val = float(cdf.iloc[shift])
         #print(cdf)
         #print(shift,cdf.iloc[shift])
-        self.logger.statement("risk-shift for {0}->type:{1}dir:{2},shift:{3},val:{4}".format(n,t,d,shift,val))
+        #self.logger.statement("risk-shift for {0}->type:{1}dir:{2},shift:{3},val:{4}".format(n,t,d,shift,val))
         return val
 
     def reduce_stack_with_risk_shift(self,oe,num_reals,risk):
@@ -491,17 +491,23 @@ class EvolAlg(EnsembleMethod):
         # both par_ensemble and dv_ensemble were passed, so check
         # for compatibility
 
-
+        self.last_stack = None
+        self.logger.log("evaluate initial dv ensemble of size {0}".format(self.dv_ensemble_base.shape[0]))
         self.obs_ensemble_base = self._calc_obs(self.dv_ensemble_base)
+        self.logger.log("evaluate initial dv ensemble of size {0}".format(self.dv_ensemble_base.shape[0]))
+
         self.obs_ensemble = self.obs_ensemble_base.copy()
         self.dv_ensemble = self.dv_ensemble_base.copy()
 
         self._initialized = True
 
 
-    def _calc_obs(self,dv_ensemble):
+    @staticmethod
+    def _drop_failed(failed_runs, dv_ensemble,obs_ensemble):
+        pass
 
-        # todo - deal with failed runs
+
+    def _calc_obs(self,dv_ensemble):
 
         if self.par_ensemble_base is None:
             failed_runs, oe = super(EvolAlg,self)._calc_obs(dv_ensemble)
@@ -522,15 +528,16 @@ class EvolAlg(EnsembleMethod):
             failed_runs, oe = super(EvolAlg,self)._calc_obs(df)
             if oe.shape[0] != dv_ensemble.shape[0] * self.par_ensemble_base.shape[0]:
                 self.logger.lraise("wrong number of runs back from stack eval")
+            EvolAlg._drop_failed(failed_runs, dv_ensemble, oe)
+            self.last_stack = oe.copy()
 
-
-            pe_reals = self.par_ensemble_base.shape[0]
-            df = self.obj_func.reduce_stack_with_risk_shift(oe,pe_reals,risk=self.risk)
+            self.logger.log("reducing initial stack evaluation")
+            df = self.obj_func.reduce_stack_with_risk_shift(oe,self.par_ensemble_base.shape[0],
+                                                            self.risk)
+            self.logger.log("reducing initial stack evaluation")
             # big assumption the run results are in the same order
             df.index = dv_ensemble.index
             oe = pyemu.ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
-
-
 
         return oe
 

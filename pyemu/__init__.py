@@ -20,7 +20,7 @@ from .utils import helpers, gw_utils, optimization,geostats, pp_utils, os_utils,
 from .plot import plot_utils
 from .logger import Logger
 
-import prototypes
+from . import prototypes
 
 from ._version import get_versions
 __version__ = get_versions()['version']

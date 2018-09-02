@@ -9,7 +9,6 @@ from pyemu.prototypes.moouu import EvolAlg
 if not os.path.exists("temp1"):
     os.mkdir("temp1")
 
-
 def tenpar_test():
     import os
     import numpy as np
