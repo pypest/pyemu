@@ -80,9 +80,9 @@ def tenpar_test():
         #print(obj)
 
         stack = ea.last_stack
-        plt.scatter(stack.iloc[:, 0], stack.iloc[:, 1], color="0.5", marker='.',s=20, alpha=0.25)
+        plt.scatter(stack.loc[:, obj_names[0]], stack.loc[:, obj_names[1]], color="0.5", marker='.',s=10, alpha=0.25)
 
-        plt.scatter(obj.iloc[:,0],obj.iloc[:,1],color=color,marker='.',alpha=0.25,s=40)
+        plt.scatter(obj.loc[:,obj_names[0]],obj.loc[:,obj_names[1]],color=color,marker='.',alpha=0.25,s=40)
         ind = obj.loc[is_nondom,:]
         #plt.scatter(ind.iloc[:, 0], ind.iloc[:, 1], color="m", marker='.',s=20,alpha=0.5)
         isfeas = ea.obj_func.is_feasible(oe)
@@ -91,7 +91,10 @@ def tenpar_test():
         #plt.scatter(isf.iloc[:, 0], isf.iloc[:, 1], color="g", marker='.', s=30, alpha=0.5)
         both = [True if s and d else False for s,d in zip(is_nondom,isfeas)]
         both = obj.loc[both,:]
-        plt.scatter(both.iloc[:, 0], both.iloc[:, 1], color=color, marker='+', s=90,alpha=0.5)
+        plt.scatter(both.loc[:, obj_names[0]], both.loc[:, obj_names[1]], color=color, marker='+', s=90,alpha=0.5)
+
+    ax.set_xlabel("{0}, dir:{1}".format(obj_names[0],obj_dict[obj_names[0]]))
+    ax.set_ylabel("{0}, dir:{1}".format(obj_names[1], obj_dict[obj_names[1]]))
     plt.savefig("risk_compare.pdf")
     #plt.show()
 

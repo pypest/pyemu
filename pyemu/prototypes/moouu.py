@@ -412,6 +412,8 @@ class EvolAlg(EnsembleMethod):
             else:
                 self.par_ensemble_base = None
 
+
+        # both par ensemble and dv ensemble were passed
         elif par_ensemble is not None and dv_ensemble is not None:
             aset = set(self.pst.adj_par_names)
             ppset = set(self.pst.par_names)
@@ -472,10 +474,6 @@ class EvolAlg(EnsembleMethod):
                                    format(",".join(diff)))
             self.par_ensemble_base = par_ensemble
 
-            # aset = set(self.pst.adj_par_names)
-            # adj_pars = aset - pset
-            # if len(adj_pars) == 0:
-            #     self.logger.lraise("all adjustable pars listed in par_ensemble, no dec vars available")
             if dv_names is None:
                 self.logger.lraise("dv_names must be passed if dv_ensemble is None and par_ensmeble is not None")
 
@@ -490,8 +488,6 @@ class EvolAlg(EnsembleMethod):
                                                                              num_reals=num_dv_reals,
                                                                              cov=self.parcov,partial=True)
 
-        # both par_ensemble and dv_ensemble were passed, so check
-        # for compatibility
 
         self.last_stack = None
         self.logger.log("evaluate initial dv ensemble of size {0}".format(self.dv_ensemble_base.shape[0]))
@@ -506,7 +502,9 @@ class EvolAlg(EnsembleMethod):
 
     @staticmethod
     def _drop_failed(failed_runs, dv_ensemble,obs_ensemble):
-        pass
+        if failed_runs is None:
+            return
+        dv_ensemble.loc[failed_runs,:] = np.NaN
 
 
     def _calc_obs(self,dv_ensemble):
