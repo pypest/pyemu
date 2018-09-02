@@ -1,0 +1,47 @@
+
+PANTHER master listening on socket:0.0.0.0:4005 (IPv4)
+running model 100 times
+
+    waiting for slaves to appear...
+
+
+09/03/18 10:17:21->new connection from: localhost:52157
+09/03/18 10:17:21->new connection from: localhost:52158
+09/03/18 10:17:21->new connection from: localhost:52159
+09/03/18 10:17:21->initializing new slave connection from: localhost:52157, number of slaves: 3, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_0
+09/03/18 10:17:21->initializing new slave connection from: localhost:52158, number of slaves: 3, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_1
+09/03/18 10:17:21->initializing new slave connection from: localhost:52159, number of slaves: 3, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_2
+09/03/18 10:17:21->new connection from: localhost:52160
+09/03/18 10:17:21->initializing new slave connection from: localhost:52160, number of slaves: 4, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_3
+09/03/18 10:17:21->new connection from: localhost:52161
+09/03/18 10:17:21->initializing new slave connection from: localhost:52161, number of slaves: 5, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_4
+09/03/18 10:17:21->new connection from: localhost:52162
+09/03/18 10:17:21->initializing new slave connection from: localhost:52162, number of slaves: 6, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_5
+09/03/18 10:17:21->new connection from: localhost:52163
+09/03/18 10:17:21->initializing new slave connection from: localhost:52163, number of slaves: 7, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_6
+09/03/18 10:17:21->new connection from: localhost:52164
+09/03/18 10:17:21->initializing new slave connection from: localhost:52164, number of slaves: 8, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_7
+09/03/18 10:17:21->new connection from: localhost:52165
+09/03/18 10:17:21->initializing new slave connection from: localhost:52165, number of slaves: 9, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_8
+09/03/18 10:17:21->new connection from: localhost:52166
+09/03/18 10:17:21->initializing new slave connection from: localhost:52166, number of slaves: 10, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_9
+09/03/18 10:17:21->new connection from: localhost:52167
+09/03/18 10:17:21->initializing new slave connection from: localhost:52167, number of slaves: 11, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_10
+09/03/18 10:17:21->new connection from: localhost:52168
+09/03/18 10:17:21->initializing new slave connection from: localhost:52168, number of slaves: 12, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_11
+09/03/18 10:17:21->new connection from: localhost:52169
+09/03/18 10:17:21->initializing new slave connection from: localhost:52169, number of slaves: 13, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_12
+09/03/18 10:17:21->new connection from: localhost:52170
+09/03/18 10:17:21->initializing new slave connection from: localhost:52170, number of slaves: 14, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_13
+09/03/18 10:17:21->new connection from: localhost:52171
+09/03/18 10:17:21->initializing new slave connection from: localhost:52171, number of slaves: 15, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_14
+09/03/18 10:17:21->new connection from: localhost:52172
+09/03/18 10:17:21->initializing new slave connection from: localhost:52172, number of slaves: 16, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_15
+09/03/18 10:17:21->new connection from: localhost:52173
+09/03/18 10:17:21->initializing new slave connection from: localhost:52173, number of slaves: 17, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_16
+09/03/18 10:17:21->new connection from: localhost:52174
+09/03/18 10:17:21->initializing new slave connection from: localhost:52174, number of slaves: 18, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_17
+09/03/18 10:17:21->new connection from: localhost:52175
+09/03/18 10:17:21->new connection from: localhost:52176
+09/03/18 10:17:21->initializing new slave connection from: localhost:52175, number of slaves: 20, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_18
+09/03/18 10:17:21->initializing new slave connection from: localhost:52176, number of slaves: 20, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_19

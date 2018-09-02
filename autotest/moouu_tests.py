@@ -15,7 +15,7 @@ def tenpar_test():
     import flopy
     import pyemu
 
-    os.chdir(os.path.join("smoother","10par_xsec"))
+    os.chdir(os.path.join("moouu","10par_xsec"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
     pst = pyemu.Pst("10par_xsec.pst")
