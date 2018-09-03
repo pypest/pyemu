@@ -15,5 +15,5 @@ setup(name="pyemu",
       download_url = 'https://github.com/jtwhite79/pyemu/tarball/0.6',
       license='New BSD',
       platforms='Windows, Mac OS-X',
-      packages = ["pyemu","pyemu.pst","pyemu.plot","pyemu.utils","pyemu.mat"],
+      packages = ["pyemu","pyemu.pst","pyemu.plot","pyemu.utils","pyemu.mat","pyemu.prototypes"],
       version="0.6")
