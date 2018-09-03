@@ -58,12 +58,12 @@ def tenpar_test():
     # return
 
     pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[:2]},
-                                                  num_reals=10,
+                                                  num_reals=50,
                                                   partial=False)
     ea = EvolAlg(pst, num_slaves=20, port=4005, verbose=True)
 
     dv = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[2:]},
-                                                  num_reals=10,
+                                                  num_reals=50,
                                                   partial=True)
 
     import matplotlib.pyplot as plt
