@@ -525,7 +525,6 @@ class EvolAlg(EnsembleMethod):
         self.logger.log("evaluate initial dv ensemble of size {0}".format(self.dv_ensemble.shape[0]))
 
 
-
         isfeas = self.obj_func.is_feasible(self.obs_ensemble,risk=self.risk)
         isnondom = self.obj_func.is_nondominated(self.obs_ensemble)
 
@@ -534,12 +533,9 @@ class EvolAlg(EnsembleMethod):
             self.logger.lraise("no feasible solutions in initial population")
         self.logger.statement("{0} feasible individuals in initial population".format(vc[True]))
         self.dv_ensemble = self.dv_ensemble.loc[isfeas,:]
-        self.obs_ensemble = self.obs_ensemble.loc[is_feas,:]
-
+        self.obs_ensemble = self.obs_ensemble.loc[isfeas,:]
 
         self._initialized = True
-
-
 
 
     @staticmethod
@@ -564,12 +560,15 @@ class EvolAlg(EnsembleMethod):
         dv_ensemble = dv_ensemble.copy()
         isfeas = self.obj_func.is_feasible(obs_ensemble)
         isnondom = self.obj_func.is_nondominated(obs_ensemble)
+        cd = self.obj_func.crowd_distance(obs_ensemble)
         obs_ensemble.loc[isfeas.index,"feasible"] = isfeas
         obs_ensemble.loc[isnondom.index,"nondominated"] = isnondom
         dv_ensemble.loc[isfeas.index,"feasible"] = isfeas
         dv_ensemble.loc[isnondom.index,"nondominated"] = isnondom
         obs_ensemble.loc[:,"iteration"] = self.iter_num
         dv_ensemble.loc[:,"iteration"] = self.iter_num
+        obs_ensemble.loc[cd.index,"crowd_distance"] = cd
+        dv_ensemble.loc[cd.index,"crowd_distance"] = cd
         if self.obs_ensemble_archive is None:
             self.obs_ensemble_archive = obs_ensemble
             self.dv_ensemble_archive = obs_ensemble
@@ -602,6 +601,7 @@ class EvolAlg(EnsembleMethod):
             EvolAlg._drop_failed(failed_runs, dv_ensemble, oe)
             self.last_stack = oe.copy()
 
+
             self.logger.log("reducing initial stack evaluation")
             df = self.obj_func.reduce_stack_with_risk_shift(oe,self.par_ensemble.shape[0],
                                                             self.risk)
@@ -609,7 +609,7 @@ class EvolAlg(EnsembleMethod):
             # big assumption the run results are in the same order
             df.index = dv_ensemble.index
             oe = pyemu.ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
-
+        self._archive(dv_ensemble, oe)
         return oe
 
 
@@ -629,6 +629,10 @@ class EliteDiffEvol(EvolAlg):
         if not self._initialized:
             self.logger.lraise("not initialized")
 
+        # todo : need to make sure enough feasible and nondominated solution are available
+        # todo : if not, should we generate populations with less fit solutions in the archive?
+        # todo : need to define (transformed) bounding box for denormalizing mutated solution vector
+
         # function to get unique index names
         child_count = 0
         def next_name():
@@ -639,17 +643,19 @@ class EliteDiffEvol(EvolAlg):
                 child_count += 1
             return sol_name
 
-        # need to make sure enough feasible and nondominated solution are available
-        # if not, should we generate populations with less fit solutions?
-
         # generate self.num_dv_reals offspring using diff evol rules
-
         dv_offspring = []
-        child2parent = {} # to track which offspring came for which parents
+        child2parent = {}
         offspring_idx = []
         for i in range(self.num_dv_reals):
             # Diff evol here MATT!!!
+            # select parent randomly - add to child2parent
+            # select two others for differntials
+
+            sol_name = "child_{0}".format(i)
             dv_offspring.append(offspring)
+            offspring_idx.append(sol_name)
+
         dv_offspring = pd.DataFrame(dv_offspring,columns=self.dv_ensemble.columns,index=offsring_idx)
 
         # run the model with offspring candidates - offspring_obs may have missing reals if runs failed!

@@ -58,16 +58,17 @@ def tenpar_test():
     # return
 
     pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[:2]},
-                                                  num_reals=10,
+                                                  num_reals=5,
                                                   partial=False)
     ea = EvolAlg(pst, num_slaves=20, port=4005, verbose=True)
 
     dv = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[2:]},
-                                                  num_reals=10,
+                                                  num_reals=5,
                                                   partial=True)
-
+    ea.initialize(obj_dict, par_ensemble=pe, dv_ensemble=dv, risk=0.5)
 
     # test the infeas calcs
+    oe = ea.obs_ensemble
     is_feasible = ea.obj_func.is_feasible(oe)
     oe.loc[is_feasible.index,"feas"] = is_feasible
     obs = pst.observation_data
@@ -185,5 +186,5 @@ def tenpar_dev():
 
 
 if __name__ == "__main__":
-    #tenpar_test()
-    tenpar_dev()
+    tenpar_test()
+    #tenpar_dev()
