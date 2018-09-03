@@ -603,6 +603,7 @@ class DiffEvol(EvolAlg):
 
         # evaluate offspring WRT feasibility and nondomination - if offspring dominates parent, replace in
         # self.dv_ensemble and self.obs_ensemble.  if not, drop candidate.  If tied, keep both
+        child_count = 0
         for idx in offspring_obs.index:
             child_sol = offspring_obs.loc[idx,:]
             parent_sol = self.dv_ensemble.loc[idx,:]
@@ -611,19 +612,26 @@ class DiffEvol(EvolAlg):
                 pass
             elif self.obj_func.dominates(child_sol,parent_sol):
                 # hey dad, what do you think about your son now!
-                self.dv_ensemble.loc[idx,offspring_decvars.columns] = offspring_decvars.loc[idx,:]
+                self.dv_ensemble.loc[idx,child_sol.index] = child_sol
                 self.obs_ensemble.loc[idx,offspring_obs.columns] = offspring_obs.loc[idx,:]
             else:
                 #need to make sure we assign unique idx...
+                while True:
+                    sol_name = "child_{0}_{1}".format(self.iter_num,child_count)
+                    if sol_name not in self.dv_ensemble.index.values:
+                        break
+                    child_count += 1
 
-                self.dv_ensemble
+                self.dv_ensemble.loc[sol_name,child_sol.index] = child_sol
+                self.obs_ensemble.loc[sol_name,offspring_obs.columns] = offspring_obs.loc[idx,:]
 
         #if there are too many individuals in self.dv_ensemble, then reduce by using crowding distance.
         while (self.dv_ensemble.shape[0] > self.num_dv_reals):
             cd = self.obj_func.crowd_distance(self.obs_ensemble)
             cd.sort_values(inplace=True,ascending=True)
             #drop the first element in cd from both dv_ensemble and obs_ensemble
-
+            self.dv_ensemble = self.dv_ensemble.loc[cd.index[-1],:]
+            self.obs_ensemble = self.obs_ensemble.loc[cd.index[-1], :]
 
         return
 
