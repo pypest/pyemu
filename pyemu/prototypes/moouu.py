@@ -53,6 +53,8 @@ class ParetoObjFunc(object):
                                   format(name, direction))
 
         self.is_nondominated = self.is_nondominated_kung
+        self.obs_obj_names = list(self.obs_dict.keys())
+
 
     def is_feasible(self, obs_df, risk=0.5):
         """identify which candidate solutions in obs_df (rows)
@@ -91,6 +93,22 @@ class ParetoObjFunc(object):
         return is_feasible
 
 
+    @property
+    def obs_obj_signs(self):
+        signs = []
+        for obj in self.obs_obj_names:
+            if self.obs_dict[obj] == "max":
+                signs.append(1.0)
+            else:
+                signs.append(-1.0)
+        signs = np.array(signs)
+
+
+    def dominates(self,sol1,sol2):
+        d = self.signs * (sol1 - sol2)
+        if np.all(d >= 0.0) and np.any(d > 0.0):
+            return True
+        return False
 
     def is_nondominated_pathetic(self, obs_df):
         """identify which candidate solutions are pareto non-dominated -
@@ -118,8 +136,6 @@ class ParetoObjFunc(object):
         obj_df = obs_df.loc[:,obj_names]
 
         def dominates(idx1,idx2):
-            r1 = obj_df.loc[idx1,:]
-            r2 = obj_df.loc[idx2,:]
             d = signs * (obj_df.loc[idx1,:] -  obj_df.loc[idx2,:])
             if np.all(d >= 0.0) and np.any(d > 0.0):
                 return True
@@ -131,9 +147,13 @@ class ParetoObjFunc(object):
             for jidx in obj_df.index:
                 if iidx == jidx:
                     continue
-                if dominates(jidx,iidx):
+                # if dominates(jidx,iidx):
+                #     ind = False
+                #     break
+                if self.dominates(obj_df.loc[jidx,:], obj_df.loc[iidx,:]):
                     ind = False
                     break
+
             is_nondom.append(ind)
         is_nondom = pd.Series(data=is_nondom,index=obs_df.index,dtype=bool)
         return is_nondom
@@ -164,8 +184,6 @@ class ParetoObjFunc(object):
         obj_df = obs_df.loc[:,obj_names]
 
         def dominates(idx1,idx2):
-            r1 = obj_df.loc[idx1,:]
-            r2 = obj_df.loc[idx2,:]
             d = signs * (obj_df.loc[idx1,:] -  obj_df.loc[idx2,:])
             if np.all(d >= 0.0) and np.any(d > 0.0):
                 return True
@@ -181,9 +199,14 @@ class ParetoObjFunc(object):
             drop = []
             keep = True
             for jidx in PP:
-                if dominates(iidx,jidx):
+                # if dominates(iidx,jidx):
+                #     drop.append(jidx)
+                # elif dominates(jidx,iidx):
+                #     keep = False
+                #     break
+                if self.dominates(obj_df.loc[iidx, :], obj_df.loc[jidx, :]):
                     drop.append(jidx)
-                elif dominates(jidx,iidx):
+                elif self.dominates(obj_df.loc[jidx, :], obj_df.loc[iidx, :]):
                     keep = False
                     break
             for d in drop:
@@ -225,8 +248,6 @@ class ParetoObjFunc(object):
         obj_df = obs_df.loc[:,obj_names]
 
         def dominates(idx1,idx2):
-            r1 = obj_df.loc[idx1,:]
-            r2 = obj_df.loc[idx2,:]
             d = signs * (obj_df.loc[idx1,:] -  obj_df.loc[idx2,:])
             if np.all(d >= 0.0) and np.any(d > 0.0):
                 return True
@@ -250,7 +271,8 @@ class ParetoObjFunc(object):
             while i < len(B):
                 j = 0
                 while j < len(T):
-                    if dominates(T[j],B[i]):
+                    #if dominates(T[j],B[i]):
+                    if self.dominates(obj_df.loc[T[j],:], obj_df.loc[B[i],:]):
                         break
                     j += 1
                 if (j == len(T)):
@@ -383,7 +405,7 @@ class EvolAlg(EnsembleMethod):
 
         # all adjustable pars are dec vars
         if dv_ensemble is None and par_ensemble is None:
-
+            self.num_dv_reals = num_dv_reals
             if dv_names is not None:
                 aset = set(self.pst.adj_par_names)
                 dvset = set(dv_names)
@@ -415,6 +437,7 @@ class EvolAlg(EnsembleMethod):
 
         # both par ensemble and dv ensemble were passed
         elif par_ensemble is not None and dv_ensemble is not None:
+            self.num_dv_reals = dv_ensemble.shape[0]
             aset = set(self.pst.adj_par_names)
             ppset = set(self.pst.par_names)
             dvset = set(dv_ensemble.columns)
@@ -436,6 +459,7 @@ class EvolAlg(EnsembleMethod):
         # dv_ensemble supplied, but not pars, so check if any adjustable pars are not
         # in dv_ensemble, and if so, draw reals for them
         elif dv_ensemble is not None and par_ensemble is None:
+            self.num_dv_reals = dv_ensemble.shape[0]
             aset = set(self.pst.adj_par_names)
             dvset = set(dv_ensemble.columns)
             diff = dvset - aset
@@ -464,7 +488,8 @@ class EvolAlg(EnsembleMethod):
 
         # par ensemble supplied but not dv_ensmeble, so check for any adjustable pars
         # that are not in par_ensemble and draw reals.  Must be at least one...
-        elif par_ensemble is not None and dv_ensemble is not None:
+        elif par_ensemble is not None and dv_ensemble is None:
+            self.num_dv_reals = num_dv_reals
             aset = set(self.pst.par_names)
             pset = set(par_ensemble.columns)
             diff = aset - pset
@@ -560,6 +585,50 @@ class DiffEvol(EvolAlg):
     def update(self):
         if not self._initialized:
             self.logger.lraise("not initialized")
+
+        pop_size = self.dv_ensemble.shape[0]
+
+        #generate self.num_dv_reals offspring using diff evol rules
+        offspring_decvars = []
+        for idx in self.dv_ensemble:
+            # MATT!!!
+            offspring_decvars.append(offspring)
+
+        offspring_decvars = pd.DataFrame(offspring_decvars,columns=self.dv_ensemble.columns)
+
+        # run the model with offspring candidates - offspring_obs may have missing reals if runs failed!
+        offspring_obs = self._calc_obs(offspring_decvars)
+
+
+        # evaluate offspring WRT feasibility and nondomination - if offspring dominates parent, replace in
+        # self.dv_ensemble and self.obs_ensemble.  if not, drop candidate.  If tied, keep both
+        for idx in offspring_obs.index:
+            child_sol = offspring_obs.loc[idx,:]
+            parent_sol = self.dv_ensemble.loc[idx,:]
+            if self.obj_func.dominates(parent_sol,child_sol):
+                #your dead to me!
+                pass
+            elif self.obj_func.dominates(child_sol,parent_sol):
+                # hey dad, what do you think about your son now!
+                self.dv_ensemble.loc[idx,offspring_decvars.columns] = offspring_decvars.loc[idx,:]
+                self.obs_ensemble.loc[idx,offspring_obs.columns] = offspring_obs.loc[idx,:]
+            else:
+                #need to make sure we assign unique idx...
+
+                self.dv_ensemble
+
+        #if there are too many individuals in self.dv_ensemble, then reduce by using crowding distance.
+        while (self.dv_ensemble.shape[0] > self.num_dv_reals):
+            cd = self.obj_func.crowd_distance(self.obs_ensemble)
+            cd.sort_values(inplace=True,ascending=True)
+            #drop the first element in cd from both dv_ensemble and obs_ensemble
+
+
+        return
+
+
+
+
 
 
 
