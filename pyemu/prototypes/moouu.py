@@ -542,15 +542,24 @@ class EvolAlg(EnsembleMethod):
         return oe
 
 
+    def update(self,*args,**kwargs):
+        self.logger.lraise("EvolAlg.update() must be implemented by derived types")
+
+
+
+
+
+class DiffEvol(EvolAlg):
+    def __init__(self, pst, parcov = None, obscov = None, num_slaves = 0, use_approx_prior = True,
+                 submit_file = None, verbose = False, port = 4004, slave_dir = "template"):
+        super(DiffEvol, self).__init__(pst=pst, parcov=parcov, obscov=obscov, num_slaves=num_slaves,
+                                      submit_file=submit_file, verbose=verbose, port=port,
+                                      slave_dir=slave_dir)
+
+
     def update(self):
         if not self._initialized:
             self.logger.lraise("not initialized")
-
-
-
-
-
-
 
 
 
