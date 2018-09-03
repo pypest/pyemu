@@ -395,6 +395,10 @@ class EvolAlg(EnsembleMethod):
         # todo : setup a run results store for all candidate solutions?  or maybe
         # just nondom, feasible solutions?
 
+        # todo : check that the dv ensemble index is not duplicated
+
+        self.dv_ensemble_archive = None
+        self.obs_ensemble_archive = None
 
         if risk != 0.5:
             if risk > 1.0 or risk < 0.0:
@@ -402,7 +406,7 @@ class EvolAlg(EnsembleMethod):
         self.risk = risk
         self.obj_func = ParetoObjFunc(self.pst,obj_func_dict, self.logger)
 
-        self.par_ensemble_base = None
+        self.par_ensemble = None
 
         # all adjustable pars are dec vars
         if dv_ensemble is None and par_ensemble is None:
@@ -421,19 +425,19 @@ class EvolAlg(EnsembleMethod):
                     self.logger.lraise("risk != 0.5 but all adjustable pars are dec vars")
                 how = {p: "uniform" for p in self.pst.adj_par_names}
 
-            self.dv_ensemble_base = pyemu.ParameterEnsemble.from_mixed_draws(self.pst, how_dict=how,
+            self.dv_ensemble = pyemu.ParameterEnsemble.from_mixed_draws(self.pst, how_dict=how,
                                                                     num_reals=num_dv_reals, cov=self.parcov)
             if risk != 0.5:
                 aset = set(self.pst.adj_par_names)
-                dvset = set(self.dv_ensemble_base.columns)
+                dvset = set(self.dv_ensemble.columns)
                 diff = aset - dvset
                 if len(diff) > 0:
                     self.logger.lraise("risk!=0.5 but all adjustable parameters are dec vars")
-                self.par_ensemble_base = pyemu.ParameterEnsemble.from_gaussian_draw(self.pst,
+                self.par_ensemble = pyemu.ParameterEnsemble.from_gaussian_draw(self.pst,
                                                                                     num_reals=num_par_reals,
                                                                                     cov=self.parcov)
             else:
-                self.par_ensemble_base = None
+                self.par_ensemble = None
 
 
         # both par ensemble and dv ensemble were passed
@@ -453,8 +457,8 @@ class EvolAlg(EnsembleMethod):
                                    "found in the adjustable parameters: {0}". \
                                    format(",".join(diff)))
 
-            self.par_ensemble_base = par_ensemble
-            self.dv_ensemble_base = dv_ensemble
+            self.par_ensemble = par_ensemble
+            self.dv_ensemble = dv_ensemble
 
 
         # dv_ensemble supplied, but not pars, so check if any adjustable pars are not
@@ -468,7 +472,7 @@ class EvolAlg(EnsembleMethod):
                 self.logger.lraise("the following dv_ensemble names were not " + \
                                    "found in the adjustable parameters: {0}". \
                                    format(",".join(diff)))
-            self.dv_ensemble_base = dv_ensemble
+            self.dv_ensemble = dv_ensemble
             if risk != 0.5:
                 if par_names is not None:
                     pset = set(par_names)
@@ -483,7 +487,7 @@ class EvolAlg(EnsembleMethod):
                     if len(adj_pars) == 0:
                         self.logger.lraise("risk!=0.5 but all adjustable pars are dec vars")
                     how = {p:"gaussian" for p in adj_pars}
-                self.par_ensemble_base = pyemu.ParameterEnsemble.from_mixed_draws(self.pst,how_dict=how,
+                self.par_ensemble = pyemu.ParameterEnsemble.from_mixed_draws(self.pst,how_dict=how,
                                          num_reals=num_par_reals,cov=self.parcov)
 
 
@@ -498,7 +502,7 @@ class EvolAlg(EnsembleMethod):
                 self.logger.lraise("the following par_ensemble names were not " + \
                                    "found in the pst par names: {0}". \
                                    format(",".join(diff)))
-            self.par_ensemble_base = par_ensemble
+            self.par_ensemble = par_ensemble
 
             if dv_names is None:
                 self.logger.lraise("dv_names must be passed if dv_ensemble is None and par_ensmeble is not None")
@@ -510,20 +514,32 @@ class EvolAlg(EnsembleMethod):
                                    "found in the adjustable parameters: {0}". \
                                    format(",".join(diff)))
             how = {p: "uniform" for p in dv_names}
-            self.dv_ensemble_base = pyemu.ParameterEnsemble.from_mixed_draws(self.pst, how_dict=how,
+            self.dv_ensemble = pyemu.ParameterEnsemble.from_mixed_draws(self.pst, how_dict=how,
                                                                              num_reals=num_dv_reals,
                                                                              cov=self.parcov,partial=True)
 
 
         self.last_stack = None
-        self.logger.log("evaluate initial dv ensemble of size {0}".format(self.dv_ensemble_base.shape[0]))
-        self.obs_ensemble_base = self._calc_obs(self.dv_ensemble_base)
-        self.logger.log("evaluate initial dv ensemble of size {0}".format(self.dv_ensemble_base.shape[0]))
+        self.logger.log("evaluate initial dv ensemble of size {0}".format(self.dv_ensemble.shape[0]))
+        self.obs_ensemble = self._calc_obs(self.dv_ensemble)
+        self.logger.log("evaluate initial dv ensemble of size {0}".format(self.dv_ensemble.shape[0]))
 
-        self.obs_ensemble = self.obs_ensemble_base.copy()
-        self.dv_ensemble = self.dv_ensemble_base.copy()
+
+
+        isfeas = self.obj_func.is_feasible(self.obs_ensemble,risk=self.risk)
+        isnondom = self.obj_func.is_nondominated(self.obs_ensemble)
+
+        vc = isfeas.value_counts()
+        if True not in vc:
+            self.logger.lraise("no feasible solutions in initial population")
+        self.logger.statement("{0} feasible individuals in initial population".format(vc[True]))
+        self.dv_ensemble = self.dv_ensemble.loc[isfeas,:]
+        self.obs_ensemble = self.obs_ensemble.loc[is_feas,:]
+
 
         self._initialized = True
+
+
 
 
     @staticmethod
@@ -531,15 +547,43 @@ class EvolAlg(EnsembleMethod):
         if failed_runs is None:
             return
         dv_ensemble.loc[failed_runs,:] = np.NaN
+        dv_ensemble = dv_ensemble.dropna(axis=1)
+        obs_ensemble.loc[failed_runs,:] = np.NaN
+        obs_ensemble = obs_ensemble.dropna(axis=1)
 
+        self.logger.statement("dropped {0} failed runs, {1} remaining".\
+                              format(len(failed_runs),dv_ensemble.shape[0]))
+
+    def _archive(self,dv_ensemble,obs_ensemble):
+        self.logger.log("archiving {0} solutions".format(dv_ensemble.shape[0]))
+        if dv_ensemble.shape[0] != obs_ensemble.shape[0]:
+            self.logger.lraise("EvolAlg._archive() error: shape mismatch: {0} : {1}".\
+                               format(dv_ensemble.shape[0],obs_ensemble.shape[0]))
+
+        obs_ensemble = obs_ensemble.copy()
+        dv_ensemble = dv_ensemble.copy()
+        isfeas = self.obj_func.is_feasible(obs_ensemble)
+        isnondom = self.obj_func.is_nondominated(obs_ensemble)
+        obs_ensemble.loc[isfeas.index,"feasible"] = isfeas
+        obs_ensemble.loc[isnondom.index,"nondominated"] = isnondom
+        dv_ensemble.loc[isfeas.index,"feasible"] = isfeas
+        dv_ensemble.loc[isnondom.index,"nondominated"] = isnondom
+        obs_ensemble.loc[:,"iteration"] = self.iter_num
+        dv_ensemble.loc[:,"iteration"] = self.iter_num
+        if self.obs_ensemble_archive is None:
+            self.obs_ensemble_archive = obs_ensemble
+            self.dv_ensemble_archive = obs_ensemble
+        else:
+            self.obs_ensemble_archive = self.obs_ensemble_archive.append(obs_ensemble)
+            self.dv_ensemble_archive = self.dv_ensemble_archive.append(dv_ensemble)
 
     def _calc_obs(self,dv_ensemble):
 
-        if self.par_ensemble_base is None:
+        if self.par_ensemble is None:
             failed_runs, oe = super(EvolAlg,self)._calc_obs(dv_ensemble)
         else:
             # make a copy of the org par ensemble but as a df instance
-            df_base = pd.DataFrame(self.par_ensemble_base.loc[:,:])
+            df_base = pd.DataFrame(self.par_ensemble.loc[:,:])
             # stack up the par ensembles for each solution
             dfs = []
             for i in range(dv_ensemble.shape[0]):
@@ -552,13 +596,14 @@ class EvolAlg(EnsembleMethod):
             org_index = df.index.copy()
             df.index = np.arange(df.shape[0])
             failed_runs, oe = super(EvolAlg,self)._calc_obs(df)
-            if oe.shape[0] != dv_ensemble.shape[0] * self.par_ensemble_base.shape[0]:
+            if oe.shape[0] != dv_ensemble.shape[0] * self.par_ensemble.shape[0]:
                 self.logger.lraise("wrong number of runs back from stack eval")
+
             EvolAlg._drop_failed(failed_runs, dv_ensemble, oe)
             self.last_stack = oe.copy()
 
             self.logger.log("reducing initial stack evaluation")
-            df = self.obj_func.reduce_stack_with_risk_shift(oe,self.par_ensemble_base.shape[0],
+            df = self.obj_func.reduce_stack_with_risk_shift(oe,self.par_ensemble.shape[0],
                                                             self.risk)
             self.logger.log("reducing initial stack evaluation")
             # big assumption the run results are in the same order
@@ -572,10 +617,7 @@ class EvolAlg(EnsembleMethod):
         self.logger.lraise("EvolAlg.update() must be implemented by derived types")
 
 
-
-
-
-class DiffEvol(EvolAlg):
+class EliteDiffEvol(EvolAlg):
     def __init__(self, pst, parcov = None, obscov = None, num_slaves = 0, use_approx_prior = True,
                  submit_file = None, verbose = False, port = 4004, slave_dir = "template"):
         super(DiffEvol, self).__init__(pst=pst, parcov=parcov, obscov=obscov, num_slaves=num_slaves,
@@ -587,43 +629,67 @@ class DiffEvol(EvolAlg):
         if not self._initialized:
             self.logger.lraise("not initialized")
 
-        pop_size = self.dv_ensemble.shape[0]
+        # function to get unique index names
+        child_count = 0
+        def next_name():
+            while True:
+                sol_name = "child_{0}_{1}".format(self.iter_num, child_count)
+                if sol_name not in self.dv_ensemble.index.values:
+                    break
+                child_count += 1
+            return sol_name
 
-        #generate self.num_dv_reals offspring using diff evol rules
-        offspring_decvars = []
-        for idx in self.dv_ensemble:
-            # MATT!!!
-            offspring_decvars.append(offspring)
+        # need to make sure enough feasible and nondominated solution are available
+        # if not, should we generate populations with less fit solutions?
 
-        offspring_decvars = pd.DataFrame(offspring_decvars,columns=self.dv_ensemble.columns)
+        # generate self.num_dv_reals offspring using diff evol rules
+
+        dv_offspring = []
+        child2parent = {} # to track which offspring came for which parents
+        offspring_idx = []
+        for i in range(self.num_dv_reals):
+            # Diff evol here MATT!!!
+            dv_offspring.append(offspring)
+        dv_offspring = pd.DataFrame(dv_offspring,columns=self.dv_ensemble.columns,index=offsring_idx)
 
         # run the model with offspring candidates - offspring_obs may have missing reals if runs failed!
-        offspring_obs = self._calc_obs(offspring_decvars)
+        self.logger.log("running {0} canditiate solutions for iteration {1}".format(pop_size,self.iter_num))
+        obs_offspring = self._calc_obs(dv_offspring)
 
 
-        # evaluate offspring WRT feasibility and nondomination - if offspring dominates parent, replace in
+        # evaluate offspring WRT feasibility and nondomination (elitist) - if offspring dominates parent, replace in
         # self.dv_ensemble and self.obs_ensemble.  if not, drop candidate.  If tied, keep both
+        isfeas = self.obj_func.is_feasible(obs_offspring)
+        isnondom = self.obj_func.is_nondominated(obs_offspring)
         child_count = 0
-        for idx in offspring_obs.index:
-            child_sol = offspring_obs.loc[idx,:]
-            parent_sol = self.dv_ensemble.loc[idx,:]
-            if self.obj_func.dominates(parent_sol,child_sol):
-                #your dead to me!
-                pass
-            elif self.obj_func.dominates(child_sol,parent_sol):
-                # hey dad, what do you think about your son now!
-                self.dv_ensemble.loc[idx,child_sol.index] = child_sol
-                self.obs_ensemble.loc[idx,offspring_obs.columns] = offspring_obs.loc[idx,:]
-            else:
-                #need to make sure we assign unique idx...
-                while True:
-                    sol_name = "child_{0}_{1}".format(self.iter_num,child_count)
-                    if sol_name not in self.dv_ensemble.index.values:
-                        break
-                    child_count += 1
+        for idx in obs_offspring.index:
+            if not isfeas[idx]:
+                self.logger.statement("child {0} is not feasible".format(idx))
+                continue
 
-                self.dv_ensemble.loc[sol_name,child_sol.index] = child_sol
-                self.obs_ensemble.loc[sol_name,offspring_obs.columns] = offspring_obs.loc[idx,:]
+            child_sol = obs_offspring.loc[idx,:]
+            if not idx in child2parent:
+                # the parent was already removed by another child, so if this child is
+                # feasible and nondominated, keep it
+                if isnondom(idx):
+                    sol_name = next_name()
+                    self.dv_ensemble.loc[sol_name, child_sol.index] = child_sol
+                    self.obs_ensemble.loc[sol_name, obs_offspring.columns] = obs_offspring.loc[idx, :]
+
+            else:
+                parent_sol = self.obs_ensemble.loc[idx,:]
+                if self.obj_func.dominates(parent_sol,child_sol):
+                    # your dead to me!
+                    pass
+                elif self.obj_func.dominates(child_sol,parent_sol):
+                    # hey dad, what do you think about your son now!
+                    self.dv_ensemble.loc[idx,child_sol.index] = child_sol
+                    self.obs_ensemble.loc[idx,obs_offspring.columns] = obs_offspring.loc[idx,:]
+                else:
+                    sol_name = next_name()
+                    self.dv_ensemble.loc[sol_name,child_sol.index] = child_sol
+                    self.obs_ensemble.loc[sol_name,obs_offspring.columns] = obs_offspring.loc[idx,:]
+
 
         #if there are too many individuals in self.dv_ensemble, then reduce by using crowding distance.
         while (self.dv_ensemble.shape[0] > self.num_dv_reals):
@@ -632,6 +698,8 @@ class DiffEvol(EvolAlg):
             #drop the first element in cd from both dv_ensemble and obs_ensemble
             self.dv_ensemble = self.dv_ensemble.loc[cd.index[-1],:]
             self.obs_ensemble = self.obs_ensemble.loc[cd.index[-1], :]
+
+        self.iter_num += 1
 
         return
 
