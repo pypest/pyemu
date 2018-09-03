@@ -105,7 +105,7 @@ class ParetoObjFunc(object):
 
 
     def dominates(self,sol1,sol2):
-        d = self.signs * (sol1 - sol2)
+        d = self.obs_obj_signs * (sol1 - sol2)
         if np.all(d >= 0.0) and np.any(d > 0.0):
             return True
         return False

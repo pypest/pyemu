@@ -12,6 +12,3 @@ from .ensemble_method import *
 from .smoother import *
 from .moouu import *
 
-from ._version import get_versions
-__version__ = get_versions()['version']
-del get_versions
