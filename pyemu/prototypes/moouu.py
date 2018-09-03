@@ -102,6 +102,7 @@ class ParetoObjFunc(object):
             else:
                 signs.append(-1.0)
         signs = np.array(signs)
+        return signs
 
 
     def dominates(self,sol1,sol2):
