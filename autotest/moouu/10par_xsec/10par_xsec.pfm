@@ -7,3 +7,11 @@ PEST++ performance logger started at:  2018-09-03 16:47:29
     starting to read parameter csv file
             ( time = 2018-09-03 16:47:29,  elapsed time = 16ms )
     finished reading parameter csv file
+            ( time = 2018-09-03 16:48:27,  elapsed time = 58sec )
+      starting to read parameter csv file
+              ( time = 2018-09-03 16:48:27,  elapsed time = 8ms )
+      finished reading parameter csv file
+              ( time = 2018-09-03 18:02:46,  elapsed time = 1hr )
+        starting to read parameter csv file
+                ( time = 2018-09-03 18:02:46,  elapsed time = 8ms )
+        finished reading parameter csv file
