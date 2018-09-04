@@ -677,21 +677,26 @@ class EliteDiffEvol(EvolAlg):
                 parent_idx = i
             else:
                 #otherwise, some parents get more than one offspring
+                # could do something better here - like pick a good parent
                 parent_idx = np.random.randint(0,dv_ensemble_trans.shape[0])
 
             parent = dv_ensemble_trans.iloc[parent_idx,:]
+
+            # just experimenting with picking children that are sufficiently
+            # diff from other members of the current population
             while True:
                 # select the three other members in the population
                 abc_idxs = np.random.choice(dv_ensemble_trans.index,3,replace=False)
 
                 abc = dv_ensemble_trans.loc[abc_idxs,:].copy()
-                # here it is - all of DE in one line:
+
                 mutant= abc.iloc[0] + (mut * (abc.iloc[1] - abc.iloc[2]))
 
                 # select cross over genes (dec var values)
                 cross_points = np.random.rand(num_dv) < cross_over
                 if not np.any(cross_points):
                     cross_points[np.random.randint(0,num_dv)] = True
+
                 #create an offspring
                 offspring = parent.copy()
                 offspring.loc[cross_points] = mutant.loc[cross_points]
@@ -701,11 +706,12 @@ class EliteDiffEvol(EvolAlg):
                 offspring.loc[out] = ub.loc[out]
                 out = offspring < lb
                 offspring.loc[out] = lb.loc[out]
+
                 # back transform
                 offspring.loc[dv_log] = 10.0**offspring.loc[dv_log]
                 offspring = offspring.loc[self.dv_ensemble.columns]
-                dist = [np.dot(self.dv_ensemble.loc[i,:].values,offspring.values) for i in self.dv_ensemble.index]
 
+                dist = [np.dot(self.dv_ensemble.loc[i,:].values,offspring.values) for i in self.dv_ensemble.index]
                 if min(dist) > tol:
                     break
 
@@ -716,13 +722,16 @@ class EliteDiffEvol(EvolAlg):
 
         dv_offspring = pd.DataFrame(dv_offspring,columns=self.dv_ensemble.columns,index=offspring_idx)
 
-        # run the model with offspring candidates - offspring_obs may have missing reals if runs failed!
-        self.logger.log("running {0} canditiate solutions for iteration {1}".format(dv_offspring.shape[0],self.iter_num))
+        # run the model with offspring candidates
+        self.logger.log("running {0} canditiate solutions for iteration {1}".\
+                        format(dv_offspring.shape[0],self.iter_num))
         obs_offspring = self._calc_obs(dv_offspring)
 
 
-        # evaluate offspring WRT feasibility and nondomination (elitist) - if offspring dominates parent, replace in
-        # self.dv_ensemble and self.obs_ensemble.  if not, drop candidate.  If tied, keep both
+        # evaluate offspring fitness WRT feasibility and nondomination (elitist) -
+        # if offspring dominates parent, replace in
+        # self.dv_ensemble and self.obs_ensemble.  if not, drop candidate.
+        # If tied, keep both
         isfeas = self.obj_func.is_feasible(obs_offspring)
         isnondom = self.obj_func.is_nondominated(obs_offspring)
 
@@ -763,7 +772,8 @@ class EliteDiffEvol(EvolAlg):
                     self.obs_ensemble.loc[sol_name,obs_offspring.columns] = obs_offspring.loc[child_idx,:]
 
 
-        #if there are too many individuals in self.dv_ensemble, first drop dominated,then reduce by using crowding distance.
+        #if there are too many individuals in self.dv_ensemble,
+        # first drop dominated,then reduce by using crowding distance.
 
         self.logger.statement("number of solutions:{0}".format(self.dv_ensemble.shape[0]))
         isnondom = self.obj_func.is_nondominated(self.obs_ensemble)
@@ -776,26 +786,22 @@ class EliteDiffEvol(EvolAlg):
         if ndrop > 0:
             isnondom = self.obj_func.is_nondominated(self.obs_ensemble)
             vc = isnondom.value_counts()
+            # if there a dominated solutions, drop those first, using
+            # crowding distance as the order
             if False in vc.index:
                 # get dfs for the dominated solutions
                 dv_dom = self.dv_ensemble.loc[dom_idx,:].copy()
                 obs_dom = self.obs_ensemble.loc[dom_idx,:].copy()
 
-                # drop all domianted solutions
-                #self.logger.statement("current size: {0}".format(self.dv_ensemble.shape[0]))
-
                 self.dv_ensemble.drop(dom_idx,inplace=True)
                 self.obs_ensemble.drop(dom_idx,inplace=True)
-                #progressively drop dominated solutions by crowd distance
                 self.logger.statement("dropping {0} dominated individuals based on crowd distance".\
                                       format(ndrop))
 
-                self._drop_by_crowd(dv_dom,obs_dom,ndrop)
+                self._drop_by_crowd(dv_dom,obs_dom,min(ndrop,dv_dom.shape[0]))
                 #add any remaining dominated solutions back
                 self.dv_ensemble = self.dv_ensemble.append(dv_dom)
                 self.obs_ensemble = self.obs_ensemble.append(obs_dom)
-                #self.dv_ensemble.drop(dom_idx,inplace=True)
-                #self.obs_ensemble.drop(dom_idx,inplace=True)
 
 
         # drop remaining nondom solutions as needed

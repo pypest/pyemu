@@ -181,7 +181,7 @@ def tenpar_dev():
 
 
     ax.set_xlim(1.5, 3.5)
-    ax.set_ylim(2, 4)
+    ax.set_ylim(2.25, 4.25)
     ax.set_title("iter {0}, total runs: {1}".format(0,ea.total_runs))
     ax.set_xlabel("{0}, dir:{1}".format(obj_names[0], obj_dict[obj_names[0]]))
     ax.set_ylabel("{0}, dir:{1}".format(obj_names[1], obj_dict[obj_names[1]]))
@@ -210,14 +210,14 @@ def tenpar_dev():
                 continue
             ax.text(obj.loc[i, obj_names[0]], obj.loc[i, obj_names[1]], str(i), ha="center", fontsize=5)
         ax.set_xlim(1.5, 3.5)
-        ax.set_ylim(2, 4)
+        ax.set_ylim(2.25, 4.25)
 
         ax.set_title("iter {0}, total runs: {1}".format(ea.iter_num, ea.total_runs))
         ax.set_xlabel("{0}, dir:{1}".format(obj_names[0], obj_dict[obj_names[0]]))
         ax.set_ylabel("{0}, dir:{1}".format(obj_names[1], obj_dict[obj_names[1]]))
         plt.savefig("iter_{0:03d}.png".format(ea.iter_num),dpi=500)
         plt.close("all")
-        break
+
     os.system("ffmpeg -r 2 -i iter_%03d.png -loop 0 -final_delay 100 -y shhh.mp4")
     return
     ax = plt.subplot(111)
