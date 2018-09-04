@@ -493,7 +493,15 @@ class EvolAlg(EnsembleMethod):
                     how = {p:"gaussian" for p in adj_pars}
                 self.par_ensemble = pyemu.ParameterEnsemble.from_mixed_draws(self.pst,how_dict=how,
                                          num_reals=num_par_reals,cov=self.parcov)
+            else:
+                diff = aset - dvset
+                if len(diff) > 0:
+                    self.logger.warn("adj pars {0} missing from dv_ensemble".\
+                                       format(','.join(diff)))
+                    df = pd.DataFrame(self.pst.parameter_data.loc[:,"parval1"]).T
 
+                    self.par_ensemble = pyemu.ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
+                    print(self.par_ensemble.shape)
 
         # par ensemble supplied but not dv_ensmeble, so check for any adjustable pars
         # that are not in par_ensemble and draw reals.  Must be at least one...
@@ -639,9 +647,8 @@ class EliteDiffEvol(EvolAlg):
             self.logger.lraise("not initialized")
         if num_dv_reals is None:
             num_dv_reals = self.num_dv_reals
-        # todo : need to make sure enough feasible and nondominated solution are available
-        # todo : if not, should we generate populations with less fit solutions in the archive?
-        # todo : need to define (transformed) bounding box for denormalizing mutated solution vector
+        if self.dv_ensemble.shape[0] < 4:
+            self.logger.lraise("not enough individuals in population to continue")
 
         # function to get unique index names
         self._child_count = 0

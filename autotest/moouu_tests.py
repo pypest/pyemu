@@ -111,8 +111,8 @@ def tenpar_dev():
     # pst.observation_data.loc[pst.obs_names[-1], "weight"] = 1.0
     # pst.observation_data.loc[pst.obs_names[-1], "obsval"] *= 0.85
 
-    #pst.observation_data.loc["h01_10", "obgnme"] = "greaterthan"
-    #pst.observation_data.loc["h01_10", "weight"] = 1.0
+    pst.observation_data.loc["h01_10", "obgnme"] = "lessthan"
+    pst.observation_data.loc["h01_10", "weight"] = 1.0
     #pst.observation_data.loc["h01_10", "obsval"] *= 0.85
 
 
@@ -146,12 +146,10 @@ def tenpar_dev():
     par.loc[dv_names, "parlbnd"] = 1.0
     par.loc[dv_names, "parubnd"] = 5.0
 
-    np.random.seed(12345)
-
-    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in par_names},
-                                                  num_reals=1,
-                                                  partial=False)
-
+    # pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in par_names},
+    #                                              num_reals=1,
+    #                                              partial=False)
+    pe = None
 
     dv = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in dv_names},
                                                   num_reals=20,
@@ -181,7 +179,7 @@ def tenpar_dev():
 
 
     ax.set_xlim(1.5, 3.5)
-    ax.set_ylim(2.25, 4.25)
+    ax.set_ylim(1.5, 3.5)
     ax.set_title("iter {0}, total runs: {1}".format(0,ea.total_runs))
     ax.set_xlabel("{0}, dir:{1}".format(obj_names[0], obj_dict[obj_names[0]]))
     ax.set_ylabel("{0}, dir:{1}".format(obj_names[1], obj_dict[obj_names[1]]))
@@ -189,7 +187,7 @@ def tenpar_dev():
 
     plt.close("all")
 
-    for i in range(20):
+    for i in range(30):
 
         ea.update()
         fig = plt.figure()
@@ -210,7 +208,7 @@ def tenpar_dev():
                 continue
             ax.text(obj.loc[i, obj_names[0]], obj.loc[i, obj_names[1]], str(i), ha="center", fontsize=5)
         ax.set_xlim(1.5, 3.5)
-        ax.set_ylim(2.25, 4.25)
+        ax.set_ylim(1.5, 3.5)
 
         ax.set_title("iter {0}, total runs: {1}".format(ea.iter_num, ea.total_runs))
         ax.set_xlabel("{0}, dir:{1}".format(obj_names[0], obj_dict[obj_names[0]]))
