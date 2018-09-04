@@ -1272,8 +1272,8 @@ def sfr_obs_test():
 
     m = flopy.modflow.Modflow.load("freyberg.nam",model_ws="utils",load_only=[],check=False)
     pyemu.gw_utils.setup_sfr_obs(sfr_file,model=m)
+    pyemu.gw_utils.apply_sfr_obs()
     pyemu.gw_utils.setup_sfr_obs(sfr_file, seg_group_dict={"obs1": [1, 4], "obs2": [16, 17, 18, 19, 22, 23]},model=m)
-
 
 def gage_obs_test():
     import os
@@ -1475,16 +1475,16 @@ def smp_dateparser_test():
 
 
 if __name__ == "__main__":
-    smp_test()
-    smp_dateparser_test()
-    smp_to_ins_test()
+    # smp_test()
+    # smp_dateparser_test()
+    # smp_to_ins_test()
     #read_runstor_test()
     #long_names()
     #master_and_slaves()
     #plot_id_bar_test()
     #pst_from_parnames_obsnames_test()
     #write_jactest_test()
-    #sfr_obs_test()
+    sfr_obs_test()
     #gage_obs_test()
     #setup_pp_test()
     #sfr_helper_test()

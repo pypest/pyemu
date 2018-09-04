@@ -1602,7 +1602,8 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
 
     if seg_group_dict is None:
         seg_group_dict = {"seg{0:04d}".format(s):s for s in sfr_dict[kpers[0]].segment}
-
+    else:
+        warnings.warn("Flow out (flout) of grouped segments will be aggregated... ", PyemuWarning)
     sfr_segs = set(sfr_dict[list(sfr_dict.keys())[0]].segment)
     keys = ["sfr_out_file"]
     if include_path:
@@ -1615,7 +1616,7 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
             segs = [segs]
         else:
             segs_set = set(segs)
-        diff =  segs_set.difference(sfr_segs)
+        diff = segs_set.difference(sfr_segs)
         if len(diff) > 0:
             raise Exception("the following segs listed with oname {0} where not found: {1}".
                             format(oname,','.join([str(s) for s in diff])))
@@ -1711,7 +1712,7 @@ def apply_sfr_obs():
     for kper in kpers:
         df = sfr_kper[kper]
         for obs_base,segs in seg_group_dict.items():
-            agg = df.loc[segs.values,:].sum()
+            agg = df.loc[segs.values,:].sum()  # still agg flout where seg groups are passed!
             #print(obs_base,agg)
             results.append([kper,obs_base,agg["flaqx"],agg["flout"]])
     df = pd.DataFrame(data=results,columns=["kper","obs_base","flaqx","flout"])
@@ -1722,7 +1723,7 @@ def apply_sfr_obs():
 
 def load_sfr_out(sfr_out_file):
     """load an ASCII SFR output file into a dictionary of kper: dataframes.  aggregates
-    segments and only returns flow to aquifer and flow out.
+    flow to aquifer for segments and returns and flow out at downstream end of segment.
 
     Parameters
     ----------
@@ -1740,6 +1741,8 @@ def load_sfr_out(sfr_out_file):
     tag = " stream listing"
     lcount = 0
     sfr_dict = {}
+    warnings.warn("Flow out aggregation for segment has changed. "
+                  "Now returning flow out at bottom of seg ...", PyemuWarning)
     with open(sfr_out_file) as f:
         while True:
             line = f.readline().lower()
@@ -1760,17 +1763,24 @@ def load_sfr_out(sfr_out_file):
                         break
                     draw = dline.strip().split()
                     dlines.append(draw)
-                df = pd.DataFrame(data=np.array(dlines)).iloc[:,[3,6,7]]
-                df.columns = ["segment","flaqx","flout"]
-                df.loc[:,"segment"] = df.segment.apply(np.int)
-                df.loc[:,"flaqx"] = df.flaqx.apply(np.float)
-                df.loc[:,"flout"] = df.flout.apply(np.float)
-                df.index = df.segment
-                df = df.groupby(df.segment).sum()
-                df.loc[:,"segment"] = df.index
+                df = pd.DataFrame(data=np.array(dlines)).iloc[:, [3, 4, 6, 7]]
+                df.columns = ["segment", "reach", "flaqx", "flout"]
+                df.loc[:, "segment"] = df.segment.apply(np.int)
+                df.loc[:, "reach"] = df.reach.apply(np.int)
+                df.loc[:, "flaqx"] = df.flaqx.apply(np.float)
+                df.loc[:, "flout"] = df.flout.apply(np.float)
+                df.index = df.apply(lambda x: "{0:04d}_{1:04d}".format(int(x.segment), int(x.reach)), axis=1)
+                gp = df.groupby(df.segment)
+                bot_reaches = gp[['reach']].max().apply(
+                    lambda x: "{0:04d}_{1:04d}".format(int(x.name), int(x.reach)), axis=1)
+                df2 = pd.DataFrame(index=gp.groups.keys(), columns=['flaqx', 'flout'])
+                df2['flaqx'] = gp.flaqx.sum()  # only sum distributed output
+                df2['flout'] = df.loc[bot_reaches, 'flout'].values  # take flow out of seg
+                # df = df.groupby(df.segment).sum()
+                df2.loc[:,"segment"] = df2.index
                 if kper in sfr_dict.keys():
                     print("multiple entries found for kper {0}, replacing...".format(kper))
-                sfr_dict[kper] = df
+                sfr_dict[kper] = df2
     return sfr_dict
 
 def modflow_sfr_gag_to_instruction_file(gage_output_file, ins_file=None, parse_filename=False):
