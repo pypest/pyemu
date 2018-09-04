@@ -1794,8 +1794,8 @@ def load_sfr_out(sfr_out_file, selection=None):
                                                    format(int(x.segment), int(x.reach)), axis=1).values
                     for sr in seg_reach_id:
                         if sr not in df.index:
-                            s,r = [x.lstrip('0') for x in sr.split('_')]
-                            warnings.warn("Requested reach {0} is not in segment {1}. Dropping...".
+                            s, r = [x.lstrip('0') for x in sr.split('_')]
+                            warnings.warn("Requested segment reach pair ({0},{1}) is not in sfr output. Dropping...".
                                           format(int(r), int(s)), PyemuWarning)
                             seg_reach_id = np.delete(seg_reach_id, np.where(seg_reach_id == sr), axis=0)
                     df2 = df.loc[seg_reach_id].copy()
@@ -1808,16 +1808,16 @@ def load_sfr_out(sfr_out_file, selection=None):
 def setup_sfr_reach_obs(sfr_out_file,seg_reach=None,ins_file=None,model=None,
                         include_path=False):
     """setup observations using the sfr ASCII output file.  Setups
-    sfr point observations using segment and reach numbers
+    sfr point observations using segment and reach numbers.
 
     Parameters
     ----------
     sft_out_file : str
         the existing SFR output file
     seg_reach : dict, list or pandas.DataFrame
-        a dict, or list of SFR [segement,reach] pairs idetifying observation locations.
-        if dict the key value in the dict is the base observation name. If None, all reaches
-        are used as individual observations. Default is None - THIS MAY SET UP A LOT OF OBS!
+        a dict, or list of SFR [segment,reach] pairs identifying observation locations.
+        If dict the key value in the dict is the base observation name.
+        If None, all reaches are used as individual observations. Default is None - THIS MAY SET UP A LOT OF OBS!
     model : flopy.mbase
         a flopy model.  If passed, the observation names will have the datetime of the
         observation appended to them.  If None, the observation names will have the
@@ -1865,17 +1865,15 @@ def setup_sfr_reach_obs(sfr_out_file,seg_reach=None,ins_file=None,model=None,
         values = [sfr_out_file]
     diff = seg_reach.loc[seg_reach.apply(lambda x: "{0:03d}_{1:03d}".format(int(x.segment), int(x.reach))
                                          not in sfr_dict[list(sfr_dict.keys())[0]].index, axis=1)]
-    # for oname, sr in seg_reach.iteritems():
-    #     segs_set = {sr}
-    #     diff = segs_set.difference(sfr_seg_reach)
+
     if len(diff) > 0:
         for ob in diff.itertuples():
-            warnings.warn("segs,reach pairs listed with onames {0} where not found: {1}".
+            warnings.warn("segs,reach pair listed with onames {0} was not found: {1}".
                           format(ob.Index, "({},{})".format(ob.segment, ob.reach)), PyemuWarning)
     seg_reach = seg_reach.drop(diff.index)
     seg_reach['obs_base'] = seg_reach.index
-    df_key = pd.DataFrame({"obs_base": keys, "segment": np.nan, 'reach': values})
-    df_key = pd.concat([df_key, seg_reach]).reset_index(drop=True)
+    df_key = pd.DataFrame({"obs_base": keys, "segment": 0, 'reach': values})
+    df_key = pd.concat([df_key, seg_reach], sort=True).reset_index(drop=True)
     if include_path:
         pth = os.path.join(*[p for p in os.path.split(sfr_out_file)[:-1]])
         config_file = os.path.join(pth,"sfr_reach_obs.config")
@@ -1892,24 +1890,24 @@ def setup_sfr_reach_obs(sfr_out_file,seg_reach=None,ins_file=None,model=None,
         df = apply_sfr_reach_obs()
     except Exception as e:
         os.chdir(bd)
-        raise Exception("error in apply_sfr_obs(): {0}".format(str(e)))
+        raise Exception("error in apply_sfr_reach_obs(): {0}".format(str(e)))
     os.chdir(bd)
     if model is not None:
-        dts = (pd.to_datetime(model.start_datetime) + pd.to_timedelta(np.cumsum(model.dis.perlen.array),unit='d')).date
-        df.loc[:,"datetime"] = df.kper.apply(lambda x: dts[x])
-        df.loc[:,"time_str"] = df.datetime.apply(lambda x: x.strftime("%Y%m%d"))
+        dts = (pd.to_datetime(model.start_datetime) + pd.to_timedelta(np.cumsum(model.dis.perlen.array), unit='d')).date
+        df.loc[:, "datetime"] = df.kper.apply(lambda x: dts[x])
+        df.loc[:, "time_str"] = df.datetime.apply(lambda x: x.strftime("%Y%m%d"))
     else:
-        df.loc[:,"time_str"] = df.kper.apply(lambda x: "{0:04d}".format(x))
-    df.loc[:,"flaqx_obsnme"] = df.apply(lambda x: "{0}_{1}_{2}".format("fa",x.obs_base,x.time_str),axis=1)
-    df.loc[:,"flout_obsnme"] = df.apply(lambda x: "{0}_{1}_{2}".format("fo",x.obs_base,x.time_str),axis=1)
+        df.loc[:, "time_str"] = df.kper.apply(lambda x: "{0:04d}".format(x))
+    df.loc[:, "flaqx_obsnme"] = df.apply(lambda x: "{0}_{1}_{2}".format("fa", x.obs_base, x.time_str), axis=1)
+    df.loc[:, "flout_obsnme"] = df.apply(lambda x: "{0}_{1}_{2}".format("fo", x.obs_base, x.time_str), axis=1)
 
     if ins_file is None:
-        ins_file = sfr_out_file + ".processed.ins"
+        ins_file = sfr_out_file + ".reach_processed.ins"
 
-    with open(ins_file,'w') as f:
+    with open(ins_file, 'w') as f:
         f.write("pif ~\nl1\n")
-        for fla,flo in zip(df.flaqx_obsnme,df.flout_obsnme):
-            f.write("l1 w w !{0}! !{1}!\n".format(fla,flo))
+        for fla, flo in zip(df.flaqx_obsnme, df.flout_obsnme):
+            f.write("l1 w w !{0}! !{1}!\n".format(fla, flo))
 
     df = None
     pth = os.path.split(ins_file)[:-1]
@@ -1920,20 +1918,20 @@ def setup_sfr_reach_obs(sfr_out_file,seg_reach=None,ins_file=None,model=None,
     os.chdir(pth)
     try:
         #df = _try_run_inschek(os.path.split(ins_file)[-1],os.path.split(sfr_out_file+".processed")[-1])
-        df = try_process_ins_file(os.path.split(ins_file)[-1],os.path.split(sfr_out_file+".processed")[-1])
+        df = try_process_ins_file(os.path.split(ins_file)[-1], os.path.split(sfr_out_file+".reach_processed")[-1])
     except Exception as e:
         pass
     os.chdir(bd)
     if df is not None:
-        df.loc[:,"obsnme"] = df.index.values
-        df.loc[:,"obgnme"] = df.obsnme.apply(lambda x: "flaqx" if x.startswith("fa") else "flout")
+        df.loc[:, "obsnme"] = df.index.values
+        df.loc[:, "obgnme"] = df.obsnme.apply(lambda x: "flaqx" if x.startswith("fa") else "flout")
         return df
 
 
 def apply_sfr_reach_obs():
-    """apply the sfr observation process - pairs with setup_sfr_obs().
-    requires sfr_obs.config.  Writes <sfr_out_file>.processed, where
-    <sfr_out_file> is defined in "sfr_obs.config"
+    """apply the sfr reach observation process - pairs with setup_sfr_reach_obs().
+    requires sfr_reach_obs.config.  Writes <sfr_out_file>.processed, where
+    <sfr_out_file> is defined in "sfr_reach_obs.config"
 
 
     Parameters
@@ -1943,7 +1941,7 @@ def apply_sfr_reach_obs():
     Returns
     -------
     df : pd.DataFrame
-        a dataframe of aggregrated sfr segment aquifer and outflow
+        a dataframe of sfr aquifer and outflow ad segment,reach locations
     """
     assert os.path.exists("sfr_reach_obs.config")
     df_key = pd.read_csv("sfr_reach_obs.config", index_col=0)
@@ -1954,86 +1952,22 @@ def apply_sfr_reach_obs():
     df_key.loc[:, "segment"] = df_key.segment.apply(np.int)
     df_key.loc[:, "reach"] = df_key.reach.apply(np.int)
     df_key = df_key.set_index('obs_base')
-    # seg_group_dict = df_key.groupby(df_key.obs_base).groups
 
     sfr_kper = load_sfr_out(sfr_out_file, df_key)
     kpers = list(sfr_kper.keys())
     kpers.sort()
-    #results = {o:[] for o in seg_group_dict.keys()}
+
     results = []
     for kper in kpers:
         df = sfr_kper[kper]
         for sr in df_key.itertuples():
-            ob = df.loc["{0:03d}_{1:03d}".format(sr.segment, sr.reach), :]  # still agg flout where seg groups are passed!
-            #print(obs_base,agg)
+            ob = df.loc["{0:03d}_{1:03d}".format(sr.segment, sr.reach), :]
             results.append([kper, sr.Index, ob["flaqx"], ob["flout"]])
-    df = pd.DataFrame(data=results,columns=["kper","obs_base","flaqx","flout"])
-    df.sort_values(by=["kper","obs_base"],inplace=True)
-    df.to_csv(sfr_out_file+".processed",sep=' ',index=False)
+    df = pd.DataFrame(data=results, columns=["kper", "obs_base", "flaqx", "flout"])
+    df.sort_values(by=["kper", "obs_base"], inplace=True)
+    df.to_csv(sfr_out_file+".reach_processed", sep=' ', index=False)
     return df
-#
-#
-# def load_sfr_out(sfr_out_file):
-#     """load an ASCII SFR output file into a dictionary of kper: dataframes.  aggregates
-#     flow to aquifer for segments and returns and flow out at downstream end of segment.
-#
-#     Parameters
-#     ----------
-#     sfr_out_file : str
-#         SFR ASCII output file
-#
-#     Returns
-#     -------
-#         sfr_dict : dict
-#             dictionary of {kper:dataframe}
-#
-#     """
-#     assert os.path.exists(sfr_out_file),"couldn't find sfr out file {0}".\
-#         format(sfr_out_file)
-#     tag = " stream listing"
-#     lcount = 0
-#     sfr_dict = {}
-#     warnings.warn("Flow out aggregation for segment has changed. "
-#                   "Now returning flow out at bottom of seg ...", PyemuWarning)
-#     with open(sfr_out_file) as f:
-#         while True:
-#             line = f.readline().lower()
-#             lcount += 1
-#             if line == '':
-#                 break
-#             if line.startswith(tag):
-#                 raw = line.strip().split()
-#                 kper = int(raw[3]) - 1
-#                 kstp = int(raw[5]) - 1
-#                 [f.readline() for _ in range(4)] #skip to where the data starts
-#                 lcount += 4
-#                 dlines = []
-#                 while True:
-#                     dline = f.readline()
-#                     lcount += 1
-#                     if dline.strip() == '':
-#                         break
-#                     draw = dline.strip().split()
-#                     dlines.append(draw)
-#                 df = pd.DataFrame(data=np.array(dlines)).iloc[:, [3, 4, 6, 7]]
-#                 df.columns = ["segment", "reach", "flaqx", "flout"]
-#                 df.loc[:, "segment"] = df.segment.apply(np.int)
-#                 df.loc[:, "reach"] = df.reach.apply(np.int)
-#                 df.loc[:, "flaqx"] = df.flaqx.apply(np.float)
-#                 df.loc[:, "flout"] = df.flout.apply(np.float)
-#                 df.index = df.apply(lambda x: "{0:04d}_{1:04d}".format(int(x.segment), int(x.reach)), axis=1)
-#                 gp = df.groupby(df.segment)
-#                 bot_reaches = gp[['reach']].max().apply(
-#                     lambda x: "{0:04d}_{1:04d}".format(int(x.name), int(x.reach)), axis=1)
-#                 df2 = pd.DataFrame(index=gp.groups.keys(), columns=['flaqx', 'flout'])
-#                 df2['flaqx'] = gp.flaqx.sum()  # only sum distributed output
-#                 df2['flout'] = df.loc[bot_reaches, 'flout'].values  # take flow out of seg
-#                 # df = df.groupby(df.segment).sum()
-#                 df2.loc[:,"segment"] = df2.index
-#                 if kper in sfr_dict.keys():
-#                     print("multiple entries found for kper {0}, replacing...".format(kper))
-#                 sfr_dict[kper] = df2
-#     return sfr_dict
+
 
 def modflow_sfr_gag_to_instruction_file(gage_output_file, ins_file=None, parse_filename=False):
     """writes an instruction file for an SFR gage output file to read Flow only at all times
