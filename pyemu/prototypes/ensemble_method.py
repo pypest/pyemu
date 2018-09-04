@@ -1,6 +1,4 @@
-"""this is a prototype ensemble smoother based on the LM-EnRML
-algorithm of Chen and Oliver 2013.  It requires the pest++ "sweep" utility
-to propagate the ensemble forward.
+"""A base class for developing prototype ensemble methods
 """
 from __future__ import print_function, division
 import os
@@ -18,7 +16,6 @@ from pyemu.mat import Cov,Matrix
 
 from pyemu.pst import Pst
 from ..logger import Logger
-
 
 
 

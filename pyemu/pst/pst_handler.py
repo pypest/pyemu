@@ -1755,7 +1755,7 @@ class Pst(object):
         for col in ["parval1","parlbnd","parubnd","increment"]:
             if col not in self.parameter_data.columns:
                 continue
-            self.parameter_data.loc[:,col+"_trans"] = (self.parameter_data.parval1 *
+            self.parameter_data.loc[:,col+"_trans"] = (self.parameter_data.loc[:,col] *
                                                           self.parameter_data.scale) +\
                                                          self.parameter_data.offset
             #isnotfixed = self.parameter_data.partrans != "fixed"

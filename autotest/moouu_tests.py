@@ -3,7 +3,7 @@ import sys
 
 sys.path.append(os.path.join("..","pyemu"))
 
-from pyemu.prototypes.moouu import EvolAlg
+from pyemu.prototypes.moouu import EvolAlg, EliteDiffEvol
 
 
 if not os.path.exists("temp1"):
@@ -94,6 +94,8 @@ def tenpar_test():
 def tenpar_dev():
     import os
     import numpy as np
+    import matplotlib.pyplot as plt
+
     import flopy
     import pyemu
 
@@ -109,13 +111,14 @@ def tenpar_dev():
     # pst.observation_data.loc[pst.obs_names[-1], "weight"] = 1.0
     # pst.observation_data.loc[pst.obs_names[-1], "obsval"] *= 0.85
 
-    pst.observation_data.loc["h01_10", "obgnme"] = "greaterthan"
-    pst.observation_data.loc["h01_10", "weight"] = 1.0
+    #pst.observation_data.loc["h01_10", "obgnme"] = "greaterthan"
+    #pst.observation_data.loc["h01_10", "weight"] = 1.0
     #pst.observation_data.loc["h01_10", "obsval"] *= 0.85
 
 
     par = pst.parameter_data
-    #par.loc[:,"partrans"] = "none"
+    par.loc[:,"partrans"] = "none"
+
 
     obj_dict = {}
     obj_dict[obj_names[0]] = "min"
@@ -138,17 +141,85 @@ def tenpar_dev():
     # plt.show()
     # print(df.shape)
     # return
+    dv_names = pst.adj_par_names[2:]
+    par_names = pst.adj_par_names[:2]
+    par.loc[dv_names, "parlbnd"] = 1.0
+    par.loc[dv_names, "parubnd"] = 5.0
 
-    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[:2]},
-                                                  num_reals=50,
+    np.random.seed(12345)
+
+    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in par_names},
+                                                  num_reals=1,
                                                   partial=False)
-    ea = EvolAlg(pst, num_slaves=20, port=4005, verbose=True)
 
-    dv = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[2:]},
-                                                  num_reals=50,
+
+    dv = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in dv_names},
+                                                  num_reals=20,
                                                   partial=True)
 
-    import matplotlib.pyplot as plt
+    dv.index = ["p_{0}".format(i) for i in range(dv.shape[0])]
+    ea = EliteDiffEvol(pst, num_slaves=10, port=4005, verbose=True)
+
+    ea.initialize(obj_dict,par_ensemble=pe,dv_ensemble=dv,risk=0.5)
+
+    #ax = plt.subplot(111)
+    obj_org = ea.obs_ensemble.loc[:, obj_names].copy()
+    dom_org = ea.obj_func.is_nondominated(obj_org)
+
+    fig = plt.figure()
+    ax = plt.subplot(111,aspect="equal")
+    # obj_org = ea.obs_ensemble.loc[:, obj_names].copy()
+    # dom_org = ea.obj_func.is_nondominated(obj_org)
+    ax.scatter(obj_org.loc[:, obj_names[0]], obj_org.loc[:, obj_names[1]], color="0.5", marker='.', alpha=0.25,
+               s=40)
+    ax.scatter(obj_org.loc[dom_org, obj_names[0]], obj_org.loc[dom_org, obj_names[1]], color="0.5", marker='+',
+               alpha=0.25, s=60)
+    for i in obj_org.index:
+        if i not in dom_org.index:
+            continue
+        ax.text(obj_org.loc[i, obj_names[0]], obj_org.loc[i, obj_names[1]],str(i),ha="center",fontsize=5)
+
+
+    ax.set_xlim(1.5, 3.5)
+    ax.set_ylim(2, 4)
+    ax.set_title("iter {0}, total runs: {1}".format(0,ea.total_runs))
+    ax.set_xlabel("{0}, dir:{1}".format(obj_names[0], obj_dict[obj_names[0]]))
+    ax.set_ylabel("{0}, dir:{1}".format(obj_names[1], obj_dict[obj_names[1]]))
+    plt.savefig("iter_{0:03d}.png".format(ea.iter_num),dpi=500)
+
+    plt.close("all")
+
+    for i in range(20):
+
+        ea.update()
+        fig = plt.figure()
+        ax = plt.subplot(111, aspect="equal")
+        # obj_org = ea.obs_ensemble.loc[:, obj_names].copy()
+        # dom_org = ea.obj_func.is_nondominated(obj_org)
+        ax.scatter(obj_org.loc[:, obj_names[0]], obj_org.loc[:, obj_names[1]], color="0.5", marker='.', alpha=0.25,
+                   s=30)
+        ax.scatter(obj_org.loc[dom_org, obj_names[0]], obj_org.loc[dom_org, obj_names[1]], color="0.5", marker='+',
+                   alpha=0.25, s=60)
+
+        obj = ea.obs_ensemble.loc[:, obj_names]
+        dom = ea.obj_func.is_nondominated(obj)
+        ax.scatter(obj.loc[:, obj_names[0]], obj.loc[:, obj_names[1]], color='b', marker='.', alpha=0.25, s=30)
+        ax.scatter(obj.loc[dom, obj_names[0]], obj.loc[dom, obj_names[1]], color="b", marker='+', alpha=0.25, s=60)
+        for i in obj.index:
+            if i not in dom.index:
+                continue
+            ax.text(obj.loc[i, obj_names[0]], obj.loc[i, obj_names[1]], str(i), ha="center", fontsize=5)
+        ax.set_xlim(1.5, 3.5)
+        ax.set_ylim(2, 4)
+
+        ax.set_title("iter {0}, total runs: {1}".format(ea.iter_num, ea.total_runs))
+        ax.set_xlabel("{0}, dir:{1}".format(obj_names[0], obj_dict[obj_names[0]]))
+        ax.set_ylabel("{0}, dir:{1}".format(obj_names[1], obj_dict[obj_names[1]]))
+        plt.savefig("iter_{0:03d}.png".format(ea.iter_num),dpi=500)
+        plt.close("all")
+        break
+    os.system("ffmpeg -r 2 -i iter_%03d.png -loop 0 -final_delay 100 -y shhh.mp4")
+    return
     ax = plt.subplot(111)
     colors = ['r','y','g','b','m']
     risks = [0.05,0.25,0.51,0.75,0.95]
@@ -156,7 +227,7 @@ def tenpar_dev():
         ea.initialize(obj_dict,par_ensemble=pe,dv_ensemble=dv,risk=risk,dv_names=pst.adj_par_names[2:])
         oe = ea.obs_ensemble
         # call the nondominated sorting
-        is_nondom = ea.obj_func.is_nondominated_continuous(oe)
+        is_nondom = ea.obj_func.is_nondominated(oe)
         obj = oe.loc[:,obj_names]
         obj.loc[is_nondom,"is_nondom"] = is_nondom
         #print(obj)
@@ -186,5 +257,5 @@ def tenpar_dev():
 
 
 if __name__ == "__main__":
-    tenpar_test()
-    #tenpar_dev()
+    #tenpar_test()
+    tenpar_dev()

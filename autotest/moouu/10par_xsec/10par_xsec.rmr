@@ -1,121 +1,81 @@
 
 PANTHER master listening on socket:0.0.0.0:4005 (IPv4)
-running model 25 times
+running model 20 times
 
     waiting for slaves to appear...
 
 
-09/03/18 19:19:23->new connection from: localhost:56206
-09/03/18 19:19:23->initializing new slave connection from: localhost:56206, number of slaves: 1, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_0
-09/03/18 19:19:23->new connection from: localhost:56207
-09/03/18 19:19:23->initializing new slave connection from: localhost:56207, number of slaves: 2, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_1
-09/03/18 19:19:23->new connection from: localhost:56208
-09/03/18 19:19:23->initializing new slave connection from: localhost:56208, number of slaves: 3, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_2
-09/03/18 19:19:23->new connection from: localhost:56209
-09/03/18 19:19:23->initializing new slave connection from: localhost:56209, number of slaves: 4, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_3
-09/03/18 19:19:23->new connection from: localhost:56210
-09/03/18 19:19:23->initializing new slave connection from: localhost:56210, number of slaves: 5, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_4
-09/03/18 19:19:23->new connection from: localhost:56211
-09/03/18 19:19:23->initializing new slave connection from: localhost:56211, number of slaves: 6, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_5
-09/03/18 19:19:23->new connection from: localhost:56212
-09/03/18 19:19:23->initializing new slave connection from: localhost:56212, number of slaves: 7, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_6
-09/03/18 19:19:23->new connection from: localhost:56213
-09/03/18 19:19:23->new connection from: localhost:56214
-09/03/18 19:19:23->initializing new slave connection from: localhost:56213, number of slaves: 9, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_7
-09/03/18 19:19:23->initializing new slave connection from: localhost:56214, number of slaves: 9, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_8
-09/03/18 19:19:23->new connection from: localhost:56215
-09/03/18 19:19:23->initializing new slave connection from: localhost:56215, number of slaves: 10, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_9
-09/03/18 19:19:23->new connection from: localhost:56216
-09/03/18 19:19:23->initializing new slave connection from: localhost:56216, number of slaves: 11, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_10
-09/03/18 19:19:23->new connection from: localhost:56217
-09/03/18 19:19:23->initializing new slave connection from: localhost:56217, number of slaves: 12, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_11
-09/03/18 19:19:23->new connection from: localhost:56218
-09/03/18 19:19:23->initializing new slave connection from: localhost:56218, number of slaves: 13, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_12
-09/03/18 19:19:23->new connection from: localhost:56219
-09/03/18 19:19:23->initializing new slave connection from: localhost:56219, number of slaves: 14, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_13
-09/03/18 19:19:23->new connection from: localhost:56220
-09/03/18 19:19:23->initializing new slave connection from: localhost:56220, number of slaves: 15, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_14
-09/03/18 19:19:23->new connection from: localhost:56221
-09/03/18 19:19:23->initializing new slave connection from: localhost:56221, number of slaves: 16, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_15
-09/03/18 19:19:23->new connection from: localhost:56222
-09/03/18 19:19:23->initializing new slave connection from: localhost:56222, number of slaves: 17, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_16
-09/03/18 19:19:23->new connection from: localhost:56223
-09/03/18 19:19:23->initializing new slave connection from: localhost:56223, number of slaves: 18, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_17
-09/03/18 19:19:23->new connection from: localhost:56224
-09/03/18 19:19:23->initializing new slave connection from: localhost:56224, number of slaves: 19, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_18
-09/03/18 19:19:23->new connection from: localhost:56225
-09/03/18 19:19:23->initializing new slave connection from: localhost:56225, number of slaves: 20, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_19
-09/03/18 19:19:24->new slave ready: localhost:56206
-09/03/18 19:19:24->Sending run 0 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:0, concurrent runs:1)
-09/03/18 19:19:24->new slave ready: localhost:56207
-09/03/18 19:19:24->Sending run 1 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_1  (group id:2, run id:1, concurrent runs:1)
-09/03/18 19:19:24->new slave ready: localhost:56208
-09/03/18 19:19:24->Sending run 2 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_2  (group id:2, run id:2, concurrent runs:1)
-09/03/18 19:19:24->new slave ready: localhost:56209
-09/03/18 19:19:24->Sending run 3 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_3  (group id:2, run id:3, concurrent runs:1)
-09/03/18 19:19:24->new slave ready: localhost:56210
-09/03/18 19:19:24->Sending run 4 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_4  (group id:2, run id:4, concurrent runs:1)
-09/03/18 19:19:24->new slave ready: localhost:56211
-09/03/18 19:19:24->Sending run 5 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_5  (group id:2, run id:5, concurrent runs:1)
-09/03/18 19:19:24->new slave ready: localhost:56212
-09/03/18 19:19:24->Sending run 6 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_6  (group id:2, run id:6, concurrent runs:1)
-09/03/18 19:19:25->new slave ready: localhost:56213
-09/03/18 19:19:25->Sending run 7 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_7  (group id:2, run id:7, concurrent runs:1)
-09/03/18 19:19:25->new slave ready: localhost:56215
-09/03/18 19:19:25->Sending run 8 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_9  (group id:2, run id:8, concurrent runs:1)
-09/03/18 19:19:25->new slave ready: localhost:56214
-09/03/18 19:19:25->Sending run 9 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_8  (group id:2, run id:9, concurrent runs:1)
-09/03/18 19:19:25->new slave ready: localhost:56217
-09/03/18 19:19:25->Sending run 10 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_11  (group id:2, run id:10, concurrent runs:1)
-09/03/18 19:19:25->new slave ready: localhost:56216
-09/03/18 19:19:25->Sending run 11 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_10  (group id:2, run id:11, concurrent runs:1)
-09/03/18 19:19:25->new slave ready: localhost:56218
-09/03/18 19:19:25->Sending run 12 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_12  (group id:2, run id:12, concurrent runs:1)
-09/03/18 19:19:25->new slave ready: localhost:56219
-09/03/18 19:19:25->Sending run 13 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_13  (group id:2, run id:13, concurrent runs:1)
-09/03/18 19:19:25->new slave ready: localhost:56220
-09/03/18 19:19:25->Sending run 14 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_14  (group id:2, run id:14, concurrent runs:1)
-09/03/18 19:19:25->new slave ready: localhost:56221
-09/03/18 19:19:25->Sending run 15 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_15  (group id:2, run id:15, concurrent runs:1)
-09/03/18 19:19:25->new slave ready: localhost:56222
-09/03/18 19:19:25->Sending run 16 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_16  (group id:2, run id:16, concurrent runs:1)
-09/03/18 19:19:25->new slave ready: localhost:56223
-09/03/18 19:19:25->Sending run 17 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_17  (group id:2, run id:17, concurrent runs:1)
-09/03/18 19:19:25->new slave ready: localhost:56224
-09/03/18 19:19:25->Sending run 18 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_18  (group id:2, run id:18, concurrent runs:1)
-09/03/18 19:19:25->new slave ready: localhost:56225
-09/03/18 19:19:25->Sending run 19 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_19  (group id:2, run id:19, concurrent runs:1)
-09/03/18 19:19:26->run 0 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_0  (run time:0.0373167 min, avg run time:0.0373167 min, group id:2, run id = 0 concurrent:1)
-09/03/18 19:19:26->Sending run 20 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:20, concurrent runs:1)
-09/03/18 19:19:26->run 1 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_1  (run time:0.03735 min, avg run time:0.0373333 min, group id:2, run id = 1 concurrent:1)
-09/03/18 19:19:26->Sending run 21 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_1  (group id:2, run id:21, concurrent runs:1)
-09/03/18 19:19:26->run 2 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_2  (run time:0.0372 min, avg run time:0.0372889 min, group id:2, run id = 2 concurrent:1)
-09/03/18 19:19:26->Sending run 22 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_2  (group id:2, run id:22, concurrent runs:1)
-09/03/18 19:19:26->run 3 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_3  (run time:0.0374 min, avg run time:0.0373167 min, group id:2, run id = 3 concurrent:1)
-09/03/18 19:19:26->Sending run 23 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_3  (group id:2, run id:23, concurrent runs:1)
-09/03/18 19:19:27->run 4 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_4  (run time:0.0372333 min, avg run time:0.0373 min, group id:2, run id = 4 concurrent:1)
-09/03/18 19:19:27->Sending run 24 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_4  (group id:2, run id:24, concurrent runs:1)
-09/03/18 19:19:27->run 5 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_5  (run time:0.0373 min, avg run time:0.0373 min, group id:2, run id = 5 concurrent:1)
-09/03/18 19:19:27->run 6 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_6  (run time:0.0371667 min, avg run time:0.037281 min, group id:2, run id = 6 concurrent:1)
-09/03/18 19:19:27->run 7 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_7  (run time:0.0374 min, avg run time:0.0372958 min, group id:2, run id = 7 concurrent:1)
-09/03/18 19:19:27->run 8 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_9  (run time:0.0370667 min, avg run time:0.0372704 min, group id:2, run id = 8 concurrent:1)
-09/03/18 19:19:27->run 11 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_10  (run time:0.0371667 min, avg run time:0.03726 min, group id:2, run id = 11 concurrent:1)
-09/03/18 19:19:27->run 10 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_11  (run time:0.0372333 min, avg run time:0.0372576 min, group id:2, run id = 10 concurrent:1)
-09/03/18 19:19:27->run 12 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_12  (run time:0.03715 min, avg run time:0.0372486 min, group id:2, run id = 12 concurrent:1)
-09/03/18 19:19:27->run 9 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_8  (run time:0.0373 min, avg run time:0.0372526 min, group id:2, run id = 9 concurrent:1)
-09/03/18 19:19:27->run 13 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_13  (run time:0.0372333 min, avg run time:0.0372512 min, group id:2, run id = 13 concurrent:1)
-09/03/18 19:19:27->run 14 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_14  (run time:0.0371833 min, avg run time:0.0372467 min, group id:2, run id = 14 concurrent:1)
-09/03/18 19:19:27->run 15 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_15  (run time:0.0371667 min, avg run time:0.0372417 min, group id:2, run id = 15 concurrent:1)
-09/03/18 19:19:27->run 16 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_16  (run time:0.0371167 min, avg run time:0.0372343 min, group id:2, run id = 16 concurrent:1)
-09/03/18 19:19:27->run 17 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_17  (run time:0.0372333 min, avg run time:0.0372343 min, group id:2, run id = 17 concurrent:1)
-09/03/18 19:19:27->run 18 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_18  (run time:0.0373 min, avg run time:0.0372377 min, group id:2, run id = 18 concurrent:1)
-09/03/18 19:19:27->run 19 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_19  (run time:0.0374333 min, avg run time:0.0372475 min, group id:2, run id = 19 concurrent:1)
-09/03/18 19:19:28->run 20 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_0  (run time:0.0373667 min, avg run time:0.03725 min, group id:2, run id = 20 concurrent:1)
-09/03/18 19:19:29->run 21 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_1  (run time:0.0373833 min, avg run time:0.0372517 min, group id:2, run id = 21 concurrent:1)
-09/03/18 19:19:29->run 22 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_2  (run time:0.0373167 min, avg run time:0.0372575 min, group id:2, run id = 22 concurrent:1)
-09/03/18 19:19:29->run 23 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_3  (run time:0.0373667 min, avg run time:0.0372558 min, group id:2, run id = 23 concurrent:1)
-09/03/18 19:19:29->run 24 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_4  (run time:0.0373167 min, avg run time:0.03726 min, group id:2, run id = 24 concurrent:1)
+09/04/18 17:54:59->new connection from: localhost:49950
+09/04/18 17:54:59->initializing new slave connection from: localhost:49950, number of slaves: 1, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_0
+09/04/18 17:54:59->new connection from: localhost:49951
+09/04/18 17:54:59->initializing new slave connection from: localhost:49951, number of slaves: 2, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_1
+09/04/18 17:54:59->new connection from: localhost:49952
+09/04/18 17:54:59->initializing new slave connection from: localhost:49952, number of slaves: 3, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_2
+09/04/18 17:54:59->new connection from: localhost:49953
+09/04/18 17:54:59->initializing new slave connection from: localhost:49953, number of slaves: 4, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_3
+09/04/18 17:54:59->new connection from: localhost:49954
+09/04/18 17:54:59->initializing new slave connection from: localhost:49954, number of slaves: 5, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_4
+09/04/18 17:54:59->new connection from: localhost:49955
+09/04/18 17:54:59->initializing new slave connection from: localhost:49955, number of slaves: 6, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_5
+09/04/18 17:54:59->new connection from: localhost:49956
+09/04/18 17:54:59->initializing new slave connection from: localhost:49956, number of slaves: 7, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_6
+09/04/18 17:54:59->new connection from: localhost:49957
+09/04/18 17:54:59->initializing new slave connection from: localhost:49957, number of slaves: 8, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_7
+09/04/18 17:54:59->new connection from: localhost:49958
+09/04/18 17:55:00->initializing new slave connection from: localhost:49958, number of slaves: 9, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_8
+09/04/18 17:55:00->new connection from: localhost:49959
+09/04/18 17:55:00->initializing new slave connection from: localhost:49959, number of slaves: 10, working dir: /Users/jeremyw/Dev/pyemu/autotest/moouu/slave_9
+09/04/18 17:55:00->new slave ready: localhost:49950
+09/04/18 17:55:00->Sending run 0 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:0, concurrent runs:1)
+09/04/18 17:55:00->new slave ready: localhost:49951
+09/04/18 17:55:00->Sending run 1 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_1  (group id:2, run id:1, concurrent runs:1)
+09/04/18 17:55:00->new slave ready: localhost:49952
+09/04/18 17:55:00->Sending run 2 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_2  (group id:2, run id:2, concurrent runs:1)
+09/04/18 17:55:00->new slave ready: localhost:49953
+09/04/18 17:55:00->Sending run 3 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_3  (group id:2, run id:3, concurrent runs:1)
+09/04/18 17:55:00->new slave ready: localhost:49954
+09/04/18 17:55:00->Sending run 4 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_4  (group id:2, run id:4, concurrent runs:1)
+09/04/18 17:55:00->new slave ready: localhost:49955
+09/04/18 17:55:00->Sending run 5 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_5  (group id:2, run id:5, concurrent runs:1)
+09/04/18 17:55:00->new slave ready: localhost:49956
+09/04/18 17:55:00->Sending run 6 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_6  (group id:2, run id:6, concurrent runs:1)
+09/04/18 17:55:00->new slave ready: localhost:49957
+09/04/18 17:55:00->Sending run 7 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_7  (group id:2, run id:7, concurrent runs:1)
+09/04/18 17:55:00->new slave ready: localhost:49958
+09/04/18 17:55:00->Sending run 8 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_8  (group id:2, run id:8, concurrent runs:1)
+09/04/18 17:55:01->new slave ready: localhost:49959
+09/04/18 17:55:01->Sending run 9 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_9  (group id:2, run id:9, concurrent runs:1)
+09/04/18 17:55:03->run 0 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_0  (run time:0.03745 min, avg run time:0.03745 min, group id:2, run id = 0 concurrent:1)
+09/04/18 17:55:03->Sending run 10 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:10, concurrent runs:1)
+09/04/18 17:55:03->run 1 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_1  (run time:0.0372 min, avg run time:0.037325 min, group id:2, run id = 1 concurrent:1)
+09/04/18 17:55:03->Sending run 11 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_1  (group id:2, run id:11, concurrent runs:1)
+09/04/18 17:55:03->run 2 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_2  (run time:0.0373333 min, avg run time:0.0373278 min, group id:2, run id = 2 concurrent:1)
+09/04/18 17:55:03->Sending run 12 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_2  (group id:2, run id:12, concurrent runs:1)
+09/04/18 17:55:03->run 3 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_3  (run time:0.0375 min, avg run time:0.0373708 min, group id:2, run id = 3 concurrent:1)
+09/04/18 17:55:03->Sending run 13 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_3  (group id:2, run id:13, concurrent runs:1)
+09/04/18 17:55:03->run 4 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_4  (run time:0.0372333 min, avg run time:0.0373433 min, group id:2, run id = 4 concurrent:1)
+09/04/18 17:55:03->Sending run 14 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_4  (group id:2, run id:14, concurrent runs:1)
+09/04/18 17:55:03->run 5 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_5  (run time:0.0374667 min, avg run time:0.0373639 min, group id:2, run id = 5 concurrent:1)
+09/04/18 17:55:03->run 6 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_6  (run time:0.0373667 min, avg run time:0.0373643 min, group id:2, run id = 6 concurrent:1)
+09/04/18 17:55:03->Sending run 15 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_5  (group id:2, run id:15, concurrent runs:1)
+09/04/18 17:55:03->Sending run 16 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_6  (group id:2, run id:16, concurrent runs:1)
+09/04/18 17:55:03->run 7 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_7  (run time:0.0372333 min, avg run time:0.0373479 min, group id:2, run id = 7 concurrent:1)
+09/04/18 17:55:03->run 8 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_8  (run time:0.0371833 min, avg run time:0.0373296 min, group id:2, run id = 8 concurrent:1)
+09/04/18 17:55:03->Sending run 17 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_7  (group id:2, run id:17, concurrent runs:1)
+09/04/18 17:55:03->Sending run 18 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_8  (group id:2, run id:18, concurrent runs:1)
+09/04/18 17:55:03->run 9 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_9  (run time:0.0372833 min, avg run time:0.037325 min, group id:2, run id = 9 concurrent:1)
+09/04/18 17:55:03->Sending run 19 to: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_9  (group id:2, run id:19, concurrent runs:1)
+09/04/18 17:55:05->run 11 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_1  (run time:0.0373167 min, avg run time:0.0373367 min, group id:2, run id = 11 concurrent:1)
+09/04/18 17:55:05->run 10 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_0  (run time:0.03745 min, avg run time:0.0373367 min, group id:2, run id = 10 concurrent:1)
+09/04/18 17:55:05->run 12 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_2  (run time:0.0373833 min, avg run time:0.0373417 min, group id:2, run id = 12 concurrent:1)
+09/04/18 17:55:05->run 13 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_3  (run time:0.0374167 min, avg run time:0.0373333 min, group id:2, run id = 13 concurrent:1)
+09/04/18 17:55:05->run 14 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_4  (run time:0.0373167 min, avg run time:0.0373417 min, group id:2, run id = 14 concurrent:1)
+09/04/18 17:55:05->run 15 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_5  (run time:0.0374167 min, avg run time:0.0373367 min, group id:2, run id = 15 concurrent:1)
+09/04/18 17:55:05->run 16 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_6  (run time:0.03735 min, avg run time:0.037335 min, group id:2, run id = 16 concurrent:1)
+09/04/18 17:55:05->run 17 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_7  (run time:0.03725 min, avg run time:0.0373367 min, group id:2, run id = 17 concurrent:1)
+09/04/18 17:55:05->run 18 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_8  (run time:0.0372333 min, avg run time:0.0373417 min, group id:2, run id = 18 concurrent:1)
+09/04/18 17:55:05->run 19 received from: localhost$/Users/jeremyw/Dev/pyemu/autotest/moouu/slave_9  (run time:0.0373 min, avg run time:0.0373433 min, group id:2, run id = 19 concurrent:1)
 
 ---------------------
-   25 runs complete :  0 runs failed
+   20 runs complete :  0 runs failed
 

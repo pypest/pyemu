@@ -1,3 +1,5 @@
+"""a prototype multiobjective opt under uncertainty algorithm
+"""
 import os
 import numpy as np
 import pandas as pd
@@ -7,6 +9,8 @@ from .ensemble_method import EnsembleMethod
 
 
 class ParetoObjFunc(object):
+    """multiobjective function calculator.
+    """
 
     def __init__(self, pst, obj_function_dict, logger):
 
@@ -52,7 +56,7 @@ class ParetoObjFunc(object):
             self.logger.statement("pi obj function: {0}, direction: {1}". \
                                   format(name, direction))
 
-        self.is_nondominated = self.is_nondominated_kung
+        self.is_nondominated = self.is_nondominated_continuous
         self.obs_obj_names = list(self.obs_dict.keys())
 
 
@@ -194,8 +198,9 @@ class ParetoObjFunc(object):
         PP = set()
         PP.add(P[0])
 
-        iidx = 1
-        while iidx < len(P):
+        #iidx = 1
+        #while iidx < len(P):
+        for iidx in P:
             jidx = 0
             drop = []
             keep = True
@@ -214,7 +219,7 @@ class ParetoObjFunc(object):
                 PP.remove(d)
             if keep:
                 PP.add(iidx)
-            iidx += 1
+            #iidx += 1
 
 
 
@@ -380,7 +385,6 @@ class ParetoObjFunc(object):
         return df
 
 
-
 class EvolAlg(EnsembleMethod):
     def __init__(self, pst, parcov = None, obscov = None, num_slaves = 0, use_approx_prior = True,
                  submit_file = None, verbose = False, port = 4004, slave_dir = "template"):
@@ -535,6 +539,11 @@ class EvolAlg(EnsembleMethod):
         self.dv_ensemble = self.dv_ensemble.loc[isfeas,:]
         self.obs_ensemble = self.obs_ensemble.loc[isfeas,:]
 
+
+        self.pst.add_transform_columns()
+
+
+
         self._initialized = True
 
 
@@ -570,11 +579,11 @@ class EvolAlg(EnsembleMethod):
         obs_ensemble.loc[cd.index,"crowd_distance"] = cd
         dv_ensemble.loc[cd.index,"crowd_distance"] = cd
         if self.obs_ensemble_archive is None:
-            self.obs_ensemble_archive = obs_ensemble
-            self.dv_ensemble_archive = obs_ensemble
+            self.obs_ensemble_archive = pd.DataFrame(obs_ensemble.loc[:,:])
+            self.dv_ensemble_archive = pd.DataFrame(dv_ensemble.loc[:,:])
         else:
-            self.obs_ensemble_archive = self.obs_ensemble_archive.append(obs_ensemble)
-            self.dv_ensemble_archive = self.dv_ensemble_archive.append(dv_ensemble)
+            self.obs_ensemble_archive = self.obs_ensemble_archive.append(pd.DataFrame(obs_ensemble.loc[:,:]))
+            self.dv_ensemble_archive = self.dv_ensemble_archive.append(pd.DataFrame(dv_ensemble.loc[:,:]))
 
     def _calc_obs(self,dv_ensemble):
 
@@ -586,7 +595,7 @@ class EvolAlg(EnsembleMethod):
             # stack up the par ensembles for each solution
             dfs = []
             for i in range(dv_ensemble.shape[0]):
-                solution = dv_ensemble.loc[i,:]
+                solution = dv_ensemble.iloc[i,:]
                 df = df_base.copy()
                 df.loc[:,solution.index] = solution.values
                 dfs.append(df)
@@ -620,46 +629,95 @@ class EvolAlg(EnsembleMethod):
 class EliteDiffEvol(EvolAlg):
     def __init__(self, pst, parcov = None, obscov = None, num_slaves = 0, use_approx_prior = True,
                  submit_file = None, verbose = False, port = 4004, slave_dir = "template"):
-        super(DiffEvol, self).__init__(pst=pst, parcov=parcov, obscov=obscov, num_slaves=num_slaves,
+        super(EliteDiffEvol, self).__init__(pst=pst, parcov=parcov, obscov=obscov, num_slaves=num_slaves,
                                       submit_file=submit_file, verbose=verbose, port=port,
                                       slave_dir=slave_dir)
 
 
-    def update(self):
+    def update(self,mut = 0.8,cross_over=0.7,num_dv_reals=None):
         if not self._initialized:
             self.logger.lraise("not initialized")
-
+        if num_dv_reals is None:
+            num_dv_reals = self.num_dv_reals
         # todo : need to make sure enough feasible and nondominated solution are available
         # todo : if not, should we generate populations with less fit solutions in the archive?
         # todo : need to define (transformed) bounding box for denormalizing mutated solution vector
 
         # function to get unique index names
-        child_count = 0
+        self._child_count = 0
+
         def next_name():
             while True:
-                sol_name = "child_{0}_{1}".format(self.iter_num, child_count)
+                sol_name = "child_{0}_{1}".format(self.iter_num, self._child_count)
                 if sol_name not in self.dv_ensemble.index.values:
                     break
-                child_count += 1
+                self._child_count += 1
             return sol_name
 
         # generate self.num_dv_reals offspring using diff evol rules
         dv_offspring = []
         child2parent = {}
         offspring_idx = []
-        for i in range(self.num_dv_reals):
-            # Diff evol here MATT!!!
-            # select parent randomly - add to child2parent
-            # select two others for differntials
+        tol = 1.0
+        num_dv = self.dv_ensemble.shape[1]
+        dv_names = self.dv_ensemble.columns
+        dv_log = self.pst.parameter_data.loc[dv_names, "partrans"] == "log"
+        lb = self.pst.parameter_data.loc[dv_names,"parlbnd"].copy()
+        ub = self.pst.parameter_data.loc[dv_names,"parubnd"].copy()
+        lb.loc[dv_log] = lb.loc[dv_log].apply(np.log10)
+        ub.loc[dv_log] = ub.loc[dv_log].apply(np.log10)
+        dv_ensemble_trans = self.dv_ensemble.copy()
+
+        for idx in dv_ensemble_trans.index:
+            dv_ensemble_trans.loc[idx,dv_log] = dv_ensemble_trans.loc[idx,dv_log].apply(lambda x: np.log10(x))
+
+        for i in range(num_dv_reals):
+            # every parent gets an offspring
+            if i < self.dv_ensemble.shape[0]:
+                parent_idx = i
+            else:
+                #otherwise, some parents get more than one offspring
+                parent_idx = np.random.randint(0,dv_ensemble_trans.shape[0])
+
+            parent = dv_ensemble_trans.iloc[parent_idx,:]
+            while True:
+                # select the three other members in the population
+                abc_idxs = np.random.choice(dv_ensemble_trans.index,3,replace=False)
+
+                abc = dv_ensemble_trans.loc[abc_idxs,:].copy()
+                # here it is - all of DE in one line:
+                mutant= abc.iloc[0] + (mut * (abc.iloc[1] - abc.iloc[2]))
+
+                # select cross over genes (dec var values)
+                cross_points = np.random.rand(num_dv) < cross_over
+                if not np.any(cross_points):
+                    cross_points[np.random.randint(0,num_dv)] = True
+                #create an offspring
+                offspring = parent.copy()
+                offspring.loc[cross_points] = mutant.loc[cross_points]
+
+                #enforce bounds
+                out = offspring > ub
+                offspring.loc[out] = ub.loc[out]
+                out = offspring < lb
+                offspring.loc[out] = lb.loc[out]
+                # back transform
+                offspring.loc[dv_log] = 10.0**offspring.loc[dv_log]
+                offspring = offspring.loc[self.dv_ensemble.columns]
+                dist = [np.dot(self.dv_ensemble.loc[i,:].values,offspring.values) for i in self.dv_ensemble.index]
+
+                if min(dist) > tol:
+                    break
 
             sol_name = "child_{0}".format(i)
             dv_offspring.append(offspring)
             offspring_idx.append(sol_name)
+            child2parent[sol_name] = dv_ensemble_trans.index[parent_idx]
 
-        dv_offspring = pd.DataFrame(dv_offspring,columns=self.dv_ensemble.columns,index=offsring_idx)
+        dv_offspring = pd.DataFrame(dv_offspring,columns=self.dv_ensemble.columns,index=offspring_idx)
 
         # run the model with offspring candidates - offspring_obs may have missing reals if runs failed!
-        self.logger.log("running {0} canditiate solutions for iteration {1}".format(pop_size,self.iter_num))
+        self.logger.log("running {0} canditiate solutions for iteration {1}".format(dv_offspring.shape[0],self.iter_num))
         obs_offspring = self._calc_obs(dv_offspring)
 
 
@@ -667,49 +725,106 @@ class EliteDiffEvol(EvolAlg):
         # self.dv_ensemble and self.obs_ensemble.  if not, drop candidate.  If tied, keep both
         isfeas = self.obj_func.is_feasible(obs_offspring)
         isnondom = self.obj_func.is_nondominated(obs_offspring)
-        child_count = 0
-        for idx in obs_offspring.index:
-            if not isfeas[idx]:
-                self.logger.statement("child {0} is not feasible".format(idx))
+
+        for child_idx in obs_offspring.index:
+            if not isfeas[child_idx]:
+                self.logger.statement("child {0} is not feasible".format(child_idx))
                 continue
 
-            child_sol = obs_offspring.loc[idx,:]
-            if not idx in child2parent:
+            child_sol = obs_offspring.loc[child_idx,:]
+            parent_idx = child2parent[child_idx]
+            if parent_idx is None:
                 # the parent was already removed by another child, so if this child is
                 # feasible and nondominated, keep it
-                if isnondom(idx):
+                if isnondom(child_idx):
+                    self.logger.statement("orphaned child {0} retained".format(child_idx))
                     sol_name = next_name()
                     self.dv_ensemble.loc[sol_name, child_sol.index] = child_sol
-                    self.obs_ensemble.loc[sol_name, obs_offspring.columns] = obs_offspring.loc[idx, :]
+                    self.obs_ensemble.loc[sol_name, obs_offspring.columns] = obs_offspring.loc[child_idx, :]
 
             else:
-                parent_sol = self.obs_ensemble.loc[idx,:]
-                if self.obj_func.dominates(parent_sol,child_sol):
+                parent_sol = self.obs_ensemble.loc[parent_idx,:]
+                if self.obj_func.dominates(parent_sol.loc[self.obj_func.obs_obj_names],\
+                                           child_sol.loc[self.obj_func.obs_obj_names]):
+                    self.logger.statement("child {0} dominated by parent {1}".format(child_idx,parent_idx))
                     # your dead to me!
                     pass
-                elif self.obj_func.dominates(child_sol,parent_sol):
+                elif self.obj_func.dominates(child_sol.loc[self.obj_func.obs_obj_names],\
+                                             parent_sol.loc[self.obj_func.obs_obj_names]):
                     # hey dad, what do you think about your son now!
-                    self.dv_ensemble.loc[idx,child_sol.index] = child_sol
-                    self.obs_ensemble.loc[idx,obs_offspring.columns] = obs_offspring.loc[idx,:]
+                    self.logger.statement("child {0} dominates parent {1}".format(child_idx,parent_idx))
+                    self.dv_ensemble.loc[parent_idx,dv_offspring.columns] = dv_offspring.loc[child_idx,:]
+                    self.obs_ensemble.loc[parent_idx,obs_offspring.columns] = obs_offspring.loc[child_idx,:]
+                    child2parent[idx] = None
                 else:
+                    self.logger.statement("child {0} and parent {1} kept".format(child_idx,parent_idx))
                     sol_name = next_name()
-                    self.dv_ensemble.loc[sol_name,child_sol.index] = child_sol
-                    self.obs_ensemble.loc[sol_name,obs_offspring.columns] = obs_offspring.loc[idx,:]
+                    self.dv_ensemble.loc[sol_name,dv_offspring.columns] = dv_offspring.loc[child_idx,:]
+                    self.obs_ensemble.loc[sol_name,obs_offspring.columns] = obs_offspring.loc[child_idx,:]
 
 
-        #if there are too many individuals in self.dv_ensemble, then reduce by using crowding distance.
-        while (self.dv_ensemble.shape[0] > self.num_dv_reals):
-            cd = self.obj_func.crowd_distance(self.obs_ensemble)
-            cd.sort_values(inplace=True,ascending=True)
-            #drop the first element in cd from both dv_ensemble and obs_ensemble
-            self.dv_ensemble = self.dv_ensemble.loc[cd.index[-1],:]
-            self.obs_ensemble = self.obs_ensemble.loc[cd.index[-1], :]
+        #if there are too many individuals in self.dv_ensemble, first drop dominated,then reduce by using crowding distance.
+
+        self.logger.statement("number of solutions:{0}".format(self.dv_ensemble.shape[0]))
+        isnondom = self.obj_func.is_nondominated(self.obs_ensemble)
+        dom_idx = isnondom.loc[isnondom == False].index
+        nondom_idx = isnondom.loc[isnondom==True].index
+        self.logger.statement("number of dominated solutions:{0}".format(dom_idx.shape[0]))
+        self.logger.statement("nondominated solutions: {0}".format(','.join(nondom_idx)))
+        self.logger.statement("dominated solutions: {0}".format(','.join(dom_idx)))
+        ndrop = self.dv_ensemble.shape[0] - num_dv_reals
+        if ndrop > 0:
+            isnondom = self.obj_func.is_nondominated(self.obs_ensemble)
+            vc = isnondom.value_counts()
+            if False in vc.index:
+                # get dfs for the dominated solutions
+                dv_dom = self.dv_ensemble.loc[dom_idx,:].copy()
+                obs_dom = self.obs_ensemble.loc[dom_idx,:].copy()
+
+                # drop all domianted solutions
+                #self.logger.statement("current size: {0}".format(self.dv_ensemble.shape[0]))
+
+                self.dv_ensemble.drop(dom_idx,inplace=True)
+                self.obs_ensemble.drop(dom_idx,inplace=True)
+                #progressively drop dominated solutions by crowd distance
+                self.logger.statement("dropping {0} dominated individuals based on crowd distance".\
+                                      format(ndrop))
+
+                self._drop_by_crowd(dv_dom,obs_dom,ndrop)
+                #add any remaining dominated solutions back
+                self.dv_ensemble = self.dv_ensemble.append(dv_dom)
+                self.obs_ensemble = self.obs_ensemble.append(obs_dom)
+                #self.dv_ensemble.drop(dom_idx,inplace=True)
+                #self.obs_ensemble.drop(dom_idx,inplace=True)
+
+
+        # drop remaining nondom solutions as needed
+        if self.dv_ensemble.shape[0] > num_dv_reals:
+            self._drop_by_crowd(self.dv_ensemble,self.obs_ensemble,self.dv_ensemble.shape[0] - num_dv_reals)
 
         self.iter_num += 1
 
         return
 
 
+
+
+    def _drop_by_crowd(self,dv_ensemble, obs_ensemble, ndrop):
+        if ndrop > dv_ensemble.shape[0]:
+            self.logger.lraise("EliteDiffEvol.drop_by_crowd() error: ndrop"+
+                               "{0} > dv_ensemble.shape[0] {1}".\
+                               format(ndrop,dv_ensemble.shape[0]))
+        self.logger.statement("dropping {0} of {1} individuals based on crowd distance".\
+                              format(ndrop,dv_ensemble.shape[0]))
+        for idrop in range(ndrop):
+            cd = self.obj_func.crowd_distance(obs_ensemble)
+            cd.sort_values(inplace=True,ascending=False)
+            #drop the first element in cd from both dv_ensemble and obs_ensemble
+            drop_idx = cd.index[-1]
+            self.logger.statement("solution {0} removed based on crowding distance {1}".\
+                                  format(drop_idx,cd[drop_idx]))
+            dv_ensemble.drop(drop_idx,inplace=True)
+            obs_ensemble.drop(drop_idx,inplace=True)
 
 
 
