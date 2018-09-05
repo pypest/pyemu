@@ -129,23 +129,7 @@ class ParetoObjFunc(object):
         is_dominated : pandas.Series
             series with index of obs_df and bool series
         """
-        signs = []
-        obj_names = list(self.obs_dict.keys())
-        for obj in obj_names:
-            if self.obs_dict[obj] == "max":
-                signs.append(1.0)
-            else:
-                signs.append(-1.0)
-        signs = np.array(signs)
-
-        obj_df = obs_df.loc[:,obj_names]
-
-        def dominates(idx1,idx2):
-            d = signs * (obj_df.loc[idx1,:] -  obj_df.loc[idx2,:])
-            if np.all(d >= 0.0) and np.any(d > 0.0):
-                return True
-            return False
-
+        obj_df = obs_df.loc[:,self.obs_obj_names]
         is_nondom = []
         for i,iidx in enumerate(obj_df.index):
             ind = True
@@ -177,23 +161,8 @@ class ParetoObjFunc(object):
         is_dominated : pandas.Series
             series with index of obs_df and bool series
         """
-        signs = []
-        obj_names = list(self.obs_dict.keys())
-        for obj in obj_names:
-            if self.obs_dict[obj] == "max":
-                signs.append(1.0)
-            else:
-                signs.append(-1.0)
-        signs = np.array(signs)
 
-        obj_df = obs_df.loc[:,obj_names]
-
-        def dominates(idx1,idx2):
-            d = signs * (obj_df.loc[idx1,:] -  obj_df.loc[idx2,:])
-            if np.all(d >= 0.0) and np.any(d > 0.0):
-                return True
-            return False
-
+        obj_df = obs_df.loc[:,self.obs_obj_names]
         P = list(obj_df.index)
         PP = set()
         PP.add(P[0])
@@ -210,6 +179,8 @@ class ParetoObjFunc(object):
                 # elif dominates(jidx,iidx):
                 #     keep = False
                 #     break
+                if jidx == iidx:
+                    continue
                 if self.dominates(obj_df.loc[iidx, :], obj_df.loc[jidx, :]):
                     drop.append(jidx)
                 elif self.dominates(obj_df.loc[jidx, :], obj_df.loc[iidx, :]):
@@ -242,22 +213,9 @@ class ParetoObjFunc(object):
         is_dominated : pandas.Series
             series with index of obs_df and bool series
         """
-        signs = []
-        obj_names = list(self.obs_dict.keys())
-        for obj in obj_names:
-            if self.obs_dict[obj] == "max":
-                signs.append(1.0)
-            else:
-                signs.append(-1.0)
-        signs = np.array(signs)
 
-        obj_df = obs_df.loc[:,obj_names]
+        obj_df = obs_df.loc[:,self.obs_obj_names]
 
-        def dominates(idx1,idx2):
-            d = signs * (obj_df.loc[idx1,:] -  obj_df.loc[idx2,:])
-            if np.all(d >= 0.0) and np.any(d > 0.0):
-                return True
-            return False
         ascending = False
         if self.obs_dict[obj_names[0]] == "min":
             ascending = True
@@ -546,6 +504,13 @@ class EvolAlg(EnsembleMethod):
         self.logger.statement("{0} feasible individuals in initial population".format(vc[True]))
         self.dv_ensemble = self.dv_ensemble.loc[isfeas,:]
         self.obs_ensemble = self.obs_ensemble.loc[isfeas,:]
+        vc = isnondom.value_counts()
+        if True in vc:
+            self.logger.statement("{0} nondominated solutions in initial population".format(vc[True]))
+        else:
+            self.logger.statement("no nondominated solutions in initial population")
+        self.dv_ensemble = self.dv_ensemble.loc[isfeas,:]
+        self.obs_ensemble = self.obs_ensemble.loc[isfeas,:]
 
 
         self.pst.add_transform_columns()
@@ -642,7 +607,7 @@ class EliteDiffEvol(EvolAlg):
                                       slave_dir=slave_dir)
 
 
-    def update(self,mut = 0.8,cross_over=0.7,num_dv_reals=None):
+    def update(self,mut_base = 0.8,cross_over_base=0.7,num_dv_reals=None):
         if not self._initialized:
             self.logger.lraise("not initialized")
         if num_dv_reals is None:
@@ -655,7 +620,7 @@ class EliteDiffEvol(EvolAlg):
 
         def next_name():
             while True:
-                sol_name = "child_{0}_{1}".format(self.iter_num, self._child_count)
+                sol_name = "c_i{0}_{1}".format(self.iter_num, self._child_count)
                 if sol_name not in self.dv_ensemble.index.values:
                     break
                 self._child_count += 1
@@ -682,47 +647,47 @@ class EliteDiffEvol(EvolAlg):
             # every parent gets an offspring
             if i < self.dv_ensemble.shape[0]:
                 parent_idx = i
+                mut = mut_base
+                cross_over = cross_over_base
             else:
                 #otherwise, some parents get more than one offspring
                 # could do something better here - like pick a good parent
+                # make a wild child
                 parent_idx = np.random.randint(0,dv_ensemble_trans.shape[0])
+                mut = 0.9
+                cross_over = 0.9
 
             parent = dv_ensemble_trans.iloc[parent_idx,:]
 
-            # just experimenting with picking children that are sufficiently
-            # diff from other members of the current population
-            while True:
-                # select the three other members in the population
-                abc_idxs = np.random.choice(dv_ensemble_trans.index,3,replace=False)
 
-                abc = dv_ensemble_trans.loc[abc_idxs,:].copy()
+            # select the three other members in the population
+            abc_idxs = np.random.choice(dv_ensemble_trans.index,3,replace=False)
 
-                mutant= abc.iloc[0] + (mut * (abc.iloc[1] - abc.iloc[2]))
+            abc = dv_ensemble_trans.loc[abc_idxs,:].copy()
 
-                # select cross over genes (dec var values)
-                cross_points = np.random.rand(num_dv) < cross_over
-                if not np.any(cross_points):
-                    cross_points[np.random.randint(0,num_dv)] = True
+            mutant= abc.iloc[0] + (mut * (abc.iloc[1] - abc.iloc[2]))
 
-                #create an offspring
-                offspring = parent.copy()
-                offspring.loc[cross_points] = mutant.loc[cross_points]
+            # select cross over genes (dec var values)
+            cross_points = np.random.rand(num_dv) < cross_over
+            if not np.any(cross_points):
+                cross_points[np.random.randint(0,num_dv)] = True
 
-                #enforce bounds
-                out = offspring > ub
-                offspring.loc[out] = ub.loc[out]
-                out = offspring < lb
-                offspring.loc[out] = lb.loc[out]
+            #create an offspring
+            offspring = parent.copy()
+            offspring.loc[cross_points] = mutant.loc[cross_points]
 
-                # back transform
-                offspring.loc[dv_log] = 10.0**offspring.loc[dv_log]
-                offspring = offspring.loc[self.dv_ensemble.columns]
+            #enforce bounds
+            out = offspring > ub
+            offspring.loc[out] = ub.loc[out]
+            out = offspring < lb
+            offspring.loc[out] = lb.loc[out]
 
-                dist = [np.dot(self.dv_ensemble.loc[i,:].values,offspring.values) for i in self.dv_ensemble.index]
-                if min(dist) > tol:
-                    break
+            # back transform
+            offspring.loc[dv_log] = 10.0**offspring.loc[dv_log]
+            offspring = offspring.loc[self.dv_ensemble.columns]
 
-            sol_name = "child_{0}".format(i)
+
+            sol_name = "c_{0}".format(i)
             dv_offspring.append(offspring)
             offspring_idx.append(sol_name)
             child2parent[sol_name] = dv_ensemble_trans.index[parent_idx]
@@ -782,12 +747,12 @@ class EliteDiffEvol(EvolAlg):
         #if there are too many individuals in self.dv_ensemble,
         # first drop dominated,then reduce by using crowding distance.
 
-        self.logger.statement("number of solutions:{0}".format(self.dv_ensemble.shape[0]))
+        # self.logger.statement("number of solutions:{0}".format(self.dv_ensemble.shape[0]))
         isnondom = self.obj_func.is_nondominated(self.obs_ensemble)
         dom_idx = isnondom.loc[isnondom == False].index
         nondom_idx = isnondom.loc[isnondom==True].index
         self.logger.statement("number of dominated solutions:{0}".format(dom_idx.shape[0]))
-        self.logger.statement("nondominated solutions: {0}".format(','.join(nondom_idx)))
+        # self.logger.statement("nondominated solutions: {0}".format(','.join(nondom_idx)))
         self.logger.statement("dominated solutions: {0}".format(','.join(dom_idx)))
         ndrop = self.dv_ensemble.shape[0] - num_dv_reals
         if ndrop > 0:
@@ -803,7 +768,7 @@ class EliteDiffEvol(EvolAlg):
                 self.dv_ensemble.drop(dom_idx,inplace=True)
                 self.obs_ensemble.drop(dom_idx,inplace=True)
                 self.logger.statement("dropping {0} dominated individuals based on crowd distance".\
-                                      format(ndrop))
+                                      format(min(ndrop,dv_dom.shape[0])))
 
                 self._drop_by_crowd(dv_dom,obs_dom,min(ndrop,dv_dom.shape[0]))
                 #add any remaining dominated solutions back
@@ -815,20 +780,56 @@ class EliteDiffEvol(EvolAlg):
         if self.dv_ensemble.shape[0] > num_dv_reals:
             self._drop_by_crowd(self.dv_ensemble,self.obs_ensemble,self.dv_ensemble.shape[0] - num_dv_reals)
 
+        self.iter_report()
         self.iter_num += 1
 
         return
 
+    def iter_report(self):
+
+        oe = self.obs_ensemble.copy()
+        dv = self.dv_ensemble.copy()
+        isfeas = self.obj_func.is_feasible(oe)
+        isnondom = self.obj_func.is_nondominated(oe)
+        cd = self.obj_func.crowd_distance(oe)
+        for df in [oe,dv]:
+            df.loc[isfeas.index,"feasible"] = isfeas
+            df.loc[isnondom.index, "nondominated"] = isnondom
+            df.loc[cd.index,"crowd_distance"] = cd
+
+        dv.to_csv("dv_ensemble.{0}.csv".format(self.iter_num + 1))
+        oe.to_csv("obs_ensemble.{0}.csv".format(self.iter_num + 1))
+        self.logger.statement("*** iteration {0} report".format(self.iter_num+1))
+        self.logger.statement("{0} current solutions".format(dv.shape[0]))
+        self.logger.statement("{0} infeasible".format(isfeas[isfeas==False].shape[0]))
+        self.logger.statement("{0} nondomiated".format(isnondom[isnondom==True].shape[0]))
 
 
 
-    def _drop_by_crowd(self,dv_ensemble, obs_ensemble, ndrop):
+
+    def _drop_by_crowd(self,dv_ensemble, obs_ensemble, ndrop,min_dist=0.1):
         if ndrop > dv_ensemble.shape[0]:
             self.logger.lraise("EliteDiffEvol.drop_by_crowd() error: ndrop"+
                                "{0} > dv_ensemble.shape[0] {1}".\
                                format(ndrop,dv_ensemble.shape[0]))
         self.logger.statement("dropping {0} of {1} individuals based on crowd distance".\
                               format(ndrop,dv_ensemble.shape[0]))
+        # if min_dist is not None:
+        #     while True:
+        #         cd = self.obj_func.crowd_distance(obs_ensemble)
+        #         if cd.min() >= min_dist or ndrop == 0:
+        #             break
+        #         cd.sort_values(inplace=True, ascending=False)
+        #
+        #         drop_idx = cd.index[-1]
+        #         self.logger.statement("dropping solution {0} - less then 'min_dist' apart{1}".\
+        #                               format(drop_idx,cd.loc[drop_idx]))
+        #
+        #         dv_ensemble.drop(drop_idx,inplace=True)
+        #         obs_ensemble.drop(drop_idx,inplace=True)
+        #         ndrop -= 1%
+
+
         for idrop in range(ndrop):
             cd = self.obj_func.crowd_distance(obs_ensemble)
             cd.sort_values(inplace=True,ascending=False)

@@ -19,6 +19,7 @@ def tenpar_test():
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
     pst = pyemu.Pst("10par_xsec.pst")
+
     obj_names = pst.nnz_obs_names
     # pst.observation_data.loc[pst.obs_names[0],"obgnme"] = "greaterthan"
     # pst.observation_data.loc[pst.obs_names[0], "weight"] = 1.0
@@ -27,8 +28,8 @@ def tenpar_test():
     # pst.observation_data.loc[pst.obs_names[-1], "weight"] = 1.0
     # pst.observation_data.loc[pst.obs_names[-1], "obsval"] *= 0.85
 
-    pst.observation_data.loc["h01_10", "obgnme"] = "greaterthan"
-    pst.observation_data.loc["h01_10", "weight"] = 1.0
+    # pst.observation_data.loc["h01_10", "obgnme"] = "greaterthan"
+    # pst.observation_data.loc["h01_10", "weight"] = 1.0
     #pst.observation_data.loc["h01_10", "obsval"] *= 0.85
 
 
@@ -60,7 +61,7 @@ def tenpar_test():
     pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[:2]},
                                                   num_reals=5,
                                                   partial=False)
-    ea = EvolAlg(pst, num_slaves=20, port=4005, verbose=True)
+    ea = EvolAlg(pst, num_slaves=8, port=4005, verbose=True)
 
     dv = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[2:]},
                                                   num_reals=5,
@@ -103,7 +104,9 @@ def tenpar_dev():
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
     pst = pyemu.Pst("10par_xsec.pst")
-    obj_names = pst.nnz_obs_names
+    #obj_names = pst.nnz_obs_names
+    obj_names = ["h01_04", "h01_06", "h01_08"]
+
     # pst.observation_data.loc[pst.obs_names[0],"obgnme"] = "greaterthan"
     # pst.observation_data.loc[pst.obs_names[0], "weight"] = 1.0
     # pst.observation_data.loc[pst.obs_names[0], "obsval"] *= 0.85
@@ -111,9 +114,9 @@ def tenpar_dev():
     # pst.observation_data.loc[pst.obs_names[-1], "weight"] = 1.0
     # pst.observation_data.loc[pst.obs_names[-1], "obsval"] *= 0.85
 
-    pst.observation_data.loc["h01_10", "obgnme"] = "lessthan"
-    pst.observation_data.loc["h01_10", "weight"] = 1.0
-    #pst.observation_data.loc["h01_10", "obsval"] *= 0.85
+    # pst.observation_data.loc["h01_10", "obgnme"] = "lessthan"
+    # pst.observation_data.loc["h01_10", "weight"] = 1.0
+    # pst.observation_data.loc["h01_10", "obsval"] *= 0.85
 
 
     par = pst.parameter_data
@@ -123,7 +126,7 @@ def tenpar_dev():
     obj_dict = {}
     obj_dict[obj_names[0]] = "min"
     obj_dict[obj_names[1]] = "max"
-
+    obj_dict[obj_names[2]] = "max"
 
     # testing for reduce method
     # oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst=pst, num_reals=5000)
@@ -146,17 +149,17 @@ def tenpar_dev():
     par.loc[dv_names, "parlbnd"] = 1.0
     par.loc[dv_names, "parubnd"] = 5.0
 
-    # pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in par_names},
-    #                                              num_reals=1,
-    #                                              partial=False)
-    pe = None
+    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in par_names},
+                                                 num_reals=1,
+                                                 partial=False)
+
 
     dv = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in dv_names},
-                                                  num_reals=20,
+                                                  num_reals=100,
                                                   partial=True)
 
     dv.index = ["p_{0}".format(i) for i in range(dv.shape[0])]
-    ea = EliteDiffEvol(pst, num_slaves=10, port=4005, verbose=True)
+    ea = EliteDiffEvol(pst, num_slaves=30, port=4005, verbose=True)
 
     ea.initialize(obj_dict,par_ensemble=pe,dv_ensemble=dv,risk=0.5)
 
@@ -164,57 +167,105 @@ def tenpar_dev():
     obj_org = ea.obs_ensemble.loc[:, obj_names].copy()
     dom_org = ea.obj_func.is_nondominated(obj_org)
 
-    fig = plt.figure()
-    ax = plt.subplot(111,aspect="equal")
-    # obj_org = ea.obs_ensemble.loc[:, obj_names].copy()
-    # dom_org = ea.obj_func.is_nondominated(obj_org)
-    ax.scatter(obj_org.loc[:, obj_names[0]], obj_org.loc[:, obj_names[1]], color="0.5", marker='.', alpha=0.25,
-               s=40)
-    ax.scatter(obj_org.loc[dom_org, obj_names[0]], obj_org.loc[dom_org, obj_names[1]], color="0.5", marker='+',
-               alpha=0.25, s=60)
-    for i in obj_org.index:
-        if i not in dom_org.index:
-            continue
-        ax.text(obj_org.loc[i, obj_names[0]], obj_org.loc[i, obj_names[1]],str(i),ha="center",fontsize=5)
+    def plot_3obj(obj=None,label=False):
 
-
-    ax.set_xlim(1.5, 3.5)
-    ax.set_ylim(1.5, 3.5)
-    ax.set_title("iter {0}, total runs: {1}".format(0,ea.total_runs))
-    ax.set_xlabel("{0}, dir:{1}".format(obj_names[0], obj_dict[obj_names[0]]))
-    ax.set_ylabel("{0}, dir:{1}".format(obj_names[1], obj_dict[obj_names[1]]))
-    plt.savefig("iter_{0:03d}.png".format(ea.iter_num),dpi=500)
-
-    plt.close("all")
-
-    for i in range(30):
-
-        ea.update()
-        fig = plt.figure()
-        ax = plt.subplot(111, aspect="equal")
+        fig = plt.figure(figsize=(9,3))
+        ax = plt.subplot(131,aspect="equal")
+        ax2 = plt.subplot(132, aspect="equal")
+        ax3 = plt.subplot(133, aspect="equal")
         # obj_org = ea.obs_ensemble.loc[:, obj_names].copy()
         # dom_org = ea.obj_func.is_nondominated(obj_org)
         ax.scatter(obj_org.loc[:, obj_names[0]], obj_org.loc[:, obj_names[1]], color="0.5", marker='.', alpha=0.25,
-                   s=30)
+                   s=8)
         ax.scatter(obj_org.loc[dom_org, obj_names[0]], obj_org.loc[dom_org, obj_names[1]], color="0.5", marker='+',
-                   alpha=0.25, s=60)
+                   alpha=0.25, s=25)
+        if label and obj is None:
+            for i in obj_org.index:
+               if i not in dom_org.index:
+                   continue
+               ax.text(obj_org.loc[i, obj_names[0]], obj_org.loc[i, obj_names[1]],str(i),ha="center",fontsize=5)
 
-        obj = ea.obs_ensemble.loc[:, obj_names]
-        dom = ea.obj_func.is_nondominated(obj)
-        ax.scatter(obj.loc[:, obj_names[0]], obj.loc[:, obj_names[1]], color='b', marker='.', alpha=0.25, s=30)
-        ax.scatter(obj.loc[dom, obj_names[0]], obj.loc[dom, obj_names[1]], color="b", marker='+', alpha=0.25, s=60)
-        for i in obj.index:
-            if i not in dom.index:
-                continue
-            ax.text(obj.loc[i, obj_names[0]], obj.loc[i, obj_names[1]], str(i), ha="center", fontsize=5)
-        ax.set_xlim(1.5, 3.5)
-        ax.set_ylim(1.5, 3.5)
+        ax2.scatter(obj_org.loc[:, obj_names[1]], obj_org.loc[:, obj_names[2]], color="0.5", marker='.', alpha=0.25,
+                   s=8)
+        ax2.scatter(obj_org.loc[dom_org, obj_names[1]], obj_org.loc[dom_org, obj_names[2]], color="0.5", marker='+',
+                   alpha=0.25, s=25)
+        if label and obj is None:
+            for i in obj_org.index:
+                if i not in dom_org.index:
+                    continue
+                ax2.text(obj_org.loc[i, obj_names[1]], obj_org.loc[i, obj_names[2]], str(i), ha="center", fontsize=5)
 
-        ax.set_title("iter {0}, total runs: {1}".format(ea.iter_num, ea.total_runs))
+        ax3.scatter(obj_org.loc[:, obj_names[0]], obj_org.loc[:, obj_names[2]], color="0.5", marker='.', alpha=0.25,
+                    s=8)
+        ax3.scatter(obj_org.loc[dom_org, obj_names[0]], obj_org.loc[dom_org, obj_names[2]], color="0.5", marker='+',
+                    alpha=0.25, s=25)
+        if label and obj is None:
+            for i in obj_org.index:
+                if i not in dom_org.index:
+                    continue
+                ax3.text(obj_org.loc[i, obj_names[0]], obj_org.loc[i, obj_names[2]], str(i), ha="center", fontsize=5)
+
+        if obj is not None:
+            dom = ea.obj_func.is_nondominated(obj)
+            ax.scatter(obj.loc[:, obj_names[0]], obj.loc[:, obj_names[1]], color="b", marker='.', alpha=0.25,
+                       s=8)
+            ax.scatter(obj.loc[dom, obj_names[0]], obj.loc[dom, obj_names[1]], color="b", marker='+',
+                       alpha=0.25, s=25)
+
+            if label:
+                for i in obj.index:
+                    if i not in dom.index:
+                        continue
+                    ax.text(obj.loc[i, obj_names[0]], obj.loc[i, obj_names[1]], str(i), ha="center", fontsize=5)
+
+            ax2.scatter(obj.loc[:, obj_names[1]], obj.loc[:, obj_names[2]], color="b", marker='.', alpha=0.25,
+                       s=8)
+            ax2.scatter(obj.loc[dom, obj_names[1]], obj.loc[dom, obj_names[2]], color="b", marker='+',
+                       alpha=0.25, s=25)
+
+            if label:
+                for i in obj.index:
+                    if i not in dom.index:
+                        continue
+                    ax2.text(obj.loc[i, obj_names[1]], obj.loc[i, obj_names[2]], str(i), ha="center", fontsize=5)
+
+            ax3.scatter(obj.loc[:, obj_names[0]], obj.loc[:, obj_names[2]], color="b", marker='.', alpha=0.25,
+                        s=8)
+            ax3.scatter(obj.loc[dom, obj_names[0]], obj.loc[dom, obj_names[2]], color="b", marker='+',
+                        alpha=0.25, s=25)
+
+            if label:
+                for i in obj.index:
+                    if i not in dom.index:
+                        continue
+                    ax3.text(obj.loc[i, obj_names[0]], obj.loc[i, obj_names[2]], str(i), ha="center", fontsize=5)
+
+
+
+        for aax in [ax,ax2,ax3]:
+            aax.set_xlim(0, 4.5)
+            aax.set_ylim(0, 4.5)
+
+        ax.set_title("iter {0}, total runs: {1}".format(0,ea.total_runs))
         ax.set_xlabel("{0}, dir:{1}".format(obj_names[0], obj_dict[obj_names[0]]))
         ax.set_ylabel("{0}, dir:{1}".format(obj_names[1], obj_dict[obj_names[1]]))
+        ax2.set_xlabel("{0}, dir:{1}".format(obj_names[1], obj_dict[obj_names[1]]))
+        ax2.set_ylabel("{0}, dir:{1}".format(obj_names[2], obj_dict[obj_names[2]]))
+        ax3.set_xlabel("{0}, dir:{1}".format(obj_names[0], obj_dict[obj_names[0]]))
+        ax3.set_ylabel("{0}, dir:{1}".format(obj_names[2], obj_dict[obj_names[2]]))
+
         plt.savefig("iter_{0:03d}.png".format(ea.iter_num),dpi=500)
+
         plt.close("all")
+
+    plot_3obj()
+
+    for i in range(10):
+
+        ea.update()
+
+        obj = ea.obs_ensemble.loc[:, obj_names]
+        plot_3obj(obj)
 
     os.system("ffmpeg -r 2 -i iter_%03d.png -loop 0 -final_delay 100 -y shhh.mp4")
     return
@@ -233,9 +284,9 @@ def tenpar_dev():
         stack = ea.last_stack
         plt.scatter(stack.loc[:, obj_names[0]], stack.loc[:, obj_names[1]], color="0.5", marker='.',s=10, alpha=0.25)
 
-        plt.scatter(obj.loc[:,obj_names[0]],obj.loc[:,obj_names[1]],color=color,marker='.',alpha=0.25,s=40)
+        plt.scatter(obj.loc[:,obj_names[0]],obj.loc[:,obj_names[1]],color=color,marker='.',alpha=0.25,s=8)
         ind = obj.loc[is_nondom,:]
-        #plt.scatter(ind.iloc[:, 0], ind.iloc[:, 1], color="m", marker='.',s=20,alpha=0.5)
+        #plt.scatter(ind.iloc[:, 0], ind.iloc[:, 1], color="m", marker='.',s=8,alpha=0.5)
         isfeas = ea.obj_func.is_feasible(oe)
 
         isf = obj.loc[isfeas,:]
