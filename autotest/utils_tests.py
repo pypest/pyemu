@@ -1281,9 +1281,13 @@ def sfr_reach_obs_test():
     import pyemu
     import flopy
     import pandas as pd
+    import numpy as np
 
     sfr_file = os.path.join("utils","freyberg.sfr.out")
     pyemu.gw_utils.setup_sfr_reach_obs(sfr_file, seg_reach=[[1, 2], [4, 1], [2, 2]])
+    proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
+    assert proc.shape[0] == 3*2  # (nper*nobs)
+    pyemu.gw_utils.setup_sfr_reach_obs(sfr_file, seg_reach=np.array([[1, 2], [4, 1], [2, 2]]))
     proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
     assert proc.shape[0] == 3*2  # (nper*nobs)
     pyemu.gw_utils.setup_sfr_reach_obs(sfr_file)
