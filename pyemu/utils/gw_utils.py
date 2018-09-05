@@ -1841,7 +1841,7 @@ def setup_sfr_reach_obs(sfr_out_file,seg_reach=None,ins_file=None,model=None,
     if seg_reach is None:
         warnings.warn("Obs will be set up for every reach", PyemuWarning)
         seg_reach = 'all'
-    elif isinstance(seg_reach, list):
+    elif isinstance(seg_reach, list) or isinstance(seg_reach, np.ndarray):
         if np.ndim(seg_reach) == 1:
             seg_reach = [seg_reach]
         assert np.shape(
