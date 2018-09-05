@@ -1745,6 +1745,13 @@ def load_sfr_out(sfr_out_file, selection=None):
     if selection is None:
         warnings.warn("Flow out aggregation for segment has changed. "
                       "Now returning flow out at bottom of seg ...", PyemuWarning)
+    elif isinstance(selection, str):
+        assert selection == 'all', "If string passed as selection only 'all' allowed: {}".format(selection)
+    else:
+        assert isinstance(
+            selection, pd.DataFrame), "'selection needs to be pandas Dataframe. Type {} passed.".format(type(selection))
+        assert np.all([sr in selection.columns for sr in ['segment', 'reach']]
+                      ), "Either 'segment' or 'reach' not in selection columns"
     with open(sfr_out_file) as f:
         while True:
             line = f.readline().lower()
@@ -1784,12 +1791,6 @@ def load_sfr_out(sfr_out_file, selection=None):
                 elif isinstance(selection, str) and selection == 'all':
                     df2 = df
                 else:
-                    assert isinstance(
-                        selection, pd.DataFrame), "'selection needs to be pandas Dataframe. Type {} passed.".format(
-                        type(selection))
-                    assert np.all(
-                        [sr in selection.columns
-                         for sr in ['segment', 'reach']]), "Either 'segment' or 'reach' not in selection columns"
                     seg_reach_id = selection.apply(lambda x: "{0:03d}_{1:03d}".
                                                    format(int(x.segment), int(x.reach)), axis=1).values
                     for sr in seg_reach_id:
@@ -1850,6 +1851,11 @@ def setup_sfr_reach_obs(sfr_out_file,seg_reach=None,ins_file=None,model=None,
         seg_reach.index = seg_reach.apply(lambda x: "s{0:03d}r{1:03d}".format(int(x.segment), int(x.reach)), axis=1)
     elif isinstance(seg_reach, dict):
         seg_reach = pd.DataFrame.from_dict(seg_reach, orient='index', columns=['segment', 'reach'])
+    else:
+        assert isinstance(
+            seg_reach, pd.DataFrame), "'selection needs to be pandas Dataframe. Type {} passed.".format(type(seg_reach))
+        assert np.all([sr in seg_reach.columns for sr in ['segment', 'reach']]
+                      ), "Either 'segment' or 'reach' not in selection columns"
 
     sfr_dict = load_sfr_out(sfr_out_file, selection=seg_reach)
     kpers = list(sfr_dict.keys())
