@@ -50,7 +50,7 @@ h02_08    4.300000E+00 0.0 head
 h02_09    4.700000E+00 0.0 head
 h02_10    5.100000E+00 0.0 head
 * model command line
-mf2005 10par_xsec.nam
+mfnwt 10par_xsec.nam
 * model input/output
 k.tpl hk_Layer_1.ref
 strt_Layer_1.tpl strt_Layer_1.ref

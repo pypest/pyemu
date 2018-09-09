@@ -1,7 +1,7 @@
 import os
 import sys
 
-sys.path.append(os.path.join("..","pyemu"))
+#sys.path.append(os.path.join("..","pyemu"))
 
 from pyemu.prototypes.moouu import EvolAlg, EliteDiffEvol
 

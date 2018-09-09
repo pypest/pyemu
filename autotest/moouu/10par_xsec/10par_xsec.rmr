@@ -5,181 +5,81 @@ running model 25 times
     waiting for slaves to appear...
 
 
-09/10/18 09:48:09->new connection from: localhost:53350
-09/10/18 09:48:09->initializing new slave connection from: localhost:53350, number of slaves: 1, working dir: /home/parallels/Dev/pyemu/autotest/moouu/slave_0
-09/10/18 09:48:09->new connection from: localhost:53352
-09/10/18 09:48:09->initializing new slave connection from: localhost:53352, number of slaves: 2, working dir: /home/parallels/Dev/pyemu/autotest/moouu/slave_1
-09/10/18 09:48:09->new connection from: localhost:53354
-09/10/18 09:48:09->initializing new slave connection from: localhost:53354, number of slaves: 3, working dir: /home/parallels/Dev/pyemu/autotest/moouu/slave_2
-09/10/18 09:48:09->new connection from: localhost:53356
-09/10/18 09:48:09->initializing new slave connection from: localhost:53356, number of slaves: 4, working dir: /home/parallels/Dev/pyemu/autotest/moouu/slave_3
-09/10/18 09:48:09->new connection from: localhost:53358
-09/10/18 09:48:09->initializing new slave connection from: localhost:53358, number of slaves: 5, working dir: /home/parallels/Dev/pyemu/autotest/moouu/slave_4
-09/10/18 09:48:09->new connection from: localhost:53360
-09/10/18 09:48:09->initializing new slave connection from: localhost:53360, number of slaves: 6, working dir: /home/parallels/Dev/pyemu/autotest/moouu/slave_5
-09/10/18 09:48:09->new connection from: localhost:53362
-09/10/18 09:48:09->initializing new slave connection from: localhost:53362, number of slaves: 7, working dir: /home/parallels/Dev/pyemu/autotest/moouu/slave_6
-09/10/18 09:48:09->new connection from: localhost:53364
-09/10/18 09:48:09->initializing new slave connection from: localhost:53364, number of slaves: 8, working dir: /home/parallels/Dev/pyemu/autotest/moouu/slave_7
-09/10/18 09:48:13->new slave ready: localhost:53356
-09/10/18 09:48:13->Sending run 0 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id:2, run id:0, concurrent runs:1)
-09/10/18 09:48:13->new slave ready: localhost:53350
-09/10/18 09:48:13->Sending run 1 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:1, concurrent runs:1)
-09/10/18 09:48:13->new slave ready: localhost:53352
-09/10/18 09:48:13->Sending run 2 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id:2, run id:2, concurrent runs:1)
-09/10/18 09:48:13->new slave ready: localhost:53362
-09/10/18 09:48:13->Sending run 3 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id:2, run id:3, concurrent runs:1)
-09/10/18 09:48:13->new slave ready: localhost:53360
-09/10/18 09:48:13->Sending run 4 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id:2, run id:4, concurrent runs:1)
-09/10/18 09:48:13->new slave ready: localhost:53358
-09/10/18 09:48:13->Sending run 5 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id:2, run id:5, concurrent runs:1)
-09/10/18 09:48:13->new slave ready: localhost:53354
-09/10/18 09:48:13->Sending run 6 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id:2, run id:6, concurrent runs:1)
-09/10/18 09:48:13->new slave ready: localhost:53364
-09/10/18 09:48:13->Sending run 7 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id:2, run id:7, concurrent runs:1)
-09/10/18 09:48:19->Run 0 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id: 2, run id: 0, concurrent: 1) 
-09/10/18 09:48:19->Sending run 8 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id:2, run id:8, concurrent runs:1)
-09/10/18 09:48:19->Run 2 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id: 2, run id: 2, concurrent: 1) 
-09/10/18 09:48:19->Run 1 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id: 2, run id: 1, concurrent: 1) 
-09/10/18 09:48:19->Run 3 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id: 2, run id: 3, concurrent: 1) 
-09/10/18 09:48:19->Sending run 3 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id:2, run id:3, concurrent runs:1)
-09/10/18 09:48:19->Run 4 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id: 2, run id: 4, concurrent: 1) 
-09/10/18 09:48:19->Sending run 4 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:4, concurrent runs:1)
-09/10/18 09:48:19->Sending run 1 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id:2, run id:1, concurrent runs:1)
-09/10/18 09:48:19->Run 6 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id: 2, run id: 6, concurrent: 1) 
-09/10/18 09:48:19->Run 5 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id: 2, run id: 5, concurrent: 1) 
-09/10/18 09:48:19->Sending run 5 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id:2, run id:5, concurrent runs:1)
-09/10/18 09:48:19->Sending run 6 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id:2, run id:6, concurrent runs:1)
-09/10/18 09:48:19->Sending run 2 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id:2, run id:2, concurrent runs:1)
-09/10/18 09:48:19->Run 7 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id: 2, run id: 7, concurrent: 1) 
-09/10/18 09:48:19->Sending run 0 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id:2, run id:0, concurrent runs:1)
-09/10/18 09:48:25->Run 8 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id: 2, run id: 8, concurrent: 1) 
-09/10/18 09:48:25->Sending run 7 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id:2, run id:7, concurrent runs:1)
-09/10/18 09:48:25->Run 2 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id: 2, run id: 2, concurrent: 1) 
-09/10/18 09:48:25->Run 5 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id: 2, run id: 5, concurrent: 1) 
-09/10/18 09:48:25->Sending run 5 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id:2, run id:5, concurrent runs:1)
-09/10/18 09:48:25->Sending run 2 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id:2, run id:2, concurrent runs:1)
-09/10/18 09:48:26->Run 3 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id: 2, run id: 3, concurrent: 1) 
-09/10/18 09:48:26->Run 1 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id: 2, run id: 1, concurrent: 1) 
-09/10/18 09:48:26->Run 4 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id: 2, run id: 4, concurrent: 1) 
-09/10/18 09:48:26->Sending run 4 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id:2, run id:4, concurrent runs:1)
-09/10/18 09:48:26->Sending run 8 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id:2, run id:8, concurrent runs:1)
-09/10/18 09:48:26->Sending run 3 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:3, concurrent runs:1)
-09/10/18 09:48:26->Run 6 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id: 2, run id: 6, concurrent: 1) 
-09/10/18 09:48:26->Sending run 1 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id:2, run id:1, concurrent runs:1)
-09/10/18 09:48:26->Run 0 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id: 2, run id: 0, concurrent: 1) 
-09/10/18 09:48:26->Sending run 6 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id:2, run id:6, concurrent runs:1)
-09/10/18 09:48:32->Run 7 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id: 2, run id: 7, concurrent: 1) 
-09/10/18 09:48:32->Sending run 9 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id:2, run id:9, concurrent runs:1)
-09/10/18 09:48:32->Run 8 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id: 2, run id: 8, concurrent: 1) 
-09/10/18 09:48:32->Run 5 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id: 2, run id: 5, concurrent: 1) 
-09/10/18 09:48:32->Sending run 7 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id:2, run id:7, concurrent runs:1)
-09/10/18 09:48:32->Sending run 8 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id:2, run id:8, concurrent runs:1)
-09/10/18 09:48:32->Run 3 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id: 2, run id: 3, concurrent: 1) 
-09/10/18 09:48:32->Run 4 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id: 2, run id: 4, concurrent: 1) 
-09/10/18 09:48:32->Run 2 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id: 2, run id: 2, concurrent: 1) 
-09/10/18 09:48:32->Sending run 0 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:0, concurrent runs:1)
-09/10/18 09:48:32->Sending run 10 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id:2, run id:10, concurrent runs:1)
-09/10/18 09:48:32->Sending run 11 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id:2, run id:11, concurrent runs:1)
-09/10/18 09:48:32->Run 1 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id: 2, run id: 1, concurrent: 1) 
-09/10/18 09:48:32->Sending run 12 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id:2, run id:12, concurrent runs:1)
-09/10/18 09:48:32->Run 6 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id: 2, run id: 6, concurrent: 1) 
-09/10/18 09:48:32->Sending run 13 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id:2, run id:13, concurrent runs:1)
-09/10/18 09:48:38->Run 9 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id: 2, run id: 9, concurrent: 1) 
-09/10/18 09:48:38->Sending run 14 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id:2, run id:14, concurrent runs:1)
-09/10/18 09:48:38->Run 8 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id: 2, run id: 8, concurrent: 1) 
-09/10/18 09:48:38->Run 11 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id: 2, run id: 11, concurrent: 1) 
-09/10/18 09:48:38->Run 7 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id: 2, run id: 7, concurrent: 1) 
-09/10/18 09:48:38->Run 0 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id: 2, run id: 0, concurrent: 1) 
-09/10/18 09:48:38->Run 10 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id: 2, run id: 10, concurrent: 1) 
-09/10/18 09:48:38->Sending run 10 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id:2, run id:10, concurrent runs:1)
-09/10/18 09:48:38->Sending run 11 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id:2, run id:11, concurrent runs:1)
-09/10/18 09:48:38->Sending run 9 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id:2, run id:9, concurrent runs:1)
-09/10/18 09:48:38->Sending run 15 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:15, concurrent runs:1)
-09/10/18 09:48:38->Sending run 16 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id:2, run id:16, concurrent runs:1)
-09/10/18 09:48:38->Run 12 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id: 2, run id: 12, concurrent: 1) 
-09/10/18 09:48:38->Sending run 17 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id:2, run id:17, concurrent runs:1)
-09/10/18 09:48:38->Run 13 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id: 2, run id: 13, concurrent: 1) 
-09/10/18 09:48:38->Sending run 12 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id:2, run id:12, concurrent runs:1)
-09/10/18 09:48:44->Run 15 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id: 2, run id: 15, concurrent: 1) 
-09/10/18 09:48:44->Run 16 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id: 2, run id: 16, concurrent: 1) 
-09/10/18 09:48:44->Run 10 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id: 2, run id: 10, concurrent: 1) 
-09/10/18 09:48:44->Run 9 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id: 2, run id: 9, concurrent: 1) 
-09/10/18 09:48:44->Run 11 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id: 2, run id: 11, concurrent: 1) 
-09/10/18 09:48:44->Run 14 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id: 2, run id: 14, concurrent: 1) 
-09/10/18 09:48:44->Sending run 14 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:14, concurrent runs:1)
-09/10/18 09:48:44->Sending run 11 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id:2, run id:11, concurrent runs:1)
-09/10/18 09:48:44->Sending run 9 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id:2, run id:9, concurrent runs:1)
-09/10/18 09:48:44->Sending run 10 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id:2, run id:10, concurrent runs:1)
-09/10/18 09:48:44->Sending run 16 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id:2, run id:16, concurrent runs:1)
-09/10/18 09:48:44->Sending run 15 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id:2, run id:15, concurrent runs:1)
-09/10/18 09:48:44->Run 17 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id: 2, run id: 17, concurrent: 1) 
-09/10/18 09:48:44->Sending run 13 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id:2, run id:13, concurrent runs:1)
-09/10/18 09:48:44->Run 12 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id: 2, run id: 12, concurrent: 1) 
-09/10/18 09:48:44->Sending run 17 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id:2, run id:17, concurrent runs:1)
-09/10/18 09:48:50->Run 15 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id: 2, run id: 15, concurrent: 1) 
-09/10/18 09:48:50->Run 11 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id: 2, run id: 11, concurrent: 1) 
-09/10/18 09:48:50->Run 9 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id: 2, run id: 9, concurrent: 1) 
-09/10/18 09:48:50->Run 10 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id: 2, run id: 10, concurrent: 1) 
-09/10/18 09:48:50->Run 16 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id: 2, run id: 16, concurrent: 1) 
-09/10/18 09:48:50->Sending run 16 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id:2, run id:16, concurrent runs:1)
-09/10/18 09:48:50->Run 14 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id: 2, run id: 14, concurrent: 1) 
-09/10/18 09:48:50->Sending run 14 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id:2, run id:14, concurrent runs:1)
-09/10/18 09:48:50->Sending run 15 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id:2, run id:15, concurrent runs:1)
-09/10/18 09:48:50->Sending run 12 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id:2, run id:12, concurrent runs:1)
-09/10/18 09:48:50->Sending run 18 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id:2, run id:18, concurrent runs:1)
-09/10/18 09:48:50->Sending run 19 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:19, concurrent runs:1)
-09/10/18 09:48:50->Run 13 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id: 2, run id: 13, concurrent: 1) 
-09/10/18 09:48:50->Sending run 20 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id:2, run id:20, concurrent runs:1)
-09/10/18 09:48:51->Run 17 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id: 2, run id: 17, concurrent: 1) 
-09/10/18 09:48:51->Sending run 21 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id:2, run id:21, concurrent runs:1)
-09/10/18 09:48:57->Run 12 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id: 2, run id: 12, concurrent: 1) 
-09/10/18 09:48:57->Sending run 17 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id:2, run id:17, concurrent runs:1)
-09/10/18 09:48:57->Run 19 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id: 2, run id: 19, concurrent: 1) 
-09/10/18 09:48:57->Run 14 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id: 2, run id: 14, concurrent: 1) 
-09/10/18 09:48:57->Run 15 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id: 2, run id: 15, concurrent: 1) 
-09/10/18 09:48:57->Run 16 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id: 2, run id: 16, concurrent: 1) 
-09/10/18 09:48:57->Run 18 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id: 2, run id: 18, concurrent: 1) 
-09/10/18 09:48:57->Sending run 18 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:18, concurrent runs:1)
-09/10/18 09:48:57->Sending run 19 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id:2, run id:19, concurrent runs:1)
-09/10/18 09:48:57->Sending run 13 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id:2, run id:13, concurrent runs:1)
-09/10/18 09:48:57->Sending run 22 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id:2, run id:22, concurrent runs:1)
-09/10/18 09:48:57->Sending run 23 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id:2, run id:23, concurrent runs:1)
-09/10/18 09:48:57->Run 20 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id: 2, run id: 20, concurrent: 1) 
-09/10/18 09:48:57->Sending run 24 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id:2, run id:24, concurrent runs:1)
-09/10/18 09:48:57->Run 21 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id: 2, run id: 21, concurrent: 1) 
-09/10/18 09:48:57->Sending run 20 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id:2, run id:20, concurrent runs:1)
-09/10/18 09:49:03->Run 18 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id: 2, run id: 18, concurrent: 1) 
-09/10/18 09:49:03->Run 19 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id: 2, run id: 19, concurrent: 1) 
-09/10/18 09:49:03->Run 13 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id: 2, run id: 13, concurrent: 1) 
-09/10/18 09:49:03->Run 22 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id: 2, run id: 22, concurrent: 1) 
-09/10/18 09:49:03->Run 17 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id: 2, run id: 17, concurrent: 1) 
-09/10/18 09:49:03->Run 23 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id: 2, run id: 23, concurrent: 1) 
-09/10/18 09:49:03->Sending run 23 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:23, concurrent runs:1)
-09/10/18 09:49:03->Sending run 22 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id:2, run id:22, concurrent runs:1)
-09/10/18 09:49:03->Sending run 19 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id:2, run id:19, concurrent runs:1)
-09/10/18 09:49:03->Sending run 18 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id:2, run id:18, concurrent runs:1)
-09/10/18 09:49:03->Sending run 21 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id:2, run id:21, concurrent runs:1)
-09/10/18 09:49:03->Run 24 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id: 2, run id: 24, concurrent: 1) 
-09/10/18 09:49:03->Sending run 24 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id:2, run id:24, concurrent runs:1)
-09/10/18 09:49:03->Run 20 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id: 2, run id: 20, concurrent: 1) 
-09/10/18 09:49:09->Run 23 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id: 2, run id: 23, concurrent: 1) 
-09/10/18 09:49:09->Run 19 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id: 2, run id: 19, concurrent: 1) 
-09/10/18 09:49:09->Run 18 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id: 2, run id: 18, concurrent: 1) 
-09/10/18 09:49:09->Sending run 23 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id:2, run id:23, concurrent runs:1)
-09/10/18 09:49:09->Run 22 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id: 2, run id: 22, concurrent: 1) 
-09/10/18 09:49:09->Run 21 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id: 2, run id: 21, concurrent: 1) 
-09/10/18 09:49:09->Run 24 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id: 2, run id: 24, concurrent: 1) 
-09/10/18 09:49:09->Sending run 24 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:24, concurrent runs:1)
-09/10/18 09:49:09->Sending run 21 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id:2, run id:21, concurrent runs:1)
-09/10/18 09:49:09->Sending run 22 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id:2, run id:22, concurrent runs:1)
-09/10/18 09:49:09->Sending run 20 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id:2, run id:20, concurrent runs:1)
-09/10/18 09:49:15->Run 22 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id: 2, run id: 22, concurrent: 1) 
-09/10/18 09:49:15->Run 23 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id: 2, run id: 23, concurrent: 1) 
-09/10/18 09:49:15->Run 24 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id: 2, run id: 24, concurrent: 1) 
-09/10/18 09:49:15->Run 21 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id: 2, run id: 21, concurrent: 1) 
-09/10/18 09:49:15->Run 20 failed on slave:localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id: 2, run id: 20, concurrent: 1) 
+09/10/18 10:52:16->new connection from: localhost:43224
+09/10/18 10:52:16->initializing new slave connection from: localhost:43224, number of slaves: 1, working dir: /home/parallels/Dev/pyemu/autotest/moouu/slave_0
+09/10/18 10:52:16->new connection from: localhost:43226
+09/10/18 10:52:16->initializing new slave connection from: localhost:43226, number of slaves: 2, working dir: /home/parallels/Dev/pyemu/autotest/moouu/slave_1
+09/10/18 10:52:16->new connection from: localhost:43228
+09/10/18 10:52:16->initializing new slave connection from: localhost:43228, number of slaves: 3, working dir: /home/parallels/Dev/pyemu/autotest/moouu/slave_2
+09/10/18 10:52:16->new connection from: localhost:43230
+09/10/18 10:52:16->initializing new slave connection from: localhost:43230, number of slaves: 4, working dir: /home/parallels/Dev/pyemu/autotest/moouu/slave_3
+09/10/18 10:52:16->new connection from: localhost:43232
+09/10/18 10:52:16->initializing new slave connection from: localhost:43232, number of slaves: 5, working dir: /home/parallels/Dev/pyemu/autotest/moouu/slave_4
+09/10/18 10:52:16->new connection from: localhost:43234
+09/10/18 10:52:16->initializing new slave connection from: localhost:43234, number of slaves: 6, working dir: /home/parallels/Dev/pyemu/autotest/moouu/slave_5
+09/10/18 10:52:16->new connection from: localhost:43236
+09/10/18 10:52:16->initializing new slave connection from: localhost:43236, number of slaves: 7, working dir: /home/parallels/Dev/pyemu/autotest/moouu/slave_6
+09/10/18 10:52:16->new connection from: localhost:43238
+09/10/18 10:52:16->initializing new slave connection from: localhost:43238, number of slaves: 8, working dir: /home/parallels/Dev/pyemu/autotest/moouu/slave_7
+09/10/18 10:52:20->new slave ready: localhost:43224
+09/10/18 10:52:20->Sending run 0 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:0, concurrent runs:1)
+09/10/18 10:52:20->new slave ready: localhost:43236
+09/10/18 10:52:20->Sending run 1 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id:2, run id:1, concurrent runs:1)
+09/10/18 10:52:21->new slave ready: localhost:43234
+09/10/18 10:52:21->Sending run 2 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id:2, run id:2, concurrent runs:1)
+09/10/18 10:52:21->new slave ready: localhost:43230
+09/10/18 10:52:21->Sending run 3 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id:2, run id:3, concurrent runs:1)
+09/10/18 10:52:21->new slave ready: localhost:43232
+09/10/18 10:52:21->Sending run 4 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id:2, run id:4, concurrent runs:1)
+09/10/18 10:52:21->new slave ready: localhost:43228
+09/10/18 10:52:21->Sending run 5 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id:2, run id:5, concurrent runs:1)
+09/10/18 10:52:21->new slave ready: localhost:43226
+09/10/18 10:52:21->Sending run 6 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id:2, run id:6, concurrent runs:1)
+09/10/18 10:52:21->new slave ready: localhost:43238
+09/10/18 10:52:21->Sending run 7 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id:2, run id:7, concurrent runs:1)
+09/10/18 10:52:23->run 0 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (run time:0.03845 min, avg run time:0.03845 min, group id:2, run id = 0 concurrent:1)
+09/10/18 10:52:23->Sending run 8 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:8, concurrent runs:1)
+09/10/18 10:52:23->run 1 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (run time:0.0384667 min, avg run time:0.0384583 min, group id:2, run id = 1 concurrent:1)
+09/10/18 10:52:23->run 3 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (run time:0.0366667 min, avg run time:0.0378611 min, group id:2, run id = 3 concurrent:1)
+09/10/18 10:52:23->run 4 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (run time:0.0364 min, avg run time:0.0374958 min, group id:2, run id = 4 concurrent:1)
+09/10/18 10:52:23->run 2 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (run time:0.0376 min, avg run time:0.0375167 min, group id:2, run id = 2 concurrent:1)
+09/10/18 10:52:23->Sending run 9 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id:2, run id:9, concurrent runs:1)
+09/10/18 10:52:23->Sending run 10 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id:2, run id:10, concurrent runs:1)
+09/10/18 10:52:23->Sending run 11 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id:2, run id:11, concurrent runs:1)
+09/10/18 10:52:23->Sending run 12 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id:2, run id:12, concurrent runs:1)
+09/10/18 10:52:23->run 5 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (run time:0.0367833 min, avg run time:0.0373944 min, group id:2, run id = 5 concurrent:1)
+09/10/18 10:52:23->run 6 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (run time:0.0366667 min, avg run time:0.0372905 min, group id:2, run id = 6 concurrent:1)
+09/10/18 10:52:23->Sending run 13 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id:2, run id:13, concurrent runs:1)
+09/10/18 10:52:23->Sending run 14 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id:2, run id:14, concurrent runs:1)
+09/10/18 10:52:23->run 7 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (run time:0.03685 min, avg run time:0.0372354 min, group id:2, run id = 7 concurrent:1)
+09/10/18 10:52:23->Sending run 15 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id:2, run id:15, concurrent runs:1)
+09/10/18 10:52:25->run 8 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (run time:0.0376167 min, avg run time:0.0371312 min, group id:2, run id = 8 concurrent:1)
+09/10/18 10:52:25->Sending run 16 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:16, concurrent runs:1)
+09/10/18 10:52:25->run 9 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (run time:0.0369167 min, avg run time:0.0369375 min, group id:2, run id = 9 concurrent:1)
+09/10/18 10:52:25->Sending run 17 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (group id:2, run id:17, concurrent runs:1)
+09/10/18 10:52:25->run 12 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (run time:0.0365 min, avg run time:0.0368 min, group id:2, run id = 12 concurrent:1)
+09/10/18 10:52:25->run 10 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (run time:0.0360333 min, avg run time:0.0367208 min, group id:2, run id = 10 concurrent:1)
+09/10/18 10:52:25->Sending run 18 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (group id:2, run id:18, concurrent runs:1)
+09/10/18 10:52:25->Sending run 19 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (group id:2, run id:19, concurrent runs:1)
+09/10/18 10:52:25->run 11 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (run time:0.0365833 min, avg run time:0.0367437 min, group id:2, run id = 11 concurrent:1)
+09/10/18 10:52:25->Sending run 20 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (group id:2, run id:20, concurrent runs:1)
+09/10/18 10:52:25->run 13 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (run time:0.0365833 min, avg run time:0.0367188 min, group id:2, run id = 13 concurrent:1)
+09/10/18 10:52:25->run 14 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (run time:0.0367167 min, avg run time:0.036725 min, group id:2, run id = 14 concurrent:1)
+09/10/18 10:52:25->Sending run 21 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (group id:2, run id:21, concurrent runs:1)
+09/10/18 10:52:25->Sending run 22 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (group id:2, run id:22, concurrent runs:1)
+09/10/18 10:52:25->run 15 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (run time:0.0368333 min, avg run time:0.0367229 min, group id:2, run id = 15 concurrent:1)
+09/10/18 10:52:25->Sending run 23 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (group id:2, run id:23, concurrent runs:1)
+09/10/18 10:52:27->run 16 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (run time:0.0372 min, avg run time:0.0366708 min, group id:2, run id = 16 concurrent:1)
+09/10/18 10:52:27->Sending run 24 to: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (group id:2, run id:24, concurrent runs:1)
+09/10/18 10:52:27->run 17 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_6  (run time:0.0372333 min, avg run time:0.0367104 min, group id:2, run id = 17 concurrent:1)
+09/10/18 10:52:27->run 19 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_3  (run time:0.0368 min, avg run time:0.0368062 min, group id:2, run id = 19 concurrent:1)
+09/10/18 10:52:27->run 18 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_5  (run time:0.0370333 min, avg run time:0.0368729 min, group id:2, run id = 18 concurrent:1)
+09/10/18 10:52:27->run 20 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_4  (run time:0.0367333 min, avg run time:0.0368917 min, group id:2, run id = 20 concurrent:1)
+09/10/18 10:52:27->run 21 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_2  (run time:0.0364833 min, avg run time:0.0368792 min, group id:2, run id = 21 concurrent:1)
+09/10/18 10:52:27->run 22 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_1  (run time:0.03675 min, avg run time:0.0368833 min, group id:2, run id = 22 concurrent:1)
+09/10/18 10:52:28->run 23 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_7  (run time:0.0368 min, avg run time:0.0368792 min, group id:2, run id = 23 concurrent:1)
+09/10/18 10:52:29->run 24 received from: localhost$/home/parallels/Dev/pyemu/autotest/moouu/slave_0  (run time:0.0370333 min, avg run time:0.0368583 min, group id:2, run id = 24 concurrent:1)
 
 ---------------------
-   0 runs complete :  25 runs failed
+   25 runs complete :  0 runs failed
 
