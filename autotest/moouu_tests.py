@@ -15,79 +15,84 @@ def tenpar_test():
     import flopy
     import pyemu
 
-    os.chdir(os.path.join("moouu","10par_xsec"))
-    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
-    [os.remove(csv_file) for csv_file in csv_files]
-    pst = pyemu.Pst("10par_xsec.pst")
+    bd = os.getcwd()
+    try:
+        os.chdir(os.path.join("moouu","10par_xsec"))
+        csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+        [os.remove(csv_file) for csv_file in csv_files]
+        pst = pyemu.Pst("10par_xsec.pst")
 
-    obj_names = pst.nnz_obs_names
-    # pst.observation_data.loc[pst.obs_names[0],"obgnme"] = "greaterthan"
-    # pst.observation_data.loc[pst.obs_names[0], "weight"] = 1.0
-    # pst.observation_data.loc[pst.obs_names[0], "obsval"] *= 0.85
-    # pst.observation_data.loc[pst.obs_names[-1], "obgnme"] = "greaterthan"
-    # pst.observation_data.loc[pst.obs_names[-1], "weight"] = 1.0
-    # pst.observation_data.loc[pst.obs_names[-1], "obsval"] *= 0.85
+        obj_names = pst.nnz_obs_names
+        # pst.observation_data.loc[pst.obs_names[0],"obgnme"] = "greaterthan"
+        # pst.observation_data.loc[pst.obs_names[0], "weight"] = 1.0
+        # pst.observation_data.loc[pst.obs_names[0], "obsval"] *= 0.85
+        # pst.observation_data.loc[pst.obs_names[-1], "obgnme"] = "greaterthan"
+        # pst.observation_data.loc[pst.obs_names[-1], "weight"] = 1.0
+        # pst.observation_data.loc[pst.obs_names[-1], "obsval"] *= 0.85
 
-    # pst.observation_data.loc["h01_10", "obgnme"] = "greaterthan"
-    # pst.observation_data.loc["h01_10", "weight"] = 1.0
-    #pst.observation_data.loc["h01_10", "obsval"] *= 0.85
-
-
-    par = pst.parameter_data
-    #par.loc[:,"partrans"] = "none"
-
-    obj_dict = {}
-    obj_dict[obj_names[0]] = "min"
-    obj_dict[obj_names[1]] = "max"
+        # pst.observation_data.loc["h01_10", "obgnme"] = "greaterthan"
+        # pst.observation_data.loc["h01_10", "weight"] = 1.0
+        #pst.observation_data.loc["h01_10", "obsval"] *= 0.85
 
 
-    # testing for reduce method
-    # oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst=pst, num_reals=5000)
-    # logger = pyemu.Logger("temp.log")
-    # obj_func = evol_proto.ParetoObjFunc(pst,obj_dict,logger)
-    # df = obj_func.reduce_stack_with_risk_shift(oe,50,0.05)
-    #
-    # import matplotlib.pyplot as plt
-    # ax = plt.subplot(111)
-    # oe.iloc[:, -1].hist(ax=ax)
-    # ylim = ax.get_ylim()
-    # val = df.iloc[0,-1]
-    # ax.plot([val, val], ylim)
-    # ax.set_ylim(ylim)
-    # plt.show()
-    # print(df.shape)
-    # return
+        par = pst.parameter_data
+        #par.loc[:,"partrans"] = "none"
 
-    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[:2]},
-                                                  num_reals=5,
-                                                  partial=False)
-    ea = EvolAlg(pst, num_slaves=8, port=4005, verbose=True)
+        obj_dict = {}
+        obj_dict[obj_names[0]] = "min"
+        obj_dict[obj_names[1]] = "max"
 
-    dv = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[2:]},
-                                                  num_reals=5,
-                                                  partial=True)
-    ea.initialize(obj_dict, par_ensemble=pe, dv_ensemble=dv, risk=0.5)
 
-    # test the infeas calcs
-    oe = ea.obs_ensemble
-    is_feasible = ea.obj_func.is_feasible(oe)
-    oe.loc[is_feasible.index,"feas"] = is_feasible
-    obs = pst.observation_data
-    for lt_obs in pst.less_than_obs_constraints:
-        val = obs.loc[lt_obs,"obsval"]
-        infeas = oe.loc[:,lt_obs] >= val
-        assert np.all(~is_feasible.loc[infeas])
+        # testing for reduce method
+        # oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst=pst, num_reals=5000)
+        # logger = pyemu.Logger("temp.log")
+        # obj_func = evol_proto.ParetoObjFunc(pst,obj_dict,logger)
+        # df = obj_func.reduce_stack_with_risk_shift(oe,50,0.05)
+        #
+        # import matplotlib.pyplot as plt
+        # ax = plt.subplot(111)
+        # oe.iloc[:, -1].hist(ax=ax)
+        # ylim = ax.get_ylim()
+        # val = df.iloc[0,-1]
+        # ax.plot([val, val], ylim)
+        # ax.set_ylim(ylim)
+        # plt.show()
+        # print(df.shape)
+        # return
 
-    for gt_obs in pst.greater_than_obs_constraints:
-        val = obs.loc[gt_obs,"obsval"]
-        infeas = oe.loc[:,gt_obs] <= val
-        assert np.all(~is_feasible.loc[infeas])
+        pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[:2]},
+                                                      num_reals=5,
+                                                      partial=False)
+        ea = EvolAlg(pst, num_slaves=8, port=4005, verbose=True)
 
-    # test that the end members are getting max distance
-    crowd_distance = ea.obj_func.crowd_distance(oe)
-    for name,direction in ea.obj_func.obs_dict.items():
-        assert crowd_distance.loc[oe.loc[:,name].idxmax()] >= ea.obj_func.max_distance,crowd_distance.loc[oe.loc[:,name].idxmax()]
-        assert crowd_distance.loc[oe.loc[:, name].idxmin()] >= ea.obj_func.max_distance,crowd_distance.loc[oe.loc[:, name].idxmin()]
+        dv = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[2:]},
+                                                      num_reals=5,
+                                                      partial=True)
+        ea.initialize(obj_dict, par_ensemble=pe, dv_ensemble=dv, risk=0.5)
+
+        # test the infeas calcs
+        oe = ea.obs_ensemble
+        is_feasible = ea.obj_func.is_feasible(oe)
+        oe.loc[is_feasible.index,"feas"] = is_feasible
+        obs = pst.observation_data
+        for lt_obs in pst.less_than_obs_constraints:
+            val = obs.loc[lt_obs,"obsval"]
+            infeas = oe.loc[:,lt_obs] >= val
+            assert np.all(~is_feasible.loc[infeas])
+
+        for gt_obs in pst.greater_than_obs_constraints:
+            val = obs.loc[gt_obs,"obsval"]
+            infeas = oe.loc[:,gt_obs] <= val
+            assert np.all(~is_feasible.loc[infeas])
+
+        # test that the end members are getting max distance
+        crowd_distance = ea.obj_func.crowd_distance(oe)
+        for name,direction in ea.obj_func.obs_dict.items():
+            assert crowd_distance.loc[oe.loc[:,name].idxmax()] >= ea.obj_func.max_distance,crowd_distance.loc[oe.loc[:,name].idxmax()]
+            assert crowd_distance.loc[oe.loc[:, name].idxmin()] >= ea.obj_func.max_distance,crowd_distance.loc[oe.loc[:, name].idxmin()]
+    except Exception as e:
+        os.chdir(os.path.join("..",".."))
+        raise Exception(str(e))
 
     os.chdir(os.path.join("..",".."))
 
@@ -306,5 +311,5 @@ def tenpar_dev():
 
 
 if __name__ == "__main__":
-    #tenpar_test()
-    tenpar_dev()
+    tenpar_test()
+    #tenpar_dev()
