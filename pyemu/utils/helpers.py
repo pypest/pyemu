@@ -3795,12 +3795,13 @@ def setup_fake_forward_run(pst,new_pst_name,org_cwd='.',bak_suffix="._bak",new_c
 
 
     pairs = {}
+
     for output_file in pst.output_files:
         org_pth = os.path.join(org_cwd,output_file)
         new_pth = os.path.join(new_cwd,os.path.split(output_file)[-1])
         assert os.path.exists(org_pth),org_pth
         shutil.copy2(org_pth,new_pth+bak_suffix)
-        pairs[output_file] = output_file+bak_suffix
+        pairs[output_file] = os.path.split(output_file)[-1]+bak_suffix
 
     if new_cwd != org_cwd:
         for files in [pst.template_files,pst.instruction_files]:
