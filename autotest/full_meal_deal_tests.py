@@ -123,9 +123,14 @@ def fake_run_test():
     pst = pyemu.Pst(os.path.join(new_model_ws,"freyberg.pst"))
     pst.pestpp_options["ies_num_reals"] = 10
     pst.control_data.noptmax = 0
-    pst = pyemu.helpers.setup_fake_forward_run(pst,"fake.pst",cwd=new_model_ws)
+    pst = pyemu.helpers.setup_fake_forward_run(pst,"fake.pst",org_cwd=new_model_ws)
     pyemu.os_utils.run("{0} {1}".format(pp_exe_name,"fake.pst"),cwd=new_model_ws)
     pyemu.os_utils.run("{0} {1}".format(ies_exe_name, "fake.pst"), cwd=new_model_ws)
+
+    new_cwd = "fake_test"
+    pst = pyemu.helpers.setup_fake_forward_run(pst, "fake.pst", org_cwd=new_model_ws,new_cwd=new_cwd)
+    pyemu.os_utils.run("{0} {1}".format(pp_exe_name, "fake.pst"), cwd=new_cwd)
+    pyemu.os_utils.run("{0} {1}".format(ies_exe_name, "fake.pst"), cwd=new_cwd)
 
 
 

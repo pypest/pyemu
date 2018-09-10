@@ -3769,7 +3769,7 @@ def write_df_tpl(filename,df,sep=',',tpl_marker='~',**kwargs):
 
 
 
-def setup_fake_forward_run(pst,new_pst_name,cwd='.',bak_suffix="._bak"):
+def setup_fake_forward_run(pst,new_pst_name,org_cwd='.',bak_suffix="._bak",new_cwd='.'):
     """setup a fake forward run for a pst.  The fake
     forward run simply copies existing backup versions of
     model output files to the outfiles pest(pp) is looking
@@ -3781,20 +3781,58 @@ def setup_fake_forward_run(pst,new_pst_name,cwd='.',bak_suffix="._bak"):
 
     new_pst_name : str
 
-    cwd : str
+    org_cwd : str
+        existing working dir
+    new_cwd : str
+        new working dir
 
     """
+
+
+    if new_cwd != org_cwd and not os.path.exists(new_cwd):
+        os.mkdir(new_cwd)
+
+
+
     pairs = {}
     for output_file in pst.output_files:
-        pth = os.path.join(cwd,output_file)
-        assert os.path.exists(pth),pth
-        shutil.copy2(pth,pth+bak_suffix)
+        org_pth = os.path.join(org_cwd,output_file)
+        new_pth = os.path.join(new_cwd,output_file)
+        assert os.path.exists(org_pth),org_pth
+        shutil.copy2(org_pth,new_pth+bak_suffix)
         pairs[output_file] = output_file+bak_suffix
 
-    with open(os.path.join(cwd,"fake_forward_run.py"),'w') as f:
+    if new_cwd != org_cwd:
+        for files in [pst.template_files,pst.instruction_files]:
+            for f in files:
+                raw = os.path.split(f)
+                if len(raw[0]) == 0:
+                    raw = raw[1:]
+                if len(raw) > 1:
+                    pth = os.path.join(*raw[:-1])
+                    pth = os.path.join(new_cwd,pth)
+                    if not os.path.exists(pth):
+                        os.makedirs(pth)
+
+                org_pth = os.path.join(org_cwd, f)
+                new_pth = os.path.join(new_cwd, f)
+                assert os.path.exists(org_pth), org_pth
+                shutil.copy2(org_pth,new_pth)
+        for f in pst.input_files:
+            raw = os.path.split(f)
+            if len(raw[0]) == 0:
+                raw = raw[1:]
+            if len(raw) > 1:
+                pth = os.path.join(*raw[:-1])
+                pth = os.path.join(new_cwd, pth)
+                if not os.path.exists(pth):
+                    os.makedirs(pth)
+
+    with open(os.path.join(new_cwd,"fake_forward_run.py"),'w') as f:
         f.write("import os\nimport shutil\n")
         for org,bak in pairs.items():
             f.write("shutil.copy2('{0}','{1}')\n".format(bak,org))
     pst.model_command = "python fake_forward_run.py"
-    pst.write(os.path.join(cwd,new_pst_name))
+    pst.write(os.path.join(new_cwd,new_pst_name))
+
     return pst
