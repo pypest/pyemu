@@ -1598,6 +1598,7 @@ class PstFromFlopyModel(object):
             self.setup_hfb_pars()
 
         self.mflist_waterbudget = mflist_waterbudget
+        self.mfhyd = mfhyd
         self.setup_observations()
         self.build_pst()
         if build_prior:
@@ -3164,21 +3165,22 @@ class PstFromFlopyModel(object):
         """
         if self.m.hyd is None:
             return
-        org_hyd_out = os.path.join(self.org_model_ws,self.m.name+".hyd.bin")
-        if not os.path.exists(org_hyd_out):
-            self.logger.warn("can't find existing hyd out file:{0}...skipping".
-                               format(org_hyd_out))
-            return
-        new_hyd_out = os.path.join(self.m.model_ws,os.path.split(org_hyd_out)[-1])
-        shutil.copy2(org_hyd_out,new_hyd_out)
-        df = pyemu.gw_utils.modflow_hydmod_to_instruction_file(new_hyd_out)
-        df.loc[:,"obgnme"] = df.obsnme.apply(lambda x: '_'.join(x.split('_')[:-1]))
-        line = "pyemu.gw_utils.modflow_read_hydmod_file('{0}')".\
-            format(os.path.split(new_hyd_out)[-1])
-        self.logger.statement("forward_run line: {0}".format(line))
-        self.frun_post_lines.append(line)
-        self.obs_dfs["hyd"] = df
-        self.tmp_files.append(os.path.split(new_hyd_out)[-1])
+        if self.mfhyd:
+            org_hyd_out = os.path.join(self.org_model_ws,self.m.name+".hyd.bin")
+            if not os.path.exists(org_hyd_out):
+                self.logger.warn("can't find existing hyd out file:{0}...skipping".
+                                   format(org_hyd_out))
+                return
+            new_hyd_out = os.path.join(self.m.model_ws,os.path.split(org_hyd_out)[-1])
+            shutil.copy2(org_hyd_out,new_hyd_out)
+            df = pyemu.gw_utils.modflow_hydmod_to_instruction_file(new_hyd_out)
+            df.loc[:,"obgnme"] = df.obsnme.apply(lambda x: '_'.join(x.split('_')[:-1]))
+            line = "pyemu.gw_utils.modflow_read_hydmod_file('{0}')".\
+                format(os.path.split(new_hyd_out)[-1])
+            self.logger.statement("forward_run line: {0}".format(line))
+            self.frun_post_lines.append(line)
+            self.obs_dfs["hyd"] = df
+            self.tmp_files.append(os.path.split(new_hyd_out)[-1])
 
     def setup_water_budget_obs(self):
         """ setup observations from the MODFLOW list file for
