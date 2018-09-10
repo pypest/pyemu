@@ -1755,7 +1755,7 @@ class Pst(object):
         for col in ["parval1","parlbnd","parubnd","increment"]:
             if col not in self.parameter_data.columns:
                 continue
-            self.parameter_data.loc[:,col+"_trans"] = (self.parameter_data.parval1 *
+            self.parameter_data.loc[:,col+"_trans"] = (self.parameter_data.loc[:,col] *
                                                           self.parameter_data.scale) +\
                                                          self.parameter_data.offset
             #isnotfixed = self.parameter_data.partrans != "fixed"
@@ -2238,3 +2238,88 @@ class Pst(object):
                 cwd = '.'
         print("executing {0} in dir {1}".format(cmd_line, cwd))
         pyemu.utils.os_utils.run(cmd_line,cwd=cwd)
+
+
+    def _is_less_const(self,name):
+        constraint_tags = ["l_", "less"]
+        return True in [True for c in constraint_tags if name.startswith(c)]
+
+    @property
+    def less_than_obs_constraints(self):
+        """get the names of the observations that
+        are listed as less than inequality constraints.  Zero-
+        weighted obs are skipped
+
+        Returns
+        -------
+        pandas.Series : obsnme of obseravtions that are non-zero weighted
+                        less than constraints
+
+        """
+
+
+        obs = self.observation_data
+        lt_obs = obs.loc[obs.apply(lambda x: self._is_less_const(x.obgnme) \
+                                             and x.weight != 0.0,axis=1),"obsnme"]
+        return lt_obs
+
+    @property
+    def less_than_pi_constraints(self):
+        """get the names of the prior information eqs that
+        are listed as less than inequality constraints.  Zero-
+        weighted pi are skipped
+
+        Returns
+        -------
+        pandas.Series : pilbl of prior information that are non-zero weighted
+                        less than constraints
+
+        """
+
+        pi = self.prior_information
+        lt_pi = pi.loc[pi.apply(lambda x: self._is_less_const(x.obgnme) \
+                                             and x.weight != 0.0, axis=1), "pilbl"]
+        return lt_pi
+
+
+    def _is_greater_const(self,name):
+        constraint_tags = ["g_", "greater"]
+        return True in [True for c in constraint_tags if name.startswith(c)]
+
+    @property
+    def greater_than_obs_constraints(self):
+        """get the names of the observations that
+        are listed as greater than inequality constraints.  Zero-
+        weighted obs are skipped
+
+        Returns
+        -------
+        pandas.Series : obsnme of obseravtions that are non-zero weighted
+                        greater than constraints
+
+        """
+
+
+
+        obs = self.observation_data
+        gt_obs = obs.loc[obs.apply(lambda x: self._is_greater_const(x.obgnme) \
+                                             and x.weight != 0.0,axis=1),"obsnme"]
+        return gt_obs
+
+    @property
+    def greater_than_pi_constraints(self):
+        """get the names of the prior information eqs that
+        are listed as greater than inequality constraints.  Zero-
+        weighted pi are skipped
+
+        Returns
+        -------
+        pandas.Series : pilbl of prior information that are non-zero weighted
+                        greater than constraints
+
+        """
+
+        pi = self.prior_information
+        gt_pi = pi.loc[pi.apply(lambda x: self._is_greater_const(x.obgnme) \
+                                          and x.weight != 0.0, axis=1), "pilbl"]
+        return gt_pi

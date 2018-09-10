@@ -1275,6 +1275,45 @@ def sfr_obs_test():
     pyemu.gw_utils.apply_sfr_obs()
     pyemu.gw_utils.setup_sfr_obs(sfr_file, seg_group_dict={"obs1": [1, 4], "obs2": [16, 17, 18, 19, 22, 23]},model=m)
 
+
+def sfr_reach_obs_test():
+    import os
+    import pyemu
+    import flopy
+    import pandas as pd
+    import numpy as np
+
+    sfr_file = os.path.join("utils","freyberg.sfr.out")
+    pyemu.gw_utils.setup_sfr_reach_obs(sfr_file, seg_reach=[[1, 2], [4, 1], [2, 2]])
+    proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
+    assert proc.shape[0] == 3*2  # (nper*nobs)
+    pyemu.gw_utils.setup_sfr_reach_obs(sfr_file, seg_reach=np.array([[1, 2], [4, 1], [2, 2]]))
+    proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
+    assert proc.shape[0] == 3*2  # (nper*nobs)
+    pyemu.gw_utils.setup_sfr_reach_obs(sfr_file)
+    proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
+    assert proc.shape[0] == 3*40  # (nper*nobs)
+    pyemu.gw_utils.setup_sfr_reach_obs(sfr_file,seg_reach={"obs1": [1, 2], "obs2": [4, 1]})
+    proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
+    assert proc.shape[0] == 3*2  # (nper*nobs)
+    seg_reach_df = pd.DataFrame.from_dict({"obs1": [1, 2], "obs2": [4, 1]}, columns=['segment', 'reach'], orient='index')
+    pyemu.gw_utils.setup_sfr_reach_obs(sfr_file, seg_reach=seg_reach_df)
+    proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
+    assert proc.shape[0] == 3*2  # (nper*nobs)
+
+    m = flopy.modflow.Modflow.load("freyberg.nam", model_ws="utils", load_only=[], check=False)
+    pyemu.gw_utils.setup_sfr_reach_obs(sfr_file, model=m)
+    pyemu.gw_utils.apply_sfr_reach_obs()
+    proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
+    assert proc.shape[0] == 3*40  # (nper*nobs)
+    pyemu.gw_utils.setup_sfr_reach_obs(sfr_file, seg_reach={"obs1": [1, 2], "obs2": [4, 1], "blah": [2, 1]}, model=m)
+    proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
+    assert proc.shape[0] == 3*2  # (nper*nobs)
+    pyemu.gw_utils.setup_sfr_reach_obs(sfr_file, model=m, seg_reach=seg_reach_df)
+    proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
+    assert proc.shape[0] == 3*2  # (nper*nobs)
+
+
 def gage_obs_test():
     import os
     import pyemu
@@ -1484,7 +1523,8 @@ if __name__ == "__main__":
     #plot_id_bar_test()
     #pst_from_parnames_obsnames_test()
     #write_jactest_test()
-    sfr_obs_test()
+    # sfr_obs_test()
+    sfr_reach_obs_test()
     #gage_obs_test()
     #setup_pp_test()
     #sfr_helper_test()

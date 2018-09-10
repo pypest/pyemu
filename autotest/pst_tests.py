@@ -1074,8 +1074,40 @@ def csv_to_ins_test():
     assert len(names) == df.shape[0] * df.shape[1]
 
 
+def lt_gt_constraint_names_test():
+    import os
+    import pyemu
+    import os
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    obs = pst.observation_data
+    obs.loc[:,"weight"] = 1.0
+    pst.observation_data.loc[pst.obs_names[:4],"obgnme"] = "lessjunk"
+    pst.observation_data.loc[pst.obs_names[4:8], "obgnme"] = "l_junk"
+    pst.observation_data.loc[pst.obs_names[8:12], "obgnme"] = "greaterjunk"
+    pst.observation_data.loc[pst.obs_names[12:16], "obgnme"] = "g_junk"
+    assert pst.less_than_obs_constraints.shape[0] == 8
+    assert pst.greater_than_obs_constraints.shape[0] == 8
+
+    obs.loc[:, "weight"] = 0.0
+    assert pst.less_than_obs_constraints.shape[0] == 0
+    assert pst.greater_than_obs_constraints.shape[0] == 0
+
+    pi = pst.prior_information
+    pi.loc[pst.prior_names[:4],"obgnme"] = "lessjunk"
+    pi.loc[pst.prior_names[4:8], "obgnme"] = "l_junk"
+    pi.loc[pst.prior_names[8:12], "obgnme"] = "greaterjunk"
+    pi.loc[pst.prior_names[12:16], "obgnme"] = "g_junk"
+    assert pst.less_than_pi_constraints.shape[0] == 8
+    assert pst.greater_than_pi_constraints.shape[0] == 8
+
+    pi.loc[:, "weight"] = 0.0
+    assert pst.less_than_pi_constraints.shape[0] == 0
+    assert pst.greater_than_pi_constraints.shape[0] == 0
+
 if __name__ == "__main__":
-    csv_to_ins_test()
+    lt_gt_constraint_names_test()
+    #csv_to_ins_test()
     # pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
