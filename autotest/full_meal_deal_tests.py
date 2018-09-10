@@ -114,6 +114,21 @@ def freyberg_test():
     assert final_phi < init_phi
 
 
+def fake_run_test():
+    import os
+    import pyemu
+    new_model_ws = "template1"
+    if not os.path.exists(new_model_ws):
+        freyberg_test()
+    pst = pyemu.Pst(os.path.join(new_model_ws,"freyberg.pst"))
+    pst.pestpp_options["ies_num_reals"] = 10
+    pst.control_data.noptmax = 0
+    pst = pyemu.helpers.setup_fake_forward_run(pst,"fake.pst",cwd=new_model_ws)
+    pyemu.os_utils.run("{0} {1}".format(pp_exe_name,"fake.pst"),cwd=new_model_ws)
+    pyemu.os_utils.run("{0} {1}".format(ies_exe_name, "fake.pst"), cwd=new_model_ws)
+
+
+
 def freyberg_kl_pp_compare():
     import shutil
     import matplotlib.pyplot as plt
@@ -280,6 +295,7 @@ def run_sweep_test():
 
 
 if __name__ == "__main__":
-    freyberg_test()
+    #freyberg_test()
     #freyberg_kl_pp_compare()
     #run_sweep_test()
+    fake_run_test()

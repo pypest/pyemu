@@ -3766,3 +3766,33 @@ def write_df_tpl(filename,df,sep=',',tpl_marker='~',**kwargs):
         df.to_csv(f,sep=sep,mode='a',**kwargs)
 
 
+
+def setup_fake_forward_run(pst,new_pst_name,cwd='.',bak_suffix="._bak"):
+    """setup a fake forward run for a pst.  The fake
+    forward run simply copies existing backup versions of
+    model output files to the outfiles pest(pp) is looking
+    for.  This is really a development option for debugging
+
+    Parameters
+    ----------
+    pst : pyemu.Pst
+
+    new_pst_name : str
+
+    cwd : str
+
+    """
+    pairs = {}
+    for output_file in pst.output_files:
+        pth = os.path.join(cwd,output_file)
+        assert os.path.exists(pth),pth
+        shutil.copy2(pth,pth+bak_suffix)
+        pairs[output_file] = output_file+bak_suffix
+
+    with open(os.path.join(cwd,"fake_forward_run.py"),'w') as f:
+        f.write("import os\nimport shutil\n")
+        for org,bak in pairs.items():
+            f.write("shutil.copy2('{0}','{1}')\n".format(bak,org))
+    pst.model_command = "python fake_forward_run.py"
+    pst.write(os.path.join(cwd,new_pst_name))
+    return pst
