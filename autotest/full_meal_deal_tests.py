@@ -282,4 +282,4 @@ def run_sweep_test():
 if __name__ == "__main__":
     freyberg_test()
     #freyberg_kl_pp_compare()
-    run_sweep_test()
+    #run_sweep_test()
