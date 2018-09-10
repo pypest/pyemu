@@ -3797,7 +3797,7 @@ def setup_fake_forward_run(pst,new_pst_name,org_cwd='.',bak_suffix="._bak",new_c
     pairs = {}
     for output_file in pst.output_files:
         org_pth = os.path.join(org_cwd,output_file)
-        new_pth = os.path.join(new_cwd,output_file)
+        new_pth = os.path.join(new_cwd,os.path.split(output_file)[-1])
         assert os.path.exists(org_pth),org_pth
         shutil.copy2(org_pth,new_pth+bak_suffix)
         pairs[output_file] = output_file+bak_suffix
@@ -3827,6 +3827,24 @@ def setup_fake_forward_run(pst,new_pst_name,org_cwd='.',bak_suffix="._bak",new_c
                 pth = os.path.join(new_cwd, pth)
                 if not os.path.exists(pth):
                     os.makedirs(pth)
+
+
+        for key,f in pst.pestpp_options.items():
+            if not isinstance(f,str):
+                continue
+                raw = os.path.split(f)
+                if len(raw[0]) == 0:
+                    raw = raw[1:]
+                if len(raw) > 1:
+                    pth = os.path.join(*raw[:-1])
+                    pth = os.path.join(new_cwd, pth)
+                    if not os.path.exists(pth):
+                        os.makedirs(pth)
+            org_pth = os.path.join(org_cwd, f)
+            new_pth = os.path.join(new_cwd, f)
+
+            if os.path.exists(org_pth):
+                shutil.copy2(org_pth,new_pth)
 
     with open(os.path.join(new_cwd,"fake_forward_run.py"),'w') as f:
         f.write("import os\nimport shutil\n")
