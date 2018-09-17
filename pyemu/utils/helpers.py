@@ -3402,8 +3402,7 @@ def apply_hfb_pars():
     # read in the multipliers
     names = ['lay', 'irow1','icol1','irow2','icol2', 'hydchr']
     hfb_mults = pd.read_csv(hfb_pars.mlt_file.values[0], skiprows=skiprows, delim_whitespace=True, names=names).dropna()
-    for cn in names[:-1]:
-        hfb_mults[cn] = hfb_mults[cn].astype(np.int)
+
 
     # read in the original file
     hfb_org = pd.read_csv(hfb_pars.org_file.values[0], skiprows=skiprows, delim_whitespace=True, names=names).dropna()
@@ -3411,6 +3410,9 @@ def apply_hfb_pars():
     # multiply it out
     hfb_org.hydchr *= hfb_mults.hydchr
 
+    for cn in names[:-1]:
+        hfb_mults[cn] = hfb_mults[cn].astype(np.int)
+        hfb_org[cn] = hfb_org[cn].astype(np.int)
     # write the results
     with open(hfb_pars.model_file.values[0], 'w') as ofp:
         [ofp.write('{0}\n'.format(line.strip())) for line in header]
