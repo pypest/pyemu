@@ -110,7 +110,7 @@ def tenpar_dev():
     [os.remove(csv_file) for csv_file in csv_files]
     pst = pyemu.Pst("10par_xsec.pst")
     #obj_names = pst.nnz_obs_names
-    obj_names = ["h01_04", "h01_06", "h01_08"]
+    obj_names = ["h01_04", "h01_06"]
 
     # pst.observation_data.loc[pst.obs_names[0],"obgnme"] = "greaterthan"
     # pst.observation_data.loc[pst.obs_names[0], "weight"] = 1.0
@@ -131,7 +131,7 @@ def tenpar_dev():
     obj_dict = {}
     obj_dict[obj_names[0]] = "min"
     obj_dict[obj_names[1]] = "max"
-    obj_dict[obj_names[2]] = "max"
+    #obj_dict[obj_names[2]] = "max"
 
     # testing for reduce method
     # oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst=pst, num_reals=5000)
@@ -171,6 +171,10 @@ def tenpar_dev():
     #ax = plt.subplot(111)
     obj_org = ea.obs_ensemble.loc[:, obj_names].copy()
     dom_org = ea.obj_func.is_nondominated(obj_org)
+
+    pd.plotting.scatter_matrix(obj_org)
+    plt.show()
+    return
 
     def plot_3obj(obj=None,label=False):
 
@@ -311,5 +315,5 @@ def tenpar_dev():
 
 
 if __name__ == "__main__":
-    tenpar_test()
-    #tenpar_dev()
+    #tenpar_test()
+    tenpar_dev()
