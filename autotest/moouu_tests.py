@@ -100,6 +100,7 @@ def tenpar_test():
 def tenpar_dev():
     import os
     import numpy as np
+    import pandas as pd
     import matplotlib.pyplot as plt
 
     import flopy
@@ -110,7 +111,7 @@ def tenpar_dev():
     [os.remove(csv_file) for csv_file in csv_files]
     pst = pyemu.Pst("10par_xsec.pst")
     #obj_names = pst.nnz_obs_names
-    obj_names = ["h01_04", "h01_06", "h01_08"]
+    obj_names = ["h01_04", "h01_06"]
 
     # pst.observation_data.loc[pst.obs_names[0],"obgnme"] = "greaterthan"
     # pst.observation_data.loc[pst.obs_names[0], "weight"] = 1.0
@@ -131,7 +132,7 @@ def tenpar_dev():
     obj_dict = {}
     obj_dict[obj_names[0]] = "min"
     obj_dict[obj_names[1]] = "max"
-    obj_dict[obj_names[2]] = "max"
+    #obj_dict[obj_names[2]] = "max"
 
     # testing for reduce method
     # oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst=pst, num_reals=5000)
@@ -172,105 +173,35 @@ def tenpar_dev():
     obj_org = ea.obs_ensemble.loc[:, obj_names].copy()
     dom_org = ea.obj_func.is_nondominated(obj_org)
 
-    def plot_3obj(obj=None,label=False):
 
-        fig = plt.figure(figsize=(9,3))
-        ax = plt.subplot(131,aspect="equal")
-        ax2 = plt.subplot(132, aspect="equal")
-        ax3 = plt.subplot(133, aspect="equal")
-        # obj_org = ea.obs_ensemble.loc[:, obj_names].copy()
-        # dom_org = ea.obj_func.is_nondominated(obj_org)
-        ax.scatter(obj_org.loc[:, obj_names[0]], obj_org.loc[:, obj_names[1]], color="0.5", marker='.', alpha=0.25,
-                   s=8)
-        ax.scatter(obj_org.loc[dom_org, obj_names[0]], obj_org.loc[dom_org, obj_names[1]], color="0.5", marker='+',
-                   alpha=0.25, s=25)
-        if label and obj is None:
-            for i in obj_org.index:
-               if i not in dom_org.index:
-                   continue
-               ax.text(obj_org.loc[i, obj_names[0]], obj_org.loc[i, obj_names[1]],str(i),ha="center",fontsize=5)
+    axes = pd.plotting.scatter_matrix(obj_org)
+    print(axes)
+    axes[0,0].set_xlim(0,4)
+    axes[1, 1].set_xlim(0, 4)
+    axes[0,1].set_xlim(0,4)
+    axes[0,1].set_ylim(0,4)
+    axes[1, 0].set_xlim(0, 4)
+    axes[1, 0].set_ylim(0, 4)
 
-        ax2.scatter(obj_org.loc[:, obj_names[1]], obj_org.loc[:, obj_names[2]], color="0.5", marker='.', alpha=0.25,
-                   s=8)
-        ax2.scatter(obj_org.loc[dom_org, obj_names[1]], obj_org.loc[dom_org, obj_names[2]], color="0.5", marker='+',
-                   alpha=0.25, s=25)
-        if label and obj is None:
-            for i in obj_org.index:
-                if i not in dom_org.index:
-                    continue
-                ax2.text(obj_org.loc[i, obj_names[1]], obj_org.loc[i, obj_names[2]], str(i), ha="center", fontsize=5)
-
-        ax3.scatter(obj_org.loc[:, obj_names[0]], obj_org.loc[:, obj_names[2]], color="0.5", marker='.', alpha=0.25,
-                    s=8)
-        ax3.scatter(obj_org.loc[dom_org, obj_names[0]], obj_org.loc[dom_org, obj_names[2]], color="0.5", marker='+',
-                    alpha=0.25, s=25)
-        if label and obj is None:
-            for i in obj_org.index:
-                if i not in dom_org.index:
-                    continue
-                ax3.text(obj_org.loc[i, obj_names[0]], obj_org.loc[i, obj_names[2]], str(i), ha="center", fontsize=5)
-
-        if obj is not None:
-            dom = ea.obj_func.is_nondominated(obj)
-            ax.scatter(obj.loc[:, obj_names[0]], obj.loc[:, obj_names[1]], color="b", marker='.', alpha=0.25,
-                       s=8)
-            ax.scatter(obj.loc[dom, obj_names[0]], obj.loc[dom, obj_names[1]], color="b", marker='+',
-                       alpha=0.25, s=25)
-
-            if label:
-                for i in obj.index:
-                    if i not in dom.index:
-                        continue
-                    ax.text(obj.loc[i, obj_names[0]], obj.loc[i, obj_names[1]], str(i), ha="center", fontsize=5)
-
-            ax2.scatter(obj.loc[:, obj_names[1]], obj.loc[:, obj_names[2]], color="b", marker='.', alpha=0.25,
-                       s=8)
-            ax2.scatter(obj.loc[dom, obj_names[1]], obj.loc[dom, obj_names[2]], color="b", marker='+',
-                       alpha=0.25, s=25)
-
-            if label:
-                for i in obj.index:
-                    if i not in dom.index:
-                        continue
-                    ax2.text(obj.loc[i, obj_names[1]], obj.loc[i, obj_names[2]], str(i), ha="center", fontsize=5)
-
-            ax3.scatter(obj.loc[:, obj_names[0]], obj.loc[:, obj_names[2]], color="b", marker='.', alpha=0.25,
-                        s=8)
-            ax3.scatter(obj.loc[dom, obj_names[0]], obj.loc[dom, obj_names[2]], color="b", marker='+',
-                        alpha=0.25, s=25)
-
-            if label:
-                for i in obj.index:
-                    if i not in dom.index:
-                        continue
-                    ax3.text(obj.loc[i, obj_names[0]], obj.loc[i, obj_names[2]], str(i), ha="center", fontsize=5)
-
-
-
-        for aax in [ax,ax2,ax3]:
-            aax.set_xlim(0, 4.5)
-            aax.set_ylim(0, 4.5)
-
-        ax.set_title("iter {0}, total runs: {1}".format(0,ea.total_runs))
-        ax.set_xlabel("{0}, dir:{1}".format(obj_names[0], obj_dict[obj_names[0]]))
-        ax.set_ylabel("{0}, dir:{1}".format(obj_names[1], obj_dict[obj_names[1]]))
-        ax2.set_xlabel("{0}, dir:{1}".format(obj_names[1], obj_dict[obj_names[1]]))
-        ax2.set_ylabel("{0}, dir:{1}".format(obj_names[2], obj_dict[obj_names[2]]))
-        ax3.set_xlabel("{0}, dir:{1}".format(obj_names[0], obj_dict[obj_names[0]]))
-        ax3.set_ylabel("{0}, dir:{1}".format(obj_names[2], obj_dict[obj_names[2]]))
-
-        plt.savefig("iter_{0:03d}.png".format(ea.iter_num),dpi=500)
-
-        plt.close("all")
-
-    plot_3obj()
-
-    for i in range(10):
+    plt.show()
+    plt.savefig("iter_{0:03d}.png".format(0))
+    plt.close("all")
+    for i in range(30):
 
         ea.update()
 
         obj = ea.obs_ensemble.loc[:, obj_names]
-        plot_3obj(obj)
+        axes = pd.plotting.scatter_matrix(obj)
+        print(axes)
+        axes[0, 0].set_xlim(0, 4)
+        axes[1, 1].set_xlim(0, 4)
+        axes[0, 1].set_xlim(0, 4)
+        axes[0, 1].set_ylim(0, 4)
+        axes[1, 0].set_xlim(0, 4)
+        axes[1, 0].set_ylim(0, 4)
+
+        plt.savefig("iter_{0:03d}.png".format(i+1))
+        plt.close("all")
 
     os.system("ffmpeg -r 2 -i iter_%03d.png -loop 0 -final_delay 100 -y shhh.mp4")
     return
@@ -311,5 +242,5 @@ def tenpar_dev():
 
 
 if __name__ == "__main__":
-    tenpar_test()
-    #tenpar_dev()
+    #tenpar_test()
+    tenpar_dev()

@@ -559,11 +559,12 @@ class Pst(object):
         if df.shape[1] > len(names):
             df = df.iloc[:,len(names)]
             df.columns = names
-
+        isnull = pd.isnull(df)
         if defaults is not None:
             for name in names:
                 df.loc[:,name] = df.loc[:,name].fillna(defaults[name])
-        elif np.any(pd.isnull(df)):
+
+        elif np.any(pd.isnull(df).values.flatten()):
             raise Exception("NANs found")
         f.seek(seek_point)
         extras = []
@@ -907,8 +908,8 @@ class Pst(object):
                                                       self.obs_fieldnames,
                                                       self.obs_converters)
                 self.observation_data.index = self.observation_data.obsnme
-            except:
-                raise Exception("Pst.load() error reading observation data")
+            except Exception as e:
+                raise Exception("Pst.load() error reading observation data: {0}".format(str(e)))
         else:
             raise Exception("nobs == 0")
         #model command line
