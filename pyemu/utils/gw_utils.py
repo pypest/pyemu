@@ -2241,7 +2241,7 @@ def write_hfb_zone_multipliers_template(m):
     with open(os.path.join(m.model_ws, 'hfb6_pars.csv'), 'w') as ofp:
         ofp.write('org_file,mlt_file,model_file\n')
         ofp.write('{0},{1},{2}\n'.format(os.path.join(m.model_ws, 'hfb6_org', m.hfb6.file_name[0]),
-                                         os.path.join(m.model_ws, 'hfb6_mlt', tpl_file.replace('.tpl','')),
+                                         os.path.join(m.model_ws, 'hfb6_mlt', os.path.basename(tpl_file).replace('.tpl','')),
                                          hfb_file))
 
     return hfb_mults, tpl_file
