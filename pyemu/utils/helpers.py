@@ -3279,7 +3279,7 @@ def apply_array_pars(arr_par_file="arr_pars.csv"):
                 lb = list(lb_vals.keys())[0]
                 org_arr[org_arr < lb] = lb
 
-        np.savetxt(model_file,org_arr,fmt="%15.6E",delimiter='')
+        np.savetxt(model_file,np.atleast_2d(org_arr),fmt="%15.6E",delimiter='')
 
 def apply_list_pars():
     """ a function to apply boundary condition multiplier parameters.  Used to implement

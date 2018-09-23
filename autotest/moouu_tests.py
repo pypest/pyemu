@@ -161,11 +161,11 @@ def tenpar_dev():
 
 
     dv = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in dv_names},
-                                                  num_reals=100,
+                                                  num_reals=10,
                                                   partial=True)
 
     dv.index = ["p_{0}".format(i) for i in range(dv.shape[0])]
-    ea = EliteDiffEvol(pst, num_slaves=30, port=4005, verbose=True)
+    ea = EliteDiffEvol(pst, num_slaves=5, port=4005, verbose=True)
 
     ea.initialize(obj_dict,par_ensemble=pe,dv_ensemble=dv,risk=0.5)
 
@@ -183,7 +183,7 @@ def tenpar_dev():
     axes[1, 0].set_xlim(0, 4)
     axes[1, 0].set_ylim(0, 4)
 
-    plt.show()
+    #plt.show()
     plt.savefig("iter_{0:03d}.png".format(0))
     plt.close("all")
     for i in range(30):
