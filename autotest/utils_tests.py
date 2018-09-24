@@ -1538,7 +1538,15 @@ def fieldgen_dev():
                                          grid_props=[["upw.hk", 0], ["rch.rech", 0]],
                                          remove_existing=True,build_prior=False)
     struct_dict = {ph.grid_geostruct:["hk","ss"]}
-    pyemu.helpers.run_fieldgen(m,10,struct_dict,cwd=new_model_ws)
+    df = pyemu.helpers.run_fieldgen(m,10,struct_dict,cwd=new_model_ws)
+
+    import matplotlib.pyplot as plt
+    i = df.index.map(lambda x: int(x.split('_')[0]))
+    j = df.index.map(lambda x: int(x.split('_')[1]))
+    arr = np.zeros((m.nrow,m.ncol))
+    arr[i,j] = df.iloc[:,0]
+    plt.imshow(arr)
+    plt.show()
 
 
 if __name__ == "__main__":

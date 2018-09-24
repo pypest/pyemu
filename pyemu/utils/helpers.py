@@ -58,6 +58,32 @@ def run(cmd_str,cwd='.',verbose=False):
 
 
 def run_fieldgen(m,num_reals,struct_dict,cwd=None):
+    """run fieldgen and return a dataframe with the realizations
+
+    Parameters
+    ----------
+    m : flopy.mbase
+        a floy model instance
+    num_reals : int
+        number of realizations to generate
+    struct_dict : dict
+        key-value pairs of pyemu.GeoStruct instances and lists of prefix strings.  Example: {gs1:['hk','ss']}
+    cwd : str
+        working director where to execute fieldgen.  If None, m.model_ws is used.  Default is None
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        a dataframe of realizations.  Columns are named to include structure, prefix and realization number.  Index
+        includes i-j position
+
+    Note
+    ----
+    only Ordinary kriging is supported
+    only a single zone is supported
+
+
+    """
     if cwd is None:
         cwd = m.model_ws
     set_file = os.path.join(cwd,"settings.fig")
@@ -69,9 +95,7 @@ def run_fieldgen(m,num_reals,struct_dict,cwd=None):
     m.sr.write_gridSpec(os.path.join(cwd,"grid.spc"))
 
     np.savetxt(os.path.join(cwd,"zone.dat"),np.ones((m.nrow,m.ncol),dtype=np.int),fmt="%2d")
-
-
-
+    arrs = {}
     for struct,prefixes in struct_dict.items():
         args = ["grid.spc",'']
 
@@ -96,7 +120,26 @@ def run_fieldgen(m,num_reals,struct_dict,cwd=None):
                 for arg in prefix_args:
                     f.write(str(arg)+'\n')
             pyemu.os_utils.run("fieldgen <{0} >{1}".format(rsp_file,rsp_file.replace(".in",".stdout")),cwd=cwd)
-            break
+            real_files = ["{0}{1}.ref".format(prefix,i+1) for i in range(num_reals)]
+
+            for real_file in real_files:
+                assert os.path.exists(os.path.join(cwd,real_file)),"missing realization file: "+real_file
+                vals = []
+                with open(os.path.join(cwd,real_file),'r') as f:
+                    [vals.extend(line.strip().split()) for line in f]
+                arr = np.array(vals,dtype=np.float)#.reshape(m.nrow,m.ncol)
+                real_num = int(real_file.split('.')[0].replace(prefix,''))
+                arrs["{0}_{1}_{2}".format(struct.name,prefix,real_num)] = arr
+        ij = []
+        for i in range(m.nrow):
+            for j in range(m.ncol):
+                ij.append("{0}_{1}".format(i,j))
+        df = pd.DataFrame(arrs,index=ij)
+        return df
+
+
+
+
 
 
 
