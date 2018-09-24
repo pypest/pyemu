@@ -161,7 +161,9 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
                 tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
 
                 if verbose: print("scaling full cov by diag var cov")
-                cov *= tpl_var
+                #cov.x *= tpl_var
+                for i in range(cov.shape[0]):
+                   cov.x[i,:] *= tpl_var
                 # no fixed values here
                 pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,cov=cov,num_reals=num_reals,
                                                                 group_chunks=False,fill_fixed=False)
