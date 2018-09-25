@@ -1512,9 +1512,48 @@ def smp_dateparser_test():
 
 
 
+def fieldgen_dev():
+    import shutil
+    import numpy as np
+    import pandas as pd
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    flopy.modflow.ModflowRiv(m, stress_period_data={0: [[0, 0, 0, 30.0, 1.0, 25.0],
+                                                        [0, 0, 1, 31.0, 1.0, 25.0],
+                                                        [0, 0, 1, 31.0, 1.0, 25.0]]})
+    org_model_ws = "temp"
+    m.change_model_ws(org_model_ws)
+    m.write_input()
+
+    new_model_ws = "temp_fieldgen"
+
+    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+                                         org_model_ws=org_model_ws,
+                                         grid_props=[["upw.hk", 0], ["rch.rech", 0]],
+                                         remove_existing=True,build_prior=False)
+    v = pyemu.geostats.ExpVario(1.0,1000,anisotropy=10,bearing=45)
+    gs = pyemu.geostats.GeoStruct(nugget=0.0,variograms=v,name="aniso")
+    struct_dict = {gs:["hk","ss"]}
+    df = pyemu.helpers.run_fieldgen(m,10,struct_dict,cwd=new_model_ws)
+
+    import matplotlib.pyplot as plt
+    i = df.index.map(lambda x: int(x.split('_')[0]))
+    j = df.index.map(lambda x: int(x.split('_')[1]))
+    arr = np.zeros((m.nrow,m.ncol))
+    arr[i,j] = df.iloc[:,0]
+    plt.imshow(arr)
+    plt.show()
+
 
 if __name__ == "__main__":
-    smp_test()
+    fieldgen_dev()
+    # smp_test()
     # smp_dateparser_test()
     # smp_to_ins_test()
     #read_runstor_test()

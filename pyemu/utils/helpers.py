@@ -57,6 +57,97 @@ def run(cmd_str,cwd='.',verbose=False):
     pyemu.os_utils.run(cmd_str=cmd_str,cwd=cwd,verbose=verbose)
 
 
+def run_fieldgen(m,num_reals,struct_dict,cwd=None):
+    """run fieldgen and return a dataframe with the realizations
+
+    Parameters
+    ----------
+    m : flopy.mbase
+        a floy model instance
+    num_reals : int
+        number of realizations to generate
+    struct_dict : dict
+        key-value pairs of pyemu.GeoStruct instances and lists of prefix strings.  Example: {gs1:['hk','ss']}
+    cwd : str
+        working director where to execute fieldgen.  If None, m.model_ws is used.  Default is None
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        a dataframe of realizations.  Columns are named to include structure, prefix and realization number.  Index
+        includes i-j position
+
+    Note
+    ----
+    only Ordinary kriging is supported
+    only a single zone is supported
+
+
+    """
+    if cwd is None:
+        cwd = m.model_ws
+    set_file = os.path.join(cwd,"settings.fig")
+    if not os.path.exists(set_file):
+        print("writing ",set_file)
+        with open(set_file,'w') as f:
+            f.write("date=dd/mm/yyyy\ncolrow=no\n")
+
+    m.sr.write_gridSpec(os.path.join(cwd,"grid.spc"))
+
+    np.savetxt(os.path.join(cwd,"zone.dat"),np.ones((m.nrow,m.ncol),dtype=np.int),fmt="%2d")
+    arrs = {}
+    for struct,prefixes in struct_dict.items():
+        args = ["grid.spc",'']
+
+        print(struct)
+        struct.to_struct_file(os.path.join(cwd,"pyemu_struct.dat"))
+
+        args.append("zone.dat")
+        args.append("f")
+        args.append("pyemu_struct.dat")
+        args.append(struct.name)
+        args.append("o")
+        args.append("10")
+        args.append(num_reals)
+        for prefix in prefixes:
+            prefix_args = list(args)
+            prefix_args.append(prefix)
+            prefix_args.append("f")
+            prefix_args.append(1.0)
+            prefix_args.append('')
+            rsp_file = "fieldgen_{0}.in".format(prefix)
+            with open(os.path.join(cwd,rsp_file),'w') as f:
+                for arg in prefix_args:
+                    f.write(str(arg)+'\n')
+            pyemu.os_utils.run("fieldgen <{0} >{1}".format(rsp_file,rsp_file.replace(".in",".stdout")),cwd=cwd)
+            real_files = ["{0}{1}.ref".format(prefix,i+1) for i in range(num_reals)]
+
+            for real_file in real_files:
+                assert os.path.exists(os.path.join(cwd,real_file)),"missing realization file: "+real_file
+                vals = []
+                with open(os.path.join(cwd,real_file),'r') as f:
+                    [vals.extend(line.strip().split()) for line in f]
+                arr = np.array(vals,dtype=np.float)#.reshape(m.nrow,m.ncol)
+                real_num = int(real_file.split('.')[0].replace(prefix,''))
+                arrs["{0}_{1}_{2}".format(struct.name,prefix,real_num)] = arr
+        ij = []
+        for i in range(m.nrow):
+            for j in range(m.ncol):
+                ij.append("{0}_{1}".format(i,j))
+        df = pd.DataFrame(arrs,index=ij)
+        return df
+
+
+
+
+
+
+
+
+
+
+
+
 def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=True):
     """ a helper function to construct a parameter ensenble from a full prior covariance matrix
     implied by the geostatistical structure(s) in struct_dict.  This function is much more efficient

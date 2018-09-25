@@ -317,6 +317,15 @@ def nnz_groups_test():
     assert org_og[0] not in new_nnz_og
 
 
+def adj_group_test():
+    import os
+    import pyemu
+    pst_dir = os.path.join("pst")
+    pst = pyemu.Pst(os.path.join(pst_dir, "pest.pst"))
+    par = pst.parameter_data
+    par.loc[par.pargp.apply(lambda x: x in pst.par_groups[1:]),"partrans"] = "fixed"
+    assert pst.adj_par_groups == [pst.par_groups[0]]
+
 def regdata_test():
     import os
     import pyemu
@@ -975,7 +984,6 @@ def sanity_check_test():
 
     pst.write(os.path.join("temp", "test.pst"))
 
-
 def pst_from_flopy_geo_draw_test():
     import shutil
     import numpy as np
@@ -1009,6 +1017,7 @@ def pst_from_flopy_geo_draw_test():
                                          remove_existing=True,
                                          model_exe_name="mfnwt", temporal_list_props=temp_list_props,
                                          spatial_list_props=spat_list_props)
+
 
     num_reals = 100000
     pe1 = ph.draw(num_reals=num_reals, sigma_range=6)
@@ -1106,7 +1115,7 @@ def lt_gt_constraint_names_test():
     assert pst.greater_than_pi_constraints.shape[0] == 0
 
 if __name__ == "__main__":
-    lt_gt_constraint_names_test()
+    #lt_gt_constraint_names_test()
     #csv_to_ins_test()
     # pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
@@ -1125,6 +1134,7 @@ if __name__ == "__main__":
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
+    adj_group_test()
     # regul_rectify_test()
     # derivative_increment_tests()
     # tied_test()
