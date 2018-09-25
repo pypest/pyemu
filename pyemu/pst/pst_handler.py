@@ -371,6 +371,23 @@ class Pst(object):
                 og.append(g)
         return og
 
+    @property
+    def adj_par_groups(self):
+        """get the parameter groups with atleast one adjustable parameter
+
+        Returns
+        -------
+        adj_par_groups : list
+            a list of parameter groups with  at least one adjustable parameter
+
+        """
+        adj_pargp = []
+        for pargp in self.par_groups:
+            ptrans = self.parameter_data.loc[self.parameter_data.pargp==pargp,"partrans"].values
+            if "log" in ptrans or "none" in ptrans:
+                adj_pargp.append(pargp)
+        return adj_pargp
+
 
     @property
     def par_groups(self):

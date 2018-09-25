@@ -1537,7 +1537,9 @@ def fieldgen_dev():
                                          org_model_ws=org_model_ws,
                                          grid_props=[["upw.hk", 0], ["rch.rech", 0]],
                                          remove_existing=True,build_prior=False)
-    struct_dict = {ph.grid_geostruct:["hk","ss"]}
+    v = pyemu.geostats.ExpVario(1.0,1000,anisotropy=10,bearing=45)
+    gs = pyemu.geostats.GeoStruct(nugget=0.0,variograms=v,name="aniso")
+    struct_dict = {gs:["hk","ss"]}
     df = pyemu.helpers.run_fieldgen(m,10,struct_dict,cwd=new_model_ws)
 
     import matplotlib.pyplot as plt
