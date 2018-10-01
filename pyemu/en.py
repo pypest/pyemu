@@ -1249,7 +1249,7 @@ class ParameterEnsemble(Ensemble):
         accept = {"uniform", "triangular", "gaussian"}
         assert default in accept,"ParameterEnsemble.from_mixed_draw() error: 'default' must be in {0}".format(accept)
         par_org = pst.parameter_data.copy()
-        pset = set(pst.par_names)
+        pset = set(pst.adj_par_names)
         hset = set(how_dict.keys())
         missing = pset.difference(hset)
         #assert len(missing) == 0,"ParameterEnsemble.from_mixed_draws() error: the following par names are not in " +\
