@@ -1314,14 +1314,16 @@ class ParameterEnsemble(Ensemble):
             pes.append(pe_tri)
 
 
-
-
-
         df = pd.DataFrame(index=np.arange(num_reals),columns=par_org.parnme.values)
+
         df.loc[:,:] = np.NaN
+        fixed_tied = par_org.loc[par_org.partrans.apply(lambda x: x in ["fixed","tied"]),"parval1"].to_dict()
+        for p,v in fixed_tied.items():
+            df.loc[:,p] = v
+
         for pe in pes:
             df.loc[pe.index,pe.columns] = pe
-        print(df.shape)
+
         if partial:
             df = df.dropna(axis=1)
         elif df.shape != df.dropna().shape:
