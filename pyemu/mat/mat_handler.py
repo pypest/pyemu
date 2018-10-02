@@ -1921,7 +1921,7 @@ class Matrix(object):
         assert isinstance(df, pandas.DataFrame)
         row_names = copy.deepcopy(list(df.index))
         col_names = copy.deepcopy(list(df.columns))
-        return cls(x=df.as_matrix(),row_names=row_names,col_names=col_names)
+        return cls(x=df.values(),row_names=row_names,col_names=col_names)
 
 
     @classmethod
