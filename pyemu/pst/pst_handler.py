@@ -1470,7 +1470,7 @@ class Pst(object):
 
 
 
-    def adjust_weights_recfile(self, recfile=None):
+    def adjust_weights_recfile(self, recfile=None,original_ceiling=True):
         """adjusts the weights by group of the observations based on the phi components
         in a pest record file so that total phi is equal to the number of
         non-zero weighted observations
@@ -1480,6 +1480,9 @@ class Pst(object):
         recfile : str
             record file name.  If None, try to use a record file
             with the Pst case name.  Default is None
+        original_ceiling : bool
+            flag to keep weights from increasing - this is generally a good idea.
+            Default is True
 
         """
         if recfile is None:
@@ -1506,9 +1509,9 @@ class Pst(object):
             raise Exception("Pst.pwtadj2(): no complete phi component" +
                             " records found in recfile")
         self._adjust_weights_by_phi_components(
-            iter_components[last_complete_iter])
+            iter_components[last_complete_iter],original_ceiling)
 
-    def adjust_weights_resfile(self, resfile=None):
+    def adjust_weights_resfile(self, resfile=None,original_ceiling=True):
         """adjusts the weights by group of the observations based on the phi components
         in a pest residual file so that total phi is equal to the number of
         non-zero weighted observations
@@ -1518,15 +1521,66 @@ class Pst(object):
         resfile : str
             residual file name.  If None, try to use a residual file
             with the Pst case name.  Default is None
+        original_ceiling : bool
+            flag to keep weights from increasing - this is generally a good idea.
+            Default is True
+
 
         """
         if resfile is not None:
             self.resfile = resfile
             self.__res = None
         phi_comps = self.phi_components
-        self._adjust_weights_by_phi_components(phi_comps)
+        self._adjust_weights_by_phi_components(phi_comps,original_ceiling)
 
-    def _adjust_weights_by_phi_components(self, components):
+    def adjust_weights_discrepancy(self, resfile=None,original_ceiling=True):
+        """adjusts the weights of each non-zero weight observation based
+        on the residual in the pest residual file so each observations contribution
+        to phi is 1.0
+
+        Parameters
+        ----------
+        resfile : str
+            residual file name.  If None, try to use a residual file
+            with the Pst case name.  Default is None
+        original_ceiling : bool
+            flag to keep weights from increasing - this is generally a good idea.
+            Default is True
+
+        """
+        if resfile is not None:
+            self.resfile = resfile
+            self.__res = None
+        obs = self.observation_data.loc[self.nnz_obs_names,:]
+        swr = (self.res.loc[self.nnz_obs_names,:].residual * obs.weight)**2
+        factors =  (1.0/swr).apply(np.sqrt)
+        if original_ceiling:
+            factors = factors.apply(lambda x: 1.0 if x > 1.0 else x)
+        self.observation_data.loc[self.nnz_obs_names,"weight"] *= factors
+
+
+        # nz_groups = obs.groupby(obs["weight"].map(lambda x: x == 0)).groups
+        # ogroups = obs.groupby("obgnme").groups
+        # for ogroup, idxs in ogroups.items():
+        #     if self.control_data.pestmode.startswith("regul") \
+        #             and "regul" in ogroup.lower():
+        #         continue
+        #     og_phi = components[ogroup]
+        #     nz_groups = obs.loc[idxs, :].groupby(obs.loc[idxs, "weight"]. \
+        #                                          map(lambda x: x == 0)).groups
+        #     og_nzobs = 0
+        #     if False in nz_groups.keys():
+        #         og_nzobs = len(nz_groups[False])
+        #     if og_nzobs == 0 and og_phi > 0:
+        #         raise Exception("Pst.adjust_weights_by_phi_components():"
+        #                         " no obs with nonzero weight," +
+        #                         " but phi > 0 for group:" + str(ogroup))
+        #     if og_phi > 0:
+        #         factor = np.sqrt(float(og_nzobs) / float(og_phi))
+        #         obs.loc[idxs, "weight"] = obs.weight[idxs] * factor
+        # self.observation_data = obs
+
+    def _adjust_weights_by_phi_components(self, components,original_ceiling):
         """resets the weights of observations by group to account for
         residual phi components.
 
@@ -1534,6 +1588,8 @@ class Pst(object):
         ----------
         components : dict
             a dictionary of obs group:phi contribution pairs
+        original_ceiling : bool
+            flag to keep weights from increasing
 
         """
         obs = self.observation_data
@@ -1555,6 +1611,8 @@ class Pst(object):
                                 " but phi > 0 for group:" + str(ogroup))
             if og_phi > 0:
                 factor = np.sqrt(float(og_nzobs) / float(og_phi))
+                if original_ceiling:
+                    factor = min(factor,1.0)
                 obs.loc[idxs,"weight"] = obs.weight[idxs] * factor
         self.observation_data = obs
 

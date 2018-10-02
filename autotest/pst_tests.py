@@ -58,7 +58,12 @@ def res_test():
     assert "regul_p" in phi_comp
     assert "regul_m" in phi_comp
 
-    p.adjust_weights_resfile()
+    p.adjust_weights_discrepancy(original_ceiling=False)
+    d = np.abs(p.phi - p.nnz_obs)
+    assert d < 1.0E-5
+
+    p = Pst(os.path.join(pst_dir, "pest.pst"))
+    p.adjust_weights_resfile(original_ceiling=False)
 
     d = np.abs(p.phi - p.nnz_obs)
     assert d < 1.0E-5
@@ -1134,7 +1139,7 @@ if __name__ == "__main__":
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
-    adj_group_test()
+    #adj_group_test()
     # regul_rectify_test()
     # derivative_increment_tests()
     # tied_test()
@@ -1147,7 +1152,7 @@ if __name__ == "__main__":
     # test_e_clean()
     # load_test()
     # flex_load_test()
-    # res_test()
+    res_test()
     # smp_test()
     # from_io_with_inschek_test()
     # pestpp_args_test()
