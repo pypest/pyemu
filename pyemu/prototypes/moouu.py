@@ -215,7 +215,7 @@ class ParetoObjFunc(object):
         """
 
         obj_df = obs_df.loc[:,self.obs_obj_names]
-
+        obj_names = self.obs_obj_names
         ascending = False
         if self.obs_dict[obj_names[0]] == "min":
             ascending = True
@@ -753,7 +753,7 @@ class EliteDiffEvol(EvolAlg):
         nondom_idx = isnondom.loc[isnondom==True].index
         self.logger.statement("number of dominated solutions:{0}".format(dom_idx.shape[0]))
         # self.logger.statement("nondominated solutions: {0}".format(','.join(nondom_idx)))
-        self.logger.statement("dominated solutions: {0}".format(','.join(dom_idx)))
+        self.logger.statement("dominated solutions: {0}".format(','.join(str(dom_idx))))
         ndrop = self.dv_ensemble.shape[0] - num_dv_reals
         if ndrop > 0:
             isnondom = self.obj_func.is_nondominated(self.obs_ensemble)

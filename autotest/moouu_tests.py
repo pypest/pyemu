@@ -63,15 +63,22 @@ def tenpar_test():
         pe = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[:2]},
                                                       num_reals=5,
                                                       partial=False)
-        ea = EvolAlg(pst, num_slaves=8, port=4005, verbose=True)
+        ea = EliteDiffEvol(pst, num_slaves=8, port=4005, verbose=True)
 
         dv = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={p: "uniform" for p in pst.adj_par_names[2:]},
                                                       num_reals=5,
                                                       partial=True)
+
+        ea.initialize(obj_dict,num_dv_reals=5,num_par_reals=5,risk=0.5)
         ea.initialize(obj_dict, par_ensemble=pe, dv_ensemble=dv, risk=0.5)
+
+        ea.update()
+
 
         # test the infeas calcs
         oe = ea.obs_ensemble
+        ea.obj_func.is_nondominated_continuous(oe)
+        ea.obj_func.is_nondominated_kung(oe)
         is_feasible = ea.obj_func.is_feasible(oe)
         oe.loc[is_feasible.index,"feas"] = is_feasible
         obs = pst.observation_data
@@ -169,6 +176,8 @@ def tenpar_dev():
 
     ea.initialize(obj_dict,par_ensemble=pe,dv_ensemble=dv,risk=0.5)
 
+
+
     #ax = plt.subplot(111)
     obj_org = ea.obs_ensemble.loc[:, obj_names].copy()
     dom_org = ea.obj_func.is_nondominated(obj_org)
@@ -242,5 +251,5 @@ def tenpar_dev():
 
 
 if __name__ == "__main__":
-    #tenpar_test()
-    tenpar_dev()
+    tenpar_test()
+    #tenpar_dev()
