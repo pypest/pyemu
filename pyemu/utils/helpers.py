@@ -3609,12 +3609,16 @@ def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
                                                format(pname))
                     parnme.append(pname)
                     pname = ' ~     {0}   ~ '.format(pname)
-                    x.append(spatial_reference.xcentergrid[i, j])
-                    y.append(spatial_reference.ycentergrid[i, j])
+                    if spatial_reference is not None:
+                        x.append(spatial_reference.xcentergrid[i, j])
+                        y.append(spatial_reference.ycentergrid[i, j])
 
                 f.write(pname)
             f.write("\n")
-    df = pd.DataFrame({"parnme": parnme, "x": x, "y": y}, index=parnme)
+    df = pd.DataFrame({"parnme": parnme}, index=parnme)
+    if spatial_reference is not None:
+        df.loc[:,'x'] = x
+        df.loc[:,'y'] = y
     df.loc[:, "pargp"] = "{0}{1}".format(suffix.replace('_', ''), name)
     df.loc[:, "tpl"] = tpl_file
     return df
@@ -3654,13 +3658,17 @@ def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
         f.write("ptf ~\n")
         for i in range(shape[0]):
             for j in range(shape[1]):
-                if zn_array[i, j] < 1:
+                if zn_array is not None and zn_array[i, j] < 1:
                     pname = " 1.0  "
                 else:
+                    zval = 1
+                    if zn_array is not None:
+                        zval = zn_array[i, j]
                     if longnames:
-                        pname = "{0}_zone:{1}_{2}".format(name,zn_array[i,j],suffix)
+                        pname = "{0}_zone:{1}_{2}".format(name,zval,suffix)
                     else:
-                        pname = "{0}_zn{1}".format(name, zn_array[i, j])
+
+                        pname = "{0}_zn{1}".format(name, zval)
                         if len(pname) > 12:
                             raise("zone pname too long:{0}". \
                                               format(pname))

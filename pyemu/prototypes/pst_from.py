@@ -39,12 +39,16 @@ class PstFrom(object):
         self._setup_dirs()
 
 
-    def _add_pars(self,filenames,dist_type,sigma_range,
-                        upper_bound,lower_bound):
-        """private method to track new pars"""
-
+    def write_forward_run(self):
         pass
-        # todo: check for bound compat with log status
+
+
+    def build_prior(self):
+        pass
+
+
+    def draw(self):
+        pass
 
 
     def _setup_dirs(self):
@@ -153,6 +157,7 @@ class PstFrom(object):
                                        format(file_path),str(missing))
                 if header is None:
                     header = False
+                self.logger.statement("loaded list '{0}' of shape {1}".format(file_path,df.shape))
                 df.to_csv(os.path.join(self.original_file_d,filename),index=False,sep=sep,header=header)
                 file_dict[filename] = df
                 self.logger.log("loading array {0}".format(file_path))
@@ -193,10 +198,10 @@ class PstFrom(object):
         return count
 
 
-    def add_constant_pars(self,filenames,zone_array=None,dist_type="gaussian",sigma_range=4.0,
+    def add_parameters(self,filenames,par_type,zone_array=None,dist_type="gaussian",sigma_range=4.0,
                           upper_bound=1.0e10,lower_bound=1.0e-10,trans="log",
                           par_name_base="uni",index_cols=None,use_cols=None,
-                          tpl_filename=None):
+                          tpl_filename=None,pp_space=10,num_eig_kl=100):
         self.logger.log("adding uniform pars for file(s) {0}".format(str(filenames)))
         index_cols, use_cols, file_dict = self._par_filename_prep(filenames,index_cols,use_cols)
         if tpl_filename is None:
@@ -205,61 +210,40 @@ class PstFrom(object):
             self.logger.lraise("tpl_filename '{0}' already listed".format(tpl_filename))
 
         if index_cols is not None:
-            write_list_tpl(file_dict.values(),par_name_base,tpl_filename,ptype="constant",suffix='',
-                           index_cols=index_cols,use_cols=use_cols,longnames=self.longnames)
+            self.logger.log("writing list-based template file '{0}'".format(tpl_filename))
+            df = write_list_tpl(file_dict.values(),par_name_base,os.path.join(self.new_d,tpl_filename),
+                                ptype=par_type,suffix='',index_cols=index_cols,use_cols=use_cols,
+                                longnames=self.longnames)
+            self.logger.log("writing list-based template file '{0}'".format(tpl_filename))
         else:
+            self.logger.log("writing array-based template file '{0}'".format(tpl_filename))
             shape = file_dict[list(file_dict.keys())[0]].shape
-            pyemu.helpers.write_const_tpl(par_name_base,tpl_filename,suffix='',shape=shape,zn_array=zone_array)
+            if par_type == "constant":
+                df = pyemu.helpers.write_const_tpl(par_name_base,tpl_filename,suffix='',shape=shape,zn_array=zone_array)
+            elif par_type == "zone":
+                df = pyemu.helpers.write_zone_tpl(par_name_base, tpl_filename, suffix='',
+                                                  shape=shape, zn_array=zone_array)
+            elif par_type == "grid":
+                df = pyemu.helpers.write_grid_tpl(par_name_base, tpl_filename, suffix='',
+                                                  shape=shape, zn_array=zone_array)
+            elif par_type == "pilotpoints" or par_type == "pilot_points":
+                self.logger.lraise("array type 'pilotpoints' not implemented")
+            elif par_type == "kl":
+                self.logger.lraise("array type 'kl' not implemented")
+            else:
+                self.logger.lraise("unrecognized 'par_type': '{0}', should be in "+\
+                                   "['constant','zone','grid','pilotpoints','kl'")
+            self.logger.log("writing array-based template file '{0}'".format(tpl_filename))
+        df.loc[:,"partrans"] = trans
+        df.loc[:,"parubnd"] = upper_bound
+        df.loc[:,"parlbnd"] = lower_bound
 
         self.logger.log("adding uniform pars for file(s) {0}".format(str(filenames)))
 
 
-    def add_zone_pars(self, filenames, zone_array, dist_type="gaussian",
-                      sigma_range=4.0,upper_bound=1.0e10,
-                      lower_bound=1.0e-10, trans="log",prefix="zon",
-                      skip_zone_vals=None,index_cols=None,use_cols=None):
 
-        #todo: check for zone array shape compatibility
-        #todo: if list pars, what if zone array is not 3D?
-        pass
-
-
-    def add_grid_pars(self,filenames,zone_array=None,dist_type="gaussian",
-                      sigma_range=4.0,upper_bound=1.0e10,
-                      lower_bound=1.0e-10, trans="log",prefix="grd",
-                      skip_zone_vals=None,geostruct=None,spatial_ref=None,
-                      index_cols=None,use_cols=None):
-
-        # todo: geostruct and spatial_ref must be used together
-        # todo: if list pars, what if zone array is not 3D?
-        pass
-
-
-    def add_pilotpoint_pars(self,filenames,zone_array=None,dist_type="gaussian",
-                            sigma_range=4.0,upper_bound=1.0e10,
-                            lower_bound=1.0e-10, trans="log",prefix="ppt",
-                            space=10,geostruct=None,spatial_ref=None,
-                            index_cols=None,use_cols=None):
-
-        # todo: geostruct and spatial_ref must be used together
-        # todo: if list pars, what if zone array is not 3D?
-        pass
-
-
-    def add_kl_pars(self,filenames,zone_array=None,dist_type="gaussian",
-                    sigma_range=4.0,upper_bound=1.0e10,
-                    lower_bound=1.0e-10, trans="log",prefix="ppt",
-                    num_comps=10,geostruct=None,spatial_ref=None,
-                    index_cols=None,use_cols=None):
-
-        # todo: geostruct and spatial_ref must be used together
-        # todo: num_comps <= array entries
-        # todo: if list pars, what if zone array is not 3D?
-        pass
-
-
-
-def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, ptype, use_cols=None, zn_array=None, spatial_reference=None,
+def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, ptype, use_cols=None,
+                   zn_array=None, spatial_reference=None,
                    longnames=False):
 
     if not isinstance(dfs,list):
@@ -274,7 +258,6 @@ def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, ptype, use_cols=None
     # use all non-index columns if use_cols not passed
     if use_cols is None:
         use_cols = [c for c in df_tpl.columns if c not in index_cols]
-
 
     # get some index strings for naming
     if longnames:
@@ -323,7 +306,14 @@ def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, ptype, use_cols=None
             raise Exception("write_list_tpl() error: unrecognized 'ptype' should be 'constant','zone',"+\
                             "or 'grid', not '{0}'".format(ptype))
 
+    parnme = list(df_tpl.loc[:,use_cols].values.flatten())
+    df_par = pd.DataFrame({"parnme":parnme},index=parnme)
 
+    for use_col in use_cols:
+        df_tpl.loc[:,use_col] = df_tpl.loc[:,use_col].apply(lambda x: "~  {0}  ~".format(x))
+    pyemu.helpers.write_df_tpl(filename=tpl_file,df=df_tpl,sep=',',tpl_marker='~')
+
+    return df_par
 
 
 

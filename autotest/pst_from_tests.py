@@ -55,10 +55,10 @@ def freyberg_test():
     print("{0} {1}".format(mf_exe_name, m.name + ".nam"), org_model_ws)
     os_utils.run("{0} {1}".format(mf_exe_name, m.name + ".nam"), cwd=org_model_ws)
 
-    pf = PstFrom(original_d=org_model_ws,new_d="new_temp",remove_existing=True,longnames=False)
-    pf.add_constant_pars(filenames=["WEL_0000.dat"], index_cols=[0, 1, 2], use_cols=3)
-    #pf.add_constant_pars(filenames="rech_1.ref")
-    #pf.add_constant_pars(filenames=["rech_1.ref","rech_2.ref"])
+    pf = PstFrom(original_d=org_model_ws,new_d="new_temp",remove_existing=True,longnames=True)
+    pf.add_parameters(filenames=["WEL_0000.dat"], par_type="constant",index_cols=[0, 1, 2], use_cols=3)
+    pf.add_parameters(filenames="rech_1.ref",par_type="grid")
+    pf.add_parameters(filenames=["rech_1.ref","rech_2.ref"],par_type="zone")
 
 if __name__ == "__main__":
     freyberg_test()
