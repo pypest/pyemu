@@ -26,10 +26,15 @@ class PstFrom(object):
         self.post_py_cmds = []
         self.post_sys_cmds = []
 
+        self.tpl_filenames, self.input_filenames = [],[]
+        self.ins_filenames, self.output_filenames = [],[]
+
         self.longnames=bool(longnames)
         self.logger = pyemu.Logger("PstFrom.log",echo=True)
 
         self.logger.statement("starting PstFrom process")
+
+        self._prefix_count = {}
 
         self._setup_dirs()
 
@@ -73,11 +78,13 @@ class PstFrom(object):
 
         self.logger.log("setting up dirs")
 
+
     def _par_filename_prep(self,filenames,index_cols,use_cols):
-        pass
+
         # todo: cast str column names, index_cols and use_cols to lower if str?
         # todo: copy files, load files, return file_dict
         # todo: check that all index_cols and use_cols are the same type
+        # todo: check for shape consistency at least for array types
         file_dict = {}
         if not isinstance(filenames,list):
             filenames = [filenames]
@@ -118,9 +125,6 @@ class PstFrom(object):
                 i = si.intersection(su)
                 if len(i) > 0:
                     self.logger.lraise("use_cols also listed in index_cols: {0}".format(str(i)))
-
-
-
 
             for filename in filenames:
                 delim_whitespace = True
@@ -166,18 +170,46 @@ class PstFrom(object):
                 self.logger.statement("loaded array '{0}' of shape {1}".format(filename,arr.shape))
                 np.savetxt(os.path.join(self.original_file_d,filename),arr)
                 file_dict[filename] = arr
+            fnames = list(file_dict.keys())
+            for i in range(len(fnames)):
+                for j in range(i+1,len(fnames)):
+                    if file_dict[fnames[i]].shape != file_dict[fnames[j]].shape:
+                        self.logger.lraise("shape mismatch for array types, '{0}' shape {1} != '{2}' shape {3}".
+                                           format(fnames[i],file_dict[fnames[i]].shape,
+                                                  fnames[j],file_dict[fnames[j]].shape))
+
+        return index_cols, use_cols, file_dict
 
 
     def add_pars_from_template(self,tpl_filename, in_filename):
         pass
 
 
-    def add_uniform_pars(self,filenames,dist_type="gaussian",sigma_range=4.0,
-                               upper_bound=1.0e10,lower_bound=1.0e-10,trans="log",
-                               prefix="uni",index_cols=None,use_cols=None):
-        self.logger.log("adding uniform pars for file(s) {0}".format(str(filenames)))
-        file_dict = self._par_filename_prep(filenames,index_cols,use_cols)
+    def _next_count(self,prefix):
+        if prefix not in self._prefix_count:
+            self._prefix_count[prefix] = 0
+        count = self._prefix_count[prefix]
+        self._prefix_count[prefix] += 1
+        return count
 
+
+    def add_constant_pars(self,filenames,zone_array=None,dist_type="gaussian",sigma_range=4.0,
+                          upper_bound=1.0e10,lower_bound=1.0e-10,trans="log",
+                          par_name_base="uni",index_cols=None,use_cols=None,
+                          tpl_filename=None):
+        self.logger.log("adding uniform pars for file(s) {0}".format(str(filenames)))
+        index_cols, use_cols, file_dict = self._par_filename_prep(filenames,index_cols,use_cols)
+        if tpl_filename is None:
+            tpl_filename = "{0}_{1}.tpl".format(par_name_base,self._next_count(par_name_base))
+        if tpl_filename in self.tpl_filenames:
+            self.logger.lraise("tpl_filename '{0}' already listed".format(tpl_filename))
+
+        if index_cols is not None:
+            write_list_tpl(file_dict.values(),par_name_base,tpl_filename,ptype="constant",suffix='',
+                           index_cols=index_cols,use_cols=use_cols,longnames=self.longnames)
+        else:
+            shape = file_dict[list(file_dict.keys())[0]].shape
+            pyemu.helpers.write_const_tpl(par_name_base,tpl_filename,suffix='',shape=shape,zn_array=zone_array)
 
         self.logger.log("adding uniform pars for file(s) {0}".format(str(filenames)))
 
@@ -224,5 +256,75 @@ class PstFrom(object):
         # todo: num_comps <= array entries
         # todo: if list pars, what if zone array is not 3D?
         pass
+
+
+
+def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, ptype, use_cols=None, zn_array=None, spatial_reference=None,
+                   longnames=False):
+
+    if not isinstance(dfs,list):
+        dfs = list(dfs)
+    #work out the union of indices across all dfs
+    sidx = set()
+    for df in dfs:
+        didx = set(df.loc[:,index_cols].apply(lambda x: tuple(x),axis=1))
+        sidx.update(didx)
+    df_tpl = pd.DataFrame({"sidx": sidx}, columns=["sidx"])
+
+    # use all non-index columns if use_cols not passed
+    if use_cols is None:
+        use_cols = [c for c in df_tpl.columns if c not in index_cols]
+
+
+    # get some index strings for naming
+    if longnames:
+        df_tpl.loc[:, "idx_strs"] = ["_".join(["{0}:{1}".format(idx,df.loc[i,idx])
+                              for idx in index_cols]) for i in range(df_tpl.shape[0])]
+
+    else:
+        df_tpl.loc[:, "idx_strs"] = ["".join(["{1:03d}".format(idx, df.loc[i, idx])
+                              for idx in index_cols]) for i in range(df_tpl.shape[0])]
+
+    for use_col in use_cols:
+        if ptype == "constant":
+            if longnames:
+                df_tpl.loc[:,use_col] = "{0}_{1}".format(name,use_col)
+                if suffix != '':
+                    df_tpl.loc[:,use_col] += "_{0}".format(suffix)
+            else:
+                df_tpl.loc[:, use_col] = "{0}{1}".format(name, use_col)
+                if suffix != '':
+                    df_tpl.loc[:, use_col] += suffix
+
+        elif ptype == "zone":
+            if longnames:
+                df_tpl.loc[:, use_col] = "{0}_{1}".format(name, use_col)
+                if suffix != '':
+                    df_tpl.loc[:, use_col] += "_{0}".format(suffix)
+            else:
+                df_tpl.loc[:, use_col] = "{0}{1}".format(name, use_col)
+                if suffix != '':
+                    df_tpl.loc[:, use_col] += suffix
+
+        elif ptype == "grid":
+            if longnames:
+                df_tpl.loc[:, use_col] = "{0}_{1}".format(name, use_col)
+                if suffix != '':
+                    df_tpl.loc[:, use_col] += "_{0}".format(suffix)
+                df_tpl.loc[:,use_col] += '_' + df_tpl.idx_strs
+
+            else:
+                df_tpl.loc[:, use_col] = "{0}{1}".format(name, use_col)
+                if suffix != '':
+                    df_tpl.loc[:, use_col] += suffix
+                df_tpl.loc[:,use_col] += df_tpl.idx_strs
+
+        else:
+            raise Exception("write_list_tpl() error: unrecognized 'ptype' should be 'constant','zone',"+\
+                            "or 'grid', not '{0}'".format(ptype))
+
+
+
+
 
 
