@@ -3,16 +3,17 @@ from __future__ import print_function, division
 import os
 from datetime import datetime
 import shutil
-
+import inspect
 import warnings
 
 import numpy as np
 import pandas as pd
 import pyemu
-
+from ..pyemu_warnings import PyemuWarning
 class PstFrom(object):
 
-    def __init__(self,original_d,new_d,longnames=True,remove_existing=False):
+    def __init__(self,original_d,new_d,longnames=True,remove_existing=False,
+                 spatial_reference=None):
         self.original_d = original_d
         self.new_d = new_d
         self.original_file_d = None
@@ -36,7 +37,42 @@ class PstFrom(object):
 
         self._prefix_count = {}
 
+        self.get_xy = None
+        self._spatial_reference = spatial_reference
+        self.initialize_spatial_reference()
+
         self._setup_dirs()
+
+
+    def _generic_get_xy(self,*args):
+        if len(args) == 3: #kij
+            return float(args[1]),float(args[2])
+        elif len(args) == 2: #ij
+            return float(args[0]),float(args[1])
+        else:
+            return 0.0,0.0
+
+    def _flopy_structured_get_xy(self,*kwargs):
+        if len(args) == 3: #kij
+            return self._spatial_reference.xcentergrid[args[1],args[2]],\
+                   self._spatial_reference.ycentergrid[args[1],args[2]]
+        elif len(args) == 2: #ij
+            return self._spatial_reference.xcentergrid[args[0], args[1]],\
+                   self._spatial_reference.ycentergrid[args[0], args[1]]
+        else:
+            self.logger.lraise("_flopy_structured_get_xy() error: wrong number of args, should be 3 (kij) or 2 (ij)"+\
+                               ", not '{0}'".format(str(args)))
+
+
+    def initialize_spatial_reference(self):
+        if self._spatial_reference is None:
+            self.get_xy = self._generic_get_xy
+        elif hasattr(self._spatial_reference,"xcentergrid") and\
+            hasattr(self._spatial_reference,"ycentergrid"):
+            self.get_xy = self._flopy_structured_get_xy
+        else:
+            self.logger.lraise("initialize_spatial_reference() error: unsupported spatial_reference")
+
 
 
     def write_forward_run(self):
@@ -201,8 +237,9 @@ class PstFrom(object):
     def add_parameters(self,filenames,par_type,zone_array=None,dist_type="gaussian",sigma_range=4.0,
                           upper_bound=1.0e10,lower_bound=1.0e-10,trans="log",
                           par_name_base="uni",index_cols=None,use_cols=None,
-                          tpl_filename=None,pp_space=10,num_eig_kl=100):
-        self.logger.log("adding uniform pars for file(s) {0}".format(str(filenames)))
+                          tpl_filename=None,pp_space=10,num_eig_kl=100,spatial_reference=None):
+        
+        self.logger.log("adding parameters for file(s) {0}".format(str(filenames)))
         index_cols, use_cols, file_dict = self._par_filename_prep(filenames,index_cols,use_cols)
         if tpl_filename is None:
             tpl_filename = "{0}_{1}.tpl".format(par_name_base,self._next_count(par_name_base))
@@ -212,20 +249,19 @@ class PstFrom(object):
         if index_cols is not None:
             self.logger.log("writing list-based template file '{0}'".format(tpl_filename))
             df = write_list_tpl(file_dict.values(),par_name_base,os.path.join(self.new_d,tpl_filename),
-                                ptype=par_type,suffix='',index_cols=index_cols,use_cols=use_cols,
-                                longnames=self.longnames)
+                                par_type=par_type,suffix='',index_cols=index_cols,use_cols=use_cols,
+                                zone_array=zone_array, longnames=self.longnames,
+                                get_xy=self.get_xy)
             self.logger.log("writing list-based template file '{0}'".format(tpl_filename))
         else:
             self.logger.log("writing array-based template file '{0}'".format(tpl_filename))
             shape = file_dict[list(file_dict.keys())[0]].shape
-            if par_type == "constant":
-                df = pyemu.helpers.write_const_tpl(par_name_base,tpl_filename,suffix='',shape=shape,zn_array=zone_array)
-            elif par_type == "zone":
-                df = pyemu.helpers.write_zone_tpl(par_name_base, tpl_filename, suffix='',
-                                                  shape=shape, zn_array=zone_array)
-            elif par_type == "grid":
-                df = pyemu.helpers.write_grid_tpl(par_name_base, tpl_filename, suffix='',
-                                                  shape=shape, zn_array=zone_array)
+            if par_type in ["constant","zone","grid"]:
+                df = write_array_tpl(name=par_name_base,tpl_file=tpl_filename,suffix='',
+                                     par_type=par_type,zone_array=zone_array,shape=shape,
+                                     longnames=self.longnames,get_xy=self.get_xy,
+                                     fill_value=1.0)
+                
             elif par_type == "pilotpoints" or par_type == "pilot_points":
                 self.logger.lraise("array type 'pilotpoints' not implemented")
             elif par_type == "kl":
@@ -238,13 +274,12 @@ class PstFrom(object):
         df.loc[:,"parubnd"] = upper_bound
         df.loc[:,"parlbnd"] = lower_bound
 
-        self.logger.log("adding uniform pars for file(s) {0}".format(str(filenames)))
+        self.logger.log("adding parameters for file(s) {0}".format(str(filenames)))
 
 
 
-def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, ptype, use_cols=None,
-                   zn_array=None, spatial_reference=None,
-                   longnames=False):
+def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, par_type, use_cols=None,
+                   zone_array=None,longnames=False,get_xy=None):
 
     if not isinstance(dfs,list):
         dfs = list(dfs)
@@ -254,6 +289,8 @@ def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, ptype, use_cols=None
         didx = set(df.loc[:,index_cols].apply(lambda x: tuple(x),axis=1))
         sidx.update(didx)
     df_tpl = pd.DataFrame({"sidx": sidx}, columns=["sidx"])
+
+
 
     # use all non-index columns if use_cols not passed
     if use_cols is None:
@@ -269,7 +306,7 @@ def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, ptype, use_cols=None
                               for idx in index_cols]) for i in range(df_tpl.shape[0])]
 
     for use_col in use_cols:
-        if ptype == "constant":
+        if par_type == "constant":
             if longnames:
                 df_tpl.loc[:,use_col] = "{0}_{1}".format(name,use_col)
                 if suffix != '':
@@ -279,7 +316,7 @@ def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, ptype, use_cols=None
                 if suffix != '':
                     df_tpl.loc[:, use_col] += suffix
 
-        elif ptype == "zone":
+        elif par_type == "zone":
             if longnames:
                 df_tpl.loc[:, use_col] = "{0}_{1}".format(name, use_col)
                 if suffix != '':
@@ -289,7 +326,7 @@ def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, ptype, use_cols=None
                 if suffix != '':
                     df_tpl.loc[:, use_col] += suffix
 
-        elif ptype == "grid":
+        elif par_type == "grid":
             if longnames:
                 df_tpl.loc[:, use_col] = "{0}_{1}".format(name, use_col)
                 if suffix != '':
@@ -303,8 +340,8 @@ def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, ptype, use_cols=None
                 df_tpl.loc[:,use_col] += df_tpl.idx_strs
 
         else:
-            raise Exception("write_list_tpl() error: unrecognized 'ptype' should be 'constant','zone',"+\
-                            "or 'grid', not '{0}'".format(ptype))
+            raise Exception("write_list_tpl() error: unrecognized 'par_type' should be 'constant','zone',"+\
+                            "or 'grid', not '{0}'".format(par_type))
 
     parnme = list(df_tpl.loc[:,use_cols].values.flatten())
     df_par = pd.DataFrame({"parnme":parnme},index=parnme)
@@ -316,5 +353,109 @@ def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, ptype, use_cols=None
     return df_par
 
 
+def write_array_tpl(name, tpl_file, suffix, par_type, zone_array=None, shape=None,
+                    longnames=False, fill_value=1.0,get_xy=None):
+    """ write a template file for a 2D array.
+
+        Parameters
+        ----------
+        name : str
+            the base parameter name
+        tpl_file : str
+            the template file to write - include path
+        zone_array : numpy.ndarray
+            an array used to skip inactive cells.  Values less than 1 are
+            not parameterized and are assigned a value of fill_value.
+            Default is None.
+        fill_value : float
+            value to fill in values that are skipped.  Default is 1.0.
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            a dataframe with parameter information
+
+        """
+    if shape is None and zone_array is None:
+        raise Exception("write_array_tpl() error: must pass either zone_array or shape")
+    elif shape is not None and zone_array is not None:
+        if shape != zone_array.shape:
+            raise Exception("write_array_tpl() error: passed shape != zone_array.shape")
+    elif shape is None:
+        shape = zone_array.shape
+    if len(shape) != 2:
+        raise Exception("write_array_tpl() error: shape '{0}' not 2D".format(str(shape)))
+
+    def constant_namer(i,j):
+        if longnames:
+            pname =  "const_{0}".format(name)
+            if suffix != '':
+                pname += "_{0}".format(suffix)
+        else:
+            pname = "{0}{1}".format(name, suffix)
+            if len(pname) > 12:
+                raise ("constant par name too long:{0}". \
+                       format(pname))
+        return pname
+
+    def zone_namer(i,j):
+        zval = 1
+        if zone_array is not None:
+            zval = zone_array[i, j]
+        if longnames:
+            pname = "{0}_zone:{1}".format(name, zval)
+            if suffix != '':
+                pname += "_{0}".format(suffix)
+        else:
+
+            pname = "{0}_zn{1}".format(name, zval)
+            if len(pname) > 12:
+                raise ("zone par name too long:{0}". \
+                       format(pname))
+        return pname
+
+    def grid_namer(i,j):
+        if longnames:
+            pname = "{0}_i:{0}_j:{1}".format(name, i, j)
+            if get_xy is not None:
+                pname += "_x:{0:10.2E}_y:{1:10.2E}".format(*get_xy(i,j))
+            if suffix != '':
+                pname += "_{0}".format(suffix)
+        else:
+            pname = "{0}{1:03d}{2:03d}".format(name, i, j)
+            if len(pname) > 12:
+                raise ("grid pname too long:{0}". \
+                       format(pname))
+        return pname
+
+    if par_type == "constant":
+        namer = constant_namer
+    elif par_type == "zone":
+        namer = zone_namer
+    elif par_type == "grid":
+        namer = grid_namer
+    else:
+        raise Exception("write_array_tpl() error: unsupported par_type"+
+                        ", options are 'constant', 'zone', or 'grid', not"+\
+                        "'{0}'".format(par_type))
+
+    parnme = []
+    with open(tpl_file, 'w') as f:
+        f.write("ptf ~\n")
+        for i in range(shape[0]):
+            for j in range(shape[1]):
+                if zone_array is not None and zone_array[i, j] < 1:
+                    pname = " {0} ".format(fill_value)
+                else:
+                    pname = namer(i,j)
+                    parnme.append(pname)
+                    pname = " ~   {0}    ~".format(pname)
+                f.write(pname)
+            f.write("\n")
+    df = pd.DataFrame({"parnme": parnme}, index=parnme)
+    # df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
+    df.loc[:, "pargp"] = "{0}_{1}".format(name, suffix.replace('_', ''))
+    df.loc[:, "tpl"] = tpl_file
+    return df
 
 
