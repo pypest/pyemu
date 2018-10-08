@@ -57,7 +57,7 @@ def freyberg_test():
 
     pf = PstFrom(original_d=org_model_ws,new_d="new_temp",remove_existing=True)
     pf.add_uniform_pars(filenames="rech_1.ref")
-    pf.add_uniform_pars(filenames=["WEL_0000.dat"])
+    pf.add_uniform_pars(filenames=["WEL_0000.dat"],index_cols=[0,1,2],use_cols=3)
 
 
 if __name__ == "__main__":
