@@ -48,6 +48,7 @@ def freyberg_test():
     nam_file = "freyberg.nam"
     m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False, forgive=False,
                                    exe_name=mf_exe_name)
+    flopy.modflow.ModflowRiv(m,stress_period_data={0:[0,0,0,1.0,1.0,1.0]})
     org_model_ws = "temp2"
     m.external_path="."
     m.change_model_ws(org_model_ws)
@@ -55,10 +56,16 @@ def freyberg_test():
     print("{0} {1}".format(mf_exe_name, m.name + ".nam"), org_model_ws)
     os_utils.run("{0} {1}".format(mf_exe_name, m.name + ".nam"), cwd=org_model_ws)
 
-    pf = PstFrom(original_d=org_model_ws,new_d="new_temp",remove_existing=True,longnames=True)
-    pf.add_parameters(filenames=["WEL_0000.dat"], par_type="constant",index_cols=[0, 1, 2], use_cols=3)
-    pf.add_parameters(filenames="rech_1.ref",par_type="grid")
-    pf.add_parameters(filenames=["rech_1.ref","rech_2.ref"],par_type="zone")
+    pf = PstFrom(original_d=org_model_ws,new_d="new_temp",remove_existing=True,
+                 longnames=True,spatial_reference=m.sr,zero_based=False)
+    pf.add_parameters(filenames="RIV_0000.dat", par_type="grid",
+                      index_cols=[0, 1, 2], use_cols=[3,4], par_name_base=["rivbot_grid","rivstage_grid"])
+    pf.add_parameters(filenames=["WEL_0000.dat","WEL_0001.dat"], par_type="grid",
+                      index_cols=[0, 1, 2], use_cols=3,par_name_base="welflux_grid",zone_array=m.bas6.ibound.array)
+    pf.add_parameters(filenames=["WEL_0000.dat"], par_type="constant", index_cols=[0, 1, 2],
+                      use_cols=3,par_name_base=["flux_const"])
+    #pf.add_parameters(filenames="rech_1.ref",par_type="grid")
+    #pf.add_parameters(filenames=["rech_1.ref","rech_2.ref"],par_type="zone")
 
 if __name__ == "__main__":
     freyberg_test()

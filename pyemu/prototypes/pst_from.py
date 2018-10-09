@@ -13,12 +13,15 @@ from ..pyemu_warnings import PyemuWarning
 class PstFrom(object):
 
     def __init__(self,original_d,new_d,longnames=True,remove_existing=False,
-                 spatial_reference=None):
+                 spatial_reference=None,zero_based=True):
         self.original_d = original_d
         self.new_d = new_d
         self.original_file_d = None
         self.mult_file_d = None
         self.remove_existing = bool(remove_existing)
+        self.zero_based = bool(zero_based)
+        self._spatial_reference = spatial_reference
+
         self.par_dfs = []
         self.obs_dfs = []
         self.pre_py_cmds = []
@@ -38,7 +41,7 @@ class PstFrom(object):
         self._prefix_count = {}
 
         self.get_xy = None
-        self._spatial_reference = spatial_reference
+
         self.initialize_spatial_reference()
 
         self._setup_dirs()
@@ -52,17 +55,21 @@ class PstFrom(object):
         else:
             return 0.0,0.0
 
-    def _flopy_structured_get_xy(self,*kwargs):
+    def _flopy_structured_get_xy(self,*args):
+
         if len(args) == 3: #kij
-            return self._spatial_reference.xcentergrid[args[1],args[2]],\
-                   self._spatial_reference.ycentergrid[args[1],args[2]]
+            i,j = args[1],args[2]
+
         elif len(args) == 2: #ij
-            return self._spatial_reference.xcentergrid[args[0], args[1]],\
-                   self._spatial_reference.ycentergrid[args[0], args[1]]
+            i,j = args[0],args[1]
         else:
             self.logger.lraise("_flopy_structured_get_xy() error: wrong number of args, should be 3 (kij) or 2 (ij)"+\
                                ", not '{0}'".format(str(args)))
-
+        if not self.zero_based:
+            i -= 1
+            j -= 1
+        return self._spatial_reference.xcentergrid[i,j], \
+               self._spatial_reference.ycentergrid[i,j]
 
     def initialize_spatial_reference(self):
         if self._spatial_reference is None:
@@ -72,7 +79,6 @@ class PstFrom(object):
             self.get_xy = self._flopy_structured_get_xy
         else:
             self.logger.lraise("initialize_spatial_reference() error: unsupported spatial_reference")
-
 
 
     def write_forward_run(self):
@@ -173,7 +179,7 @@ class PstFrom(object):
                     delim_whitespace = False
                     sep = ','
                 file_path = os.path.join(self.new_d, filename)
-                self.logger.log("loading array {0}".format(file_path))
+                self.logger.log("loading list {0}".format(file_path))
                 if not os.path.exists(file_path):
                     self.logger.lraise("par filename '{0}' not found ".format(file_path))
                 df = pd.read_csv(file_path,header=header,delim_whitespace=delim_whitespace)
@@ -181,22 +187,34 @@ class PstFrom(object):
                 for index_col in index_cols:
                     if index_col not in df.columns:
                         missing.append(index_col)
+                    df.loc[:,index_col] = df.loc[:,index_col].astype(np.int)
+
                 if len(missing) > 0:
                     self.logger.lraise("the following index_cols were not found in file '{0}':{1}".
-                                       format(file_path),str(missing))
+                                       format(file_path,str(missing)))
 
                 for use_col in use_cols:
                     if use_col not in df.columns:
                         missing.append(use_col)
                 if len(missing) > 0:
                     self.logger.lraise("the following use_cols were not found in file '{0}':{1}".
-                                       format(file_path),str(missing))
-                if header is None:
-                    header = False
+                                       format(file_path,str(missing)))
+                hheader = header
+                if hheader is None:
+                    hheader = False
                 self.logger.statement("loaded list '{0}' of shape {1}".format(file_path,df.shape))
-                df.to_csv(os.path.join(self.original_file_d,filename),index=False,sep=sep,header=header)
+                df.to_csv(os.path.join(self.original_file_d,filename),index=False,sep=sep,header=hheader)
                 file_dict[filename] = df
-                self.logger.log("loading array {0}".format(file_path))
+                self.logger.log("loading list {0}".format(file_path))
+
+            # check for compatibility
+            fnames = list(file_dict.keys())
+            for i in range(len(fnames)):
+                for j in range(i+1,len(fnames)):
+                    if file_dict[fnames[i]].shape[1] != file_dict[fnames[j]].shape[1]:
+                        self.logger.lraise("shape mismatch for array types, '{0}' shape {1} != '{2}' shape {3}".
+                                           format(fnames[i],file_dict[fnames[i]].shape[1],
+                                                  fnames[j],file_dict[fnames[j]].shape[1]))
 
 
         # load array type files
@@ -211,6 +229,8 @@ class PstFrom(object):
                 self.logger.statement("loaded array '{0}' of shape {1}".format(filename,arr.shape))
                 np.savetxt(os.path.join(self.original_file_d,filename),arr)
                 file_dict[filename] = arr
+
+            #check for compatibility
             fnames = list(file_dict.keys())
             for i in range(len(fnames)):
                 for j in range(i+1,len(fnames)):
@@ -235,14 +255,27 @@ class PstFrom(object):
 
 
     def add_parameters(self,filenames,par_type,zone_array=None,dist_type="gaussian",sigma_range=4.0,
-                          upper_bound=1.0e10,lower_bound=1.0e-10,trans="log",
-                          par_name_base="uni",index_cols=None,use_cols=None,
+                          upper_bound=1.0e10,lower_bound=1.0e-10,transform="log",
+                          par_name_base="p",index_cols=None,use_cols=None,
                           tpl_filename=None,pp_space=10,num_eig_kl=100,spatial_reference=None):
         
         self.logger.log("adding parameters for file(s) {0}".format(str(filenames)))
         index_cols, use_cols, file_dict = self._par_filename_prep(filenames,index_cols,use_cols)
+
+        tpl_base = par_name_base
+        if not isinstance(par_name_base, str):
+            if len(par_name_base) == 1:
+                par_name_base = str(par_name_base[0])
+                tpl_base = par_name_base
+            elif use_cols is not None and len(par_name_base) == len(use_cols):
+                tpl_base = par_name_base[0]
+            else:
+                self.logger.lraise("par_name_base should be a string,single-element " + \
+                                   "container,container of len use_cols " + \
+                                   "not '{0}'".format(str(par_name_base)))
+
         if tpl_filename is None:
-            tpl_filename = "{0}_{1}.tpl".format(par_name_base,self._next_count(par_name_base))
+            tpl_filename = "{0}_{1}.tpl".format(tpl_base,self._next_count(tpl_base))
         if tpl_filename in self.tpl_filenames:
             self.logger.lraise("tpl_filename '{0}' already listed".format(tpl_filename))
 
@@ -251,17 +284,22 @@ class PstFrom(object):
             df = write_list_tpl(file_dict.values(),par_name_base,os.path.join(self.new_d,tpl_filename),
                                 par_type=par_type,suffix='',index_cols=index_cols,use_cols=use_cols,
                                 zone_array=zone_array, longnames=self.longnames,
-                                get_xy=self.get_xy)
+                                get_xy=self.get_xy,zero_based=self.zero_based)
             self.logger.log("writing list-based template file '{0}'".format(tpl_filename))
         else:
             self.logger.log("writing array-based template file '{0}'".format(tpl_filename))
             shape = file_dict[list(file_dict.keys())[0]].shape
+
             if par_type in ["constant","zone","grid"]:
+                self.logger.log("writing template file {0} for {1}".\
+                                format(tpl_filename,par_name_base))
                 df = write_array_tpl(name=par_name_base,tpl_file=tpl_filename,suffix='',
                                      par_type=par_type,zone_array=zone_array,shape=shape,
                                      longnames=self.longnames,get_xy=self.get_xy,
                                      fill_value=1.0)
-                
+                self.logger.log("writing template file {0} for {1}". \
+                                format(tpl_filename, par_name_base))
+
             elif par_type == "pilotpoints" or par_type == "pilot_points":
                 self.logger.lraise("array type 'pilotpoints' not implemented")
             elif par_type == "kl":
@@ -270,16 +308,16 @@ class PstFrom(object):
                 self.logger.lraise("unrecognized 'par_type': '{0}', should be in "+\
                                    "['constant','zone','grid','pilotpoints','kl'")
             self.logger.log("writing array-based template file '{0}'".format(tpl_filename))
-        df.loc[:,"partrans"] = trans
+        df.loc[:,"partrans"] = transform
         df.loc[:,"parubnd"] = upper_bound
         df.loc[:,"parlbnd"] = lower_bound
-
+        print(df)
         self.logger.log("adding parameters for file(s) {0}".format(str(filenames)))
 
 
 
 def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, par_type, use_cols=None,
-                   zone_array=None,longnames=False,get_xy=None):
+                   zone_array=None,longnames=False,get_xy=None,zero_based=True):
 
     if not isinstance(dfs,list):
         dfs = list(dfs)
@@ -288,53 +326,89 @@ def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, par_type, use_cols=N
     for df in dfs:
         didx = set(df.loc[:,index_cols].apply(lambda x: tuple(x),axis=1))
         sidx.update(didx)
-    df_tpl = pd.DataFrame({"sidx": sidx}, columns=["sidx"])
 
+    df_tpl = pd.DataFrame({"sidx": list(sidx)}, columns=["sidx"])
+
+
+    # get some index strings for naming
+    if longnames:
+        j = '_'
+        fmt = "{0}:{1}"
+        if isinstance(index_cols[0], str):
+            inames = index_cols
+        else:
+            inames = ["idx{0}".format(i) for i in range(len(index_cols))]
+    else:
+        fmt = "{1:03d}"
+        j = ''
+
+
+    if not zero_based:
+        df_tpl.loc[:,"sidx"] = df_tpl.sidx.apply(lambda x: tuple(xx-1 for xx in x))
+        df_tpl.loc[:, "idx_strs"] = [j.join([fmt.format(iname, df.loc[i, idx]-1)
+                    for iname,idx in zip(inames,index_cols)]) for i in range(df_tpl.shape[0])]
+    else:
+        df_tpl.loc[:, "idx_strs"] = [j.join([fmt.format(iname, df.loc[i, idx])
+                    for iname, idx in zip(inames, index_cols)]) for i in range(df_tpl.shape[0])]
+
+
+    # if zone type, find the zones for each index position
+    if zone_array is not None and par_type in ["zone","grid"]:
+        if zone_array.ndim != len(index_cols):
+            raise Exception("write_list_tpl() error: zone_array.ndim "+\
+                            "({0}) != len(index_cols)({1})".format(zone_array.ndim,len(index_cols)))
+        df_tpl.loc[:,"zval"] = df_tpl.sidx.apply(lambda x: zone_array[x])
 
 
     # use all non-index columns if use_cols not passed
     if use_cols is None:
         use_cols = [c for c in df_tpl.columns if c not in index_cols]
 
-    # get some index strings for naming
-    if longnames:
-        df_tpl.loc[:, "idx_strs"] = ["_".join(["{0}:{1}".format(idx,df.loc[i,idx])
-                              for idx in index_cols]) for i in range(df_tpl.shape[0])]
 
-    else:
-        df_tpl.loc[:, "idx_strs"] = ["".join(["{1:03d}".format(idx, df.loc[i, idx])
-                              for idx in index_cols]) for i in range(df_tpl.shape[0])]
+    if get_xy is not None:
+        df_tpl.loc[:,'xy'] = df_tpl.sidx.apply(lambda x: get_xy(*x))
+        df_tpl.loc[:,'x'] = df_tpl.xy.apply(lambda x : x[0])
+        df_tpl.loc[:, 'y'] = df_tpl.xy.apply(lambda x: x[1])
 
-    for use_col in use_cols:
+
+    for iuc,use_col in enumerate(use_cols):
+        nname = name
+        if not isinstance(name,str):
+           nname = name[iuc]
         if par_type == "constant":
             if longnames:
-                df_tpl.loc[:,use_col] = "{0}_{1}".format(name,use_col)
+                df_tpl.loc[:,use_col] = "{0}_use_col:{1}".format(nname,use_col)
                 if suffix != '':
                     df_tpl.loc[:,use_col] += "_{0}".format(suffix)
             else:
-                df_tpl.loc[:, use_col] = "{0}{1}".format(name, use_col)
+                df_tpl.loc[:, use_col] = "{0}{1}".format(nname, use_col)
                 if suffix != '':
                     df_tpl.loc[:, use_col] += suffix
 
         elif par_type == "zone":
+
             if longnames:
-                df_tpl.loc[:, use_col] = "{0}_{1}".format(name, use_col)
+                df_tpl.loc[:, use_col] = "{0}_use_col:{1}".format(nname, use_col)
+                if zone_array is not None:
+                    df_tpl.loc[:, use_col] += df_tpl.zval.apply(lambda x: "_zone:{0}".format(x))
                 if suffix != '':
                     df_tpl.loc[:, use_col] += "_{0}".format(suffix)
             else:
-                df_tpl.loc[:, use_col] = "{0}{1}".format(name, use_col)
+                df_tpl.loc[:, use_col] = "{0}{1}".format(nname, use_col)
                 if suffix != '':
                     df_tpl.loc[:, use_col] += suffix
 
         elif par_type == "grid":
             if longnames:
-                df_tpl.loc[:, use_col] = "{0}_{1}".format(name, use_col)
+                df_tpl.loc[:, use_col] = "{0}_use_col:{1}".format(nname, use_col)
+                if zone_array is not None:
+                    df_tpl.loc[:, use_col] += df_tpl.zval.apply(lambda x: "_zone:{0}".format(x))
                 if suffix != '':
                     df_tpl.loc[:, use_col] += "_{0}".format(suffix)
                 df_tpl.loc[:,use_col] += '_' + df_tpl.idx_strs
 
             else:
-                df_tpl.loc[:, use_col] = "{0}{1}".format(name, use_col)
+                df_tpl.loc[:, use_col] = "{0}{1}".format(nname, use_col)
                 if suffix != '':
                     df_tpl.loc[:, use_col] += suffix
                 df_tpl.loc[:,use_col] += df_tpl.idx_strs
@@ -345,7 +419,11 @@ def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, par_type, use_cols=N
 
     parnme = list(df_tpl.loc[:,use_cols].values.flatten())
     df_par = pd.DataFrame({"parnme":parnme},index=parnme)
-
+    if not longnames:
+        too_long = df_par.loc[df_par.parnme.apply(lambda x: len(x) > 12),"parnme"]
+        if too_long.shape[0] > 0:
+            raise Exception("write_list_tpl() error: the following parameter names are too long:{0}".
+                            format(','.join(list(too_long))))
     for use_col in use_cols:
         df_tpl.loc[:,use_col] = df_tpl.loc[:,use_col].apply(lambda x: "~  {0}  ~".format(x))
     pyemu.helpers.write_df_tpl(filename=tpl_file,df=df_tpl,sep=',',tpl_marker='~')
@@ -440,6 +518,7 @@ def write_array_tpl(name, tpl_file, suffix, par_type, zone_array=None, shape=Non
                         "'{0}'".format(par_type))
 
     parnme = []
+    xx,yy,ii,jj = [],[],[],[]
     with open(tpl_file, 'w') as f:
         f.write("ptf ~\n")
         for i in range(shape[0]):
@@ -447,13 +526,24 @@ def write_array_tpl(name, tpl_file, suffix, par_type, zone_array=None, shape=Non
                 if zone_array is not None and zone_array[i, j] < 1:
                     pname = " {0} ".format(fill_value)
                 else:
+                    if get_xy is not None:
+                        x,y = get_xy(i,j)
+                        xx.append(x)
+                        yy.append(y)
+                    ii.append(i)
+                    jj.append(j)
+
                     pname = namer(i,j)
                     parnme.append(pname)
                     pname = " ~   {0}    ~".format(pname)
                 f.write(pname)
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme}, index=parnme)
-    # df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
+    df.loc[:,'i'] = ii
+    df.loc[:,'j'] = jj
+    if get_xy is not None:
+        df.loc[:,'x'] = xx
+        df.loc[:,'y'] = yy
     df.loc[:, "pargp"] = "{0}_{1}".format(name, suffix.replace('_', ''))
     df.loc[:, "tpl"] = tpl_file
     return df
