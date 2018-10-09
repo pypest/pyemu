@@ -64,8 +64,8 @@ def freyberg_test():
                       index_cols=[0, 1, 2], use_cols=3,par_name_base="welflux_grid",zone_array=m.bas6.ibound.array)
     pf.add_parameters(filenames=["WEL_0000.dat"], par_type="constant", index_cols=[0, 1, 2],
                       use_cols=3,par_name_base=["flux_const"])
-    #pf.add_parameters(filenames="rech_1.ref",par_type="grid")
-    #pf.add_parameters(filenames=["rech_1.ref","rech_2.ref"],par_type="zone")
+    pf.add_parameters(filenames="rech_1.ref",par_type="grid",zone_array=m.bas6.ibound[0].array,par_name_base="rch_datetime:1-1-1970")
+    pf.add_parameters(filenames=["rech_1.ref","rech_2.ref"],par_type="zone",zone_array=m.bas6.ibound[0].array)
 
 if __name__ == "__main__":
     freyberg_test()

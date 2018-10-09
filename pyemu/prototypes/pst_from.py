@@ -494,9 +494,11 @@ def write_array_tpl(name, tpl_file, suffix, par_type, zone_array=None, shape=Non
 
     def grid_namer(i,j):
         if longnames:
-            pname = "{0}_i:{0}_j:{1}".format(name, i, j)
+            pname = "{0}_i:{1}_j:{2}".format(name, i, j)
             if get_xy is not None:
-                pname += "_x:{0:10.2E}_y:{1:10.2E}".format(*get_xy(i,j))
+                pname += "_x:{0:0.2f}_y:{1:0.2f}".format(*get_xy(i,j))
+            if zone_array is not None:
+                pname += "_zone:{0}".format(zone_array[i,j])
             if suffix != '':
                 pname += "_{0}".format(suffix)
         else:
