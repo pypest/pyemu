@@ -22,6 +22,9 @@ class PstFrom(object):
         self.zero_based = bool(zero_based)
         self._spatial_reference = spatial_reference
 
+        self.mult_files = []
+        self.org_files = []
+
         self.par_dfs = []
         self.obs_dfs = []
         self.pre_py_cmds = []
@@ -125,12 +128,10 @@ class PstFrom(object):
         self.logger.log("setting up dirs")
 
 
-    def _par_filename_prep(self,filenames,index_cols,use_cols):
+    def _par_file_prep(self,filenames,index_cols,use_cols, tpl_filename):
 
         # todo: cast str column names, index_cols and use_cols to lower if str?
-        # todo: copy files, load files, return file_dict
         # todo: check that all index_cols and use_cols are the same type
-        # todo: check for shape consistency at least for array types
         file_dict = {}
         if not isinstance(filenames,list):
             filenames = [filenames]
@@ -239,7 +240,21 @@ class PstFrom(object):
                                            format(fnames[i],file_dict[fnames[i]].shape,
                                                   fnames[j],file_dict[fnames[j]].shape))
 
-        return index_cols, use_cols, file_dict
+        if tpl_filename is None:
+            tpl_filename = os.path.split(filenames[0])[-1] + "{0}.tpl".\
+                format(self._next_count(os.path.split(filenames[0])[-1]))
+        if tpl_filename in self.tpl_filenames:
+            self.logger.lraise("tpl_filename '{0}' already listed".format(tpl_filename))
+
+        self.tpl_filenames.append(tpl_filename)
+        mult_file = os.path.join("mult",tpl_filename.replace(".tpl",""))
+        self.output_filenames.append(mult_file)
+
+        for filename in file_dict.keys():
+            self.mult_files.append(mult_file)
+            self.org_files.append(os.path.join("org",filename))
+
+        return index_cols, use_cols, file_dict, tpl_filename
 
 
     def add_pars_from_template(self,tpl_filename, in_filename):
@@ -249,8 +264,10 @@ class PstFrom(object):
     def _next_count(self,prefix):
         if prefix not in self._prefix_count:
             self._prefix_count[prefix] = 0
-        count = self._prefix_count[prefix]
-        self._prefix_count[prefix] += 1
+            count = ''
+        else:
+            self._prefix_count[prefix] += 1
+            count = self._prefix_count[prefix]
         return count
 
 
@@ -260,24 +277,20 @@ class PstFrom(object):
                           tpl_filename=None,pp_space=10,num_eig_kl=100,spatial_reference=None):
         
         self.logger.log("adding parameters for file(s) {0}".format(str(filenames)))
-        index_cols, use_cols, file_dict = self._par_filename_prep(filenames,index_cols,use_cols)
+        index_cols, use_cols, file_dict, tpl_filename = self._par_file_prep(filenames,index_cols,use_cols,tpl_filename)
 
-        tpl_base = par_name_base
+
         if not isinstance(par_name_base, str):
             if len(par_name_base) == 1:
                 par_name_base = str(par_name_base[0])
-                tpl_base = par_name_base
             elif use_cols is not None and len(par_name_base) == len(use_cols):
-                tpl_base = par_name_base[0]
+                pass
             else:
                 self.logger.lraise("par_name_base should be a string,single-element " + \
-                                   "container,container of len use_cols " + \
+                                   "container, or container of len use_cols " + \
                                    "not '{0}'".format(str(par_name_base)))
 
-        if tpl_filename is None:
-            tpl_filename = "{0}_{1}.tpl".format(tpl_base,self._next_count(tpl_base))
-        if tpl_filename in self.tpl_filenames:
-            self.logger.lraise("tpl_filename '{0}' already listed".format(tpl_filename))
+
 
         if index_cols is not None:
             self.logger.log("writing list-based template file '{0}'".format(tpl_filename))
@@ -311,7 +324,8 @@ class PstFrom(object):
         df.loc[:,"partrans"] = transform
         df.loc[:,"parubnd"] = upper_bound
         df.loc[:,"parlbnd"] = lower_bound
-        print(df)
+        df.loc[:,"tpl_filename"] = tpl_filename
+
         self.logger.log("adding parameters for file(s) {0}".format(str(filenames)))
 
 

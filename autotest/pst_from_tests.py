@@ -67,5 +67,8 @@ def freyberg_test():
     pf.add_parameters(filenames="rech_1.ref",par_type="grid",zone_array=m.bas6.ibound[0].array,par_name_base="rch_datetime:1-1-1970")
     pf.add_parameters(filenames=["rech_1.ref","rech_2.ref"],par_type="zone",zone_array=m.bas6.ibound[0].array)
 
+    print(pf.mult_files)
+    print(pf.org_files)
+
 if __name__ == "__main__":
     freyberg_test()
