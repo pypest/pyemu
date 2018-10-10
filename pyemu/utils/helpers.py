@@ -3513,7 +3513,8 @@ def apply_hfb_pars():
         hfb_org[['lay', 'irow1','icol1','irow2','icol2', 'hydchr']].to_csv(ofp, sep=' ',
                 header=None, index=None)
 
-def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None):
+def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None,
+                    longnames=False):
     """ write a constant (uniform) template file
 
     Parameters
@@ -3543,13 +3544,16 @@ def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_r
         f.write("ptf ~\n")
         for i in range(shape[0]):
             for j in range(shape[1]):
-                if zn_array[i, j] < 1:
+                if zn_array is not None and zn_array[i, j] < 1:
                     pname = " 1.0  "
                 else:
-                    pname = "{0}{1}".format(name, suffix)
-                    if len(pname) > 12:
-                        raise("zone pname too long:{0}". \
-                                           format(pname))
+                    if longnames:
+                        pname = "const_{0}_{1}".format(name,suffix)
+                    else:
+                        pname = "{0}{1}".format(name, suffix)
+                        if len(pname) > 12:
+                            raise("zone pname too long:{0}". \
+                                               format(pname))
                     parnme.append(pname)
                     pname = " ~   {0}    ~".format(pname)
                 f.write(pname)
@@ -3561,7 +3565,8 @@ def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_r
     return df
 
 
-def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None):
+def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
+                   spatial_reference=None,longnames=False):
     """ write a grid-based template file
     Parameters
     ----------
@@ -3589,27 +3594,38 @@ def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_re
         f.write("ptf ~\n")
         for i in range(shape[0]):
             for j in range(shape[1]):
-                if zn_array[i, j] < 1:
+                if zn_array is not None and zn_array[i, j] < 1:
                     pname = ' 1.0 '
                 else:
-                    pname = "{0}{1:03d}{2:03d}".format(name, i, j)
-                    if len(pname) > 12:
-                        raise("grid pname too long:{0}". \
-                                           format(pname))
+                    if longnames:
+                        pname = "{0}_i:{0}_j:{1}_{2}".format(name,i,j,suffix)
+                        if spatial_reference is not None:
+                            pname += "_x:{0:10.2E}_y:{1:10.2E}".format(sr.xcentergrid[i,j],
+                                                                       sr.ycentergrid[i,j])
+                    else:
+                        pname = "{0}{1:03d}{2:03d}".format(name, i, j)
+                        if len(pname) > 12:
+                            raise("grid pname too long:{0}". \
+                                               format(pname))
                     parnme.append(pname)
                     pname = ' ~     {0}   ~ '.format(pname)
-                    x.append(spatial_reference.xcentergrid[i, j])
-                    y.append(spatial_reference.ycentergrid[i, j])
+                    if spatial_reference is not None:
+                        x.append(spatial_reference.xcentergrid[i, j])
+                        y.append(spatial_reference.ycentergrid[i, j])
 
                 f.write(pname)
             f.write("\n")
-    df = pd.DataFrame({"parnme": parnme, "x": x, "y": y}, index=parnme)
+    df = pd.DataFrame({"parnme": parnme}, index=parnme)
+    if spatial_reference is not None:
+        df.loc[:,'x'] = x
+        df.loc[:,'y'] = y
     df.loc[:, "pargp"] = "{0}{1}".format(suffix.replace('_', ''), name)
     df.loc[:, "tpl"] = tpl_file
     return df
 
 
-def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None):
+def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
+                   spatial_reference=None,longnames=False):
     """ write a zone template file
 
     Parameters
@@ -3642,13 +3658,20 @@ def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_re
         f.write("ptf ~\n")
         for i in range(shape[0]):
             for j in range(shape[1]):
-                if zn_array[i, j] < 1:
+                if zn_array is not None and zn_array[i, j] < 1:
                     pname = " 1.0  "
                 else:
-                    pname = "{0}_zn{1}".format(name, zn_array[i, j])
-                    if len(pname) > 12:
-                        raise("zone pname too long:{0}". \
-                                          format(pname))
+                    zval = 1
+                    if zn_array is not None:
+                        zval = zn_array[i, j]
+                    if longnames:
+                        pname = "{0}_zone:{1}_{2}".format(name,zval,suffix)
+                    else:
+
+                        pname = "{0}_zn{1}".format(name, zval)
+                        if len(pname) > 12:
+                            raise("zone pname too long:{0}". \
+                                              format(pname))
                     parnme.append(pname)
                     pname = " ~   {0}    ~".format(pname)
                 f.write(pname)
