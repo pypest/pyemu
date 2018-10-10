@@ -128,7 +128,7 @@ class PstFrom(object):
         self.logger.log("setting up dirs")
 
 
-    def _par_file_prep(self,filenames,index_cols,use_cols, tpl_filename):
+    def _par_prep(self,filenames,index_cols,use_cols):
 
         # todo: cast str column names, index_cols and use_cols to lower if str?
         # todo: check that all index_cols and use_cols are the same type
@@ -240,21 +240,21 @@ class PstFrom(object):
                                            format(fnames[i],file_dict[fnames[i]].shape,
                                                   fnames[j],file_dict[fnames[j]].shape))
 
-        if tpl_filename is None:
-            tpl_filename = os.path.split(filenames[0])[-1] + "{0}.tpl".\
-                format(self._next_count(os.path.split(filenames[0])[-1]))
-        if tpl_filename in self.tpl_filenames:
-            self.logger.lraise("tpl_filename '{0}' already listed".format(tpl_filename))
+        # if tpl_filename is None:
+        #     tpl_filename = os.path.split(filenames[0])[-1] + "{0}.tpl".\
+        #         format(self._next_count(os.path.split(filenames[0])[-1]))
+        # if tpl_filename in self.tpl_filenames:
+        #     self.logger.lraise("tpl_filename '{0}' already listed".format(tpl_filename))
+        #
+        # self.tpl_filenames.append(tpl_filename)
+        # mult_file = os.path.join("mult",tpl_filename.replace(".tpl",""))
+        # self.output_filenames.append(mult_file)
+        #
+        # for filename in file_dict.keys():
+        #     self.mult_files.append(mult_file)
+        #     self.org_files.append(os.path.join("org",filename))
 
-        self.tpl_filenames.append(tpl_filename)
-        mult_file = os.path.join("mult",tpl_filename.replace(".tpl",""))
-        self.output_filenames.append(mult_file)
-
-        for filename in file_dict.keys():
-            self.mult_files.append(mult_file)
-            self.org_files.append(os.path.join("org",filename))
-
-        return index_cols, use_cols, file_dict, tpl_filename
+        return index_cols, use_cols, file_dict
 
 
     def add_pars_from_template(self,tpl_filename, in_filename):
@@ -264,52 +264,68 @@ class PstFrom(object):
     def _next_count(self,prefix):
         if prefix not in self._prefix_count:
             self._prefix_count[prefix] = 0
-            count = ''
         else:
             self._prefix_count[prefix] += 1
-            count = self._prefix_count[prefix]
-        return count
+
+        return self._prefix_count[prefix]
 
 
     def add_parameters(self,filenames,par_type,zone_array=None,dist_type="gaussian",sigma_range=4.0,
                           upper_bound=1.0e10,lower_bound=1.0e-10,transform="log",
                           par_name_base="p",index_cols=None,use_cols=None,
-                          tpl_filename=None,pp_space=10,num_eig_kl=100,spatial_reference=None):
+                          pp_space=10,num_eig_kl=100,spatial_reference=None):
         
         self.logger.log("adding parameters for file(s) {0}".format(str(filenames)))
-        index_cols, use_cols, file_dict, tpl_filename = self._par_file_prep(filenames,index_cols,use_cols,tpl_filename)
+        index_cols, use_cols, file_dict = self._par_prep(filenames,index_cols,use_cols)
 
 
-        if not isinstance(par_name_base, str):
-            if len(par_name_base) == 1:
-                par_name_base = str(par_name_base[0])
-            elif use_cols is not None and len(par_name_base) == len(use_cols):
-                pass
-            else:
-                self.logger.lraise("par_name_base should be a string,single-element " + \
-                                   "container, or container of len use_cols " + \
-                                   "not '{0}'".format(str(par_name_base)))
+        if isinstance(par_name_base,str):
+            par_name_base = [par_name_base]
 
+        if len(par_name_base) == 1:
+            pass
+        elif use_cols is not None and len(par_name_base) == len(use_cols):
+            pass
+        else:
+            self.logger.lraise("par_name_base should be a string,single-element " + \
+                               "container, or container of len use_cols " + \
+                               "not '{0}'".format(str(par_name_base)))
+
+
+
+        if self.longnames:
+            fmt = "_inst:{0}"
+        else:
+            fmt = "{0}"
+        for i in range(len(par_name_base)):
+            par_name_base[i] += fmt.format(self._next_count(par_name_base[i]))
 
 
         if index_cols is not None:
+            mlt_filename = "{0}_{1}.csv".format(par_name_base[0],par_type)
+            tpl_filename = mlt_filename + ".tpl"
+
             self.logger.log("writing list-based template file '{0}'".format(tpl_filename))
             df = write_list_tpl(file_dict.values(),par_name_base,os.path.join(self.new_d,tpl_filename),
                                 par_type=par_type,suffix='',index_cols=index_cols,use_cols=use_cols,
                                 zone_array=zone_array, longnames=self.longnames,
-                                get_xy=self.get_xy,zero_based=self.zero_based)
+                                get_xy=self.get_xy,zero_based=self.zero_based,
+                                input_filename=os.path.join(self.mult_file_d,mlt_filename))
+
             self.logger.log("writing list-based template file '{0}'".format(tpl_filename))
         else:
+            mlt_filename = "{0}_{1}.csv".format(par_name_base[0], par_type)
+            tpl_filename = mlt_filename + ".tpl"
             self.logger.log("writing array-based template file '{0}'".format(tpl_filename))
             shape = file_dict[list(file_dict.keys())[0]].shape
 
             if par_type in ["constant","zone","grid"]:
                 self.logger.log("writing template file {0} for {1}".\
                                 format(tpl_filename,par_name_base))
-                df = write_array_tpl(name=par_name_base,tpl_file=tpl_filename,suffix='',
-                                     par_type=par_type,zone_array=zone_array,shape=shape,
-                                     longnames=self.longnames,get_xy=self.get_xy,
-                                     fill_value=1.0)
+                df = write_array_tpl(name=par_name_base[0],tpl_filename=os.path.join(self.new_d,tpl_filename),
+                                     suffix='',par_type=par_type,zone_array=zone_array,shape=shape,
+                                     longnames=self.longnames,get_xy=self.get_xy,fill_value=1.0,
+                                     input_filename=os.path.join(self.mult_file_d,mlt_filename))
                 self.logger.log("writing template file {0} for {1}". \
                                 format(tpl_filename, par_name_base))
 
@@ -324,14 +340,21 @@ class PstFrom(object):
         df.loc[:,"partrans"] = transform
         df.loc[:,"parubnd"] = upper_bound
         df.loc[:,"parlbnd"] = lower_bound
-        df.loc[:,"tpl_filename"] = tpl_filename
+        #df.loc[:,"tpl_filename"] = tpl_filename
+
+        self.tpl_filenames.append(tpl_filename)
+        self.input_filenames.append(mlt_filename)
+        for file_name in file_dict.keys():
+            self.org_files.append(file_name)
+            self.mult_files.append(mlt_filename)
 
         self.logger.log("adding parameters for file(s) {0}".format(str(filenames)))
 
 
 
-def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, par_type, use_cols=None,
-                   zone_array=None,longnames=False,get_xy=None,zero_based=True):
+def write_list_tpl(dfs, name, tpl_filename, suffix, index_cols, par_type, use_cols=None,
+                   zone_array=None,longnames=False,get_xy=None,zero_based=True,
+                   input_filename=None):
 
     if not isinstance(dfs,list):
         dfs = list(dfs)
@@ -440,13 +463,19 @@ def write_list_tpl(dfs, name, tpl_file, suffix, index_cols, par_type, use_cols=N
                             format(','.join(list(too_long))))
     for use_col in use_cols:
         df_tpl.loc[:,use_col] = df_tpl.loc[:,use_col].apply(lambda x: "~  {0}  ~".format(x))
-    pyemu.helpers.write_df_tpl(filename=tpl_file,df=df_tpl,sep=',',tpl_marker='~')
+    pyemu.helpers.write_df_tpl(filename=tpl_filename,df=df_tpl,sep=',',tpl_marker='~')
 
+    if input_filename is not None:
+        df_in = df_tpl.copy()
+        df_in.loc[:,use_cols] = 1.0
+        df_in.to_csv(input_filename)
+    df_par.loc[:,"tpl_filename"] = tpl_filename
+    df_par.loc[:,"input_filename"] = input_filename
     return df_par
 
 
-def write_array_tpl(name, tpl_file, suffix, par_type, zone_array=None, shape=None,
-                    longnames=False, fill_value=1.0,get_xy=None):
+def write_array_tpl(name, tpl_filename, suffix, par_type, zone_array=None, shape=None,
+                    longnames=False, fill_value=1.0,get_xy=None,input_filename=None):
     """ write a template file for a 2D array.
 
         Parameters
@@ -535,7 +564,7 @@ def write_array_tpl(name, tpl_file, suffix, par_type, zone_array=None, shape=Non
 
     parnme = []
     xx,yy,ii,jj = [],[],[],[]
-    with open(tpl_file, 'w') as f:
+    with open(tpl_filename, 'w') as f:
         f.write("ptf ~\n")
         for i in range(shape[0]):
             for j in range(shape[1]):
@@ -561,7 +590,12 @@ def write_array_tpl(name, tpl_file, suffix, par_type, zone_array=None, shape=Non
         df.loc[:,'x'] = xx
         df.loc[:,'y'] = yy
     df.loc[:, "pargp"] = "{0}_{1}".format(name, suffix.replace('_', ''))
-    df.loc[:, "tpl"] = tpl_file
+    df.loc[:, "tpl_filename"] = tpl_filename
+    df.loc[:,"input_filename"] = input_filename
+    if input_filename is not None:
+        arr = np.ones(shape)
+        np.savetxt(input_filename,arr,fmt="%2.1f")
+
     return df
 
 
