@@ -765,14 +765,14 @@ def mixed_par_draw_test():
 
     how = {}
 
-    for p in pst.par_names[:10]:
+    for p in pst.adj_par_names[:10]:
         how[p] = "gaussian"
-    for p in pst.par_names[12:30]:
+    for p in pst.adj_par_names[12:30]:
         how[p] = "uniform"
-    for p in pst.par_names[40:100]:
+    for p in pst.adj_par_names[40:100]:
         how[p] = "triangular"
-    for pnames in how.keys():
-        pst.parameter_data.loc[::3,"partrans"] = "fixed"
+    #for pnames in how.keys():
+    #    pst.parameter_data.loc[::3,"partrans"] = "fixed"
 
     pe = pyemu.ParameterEnsemble.from_mixed_draws(pst,how)
     pst.parameter_data.loc[pname, "partrans"] = "none"
@@ -851,8 +851,8 @@ def ensemble_deviations_test():
 
 
 if __name__ == "__main__":
-    ensemble_deviations_test()
-    #mixed_par_draw_test()
+    #ensemble_deviations_test()
+    mixed_par_draw_test()
     #triangular_draw_test()
     # sparse_draw_test()
     # binary_ensemble_dev()

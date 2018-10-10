@@ -58,7 +58,12 @@ def res_test():
     assert "regul_p" in phi_comp
     assert "regul_m" in phi_comp
 
-    p.adjust_weights_resfile()
+    p.adjust_weights_discrepancy(original_ceiling=False)
+    d = np.abs(p.phi - p.nnz_obs)
+    assert d < 1.0E-5
+
+    p = Pst(os.path.join(pst_dir, "pest.pst"))
+    p.adjust_weights_resfile(original_ceiling=False)
 
     d = np.abs(p.phi - p.nnz_obs)
     assert d < 1.0E-5
@@ -316,6 +321,15 @@ def nnz_groups_test():
     new_nnz_og = pst.nnz_obs_groups
     assert org_og[0] not in new_nnz_og
 
+
+def adj_group_test():
+    import os
+    import pyemu
+    pst_dir = os.path.join("pst")
+    pst = pyemu.Pst(os.path.join(pst_dir, "pest.pst"))
+    par = pst.parameter_data
+    par.loc[par.pargp.apply(lambda x: x in pst.par_groups[1:]),"partrans"] = "fixed"
+    assert pst.adj_par_groups == [pst.par_groups[0]]
 
 def regdata_test():
     import os
@@ -1031,7 +1045,6 @@ def sanity_check_test():
 
     pst.write(os.path.join("temp", "test.pst"))
 
-
 def pst_from_flopy_geo_draw_test():
     import shutil
     import numpy as np
@@ -1065,6 +1078,7 @@ def pst_from_flopy_geo_draw_test():
                                          remove_existing=True,
                                          model_exe_name="mfnwt", temporal_list_props=temp_list_props,
                                          spatial_list_props=spat_list_props)
+
 
     num_reals = 100000
     pe1 = ph.draw(num_reals=num_reals, sigma_range=6)
@@ -1130,8 +1144,40 @@ def csv_to_ins_test():
     assert len(names) == df.shape[0] * df.shape[1]
 
 
+def lt_gt_constraint_names_test():
+    import os
+    import pyemu
+    import os
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    obs = pst.observation_data
+    obs.loc[:,"weight"] = 1.0
+    pst.observation_data.loc[pst.obs_names[:4],"obgnme"] = "lessjunk"
+    pst.observation_data.loc[pst.obs_names[4:8], "obgnme"] = "l_junk"
+    pst.observation_data.loc[pst.obs_names[8:12], "obgnme"] = "greaterjunk"
+    pst.observation_data.loc[pst.obs_names[12:16], "obgnme"] = "g_junk"
+    assert pst.less_than_obs_constraints.shape[0] == 8
+    assert pst.greater_than_obs_constraints.shape[0] == 8
+
+    obs.loc[:, "weight"] = 0.0
+    assert pst.less_than_obs_constraints.shape[0] == 0
+    assert pst.greater_than_obs_constraints.shape[0] == 0
+
+    pi = pst.prior_information
+    pi.loc[pst.prior_names[:4],"obgnme"] = "lessjunk"
+    pi.loc[pst.prior_names[4:8], "obgnme"] = "l_junk"
+    pi.loc[pst.prior_names[8:12], "obgnme"] = "greaterjunk"
+    pi.loc[pst.prior_names[12:16], "obgnme"] = "g_junk"
+    assert pst.less_than_pi_constraints.shape[0] == 8
+    assert pst.greater_than_pi_constraints.shape[0] == 8
+
+    pi.loc[:, "weight"] = 0.0
+    assert pst.less_than_pi_constraints.shape[0] == 0
+    assert pst.greater_than_pi_constraints.shape[0] == 0
+
 if __name__ == "__main__":
-    # csv_to_ins_test()
+    #lt_gt_constraint_names_test()
+    #csv_to_ins_test()
     # pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
@@ -1149,6 +1195,7 @@ if __name__ == "__main__":
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
+    #adj_group_test()
     # regul_rectify_test()
     # derivative_increment_tests()
     # tied_test()
@@ -1161,7 +1208,7 @@ if __name__ == "__main__":
     # test_e_clean()
     # load_test()
     # flex_load_test()
-    # res_test()
+    res_test()
     # smp_test()
     # from_io_with_inschek_test()
     # pestpp_args_test()

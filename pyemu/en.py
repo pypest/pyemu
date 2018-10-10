@@ -1214,7 +1214,7 @@ class ParameterEnsemble(Ensemble):
 
     @classmethod
     def from_mixed_draws(cls,pst,how_dict,default="gaussian",num_reals=100,cov=None,sigma_range=6,
-                         enforce_bounds=True):
+                         enforce_bounds=True,partial=False):
         """instaniate a parameter ensemble from stochastic draws using a mixture of
         distributions.  Available distributions include (log) "uniform", (log) "triangular",
         and (log) "gaussian". log transformation is respected.
@@ -1240,6 +1240,8 @@ class ParameterEnsemble(Ensemble):
         enforce_bounds : boolean
             flag to enforce parameter bounds in resulting ParameterEnsemble.
             Only matters if "gaussian" is in values of how_dict.  Default is True.
+        partial : bool
+            flag to allow a partial ensemble (not all pars included). Default is False
 
         """
 
@@ -1247,12 +1249,12 @@ class ParameterEnsemble(Ensemble):
         accept = {"uniform", "triangular", "gaussian"}
         assert default in accept,"ParameterEnsemble.from_mixed_draw() error: 'default' must be in {0}".format(accept)
         par_org = pst.parameter_data.copy()
-        pset = set(pst.par_names)
+        pset = set(pst.adj_par_names)
         hset = set(how_dict.keys())
         missing = pset.difference(hset)
         #assert len(missing) == 0,"ParameterEnsemble.from_mixed_draws() error: the following par names are not in " +\
         #    " in how_dict: {0}".format(','.join(missing))
-        if len(missing) > 0:
+        if not partial and len(missing) > 0:
             print("{0} par names missing in how_dict, these parameters will be sampled using {1} (the 'default')".\
                   format(len(missing),default))
             for m in missing:
@@ -1280,6 +1282,7 @@ class ParameterEnsemble(Ensemble):
         if len(how_groups["gaussian"]) > 0:
             gset = set(how_groups["gaussian"])
             par_gaussian = par_org.loc[gset, :]
+            par_gaussian.sort_values(by="parnme", inplace=True)
             pst.parameter_data = par_gaussian
 
             if cov is not None:
@@ -1298,26 +1301,32 @@ class ParameterEnsemble(Ensemble):
 
         if len(how_groups["uniform"]) > 0:
             par_uniform = par_org.loc[how_groups["uniform"],:]
+            par_uniform.sort_values(by="parnme",inplace=True)
             pst.parameter_data = par_uniform
             pe_uniform = ParameterEnsemble.from_uniform_draw(pst,num_reals=num_reals)
             pes.append(pe_uniform)
 
         if len(how_groups["triangular"]) > 0:
             par_tri = par_org.loc[how_groups["triangular"],:]
+            par_tri.sort_values(by="parnme", inplace=True)
             pst.parameter_data = par_tri
             pe_tri = ParameterEnsemble.from_triangular_draw(pst,num_reals=num_reals)
             pes.append(pe_tri)
 
 
-
-
-
         df = pd.DataFrame(index=np.arange(num_reals),columns=par_org.parnme.values)
+
         df.loc[:,:] = np.NaN
+        fixed_tied = par_org.loc[par_org.partrans.apply(lambda x: x in ["fixed","tied"]),"parval1"].to_dict()
+        for p,v in fixed_tied.items():
+            df.loc[:,p] = v
+
         for pe in pes:
             df.loc[pe.index,pe.columns] = pe
-        print(df.shape)
-        if df.shape != df.dropna().shape:
+
+        if partial:
+            df = df.dropna(axis=1)
+        elif df.shape != df.dropna().shape:
             raise Exception("ParameterEnsemble.from_mixed_draws() error: NaNs in final parameter ensemble")
         pst.parameter_data = par_org
         return ParameterEnsemble.from_dataframe(df=df,pst=pst)

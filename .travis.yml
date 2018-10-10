@@ -7,11 +7,7 @@ python:
   - "2.7"
   - "3.5"
   - "3.6"
-cache:
-  pip: true
-  directories:
-    - $HOME/.cache/pip
-    - $HOME/.local
+
 
 addons:
   apt:
