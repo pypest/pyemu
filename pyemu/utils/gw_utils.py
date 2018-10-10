@@ -1742,7 +1742,9 @@ def load_sfr_out(sfr_out_file, selection=None):
     tag = " stream listing"
     lcount = 0
     sfr_dict = {}
-    if isinstance(selection, str):
+    if selection is None:
+        pass
+    elif isinstance(selection, str):
         assert selection == 'all', "If string passed as selection only 'all' allowed: {}".format(selection)
     else:
         assert isinstance(
