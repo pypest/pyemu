@@ -9,9 +9,9 @@ import copy
 class Assimilator():
     def __init__(self, type='Smoother', iterate=False, pst=None, mode='stochastic', options={}):
         """
-        A clase to implement one update cycle. For the Ensemble smoother, the update cycle includes all available
-        observations; for ensemble filter, it will update parameter given new observations only; and finally for Kalman Smoother,
-        the parameters will be updated given all observations avialble before a certain time
+        A clase to implement one or multiple update cycle. For the Ensemble smoother (ES), the update cycle includes all available
+        observations. Ror Ensemble Kalman Filter (EnKF), the update is acheived on multiple cycles (time windows); and finally the nsemble Kalman Smoother (EnKS)
+        updat parameters given all observations available up to a certain time
         """
         self.mode_options = ['Stochastic', 'Deterministic']
         self.type_options = ['Smoother', 'Kalman Filter', 'Kalman Smoother']
