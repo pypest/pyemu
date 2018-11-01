@@ -1077,7 +1077,7 @@ def grid_obs_test():
     diff = df1.obsval - df2.obsval
     assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
 
-    m = flopy.modflow.Modflow.load("freyberg.nam", model_ws=m_ws, load_only=[])
+    m = flopy.modflow.Modflow.load("freyberg.nam", model_ws=m_ws, load_only=["BAS6"],forgive=False,verbose=True)
     kperk_pairs = [(0, 0), (0, 1), (0, 2)]
     skipmask = m.bas6.ibound.array
     pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
@@ -1552,7 +1552,7 @@ def fieldgen_dev():
 
 
 if __name__ == "__main__":
-    fieldgen_dev()
+    # fieldgen_dev()
     # smp_test()
     # smp_dateparser_test()
     # smp_to_ins_test()
@@ -1569,7 +1569,7 @@ if __name__ == "__main__":
     #sfr_helper_test()
     # gw_sft_ins_test()
     # par_knowledge_test()
-    # grid_obs_test()
+    grid_obs_test()
     # hds_timeseries_test()
     # postprocess_inactive_conc_test()
     # plot_summary_test()
