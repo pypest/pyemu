@@ -1,5 +1,6 @@
 import os
 import copy
+import shutil
 import numpy as np
 import pandas as pd
 import flopy
@@ -60,11 +61,11 @@ def setup_truth():
                                          sfr_obs=sfr_obs_dict,hds_kperk=hds_kperk)
     par = ph.pst.parameter_data
     wf_pars = par.parnme.apply(lambda x: x.startswith("wel"))
-    par.loc[wf_pars,"parubnd"] = 100
-    par.loc[wf_pars,"parlbnd"] = 0.01
+    par.loc[wf_pars,"parubnd"] = 10
+    par.loc[wf_pars,"parlbnd"] = 0.1
     rch_pars = par.parnme.apply(lambda x: x.startswith("rech") and x.endswith("_cn"))
-    par.loc[rch_pars, "parubnd"] = 1.25
-    par.loc[rch_pars, "parlbnd"] = 0.75
+    par.loc[rch_pars, "parubnd"] = 1.2
+    par.loc[rch_pars, "parlbnd"] = 0.8
 
     ph.pst.control_data.noptmax = 0
     ph.pst.write(os.path.join("truth_template","freyberg_truth.pst"))
@@ -162,9 +163,46 @@ def process_truth_for_obs_states():
     truth_obs_states.loc[:,"obsnme"] = truth_obs_states.apply(lambda x: "hds_00_{0:03d}_{1:03d}_000".format(int(x.i),int(x.j)),axis=1)
     truth_obs_states.to_csv(os.path.join("da","freyberg","daily_template","truth_states.csv"))
 
+
+def freyberg_test():
+    t_d = "daily_template"
+    m_d = "daily_master"
+    bd = os.getcwd()
+
+    os.chdir(os.path.join("da","freyberg"))
+    #load the truth states
+    truth_df = pd.read_csv(os.path.join(t_d,"truth_states.csv"),index_col=0)
+    # for now,not adding any noise to the truth states
+
+    truth_df = truth_df.loc[truth_df.kper==0,:]
+    truth_df.index = truth_df.obsnme
+    print(truth_df)
+
+    t_d = "daily_template"
+    m_d = "daily_master"
+    if os.path.exists(m_d):
+        shutil.rmtree(m_d)
+    shutil.copytree(t_d,m_d)
+    shutil.copytree(t_d,os.path.join(m_d,t_d))
+    os.chdir(m_d)
+    pst = pyemu.Pst(os.path.join("freyberg_transient.pst"))
+    obs = pst.observation_data
+
+    # set all obs weights to zero
+    obs.loc[:,"weight"] = 0.0
+    # replace the obs vals in the pst with the truth states at the end of the first assimilation cycle
+    obs.loc[truth_df.index,"obsval"] = truth_df.loc[:,"0"]
+    obs.loc[truth_df.index, "weight"] = 0.001 # oh, who knows...
+
+    enkf = pyemu.EnsembleKalmanFilter(pst=pst,num_slaves=5,slave_dir=t_d)
+    enkf.initialize(num_reals=20)
+
+    os.chdir(bd)
+
 if __name__ == "__main__":
-    #setup_freyberg_transient_model()
-    #setup_truth()
-    #run_truth_sweep()
+    setup_freyberg_transient_model()
+    setup_truth()
+    run_truth_sweep()
     setup_daily_da()
     process_truth_for_obs_states()
+    freyberg_test()

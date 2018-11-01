@@ -1,9 +1,199 @@
 import os
 import sys
-import pyemu
 import multiprocessing as mp
-from pyemu_warnings import PyemuWarning
 import copy
+
+import pyemu
+from .ensemble_method import EnsembleMethod
+
+
+class EnsembleKalmanFilter(EnsembleMethod):
+    def __init__(self, pst, parcov = None, obscov = None, num_slaves = 0,
+                 submit_file = None, verbose = False, port = 4004, slave_dir = "template"):
+        super(EnsembleKalmanFilter, self).__init__(pst=pst, parcov=parcov, obscov=obscov, num_slaves=num_slaves,
+                                      submit_file=submit_file, verbose=verbose, port=port,
+                                      slave_dir=slave_dir)
+
+    def initialize(self,num_reals=1,enforce_bounds="reset",
+                   parensemble=None,obsensemble=None,restart_obsensemble=None):
+        """Initialize.  Depending on arguments, draws or loads
+        initial parameter observations ensembles and runs the initial parameter
+        ensemble
+
+        Parameters
+        ----------
+            num_reals : int
+                the number of realizations to draw.  Ignored if parensemble/obsensemble
+                are not None
+            enforce_bounds : str
+                how to enfore parameter bound transgression.  options are
+                reset, drop, or None
+            parensemble : pyemu.ParameterEnsemble or str
+                a parameter ensemble or filename to use as the initial
+                parameter ensemble.  If not None, then obsenemble must not be
+                None
+            obsensemble : pyemu.ObservationEnsemble or str
+                an observation ensemble or filename to use as the initial
+                observation ensemble.  If not None, then parensemble must
+                not be None
+            restart_obsensemble : pyemu.ObservationEnsemble or str
+                an observation ensemble or filename to use as an
+                evaluated observation ensemble.  If not None, this will skip the initial
+                parameter ensemble evaluation - user beware!
+
+        """
+
+        build_empirical_prior = False
+
+        # initialize the phi report csv
+        self.enforce_bounds = enforce_bounds
+
+        self.total_runs = 0
+        # this matrix gets used a lot, so only calc once and store
+        self.obscov_inv_sqrt = self.obscov.get(self.pst.nnz_obs_names).inv.sqrt
+
+        self.logger.log("forming inverse sqrt parcov matrix")
+        self.parcov_inv_sqrt = self.parcov.inv.sqrt
+        self.logger.log("forming inverse sqrt parcov matrix")
+
+        if parensemble is not None and obsensemble is not None:
+            self.logger.log("initializing with existing ensembles")
+            if isinstance(parensemble,str):
+                self.logger.log("loading parensemble from file")
+                if not os.path.exists(obsensemble):
+                    self.logger.lraise("can not find parensemble file: {0}".\
+                                       format(parensemble))
+                df = pd.read_csv(parensemble,index_col=0)
+                #df.index = [str(i) for i in df.index]
+                self.parensemble_0 = ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
+                self.logger.log("loading parensemble from file")
+
+            elif isinstance(parensemble,ParameterEnsemble):
+                self.parensemble_0 = parensemble.copy()
+            else:
+                raise Exception("unrecognized arg type for parensemble, " +\
+                                "should be filename or ParameterEnsemble" +\
+                                ", not {0}".format(type(parensemble)))
+            self.parensemble = self.parensemble_0.copy()
+            if isinstance(obsensemble,str):
+                self.logger.log("loading obsensemble from file")
+                if not os.path.exists(obsensemble):
+                    self.logger.lraise("can not find obsensemble file: {0}".\
+                                       format(obsensemble))
+                df = pd.read_csv(obsensemble,index_col=0).loc[:,self.pst.nnz_obs_names]
+                #df.index = [str(i) for i in df.index]
+                self.obsensemble_0 = ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
+                self.logger.log("loading obsensemble from file")
+
+            elif isinstance(obsensemble,ObservationEnsemble):
+                self.obsensemble_0 = obsensemble.copy()
+            else:
+                raise Exception("unrecognized arg type for obsensemble, " +\
+                                "should be filename or ObservationEnsemble" +\
+                                ", not {0}".format(type(obsensemble)))
+
+            assert self.parensemble_0.shape[0] == self.obsensemble_0.shape[0]
+            #self.num_reals = self.parensemble_0.shape[0]
+            num_reals = self.parensemble.shape[0]
+            self.logger.log("initializing with existing ensembles")
+
+            if build_empirical_prior:
+
+                self.reset_parcov(self.parensemble.covariance_matrix())
+                if self.save_mats:
+                    self.parcov.to_binary(self.pst.filename+".empcov.jcb")
+
+        else:
+            if build_empirical_prior:
+                self.logger.lraise("can't use build_emprirical_prior without parensemble...")
+            self.logger.log("initializing with {0} realizations".format(num_reals))
+            self.logger.log("initializing parensemble")
+            self.parensemble_0 = pyemu.ParameterEnsemble.from_gaussian_draw(self.pst,
+                                                                            self.parcov,num_reals=num_reals)
+            self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
+            self.logger.log("initializing parensemble")
+            self.parensemble = self.parensemble_0.copy()
+            self.parensemble_0.to_csv(self.pst.filename +\
+                                      self.paren_prefix.format(0))
+            self.logger.log("initializing parensemble")
+            self.logger.log("initializing obsensemble")
+            self.obsensemble_0 = pyemu.ObservationEnsemble.from_id_gaussian_draw(self.pst,
+                                                                                 num_reals=num_reals)
+            #self.obsensemble = self.obsensemble_0.copy()
+
+            # save the base obsensemble
+            self.obsensemble_0.to_csv(self.pst.filename +\
+                                      self.obsen_prefix.format(-1))
+            self.logger.log("initializing obsensemble")
+            self.logger.log("initializing with {0} realizations".format(num_reals))
+
+
+        self.enforce_bounds = enforce_bounds
+
+        if restart_obsensemble is not None:
+            self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
+            failed_runs,self.obsensemble = self._load_obs_ensemble(restart_obsensemble)
+            assert self.obsensemble.shape[0] == self.obsensemble_0.shape[0]
+            assert list(self.obsensemble.columns) == list(self.obsensemble_0.columns)
+            self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
+
+        else:
+            # run the initial parameter ensemble
+            self.logger.log("evaluating initial ensembles")
+            self.obsensemble = self.forecast()
+            self.logger.log("evaluating initial ensembles")
+
+        if not self.parensemble.istransformed:
+            self.parensemble._transform(inplace=True)
+        if not self.parensemble_0.istransformed:
+            self.parensemble_0._transform(inplace=True)
+        self._initialized = True
+
+
+    def forecast(self,parensemble=None):
+        """for the enkf formulation, this simply moves the ensemble forward by running the model
+        once for each realization"""
+        if parensemble is None:
+            parensemble = self.parensemble
+        self.logger.log("evaluating ensemble")
+        failed_runs, obsensemble = self._calc_obs(parensemble)
+
+
+        if failed_runs is not None:
+            self.logger.warn("dropping failed realizations")
+            parensemble.loc[failed_runs, :] = np.NaN
+            parensemble = parensemble.dropna()
+            obsensemble.loc[failed_runs, :] = np.NaN
+            obsensemble = obsensemble.dropna()
+        self.logger.log("evaluating ensemble")
+
+        return obsensemble
+
+    def analysis(self):
+        """Ayman here!!!.  some peices that may be useful:
+        self.parcov = parameter covariance matrix
+        self.obscov = obseravtion noise covariance matrix
+        self.parensmeble = current parameter ensemble
+        self.obsensemble = current observation (model output) ensemble
+
+        the ensemble instances have two useful methods:
+        Ensemble.covariance_matrix() - get an empirical covariance matrix
+        Ensemble.get_deviations() - get an ensemble of deviations around the mean vector
+
+
+
+        """
+
+
+
+        self.iter_num += 1
+
+    def update(self):
+        """update performs the analysis, then runs the forecast using the updated self.parensemble.
+        This can be called repeatedly to iterate..."""
+        self.analysis()
+        self.forecast()
+
 
 
 class Assimilator():
