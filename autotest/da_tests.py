@@ -200,9 +200,9 @@ def freyberg_test():
     os.chdir(bd)
 
 if __name__ == "__main__":
-    setup_freyberg_transient_model()
-    setup_truth()
-    run_truth_sweep()
-    setup_daily_da()
-    process_truth_for_obs_states()
+    #setup_freyberg_transient_model()
+    #setup_truth()
+    #run_truth_sweep()
+    #setup_daily_da()
+    #process_truth_for_obs_states()
     freyberg_test()

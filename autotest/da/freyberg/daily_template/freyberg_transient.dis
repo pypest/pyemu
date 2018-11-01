@@ -4,5 +4,5 @@
 OPEN/CLOSE                      ./delr.ref               1  (20E15.6) -1 delr                          
 OPEN/CLOSE                      ./delc.ref               1  (40E15.6) -1 delc                          
 OPEN/CLOSE                 ./model_top.ref               1     (FREE) -1 model_top                     
-OPEN/CLOSE              ./botm_layer_1.ref               1  (20E15.6) -1 botm_layer_0                  
+OPEN/CLOSE              ./botm_layer_1.ref               1     (FREE) -1 botm_layer_0                  
       1.000000             1  1.000000  SS 

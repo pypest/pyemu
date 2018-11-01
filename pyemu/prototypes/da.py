@@ -180,6 +180,14 @@ class EnsembleKalmanFilter(EnsembleMethod):
         Ensemble.covariance_matrix() - get an empirical covariance matrix
         Ensemble.get_deviations() - get an ensemble of deviations around the mean vector
 
+        If you use pyemu.Matrix (and pyemu.Cov) for the linear algebra parts, you don't
+        have to worry about the alignment of the matrices (pyemu will dynamically reorder/align
+        based in row and/or col names).  The Matrix instance also has a .inv for the inverse
+        as well as .s, .u and .v for the SVD components (gets dynamically evaluated if you try to
+        access these attributes)
+
+
+
 
 
         """
