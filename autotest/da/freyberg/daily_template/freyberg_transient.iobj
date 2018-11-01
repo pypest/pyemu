@@ -1,0 +1,2 @@
+iteration,model_runs_completed,total_phi,measurement_phi,regularization_phi,flx_stream_,vol_stream_,vol_wells,vol_in-out,flx_total,vol_percent,vol_storage,flx_wells,flaqx,flx_constan,vol_total,hds,vol_recharg,vol_constan,flx_storage,flx_in-out,flx_percent,flout,flx_recharg
+0,1,3.58105e-10,3.58105e-10,0,0,0,0,0,0,0,0,0,0,0,0,3.58105e-10,0,0,0,0,0,0,0
