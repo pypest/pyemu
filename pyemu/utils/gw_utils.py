@@ -1743,8 +1743,7 @@ def load_sfr_out(sfr_out_file, selection=None):
     lcount = 0
     sfr_dict = {}
     if selection is None:
-        warnings.warn("Flow out aggregation for segment has changed. "
-                      "Now returning flow out at bottom of seg ...", PyemuWarning)
+        pass
     elif isinstance(selection, str):
         assert selection == 'all', "If string passed as selection only 'all' allowed: {}".format(selection)
     else:
