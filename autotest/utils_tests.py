@@ -1077,7 +1077,7 @@ def grid_obs_test():
     diff = df1.obsval - df2.obsval
     assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
 
-    m = flopy.modflow.Modflow.load("freyberg.nam", model_ws=m_ws, load_only=[])
+    m = flopy.modflow.Modflow.load("freyberg.nam", model_ws=m_ws, load_only=["BAS6"])
     kperk_pairs = [(0, 0), (0, 1), (0, 2)]
     skipmask = m.bas6.ibound.array
     pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
