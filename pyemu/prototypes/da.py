@@ -191,8 +191,15 @@ class EnsembleKalmanFilter(EnsembleMethod):
 
 
         """
+        A = pyemu.Matrix.from_dataframe(self.obsensemble.get_deviations().loc[:,self.pst.nnz_obs_names])
+        C = A * A.T
+        C /= float(C.shape[0] - 1)
+
+        innovation = self.obsensemble_0.loc[:,self.pst.nnz_obs_names] - self.obsensemble.loc[:,self.pst.nnz_obs_names]
 
 
+
+        new_paren = self.parensemble + upgrade
 
         self.iter_num += 1
 
