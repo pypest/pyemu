@@ -362,7 +362,7 @@ def setup_pp_test():
     ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False)
 
     pp_dir = os.path.join("utils")
-    ml.export(os.path.join("temp","test_unrot_grid.shp"))
+    #ml.export(os.path.join("temp","test_unrot_grid.shp"))
 
     par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(sr=ml.sr, prefix_dict={0: "hk1",1:"hk2"},
                                                            every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
@@ -388,7 +388,7 @@ def setup_pp_test():
 
 
     ml.sr.rotation = 15
-    ml.export(os.path.join("temp","test_rot_grid.shp"))
+    #ml.export(os.path.join("temp","test_rot_grid.shp"))
 
     #pyemu.gw_utils.setup_pilotpoints_grid(ml)
 
@@ -1569,7 +1569,7 @@ if __name__ == "__main__":
     #sfr_helper_test()
     # gw_sft_ins_test()
     # par_knowledge_test()
-    grid_obs_test()
+    # grid_obs_test()
     # hds_timeseries_test()
     # postprocess_inactive_conc_test()
     # plot_summary_test()
@@ -1594,7 +1594,7 @@ if __name__ == "__main__":
     # smp_to_ins_test()
     # read_pestpp_runstorage_file_test()
     # write_tpl_test()
-    # pp_to_shapefile_test()
+    pp_to_shapefile_test()
     # read_pval_test()
     # read_hob_test()
     #setup_pp_test()

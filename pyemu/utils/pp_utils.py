@@ -304,7 +304,8 @@ def write_pp_shapfile(pp_df,shapename=None):
 
     # some pandas awesomeness..
     for df in dfs:
-        df.apply(lambda x: shp.poly([[[x.x, x.y]]]), axis=1)
+        #df.apply(lambda x: shp.poly([[[x.x, x.y]]]), axis=1)
+        df.apply(lambda x: shp.point(x.x, x.y), axis=1)
         df.apply(lambda x: shp.record(*x), axis=1)
 
     try:
