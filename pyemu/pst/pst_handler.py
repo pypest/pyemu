@@ -1946,7 +1946,7 @@ class Pst(object):
         return new_par_data
 
 
-    def add_observations(self,ins_file,out_file,pst_path=None,inschek=True):
+    def add_observations(self,ins_file,out_file=None,pst_path=None,inschek=True):
         """ add new parameters to a control file
 
         Parameters
@@ -1954,7 +1954,7 @@ class Pst(object):
             ins_file : str
                 instruction file
             out_file : str
-                model output file
+                model output file.  If None, then ins_file.replace(".ins","") is used.  Default is None
             pst_path : str(optional)
                 the path to append to the instruction file and out file in the control file.  If
                 not None, then any existing path in front of the template or in file is split off
@@ -1973,6 +1973,8 @@ class Pst(object):
 
         """
         assert os.path.exists(ins_file),"{0}, {1}".format(os.getcwd(),ins_file)
+        if out_file is None:
+            out_file = ins_file.replace(".ins","")
         assert ins_file != out_file, "doh!"
 
         # get the parameter names in the template file
@@ -1998,15 +2000,16 @@ class Pst(object):
         new_obs_data.loc[new_obsnme,"obsnme"] = new_obsnme
         new_obs_data.index = new_obsnme
         self.observation_data = self.observation_data.append(new_obs_data)
-
+        cwd = '.'
         if pst_path is not None:
+            cwd = os.path.join(*os.path.split(ins_file)[:-1])
             ins_file = os.path.join(pst_path,os.path.split(ins_file)[-1])
             out_file = os.path.join(pst_path, os.path.split(out_file)[-1])
         self.instruction_files.append(ins_file)
         self.output_files.append(out_file)
         df = None
         if inschek:
-            df = pst_utils._try_run_inschek(ins_file,out_file)
+            df = pst_utils._try_run_inschek(ins_file,out_file,cwd=cwd)
         if df is not None:
             #print(self.observation_data.index,df.index)
             self.observation_data.loc[df.index,"obsval"] = df.obsval
