@@ -198,8 +198,8 @@ class Matrix(object):
 
     par_length = 12
     obs_length = 20
-    new_par_length = 100
-    new_obs_length = 100
+    new_par_length = 200
+    new_obs_length = 200
 
     def __init__(self, x=None, row_names=[], col_names=[], isdiagonal=False,
                  autoalign=True):
@@ -1469,7 +1469,7 @@ class Matrix(object):
 
 
     def to_coo(self,filename,droptol=None,chunk=None):
-        """write a PEST-compatible binary file.  The data format is
+        """write a new format binary file.  The data format is
         [int,int,float] for i,j,value.  It is autodetected during
         the read with Matrix.from_binary().
 
@@ -1523,6 +1523,8 @@ class Matrix(object):
 
         for name in self.col_names:
             if len(name) > self.new_par_length:
+                warnings.warn("par name '{0}' greater than {1} chars"\
+                              .format(name,self.new_par_length))
                 name = name[:self.new_par_length - 1]
             elif len(name) < self.new_par_length:
                 for i in range(len(name), self.new_par_length):
@@ -1530,6 +1532,8 @@ class Matrix(object):
             f.write(name.encode())
         for name in self.row_names:
             if len(name) > self.new_obs_length:
+                warnings.warn("obs name '{0}' greater than {1} chars"\
+                              .format(name, self.new_obs_length))
                 name = name[:self.new_obs_length - 1]
             elif len(name) < self.new_obs_length:
                 for i in range(len(name), self.new_obs_length):
@@ -1598,6 +1602,7 @@ class Matrix(object):
 
         for name in self.col_names:
             if len(name) > self.par_length:
+                warnings.warn("par name '{0}' greater than {1} chars".format(name, self.par_length))
                 name = name[:self.par_length - 1]
             elif len(name) < self.par_length:
                 for i in range(len(name), self.par_length):
@@ -1605,6 +1610,7 @@ class Matrix(object):
             f.write(name.encode())
         for name in self.row_names:
             if len(name) > self.obs_length:
+                warnings.warn("obs name '{0}' greater than {1} chars".format(name, self.obs_length))
                 name = name[:self.obs_length - 1]
             elif len(name) < self.obs_length:
                 for i in range(len(name), self.obs_length):
@@ -1652,7 +1658,7 @@ class Matrix(object):
             # raise TypeError('Matrix.from_binary(): Jco produced by ' +
             #                 'deprecated version of PEST,' +
             #                 'Use JcoTRANS to convert to new format')
-            print("'COO' format detected...")
+            print("new binary format detected...")
 
             data = np.fromfile(f, Matrix.coo_rec_dt, icount)
             if sparse:
@@ -1915,7 +1921,7 @@ class Matrix(object):
         assert isinstance(df, pandas.DataFrame)
         row_names = copy.deepcopy(list(df.index))
         col_names = copy.deepcopy(list(df.columns))
-        return cls(x=df.as_matrix(),row_names=row_names,col_names=col_names)
+        return cls(x=df.values,row_names=row_names,col_names=col_names)
 
 
     @classmethod
@@ -2468,7 +2474,7 @@ class Cov(Matrix):
         if not pst_file.endswith(".pst"):
             pst_file += ".pst"
         new_pst = Pst(pst_file)
-        return Cov.from_parameter_data(new_pst, sigma_range)
+        return Cov.from_parameter_data(new_pst, sigma_range, scale_offset)
 
     @classmethod
     def from_parameter_data(cls, pst, sigma_range = 4.0, scale_offset=True):
@@ -2516,9 +2522,11 @@ class Cov(Matrix):
                                 "variance for parameter {0} is nan".\
                                 format(row["parnme"]))
             if (var == 0.0):
-                raise Exception("Cov.from_parameter_data() error: " +\
-                                "variance for parameter {0} is 0.0".\
-                                format(row["parnme"]))
+                s = "Cov.from_parameter_data() error: " +\
+                                "variance for parameter {0} is 0.0.".format(row["parnme"])
+                s += "  This might be from enforcement of scale/offset and log transform."
+                s += "  Try changing 'scale_offset' arg"
+                raise Exception(s)
             x[idx] = var
             names.append(row["parnme"].lower())
             idx += 1

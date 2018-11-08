@@ -306,7 +306,11 @@ class GeoStruct(object):
         if "ax" in kwargs:
             ax = kwargs.pop("ax")
         else:
-            import matplotlib.pyplot as plt
+            try:
+                import matplotlib.pyplot as plt
+            except Exception as e:
+                raise Exception("error importing matplotlib: {0}".format(str(e)))
+
             ax = plt.subplot(111)
         legend = kwargs.pop("legend",False)
         individuals = kwargs.pop("individuals",False)
@@ -1118,7 +1122,11 @@ class Vario2d(object):
         kwargs are passed to matplotlib.pyplot.plot()
 
         """
-        import matplotlib.pyplot as plt
+        try:
+            import matplotlib.pyplot as plt
+        except Exception as e:
+            raise Exception("error importing matplotlib: {0}".format(str(e)))
+
         ax = kwargs.pop("ax",plt.subplot(111))
         x = np.linspace(0,self.a*3,100)
         y = self.inv_h(x)
@@ -1686,7 +1694,7 @@ def _read_structure_attributes(f):
         elif line[0] == "end":
             break
         elif line[0] == "mean":
-            warning.warn("'mean' attribute not supported, skipping",PyemuWarningF)
+            warnings.warn("'mean' attribute not supported, skipping",PyemuWarning)
         else:
             raise Exception("unrecognized line in structure definition:{0}".\
                             format(line[0]))

@@ -362,7 +362,7 @@ def setup_pp_test():
     ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,check=False)
 
     pp_dir = os.path.join("utils")
-    ml.export(os.path.join("temp","test_unrot_grid.shp"))
+    #ml.export(os.path.join("temp","test_unrot_grid.shp"))
 
     par_info_unrot = pyemu.pp_utils.setup_pilotpoints_grid(sr=ml.sr, prefix_dict={0: "hk1",1:"hk2"},
                                                            every_n_cell=2, pp_dir=pp_dir, tpl_dir=pp_dir,
@@ -388,7 +388,7 @@ def setup_pp_test():
 
 
     ml.sr.rotation = 15
-    ml.export(os.path.join("temp","test_rot_grid.shp"))
+    #ml.export(os.path.join("temp","test_rot_grid.shp"))
 
     #pyemu.gw_utils.setup_pilotpoints_grid(ml)
 
@@ -456,7 +456,7 @@ def smp_to_ins_test():
         pass
     else:
         raise Exception("should have failed")
-    pyemu.pst_utils.smp_to_ins(smp,ins,True)
+    pyemu.smp_utils.smp_to_ins(smp,ins,True)
 
 def master_and_slaves():
     import shutil
@@ -943,8 +943,6 @@ def plot_summary_test():
         plt.close(fig)
 
 
-
-
 def hds_timeseries_test():
     import os
     import shutil
@@ -985,6 +983,7 @@ def hds_timeseries_test():
     # pyemu.gw_utils.apply_hds_obs(hds_file)
     # df2 = pd.read_csv(out_file, delim_whitespace=True)
     # diff = df1.obsval - df2.obsval
+
 
 def grid_obs_test():
     import os
@@ -1078,7 +1077,7 @@ def grid_obs_test():
     diff = df1.obsval - df2.obsval
     assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
 
-    m = flopy.modflow.Modflow.load("freyberg.nam", model_ws=m_ws, load_only=[])
+    m = flopy.modflow.Modflow.load("freyberg.nam", model_ws=m_ws, load_only=["BAS6"],forgive=False,verbose=True)
     kperk_pairs = [(0, 0), (0, 1), (0, 2)]
     skipmask = m.bas6.ibound.array
     pyemu.gw_utils.setup_hds_obs(multlay_hds_file, kperk_pairs=kperk_pairs,
@@ -1113,6 +1112,39 @@ def grid_obs_test():
     diff = df1.obsval - df2.obsval
     assert np.allclose(df1.obsval, df2.obsval), abs(diff.max())
 
+
+def postprocess_inactive_conc_test():
+    import os
+    import shutil
+    import numpy as np
+    import pandas as pd
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+    bd = os.getcwd()
+    model_ws = os.path.join("..", "examples", "Freyberg_transient")
+
+    org_hds_file = os.path.join("utils", "MT3D001.UCN")
+    hds_file = os.path.join("temp", "MT3D001.UCN")
+    shutil.copy2(org_hds_file, hds_file)
+    kij_dict = {"test1": [0, 0, 0], "test2": (1, 1, 1), "inact": [0, 81, 35]}
+
+    m = flopy.modflow.Modflow.load("freyberg.nam", model_ws=model_ws, load_only=[], check=False)
+    frun_line, df = pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, model=m, include_path=True, prefix="hds",
+                                                        postprocess_inact=1E30)
+    os.chdir("temp")
+    df0 = pd.read_csv("{0}_timeseries.processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True)
+    df1 = pd.read_csv("{0}_timeseries.post_processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True)
+    eval(frun_line)
+    df2 = pd.read_csv("{0}_timeseries.processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True)
+    df3 = pd.read_csv("{0}_timeseries.post_processed".format(os.path.split(hds_file)[-1]), delim_whitespace=True)
+    assert np.allclose(df0, df2)
+    assert np.allclose(df2.test1, df3.test1)
+    assert np.allclose(df2.test2, df3.test2)
+    assert np.allclose(df3, df1)
+    os.chdir(bd)
 
 def par_knowledge_test():
     import os
@@ -1240,7 +1272,46 @@ def sfr_obs_test():
 
     m = flopy.modflow.Modflow.load("freyberg.nam",model_ws="utils",load_only=[],check=False)
     pyemu.gw_utils.setup_sfr_obs(sfr_file,model=m)
+    pyemu.gw_utils.apply_sfr_obs()
     pyemu.gw_utils.setup_sfr_obs(sfr_file, seg_group_dict={"obs1": [1, 4], "obs2": [16, 17, 18, 19, 22, 23]},model=m)
+
+
+def sfr_reach_obs_test():
+    import os
+    import pyemu
+    import flopy
+    import pandas as pd
+    import numpy as np
+
+    sfr_file = os.path.join("utils","freyberg.sfr.out")
+    pyemu.gw_utils.setup_sfr_reach_obs(sfr_file, seg_reach=[[1, 2], [4, 1], [2, 2]])
+    proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
+    assert proc.shape[0] == 3*2  # (nper*nobs)
+    pyemu.gw_utils.setup_sfr_reach_obs(sfr_file, seg_reach=np.array([[1, 2], [4, 1], [2, 2]]))
+    proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
+    assert proc.shape[0] == 3*2  # (nper*nobs)
+    pyemu.gw_utils.setup_sfr_reach_obs(sfr_file)
+    proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
+    assert proc.shape[0] == 3*40  # (nper*nobs)
+    pyemu.gw_utils.setup_sfr_reach_obs(sfr_file,seg_reach={"obs1": [1, 2], "obs2": [4, 1]})
+    proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
+    assert proc.shape[0] == 3*2  # (nper*nobs)
+    seg_reach_df = pd.DataFrame.from_dict({"obs1": [1, 2], "obs2": [4, 1]}, columns=['segment', 'reach'], orient='index')
+    pyemu.gw_utils.setup_sfr_reach_obs(sfr_file, seg_reach=seg_reach_df)
+    proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
+    assert proc.shape[0] == 3*2  # (nper*nobs)
+
+    m = flopy.modflow.Modflow.load("freyberg.nam", model_ws="utils", load_only=[], check=False)
+    pyemu.gw_utils.setup_sfr_reach_obs(sfr_file, model=m)
+    pyemu.gw_utils.apply_sfr_reach_obs()
+    proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
+    assert proc.shape[0] == 3*40  # (nper*nobs)
+    pyemu.gw_utils.setup_sfr_reach_obs(sfr_file, seg_reach={"obs1": [1, 2], "obs2": [4, 1], "blah": [2, 1]}, model=m)
+    proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
+    assert proc.shape[0] == 3*2  # (nper*nobs)
+    pyemu.gw_utils.setup_sfr_reach_obs(sfr_file, model=m, seg_reach=seg_reach_df)
+    proc = pd.read_csv("{0}.reach_processed".format(sfr_file), sep=' ')
+    assert proc.shape[0] == 3*2  # (nper*nobs)
 
 
 def gage_obs_test():
@@ -1391,21 +1462,116 @@ def read_runstor_test():
         raise Exception()
 
 
+
+def smp_test():
+    import os
+    from pyemu.utils import smp_to_dataframe, dataframe_to_smp, \
+        smp_to_ins
+    from pyemu.pst.pst_utils import parse_ins_file
+
+    smp_filename = os.path.join("misc", "gainloss.smp")
+    df = smp_to_dataframe(smp_filename)
+    print(df.dtypes)
+    dataframe_to_smp(df, smp_filename + ".test")
+    smp_to_ins(smp_filename)
+    obs_names = parse_ins_file(smp_filename + ".ins")
+    print(len(obs_names))
+
+    smp_filename = os.path.join("misc", "sim_hds_v6.smp")
+    df = smp_to_dataframe(smp_filename)
+    print(df.dtypes)
+    dataframe_to_smp(df, smp_filename + ".test")
+    smp_to_ins(smp_filename)
+    obs_names = parse_ins_file(smp_filename + ".ins")
+    print(len(obs_names))
+
+
+def smp_dateparser_test():
+    import os
+    import pyemu
+    from pyemu.utils import smp_to_dataframe, dataframe_to_smp, \
+        smp_to_ins
+
+
+
+    smp_filename = os.path.join("misc", "gainloss.smp")
+    df = smp_to_dataframe(smp_filename, datetime_format="%d/%m/%Y %H:%M:%S")
+    print(df.dtypes)
+    dataframe_to_smp(df, smp_filename + ".test")
+    smp_to_ins(smp_filename)
+    obs_names = pyemu.pst_utils.parse_ins_file(smp_filename + ".ins")
+    print(len(obs_names))
+
+    smp_filename = os.path.join("misc", "sim_hds_v6.smp")
+    df = smp_to_dataframe(smp_filename)
+    print(df.dtypes)
+    dataframe_to_smp(df, smp_filename + ".test")
+    smp_to_ins(smp_filename)
+    obs_names = pyemu.pst_utils.parse_ins_file(smp_filename + ".ins")
+    print(len(obs_names))
+
+
+
+def fieldgen_dev():
+    import shutil
+    import numpy as np
+    import pandas as pd
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    flopy.modflow.ModflowRiv(m, stress_period_data={0: [[0, 0, 0, 30.0, 1.0, 25.0],
+                                                        [0, 0, 1, 31.0, 1.0, 25.0],
+                                                        [0, 0, 1, 31.0, 1.0, 25.0]]})
+    org_model_ws = "temp"
+    m.change_model_ws(org_model_ws)
+    m.write_input()
+
+    new_model_ws = "temp_fieldgen"
+
+    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+                                         org_model_ws=org_model_ws,
+                                         grid_props=[["upw.hk", 0], ["rch.rech", 0]],
+                                         remove_existing=True,build_prior=False)
+    v = pyemu.geostats.ExpVario(1.0,1000,anisotropy=10,bearing=45)
+    gs = pyemu.geostats.GeoStruct(nugget=0.0,variograms=v,name="aniso")
+    struct_dict = {gs:["hk","ss"]}
+    df = pyemu.helpers.run_fieldgen(m,10,struct_dict,cwd=new_model_ws)
+
+    import matplotlib.pyplot as plt
+    i = df.index.map(lambda x: int(x.split('_')[0]))
+    j = df.index.map(lambda x: int(x.split('_')[1]))
+    arr = np.zeros((m.nrow,m.ncol))
+    arr[i,j] = df.iloc[:,0]
+    plt.imshow(arr)
+    plt.show()
+
+
 if __name__ == "__main__":
-    read_runstor_test()
+    # fieldgen_dev()
+    # smp_test()
+    # smp_dateparser_test()
+    # smp_to_ins_test()
+    #read_runstor_test()
     #long_names()
     #master_and_slaves()
     #plot_id_bar_test()
     #pst_from_parnames_obsnames_test()
     #write_jactest_test()
-    #sfr_obs_test()
+    # sfr_obs_test()
+    #sfr_reach_obs_test()
     #gage_obs_test()
     #setup_pp_test()
     #sfr_helper_test()
     # gw_sft_ins_test()
     # par_knowledge_test()
-    #grid_obs_test()
+    # grid_obs_test()
     # hds_timeseries_test()
+    # postprocess_inactive_conc_test()
     # plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
@@ -1428,7 +1594,7 @@ if __name__ == "__main__":
     # smp_to_ins_test()
     # read_pestpp_runstorage_file_test()
     # write_tpl_test()
-    # pp_to_shapefile_test()
+    pp_to_shapefile_test()
     # read_pval_test()
     # read_hob_test()
     #setup_pp_test()

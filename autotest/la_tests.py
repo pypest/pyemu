@@ -72,6 +72,10 @@ def schur_test():
     print(sc.posterior_forecast)
     print(sc.get_par_group_contribution())
 
+    df = sc.get_par_group_contribution(include_prior_results=True)
+    levels = list(df.columns.levels[1])
+    assert "prior" in levels,levels
+    assert "post" in levels,levels
 
     print(sc.get_parameter_summary(include_map=True))
     print(sc.get_forecast_summary(include_map=True))
@@ -258,6 +262,7 @@ def par_contrib_test():
                                         parlist_dict=groups))
 
 
+
 def map_test():
     import os
     from pyemu import Schur
@@ -428,7 +433,7 @@ def alternative_dw():
 
 if __name__ == "__main__":
     #alternative_dw()
-    freyberg_verf_test()
+    #freyberg_verf_test()
     #forecast_pestpp_load_test()
     #map_test()
     #par_contrib_speed_test()
@@ -436,8 +441,7 @@ if __name__ == "__main__":
     #par_contrib_test()
     #dataworth_test()
     #dataworth_next_test()
-    #schur_test_nonpest()
-    #schur_test()
+    schur_test_nonpest()
     #la_test_io()
     #errvar_test_nonpest()
     #errvar_test()

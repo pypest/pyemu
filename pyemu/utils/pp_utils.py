@@ -177,7 +177,10 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
             print("error importing shapefile, try pip install pyshp...{0}"\
                   .format(str(e)))
             return par_info
-        shp = shapefile.Writer(shapeType=shapefile.POINT)
+        try:
+            shp = shapefile.Writer(target=shapename,shapeType=shapefile.POINT)
+        except:
+            shp = shapefile.Writer(shapeType=shapefile.POINT)
         for name,dtype in par_info.dtypes.iteritems():
             if dtype == object:
                 shp.field(name=name,fieldType='C',size=50)
@@ -189,10 +192,13 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
                 raise Exception("unrecognized field type in par_info:{0}:{1}".format(name,dtype))
 
         #some pandas awesomeness..
-        par_info.apply(lambda x:shp.poly([[[x.x,x.y]]],shapeType=shapefile.POINT), axis=1)
+        par_info.apply(lambda x:shp.point(x.x,x.y), axis=1)
         par_info.apply(lambda x:shp.record(*x),axis=1)
+        try:
+            shp.save(shapename)
+        except:
+            shp.close()
 
-        shp.save(shapename)
         shp = shapefile.Reader(shapename)
         assert shp.numRecords == par_info.shape[0]
     return par_info
@@ -281,8 +287,10 @@ def write_pp_shapfile(pp_df,shapename=None):
 
     if shapename is None:
         shapename = "pp_locs.shp"
-
-    shp = shapefile.Writer(shapeType=shapefile.POINT)
+    try:
+        shp = shapefile.Writer(shapeType=shapefile.POINT)
+    except:
+        shp = shapefile.Writer(target=shapename, shapeType=shapefile.POINT)
     for name, dtype in dfs[0].dtypes.iteritems():
         if dtype == object:
             shp.field(name=name, fieldType='C', size=50)
@@ -296,10 +304,15 @@ def write_pp_shapfile(pp_df,shapename=None):
 
     # some pandas awesomeness..
     for df in dfs:
-        df.apply(lambda x: shp.poly([[[x.x, x.y]]]), axis=1)
+        #df.apply(lambda x: shp.poly([[[x.x, x.y]]]), axis=1)
+        df.apply(lambda x: shp.point(x.x, x.y), axis=1)
         df.apply(lambda x: shp.record(*x), axis=1)
 
-    shp.save(shapename)
+    try:
+        shp.save(shapename)
+    except:
+        shp.close()
+
 
 
 

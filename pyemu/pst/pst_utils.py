@@ -620,11 +620,11 @@ def try_process_ins_file(ins_file,out_file=None):
 
 
 
-def _try_run_inschek(ins_file,out_file):
+def _try_run_inschek(ins_file,out_file,cwd='.'):
 
     try:
-        pyemu.os_utils.run("inschek {0} {1}".format(ins_file, out_file))
-        obf_file = ins_file.replace(".ins", ".obf")
+        pyemu.os_utils.run("inschek {0} {1}".format(ins_file, out_file),cwd=cwd)
+        obf_file = os.path.join(cwd,ins_file.replace(".ins", ".obf"))
         df = pd.read_csv(obf_file, delim_whitespace=True,
                          skiprows=0, index_col=0, names=["obsval"])
         df.index = df.index.map(str.lower)
@@ -675,177 +675,6 @@ def get_phi_comps_from_recfile(recfile):
                 contributions[group] = val
     return iters
 
-def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
-               gwutils_compliant=False, datetime_format=None,prefix=''):
-    """ create an instruction file for an smp file
-
-    Parameters
-    ----------
-    smp_filename : str
-        existing smp file
-    ins_filename: str
-        instruction file to create.  If None, create
-        an instruction file using the smp filename
-        with the ".ins" suffix
-    use_generic_names : bool
-        flag to force observations names to use a generic
-        int counter instead of trying to use a datetime str
-    gwutils_compliant : bool
-        flag to use instruction set that is compliant with the
-        pest gw utils (fixed format instructions).  If false,
-        use free format (with whitespace) instruction set
-    datetime_format : str
-        str to pass to datetime.strptime in the smp_to_dataframe() function
-    prefix : str
-         a prefix to add to the front of the obsnmes.  Default is ''
-
-
-    Returns
-    -------
-    df : pandas.DataFrame
-        dataframe instance of the smp file with the observation names and
-        instruction lines as additional columns
-
-    """
-    if ins_filename is None:
-        ins_filename = smp_filename+".ins"
-    df = smp_to_dataframe(smp_filename,datetime_format=datetime_format)
-    df.loc[:,"ins_strings"] = None
-    df.loc[:,"observation_names"] = None
-    name_groups = df.groupby("name").groups
-    for name,idxs in name_groups.items():
-        if not use_generic_names and len(name) <= 11:
-            onames = df.loc[idxs,"datetime"].apply(lambda x: prefix+name+'_'+x.strftime("%d%m%Y")).values
-        else:
-            onames = [prefix+name+"_{0:d}".format(i) for i in range(len(idxs))]
-        if False in (map(lambda x :len(x) <= 20,onames)):
-            long_names = [oname for oname in onames if len(oname) > 20]
-            raise Exception("observation names longer than 20 chars:\n{0}".format(str(long_names)))
-        if gwutils_compliant:
-            ins_strs = ["l1  ({0:s})39:46".format(on) for on in onames]
-        else:
-            ins_strs = ["l1 w w w  !{0:s}!".format(on) for on in onames]
-        df.loc[idxs,"observation_names"] = onames
-        df.loc[idxs,"ins_strings"] = ins_strs
-
-    counts = df.observation_names.value_counts()
-    dup_sites = [name for name in counts.index if counts[name] > 1]
-    if len(dup_sites) > 0:
-        raise Exception("duplicate observation names found:{0}"\
-                        .format(','.join(dup_sites)))
-
-    with open(ins_filename,'w') as f:
-        f.write("pif ~\n")
-        [f.write(ins_str+"\n") for ins_str in df.loc[:,"ins_strings"]]
-    return df
-
-
-def dataframe_to_smp(dataframe,smp_filename,name_col="name",
-                     datetime_col="datetime",value_col="value",
-                     datetime_format="dd/mm/yyyy",
-                     value_format="{0:15.6E}",
-                     max_name_len=12):
-    """ write a dataframe as an smp file
-
-    Parameters
-    ----------
-    dataframe : pandas.DataFrame
-    smp_filename : str
-        smp file to write
-    name_col: str
-        the column in the dataframe the marks the site namne
-    datetime_col: str
-        the column in the dataframe that is a datetime instance
-    value_col: str
-        the column in the dataframe that is the values
-    datetime_format: str
-        either 'dd/mm/yyyy' or 'mm/dd/yyy'
-    value_format: str
-        a python float-compatible format
-
-    """
-    formatters = {"name":lambda x:"{0:<20s}".format(str(x)[:max_name_len]),
-                  "value":lambda x:value_format.format(x)}
-    if datetime_format.lower().startswith("d"):
-        dt_fmt = "%d/%m/%Y    %H:%M:%S"
-    elif datetime_format.lower().startswith("m"):
-        dt_fmt = "%m/%d/%Y    %H:%M:%S"
-    else:
-        raise Exception("unrecognized datetime_format: " +\
-                        "{0}".format(str(datetime_format)))
-
-    for col in [name_col,datetime_col,value_col]:
-        assert col in dataframe.columns
-
-    dataframe.loc[:,"datetime_str"] = dataframe.loc[:,"datetime"].\
-        apply(lambda x:x.strftime(dt_fmt))
-    if isinstance(smp_filename,str):
-        smp_filename = open(smp_filename,'w')
-        # need this to remove the leading space that pandas puts in front
-        s = dataframe.loc[:,[name_col,"datetime_str",value_col]].\
-                to_string(col_space=0,
-                          formatters=formatters,
-                          justify=None,
-                          header=False,
-                          index=False)
-        for ss in s.split('\n'):
-            smp_filename.write("{0:<s}\n".format(ss.strip()))
-    dataframe.pop("datetime_str")
-
-
-def date_parser(items):
-    """ datetime parser to help load smp files
-
-    Parameters
-    ----------
-    items : iterable
-        something or somethings to try to parse into datetimes
-
-    Returns
-    -------
-    dt : iterable
-        the cast datetime things
-    """
-    try:
-        dt = datetime.strptime(items,"%d/%m/%Y %H:%M:%S")
-    except Exception as e:
-        try:
-            dt = datetime.strptime(items,"%m/%d/%Y %H:%M:%S")
-        except Exception as ee:
-            raise Exception("error parsing datetime string" +\
-                            " {0}: \n{1}\n{2}".format(str(items),str(e),str(ee)))
-    return dt
-
-
-def smp_to_dataframe(smp_filename,datetime_format=None):
-    """ load an smp file into a pandas dataframe (stacked in wide format)
-
-    Parameters
-    ----------
-    smp_filename : str
-        smp filename to load
-    datetime_format : str
-        should be either "%m/%d/%Y %H:%M:%S" or "%d/%m/%Y %H:%M:%S"
-        If None, then we will try to deduce the format for you, which
-        always dangerous
-
-    Returns
-    -------
-    df : pandas.DataFrame
-
-    """
-
-    if datetime_format is not None:
-        date_func = lambda x: datetime.strptime(x,datetime_format)
-    else:
-        date_func = date_parser
-    df = pd.read_csv(smp_filename, delim_whitespace=True,
-                     parse_dates={"datetime":["date","time"]},
-                     header=None,names=["name","date","time","value"],
-                     dtype={"name":object,"value":np.float64},
-                     na_values=["dry"],
-                     date_parser=date_func)
-    return df
 
 def del_rw(action, name, exc):
     os.chmod(name, stat.S_IWRITE)
@@ -915,6 +744,99 @@ def clean_missing_exponent(pst_filename,clean_filename="clean.pst"):
     with open(clean_filename,'w') as f:
         for line in lines:
             f.write(line+'\n')
+
+def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None,
+                    marker='~',includes_header=True,includes_index=True):
+
+    # process the csv_filename in case it is a dataframe
+    if isinstance(csv_filename,str):
+        df = pd.read_csv(csv_filename,index_col=0)
+        df.columns = df.columns.map(str.lower)
+        df.index = df.index.map(lambda x: str(x).lower())
+    else:
+        df = csv_filename
+
+    # process only_cols
+    if only_cols is None:
+        only_cols = set(df.columns.map(str.lower))
+    else:
+        if isinstance(only_cols,str): # incase it is a single name
+            only_cols = [only_cols]
+        only_cols = set(only_cols)
+
+    if only_rows is None:
+        only_rows = set(df.index.map(str.lower))
+    else:
+        if isinstance(only_rows,str): # incase it is a single name
+            only_rows = [only_rows]
+        only_rows = set(only_rows)
+
+    # process the row labels, handling duplicates
+    rlabels = []
+    row_visit = {}
+    only_rlabels = []
+    for rname in df.index:
+        rname = str(rname).strip().lower()
+
+        if rname in row_visit:
+            rsuffix = str(int(row_visit[rname] + 1))
+            row_visit[rname] += 1
+        else:
+            row_visit[rname] = 1
+            rsuffix = ''
+        rlabel = rname + rsuffix
+        rlabels.append(rlabel)
+        if rname in only_rows:
+            only_rlabels.append(rlabel)
+    only_rlabels = set(only_rlabels)
+
+    #process the col labels, handling duplicates
+    clabels = []
+    col_visit = {}
+    only_clabels = []
+    for cname in df.columns:
+        cname = str(cname).strip().lower()
+        if cname in col_visit:
+            csuffix = str(int(col_visit[cname]+1))
+            col_visit[cname] += 1
+        else:
+            col_visit[cname] = 1
+            csuffix = ''
+        clabel = cname + csuffix
+        clabels.append(clabel)
+        if cname in only_cols:
+            only_clabels.append(clabel)
+
+    if ins_filename is None:
+        if not isinstance(csv_filename,str):
+            raise Exception("ins_filename is None but csv_filename is not string")
+        ins_filename = csv_filename + ".ins"
+    row_visit, col_visit = {},{}
+    onames = []
+    ovals = []
+    with open(ins_filename,'w') as f:
+        f.write("pif ~\nl1\n")
+        for i,rlabel in enumerate(rlabels):
+            if includes_header:
+                f.write("l1 ") #skip the row (index) label
+            for j,clabel in enumerate(clabels):
+                if rlabel in only_rlabels and clabel in only_clabels:
+                    oname = rlabel+"_"+clabel
+                    onames.append(oname)
+                    ovals.append(df.iloc[i,j])
+                else:
+                    oname = "dum"
+                if j == 0:
+                    if includes_index:
+                        f.write(" {0},{0} ".format(marker))
+                else:
+                    f.write(" {0},{0} ".format(marker))
+                f.write(" !{0}! ".format(oname))
+            f.write('\n')
+    odf = pd.DataFrame({"obsnme":onames,"obsval":ovals},index=onames)
+    return odf
+
+
 
 
 

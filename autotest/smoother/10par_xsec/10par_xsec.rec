@@ -1,0 +1,13 @@
+             sweep.exe - a parameteric sweep utility
+for PEST(++) datasets 
+
+                 by the PEST++ developement team
+
+
+
+using control file: "10par_xsec.pst"
+
+    sweep parameter csv file = sweep_in.csv                                      
+    sweep output csv file = sweep_out.csv                                     
+    sweep chunk size = 500       
+    sweep forgive failed runs = 0         

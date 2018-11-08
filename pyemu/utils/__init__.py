@@ -7,3 +7,7 @@ the PEST(++) model independent framework
 from .helpers import *
 from .geostats import *
 from .pp_utils import *
+from .gw_utils import *
+from .os_utils import *
+from .smp_utils import *
+

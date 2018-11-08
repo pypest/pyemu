@@ -58,7 +58,12 @@ def res_test():
     assert "regul_p" in phi_comp
     assert "regul_m" in phi_comp
 
-    p.adjust_weights_resfile()
+    p.adjust_weights_discrepancy(original_ceiling=False)
+    d = np.abs(p.phi - p.nnz_obs)
+    assert d < 1.0E-5
+
+    p = Pst(os.path.join(pst_dir, "pest.pst"))
+    p.adjust_weights_resfile(original_ceiling=False)
 
     d = np.abs(p.phi - p.nnz_obs)
     assert d < 1.0E-5
@@ -196,48 +201,6 @@ def comments_test():
     assert pst2.parameter_data.dropna().shape[0] == 0
 
 
-def smp_test():
-    import os
-    from pyemu.pst.pst_utils import smp_to_dataframe, dataframe_to_smp, \
-        parse_ins_file, smp_to_ins
-
-    smp_filename = os.path.join("misc", "gainloss.smp")
-    df = smp_to_dataframe(smp_filename)
-    print(df.dtypes)
-    dataframe_to_smp(df, smp_filename + ".test")
-    smp_to_ins(smp_filename)
-    obs_names = parse_ins_file(smp_filename + ".ins")
-    print(len(obs_names))
-
-    smp_filename = os.path.join("misc", "sim_hds_v6.smp")
-    df = smp_to_dataframe(smp_filename)
-    print(df.dtypes)
-    dataframe_to_smp(df, smp_filename + ".test")
-    smp_to_ins(smp_filename)
-    obs_names = parse_ins_file(smp_filename + ".ins")
-    print(len(obs_names))
-
-
-def smp_dateparser_test():
-    import os
-    from pyemu.pst.pst_utils import smp_to_dataframe, dataframe_to_smp, \
-        parse_ins_file, smp_to_ins
-
-    smp_filename = os.path.join("misc", "gainloss.smp")
-    df = smp_to_dataframe(smp_filename, datetime_format="%d/%m/%Y %H:%M:%S")
-    print(df.dtypes)
-    dataframe_to_smp(df, smp_filename + ".test")
-    smp_to_ins(smp_filename)
-    obs_names = parse_ins_file(smp_filename + ".ins")
-    print(len(obs_names))
-
-    smp_filename = os.path.join("misc", "sim_hds_v6.smp")
-    df = smp_to_dataframe(smp_filename)
-    print(df.dtypes)
-    dataframe_to_smp(df, smp_filename + ".test")
-    smp_to_ins(smp_filename)
-    obs_names = parse_ins_file(smp_filename + ".ins")
-    print(len(obs_names))
 
 
 def tied_test():
@@ -359,6 +322,15 @@ def nnz_groups_test():
     assert org_og[0] not in new_nnz_og
 
 
+def adj_group_test():
+    import os
+    import pyemu
+    pst_dir = os.path.join("pst")
+    pst = pyemu.Pst(os.path.join(pst_dir, "pest.pst"))
+    par = pst.parameter_data
+    par.loc[par.pargp.apply(lambda x: x in pst.par_groups[1:]),"partrans"] = "fixed"
+    assert pst.adj_par_groups == [pst.par_groups[0]]
+
 def regdata_test():
     import os
     import pyemu
@@ -370,84 +342,6 @@ def regdata_test():
     pst.write(os.path.join("temp", "pest_regultest.pst"))
     pst_new = pyemu.Pst(os.path.join("temp", "pest_regultest.pst"))
     assert pst_new.reg_data.phimlim == phimlim
-
-
-def plot_flopy_par_ensemble_test():
-    import shutil
-    import numpy as np
-    try:
-        import flopy
-    except:
-        return
-    try:
-        import matplotlib.pyplot as plt
-    except:
-        print("error importing pyplot")
-        return
-    try:
-        import shapely
-    except:
-        print("error importing shapely")
-        return
-
-    import pyemu
-    bd = os.getcwd()
-    try:
-        org_model_ws = os.path.join("..", "examples", "Freyberg_transient")
-        nam_file = "freyberg.nam"
-
-        new_model_ws = "temp_pst_from_flopy"
-        pp_props = [["upw.hk", 0], ["upw.hk", 1]]
-        helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
-                                                 grid_props=pp_props, remove_existing=True,
-                                                 model_exe_name="mfnwt")
-
-        pst = pyemu.Pst(os.path.join(new_model_ws, "freyberg.pst"))
-        mc = pyemu.MonteCarlo(pst=pst)
-        os.chdir(new_model_ws)
-        cov = pyemu.Cov.from_ascii("freyberg.pst.prior.cov")
-        mc.draw(100, cov=cov)
-        # pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None, model=helper.m)
-        # pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None)
-
-        import cartopy.crs as ccrs
-        import cartopy.io.img_tiles as cimgt
-
-        import pyproj
-        # except:
-        #     return
-
-        stamen_terrain = cimgt.StamenTerrain()
-        zoom = 10
-
-        def fig_ax_gen():
-            fig = plt.figure(figsize=(20, 20))
-            nrow, ncol = 5, 4
-
-            axes = []
-            for i in range(nrow * ncol):
-                # print(i)
-                ax = plt.subplot(nrow, ncol, i + 1, projection=stamen_terrain.crs)
-                ax.set_extent([-97.775, -97.625, 30.2, 30.35])
-                # ax.set_extent([175.2, 176.2, -37, -38.2])
-                ax.add_image(stamen_terrain, zoom)
-                # plt.show()
-                axes.append(ax)
-
-                # break
-            return fig, axes
-
-        # fig,axes = fig_ax_gen()
-        # plt.show()
-        # return
-        pcolormesh_trans = ccrs.UTM(zone=14)
-        pyemu.helpers.plot_flopy_par_ensemble(mc.pst, mc.parensemble, num_reals=None, fig_axes_generator=fig_ax_gen,
-                                              pcolormesh_transform=pcolormesh_trans, model="freyberg.nam")
-
-        os.chdir("..")
-    except Exception as e:
-        os.chdir(bd)
-        raise Exception(str(e))
 
 
 def from_flopy_kl_test():
@@ -1095,7 +989,6 @@ def sanity_check_test():
 
     pst.write(os.path.join("temp", "test.pst"))
 
-
 def pst_from_flopy_geo_draw_test():
     import shutil
     import numpy as np
@@ -1130,6 +1023,7 @@ def pst_from_flopy_geo_draw_test():
                                          model_exe_name="mfnwt", temporal_list_props=temp_list_props,
                                          spatial_list_props=spat_list_props)
 
+
     num_reals = 100000
     pe1 = ph.draw(num_reals=num_reals, sigma_range=6)
     pyemu.Ensemble.reseed()
@@ -1147,8 +1041,88 @@ def pst_from_flopy_geo_draw_test():
     assert diff_sd.apply(np.abs).max() < 0.1
 
 
+def csv_to_ins_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
+
+    cnames = ["col{0}".format(i) for i in range(10)]
+    rnames = ["row{0}".format(i) for i in range(10)]
+    df = pd.DataFrame(index=rnames,columns=cnames)
+    df.loc[:,:] = np.random.random(df.shape)
+    df.to_csv(os.path.join("temp", "temp.csv"))
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_cols=cnames[0])
+    assert len(names) == df.shape[0], names
+
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_cols=cnames[0:2])
+    assert len(names) == df.shape[0]*2, names
+
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_rows=rnames[0])
+    assert len(names) == df.shape[1], names
+
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_rows=rnames[0:2])
+    assert len(names) == df.shape[1] * 2, names
+
+    names = pyemu.pst_utils.csv_to_ins_file(df,ins_filename=os.path.join("temp","temp.csv.ins"))
+    assert len(names) == df.shape[0] * df.shape[1]
+
+    df.columns = ["col" for i in range(df.shape[1])]
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"))
+    assert len(names) == df.shape[0] * df.shape[1]
+
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_cols="col")
+    assert len(names) == df.shape[0] * df.shape[1]
+
+    df.index = ["row" for i in range(df.shape[0])]
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"))
+    assert len(names) == df.shape[0] * df.shape[1]
+
+    names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
+                                            only_cols="col",only_rows="row")
+    assert len(names) == df.shape[0] * df.shape[1]
+
+
+def lt_gt_constraint_names_test():
+    import os
+    import pyemu
+    import os
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    obs = pst.observation_data
+    obs.loc[:,"weight"] = 1.0
+    pst.observation_data.loc[pst.obs_names[:4],"obgnme"] = "lessjunk"
+    pst.observation_data.loc[pst.obs_names[4:8], "obgnme"] = "l_junk"
+    pst.observation_data.loc[pst.obs_names[8:12], "obgnme"] = "greaterjunk"
+    pst.observation_data.loc[pst.obs_names[12:16], "obgnme"] = "g_junk"
+    assert pst.less_than_obs_constraints.shape[0] == 8
+    assert pst.greater_than_obs_constraints.shape[0] == 8
+
+    obs.loc[:, "weight"] = 0.0
+    assert pst.less_than_obs_constraints.shape[0] == 0
+    assert pst.greater_than_obs_constraints.shape[0] == 0
+
+    pi = pst.prior_information
+    pi.loc[pst.prior_names[:4],"obgnme"] = "lessjunk"
+    pi.loc[pst.prior_names[4:8], "obgnme"] = "l_junk"
+    pi.loc[pst.prior_names[8:12], "obgnme"] = "greaterjunk"
+    pi.loc[pst.prior_names[12:16], "obgnme"] = "g_junk"
+    assert pst.less_than_pi_constraints.shape[0] == 8
+    assert pst.greater_than_pi_constraints.shape[0] == 8
+
+    pi.loc[:, "weight"] = 0.0
+    assert pst.less_than_pi_constraints.shape[0] == 0
+    assert pst.greater_than_pi_constraints.shape[0] == 0
+
 if __name__ == "__main__":
-    pst_from_flopy_geo_draw_test()
+    #lt_gt_constraint_names_test()
+    #csv_to_ins_test()
+    # pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
     # res_stats_test()
@@ -1157,14 +1131,15 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    from_flopy()
+    #from_flopy()
     # add_obs_test()
-    from_flopy_kl_test()
-    from_flopy_test_reachinput_test()
-    # plot_flopy_par_ensemble_test()
+    #from_flopy_kl_test()
+    #from_flopy_test_reachinput_test()
+
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
+    #adj_group_test()
     # regul_rectify_test()
     # derivative_increment_tests()
     # tied_test()
@@ -1177,7 +1152,7 @@ if __name__ == "__main__":
     # test_e_clean()
     # load_test()
     # flex_load_test()
-    # res_test()
+    res_test()
     # smp_test()
     # from_io_with_inschek_test()
     # pestpp_args_test()

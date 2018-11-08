@@ -41,11 +41,12 @@ class LinearAnalysis(object):
         the file extension.  If None, the observation noise covariance matrix is
         constructed from the weights in the control file represented
         by the pst argument. Can also be a pyemu.Cov instance
-    predictions : (varies)
+    predictions or forecasts : (varies)
         prediction (aka forecast) sensitivity vectors.  If str, a filename
         is assumed and predictions are loaded from a file using the file extension.
         Can also be a pyemu.Matrix instance, a numpy.ndarray or a collection
         of pyemu.Matrix or numpy.ndarray.
+        Note: only one of "predictions" or "forecasts" can be used (they are synonymous)
     ref_var : (float)
         reference variance
     verbose : (either bool or string)
@@ -481,7 +482,9 @@ class LinearAnalysis(object):
         except:
             fnames = []
         if len(fnames) > 0:
-            raise Exception("forecasts with non-zero weight in pst: {0}".format(','.join(fnames)))
+            self.logger.warn("forecasts with non-zero weight in pst: {0}...".format(','.join(fnames)) +
+                             "\n -> re-setting these forecast weights to zero...")
+            self.pst.observation_data.loc[fnames,"weight"] = 0.0
         self.log("loading forecasts")
         self.logger.statement("forecast names: {0}".format(','.join(mat.col_names)))
         return self.__predictions

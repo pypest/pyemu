@@ -632,6 +632,7 @@ def to_from_binary_test():
     pe1 = pyemu.ParameterEnsemble.from_binary(mc.pst,pe_name)
     oe1 = pyemu.ObservationEnsemble.from_binary(mc.pst,oe_name)
     pe1.index = pe1.index.map(np.int)
+    oe1.index = oe1.index.map(np.int)
     d = (oe - oe1).apply(np.abs)
     assert d.max().max() == 0.0
     d = (pe - pe1).apply(np.abs)
@@ -764,14 +765,14 @@ def mixed_par_draw_test():
 
     how = {}
 
-    for p in pst.par_names[:10]:
+    for p in pst.adj_par_names[:10]:
         how[p] = "gaussian"
-    for p in pst.par_names[12:30]:
+    for p in pst.adj_par_names[12:30]:
         how[p] = "uniform"
-    for p in pst.par_names[40:100]:
+    for p in pst.adj_par_names[40:100]:
         how[p] = "triangular"
-    for pnames in how.keys():
-        pst.parameter_data.loc[::3,"partrans"] = "fixed"
+    #for pnames in how.keys():
+    #    pst.parameter_data.loc[::3,"partrans"] = "fixed"
 
     pe = pyemu.ParameterEnsemble.from_mixed_draws(pst,how)
     pst.parameter_data.loc[pname, "partrans"] = "none"
@@ -815,12 +816,47 @@ def mixed_par_draw_test():
     #cov.drop(pst.par_names[:2], 0)
     assert pst.npar == npar
 
+
+def ensemble_deviations_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+
+    pe = pyemu.ParameterEnsemble.from_uniform_draw(pst,num_reals=10)
+    dev = pe.get_deviations()
+    assert dev.shape == pe.shape
+    assert type(dev) == type(pe)
+
+    oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst=pst,num_reals=10)
+    dev = oe.get_deviations()
+    assert dev.shape == oe.shape
+    assert type(dev) == type(oe)
+
+    df = pd.DataFrame(index=np.arange(10), columns=pst.par_names)
+    df.loc[:,:]= 1.0
+    pe = pyemu.ParameterEnsemble.from_dataframe(pst=pst,df=df)
+    dev = pe.get_deviations()
+    assert dev.max().max() == 0.0
+    assert dev.min().min() == 0.0
+
+    df = pd.DataFrame(index=np.arange(10), columns=pst.obs_names)
+    df.loc[:, :] = 1.0
+    oe = pyemu.ObservationEnsemble.from_dataframe(pst=pst, df=df)
+    dev = oe.get_deviations()
+    assert dev.max().max() == 0.0
+    assert dev.min().min() == 0.0
+
+
 if __name__ == "__main__":
+    #ensemble_deviations_test()
     mixed_par_draw_test()
     #triangular_draw_test()
     # sparse_draw_test()
     # binary_ensemble_dev()
-    #to_from_binary_test()
+    # to_from_binary_test()
     # ensemble_covariance_test()
     # homegrown_draw_test()
     # change_weights_test()
