@@ -240,8 +240,14 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
             if "zone" not in df.columns:
                 df.loc[:,"zone"] = 1
             zones = df.zone.unique()
+            aset = set(pst.adj_par_names)
             for zone in zones:
                 df_zone = df.loc[df.zone==zone,:].copy()
+                df_zone = df_zone.loc[df_zone.parnme.apply(lambda x: x in aset),:]
+                if df_zone.shape[0] == 0:
+                    warnings.warn("all parameters in zone {0} tied and/or fixed, skipping...".format(zone),PyemuWarning)
+                    continue
+
                 df_zone.sort_values(by="parnme",inplace=True)
                 if verbose: print("build cov matrix")
                 cov = gs.covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)
