@@ -1703,6 +1703,8 @@ class PstFromFlopyModel(object):
         self.setup_array_pars()
 
         if sfr_pars:
+            if isinstance(sfr_pars, str):
+                sfr_pars = [sfr_pars]
             if isinstance(sfr_pars, list):
                 self.setup_sfr_pars(sfr_pars)
             else:
@@ -1767,12 +1769,14 @@ class PstFromFlopyModel(object):
         if isinstance(par_cols, str):
             par_cols = [par_cols]
         reach_pars = False # default to False
+        seg_pars = True
         par_dfs = {}
         df = pyemu.gw_utils.setup_sfr_seg_parameters(self.m, par_cols=par_cols)  # now just pass model
         # self.par_dfs["sfr"] = df
         if df.empty:
             warnings.warn("No sfr segment parameters have been set up", PyemuWarning)
             par_dfs["sfr"] = []
+            seg_pars = False
         else:
             par_dfs["sfr"] = [df]  # may need df for both segs and reaches
             self.tpl_files.append("sfr_seg_pars.dat.tpl")
@@ -1785,9 +1789,11 @@ class PstFromFlopyModel(object):
                 self.tpl_files.append("sfr_reach_pars.dat.tpl")
                 self.in_files.append("sfr_reach_pars.dat")
                 reach_pars = True
+                par_dfs["sfr"].append(df)
         if len(par_dfs["sfr"]) > 0:
             self.par_dfs["sfr"] = pd.concat(par_dfs["sfr"])
-            self.frun_pre_lines.append("pyemu.gw_utils.apply_sfr_parameters(reach_pars={0})".format(reach_pars))
+            self.frun_pre_lines.append(
+                "pyemu.gw_utils.apply_sfr_parameters(seg_pars={0}, reach_pars={1})".format(seg_pars, reach_pars))
         else:
             warnings.warn("No sfr parameters have been set up!", PyemuWarning)
 

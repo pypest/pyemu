@@ -713,8 +713,8 @@ def from_flopy_reachinput():
                                                  model_exe_name="mfnwt", sfr_pars=sfr_par, sfr_obs=True)
         os.chdir(new_model_ws)
         mult_files = []
+        spars = {}
         try:  # read seg pars config file
-            spars = {}
             with open("sfr_seg_pars.config", 'r') as f:
                 for line in f:
                     line = line.strip().split()
@@ -725,8 +725,8 @@ def from_flopy_reachinput():
                 pass
             else:
                 raise Exception()
+        rpars = {}
         try:  # read reach pars config file
-            rpars = {}
             with open("sfr_reach_pars.config", 'r') as f:
                 for line in f:
                     line = line.strip().split()
@@ -741,16 +741,9 @@ def from_flopy_reachinput():
             # actually write out files to check template file
             helper.pst.write_input_files()
             try:
-                pyemu.gw_utils.apply_sfr_parameters(reach_pars=True)
+                exec(helper.frun_pre_lines[0])
             except Exception as e:
-                if i == 2:
-                    pass
-                    try:
-                        pyemu.gw_utils.apply_sfr_parameters(reach_pars=False)
-                    except Exception as e:
-                        raise Exception("error applying sfr pars, check tpl(s) and datafiles: {0}".format(str(e)))
-                else:
-                    raise Exception("error applying sfr pars, check tpl(s) and datafiles: {0}".format(str(e)))
+                raise Exception("error applying sfr pars, check tpl(s) and datafiles: {0}".format(str(e)))
 
             # test using tempchek for writing tpl file
             par = helper.pst.parameter_data
@@ -771,20 +764,9 @@ def from_flopy_reachinput():
                         raise Exception("error running tempchek on template file {0} and data file {1} : {0}".
                                         format(mult, "{}.tpl".format(tpl_file), str(e)))
                 try:
-                    pyemu.gw_utils.apply_sfr_parameters(reach_pars=True)
+                    exec(helper.frun_pre_lines[0])
                 except Exception as e:
-                    if i == 2:
-                        pass
-                        try:
-                            pyemu.gw_utils.apply_sfr_parameters(reach_pars=False)
-                        except Exception as e:
-                            raise Exception(
-                                "error applying sfr pars with tempchek par file, check tpl(s) and datafiles: {0}".
-                                    format(str(e)))
-                    else:
-                        raise Exception(
-                            "error applying sfr pars with tempchek par file, check tpl(s) and datafiles: {0}".
-                                format(str(e)))
+                    raise Exception("error applying sfr pars, check tpl(s) and datafiles: {0}".format(str(e)))
         except:
             if i == 3:  # scenario 3 should not set up any parameters
                 pass
@@ -1187,11 +1169,11 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    from_flopy_zone_pars()
+    # from_flopy_zone_pars()
     #from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
-    #from_flopy_test_reachinput_test()
+    from_flopy_test_reachinput_test()
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
@@ -1208,7 +1190,7 @@ if __name__ == "__main__":
     # test_e_clean()
     # load_test()
     # flex_load_test()
-    res_test()
+    # res_test()
     # smp_test()
     # from_io_with_inschek_test()
     # pestpp_args_test()
