@@ -620,11 +620,11 @@ def try_process_ins_file(ins_file,out_file=None):
 
 
 
-def _try_run_inschek(ins_file,out_file):
+def _try_run_inschek(ins_file,out_file,cwd='.'):
 
     try:
-        pyemu.os_utils.run("inschek {0} {1}".format(ins_file, out_file))
-        obf_file = ins_file.replace(".ins", ".obf")
+        pyemu.os_utils.run("inschek {0} {1}".format(ins_file, out_file),cwd=cwd)
+        obf_file = os.path.join(cwd,ins_file.replace(".ins", ".obf"))
         df = pd.read_csv(obf_file, delim_whitespace=True,
                          skiprows=0, index_col=0, names=["obsval"])
         df.index = df.index.map(str.lower)
