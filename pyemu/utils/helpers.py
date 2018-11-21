@@ -380,8 +380,14 @@ def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4,verbose=F
             if "zone" not in df.columns:
                 df.loc[:,"zone"] = 1
             zones = df.zone.unique()
+            aset = set(pst.adj_par_names)
             for zone in zones:
                 df_zone = df.loc[df.zone==zone,:].copy()
+                df_zone = df_zone.loc[df_zone.parnme.apply(lambda x: x in aset), :]
+                if df_zone.shape[0] == 0:
+                    warnings.warn("all parameters in zone {0} tied and/or fixed, skipping...".format(zone),
+                                  PyemuWarning)
+                    continue
                 df_zone.sort_values(by="parnme",inplace=True)
                 if verbose: print("build cov matrix")
                 cov = gs.sparse_covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)
@@ -403,7 +409,7 @@ def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4,verbose=F
 
     if verbose: print("adding remaining parameters to diagonal")
     fset = set(full_cov.row_names)
-    pset = set(pst.par_names)
+    pset = set(pst.adj_par_names)
     diff = list(pset.difference(fset))
     diff.sort()
     vals = np.array([full_cov_dict[d] for d in diff])
@@ -505,8 +511,14 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
             if "zone" not in df.columns:
                 df.loc[:,"zone"] = 1
             zones = df.zone.unique()
+            aset = set(pst.adj_par_names)
             for zone in zones:
                 df_zone = df.loc[df.zone==zone,:].copy()
+                df_zone = df_zone.loc[df_zone.parnme.apply(lambda x: x in aset), :]
+                if df_zone.shape[0] == 0:
+                    warnings.warn("all parameters in zone {0} tied and/or fixed, skipping...".format(zone),
+                                  PyemuWarning)
+                    continue
                 df_zone.sort_values(by="parnme",inplace=True)
                 if verbose: print("build cov matrix")
                 cov = gs.covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)

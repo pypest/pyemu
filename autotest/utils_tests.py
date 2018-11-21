@@ -740,7 +740,7 @@ def geostat_prior_builder_test():
     import pyemu
     pst_file = os.path.join("pst","pest.pst")
     pst = pyemu.Pst(pst_file)
-
+    # print(pst.parameter_data)
     tpl_file = os.path.join("utils", "pp_locs.tpl")
     str_file = os.path.join("utils", "structure.dat")
 
@@ -755,9 +755,17 @@ def geostat_prior_builder_test():
     cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{gs:df},
                                                sigma_range=4)
     nnz = np.count_nonzero(cov.x)
-    assert nnz == pst.npar
+    assert nnz == pst.npar_adj
     d2 = np.diag(cov.x)
     assert np.array_equiv(d1, d2)
+
+    pst.parameter_data.loc[pst.par_names[1:10], "partrans"] = "tied"
+    pst.parameter_data.loc[pst.par_names[1:10], "partied"] = pst.par_names[0]
+    cov = pyemu.helpers.geostatistical_prior_builder(pst, {gs: df},
+                                                     sigma_range=4)
+    nnz = np.count_nonzero(cov.x)
+    assert nnz == pst.npar_adj
+
 
     ttpl_file = os.path.join("temp", "temp.dat.tpl")
     with open(ttpl_file, 'w') as f:
@@ -768,7 +776,7 @@ def geostat_prior_builder_test():
     pst.parameter_data.loc["temp1", "parlbnd"] = 0.9
 
     cov = pyemu.helpers.geostatistical_prior_builder(pst, {str_file: tpl_file})
-    assert cov.shape[0] == 602
+    assert cov.shape[0] == pst.npar_adj
 
     scov = pyemu.helpers.sparse_geostatistical_prior_builder(pst,{str_file: tpl_file}).to_matrix()
     d = (cov - scov).x
@@ -1586,8 +1594,8 @@ if __name__ == "__main__":
     # gslib_2_dataframe_test()
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
-    # geostat_prior_builder_test()
-    geostat_draws_test()
+    geostat_prior_builder_test()
+    # geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
     # mflist_budget_test()
     # mtlist_budget_test()
