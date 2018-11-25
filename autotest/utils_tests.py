@@ -1594,7 +1594,7 @@ if __name__ == "__main__":
     # gslib_2_dataframe_test()
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
-    geostat_prior_builder_test()
+    # geostat_prior_builder_test()
     # geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
     # mflist_budget_test()

@@ -1091,8 +1091,10 @@ def csv_to_ins_test():
     df.loc[:,:] = np.random.random(df.shape)
     df.to_csv(os.path.join("temp", "temp.csv"))
     names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
-                                            only_cols=cnames[0])
+                                            only_cols=cnames[0],prefix="test")
     assert len(names) == df.shape[0], names
+    for name in names.obsnme:
+        assert name.startswith("test"),name
 
     names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
                                             only_cols=cnames[0:2])
@@ -1159,7 +1161,7 @@ def lt_gt_constraint_names_test():
 
 if __name__ == "__main__":
     #lt_gt_constraint_names_test()
-    #csv_to_ins_test()
+    csv_to_ins_test()
     # pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
@@ -1173,7 +1175,7 @@ if __name__ == "__main__":
     #from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
-    from_flopy_test_reachinput_test()
+    #from_flopy_test_reachinput_test()
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
