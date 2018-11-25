@@ -1083,7 +1083,8 @@ class Pst(object):
         def parse(eqs):
             raw = eqs.split('=')
             rhs = float(raw[1])
-            raw = re.split('[+,-]',raw[0].lower().strip())
+            raw = [i for i in re.split('[###]',
+                    raw[0].lower().strip().replace(' + ','###').replace(' - ','###')) if i != '']
             # in case of a leading '-' or '+'
             if len(raw[0]) == 0:
                 raw = raw[1:]

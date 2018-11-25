@@ -240,8 +240,14 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
             if "zone" not in df.columns:
                 df.loc[:,"zone"] = 1
             zones = df.zone.unique()
+            aset = set(pst.adj_par_names)
             for zone in zones:
                 df_zone = df.loc[df.zone==zone,:].copy()
+                df_zone = df_zone.loc[df_zone.parnme.apply(lambda x: x in aset),:]
+                if df_zone.shape[0] == 0:
+                    warnings.warn("all parameters in zone {0} tied and/or fixed, skipping...".format(zone),PyemuWarning)
+                    continue
+
                 df_zone.sort_values(by="parnme",inplace=True)
                 if verbose: print("build cov matrix")
                 cov = gs.covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)
@@ -374,8 +380,14 @@ def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4,verbose=F
             if "zone" not in df.columns:
                 df.loc[:,"zone"] = 1
             zones = df.zone.unique()
+            aset = set(pst.adj_par_names)
             for zone in zones:
                 df_zone = df.loc[df.zone==zone,:].copy()
+                df_zone = df_zone.loc[df_zone.parnme.apply(lambda x: x in aset), :]
+                if df_zone.shape[0] == 0:
+                    warnings.warn("all parameters in zone {0} tied and/or fixed, skipping...".format(zone),
+                                  PyemuWarning)
+                    continue
                 df_zone.sort_values(by="parnme",inplace=True)
                 if verbose: print("build cov matrix")
                 cov = gs.sparse_covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)
@@ -397,7 +409,7 @@ def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4,verbose=F
 
     if verbose: print("adding remaining parameters to diagonal")
     fset = set(full_cov.row_names)
-    pset = set(pst.par_names)
+    pset = set(pst.adj_par_names)
     diff = list(pset.difference(fset))
     diff.sort()
     vals = np.array([full_cov_dict[d] for d in diff])
@@ -499,8 +511,14 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
             if "zone" not in df.columns:
                 df.loc[:,"zone"] = 1
             zones = df.zone.unique()
+            aset = set(pst.adj_par_names)
             for zone in zones:
                 df_zone = df.loc[df.zone==zone,:].copy()
+                df_zone = df_zone.loc[df_zone.parnme.apply(lambda x: x in aset), :]
+                if df_zone.shape[0] == 0:
+                    warnings.warn("all parameters in zone {0} tied and/or fixed, skipping...".format(zone),
+                                  PyemuWarning)
+                    continue
                 df_zone.sort_values(by="parnme",inplace=True)
                 if verbose: print("build cov matrix")
                 cov = gs.covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)
@@ -1697,6 +1715,8 @@ class PstFromFlopyModel(object):
         self.setup_array_pars()
 
         if sfr_pars:
+            if isinstance(sfr_pars, str):
+                sfr_pars = [sfr_pars]
             if isinstance(sfr_pars, list):
                 self.setup_sfr_pars(sfr_pars)
             else:
@@ -1761,12 +1781,14 @@ class PstFromFlopyModel(object):
         if isinstance(par_cols, str):
             par_cols = [par_cols]
         reach_pars = False # default to False
+        seg_pars = True
         par_dfs = {}
         df = pyemu.gw_utils.setup_sfr_seg_parameters(self.m, par_cols=par_cols)  # now just pass model
         # self.par_dfs["sfr"] = df
         if df.empty:
             warnings.warn("No sfr segment parameters have been set up", PyemuWarning)
             par_dfs["sfr"] = []
+            seg_pars = False
         else:
             par_dfs["sfr"] = [df]  # may need df for both segs and reaches
             self.tpl_files.append("sfr_seg_pars.dat.tpl")
@@ -1779,9 +1801,11 @@ class PstFromFlopyModel(object):
                 self.tpl_files.append("sfr_reach_pars.dat.tpl")
                 self.in_files.append("sfr_reach_pars.dat")
                 reach_pars = True
+                par_dfs["sfr"].append(df)
         if len(par_dfs["sfr"]) > 0:
             self.par_dfs["sfr"] = pd.concat(par_dfs["sfr"])
-            self.frun_pre_lines.append("pyemu.gw_utils.apply_sfr_parameters(reach_pars={0})".format(reach_pars))
+            self.frun_pre_lines.append(
+                "pyemu.gw_utils.apply_sfr_parameters(seg_pars={0}, reach_pars={1})".format(seg_pars, reach_pars))
         else:
             warnings.warn("No sfr parameters have been set up!", PyemuWarning)
 
