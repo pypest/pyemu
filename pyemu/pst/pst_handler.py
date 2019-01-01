@@ -1419,7 +1419,7 @@ class Pst(object):
         new_pst.model_command = self.model_command
         new_pst.template_files = self.template_files
         new_pst.input_files = self.input_files
-        new_pst.instruction_files = self.instruction_files
+        new_pst.instruction_files = self.instruction_filesinstruction_files
         new_pst.output_files = self.output_files
 
         if self.tied is not None:

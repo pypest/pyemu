@@ -100,7 +100,7 @@ def setup_daily_da():
     ph = pyemu.helpers.PstFromFlopyModel("freyberg_transient.nam",org_model_ws="temp",
                                          new_model_ws="daily_template",grid_props=grid_props,
                                          spatial_bc_props=[["wel.flux",0]],hds_kperk=[[0,0]],
-                                         remove_existing=True,model_exe_name="mfnwt",build_prior=False,
+                                         remove_existing=True,model_exe_name="mfnwt",build_prior=True,
                                          sfr_obs=sfr_obs_dict)
     ph.pst.control_data.noptmax = 0
     ph.pst.write(os.path.join("daily_template","freyberg_transient.pst"))
@@ -199,10 +199,26 @@ def freyberg_test():
 
     os.chdir(bd)
 
+
+def draw_forcing_ensemble():
+    t_d = os.path.join("da","freyberg","daily_template")
+    pst = pyemu.Pst(os.path.join(t_d,"freyberg_transient.pst"))
+    par = pst.parameter_data
+    forcing_groups = ["grrech0","grstrt0","welflux_k00"]
+    par.loc[par.pargp.apply(lambda x: x not in forcing_groups),"partrans"] = "fixed"
+    cov = pyemu.Cov.from_ascii(os.path.join(t_d,"freyberg_transient.pst.prior.cov")).to_dataframe()
+    cov = cov.loc[pst.adj_par_names,pst.adj_par_names]
+    cov = pyemu.Cov.from_dataframe(cov)
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=10000)
+    pe.to_csv(os.path.join("forcing.csv"))
+
+
+
 if __name__ == "__main__":
     #setup_freyberg_transient_model()
     #setup_truth()
     #run_truth_sweep()
     #setup_daily_da()
     #process_truth_for_obs_states()
-    freyberg_test()
+    #freyberg_test()
+    draw_forcing_ensemble()
