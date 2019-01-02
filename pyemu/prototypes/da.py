@@ -2,7 +2,7 @@ import os
 import sys
 import multiprocessing as mp
 import copy
-
+import numpy as np
 import pyemu
 from .ensemble_method import EnsembleMethod
 

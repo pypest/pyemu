@@ -220,5 +220,5 @@ if __name__ == "__main__":
     #run_truth_sweep()
     #setup_daily_da()
     #process_truth_for_obs_states()
-    #freyberg_test()
-    draw_forcing_ensemble()
+    freyberg_test()
+    #draw_forcing_ensemble()
