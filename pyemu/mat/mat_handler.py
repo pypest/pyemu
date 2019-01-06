@@ -6,7 +6,7 @@ import struct
 import warnings
 from datetime import datetime
 import numpy as np
-import pandas
+import pandas as pd
 import scipy.linalg as la
 from scipy.io import FortranFile
 import scipy.sparse
@@ -341,6 +341,8 @@ class Matrix(object):
                               isdiagonal=self.isdiagonal)
 
 
+
+
     def __sub__(self, other):
         """numpy.ndarray.__sub__() overload.  Tries to speedup by
          checking for scalars of diagonal matrices on either side of operator
@@ -361,6 +363,9 @@ class Matrix(object):
                           col_names=self.col_names,
                           isdiagonal=self.isdiagonal)
         else:
+            if isinstance(other,pd.DataFrame):
+                other = Matrix.from_dataframe(other)
+
             if isinstance(other, np.ndarray):
                 assert self.shape == other.shape, "Matrix.__sub__() shape" +\
                                                   "mismatch: " +\
@@ -439,6 +444,10 @@ class Matrix(object):
         if np.isscalar(other):
             return type(self)(x=self.x + other,row_names=self.row_names,
                               col_names=self.col_names,isdiagonal=self.isdiagonal)
+
+        if isinstance(other,pd.DataFrame):
+            other = Matrix.from_dataframe(other)
+
         if isinstance(other, np.ndarray):
             assert self.shape == other.shape, \
                 "Matrix.__add__(): shape mismatch: " +\
@@ -449,6 +458,7 @@ class Matrix(object):
             else:
                 return type(self)(x=self.x + other, row_names=self.row_names,
                                   col_names=self.col_names)
+
         elif isinstance(other, Matrix):
             if self.autoalign and other.autoalign \
                     and not self.element_isaligned(other):
@@ -511,6 +521,10 @@ class Matrix(object):
         """
         if np.isscalar(other):
             return type(self)(x=self.x * other)
+
+        if isinstance(other,pd.DataFrame):
+            other = Matrix.from_dataframe(other)
+
         if isinstance(other, np.ndarray):
             assert self.shape == other.shape, \
                 "Matrix.hadamard_product(): shape mismatch: " + \
@@ -580,11 +594,16 @@ class Matrix(object):
         Returns:
             Matrix : Matrix
         """
+
+        if isinstance(other, pd.DataFrame):
+            other = Matrix.from_dataframe(other)
+
         if np.isscalar(other):
             return type(self)(x=self.x.copy() * other,
                               row_names=self.row_names,
                               col_names=self.col_names,
                               isdiagonal=self.isdiagonal)
+
         elif isinstance(other, np.ndarray):
             assert self.shape[1] == other.shape[0], \
                 "Matrix.__mul__(): matrices are not aligned: " +\
@@ -662,9 +681,13 @@ class Matrix(object):
 
         """
 
+        # if isinstance(other,pd.DataFrame):
+        #     other = Matrix.from_dataframe(other)
+
         if np.isscalar(other):
             return type(self)(x=self.x.copy() * other,row_names=self.row_names,\
                               col_names=self.col_names,isdiagonal=self.isdiagonal)
+
         elif isinstance(other, np.ndarray):
             assert self.shape[0] == other.shape[1], \
                 "Matrix.__rmul__(): matrices are not aligned: " +\
@@ -1918,7 +1941,7 @@ class Matrix(object):
         Matrix : Matrix
 
         """
-        assert isinstance(df, pandas.DataFrame)
+        assert isinstance(df, pd.DataFrame)
         row_names = copy.deepcopy(list(df.index))
         col_names = copy.deepcopy(list(df.columns))
         return cls(x=df.values,row_names=row_names,col_names=col_names)
@@ -1971,7 +1994,7 @@ class Matrix(object):
             x = np.diag(self.__x[:, 0])
         else:
             x = self.__x
-        return pandas.DataFrame(data=x,index=self.row_names,columns=self.col_names)
+        return pd.DataFrame(data=x,index=self.row_names,columns=self.col_names)
 
 
     def to_sparse(self, trunc=0.0):
