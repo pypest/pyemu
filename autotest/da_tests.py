@@ -165,6 +165,7 @@ def process_truth_for_obs_states():
 
 
 def freyberg_test():
+
     t_d = "daily_template"
     m_d = "daily_master"
     bd = os.getcwd()
@@ -195,8 +196,8 @@ def freyberg_test():
     obs.loc[truth_df.index, "weight"] = 0.001 # oh, who knows...
 
     enkf = pyemu.EnsembleKalmanFilter(pst=pst,num_slaves=5,slave_dir=t_d)
-    enkf.initialize(num_reals=20)
-
+    enkf.initialize(num_reals=10)
+    #enkf.analysis()
     os.chdir(bd)
 
 

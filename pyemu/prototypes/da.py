@@ -188,18 +188,42 @@ class EnsembleKalmanFilter(EnsembleMethod):
 
 
 
-
-
+        Following Evensen 2003..
         """
-        A = pyemu.Matrix.from_dataframe(self.obsensemble.get_deviations().loc[:,self.pst.nnz_obs_names])
-        C = A * A.T
-        C /= float(C.shape[0] - 1)
 
-        innovation = self.obsensemble_0.loc[:,self.pst.nnz_obs_names] - self.obsensemble.loc[:,self.pst.nnz_obs_names]
+        nz_names = self.pst.nnz_obs_names
+
+        # nonzero weighted state deviations
+        HA_prime = self.obsensemble.get_deviations().loc[:,nz_names]
+
+        # obs noise pertubations - move to constuctor
+        E = self.obsensemble_0 - self.pst.observation_data.obsval.loc[self.obsensemble_0.columns]
+
+        # innovations:  account for any failed runs (use obsensemble index)
+        D_prime = (self.obsensemble.loc[:,nz_names] - self.obsensemble_0.loc[self.obsensemble.index,nz_names])
+
+        ES = HA_prime.loc[E.index,nz_names] + E.loc[:,nz_names]
+        assert ES.shape == ES.dropna().shape
+
+        ES = pyemu.Matrix.from_dataframe(ES)
+        U = ES.u
+        s = ES.s
+        num_eig = min(self.pst.svd_data.maxsing,ES.get_maxsing(self.pst.svd_data.eigthresh))
+        print(num_eig)
+        eigvec_arr = U[:num_eig,:num_eig]
+        eigval_arr = s.inv[:num_eig]
+        print(eigvec_arr.shape,eigval_arr.shape)
+        print(eigval_arr)
+
+        X1 = np.dot(eigval_arr,eigvec_arr)
+
+        X2 =  X1 * D_prime #these are aligned through the use of nz_names
+
+        X3 = eigvec_arr * X2 #also aligned
+
+        X4 = HA_prime.array.transpose() * X3
 
 
-
-        new_paren = self.parensemble + upgrade
 
         self.iter_num += 1
 
