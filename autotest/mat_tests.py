@@ -178,6 +178,17 @@ def pseudo_inv_test():
     jpi = jco.pseudo_inv(maxsing=1)
     jpi = jco.pseudo_inv(maxsing=19)
 
+    u1,s1,v1 = jco.pseudo_inv_components(2)
+    assert s1.shape[0] == 2
+    u2, s2, v2 = jco.pseudo_inv_components(2,truncate=False)
+    assert s2.shape == jco.shape
+
+    d = u1 - u2[:,:2]
+    assert d.x.max() == 0.0
+
+
+
+
 def cov_identity_test():
     import os
     import numpy as np
@@ -660,14 +671,14 @@ def df_tests():
 
 
 if __name__ == "__main__":
-    df_tests()
+    #df_tests()
     # cov_scale_offset_test()
     #coo_tests()
     # indices_test()
     # mat_test()
     # load_jco_test()
     # extend_test()
-    # pseudo_inv_test()
+    pseudo_inv_test()
     # drop_test()
     # get_test()
     # cov_identity_test()

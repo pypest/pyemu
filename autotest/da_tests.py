@@ -197,7 +197,7 @@ def freyberg_test():
 
     enkf = pyemu.EnsembleKalmanFilter(pst=pst,num_slaves=5,slave_dir=t_d)
     enkf.initialize(num_reals=10)
-    #enkf.analysis()
+    enkf.analysis()
     os.chdir(bd)
 
 

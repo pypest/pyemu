@@ -194,36 +194,44 @@ class EnsembleKalmanFilter(EnsembleMethod):
         nz_names = self.pst.nnz_obs_names
 
         # nonzero weighted state deviations
-        HA_prime = self.obsensemble.get_deviations().loc[:,nz_names]
+        HA_prime = self.obsensemble.get_deviations().loc[:,nz_names].T
 
         # obs noise pertubations - move to constuctor
-        E = self.obsensemble_0 - self.pst.observation_data.obsval.loc[self.obsensemble_0.columns]
+        E = (self.obsensemble_0 - self.pst.observation_data.obsval.loc[self.obsensemble_0.columns]).T
 
         # innovations:  account for any failed runs (use obsensemble index)
-        D_prime = (self.obsensemble.loc[:,nz_names] - self.obsensemble_0.loc[self.obsensemble.index,nz_names])
+        D_prime = (self.obsensemble.loc[:,nz_names] - self.obsensemble_0.loc[self.obsensemble.index,nz_names]).T
 
-        ES = HA_prime.loc[E.index,nz_names] + E.loc[:,nz_names]
+        ES = HA_prime.loc[nz_names,E.columns] + E.loc[nz_names,:]
         assert ES.shape == ES.dropna().shape
 
         ES = pyemu.Matrix.from_dataframe(ES)
-        U = ES.u
-        s = ES.s
-        num_eig = min(self.pst.svd_data.maxsing,ES.get_maxsing(self.pst.svd_data.eigthresh))
-        print(num_eig)
-        eigvec_arr = U[:num_eig,:num_eig]
-        eigval_arr = s.inv[:num_eig]
-        print(eigvec_arr.shape,eigval_arr.shape)
-        print(eigval_arr)
+        U,s,v = ES.pseudo_inv_components(maxsing=None,
+                                         eigthresh=ES.get_maxsing(self.pst.svd_data.eigthresh),
+                                         truncate=True)
 
-        X1 = np.dot(eigval_arr,eigvec_arr)
+        for i,sval in enumerate(np.diag(s.x)):
+            if sval == 0.0:
+                break
+            s.x[i,i] = 1.0 / sval
+
+
+        X1 = s * U.T
+        X1.autoalign = False
 
         X2 =  X1 * D_prime #these are aligned through the use of nz_names
 
-        X3 = eigvec_arr * X2 #also aligned
+        X3 = U * X2 #also aligned
 
-        X4 = HA_prime.array.transpose() * X3
+        X4 = pyemu.Matrix.from_dataframe(HA_prime.T) * X3
 
+        A_prime = pyemu.Matrix.from_dataframe(self.parensemble.get_deviations().loc[:,self.pst.adj_par_names]).T
 
+        upgrade = (A_prime * X4).to_dataframe()
+
+        assert upgrade.shape == upgrade.dropna().shape
+
+        print(upgrade)
 
         self.iter_num += 1
 
