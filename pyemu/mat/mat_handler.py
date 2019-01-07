@@ -997,7 +997,7 @@ class Matrix(object):
         return max(1,ising)
 
     def pseudo_inv_components(self,maxsing=None,eigthresh=1.0e-5,truncate=True):
-        """ Get the truncated SVD components
+        """ Get the (optionally) truncated SVD components
 
         Parameters
         ----------
@@ -1014,28 +1014,29 @@ class Matrix(object):
         Returns
         -------
         u : Matrix
-            truncated left singular vectors
+            (optionally) truncated left singular vectors
         s : Matrix
-            truncated singular value matrix
+            (optionally) truncated singular value matrix
         v : Matrix
-            truncated right singular vectors
+            (optionally) truncated right singular vectors
 
         """
 
         if maxsing is None:
             maxsing = self.get_maxsing(eigthresh=eigthresh)
-        s = self.s.copy()
+        # else:
+        #     maxsing = min(self.get_maxsing(eigthresh=eigthresh),maxsing)
+
+        s = self.full_s.copy()
         v = self.v.copy()
         u = self.u.copy()
         if truncate:
+
             s = s[:maxsing,:maxsing]
             v = v[:,:maxsing]
             u = u[:,:maxsing]
         else:
-
-            new_s = Matrix(x=np.zeros(self.shape),row_names=u.col_names,col_names=v.col_names)
-            for i,sval in enumerate(np.diag(s.x)):
-                new_s.x[i,i] = sval
+            new_s = self.full_s.copy()
             s = new_s
             s.x[maxsing:, maxsing:] = 0.0
             v.x[:, maxsing:] = 0.0

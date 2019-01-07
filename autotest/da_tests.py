@@ -193,13 +193,16 @@ def freyberg_test():
     obs.loc[:,"weight"] = 0.0
     # replace the obs vals in the pst with the truth states at the end of the first assimilation cycle
     obs.loc[truth_df.index,"obsval"] = truth_df.loc[:,"0"]
-    obs.loc[truth_df.index, "weight"] = 0.001 # oh, who knows...
+    obs.loc[truth_df.index, "weight"] = 1.0 # oh, who knows...
 
     enkf = pyemu.EnsembleKalmanFilter(pst=pst,num_slaves=5,slave_dir=t_d)
     enkf.initialize(num_reals=10)
-    enkf.analysis()
+    init_phi = enkf.obsensemble.phi_vector
+    #enkf.update()
+    phi = enkf.obsensemble.phi_vector
     os.chdir(bd)
-
+    print(init_phi.mean())
+    print(phi.mean())
 
 def draw_forcing_ensemble():
     t_d = os.path.join("da","freyberg","daily_template")

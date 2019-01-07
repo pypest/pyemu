@@ -206,41 +206,62 @@ class EnsembleKalmanFilter(EnsembleMethod):
         assert ES.shape == ES.dropna().shape
 
         ES = pyemu.Matrix.from_dataframe(ES)
-        U,s,v = ES.pseudo_inv_components(maxsing=None,
-                                         eigthresh=ES.get_maxsing(self.pst.svd_data.eigthresh),
-                                         truncate=True)
 
+        nrmin = min(self.pst.nnz_obs,self.obsensemble.shape[0])
+        U,s,v = ES.pseudo_inv_components(maxsing=nrmin,
+                                        eigthresh=ES.get_maxsing(self.pst.svd_data.eigthresh),
+                                        truncate=True)
+
+        #half assed inverse
+        s_inv = s.T
         for i,sval in enumerate(np.diag(s.x)):
-            if sval == 0.0:
-                break
-            s.x[i,i] = 1.0 / sval
+           if sval == 0.0:
+               break
+           s_inv.x[i,i] = 1.0 / (sval * sval)
 
-
-        X1 = s * U.T
-        X1.autoalign = False
+        X1 = s_inv * U.T
+        X1.autoalign = False #since the row/col names don't mean anything for singular components and everything is aligned
 
         X2 =  X1 * D_prime #these are aligned through the use of nz_names
 
         X3 = U * X2 #also aligned
 
         X4 = pyemu.Matrix.from_dataframe(HA_prime.T) * X3
+        I = np.identity(X4.shape[0])
 
+        X5 = X4 + I
+
+        print(X5.x.sum(axis=1))
+
+
+        # deviations of adj pars
         A_prime = pyemu.Matrix.from_dataframe(self.parensemble.get_deviations().loc[:,self.pst.adj_par_names]).T
 
-        upgrade = (A_prime * X4).to_dataframe()
+
+        upgrade = (A_prime * X4).to_dataframe().T
 
         assert upgrade.shape == upgrade.dropna().shape
 
+        upgrade.index = self.parensemble.index
         print(upgrade)
+        parensemble = self.parensemble + upgrade
 
-        self.iter_num += 1
+
+        assert parensemble.shape == parensemble.dropna().shape
+        return parensemble
+
 
     def update(self):
         """update performs the analysis, then runs the forecast using the updated self.parensemble.
         This can be called repeatedly to iterate..."""
-        self.analysis()
-        self.forecast()
+        parensemble = self.analysis()
+        obsensemble  = self.forecast(parensemble=parensemble)
+        # todo: check for phi improvement
+        if True:
+            self.obsensemble = obsensemble
+            self.parensemble = parensemble
 
+        self.iter_num += 1
 
 
 class Assimilator():

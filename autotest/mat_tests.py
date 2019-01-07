@@ -179,6 +179,7 @@ def pseudo_inv_test():
     jpi = jco.pseudo_inv(maxsing=19)
 
     u1,s1,v1 = jco.pseudo_inv_components(2)
+    print(s1.shape)
     assert s1.shape[0] == 2
     u2, s2, v2 = jco.pseudo_inv_components(2,truncate=False)
     assert s2.shape == jco.shape
