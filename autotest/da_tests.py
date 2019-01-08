@@ -164,7 +164,7 @@ def process_truth_for_obs_states():
     truth_obs_states.to_csv(os.path.join("da","freyberg","daily_template","truth_states.csv"))
 
 
-def freyberg_test():
+def freyberg_dev():
 
     t_d = "daily_template"
     m_d = "daily_master"
@@ -201,6 +201,7 @@ def freyberg_test():
     pst.pestpp_options["ies_lambda_mults"] = 1.0
     pst.pestpp_options["lambda_scale_fac"] = 1.0
     pst.pestpp_options["ies_subset_size"] = 10
+    pst.pestpp_options["overdue_giveup_fac"] = 1000.0
     pst.write(os.path.join(t_d,"test.pst"))
     pyemu.os_utils.start_slaves(t_d,"pestpp-ies","test.pst",num_slaves=3,master_dir="test")
 
@@ -209,17 +210,11 @@ def freyberg_test():
                     obsensemble=os.path.join("test","test.base.obs.csv"),
                     restart_obsensemble=os.path.join("test","test.0.obs.csv"))
     init_phi = enkf.obsensemble.phi_vector
-    #enkf.analysis_evensen()
-    #enkf.forecast()
-    enkf.update()
-    phi = enkf.obsensemble.phi_vector
-    print(init_phi.mean(), phi.mean())
-    enkf.update()
-    phi = enkf.obsensemble.phi_vector
-    print(init_phi.mean(), phi.mean())
-    enkf.update()
-    phi = enkf.obsensemble.phi_vector
-    print(init_phi.mean(), phi.mean())
+
+    for i in range(pst.control_data.noptmax):
+        enkf.update()
+        phi = enkf.obsensemble.phi_vector
+        print(i,init_phi.mean(), phi.mean())
 
     os.chdir(bd)
 
@@ -244,5 +239,5 @@ if __name__ == "__main__":
     #run_truth_sweep()
     #setup_daily_da()
     #process_truth_for_obs_states()
-    freyberg_test()
+    freyberg_dev()
     #draw_forcing_ensemble()
