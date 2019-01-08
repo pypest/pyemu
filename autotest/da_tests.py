@@ -193,16 +193,36 @@ def freyberg_test():
     obs.loc[:,"weight"] = 0.0
     # replace the obs vals in the pst with the truth states at the end of the first assimilation cycle
     obs.loc[truth_df.index,"obsval"] = truth_df.loc[:,"0"]
-    obs.loc[truth_df.index, "weight"] = 1.0 # oh, who knows...
+    obs.loc[truth_df.index, "weight"] = 100 # oh, who knows...
 
-    enkf = pyemu.EnsembleKalmanFilter(pst=pst,num_slaves=5,slave_dir=t_d)
-    enkf.initialize(num_reals=10)
+    pst.control_data.noptmax = 3
+
+    pst.pestpp_options["ies_num_reals"] = 10
+    pst.pestpp_options["ies_lambda_mults"] = 1.0
+    pst.pestpp_options["lambda_scale_fac"] = 1.0
+    pst.pestpp_options["ies_subset_size"] = 10
+    pst.write(os.path.join(t_d,"test.pst"))
+    pyemu.os_utils.start_slaves(t_d,"pestpp-ies","test.pst",num_slaves=3,master_dir="test")
+
+    enkf = pyemu.EnsembleKalmanFilter(pst=pst,num_slaves=3,slave_dir=t_d)
+    enkf.initialize(parensemble=os.path.join("test","test.0.par.csv"),
+                    obsensemble=os.path.join("test","test.base.obs.csv"),
+                    restart_obsensemble=os.path.join("test","test.0.obs.csv"))
     init_phi = enkf.obsensemble.phi_vector
-    #enkf.update()
+    #enkf.analysis_evensen()
+    #enkf.forecast()
+    enkf.update()
     phi = enkf.obsensemble.phi_vector
+    print(init_phi.mean(), phi.mean())
+    enkf.update()
+    phi = enkf.obsensemble.phi_vector
+    print(init_phi.mean(), phi.mean())
+    enkf.update()
+    phi = enkf.obsensemble.phi_vector
+    print(init_phi.mean(), phi.mean())
+
     os.chdir(bd)
-    print(init_phi.mean())
-    print(phi.mean())
+
 
 def draw_forcing_ensemble():
     t_d = os.path.join("da","freyberg","daily_template")

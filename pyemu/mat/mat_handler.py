@@ -1024,8 +1024,8 @@ class Matrix(object):
 
         if maxsing is None:
             maxsing = self.get_maxsing(eigthresh=eigthresh)
-        # else:
-        #     maxsing = min(self.get_maxsing(eigthresh=eigthresh),maxsing)
+        else:
+             maxsing = min(self.get_maxsing(eigthresh=eigthresh),maxsing)
 
         s = self.full_s.copy()
         v = self.v.copy()

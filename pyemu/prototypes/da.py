@@ -3,6 +3,7 @@ import sys
 import multiprocessing as mp
 import copy
 import numpy as np
+import pandas as pd
 import pyemu
 from .ensemble_method import EnsembleMethod
 
@@ -64,8 +65,9 @@ class EnsembleKalmanFilter(EnsembleMethod):
                     self.logger.lraise("can not find parensemble file: {0}".\
                                        format(parensemble))
                 df = pd.read_csv(parensemble,index_col=0)
+                df.columns = df.columns.str.lower()
                 #df.index = [str(i) for i in df.index]
-                self.parensemble_0 = ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
+                self.parensemble_0 = pyemu.ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
                 self.logger.log("loading parensemble from file")
 
             elif isinstance(parensemble,ParameterEnsemble):
@@ -80,9 +82,11 @@ class EnsembleKalmanFilter(EnsembleMethod):
                 if not os.path.exists(obsensemble):
                     self.logger.lraise("can not find obsensemble file: {0}".\
                                        format(obsensemble))
-                df = pd.read_csv(obsensemble,index_col=0).loc[:,self.pst.nnz_obs_names]
+                df = pd.read_csv(obsensemble,index_col=0)
+                df.columns = df.columns.str.lower()
+                df = df.loc[:,self.pst.nnz_obs_names]
                 #df.index = [str(i) for i in df.index]
-                self.obsensemble_0 = ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
+                self.obsensemble_0 = pyemu.ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
                 self.logger.log("loading obsensemble from file")
 
             elif isinstance(obsensemble,ObservationEnsemble):
@@ -132,7 +136,12 @@ class EnsembleKalmanFilter(EnsembleMethod):
 
         if restart_obsensemble is not None:
             self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
-            failed_runs,self.obsensemble = self._load_obs_ensemble(restart_obsensemble)
+            #failed_runs,self.obsensemble = self._load_obs_ensemble(restart_obsensemble)
+            df = pd.read_csv(restart_obsensemble, index_col=0)
+            df.columns = df.columns.str.lower()
+            #df = df.loc[:, self.pst.nnz_obs_names]
+            # df.index = [str(i) for i in df.index]
+            self.obsensemble = pyemu.ObservationEnsemble.from_dataframe(df=df, pst=self.pst)
             assert self.obsensemble.shape[0] == self.obsensemble_0.shape[0]
             assert list(self.obsensemble.columns) == list(self.obsensemble_0.columns)
             self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
@@ -143,10 +152,10 @@ class EnsembleKalmanFilter(EnsembleMethod):
             self.obsensemble = self.forecast()
             self.logger.log("evaluating initial ensembles")
 
-        if not self.parensemble.istransformed:
-            self.parensemble._transform(inplace=True)
-        if not self.parensemble_0.istransformed:
-            self.parensemble_0._transform(inplace=True)
+        #if not self.parensemble.istransformed:
+        self.parensemble._transform(inplace=True)
+        #if not self.parensemble_0.istransformed:
+        self.parensemble_0._transform(inplace=True)
         self._initialized = True
 
 
@@ -170,6 +179,40 @@ class EnsembleKalmanFilter(EnsembleMethod):
         return obsensemble
 
     def analysis(self):
+
+        nz_names = self.pst.nnz_obs_names
+        nreals = self.obsensemble.shape[0]
+
+        h_dash = pyemu.Matrix.from_dataframe(self.obsensemble.get_deviations().loc[:,nz_names].T)
+
+        R = self.obscov
+
+        Chh = ((h_dash * h_dash.T) *  (1.0 / nreals - 1)) + R
+
+        Cinv = Chh.pseudo_inv(maxsing=1,eigthresh=self.pst.svd_data.eigthresh)
+
+        #Chh = None
+
+        d_dash = pyemu.Matrix.from_dataframe(self.obsensemble_0.loc[self.obsensemble.index,nz_names] - self.obsensemble.loc[:,nz_names]).T
+
+        k_dash = pyemu.Matrix.from_dataframe(self.parensemble.get_deviations().loc[:,self.pst.adj_par_names]).T
+
+        Chk = (k_dash * h_dash.T) * (1.0 / nreals - 1)
+
+        Chk_dot_Cinv = Chk * Cinv
+        #Chk = None
+        upgrade = Chk_dot_Cinv * d_dash
+        parensemble = self.parensemble.copy()
+        upgrade = upgrade.to_dataframe().T
+
+        upgrade.index = parensemble.index
+        parensemble += upgrade
+        parensemble = pyemu.ParameterEnsemble.from_dataframe(df=parensemble,pst=self.pst,istransformed=True)
+        parensemble.enforce()
+        return parensemble
+
+
+    def analysis_evensen(self):
         """Ayman here!!!.  some peices that may be useful:
         self.parcov = parameter covariance matrix
         self.obscov = obseravtion noise covariance matrix
@@ -192,15 +235,17 @@ class EnsembleKalmanFilter(EnsembleMethod):
         """
 
         nz_names = self.pst.nnz_obs_names
-
+        nreals = self.obsensemble.shape[0]
+        self.parensemble._transform()
         # nonzero weighted state deviations
         HA_prime = self.obsensemble.get_deviations().loc[:,nz_names].T
 
         # obs noise pertubations - move to constuctor
-        E = (self.obsensemble_0 - self.pst.observation_data.obsval.loc[self.obsensemble_0.columns]).T
+        E = (self.obsensemble_0.loc[:,nz_names] - self.pst.observation_data.obsval.loc[nz_names]).T
+        #print(E)
 
         # innovations:  account for any failed runs (use obsensemble index)
-        D_prime = (self.obsensemble.loc[:,nz_names] - self.obsensemble_0.loc[self.obsensemble.index,nz_names]).T
+        D_prime = (self.obsensemble_0.loc[self.obsensemble.index,nz_names] - self.obsensemble.loc[:,nz_names]).T
 
         ES = HA_prime.loc[nz_names,E.columns] + E.loc[nz_names,:]
         assert ES.shape == ES.dropna().shape
@@ -227,11 +272,10 @@ class EnsembleKalmanFilter(EnsembleMethod):
         X3 = U * X2 #also aligned
 
         X4 = pyemu.Matrix.from_dataframe(HA_prime.T) * X3
+
         I = np.identity(X4.shape[0])
-
         X5 = X4 + I
-
-        print(X5.x.sum(axis=1))
+        #print(X5.x.sum(axis=1))
 
 
         # deviations of adj pars
@@ -243,9 +287,10 @@ class EnsembleKalmanFilter(EnsembleMethod):
         assert upgrade.shape == upgrade.dropna().shape
 
         upgrade.index = self.parensemble.index
-        print(upgrade)
+        #print(upgrade)
         parensemble = self.parensemble + upgrade
 
+        parensemble = pyemu.ParameterEnsemble.from_dataframe(df=parensemble,pst=self.pst,istransformed=True)
 
         assert parensemble.shape == parensemble.dropna().shape
         return parensemble
@@ -254,7 +299,7 @@ class EnsembleKalmanFilter(EnsembleMethod):
     def update(self):
         """update performs the analysis, then runs the forecast using the updated self.parensemble.
         This can be called repeatedly to iterate..."""
-        parensemble = self.analysis()
+        parensemble = self.analysis_evensen()
         obsensemble  = self.forecast(parensemble=parensemble)
         # todo: check for phi improvement
         if True:
