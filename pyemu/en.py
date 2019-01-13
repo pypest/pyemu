@@ -1416,7 +1416,8 @@ class ParameterEnsemble(Ensemble):
 
         """
         if self.istransformed:
-            raise Exception("ParameterEnsemble already transformed")
+            #raise Exception("ParameterEnsemble already transformed")
+            return
 
         istransformed = self.pst.parameter_data.loc[:,"partrans"] == "log"
         if inplace:
