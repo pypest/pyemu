@@ -153,7 +153,11 @@ class EnsembleMethod(object):
             failed_runs = obs.loc[obs.failed_flag == 1].index.values
             self.logger.warn("{0} runs failed (indices: {1})".\
                              format(len(failed_runs),','.join([str(f) for f in failed_runs])))
-        obs = ObservationEnsemble.from_dataframe(df=obs.loc[:,self.obscov.row_names],
+        if self.obscov is None:
+            obsnames = self.pst.observation_data['obsnme'].values
+        else:
+            obsnames = self.obscov.row_names
+        obs = ObservationEnsemble.from_dataframe(df=obs.loc[:,obsnames],
                                                                pst=self.pst)
         if obs.isnull().values.any():
             self.logger.lraise("_calc_obs() error: NaNs in obsensemble")

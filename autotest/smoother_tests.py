@@ -245,7 +245,7 @@ def freyberg():
     import flopy
 
     ml = flopy.modflow.Modflow.load("freyberg.nam",model_ws="template",
-                                    load_only=[])
+                                    load_only=['DIS', 'BAS6'])
     #xy = pd.DataFrame([(x,y) for x,y in zip(ml.sr.xcentergrid.flatten(),ml.sr.ycentergrid.flatten())],
     #                  columns=['x','y'])
     x,y,names = [],[],[]
@@ -1886,14 +1886,14 @@ if __name__ == "__main__":
     #chenoliver_obj_plot()
     #tenpar_fixed()
     #tenpar_phi()
-    tenpar_test()
+    #tenpar_test()
     #tenpar_opt()
     #plot_10par_opt_traj()
     #tenpar_restart()
     #tenpar_plot()
     #tenpar_failed_runs()
     #tenpar()
-    #freyberg()
+    freyberg()
     #freyberg_check_phi_calc()
     #freyberg_condor()
     #freyberg_plot()

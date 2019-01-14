@@ -972,6 +972,34 @@ def simple_tpl_from_pars(parnames, tplfilename='model.input.tpl'):
         ofp.write('ptf ~\n')
         [ofp.write('~{0:^12}~\n'.format(cname)) for cname in parnames]
 
+def simple_tpl_from_pars2(parnames, tplfilename='model.input.tpl'):
+    """
+    Make a template file just assuming a list of parameter names the values of which should be
+    listed in order in a model input file
+    Args:
+        parnames: list of names from which to make a template file
+        tplfilename: filename for TPL file (default: model.input.tpl)
+
+    Returns:
+        writes a file <tplfilename> with each parameter name on a line
+
+    """
+    with open(tplfilename, 'w') as ofp:
+        ofp.write('ptf ~\n')
+        ofp.write(',parnme,parval1\n')
+        [ofp.write('{0},{1},~{2:^12}~\n'.format(i, cname, cname)) for i, cname in enumerate(parnames)]
+
+def simple_ins_from_obs2(obsnames = ['obs1'], marker = '!', obs_width = 20,  insfilename='model.output.ins'):
+    fid = open(insfilename, 'w')
+    fid.write("pif %s\n" % (marker))
+    obs_names = obsnames
+    for nm in obs_names:
+        fid.write("l1 ")
+        fid.write("[{}]".format(nm))
+        fid.write("1:{}".format(obs_width))
+        fid.write("\n")
+
+    fid.close()
 
 def simple_ins_from_obs(obsnames, insfilename='model.output.ins'):
     """

@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import flopy
 import pyemu
+from pyemu.prototypes.da import Assimilator
 
 def setup_freyberg_transient_model():
 
@@ -194,8 +195,13 @@ def freyberg_test():
     obs.loc[truth_df.index,"obsval"] = truth_df.loc[:,"0"]
     obs.loc[truth_df.index, "weight"] = 0.001 # oh, who knows...
 
-    enkf = pyemu.EnsembleKalmanFilter(pst=pst,num_slaves=5,slave_dir=t_d)
-    enkf.initialize(num_reals=20)
+    sm = Assimilator(type='Smoother', iterate=False, mode='Stochastic', pst=pst, parens=None, err_ens=None,
+                     num_slaves=20, slave_dir = 'daily_template')
+    sm.run()
+
+    if 0:
+        enkf = pyemu.EnsembleKalmanFilter(pst=pst,num_slaves=5,slave_dir=t_d)
+        enkf.initialize(num_reals=20)
 
     os.chdir(bd)
 

@@ -226,7 +226,7 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
     ``>>>pyemu.helpers.start_slaves("template","pestpp","pest.pst",10,master_dir="master")``
 
     """
-
+    #cleanup = False
     assert os.path.isdir(slave_dir)
     assert os.path.isdir(slave_root)
     if num_slaves is None:
