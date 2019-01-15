@@ -250,6 +250,123 @@ def tenpar_dev():
 
 
 
+def setup_freyberg_transport():
+    import os
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import flopy
+    import pyemu
+
+
+    org_model_ws = os.path.join("..","examples","freyberg_sfr_reaches")
+    new_model_ws = os.path.join("moouu","freyberg","temp")
+    mf_nam = "freyberg.nam"
+    mt_nam = "freyberg_mt.nam"
+
+    mf = flopy.modflow.Modflow.load(mf_nam,model_ws=org_model_ws,verbose=True,version="mfnwt",exe_name="mfnwt")
+    mf.dis.nper = 1
+    mf.dis.perlen = 3650.0
+    mf.external_path = '.'
+    mf.change_model_ws(new_model_ws,reset_external=True)
+
+    mf.write_input()
+    mf.run_model()
+
+    # hds = flopy.utils.HeadFile(os.path.join(new_model_ws,mf_nam.replace(".nam",".hds")),model=mf)
+    # hds.plot()
+    # plt.show()
+
+    mt = flopy.mt3d.Mt3dms.load(mt_nam,model_ws=org_model_ws,verbose=True,exe_name="mt3dusgs",modflowmodel=mf)
+
+    mt.btn.nper = 1
+    mt.btn.perlen = 3650.0
+    #mt.external_path = '.'
+    mt.remove_package("SSM")
+    spd = []
+    ib = mf.bas6.ibound[0].array
+    for i in range(mf.nrow):
+        for j in range(mf.ncol):
+            if ib[i,j] <= 0:
+                continue
+            spd.append([0,i,j,1.0,15])
+
+    flopy.mt3d.Mt3dSsm(mt,crch=0.0,stress_period_data=spd,mxss=10000)
+    mt.change_model_ws(new_model_ws,reset_external=True)
+    mt.sft.nsfinit = 40
+    mt.sft.nobssf = 40
+    mt.sft.obs_sf = np.arange(mt.sft.nsfinit) + 1
+    mt.write_input()
+    mt.run_model()
+
+    # unc = flopy.utils.UcnFile(os.path.join(new_model_ws,"MT3D001.UCN"),model=mf)
+    # unc.plot(colorbar=True,masked_values=[1.0e30])
+    # plt.show()
+    return new_model_ws
+
+
+def setup_freyberg_pest_interface():
+    import os
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import flopy
+    import pyemu
+
+    org_model_ws = setup_freyberg_transport()
+
+    props = []
+    paks = ["upw.hk","upw.vka","extra.prst","extra.rc11","extra.scn1"]
+    for k in range(3):
+        for p in paks:
+            props.append([p,k])
+    props.append(["rch.rech",0])
+
+
+    ph = pyemu.helpers.PstFromFlopyModel("freyberg.nam",org_model_ws=org_model_ws,new_model_ws="template",remove_existing=True,
+                                         grid_props=props,spatial_bc_props=["wel.flux",2],hds_kperk=[[0,0],[0,1],[0,2]],
+                                         mflist_waterbudget=True,sfr_pars=True,build_prior=False,extra_post_cmds=["mt3dusgs freyberg_mt.nam >mt_stdout"])
+
+    pyemu.helpers.run("mfnwt freyberg.nam", cwd=ph.m.model_ws)
+    mt = flopy.mt3d.Mt3dms.load("freyberg_mt.nam", model_ws=org_model_ws, verbose=True, exe_name="mt3dusgs")
+    mt.external_path = '.'
+    mt.change_model_ws("template",reset_external=True)
+    mt.write_input()
+    pyemu.helpers.run("mt3dusgs freyberg_mt.nam",cwd="template")
+
+    tpl_file = write_ssm_tpl(os.path.join("template","freyberg_mt.ssm"))
+
+def write_ssm_tpl(ssm_file):
+
+    f_in = open(ssm_file,'r')
+    tpl_file = ssm_file + ".tpl"
+    f_tpl = open(tpl_file,'w')
+    f_tpl.write("ptf ~\n")
+    while True:
+        line = f_in.readline()
+        if line == '':
+            break
+        f_tpl.write(line)
+        if "stress period" in line.lower():
+            #f_tpl.write(line)
+            while True:
+                line = f_in.readline()
+                if line == '':
+                    break
+                raw = line.strip().split()
+                i = int(raw[1]) - 1
+                j = int(raw[2]) - 1
+                pname = "k{0:02d}_{1:02d}".format(i,j)
+                tpl_str = "~{0}~ ".format(pname)
+                line = line[:39] + tpl_str + line[48:]
+                #print(line)
+                f_tpl.write(line)
+
+
+
+
 if __name__ == "__main__":
-    tenpar_test()
+    #tenpar_test()
     #tenpar_dev()
+    #setup_freyberg_transport()
+    setup_freyberg_pest_interface()
