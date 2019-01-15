@@ -223,7 +223,6 @@ class EnsembleMethod(object):
         self.logger.log("evaluating ensemble of size {0} with htcondor".\
                         format(parensemble.shape[0]))
 
-
     def _calc_obs_local(self,parensemble):
         '''
         propagate the ensemble forward using sweep.
@@ -241,7 +240,6 @@ class EnsembleMethod(object):
 
         self.logger.log("evaluating ensemble of size {0} locally with sweep".\
                         format(parensemble.shape[0]))
-
 
     def update(self,lambda_mults=[1.0],localizer=None,run_subset=None,use_approx=True):
         raise Exception("EnsembleMethod.update() must be implemented by the derived types")

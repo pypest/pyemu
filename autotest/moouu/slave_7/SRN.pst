@@ -1,0 +1,33 @@
+pcf
+* control data
+restart estimation
+2  4  1  0  1
+1  1  single  point  1  0  0
+1e-1  -4.0   0.3  0.03  10  999
+5.0   5.0   1.0e-3  absparmax(5)=1
+0.1  
+0   .005  4   4  .005   4
+1    1    1
+* singular value decomposition
+1
+11  1.0000000E-06 
+0
+* parameter groups
+var	absolute	1.0000E-10	0.000	switch	2.000	parabolic
+* parameter data
+dvar1  none  absolute(5)  0  -20  20  var  1.0  0.0  1  
+dvar2  none  absolute(5)  0  -20  20  var  1.0  0.0  1
+* observation groups
+output
+* observation data
+obj1  0  10.0  output
+obj2  0  10.0  output
+cnstr1  6  10.0  output 
+cnstr2  1  10.0  output
+* model command line
+python StochasticProblemSuite.py SRN
+* model input/output
+SRN.tpl input.dat
+SRN.ins output.dat
+++# PEST++ optional input
+++sweep_parameter_csv_file(sweep_in.csv)

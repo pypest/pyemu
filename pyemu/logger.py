@@ -12,7 +12,7 @@ class Logger(object):
 
     Parameters
     ----------
-    filename : str
+    filename : str, bool
         Filename to write logged events to. If False, no file will be created,
         and logged events will be displayed on standard out.
     echo : bool
