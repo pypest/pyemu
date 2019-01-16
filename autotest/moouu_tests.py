@@ -281,14 +281,58 @@ def setup_freyberg_transport():
     mf.dis.nper = 1
     mf.dis.perlen = 3650.0
     mf.external_path = '.'
+    rdata = mf.sfr.reach_data
+    #print(rdata)
+    upstrm = 33
+    dwstrm = 32.5
+    total_length = mf.dis.delc.array.max() * mf.nrow
+    slope = (upstrm - dwstrm) / total_length
+    #print(rdata.dtype,slope)
+    strtop = np.linspace(upstrm,dwstrm,40)
+    #print(strtop)
+    rdata["strtop"] = strtop
+    rdata["slope"] = slope
+
+
+    sdata = mf.sfr.segment_data[0]
+    print(sdata)
+    print(sdata.dtype)
+    sdata["flow"][0] = 10000
+    sdata["width1"][:] = 5.
+    sdata["width2"][:] = 5.
+    #sdata["hcond1"][:] *= 10.0
+
     mf.change_model_ws(new_model_ws,reset_external=True)
+    mf.rch.rech[0] *= 0.1
+    mf.wel.stress_period_data[0]["flux"][:] *= 0.1
+
+    ib = mf.bas6.ibound[0].array
+    drn_data = []
+    for i in range(mf.nrow):
+        for j in range(mf.ncol):
+            if j == 15:
+                continue
+            if ib[i,j] < 0:
+                print(mf.dis.botm.array[0,i,j])
+                drn_data.append([0,i,j,33,10000.0])
+    flopy.modflow.ModflowDrn(mf,stress_period_data=drn_data)
+    ib[ib<0] = 1
+    mf.bas6.ibound = ib
+
+    #mf.upw.vka[1] *= 100.0
+    mf.upw.hk *= 5.0
 
     mf.write_input()
     mf.run_model()
 
-    # hds = flopy.utils.HeadFile(os.path.join(new_model_ws,mf_nam.replace(".nam",".hds")),model=mf)
-    # hds.plot()
-    # plt.show()
+    hds = flopy.utils.HeadFile(os.path.join(new_model_ws,mf_nam.replace(".nam",".hds")),model=mf)
+    hds.plot(colorbar=True)
+    plt.show()
+
+    mlist = flopy.utils.MfListBudget(os.path.join(new_model_ws,mf_nam.replace(".nam",".list")))
+    df = mlist.get_dataframes(diff=True)[1]
+    df.plot(kind="bar")
+    plt.show()
 
     mt = flopy.mt3d.Mt3dms.load(mt_nam,model_ws=org_model_ws,verbose=True,exe_name="mt3dusgs",modflowmodel=mf)
 
@@ -302,9 +346,10 @@ def setup_freyberg_transport():
         for j in range(mf.ncol):
             if ib[i,j] <= 0:
                 continue
-            spd.append([0,i,j,1.0,15])
+            spd.append([0,i,j,2.0,15])
 
     flopy.mt3d.Mt3dSsm(mt,crch=0.0,stress_period_data=spd,mxss=10000)
+    flopy.mt3d.Mt3dRct(mt,ireact=1,rc1=0.0075,igetsc=0)
     mt.change_model_ws(new_model_ws,reset_external=True)
     mt.sft.nsfinit = 40
     mt.sft.nobssf = 40
@@ -312,19 +357,81 @@ def setup_freyberg_transport():
     mt.write_input()
     mt.run_model()
 
-    # unc = flopy.utils.UcnFile(os.path.join(new_model_ws,"MT3D001.UCN"),model=mf)
-    # unc.plot(colorbar=True,masked_values=[1.0e30])
-    # plt.show()
+    unc = flopy.utils.UcnFile(os.path.join(new_model_ws,"MT3D001.UCN"),model=mf)
+    unc.plot(colorbar=True,masked_values=[1.0e30])
+    plt.show()
     return new_model_ws
 
 
 def setup_freyberg_pest_interface():
     import os
+    import shutil
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
     import flopy
     import pyemu
+
+    def set_par_bounds(pst,new_model_ws):
+        df_zn = pd.read_csv(os.path.join(new_model_ws, "arr_pars.csv"))
+        df_zn = df_zn.loc[df_zn.suffix == "_zn", :]
+
+        par = pst.parameter_data
+
+        pr_pars = par.loc[par.parnme.apply(lambda x: "prst" in x), "parnme"]
+        par.loc[pr_pars, "parubnd"] = 10.0
+        par.loc[pr_pars, "parlbnd"] = 0.1
+
+        pr_pars = par.loc[par.parnme.apply(lambda x: "al" in x), "parnme"]
+        par.loc[pr_pars, "parubnd"] = 10.0
+        par.loc[pr_pars, "parlbnd"] = 0.1
+
+        rc_pars = par.loc[par.parnme.apply(lambda x: "rc1" in x), "parnme"]
+        par.loc[rc_pars, "parubnd"] = 10.0
+        par.loc[rc_pars, "parlbnd"] = 0.1
+
+        rc_pars = par.loc[par.parnme.apply(lambda x: "scn" in x), "parnme"]
+        par.loc[rc_pars, "parubnd"] = 1.5
+        par.loc[rc_pars, "parlbnd"] = 0.5
+
+        # vka zone bounds
+        vka_names = par.loc[par.parnme.apply(lambda x: "vka" in x), "parnme"]
+        par.loc[vka_names, "parubnd"] = 10.0
+        par.loc[vka_names, "parlbnd"] = 0.1  # org model value is 10, so this is means lower bound is 1.0
+
+        # rch zone bounds
+        rch_names = par.loc[par.parnme.apply(lambda x: "rech" in x), 'parnme']
+        par.loc[rch_names, "parlbnd"] = 0.8
+        par.loc[rch_names, "parubnd"] = 1.2
+
+
+
+    def write_ssm_tpl(ssm_file):
+
+        f_in = open(ssm_file, 'r')
+        tpl_file = ssm_file + ".tpl"
+        f_tpl = open(tpl_file, 'w')
+        f_tpl.write("ptf ~\n")
+        while True:
+            line = f_in.readline()
+            if line == '':
+                break
+            f_tpl.write(line)
+            if "stress period" in line.lower():
+                # f_tpl.write(line)
+                while True:
+                    line = f_in.readline()
+                    if line == '':
+                        break
+                    raw = line.strip().split()
+                    i = int(raw[1]) - 1
+                    j = int(raw[2]) - 1
+                    pname = "k{0:02d}_{1:02d}".format(i, j)
+                    tpl_str = " ~ {0}~".format(pname)
+                    line = line[:30] + tpl_str + line[40:]
+                    # print(line)
+                    f_tpl.write(line)
+        return tpl_file
 
     org_model_ws = setup_freyberg_transport()
 
@@ -338,7 +445,9 @@ def setup_freyberg_pest_interface():
 
     ph = pyemu.helpers.PstFromFlopyModel("freyberg.nam",org_model_ws=org_model_ws,new_model_ws="template",remove_existing=True,
                                          grid_props=props,spatial_bc_props=["wel.flux",2],hds_kperk=[[0,0],[0,1],[0,2]],
-                                         mflist_waterbudget=True,sfr_pars=True,build_prior=False,extra_post_cmds=["mt3dusgs freyberg_mt.nam >mt_stdout"])
+                                         mflist_waterbudget=True,sfr_pars=True,build_prior=False,
+                                         extra_post_cmds=["mt3dusgs freyberg_mt.nam >mt_stdout"],
+                                         model_exe_name="mfnwt")
 
     pyemu.helpers.run("mfnwt freyberg.nam", cwd=ph.m.model_ws)
     mt = flopy.mt3d.Mt3dms.load("freyberg_mt.nam", model_ws=org_model_ws, verbose=True, exe_name="mt3dusgs")
@@ -348,7 +457,142 @@ def setup_freyberg_pest_interface():
     pyemu.helpers.run("mt3dusgs freyberg_mt.nam",cwd="template")
 
     tpl_file = write_ssm_tpl(os.path.join("template","freyberg_mt.ssm"))
+    df_ssm = ph.pst.add_parameters(tpl_file,pst_path='.')
+    ph.pst.parameter_data.loc[df_ssm.parnme,"partrans"] = "none"
+    ph.pst.parameter_data.loc[df_ssm.parnme, "parval1"] = 1.0
+    ph.pst.parameter_data.loc[df_ssm.parnme, "parlbnd"] = 0.0
+    ph.pst.parameter_data.loc[df_ssm.parnme, "parubnd"] = 10.0
 
+    # copy the original prsity array to arr_org
+    new_model_ws = ph.m.model_ws
+    [shutil.copy2(os.path.join(new_model_ws, f), os.path.join(new_model_ws, 'arr_org', f)) for f in
+     os.listdir(new_model_ws) if "prsity" in f.lower()]
+
+    [shutil.copy2(os.path.join(new_model_ws, f), os.path.join(new_model_ws, 'arr_org', f)) for f in
+     os.listdir(new_model_ws) if "rc11" in f.lower()]
+
+    [shutil.copy2(os.path.join(new_model_ws, f), os.path.join(new_model_ws, 'arr_org', f)) for f in
+     os.listdir(new_model_ws) if "sconc" in f.lower()]
+
+
+    # mod arr pars csv for prsity name len issue - 12 chars, seriously?
+    df = pd.read_csv(os.path.join(new_model_ws, "arr_pars.csv"))
+    df.loc[:, "model_file"] = df.model_file.apply(lambda x: x.replace("prst", "prsity"))
+    df.loc[:, "org_file"] = df.org_file.apply(lambda x: x.replace("prst", "prsity"))
+    df.loc[:, "model_file"] = df.model_file.apply(lambda x: x.replace("scn", "sconc"))
+    df.loc[:, "org_file"] = df.org_file.apply(lambda x: x.replace("scn", "sconc"))
+    df.loc[:, "upper_bound"] = np.NaN
+    pr_rows = df.model_file.apply(lambda x: "prsity" in x)
+    df.loc[pr_rows, "upper_bound"] = 0.35
+    df.loc[pr_rows, "lower_bound"] = 0.01
+    df.to_csv(os.path.join(new_model_ws, "arr_pars.csv"))
+
+    bdir = os.getcwd()
+    os.chdir(new_model_ws)
+
+    mt_list = mt.name + ".list"
+    frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(mt_list,
+                                                                      start_datetime=ph.m.start_datetime)
+    pst = ph.pst
+    for ins_file in ins_files:
+        pst.add_observations(ins_file, out_file=ins_file.replace(".ins", ""))
+    pst.observation_data.loc[df.obsnme, "weight"] = 0.0
+    pst.observation_data.loc[df.obsnme, "obgnme"] = "mtlist"
+    ph.frun_post_lines.append(frun_line)
+    pst.observation_data.loc[df.obsnme, "weight"] = 0.0
+    pst.observation_data.loc[df.obsnme, "obgnme"] = "mtlist"
+
+    ucn_kperk = []
+    for k in range(ph.m.nlay):
+        ucn_kperk.append([mt.nper - 1, k])
+
+    fline, df = pyemu.gw_utils.setup_hds_obs("mt3d001.ucn", skip=1.0e+30, kperk_pairs=ucn_kperk,
+                                             prefix="ucn1")
+    ph.frun_post_lines.append(fline)
+
+    ph.tmp_files.append("mt3d001.ucn")
+    ucn1 = pst.add_observations(os.path.join("mt3d001.ucn.dat.ins"), os.path.join("mt3d001.ucn.dat"))
+
+    all_times = np.cumsum(mt.btn.perlen.array)
+    times = []
+    for time in all_times:
+        times.append(time)
+
+    sft_obs = "freyberg_mt.sftcobs.out"
+    df_sft = pyemu.gw_utils.setup_sft_obs(sft_obs, times=times, ncomp=1)
+    new_obs_sft = pst.add_observations(sft_obs + '.processed.ins', sft_obs + ".processed")
+    ph.frun_post_lines.append("pyemu.gw_utils.apply_sft_obs()")
+
+    os.chdir(bdir)
+
+    set_par_bounds(ph.pst,ph.m.model_ws)
+    print(ph.pst.npar)
+
+    ph.write_forward_run()
+    ph.pst.parameter_data.loc[df_ssm.parnme,"partrans"] = "fixed"
+    pe = ph.draw(1000)
+
+    pe.enforce()
+    pe.to_csv(os.path.join(ph.m.model_ws,"sweep_in.csv"))
+    # tie nitrate loading rates by zones
+
+    zarr = np.loadtxt(os.path.join("..","examples","Freyberg_Truth","hk.zones"),dtype=int)
+    df_ssm.loc[:, "i"] = df_ssm.parnme.apply(lambda x: int(x[1:3]))
+    df_ssm.loc[:, "j"] = df_ssm.parnme.apply(lambda x: int(x[-2:]))
+
+    df_ssm.loc[:,"zone"] = df_ssm.apply(lambda x: zarr[x.i,x.j],axis=1)
+    z_grps = df_ssm.groupby(df_ssm.zone).groups
+    for z,znames in z_grps.items():
+        ph.pst.parameter_data.loc[znames[0],"partrans"] = "none"
+        ph.pst.parameter_data.loc[znames[1:],"partrans"] = "tied"
+        ph.pst.parameter_data.loc[znames[1:], "partied"] = znames[0]
+    print(np.unique(zarr))
+    ph.pst.write(os.path.join("template", "freyberg.pst"))
+
+    pyemu.os_utils.run("pestpp freyberg.pst",cwd=ph.m.model_ws)
+
+
+def run_freyberg_par_sweep():
+
+    pyemu.os_utils.start_slaves("template","pestpp-swp","freyberg.pst",20,master_dir="master_par_sweep")
+
+
+def process_freyberg_par_sweep():
+    import os
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    df = pd.read_csv(os.path.join("master_par_sweep","sweep_out.csv"),index_col=0)
+    df.columns = df.columns.str.lower()
+
+    oname = "sfrc40_1_03650.00"
+    df.loc[:,"sfrc40_1_03650.00"].hist(bins=20)
+    plt.show()
+    vals = df.loc[:,oname].copy()
+    vals.sort_values(inplace=True)
+    print(vals)
+    ninetyfith = int(df.shape[0] * 0.95)
+    idx = vals.index.values
+    idx_nf = idx[ninetyfith]
+    val = vals.loc[idx_nf]
+    par_df = pd.read_csv(os.path.join("template","sweep_in.csv"),index_col=0)
+    pars = par_df.iloc[idx_nf,:]
+    pst = pyemu.Pst(os.path.join("template","freyberg.pst"))
+    pst.parameter_data.loc[:,"parval1"] = pars.loc[pst.par_names]
+
+    pst.write(os.path.join("template","freyberg_nf.pst"))
+    pyemu.os_utils.run("pestpp freyberg_nf.pst",cwd="template")
+    pst = pyemu.Pst(os.path.join("template","freyberg_nf.pst"))
+
+    assert np.abs(val - pst.res.loc[oname,"modelled"]) < 0.0001
+    pst.observation_data.loc[:,"obsval"] = pst.res.loc[pst.obs_names,"modelled"]
+    pst.write(os.path.join("template","freyberg_nf.pst"))
+    pyemu.os_utils.run("pestpp freyberg_nf.pst",cwd="template")
+
+    par = pst.parameter_data
+
+<<<<<<< HEAD
 
 def write_ssm_tpl(ssm_file):
 
@@ -379,9 +623,53 @@ def write_ssm_tpl(ssm_file):
 
 if __name__ == "__main__":
     test_paretoObjFunc()
+=======
+    load_pars = set(par.loc[par.apply(lambda x: x.pargp == "pargp" and x.parnme.startswith("k"), axis=1),"parnme"].values)
+    par.loc[par.parnme.apply(lambda x: x not in load_pars),"partrans"] = "fixed"
+    pe = pyemu.ParameterEnsemble.from_uniform_draw(pst,num_reals = 100000)
+    pe.to_csv(os.path.join("template","dec_var_sweep_in.csv"))
+    pst.pestpp_options["sweep_parameter_csv_file"] = "dec_var_sweep_in.csv"
+    pst.write(os.path.join("template", "freyberg_nf.pst"))
+
+
+def run_freyberg_dec_var_sweep():
+    import os
+    import shutil
+    import pyemu
+    m_d = "master_dec_var_sweep"
+    if os.path.exists(m_d):
+        shutil.rmtree(m_d)
+    shutil.copytree("template",m_d)
+    shutil.copytree("template","template_temp")
+    os.remove(os.path.join("template_temp","dec_var_sweep_in.csv"))
+    os.chdir(m_d)
+    pyemu.os_utils.start_slaves(os.path.join("..","template_temp"),"pestpp-swp","freyberg_nf.pst",num_slaves=20,master_dir='.')
+
+
+def process_freyberg_dec_var_sweep():
+    import os
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import pyemu
+
+    df = pd.read_csv(os.path.join("master_dec_var_sweep","sweep_out.csv"),index_col=0)
+    df.columns = df.columns.str.lower()
+    print(df.shape)
+    oname = "sfrc40_1_03650.00"
+    df.loc[:,oname].hist()
+    plt.show()
+
+
+if __name__ == "__main__":
     #tenpar_test()
     #quick_tests()
     #tenpar_test()
     #tenpar_dev()
+    setup_freyberg_transport()
+    #setup_freyberg_pest_interface()
+    #run_freyberg_par_sweep()
+    #process_freyberg_par_sweep()
     #setup_freyberg_transport()
     #setup_freyberg_pest_interface()
+    #run_freyberg_dec_var_sweep()
+    #process_freyberg_dec_var_sweep()

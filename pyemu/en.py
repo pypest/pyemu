@@ -819,6 +819,9 @@ class ParameterEnsemble(Ensemble):
         lb = pst.parameter_data.parlbnd.copy()
         lb.loc[li] = lb.loc[li].apply(np.log10)
         lb = lb.to_dict()
+        pval = pst.parameter_data.parval1.copy()
+        pval.loc[li] = pval.loc[li].apply(np.log10)
+        pval = pval.to_dict()
 
         # set up some column names
         #real_names = ["{0:d}".format(i)
@@ -833,9 +836,10 @@ class ParameterEnsemble(Ensemble):
                                                       ub[pname],
                                                       size=num_reals)
             else:
-                arr[:,i] = np.zeros((num_reals)) + \
-                                    pst.parameter_data.\
-                                         loc[pname,"parval1"]
+                # arr[:,i] = np.zeros((num_reals)) + \
+                #                     pst.parameter_data.\
+                #                          loc[pname,"parval1"]
+                arr[:, i] = np.zeros((num_reals)) + pval[pname]
         #print("back transforming")
 
         df = pd.DataFrame(arr,index=real_names,columns=pst.par_names)
