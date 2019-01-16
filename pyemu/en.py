@@ -259,8 +259,6 @@ class Ensemble(pd.DataFrame):
         df = super(Ensemble,self).copy()
         return type(self).from_dataframe(df=df)
 
-
-
     def covariance_matrix(self,localizer=None):
         """calculate the approximate covariance matrix implied by the ensemble using
         mean-differencing operation at the core of EnKF
@@ -291,7 +289,6 @@ class Ensemble(pd.DataFrame):
             return delta.hadamard_product(localizer)
 
         return delta.T * delta
-
 
     def get_deviations(self):
         """get the deviations of the ensemble value from the mean vector

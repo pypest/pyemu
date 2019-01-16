@@ -31,7 +31,7 @@ class ParetoObjFunc(object):
                 else:
                     self.logger.lraise("unrecognized direction for obs obj func {0}:'{1}'".\
                                        format(name,direction))
-            elif  name in pi.pilbl:
+            elif name in pi.pilbl:
                 if direction.lower().startswith("max"):
                     self.pi_dict[name] = "max"
                 elif direction.lower().startswith("min"):
@@ -96,6 +96,26 @@ class ParetoObjFunc(object):
                 val = self.pst.observation_data.loc[gt_obs,"obsval"]
             is_feasible.loc[obs_df.loc[:,gt_obs] <= val] = False
         return is_feasible
+
+    # def constraint_violation_vector(self, obs_df, risk=0.5):
+    #     """calculate the constraint violation for constraints in obs_df.
+    #
+    #     Parameters
+    #     ----------
+    #     obs_df : pandas.DataFrame
+    #         a dataframe with columns of obs names and rows of realizations
+    #     risk : float
+    #         risk value. If != 0.5, then risk shifting is used.  Otherwise, the
+    #         obsval in Pst is used.  Default is 0.5.
+    #
+    #
+    #     Returns
+    #     -------
+    #     Series of constraint observation names (index) and constraint violation values
+    #
+    #     """
+    #     constraint_values - pd.Series(data=True, index=obs_df.index)
+    #     for lt_obs in self.pst.less_than_obs_constraints:
 
 
     @property
@@ -565,7 +585,8 @@ class EvolAlg(EnsembleMethod):
             failed_runs, oe = super(EvolAlg,self)._calc_obs(dv_ensemble)
         else:
             # make a copy of the org par ensemble but as a df instance
-            df_base = pd.DataFrame(self.par_ensemble.loc[:,:])
+            df_base = pd.DataFrame(self.par_ensemble.loc[:,:])  # note that k_02 - k_10 are dvs.
+            # must replace k_02 - k_10 in par ensemble with dvs
             # stack up the par ensembles for each solution
             dfs = []
             for i in range(dv_ensemble.shape[0]):
@@ -577,7 +598,9 @@ class EvolAlg(EnsembleMethod):
             # reset with a range index
             org_index = df.index.copy()
             df.index = np.arange(df.shape[0])
+            print(df)
             failed_runs, oe = super(EvolAlg,self)._calc_obs(df)
+            print(oe)
             if oe.shape[0] != dv_ensemble.shape[0] * self.par_ensemble.shape[0]:
                 self.logger.lraise("wrong number of runs back from stack eval")
 
@@ -602,7 +625,7 @@ class EvolAlg(EnsembleMethod):
 
 class EliteDiffEvol(EvolAlg):
     def __init__(self, pst, parcov = None, obscov = None, num_slaves = 0, use_approx_prior = True,
-                 submit_file = None, verbose = False, port = 4004, slave_dir = "template"):
+                 submit_file = None, verbose = False, port = 4004, slave_dir = "template", ):
         super(EliteDiffEvol, self).__init__(pst=pst, parcov=parcov, obscov=obscov, num_slaves=num_slaves,
                                       submit_file=submit_file, verbose=verbose, port=port,
                                       slave_dir=slave_dir)
