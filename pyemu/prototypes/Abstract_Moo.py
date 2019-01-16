@@ -4,11 +4,9 @@
 import numpy as np
 import subprocess
 import os
-from .moouu import EvolAlg, ParetoObjFunc
 import time
 import pandas as pd
-
-
+from .moouu import ParetoObjFunc, EvolAlg
 
 
 class AbstractMOEA(EvolAlg):
@@ -23,62 +21,89 @@ class AbstractMOEA(EvolAlg):
     """
 
     # ------------------------External methods--------------------------------
-    def __init__(self, objectives, bounds, number_objectives, pst, parcov = None, obscov = None, num_slaves = 0,
+    def __init__(self, pst, parcov = None, obscov = None, num_slaves = 0, use_approx_prior = True,
                  submit_file = None, verbose = False, port = 4004, slave_dir = "template",
-                 constraints=None, cross_prob=0.8, cross_dist=20, mut_prob=0.01, mut_dist=20,
-                 iterations=20):
+                 cross_prob=0.8, cross_dist=20, mut_prob=0.01, mut_dist=20):
         """initialise the algorithm. Parameters:
            objectives: callable function that returns an ndarray of objective values
            bounds: array of upper and lower bounds for each decision variable, eg [(0, 5), (-2, 2)]
            ------------------------------------- Optional parameters -------------------------------------------------
-           parent_pop_size: size of parent population. Full population size is 2 * parent_pop due to child population
-           cross_prob: probability of crossover occurring for any child
+           archive_size: size of archive population. Full population size is 2 * archive due to population population
+           cross_prob: probability of crossover occurring for any population
            cross_dist: distribution parameter of the crossover operation
-           mut_prob: probability of mutation occurring for any child
+           mut_prob: probability of mutation occurring for any population
            mut_dist: distribution parameter of the mutation operation
            iterations: number of iterations of the algorithm
         """
         super().__init__(pst=pst, parcov=parcov, obscov=obscov, num_slaves=num_slaves,
-                         submit_file=submit_file, verbose=verbose, port=port,slave_dir=slave_dir)
-        self.constraints = constraints
-        self.number_objectives = number_objectives
-        self.is_constrained = constraints is not None
-        self.objectives = objectives
-        self.bounds = bounds
+                         submit_file=submit_file, verbose=verbose, port=port, slave_dir=slave_dir)
+        # self.model_path = pst
+        # self.model = model
+        # self.constraints = constraints
+        # self.number_objectives = number_objectives
+        # self.is_constrained = constraints is not None
+        # self.objectives = objectives
+        # self.bounds = bounds
+
+        # self.pst = pst done by super()
+        self.bounds = None
+        self.is_constrained = None
+        self.number_objectives = None
         self.cross_prob = cross_prob
         self.cross_dist = cross_dist
         self.mut_prob = mut_prob
         self.mut_dist = mut_dist
-        self.iterations = iterations
         self.animator_points = []
 
     def run(self):
         pass
+
+    def initialize(self,obj_func_dict,num_par_reals=100,num_dv_reals=100,
+                   dv_ensemble=None, par_ensemble=None, risk=0.5, dv_names=None,
+                   par_names=None):
+        super().initialize(obj_func_dict=obj_func_dict, num_par_reals=num_par_reals, num_dv_reals=num_dv_reals,
+                           dv_ensemble=dv_ensemble, par_ensemble=par_ensemble, risk=risk, dv_names=dv_names,
+                           par_names=par_names)
+        self.bounds = self._get_bounds()
+        self.is_constrained = not(self.pst.greater_than_obs_constraints.empty
+                                  and self.pst.less_than_obs_constraints.empty)
+        self.number_objectives = len(obj_func_dict)
+
+    def update(self, *args, **kwargs):
+        super().update(*args, **kwargs)
 
     def run_model(self, population):
         """
         to be called after all changes to the population have been made. individuals whose objectives
         need calculating are calculated.
         """
-        if type(population) != "numpy.ndarray":
-            population = np.array(population)
-        positions = np.where([individual.calculate_objectives for individual in population])[0]
-        ensemble = np.atleast_2d(np.array([individual.d_vars for individual in population[positions]]))
-        ensemble = ensemble.T
-        if len(ensemble) > 0:
-            data = np.atleast_2d(self.objectives(ensemble))
-            data = data.T
-            for i, individual in enumerate(population[positions]):
-                individual.objective_values = data[i]
+        # if type(population) != "numpy.ndarray":
+        #     population = np.array(population)
+        # positions = np.where([individual.run_model for individual in population])[0]
+        # constraint_positions = np.where([individual.calculate_constraints for individual in population])
+        # #assert np.all(constraint_positions == positions)
+        # ensemble = np.atleast_2d(np.array([individual.d_vars for individual in population[positions]]))
+        # ensemble = ensemble.T
+        # if len(ensemble) > 0:
+        #     objectives = np.atleast_2d(self.objectives(ensemble)).T
+        #     if self.is_constrained:
+        #         constraints = np.atleast_2d(self.constraints(ensemble)).T
+        #         constraints[np.where(constraints >= 0)] = 0
+        #         total_constraint_violation = np.sum(np.abs(constraints), axis=1)
+        #         for i, individual in enumerate(population[positions]):
+        #             individual.objective_values = objectives[i]
+        #             individual.total_constraint_violation = total_constraint_violation[i]
+        #             individual.violates = bool(individual.total_constraint_violation > 0)
+        #     else:
+        #         for i, individual in enumerate(population[positions]):
+        #             individual.objective_values = objectives[i]
 
-    def run_pyemu(self):
-        raise Exception('run_pyemu must be implemented by child class')
 
     def run_model_IO(self, population, decision_variable_template='individual_{}.inp',
                   objective_template='individual_{}.out'):
         input_files = population.write_decision_variables(decision_variable_template)
         output_files = [objective_template.format(i + 1) for i in range(len(input_files))]
-        for I, O in zip(input_files, output_files):  # TODO: substitute this for parallel run use pyemu.helpers.setup_slaves (or something)
+        for I, O in zip(input_files, output_files):
             cmd = self.model_path + [self.model, '--input_file', I, '--output_file', O]
             subprocess.run(cmd, shell=True)
         population.read_objectives(objective_template)
@@ -142,13 +167,14 @@ class AbstractMOEA(EvolAlg):
 class AbstractPopulation:
     """represents a population of individuals"""
 
-    def __init__(self, population, constrained=False):
+    def __init__(self, population, dv_names, constrained=False):
         """create either from uniform draw or from old population"""
         if type(population) != np.ndarray:
             self.population = np.array(population)
         else:
             self.population = population
         self.constrained = constrained
+        self.dv_names = dv_names
 
     def __len__(self):
         return len(self.population)
@@ -167,7 +193,7 @@ class AbstractPopulation:
         population = np.concatenate((self.population, other.population))
         if self.constrained is not other.constrained:
             raise Exception("population {} and population {} are inconsistent with constraints".format(self, other))
-        return self.__class__(population, self.constrained)
+        return self.__class__(population=population, constrained=self.constrained, dv_names=self.dv_names)
 
     def __iter__(self):
         return iter(self.population)
@@ -177,22 +203,13 @@ class AbstractPopulation:
 
     def __getitem__(self, item):
         if isinstance(item, slice):
-            return self.__class__(self.population.__getitem__(item), constrained=self.constrained)
+            return self.__class__(self.population.__getitem__(item), constrained=self.constrained,
+                                  dv_names=self.dv_names)
         else:
             return self.population.__getitem__(item)
 
     def __setitem__(self, key, value):
         self.population.__setitem__(key, value)
-
-    @classmethod
-    def draw_uniform(cls, constrained, bounds, population_size, individual_class):
-        population = []
-        for i in range(population_size):
-            d_vars = []
-            for bound in bounds:
-                d_vars.append(min(bound) + np.random.random() * (max(bound) - min(bound)))
-            population.append(individual_class(d_vars))
-        return cls(population, constrained)
 
     def tournament_selection(self, num_to_select, is_better=lambda x, y: x.fitness < y.fitness):
         next_population = []
@@ -207,7 +224,7 @@ class AbstractPopulation:
                     next_population.append(individual2.clone())
         if num_to_select % 2 == 1:  # i.e is odd
             next_population.append(self.population[-1].clone())
-        return self.__class__(next_population, self.constrained)
+        return self.__class__(next_population, constrained=self.constrained, dv_names=self.dv_names)
 
     def crossover(self, bounds, crossover_probability, crossover_distribution):
         for individual1 in self.population:
@@ -228,24 +245,17 @@ class AbstractPopulation:
         if model_update is False:
             positions = np.arange(0, len(self))
         else:
-            positions = np.where([individual.calculate_objectives for individual in self.population])[0]
-        return np.atleast_2d(np.array([individual.d_vars for individual in self.population[positions]]))
+            positions = np.where([individual.run_model for individual in self.population])[0]
+        return np.atleast_2d(np.array([individual.d_vars for individual in self.population[positions]])).T
 
     def write_decision_variables(self, filename_template):
         """for now just use this simple output method. In future use pyemu and pest to write model input file"""
         ensemble = self.to_decision_variable_array(model_update=True)
-        file_names = [filename_template.format(i) for i in range(1, ensemble.shape[0] + 1)]
-        for file in file_names:
-            if os.path.exists(file):
-                os.remove(file)
-        index = ['d_var{}'.format(i) for i in range(1, ensemble.shape[1] + 1)]
-        for decision_variables, filename in zip(ensemble, file_names):
-            df = pd.Series(decision_variables, index=index, name='MODEL INPUT FILE')
-            df.to_csv(filename, header=True, encoding='ascii')
-        return file_names
+        columns = [dv_name for dv_name in self.dv_names]
+        return pd.DataFrame(data=ensemble, columns=columns)
 
     def read_objectives(self, filename_template):
-        positions = np.where([individual.calculate_objectives for individual in self.population])[0]
+        positions = np.where([individual.run_model for individual in self.population])[0]
         file_names = [filename_template.format(i) for i in range(1, len(positions) + 1)]
         for filename, individual in zip(file_names, self.population[positions]):
             df = pd.read_csv(filename, header=0, index_col=0, encoding='ascii').T
@@ -268,37 +278,34 @@ class AbstractPopulation:
 class AbstractPopIndividual:
     """represents an individual in a population for NSGA-II"""
 
-    def __init__(self, d_vars, constraints=None, objective_values=None, total_constraint_violation=None):
+    def __init__(self, d_vars, is_constrained=False, objective_values=None, total_constraint_violation=None):
         """initialise the new population member"""
         self.d_vars = np.array(d_vars, dtype=float)
         # self.objectives = objectives
         self.fitness = 0
-        self.is_constrained = not (constraints is None)
-        self.calculate_objectives = False
+        self.is_constrained = is_constrained
+        self.run_model = False
         self.calculate_constraints = False
         if objective_values is None:
-            self.calculate_objectives = True
+            self.run_model = True
             self.objective_values = None
         else:
             self.objective_values = objective_values
         if self.is_constrained:
-            self.constraints = constraints
             if total_constraint_violation is None:
-                self.total_constraint_violation = self.calculate_constrained_values(self.constraints, self.d_vars)
                 self.calculate_constraints = True
+                self.violates = None
             else:
                 self.total_constraint_violation = total_constraint_violation
+                self.violates = bool(self.total_constraint_violation > 0)
                 self.calculate_constraints = False
-            self.violates = bool(self.total_constraint_violation > 0)
 
     def update(self):
-        if not self.is_constrained:
-            self.calculate_objectives = True
-        else:  # TODO: check this whole section. Strategy for constrained problems needs to be updated
-            self.total_constraint_violation = self.calculate_constrained_values(self.constraints, self.d_vars)
-            self.violates = bool(self.total_constraint_violation > 0)
-            self.calculate_objectives = True
-            self.calculate_constraints = True
+        self.objective_values = None
+        self.total_constraint_violation = None
+        self.violates = None
+        self.run_model = True
+        self.calculate_constraints = True
 
     def __str__(self):
         try:
@@ -388,17 +395,17 @@ class AbstractPopIndividual:
     def clone(self):
         cls = self.__class__
         if self.is_constrained and self.violates:
-            return cls(self.d_vars, self.constraints,
+            return cls(self.d_vars, is_constrained=self.is_constrained,
                        total_constraint_violation=self.total_constraint_violation)
         elif self.is_constrained:
-            return cls(self.d_vars, self.constraints, self.objective_values,
-                       self.total_constraint_violation)
+            return cls(self.d_vars, is_constrained=self.is_constrained, objective_values=self.objective_values,
+                       total_constraint_violation=self.total_constraint_violation)
         else:
             return cls(self.d_vars, objective_values=self.objective_values)
 
     def crossover_SBX(self, other, bounds, distribution_parameter):
         """uses simulated binary crossover"""
-        for i in range(len(self.d_vars)):
+        for i in range(len(self.d_vars)): #TODO change bound handling method
             if np.random.random() >= 0.5:
                 p1 = self.d_vars[i]
                 p2 = other.d_vars[i]
@@ -430,7 +437,7 @@ class AbstractPopIndividual:
         return beta_values
 
     def mutate_polynomial(self, variable, bounds, distribution_parameter):
-        u = np.random.random()
+        u = np.random.random() # TODO bounds change
         if u <= 0.5:
             delta = (2 * u) ** (1 / (distribution_parameter + 1)) - 1
             self.d_vars[variable] = self.d_vars[variable] + delta * (self.d_vars[variable] - bounds[variable][0])
@@ -438,19 +445,6 @@ class AbstractPopIndividual:
             delta = 1 - (2 * (1 - u)) ** (1 / (1 + distribution_parameter))
             self.d_vars[variable] = self.d_vars[variable] + delta * (bounds[variable][1] - self.d_vars[variable])
         self.update()
-
-    @staticmethod
-    def calculate_constrained_values(constraints, d_vars):
-        """return the total constraint violation. Assumes all constraints are of the form g(X) >= 0"""
-        evaluated_constraints = constraints(d_vars)
-        where_violates = np.where(evaluated_constraints < 0)
-        return np.sum(np.abs(evaluated_constraints[where_violates]))
-        # total_constraint_violation = 0
-        # evaluated_constraints = constraints(d_vars)
-        # for g in evaluated_constraints:
-        #     if g < 0:
-        #         total_constraint_violation += abs(g)
-        # return total_constraint_violation
 
     def clear(self):
         self.fitness = 0

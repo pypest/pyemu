@@ -10,15 +10,17 @@ from pyemu.prototypes.moouu import EvolAlg, EliteDiffEvol, ParetoObjFunc
 if not os.path.exists("temp1"):
     os.mkdir("temp1")
 
-def quick_tests():
-    path = os.path.join(os.getcwd(), 'moouu', '10par_xsec', '10par_xsec.pst')
-    pst = pyemu.Pst(path)
-    obj_func_dict = {pst.obs_names[0]: 'min', pst.obs_names[1]: 'min'}
-    log = pyemu.Logger(False)
-    obj_func = ParetoObjFunc(pst=pst, obj_function_dict=obj_func_dict, logger=log)
-    alg = EvolAlg(pst=pst)
-    alg.initialize(obj_func_dict)
-
+def test_paretoObjFunc():
+    import pyemu
+    import os
+    os.chdir(os.path.join('moouu', 'StochasticProblemSuite'))
+    pst = pyemu.Pst('SRN.pst')
+    obj_dict = {pst.obs_names[0]: 'min', pst.obs_names[1]: 'min'}
+    dv_names = pst.par_names
+    d_vars = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={dv: 'uniform'for dv in dv_names},
+                                                      partial=True, num_reals=5)
+    ga = EliteDiffEvol(pst=pst, num_slaves=4, verbose=True)
+    ga.initialize(obj_func_dict=obj_dict, num_par_reals=5, num_dv_reals=5, dv_ensemble=d_vars)
 
 
 def tenpar_test():
@@ -35,7 +37,6 @@ def tenpar_test():
         [os.remove(csv_file) for csv_file in csv_files]
         #pst = pyemu.Pst("10par_xsec.pst")
         pst = pyemu.Pst('SRN.pst')
-
         obj_names = pst.nnz_obs_names
         # pst.observation_data.loc[pst.obs_names[0],"obgnme"] = "greaterthan"
         # pst.observation_data.loc[pst.obs_names[0], "weight"] = 1.0
@@ -262,8 +263,6 @@ def tenpar_dev():
     os.chdir(os.path.join("..",".."))
 
 
-
-
 def setup_freyberg_transport():
     import os
     import numpy as np
@@ -350,6 +349,7 @@ def setup_freyberg_pest_interface():
 
     tpl_file = write_ssm_tpl(os.path.join("template","freyberg_mt.ssm"))
 
+
 def write_ssm_tpl(ssm_file):
 
     f_in = open(ssm_file,'r')
@@ -377,12 +377,11 @@ def write_ssm_tpl(ssm_file):
                 f_tpl.write(line)
 
 
-
-
 if __name__ == "__main__":
-    tenpar_test()
+    test_paretoObjFunc()
+    #tenpar_test()
     #quick_tests()
     #tenpar_test()
     #tenpar_dev()
     #setup_freyberg_transport()
-    setup_freyberg_pest_interface()
+    #setup_freyberg_pest_interface()

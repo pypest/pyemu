@@ -85,10 +85,10 @@ Prior information:-
 Observations:-
 
 Observation name        Observation       Weight       Group
- obj1                    0.00000          10.00       output      
- obj2                    0.00000          10.00       output      
- cnstr1                  6.00000          10.00       output      
- cnstr2                  1.00000          10.00       output      
+ obj1                    0.00000          10.00       objective   
+ obj2                    0.00000          10.00       objective   
+ cnstr1                  6.00000          10.00       g_constraint
+ cnstr2                  1.00000          10.00       g_constraint
 
 
 Control settings:-
@@ -144,7 +144,9 @@ File saving options: -
 
 
 INITIAL CONDITIONS: 
-   Sum of squared weighted residuals (ie phi) =   8700.0    
+   Sum of squared weighted residuals (ie phi)               =   8700.0    
+   Contribution to phi from observation group "objective"   =   5000.0    
+   Contribution to phi from observation group "g_constraint"=   3700.0    
 
       Current parameter values
       dvar1            0.00000    
@@ -175,10 +177,10 @@ Observations ----->
 
 Observation            Measured       Calculated     Residual       Weight     Group
                        value          value
-obj1                   0.00000        7.00000       -7.00000        10.00      output      
-obj2                   0.00000       -1.00000        1.00000        10.00      output      
-cnstr1                 6.00000        0.00000        6.00000        10.00      output      
-cnstr2                 1.00000        0.00000        1.00000        10.00      output      
+obj1                   0.00000        7.00000       -7.00000        10.00      objective   
+obj2                   0.00000       -1.00000        1.00000        10.00      objective   
+cnstr1                 6.00000        0.00000        6.00000        10.00      g_constraint
+cnstr2                 1.00000        0.00000        1.00000        10.00      g_constraint
 
 See file srn.res for more details of residuals in graph-ready format.
 
@@ -187,7 +189,9 @@ See file srn.seo for composite observation sensitivities.
 
 Objective function ----->
 
-  Sum of squared weighted residuals (ie phi)                =   8700.    
+  Sum of squared weighted residuals (ie phi)                =   8700.0    
+  Contribution to phi from observation group "objective"    =   5000.0    
+  Contribution to phi from observation group "g_constraint" =   3700.0    
 
 
 Correlation Coefficient ----->
@@ -212,6 +216,28 @@ Analysis of residuals ----->
      If the degrees of freedom is negative the divisor becomes 
      the number of observations with non-zero weight plus the number of 
      prior information items with non-zero weight.
+
+  Residuals for observation group "objective":-
+     Number of residuals with non-zero weight                       =     2
+     Mean value of non-zero weighted residuals                      =  -30.00    
+     Maximum weighted residual [observation "obj2"]                 =   10.00    
+     Minimum weighted residual [observation "obj1"]                 =  -70.00    
+     "Variance" of weighted residuals                               =   2500.    
+     "Standard error" of weighted residuals                         =   50.00    
+
+     Note: the above "variance" was obtained by dividing the sum of squared 
+     residuals by the number of items with non-zero weight.
+
+  Residuals for observation group "g_constraint":-
+     Number of residuals with non-zero weight                       =     2
+     Mean value of non-zero weighted residuals                      =   35.00    
+     Maximum weighted residual [observation "cnstr1"]               =   60.00    
+     Minimum weighted residual [observation "cnstr2"]               =   10.00    
+     "Variance" of weighted residuals                               =   1850.    
+     "Standard error" of weighted residuals                         =   43.01    
+
+     Note: the above "variance" was obtained by dividing the sum of squared 
+     residuals by the number of items with non-zero weight.
 
 
 Covariance and other statistical matrices cannot be determined:-
