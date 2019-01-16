@@ -282,14 +282,43 @@ def setup_freyberg_transport():
     mf.dis.nper = 1
     mf.dis.perlen = 3650.0
     mf.external_path = '.'
+    rdata = mf.sfr.reach_data
+    #print(rdata)
+    upstrm = 35
+    dwstrm = 32.5
+    total_length = mf.dis.delc.array.max() * mf.nrow
+    slope = (upstrm - dwstrm) / total_length
+    #print(rdata.dtype,slope)
+    strtop = np.linspace(upstrm,dwstrm,40)
+    #print(strtop)
+    rdata["strtop"] = strtop
+    rdata["slope"] = slope
+    #return
     mf.change_model_ws(new_model_ws,reset_external=True)
+    mf.rch.rech[0] *= 0.15
+    mf.wel.stress_period_data[0]["flux"][:] *= 0.25
+
+    ib = mf.bas6.ibound[0].array
+    drn_data = []
+    for i in range(mf.nrow):
+        for j in range(mf.ncol):
+            if j == 15:
+                continue
+            if ib[i,j] < 0:
+                print(mf.dis.botm.array[0,i,j])
+                drn_data.append([0,i,j,32.5,10000.0])
+    flopy.modflow.ModflowDrn(mf,stress_period_data=drn_data)
+    ib[ib<0] = 1
+    mf.bas6.ibound = ib
+
+    mf.upw.vka[1] *= 10.0
 
     mf.write_input()
     mf.run_model()
 
-    # hds = flopy.utils.HeadFile(os.path.join(new_model_ws,mf_nam.replace(".nam",".hds")),model=mf)
-    # hds.plot()
-    # plt.show()
+    hds = flopy.utils.HeadFile(os.path.join(new_model_ws,mf_nam.replace(".nam",".hds")),model=mf)
+    hds.plot(colorbar=True)
+    plt.show()
 
     mt = flopy.mt3d.Mt3dms.load(mt_nam,model_ws=org_model_ws,verbose=True,exe_name="mt3dusgs",modflowmodel=mf)
 
@@ -479,7 +508,6 @@ def setup_freyberg_pest_interface():
     new_obs_sft = pst.add_observations(sft_obs + '.processed.ins', sft_obs + ".processed")
     ph.frun_post_lines.append("pyemu.gw_utils.apply_sft_obs()")
 
-
     os.chdir(bdir)
 
     set_par_bounds(ph.pst,ph.m.model_ws)
@@ -490,7 +518,7 @@ def setup_freyberg_pest_interface():
     pe = ph.draw(1000)
 
     pe.enforce()
-    pe.to_csv(os.path.join(ph.m.model_ws,"prior.csv"))
+    pe.to_csv(os.path.join(ph.m.model_ws,"sweep_in.csv"))
     # tie nitrate loading rates by zones
 
     zarr = np.loadtxt(os.path.join("..","examples","Freyberg_Truth","hk.zones"),dtype=int)
@@ -509,11 +537,29 @@ def setup_freyberg_pest_interface():
     pyemu.os_utils.run("pestpp freyberg.pst",cwd=ph.m.model_ws)
 
 
+def run_freyberg_par_sweep():
+
+    pyemu.os_utils.start_slaves("template","pestpp-swp","freyberg.pst",20,master_dir="master_par_sweep")
+
+
+def process_freyberg_par_sweep():
+    import os
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    df = pd.read_csv(os.path.join("master_par_sweep","sweep_out.csv"),index_col=0)
+    df.columns = df.columns.str.lower()
+
+    print(df.columns)
+    df.loc[:,"sfrc40_1_03650.00"].hist(bins=20)
+    plt.show()
 
 if __name__ == "__main__":
-    tenpar_test()
+    #tenpar_test()
     #quick_tests()
     #tenpar_test()
     #tenpar_dev()
     #setup_freyberg_transport()
-    setup_freyberg_pest_interface()
+    #setup_freyberg_pest_interface()
+    #process_freyberg_par_sweep()
+    setup_freyberg_transport()
