@@ -307,11 +307,73 @@ def setup_freyberg_transport():
 
 def setup_freyberg_pest_interface():
     import os
+    import shutil
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
     import flopy
     import pyemu
+
+    def set_par_bounds(pst,new_model_ws):
+        df_zn = pd.read_csv(os.path.join(new_model_ws, "arr_pars.csv"))
+        df_zn = df_zn.loc[df_zn.suffix == "_zn", :]
+
+        par = pst.parameter_data
+
+        pr_pars = par.loc[par.parnme.apply(lambda x: "prst" in x), "parnme"]
+        par.loc[pr_pars, "parubnd"] = 10.0
+        par.loc[pr_pars, "parlbnd"] = 0.1
+
+        pr_pars = par.loc[par.parnme.apply(lambda x: "al" in x), "parnme"]
+        par.loc[pr_pars, "parubnd"] = 10.0
+        par.loc[pr_pars, "parlbnd"] = 0.1
+
+        rc_pars = par.loc[par.parnme.apply(lambda x: "rc1" in x), "parnme"]
+        par.loc[rc_pars, "parubnd"] = 10.0
+        par.loc[rc_pars, "parlbnd"] = 0.1
+
+        rc_pars = par.loc[par.parnme.apply(lambda x: "scn" in x), "parnme"]
+        par.loc[rc_pars, "parubnd"] = 1.5
+        par.loc[rc_pars, "parlbnd"] = 0.5
+
+        # vka zone bounds
+        vka_names = par.loc[par.parnme.apply(lambda x: "vka" in x), "parnme"]
+        par.loc[vka_names, "parubnd"] = 10.0
+        par.loc[vka_names, "parlbnd"] = 0.1  # org model value is 10, so this is means lower bound is 1.0
+
+        # rch zone bounds
+        rch_names = par.loc[par.parnme.apply(lambda x: "rech" in x), 'parnme']
+        par.loc[rch_names, "parlbnd"] = 0.8
+        par.loc[rch_names, "parubnd"] = 1.2
+
+
+
+    def write_ssm_tpl(ssm_file):
+
+        f_in = open(ssm_file, 'r')
+        tpl_file = ssm_file + ".tpl"
+        f_tpl = open(tpl_file, 'w')
+        f_tpl.write("ptf ~\n")
+        while True:
+            line = f_in.readline()
+            if line == '':
+                break
+            f_tpl.write(line)
+            if "stress period" in line.lower():
+                # f_tpl.write(line)
+                while True:
+                    line = f_in.readline()
+                    if line == '':
+                        break
+                    raw = line.strip().split()
+                    i = int(raw[1]) - 1
+                    j = int(raw[2]) - 1
+                    pname = "k{0:02d}_{1:02d}".format(i, j)
+                    tpl_str = " ~ {0}~".format(pname)
+                    line = line[:30] + tpl_str + line[40:]
+                    # print(line)
+                    f_tpl.write(line)
+        return tpl_file
 
     org_model_ws = setup_freyberg_transport()
 
@@ -325,7 +387,9 @@ def setup_freyberg_pest_interface():
 
     ph = pyemu.helpers.PstFromFlopyModel("freyberg.nam",org_model_ws=org_model_ws,new_model_ws="template",remove_existing=True,
                                          grid_props=props,spatial_bc_props=["wel.flux",2],hds_kperk=[[0,0],[0,1],[0,2]],
-                                         mflist_waterbudget=True,sfr_pars=True,build_prior=False,extra_post_cmds=["mt3dusgs freyberg_mt.nam >mt_stdout"])
+                                         mflist_waterbudget=True,sfr_pars=True,build_prior=False,
+                                         extra_post_cmds=["mt3dusgs freyberg_mt.nam >mt_stdout"],
+                                         model_exe_name="mfnwt")
 
     pyemu.helpers.run("mfnwt freyberg.nam", cwd=ph.m.model_ws)
     mt = flopy.mt3d.Mt3dms.load("freyberg_mt.nam", model_ws=org_model_ws, verbose=True, exe_name="mt3dusgs")
@@ -335,33 +399,100 @@ def setup_freyberg_pest_interface():
     pyemu.helpers.run("mt3dusgs freyberg_mt.nam",cwd="template")
 
     tpl_file = write_ssm_tpl(os.path.join("template","freyberg_mt.ssm"))
+    df_ssm = ph.pst.add_parameters(tpl_file,pst_path='.')
+    ph.pst.parameter_data.loc[df_ssm.parnme,"partrans"] = "none"
+    ph.pst.parameter_data.loc[df_ssm.parnme, "parval1"] = 1.0
+    ph.pst.parameter_data.loc[df_ssm.parnme, "parlbnd"] = 0.0
+    ph.pst.parameter_data.loc[df_ssm.parnme, "parubnd"] = 10.0
 
-def write_ssm_tpl(ssm_file):
+    # copy the original prsity array to arr_org
+    new_model_ws = ph.m.model_ws
+    [shutil.copy2(os.path.join(new_model_ws, f), os.path.join(new_model_ws, 'arr_org', f)) for f in
+     os.listdir(new_model_ws) if "prsity" in f.lower()]
 
-    f_in = open(ssm_file,'r')
-    tpl_file = ssm_file + ".tpl"
-    f_tpl = open(tpl_file,'w')
-    f_tpl.write("ptf ~\n")
-    while True:
-        line = f_in.readline()
-        if line == '':
-            break
-        f_tpl.write(line)
-        if "stress period" in line.lower():
-            #f_tpl.write(line)
-            while True:
-                line = f_in.readline()
-                if line == '':
-                    break
-                raw = line.strip().split()
-                i = int(raw[1]) - 1
-                j = int(raw[2]) - 1
-                pname = "k{0:02d}_{1:02d}".format(i,j)
-                tpl_str = "~{0}~ ".format(pname)
-                line = line[:39] + tpl_str + line[48:]
-                #print(line)
-                f_tpl.write(line)
+    [shutil.copy2(os.path.join(new_model_ws, f), os.path.join(new_model_ws, 'arr_org', f)) for f in
+     os.listdir(new_model_ws) if "rc11" in f.lower()]
 
+    [shutil.copy2(os.path.join(new_model_ws, f), os.path.join(new_model_ws, 'arr_org', f)) for f in
+     os.listdir(new_model_ws) if "sconc" in f.lower()]
+
+
+    # mod arr pars csv for prsity name len issue - 12 chars, seriously?
+    df = pd.read_csv(os.path.join(new_model_ws, "arr_pars.csv"))
+    df.loc[:, "model_file"] = df.model_file.apply(lambda x: x.replace("prst", "prsity"))
+    df.loc[:, "org_file"] = df.org_file.apply(lambda x: x.replace("prst", "prsity"))
+    df.loc[:, "model_file"] = df.model_file.apply(lambda x: x.replace("scn", "sconc"))
+    df.loc[:, "org_file"] = df.org_file.apply(lambda x: x.replace("scn", "sconc"))
+    df.loc[:, "upper_bound"] = np.NaN
+    pr_rows = df.model_file.apply(lambda x: "prsity" in x)
+    df.loc[pr_rows, "upper_bound"] = 0.35
+    df.loc[pr_rows, "lower_bound"] = 0.01
+    df.to_csv(os.path.join(new_model_ws, "arr_pars.csv"))
+
+    bdir = os.getcwd()
+    os.chdir(new_model_ws)
+
+    mt_list = mt.name + ".list"
+    frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(mt_list,
+                                                                      start_datetime=ph.m.start_datetime)
+    pst = ph.pst
+    for ins_file in ins_files:
+        pst.add_observations(ins_file, out_file=ins_file.replace(".ins", ""))
+    pst.observation_data.loc[df.obsnme, "weight"] = 0.0
+    pst.observation_data.loc[df.obsnme, "obgnme"] = "mtlist"
+    ph.frun_post_lines.append(frun_line)
+    pst.observation_data.loc[df.obsnme, "weight"] = 0.0
+    pst.observation_data.loc[df.obsnme, "obgnme"] = "mtlist"
+
+    ucn_kperk = []
+    for k in range(ph.m.nlay):
+        ucn_kperk.append([mt.nper - 1, k])
+
+    fline, df = pyemu.gw_utils.setup_hds_obs("mt3d001.ucn", skip=1.0e+30, kperk_pairs=ucn_kperk,
+                                             prefix="ucn1")
+    ph.frun_post_lines.append(fline)
+
+    ph.tmp_files.append("mt3d001.ucn")
+    ucn1 = pst.add_observations(os.path.join("mt3d001.ucn.dat.ins"), os.path.join("mt3d001.ucn.dat"))
+
+    all_times = np.cumsum(mt.btn.perlen.array)
+    times = []
+    for time in all_times:
+        times.append(time)
+
+    sft_obs = "freyberg_mt.sftcobs.out"
+    df_sft = pyemu.gw_utils.setup_sft_obs(sft_obs, times=times, ncomp=1)
+    new_obs_sft = pst.add_observations(sft_obs + '.processed.ins', sft_obs + ".processed")
+    ph.frun_post_lines.append("pyemu.gw_utils.apply_sft_obs()")
+
+
+    os.chdir(bdir)
+
+    set_par_bounds(ph.pst,ph.m.model_ws)
+    print(ph.pst.npar)
+
+    ph.write_forward_run()
+    ph.pst.parameter_data.loc[df_ssm.parnme,"partrans"] = "fixed"
+    pe = ph.draw(1000)
+
+    pe.enforce()
+    pe.to_csv(os.path.join(ph.m.model_ws,"prior.csv"))
+    # tie nitrate loading rates by zones
+
+    zarr = np.loadtxt(os.path.join("..","examples","Freyberg_Truth","hk.zones"),dtype=int)
+    df_ssm.loc[:, "i"] = df_ssm.parnme.apply(lambda x: int(x[1:3]))
+    df_ssm.loc[:, "j"] = df_ssm.parnme.apply(lambda x: int(x[-2:]))
+
+    df_ssm.loc[:,"zone"] = df_ssm.apply(lambda x: zarr[x.i,x.j],axis=1)
+    z_grps = df_ssm.groupby(df_ssm.zone).groups
+    for z,znames in z_grps.items():
+        ph.pst.parameter_data.loc[znames[0],"partrans"] = "none"
+        ph.pst.parameter_data.loc[znames[1:],"partrans"] = "tied"
+        ph.pst.parameter_data.loc[znames[1:], "partied"] = znames[0]
+    print(np.unique(zarr))
+    ph.pst.write(os.path.join("template", "freyberg.pst"))
+
+    pyemu.os_utils.run("pestpp freyberg.pst",cwd=ph.m.model_ws)
 
 
 
