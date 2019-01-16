@@ -316,9 +316,9 @@ def setup_freyberg_transport():
     mf.write_input()
     mf.run_model()
 
-    hds = flopy.utils.HeadFile(os.path.join(new_model_ws,mf_nam.replace(".nam",".hds")),model=mf)
-    hds.plot(colorbar=True)
-    plt.show()
+    # hds = flopy.utils.HeadFile(os.path.join(new_model_ws,mf_nam.replace(".nam",".hds")),model=mf)
+    # hds.plot(colorbar=True)
+    # plt.show()
 
     mt = flopy.mt3d.Mt3dms.load(mt_nam,model_ws=org_model_ws,verbose=True,exe_name="mt3dusgs",modflowmodel=mf)
 
@@ -551,8 +551,23 @@ def process_freyberg_par_sweep():
     df.columns = df.columns.str.lower()
 
     print(df.columns)
-    df.loc[:,"sfrc40_1_03650.00"].hist(bins=20)
-    plt.show()
+    #df.loc[:,"sfrc40_1_03650.00"].hist(bins=20)
+    vals = df.loc[:,"sfrc40_1_03650.00"].copy()
+    vals.sort_values(inplace=True)
+    print(vals)
+    ninetyfith = int(df.shape[0] * 0.95)
+    idx = vals.index.values
+    idx_nf = idx[ninetyfith]
+    #print(vals.iloc[ninetyfith],idx_nf)
+    #print(df.loc[:,"sfrc40_1_03650.00"].max())
+    par_df = pd.read_csv(os.path.join("template","sweep_in.csv"),index_col=0)
+    pars = par_df.iloc[idx_nf,:]
+    pst = pyemu.Pst(os.path.join("template","freyberg.pst"))
+    pst.parameter_data.loc[:,"parval1"] = pars.loc[pst.par_names]
+
+    pst.write(os.path.join("template","freyberg_nf.pst"))
+    pyemu.os_utils.run("pestpp freyberg_nf.pst",cwd="template")
+    #plt.show()
 
 if __name__ == "__main__":
     #tenpar_test()
@@ -561,5 +576,6 @@ if __name__ == "__main__":
     #tenpar_dev()
     #setup_freyberg_transport()
     #setup_freyberg_pest_interface()
-    #process_freyberg_par_sweep()
-    setup_freyberg_transport()
+    #run_freyberg_par_sweep()
+    process_freyberg_par_sweep()
+    #setup_freyberg_transport()
