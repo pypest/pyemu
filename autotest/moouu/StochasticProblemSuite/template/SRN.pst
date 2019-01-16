@@ -22,8 +22,8 @@ output
 * observation data
 obj1  0  10.0  output
 obj2  0  10.0  output
-cnstr1  6  10.0  output 
-cnstr2  1  10.0  output
+g_cnstr1  6  10.0  output 
+g_cnstr2  1  10.0  output
 * model command line
 python StochasticProblemSuite.py SRN
 * model input/output
