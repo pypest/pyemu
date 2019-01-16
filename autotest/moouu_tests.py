@@ -284,7 +284,7 @@ def setup_freyberg_transport():
     mf.external_path = '.'
     rdata = mf.sfr.reach_data
     #print(rdata)
-    upstrm = 35
+    upstrm = 33
     dwstrm = 32.5
     total_length = mf.dis.delc.array.max() * mf.nrow
     slope = (upstrm - dwstrm) / total_length
@@ -293,10 +293,19 @@ def setup_freyberg_transport():
     #print(strtop)
     rdata["strtop"] = strtop
     rdata["slope"] = slope
-    #return
+
+
+    sdata = mf.sfr.segment_data[0]
+    print(sdata)
+    print(sdata.dtype)
+    sdata["flow"][0] = 10000
+    sdata["width1"][:] = 5.
+    sdata["width2"][:] = 5.
+    #sdata["hcond1"][:] *= 10.0
+
     mf.change_model_ws(new_model_ws,reset_external=True)
-    mf.rch.rech[0] *= 0.15
-    mf.wel.stress_period_data[0]["flux"][:] *= 0.25
+    mf.rch.rech[0] *= 0.1
+    mf.wel.stress_period_data[0]["flux"][:] *= 0.1
 
     ib = mf.bas6.ibound[0].array
     drn_data = []
@@ -306,19 +315,25 @@ def setup_freyberg_transport():
                 continue
             if ib[i,j] < 0:
                 print(mf.dis.botm.array[0,i,j])
-                drn_data.append([0,i,j,32.5,10000.0])
+                drn_data.append([0,i,j,33,10000.0])
     flopy.modflow.ModflowDrn(mf,stress_period_data=drn_data)
     ib[ib<0] = 1
     mf.bas6.ibound = ib
 
-    mf.upw.vka[1] *= 10.0
+    #mf.upw.vka[1] *= 100.0
+    mf.upw.hk *= 5.0
 
     mf.write_input()
     mf.run_model()
 
-    # hds = flopy.utils.HeadFile(os.path.join(new_model_ws,mf_nam.replace(".nam",".hds")),model=mf)
-    # hds.plot(colorbar=True)
-    # plt.show()
+    hds = flopy.utils.HeadFile(os.path.join(new_model_ws,mf_nam.replace(".nam",".hds")),model=mf)
+    hds.plot(colorbar=True)
+    plt.show()
+
+    mlist = flopy.utils.MfListBudget(os.path.join(new_model_ws,mf_nam.replace(".nam",".list")))
+    df = mlist.get_dataframes(diff=True)[1]
+    df.plot(kind="bar")
+    plt.show()
 
     mt = flopy.mt3d.Mt3dms.load(mt_nam,model_ws=org_model_ws,verbose=True,exe_name="mt3dusgs",modflowmodel=mf)
 
@@ -332,9 +347,10 @@ def setup_freyberg_transport():
         for j in range(mf.ncol):
             if ib[i,j] <= 0:
                 continue
-            spd.append([0,i,j,1.0,15])
+            spd.append([0,i,j,2.0,15])
 
     flopy.mt3d.Mt3dSsm(mt,crch=0.0,stress_period_data=spd,mxss=10000)
+    flopy.mt3d.Mt3dRct(mt,ireact=1,rc1=0.0075,igetsc=0)
     mt.change_model_ws(new_model_ws,reset_external=True)
     mt.sft.nsfinit = 40
     mt.sft.nobssf = 40
@@ -342,9 +358,9 @@ def setup_freyberg_transport():
     mt.write_input()
     mt.run_model()
 
-    # unc = flopy.utils.UcnFile(os.path.join(new_model_ws,"MT3D001.UCN"),model=mf)
-    # unc.plot(colorbar=True,masked_values=[1.0e30])
-    # plt.show()
+    unc = flopy.utils.UcnFile(os.path.join(new_model_ws,"MT3D001.UCN"),model=mf)
+    unc.plot(colorbar=True,masked_values=[1.0e30])
+    plt.show()
     return new_model_ws
 
 
@@ -544,22 +560,23 @@ def run_freyberg_par_sweep():
 
 def process_freyberg_par_sweep():
     import os
+    import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
 
     df = pd.read_csv(os.path.join("master_par_sweep","sweep_out.csv"),index_col=0)
     df.columns = df.columns.str.lower()
 
-    print(df.columns)
-    #df.loc[:,"sfrc40_1_03650.00"].hist(bins=20)
-    vals = df.loc[:,"sfrc40_1_03650.00"].copy()
+    oname = "sfrc40_1_03650.00"
+    df.loc[:,"sfrc40_1_03650.00"].hist(bins=20)
+    plt.show()
+    vals = df.loc[:,oname].copy()
     vals.sort_values(inplace=True)
     print(vals)
     ninetyfith = int(df.shape[0] * 0.95)
     idx = vals.index.values
     idx_nf = idx[ninetyfith]
-    #print(vals.iloc[ninetyfith],idx_nf)
-    #print(df.loc[:,"sfrc40_1_03650.00"].max())
+    val = vals.loc[idx_nf]
     par_df = pd.read_csv(os.path.join("template","sweep_in.csv"),index_col=0)
     pars = par_df.iloc[idx_nf,:]
     pst = pyemu.Pst(os.path.join("template","freyberg.pst"))
@@ -567,15 +584,60 @@ def process_freyberg_par_sweep():
 
     pst.write(os.path.join("template","freyberg_nf.pst"))
     pyemu.os_utils.run("pestpp freyberg_nf.pst",cwd="template")
-    #plt.show()
+    pst = pyemu.Pst(os.path.join("template","freyberg_nf.pst"))
+
+    assert np.abs(val - pst.res.loc[oname,"modelled"]) < 0.0001
+    pst.observation_data.loc[:,"obsval"] = pst.res.loc[pst.obs_names,"modelled"]
+    pst.write(os.path.join("template","freyberg_nf.pst"))
+    pyemu.os_utils.run("pestpp freyberg_nf.pst",cwd="template")
+
+    par = pst.parameter_data
+
+    load_pars = set(par.loc[par.apply(lambda x: x.pargp == "pargp" and x.parnme.startswith("k"), axis=1),"parnme"].values)
+    par.loc[par.parnme.apply(lambda x: x not in load_pars),"partrans"] = "fixed"
+    pe = pyemu.ParameterEnsemble.from_uniform_draw(pst,num_reals = 100000)
+    pe.to_csv(os.path.join("template","dec_var_sweep_in.csv"))
+    pst.pestpp_options["sweep_parameter_csv_file"] = "dec_var_sweep_in.csv"
+    pst.write(os.path.join("template", "freyberg_nf.pst"))
+
+
+def run_freyberg_dec_var_sweep():
+    import os
+    import shutil
+    import pyemu
+    m_d = "master_dec_var_sweep"
+    if os.path.exists(m_d):
+        shutil.rmtree(m_d)
+    shutil.copytree("template",m_d)
+    shutil.copytree("template","template_temp")
+    os.remove(os.path.join("template_temp","dec_var_sweep_in.csv"))
+    os.chdir(m_d)
+    pyemu.os_utils.start_slaves(os.path.join("..","template_temp"),"pestpp-swp","freyberg_nf.pst",num_slaves=20,master_dir='.')
+
+
+def process_freyberg_dec_var_sweep():
+    import os
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import pyemu
+
+    df = pd.read_csv(os.path.join("master_dec_var_sweep","sweep_out.csv"),index_col=0)
+    df.columns = df.columns.str.lower()
+    print(df.shape)
+    oname = "sfrc40_1_03650.00"
+    df.loc[:,oname].hist()
+    plt.show()
+
 
 if __name__ == "__main__":
     #tenpar_test()
     #quick_tests()
     #tenpar_test()
     #tenpar_dev()
-    #setup_freyberg_transport()
+    setup_freyberg_transport()
     #setup_freyberg_pest_interface()
     #run_freyberg_par_sweep()
-    process_freyberg_par_sweep()
+    #process_freyberg_par_sweep()
     #setup_freyberg_transport()
+    #run_freyberg_dec_var_sweep()
+    #process_freyberg_dec_var_sweep()
