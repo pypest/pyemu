@@ -3666,7 +3666,7 @@ def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
                     else:
                         pname = "{0}{1:03d}{2:03d}".format(name, i, j)
                         if len(pname) > 12:
-                            raise("grid pname too long:{0}". \
+                            raise Exception("grid pname too long:{0}". \
                                                format(pname))
                     parnme.append(pname)
                     pname = ' ~     {0}   ~ '.format(pname)
