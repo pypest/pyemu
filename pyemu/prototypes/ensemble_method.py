@@ -116,11 +116,19 @@ class EnsembleMethod(object):
         except Exception as e:
             self.logger.warn("error removing existing sweep out file:{0}".format(str(e)))
         self.logger.log("removing existing sweep in/out files")
-
         if parensemble.isnull().values.any():
             parensemble.to_csv("_nan.csv")
             self.logger.lraise("_calc_obs() error: NaNs in parensemble (written to '_nan.csv')")
-
+        # changed
+        missing_pars = set(self.pst.par_names) - set(parensemble.columns)
+        if len(missing_pars) > 0:
+            parval1 = self.pst.parameter_data.loc[missing_pars, 'parval1']
+            new = pyemu.ParameterEnsemble(pst=self.pst, index=parensemble.index)
+            new.loc[:, parensemble.columns] = parensemble.values
+            new.loc[:, missing_pars] = parval1.values
+            parensemble = new
+        parensemble._transform(inplace=True)  # TODO: check if still works with multiple pars
+        # end changes
         if self.submit_file is None:
             self._calc_obs_local(parensemble)
         else:
