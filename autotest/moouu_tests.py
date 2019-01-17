@@ -592,7 +592,6 @@ def process_freyberg_par_sweep():
 
     par = pst.parameter_data
 
-<<<<<<< HEAD
 
 def write_ssm_tpl(ssm_file):
 
@@ -623,7 +622,6 @@ def write_ssm_tpl(ssm_file):
 
 if __name__ == "__main__":
     test_paretoObjFunc()
-=======
     load_pars = set(par.loc[par.apply(lambda x: x.pargp == "pargp" and x.parnme.startswith("k"), axis=1),"parnme"].values)
     par.loc[par.parnme.apply(lambda x: x not in load_pars),"partrans"] = "fixed"
     pe = pyemu.ParameterEnsemble.from_uniform_draw(pst,num_reals = 100000)
@@ -661,11 +659,10 @@ def process_freyberg_dec_var_sweep():
 
 
 if __name__ == "__main__":
-    #tenpar_test()
-    #quick_tests()
+    tenpar_test()
     #tenpar_test()
     #tenpar_dev()
-    setup_freyberg_transport()
+    #setup_freyberg_transport()
     #setup_freyberg_pest_interface()
     #run_freyberg_par_sweep()
     #process_freyberg_par_sweep()

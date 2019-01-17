@@ -4,6 +4,7 @@
 import os
 import numpy as np
 import pandas as pd
+import time
 
 import pyemu
 from .ensemble_method import EnsembleMethod
@@ -127,6 +128,9 @@ class ParetoObjFunc(object):
                 val = self.pst.observation_data.loc[gt_obs, 'obsval']
             constraint_values.loc[obs_df.loc[:, gt_obs] <= val] = val - obs_df.loc[:, gt_obs]
         return constraint_values
+
+    def objective_vector(self, obs_df):
+        return obs_df.loc[:, self.obs_obj_names] * self.obs_obj_signs
 
     @property
     def obs_obj_signs(self):
@@ -376,6 +380,7 @@ class EvolAlg(EnsembleMethod):
         super(EvolAlg, self).__init__(pst=pst, parcov=parcov, obscov=obscov, num_slaves=num_slaves,
                                       submit_file=submit_file, verbose=verbose, port=port,
                                       slave_dir=slave_dir)
+        self.dv_names = None
 
 
     def initialize(self,obj_func_dict,num_par_reals=100,num_dv_reals=100,
@@ -401,6 +406,7 @@ class EvolAlg(EnsembleMethod):
         if dv_ensemble is None and par_ensemble is None:
             self.num_dv_reals = num_dv_reals
             if dv_names is not None:
+                self.dv_names = dv_names
                 aset = set(self.pst.adj_par_names)
                 dvset = set(dv_names)
                 diff = dvset - aset
@@ -413,9 +419,11 @@ class EvolAlg(EnsembleMethod):
                 if risk != 0.5:
                     self.logger.lraise("risk != 0.5 but all adjustable pars are dec vars")
                 how = {p: "uniform" for p in self.pst.adj_par_names}
+                self.dv_names = dv_names
 
             self.dv_ensemble = pyemu.ParameterEnsemble.from_mixed_draws(self.pst, how_dict=how,
-                                                                    num_reals=num_dv_reals, cov=self.parcov)
+                                                                        num_reals=num_dv_reals, cov=self.parcov,
+                                                                        partial=True) # TODO: add partial=True?
             if risk != 0.5:
                 aset = set(self.pst.adj_par_names)
                 dvset = set(self.dv_ensemble.columns)
@@ -486,7 +494,6 @@ class EvolAlg(EnsembleMethod):
                     df = pd.DataFrame(self.pst.parameter_data.loc[:,"parval1"]).T
 
                     self.par_ensemble = pyemu.ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
-                    print(self.par_ensemble.shape)
 
         # par ensemble supplied but not dv_ensmeble, so check for any adjustable pars
         # that are not in par_ensemble and draw reals.  Must be at least one...
@@ -538,25 +545,21 @@ class EvolAlg(EnsembleMethod):
             self.logger.statement("no nondominated solutions in initial population")
         self.dv_ensemble = self.dv_ensemble.loc[isnondom,:]  # TODO: check this - before was isfeas?
         self.obs_ensemble = self.obs_ensemble.loc[isnondom,:]  # seemed to be doing the same thing twice
-
-
         self.pst.add_transform_columns()
-
-
-
         self._initialized = True
 
     @staticmethod
     def _drop_failed(failed_runs, dv_ensemble, obs_ensemble):
         if failed_runs is None:
             return
+        print(dv_ensemble)
         dv_ensemble.loc[failed_runs,:] = np.NaN
-        dv_ensemble = dv_ensemble.dropna(axis=1)
+        print(dv_ensemble)
+        print(obs_ensemble)
+        dv_ensemble = dv_ensemble.dropna(axis=0)
         obs_ensemble.loc[failed_runs,:] = np.NaN
-        obs_ensemble = obs_ensemble.dropna(axis=1)
-
-        self.logger.statement("dropped {0} failed runs, {1} remaining".\
-                              format(len(failed_runs),dv_ensemble.shape[0]))
+        obs_ensemble = obs_ensemble.dropna(axis=0)
+        print(obs_ensemble)
 
     def _archive(self,dv_ensemble,obs_ensemble):
         self.logger.log("archiving {0} solutions".format(dv_ensemble.shape[0]))
@@ -603,13 +606,16 @@ class EvolAlg(EnsembleMethod):
             # reset with a range index
             org_index = df.index.copy()
             df.index = np.arange(df.shape[0])
-            print(df)
             failed_runs, oe = super(EvolAlg,self)._calc_obs(df)
-            print(oe)
             if oe.shape[0] != dv_ensemble.shape[0] * self.par_ensemble.shape[0]:
                 self.logger.lraise("wrong number of runs back from stack eval")
-
-            EvolAlg._drop_failed(failed_runs, dv_ensemble, oe)
+            EvolAlg._drop_failed(failed_runs, df, oe)  # TODO: check what happens if all runs for one dv fail
+            try:
+                num_failed = len(failed_runs)
+            except TypeError:
+                num_failed = 0
+            self.logger.statement("dropped {0} failed runs, {1} remaining". \
+                                  format(num_failed, dv_ensemble.shape[0]))
             self.last_stack = oe.copy()
 
 
@@ -627,7 +633,7 @@ class EvolAlg(EnsembleMethod):
         self.logger.lraise("EvolAlg.update() must be implemented by derived types")
 
     def _get_bounds(self):
-        dv_names = self.dv_ensemble.index
+        dv_names = self.dv_ensemble.columns
         bounds = self.pst.parameter_data.loc[dv_names, ['parlbnd', 'parubnd']].copy()
         return bounds.T.values
 

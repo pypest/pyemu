@@ -49,7 +49,7 @@ class NSGA_II(AbstractMOEA):
     def update(self):
         joint = self.archive + self.population
         fronts = joint.non_dominated_sort()
-        self.archive = Population([], constrained=self.is_constrained)
+        self.archive = Population([], constrained=self.is_constrained, dv_names=self.dv_ensemble.columns)
         j = 0
         while len(self.archive) + len(fronts[j]) < self.archive_size:
             self.crowding_distance_assignment(fronts[j])
@@ -60,7 +60,7 @@ class NSGA_II(AbstractMOEA):
         self.archive += fronts[j][:(self.archive_size - len(self.archive))]
         self.population = self.archive.tournament_selection(self.archive_size, is_better=lambda x, y: x < y)
         self.population.crossover(bounds=self.bounds, crossover_probability=self.cross_prob,
-                        crossover_distribution=self.cross_dist)
+                                  crossover_distribution=self.cross_dist)
         self.population.mutation(bounds=self.bounds, mutation_probability=self.mut_prob, mutation_distribution=self.mut_dist)
         self.archive.reset_population()
         self.run_model(self.population)
@@ -103,7 +103,7 @@ class Population(AbstractPopulation):
             if individual1.domination_count == 0:
                 individual1.rank = 1
                 Q.add(individual1)
-        fronts.append(Population(population=list(Q), constrained=self.constrained))
+        fronts.append(Population(population=list(Q), constrained=self.constrained, dv_names=self.dv_names))
         i = 0
         while fronts[i]:
             Q = set()
@@ -114,7 +114,7 @@ class Population(AbstractPopulation):
                         individual2.rank = i + 2
                         Q.add(individual2)
             i += 1
-            fronts.append(Population(population=list(Q), constrained=self.constrained))
+            fronts.append(Population(population=list(Q), constrained=self.constrained, dv_names=self.dv_names))
         fronts.pop()
         return fronts
 
