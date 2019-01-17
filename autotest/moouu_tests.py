@@ -10,15 +10,17 @@ from pyemu.prototypes.moouu import EvolAlg, EliteDiffEvol, ParetoObjFunc
 if not os.path.exists("temp1"):
     os.mkdir("temp1")
 
-def quick_tests():
-    path = os.path.join(os.getcwd(), 'moouu', '10par_xsec', '10par_xsec.pst')
-    pst = pyemu.Pst(path)
-    obj_func_dict = {pst.obs_names[0]: 'min', pst.obs_names[1]: 'min'}
-    log = pyemu.Logger(False)
-    obj_func = ParetoObjFunc(pst=pst, obj_function_dict=obj_func_dict, logger=log)
-    alg = EvolAlg(pst=pst)
-    alg.initialize(obj_func_dict)
-
+def test_paretoObjFunc():
+    import pyemu
+    import os
+    os.chdir(os.path.join('moouu', 'StochasticProblemSuite'))
+    pst = pyemu.Pst('SRN.pst')
+    obj_dict = {pst.obs_names[0]: 'min', pst.obs_names[1]: 'min'}
+    dv_names = pst.par_names
+    d_vars = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={dv: 'uniform'for dv in dv_names},
+                                                      partial=True, num_reals=5)
+    ga = EliteDiffEvol(pst=pst, num_slaves=4, verbose=True)
+    ga.initialize(obj_func_dict=obj_dict, num_par_reals=5, num_dv_reals=5, dv_ensemble=d_vars)
 
 
 def tenpar_test():
@@ -35,7 +37,6 @@ def tenpar_test():
         [os.remove(csv_file) for csv_file in csv_files]
         #pst = pyemu.Pst("10par_xsec.pst")
         pst = pyemu.Pst('SRN.pst')
-
         obj_names = pst.nnz_obs_names
         # pst.observation_data.loc[pst.obs_names[0],"obgnme"] = "greaterthan"
         # pst.observation_data.loc[pst.obs_names[0], "weight"] = 1.0
@@ -260,8 +261,6 @@ def tenpar_dev():
     #plt.show()
 
     os.chdir(os.path.join("..",".."))
-
-
 
 
 def setup_freyberg_transport():
@@ -593,6 +592,38 @@ def process_freyberg_par_sweep():
 
     par = pst.parameter_data
 
+<<<<<<< HEAD
+
+def write_ssm_tpl(ssm_file):
+
+    f_in = open(ssm_file,'r')
+    tpl_file = ssm_file + ".tpl"
+    f_tpl = open(tpl_file,'w')
+    f_tpl.write("ptf ~\n")
+    while True:
+        line = f_in.readline()
+        if line == '':
+            break
+        f_tpl.write(line)
+        if "stress period" in line.lower():
+            #f_tpl.write(line)
+            while True:
+                line = f_in.readline()
+                if line == '':
+                    break
+                raw = line.strip().split()
+                i = int(raw[1]) - 1
+                j = int(raw[2]) - 1
+                pname = "k{0:02d}_{1:02d}".format(i,j)
+                tpl_str = "~{0}~ ".format(pname)
+                line = line[:39] + tpl_str + line[48:]
+                #print(line)
+                f_tpl.write(line)
+
+
+if __name__ == "__main__":
+    test_paretoObjFunc()
+=======
     load_pars = set(par.loc[par.apply(lambda x: x.pargp == "pargp" and x.parnme.startswith("k"), axis=1),"parnme"].values)
     par.loc[par.parnme.apply(lambda x: x not in load_pars),"partrans"] = "fixed"
     pe = pyemu.ParameterEnsemble.from_uniform_draw(pst,num_reals = 100000)
@@ -716,6 +747,7 @@ if __name__ == "__main__":
     #run_freyberg_par_sweep()
     #process_freyberg_par_sweep()
     #setup_freyberg_transport()
+    #setup_freyberg_pest_interface()
     #run_freyberg_dec_var_sweep()
     process_freyberg_dec_var_sweep()
     #plot_freyberg_domain()

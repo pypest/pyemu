@@ -60,7 +60,6 @@ class ParetoObjFunc(object):
         self.is_nondominated = self.is_nondominated_continuous
         self.obs_obj_names = list(self.obs_dict.keys())
 
-
     def is_feasible(self, obs_df, risk=0.5):
         """identify which candidate solutions in obs_df (rows)
         are feasible with respect obs constraints (obs_df)
@@ -91,32 +90,43 @@ class ParetoObjFunc(object):
             is_feasible.loc[obs_df.loc[:,lt_obs]>=val] = False
         for gt_obs in self.pst.greater_than_obs_constraints:
             if risk != 0.5:
-                val = self.get_risk_shifted_value(risk,obs_df.loc[gt_obs])
+                val = self.get_risk_shifted_value(risk, obs_df.loc[gt_obs])
             else:
                 val = self.pst.observation_data.loc[gt_obs,"obsval"]
             is_feasible.loc[obs_df.loc[:,gt_obs] <= val] = False
         return is_feasible
 
-    # def constraint_violation_vector(self, obs_df, risk=0.5):
-    #     """calculate the constraint violation for constraints in obs_df.
-    #
-    #     Parameters
-    #     ----------
-    #     obs_df : pandas.DataFrame
-    #         a dataframe with columns of obs names and rows of realizations
-    #     risk : float
-    #         risk value. If != 0.5, then risk shifting is used.  Otherwise, the
-    #         obsval in Pst is used.  Default is 0.5.
-    #
-    #
-    #     Returns
-    #     -------
-    #     Series of constraint observation names (index) and constraint violation values
-    #
-    #     """
-    #     constraint_values - pd.Series(data=True, index=obs_df.index)
-    #     for lt_obs in self.pst.less_than_obs_constraints:
+    def constraint_violation_vector(self, obs_df, risk=0.5):
+        """calculate the constraint violation for constraints in obs_df.
 
+        Parameters
+        ----------
+        obs_df : pandas.DataFrame
+            a dataframe with columns of obs names and rows of realizations
+        risk : float
+            risk value. If != 0.5, then risk shifting is used.  Otherwise, the
+            obsval in Pst is used.  Default is 0.5.
+
+
+        Returns
+        -------
+        Series of constraint observation names (index) and constraint violation values
+
+        """
+        constraint_values = pd.Series(data=0, index=obs_df.index)
+        for lt_obs in self.pst.less_than_obs_constraints:
+            if risk != 0.5:
+                val = self.get_risk_shifted_value(risk, obs_df.loc[lt_obs])
+            else:
+                val = self.pst.observation_data.loc[lt_obs, 'obsval']
+            constraint_values.loc[obs_df.loc[:, lt_obs] >= val] = obs_df.loc[:, lt_obs] - val
+        for gt_obs in self.pst.greater_than_obs_constraints:
+            if risk != 0.5:
+                val = self.get_risk_shifted_value(risk, obs_df.loc[gt_obs])
+            else:
+                val = self.pst.observation_data.loc[gt_obs, 'obsval']
+            constraint_values.loc[obs_df.loc[:, gt_obs] <= val] = val - obs_df.loc[:, gt_obs]
+        return constraint_values
 
     @property
     def obs_obj_signs(self):
@@ -128,7 +138,6 @@ class ParetoObjFunc(object):
                 signs.append(-1.0)
         signs = np.array(signs)
         return signs
-
 
     def dominates(self,sol1,sol2):
         d = self.obs_obj_signs * (sol1 - sol2)
@@ -220,7 +229,6 @@ class ParetoObjFunc(object):
         is_nondom.loc[PP] = True
         return is_nondom
 
-
     def is_nondominated_kung(self, obs_df):
         """identify which candidate solutions are pareto non-dominated using Kungs algorithm
 
@@ -272,7 +280,6 @@ class ParetoObjFunc(object):
         is_nondom.loc[PP] = True
         return is_nondom
 
-
     def crowd_distance(self,obs_df):
         """determine the crowding distance for each candidate solution
 
@@ -308,7 +315,6 @@ class ParetoObjFunc(object):
                 i += 1
 
         return crowd_distance
-
 
     def get_risk_shifted_value(self,risk,series):
         n = series.name
@@ -530,8 +536,8 @@ class EvolAlg(EnsembleMethod):
             self.logger.statement("{0} nondominated solutions in initial population".format(vc[True]))
         else:
             self.logger.statement("no nondominated solutions in initial population")
-        self.dv_ensemble = self.dv_ensemble.loc[isfeas,:]
-        self.obs_ensemble = self.obs_ensemble.loc[isfeas,:]
+        self.dv_ensemble = self.dv_ensemble.loc[isnondom,:]  # TODO: check this - before was isfeas?
+        self.obs_ensemble = self.obs_ensemble.loc[isnondom,:]  # seemed to be doing the same thing twice
 
 
         self.pst.add_transform_columns()
@@ -540,9 +546,8 @@ class EvolAlg(EnsembleMethod):
 
         self._initialized = True
 
-
     @staticmethod
-    def _drop_failed(failed_runs, dv_ensemble,obs_ensemble):
+    def _drop_failed(failed_runs, dv_ensemble, obs_ensemble):
         if failed_runs is None:
             return
         dv_ensemble.loc[failed_runs,:] = np.NaN
@@ -618,9 +623,16 @@ class EvolAlg(EnsembleMethod):
         self._archive(dv_ensemble, oe)
         return oe
 
-
     def update(self,*args,**kwargs):
         self.logger.lraise("EvolAlg.update() must be implemented by derived types")
+
+    def _get_bounds(self):
+        dv_names = self.dv_ensemble.index
+        bounds = self.pst.parameter_data.loc[dv_names, ['parlbnd', 'parubnd']].copy()
+        return bounds.T.values
+
+    def iter_report(self):
+        self.logger.lraise('EvolAlg.iter_report should be implemented by population class')
 
 
 class EliteDiffEvol(EvolAlg):
@@ -668,15 +680,15 @@ class EliteDiffEvol(EvolAlg):
             dv_ensemble_trans.loc[idx,dv_log] = dv_ensemble_trans.loc[idx,dv_log].apply(lambda x: np.log10(x))
 
         for i in range(num_dv_reals):
-            # every parent gets an offspring
+            # every archive gets an offspring
             if i < self.dv_ensemble.shape[0]:
                 parent_idx = i
                 mut = mut_base
                 cross_over = cross_over_base
             else:
                 #otherwise, some parents get more than one offspring
-                # could do something better here - like pick a good parent
-                # make a wild child
+                # could do something better here - like pick a good archive
+                # make a wild population
                 parent_idx = np.random.randint(0,dv_ensemble_trans.shape[0])
                 mut = 0.9
                 cross_over = 0.9
@@ -725,7 +737,7 @@ class EliteDiffEvol(EvolAlg):
 
 
         # evaluate offspring fitness WRT feasibility and nondomination (elitist) -
-        # if offspring dominates parent, replace in
+        # if offspring dominates archive, replace in
         # self.dv_ensemble and self.obs_ensemble.  if not, drop candidate.
         # If tied, keep both
         isfeas = self.obj_func.is_feasible(obs_offspring)
@@ -733,16 +745,16 @@ class EliteDiffEvol(EvolAlg):
 
         for child_idx in obs_offspring.index:
             if not isfeas[child_idx]:
-                self.logger.statement("child {0} is not feasible".format(child_idx))
+                self.logger.statement("population {0} is not feasible".format(child_idx))
                 continue
 
             child_sol = obs_offspring.loc[child_idx,:]
             parent_idx = child2parent[child_idx]
             if parent_idx is None:
-                # the parent was already removed by another child, so if this child is
+                # the archive was already removed by another population, so if this population is
                 # feasible and nondominated, keep it
                 if isnondom(child_idx):
-                    self.logger.statement("orphaned child {0} retained".format(child_idx))
+                    self.logger.statement("orphaned population {0} retained".format(child_idx))
                     sol_name = next_name()
                     self.dv_ensemble.loc[sol_name, child_sol.index] = child_sol
                     self.obs_ensemble.loc[sol_name, obs_offspring.columns] = obs_offspring.loc[child_idx, :]
@@ -751,18 +763,18 @@ class EliteDiffEvol(EvolAlg):
                 parent_sol = self.obs_ensemble.loc[parent_idx,:]
                 if self.obj_func.dominates(parent_sol.loc[self.obj_func.obs_obj_names],\
                                            child_sol.loc[self.obj_func.obs_obj_names]):
-                    self.logger.statement("child {0} dominated by parent {1}".format(child_idx,parent_idx))
+                    self.logger.statement("population {0} dominated by archive {1}".format(child_idx,parent_idx))
                     # your dead to me!
                     pass
                 elif self.obj_func.dominates(child_sol.loc[self.obj_func.obs_obj_names],\
                                              parent_sol.loc[self.obj_func.obs_obj_names]):
                     # hey dad, what do you think about your son now!
-                    self.logger.statement("child {0} dominates parent {1}".format(child_idx,parent_idx))
+                    self.logger.statement("population {0} dominates archive {1}".format(child_idx,parent_idx))
                     self.dv_ensemble.loc[parent_idx,dv_offspring.columns] = dv_offspring.loc[child_idx,:]
                     self.obs_ensemble.loc[parent_idx,obs_offspring.columns] = obs_offspring.loc[child_idx,:]
                     child2parent[idx] = None
                 else:
-                    self.logger.statement("child {0} and parent {1} kept".format(child_idx,parent_idx))
+                    self.logger.statement("population {0} and archive {1} kept".format(child_idx,parent_idx))
                     sol_name = next_name()
                     self.dv_ensemble.loc[sol_name,dv_offspring.columns] = dv_offspring.loc[child_idx,:]
                     self.obs_ensemble.loc[sol_name,obs_offspring.columns] = obs_offspring.loc[child_idx,:]
@@ -827,9 +839,6 @@ class EliteDiffEvol(EvolAlg):
         self.logger.statement("{0} current solutions".format(dv.shape[0]))
         self.logger.statement("{0} infeasible".format(isfeas[isfeas==False].shape[0]))
         self.logger.statement("{0} nondomiated".format(isnondom[isnondom==True].shape[0]))
-
-
-
 
     def _drop_by_crowd(self,dv_ensemble, obs_ensemble, ndrop,min_dist=0.1):
         if ndrop > dv_ensemble.shape[0]:

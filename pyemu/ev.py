@@ -85,7 +85,7 @@ class ErrVar(LinearAnalysis):
         self.__omitted_parcov = None
         self.__omitted_predictions = None
 
-        # instantiate the parent class
+        # instantiate the archive class
         super(ErrVar, self).__init__(jco, **kwargs)
         if self.__need_omitted:
             self.log("pre-loading omitted components")

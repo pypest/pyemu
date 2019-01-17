@@ -1,6 +1,0 @@
-forrtl: error (200): program aborting due to control-C event
-Image              PC                Routine            Line        Source             
-pestpp-swp.exe     00007FF725118C68  Unknown               Unknown  Unknown
-KERNELBASE.dll     00007FFB45D756FD  Unknown               Unknown  Unknown
-KERNEL32.DLL       00007FFB463C3034  Unknown               Unknown  Unknown
-ntdll.dll          00007FFB48F93691  Unknown               Unknown  Unknown
