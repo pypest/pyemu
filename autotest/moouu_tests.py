@@ -592,7 +592,13 @@ def process_freyberg_par_sweep():
 
     par = pst.parameter_data
 
-<<<<<<< HEAD
+    load_pars = set(
+        par.loc[par.apply(lambda x: x.pargp == "pargp" and x.parnme.startswith("k"), axis=1), "parnme"].values)
+    par.loc[par.parnme.apply(lambda x: x not in load_pars), "partrans"] = "fixed"
+    pe = pyemu.ParameterEnsemble.from_uniform_draw(pst, num_reals=100000)
+    pe.to_csv(os.path.join("template", "dec_var_sweep_in.csv"))
+    pst.pestpp_options["sweep_parameter_csv_file"] = "dec_var_sweep_in.csv"
+    pst.write(os.path.join("template", "freyberg_nf.pst"))
 
 def write_ssm_tpl(ssm_file):
 
@@ -621,15 +627,6 @@ def write_ssm_tpl(ssm_file):
                 f_tpl.write(line)
 
 
-if __name__ == "__main__":
-    test_paretoObjFunc()
-=======
-    load_pars = set(par.loc[par.apply(lambda x: x.pargp == "pargp" and x.parnme.startswith("k"), axis=1),"parnme"].values)
-    par.loc[par.parnme.apply(lambda x: x not in load_pars),"partrans"] = "fixed"
-    pe = pyemu.ParameterEnsemble.from_uniform_draw(pst,num_reals = 100000)
-    pe.to_csv(os.path.join("template","dec_var_sweep_in.csv"))
-    pst.pestpp_options["sweep_parameter_csv_file"] = "dec_var_sweep_in.csv"
-    pst.write(os.path.join("template", "freyberg_nf.pst"))
 
 
 def run_freyberg_dec_var_sweep():
@@ -658,8 +655,24 @@ def process_freyberg_dec_var_sweep():
     df.columns = df.columns.str.lower()
     print(df.shape)
     oname = "sfrc40_1_03650.00"
-    df.loc[:,oname].hist()
+    oname2 = "gw_malo1c_19791230"
+    fig = plt.figure(figsize=(4,4))
+    ax = plt.subplot(111)
+    ax.scatter(df.loc[:,oname],df.loc[:,oname2],marker='.',s=5,color="0.5",alpha=0.5)
+    ax.set_xlabel("reach 40 concentration ($\\frac{mg}{l}$)")
+    ax.set_ylabel("total nitrate mass loading ($kg$)")
+    # plt.show()
+    odict = {oname:"min",oname2:"max"}
+    pst = pyemu.Pst(os.path.join("template","freyberg.pst"))
+    logger = pyemu.Logger("temp.log")
+    obj = pyemu.moouu.ParetoObjFunc(pst=pst,obj_function_dict=odict,logger=logger)
+    nondom = obj.is_nondominated_kung(df)
+    ax.scatter(df.loc[nondom,oname],df.loc[nondom,oname2],marker=".",s=12,color='b')
+    #df.loc[:,oname].hist()
+    plt.tight_layout()
+    plt.savefig("freyberg_bruteforce_truth.pdf")
     plt.show()
+
 
 
 def plot_freyberg_domain():
@@ -707,11 +720,11 @@ def plot_freyberg_domain():
         if k is not None:
             tag = tag + ' layer {0}'.format(k+1)
         group_names[group] = tag
-    pst.write_par_summary_table("freyeberg.pars.tex",sigma_range=6.0,group_names=group_names)
+    pst.write_par_summary_table("freyberg.pars.tex",sigma_range=6.0,group_names=group_names)
 
 
     m = flopy.modflow.Modflow.load("freyberg.nam",model_ws="template",check=False,verbose=True)
-    fig = plt.figure(figsize=(4.5, 6))
+    fig = plt.figure(figsize=(2.25, 3))
     ax = plt.subplot(111,aspect="equal")
     mm = flopy.plot.ModelMap(model=m,ax=ax)
     ib = m.bas6.ibound[0].array
@@ -738,16 +751,19 @@ def plot_freyberg_domain():
 
 
 if __name__ == "__main__":
+    #test_paretoObjFunc()
+
+
     #tenpar_test()
     #quick_tests()
     #tenpar_test()
     #tenpar_dev()
     #setup_freyberg_transport()
-    #setup_freyberg_pest_interface()
+    setup_freyberg_pest_interface()
     #run_freyberg_par_sweep()
     #process_freyberg_par_sweep()
     #setup_freyberg_transport()
     #setup_freyberg_pest_interface()
     #run_freyberg_dec_var_sweep()
     process_freyberg_dec_var_sweep()
-    #plot_freyberg_domain()
+    plot_freyberg_domain()
