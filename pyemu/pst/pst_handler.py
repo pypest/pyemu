@@ -2209,9 +2209,10 @@ class Pst(object):
             f.write(preamble)
             f.write("\\begin{center}\nParameter Summary\n\\end{center}\n")
             f.write("\\begin{center}\n\\begin{landscape}\n")
-            pargp_df.to_latex(f, index=False, longtable=True)
+            pargp_df.sort_values(by="type").to_latex(f, index=False, longtable=True)
             f.write("\\end{landscape}\n")
             f.write("\\end{center}\n")
+
             f.write("\\end{document}\n")
 
     def write_obs_summary_table(self,filename=None,group_names=None):

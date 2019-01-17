@@ -537,7 +537,7 @@ def setup_freyberg_pest_interface():
     pe.to_csv(os.path.join(ph.m.model_ws,"sweep_in.csv"))
     # tie nitrate loading rates by zones
 
-    zarr = np.loadtxt(os.path.join("..","examples","Freyberg_Truth","hk.zones"),dtype=int)
+
     df_ssm.loc[:, "i"] = df_ssm.parnme.apply(lambda x: int(x[1:3]))
     df_ssm.loc[:, "j"] = df_ssm.parnme.apply(lambda x: int(x[-2:]))
 
@@ -609,6 +609,8 @@ def run_freyberg_dec_var_sweep():
     if os.path.exists(m_d):
         shutil.rmtree(m_d)
     shutil.copytree("template",m_d)
+    if os.path.exists("template_temp"):
+        shutil.rmtree("template_temp")
     shutil.copytree("template","template_temp")
     os.remove(os.path.join("template_temp","dec_var_sweep_in.csv"))
     os.chdir(m_d)
@@ -629,15 +631,91 @@ def process_freyberg_dec_var_sweep():
     plt.show()
 
 
+def plot_freyberg_domain():
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import flopy
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("template","freyberg.pst"))
+    par = pst.parameter_data
+    load_pars = set(par.loc[par.apply(lambda x: x.pargp == "pargp" and x.parnme.startswith("k"), axis=1), "parnme"].values)
+    pst.parameter_data = par.loc[par.parnme.apply(lambda x: x not in load_pars), :]
+    pst.parameter_data.loc[:,"partrans"] = "log"
+    group_names = {}
+    for group in pst.par_groups:
+        k = None
+        if "hk" in group:
+            k = int(group[-1])
+            tag = "horizontal hydraulic conductivity"
+        elif "vk" in group:
+            k = int(group[-1])
+            tag = "vertical hydraulic conductivity"
+        elif "prst" in group:
+            k = int(group[-1])
+            tag = "porosity"
+        elif "scn" in group:
+            k = int(group[-1])
+            tag = "initial nitrate concentration"
+        elif "rech" in group:
+            k = 0
+            tag = "recharge"
+        elif "pargp" in group:
+            tag = "surface-water/groundwater exchange conductance"
+        elif "welflux" in group:
+            k = 2
+            tag = "abstraction rate"
+        elif "flow" in group:
+            tag = "surface-water inflow"
+        elif "rc1" in group:
+            k = int(group[-1])
+            tag = "first-order nitrate decay"
+        else:
+            raise Exception(group)
+        if k is not None:
+            tag = tag + ' layer {0}'.format(k+1)
+        group_names[group] = tag
+    pst.write_par_summary_table("freyeberg.pars.tex",sigma_range=6.0,group_names=group_names)
+
+
+    m = flopy.modflow.Modflow.load("freyberg.nam",model_ws="template",check=False,verbose=True)
+    fig = plt.figure(figsize=(4.5, 6))
+    ax = plt.subplot(111,aspect="equal")
+    mm = flopy.plot.ModelMap(model=m,ax=ax)
+    ib = m.bas6.ibound[0].array
+    zarr = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "hk.zones"), dtype=int)
+    zarr = np.ma.masked_where(ib==0,zarr)
+    cmap = plt.get_cmap("viridis")
+    cmap.set_bad("k",0.0)
+    ibmask = ib.copy()
+    ibmask = np.ma.masked_where(ibmask!=0,ibmask)
+
+
+    mm.plot_array(zarr,cmap=cmap,alpha=0.5,edgecolor="none")
+    cmap = plt.get_cmap("Greys_r")
+    cmap.set_bad("k",0.0)
+    mm.plot_array(ibmask,cmap=cmap)
+    mm.plot_bc(package=m.wel,plotAll=True)
+    mm.plot_bc(package=m.sfr,color='m')
+    mm.plot_bc(package=m.drn,color='b')
+
+    plt.tight_layout()
+    plt.savefig("freyberg_domain.pdf")
+    plt.show()
+
+
+
 if __name__ == "__main__":
     #tenpar_test()
     #quick_tests()
     #tenpar_test()
     #tenpar_dev()
-    setup_freyberg_transport()
+    #setup_freyberg_transport()
     #setup_freyberg_pest_interface()
     #run_freyberg_par_sweep()
     #process_freyberg_par_sweep()
     #setup_freyberg_transport()
     #run_freyberg_dec_var_sweep()
-    #process_freyberg_dec_var_sweep()
+    process_freyberg_dec_var_sweep()
+    #plot_freyberg_domain()
