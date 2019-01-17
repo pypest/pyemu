@@ -536,7 +536,7 @@ def setup_freyberg_pest_interface():
     pe.to_csv(os.path.join(ph.m.model_ws,"sweep_in.csv"))
     # tie nitrate loading rates by zones
 
-    zarr = np.loadtxt(os.path.join("..","examples","Freyberg_Truth","hk.zones"),dtype=int)
+
     df_ssm.loc[:, "i"] = df_ssm.parnme.apply(lambda x: int(x[1:3]))
     df_ssm.loc[:, "j"] = df_ssm.parnme.apply(lambda x: int(x[-2:]))
 
@@ -592,6 +592,13 @@ def process_freyberg_par_sweep():
 
     par = pst.parameter_data
 
+    load_pars = set(
+        par.loc[par.apply(lambda x: x.pargp == "pargp" and x.parnme.startswith("k"), axis=1), "parnme"].values)
+    par.loc[par.parnme.apply(lambda x: x not in load_pars), "partrans"] = "fixed"
+    pe = pyemu.ParameterEnsemble.from_uniform_draw(pst, num_reals=100000)
+    pe.to_csv(os.path.join("template", "dec_var_sweep_in.csv"))
+    pst.pestpp_options["sweep_parameter_csv_file"] = "dec_var_sweep_in.csv"
+    pst.write(os.path.join("template", "freyberg_nf.pst"))
 
 def write_ssm_tpl(ssm_file):
 
@@ -638,6 +645,8 @@ def run_freyberg_dec_var_sweep():
     if os.path.exists(m_d):
         shutil.rmtree(m_d)
     shutil.copytree("template",m_d)
+    if os.path.exists("template_temp"):
+        shutil.rmtree("template_temp")
     shutil.copytree("template","template_temp")
     os.remove(os.path.join("template_temp","dec_var_sweep_in.csv"))
     os.chdir(m_d)
@@ -654,8 +663,99 @@ def process_freyberg_dec_var_sweep():
     df.columns = df.columns.str.lower()
     print(df.shape)
     oname = "sfrc40_1_03650.00"
-    df.loc[:,oname].hist()
+    oname2 = "gw_malo1c_19791230"
+    fig = plt.figure(figsize=(4,4))
+    ax = plt.subplot(111)
+    ax.scatter(df.loc[:,oname],df.loc[:,oname2],marker='.',s=5,color="0.5",alpha=0.5)
+    ax.set_xlabel("reach 40 concentration ($\\frac{mg}{l}$)")
+    ax.set_ylabel("total nitrate mass loading ($kg$)")
+    # plt.show()
+    odict = {oname:"min",oname2:"max"}
+    pst = pyemu.Pst(os.path.join("template","freyberg.pst"))
+    logger = pyemu.Logger("temp.log")
+    obj = pyemu.moouu.ParetoObjFunc(pst=pst,obj_function_dict=odict,logger=logger)
+    nondom = obj.is_nondominated_kung(df)
+    ax.scatter(df.loc[nondom,oname],df.loc[nondom,oname2],marker=".",s=12,color='b')
+    #df.loc[:,oname].hist()
+    plt.tight_layout()
+    plt.savefig("freyberg_bruteforce_truth.pdf")
     plt.show()
+
+
+
+def plot_freyberg_domain():
+    import os
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import flopy
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("template","freyberg.pst"))
+    par = pst.parameter_data
+    load_pars = set(par.loc[par.apply(lambda x: x.pargp == "pargp" and x.parnme.startswith("k"), axis=1), "parnme"].values)
+    pst.parameter_data = par.loc[par.parnme.apply(lambda x: x not in load_pars), :]
+    pst.parameter_data.loc[:,"partrans"] = "log"
+    group_names = {}
+    for group in pst.par_groups:
+        k = None
+        if "hk" in group:
+            k = int(group[-1])
+            tag = "horizontal hydraulic conductivity"
+        elif "vk" in group:
+            k = int(group[-1])
+            tag = "vertical hydraulic conductivity"
+        elif "prst" in group:
+            k = int(group[-1])
+            tag = "porosity"
+        elif "scn" in group:
+            k = int(group[-1])
+            tag = "initial nitrate concentration"
+        elif "rech" in group:
+            k = 0
+            tag = "recharge"
+        elif "pargp" in group:
+            tag = "surface-water/groundwater exchange conductance"
+        elif "welflux" in group:
+            k = 2
+            tag = "abstraction rate"
+        elif "flow" in group:
+            tag = "surface-water inflow"
+        elif "rc1" in group:
+            k = int(group[-1])
+            tag = "first-order nitrate decay"
+        else:
+            raise Exception(group)
+        if k is not None:
+            tag = tag + ' layer {0}'.format(k+1)
+        group_names[group] = tag
+    pst.write_par_summary_table("freyberg.pars.tex",sigma_range=6.0,group_names=group_names)
+
+
+    m = flopy.modflow.Modflow.load("freyberg.nam",model_ws="template",check=False,verbose=True)
+    fig = plt.figure(figsize=(2.25, 3))
+    ax = plt.subplot(111,aspect="equal")
+    mm = flopy.plot.ModelMap(model=m,ax=ax)
+    ib = m.bas6.ibound[0].array
+    zarr = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "hk.zones"), dtype=int)
+    zarr = np.ma.masked_where(ib==0,zarr)
+    cmap = plt.get_cmap("viridis")
+    cmap.set_bad("k",0.0)
+    ibmask = ib.copy()
+    ibmask = np.ma.masked_where(ibmask!=0,ibmask)
+
+
+    mm.plot_array(zarr,cmap=cmap,alpha=0.5,edgecolor="none")
+    cmap = plt.get_cmap("Greys_r")
+    cmap.set_bad("k",0.0)
+    mm.plot_array(ibmask,cmap=cmap)
+    mm.plot_bc(package=m.wel,plotAll=True)
+    mm.plot_bc(package=m.sfr,color='m')
+    mm.plot_bc(package=m.drn,color='b')
+
+    plt.tight_layout()
+    plt.savefig("freyberg_domain.pdf")
+    plt.show()
+
 
 
 if __name__ == "__main__":
@@ -664,9 +764,19 @@ if __name__ == "__main__":
     #tenpar_dev()
     #setup_freyberg_transport()
     #setup_freyberg_pest_interface()
+    #test_paretoObjFunc()
+
+
+    #tenpar_test()
+    #quick_tests()
+    #tenpar_test()
+    #tenpar_dev()
+    #setup_freyberg_transport()
+    setup_freyberg_pest_interface()
     #run_freyberg_par_sweep()
     #process_freyberg_par_sweep()
     #setup_freyberg_transport()
     #setup_freyberg_pest_interface()
     #run_freyberg_dec_var_sweep()
-    #process_freyberg_dec_var_sweep()
+    process_freyberg_dec_var_sweep()
+    plot_freyberg_domain()
