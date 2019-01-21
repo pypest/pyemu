@@ -13,6 +13,24 @@ import subprocess
 import time
 
 
+def additive_parameter_interaction(d_vars, pars):
+    if len(d_vars) != len(pars):
+        raise Exception('Should have same number of parameters and decision variables')
+    return np.sum(pars)
+
+
+def multiplicitive_parameter_interaction(d_vars, pars):
+    if len(d_vars) != len(pars):
+        raise Exception('Should have same number of parameters and decision variables')
+    return (np.sin(np.pi * d_vars[0] + 1)) * pars[0] + np.sum(d_vars[1:] * pars[1:])
+
+
+def nonlinear_parameter_interaction(d_vars, pars):
+    if len(d_vars) != len(pars):
+        raise Exception('Should have same number of parameters and decision variables')
+    return None # Change this soon
+
+
 class BenchmarkTestProblem:
     """
     General class for stochastic benchmark test problems
@@ -527,14 +545,24 @@ test_functions = {"stochasticparaboloid": StochasticParaboloid, "stochasticparab
                   'simple': Simple, 'zdt1': ZDT1, 'zdt2': ZDT2, 'test1': Test1, 'test2': Test2, 'constr': CONSTR,
                   'srn': SRN}
 
+parameter_interactions = {'additive': additive_parameter_interaction,
+                          'multiplicative': multiplicitive_parameter_interaction,
+                          'nonlinear': nonlinear_parameter_interaction}
+
 
 class IOWrapper:
 
     def __init__(self):
         args = self.parse()
+        # if np.random.random() > 0.5:  # Random failure checks
+        #     raise Exception('Random fail occured')
         model = test_functions[args.benchmark_function.lower()]
         d_vars, pars = self.read_input_file(args.input_file, model)
         objectives = model.calculate_objectives(d_vars, pars)
+        if args.stochastic is not None:
+            pi = parameter_interactions[args.stochastic](d_vars, pars)
+            for i, objective in enumerate(objectives):
+                objectives[i] = objective + pi
         if model.constrained():
             constraints = model.calculate_constraints(d_vars, pars)
         else:
@@ -547,6 +575,7 @@ class IOWrapper:
         parser.add_argument("benchmark_function", default='stochasticparaboloid')
         parser.add_argument("--input_file", dest='input_file', default='input.dat')
         parser.add_argument("--output_file", dest='output_file', default='output.dat')
+        parser.add_argument("--stochastic", dest='stochastic', default=None)
         args = parser.parse_args()
         if os.path.exists(args.output_file):
             os.remove(args.output_file)
@@ -554,6 +583,10 @@ class IOWrapper:
             raise Exception("benchmark_function {} not found in known functions".format(args.benchmark_function))
         if not os.path.exists(args.input_file):
             raise Exception("input file not found")
+        if not(args.stochastic is None or args.stochastic.lower() in parameter_interactions.keys()):
+            add, mult, nonlin = parameter_interactions.keys()
+            raise Exception('unknown parameter interaction flag {} entered. Choose from {}, {} or {} interactions'.
+                            format(args.stochastic, add, mult, nonlin))
         return args
 
     @staticmethod

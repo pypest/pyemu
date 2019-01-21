@@ -77,91 +77,15 @@ class AbstractMOEA(EvolAlg):
         to be called after all changes to the population have been made. individuals whose objectives
         need calculating are calculated.
         """
-        # if type(population) != "numpy.ndarray":
-        #     population = np.array(population)
-        # positions = np.where([individual.run_model for individual in population])[0]
-        # constraint_positions = np.where([individual.calculate_constraints for individual in population])
-        # #assert np.all(constraint_positions == positions)
-        # ensemble = np.atleast_2d(np.array([individual.d_vars for individual in population[positions]]))
-        # ensemble = ensemble.T
-        # if len(ensemble) > 0:
-        #     objectives = np.atleast_2d(self.objectives(ensemble)).T
-        #     if self.is_constrained:
-        #         constraints = np.atleast_2d(self.constraints(ensemble)).T
-        #         constraints[np.where(constraints >= 0)] = 0
-        #         total_constraint_violation = np.sum(np.abs(constraints), axis=1)
-        #         for i, individual in enumerate(population[positions]):
-        #             individual.objective_values = objectives[i]
-        #             individual.total_constraint_violation = total_constraint_violation[i]
-        #             individual.violates = bool(individual.total_constraint_violation > 0)
-        #     else:
-        #         for i, individual in enumerate(population[positions]):
-        #             individual.objective_values = objectives[i]
-
-
-    def run_model_IO(self, population, decision_variable_template='individual_{}.inp',
-                  objective_template='individual_{}.out'):
-        input_files = population.write_decision_variables(decision_variable_template)
-        output_files = [objective_template.format(i + 1) for i in range(len(input_files))]
-        for I, O in zip(input_files, output_files):
-            cmd = self.model_path + [self.model, '--input_file', I, '--output_file', O]
-            subprocess.run(cmd, shell=True)
-        population.read_objectives(objective_template)
-
-    @staticmethod
-    def tournament_selection(old_population, new_max_size, is_better=lambda x, y: x.fitness < y.fitness):
-        new_population = []
-        for _ in range(2):
-            np.random.shuffle(old_population)
-            i = 0
-            while i < (new_max_size // 2):
-                if is_better(old_population[2 * i], old_population[2 * i + 1]):  # Change this to a method -> __lt__ no more
-                    new_population.append(old_population[2 * i].clone())
-                else:
-                    new_population.append(old_population[2 * i + 1].clone())
-                i += 1
-        if new_max_size % 2 == 1:  # i.e is odd
-            new_population.append(old_population[-1].clone())
-        return new_population
-
-    def initialise_population(self, population_size, population_class):
-        new_population = []
-        for i in range(population_size):
-            d_vars = []
-            for j in range(len(self.bounds)):
-                d_vars.append(self.bounds[j][0] + np.random.random() * (self.bounds[j][1] - self.bounds[j][0]))
-            new_population.append(population_class(d_vars, self.constraints))
-        return new_population
-
-    def crossover_step_SBX(self, population):
-        for i in range(len(population)):
-            if np.random.random() > self.cross_prob:
-                rand_index = np.random.randint(0, len(population))
-                population[i].crossover_SBX(population[rand_index], self.bounds, self.cross_dist)
-
-    def mutation_step_polynomial(self, population):
-        k = 0
-        i = 0
-        while i < len(population):
-            population[i].mutate_polynomial(k, self.bounds, self.mut_dist)
-            length = int(np.ceil(- 1 / self.mut_prob * np.log(1 - np.random.random())))
-            i += (k + length) // len(self.bounds)
-            k = (k + length) % len(self.bounds)
-
-    def reset_population(self, population):
-        gen = []
-        for _ in range(self.number_objectives):
-            gen.append(np.zeros(len(population)))
-        count = 0
-        for individual in population:
-            for i, obj in enumerate(individual.objective_values):
-                gen[i][count] = obj
-            individual.clear()
-            count += 1
-        self.animator_points.append(gen)
-
-    def get_animation_points(self):
-        return self.animator_points
+        df = population.to_pandas_dataframe()
+        print(df)
+        obs_df = super()._calc_obs(df)
+        objectives = self.obj_func.objective_vector().values
+        if self.is_constrained:
+            constraints = self.obj_func.constraint_violation_vector(obs_df).values
+            population.update_objectives(objectives, constraints)
+        else:
+            population.update_objectives(objectives)
 
 
 class AbstractPopulation:
@@ -248,19 +172,22 @@ class AbstractPopulation:
             positions = np.where([individual.run_model for individual in self.population])[0]
         return np.atleast_2d(np.array([individual.d_vars for individual in self.population[positions]])).T
 
-    def write_decision_variables(self, filename_template):
+    def model_update_dataframe(self):
         """for now just use this simple output method. In future use pyemu and pest to write model input file"""
         ensemble = self.to_decision_variable_array(model_update=True)
         columns = [dv_name for dv_name in self.dv_names]
         return pd.DataFrame(data=ensemble, columns=columns)
 
-    def read_objectives(self, filename_template):
+    def update_objectives(self, objectives, constraints=None):
         positions = np.where([individual.run_model for individual in self.population])[0]
-        file_names = [filename_template.format(i) for i in range(1, len(positions) + 1)]
-        for filename, individual in zip(file_names, self.population[positions]):
-            df = pd.read_csv(filename, header=0, index_col=0, encoding='ascii').T
-            objectives = np.array(df)[0]
-            individual.objective_values = objectives
+        to_update = self.population[positions]
+        if self.constrained:
+            for objective, constraint, individual in zip(objectives, constraints, to_update):
+                individual.objective_values = objective
+                individual.total_constraint = np.sum(constraint)
+        else:
+            for objective, individual in zip(objectives, constraints):
+                individual.objective_values = objective
 
     def reset_population(self):
         for individual in self.population:
@@ -412,8 +339,8 @@ class AbstractPopIndividual:
                 if np.isclose(p1, p2, rtol=0, atol=1e-15):
                     beta_1, beta_2 = self.get_beta(np.NaN, np.NaN, distribution_parameter, values_are_close=True)
                 else:
-                    lower_transformation = (p1 + p2 - 2 * bounds[i][0]) / (abs(p2 - p1))
-                    upper_transformation = (2 * bounds[i][1] - p1 - p2) / (abs(p2 - p1))
+                    lower_transformation = (p1 + p2 - 2 * bounds[0][i]) / (abs(p2 - p1))
+                    upper_transformation = (2 * bounds[0][i] - p1 - p2) / (abs(p2 - p1))
                     beta_1, beta_2 = self.get_beta(lower_transformation, upper_transformation, distribution_parameter)
                 self.d_vars[i] = 0.5 * ((p1 + p2) - beta_1 * abs(p2 - p1))
                 other.d_vars[i] = 0.5 * ((p1 + p2) + beta_2 * abs(p2 - p1))
@@ -440,10 +367,10 @@ class AbstractPopIndividual:
         u = np.random.random() # TODO bounds change
         if u <= 0.5:
             delta = (2 * u) ** (1 / (distribution_parameter + 1)) - 1
-            self.d_vars[variable] = self.d_vars[variable] + delta * (self.d_vars[variable] - bounds[variable][0])
+            self.d_vars[variable] = self.d_vars[variable] + delta * (self.d_vars[variable] - bounds[0][variable])
         else:
             delta = 1 - (2 * (1 - u)) ** (1 / (1 + distribution_parameter))
-            self.d_vars[variable] = self.d_vars[variable] + delta * (bounds[variable][1] - self.d_vars[variable])
+            self.d_vars[variable] = self.d_vars[variable] + delta * (bounds[1][variable] - self.d_vars[variable])
         self.update()
 
     def clear(self):

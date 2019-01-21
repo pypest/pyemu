@@ -627,6 +627,14 @@ def write_ssm_tpl(ssm_file):
                 f_tpl.write(line)
 
 
+if __name__ == "__main__":
+    test_paretoObjFunc()
+    load_pars = set(par.loc[par.apply(lambda x: x.pargp == "pargp" and x.parnme.startswith("k"), axis=1),"parnme"].values)
+    par.loc[par.parnme.apply(lambda x: x not in load_pars),"partrans"] = "fixed"
+    pe = pyemu.ParameterEnsemble.from_uniform_draw(pst,num_reals = 100000)
+    pe.to_csv(os.path.join("template","dec_var_sweep_in.csv"))
+    pst.pestpp_options["sweep_parameter_csv_file"] = "dec_var_sweep_in.csv"
+    pst.write(os.path.join("template", "freyberg_nf.pst"))
 
 
 def run_freyberg_dec_var_sweep():
@@ -868,6 +876,11 @@ def redis_freyberg():
     plt.show()
 
 if __name__ == "__main__":
+    tenpar_test()
+    #tenpar_test()
+    #tenpar_dev()
+    #setup_freyberg_transport()
+    #setup_freyberg_pest_interface()
     #test_paretoObjFunc()
 
 
