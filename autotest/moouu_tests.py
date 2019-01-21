@@ -642,7 +642,7 @@ def run_freyberg_dec_var_sweep():
     shutil.copytree("template","template_temp")
     os.remove(os.path.join("template_temp","dec_var_sweep_in.csv"))
     os.chdir(m_d)
-    pyemu.os_utils.start_slaves(os.path.join("..","template_temp"),"pestpp-swp","freyberg_nf.pst",num_slaves=20,master_dir='.')
+    pyemu.os_utils.start_slaves(os.path.join("..","template_temp"),"pestpp-swp","freyberg_nf.pst",num_slaves=15,master_dir='.')
 
 
 def process_freyberg_dec_var_sweep():
@@ -748,7 +748,124 @@ def plot_freyberg_domain():
     plt.savefig("freyberg_domain.pdf")
     plt.show()
 
+def redis_freyberg():
+    import os
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import flopy
+    import pyemu
 
+    #setup_freyberg_transport()
+
+    model_ws = os.path.join("moouu", "freyberg", "temp")
+    mf_nam = "freyberg.nam"
+
+    mf = flopy.modflow.Modflow.load(mf_nam, model_ws=model_ws, verbose=True, version="mfnwt", exe_name="mfnwt")
+
+    def resample_arr(arr,fac):
+        new_arr = np.zeros((arr.shape[0] * fac, arr.shape[1] * fac))
+        for i in range(arr.shape[0]):
+            for j in range(arr.shape[1]):
+                new_arr[i*fac:(i*fac)+fac,j*fac:(j*fac)+fac] = arr[i,j]
+        return new_arr
+
+
+    fac = 5
+    perlen = np.ones(3650)
+    delr = mf.dis.delr.array[0] / fac
+    delc = mf.dis.delc.array[0] / fac
+    redis_model_ws = "redis"
+    mfr = flopy.modflow.Modflow("freyberg_redis",model_ws=redis_model_ws,version="mfnwt",exe_name="mfnwt")
+    flopy.modflow.ModflowDis(mfr,nrow=mf.nrow*fac,ncol=mf.ncol*fac,nlay=mf.nlay,
+                             nper=perlen.shape[0],delr=delr,delc=delc,
+                             top=resample_arr(mf.dis.top.array,fac),
+                             botm=[resample_arr(a,fac) for a in mf.dis.botm.array])
+
+    flopy.modflow.ModflowBas(mfr,ibound=[resample_arr(a,fac) for a in mf.bas6.ibound.array],
+                             strt=[resample_arr(a,fac) for a in mf.bas6.strt.array])
+
+    flopy.modflow.ModflowNwt(mfr)
+
+    oc_spd = {(iper,0):["save head","save budget"] for iper in range(mfr.nper)}
+    flopy.modflow.ModflowOc(mfr,stress_period_data=oc_spd)
+
+    flopy.modflow.ModflowUpw(mfr,laytyp=mf.upw.laytyp,hk=[resample_arr(a,fac) for a in mf.upw.hk.array],
+                             vka=[resample_arr(a,fac) for a in mf.upw.vka.array],
+                             sy=0.1)
+    rech = resample_arr(mf.rch.rech[0].array,fac)
+    flopy.modflow.ModflowRch(mfr,rech={iper:rech.copy() for iper in range(1)})
+
+    wel_spd = mf.wel.stress_period_data[0].copy()
+    wel_spd["i"] = (wel_spd["i"] * fac) + int(fac/2.0)
+    wel_spd["j"] = (wel_spd["j"] * fac) + int(fac/2.0)
+    #print(mf.wel.stress_period_data[0]["i"],wel_spd["i"])
+    #print(39 * fac + int(fac/2.0))
+    flopy.modflow.ModflowWel(mfr,stress_period_data=wel_spd)
+
+    drn_spd = mf.drn.stress_period_data[0].copy()
+    drn_spd["i"] = (drn_spd["i"] * fac) + int(fac / 2.0)
+    drn_spd["j"] = (drn_spd["j"] * fac) + int(fac / 2.0)
+    flopy.modflow.ModflowDrn(mfr,stress_period_data=drn_spd)
+
+    rdata = pd.DataFrame.from_records(mf.sfr.reach_data)
+    sdata = pd.DataFrame.from_records(mf.sfr.segment_data[0])
+    print(rdata.reachID)
+
+    rdata = rdata.reindex(np.arange(mfr.nrow))
+    #print(rdata.shape)
+    rdata.loc[:,'k'] = 0
+    rdata.loc[:,'j'] = (rdata.loc[0,"j"] * fac) + int(fac / 2.0)
+    rdata.loc[:,'rchlen'] = mfr.dis.delc.array
+    rdata.loc[:,'i'] = np.arange(mfr.nrow)
+    rdata.loc[:,"iseg"] = rdata.i + 1
+    rdata.loc[:,"ireach"] = 1
+    rdata.loc[:,"outreach"] = rdata.reachID + 1
+    rdata.loc[mfr.nrow-1,"outreach"] = 0
+    rdata.loc[:,"node"] = rdata.index.values
+    for col in ["strthick","thts","thti","eps","uhc"]:
+        rdata.loc[:,col] = rdata.loc[0,col]
+
+
+
+    upstrm = 33
+    dwstrm = 32.5
+    total_length = mfr.dis.delc.array.max() * mfr.nrow
+    slope = (upstrm - dwstrm) / total_length
+    # print(rdata.dtype,slope)
+    strtop = np.linspace(upstrm, dwstrm, mfr.nrow)
+    # print(strtop)
+    rdata.loc[:,"strtop"] = strtop
+    rdata.loc[:,"slope"] = slope
+
+    #print(sdata.nseg)
+    sdata = sdata.reindex(np.arange(mfr.nrow))
+    for column in sdata.columns:
+        sdata.loc[:,column] = sdata.loc[0,column]
+    sdata.loc[:,"nseg"] = np.arange(mfr.nrow) + 1
+    sdata.loc[1:,"flow"] = 0
+    sdata.loc[:,"width1"] = 5.
+    sdata.loc[:,"width2"] = 5.
+    sdata.loc[:,"elevup"] = strtop
+    sdata.loc[:,"elevdn"] = strtop - slope
+    sdata.loc[:,"outseg"] = sdata.nseg + 1
+    sdata.loc[mfr.nrow-1,"outseg"] = 0
+
+    #print(sdata)
+    print(mf.sfr.isfropt)
+
+    flopy.modflow.ModflowSfr2(mfr,nstrm=mfr.nrow,nss=mfr.nrow,isfropt=mf.sfr.isfropt,
+                              segment_data=sdata.to_records(index=False),
+                              reach_data=rdata.to_records(index=False),ipakcb=mf.sfr.ipakcb,
+                              istcb2=mf.istcb2)
+
+
+    mfr.write_input()
+    mfr.run_model()
+
+    hds = flopy.utils.HeadFile(os.path.join(new_model_ws, mf_nam.replace(".nam", ".hds")), model=mf)
+    hds.plot(colorbar=True)
+    plt.show()
 
 if __name__ == "__main__":
     #test_paretoObjFunc()
@@ -759,11 +876,12 @@ if __name__ == "__main__":
     #tenpar_test()
     #tenpar_dev()
     #setup_freyberg_transport()
-    setup_freyberg_pest_interface()
+    #setup_freyberg_pest_interface()
     #run_freyberg_par_sweep()
     #process_freyberg_par_sweep()
     #setup_freyberg_transport()
     #setup_freyberg_pest_interface()
     #run_freyberg_dec_var_sweep()
-    process_freyberg_dec_var_sweep()
-    plot_freyberg_domain()
+    #process_freyberg_dec_var_sweep()
+    #plot_freyberg_domain()
+    redis_freyberg()
