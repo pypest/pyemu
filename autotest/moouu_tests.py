@@ -627,14 +627,7 @@ def write_ssm_tpl(ssm_file):
                 f_tpl.write(line)
 
 
-if __name__ == "__main__":
-    test_paretoObjFunc()
-    load_pars = set(par.loc[par.apply(lambda x: x.pargp == "pargp" and x.parnme.startswith("k"), axis=1),"parnme"].values)
-    par.loc[par.parnme.apply(lambda x: x not in load_pars),"partrans"] = "fixed"
-    pe = pyemu.ParameterEnsemble.from_uniform_draw(pst,num_reals = 100000)
-    pe.to_csv(os.path.join("template","dec_var_sweep_in.csv"))
-    pst.pestpp_options["sweep_parameter_csv_file"] = "dec_var_sweep_in.csv"
-    pst.write(os.path.join("template", "freyberg_nf.pst"))
+
 
 
 def run_freyberg_dec_var_sweep():
@@ -779,12 +772,12 @@ def redis_freyberg():
         return new_arr
 
 
-    fac = 5
+    fac = 3
     perlen = np.ones(3650)
     delr = mf.dis.delr.array[0] / fac
     delc = mf.dis.delc.array[0] / fac
     redis_model_ws = "redis"
-    mfr = flopy.modflow.Modflow("freyberg_redis",model_ws=redis_model_ws,version="mfnwt",exe_name="mfnwt")
+    mfr = flopy.modflow.Modflow("freyberg_redis",model_ws=redis_model_ws,version="mfnwt",exe_name="mfnwt",external_path='.')
     flopy.modflow.ModflowDis(mfr,nrow=mf.nrow*fac,ncol=mf.ncol*fac,nlay=mf.nlay,
                              nper=perlen.shape[0],delr=delr,delc=delc,
                              top=resample_arr(mf.dis.top.array,fac),
@@ -821,17 +814,19 @@ def redis_freyberg():
     print(rdata.reachID)
 
     rdata = rdata.reindex(np.arange(mfr.nrow))
-    #print(rdata.shape)
+    #print(rdata.strthick)
+    #return
     rdata.loc[:,'k'] = 0
     rdata.loc[:,'j'] = (rdata.loc[0,"j"] * fac) + int(fac / 2.0)
     rdata.loc[:,'rchlen'] = mfr.dis.delc.array
     rdata.loc[:,'i'] = np.arange(mfr.nrow)
     rdata.loc[:,"iseg"] = rdata.i + 1
     rdata.loc[:,"ireach"] = 1
+    rdata.loc[:,"reachID"] = rdata.index.values
     rdata.loc[:,"outreach"] = rdata.reachID + 1
     rdata.loc[mfr.nrow-1,"outreach"] = 0
     rdata.loc[:,"node"] = rdata.index.values
-    for col in ["strthick","thts","thti","eps","uhc"]:
+    for col in ["strthick","thts","thti","eps","uhc","strhc1"]:
         rdata.loc[:,col] = rdata.loc[0,col]
 
 
@@ -865,18 +860,36 @@ def redis_freyberg():
     flopy.modflow.ModflowSfr2(mfr,nstrm=mfr.nrow,nss=mfr.nrow,isfropt=mf.sfr.isfropt,
                               segment_data=sdata.to_records(index=False),
                               reach_data=rdata.to_records(index=False),ipakcb=mf.sfr.ipakcb,
-                              istcb2=mf.istcb2)
-
+                              istcb2=mf.sfr.istcb2,reachinput=True)
+    #flopy.modflow.ModflowLmt(mfr,output_file_format="formatted",package_flows=["SFR"])
 
     mfr.write_input()
     mfr.run_model()
 
-    hds = flopy.utils.HeadFile(os.path.join(new_model_ws, mf_nam.replace(".nam", ".hds")), model=mf)
+    cbb = flopy.utils.CellBudgetFile(os.path.join(redis_model_ws, mfr.namefile.replace(".nam", ".cbc")), model=mfr)
+    print(cbb.textlist)
+
+
+    hds = flopy.utils.HeadFile(os.path.join(redis_model_ws, mfr.namefile.replace(".nam", ".hds")), model=mfr)
     hds.plot(colorbar=True)
     plt.show()
 
+    mlist = flopy.utils.MfListBudget(os.path.join(redis_model_ws, mfr.namefile.replace(".nam", ".list")))
+    df = mlist.get_dataframes(diff=True)[1]
+    df.plot()
+    plt.show()
+
 if __name__ == "__main__":
-    tenpar_test()
+
+    # test_paretoObjFunc()
+    # load_pars = set(
+    #     par.loc[par.apply(lambda x: x.pargp == "pargp" and x.parnme.startswith("k"), axis=1), "parnme"].values)
+    # par.loc[par.parnme.apply(lambda x: x not in load_pars), "partrans"] = "fixed"
+    # pe = pyemu.ParameterEnsemble.from_uniform_draw(pst, num_reals=100000)
+    # pe.to_csv(os.path.join("template", "dec_var_sweep_in.csv"))
+    # pst.pestpp_options["sweep_parameter_csv_file"] = "dec_var_sweep_in.csv"
+    # pst.write(os.path.join("template", "freyberg_nf.pst"))
+    #tenpar_test()
     #tenpar_test()
     #tenpar_dev()
     #setup_freyberg_transport()
