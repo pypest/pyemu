@@ -1,7 +1,7 @@
 pcf
 * control data
 restart estimation
-2  4  1  0  2
+2  4  1  0  3
 1  1  single  point  1  0  0
 1e-1  -4.0   0.3  0.03  10  999
 5.0   5.0   1.0e-3  absparmax(5)=1
@@ -20,11 +20,12 @@ dvar2  none  absolute(5)  0  -20  20  var  1.0  0.0  1
 * observation groups
 objective
 g_constraint
+l_constraint
 * observation data
 obj1  0  10.0  objective
 obj2  0  10.0  objective
-cnstr1  6  10.0  g_constraint
-cnstr2  1  10.0  g_constraint
+cnstr1  225  10.0  l_constraint
+cnstr2  10  10.0  g_constraint
 * model command line
 python StochasticProblemSuite.py SRN
 * model input/output

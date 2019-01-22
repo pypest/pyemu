@@ -7,6 +7,7 @@ import os
 import time
 import pandas as pd
 from .moouu import ParetoObjFunc, EvolAlg
+import pyemu
 
 
 class AbstractMOEA(EvolAlg):
@@ -49,6 +50,7 @@ class AbstractMOEA(EvolAlg):
         self.bounds = None
         self.is_constrained = None
         self.number_objectives = None
+        self.dv_names = None
         self.cross_prob = cross_prob
         self.cross_dist = cross_dist
         self.mut_prob = mut_prob
@@ -68,6 +70,10 @@ class AbstractMOEA(EvolAlg):
         self.is_constrained = not(self.pst.greater_than_obs_constraints.empty
                                   and self.pst.less_than_obs_constraints.empty)
         self.number_objectives = len(obj_func_dict)
+        if dv_names is None:
+            self.dv_names = dv_ensemble.columns
+        else:
+            self.dv_names = dv_names
 
     def update(self, *args, **kwargs):
         super().update(*args, **kwargs)
@@ -77,12 +83,11 @@ class AbstractMOEA(EvolAlg):
         to be called after all changes to the population have been made. individuals whose objectives
         need calculating are calculated.
         """
-        df = population.to_pandas_dataframe()
-        print(df)
-        obs_df = super()._calc_obs(df)
-        objectives = self.obj_func.objective_vector().values
+        df = population.to_pyemu_ensemble(pst=self.pst)
+        super()._calc_obs(df)
+        objectives = self.obj_func.objective_vector(self.obs_ensemble).values
         if self.is_constrained:
-            constraints = self.obj_func.constraint_violation_vector(obs_df).values
+            constraints = self.obj_func.constraint_violation_vector(self.obs_ensemble).values
             population.update_objectives(objectives, constraints)
         else:
             population.update_objectives(objectives)
@@ -135,6 +140,13 @@ class AbstractPopulation:
     def __setitem__(self, key, value):
         self.population.__setitem__(key, value)
 
+    @classmethod
+    def from_pyemu_ensemble(cls, dv_ensemble, individual_class, constrained):
+        population = []
+        for i, row in dv_ensemble.iterrows():
+            population.append(individual_class(d_vars=row.values, is_constrained=constrained))
+        return cls(population=population, dv_names=dv_ensemble.columns, constrained=constrained)
+
     def tournament_selection(self, num_to_select, is_better=lambda x, y: x.fitness < y.fitness):
         next_population = []
         even = np.arange(0, (num_to_select // 2) * 2, 2)
@@ -170,13 +182,13 @@ class AbstractPopulation:
             positions = np.arange(0, len(self))
         else:
             positions = np.where([individual.run_model for individual in self.population])[0]
-        return np.atleast_2d(np.array([individual.d_vars for individual in self.population[positions]])).T
+        return np.atleast_2d(np.array([individual.d_vars for individual in self.population[positions]]))
 
-    def model_update_dataframe(self):
+    def to_pyemu_ensemble(self, pst):
         """for now just use this simple output method. In future use pyemu and pest to write model input file"""
         ensemble = self.to_decision_variable_array(model_update=True)
         columns = [dv_name for dv_name in self.dv_names]
-        return pd.DataFrame(data=ensemble, columns=columns)
+        return pyemu.ParameterEnsemble(pst=pst, data=ensemble, columns=columns)
 
     def update_objectives(self, objectives, constraints=None):
         positions = np.where([individual.run_model for individual in self.population])[0]
@@ -186,7 +198,7 @@ class AbstractPopulation:
                 individual.objective_values = objective
                 individual.total_constraint = np.sum(constraint)
         else:
-            for objective, individual in zip(objectives, constraints):
+            for objective, individual in zip(objectives, to_update):
                 individual.objective_values = objective
 
     def reset_population(self):
@@ -212,7 +224,6 @@ class AbstractPopIndividual:
         self.fitness = 0
         self.is_constrained = is_constrained
         self.run_model = False
-        self.calculate_constraints = False
         if objective_values is None:
             self.run_model = True
             self.objective_values = None
@@ -220,19 +231,17 @@ class AbstractPopIndividual:
             self.objective_values = objective_values
         if self.is_constrained:
             if total_constraint_violation is None:
-                self.calculate_constraints = True
                 self.violates = None
             else:
                 self.total_constraint_violation = total_constraint_violation
                 self.violates = bool(self.total_constraint_violation > 0)
-                self.calculate_constraints = False
 
     def update(self):
         self.objective_values = None
-        self.total_constraint_violation = None
         self.violates = None
         self.run_model = True
-        self.calculate_constraints = True
+        if self.is_constrained:
+            self.total_constraint_violation = None
 
     def __str__(self):
         try:
@@ -262,25 +271,14 @@ class AbstractPopIndividual:
         print("calculate_objective_values should not be called. called by {}".format(str(self)))
 
     def dominates(self, other):
-        """tests for dominance between self and other. returns true if self dominates other, false otherwise"""
-        # weak_dom = True
-        # strong_condition = False
-        # for i in range(len(self.objective_values)):
-        #     if self.objective_values[i] > other.objective_values[i]:
-        #         weak_dom = False
-        #         i = len(self.objective_values)
-        #     elif self.objective_values[i] < other.objective_values[i]:
-        #         strong_condition = True
-        #     i += 1
-        # return weak_dom and strong_condition
         def _unconstrained_dominate(a, b):
             weak_dom = True
             strong_condition = False
             for i in range(len(a.objective_values)):
-                if a.objective_values[i] > b.objective_values[i]:
+                if a.objective_values[i] < b.objective_values[i]:
                     weak_dom = False
                     i = len(a.objective_values)
-                elif a.objective_values[i] < b.objective_values[i]:
+                elif a.objective_values[i] > b.objective_values[i]:
                     strong_condition = True
                 i += 1
             return weak_dom and strong_condition

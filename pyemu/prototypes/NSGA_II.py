@@ -39,7 +39,6 @@ class NSGA_II(AbstractMOEA):
                  submit_file=submit_file, verbose=verbose, port=port, slave_dir=slave_dir,
                  cross_prob=cross_prob, cross_dist=cross_dist, mut_prob=mut_prob, mut_dist=mut_dist)
         # --------------------------------sets of population members------------------------------------------
-        self.archive_size = archive_size
         self.archive = None
         self.population = None
 
@@ -52,27 +51,43 @@ class NSGA_II(AbstractMOEA):
         super().initialize(obj_func_dict=obj_func_dict, num_par_reals=num_par_reals, num_dv_reals=num_dv_reals,
                            dv_ensemble=dv_ensemble, par_ensemble=par_ensemble, risk=risk, dv_names=dv_names,
                            par_names=par_names)
-        self.archive = Population(population=self.dv_ensemble.values, constrained=)
+        self.archive = Population.from_pyemu_ensemble(dv_ensemble=self.dv_ensemble, constrained=self.is_constrained,
+                                                      individual_class=PopIndividual)
+        objectives = self.obj_func.objective_vector(self.obs_ensemble).values
+        constraints = self.obj_func.constraint_violation_vector(self.obs_ensemble).values
+        self.archive.update_objectives(objectives=objectives, constraints=constraints)
+        self.archive.non_dominated_sort()
+        self.population = self.archive.tournament_selection(num_to_select=self.num_dv_reals, is_better=lambda x, y: x < y)
+        self.population.crossover(bounds=self.bounds, crossover_probability=self.cross_prob,
+                                  crossover_distribution=self.cross_dist)
+        self.population.mutation(bounds=self.bounds, mutation_probability=self.mut_prob,
+                                 mutation_distribution=self.mut_dist)
+        self.run_model(population=self.population)
 
     def update(self):
+        t0 = time.perf_counter()
         joint = self.archive + self.population
         fronts = joint.non_dominated_sort()
         self.archive = Population([], constrained=self.is_constrained, dv_names=self.dv_ensemble.columns)
         j = 0
-        while len(self.archive) + len(fronts[j]) < self.archive_size:
+        while len(self.archive) + len(fronts[j]) < self.num_dv_reals:
             self.crowding_distance_assignment(fronts[j])
             self.archive += fronts[j]
             j += 1
         self.crowding_distance_assignment(fronts[j])
         fronts[j].sort()
-        self.archive += fronts[j][:(self.archive_size - len(self.archive))]
-        self.population = self.archive.tournament_selection(self.archive_size, is_better=lambda x, y: x < y)
+        self.archive += fronts[j][:(self.num_dv_reals - len(self.archive))]
+        self.population = self.archive.tournament_selection(self.num_dv_reals, is_better=lambda x, y: x < y)
         self.population.crossover(bounds=self.bounds, crossover_probability=self.cross_prob,
                                   crossover_distribution=self.cross_dist)
-        self.population.mutation(bounds=self.bounds, mutation_probability=self.mut_prob, mutation_distribution=self.mut_dist)
+        self.population.mutation(bounds=self.bounds, mutation_probability=self.mut_prob,
+                                 mutation_distribution=self.mut_dist)
         self.archive.reset_population()
         self.run_model(self.population)
-        self.iter_report()
+        iteration_time = time.perf_counter() - t0
+        self.iter_report(iteration_time)
+        self.archive.reset_population()
+        return fronts[0]
 
     def crowding_distance_assignment(self, front):
         """Internal method. Calculates and assigns the crowding distance for each individual in the population"""
@@ -90,6 +105,11 @@ class NSGA_II(AbstractMOEA):
                     j += 1
             i += 1
             # TODO: Sorting by objective d_vars: will not work in constrained problem
+
+    def iter_report(self, iteration_time):
+        non_dominated = len([individual.rank == 1 for individual in self.archive])
+        self.logger.statement('iteration took: {} s'.format(iteration_time))
+        self.logger.statement("{0} non-dominated individuals in population".format(non_dominated))
 
 
 class Population(AbstractPopulation):
