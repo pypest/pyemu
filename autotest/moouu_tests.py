@@ -263,7 +263,7 @@ def tenpar_dev():
     os.chdir(os.path.join("..",".."))
 
 
-def setup_freyberg_transport():
+def setup_freyberg_transport(plot=True):
     import os
     import numpy as np
     import pandas as pd
@@ -287,11 +287,13 @@ def setup_freyberg_transport():
     dwstrm = 32.5
     total_length = mf.dis.delc.array.max() * mf.nrow
     slope = (upstrm - dwstrm) / total_length
-    #print(rdata.dtype,slope)
+
     strtop = np.linspace(upstrm,dwstrm,40)
     #print(strtop)
     rdata["strtop"] = strtop
     rdata["slope"] = slope
+    #rdata["strhc1"] *= 10
+
 
 
     sdata = mf.sfr.segment_data[0]
@@ -303,8 +305,8 @@ def setup_freyberg_transport():
     #sdata["hcond1"][:] *= 10.0
 
     mf.change_model_ws(new_model_ws,reset_external=True)
-    mf.rch.rech[0] *= 0.1
-    mf.wel.stress_period_data[0]["flux"][:] *= 0.1
+    mf.rch.rech[0] *= 1.0
+    mf.wel.stress_period_data[0]["flux"][:] *= 1.0
 
     ib = mf.bas6.ibound[0].array
     drn_data = []
@@ -320,19 +322,41 @@ def setup_freyberg_transport():
     mf.bas6.ibound = ib
 
     #mf.upw.vka[1] *= 100.0
-    mf.upw.hk *= 5.0
+    mf.upw.hk[0] = 15
+    mf.upw.vka[0] = 1.5
+
+    mf.upw.hk[1] = 0.25
+    mf.upw.vka[1] = 0.25
+
+    mf.upw.hk[2] = 30.0
+    mf.upw.vka[2] = 3.0
+
 
     mf.write_input()
     mf.run_model()
 
     hds = flopy.utils.HeadFile(os.path.join(new_model_ws,mf_nam.replace(".nam",".hds")),model=mf)
-    hds.plot(colorbar=True)
-    plt.show()
 
-    mlist = flopy.utils.MfListBudget(os.path.join(new_model_ws,mf_nam.replace(".nam",".list")))
-    df = mlist.get_dataframes(diff=True)[1]
-    df.plot(kind="bar")
-    plt.show()
+    mf.dis.top = hds.get_data()[0,:,:] * 1.05
+    #print(mf.dis.model_top)
+    mf.write_input()
+    mf.run_model()
+
+    if plot:
+        hds = flopy.utils.HeadFile(os.path.join(new_model_ws, mf_nam.replace(".nam", ".hds")), model=mf)
+        hds.plot(colorbar=True)
+        plt.show()
+
+        dtw = mf.dis.top.array - hds.get_data()[0,:,:]
+        dtw[dtw < -10.0] = np.nan
+        cb = plt.imshow(dtw)
+        plt.colorbar(cb)
+        plt.show()
+
+        mlist = flopy.utils.MfListBudget(os.path.join(new_model_ws,mf_nam.replace(".nam",".list")))
+        df = mlist.get_dataframes(diff=True)[1]
+        df.plot(kind="bar")
+        plt.show()
 
     mt = flopy.mt3d.Mt3dms.load(mt_nam,model_ws=org_model_ws,verbose=True,exe_name="mt3dusgs",modflowmodel=mf)
 
@@ -357,9 +381,10 @@ def setup_freyberg_transport():
     mt.write_input()
     mt.run_model()
 
-    unc = flopy.utils.UcnFile(os.path.join(new_model_ws,"MT3D001.UCN"),model=mf)
-    unc.plot(colorbar=True,masked_values=[1.0e30])
-    plt.show()
+    if plot:
+        unc = flopy.utils.UcnFile(os.path.join(new_model_ws,"MT3D001.UCN"),model=mf)
+        unc.plot(colorbar=True,masked_values=[1.0e30])
+        plt.show()
     return new_model_ws
 
 
@@ -535,7 +560,7 @@ def setup_freyberg_pest_interface():
     pe.enforce()
     pe.to_csv(os.path.join(ph.m.model_ws,"sweep_in.csv"))
     # tie nitrate loading rates by zones
-
+    zarr = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "hk.zones"), dtype=int)
 
     df_ssm.loc[:, "i"] = df_ssm.parnme.apply(lambda x: int(x[1:3]))
     df_ssm.loc[:, "j"] = df_ssm.parnme.apply(lambda x: int(x[-2:]))
@@ -757,7 +782,7 @@ def redis_freyberg():
     import flopy
     import pyemu
 
-    #setup_freyberg_transport()
+    setup_freyberg_transport(plot=False)
 
     model_ws = os.path.join("moouu", "freyberg", "temp")
     mf_nam = "freyberg.nam"
@@ -773,15 +798,18 @@ def redis_freyberg():
 
 
     fac = 3
-    perlen = np.ones(3650)
+    assert fac % 2 != 0
+    perlen = np.ones(520) * 7
     delr = mf.dis.delr.array[0] / fac
     delc = mf.dis.delc.array[0] / fac
     redis_model_ws = "redis"
-    mfr = flopy.modflow.Modflow("freyberg_redis",model_ws=redis_model_ws,version="mfnwt",exe_name="mfnwt",external_path='.')
+    mfr = flopy.modflow.Modflow("freyberg_redis",model_ws=redis_model_ws,
+                                version="mfnwt",exe_name="mfnwt")
     flopy.modflow.ModflowDis(mfr,nrow=mf.nrow*fac,ncol=mf.ncol*fac,nlay=mf.nlay,
                              nper=perlen.shape[0],delr=delr,delc=delc,
                              top=resample_arr(mf.dis.top.array,fac),
-                             botm=[resample_arr(a,fac) for a in mf.dis.botm.array])
+                             botm=[resample_arr(a,fac) for a in mf.dis.botm.array],
+                             steady=False)
 
     flopy.modflow.ModflowBas(mfr,ibound=[resample_arr(a,fac) for a in mf.bas6.ibound.array],
                              strt=[resample_arr(a,fac) for a in mf.bas6.strt.array])
@@ -794,6 +822,10 @@ def redis_freyberg():
     flopy.modflow.ModflowUpw(mfr,laytyp=mf.upw.laytyp,hk=[resample_arr(a,fac) for a in mf.upw.hk.array],
                              vka=[resample_arr(a,fac) for a in mf.upw.vka.array],
                              sy=0.1)
+    #mfr.upw.hk = 30.
+    #mfr.upw.vka = 3
+    #mfr.upw.hk[1] = 0.1
+    #mfr.upw.vka[1] = 0.1
     rech = resample_arr(mf.rch.rech[0].array,fac)
     flopy.modflow.ModflowRch(mfr,rech={iper:rech.copy() for iper in range(1)})
 
@@ -903,7 +935,7 @@ if __name__ == "__main__":
     #tenpar_dev()
     #setup_freyberg_transport()
     #setup_freyberg_pest_interface()
-    #run_freyberg_par_sweep()
+    run_freyberg_par_sweep()
     #process_freyberg_par_sweep()
     #setup_freyberg_transport()
     #setup_freyberg_pest_interface()
