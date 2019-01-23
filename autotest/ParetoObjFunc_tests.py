@@ -9,8 +9,10 @@ import itertools as it
 os.chdir('moouu')
 xsec = pyemu.Pst(os.path.join('10par_xsec', '10par_xsec.pst'))
 srn = pyemu.Pst(os.path.join('StochasticProblemSuite', 'SRN.pst'))
+simple = pyemu.Pst(os.path.join('StochasticProblemSuite', 'Simple.pst'))
 xsec_objectives = {'h01_04': 'max', 'h01_06': 'min'}
 srn_objectives = {'obj1': 'min', 'obj2': 'min'}
+simple_objecives = srn_objectives
 logger = pyemu.Logger(True)
 
 
@@ -57,6 +59,14 @@ def test_dominates():
     assert obj_func.dominates(soln_df.loc[0, :], soln_df.loc[3, :])
     assert obj_func.dominates(soln_df.loc[1, :], soln_df.loc[0, :]) is False
     assert obj_func.dominates(soln_df.loc[3, :], soln_df.loc[1, :]) is False
+    # test constrained dominates
+    data = np.array([[2, 1, 224, 11], [0, 0, 226, 11], [0, 0, 224, 9], [3, 1, 224.99, 10.0001],
+                     [3, 2, 20, 224.99, 10.0001]])
+    objective_df = pyemu.ObservationEnsemble(pst=srn, data=data, columns=srn.observation_data.index)
+    objective_vector = obj_func.constraint_violation_vector(objective_df, risk=0.5)
+    assert obj_func.dominates()
+
+
 
 
 def test_is_nondominated_kung():
@@ -68,7 +78,7 @@ def test_is_nondominated_kung():
 
 def test_crowding_distance():
     obj_func = ParetoObjFunc(srn, obj_function_dict=srn_objectives, logger=logger)
-    d_vars = np.array([[i for i in range(1, 5)], [1 for i in range(1, 5)]])
+    d_vars = np.array([[i for i in range(1, 5)], [1 for j in range(1, 5)]])
     objectives = np.array([d_vars[0], 1 / d_vars[0] + d_vars[1]])
     obj_df = pyemu.ParameterEnsemble(pst=srn, data=objectives.T, columns=srn_objectives.keys())
     cd = obj_func.crowd_distance(obj_df)
@@ -76,6 +86,30 @@ def test_crowding_distance():
     assert np.isclose(cd.loc[1], 14/9)
     assert np.isclose(cd.loc[2], 1)
     assert cd.loc[3] == np.inf
+
+
+def test_nsga2_non_dominated_sort():
+    obj_func_dict = {'obj1': 'min'}
+    obj_func = ParetoObjFunc(simple, obj_function_dict=obj_func_dict, logger=logger)
+    d_vars = np.array([[i for i in range(5)]])
+    objectives = np.array([d_vars[0]])
+    obj_df = pyemu.ParameterEnsemble(pst=srn, data=objectives.T, columns=['obj1'])
+    rank = obj_func.nsga2_non_dominated_sort(obj_df, risk=0.5)
+    for i, idx in enumerate(obj_df.index):
+        assert rank[idx] == i + 1
+    obj_func = ParetoObjFunc(simple, obj_function_dict=simple_objecives, logger=logger)
+    d_vars = []
+    for i in range(1, 5):
+        for j in range(1, 5):
+            d_vars.append([i, j])
+    d_vars = np.array(d_vars).T
+    objectives = np.array([d_vars[0], 1 / d_vars[0] + d_vars[1]])
+    obj_df = pyemu.ParameterEnsemble(pst=simple, data=objectives.T, columns=srn_objectives.keys())
+    rank = obj_func.nsga2_non_dominated_sort(obj_df, risk=0.5)
+    for idx in rank.index:
+        assert rank.loc[idx] == d_vars[1, idx]
+
+
 
 
 if __name__ == '__main__':
@@ -86,3 +120,4 @@ if __name__ == '__main__':
     test_dominates()
     test_is_nondominated_kung()
     test_crowding_distance()
+    test_nsga2_non_dominated_sort()

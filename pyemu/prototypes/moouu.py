@@ -143,11 +143,23 @@ class ParetoObjFunc(object):
         signs = np.array(signs)
         return signs
 
-    def dominates(self,sol1,sol2):
-        d = self.obs_obj_signs * (sol1 - sol2)
-        if np.all(d >= 0.0) and np.any(d > 0.0):
-            return True
-        return False
+    def dominates(self,sol1,sol2, constraint_violation1=None, constraint_violation2=None):
+        def _dominates(sol1, sol2):
+            d = self.obs_obj_signs * (sol1 - sol2)
+            if np.all(d >= 0.0) and np.any(d > 0.0):
+                return True
+            return False
+        if constraint_violation1 is None and constraint_violation2 is None:
+            return _dominates(sol1, sol2)
+        elif constraint_violation1 is None or constraint_violation2 is None:
+            self.logger.lraise('constraint violation for one individual given as None while other is not None')
+        else:
+            if constraint_violation1 < constraint_violation2: # soln1 has smaller constraint violation
+                return True
+            elif constraint_violation2 < constraint_violation1:
+                return False
+            else:  # the constraint violations are both zero or equal
+                return _dominates(sol1, sol2)
 
     def is_nondominated_pathetic(self, obs_df):
         """identify which candidate solutions are pareto non-dominated -
@@ -376,6 +388,46 @@ class ParetoObjFunc(object):
         df = pd.DataFrame(data=vvals,columns=oe.columns)
         return df
 
+    def nsga2_non_dominated_sort(self, obs_df, risk):
+        """
+
+        :param obs_df: dataframe of observations
+        :return: pd series of indexes and
+        """
+        rank = pd.Series(data=-1, index=obs_df.index, dtype=np.int16)
+        dominated_sets = {idx: [] for idx in obs_df.index}
+        domination_counts = pd.Series(data=0, index=obs_df.index)
+        constraint_vector = self.constraint_violation_vector(obs_df, risk=risk)
+        current_front = set()
+        for idx1 in obs_df.index: # p
+            individual1 = obs_df.loc[idx1, :]
+            violation1 = constraint_vector.loc[idx1]
+            for idx2 in obs_df.index[idx1 + 1:]: # q
+                individual2 = obs_df.loc[idx2, :]
+                violation2 = constraint_vector.loc[idx2]
+                if self.dominates(individual1, individual2, violation1, violation2):  # self.dominates(p, q): p dominates q
+                    dominated_sets[idx1].append(idx2)
+                    domination_counts.loc[idx2] += 1
+                elif self.dominates(individual2, individual1, violation2, violation1):  # self.dominates(q, p):
+                    dominated_sets[idx2].append(idx1)
+                    domination_counts.loc[idx1] += 1
+            if domination_counts[idx1] == 0:
+                rank.loc[idx1] = 1
+                current_front.add(idx1)
+        prev_front = current_front
+        i = 0
+        while prev_front:
+            current_front = set()
+            for idx1 in prev_front:
+                for idx2 in dominated_sets[idx1]:
+                    domination_counts.loc[idx2] -= 1
+                    if domination_counts.loc[idx2] == 0:
+                        rank.loc[idx2] = i + 2
+                        current_front.add(idx2)
+            prev_front = current_front
+            i += 1
+        return rank
+
 
 class EvolAlg(EnsembleMethod):
     def __init__(self, pst, parcov = None, obscov = None, num_slaves = 0, use_approx_prior = True,
@@ -429,7 +481,7 @@ class EvolAlg(EnsembleMethod):
                 aset = set(self.pst.adj_par_names)
                 dvset = set(self.dv_ensemble.columns)
                 diff = aset - dvset
-                if len(diff) > 0:
+                if len(diff) == 0:
                     self.logger.lraise("risk!=0.5 but all adjustable parameters are dec vars")
                 self.par_ensemble = pyemu.ParameterEnsemble.from_gaussian_draw(self.pst,
                                                                                     num_reals=num_par_reals,

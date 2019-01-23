@@ -1,0 +1,146 @@
+
+                      PEST RUN RECORD: CASE simple
+
+
+PEST Version: 15.00
+
+
+PEST run mode:-
+
+   Parameter estimation mode
+
+
+Case dimensions:-
+
+   Number of parameters                           :     2
+   Number of adjustable parameters                :     2
+   Number of parameter groups                     :     1
+   Number of observations                         :     2
+   Number of prior estimates                      :     0
+
+
+Model command line(s):-
+
+   python StochasticProblemSuite.py Simple
+
+
+Jacobian command line:-
+
+   na
+
+
+Model interface files:-
+
+   Templates:
+      Simple.tpl
+   for model input files:
+      input.dat
+
+   (Parameter values written using single precision protocol.)
+   (Decimal point always included.)
+
+   Instruction files:
+      Simple.ins
+   for reading model output files:
+      output.dat
+
+
+PEST-to-model message file:-
+
+   na
+
+
+Singular value decomposition:-
+
+   Perform SVD on XtQX or Q^(1/2)X               : XtQX
+   Max. number of singular values to employ      : 11
+   Ratio of lowest/highest singular value        :  1.000000E-06
+   Record eigenvectors in SVD file               : no
+
+
+Derivatives calculation:-
+
+Param        Increment   Increment   Increment   Forward or   Multiplier  Method
+group        type                    low bound   central      (central)   (central)
+var          absolute    1.0000E-10    na          switch       2.000     parabolic
+
+
+Parameter definitions:-
+
+Name         Trans-            Change       Initial        Lower          Upper
+             formation         limit        value          bound          bound
+dvar1        none              abs(5)      1.00000       0.100000        2.00000    
+dvar2        none              abs(5)      1.00000       0.100000        2.00000    
+
+Name         Group          Scale         Offset        Model command number
+dvar1        var           1.00000        0.00000            1
+dvar2        var           1.00000        0.00000            1
+
+
+Prior information:-
+
+   No prior information supplied
+
+
+Observations:-
+
+Observation name        Observation       Weight       Group
+ obj1                    0.00000          10.00       objective   
+ obj2                    0.00000          10.00       objective   
+
+
+Control settings:-
+
+   Initial lambda                                               : 0.10000    
+   Lambda adjustment factor                                     : iteration-dependent
+   Value of variable governing adjustment                       : -4.0000    
+   Sufficient new/old phi ratio per optimisation iteration      : 0.30000    
+   Limiting relative phi reduction between lambdas              : 3.00000E-02
+   Maximum trial lambdas per iteration                          :  10
+   Forgive model run failure during lamda testing               : no
+   Forgive model run failure during Jacobian runs               : no
+
+   Perform Broyden's update of Jacobian matrix                  : yes
+   Maximum number of updates per iteration                      : 999
+   Undertake observation re-referencing                         : no
+
+   Maximum  factor  parameter change (factor-limited changes)   : na
+   Maximum relative parameter change (relative-limited changes) : na
+   Fraction of initial parameter values used in computing
+   change limit for near-zero parameters                        : 1.00000E-03
+   Absolute parameter change limit (5)                          :  1.0000
+   Allow bending of parameter upgrade vector                    : no
+   Allow parameters to stick to their bounds                    : no
+
+   Relative phi reduction below which to begin use of
+   central derivatives                                          : 0.10000             
+   Iteration at which to first consider derivatives switch      :   1
+
+   Relative phi reduction indicating convergence                : 0.50000E-02
+   Number of phi values required within this range              :   4
+   Maximum number of consecutive failures to lower phi          :   4
+   Minimal relative parameter change indicating convergence     : 0.50000E-02
+   Number of consecutive iterations with minimal param change   :   4
+   Maximum number of optimisation iterations                    :   0
+
+   Attempt automatic user intervention                          : no
+
+   Attempt reuse of parameter sensitivities                     : no
+
+   Scale parameters by their bounds                             : no
+
+
+File saving options: -
+
+   Save best JCO file                                           : yes
+   Save multiple JCO files                                      : no
+   Save multiple REI files                                      : no
+   Save multiple PAR files                                      : no
+
+
+
+******************************************************************************
+Error condition prevents continued PEST execution:-
+
+Cannot open model output file output.dat.
+******************************************************************************

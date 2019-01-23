@@ -84,8 +84,8 @@ class AbstractMOEA(EvolAlg):
         need calculating are calculated.
         """
         df = population.to_pyemu_ensemble(pst=self.pst)
-        super()._calc_obs(df)
-        objectives = self.obj_func.objective_vector(self.obs_ensemble).values
+        observation_ensemble = super()._calc_obs(df)
+        objectives = self.obj_func.objective_vector(observation_ensemble).values
         if self.is_constrained:
             constraints = self.obj_func.constraint_violation_vector(self.obs_ensemble).values
             population.update_objectives(objectives, constraints)
@@ -164,7 +164,7 @@ class AbstractPopulation:
 
     def crossover(self, bounds, crossover_probability, crossover_distribution):
         for individual1 in self.population:
-            if np.random.random() > crossover_probability:
+            if np.random.random() <= crossover_probability:
                 individual2 = np.random.choice(self.population)
                 individual1.crossover_SBX(individual2, bounds, crossover_distribution)
 
@@ -197,9 +197,11 @@ class AbstractPopulation:
             for objective, constraint, individual in zip(objectives, constraints, to_update):
                 individual.objective_values = objective
                 individual.total_constraint = np.sum(constraint)
+                individual.run_model = False
         else:
             for objective, individual in zip(objectives, to_update):
                 individual.objective_values = objective
+                individual.run_model = False
 
     def reset_population(self):
         for individual in self.population:
@@ -338,7 +340,7 @@ class AbstractPopIndividual:
                     beta_1, beta_2 = self.get_beta(np.NaN, np.NaN, distribution_parameter, values_are_close=True)
                 else:
                     lower_transformation = (p1 + p2 - 2 * bounds[0][i]) / (abs(p2 - p1))
-                    upper_transformation = (2 * bounds[0][i] - p1 - p2) / (abs(p2 - p1))
+                    upper_transformation = (2 * bounds[1][i] - p1 - p2) / (abs(p2 - p1))
                     beta_1, beta_2 = self.get_beta(lower_transformation, upper_transformation, distribution_parameter)
                 self.d_vars[i] = 0.5 * ((p1 + p2) - beta_1 * abs(p2 - p1))
                 other.d_vars[i] = 0.5 * ((p1 + p2) + beta_2 * abs(p2 - p1))
