@@ -18,7 +18,7 @@ class ParetoObjFunc(object):
 
         self.logger = logger
         self.pst = pst
-        self.max_distance = 1.0e+30
+        self.max_distance = np.inf
         obs = pst.observation_data
         pi = pst.prior_information
         self.obs_dict, self.pi_dict = {}, {}
@@ -88,7 +88,7 @@ class ParetoObjFunc(object):
                 val = self.get_risk_shifted_value(risk,obs_df.loc[lt_obs])
             else:
                 val = self.pst.observation_data.loc[lt_obs,"obsval"]
-            is_feasible.loc[obs_df.loc[:,lt_obs]>=val] = False
+            is_feasible.loc[obs_df.loc[:,lt_obs] >= val] = False
         for gt_obs in self.pst.greater_than_obs_constraints:
             if risk != 0.5:
                 val = self.get_risk_shifted_value(risk, obs_df.loc[gt_obs])
@@ -120,13 +120,13 @@ class ParetoObjFunc(object):
                 val = self.get_risk_shifted_value(risk, obs_df.loc[lt_obs])
             else:
                 val = self.pst.observation_data.loc[lt_obs, 'obsval']
-            constraint_values.loc[obs_df.loc[:, lt_obs] >= val] = obs_df.loc[:, lt_obs] - val
+            constraint_values.loc[obs_df.loc[:, lt_obs] >= val] += obs_df.loc[:, lt_obs] - val
         for gt_obs in self.pst.greater_than_obs_constraints:
             if risk != 0.5:
                 val = self.get_risk_shifted_value(risk, obs_df.loc[gt_obs])
             else:
                 val = self.pst.observation_data.loc[gt_obs, 'obsval']
-            constraint_values.loc[obs_df.loc[:, gt_obs] <= val] = val - obs_df.loc[:, gt_obs]
+            constraint_values.loc[obs_df.loc[:, gt_obs] <= val] += val - obs_df.loc[:, gt_obs]
         return constraint_values
 
     def objective_vector(self, obs_df):
@@ -143,11 +143,23 @@ class ParetoObjFunc(object):
         signs = np.array(signs)
         return signs
 
-    def dominates(self,sol1,sol2):
-        d = self.obs_obj_signs * (sol1 - sol2)
-        if np.all(d >= 0.0) and np.any(d > 0.0):
-            return True
-        return False
+    def dominates(self,sol1,sol2, constraint_violation1=None, constraint_violation2=None):
+        def _dominates(sol1, sol2):
+            d = self.obs_obj_signs * (sol1 - sol2)
+            if np.all(d >= 0.0) and np.any(d > 0.0):
+                return True
+            return False
+        if constraint_violation1 is None and constraint_violation2 is None:
+            return _dominates(sol1, sol2)
+        elif constraint_violation1 is None or constraint_violation2 is None:
+            self.logger.lraise('constraint violation for one individual given as None while other is not None')
+        else:
+            if constraint_violation1 < constraint_violation2: # soln1 has smaller constraint violation
+                return True
+            elif constraint_violation2 < constraint_violation1:
+                return False
+            else:  # the constraint violations are both zero or equal
+                return _dominates(sol1, sol2)
 
     def is_nondominated_pathetic(self, obs_df):
         """identify which candidate solutions are pareto non-dominated -
@@ -301,7 +313,7 @@ class ParetoObjFunc(object):
         # initialize the distance container
         crowd_distance = pd.Series(data=0.0,index=obs_df.index)
 
-        for name,direction in self.obs_dict.items():
+        for name, direction in self.obs_dict.items():
             # make a copy - wasteful, but easier
             obj_df = obs_df.loc[:,name].copy()
 
@@ -312,10 +324,13 @@ class ParetoObjFunc(object):
             crowd_distance.loc[obj_df.index[0]] += self.max_distance
             crowd_distance.loc[obj_df.index[-1]] += self.max_distance
 
+            # calculate the maximum separation for this objective
+            max_separation = obj_df.iloc[0] - obj_df.iloc[-1]
+
             # process the vector
             i = 1
             for idx in obj_df.index[1:-1]:
-                crowd_distance.loc[idx] += obj_df.iloc[i-1] - obj_df.iloc[i+1]
+                crowd_distance.loc[idx] += (obj_df.iloc[i-1] - obj_df.iloc[i+1]) / max_separation
                 i += 1
 
         return crowd_distance
@@ -373,6 +388,46 @@ class ParetoObjFunc(object):
         df = pd.DataFrame(data=vvals,columns=oe.columns)
         return df
 
+    def nsga2_non_dominated_sort(self, obs_df, risk):
+        """
+
+        :param obs_df: dataframe of observations
+        :return: pd series of indexes and
+        """
+        rank = pd.Series(data=-1, index=obs_df.index, dtype=np.int16)
+        dominated_sets = {idx: [] for idx in obs_df.index}
+        domination_counts = pd.Series(data=0, index=obs_df.index)
+        constraint_vector = self.constraint_violation_vector(obs_df, risk=risk)
+        current_front = set()
+        for idx1 in obs_df.index: # p
+            individual1 = obs_df.loc[idx1, :]
+            violation1 = constraint_vector.loc[idx1]
+            for idx2 in obs_df.index[idx1 + 1:]: # q
+                individual2 = obs_df.loc[idx2, :]
+                violation2 = constraint_vector.loc[idx2]
+                if self.dominates(individual1, individual2, violation1, violation2):  # self.dominates(p, q): p dominates q
+                    dominated_sets[idx1].append(idx2)
+                    domination_counts.loc[idx2] += 1
+                elif self.dominates(individual2, individual1, violation2, violation1):  # self.dominates(q, p):
+                    dominated_sets[idx2].append(idx1)
+                    domination_counts.loc[idx1] += 1
+            if domination_counts[idx1] == 0:
+                rank.loc[idx1] = 1
+                current_front.add(idx1)
+        prev_front = current_front
+        i = 0
+        while prev_front:
+            current_front = set()
+            for idx1 in prev_front:
+                for idx2 in dominated_sets[idx1]:
+                    domination_counts.loc[idx2] -= 1
+                    if domination_counts.loc[idx2] == 0:
+                        rank.loc[idx2] = i + 2
+                        current_front.add(idx2)
+            prev_front = current_front
+            i += 1
+        return rank
+
 
 class EvolAlg(EnsembleMethod):
     def __init__(self, pst, parcov = None, obscov = None, num_slaves = 0, use_approx_prior = True,
@@ -380,7 +435,6 @@ class EvolAlg(EnsembleMethod):
         super(EvolAlg, self).__init__(pst=pst, parcov=parcov, obscov=obscov, num_slaves=num_slaves,
                                       submit_file=submit_file, verbose=verbose, port=port,
                                       slave_dir=slave_dir)
-        self.dv_names = None
 
 
     def initialize(self,obj_func_dict,num_par_reals=100,num_dv_reals=100,
@@ -406,7 +460,6 @@ class EvolAlg(EnsembleMethod):
         if dv_ensemble is None and par_ensemble is None:
             self.num_dv_reals = num_dv_reals
             if dv_names is not None:
-                self.dv_names = dv_names
                 aset = set(self.pst.adj_par_names)
                 dvset = set(dv_names)
                 diff = dvset - aset
@@ -428,7 +481,7 @@ class EvolAlg(EnsembleMethod):
                 aset = set(self.pst.adj_par_names)
                 dvset = set(self.dv_ensemble.columns)
                 diff = aset - dvset
-                if len(diff) > 0:
+                if len(diff) == 0:
                     self.logger.lraise("risk!=0.5 but all adjustable parameters are dec vars")
                 self.par_ensemble = pyemu.ParameterEnsemble.from_gaussian_draw(self.pst,
                                                                                     num_reals=num_par_reals,
@@ -525,28 +578,28 @@ class EvolAlg(EnsembleMethod):
 
         self.last_stack = None
         self.logger.log("evaluate initial dv ensemble of size {0}".format(self.dv_ensemble.shape[0]))
-        self.obs_ensemble = self._calc_obs(self.dv_ensemble)
+        self.obs_ensemble = self._calc_obs(self.dv_ensemble) # TODO maybe change to copy()?
         self.logger.log("evaluate initial dv ensemble of size {0}".format(self.dv_ensemble.shape[0]))
 
 
-        isfeas = self.obj_func.is_feasible(self.obs_ensemble,risk=self.risk)
-        isnondom = self.obj_func.is_nondominated(self.obs_ensemble)
-
-        vc = isfeas.value_counts()
-        if True not in vc:
-            self.logger.lraise("no feasible solutions in initial population")
-        self.logger.statement("{0} feasible individuals in initial population".format(vc[True]))
-        self.dv_ensemble = self.dv_ensemble.loc[isfeas,:]
-        self.obs_ensemble = self.obs_ensemble.loc[isfeas,:]
-        vc = isnondom.value_counts()
-        if True in vc:
-            self.logger.statement("{0} nondominated solutions in initial population".format(vc[True]))
-        else:
-            self.logger.statement("no nondominated solutions in initial population")
-        self.dv_ensemble = self.dv_ensemble.loc[isnondom,:]  # TODO: check this - before was isfeas?
-        self.obs_ensemble = self.obs_ensemble.loc[isnondom,:]  # seemed to be doing the same thing twice
-        self.pst.add_transform_columns()
-        self._initialized = True
+        # isfeas = self.obj_func.is_feasible(self.obs_ensemble,risk=self.risk)
+        # isnondom = self.obj_func.is_nondominated(self.obs_ensemble)
+        #
+        # vc = isfeas.value_counts()
+        # if True not in vc:
+        #     self.logger.lraise("no feasible solutions in initial population")
+        # self.logger.statement("{0} feasible individuals in initial population".format(vc[True]))
+        # self.dv_ensemble = self.dv_ensemble.loc[isfeas,:]
+        # self.obs_ensemble = self.obs_ensemble.loc[isfeas,:]
+        # vc = isnondom.value_counts()
+        # if True in vc:
+        #     self.logger.statement("{0} nondominated solutions in initial population".format(vc[True]))
+        # else:
+        #     self.logger.statement("no nondominated solutions in initial population")
+        # self.dv_ensemble = self.dv_ensemble.loc[isnondom,:]  # TODO: check this - before was isfeas?
+        # self.obs_ensemble = self.obs_ensemble.loc[isnondom,:]  # seemed to be doing the same thing twice
+        # self.pst.add_transform_columns()
+        # self._initialized = True
 
     @staticmethod
     def _drop_failed(failed_runs, dv_ensemble, obs_ensemble):
@@ -588,9 +641,20 @@ class EvolAlg(EnsembleMethod):
             self.dv_ensemble_archive = self.dv_ensemble_archive.append(pd.DataFrame(dv_ensemble.loc[:,:]))
 
     def _calc_obs(self,dv_ensemble):
-
+        eval_ensemble = dv_ensemble.copy()
         if self.par_ensemble is None:
-            failed_runs, oe = super(EvolAlg,self)._calc_obs(dv_ensemble)
+            missing_pars = set(self.pst.par_names) - set(dv_ensemble)
+            if len(missing_pars) > 0:
+                parval1 = self.pst.parameter_data.loc[missing_pars, 'parval1']
+                eval_ensemble = pyemu.ParameterEnsemble(pst=self.pst, index=dv_ensemble.index)
+                eval_ensemble.loc[:, dv_ensemble.columns] = dv_ensemble.values
+                eval_ensemble.loc[:, missing_pars] = parval1.values
+            if not dv_ensemble.istransformed:
+                eval_ensemble._transform(inplace=True)  # TODO: check if still works with multiple pars
+            else:
+                raise Exception("dv_ensemble was already transformed")
+            # end changes
+            failed_runs, oe = super(EvolAlg,self)._calc_obs(eval_ensemble)
         else:
             # make a copy of the org par ensemble but as a df instance
             df_base = pd.DataFrame(self.par_ensemble.loc[:,:])  # note that k_02 - k_10 are dvs.
@@ -647,7 +711,30 @@ class EliteDiffEvol(EvolAlg):
         super(EliteDiffEvol, self).__init__(pst=pst, parcov=parcov, obscov=obscov, num_slaves=num_slaves,
                                       submit_file=submit_file, verbose=verbose, port=port,
                                       slave_dir=slave_dir)
+    def initialize(self,obj_func_dict,num_par_reals=100,num_dv_reals=100,
+                   dv_ensemble=None,par_ensemble=None,risk=0.5,
+                   dv_names=None,par_names=None):
+        super(EliteDiffEvol, self).initialize(obj_func_dict=obj_func_dict, num_par_reals=num_par_reals, num_dv_reals=num_dv_reals,
+                           dv_ensemble=dv_ensemble, par_ensemble=par_ensemble, risk=risk, dv_names=dv_names,
+                           par_names=par_names)
+        isfeas = self.obj_func.is_feasible(self.obs_ensemble,risk=self.risk)
+        isnondom = self.obj_func.is_nondominated(self.obs_ensemble)
 
+        vc = isfeas.value_counts()
+        if True not in vc:
+            self.logger.lraise("no feasible solutions in initial population")
+        self.logger.statement("{0} feasible individuals in initial population".format(vc[True]))
+        self.dv_ensemble = self.dv_ensemble.loc[isfeas,:]
+        self.obs_ensemble = self.obs_ensemble.loc[isfeas,:]
+        vc = isnondom.value_counts()
+        if True in vc:
+            self.logger.statement("{0} nondominated solutions in initial population".format(vc[True]))
+        else:
+            self.logger.statement("no nondominated solutions in initial population")
+        self.dv_ensemble = self.dv_ensemble.loc[isnondom,:]  # TODO: check this - before was isfeas?
+        self.obs_ensemble = self.obs_ensemble.loc[isnondom,:]  # seemed to be doing the same thing twice
+        self.pst.add_transform_columns()
+        self._initialized = True
 
     def update(self,mut_base = 0.8,cross_over_base=0.7,num_dv_reals=None):
         if not self._initialized:

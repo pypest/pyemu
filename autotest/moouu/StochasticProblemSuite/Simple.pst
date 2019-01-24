@@ -1,7 +1,7 @@
 pcf
 * control data
 restart estimation
-2  4  1  0  3
+2  2  1  0  1
 1  1  single  point  1  0  0
 1e-1  -4.0   0.3  0.03  10  999
 5.0   5.0   1.0e-3  absparmax(5)=1
@@ -15,21 +15,17 @@ restart estimation
 * parameter groups
 var	absolute	1.0000E-10	0.000	switch	2.000	parabolic
 * parameter data
-dvar1  none  absolute(5)  0  -20  20  var  1.0  0.0  1  
-dvar2  none  absolute(5)  0  -20  20  var  1.0  0.0  1
+dvar1  none  absolute(5)  1  0.1  2  var  1.0  0.0  1  
+dvar2  none  absolute(5)  1  0.1  2  var  1.0  0.0  1
 * observation groups
 objective
-g_constraint
-l_constraint
 * observation data
 obj1  0  10.0  objective
 obj2  0  10.0  objective
-cnstr1  225  10.0  l_constraint
-cnstr2  10  10.0  g_constraint
 * model command line
-python StochasticProblemSuite.py SRN
+python StochasticProblemSuite.py Simple
 * model input/output
-SRN.tpl input.dat
-SRN.ins output.dat
+Simple.tpl input.dat
+Simple.ins output.dat
 ++# PEST++ optional input
 ++sweep_parameter_csv_file(sweep_in.csv)

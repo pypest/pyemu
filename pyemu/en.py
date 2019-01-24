@@ -1333,8 +1333,6 @@ class ParameterEnsemble(Ensemble):
         return ParameterEnsemble.from_dataframe(df=df,pst=pst)
 
 
-
-
     @classmethod
     def from_binary(cls, pst, filename):
         """instantiate an parameter obsemble from a jco-type file
