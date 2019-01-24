@@ -398,12 +398,13 @@ class ParetoObjFunc(object):
         dominated_sets = {idx: [] for idx in obs_df.index}
         domination_counts = pd.Series(data=0, index=obs_df.index)
         constraint_vector = self.constraint_violation_vector(obs_df, risk=risk)
+        obj_df = obs_df.loc[:, self.obs_obj_names]
         current_front = set()
-        for idx1 in obs_df.index: # p
-            individual1 = obs_df.loc[idx1, :]
+        for idx1 in obj_df.index: # p
+            individual1 = obj_df.loc[idx1, :]
             violation1 = constraint_vector.loc[idx1]
-            for idx2 in obs_df.index[idx1 + 1:]: # q
-                individual2 = obs_df.loc[idx2, :]
+            for idx2 in obj_df.index[idx1 + 1:]: # q
+                individual2 = obj_df.loc[idx2, :]
                 violation2 = constraint_vector.loc[idx2]
                 if self.dominates(individual1, individual2, violation1, violation2):  # self.dominates(p, q): p dominates q
                     dominated_sets[idx1].append(idx2)
@@ -576,6 +577,7 @@ class EvolAlg(EnsembleMethod):
                                                                              cov=self.parcov,partial=True)
 
 
+        self.dv_names = self.dv_ensemble.columns
         self.last_stack = None
         self.logger.log("evaluate initial dv ensemble of size {0}".format(self.dv_ensemble.shape[0]))
         self.obs_ensemble = self._calc_obs(self.dv_ensemble) # TODO maybe change to copy()?
@@ -697,9 +699,8 @@ class EvolAlg(EnsembleMethod):
         self.logger.lraise("EvolAlg.update() must be implemented by derived types")
 
     def _get_bounds(self):
-        dv_names = self.dv_ensemble.columns
-        bounds = self.pst.parameter_data.loc[dv_names, ['parlbnd', 'parubnd']].copy()
-        return bounds.T.values
+        bounds = self.pst.parameter_data.loc[self.dv_names, ['parlbnd', 'parubnd']].values
+        return bounds.T
 
     def iter_report(self):
         self.logger.lraise('EvolAlg.iter_report should be implemented by population class')

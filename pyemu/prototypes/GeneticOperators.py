@@ -15,30 +15,33 @@ class Crossover:
         for index in dv_ensemble.index:
             if np.random.random() <= crossover_probability:
                 index_other = np.random.choice(dv_ensemble.index)
-                solution1, solution2 = Crossover._sbx_helper(dv_ensemble.loc[:, index],
-                                                             dv_ensemble.loc[:, index_other], bounds,
+                solution1, solution2 = Crossover._sbx_helper(dv_ensemble.loc[index, :],
+                                                             dv_ensemble.loc[index_other, :], bounds,
                                                              crossover_distribution_parameter)
                 dv_ensemble.loc[index, :] = solution1
                 dv_ensemble.loc[index, :] = solution2
                 to_update.add(index)
                 to_update.add(index_other)
+        print(to_update)
         return to_update
 
     @staticmethod
     def _sbx_helper(solution1, solution2, bounds, cross_dist):
-        for i in range(len(solution1)):
+        values1 = solution1.values
+        values2 = solution2.values
+        for i in range(len(values1)):
             if np.random.random() <= 0.5:
-                p1 = solution1.loc[solution1.index[i]]
-                p2 = solution2.loc[solution2.index[i]]
+                p1 = values1[i]
+                p2 = values2[i]
                 if np.isclose(p1, p2, rtol=0, atol=1e-15):
                     beta_1, beta_2 = Crossover._get_beta(np.NaN, np.NaN, cross_dist, values_are_close=True)
                 else:
                     lower_transformation = (p1 + p2 - 2 * bounds[0][i]) / (abs(p2 - p1))
                     upper_transformation = (2 * bounds[1][i] - p1 - p2) / (abs(p2 - p1))
                     beta_1, beta_2 = Crossover._get_beta(lower_transformation, upper_transformation, cross_dist)
-                solution1.loc[solution1.index[i]] = 0.5 * ((p1 + p2) - beta_1 * abs(p2 - p1))
-                solution2.loc[solution2.index[i]] = 0.5 * ((p1 + p2) + beta_2 * abs(p2 - p1))
-        return solution1, solution2
+                values1[i] = 0.5 * ((p1 + p2) - beta_1 * abs(p2 - p1))
+                values2[i] = 0.5 * ((p1 + p2) + beta_2 * abs(p2 - p1))
+        return values1, values2
 
     @staticmethod
     def _get_beta(transformation1, transformation2, distribution_parameter, values_are_close=False):
@@ -68,7 +71,7 @@ class Mutation:
         k = 0
         i = 0
         while i < len(dv_ensemble.index):
-            dv = dv_ensemble.loc[dv_ensemble.columns[k], dv_ensemble.index[i]]
+            dv = dv_ensemble.loc[dv_ensemble.index[i], dv_ensemble.columns[k]]
             dv = Mutation._polynomial_helper(dv, bounds[:, k], mutation_distribution_parameter)
             dv_ensemble.loc[dv_ensemble.columns[k], dv_ensemble.index[i]] = dv
             to_update.add(dv_ensemble.index[i])
