@@ -685,34 +685,30 @@ class EvolAlg(EnsembleMethod):
                 pass  # full recalculation at every step
             elif self._initialized is False:
                 if self.when_calculate == -1:
-                      # initial calculation for propogating the cdf to all locations
+                    df = self._evaluation_ensemble(eval_ensemble, par_ensemble=self.par_ensemble)
+                    failed_runs, oe = super(EvolAlg, self)._calc_obs(df)
+                    if oe.shape[0] != dv_ensemble.shape[0] * self.par_ensemble.shape[0]:
+                        self.logger.lraise("wrong number of runs back from stack eval")
+                    EvolAlg._drop_failed(failed_runs, df, oe)  # TODO: check what happens if all runs for one dv fail
+                    try:
+                        num_failed = len(failed_runs)
+                    except TypeError:
+                        num_failed = 0
+                    self.logger.statement("dropped {0} failed runs, {1} remaining". \
+                                          format(num_failed, dv_ensemble.shape[0]))
+                    self.last_stack = oe.copy()
+
+                    self.logger.log("reducing initial stack evaluation")
+                    df = self.obj_func.full_recalculation_risk_shift(oe, self.par_ensemble.shape[0],
+                                                                     self.risk)
+                    self.logger.log("reducing initial stack evaluation")
+                    # big assumption the run results are in the same order
+                    df.index = dv_ensemble.index
+                    oe = pyemu.ObservationEnsemble.from_dataframe(df=df, pst=self.pst)
                 else:
                     pass  # initial calculation when cdf is recalculated every couple of iterations
             elif self.when_calculate > 0 and self.iter_num % self.when_calculate == 0:
                 pass  # first calculate at mean of pars, - find ideal and nadir vectors, then get ensemble
-
-            # get evaluation ensemble
-            df = self._evaluation_ensemble(eval_ensemble, par_ensemble=self.par_ensemble)
-            failed_runs, oe = super(EvolAlg,self)._calc_obs(df)
-            if oe.shape[0] != dv_ensemble.shape[0] * self.par_ensemble.shape[0]:
-                self.logger.lraise("wrong number of runs back from stack eval")
-            EvolAlg._drop_failed(failed_runs, df, oe)  # TODO: check what happens if all runs for one dv fail
-            try:
-                num_failed = len(failed_runs)
-            except TypeError:
-                num_failed = 0
-            self.logger.statement("dropped {0} failed runs, {1} remaining". \
-                                  format(num_failed, dv_ensemble.shape[0]))
-            self.last_stack = oe.copy()
-
-
-            self.logger.log("reducing initial stack evaluation")
-            df = self.obj_func.full_recalculation_risk_shift(oe,self.par_ensemble.shape[0],
-                                                            self.risk)
-            self.logger.log("reducing initial stack evaluation")
-            # big assumption the run results are in the same order
-            df.index = dv_ensemble.index
-            oe = pyemu.ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
         self._archive(dv_ensemble, oe)
         return oe
 
