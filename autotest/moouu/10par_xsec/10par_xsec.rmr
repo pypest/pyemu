@@ -1,85 +1,95 @@
 
 PANTHER master listening on socket:0.0.0.0:4005 (IPv4)
-running model 25 times
+running model 30 times
 
     waiting for slaves to appear...
 
 
-01/15/19 16:05:05->new connection from: DESKTOP-HEOQJUQ:54162
-01/15/19 16:05:05->initializing new slave connection from: DESKTOP-HEOQJUQ:54162, number of slaves: 1, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_0
-01/15/19 16:05:05->new connection from: DESKTOP-HEOQJUQ:54163
-01/15/19 16:05:05->initializing new slave connection from: DESKTOP-HEOQJUQ:54163, number of slaves: 2, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_1
-01/15/19 16:05:05->new connection from: DESKTOP-HEOQJUQ:54164
-01/15/19 16:05:05->initializing new slave connection from: DESKTOP-HEOQJUQ:54164, number of slaves: 3, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_2
-01/15/19 16:05:05->new connection from: DESKTOP-HEOQJUQ:54165
-01/15/19 16:05:05->initializing new slave connection from: DESKTOP-HEOQJUQ:54165, number of slaves: 4, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_3
-01/15/19 16:05:05->new connection from: DESKTOP-HEOQJUQ:54166
-01/15/19 16:05:05->initializing new slave connection from: DESKTOP-HEOQJUQ:54166, number of slaves: 5, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_4
-01/15/19 16:05:05->new connection from: DESKTOP-HEOQJUQ:54167
-01/15/19 16:05:05->initializing new slave connection from: DESKTOP-HEOQJUQ:54167, number of slaves: 6, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_5
-01/15/19 16:05:05->new connection from: DESKTOP-HEOQJUQ:54168
-01/15/19 16:05:05->initializing new slave connection from: DESKTOP-HEOQJUQ:54168, number of slaves: 7, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_6
-01/15/19 16:05:05->new connection from: DESKTOP-HEOQJUQ:54169
-01/15/19 16:05:05->initializing new slave connection from: DESKTOP-HEOQJUQ:54169, number of slaves: 8, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_7
-01/15/19 16:05:06->new slave ready: DESKTOP-HEOQJUQ:54162
-01/15/19 16:05:06->Sending run 0 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (group id:2, run id:0, concurrent runs:1)
-01/15/19 16:05:07->new slave ready: DESKTOP-HEOQJUQ:54163
-01/15/19 16:05:07->Sending run 1 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (group id:2, run id:1, concurrent runs:1)
-01/15/19 16:05:07->new slave ready: DESKTOP-HEOQJUQ:54164
-01/15/19 16:05:07->Sending run 2 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (group id:2, run id:2, concurrent runs:1)
-01/15/19 16:05:07->new slave ready: DESKTOP-HEOQJUQ:54165
-01/15/19 16:05:07->Sending run 3 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_3  (group id:2, run id:3, concurrent runs:1)
-01/15/19 16:05:07->new slave ready: DESKTOP-HEOQJUQ:54166
-01/15/19 16:05:07->Sending run 4 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_4  (group id:2, run id:4, concurrent runs:1)
-01/15/19 16:05:07->new slave ready: DESKTOP-HEOQJUQ:54167
-01/15/19 16:05:07->Sending run 5 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_5  (group id:2, run id:5, concurrent runs:1)
-01/15/19 16:05:07->new slave ready: DESKTOP-HEOQJUQ:54168
-01/15/19 16:05:07->Sending run 6 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_6  (group id:2, run id:6, concurrent runs:1)
-01/15/19 16:05:07->new slave ready: DESKTOP-HEOQJUQ:54169
-01/15/19 16:05:07->Sending run 7 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_7  (group id:2, run id:7, concurrent runs:1)
-01/15/19 16:05:09->run 0 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (run time:0.0404833 min, avg run time:0.0404833 min, group id:2, run id = 0 concurrent:1)
-01/15/19 16:05:09->Sending run 8 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (group id:2, run id:8, concurrent runs:1)
-01/15/19 16:05:09->run 1 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (run time:0.0399833 min, avg run time:0.0402333 min, group id:2, run id = 1 concurrent:1)
-01/15/19 16:05:09->Sending run 9 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (group id:2, run id:9, concurrent runs:1)
-01/15/19 16:05:09->run 2 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (run time:0.0392167 min, avg run time:0.0398944 min, group id:2, run id = 2 concurrent:1)
-01/15/19 16:05:09->Sending run 10 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (group id:2, run id:10, concurrent runs:1)
-01/15/19 16:05:09->run 3 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_3  (run time:0.03905 min, avg run time:0.0396833 min, group id:2, run id = 3 concurrent:1)
-01/15/19 16:05:09->Sending run 11 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_3  (group id:2, run id:11, concurrent runs:1)
-01/15/19 16:05:09->run 4 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_4  (run time:0.0384833 min, avg run time:0.0394433 min, group id:2, run id = 4 concurrent:1)
-01/15/19 16:05:09->Sending run 12 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_4  (group id:2, run id:12, concurrent runs:1)
-01/15/19 16:05:09->run 5 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_5  (run time:0.0384667 min, avg run time:0.0392806 min, group id:2, run id = 5 concurrent:1)
-01/15/19 16:05:09->Sending run 13 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_5  (group id:2, run id:13, concurrent runs:1)
-01/15/19 16:05:09->run 6 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_6  (run time:0.0384667 min, avg run time:0.0391643 min, group id:2, run id = 6 concurrent:1)
-01/15/19 16:05:09->Sending run 14 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_6  (group id:2, run id:14, concurrent runs:1)
-01/15/19 16:05:10->run 7 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_7  (run time:0.0384833 min, avg run time:0.0390792 min, group id:2, run id = 7 concurrent:1)
-01/15/19 16:05:10->Sending run 15 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_7  (group id:2, run id:15, concurrent runs:1)
-01/15/19 16:05:11->run 8 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (run time:0.0394667 min, avg run time:0.0389521 min, group id:2, run id = 8 concurrent:1)
-01/15/19 16:05:11->Sending run 16 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (group id:2, run id:16, concurrent runs:1)
-01/15/19 16:05:11->run 9 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (run time:0.0392 min, avg run time:0.0388542 min, group id:2, run id = 9 concurrent:1)
-01/15/19 16:05:11->Sending run 17 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (group id:2, run id:17, concurrent runs:1)
-01/15/19 16:05:11->run 10 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (run time:0.0388333 min, avg run time:0.0388063 min, group id:2, run id = 10 concurrent:1)
-01/15/19 16:05:11->Sending run 18 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (group id:2, run id:18, concurrent runs:1)
-01/15/19 16:05:11->run 11 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_3  (run time:0.03875 min, avg run time:0.0387687 min, group id:2, run id = 11 concurrent:1)
-01/15/19 16:05:11->Sending run 19 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_3  (group id:2, run id:19, concurrent runs:1)
-01/15/19 16:05:12->run 12 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_4  (run time:0.0384667 min, avg run time:0.0387667 min, group id:2, run id = 12 concurrent:1)
-01/15/19 16:05:12->Sending run 20 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_4  (group id:2, run id:20, concurrent runs:1)
-01/15/19 16:05:12->run 13 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_5  (run time:0.0384667 min, avg run time:0.0387667 min, group id:2, run id = 13 concurrent:1)
-01/15/19 16:05:12->Sending run 21 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_5  (group id:2, run id:21, concurrent runs:1)
-01/15/19 16:05:12->run 14 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_6  (run time:0.0384333 min, avg run time:0.0387625 min, group id:2, run id = 14 concurrent:1)
-01/15/19 16:05:12->Sending run 22 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_6  (group id:2, run id:22, concurrent runs:1)
-01/15/19 16:05:12->run 15 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_7  (run time:0.03845 min, avg run time:0.0387583 min, group id:2, run id = 15 concurrent:1)
-01/15/19 16:05:12->Sending run 23 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_7  (group id:2, run id:23, concurrent runs:1)
-01/15/19 16:05:13->run 16 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (run time:0.03895 min, avg run time:0.0386937 min, group id:2, run id = 16 concurrent:1)
-01/15/19 16:05:13->Sending run 24 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (group id:2, run id:24, concurrent runs:1)
-01/15/19 16:05:14->run 17 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (run time:0.0388333 min, avg run time:0.0386479 min, group id:2, run id = 17 concurrent:1)
-01/15/19 16:05:14->run 18 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (run time:0.03865 min, avg run time:0.038625 min, group id:2, run id = 18 concurrent:1)
-01/15/19 16:05:14->run 19 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_3  (run time:0.0386 min, avg run time:0.0386063 min, group id:2, run id = 19 concurrent:1)
-01/15/19 16:05:14->run 20 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_4  (run time:0.0384667 min, avg run time:0.0386063 min, group id:2, run id = 20 concurrent:1)
-01/15/19 16:05:14->run 21 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_5  (run time:0.0384667 min, avg run time:0.0386063 min, group id:2, run id = 21 concurrent:1)
-01/15/19 16:05:14->run 22 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_6  (run time:0.03845 min, avg run time:0.0386083 min, group id:2, run id = 22 concurrent:1)
-01/15/19 16:05:14->run 23 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_7  (run time:0.03845 min, avg run time:0.0386083 min, group id:2, run id = 23 concurrent:1)
-01/15/19 16:05:16->run 24 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (run time:0.0386833 min, avg run time:0.038575 min, group id:2, run id = 24 concurrent:1)
+01/25/19 13:16:12->new connection from: DESKTOP-HEOQJUQ:58572
+01/25/19 13:16:12->initializing new slave connection from: DESKTOP-HEOQJUQ:58572, number of slaves: 1, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_0
+01/25/19 13:16:12->new connection from: DESKTOP-HEOQJUQ:58573
+01/25/19 13:16:12->initializing new slave connection from: DESKTOP-HEOQJUQ:58573, number of slaves: 2, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_1
+01/25/19 13:16:12->new connection from: DESKTOP-HEOQJUQ:58574
+01/25/19 13:16:12->initializing new slave connection from: DESKTOP-HEOQJUQ:58574, number of slaves: 3, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_2
+01/25/19 13:16:12->new connection from: DESKTOP-HEOQJUQ:58575
+01/25/19 13:16:12->initializing new slave connection from: DESKTOP-HEOQJUQ:58575, number of slaves: 4, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_3
+01/25/19 13:16:12->new connection from: DESKTOP-HEOQJUQ:58576
+01/25/19 13:16:12->initializing new slave connection from: DESKTOP-HEOQJUQ:58576, number of slaves: 5, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_4
+01/25/19 13:16:12->new connection from: DESKTOP-HEOQJUQ:58577
+01/25/19 13:16:12->initializing new slave connection from: DESKTOP-HEOQJUQ:58577, number of slaves: 6, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_5
+01/25/19 13:16:12->new connection from: DESKTOP-HEOQJUQ:58578
+01/25/19 13:16:12->initializing new slave connection from: DESKTOP-HEOQJUQ:58578, number of slaves: 7, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_6
+01/25/19 13:16:13->new connection from: DESKTOP-HEOQJUQ:58579
+01/25/19 13:16:13->initializing new slave connection from: DESKTOP-HEOQJUQ:58579, number of slaves: 8, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_7
+01/25/19 13:16:13->new slave ready: DESKTOP-HEOQJUQ:58572
+01/25/19 13:16:13->Sending run 0 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (group id:2, run id:0, concurrent runs:1)
+01/25/19 13:16:14->new slave ready: DESKTOP-HEOQJUQ:58573
+01/25/19 13:16:14->Sending run 1 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (group id:2, run id:1, concurrent runs:1)
+01/25/19 13:16:14->new slave ready: DESKTOP-HEOQJUQ:58574
+01/25/19 13:16:14->Sending run 2 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (group id:2, run id:2, concurrent runs:1)
+01/25/19 13:16:14->new slave ready: DESKTOP-HEOQJUQ:58575
+01/25/19 13:16:14->Sending run 3 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_3  (group id:2, run id:3, concurrent runs:1)
+01/25/19 13:16:14->new slave ready: DESKTOP-HEOQJUQ:58576
+01/25/19 13:16:14->Sending run 4 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_4  (group id:2, run id:4, concurrent runs:1)
+01/25/19 13:16:14->new slave ready: DESKTOP-HEOQJUQ:58577
+01/25/19 13:16:14->Sending run 5 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_5  (group id:2, run id:5, concurrent runs:1)
+01/25/19 13:16:14->new slave ready: DESKTOP-HEOQJUQ:58578
+01/25/19 13:16:14->Sending run 6 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_6  (group id:2, run id:6, concurrent runs:1)
+01/25/19 13:16:14->new slave ready: DESKTOP-HEOQJUQ:58579
+01/25/19 13:16:14->Sending run 7 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_7  (group id:2, run id:7, concurrent runs:1)
+01/25/19 13:16:16->run 0 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (run time:0.0438833 min, avg run time:0.0438833 min, group id:2, run id = 0 concurrent:1)
+01/25/19 13:16:16->Sending run 8 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (group id:2, run id:8, concurrent runs:1)
+01/25/19 13:16:16->run 1 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (run time:0.0395833 min, avg run time:0.0417333 min, group id:2, run id = 1 concurrent:1)
+01/25/19 13:16:16->Sending run 9 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (group id:2, run id:9, concurrent runs:1)
+01/25/19 13:16:16->run 2 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (run time:0.0391 min, avg run time:0.0408556 min, group id:2, run id = 2 concurrent:1)
+01/25/19 13:16:16->Sending run 10 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (group id:2, run id:10, concurrent runs:1)
+01/25/19 13:16:16->run 3 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_3  (run time:0.0386167 min, avg run time:0.0402958 min, group id:2, run id = 3 concurrent:1)
+01/25/19 13:16:16->Sending run 11 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_3  (group id:2, run id:11, concurrent runs:1)
+01/25/19 13:16:16->run 4 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_4  (run time:0.0384667 min, avg run time:0.03993 min, group id:2, run id = 4 concurrent:1)
+01/25/19 13:16:16->Sending run 12 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_4  (group id:2, run id:12, concurrent runs:1)
+01/25/19 13:16:16->run 5 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_5  (run time:0.0384667 min, avg run time:0.0396861 min, group id:2, run id = 5 concurrent:1)
+01/25/19 13:16:16->Sending run 13 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_5  (group id:2, run id:13, concurrent runs:1)
+01/25/19 13:16:17->run 6 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_6  (run time:0.0384667 min, avg run time:0.0395119 min, group id:2, run id = 6 concurrent:1)
+01/25/19 13:16:17->Sending run 14 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_6  (group id:2, run id:14, concurrent runs:1)
+01/25/19 13:16:17->run 7 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_7  (run time:0.0385333 min, avg run time:0.0393896 min, group id:2, run id = 7 concurrent:1)
+01/25/19 13:16:17->Sending run 15 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_7  (group id:2, run id:15, concurrent runs:1)
+01/25/19 13:16:18->run 8 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (run time:0.04115 min, avg run time:0.0390479 min, group id:2, run id = 8 concurrent:1)
+01/25/19 13:16:18->Sending run 16 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (group id:2, run id:16, concurrent runs:1)
+01/25/19 13:16:18->run 9 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (run time:0.039 min, avg run time:0.038975 min, group id:2, run id = 9 concurrent:1)
+01/25/19 13:16:18->Sending run 17 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (group id:2, run id:17, concurrent runs:1)
+01/25/19 13:16:19->run 10 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (run time:0.0387667 min, avg run time:0.0389333 min, group id:2, run id = 10 concurrent:1)
+01/25/19 13:16:19->Sending run 18 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (group id:2, run id:18, concurrent runs:1)
+01/25/19 13:16:19->run 11 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_3  (run time:0.0385333 min, avg run time:0.0389229 min, group id:2, run id = 11 concurrent:1)
+01/25/19 13:16:19->Sending run 19 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_3  (group id:2, run id:19, concurrent runs:1)
+01/25/19 13:16:19->run 12 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_4  (run time:0.0384333 min, avg run time:0.0389188 min, group id:2, run id = 12 concurrent:1)
+01/25/19 13:16:19->Sending run 20 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_4  (group id:2, run id:20, concurrent runs:1)
+01/25/19 13:16:19->run 13 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_5  (run time:0.0384667 min, avg run time:0.0389188 min, group id:2, run id = 13 concurrent:1)
+01/25/19 13:16:19->Sending run 21 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_5  (group id:2, run id:21, concurrent runs:1)
+01/25/19 13:16:19->run 14 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_6  (run time:0.0384667 min, avg run time:0.0389188 min, group id:2, run id = 14 concurrent:1)
+01/25/19 13:16:19->Sending run 22 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_6  (group id:2, run id:22, concurrent runs:1)
+01/25/19 13:16:19->run 15 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_7  (run time:0.0384833 min, avg run time:0.0389125 min, group id:2, run id = 15 concurrent:1)
+01/25/19 13:16:19->Sending run 23 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_7  (group id:2, run id:23, concurrent runs:1)
+01/25/19 13:16:21->run 16 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (run time:0.0397833 min, avg run time:0.0387417 min, group id:2, run id = 16 concurrent:1)
+01/25/19 13:16:21->Sending run 24 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (group id:2, run id:24, concurrent runs:1)
+01/25/19 13:16:21->run 17 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (run time:0.0387167 min, avg run time:0.0387062 min, group id:2, run id = 17 concurrent:1)
+01/25/19 13:16:21->Sending run 25 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (group id:2, run id:25, concurrent runs:1)
+01/25/19 13:16:21->run 18 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (run time:0.0386167 min, avg run time:0.0386875 min, group id:2, run id = 18 concurrent:1)
+01/25/19 13:16:21->Sending run 26 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (group id:2, run id:26, concurrent runs:1)
+01/25/19 13:16:21->run 19 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_3  (run time:0.0385 min, avg run time:0.0386833 min, group id:2, run id = 19 concurrent:1)
+01/25/19 13:16:21->Sending run 27 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_3  (group id:2, run id:27, concurrent runs:1)
+01/25/19 13:16:21->run 20 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_4  (run time:0.03845 min, avg run time:0.0386854 min, group id:2, run id = 20 concurrent:1)
+01/25/19 13:16:21->Sending run 28 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_4  (group id:2, run id:28, concurrent runs:1)
+01/25/19 13:16:21->run 21 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_5  (run time:0.03845 min, avg run time:0.0386833 min, group id:2, run id = 21 concurrent:1)
+01/25/19 13:16:21->Sending run 29 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_5  (group id:2, run id:29, concurrent runs:1)
+01/25/19 13:16:21->run 22 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_6  (run time:0.0384667 min, avg run time:0.0386833 min, group id:2, run id = 22 concurrent:1)
+01/25/19 13:16:21->run 23 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_7  (run time:0.0384667 min, avg run time:0.0386812 min, group id:2, run id = 23 concurrent:1)
+01/25/19 13:16:23->run 24 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (run time:0.0390833 min, avg run time:0.0385937 min, group id:2, run id = 24 concurrent:1)
+01/25/19 13:16:23->run 25 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (run time:0.03855 min, avg run time:0.0385729 min, group id:2, run id = 25 concurrent:1)
+01/25/19 13:16:23->run 26 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (run time:0.0385333 min, avg run time:0.0385625 min, group id:2, run id = 26 concurrent:1)
+01/25/19 13:16:23->run 27 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_3  (run time:0.0384833 min, avg run time:0.0385604 min, group id:2, run id = 27 concurrent:1)
+01/25/19 13:16:23->run 28 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_4  (run time:0.03845 min, avg run time:0.0385604 min, group id:2, run id = 28 concurrent:1)
+01/25/19 13:16:23->run 29 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_5  (run time:0.03845 min, avg run time:0.0385604 min, group id:2, run id = 29 concurrent:1)
 
 ---------------------
-   25 runs complete :  0 runs failed
+   30 runs complete :  0 runs failed
 

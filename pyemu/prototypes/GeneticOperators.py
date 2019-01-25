@@ -15,20 +15,17 @@ class Crossover:
         for index in dv_ensemble.index:
             if np.random.random() <= crossover_probability:
                 index_other = np.random.choice(dv_ensemble.index)
-                solution1, solution2 = Crossover._sbx_helper(dv_ensemble.loc[index, :],
-                                                             dv_ensemble.loc[index_other, :], bounds,
+                solution1, solution2 = Crossover._sbx_helper(dv_ensemble.loc[index, :].values,
+                                                             dv_ensemble.loc[index_other, :].values, bounds,
                                                              crossover_distribution_parameter)
                 dv_ensemble.loc[index, :] = solution1
-                dv_ensemble.loc[index, :] = solution2
+                dv_ensemble.loc[index_other, :] = solution2
                 to_update.add(index)
                 to_update.add(index_other)
-        print(to_update)
         return to_update
 
     @staticmethod
-    def _sbx_helper(solution1, solution2, bounds, cross_dist):
-        values1 = solution1.values
-        values2 = solution2.values
+    def _sbx_helper(values1, values2, bounds, cross_dist):
         for i in range(len(values1)):
             if np.random.random() <= 0.5:
                 p1 = values1[i]
@@ -73,7 +70,7 @@ class Mutation:
         while i < len(dv_ensemble.index):
             dv = dv_ensemble.loc[dv_ensemble.index[i], dv_ensemble.columns[k]]
             dv = Mutation._polynomial_helper(dv, bounds[:, k], mutation_distribution_parameter)
-            dv_ensemble.loc[dv_ensemble.columns[k], dv_ensemble.index[i]] = dv
+            dv_ensemble.loc[dv_ensemble.index[i], dv_ensemble.columns[k]] = dv
             to_update.add(dv_ensemble.index[i])
             length = int(np.ceil(- 1 / mutation_probability * np.log(1 - np.random.random())))
             i += (k + length) // len(bounds)

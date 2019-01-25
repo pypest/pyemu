@@ -42,10 +42,10 @@ class NSGA_II_pyemu(EvolAlg):
 
     def initialize(self,obj_func_dict,num_par_reals=100,num_dv_reals=100,
                    dv_ensemble=None,par_ensemble=None,risk=0.5,
-                   dv_names=None,par_names=None):
+                   dv_names=None,par_names=None, when_calculate=0):
         super().initialize(obj_func_dict=obj_func_dict, num_par_reals=num_par_reals, num_dv_reals=num_dv_reals,
                            dv_ensemble=dv_ensemble, par_ensemble=par_ensemble, risk=risk, dv_names=dv_names,
-                           par_names=par_names)
+                           par_names=par_names, when_calculate=when_calculate)
         self.joint_dv = pyemu.ParameterEnsemble(pst=self.pst, data=np.NaN, index=np.arange(2 * self.num_dv_reals),
                                                 columns=self.dv_names)
         self.joint_obs = pyemu.ObservationEnsemble(pst=self.pst, data=np.NaN, index=np.arange(2 * self.num_dv_reals),
@@ -66,51 +66,34 @@ class NSGA_II_pyemu(EvolAlg):
         new_population_index = self.tournament_selection(self.archive_dv, self.num_dv_reals)
         self.population_dv.loc[:, :] = self.archive_dv.loc[new_population_index, self.dv_names].values
         self.population_obs.loc[:, :] = self.archive_obs.loc[new_population_index, :].values
-        print(self.population_dv)
-        to_update = Crossover.sbx(self.archive_dv.loc[:, self.dv_names], self._get_bounds(), self.cross_prob, self.mut_dist)
-        print(self.population_dv)
-        to_update | Mutation.polynomial(self.archive_dv.loc[:, self.dv_names], self._get_bounds(), self.mut_prob, self.mut_dist)
-        print(self.population_dv)
+        to_update = Crossover.sbx(self.population_dv, self._get_bounds(), self.cross_prob, self.mut_dist)
+        to_update | Mutation.polynomial(self.population_dv, self._get_bounds(), self.mut_prob, self.mut_dist)
         to_update = list(to_update)
         self.population_obs.loc[to_update, :] = self._calc_obs(self.population_dv.loc[to_update, self.dv_names]).values
-        # self.archive = Population_pyemu(self.dv_ensemble, self.obs_ensemble, logger=self.logger)
-        # ranks = self.obj_func.nsga2_non_dominated_sort(self.archive.obs_ensemble, risk=self.risk)
-        # fronts = self.archive.fronts_from_rank(ranks)
-        # self.population = self.archive.tournament_selection(num_to_select=self.num_dv_reals, is_better=None)  # TODO change
-        # to_update = Crossover.sbx(dv_ensemble=self.population.dv_ensemble, bounds=self._get_bounds(),
-        #                        crossover_probability=self.cross_prob,
-        #                        crossover_distribution_parameter=self.cross_dist)
-        # to_update | Mutation.polynomial(dv_ensemble=self.population.dv_ensemble,
-        #                              bounds=self._get_bounds(), mutation_probability=self.mut_prob,
-        #                              mutation_distribution_parameter=self.mut_dist)
-        # to_update = list(to_update)
-        # obs_ensemble = self._calc_obs(self.dv_ensemble.loc[to_update, :])
-        # self.population.update_obs_ensemble(obs_ensemble=obs_ensemble, to_update=to_update)
+        self._initialized = True
+        self.iter_num = 1
 
     def update(self):
         # create joint population from previous archive and population
-        self.joint_dv.loc[self.archive_dv.index, :] = self.archive_dv.values
+        self.joint_dv.loc[self.archive_dv.index, :] = self.archive_dv.loc[:, self.dv_names].values
         self.joint_dv.loc[self.population_dv.index, :] = self.population_dv.values
         self.joint_obs.loc[self.archive_obs.index, :] = self.archive_obs.values
         self.joint_obs.loc[self.population_obs.index, :] = self.population_obs.values
         # set old archive values as NaN
-        self.archive_obs.values = np.NaN
-        self.archive_dv.values = np.NaN
+        self.archive_obs.loc[:, :] = np.NaN
+        self.archive_dv.loc[:, :] = np.NaN
         # sort joint population into non dominated fronts and rank it
         rank = self.obj_func.nsga2_non_dominated_sort(self.joint_obs, risk=self.risk)
         fronts = self.get_fronts(rank)
         j = 0
         num_filled = 0
-        # create rank and crowding distance columns in dv archive data frame
-        self.archive_dv.loc[:, 'rank'] = np.NaN
-        self.archive_dv.loc[:, 'crowding_distance'] = np.NaN
         # put all nondominated fronts that fit into the archive, into the archive
         while num_filled + len(fronts[j]) < self.num_dv_reals:
             index = np.arange(num_filled, num_filled + len(fronts[j]))
-            self.archive_dv.loc[index, :] = self.joint_dv.loc[fronts[j], :].values
+            self.archive_dv.loc[index, self.dv_names] = self.joint_dv.loc[fronts[j], :].values
             self.obs_ensemble.loc[index, :] = self.joint_obs.loc[fronts[j], :].values
             self.archive_dv.loc[index, 'rank'] = rank[fronts[j]].values
-            cd = self.obj_func.crowd_distance(self.archive_obs[index, :])
+            cd = self.obj_func.crowd_distance(self.archive_obs.loc[index, :])
             self.archive_dv.loc[index, 'crowding_distance'] = cd.values
             num_filled += len(fronts[j])
             j += 1
@@ -120,8 +103,8 @@ class NSGA_II_pyemu(EvolAlg):
         joint_dvj.loc[:, 'crowding_distance'] = self.obj_func.crowd_distance(self.joint_obs.loc[fronts[j]])
         joint_dvj.sort_values(by=['rank', 'crowding_distance'], ascending=[True, False], inplace=True)
         index = np.arange(num_filled, self.num_dv_reals)
-        self.archive_dv.loc[index, :] = joint_dvj.loc[:, joint_dvj.index[index]]
-        self.archive_obs.loc[index, :] = self.joint_obs.loc[:, joint_dvj.index[index]]
+        self.archive_dv.loc[index, :] = joint_dvj.loc[joint_dvj.index[:len(index)], :].values
+        self.archive_obs.loc[index, :] = self.joint_obs.loc[joint_dvj.index[:len(index)], :].values
         # use tournament selection, and the genetic operators to create new population
         new_population_index = self.tournament_selection(self.archive_dv, self.num_dv_reals)
         self.population_dv.loc[:, :] = self.archive_dv.loc[new_population_index, self.dv_names].values
@@ -130,7 +113,8 @@ class NSGA_II_pyemu(EvolAlg):
         to_update | Mutation.polynomial(self.population_dv, self._get_bounds(), self.mut_prob, self.mut_dist)
         to_update = list(to_update)
         # calculate observations for updated individuals in populations
-        self.population_obs.loc[to_update, :] = self._calc_obs(self.population_dv.loc[to_update, self.dv_names])
+        self.population_obs.loc[to_update, :] = self._calc_obs(self.population_dv.loc[to_update, self.dv_names]).values
+        self.iter_num += 1
         return self.joint_dv.loc[fronts[0], :], self.joint_obs.loc[fronts[0], :]
 
     def get_fronts(self, ranks):
@@ -170,98 +154,6 @@ class NSGA_II_pyemu(EvolAlg):
         if num_to_select % 2 == 1:  # i.e is odd
             child_population_index.append(index[-1])
         return child_population_index
-
-
-class Population_pyemu:
-
-    def __init__(self, dv_ensemble, obs_ensemble, logger):
-        self.logger = logger
-        if obs_ensemble is None:
-           self.dv_ensemble = dv_ensemble
-           self.obs_ensemble = None
-        elif len(dv_ensemble.index) != len(obs_ensemble.index):
-            self.logger.lraise('number of observation relisations and dv_realisations is different')
-        # reset index to 0 - len(index) - 1
-        dv_ensemble.index = range(len(dv_ensemble.index))
-        obs_ensemble.index = range(len(obs_ensemble.index))
-        self.dv_ensemble = dv_ensemble
-        self.obs_ensemble = obs_ensemble
-
-    def __len__(self):
-        if len(self.dv_ensemble.index) != len(self.obs_ensemble.index):
-            self.logger.lraise('number of observation relisations and dv_realisations is different')
-        return len(self.dv_ensemble.index)
-
-    def __repr__(self):
-        data = np.column_stack((self.dv_ensemble.values, self.obs_ensemble.values))
-        columns = np.concatenate((self.dv_ensemble.columns, self.obs_ensemble.columns))
-        df = pd.DataFrame(data=data, columns=columns)
-        return str(df)
-
-    def __str__(self):
-        return repr(self)
-
-    def __add__(self, other):
-        dv_ensemble_values = np.row_stack((self.dv_ensemble.values, other.dv_ensemble.values))
-        dv_ensemble = pyemu.ParameterEnsemble(pst=self.dv_ensemble.pst, data=dv_ensemble_values,
-                                              columns=self.dv_ensemble.columns)
-        obs_ensemble_values = np.row_stack((self.obs_ensemble.values, other.obs_ensemble.values))
-        obs_ensemble = pyemu.ObservationEnsemble(self.obs_ensemble.pst, data=obs_ensemble_values,
-                                                 columns=self.obs_ensemble.columns)
-        return self.__class__(dv_ensemble=dv_ensemble, obs_ensemble=obs_ensemble, logger=self.logger)
-
-    def fronts_from_rank(self, ranks):
-        rank_copy = ranks.sort_values(ascending=True, inplace=False)
-        start = 0
-        finish = 1
-        fronts = []
-        while finish < len(rank_copy.index):
-            if rank_copy.loc[rank_copy.index[start]] != rank_copy.loc[rank_copy.index[finish]]:
-                index_slice = rank_copy.index[start: finish]
-                dv_ensemble = self.dv_ensemble.loc[index_slice, :]
-                obs_ensemble = self.obs_ensemble.loc[index_slice, :]
-                fronts.append(self.__class__(dv_ensemble=dv_ensemble, obs_ensemble=obs_ensemble,
-                                             logger=self.logger))
-                start = finish
-            finish += 1
-        index_slice = rank_copy.index[start:]
-        dv_ensemble = self.dv_ensemble.loc[index_slice, :]
-        obs_ensemble = self.obs_ensemble.loc[index_slice, :]
-        fronts.append(self.__class__(dv_ensemble=dv_ensemble, obs_ensemble=obs_ensemble,
-                                     logger=self.logger))
-        return fronts
-
-    def tournament_selection(self, num_to_select, is_better):
-        child_dv_ensemble = pyemu.ParameterEnsemble(pst=self.dv_ensemble.pst, index=np.arange(num_to_select),
-                                                    columns=self.dv_ensemble.columns, data=np.NaN)
-        child_obs_ensemble = pyemu.ObservationEnsemble(pst=self.obs_ensemble.pst, index=np.arange(num_to_select),
-                                                       columns=self.obs_ensemble.columns, data=np.NaN)
-        even = np.arange(0, (num_to_select // 2) * 2, 2)
-        odd = np.arange(1, (num_to_select // 2) * 2, 2)
-        index = np.array(self.dv_ensemble.index)
-        i = 0
-        for _ in range(2):
-            np.random.shuffle(index)
-            for idx1, idx2 in zip(index[even], index[odd]):
-                if is_better(idx1, idx2):
-                    child_dv_ensemble.loc[i, :] = self.dv_ensemble.loc[idx1, :]
-                    child_obs_ensemble.loc[i, :] = self.obs_ensemble.loc[idx1, :]
-                else:
-                    child_dv_ensemble.loc[i, :] = self.dv_ensemble.loc[idx2, :]
-                    child_obs_ensemble.loc[i, :] = self.obs_ensemble.loc[idx2, :]
-                i += 1
-        if num_to_select % 2 == 1:  # i.e is odd
-            child_dv_ensemble.loc[i, :] = self.dv_ensemble.loc[index[-1], :]
-        return self.__class__(dv_ensemble=child_dv_ensemble, obs_ensemble=child_obs_ensemble, logger=self.logger)
-
-    def update_obs_ensemble(self, obs_ensemble, to_update):
-        self.obs_ensemble.loc[to_update, :] = obs_ensemble.values
-
-    @classmethod
-    def empty(cls, pst, dv_names, logger):
-        dv_ensemble = pyemu.ParameterEnsemble(pst=pst, columns=dv_names)
-        obs_ensemble = pyemu.ObservationEnsemble(pst=pst, columns=pst.obs_names)
-        return cls(dv_ensemble=dv_ensemble, obs_ensemble=obs_ensemble, logger=logger)
 
 
 class NSGA_II(AbstractMOEA):
@@ -320,6 +212,8 @@ class NSGA_II(AbstractMOEA):
         self.population.mutation(bounds=self.bounds, mutation_probability=self.mut_prob,
                                  mutation_distribution=self.mut_dist)
         self.run_model(population=self.population)
+        self._initialized = True
+        self.iter_num = 1
 
     def update(self):
         self.logger.log('iteration {}'.format(self.iteration))
@@ -346,6 +240,7 @@ class NSGA_II(AbstractMOEA):
         iteration_time = time.perf_counter() - t0
         self.iter_report(iteration_time)
         self.archive.reset_population()
+        self.iter_num += 1
         return fronts[0]
 
     def crowding_distance_assignment(self, front):

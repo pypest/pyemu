@@ -88,13 +88,25 @@ def test():
 
 
 def test_simple():
-    evolAlg = NSGA_II_pyemu(pst=simple, verbose=True, slave_dir='template')
-    evolAlg.initialize(obj_func_dict=simple_objecives, dv_names=simple.par_names, num_dv_reals=2)
-    for i in range(1):
+    np.random.seed(21212)
+    data = np.random.random(size=(5, 2))
+    dv_ensemble = pyemu.ParameterEnsemble(pst=simple, data=data)
+    evolAlg = NSGA_II(pst=simple, verbose=True, slave_dir='template')
+    evolAlg.initialize(obj_func_dict=simple_objecives, dv_ensemble=dv_ensemble, num_dv_reals=20)
+    for i in range(5):
         evolAlg.update()
-    _, objective_df = evolAlg.update()
-    f1, f2 = simple_objecives.keys()
-    plt.plot(objective_df.loc[:, f1], objective_df.loc[f2], 'o')
+    front = evolAlg.update()
+    x = []
+    y = []
+    for individual in front:
+        a, b = individual.objective_values
+        x.append(a * -1)
+        y.append(b * -1)
+
+    # _, objective_df = evolAlg.update()
+    # f1, f2 = simple_objecives.keys()
+    # plt.plot(objective_df.loc[:, f1], objective_df.loc[:, f2], 'o')
+    plt.plot(x, y, 'o')
     x = np.linspace(0.1, 2)
     y = 1/x
     plt.plot(x, y)
