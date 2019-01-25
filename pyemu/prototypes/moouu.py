@@ -395,6 +395,7 @@ class ParetoObjFunc(object):
         :param observation_ensemble: ensemble of observations
         :return:
         """
+        pass
 
     def nsga2_non_dominated_sort(self, obs_df, risk):
         """
@@ -676,39 +677,42 @@ class EvolAlg(EnsembleMethod):
         :param dv_ensemble: dv to calculate obs_ensemble for
         :return obs_ensemble: ensemble of (risk shifted) observations
         """
+        oe = None
         eval_ensemble = dv_ensemble.copy()
         if self.par_ensemble is None:  # MOO setting is being used
-            self._add_missing_pars(eval_ensemble)
+            eval_ensemble = self._add_missing_pars(eval_ensemble)
             failed_runs, oe = super(EvolAlg,self)._calc_obs(eval_ensemble)
         else:  # Do MOOUU
             if self.when_calculate == 0:
-                pass  # full recalculation at every step
+                df = self._evaluation_ensemble(eval_ensemble, par_ensemble=self.par_ensemble)
+                failed_runs, oe = super(EvolAlg, self)._calc_obs(df)
+                if oe.shape[0] != dv_ensemble.shape[0] * self.par_ensemble.shape[0]:
+                    self.logger.lraise("wrong number of runs back from stack eval")
+                EvolAlg._drop_failed(failed_runs, df, oe)  # TODO: check what happens if all runs for one dv fail
+                try:
+                    num_failed = len(failed_runs)
+                except TypeError:
+                    num_failed = 0
+                self.logger.statement("dropped {0} failed runs, {1} remaining". \
+                                      format(num_failed, dv_ensemble.shape[0]))
+                self.last_stack = oe.copy()
+
+                self.logger.log("reducing initial stack evaluation")
+                df = self.obj_func.full_recalculation_risk_shift(oe, self.par_ensemble.shape[0],
+                                                                 self.risk)
+                self.logger.log("reducing initial stack evaluation")
+                # big assumption the run results are in the same order
+                df.index = dv_ensemble.index
+                oe = pyemu.ObservationEnsemble.from_dataframe(df=df, pst=self.pst)
             elif self._initialized is False:
                 if self.when_calculate == -1:
-                    df = self._evaluation_ensemble(eval_ensemble, par_ensemble=self.par_ensemble)
-                    failed_runs, oe = super(EvolAlg, self)._calc_obs(df)
-                    if oe.shape[0] != dv_ensemble.shape[0] * self.par_ensemble.shape[0]:
-                        self.logger.lraise("wrong number of runs back from stack eval")
-                    EvolAlg._drop_failed(failed_runs, df, oe)  # TODO: check what happens if all runs for one dv fail
-                    try:
-                        num_failed = len(failed_runs)
-                    except TypeError:
-                        num_failed = 0
-                    self.logger.statement("dropped {0} failed runs, {1} remaining". \
-                                          format(num_failed, dv_ensemble.shape[0]))
-                    self.last_stack = oe.copy()
-
-                    self.logger.log("reducing initial stack evaluation")
-                    df = self.obj_func.full_recalculation_risk_shift(oe, self.par_ensemble.shape[0],
-                                                                     self.risk)
-                    self.logger.log("reducing initial stack evaluation")
-                    # big assumption the run results are in the same order
-                    df.index = dv_ensemble.index
-                    oe = pyemu.ObservationEnsemble.from_dataframe(df=df, pst=self.pst)
+                    pass  # initial calcualtion when cdf only calculated at initial step
                 else:
                     pass  # initial calculation when cdf is recalculated every couple of iterations
             elif self.when_calculate > 0 and self.iter_num % self.when_calculate == 0:
                 pass  # first calculate at mean of pars, - find ideal and nadir vectors, then get ensemble
+            else:
+                self.logger.lraise('did not calculate observations - check logic flow')
         self._archive(dv_ensemble, oe)
         return oe
 
@@ -716,7 +720,7 @@ class EvolAlg(EnsembleMethod):
         dfs = []
         df_base = par_ensemble.reindex(columns=self.pst.par_names)
         for idx in dv_ensemble.index:
-            df_base.loc[:, dv_ensemble.columns] = dv_ensemble.loc[idx, :]
+            df_base.loc[:, dv_ensemble.columns] = dv_ensemble.loc[idx, :].values
             dfs.append(df_base.copy())
         df = pd.concat(dfs)
         df.index = np.arange(df.shape[0])

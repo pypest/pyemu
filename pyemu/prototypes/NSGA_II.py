@@ -202,7 +202,7 @@ class NSGA_II(AbstractMOEA):
         self.archive = Population.from_pyemu_ensemble(dv_ensemble=self.dv_ensemble, constrained=self.is_constrained,
                                                       individual_class=PopIndividual)
         objectives = self.obj_func.objective_vector(self.obs_ensemble).values
-        constraints = self.obj_func.constraint_violation_vector(self.obs_ensemble).values
+        constraints = self.obj_func.constraint_violation_vector(self.obs_ensemble)
         self.archive.update_objectives(objectives=objectives, constraints=constraints)
         self.archive.non_dominated_sort()
         self.crowding_distance_assignment(self.archive)

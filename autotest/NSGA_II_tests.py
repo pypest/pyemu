@@ -76,8 +76,8 @@ def test():
     print(dv_names)
     evolAlg = NSGA_II(pst, verbose=True, slave_dir='template')
     obj_func_dict = {obj_func: 'min' for obj_func in pst.obs_names}
-    evolAlg.initialize(obj_func_dict=obj_func_dict, num_dv_reals=30, dv_names=dv_names, risk=0.5)
-    for i in range(10):
+    evolAlg.initialize(obj_func_dict=obj_func_dict, num_dv_reals=10, num_par_reals=3, dv_names=dv_names, risk=0.7)
+    for i in range(2):
         evolAlg.update()
     front = evolAlg.update()
     f1, f2 = np.array([individual.objective_values for individual in front]).T
@@ -90,9 +90,9 @@ def test():
 def test_simple():
     np.random.seed(21212)
     data = np.random.random(size=(5, 2))
-    dv_ensemble = pyemu.ParameterEnsemble(pst=simple, data=data)
-    evolAlg = NSGA_II(pst=simple, verbose=True, slave_dir='template')
-    evolAlg.initialize(obj_func_dict=simple_objecives, dv_ensemble=dv_ensemble, num_dv_reals=20)
+    dv_ensemble = pyemu.ParameterEnsemble(pst=srn, data=data)
+    evolAlg = NSGA_II(pst=srn, verbose=True, slave_dir='template')
+    evolAlg.initialize(obj_func_dict=srn_objectives, dv_ensemble=dv_ensemble, num_dv_reals=20)
     for i in range(5):
         evolAlg.update()
     front = evolAlg.update()
@@ -107,13 +107,13 @@ def test_simple():
     # f1, f2 = simple_objecives.keys()
     # plt.plot(objective_df.loc[:, f1], objective_df.loc[:, f2], 'o')
     plt.plot(x, y, 'o')
-    x = np.linspace(0.1, 2)
-    y = 1/x
-    plt.plot(x, y)
-    plt.show()
+    # x = np.linspace(0.1, 2)
+    # y = 1/x
+    # plt.plot(x, y)
+    # plt.show()
 
 if __name__ == "__main__":
-    #test()
-    test_simple()
+    test()
+    #test_simple()
     # test_population_pyemu_add()
     # test_fronts_from_rank()
