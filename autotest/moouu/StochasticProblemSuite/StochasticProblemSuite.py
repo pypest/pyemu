@@ -226,8 +226,13 @@ class ZDT1(DeterministicBenchmark):
     def __init__(self):
         super().__init__()
 
-    def __str__(self):
-        return "ZDT1"
+    @classmethod
+    def __str__(cls):
+        return "zdt1"
+
+    @staticmethod
+    def name():
+        return 'zdt1'
 
     @staticmethod
     def f1(x):
@@ -267,6 +272,10 @@ class ZDT2(DeterministicBenchmark):
 
     def __str__(self):
         return "ZDT2"
+
+    @staticmethod
+    def name():
+        return 'zdt2'
 
     @staticmethod
     def f1(x):
@@ -310,6 +319,10 @@ class ZDT3(DeterministicBenchmark):
         return "ZDT3"
 
     @staticmethod
+    def name():
+        return 'zdt3'
+
+    @staticmethod
     def f1(x):
         return x[0]
 
@@ -336,6 +349,10 @@ class ZDT4(DeterministicBenchmark):
 
     def __str__(self):
         return "ZDT4"
+
+    @staticmethod
+    def name():
+        return 'zdt4'
 
     @staticmethod
     def f1(x):
@@ -366,6 +383,10 @@ class ZDT6(DeterministicBenchmark):
         return "ZDT6"
 
     @staticmethod
+    def name():
+        return 'zdt6'
+
+    @staticmethod
     def f1(x):
         return 1 - np.exp(-4 * x[0]) * np.power(np.sin(6 * np.pi * x[0]), 6)
 
@@ -390,6 +411,10 @@ class CONSTR(DeterministicBenchmark):
 
     def __str__(self):
         return "CONSTR"
+
+    @staticmethod
+    def name():
+        return 'constr'
 
     @staticmethod
     def constrained():
@@ -600,6 +625,8 @@ class IOWrapper:
             raise Exception("benchmark_function {} not found in known functions".format(args.benchmark_function))
         if not os.path.exists(args.input_file):
             raise Exception("input file not found")
+        if args.stochastic.lower() == 'none':
+            args.stochastic = None
         if not(args.stochastic is None or args.stochastic.lower() in parameter_interactions.keys()):
             add, mult, nonlin = parameter_interactions.keys()
             raise Exception('unknown parameter interaction flag {} entered. Choose from {}, {} or {} interactions'.
