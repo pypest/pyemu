@@ -95,13 +95,12 @@ class EnsembleMethod(object):
 
     def _add_missing_pars(self, parensemble):
         missing_pars = set(self.pst.par_names) - set(parensemble.columns)
-        self.logger.log('adding missing parameters to decision variable ensemble: {}'.format(sorted(missing_pars)))
+        self.logger.statement('adding missing parameters to decision variable ensemble: {}'.format(sorted(missing_pars)))
         if len(missing_pars) > 0:
             parval1 = self.pst.parameter_data.loc[missing_pars, 'parval1_trans']
             parensemble = parensemble.reindex(columns=self.pst.par_names)
             parensemble.loc[:, missing_pars] = parval1.values
         return parensemble
-
 
     def _calc_delta(self,ensemble,scaling_matrix=None):
         '''

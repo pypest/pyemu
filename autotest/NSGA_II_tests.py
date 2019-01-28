@@ -9,63 +9,38 @@ os.chdir(os.path.join('moouu', 'StochasticProblemSuite'))
 srn = pyemu.Pst('SRN.pst')
 simple = pyemu.Pst('Simple.pst')
 srn_objectives = {'obj1': 'min', 'obj2': 'min'}
-simple_objecives = srn_objectives
+simple_objectives = srn_objectives
 logger = pyemu.Logger(True)
 
 
-def test_population_pyemu_add():
-    dv_en = pyemu.ParameterEnsemble(pst=simple, data=1, columns=simple.par_names, index=np.arange(0, 5))
-    obs_en = pyemu.ObservationEnsemble(pst=simple, data=1, columns=simple.obs_names, index=np.arange(0, 5))
-    p = Population_pyemu(dv_en, obs_en, logger)
-    dv_en = pyemu.ParameterEnsemble(pst=simple, data=0, columns=simple.par_names, index=np.arange(0, 2))
-    obs_en = pyemu.ObservationEnsemble(pst=simple, data=0, columns=simple.par_names, index=np.arange(0, 2))
-    q = Population_pyemu(dv_en, obs_en, logger)
-    z = p + q
+def test_set_cdf():
+    obj_func = ParetoObjFunc(pst=simple, obj_function_dict=simple_objectives, logger=logger)
+    obs_ensemble = pd.DataFrame(data=np.arange(12).reshape((4, 3)), columns=['obj1', 'random_obs', 'obj2'])
+    obj_func.set_cdf_df(obs_ensemble, 4)
+    assert np.all(np.isclose(obj_func.cdf_dfs['cdf_1'].values,
+                             (obs_ensemble.loc[:, simple_objectives.keys()] -
+                              obs_ensemble.loc[:, simple_objectives.keys()].mean(axis=0)).values))
+    assert np.all(np.isclose(obj_func.cdf_loc.values, obs_ensemble.loc[:, simple_objectives.keys()].mean(axis=0).values))
+    try:
+        obj_func.set_cdf_df(obs_ensemble, 3)
+    except Exception as e:
+        assert str(e) == 'incorrect number of realisations supplied'
+    obs_ensemble = pd.DataFrame(data=np.arange(24).reshape((8, 3)), columns=['obj1', 'random_obs', 'obj2'])
+    obj_func.set_cdf_df(obs_ensemble, 4)
+    assert np.all(np.isclose(obj_func.cdf_dfs['cdf_1'].values,
+                             (obs_ensemble.loc[:3, simple_objectives.keys()] -
+                              obs_ensemble.loc[:3, simple_objectives.keys()].mean(axis=0)).values))
+    assert np.all(np.isclose(obj_func.cdf_loc.loc['cdf_1', :].values,
+                             obs_ensemble.loc[:3, simple_objectives.keys()].mean(axis=0).values))
 
 
-def test_fronts_from_rank():
-    obj_func = ParetoObjFunc(pst=srn, obj_function_dict=srn_objectives, logger=logger)
-    x = np.arange(1, 5)
-    y = np.concatenate((1 / x, 1 / x + 1))
-    obj_data = np.stack((np.concatenate((x, x)), y))
-    constr_data = np.array([[224, 11], [223, 12], [222, 15], [226, 9], [222, 12], [221, 20], [226, 13], [227, 9]])
-    data = np.column_stack((obj_data.T, constr_data))
-    obj_df = pyemu.ParameterEnsemble(pst=srn, data=data, columns=srn.obs_names)
-    rank = obj_func.nsga2_non_dominated_sort(obj_df, risk=0.5)
-    p = Population_pyemu(dv_ensemble=obj_df, obs_ensemble=obj_df, logger=logger)
-    fronts = p.fronts_from_rank(rank)
-    assert np.all(fronts[0].obs_ensemble.loc[range(3), :].values == obj_df.loc[range(3), :].values)
-    assert np.all(fronts[1].obs_ensemble.loc[range(2), :].values == obj_df.loc[range(4, 6), :].values)
-    assert np.all(fronts[2].obs_ensemble.loc[0, :].values == obj_df.loc[6, :].values)
-    assert np.all(fronts[3].obs_ensemble.loc[0, :].values == obj_df.loc[3, :].values)
-    assert np.all(fronts[4].obs_ensemble.loc[0, :].values == obj_df.loc[7, :].values)
-
-
-def test_tournament_selection():
-    np.random.seed(12645678)
-    pyemu.ParameterEnsemble()
-    a = AbstractPopIndividual([1])
-    b = AbstractPopIndividual([2])
-    c = AbstractPopIndividual([3])
-    d = AbstractPopIndividual([4])
-    e = AbstractPopIndividual([5])
-    a.fitness = 1
-    b.fitness = 2
-    c.fitness = 3
-    d.fitness = 6
-    e.fitness = 5
-    population = [a, b, c, d]
-    new_population = moo.tournament_selection(population, 4)
-    expected = [c, a, a, c]
-    for i, individual in enumerate(new_population):
-        assert individual.d_vars == expected[i].d_vars
-    np.random.seed(12345678)
-    moo = AbstractMOEA(objectives, bounds, 1)
-    population = [a, b, c, d, e]
-    new_population = moo.tournament_selection(population, 5)
-    expected = [b, a, a, b, e]
-    for i, individual in enumerate(new_population):
-        assert individual.d_vars == expected[i].d_vars
+def test_partial_recalculation_risk_shift():
+    obj_func = ParetoObjFunc(pst=simple, obj_function_dict=simple_objectives, logger=logger)
+    obs_ensemble = pd.DataFrame(data=np.arange(24).reshape((8, 3)), columns=['obj1', 'random_obs', 'obj2'])
+    obj_func.set_cdf_df(obs_ensemble, 4)
+    obs = pd.DataFrame(data=[[0, 12, 0], [1, 11, 1], [2, 10, 3]], columns=['obj1', 'random_obs', 'obj2'])
+    risk_shifted = obj_func.partial_recalculation_risk_shift(obs, risk=0)
+    print(risk_shifted)
 
 
 def test():
@@ -76,8 +51,9 @@ def test():
     print(dv_names)
     evolAlg = NSGA_II(pst, verbose=True, slave_dir='template')
     obj_func_dict = {obj_func: 'min' for obj_func in pst.obs_names}
-    evolAlg.initialize(obj_func_dict=obj_func_dict, num_dv_reals=10, num_par_reals=3, dv_names=dv_names, risk=0.7)
-    for i in range(2):
+    evolAlg.initialize(obj_func_dict=obj_func_dict, num_dv_reals=100, num_par_reals=30, dv_names=dv_names, risk=0.9,
+                       when_calculate=2)
+    for i in range(20):
         evolAlg.update()
     front = evolAlg.update()
     f1, f2 = np.array([individual.objective_values for individual in front]).T
@@ -115,5 +91,5 @@ def test_simple():
 if __name__ == "__main__":
     test()
     #test_simple()
-    # test_population_pyemu_add()
-    # test_fronts_from_rank()
+    #test_set_cdf()
+    #test_partial_recalculation_risk_shift()

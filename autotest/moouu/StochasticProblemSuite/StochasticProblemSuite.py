@@ -16,13 +16,26 @@ import time
 def additive_parameter_interaction(d_vars, pars):
     if len(d_vars) != len(pars):
         raise Exception('Should have same number of parameters and decision variables')
-    return np.sum(pars)
+    if len(pars) % 2 == 0:
+        even = np.arange(len(pars) // 2) * 2
+        odd = even + 1
+    else:
+        even = np.arange(len(pars) // 2 + 1) * 2
+        odd = np.arange(len(pars) // 2) * 2 + 1
+    return [np.sum(pars[even]), np.sum(pars[odd])]
 
 
 def multiplicitive_parameter_interaction(d_vars, pars):
     if len(d_vars) != len(pars):
         raise Exception('Should have same number of parameters and decision variables')
-    return (np.sin(np.pi * d_vars[0] + 1)) * pars[0] + np.sum(d_vars[1:] * pars[1:])
+    if len(pars) % 2 == 0:
+        even = np.arange(len(pars) // 2 - 1) * 2 + 2
+        odd = even + 1
+    else:
+        even = np.arange(len(pars) // 2) * 2 + 2
+        odd = np.arange(len(pars) // 2) * 2 + 1
+    return [(np.sin(np.pi * d_vars[0]) + 1) * pars[0] + np.sum(d_vars[even] * pars[even]),
+            np.sum(d_vars[odd] * d_vars[even])]
 
 
 def nonlinear_parameter_interaction(d_vars, pars):
@@ -164,6 +177,10 @@ class DeterministicBenchmark(BenchmarkTestProblem):
         return 0
 
     @staticmethod
+    def number_objectives():
+        return 2
+
+    @staticmethod
     def parameter_means():
         raise Exception("Deterministic problem has no parameters")
 
@@ -225,12 +242,12 @@ class ZDT1(DeterministicBenchmark):
         return g * (1 - np.sqrt(ZDT1.f1(x) / g))
 
     @staticmethod
-    def number_decision_vars():
+    def number_decision_variables():
         return 30
 
     @staticmethod
     def bounds():
-        return [(0, 1) for _ in range(ZDT1.number_decision_vars())]
+        return [(0, 1) for _ in range(ZDT1.number_decision_variables())]
 
     @staticmethod
     def calculate_objectives(d_vars, pars):
@@ -264,12 +281,12 @@ class ZDT2(DeterministicBenchmark):
         return g * (1 - np.power(ZDT2.f1(x) / g, 2))
 
     @staticmethod
-    def number_decision_vars():
+    def number_decision_variables():
         return 30
 
     @staticmethod
     def bounds():
-        return [(0, 1) for _ in range(ZDT2.number_decision_vars())]
+        return [(0, 1) for _ in range(ZDT2.number_decision_variables())]
 
     @staticmethod
     def calculate_objectives(d_vars, pars):
@@ -305,7 +322,7 @@ class ZDT3(DeterministicBenchmark):
         return g * (1 - np.sqrt(ZDT3.f1(x) / g) - (ZDT3.f1(x) / g) * np.sin(10 * np.pi * ZDT3.f1(x)))
 
     @staticmethod
-    def number_decision_vars():
+    def number_decision_variables():
         return 30
 
 
@@ -333,7 +350,7 @@ class ZDT4(DeterministicBenchmark):
         return g * (1 - np.sqrt(ZDT4.f1(x) / g))
 
     @staticmethod
-    def number_decision_vars():
+    def number_decision_variables():
         return 10
 
 
@@ -361,7 +378,7 @@ class ZDT6(DeterministicBenchmark):
         return g * (1 - np.power(ZDT6.f1(x) / g, 2))
 
     @staticmethod
-    def number_decision_vars():
+    def number_decision_variables():
         return 10
 
 
@@ -624,7 +641,7 @@ class IOWrapper:
         df.to_csv(output_file, encoding='ascii', mode='a')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     IOWrapper()
 
 

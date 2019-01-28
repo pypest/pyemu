@@ -195,10 +195,10 @@ class NSGA_II(AbstractMOEA):
 
     def initialize(self,obj_func_dict,num_par_reals=100,num_dv_reals=100,
                    dv_ensemble=None, par_ensemble=None, risk=0.5, dv_names=None,
-                   par_names=None):
+                   par_names=None, when_calculate=0):
         super().initialize(obj_func_dict=obj_func_dict, num_par_reals=num_par_reals, num_dv_reals=num_dv_reals,
                            dv_ensemble=dv_ensemble, par_ensemble=par_ensemble, risk=risk, dv_names=dv_names,
-                           par_names=par_names)
+                           par_names=par_names, when_calculate=when_calculate)
         self.archive = Population.from_pyemu_ensemble(dv_ensemble=self.dv_ensemble, constrained=self.is_constrained,
                                                       individual_class=PopIndividual)
         objectives = self.obj_func.objective_vector(self.obs_ensemble).values

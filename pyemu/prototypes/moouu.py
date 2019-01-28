@@ -60,7 +60,53 @@ class ParetoObjFunc(object):
 
         self.is_nondominated = self.is_nondominated_continuous
         self.obs_obj_names = list(self.obs_dict.keys())
-        self.cdf_df = None
+        self.cdf_dfs = dict()
+        self.cdf_loc = None
+
+    def set_cdf_df(self, observation_ensemble, num_realisations):
+        if observation_ensemble.shape[0] % num_realisations != 0:
+            self.logger.lraise('incorrect number of realisations supplied')
+        stochastic_cols = list(self.obs_dict.keys())
+        stochastic_cols.extend(self.pst.less_than_obs_constraints)
+        stochastic_cols.extend(self.pst.greater_than_obs_constraints)
+        stochastic_cols = set(stochastic_cols)
+        objectives = observation_ensemble.loc[:, stochastic_cols]
+        cdf_names = ['cdf_{}'.format(i + 1) for i in range(objectives.shape[0] // num_realisations)]
+        self.cdf_loc = pd.DataFrame(data=np.NaN, index=cdf_names, columns=self.obs_obj_names)
+        for i in range(objectives.shape[0] // num_realisations):
+            cdf = objectives.iloc[i * num_realisations:(i + 1) * num_realisations, :]
+            self.cdf_dfs['cdf_{}'.format(i + 1)] = cdf - cdf.mean(axis=0)  # centering
+            # store location data for each cdf
+            self.cdf_loc.loc['cdf_{}'.format(i + 1), :] = cdf.loc[:, self.obs_obj_names].mean(axis=0).values
+
+    def get_approximation_points(self, obs_ensemble):
+        """
+
+        :param obs_ensemble:
+        :return: list of indexes in obs_ensemble which should be used to calculate a cdf
+        """
+        is_nondominated = self.is_nondominated_kung(obs_ensemble)
+        front_loc = np.where(is_nondominated.values == True)[0]
+        time.sleep(0.1)
+        front = obs_ensemble.loc[front_loc, self.obs_obj_names]
+        min = front.idxmin(axis=0)
+        max = front.idxmax(axis=0)
+        nadir = []  # nadir objective vector for front (not accounting for obs obj signs)
+        for obj, idx in zip(min.index, min.values):
+            nadir.append(front.loc[idx, obj])
+        ideal = []  # ideal objective vector for front (not accounting for obs obj signs)
+        for obj, idx in zip(max.index, max.values):
+            ideal.append(front.loc[idx, obj])
+        nadir = np.array(nadir)
+        ideal = np.array(ideal)
+        mean = (nadir + ideal) / 2  # point located in centre of all possible pareto fronts
+        # find index of point on pareto front closest to the mean vector
+        distances = np.linalg.norm(front - mean, 2, axis=1)
+        mid_pareto_index = front.index[np.argmin(distances)]
+        approximation_points = set(min) | set(max)
+        approximation_points.add(mid_pareto_index)
+        print(approximation_points)
+        return list(approximation_points)
 
     def is_feasible(self, obs_df, risk=0.5):
         """identify which candidate solutions in obs_df (rows)
@@ -389,13 +435,30 @@ class ParetoObjFunc(object):
         df = pd.DataFrame(data=vvals,columns=oe.columns)
         return df
 
-    def partial_recalculation_risk_shift(self, observation_ensemble):
+    def partial_recalculation_risk_shift(self, observation_ensemble, risk):
         """
 
-        :param observation_ensemble: ensemble of observations
-        :return:
+        :param observation_ensemble: ensemble of observations with parameter means - each index represents a dv
+        :param risk: risk level for risk shifting
+        :return: observation_ensemble with constraints and objectives risk shifted
         """
-        pass
+        stochastic_cols = list(self.obs_dict.keys())
+        stochastic_cols.extend(self.pst.less_than_obs_constraints)
+        stochastic_cols.extend(self.pst.greater_than_obs_constraints)
+        stochastic_cols = set(stochastic_cols)
+        distances = pd.DataFrame(data=np.NaN, index=observation_ensemble.index, columns=self.cdf_loc.index)
+        risk_shifted_observation_ensemble = observation_ensemble.copy()
+        for idx in observation_ensemble.index:
+            distances.loc[idx, :] = np.linalg.norm(observation_ensemble.loc[idx, self.obs_obj_names] -
+                                                   self.cdf_loc, 2, axis=1)
+        cdf_names = distances.idxmin(axis=1)
+        for idx, cdf_name in zip(observation_ensemble.index, cdf_names):
+            cdf = self.cdf_dfs[cdf_name]
+            for col in stochastic_cols:
+                series = cdf.loc[:, col] + observation_ensemble.loc[idx, col]
+                val = self.get_risk_shifted_value(risk=risk, series=series)
+                risk_shifted_observation_ensemble.loc[idx, col] = val
+        return risk_shifted_observation_ensemble
 
     def nsga2_non_dominated_sort(self, obs_df, risk):
         """
@@ -678,13 +741,13 @@ class EvolAlg(EnsembleMethod):
         :return obs_ensemble: ensemble of (risk shifted) observations
         """
         oe = None
-        eval_ensemble = dv_ensemble.copy()
+        dv = dv_ensemble.copy()
         if self.par_ensemble is None:  # MOO setting is being used
-            eval_ensemble = self._add_missing_pars(eval_ensemble)
-            failed_runs, oe = super(EvolAlg,self)._calc_obs(eval_ensemble)
+            eval_ensemble = self._add_missing_pars(dv)
+            failed_runs, oe = super(EvolAlg,self)._calc_obs(eval_ensemble)  # TODO: set up some fail run dv removal
         else:  # Do MOOUU
-            if self.when_calculate == 0:
-                df = self._evaluation_ensemble(eval_ensemble, par_ensemble=self.par_ensemble)
+            if self.when_calculate == 0:  # calculate ensemble for every point - no reduction in evals
+                df = self._evaluation_ensemble(dv, par_ensemble=self.par_ensemble)
                 failed_runs, oe = super(EvolAlg, self)._calc_obs(df)
                 if oe.shape[0] != dv_ensemble.shape[0] * self.par_ensemble.shape[0]:
                     self.logger.lraise("wrong number of runs back from stack eval")
@@ -704,13 +767,40 @@ class EvolAlg(EnsembleMethod):
                 # big assumption the run results are in the same order
                 df.index = dv_ensemble.index
                 oe = pyemu.ObservationEnsemble.from_dataframe(df=df, pst=self.pst)
-            elif self._initialized is False:
-                if self.when_calculate == -1:
-                    pass  # initial calcualtion when cdf only calculated at initial step
+            elif self.when_calculate == -1:  # calculate ensemble only for initial point then propagate
+                if self._initialized is False:
+                    pass
                 else:
-                    pass  # initial calculation when cdf is recalculated every couple of iterations
+                    pass
             elif self.when_calculate > 0 and self.iter_num % self.when_calculate == 0:
-                pass  # first calculate at mean of pars, - find ideal and nadir vectors, then get ensemble
+                self.logger.statement('updating stack using decision variables')
+                eval = self._add_missing_pars(dv) # calculate at mean of pars first
+                self.logger.log('running model with mean parameters')
+                # maybe would be good to include prev generations - i.e points to calculate stack at chosen from
+                # the whole dv population (incl. those that have already been evaluated)
+                failed_runs, obs_ensemble = super()._calc_obs(eval)
+                self.logger.log('running model with mean parameters')
+                EvolAlg._drop_failed(failed_runs, eval, obs_ensemble)
+                self.logger.log('finding best points to run stack evaluation')
+                points = self.obj_func.get_approximation_points(obs_ensemble)
+                self.logger.log('finding best points to run stack evaluation')
+                # calculate ensembles for best points
+                eval_ensemble = self._evaluation_ensemble(dv.loc[points, :], self.par_ensemble)
+                self.logger.log('running stack evaluation at {} points'.format(len(points)))
+                failed_runs, stack = super()._calc_obs(eval_ensemble)
+                self.logger.log('running stack evaluation at {} points'.format(len(points)))
+                EvolAlg._drop_failed(failed_runs, eval_ensemble, stack)
+                self.obj_func.set_cdf_df(stack, self.par_ensemble.shape[0])
+                oe = self.obj_func.partial_recalculation_risk_shift(obs_ensemble, risk=self.risk)
+                oe = pyemu.ObservationEnsemble.from_dataframe(df=oe, pst=self.pst)
+            elif self.when_calculate > 0:
+                eval_ensemble = self._add_missing_pars(dv)
+                self.logger.log('running model with mean parameters')
+                failed_runs, obs_ensemble = super()._calc_obs(eval_ensemble)
+                self.logger.log('running model with mean parameters')
+                EvolAlg._drop_failed(failed_runs, eval_ensemble, obs_ensemble)
+                oe = self.obj_func.partial_recalculation_risk_shift(obs_ensemble, risk=self.risk)
+                oe = pyemu.ObservationEnsemble.from_dataframe(df=oe, pst=self.pst)
             else:
                 self.logger.lraise('did not calculate observations - check logic flow')
         self._archive(dv_ensemble, oe)

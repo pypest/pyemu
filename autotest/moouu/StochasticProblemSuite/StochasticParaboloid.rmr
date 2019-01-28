@@ -1,36 +1,7 @@
 
-PANTHER master listening on socket:0.0.0.0:4005 (IPv4)
-running model 5 times
+PANTHER master listening on socket:0.0.0.0:4004 (IPv4)
+running model 100 times
 
     waiting for slaves to appear...
 
 
-01/16/19 12:06:14->new connection from: DESKTOP-HEOQJUQ:57038
-01/16/19 12:06:14->initializing new slave connection from: DESKTOP-HEOQJUQ:57038, number of slaves: 1, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_0
-01/16/19 12:06:15->new connection from: DESKTOP-HEOQJUQ:57039
-01/16/19 12:06:15->initializing new slave connection from: DESKTOP-HEOQJUQ:57039, number of slaves: 2, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_1
-01/16/19 12:06:15->new connection from: DESKTOP-HEOQJUQ:57040
-01/16/19 12:06:15->initializing new slave connection from: DESKTOP-HEOQJUQ:57040, number of slaves: 3, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_2
-01/16/19 12:06:15->new connection from: DESKTOP-HEOQJUQ:57041
-01/16/19 12:06:15->initializing new slave connection from: DESKTOP-HEOQJUQ:57041, number of slaves: 4, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_3
-01/16/19 12:06:15->new connection from: DESKTOP-HEOQJUQ:57042
-01/16/19 12:06:15->initializing new slave connection from: DESKTOP-HEOQJUQ:57042, number of slaves: 5, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_4
-01/16/19 12:06:15->new connection from: DESKTOP-HEOQJUQ:57043
-01/16/19 12:06:15->initializing new slave connection from: DESKTOP-HEOQJUQ:57043, number of slaves: 6, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_5
-01/16/19 12:06:15->new connection from: DESKTOP-HEOQJUQ:57044
-01/16/19 12:06:15->initializing new slave connection from: DESKTOP-HEOQJUQ:57044, number of slaves: 7, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_6
-01/16/19 12:06:15->new connection from: DESKTOP-HEOQJUQ:57045
-01/16/19 12:06:15->initializing new slave connection from: DESKTOP-HEOQJUQ:57045, number of slaves: 8, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_7
-01/16/19 12:06:16->new slave ready: DESKTOP-HEOQJUQ:57038
-01/16/19 12:06:16->Sending run 0 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (group id:2, run id:0, concurrent runs:1)
-01/16/19 12:06:16->new slave ready: DESKTOP-HEOQJUQ:57039
-01/16/19 12:06:16->Sending run 1 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (group id:2, run id:1, concurrent runs:1)
-01/16/19 12:06:17->new slave ready: DESKTOP-HEOQJUQ:57040
-01/16/19 12:06:17->Sending run 2 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (group id:2, run id:2, concurrent runs:1)
-01/16/19 12:06:17->new slave ready: DESKTOP-HEOQJUQ:57041
-01/16/19 12:06:17->Sending run 3 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_3  (group id:2, run id:3, concurrent runs:1)
-01/16/19 12:06:17->new slave ready: DESKTOP-HEOQJUQ:57042
-01/16/19 12:06:17->Sending run 4 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_4  (group id:2, run id:4, concurrent runs:1)
-01/16/19 12:06:17->new slave ready: DESKTOP-HEOQJUQ:57043
-01/16/19 12:06:17->new slave ready: DESKTOP-HEOQJUQ:57044
-01/16/19 12:06:18->new slave ready: DESKTOP-HEOQJUQ:57045
