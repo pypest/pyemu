@@ -2,6 +2,8 @@
 
 from autotest.moouu.StochasticProblemSuite.StochasticProblemSuite import *
 import pyemu
+import os
+import sys
 
 head = 'pcf\n'
 control_data = "* control data\n" \
@@ -24,7 +26,7 @@ obs_groups = "* observation groups\n" \
              "objective\n"
 obs_data_template = "{obsnme}  1  10.0  objective\n"
 command_line = "* model command line\n" \
-               "python StochasticProblemSuite.py {problem} --stochastic {par_interaction}\n"
+               "{exec} StochasticProblemSuite.py {problem} --stochastic {par_interaction}\n"
 model_IO = "* model input/output\n" \
            "{template} input.dat\n" \
            "{instruction} output.dat\n"
@@ -82,16 +84,17 @@ def create_pest_file(problem, file_base, num_pars, parbnd, stochastic_flag):
     for i in range(problem.number_objectives()):
         name = 'obj{}'.format(i + 1)
         f.write(obs_data_template.format(obsnme=name))
-    f.write(command_line.format(problem=problem.name(), par_interaction=stochastic_flag))
+    exec = sys.executable
+    f.write(command_line.format(exec=exec, problem=problem.name(), par_interaction=stochastic_flag))
     f.write(model_IO.format(template=template, instruction=instruction))
     f.write(pestpp)
     f.close()
 
 
 if __name__ == '__main__':
-    name = 'zdt1'
-    num_pars = 30
-    parameter_bounds = (-1, 1)
+    name = 'stochasticparaboloid'
+    num_pars = 1
+    parameter_bounds = (-5, 5)
     parameter_interaction = None
     prob = test_functions[name]
     create_template(prob, name, num_pars)

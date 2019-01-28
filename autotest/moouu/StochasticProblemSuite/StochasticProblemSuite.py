@@ -94,6 +94,10 @@ class StochasticParaboloid(BenchmarkTestProblem):
         super().__init__()
 
     @staticmethod
+    def name():
+        return 'stochasticparaboloid'
+
+    @staticmethod
     def f1(d_vars, pars):
         return (d_vars[0] - 2) ** 2 + d_vars[1] ** 2 + 0.1 * (d_vars[0] + pars[0]) ** 3
 
@@ -158,6 +162,10 @@ class StochasticParaboloid2(StochasticParaboloid):
         return (d_vars[0] + 2) ** 2 + d_vars[1] ** 2 + 0.05 * (d_vars[1] + pars[0]) ** 3
 
     @staticmethod
+    def name():
+        return 'stochasticparaboloid2'
+
+    @staticmethod
     def pareto_front(risk):
         beta_up = stat.norm.ppf(risk)
         arg_min_f1 = BenchmarkTestProblem._quadratic_positive_root(0.15, 2 - 0.3 * beta_up, 0.15 * beta_up ** 2)
@@ -197,6 +205,10 @@ class Simple(DeterministicBenchmark):
     @staticmethod
     def f1(x):
         return x[0]
+
+    @staticmethod
+    def name():
+        return 'simple'
 
     @staticmethod
     def f2(x):
