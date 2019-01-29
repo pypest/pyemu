@@ -1162,7 +1162,7 @@ def lt_gt_constraint_names_test():
 
 if __name__ == "__main__":
     #lt_gt_constraint_names_test()
-    csv_to_ins_test()
+    #csv_to_ins_test()
     # pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
@@ -1197,7 +1197,7 @@ if __name__ == "__main__":
     # smp_test()
     # from_io_with_inschek_test()
     # pestpp_args_test()
-    # reweight_test()
+    reweight_test()
     # reweight_res_test()
     # run_test()
     # rectify_pgroup_test()

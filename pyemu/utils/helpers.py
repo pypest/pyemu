@@ -248,7 +248,8 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
                     warnings.warn("all parameters in zone {0} tied and/or fixed, skipping...".format(zone),PyemuWarning)
                     continue
 
-                df_zone.sort_values(by="parnme",inplace=True)
+                #df_zone.sort_values(by="parnme",inplace=True)
+                df_zone.sort_index(inplace=True)
                 if verbose: print("build cov matrix")
                 cov = gs.covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)
                 if verbose: print("done")
@@ -388,7 +389,8 @@ def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4,verbose=F
                     warnings.warn("all parameters in zone {0} tied and/or fixed, skipping...".format(zone),
                                   PyemuWarning)
                     continue
-                df_zone.sort_values(by="parnme",inplace=True)
+                #df_zone.sort_values(by="parnme",inplace=True)
+                df_zone.sort_index(inplace=True)
                 if verbose: print("build cov matrix")
                 cov = gs.sparse_covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)
                 if verbose: print("done")
@@ -519,7 +521,8 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
                     warnings.warn("all parameters in zone {0} tied and/or fixed, skipping...".format(zone),
                                   PyemuWarning)
                     continue
-                df_zone.sort_values(by="parnme",inplace=True)
+                #df_zone.sort_values(by="parnme",inplace=True)
+                df_zone.sort_index(inplace=True)
                 if verbose: print("build cov matrix")
                 cov = gs.covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)
                 if verbose: print("done")
