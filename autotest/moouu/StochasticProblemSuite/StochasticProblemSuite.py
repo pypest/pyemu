@@ -22,7 +22,7 @@ def additive_parameter_interaction(d_vars, pars):
     else:
         even = np.arange(len(pars) // 2 + 1) * 2
         odd = np.arange(len(pars) // 2) * 2 + 1
-    return [np.sum(pars[even]), np.sum(pars[odd])]
+    return np.array([np.sum(pars[even]), np.sum(pars[odd])])
 
 
 def multiplicitive_parameter_interaction(d_vars, pars):
@@ -34,8 +34,8 @@ def multiplicitive_parameter_interaction(d_vars, pars):
     else:
         even = np.arange(len(pars) // 2) * 2 + 2
         odd = np.arange(len(pars) // 2) * 2 + 1
-    return [(np.sin(np.pi * d_vars[0]) + 1) * pars[0] + np.sum(d_vars[even] * pars[even]),
-            np.sum(d_vars[odd] * d_vars[even])]
+    return np.array([(np.sin(np.pi * d_vars[0]) + 1) * pars[0] + np.sum(d_vars[even] * pars[even]),
+            np.sum(d_vars[odd] * d_vars[even])])
 
 
 def nonlinear_parameter_interaction(d_vars, pars):
@@ -614,9 +614,8 @@ class IOWrapper:
         d_vars, pars = self.read_input_file(args.input_file, model)
         objectives = model.calculate_objectives(d_vars, pars)
         if args.stochastic is not None:
-            pi = parameter_interactions[args.stochastic](d_vars, pars)
-            for i, objective in enumerate(objectives):
-                objectives[i] = objective + pi
+            stochastic_component = parameter_interactions[args.stochastic](d_vars, pars)
+            objectives = objectives + stochastic_component
         if model.constrained():
             constraints = model.calculate_constraints(d_vars, pars)
         else:
@@ -659,8 +658,9 @@ class IOWrapper:
                 number_pars += 1
         if number_d_vars != model.number_decision_variables():
             raise Exception("Incorrect number of decision variables for benchmark function")
-        if number_pars != model.number_parameters():
-            raise Exception("Incorrect number of parameters for benchmark function")
+        # removing this to allow adding parameter interactions in
+        # if number_pars != model.number_parameters():
+        #     raise Exception("Incorrect number of parameters for benchmark function")
         data = df.values
         d_vars = data[:number_d_vars]
         pars = data[number_d_vars: number_d_vars + number_pars]

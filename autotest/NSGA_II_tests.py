@@ -46,14 +46,13 @@ def test_partial_recalculation_risk_shift():
 def test():
     np.random.seed(12929)
     random.seed(18291)
-    pst = pyemu.Pst('StochasticParaboloid.pst')
-    dv_names = pst.par_names[:2]
-    print(dv_names)
+    pst = pyemu.Pst('zdt1.pst')
+    dv_names = pst.par_names[:30]
     evolAlg = NSGA_II(pst, verbose=True, slave_dir='template')
     obj_func_dict = {obj_func: 'min' for obj_func in pst.obs_names}
-    evolAlg.initialize(obj_func_dict=obj_func_dict, num_dv_reals=100, num_par_reals=30, dv_names=dv_names, risk=0.9,
-                       when_calculate=2)
-    for i in range(20):
+    evolAlg.initialize(obj_func_dict=obj_func_dict, num_dv_reals=20, num_par_reals=30, dv_names=dv_names, risk=0.9,
+                       when_calculate=-1)
+    for i in range(2):
         evolAlg.update()
     front = evolAlg.update()
     f1, f2 = np.array([individual.objective_values for individual in front]).T

@@ -70,7 +70,6 @@ class NSGA_II_pyemu(EvolAlg):
         to_update | Mutation.polynomial(self.population_dv, self._get_bounds(), self.mut_prob, self.mut_dist)
         to_update = list(to_update)
         self.population_obs.loc[to_update, :] = self._calc_obs(self.population_dv.loc[to_update, self.dv_names]).values
-        self._initialized = True
         self.iter_num = 1
 
     def update(self):

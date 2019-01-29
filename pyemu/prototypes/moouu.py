@@ -60,10 +60,11 @@ class ParetoObjFunc(object):
 
         self.is_nondominated = self.is_nondominated_continuous
         self.obs_obj_names = list(self.obs_dict.keys())
-        self.cdf_dfs = dict()
+        self.cdf_dfs = None
         self.cdf_loc = None
 
     def set_cdf_df(self, observation_ensemble, num_realisations):
+        self.cdf_dfs = dict()
         if observation_ensemble.shape[0] % num_realisations != 0:
             self.logger.lraise('incorrect number of realisations supplied')
         stochastic_cols = list(self.obs_dict.keys())
@@ -78,6 +79,15 @@ class ParetoObjFunc(object):
             self.cdf_dfs['cdf_{}'.format(i + 1)] = cdf - cdf.mean(axis=0)  # centering
             # store location data for each cdf
             self.cdf_loc.loc['cdf_{}'.format(i + 1), :] = cdf.loc[:, self.obs_obj_names].mean(axis=0).values
+
+    def single_point_cdf(self, observation_ensemble):
+        stochastic_cols = list(self.obs_dict.keys())
+        stochastic_cols.extend(self.pst.less_than_obs_constraints)
+        stochastic_cols.extend(self.pst.greater_than_obs_constraints)
+        stochastic_cols = set(stochastic_cols)
+        cdf = observation_ensemble.loc[:, stochastic_cols]
+        self.cdf_dfs = cdf - cdf.mean(axis=0)
+        print(self.cdf_dfs)
 
     def get_approximation_points(self, obs_ensemble):
         """
@@ -413,7 +423,7 @@ class ParetoObjFunc(object):
         #self.logger.statement("risk-shift for {0}->type:{1}dir:{2},shift:{3},val:{4}".format(n,t,d,shift,val))
         return val
 
-    def full_recalculation_risk_shift(self,oe,num_reals,risk):
+    def full_recalculation_risk_shift(self, oe, num_reals, risk):
 
         stochastic_cols = list(self.obs_dict.keys())
         stochastic_cols.extend(self.pst.less_than_obs_constraints)
@@ -459,6 +469,18 @@ class ParetoObjFunc(object):
                 val = self.get_risk_shifted_value(risk=risk, series=series)
                 risk_shifted_observation_ensemble.loc[idx, col] = val
         return risk_shifted_observation_ensemble
+
+    def no_recalculation_risk_shift(self, observation_ensemble, risk):
+        risk_shifted_obs_ensemble = observation_ensemble.copy()
+        stochastic_cols = list(self.obs_dict.keys())
+        stochastic_cols.extend(self.pst.less_than_obs_constraints)
+        stochastic_cols.extend(self.pst.greater_than_obs_constraints)
+        stochastic_cols = set(stochastic_cols)
+        for idx in observation_ensemble.index:
+            for col in stochastic_cols:
+                series = self.cdf_dfs.loc[:, col] + risk_shifted_obs_ensemble.loc[idx, col]
+                risk_shifted_obs_ensemble.loc[idx, col] = self.get_risk_shifted_value(risk=risk, series=series)
+        return risk_shifted_obs_ensemble
 
     def nsga2_non_dominated_sort(self, obs_df, risk):
         """
@@ -673,6 +695,7 @@ class EvolAlg(EnsembleMethod):
         self.logger.log("evaluate initial dv ensemble of size {0}".format(self.dv_ensemble.shape[0]))
         self.obs_ensemble = self._calc_obs(self.dv_ensemble) # TODO maybe change to copy()?
         self.logger.log("evaluate initial dv ensemble of size {0}".format(self.dv_ensemble.shape[0]))
+        self._initialized = True
 
 
         # isfeas = self.obj_func.is_feasible(self.obs_ensemble,risk=self.risk)
@@ -769,9 +792,19 @@ class EvolAlg(EnsembleMethod):
                 oe = pyemu.ObservationEnsemble.from_dataframe(df=df, pst=self.pst)
             elif self.when_calculate == -1:  # calculate ensemble only for initial point then propagate
                 if self._initialized is False:
-                    pass
-                else:
-                    pass
+                    midpoint = self._get_bounds().mean(axis=0) # calculate
+                    print(midpoint)
+                    time.sleep(0.1)
+                    midpoint = pd.DataFrame(data=midpoint, index=self.dv_names).T  # dv dataframe using mean of dvs
+                    eval_ensemble = self._evaluation_ensemble(midpoint, self.par_ensemble)
+                    failed_runs, stack = super()._calc_obs(eval_ensemble)
+                    self._drop_failed(failed_runs, eval_ensemble, stack)
+                    self.obj_func.single_point_cdf(stack)
+                eval_ensemble = self._add_missing_pars(dv)
+                failed_runs, obs_ensemble = super()._calc_obs(eval_ensemble)
+                self._drop_failed(failed_runs, dv_ensemble, obs_ensemble)
+                oe = self.obj_func.no_recalculation_risk_shift(obs_ensemble, risk=self.risk)
+                oe = pyemu.ObservationEnsemble.from_dataframe(df=oe, pst=self.pst)
             elif self.when_calculate > 0 and self.iter_num % self.when_calculate == 0:
                 self.logger.statement('updating stack using decision variables')
                 eval = self._add_missing_pars(dv) # calculate at mean of pars first
@@ -828,9 +861,6 @@ class EvolAlg(EnsembleMethod):
         bounds = self.pst.parameter_data.loc[self.dv_names, ['parlbnd_trans', 'parubnd_trans']].values
         return bounds.T
 
-    def iter_report(self):
-        self.logger.lraise('EvolAlg.iter_report should be implemented by population class')
-
 
 class EliteDiffEvol(EvolAlg):
     def __init__(self, pst, parcov = None, obscov = None, num_slaves = 0, use_approx_prior = True,
@@ -860,7 +890,6 @@ class EliteDiffEvol(EvolAlg):
             self.logger.statement("no nondominated solutions in initial population")
         self.dv_ensemble = self.dv_ensemble.loc[isnondom,:]  # TODO: check this - before was isfeas?
         self.obs_ensemble = self.obs_ensemble.loc[isnondom,:]  # seemed to be doing the same thing twice
-        self._initialized = True
         self.iter_num = 1
 
     def update(self,mut_base = 0.8,cross_over_base=0.7,num_dv_reals=None):

@@ -81,9 +81,9 @@ objective
 obj1  1  10.0  objective
 obj2  1  10.0  objective
 * model command line
-C:\Users\Violet\Anaconda3\python.exe StochasticProblemSuite.py zdt1 --stochastic additive
+C:\Users\Violet\Anaconda3\python.exe StochasticProblemSuite.py zdt2 --stochastic additive
 * model input/output
-zdt1.tpl input.dat
-zdt1.ins output.dat
+zdt2.tpl input.dat
+zdt2.ins output.dat
 ++# PEST++ optional input
 ++sweep_parameter_csv_file(sweep_in.csv)

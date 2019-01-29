@@ -92,10 +92,10 @@ def create_pest_file(problem, file_base, num_pars, parbnd, stochastic_flag):
 
 
 if __name__ == '__main__':
-    name = 'stochasticparaboloid'
-    num_pars = 1
-    parameter_bounds = (-5, 5)
-    parameter_interaction = None
+    name = 'zdt2'
+    num_pars = 30
+    parameter_bounds = (-1, 1)
+    parameter_interaction = 'additive'
     prob = test_functions[name]
     create_template(prob, name, num_pars)
     create_instruction_file(prob, name)
