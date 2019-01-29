@@ -62,10 +62,10 @@ class AbstractMOEA(EvolAlg):
 
     def initialize(self,obj_func_dict,num_par_reals=100,num_dv_reals=100,
                    dv_ensemble=None, par_ensemble=None, risk=0.5, dv_names=None,
-                   par_names=None):
+                   par_names=None, when_calculate=0):
         super().initialize(obj_func_dict=obj_func_dict, num_par_reals=num_par_reals, num_dv_reals=num_dv_reals,
                            dv_ensemble=dv_ensemble, par_ensemble=par_ensemble, risk=risk, dv_names=dv_names,
-                           par_names=par_names)
+                           par_names=par_names, when_calculate=when_calculate)
         self.bounds = self._get_bounds()
         self.is_constrained = not(self.pst.greater_than_obs_constraints.empty
                                   and self.pst.less_than_obs_constraints.empty)
@@ -86,11 +86,8 @@ class AbstractMOEA(EvolAlg):
         df = population.to_pyemu_ensemble(pst=self.pst)
         observation_ensemble = super()._calc_obs(df)
         objectives = self.obj_func.objective_vector(observation_ensemble).values
-        if self.is_constrained:
-            constraints = self.obj_func.constraint_violation_vector(self.obs_ensemble).values
-            population.update_objectives(objectives, constraints)
-        else:
-            population.update_objectives(objectives)
+        constraints = self.obj_func.constraint_violation_vector(self.obs_ensemble)
+        population.update_objectives(objectives, constraints)
 
 
 class AbstractPopulation:
@@ -193,15 +190,16 @@ class AbstractPopulation:
     def update_objectives(self, objectives, constraints=None):
         positions = np.where([individual.run_model for individual in self.population])[0]
         to_update = self.population[positions]
-        if self.constrained:
-            for objective, constraint, individual in zip(objectives, constraints, to_update):
+        if not constraints.empty:
+            for objective, constraint, individual in zip(objectives, constraints.values, to_update):
                 individual.objective_values = objective
-                individual.total_constraint = np.sum(constraint)
+                individual.total_constraint_violation = np.sum(constraint)
                 individual.run_model = False
         else:
             for objective, individual in zip(objectives, to_update):
                 individual.objective_values = objective
                 individual.run_model = False
+        time.sleep(0.1)
 
     def reset_population(self):
         for individual in self.population:

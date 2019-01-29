@@ -54,7 +54,7 @@ def tenpar_test():
         #par.loc[:,"partrans"] = "none"
 
         obj_dict = {}
-        obj_dict[obj_names[0]] = "min"
+        obj_dict[obj_names[0]] = "max"
         obj_dict[obj_names[1]] = "min"
 
 
