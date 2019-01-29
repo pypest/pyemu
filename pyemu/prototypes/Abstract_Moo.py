@@ -128,7 +128,7 @@ class AbstractPopulation:
         return next(self.population)
 
     def __getitem__(self, item):
-        if isinstance(item, slice):
+        if isinstance(item, slice) or isinstance(item, range):
             return self.__class__(self.population.__getitem__(item), constrained=self.constrained,
                                   dv_names=self.dv_names)
         else:
@@ -140,8 +140,8 @@ class AbstractPopulation:
     @classmethod
     def from_pyemu_ensemble(cls, dv_ensemble, individual_class, constrained):
         population = []
-        for i, row in dv_ensemble.iterrows():
-            population.append(individual_class(d_vars=row.values, is_constrained=constrained))
+        for idx in dv_ensemble.index:
+            population.append(individual_class(d_vars=dv_ensemble.loc[idx, :], is_constrained=constrained))
         return cls(population=population, dv_names=dv_ensemble.columns, constrained=constrained)
 
     def tournament_selection(self, num_to_select, is_better=lambda x, y: x.fitness < y.fitness):
@@ -199,7 +199,6 @@ class AbstractPopulation:
             for objective, individual in zip(objectives, to_update):
                 individual.objective_values = objective
                 individual.run_model = False
-        time.sleep(0.1)
 
     def reset_population(self):
         for individual in self.population:

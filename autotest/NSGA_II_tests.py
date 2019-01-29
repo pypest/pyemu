@@ -65,30 +65,21 @@ def test():
 def test_simple():
     np.random.seed(21212)
     data = np.random.random(size=(5, 2))
-    dv_ensemble = pyemu.ParameterEnsemble(pst=srn, data=data)
-    evolAlg = NSGA_II(pst=srn, verbose=True, slave_dir='template')
-    evolAlg.initialize(obj_func_dict=srn_objectives, dv_ensemble=dv_ensemble, num_dv_reals=20)
-    for i in range(5):
+    dv_ensemble = pyemu.ParameterEnsemble(pst=simple, data=data)
+    evolAlg = NSGA_II(pst=simple, verbose=False, slave_dir='template')
+    evolAlg.initialize(obj_func_dict=simple_objectives, dv_ensemble=dv_ensemble, num_dv_reals=5)
+    for i in range(10):
         evolAlg.update()
-    front = evolAlg.update()
-    x = []
-    y = []
-    for individual in front:
-        a, b = individual.objective_values
-        x.append(a * -1)
-        y.append(b * -1)
-
-    # _, objective_df = evolAlg.update()
-    # f1, f2 = simple_objecives.keys()
-    # plt.plot(objective_df.loc[:, f1], objective_df.loc[:, f2], 'o')
-    plt.plot(x, y, 'o')
-    # x = np.linspace(0.1, 2)
-    # y = 1/x
-    # plt.plot(x, y)
-    # plt.show()
+    _, objective_df = evolAlg.update()
+    f1, f2 = simple_objectives.keys()
+    plt.plot(objective_df.loc[:, f1], objective_df.loc[:, f2], 'o')
+    x = np.linspace(0.1, 2)
+    y = 1/x
+    plt.plot(x, y)
+    plt.show()
 
 if __name__ == "__main__":
-    test()
-    #test_simple()
+    #test()
+    test_simple()
     #test_set_cdf()
     #test_partial_recalculation_risk_shift()
