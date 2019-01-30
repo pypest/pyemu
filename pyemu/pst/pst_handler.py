@@ -1083,7 +1083,8 @@ class Pst(object):
         def parse(eqs):
             raw = eqs.split('=')
             rhs = float(raw[1])
-            raw = re.split('[+,-]',raw[0].lower().strip())
+            raw = [i for i in re.split('[###]',
+                    raw[0].lower().strip().replace(' + ','###').replace(' - ','###')) if i != '']
             # in case of a leading '-' or '+'
             if len(raw[0]) == 0:
                 raw = raw[1:]
@@ -1714,8 +1715,10 @@ class Pst(object):
                 if obs.loc[oname,"weight"] == 0.0:
                     obs.loc[oname,"weight"] = 1.0
 
-            res_groups = self.res.groupby("name").groups
-            obs_groups = self.observation_data.groupby("obsnme").groups
+            #res_groups = self.res.groupby("name").groups
+            res_groups = self.res.groupby(self.res.index).groups
+            #obs_groups = self.observation_data.groupby("obsnme").groups
+            obs_groups = self.observation_data.groupby(self.observation_data.index).groups
             self.__reset_weights(obs_dict, res_groups, obs_groups)
 
 

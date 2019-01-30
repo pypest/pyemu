@@ -67,7 +67,7 @@
 
 
                                DELR
- READING ON UNIT   99 WITH FORMAT: (20E15.6)           
+ READING ON UNIT   99 WITH FORMAT: (FREE)              
 
  OPENING FILE ON UNIT   99:
  ./delc.ref                                                                                                                                                                                              
@@ -75,7 +75,7 @@
 
 
                                DELC
- READING ON UNIT   99 WITH FORMAT: (40E15.6)           
+ READING ON UNIT   99 WITH FORMAT: (FREE)              
 
  OPENING FILE ON UNIT   99:
  ./model_top.ref                                                                                                                                                                                         
@@ -187,7 +187,7 @@
  READING ON UNIT   99 WITH FORMAT: (FREE)              
 
  OPENING FILE ON UNIT   99:
- ./vka_Layer_1.ref                                                                                                                                                                                       
+ ./vka1.ref                                                                                                                                                                                              
 
 
 
@@ -486,6 +486,6 @@
          TOTAL TIME  86400.      1440.0      24.000      1.0000     2.73785E-03
 1
 
- Run end date and time (yyyy/mm/dd hh:mm:ss): 2018/11/01 17:35:39
- Elapsed run time:  0.012 Seconds
+ Run end date and time (yyyy/mm/dd hh:mm:ss): 2018/11/28 11:07:14
+ Elapsed run time:  0.013 Seconds
 

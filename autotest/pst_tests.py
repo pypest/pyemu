@@ -601,6 +601,62 @@ def from_flopy():
     cov = helper.build_prior(fmt="none", sparse=True)
     cov.to_coo(os.path.join("temp", "cov.coo"))
 
+    from_flopy_zone_pars()
+
+
+def from_flopy_zone_pars():
+    import numpy as np
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    m.change_model_ws(org_model_ws)
+    m.write_input()
+
+    new_model_ws = "temp_pst_from_flopy"
+    grid_props = [["upw.ss", [0, 1]], ["upw.ss", 1], ["upw.ss", 2], ["extra.pr", 0],
+                ["rch.rech", 0], ["rch.rech", [1, 2]]]
+    const_props = [["rch.rech", i] for i in range(m.nper)]
+    grid_props = grid_props.extend(["extra.pr", 0])
+    zone_props = [["extra.pr", 0], ["extra.pr", 2], ["upw.vka", 1], ["upw.vka", 2]]
+
+    zn_arr = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "hk.zones"), dtype=int)
+    zn_arr2 = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "rand.zones"), dtype=int)
+
+    pp_props = [["upw.hk", [0, 1]], ["extra.pr", 1], ["upw.ss", 1], ["upw.ss", 2], ["upw.vka", 2]]
+    k_zone_dict = {"upw.hk": {k: zn_arr for k in range(3)}, "extra.pr": {k: zn_arr2 for k in range(3)},
+                   "general_zn": {k: zn_arr for k in range(3)}}
+    obssim_smp_pairs = None
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
+                                             const_props=const_props,
+                                             grid_props=grid_props,
+                                             zone_props=zone_props,
+                                             pp_props=pp_props,
+                                             remove_existing=True,
+                                             obssim_smp_pairs=obssim_smp_pairs,
+                                             pp_space=4,
+                                             use_pp_zones=True,
+                                             k_zone_dict=k_zone_dict,
+                                             hds_kperk=[0, 0], build_prior=False)
+
+    k_zone_dict = {"upw.vka": {k: zn_arr for k in range(3)}, "extra.pr": {k: zn_arr2 for k in range(3)}}
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
+                                             const_props=const_props,
+                                             grid_props=grid_props,
+                                             zone_props=zone_props,
+                                             pp_props=pp_props,
+                                             remove_existing=True,
+                                             obssim_smp_pairs=obssim_smp_pairs,
+                                             pp_space=4,
+                                             use_pp_zones=True,
+                                             k_zone_dict=k_zone_dict,
+                                             hds_kperk=[0, 0], build_prior=False)
+
+
 
 def from_flopy_test():
     bd = os.getcwd()
@@ -657,8 +713,8 @@ def from_flopy_reachinput():
                                                  model_exe_name="mfnwt", sfr_pars=sfr_par, sfr_obs=True)
         os.chdir(new_model_ws)
         mult_files = []
+        spars = {}
         try:  # read seg pars config file
-            spars = {}
             with open("sfr_seg_pars.config", 'r') as f:
                 for line in f:
                     line = line.strip().split()
@@ -669,8 +725,8 @@ def from_flopy_reachinput():
                 pass
             else:
                 raise Exception()
+        rpars = {}
         try:  # read reach pars config file
-            rpars = {}
             with open("sfr_reach_pars.config", 'r') as f:
                 for line in f:
                     line = line.strip().split()
@@ -685,16 +741,9 @@ def from_flopy_reachinput():
             # actually write out files to check template file
             helper.pst.write_input_files()
             try:
-                pyemu.gw_utils.apply_sfr_parameters(reach_pars=True)
+                exec(helper.frun_pre_lines[0])
             except Exception as e:
-                if i == 2:
-                    pass
-                    try:
-                        pyemu.gw_utils.apply_sfr_parameters(reach_pars=False)
-                    except Exception as e:
-                        raise Exception("error applying sfr pars, check tpl(s) and datafiles: {0}".format(str(e)))
-                else:
-                    raise Exception("error applying sfr pars, check tpl(s) and datafiles: {0}".format(str(e)))
+                raise Exception("error applying sfr pars, check tpl(s) and datafiles: {0}".format(str(e)))
 
             # test using tempchek for writing tpl file
             par = helper.pst.parameter_data
@@ -715,20 +764,9 @@ def from_flopy_reachinput():
                         raise Exception("error running tempchek on template file {0} and data file {1} : {0}".
                                         format(mult, "{}.tpl".format(tpl_file), str(e)))
                 try:
-                    pyemu.gw_utils.apply_sfr_parameters(reach_pars=True)
+                    exec(helper.frun_pre_lines[0])
                 except Exception as e:
-                    if i == 2:
-                        pass
-                        try:
-                            pyemu.gw_utils.apply_sfr_parameters(reach_pars=False)
-                        except Exception as e:
-                            raise Exception(
-                                "error applying sfr pars with tempchek par file, check tpl(s) and datafiles: {0}".
-                                    format(str(e)))
-                    else:
-                        raise Exception(
-                            "error applying sfr pars with tempchek par file, check tpl(s) and datafiles: {0}".
-                                format(str(e)))
+                    raise Exception("error applying sfr pars, check tpl(s) and datafiles: {0}".format(str(e)))
         except:
             if i == 3:  # scenario 3 should not set up any parameters
                 pass
@@ -1053,8 +1091,10 @@ def csv_to_ins_test():
     df.loc[:,:] = np.random.random(df.shape)
     df.to_csv(os.path.join("temp", "temp.csv"))
     names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
-                                            only_cols=cnames[0])
+                                            only_cols=cnames[0],prefix="test")
     assert len(names) == df.shape[0], names
+    for name in names.obsnme:
+        assert name.startswith("test"),name
 
     names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
                                             only_cols=cnames[0:2])
@@ -1086,6 +1126,7 @@ def csv_to_ins_test():
     names = pyemu.pst_utils.csv_to_ins_file(df, ins_filename=os.path.join("temp", "temp.csv.ins"),
                                             only_cols="col",only_rows="row")
     assert len(names) == df.shape[0] * df.shape[1]
+
 
 
 def lt_gt_constraint_names_test():
@@ -1131,11 +1172,11 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
+    # from_flopy_zone_pars()
     #from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
     #from_flopy_test_reachinput_test()
-
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
@@ -1152,11 +1193,11 @@ if __name__ == "__main__":
     # test_e_clean()
     # load_test()
     # flex_load_test()
-    res_test()
+    # res_test()
     # smp_test()
     # from_io_with_inschek_test()
     # pestpp_args_test()
-    # reweight_test()
+    reweight_test()
     # reweight_res_test()
     # run_test()
     # rectify_pgroup_test()
