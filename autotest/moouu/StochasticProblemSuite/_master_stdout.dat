@@ -1,0 +1,37 @@
+
+
+             pestpp-swp - a parameteric sweep utility, version 4.1.8
+                     for PEST(++) datasets 
+
+                 by the PEST++ development team
+
+
+
+using control file: "StochasticParaboloid.pst"
+
+noptmax = 0, resetting max_run_fail = 1
+
+             Generalized Run Manager Interface
+                             by:
+
+               The PEST++ Development Team
+
+
+          starting PANTHER master...
+
+IP addresses:
+  0.0.0.0:4004 (IPv4)
+
+PANTHER master listening on socket: 0.0.0.0:4004 (IPv4)
+reading par values...done
+starting runs 0 --> 100
+    running model 100 times
+
+      waiting for slaves to appear...
+
+
+PANTHER progress
+   runs(C = completed | F = failed | T = timed out)
+   slaves(R = running | W = waiting | U = unavailable)
+------------------------------------------------------------------------------
+01/28 15:04:14 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=0   )01/28 15:04:14 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=0   )

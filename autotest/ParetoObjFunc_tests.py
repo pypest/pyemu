@@ -61,12 +61,20 @@ def test_dominates():
     assert obj_func.dominates(soln_df.loc[3, :], soln_df.loc[1, :]) is False
     # test constrained dominates
     data = np.array([[2, 1, 224, 11], [0, 0, 226, 11], [0, 0, 224, 9], [3, 1, 224.99, 10.0001],
-                     [3, 2, 20, 224.99, 10.0001]])
+                     [3, 2, 224.99, 10.0001]])
+    obj_names = srn_objectives.keys()
     objective_df = pyemu.ObservationEnsemble(pst=srn, data=data, columns=srn.observation_data.index)
-    objective_vector = obj_func.constraint_violation_vector(objective_df, risk=0.5)
-    assert obj_func.dominates()
-
-
+    constraint_df = obj_func.constraint_violation_vector(objective_df, risk=0.5)
+    assert obj_func.dominates(objective_df.loc[0, obj_names], objective_df.loc[1, obj_names], constraint_df.loc[0],
+                              constraint_df.loc[1]) is True
+    assert obj_func.dominates(objective_df.loc[0, obj_names], objective_df.loc[2, obj_names], constraint_df.loc[0],
+                              constraint_df.loc[2]) is True
+    assert obj_func.dominates(objective_df.loc[1, obj_names], objective_df.loc[2, obj_names], constraint_df.loc[1],
+                              constraint_df.loc[0]) is False
+    assert obj_func.dominates(objective_df.loc[3, obj_names], objective_df.loc[2, obj_names], constraint_df.loc[3],
+                              constraint_df.loc[2]) is True
+    assert obj_func.dominates(objective_df.loc[2, obj_names], objective_df.loc[3, obj_names], constraint_df.loc[2],
+                              constraint_df.loc[3]) is False
 
 
 def test_is_nondominated_kung():
@@ -93,7 +101,7 @@ def test_nsga2_non_dominated_sort():
     obj_func = ParetoObjFunc(simple, obj_function_dict=obj_func_dict, logger=logger)
     d_vars = np.array([[i for i in range(5)]])
     objectives = np.array([d_vars[0]])
-    obj_df = pyemu.ParameterEnsemble(pst=srn, data=objectives.T, columns=['obj1'])
+    obj_df = pyemu.ParameterEnsemble(pst=simple, data=objectives.T, columns=['obj1'])
     rank = obj_func.nsga2_non_dominated_sort(obj_df, risk=0.5)
     for i, idx in enumerate(obj_df.index):
         assert rank[idx] == i + 1
@@ -104,10 +112,26 @@ def test_nsga2_non_dominated_sort():
             d_vars.append([i, j])
     d_vars = np.array(d_vars).T
     objectives = np.array([d_vars[0], 1 / d_vars[0] + d_vars[1]])
-    obj_df = pyemu.ParameterEnsemble(pst=simple, data=objectives.T, columns=srn_objectives.keys())
+    obj_df = pyemu.ParameterEnsemble(pst=simple, data=objectives.T, columns=simple_objecives.keys())
     rank = obj_func.nsga2_non_dominated_sort(obj_df, risk=0.5)
     for idx in rank.index:
         assert rank.loc[idx] == d_vars[1, idx]
+    # test sorting with constraints
+    obj_func = ParetoObjFunc(pst=srn, obj_function_dict=srn_objectives, logger=logger)
+    x = np.arange(1, 5)
+    y = np.concatenate((1 / x, 1 / x + 1))
+    obj_data = np.stack((np.concatenate((x, x)), y))
+    constr_data = np.array([[224, 11], [223, 12], [222, 15], [226, 9], [222, 12], [221, 20], [226, 13], [227, 9]])
+    data = np.column_stack((obj_data.T, constr_data))
+    obj_df = pyemu.ParameterEnsemble(pst=srn, data=data, columns=srn.obs_names)
+    rank = obj_func.nsga2_non_dominated_sort(obj_df, risk=0.5)
+    for i in range(3):
+        assert rank.loc[i] == 1
+    assert rank.loc[3] == 4
+    for i in range(4, 6):
+        assert rank.loc[i] == 2
+    assert rank.loc[6] == 3
+    assert rank.loc[7] == 5
 
 
 

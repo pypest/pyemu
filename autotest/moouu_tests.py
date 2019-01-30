@@ -54,7 +54,7 @@ def tenpar_test():
         #par.loc[:,"partrans"] = "none"
 
         obj_dict = {}
-        obj_dict[obj_names[0]] = "min"
+        obj_dict[obj_names[0]] = "max"
         obj_dict[obj_names[1]] = "min"
 
 
@@ -316,7 +316,7 @@ def setup_freyberg_transport(plot=True):
                 continue
             if ib[i,j] < 0:
                 print(mf.dis.botm.array[0,i,j])
-                drn_data.append([0,i,j,33,10000.0])
+                drn_data.append([0,i,j,32.5,10000.0])
     flopy.modflow.ModflowDrn(mf,stress_period_data=drn_data)
     ib[ib<0] = 1
     mf.bas6.ibound = ib
@@ -898,7 +898,7 @@ def redis_freyberg():
         return new_arr
 
 
-    fac = 9
+    fac = 3
     assert fac % 2 != 0
     perlen = np.ones(520) * 7
     delr = mf.dis.delr.array[0] / fac
@@ -937,10 +937,23 @@ def redis_freyberg():
     #print(39 * fac + int(fac/2.0))
     flopy.modflow.ModflowWel(mfr,stress_period_data=wel_spd)
 
-    drn_spd = mf.drn.stress_period_data[0].copy()
-    drn_spd["i"] = (drn_spd["i"] * fac) + int(fac / 2.0)
-    drn_spd["j"] = (drn_spd["j"] * fac) + int(fac / 2.0)
-    flopy.modflow.ModflowDrn(mfr,stress_period_data=drn_spd)
+    #drn_spd = mf.drn.stress_period_data[0].copy()
+    #drn_spd["i"] = (drn_spd["i"] * fac) + int(fac / 2.0)
+    #drn_spd["j"] = (drn_spd["j"] * fac) + int(fac / 2.0)
+    drn_spd = []
+    print(mf.drn.stress_period_data[0].dtype)
+    drn_stage = mf.drn.stress_period_data[0]["elev"][0]
+    i = mfr.nrow - 1
+    ib = mfr.bas6.ibound[0].array
+    for j in range(mfr.ncol):
+        if ib[i,j] == 0:
+            continue
+        drn_spd.append([0,i,j,drn_stage,10.0])
+
+
+
+
+    flopy.modflow.ModflowDrn(mfr,stress_period_data={0:drn_spd})
 
     rdata = pd.DataFrame.from_records(mf.sfr.reach_data)
     sdata = pd.DataFrame.from_records(mf.sfr.segment_data[0])
@@ -1152,3 +1165,5 @@ if __name__ == "__main__":
     #invest()
     #sweep_loop()
     process_sweep_loop()
+    #redis_freyberg()
+    #invest()
