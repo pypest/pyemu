@@ -1,0 +1,33 @@
+
+PANTHER master listening on socket:0.0.0.0:4004 (IPv4)
+running model 5 times
+
+    waiting for slaves to appear...
+
+
+01/30/19 17:21:25->new connection from: DESKTOP-HEOQJUQ:55026
+01/30/19 17:21:25->initializing new slave connection from: DESKTOP-HEOQJUQ:55026, number of slaves: 1, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_0
+01/30/19 17:21:25->new connection from: DESKTOP-HEOQJUQ:55027
+01/30/19 17:21:25->initializing new slave connection from: DESKTOP-HEOQJUQ:55027, number of slaves: 2, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_1
+01/30/19 17:21:25->new connection from: DESKTOP-HEOQJUQ:55028
+01/30/19 17:21:25->initializing new slave connection from: DESKTOP-HEOQJUQ:55028, number of slaves: 3, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_2
+01/30/19 17:21:25->new connection from: DESKTOP-HEOQJUQ:55029
+01/30/19 17:21:25->initializing new slave connection from: DESKTOP-HEOQJUQ:55029, number of slaves: 4, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_3
+01/30/19 17:21:26->new slave ready: DESKTOP-HEOQJUQ:55026
+01/30/19 17:21:26->Sending run 0 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (group id:2, run id:0, concurrent runs:1)
+01/30/19 17:21:26->new slave ready: DESKTOP-HEOQJUQ:55027
+01/30/19 17:21:26->Sending run 1 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (group id:2, run id:1, concurrent runs:1)
+01/30/19 17:21:26->new slave ready: DESKTOP-HEOQJUQ:55028
+01/30/19 17:21:26->Sending run 2 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (group id:2, run id:2, concurrent runs:1)
+01/30/19 17:21:27->new slave ready: DESKTOP-HEOQJUQ:55029
+01/30/19 17:21:27->Sending run 3 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_3  (group id:2, run id:3, concurrent runs:1)
+01/30/19 17:21:30->run 1 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (run time:0.0584 min, avg run time:0.0584 min, group id:2, run id = 1 concurrent:1)
+01/30/19 17:21:30->Sending run 4 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (group id:2, run id:4, concurrent runs:1)
+01/30/19 17:21:30->run 2 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (run time:0.0559833 min, avg run time:0.0571917 min, group id:2, run id = 2 concurrent:1)
+01/30/19 17:21:30->run 0 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (run time:0.0731167 min, avg run time:0.0625 min, group id:2, run id = 0 concurrent:1)
+01/30/19 17:21:30->run 3 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_3  (run time:0.0552833 min, avg run time:0.0606958 min, group id:2, run id = 3 concurrent:1)
+01/30/19 17:21:33->run 4 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (run time:0.0568 min, avg run time:0.0602958 min, group id:2, run id = 4 concurrent:1)
+
+---------------------
+   5 runs complete :  0 runs failed
+

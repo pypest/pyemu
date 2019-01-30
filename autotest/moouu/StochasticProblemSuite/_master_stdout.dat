@@ -7,7 +7,7 @@
 
 
 
-using control file: "StochasticParaboloid.pst"
+using control file: "zdt2.pst"
 
 noptmax = 0, resetting max_run_fail = 1
 
@@ -24,8 +24,8 @@ IP addresses:
 
 PANTHER master listening on socket: 0.0.0.0:4004 (IPv4)
 reading par values...done
-starting runs 0 --> 100
-    running model 100 times
+starting runs 0 --> 5
+    running model 5 times
 
       waiting for slaves to appear...
 
@@ -34,4 +34,10 @@ PANTHER progress
    runs(C = completed | F = failed | T = timed out)
    slaves(R = running | W = waiting | U = unavailable)
 ------------------------------------------------------------------------------
-01/28 15:04:14 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=0   )01/28 15:04:14 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=0   )
+01/30 17:21:22 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=0   )01/30 17:21:22 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=0   )01/30 17:21:23 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=0   )01/30 17:21:23 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=0   )01/30 17:21:24 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=0   )01/30 17:21:24 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=0   )01/30 17:21:25 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=1   )01/30 17:21:25 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=1   )01/30 17:21:25 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=1   )01/30 17:21:25 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=1   )01/30 17:21:25 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=2   )01/30 17:21:25 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=2   )01/30 17:21:25 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=2   )01/30 17:21:25 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=2   )01/30 17:21:25 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=3   )01/30 17:21:25 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=3   )01/30 17:21:25 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=3   )01/30 17:21:25 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=3   )01/30 17:21:25 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=4   )01/30 17:21:25 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=4   )01/30 17:21:25 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=4   )01/30 17:21:25 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=4   )01/30 17:21:26 runs(C=0    | F=0    | T=0    ): slaves(R=0   | W=0   | U=4   )01/30 17:21:26 runs(C=0    | F=0    | T=0    ): slaves(R=1   | W=0   | U=3   )01/30 17:21:26 runs(C=0    | F=0    | T=0    ): slaves(R=1   | W=0   | U=3   )01/30 17:21:26 runs(C=0    | F=0    | T=0    ): slaves(R=2   | W=0   | U=2   )01/30 17:21:26 runs(C=0    | F=0    | T=0    ): slaves(R=2   | W=0   | U=2   )01/30 17:21:26 runs(C=0    | F=0    | T=0    ): slaves(R=3   | W=0   | U=1   )01/30 17:21:27 runs(C=0    | F=0    | T=0    ): slaves(R=3   | W=0   | U=1   )01/30 17:21:27 runs(C=0    | F=0    | T=0    ): slaves(R=4   | W=0   | U=0   )01/30 17:21:28 runs(C=0    | F=0    | T=0    ): slaves(R=4   | W=0   | U=0   )01/30 17:21:28 runs(C=0    | F=0    | T=0    ): slaves(R=4   | W=0   | U=0   )01/30 17:21:29 runs(C=0    | F=0    | T=0    ): slaves(R=4   | W=0   | U=0   )01/30 17:21:29 runs(C=0    | F=0    | T=0    ): slaves(R=4   | W=0   | U=0   )01/30 17:21:30 runs(C=1    | F=0    | T=0    ): slaves(R=3   | W=0   | U=1   )01/30 17:21:30 runs(C=1    | F=0    | T=0    ): slaves(R=3   | W=0   | U=1   )01/30 17:21:30 runs(C=1    | F=0    | T=0    ): slaves(R=3   | W=1   | U=0   )01/30 17:21:30 runs(C=1    | F=0    | T=0    ): slaves(R=4   | W=0   | U=0   )01/30 17:21:30 runs(C=2    | F=0    | T=0    ): slaves(R=3   | W=0   | U=1   )01/30 17:21:30 runs(C=2    | F=0    | T=0    ): slaves(R=3   | W=0   | U=1   )01/30 17:21:30 runs(C=2    | F=0    | T=0    ): slaves(R=3   | W=1   | U=0   )01/30 17:21:30 runs(C=2    | F=0    | T=0    ): slaves(R=3   | W=1   | U=0   )01/30 17:21:30 runs(C=3    | F=0    | T=0    ): slaves(R=2   | W=1   | U=1   )01/30 17:21:30 runs(C=3    | F=0    | T=0    ): slaves(R=2   | W=1   | U=1   )01/30 17:21:30 runs(C=3    | F=0    | T=0    ): slaves(R=2   | W=2   | U=0   )01/30 17:21:30 runs(C=3    | F=0    | T=0    ): slaves(R=2   | W=2   | U=0   )01/30 17:21:30 runs(C=4    | F=0    | T=0    ): slaves(R=1   | W=2   | U=1   )01/30 17:21:30 runs(C=4    | F=0    | T=0    ): slaves(R=1   | W=2   | U=1   )01/30 17:21:30 runs(C=4    | F=0    | T=0    ): slaves(R=1   | W=3   | U=0   )01/30 17:21:30 runs(C=4    | F=0    | T=0    ): slaves(R=1   | W=3   | U=0   )01/30 17:21:31 runs(C=4    | F=0    | T=0    ): slaves(R=1   | W=3   | U=0   )01/30 17:21:31 runs(C=4    | F=0    | T=0    ): slaves(R=1   | W=3   | U=0   )01/30 17:21:31 runs(C=4    | F=0    | T=0    ): slaves(R=1   | W=3   | U=0   )01/30 17:21:31 runs(C=4    | F=0    | T=0    ): slaves(R=1   | W=3   | U=0   )01/30 17:21:32 runs(C=4    | F=0    | T=0    ): slaves(R=1   | W=3   | U=0   )01/30 17:21:32 runs(C=4    | F=0    | T=0    ): slaves(R=1   | W=3   | U=0   )01/30 17:21:32 runs(C=4    | F=0    | T=0    ): slaves(R=1   | W=3   | U=0   )01/30 17:21:32 runs(C=4    | F=0    | T=0    ): slaves(R=1   | W=3   | U=0   )01/30 17:21:33 runs(C=5    | F=0    | T=0    ): slaves(R=0   | W=3   | U=1   )01/30 17:21:33 runs(C=5    | F=0    | T=0    ): slaves(R=0   | W=3   | U=1   )
+
+   5 runs complete :  0 runs failed
+
+processing runs...done
+reading par values...done
+no more runs...done

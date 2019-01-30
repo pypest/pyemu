@@ -14,9 +14,9 @@ from .GeneticOperators import *
 
 class NSGA_II(EvolAlg):
 
-    def __init__(self, pst, parcov = None, obscov = None, num_slaves = 0, use_approx_prior = True,
-                 submit_file = None, verbose = False, port = 4004, slave_dir = "template",
-                 archive_size=100, cross_prob=0.9, cross_dist=15, mut_prob=0.01, mut_dist=20):
+    def __init__(self, pst, parcov=None, obscov=None, num_slaves=0, use_approx_prior=True,
+                 submit_file=None, verbose=False, port=4004, slave_dir="template",
+                 cross_prob=0.9, cross_dist=15, mut_prob=0.01, mut_dist=20):
         """initialise the algorithm. Parameters:
            objectives: vector of objective functions to be optimised
            bounds: array of upper and lower bounds for each decision variable, eg [(0, 5), (-2, 2)]
@@ -37,10 +37,17 @@ class NSGA_II(EvolAlg):
         self.population_dv = None
         self.joint_obs = None
         self.joint_dv = None
-        self.cross_prob=cross_prob
-        self.cross_dist=cross_dist
+        self.cross_prob = cross_prob
+        self.cross_dist = cross_dist
         self.mut_prob = mut_prob
         self.mut_dist = mut_dist
+        initialising_variables = 'pst {}\nparcov {}\nobscov {}\nnum_slaves {}\nuse_approx_prior {}\n ' \
+                                 'submit_file {}\nverbose {}\nport {}\nslave_dir {}\n' \
+                                 'cross_prob {}\ncross_dist {}\nmut_prob {}\n' \
+                                 'mut_dist {}'.format(pst.filename, parcov, obscov, num_slaves, use_approx_prior,
+                                                      submit_file, verbose, port, slave_dir, cross_prob, cross_dist,
+                                                      mut_prob, mut_dist)
+        self.logger.statement('using NSGA-II as evolutionary algorithm.\nParameters:\n{}'.format(initialising_variables))
 
     def initialize(self,obj_func_dict,num_par_reals=100,num_dv_reals=100,
                    dv_ensemble=None,par_ensemble=None,risk=0.5,
@@ -48,6 +55,14 @@ class NSGA_II(EvolAlg):
         super().initialize(obj_func_dict=obj_func_dict, num_par_reals=num_par_reals, num_dv_reals=num_dv_reals,
                            dv_ensemble=dv_ensemble, par_ensemble=par_ensemble, risk=risk, dv_names=dv_names,
                            par_names=par_names, when_calculate=when_calculate)
+        self.logger.log("initialising NSGA-II")
+        if when_calculate < 0:
+            use = 'single (mean of bounds) point uncertainty calculation'
+        elif when_calculate == 0:
+            use = 'complete recalculation of uncertainty for every point in decision space'
+        else:
+            use = 'will recalculate uncertainty at 3 points every {} iterations'.format(when_calculate)
+        self.logger.statement('when_calculate set as {}\n'.format(when_calculate, use))
         self.joint_dv = pyemu.ParameterEnsemble(pst=self.pst, data=np.NaN, index=np.arange(2 * self.num_dv_reals),
                                                 columns=self.dv_names)
         self.joint_obs = pyemu.ObservationEnsemble(pst=self.pst, data=np.NaN, index=np.arange(2 * self.num_dv_reals),
@@ -74,8 +89,10 @@ class NSGA_II(EvolAlg):
         to_update = list(to_update)
         self.population_obs.loc[to_update, :] = self._calc_obs(self.population_dv.loc[to_update, self.dv_names]).values
         self.iter_num = 1
+        self.logger.log("initialising NSGA-II")
 
     def update(self):
+        self.logger.log('iteration number {}'.format(self.iter_num))
         # create joint population from previous archive and population
         self.joint_dv.loc[self.archive_dv.index, :] = self.archive_dv.loc[:, self.dv_names].values
         self.joint_dv.loc[self.population_dv.index, :] = self.population_dv.values
@@ -116,6 +133,7 @@ class NSGA_II(EvolAlg):
         to_update = list(to_update)
         # calculate observations for updated individuals in populations
         self.population_obs.loc[to_update, :] = self._calc_obs(self.population_dv.loc[to_update, self.dv_names]).values
+        self.logger.log('iteration number {}'.format(self.iter_num))
         self.iter_num += 1
         return self.joint_dv.loc[fronts[0], :], self.joint_obs.loc[fronts[0], :]
 
