@@ -316,6 +316,8 @@ class ParetoObjFunc(object):
             series with index of obs_df and bool series
         """
 
+        if np.any(obs_df.index.duplicated()):
+            self.logger.lraise("is_nondominated_kung() requires a non-duplicated index for obs_df")
         obj_df = obs_df.loc[:,self.obs_obj_names]
         obj_names = self.obs_obj_names
         ascending = False

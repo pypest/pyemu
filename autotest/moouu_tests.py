@@ -1067,21 +1067,26 @@ def sweep_loop():
 def process_sweep_loop():
     import os
     import pandas as pd
+    import numpy as np
     import matplotlib.pyplot as plt
     import pyemu
+
     oname = "sfrc40_1_03650.00"
     oname2 = "gw_malo1c_19791230"
     m_d = "sweep_temp"
     files = [f for f in os.listdir(m_d) if "out" in f]
     dfs = []
     for f in files:
-        df = pd.read_csv(os.path.join(m_d,f),index_col=0,nrows=1000)
+        df = pd.read_csv(os.path.join(m_d,f),index_col=0,nrows=10)
         df.columns = df.columns.str.lower()
         df = df.loc[:,[oname,oname2]]
         dfs.append(df)
     df1 = pd.concat(dfs)
+    df1.index = np.arange(df1.shape[0])
+    df1.reindex(df1.index)
+    print(df1.index.duplicated())
 
-    df2 = pd.read_csv(os.path.join("master_dec_var_sweep_mean", "sweep_out.csv"), index_col=0, nrows=100000)
+    df2 = pd.read_csv(os.path.join("master_dec_var_sweep_mean", "sweep_out.csv"), index_col=0, nrows=100)
     df2.columns = df2.columns.str.lower()
     print(df2.shape)
 
@@ -1104,12 +1109,14 @@ def process_sweep_loop():
         pst = pyemu.Pst(os.path.join("template", "freyberg.pst"))
         logger = pyemu.Logger("temp.log")
         obj = pyemu.moouu.ParetoObjFunc(pst=pst, obj_function_dict=odict, logger=logger)
+        print("kung 1",df.shape)
         nondom = obj.is_nondominated_kung(df)
-
+        break
         ax.scatter(df.loc[nondom, oname] * 1000, df.loc[nondom, oname2], marker=".", s=12, color='b',
                    label="risk tolerant")
 
         obj_rev = pyemu.moouu.ParetoObjFunc(pst=pst, obj_function_dict=odict_rev, logger=logger)
+        print("kung 2",df.shape)
         nondom = obj_rev.is_nondominated_kung(df)
         ax.scatter(df.loc[nondom, oname] * 1000, df.loc[nondom, oname2], marker=".", s=12, color='r',
                    label="risk averse")
