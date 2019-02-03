@@ -1,17 +1,13 @@
-PEST++ performance logger started at:  14:23:24
-        ( time = 14:23:24,  elapsed time = 12ms )
+PEST++ performance logger started at:  15:49:25
+        ( time = 15:49:25,  elapsed time = 3ms )
   starting to process control file
-          ( time = 14:23:24,  elapsed time = 1ms )
+          ( time = 15:49:25,  elapsed time = 492us )
   finished processing control file
-          ( time = 14:23:24,  elapsed time = 2ms )
+          ( time = 15:49:25,  elapsed time = 1ms )
     starting basic model IO error checking
-            ( time = 14:23:24,  elapsed time = 3ms )
+            ( time = 15:49:25,  elapsed time = 1ms )
     finished basic model IO error checking
-            ( time = 14:23:24,  elapsed time = 10ms )
+            ( time = 15:49:25,  elapsed time = 7ms )
       starting to read parameter csv file
-              ( time = 14:23:24,  elapsed time = 252us )
-      finished reading parameter csv file
-              ( time = 14:23:52,  elapsed time = 28sec )
-        starting to read parameter csv file
-                ( time = 14:23:52,  elapsed time = 50us )
-        finished reading parameter csv file
+              ( time = 15:49:25,  elapsed time = 149us )
+      error processing parameter csv file: error parsing csv file on line 1: wrong number of tokens, expecting 4, found 33

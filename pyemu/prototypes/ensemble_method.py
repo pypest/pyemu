@@ -241,6 +241,7 @@ class EnsembleMethod(object):
         parensemble.to_csv(self.sweep_in_csv)
         if self.num_slaves > 0:
             master_thread = self._get_master_thread()
+            print(os.getcwd())
             pyemu.utils.start_slaves(self.slave_dir,"pestpp-swp",self.pst.filename,
                                      self.num_slaves,slave_root='..',port=self.port)
             master_thread.join()

@@ -87,7 +87,6 @@ class ParetoObjFunc(object):
         stochastic_cols = set(stochastic_cols)
         cdf = observation_ensemble.loc[:, stochastic_cols]
         self.cdf_dfs = cdf - cdf.mean(axis=0)
-        print(self.cdf_dfs)
 
     def get_approximation_points(self, obs_ensemble):
         """
@@ -115,7 +114,6 @@ class ParetoObjFunc(object):
         mid_pareto_index = front.index[np.argmin(distances)]
         approximation_points = set(min) | set(max)
         approximation_points.add(mid_pareto_index)
-        print(approximation_points)
         return list(approximation_points)
 
     def is_feasible(self, obs_df, risk=0.5):
@@ -723,14 +721,10 @@ class EvolAlg(EnsembleMethod):
     def _drop_failed(failed_runs, dv_ensemble, obs_ensemble):
         if failed_runs is None:
             return
-        print(dv_ensemble)
         dv_ensemble.loc[failed_runs,:] = np.NaN
-        print(dv_ensemble)
-        print(obs_ensemble)
         dv_ensemble = dv_ensemble.dropna(axis=0)
         obs_ensemble.loc[failed_runs,:] = np.NaN
         obs_ensemble = obs_ensemble.dropna(axis=0)
-        print(obs_ensemble)
 
     def _archive(self,dv_ensemble,obs_ensemble):
         self.logger.log("archiving {0} solutions".format(dv_ensemble.shape[0]))
@@ -795,7 +789,6 @@ class EvolAlg(EnsembleMethod):
             elif self.when_calculate == -1:  # calculate ensemble only for initial point then propagate
                 if self._initialized is False:
                     midpoint = self._get_bounds().mean(axis=0) # calculate
-                    print(midpoint)
                     time.sleep(0.1)
                     midpoint = pd.DataFrame(data=midpoint, index=self.dv_names).T  # dv dataframe using mean of dvs
                     eval_ensemble = self._evaluation_ensemble(midpoint, self.par_ensemble)

@@ -1,0 +1,47 @@
+2019-01-31 11:33:50.102734 starting: opening C:\Users\Violet\pyemu\autotest\moouu\verbose_files\zdt1_single_point.rec for logging
+2019-01-31 11:33:50.495306 using NSGA-II as evolutionary algorithm.
+Parameters:
+pst zdt1.pst
+parcov None
+obscov None
+num_slaves 4
+use_approx_prior True
+ submit_file None
+verbose C:\Users\Violet\pyemu\autotest\moouu\verbose_files\zdt1_single_point.rec
+port 4004
+slave_dir template
+cross_prob 0.9
+cross_dist 15
+mut_prob 0.01
+mut_dist 20
+2019-01-31 11:33:50.496301 2 obs objective functions registered
+2019-01-31 11:33:50.500288 obs obj function: obj1, direction: min
+2019-01-31 11:33:50.500288 obs obj function: obj2, direction: min
+2019-01-31 11:33:50.500288 0 pi objective functions registered
+2019-01-31 11:33:50.538190 starting: evaluate initial dv ensemble of size 5
+2019-01-31 11:33:50.657933 starting: removing existing sweep in/out files
+2019-01-31 11:33:50.657933 WARNING: error removing existing sweep out file:[WinError 2] The system cannot find the file specified: 'sweep_out.csv'
+2019-01-31 11:33:50.658932 finished: removing existing sweep in/out files took: 0:00:00.000999
+2019-01-31 11:33:50.659929 starting: evaluating ensemble of size 5 locally with sweep
+2019-01-31 11:34:04.594109 finished: evaluating ensemble of size 5 locally with sweep took: 0:00:13.934180
+2019-01-31 11:34:04.594109 starting: reading sweep out csv sweep_out.csv
+2019-01-31 11:34:04.599098 finished: reading sweep out csv sweep_out.csv took: 0:00:00.004989
+2019-01-31 11:34:04.599098 total runs:5
+2019-01-31 11:34:04.602115 adding missing parameters to decision variable ensemble: ['par1', 'par10', 'par11', 'par12', 'par13', 'par14', 'par15', 'par16', 'par17', 'par18', 'par19', 'par2', 'par20', 'par21', 'par22', 'par23', 'par24', 'par25', 'par26', 'par27', 'par28', 'par29', 'par3', 'par30', 'par4', 'par5', 'par6', 'par7', 'par8', 'par9']
+2019-01-31 11:34:04.609096 starting: removing existing sweep in/out files
+2019-01-31 11:34:04.610068 finished: removing existing sweep in/out files took: 0:00:00.000972
+2019-01-31 11:34:04.610068 starting: evaluating ensemble of size 5 locally with sweep
+2019-01-31 11:34:17.560129 finished: evaluating ensemble of size 5 locally with sweep took: 0:00:12.950061
+2019-01-31 11:34:17.560129 starting: reading sweep out csv sweep_out.csv
+2019-01-31 11:34:17.564116 finished: reading sweep out csv sweep_out.csv took: 0:00:00.003987
+2019-01-31 11:34:17.564692 total runs:10
+2019-01-31 11:34:17.587633 starting: archiving 5 solutions
+2019-01-31 11:34:17.641516 finished: evaluate initial dv ensemble of size 5 took: 0:00:27.103326
+2019-01-31 11:34:17.641516 starting: initialising NSGA-II
+2019-01-31 11:34:17.641516 when_calculate set as -1
+
+2019-01-31 11:34:17.690360 adding missing parameters to decision variable ensemble: ['par1', 'par10', 'par11', 'par12', 'par13', 'par14', 'par15', 'par16', 'par17', 'par18', 'par19', 'par2', 'par20', 'par21', 'par22', 'par23', 'par24', 'par25', 'par26', 'par27', 'par28', 'par29', 'par3', 'par30', 'par4', 'par5', 'par6', 'par7', 'par8', 'par9']
+2019-01-31 11:34:17.692383 starting: removing existing sweep in/out files
+2019-01-31 11:34:17.693351 finished: removing existing sweep in/out files took: 0:00:00.000968
+2019-01-31 11:34:17.693351 starting: evaluating ensemble of size 5 locally with sweep
+2019-01-31 11:34:27.098532 ERROR: error starting condor master: run() returned non-zero

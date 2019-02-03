@@ -311,7 +311,7 @@ class ZDT2(DeterministicBenchmark):
 
     @staticmethod
     def calculate_objectives(d_vars, pars):
-        return np.array([ZDT1.f1(d_vars), ZDT1.f2(d_vars)])
+        return np.array([ZDT2.f1(d_vars), ZDT2.f2(d_vars)])
 
     @staticmethod
     def pareto_front():
@@ -347,6 +347,14 @@ class ZDT3(DeterministicBenchmark):
         return g * (1 - np.sqrt(ZDT3.f1(x) / g) - (ZDT3.f1(x) / g) * np.sin(10 * np.pi * ZDT3.f1(x)))
 
     @staticmethod
+    def calculate_objectives(d_vars, pars):
+        return np.array([ZDT3.f1(d_vars), ZDT3.f2(d_vars)])
+
+    @staticmethod
+    def bounds():
+        return [(0, 1) for _ in range(ZDT3.number_decision_variables())]
+
+    @staticmethod
     def number_decision_variables():
         return 30
 
@@ -379,6 +387,14 @@ class ZDT4(DeterministicBenchmark):
         return g * (1 - np.sqrt(ZDT4.f1(x) / g))
 
     @staticmethod
+    def bounds():
+        return [(0, 1) if i == 0 else (-5, 5) for i in range(ZDT4.number_decision_variables())]
+
+    @staticmethod
+    def calculate_objectives(d_vars, pars):
+        return np.array([ZDT4.f1(d_vars), ZDT4.f2(d_vars)])
+
+    @staticmethod
     def number_decision_variables():
         return 10
 
@@ -409,6 +425,14 @@ class ZDT6(DeterministicBenchmark):
         else:
             g = 1 + 9 * np.power(np.sum(x[1:]) / (len(x) - 1), 0.25)
         return g * (1 - np.power(ZDT6.f1(x) / g, 2))
+
+    @staticmethod
+    def bounds():
+        return [(0, 1) for _ in range(ZDT6.number_decision_variables())]
+
+    @staticmethod
+    def calculate_objectives(d_vars, pars):
+        return np.array([ZDT6.f1(d_vars), ZDT6.f2(d_vars)])
 
     @staticmethod
     def number_decision_variables():
@@ -596,7 +620,8 @@ class Test2(DeterministicBenchmark):
 
 
 test_functions = {"stochasticparaboloid": StochasticParaboloid, "stochasticparaboloid2": StochasticParaboloid2,
-                  'simple': Simple, 'zdt1': ZDT1, 'zdt2': ZDT2, 'test1': Test1, 'test2': Test2, 'constr': CONSTR,
+                  'simple': Simple, 'zdt1': ZDT1, 'zdt2': ZDT2, 'zdt3': ZDT3, 'zdt4': ZDT4, 'zdt6': ZDT6,
+                  'test1': Test1, 'test2': Test2, 'constr': CONSTR,
                   'srn': SRN}
 
 parameter_interactions = {'additive': additive_parameter_interaction,
@@ -680,6 +705,7 @@ class IOWrapper:
 
 
 if __name__ == '__main__':
+    print('running')
     IOWrapper()
 
 
