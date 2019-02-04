@@ -326,6 +326,7 @@ class ParetoObjFunc(object):
         P = list(obj_df.index)
 
         def front(p):
+            #print(len(p))
             if len(p) == 1:
                 return p
             p = list(obj_df.loc[p,:].sort_values(by=obj_names[0],ascending=ascending).index)

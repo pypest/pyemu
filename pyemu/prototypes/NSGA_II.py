@@ -44,7 +44,7 @@ class NSGA_II(EvolAlg):
         initialising_variables = 'pst {}\nparcov {}\nobscov {}\nnum_slaves {}\nuse_approx_prior {}\n ' \
                                  'submit_file {}\nverbose {}\nport {}\nslave_dir {}\n' \
                                  'cross_prob {}\ncross_dist {}\nmut_prob {}\n' \
-                                 'mut_dist {}'.format(pst.filename, parcov, obscov, num_slaves, use_approx_prior,
+                                 'mut_dist {}'.format(self.pst.filename, parcov, obscov, num_slaves, use_approx_prior,
                                                       submit_file, verbose, port, slave_dir, cross_prob, cross_dist,
                                                       mut_prob, mut_dist)
         self.logger.statement('using NSGA-II as evolutionary algorithm.\nParameters:\n{}'.format(initialising_variables))
