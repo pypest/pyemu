@@ -314,6 +314,8 @@ class ParetoObjFunc(object):
             series with index of obs_df and bool series
         """
 
+        if np.any(obs_df.index.duplicated()):
+            self.logger.lraise("is_nondominated_kung() requires a non-duplicated index for obs_df")
         obj_df = obs_df.loc[:,self.obs_obj_names]
         obj_names = self.obs_obj_names
         ascending = False
@@ -324,6 +326,7 @@ class ParetoObjFunc(object):
         P = list(obj_df.index)
 
         def front(p):
+            #print(len(p))
             if len(p) == 1:
                 return p
             p = list(obj_df.loc[p,:].sort_values(by=obj_names[0],ascending=ascending).index)
