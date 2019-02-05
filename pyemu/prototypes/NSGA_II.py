@@ -56,13 +56,6 @@ class NSGA_II(EvolAlg):
                            dv_ensemble=dv_ensemble, par_ensemble=par_ensemble, risk=risk, dv_names=dv_names,
                            par_names=par_names, when_calculate=when_calculate)
         self.logger.log("initialising NSGA-II")
-        if when_calculate < 0:
-            use = 'single (mean of bounds) point uncertainty calculation'
-        elif when_calculate == 0:
-            use = 'complete recalculation of uncertainty for every point in decision space'
-        else:
-            use = 'will recalculate uncertainty at 3 points every {} iterations'.format(when_calculate)
-        self.logger.statement('when_calculate set as {}\n'.format(when_calculate, use))
         self.joint_dv = pyemu.ParameterEnsemble(pst=self.pst, data=np.NaN, index=np.arange(2 * self.num_dv_reals),
                                                 columns=self.dv_names)
         self.joint_obs = pyemu.ObservationEnsemble(pst=self.pst, data=np.NaN, index=np.arange(2 * self.num_dv_reals),

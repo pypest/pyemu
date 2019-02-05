@@ -521,6 +521,32 @@ class ParetoObjFunc(object):
             i += 1
         return rank
 
+    def spea2_fitness_assignment(self, obs_df, risk, pop_size):
+        k = int(np.sqrt(2 * pop_size)) - 1
+        obj_df = obs_df.loc[:, self.obs_obj_names]
+        cnst_df = self.constraint_violation_vector(obs_df, risk=risk)
+        index = set(obs_df.index)
+        fitness = pd.Series(data=np.NaN, index=obs_df.index)
+        strength = pd.Series(data=0, index=obs_df.index)
+        distance = pd.DataFrame(data=np.NaN, index=obs_df.index, columns=obs_df.index)
+        dominated_by = {idx: set() for idx in index}
+        for idx1 in index:
+            for idx2 in index - {idx1}:
+                if self.dominates(obj_df.loc[idx1, :], obj_df.loc[idx2, :], cnst_df.loc[idx1], cnst_df.loc[idx2]):
+                    strength.loc[idx1] = strength.loc[idx1] + 1
+                    dominated_by[idx2].add(idx1)
+                d = np.linalg.norm(obj_df.loc[idx1, :] - obj_df.loc[idx2, :], 2)
+                distance.loc[idx1, idx2] = d
+                distance.loc[idx2, idx1] = d
+        for idx1 in index:
+            raw_fitness = 0
+            for idx2 in dominated_by[idx1]:
+                raw_fitness += strength.loc[idx2]
+            kth_nearest = np.partition(distance.loc[idx1, :], k)[k]
+            density = 1 / (kth_nearest + 2)
+            fitness.loc[idx1] = raw_fitness + density
+        return fitness, distance
+
 
 class EvolAlg(EnsembleMethod):
     def __init__(self, pst, parcov = None, obscov = None, num_slaves = 0, use_approx_prior = True,
@@ -552,7 +578,13 @@ class EvolAlg(EnsembleMethod):
         # just nondom, feasible solutions?
 
         # todo : check that the dv ensemble index is not duplicated
-
+        if when_calculate < 0:
+            use = 'single (mean of bounds) point uncertainty calculation'
+        elif when_calculate == 0:
+            use = 'complete recalculation of uncertainty for every point in decision space'
+        else:
+            use = 'will recalculate uncertainty at 3 points every {} iterations'.format(when_calculate)
+        self.logger.statement('when_calculate set as {}\n{}'.format(when_calculate, use))
         self.dv_ensemble_archive = None
         self.obs_ensemble_archive = None
 
