@@ -134,14 +134,35 @@ def test_nsga2_non_dominated_sort():
     assert rank.loc[7] == 5
 
 
+def test_spea2_fitness_assignment():
+    obj_func = ParetoObjFunc(simple, obj_function_dict=simple_objecives, logger=logger)
+    obs_values = []
+    for i in range(1, 4):
+        for j in range(1, 4):
+            obs_values.append([j, 1/j + i])
+    obs_df = pyemu.ObservationEnsemble(pst=simple, data=obs_values)
+    index = obs_df.index
+    fitness, distance = obj_func.spea2_fitness_assignment(obs_df, risk=0.5, pop_size=4.5)
+    assert np.isclose(fitness.loc[index[0]], 0.320715)
+    assert np.isclose(fitness.loc[index[1]], 0.320715)
+    assert np.isclose(fitness.loc[index[2]], 0.282758)
+    assert np.isclose(fitness.loc[index[3]], 6.320715)
+    assert np.isclose(fitness.loc[index[4]], 10.33181)
+    assert np.isclose(fitness.loc[index[5]], 12.33181)
+    assert np.isclose(fitness.loc[index[6]], 9.262966)
+    assert np.isclose(fitness.loc[index[7]], 15.32071)
+    assert np.isclose(fitness.loc[index[8]], 18.30287)
+
+
 
 
 if __name__ == '__main__':
-    test_init()
-    test_is_feasible()
-    test_constraint_violation_vector()
-    test_objective_vector()
-    test_dominates()
-    test_is_nondominated_kung()
-    test_crowding_distance()
-    test_nsga2_non_dominated_sort()
+    # test_init()
+    # test_is_feasible()
+    # test_constraint_violation_vector()
+    # test_objective_vector()
+    # test_dominates()
+    # test_is_nondominated_kung()
+    # test_crowding_distance()
+    # test_nsga2_non_dominated_sort()
+    test_spea2_fitness_assignment()
