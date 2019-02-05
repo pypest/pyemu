@@ -1136,11 +1136,13 @@ def process_sweep_loop():
     plt.show()
 
 
-def apply_nsgaii_to_freyberg():
+def apply_nsgaii_to_freyberg_neutral():
     import os
     import shutil
+    import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
+    from matplotlib import cm
     import pyemu
     from pyemu.prototypes.NSGA_II import NSGA_II
 
@@ -1148,11 +1150,11 @@ def apply_nsgaii_to_freyberg():
     df2.columns = df2.columns.str.lower()
 
     t_d = "template_temp"
-    if os.path.exists(t_d):
-        shutil.rmtree(t_d)
-    shutil.copytree("template",t_d)
-    os.remove(os.path.join(t_d,"sweep_in.csv"))
-    m_d = "frebyerg_nsgaii"
+    if not os.path.exists(t_d):
+        shutil.copytree("template",t_d)
+        os.remove(os.path.join(t_d,"sweep_in.csv"))
+
+    m_d = "frebyerg_nsgaii_neutral"
     if os.path.exists(m_d):
         shutil.rmtree(m_d)
     shutil.copytree(t_d,m_d)
@@ -1162,10 +1164,113 @@ def apply_nsgaii_to_freyberg():
     # dv_how = {p:"uniform" for p in dv_names}
     # pyemu.ParameterEnsemble.from_mixed_draws(pst=pst,how_dict=dv_how)
     # dv_ensemble = pyemu.ParameterEnsemble(pst=simple, data=data)
-    df = pd.read_csv(os.path.join("template","sweep_in.csv"),index_col=0,nrows=20)
-    df.columns = df.columns.str.lower()
+    dv_en = os.path.join("template","dv_en.csv")
 
-    dv_ensemble = pyemu.ParameterEnsemble(pst=pst,data=df.loc[:,dv_names].copy()).dropna(axis=1)
+   # if not os.path.exists(dv_en):
+    if True:
+        df = pd.read_csv(os.path.join("template","sweep_in.csv"),index_col=0,nrows=20)
+        df.columns = df.columns.str.lower()
+        dv_ensemble = pyemu.ParameterEnsemble(pst=pst, data=df.loc[:, dv_names].copy()).dropna(axis=1)
+        dv_ensemble.to_csv(dv_en)
+    else:
+        df = pd.read_csv(dv_en,index_col=0)
+        dv_ensemble = pyemu.ParameterEnsemble.from_dataframe(pst=pst, df=df)
+    print(dv_ensemble.max())
+
+    oname = "sfrc40_1_03650.00"
+    oname2 = "gw_malo1c_19791230"
+    odict = {oname: "min", oname2: "max"}
+    os.chdir(m_d)
+    shutil.copytree(os.path.join("..",t_d),t_d)
+
+    evolAlg = NSGA_II(pst="freyberg.pst", verbose=True, slave_dir=t_d,num_slaves=3)
+    evolAlg.initialize(obj_func_dict=odict, dv_ensemble=dv_ensemble)#, num_dv_reals=5)
+    obj_by_iter = [evolAlg.obs_ensemble.copy()]
+    dv_by_iter = [evolAlg.dv_ensemble.copy()]
+    evolAlg.dv_ensemble.to_csv(os.path.join("freyberg.dv_ensemble.0.csv"))
+    evolAlg.obs_ensemble.to_csv(os.path.join("freyberg.obs_ensemble.0.csv"))
+
+    for i in range(20):
+        dvdf,odf =  evolAlg.update()
+        dvdf.to_csv(os.path.join("freyberg.dv_ensemble.{0}.csv".format(i+1)))
+        evolAlg.obs_ensemble.to_csv(os.path.join("freyberg.obs_ensemble.{0}.csv".format(i+1)))
+        obj_by_iter.append(odf.copy())
+        dv_by_iter.append(dvdf)
+
+    #_, objective_df = evolAlg.update()
+    #f1, f2 = simple_objectives.keys()
+    #for dvdf in dv_by_iter:
+    #    print(dvdf.max())
+    fig = plt.figure(figsize=(6,6))
+    ax = plt.subplot(111)
+    #pst = pyemu.Pst(os.path.join("master_dec_var_sweep_mean", "freyberg.pst"))
+    logger = pyemu.Logger("temp.log")
+    obj = pyemu.moouu.ParetoObjFunc(pst=pst, obj_function_dict=odict, logger=logger)
+    nondom = obj.is_nondominated_kung(df2)
+
+    #ax.scatter(df2.loc[nondom, oname] * 1000, df2.loc[nondom, oname2], marker=".", s=12, color='b',label="true")
+
+    ax.scatter(obj_by_iter[0].loc[:, oname] * 1000, obj_by_iter[0].loc[:, oname2],marker='.',color="0.5",label="initial",alpha=0.5)
+    color_idx = np.linspace(0,1,len(obj_by_iter) - 1)
+    for i,obj_df in enumerate(obj_by_iter[1:]):
+        ax.scatter(obj_df.loc[:, oname] * 1000, obj_df.loc[:, oname2],marker='.',
+                    color=cm.coolwarm(color_idx[i]),label="iter {0}".format(i+1))
+    # x = np.linspace(0.1, 2)
+    # y = 1 / x
+    # plt.plot(x, y)
+    ax.set_xlabel("reach 40 concentration ($\\frac{mg}{l}$")
+    ax.set_ylabel("nitrate load ($kg$)")
+    plt.savefig("freyberg_neutral.pdf")
+    plt.show()
+    os.chdir("..")
+
+
+def apply_nsgaii_to_freyberg_tolerant():
+    import os
+    import shutil
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from matplotlib import cm
+    import pyemu
+    from pyemu.prototypes.NSGA_II import NSGA_II
+
+    df2 = pd.read_csv(os.path.join("master_dec_var_sweep_mean", "sweep_out.csv"), index_col=0, nrows=100000000)
+    df2.columns = df2.columns.str.lower()
+
+    t_d = "template_temp"
+    if not os.path.exists(t_d):
+        shutil.copytree("template",t_d)
+        os.remove(os.path.join(t_d,"sweep_in.csv"))
+
+    m_d = "frebyerg_nsgaii_tolerant"
+    if os.path.exists(m_d):
+        shutil.rmtree(m_d)
+    shutil.copytree(t_d,m_d)
+    pst = pyemu.Pst(os.path.join(t_d,"freyberg.pst"))
+    par = pst.parameter_data
+    dv_names = list(par.loc[par.apply(lambda x : x.parnme.startswith('k') and x.partrans!="tied",axis=1),"parnme"])
+    # dv_how = {p:"uniform" for p in dv_names}
+    # pyemu.ParameterEnsemble.from_mixed_draws(pst=pst,how_dict=dv_how)
+    # dv_ensemble = pyemu.ParameterEnsemble(pst=simple, data=data)
+    dv_en = os.path.join("template","dv_en.csv")
+
+   # if not os.path.exists(dv_en):
+    if True:
+        df = pd.read_csv(os.path.join("template","sweep_in.csv"),index_col=0,nrows=20)
+        df.columns = df.columns.str.lower()
+        dv_ensemble = pyemu.ParameterEnsemble(pst=pst, data=df.loc[:, dv_names].copy()).dropna(axis=1)
+        dv_ensemble.to_csv(dv_en)
+    else:
+        df = pd.read_csv(dv_en,index_col=0)
+        dv_ensemble = pyemu.ParameterEnsemble.from_dataframe(pst=pst, df=df)
+
+    par_names = [n for n in pst.par_names if n not in dv_names]
+    df = pd.read_csv(os.path.join("template", "sweep_in.csv"), index_col=0, nrows=100)
+    df.columns = df.columns.str.lower()
+    par_ensemble = pyemu.ParameterEnsemble(pst=pst, data=df.loc[:, par_names].copy()).dropna(axis=1)
+
+
     oname = "sfrc40_1_03650.00"
     oname2 = "gw_malo1c_19791230"
     odict = {oname: "min", oname2: "max"}
@@ -1173,30 +1278,133 @@ def apply_nsgaii_to_freyberg():
     shutil.copytree(os.path.join("..",t_d),t_d)
 
     evolAlg = NSGA_II(pst="freyberg.pst", verbose=True, slave_dir=t_d,num_slaves=10)
-    evolAlg.initialize(obj_func_dict=odict, dv_ensemble=dv_ensemble)#, num_dv_reals=5)
+    evolAlg.initialize(obj_func_dict=odict, dv_ensemble=dv_ensemble,risk=0.001,par_ensemble=par_ensemble,when_calculate=1)#, num_dv_reals=5)
     obj_by_iter = [evolAlg.obs_ensemble.copy()]
-    for i in range(10):
-        x,odf =  evolAlg.update()
+    dv_by_iter = [evolAlg.dv_ensemble.copy()]
+    evolAlg.dv_ensemble.to_csv(os.path.join("freyberg.dv_ensemble.0.csv"))
+    evolAlg.obs_ensemble.to_csv(os.path.join("freyberg.obs_ensemble.0.csv"))
+
+    for i in range(20):
+        dvdf,odf =  evolAlg.update()
+        dvdf.to_csv(os.path.join("freyberg.dv_ensemble.{0}.csv".format(i+1)))
+        evolAlg.obs_ensemble.to_csv(os.path.join("freyberg.obs_ensemble.{0}.csv".format(i+1)))
         obj_by_iter.append(odf.copy())
+        dv_by_iter.append(dvdf)
+
     #_, objective_df = evolAlg.update()
     #f1, f2 = simple_objectives.keys()
+    #for dvdf in dv_by_iter:
+    #    print(dvdf.max())
     fig = plt.figure(figsize=(6,6))
     ax = plt.subplot(111)
     #pst = pyemu.Pst(os.path.join("master_dec_var_sweep_mean", "freyberg.pst"))
     logger = pyemu.Logger("temp.log")
     obj = pyemu.moouu.ParetoObjFunc(pst=pst, obj_function_dict=odict, logger=logger)
-    nondom = obj.is_nondominated_kung(df)
+    nondom = obj.is_nondominated_kung(df2)
 
-    ax.scatter(df.loc[nondom, oname] * 1000, df.loc[nondom, oname2], marker=".", s=12, color='b',label="true")
+    #ax.scatter(df2.loc[nondom, oname] * 1000, df2.loc[nondom, oname2], marker=".", s=12, color='b',label="true")
 
-    plt.scatter(obj_by_iter[0].loc[:, oname] * 1000, obj_by_iter[0].loc[:, oname2],marker='.',color="0.5",lable="initial")
+    ax.scatter(obj_by_iter[0].loc[:, oname] * 1000, obj_by_iter[0].loc[:, oname2],marker='.',color="0.5",label="initial",alpha=0.5)
     color_idx = np.linspace(0,1,len(obj_by_iter) - 1)
-    for i,obj_df in enumerate(obj_by_iter):
-        plt.scatter(objective_df.loc[:, oname] * 1000, objective_df.loc[:, oname2],marker='.',
-                    color=plt.cmap.cool(color_idx[i]),label="iter {0}".format(i+1))
+    for i,obj_df in enumerate(obj_by_iter[1:]):
+        ax.scatter(obj_df.loc[:, oname] * 1000, obj_df.loc[:, oname2],marker='.',
+                    color=cm.coolwarm(color_idx[i]),label="iter {0}".format(i+1))
     # x = np.linspace(0.1, 2)
     # y = 1 / x
     # plt.plot(x, y)
+    ax.set_xlabel("reach 40 concentration ($\\frac{mg}{l}$")
+    ax.set_ylabel("nitrate load ($kg$)")
+    plt.savefig("freyberg_neutral.pdf")
+    plt.show()
+    os.chdir("..")
+
+
+def run_nsga_freyberg_reuse_sweep():
+    import os
+    import shutil
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from matplotlib import cm
+    import pyemu
+    from pyemu.prototypes.NSGA_II import NSGA_II
+
+    t_d = "template_temp"
+    if not os.path.exists(t_d):
+        shutil.copytree("template",t_d)
+        os.remove(os.path.join(t_d,"sweep_in.csv"))
+
+    m_d = "frebyerg_nsgaii_tolerant"
+    if os.path.exists(m_d):
+        shutil.rmtree(m_d)
+    shutil.copytree(t_d,m_d)
+    pst = pyemu.Pst(os.path.join(t_d,"freyberg.pst"))
+    par = pst.parameter_data
+    dv_names = list(par.loc[par.apply(lambda x : x.parnme.startswith('k') and x.partrans!="tied",axis=1),"parnme"])
+    # dv_how = {p:"uniform" for p in dv_names}
+    # pyemu.ParameterEnsemble.from_mixed_draws(pst=pst,how_dict=dv_how)
+    # dv_ensemble = pyemu.ParameterEnsemble(pst=simple, data=data)
+    dv_en = os.path.join("template","dv_en.csv")
+
+   # if not os.path.exists(dv_en):
+    if True:
+        df = pd.read_csv(os.path.join("template","sweep_in.csv"),index_col=0,nrows=20)
+        df.columns = df.columns.str.lower()
+        dv_ensemble = pyemu.ParameterEnsemble(pst=pst, data=df.loc[:, dv_names].copy()).dropna(axis=1)
+        dv_ensemble.to_csv(dv_en)
+    else:
+        df = pd.read_csv(dv_en,index_col=0)
+        dv_ensemble = pyemu.ParameterEnsemble.from_dataframe(pst=pst, df=df)
+
+    par_names = [n for n in pst.par_names if n not in dv_names]
+    df = pd.read_csv(os.path.join("template", "sweep_in.csv"), index_col=0, nrows=10)
+    df.columns = df.columns.str.lower()
+    par_ensemble = pyemu.ParameterEnsemble(pst=pst, data=df.loc[:, par_names].copy()).dropna(axis=1)
+
+
+    oname = "sfrc40_1_03650.00"
+    oname2 = "gw_malo1c_19791230"
+    odict = {oname: "min", oname2: "max"}
+    os.chdir(m_d)
+    shutil.copytree(os.path.join("..",t_d),t_d)
+
+    evolAlg = NSGA_II(pst="freyberg.pst", verbose=True, slave_dir=t_d,num_slaves=30)
+    evolAlg.initialize(obj_func_dict=odict, dv_ensemble=dv_ensemble,risk=0.001,par_ensemble=par_ensemble)#, num_dv_reals=5)
+    obj_by_iter = [evolAlg.obs_ensemble.copy()]
+    dv_by_iter = [evolAlg.dv_ensemble.copy()]
+    evolAlg.dv_ensemble.to_csv(os.path.join("freyberg.dv_ensemble.0.csv"))
+    evolAlg.obs_ensemble.to_csv(os.path.join("freyberg.obs_ensemble.0.csv"))
+
+    for i in range(20):
+        dvdf,odf =  evolAlg.update()
+        dvdf.to_csv(os.path.join("freyberg.dv_ensemble.{0}.csv".format(i+1)))
+        evolAlg.obs_ensemble.to_csv(os.path.join("freyberg.obs_ensemble.{0}.csv".format(i+1)))
+        obj_by_iter.append(odf.copy())
+        dv_by_iter.append(dvdf)
+
+    #_, objective_df = evolAlg.update()
+    #f1, f2 = simple_objectives.keys()
+    #for dvdf in dv_by_iter:
+    #    print(dvdf.max())
+    fig = plt.figure(figsize=(6,6))
+    ax = plt.subplot(111)
+    #pst = pyemu.Pst(os.path.join("master_dec_var_sweep_mean", "freyberg.pst"))
+    logger = pyemu.Logger("temp.log")
+    obj = pyemu.moouu.ParetoObjFunc(pst=pst, obj_function_dict=odict, logger=logger)
+    nondom = obj.is_nondominated_kung(df2)
+
+    #ax.scatter(df2.loc[nondom, oname] * 1000, df2.loc[nondom, oname2], marker=".", s=12, color='b',label="true")
+
+    ax.scatter(obj_by_iter[0].loc[:, oname] * 1000, obj_by_iter[0].loc[:, oname2],marker='.',color="0.5",label="initial",alpha=0.5)
+    color_idx = np.linspace(0,1,len(obj_by_iter) - 1)
+    for i,obj_df in enumerate(obj_by_iter[1:]):
+        ax.scatter(obj_df.loc[:, oname] * 1000, obj_df.loc[:, oname2],marker='.',
+                    color=cm.coolwarm(color_idx[i]),label="iter {0}".format(i+1))
+    # x = np.linspace(0.1, 2)
+    # y = 1 / x
+    # plt.plot(x, y)
+    ax.set_xlabel("reach 40 concentration ($\\frac{mg}{l}$")
+    ax.set_ylabel("nitrate load ($kg$)")
     plt.savefig("freyberg_neutral.pdf")
     plt.show()
     os.chdir("..")
@@ -1237,6 +1445,8 @@ if __name__ == "__main__":
     #invest()
     #sweep_loop()
     #process_sweep_loop()
-    apply_nsgaii_to_freyberg()
+    apply_nsgaii_to_freyberg_tolerant()
+    #apply_nsgaii_to_freyberg_neutral()
+    #run_nsga_freyberg_reuse_sweep()
     #redis_freyberg()
     #invest()

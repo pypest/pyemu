@@ -84,10 +84,11 @@ class NSGA_II(EvolAlg):
         new_population_index = self.tournament_selection(self.archive_dv, self.num_dv_reals)
         self.population_dv.loc[:, :] = self.archive_dv.loc[new_population_index, self.dv_names].values
         self.population_obs.loc[:, :] = self.archive_obs.loc[new_population_index, :].values
-        to_update = Crossover.sbx(self.population_dv, self._get_bounds(), self.cross_prob, self.mut_dist)
-        to_update | Mutation.polynomial(self.population_dv, self._get_bounds(), self.mut_prob, self.mut_dist)
-        to_update = list(to_update)
-        self.population_obs.loc[to_update, :] = self._calc_obs(self.population_dv.loc[to_update, self.dv_names]).values
+        # to_update = Crossover.sbx(self.population_dv, self._get_bounds(), self.cross_prob, self.mut_dist)
+        # mut_to_update = Mutation.polynomial(self.population_dv, self._get_bounds(), self.mut_prob, self.mut_dist)
+        # to_update = to_update | mut_to_update
+        # to_update = list(to_update)
+        # self.population_obs.loc[to_update, :] = self._calc_obs(self.population_dv.loc[to_update, self.dv_names]).values
         self.iter_num = 1
         self.logger.log("initialising NSGA-II")
 
