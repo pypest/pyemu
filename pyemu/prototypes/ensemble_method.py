@@ -93,11 +93,14 @@ class EnsembleMethod(object):
     def initialize(self,*args,**kwargs):
         raise Exception("EnsembleMethod.initialize() must be implemented by the derived types")
 
-    def _add_missing_pars(self, parensemble):
+    def _add_missing_pars(self, parensemble,istransformed=False):
         missing_pars = set(self.pst.par_names) - set(parensemble.columns)
         self.logger.statement('adding missing parameters to decision variable ensemble: {}'.format(sorted(missing_pars)))
         if len(missing_pars) > 0:
-            parval1 = self.pst.parameter_data.loc[missing_pars, 'parval1_trans']
+            if istransformed:
+                parval1 = self.pst.parameter_data.loc[missing_pars, 'parval1_trans']
+            else:
+                parval1 = self.pst.parameter_data.loc[missing_pars, 'parval1']
             parensemble = parensemble.reindex(columns=self.pst.par_names)
             parensemble.loc[:, missing_pars] = parval1.values
         return parensemble

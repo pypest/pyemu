@@ -95,8 +95,9 @@ class ParetoObjFunc(object):
         :return: list of indexes in obs_ensemble which should be used to calculate a cdf
         """
         is_nondominated = self.is_nondominated_kung(obs_ensemble)
-        front_loc = np.where(is_nondominated.values == True)[0]
-        time.sleep(0.1)
+        #front_loc = np.where(is_nondominated.values == True)[0]
+        front_loc = obs_ensemble.loc[is_nondominated, :].index.values
+        #time.sleep(0.1)
         front = obs_ensemble.loc[front_loc, self.obs_obj_names]
         min = front.idxmin(axis=0)
         max = front.idxmax(axis=0)
@@ -641,7 +642,7 @@ class EvolAlg(EnsembleMethod):
         elif par_ensemble is not None and dv_ensemble is not None:
             self.num_dv_reals = dv_ensemble.shape[0]
             aset = set(self.pst.adj_par_names)
-            ppset = set(self.pst.par_names)
+            ppset = set(self.pst.adj_par_names)
             dvset = set(dv_ensemble.columns)
             pset = set(par_ensemble.columns)
             diff = ppset - aset
@@ -687,13 +688,14 @@ class EvolAlg(EnsembleMethod):
                 self.par_ensemble = pyemu.ParameterEnsemble.from_mixed_draws(self.pst,how_dict=how,
                                          num_reals=num_par_reals,cov=self.parcov)
             else:
-                diff = aset - dvset
-                if len(diff) > 0:
-                    self.logger.warn("adj pars {0} missing from dv_ensemble".\
-                                       format(','.join(diff)))
-                    df = pd.DataFrame(self.pst.parameter_data.loc[:,"parval1"]).T
-
-                    self.par_ensemble = pyemu.ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
+                # diff = aset - dvset
+                # if len(diff) > 0:
+                #     self.logger.warn("adj pars {0} missing from dv_ensemble".\
+                #                        format(','.join(diff)))
+                #     df = pd.DataFrame(self.pst.parameter_data.loc[:,"parval1"]).T
+                #
+                #     self.par_ensemble = pyemu.ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
+                pass
 
         # par ensemble supplied but not dv_ensmeble, so check for any adjustable pars
         # that are not in par_ensemble and draw reals.  Must be at least one...

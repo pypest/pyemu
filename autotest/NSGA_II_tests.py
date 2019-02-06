@@ -72,11 +72,12 @@ def test_simple():
         evolAlg.update()
     _, objective_df = evolAlg.update()
     f1, f2 = simple_objectives.keys()
-    plt.plot(objective_df.loc[:, f1], objective_df.loc[:, f2], 'o')
-    x = np.linspace(0.1, 2)
-    y = 1/x
-    plt.plot(x, y)
-    plt.show()
+    # turned this off for travis
+    # plt.plot(objective_df.loc[:, f1], objective_df.loc[:, f2], 'o')
+    # x = np.linspace(0.1, 2)
+    # y = 1/x
+    # plt.plot(x, y)
+    # plt.show()
 
 
 
