@@ -41,7 +41,15 @@ def multiplicitive_parameter_interaction(d_vars, pars):
 def nonlinear_parameter_interaction(d_vars, pars):
     if len(d_vars) != len(pars):
         raise Exception('Should have same number of parameters and decision variables')
-    return None # Change this soon
+    if len(pars) % 2 == 0:
+        even = np.arange(len(pars) // 2 - 1) * 2 + 2
+        odd = even + 1
+    else:
+        even = np.arange(len(pars) // 2) * 2 + 2
+        odd = np.arange(len(pars) // 2) * 2 + 1
+    f1 = np.sinh(5 * (d_vars[0] + 1) * pars[0]) + np.sum(np.sinh(5 * d_vars[even] * pars[even]))
+    f2 = np.sum(np.sinh(5 * d_vars[odd] * pars[odd]))
+    return np.array([f1, f2])
 
 
 class BenchmarkTestProblem:
