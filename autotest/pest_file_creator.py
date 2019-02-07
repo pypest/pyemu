@@ -94,6 +94,7 @@ def create_pest_file(problem, file_base, num_pars, parbnd, stochastic_flag):
 
 def setup_files(name, parameter_bounds, par_interaction):
     # create in template file
+    time.sleep(0.1)
     os.chdir(os.path.join('moouu', 'StochasticProblemSuite', 'template'))
     for f in os.listdir():
         if f.startswith(name):
@@ -116,6 +117,9 @@ def setup_files(name, parameter_bounds, par_interaction):
     pst = pyemu.Pst(pstfile)
     os.chdir(os.path.join('..', '..'))
     return pst
+
+if __name__ == '__main__':
+    setup_files('zdt1', (-1, 1), 'nonlinear')
 
 
 
