@@ -27,10 +27,10 @@ def test_paretoObjFunc():
         dv_names = pst.par_names
         pyemu.Ensemble.reseed()
         d_vars = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict={dv: 'uniform'for dv in dv_names},
-                                                          partial=True, num_reals=30)
-        ga = EliteDiffEvol(pst=pst, num_slaves=4, verbose=True)
+                                                          partial=True, num_reals=100)
+        ga = EliteDiffEvol(pst=pst, num_slaves=10, verbose=True)
         ga.initialize(obj_func_dict=obj_dict, num_par_reals=5, num_dv_reals=5, dv_ensemble=d_vars)
-    
+
     except Exception as e:
         os.chdir(bd)
         raise Exception(str(e))
