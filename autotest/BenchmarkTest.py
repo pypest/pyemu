@@ -24,13 +24,13 @@ def run_benchmarks(par_interaction, number_iterations):
         objectives = {obj: 'min' for obj in pst.obs_names}
         # initialise decision variables
         how = {p: 'uniform' for p in pst.par_names if p.startswith('dvar')}  # dictionary for draw method (only dvs)
-        d_vars = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict=how, num_reals=5, partial=True)
+        d_vars = pyemu.ParameterEnsemble.from_mixed_draws(pst=pst, how_dict=how, num_reals=20, partial=True)
         verbose_name = '{}_single_point.rec'.format(name)
         verbose = os.path.join(verbose_file_base, verbose_name)
         os.chdir(os.path.join('moouu', 'StochasticProblemSuite'))
         evolAlg = NSGA_II(pst=pst, num_slaves=4, verbose=verbose, slave_dir='template')
         # running with single point calculation
-        evolAlg.initialize(obj_func_dict=objectives, num_par_reals=5, dv_ensemble=d_vars, risk=0.9, when_calculate=-1)
+        evolAlg.initialize(obj_func_dict=objectives, num_par_reals=1, dv_ensemble=d_vars, risk=0.9, when_calculate=1)
         for i in range(number_iterations):
             evolAlg.update()
         dv_opt, pareto_front = evolAlg.update()
@@ -43,7 +43,7 @@ def run_benchmarks(par_interaction, number_iterations):
 
 
 if __name__ == "__main__":
-    run_benchmarks('additive', 1)
+    run_benchmarks('additive', 20)
 
 
 

@@ -95,17 +95,16 @@ class ParetoObjFunc(object):
         :return: list of indexes in obs_ensemble which should be used to calculate a cdf
         """
         is_nondominated = self.is_nondominated_kung(obs_ensemble)
-        #front_loc = np.where(is_nondominated.values == True)[0]
         front_loc = obs_ensemble.loc[is_nondominated, :].index.values
-        #time.sleep(0.1)
         front = obs_ensemble.loc[front_loc, self.obs_obj_names]
-        min = front.idxmin(axis=0)
-        max = front.idxmax(axis=0)
+
+        min_idx = front.idxmin(axis=0)
+        max_idx = front.idxmax(axis=0)
         nadir = []  # nadir objective vector for front (not accounting for obs obj signs)
-        for obj, idx in zip(min.index, min.values):
+        for obj, idx in zip(min_idx.index, min_idx.values):
             nadir.append(front.loc[idx, obj])
         ideal = []  # ideal objective vector for front (not accounting for obs obj signs)
-        for obj, idx in zip(max.index, max.values):
+        for obj, idx in zip(max_idx.index, max_idx.values):
             ideal.append(front.loc[idx, obj])
         nadir = np.array(nadir)
         ideal = np.array(ideal)
@@ -113,7 +112,7 @@ class ParetoObjFunc(object):
         # find index of point on pareto front closest to the mean vector
         distances = np.linalg.norm(front - mean, 2, axis=1)
         mid_pareto_index = front.index[np.argmin(distances)]
-        approximation_points = set(min) | set(max)
+        approximation_points = set(max_idx)
         approximation_points.add(mid_pareto_index)
         return list(approximation_points)
 
@@ -324,6 +323,33 @@ class ParetoObjFunc(object):
             ascending = True
 
         obj_df.sort_values(by=obj_names[0],ascending=ascending,inplace=True)
+        # This is a fix/patch for Kungs Algorithm.
+        # if the df contains multiple minimum values of first objective, then it can incorrectly assign some of the
+        # dominated values to the front because no dominance testing is done for them
+        # this is a fix for this problem - contact Otis Rea for more information if needed/curious
+        if obj_df.loc[obj_df.index[0], obj_names[0]] == obj_df.loc[obj_df.index[1], obj_names[0]]:
+            self.logger.statement("Obs_df contains potential for error when sorting with Kung's Algorithm. "
+                                  "Applying a fix by sorting small reigon using non_dom_continuous method")
+            i = 2
+            try:
+                while obj_df.loc[obj_df.index[0], obj_names[0]] == obj_df.loc[obj_df.index[i], obj_names[0]]:
+                    i += 1
+            except IndexError:
+                self.logger.warn("Either you are extremely unlucky, or you did something wrong. If this keeps "
+                                 "happening continuously, you might have non conflicting objectives, so "
+                                 "you should be able to obtain an optimal solution by only optimising the first "
+                                 "objective")
+                self.logger.statement('Reverting to non dominated continuous sort')
+                is_nondom = self.is_nondominated_pathetic(obs_df)
+                return is_nondom
+            else:
+                # do a nondom continous sort - might be slow but easy
+                fix_section = obj_df.loc[obj_df.index[:i], :].copy()
+                self.is_nondominated_pathetic(fix_section)
+                obj_df.loc[obj_df.index[:i], :] = fix_section
+                self.logger.statement("fix finished")
+        # end fix code
+        # --------------------------------------------------------------------------------
         P = list(obj_df.index)
 
         def front(p):
@@ -798,7 +824,7 @@ class EvolAlg(EnsembleMethod):
         dv = dv_ensemble.copy()
         if self.par_ensemble is None:  # MOO setting is being used
             eval_ensemble = self._add_missing_pars(dv)
-            failed_runs, oe = super(EvolAlg,self)._calc_obs(eval_ensemble)  # TODO: set up some fail run dv removal
+            failed_runs, oe = super(EvolAlg, self)._calc_obs(eval_ensemble)  # TODO: set up some fail run dv removal
         else:  # Do MOOUU
             if self.when_calculate == 0:  # calculate ensemble for every point - no reduction in evals
                 df = self._evaluation_ensemble(dv, par_ensemble=self.par_ensemble)
