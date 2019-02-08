@@ -145,7 +145,8 @@ class NSGA_II(EvolAlg):
         return fronts
 
     def tournament_selection(self, dv_ensemble, num_to_select):
-        def _is_better(idx1, idx2):
+        def _is_better(idx1, idx2):  # TODO - make this into method in NSGA-II - tournamemnt selection in GO class?
+            # should do this because code is the same except for this method
             return bool(dv_ensemble.loc[idx1, 'rank'] < dv_ensemble.loc[idx2, 'rank'] or
                         (dv_ensemble.loc[idx1, 'rank'] == dv_ensemble.loc[idx2, 'rank'] and
                          dv_ensemble.loc[idx1, 'crowding_distance'] > dv_ensemble.loc[idx2, 'crowding_distance'])

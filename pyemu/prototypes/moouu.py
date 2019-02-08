@@ -96,8 +96,11 @@ class ParetoObjFunc(object):
         """
         is_nondominated = self.is_nondominated_kung(obs_ensemble)
         front_loc = obs_ensemble.loc[is_nondominated, :].index.values
-        front = obs_ensemble.loc[front_loc, self.obs_obj_names]
-
+        front = obs_ensemble.loc[front_loc, self.obs_obj_names]  # TODO: apply fix so that only feasible solns used
+        # Problem is that to calc feasiblilty for front, need to know ensemble...
+        # can do in case that prev instance of ensemble (eg cdf's) exists, but need to figure out a way to do initially
+        # maybe run model for small number of par realisations - at points along pareto front without feasibility
+        # need to think about this
         min_idx = front.idxmin(axis=0)
         max_idx = front.idxmax(axis=0)
         nadir = []  # nadir objective vector for front (not accounting for obs obj signs)
@@ -514,6 +517,7 @@ class ParetoObjFunc(object):
         """
 
         :param obs_df: dataframe of observations
+        :param risk: risk for calculating constraints and objectives
         :return: pd series of indexes and
         """
         rank = pd.Series(data=-1, index=obs_df.index, dtype=np.int16)

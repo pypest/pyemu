@@ -59,12 +59,18 @@ class SPEA_2_pyemu(EvolAlg):
                            dv_ensemble=dv_ensemble, par_ensemble=par_ensemble, risk=risk, dv_names=dv_names,
                            par_names=par_names, when_calculate=when_calculate)
         self.logger.log('Initialising SPEA-2')
-        self.joint_dv = pyemu.ParameterEnsemble(pst=self.pst, data=np.NaN, index=np.arange(2 * self.num_dv_reals),
-                                                columns=self.obs_ensemble.columns)
-        self.joint_obs = pyemu.ParameterEnsemble(pst=self.pst, data=np.NaN, index=np.arange(2 * self.num_dv_reals),
-                                                 columns=self.pst.obs_names)
         self.population_dv = self.dv_ensemble
         self.population_obs = self.obs_ensemble
+        self.joint_dv = pyemu.ParameterEnsemble(pst=self.pst, data=np.NaN, index=np.arange(2 * self.num_dv_reals),
+                                                columns=self.dv_names)
+        self.joint_obs = pyemu.ObservationEnsemble(pst=self.pst, data=np.NaN, index=np.arange(2 * self.num_dv_reals),
+                                                 columns=self.pst.obs_names)
+        self.archive_dv = pyemu.ParameterEnsemble(pst=self.pst, data=np.NaN,
+                                                  index=np.arange(self.num_dv_reals, 2 * self.num_dv_reals),
+                                                  columns=self.dv_names)
+        self.archive_obs = pyemu.ObservationEnsemble(pst=self.pst, data=np.NaN,
+                                                     index=np.arange(self.num_dv_reals, 2 * self.num_dv_reals),
+                                                     columns=self.pst.obs_names)
         self.logger.log('Initialising SPEA-2')
 
     def update(self):
@@ -76,8 +82,26 @@ class SPEA_2_pyemu(EvolAlg):
                                                                    pop_size=self.num_dv_reals)
         self.joint_dv.loc[:, 'fitness'] = fitness.values
 
-    def enviromental_selection(self, dv_ensemble):
-        archive =
+    def enviromental_selection(self):
+        """
+
+        :return: pd.Series (boolean) of values to put in archive
+        """
+        # some rough notes:
+        # enviromental selection - in case where archive small need to know fitness for comparison simple
+        # if archive > archive size, invoke method to calculate distance and then truncate archive
+        archive_index = pd.Series(data=False, index=self.joint_dv.index)
+        non_dominated = self.dv_ensemble.loc[:, 'fitness'] < 1
+        distance_calculated = False
+        while archive.shape[0] > self.num_dv_reals:
+            if not distance_calculated:
+                distance = self.calculaate_distance(dv_ensemble)
+                distance_calculated = True
+            distance = self.distance_sort(distance)
+            self.truncate()
+        if archive.shape[0] < self.num_dv_reals:
+            k = self.num_dv_reals - archive.shape[0]
+            archive =
 
 
 class SPEA_2(AbstractMOEA):
