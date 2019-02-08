@@ -1080,6 +1080,9 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,sk
         xlim = (mn,mx)
         ax.set_xlim(mn,mx)
         ax.set_ylim(mn,mx)
+        if mx > 1.0e5:
+            ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%1.0e'))
+            ax.yaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%1.0e'))
         ax.grid()
 
         ax.set_xlabel("observed",labelpad=0.1)
@@ -1109,6 +1112,9 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,sk
         ax.set_title("{0}) group:{1}, {2} observations".
                      format(abet[ax_count], g, obs_g.shape[0]), loc="left")
         ax.grid()
+        if ax.get_xlim()[1] > 1.0e5:
+            ax.xaxis.set_major_formatter(matplotlib.ticker.FormatStrFormatter('%1.0e'))
+
         ax_count += 1
 
         logger.log("plotting 1to1 for {0}".format(g))

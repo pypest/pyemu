@@ -6,7 +6,7 @@ import struct
 import warnings
 from datetime import datetime
 import numpy as np
-import pandas
+import pandas as pd
 import scipy.linalg as la
 from scipy.io import FortranFile
 import scipy.sparse
@@ -341,6 +341,8 @@ class Matrix(object):
                               isdiagonal=self.isdiagonal)
 
 
+
+
     def __sub__(self, other):
         """numpy.ndarray.__sub__() overload.  Tries to speedup by
          checking for scalars of diagonal matrices on either side of operator
@@ -361,6 +363,9 @@ class Matrix(object):
                           col_names=self.col_names,
                           isdiagonal=self.isdiagonal)
         else:
+            if isinstance(other,pd.DataFrame):
+                other = Matrix.from_dataframe(other)
+
             if isinstance(other, np.ndarray):
                 assert self.shape == other.shape, "Matrix.__sub__() shape" +\
                                                   "mismatch: " +\
@@ -439,6 +444,10 @@ class Matrix(object):
         if np.isscalar(other):
             return type(self)(x=self.x + other,row_names=self.row_names,
                               col_names=self.col_names,isdiagonal=self.isdiagonal)
+
+        if isinstance(other,pd.DataFrame):
+            other = Matrix.from_dataframe(other)
+
         if isinstance(other, np.ndarray):
             assert self.shape == other.shape, \
                 "Matrix.__add__(): shape mismatch: " +\
@@ -449,6 +458,7 @@ class Matrix(object):
             else:
                 return type(self)(x=self.x + other, row_names=self.row_names,
                                   col_names=self.col_names)
+
         elif isinstance(other, Matrix):
             if self.autoalign and other.autoalign \
                     and not self.element_isaligned(other):
@@ -511,6 +521,10 @@ class Matrix(object):
         """
         if np.isscalar(other):
             return type(self)(x=self.x * other)
+
+        if isinstance(other,pd.DataFrame):
+            other = Matrix.from_dataframe(other)
+
         if isinstance(other, np.ndarray):
             assert self.shape == other.shape, \
                 "Matrix.hadamard_product(): shape mismatch: " + \
@@ -580,11 +594,16 @@ class Matrix(object):
         Returns:
             Matrix : Matrix
         """
+
+        if isinstance(other, pd.DataFrame):
+            other = Matrix.from_dataframe(other)
+
         if np.isscalar(other):
             return type(self)(x=self.x.copy() * other,
                               row_names=self.row_names,
                               col_names=self.col_names,
                               isdiagonal=self.isdiagonal)
+
         elif isinstance(other, np.ndarray):
             assert self.shape[1] == other.shape[0], \
                 "Matrix.__mul__(): matrices are not aligned: " +\
@@ -662,9 +681,13 @@ class Matrix(object):
 
         """
 
+        # if isinstance(other,pd.DataFrame):
+        #     other = Matrix.from_dataframe(other)
+
         if np.isscalar(other):
             return type(self)(x=self.x.copy() * other,row_names=self.row_names,\
                               col_names=self.col_names,isdiagonal=self.isdiagonal)
+
         elif isinstance(other, np.ndarray):
             assert self.shape[0] == other.shape[1], \
                 "Matrix.__rmul__(): matrices are not aligned: " +\
@@ -973,8 +996,8 @@ class Matrix(object):
         #return max(1,np.argmin(sthresh))
         return max(1,ising)
 
-    def pseudo_inv_components(self,maxsing=None,eigthresh=1.0e-5):
-        """ Get the truncated SVD components
+    def pseudo_inv_components(self,maxsing=None,eigthresh=1.0e-5,truncate=True):
+        """ Get the (optionally) truncated SVD components
 
         Parameters
         ----------
@@ -984,24 +1007,41 @@ class Matrix(object):
         eigthresh : float
             the ratio of largest to smallest singular components to use
             for truncation.  Ignored if maxsing is not None
+        truncate : bool
+            flag to truncate components. If False, U, s, and V will be zeroed out instead of truncated.
+            Default is True
 
         Returns
         -------
         u : Matrix
-            truncated left singular vectors
+            (optionally) truncated left singular vectors
         s : Matrix
-            truncated singular value matrix
+            (optionally) truncated singular value matrix
         v : Matrix
-            truncated right singular vectors
+            (optionally) truncated right singular vectors
 
         """
 
         if maxsing is None:
             maxsing = self.get_maxsing(eigthresh=eigthresh)
+        else:
+             maxsing = min(self.get_maxsing(eigthresh=eigthresh),maxsing)
 
-        s = self.s[:maxsing,:maxsing]
-        v = self.v[:,:maxsing]
-        u = self.u[:,:maxsing]
+        s = self.full_s.copy()
+        v = self.v.copy()
+        u = self.u.copy()
+        if truncate:
+
+            s = s[:maxsing,:maxsing]
+            v = v[:,:maxsing]
+            u = u[:,:maxsing]
+        else:
+            new_s = self.full_s.copy()
+            s = new_s
+            s.x[maxsing:, maxsing:] = 0.0
+            v.x[:, maxsing:] = 0.0
+            u.x[:, maxsing:] = 0.0
+
         return u,s,v
 
     def pseudo_inv(self,maxsing=None,eigthresh=1.0e-5):
@@ -1918,7 +1958,7 @@ class Matrix(object):
         Matrix : Matrix
 
         """
-        assert isinstance(df, pandas.DataFrame)
+        assert isinstance(df, pd.DataFrame)
         row_names = copy.deepcopy(list(df.index))
         col_names = copy.deepcopy(list(df.columns))
         return cls(x=df.values,row_names=row_names,col_names=col_names)
@@ -1971,7 +2011,7 @@ class Matrix(object):
             x = np.diag(self.__x[:, 0])
         else:
             x = self.__x
-        return pandas.DataFrame(data=x,index=self.row_names,columns=self.col_names)
+        return pd.DataFrame(data=x,index=self.row_names,columns=self.col_names)
 
 
     def to_sparse(self, trunc=0.0):

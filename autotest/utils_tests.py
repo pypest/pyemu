@@ -740,7 +740,7 @@ def geostat_prior_builder_test():
     import pyemu
     pst_file = os.path.join("pst","pest.pst")
     pst = pyemu.Pst(pst_file)
-
+    # print(pst.parameter_data)
     tpl_file = os.path.join("utils", "pp_locs.tpl")
     str_file = os.path.join("utils", "structure.dat")
 
@@ -755,9 +755,17 @@ def geostat_prior_builder_test():
     cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{gs:df},
                                                sigma_range=4)
     nnz = np.count_nonzero(cov.x)
-    assert nnz == pst.npar
+    assert nnz == pst.npar_adj
     d2 = np.diag(cov.x)
     assert np.array_equiv(d1, d2)
+
+    pst.parameter_data.loc[pst.par_names[1:10], "partrans"] = "tied"
+    pst.parameter_data.loc[pst.par_names[1:10], "partied"] = pst.par_names[0]
+    cov = pyemu.helpers.geostatistical_prior_builder(pst, {gs: df},
+                                                     sigma_range=4)
+    nnz = np.count_nonzero(cov.x)
+    assert nnz == pst.npar_adj
+
 
     ttpl_file = os.path.join("temp", "temp.dat.tpl")
     with open(ttpl_file, 'w') as f:
@@ -768,7 +776,7 @@ def geostat_prior_builder_test():
     pst.parameter_data.loc["temp1", "parlbnd"] = 0.9
 
     cov = pyemu.helpers.geostatistical_prior_builder(pst, {str_file: tpl_file})
-    assert cov.shape[0] == 602
+    assert cov.shape[0] == pst.npar_adj
 
     scov = pyemu.helpers.sparse_geostatistical_prior_builder(pst,{str_file: tpl_file}).to_matrix()
     d = (cov - scov).x
@@ -782,7 +790,7 @@ def geostat_draws_test():
     import pyemu
     pst_file = os.path.join("pst","pest.pst")
     pst = pyemu.Pst(pst_file)
-
+    print(pst.parameter_data)
     tpl_file = os.path.join("utils", "pp_locs.tpl")
     str_file = os.path.join("utils", "structure.dat")
 
@@ -790,12 +798,16 @@ def geostat_draws_test():
     pe = pyemu.helpers.geostatistical_draws(pst_file,{str_file:tpl_file})
     assert (pe.shape == pe.dropna().shape)
 
+    pst.parameter_data.loc[pst.par_names[1:10], "partrans"] = "tied"
+    pst.parameter_data.loc[pst.par_names[1:10], "partied"] = pst.par_names[0]
+    pe = pyemu.helpers.geostatistical_draws(pst, {str_file: tpl_file})
+    assert (pe.shape == pe.dropna().shape)
 
     df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
     gs = pyemu.geostats.read_struct_file(str_file)
     pe = pyemu.helpers.geostatistical_draws(pst_file,{gs:df},
-                                               sigma_range=4)
+                                          sigma_range=4)
 
     ttpl_file = os.path.join("temp", "temp.dat.tpl")
     with open(ttpl_file, 'w') as f:
@@ -804,9 +816,12 @@ def geostat_draws_test():
 
     pst.parameter_data.loc["temp1", "parubnd"] = 1.1
     pst.parameter_data.loc["temp1", "parlbnd"] = 0.9
-
+    pst.parameter_data.loc[pst.par_names[1:10],"partrans"] = "tied"
+    pst.parameter_data.loc[pst.par_names[1:10], "partied"] = pst.par_names[0]
     pe = pyemu.helpers.geostatistical_draws(pst, {str_file: tpl_file})
     assert (pe.shape == pe.dropna().shape)
+
+
 
 
 # def linearuniversal_krige_test():
@@ -1552,7 +1567,7 @@ def fieldgen_dev():
 
 
 if __name__ == "__main__":
-    # fieldgen_dev()
+    fieldgen_dev()
     # smp_test()
     # smp_dateparser_test()
     # smp_to_ins_test()
@@ -1594,7 +1609,7 @@ if __name__ == "__main__":
     # smp_to_ins_test()
     # read_pestpp_runstorage_file_test()
     # write_tpl_test()
-    pp_to_shapefile_test()
+    # pp_to_shapefile_test()
     # read_pval_test()
     # read_hob_test()
     #setup_pp_test()
