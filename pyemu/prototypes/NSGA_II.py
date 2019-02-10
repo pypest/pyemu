@@ -98,6 +98,8 @@ class NSGA_II(EvolAlg):
         # sort joint population into non dominated fronts and rank it
         rank = self.obj_func.nsga2_non_dominated_sort(self.joint_obs, risk=self.risk)
         fronts = self.get_fronts(rank)
+        for i,front in enumerate(fronts):
+            self.logger.statement("indices in front {0}:{1}".format(i,str(list(front))))
         j = 0
         num_filled = 0
         # put all nondominated fronts that fit into the archive, into the archive

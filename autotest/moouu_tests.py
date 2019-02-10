@@ -1325,9 +1325,10 @@ def run_freyebrg_nsga_sweep():
             evolAlg.obs_ensemble.to_csv(os.path.join("{0}.dv_ensemble.0.csv".format(m_d)))
 
             for i in range(20):
-                dvdf, odf = evolAlg.update()
-                dvdf.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d,i + 1)))
-                evolAlg.obs_ensemble.to_csv(os.path.join("{0}.obs_ensemble.{1}.csv".format(m_d,i + 1)))
+                #dvdf, odf = evolAlg.update()
+                #dvdf.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d,i + 1)))
+                evolAlg.population_dv.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d, i + 1)))
+                evolAlg.population_obs.to_csv(os.path.join("{0}.obs_ensemble.{1}.csv".format(m_d,i + 1)))
 
             os.chdir("..")
 
@@ -1395,8 +1396,8 @@ def plot_freyberg_nsga_sweep():
 
 if __name__ == "__main__":
 
-    test_paretoObjFunc()
-    tenpar_test()
+    #test_paretoObjFunc()
+    #tenpar_test()
     # load_pars = set(
     #     par.loc[par.apply(lambda x: x.pargp == "pargp" and x.parnme.startswith("k"), axis=1), "parnme"].values)
     # par.loc[par.parnme.apply(lambda x: x not in load_pars), "partrans"] = "fixed"
@@ -1431,9 +1432,9 @@ if __name__ == "__main__":
     #process_sweep_loop()
     #apply_nsgaii_to_freyberg_tolerant()
     #apply_nsgaii_to_freyberg_neutral()
-    #run_nsga_freyberg_reuse_sweep()
+
     #redis_freyberg()
     #invest()
     #setup_for_freyberg_nsga_runs(num_dv_reals=100,num_par_reals=100)
-    #run_freyebrg_nsga_sweep()
+    run_freyebrg_nsga_sweep()
     #plot_freyberg_nsga_sweep()
