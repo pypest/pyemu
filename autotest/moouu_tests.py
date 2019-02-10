@@ -1281,7 +1281,7 @@ def run_freyebrg_nsga_sweep():
     t_d = "template_temp"
     cases = ["fullreuse","nnresuse","noreuse"]
     when_calcs = [-1,1,0]
-    num_slavess = [5,5,5]
+    num_slavess = [20,20,30]
     risks = [0.001,0.999]
     rlabels = ["tolerant","averse"]
 
@@ -1325,7 +1325,9 @@ def run_freyebrg_nsga_sweep():
 
 
 def plot_freyberg_nsga_sweep():
-    results_dirs = [d for d in os.listdir(".") if "frebyerg_nsgaii" in d]
+    results_dirs = [d for d in os.listdir(".") if "freyberg_nsgaii" in d and os.path.isdir(d)]
+    print(results_dirs)
+
     cases = [r.split('_')[2] for r in results_dirs]
     risks = [r.split('_')[-1] for r in results_dirs]
     #print(results_dirs)
@@ -1335,10 +1337,13 @@ def plot_freyberg_nsga_sweep():
     xmx,xmn = -1.0e+10,1.0e+10
     ymx, ymn = -1.0e+10, 1.0e+10
     for r_d,case,risk in zip(results_dirs,cases,risks):
-        print(r_d)
+        #print(r_d)
         #need to fix this for next run:
-        obs_file = [f for f in os.listdir(r_d) if r_d in f and "obs_ensemble" in f][0]
-
+        obs_files = [f for f in os.listdir(r_d) if r_d in f and "obs_ensemble" in f]
+        iter_num = [int(f.split('.')[-2]) for f in obs_files]
+        obs_file = obs_files[iter_num.index(max(iter_num))]
+        print(obs_file)
+        #continue
         if risk == "tolerant":
             jax = 0
         elif risk == "averse":
@@ -1371,8 +1376,9 @@ def plot_freyberg_nsga_sweep():
         ax.set_xlabel("nitrate concentration in SW reach 40 ($\\frac{mg}{l}$)")
         ax.set_ylabel("total nitrate load ($kg$)")
     for ax in axes.flatten():
-       ax.set_xlim(xmn,xmx)
-       ax.set_ylim(ymn,ymx)
+       ax.set_xlim(xmn*.9,xmx*1.1)
+       ax.set_ylim(ymn*.9,ymx*1.1)
+       ax.grid()
 
     plt.tight_layout()
     plt.savefig("freyberg_nsgaii_sweep.pdf")
@@ -1419,6 +1425,6 @@ if __name__ == "__main__":
     #run_nsga_freyberg_reuse_sweep()
     #redis_freyberg()
     #invest()
-    #setup_for_freyberg_nsga_runs(num_dv_reals=30,num_par_reals=10)
+    #setup_for_freyberg_nsga_runs(num_dv_reals=100,num_par_reals=100)
     #run_freyebrg_nsga_sweep()
     plot_freyberg_nsga_sweep()
