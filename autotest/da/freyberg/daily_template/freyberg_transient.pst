@@ -14,11 +14,11 @@ pcf
 1
 * parameter groups
 grhk0                   relative              1.0000000000E-02       0.0  switch                2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller              
-grsy0                   relative              1.0000000000E-02       0.0  switch                2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller              
 grss0                   relative              1.0000000000E-02       0.0  switch                2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller              
-grrech0                 relative              1.0000000000E-02       0.0  switch                2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller              
 grstrt0                 relative              1.0000000000E-02       0.0  switch                2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller              
+grrech0                 relative              1.0000000000E-02       0.0  switch                2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller              
 grvka0                  relative              1.0000000000E-02       0.0  switch                2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller              
+grsy0                   relative              1.0000000000E-02       0.0  switch                2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller              
 welflux_k00             relative              1.0000000000E-02       0.0  switch                2.0000000000E+00       parabolic             1.0000000000E-05      5.0000000000E-01       smaller
 * parameter data
 hk0000000              log                    factor                1.0000000000E+00      1.0000000000E-02      1.0000000000E+02       grhk0                 1.0000000000E+00      0.0000000000E+00      1          
@@ -4198,25 +4198,25 @@ wf0000260010           log                    factor                1.0000000000
 wf0000290006           log                    factor                1.0000000000E+00      1.0000000000E-01      1.0000000000E+01       welflux_k00           1.0000000000E+00      0.0000000000E+00      1          
 wf0000340012           log                    factor                1.0000000000E+00      1.0000000000E-01      1.0000000000E+01       welflux_k00           1.0000000000E+00      0.0000000000E+00      1
 * observation groups
-vol_stream_          
-flx_total            
 hds                  
-flx_in-out           
-vol_percent          
-vol_recharg          
-vol_in-out           
-flx_constan          
-flx_recharg          
-flout                
-flx_storage          
-vol_wells            
-flx_stream_          
-flaqx                
-vol_total            
-flx_wells            
-vol_constan          
-flx_percent          
 vol_storage          
+flx_stream_          
+flx_total            
+flx_storage          
+vol_in-out           
+vol_total            
+flaqx                
+flx_percent          
+flx_in-out           
+flx_recharg          
+vol_recharg          
+flx_wells            
+vol_wells            
+vol_percent          
+vol_stream_          
+flx_constan          
+vol_constan          
+flout                
 * observation data
 fa_10_19700102        1.4642000000E+01      1.0000000000E+00       flaqx                
 fa_11_19700102        -1.5604000000E+01     1.0000000000E+00       flaqx                

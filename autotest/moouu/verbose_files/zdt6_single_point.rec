@@ -1,0 +1,170 @@
+2019-02-08 12:57:10.565406 starting: opening C:\Users\Violet\pyemu\autotest\moouu\verbose_files\zdt6_single_point.rec for logging
+2019-02-08 12:57:10.582363 using NSGA-II as evolutionary algorithm.
+Parameters:
+pst zdt6.pst
+parcov None
+obscov None
+num_slaves 4
+use_approx_prior True
+ submit_file None
+verbose C:\Users\Violet\pyemu\autotest\moouu\verbose_files\zdt6_single_point.rec
+port 4004
+slave_dir template
+cross_prob 0.9
+cross_dist 15
+mut_prob 0.01
+mut_dist 20
+2019-02-08 12:57:10.583360 when_calculate set as 1
+will recalculate uncertainty at 3 points every 1 iterations
+2019-02-08 12:57:10.587549 2 obs objective functions registered
+2019-02-08 12:57:10.587549 obs obj function: obj1, direction: min
+2019-02-08 12:57:10.587549 obs obj function: obj2, direction: min
+2019-02-08 12:57:10.588347 0 pi objective functions registered
+2019-02-08 12:57:10.618267 starting: evaluate initial dv ensemble of size 20
+2019-02-08 12:57:10.628271 updating stack using decision variables
+2019-02-08 12:57:10.628271 adding missing parameters to decision variable ensemble: ['par1', 'par10', 'par2', 'par3', 'par4', 'par5', 'par6', 'par7', 'par8', 'par9']
+2019-02-08 12:57:10.634250 starting: running model with mean parameters
+2019-02-08 12:57:10.634250 starting: removing existing sweep in/out files
+2019-02-08 12:57:10.635247 finished: removing existing sweep in/out files took: 0:00:00.000997
+2019-02-08 12:57:10.636217 starting: evaluating ensemble of size 20 locally with sweep
+2019-02-08 12:57:35.762765 finished: evaluating ensemble of size 20 locally with sweep took: 0:00:25.126548
+2019-02-08 12:57:35.762765 starting: reading sweep out csv sweep_out.csv
+2019-02-08 12:57:35.766754 finished: reading sweep out csv sweep_out.csv took: 0:00:00.003989
+2019-02-08 12:57:35.767675 total runs:20
+2019-02-08 12:57:35.767675 finished: running model with mean parameters took: 0:00:25.133425
+2019-02-08 12:57:35.767675 starting: finding best points to run stack evaluation
+2019-02-08 12:57:35.826553 found obsnme
+obj1    19
+obj2    13
+dtype: int64 min values
+2019-02-08 12:57:35.827518 found obsnme
+obj1    13
+obj2    19
+dtype: int64 max values
+2019-02-08 12:57:35.829513 mid pareto index is 7
+2019-02-08 12:57:35.829513 finished: finding best points to run stack evaluation took: 0:00:00.061838
+2019-02-08 12:57:35.842510 starting: running stack evaluation at 3 points
+2019-02-08 12:57:35.842510 starting: removing existing sweep in/out files
+2019-02-08 12:57:35.843476 finished: removing existing sweep in/out files took: 0:00:00.000966
+2019-02-08 12:57:35.845471 starting: evaluating ensemble of size 3 locally with sweep
+2019-02-08 12:57:46.672100 finished: evaluating ensemble of size 3 locally with sweep took: 0:00:10.826629
+2019-02-08 12:57:46.673106 starting: reading sweep out csv sweep_out.csv
+2019-02-08 12:57:46.677422 finished: reading sweep out csv sweep_out.csv took: 0:00:00.004316
+2019-02-08 12:57:46.677422 total runs:23
+2019-02-08 12:57:46.677422 finished: running stack evaluation at 3 points took: 0:00:10.834912
+2019-02-08 12:57:46.778153 starting: archiving 20 solutions
+2019-02-08 12:57:46.871928 finished: evaluate initial dv ensemble of size 20 took: 0:00:36.253661
+2019-02-08 12:57:46.871928 starting: initialising NSGA-II
+2019-02-08 12:57:47.165119 finished: initialising NSGA-II took: 0:00:00.293191
+2019-02-08 12:57:47.166115 starting: iteration number 1
+2019-02-08 12:57:48.291509 updating stack using decision variables
+2019-02-08 12:57:48.292480 adding missing parameters to decision variable ensemble: ['par1', 'par10', 'par2', 'par3', 'par4', 'par5', 'par6', 'par7', 'par8', 'par9']
+2019-02-08 12:57:48.294508 starting: running model with mean parameters
+2019-02-08 12:57:48.294508 starting: removing existing sweep in/out files
+2019-02-08 12:57:48.295473 finished: removing existing sweep in/out files took: 0:00:00.000965
+2019-02-08 12:57:48.296497 starting: evaluating ensemble of size 19 locally with sweep
+2019-02-08 12:58:12.400693 finished: evaluating ensemble of size 19 locally with sweep took: 0:00:24.104196
+2019-02-08 12:58:12.400693 starting: reading sweep out csv sweep_out.csv
+2019-02-08 12:58:12.405683 finished: reading sweep out csv sweep_out.csv took: 0:00:00.004990
+2019-02-08 12:58:12.414656 total runs:42
+2019-02-08 12:58:12.415654 finished: running model with mean parameters took: 0:00:24.121146
+2019-02-08 12:58:12.415654 starting: finding best points to run stack evaluation
+2019-02-08 12:58:12.417651 Obs_df contains potential for error when sorting with Kung's Algorithm. Applying a fix by sorting small reigon using non_dom_continuous method
+2019-02-08 12:58:12.421640 fix finished
+2019-02-08 12:58:12.493340 found obsnme
+obj1    24
+obj2    32
+dtype: int64 min values
+2019-02-08 12:58:12.494088 found obsnme
+obj1    32
+obj2    24
+dtype: int64 max values
+2019-02-08 12:58:12.495116 mid pareto index is 23
+2019-02-08 12:58:12.495116 finished: finding best points to run stack evaluation took: 0:00:00.079462
+2019-02-08 12:58:12.500106 starting: running stack evaluation at 3 points
+2019-02-08 12:58:12.501073 starting: removing existing sweep in/out files
+2019-02-08 12:58:12.502070 finished: removing existing sweep in/out files took: 0:00:00.000997
+2019-02-08 12:58:12.503070 starting: evaluating ensemble of size 3 locally with sweep
+2019-02-08 12:58:23.421633 finished: evaluating ensemble of size 3 locally with sweep took: 0:00:10.918563
+2019-02-08 12:58:23.421633 starting: reading sweep out csv sweep_out.csv
+2019-02-08 12:58:23.427617 finished: reading sweep out csv sweep_out.csv took: 0:00:00.005984
+2019-02-08 12:58:23.427617 total runs:45
+2019-02-08 12:58:23.428614 finished: running stack evaluation at 3 points took: 0:00:10.928508
+2019-02-08 12:58:23.529344 starting: archiving 19 solutions
+2019-02-08 12:58:23.640049 finished: iteration number 1 took: 0:00:36.473934
+2019-02-08 12:58:23.642042 starting: iteration number 2
+2019-02-08 12:58:24.757234 updating stack using decision variables
+2019-02-08 12:58:24.757234 adding missing parameters to decision variable ensemble: ['par1', 'par10', 'par2', 'par3', 'par4', 'par5', 'par6', 'par7', 'par8', 'par9']
+2019-02-08 12:58:24.760200 starting: running model with mean parameters
+2019-02-08 12:58:24.760642 starting: removing existing sweep in/out files
+2019-02-08 12:58:24.761921 finished: removing existing sweep in/out files took: 0:00:00.001279
+2019-02-08 12:58:24.761921 starting: evaluating ensemble of size 19 locally with sweep
+2019-02-08 12:58:53.287623 finished: evaluating ensemble of size 19 locally with sweep took: 0:00:28.525702
+2019-02-08 12:58:53.287623 starting: reading sweep out csv sweep_out.csv
+2019-02-08 12:58:53.293609 finished: reading sweep out csv sweep_out.csv took: 0:00:00.005986
+2019-02-08 12:58:53.294606 total runs:64
+2019-02-08 12:58:53.294606 finished: running model with mean parameters took: 0:00:28.534406
+2019-02-08 12:58:53.294606 starting: finding best points to run stack evaluation
+2019-02-08 12:58:53.362546 found obsnme
+obj1    27
+obj2    31
+dtype: int64 min values
+2019-02-08 12:58:53.363547 found obsnme
+obj1    31
+obj2    27
+dtype: int64 max values
+2019-02-08 12:58:53.364544 mid pareto index is 21
+2019-02-08 12:58:53.364544 finished: finding best points to run stack evaluation took: 0:00:00.069938
+2019-02-08 12:58:53.369531 starting: running stack evaluation at 3 points
+2019-02-08 12:58:53.369531 starting: removing existing sweep in/out files
+2019-02-08 12:58:53.370529 finished: removing existing sweep in/out files took: 0:00:00.000998
+2019-02-08 12:58:53.370529 starting: evaluating ensemble of size 3 locally with sweep
+2019-02-08 12:59:06.308753 finished: evaluating ensemble of size 3 locally with sweep took: 0:00:12.938224
+2019-02-08 12:59:06.308753 starting: reading sweep out csv sweep_out.csv
+2019-02-08 12:59:06.312762 finished: reading sweep out csv sweep_out.csv took: 0:00:00.004009
+2019-02-08 12:59:06.312762 total runs:67
+2019-02-08 12:59:06.313748 finished: running stack evaluation at 3 points took: 0:00:12.944217
+2019-02-08 12:59:06.411510 finished: archiving 19 solutions took: 0:00:42.882166
+2019-02-08 12:59:06.549109 finished: iteration number 2 took: 0:00:42.907067
+2019-02-08 12:59:06.551105 starting: iteration number 3
+2019-02-08 12:59:07.613292 updating stack using decision variables
+2019-02-08 12:59:07.613292 adding missing parameters to decision variable ensemble: ['par1', 'par10', 'par2', 'par3', 'par4', 'par5', 'par6', 'par7', 'par8', 'par9']
+2019-02-08 12:59:07.615290 starting: running model with mean parameters
+2019-02-08 12:59:07.615290 starting: removing existing sweep in/out files
+2019-02-08 12:59:07.616260 finished: removing existing sweep in/out files took: 0:00:00.000970
+2019-02-08 12:59:07.617282 starting: evaluating ensemble of size 20 locally with sweep
+2019-02-08 12:59:32.379564 finished: evaluating ensemble of size 20 locally with sweep took: 0:00:24.762282
+2019-02-08 12:59:32.379564 starting: reading sweep out csv sweep_out.csv
+2019-02-08 12:59:32.383585 finished: reading sweep out csv sweep_out.csv took: 0:00:00.004021
+2019-02-08 12:59:32.384200 total runs:87
+2019-02-08 12:59:32.384447 finished: running model with mean parameters took: 0:00:24.769157
+2019-02-08 12:59:32.384447 starting: finding best points to run stack evaluation
+2019-02-08 12:59:32.464463 found obsnme
+obj1    35
+obj2    30
+dtype: int64 min values
+2019-02-08 12:59:32.464964 found obsnme
+obj1    30
+obj2    35
+dtype: int64 max values
+2019-02-08 12:59:32.466963 mid pareto index is 25
+2019-02-08 12:59:32.466963 finished: finding best points to run stack evaluation took: 0:00:00.082516
+2019-02-08 12:59:32.471948 starting: running stack evaluation at 3 points
+2019-02-08 12:59:32.472945 starting: removing existing sweep in/out files
+2019-02-08 12:59:32.473946 finished: removing existing sweep in/out files took: 0:00:00.001001
+2019-02-08 12:59:32.474499 starting: evaluating ensemble of size 3 locally with sweep
+2019-02-08 12:59:43.503484 finished: evaluating ensemble of size 3 locally with sweep took: 0:00:11.028985
+2019-02-08 12:59:43.507473 starting: reading sweep out csv sweep_out.csv
+2019-02-08 12:59:43.547369 finished: reading sweep out csv sweep_out.csv took: 0:00:00.039896
+2019-02-08 12:59:43.549363 total runs:90
+2019-02-08 12:59:43.549363 finished: running stack evaluation at 3 points took: 0:00:11.077415
+2019-02-08 12:59:43.763789 finished: archiving 20 solutions took: 0:01:56.985636
+2019-02-08 12:59:44.109865 finished: iteration number 3 took: 0:00:37.558760
+2019-02-08 12:59:44.111859 starting: iteration number 4
+2019-02-08 12:59:45.440309 updating stack using decision variables
+2019-02-08 12:59:45.440309 adding missing parameters to decision variable ensemble: ['par1', 'par10', 'par2', 'par3', 'par4', 'par5', 'par6', 'par7', 'par8', 'par9']
+2019-02-08 12:59:45.442301 starting: running model with mean parameters
+2019-02-08 12:59:45.443298 starting: removing existing sweep in/out files
+2019-02-08 12:59:45.444299 finished: removing existing sweep in/out files took: 0:00:00.001001
+2019-02-08 12:59:45.444299 starting: evaluating ensemble of size 19 locally with sweep
+2019-02-08 12:59:49.300342 ERROR: error starting condor master: run() returned non-zero

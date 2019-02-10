@@ -1,0 +1,13 @@
+PEST++ performance logger started at:  12:15:36
+        ( time = 12:15:36,  elapsed time = 1ms )
+  starting to process control file
+          ( time = 12:15:36,  elapsed time = 1ms )
+  finished processing control file
+          ( time = 12:15:36,  elapsed time = 4ms )
+    starting to read parameter csv file
+            ( time = 12:15:36,  elapsed time = 668us )
+    finished reading parameter csv file
+            ( time = 12:15:43,  elapsed time = 6sec )
+      starting to read parameter csv file
+              ( time = 12:15:43,  elapsed time = 164us )
+      finished reading parameter csv file

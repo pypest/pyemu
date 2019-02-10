@@ -7,6 +7,31 @@ python:
   - "2.7"
   - "3.5"
   - "3.6"
+  - "3.7"
+
+matrix:
+  include:
+    - name: "pst tests"
+      env: TEST_SCRIPT="pst_tests.py"
+    - name: "utils tests"
+      env: TEST_SCRIPT="utils_tests.py"
+    - name: "mat tests"
+      env: TEST_SCRIPT="mat_tests.py"
+    - name: "mc tests"
+      env: TEST_SCRIPT="mc_tests.py"
+    - name: "la tests"
+      env: TEST_SCRIPT="la_tests.py"
+    - name: "pst from tests"
+      env: TEST_SCRIPT="pst_from_tests.py"
+    - name: "da tests"
+      env: TEST_SCRIPT="da_tests.py"
+    - name: "moouu tests"
+      env: TEST_SCRIPT="moouu_tests.py"
+    - name: "smoother tests"
+      env: TEST_SCRIPT="smoother_tests.py"
+    - name: "full meal deal tests"
+      env: TEST_SCRIPT="full_meal_deal_tests.py"
+
 
 
 addons:
@@ -64,7 +89,7 @@ install:
   - python setup.py install
 script:
   - export PYTHONPATH=$PYTHONPATH:.
-  - nosetests -v --with-id --nocapture --with-timer -w ./autotest --with-coverage --cover-package=pyemu
+  - nosetests -v --with-id --nocapture --with-timer -w ./autotest --with-coverage --cover-package=pyemu $TEST_SCRIPT
 after_success:
   - cd docs
   - make html

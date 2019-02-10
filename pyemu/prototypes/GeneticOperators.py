@@ -88,3 +88,46 @@ class Mutation:
             dv = dv + delta * (bound[1] - dv)
         return dv
 
+
+class Selection:
+    """
+    class for selection operators on dv_ensembles
+    """
+
+    @staticmethod
+    def spea2_enviromental_selection(fitness_df, distance_df, num_dv_reals):
+        """
+        Needs testing
+        :param fitness_df: pd.Series of fitness values for each individual
+        :param distance_df: pd.Dataframe of distances between each individual
+        :param num_dv_reals: number of individuals to select
+        :return: pd.Series (boolean), True if the individual is in the next archive
+        """
+        archive = fitness_df < 1  # non dominated indivduals have fitness less than 1
+        archive_size = len(archive.index[archive])
+        if archive_size > num_dv_reals:
+            distance_df = distance_df.loc[archive, archive]
+        while archive_size > num_dv_reals:
+            distance_index = pd.DataFrame(index=archive.index(archive), columns=np.arange(archive_size))
+            for idx in archive.index:
+                distance_index.loc[idx, :] = distance_df.loc[idx, :].sort_values(ascending=True).values
+            to_remove = None
+            i = 0
+            while to_remove is None and i < archive_size:
+                where = distance_index.loc[:, i].min == distance_index.loc[:, i]
+                distance_index = distance_index.loc[where, :]
+                if isinstance(distance_index, pd.Series):
+                    to_remove = distance_index.name
+                i += 1
+            if i == archive_size:
+                raise Exception('Seems to be a defective distance_df...')
+            archive.loc[to_remove] = False
+            distance_df = distance_df.loc[archive.index[archive], archive.index[archive]]
+            archive_size -= 1
+        if archive.shape[0] < num_dv_reals:
+            k = num_dv_reals - archive.shape[0]
+            where = fitness_df.nsmallest(k).index
+            archive.loc[where] = True
+        return archive
+
+

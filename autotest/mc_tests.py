@@ -133,7 +133,7 @@ def from_dataframe_test():
 
     pstc = Pst(pst)
     par = pstc.parameter_data
-    par.sort_values(by="parnme",ascending=False,inplace=True)
+    par.sort_index(ascending=False,inplace=True)
     cov = Cov.from_parameter_data(pstc)
     pe = ParameterEnsemble.from_gaussian_draw(pst=mc.pst,cov=cov)
 
@@ -851,9 +851,9 @@ def ensemble_deviations_test():
 
 
 if __name__ == "__main__":
-    #ensemble_deviations_test()
-    mixed_par_draw_test()
-    #triangular_draw_test()
+    # ensemble_deviations_test()
+    # mixed_par_draw_test()
+    # triangular_draw_test()
     # sparse_draw_test()
     # binary_ensemble_dev()
     # to_from_binary_test()
@@ -872,7 +872,7 @@ if __name__ == "__main__":
     # gaussian_draw_test()
     # parfile_test()
     # write_regul_test()
-    # from_dataframe_test()
+    from_dataframe_test()
     # ensemble_seed_test()
     # pnulpar_test()
     # enforce_test()
