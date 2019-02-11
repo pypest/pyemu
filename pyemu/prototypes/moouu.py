@@ -854,7 +854,6 @@ class EvolAlg(EnsembleMethod):
             elif self.when_calculate == -1:  # calculate ensemble only for initial point then propagate
                 if self._initialized is False:
                     midpoint = self._get_bounds().mean(axis=0) # calculate
-                    time.sleep(0.1)
                     midpoint = pd.DataFrame(data=midpoint, index=self.dv_names).T  # dv dataframe using mean of dvs
                     eval_ensemble = self._evaluation_ensemble(midpoint, self.par_ensemble)
                     failed_runs, stack = super()._calc_obs(eval_ensemble)

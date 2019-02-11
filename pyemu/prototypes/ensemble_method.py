@@ -95,7 +95,6 @@ class EnsembleMethod(object):
 
     def _add_missing_pars(self, parensemble,istransformed=False):
         missing_pars = set(self.pst.par_names) - set(parensemble.columns)
-        self.logger.statement('adding missing parameters to decision variable ensemble: {}'.format(sorted(missing_pars)))
         if len(missing_pars) > 0:
             if istransformed:
                 parval1 = self.pst.parameter_data.loc[missing_pars, 'parval1_trans']
@@ -244,7 +243,6 @@ class EnsembleMethod(object):
         parensemble.to_csv(self.sweep_in_csv)
         if self.num_slaves > 0:
             master_thread = self._get_master_thread()
-            print(os.getcwd())
             pyemu.utils.start_slaves(self.slave_dir,"pestpp-swp",self.pst.filename,
                                      self.num_slaves,slave_root='..',port=self.port)
             master_thread.join()
