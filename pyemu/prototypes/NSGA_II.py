@@ -8,7 +8,7 @@ IMPORTANT!!!!: Old class of NSGA_II (if checks needed/issues arise - revert to t
 better documentation coming soon...
 """
 import numpy as np
-from .Abstract_Moo import *
+from .moouu import *
 from .GeneticOperators import *
 
 
@@ -16,17 +16,30 @@ class NSGA_II(EvolAlg):
 
     def __init__(self, pst, parcov=None, obscov=None, num_slaves=0, use_approx_prior=True,
                  submit_file=None, verbose=False, port=4004, slave_dir="template",
-                 cross_prob=0.9, cross_dist=15, mut_prob=0.01, mut_dist=20):
-        """initialise the algorithm. Parameters:
-           objectives: vector of objective functions to be optimised
-           bounds: array of upper and lower bounds for each decision variable, eg [(0, 5), (-2, 2)]
-           ------------------------------------- Optional parameters -------------------------------------------------
-           archive_size: size of archive population. Full population size is 2 * archive due to population population
-           cross_prob: probability of crossover occurring for any population
-           cross_dist: distribution parameter of the crossover operation
-           mut_prob: probability of mutation occurring for any population
-           mut_dist: distribution parameter of the mutation operation
-           iterations: number of iterations of the algorithm
+                 crossover_probability=0.9, crossover_distribution=15,
+                 mutation_probability=0.01, mutation_distribution=20):
+        """
+        Initialise the NSGA-II algorithm for multi objective optimisation
+
+        :param pst: Pst object instatiated with a pest control file
+        :param parcov: parameter covariance matrix (optional)
+        :param obscov: observation covariance matrix (optional)
+        :param num_slaves: number of pipes/slaves to use if running in parallel
+        :param use_approx_prior: Does nothing currently (I think...)
+        :param submit_file: the name of a HTCondor submit file.  If not None, HTCondor is used to
+        evaluate the parameter ensemble in parallel by issuing condor_submit as a system command
+        :param verbose: if False, less output to the command line. If True, more output. If a string giving a
+        file instance is passed, logger output will be written to that file
+        :param port: the TCP port number to communicate on for parallel run management
+        :param slave_dir: directory to use as a template for parallel run management (should contain pest and model
+        executables).
+
+
+        ----------------------------Don't change these unless you know what you are doing-----------------------
+        :param crossover_probability: probability of crossover operation occurring
+        :param crossover_distribution: distribution parameter for SBX crossover
+        :param mutation_probability: probability of mutation
+        :param mutation_distribution: distribution parameter for mutation operator
         """
         super().__init__(pst, parcov=parcov, obscov=obscov, num_slaves=num_slaves, use_approx_prior=use_approx_prior,
                  submit_file=submit_file, verbose=verbose, port=port, slave_dir=slave_dir)
@@ -37,16 +50,17 @@ class NSGA_II(EvolAlg):
         self.population_dv = None
         self.joint_obs = None
         self.joint_dv = None
-        self.cross_prob = cross_prob
-        self.cross_dist = cross_dist
-        self.mut_prob = mut_prob
-        self.mut_dist = mut_dist
+        self.cross_prob = crossover_probability
+        self.cross_dist = crossover_distribution
+        self.mut_prob = mutation_probability
+        self.mut_dist = mutation_distribution
         initialising_variables = 'pst {}\nparcov {}\nobscov {}\nnum_slaves {}\nuse_approx_prior {}\n ' \
                                  'submit_file {}\nverbose {}\nport {}\nslave_dir {}\n' \
                                  'cross_prob {}\ncross_dist {}\nmut_prob {}\n' \
                                  'mut_dist {}'.format(self.pst.filename, parcov, obscov, num_slaves, use_approx_prior,
-                                                      submit_file, verbose, port, slave_dir, cross_prob, cross_dist,
-                                                      mut_prob, mut_dist)
+                                                      submit_file, verbose, port, slave_dir, crossover_probability,
+                                                      crossover_distribution, mutation_probability,
+                                                      mutation_distribution)
         self.logger.statement('using NSGA-II as evolutionary algorithm.\nParameters:\n{}'.format(initialising_variables))
 
     def initialize(self,obj_func_dict,num_par_reals=100,num_dv_reals=100,

@@ -646,7 +646,7 @@ class IOWrapper:
         model = test_functions[args.benchmark_function.lower()]
         d_vars, pars = self.read_input_file(args.input_file, model)
         objectives = model.calculate_objectives(d_vars, pars)
-        if args.stochastic is not None:
+        if args.stochastic:
             stochastic_component = parameter_interactions[args.stochastic](d_vars, pars)
             objectives = objectives + stochastic_component
         if model.constrained():

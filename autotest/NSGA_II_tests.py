@@ -38,7 +38,7 @@ def test_simple():
     dv_ensemble = pyemu.ParameterEnsemble(pst=simple, data=data)
     evolAlg = NSGA_II(pst=simple, verbose=False, slave_dir='template')
     evolAlg.initialize(obj_func_dict=simple_objectives, dv_ensemble=dv_ensemble, num_dv_reals=5)
-    for i in range(10):
+    for i in range(0):
         evolAlg.update()
     _, objective_df = evolAlg.update()
     f1, f2 = simple_objectives.keys()

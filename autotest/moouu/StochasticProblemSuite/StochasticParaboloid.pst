@@ -24,7 +24,7 @@ objective
 obj1  1  10.0  objective
 obj2  1  10.0  objective
 * model command line
-C:\Users\Violet\Anaconda3\python.exe StochasticProblemSuite.py stochasticparaboloid --stochastic None
+C:\Users\Violet\Anaconda3\python.exe StochasticProblemSuite.py stochasticparaboloid
 * model input/output
 stochasticparaboloid.tpl input.dat
 stochasticparaboloid.ins output.dat

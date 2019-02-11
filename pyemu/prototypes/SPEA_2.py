@@ -1,6 +1,5 @@
 """SPEA_2 algorithm"""
 
-import itertools as itr
 from .GeneticOperators import *
 from .moouu import *
 import os
@@ -20,11 +19,12 @@ class SPEA_2(EvolAlg):
         :param parcov: parameter covariance matrix (optional)
         :param obscov: observation covariance matrix (optional)
         :param num_slaves: number of pipes/slaves to use if running in parallel
-        :param use_approx_prior: ???
-        :param submit_file: ???
+        :param use_approx_prior: Does nothing currently (I think...)
+        :param submit_file: the name of a HTCondor submit file.  If not None, HTCondor is used to
+        evaluate the parameter ensemble in parallel by issuing condor_submit as a system command
         :param verbose: if False, less output to the command line. If True, more output. If a string giving a
         file instance is passed, logger output will be written to that file
-        :param port: serial port number ???
+        :param port: the TCP port number to communicate on for parallel run management
         :param slave_dir: directory to use as a template for parallel run management (should contain pest and model
         executables).
 
@@ -36,7 +36,7 @@ class SPEA_2(EvolAlg):
         :param mutation_distribution: distribution parameter for mutation operator
         """
         super().__init__(pst, parcov=parcov, obscov=obscov, num_slaves=num_slaves, use_approx_prior=use_approx_prior,
-                 submit_file=submit_file, verbose=verbose, port=port, slave_dir=slave_dir)
+                         submit_file=submit_file, verbose=verbose, port=port, slave_dir=slave_dir)
         self.archive_obs = None
         self.population_obs = None
         self.archive_dv = None
