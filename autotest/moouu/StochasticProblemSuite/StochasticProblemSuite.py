@@ -35,7 +35,7 @@ def multiplicitive_parameter_interaction(d_vars, pars):
         even = np.arange(len(pars) // 2) * 2 + 2
         odd = np.arange(len(pars) // 2) * 2 + 1
     return np.array([(np.sin(np.pi * d_vars[0]) + 1) * pars[0] + np.sum(d_vars[even] * pars[even]),
-                     np.sum(d_vars[odd] * d_vars[even])])
+                     np.sum(d_vars[odd] * pars[even])])
 
 
 def nonlinear_parameter_interaction(d_vars, pars):

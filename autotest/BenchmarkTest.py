@@ -8,7 +8,7 @@ from pyemu.prototypes.NSGA_II import *
 import pyemu
 
 
-def run_benchmarks(par_interaction, number_iterations):
+def run_benchmarks(par_interaction, number_iterations, when_calculate):
     benchmarks = ['zdt1']
     os.chdir(os.path.join('moouu', 'verbose_files'))
     for f in os.listdir():
@@ -43,7 +43,7 @@ def run_benchmarks(par_interaction, number_iterations):
 
 
 if __name__ == "__main__":
-    run_benchmarks('additive', 0)
+    run_benchmarks('additive', 2, 1)
 
 
 

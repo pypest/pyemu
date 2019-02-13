@@ -5,25 +5,3 @@ running model 3 times
     waiting for slaves to appear...
 
 
-02/12/19 10:51:21->new connection from: DESKTOP-HEOQJUQ:54513
-02/12/19 10:51:21->initializing new slave connection from: DESKTOP-HEOQJUQ:54513, number of slaves: 1, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_0
-02/12/19 10:51:21->new connection from: DESKTOP-HEOQJUQ:54514
-02/12/19 10:51:22->initializing new slave connection from: DESKTOP-HEOQJUQ:54514, number of slaves: 2, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_1
-02/12/19 10:51:22->new connection from: DESKTOP-HEOQJUQ:54515
-02/12/19 10:51:22->initializing new slave connection from: DESKTOP-HEOQJUQ:54515, number of slaves: 3, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_2
-02/12/19 10:51:22->new connection from: DESKTOP-HEOQJUQ:54516
-02/12/19 10:51:22->initializing new slave connection from: DESKTOP-HEOQJUQ:54516, number of slaves: 4, working dir: C:\Users\Violet\pyemu\autotest\moouu\slave_3
-02/12/19 10:51:23->new slave ready: DESKTOP-HEOQJUQ:54513
-02/12/19 10:51:23->Sending run 0 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (group id:2, run id:0, concurrent runs:1)
-02/12/19 10:51:23->new slave ready: DESKTOP-HEOQJUQ:54514
-02/12/19 10:51:23->Sending run 1 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (group id:2, run id:1, concurrent runs:1)
-02/12/19 10:51:23->new slave ready: DESKTOP-HEOQJUQ:54515
-02/12/19 10:51:23->Sending run 2 to: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (group id:2, run id:2, concurrent runs:1)
-02/12/19 10:51:24->new slave ready: DESKTOP-HEOQJUQ:54516
-02/12/19 10:51:26->run 0 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_0  (run time:0.0552333 min, avg run time:0.0552333 min, group id:2, run id = 0 concurrent:1)
-02/12/19 10:51:26->run 1 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_1  (run time:0.0553 min, avg run time:0.0552667 min, group id:2, run id = 1 concurrent:1)
-02/12/19 10:51:26->run 2 received from: DESKTOP-HEOQJUQ$C:\Users\Violet\pyemu\autotest\moouu\slave_2  (run time:0.0553 min, avg run time:0.0552778 min, group id:2, run id = 2 concurrent:1)
-
----------------------
-   3 runs complete :  0 runs failed
-
