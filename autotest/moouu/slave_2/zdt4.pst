@@ -1,0 +1,49 @@
+pcf
+* control data
+restart estimation
+20  2  1  0  1
+1  1  single  point  1  0  0
+1e-1  -4.0   0.3  0.03  10  999
+5.0   5.0   1.0e-3  absparmax(5)=1
+0.1
+0   .005  4   4  .005   4
+1    1    1
+* singular value decomposition
+1
+11  1.0000000E-06
+0
+* parameter groups
+var	absolute	1.0000E-10	0.000	switch	2.000	parabolic
+* parameter data
+dvar1  none  absolute(5)  0.5  0  1  var  1.0  0.0  1
+dvar2  none  absolute(5)  0.0  -5  5  var  1.0  0.0  1
+dvar3  none  absolute(5)  0.0  -5  5  var  1.0  0.0  1
+dvar4  none  absolute(5)  0.0  -5  5  var  1.0  0.0  1
+dvar5  none  absolute(5)  0.0  -5  5  var  1.0  0.0  1
+dvar6  none  absolute(5)  0.0  -5  5  var  1.0  0.0  1
+dvar7  none  absolute(5)  0.0  -5  5  var  1.0  0.0  1
+dvar8  none  absolute(5)  0.0  -5  5  var  1.0  0.0  1
+dvar9  none  absolute(5)  0.0  -5  5  var  1.0  0.0  1
+dvar10  none  absolute(5)  0.0  -5  5  var  1.0  0.0  1
+par1  none  absolute(5)  0.0  -1  1  var  1.0  0.0  1
+par2  none  absolute(5)  0.0  -1  1  var  1.0  0.0  1
+par3  none  absolute(5)  0.0  -1  1  var  1.0  0.0  1
+par4  none  absolute(5)  0.0  -1  1  var  1.0  0.0  1
+par5  none  absolute(5)  0.0  -1  1  var  1.0  0.0  1
+par6  none  absolute(5)  0.0  -1  1  var  1.0  0.0  1
+par7  none  absolute(5)  0.0  -1  1  var  1.0  0.0  1
+par8  none  absolute(5)  0.0  -1  1  var  1.0  0.0  1
+par9  none  absolute(5)  0.0  -1  1  var  1.0  0.0  1
+par10  none  absolute(5)  0.0  -1  1  var  1.0  0.0  1
+* observation groups
+objective
+* observation data
+obj1  1  10.0  objective
+obj2  1  10.0  objective
+* model command line
+C:\Users\Violet\Anaconda3\python.exe StochasticProblemSuite.py zdt4 --stochastic additive
+* model input/output
+zdt4.tpl input.dat
+zdt4.ins output.dat
+++# PEST++ optional input
+++sweep_parameter_csv_file(sweep_in.csv)

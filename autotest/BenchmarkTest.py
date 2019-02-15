@@ -8,8 +8,8 @@ from pyemu.prototypes.NSGA_II import *
 import pyemu
 
 
-def run_benchmarks(par_interaction, number_iterations):
-    benchmarks = ['zdt1', 'zdt2', 'zdt3', 'zdt4', 'zdt6']
+def run_benchmarks(par_interaction, number_iterations, when_calculate):
+    benchmarks = ['zdt1']
     os.chdir(os.path.join('moouu', 'verbose_files'))
     for f in os.listdir():
         for benchmark in benchmarks:
@@ -19,7 +19,7 @@ def run_benchmarks(par_interaction, number_iterations):
     os.chdir('..')
     os.chdir('..')
     for name in benchmarks:
-        pst = setup_files(name, parameter_bounds=(-1, 1), par_interaction='additive')
+        pst = setup_files(name, parameter_bounds=(-1, 1), par_interaction=par_interaction)
         # get objectives
         objectives = {obj: 'min' for obj in pst.obs_names}
         # initialise decision variables
@@ -43,7 +43,7 @@ def run_benchmarks(par_interaction, number_iterations):
 
 
 if __name__ == "__main__":
-    run_benchmarks('additive', 20)
+    run_benchmarks('additive', 2, 1)
 
 
 

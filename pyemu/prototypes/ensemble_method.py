@@ -93,14 +93,14 @@ class EnsembleMethod(object):
     def initialize(self,*args,**kwargs):
         raise Exception("EnsembleMethod.initialize() must be implemented by the derived types")
 
-    def _add_missing_pars(self, parensemble,istransformed=False):
+    def _add_missing_pars(self, parensemble):
         missing_pars = set(self.pst.par_names) - set(parensemble.columns)
-        self.logger.statement('adding missing parameters to decision variable ensemble: {}'.format(sorted(missing_pars)))
         if len(missing_pars) > 0:
-            if istransformed:
+            try:
                 parval1 = self.pst.parameter_data.loc[missing_pars, 'parval1_trans']
-            else:
-                parval1 = self.pst.parameter_data.loc[missing_pars, 'parval1']
+            except KeyError:
+                self.pst.add_transform_columns()
+                parval1 = self.pst.parameter_data.loc[missing_pars, 'parval1_trans']
             parensemble = parensemble.reindex(columns=self.pst.par_names)
             parensemble.loc[:, missing_pars] = parval1.values
         return parensemble
@@ -244,7 +244,6 @@ class EnsembleMethod(object):
         parensemble.to_csv(self.sweep_in_csv)
         if self.num_slaves > 0:
             master_thread = self._get_master_thread()
-            print(os.getcwd())
             pyemu.utils.start_slaves(self.slave_dir,"pestpp-swp",self.pst.filename,
                                      self.num_slaves,slave_root='..',port=self.port)
             master_thread.join()

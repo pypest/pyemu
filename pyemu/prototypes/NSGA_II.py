@@ -8,7 +8,7 @@ IMPORTANT!!!!: Old class of NSGA_II (if checks needed/issues arise - revert to t
 better documentation coming soon...
 """
 import numpy as np
-from .Abstract_Moo import *
+from .moouu import *
 from .GeneticOperators import *
 
 
@@ -16,17 +16,30 @@ class NSGA_II(EvolAlg):
 
     def __init__(self, pst, parcov=None, obscov=None, num_slaves=0, use_approx_prior=True,
                  submit_file=None, verbose=False, port=4004, slave_dir="template",
-                 cross_prob=0.9, cross_dist=15, mut_prob=0.01, mut_dist=20):
-        """initialise the algorithm. Parameters:
-           objectives: vector of objective functions to be optimised
-           bounds: array of upper and lower bounds for each decision variable, eg [(0, 5), (-2, 2)]
-           ------------------------------------- Optional parameters -------------------------------------------------
-           archive_size: size of archive population. Full population size is 2 * archive due to population population
-           cross_prob: probability of crossover occurring for any population
-           cross_dist: distribution parameter of the crossover operation
-           mut_prob: probability of mutation occurring for any population
-           mut_dist: distribution parameter of the mutation operation
-           iterations: number of iterations of the algorithm
+                 crossover_probability=0.9, crossover_distribution=15,
+                 mutation_probability=0.01, mutation_distribution=20):
+        """
+        Initialise the NSGA-II algorithm for multi objective optimisation
+
+        :param pst: Pst object instatiated with a pest control file
+        :param parcov: parameter covariance matrix (optional)
+        :param obscov: observation covariance matrix (optional)
+        :param num_slaves: number of pipes/slaves to use if running in parallel
+        :param use_approx_prior: Does nothing currently (I think...)
+        :param submit_file: the name of a HTCondor submit file.  If not None, HTCondor is used to
+        evaluate the parameter ensemble in parallel by issuing condor_submit as a system command
+        :param verbose: if False, less output to the command line. If True, more output. If a string giving a
+        file instance is passed, logger output will be written to that file
+        :param port: the TCP port number to communicate on for parallel run management
+        :param slave_dir: directory to use as a template for parallel run management (should contain pest and model
+        executables).
+
+
+        ----------------------------Don't change these unless you know what you are doing-----------------------
+        :param crossover_probability: probability of crossover operation occurring
+        :param crossover_distribution: distribution parameter for SBX crossover
+        :param mutation_probability: probability of mutation
+        :param mutation_distribution: distribution parameter for mutation operator
         """
         super().__init__(pst, parcov=parcov, obscov=obscov, num_slaves=num_slaves, use_approx_prior=use_approx_prior,
                  submit_file=submit_file, verbose=verbose, port=port, slave_dir=slave_dir)
@@ -37,16 +50,17 @@ class NSGA_II(EvolAlg):
         self.population_dv = None
         self.joint_obs = None
         self.joint_dv = None
-        self.cross_prob = cross_prob
-        self.cross_dist = cross_dist
-        self.mut_prob = mut_prob
-        self.mut_dist = mut_dist
+        self.cross_prob = crossover_probability
+        self.cross_dist = crossover_distribution
+        self.mut_prob = mutation_probability
+        self.mut_dist = mutation_distribution
         initialising_variables = 'pst {}\nparcov {}\nobscov {}\nnum_slaves {}\nuse_approx_prior {}\n ' \
                                  'submit_file {}\nverbose {}\nport {}\nslave_dir {}\n' \
                                  'cross_prob {}\ncross_dist {}\nmut_prob {}\n' \
                                  'mut_dist {}'.format(self.pst.filename, parcov, obscov, num_slaves, use_approx_prior,
-                                                      submit_file, verbose, port, slave_dir, cross_prob, cross_dist,
-                                                      mut_prob, mut_dist)
+                                                      submit_file, verbose, port, slave_dir, crossover_probability,
+                                                      crossover_distribution, mutation_probability,
+                                                      mutation_distribution)
         self.logger.statement('using NSGA-II as evolutionary algorithm.\nParameters:\n{}'.format(initialising_variables))
 
     def initialize(self,obj_func_dict,num_par_reals=100,num_dv_reals=100,
@@ -82,10 +96,11 @@ class NSGA_II(EvolAlg):
         # to_update = to_update | mut_to_update
         # to_update = list(to_update)
         # self.population_obs.loc[to_update, :] = self._calc_obs(self.population_dv.loc[to_update, self.dv_names]).values
-        self.iter_num = 1
+        self.iter_num = 0
         self.logger.log("initialising NSGA-II")
 
     def update(self):
+        self.iter_num += 1
         self.logger.log('iteration number {}'.format(self.iter_num))
         # create joint population from previous archive and population
         self.joint_dv.loc[self.archive_dv.index, :] = self.archive_dv.loc[:, self.dv_names].values
@@ -96,13 +111,16 @@ class NSGA_II(EvolAlg):
         self.archive_obs.loc[:, :] = np.NaN
         self.archive_dv.loc[:, :] = np.NaN
         # sort joint population into non dominated fronts and rank it
+        self.logger.log('Sorting population into non-dominated fronts')
         rank = self.obj_func.nsga2_non_dominated_sort(self.joint_obs, risk=self.risk)
         fronts = self.get_fronts(rank)
+        self.logger.log('Sorting population into non-dominated fronts')
         for i,front in enumerate(fronts):
             self.logger.statement("indices in front {0}:{1}".format(i,str(list(front))))
         j = 0
         num_filled = 0
         # put all nondominated fronts that fit into the archive, into the archive
+        self.logger.log('Filling archive with fronts')
         while num_filled + len(fronts[j]) < self.num_dv_reals:
             index = np.arange(num_filled, num_filled + len(fronts[j]))
             self.archive_dv.loc[index, self.dv_names] = self.joint_dv.loc[fronts[j], :].values
@@ -112,7 +130,9 @@ class NSGA_II(EvolAlg):
             self.archive_dv.loc[index, 'crowding_distance'] = cd.values
             num_filled += len(fronts[j])
             j += 1
+        self.logger.log('Filling archive with fronts')
         # fill up the archive using the remaining front, choosing new values based on crowding distance
+        self.logger.log('Filling remaining archive slots using crowding distance comparisons')
         joint_dvj = self.joint_dv.loc[fronts[j]]
         joint_dvj.loc[:, 'rank'] = rank.loc[fronts[j]]
         joint_dvj.loc[:, 'crowding_distance'] = self.obj_func.crowd_distance(self.joint_obs.loc[fronts[j]])
@@ -120,17 +140,22 @@ class NSGA_II(EvolAlg):
         index = np.arange(num_filled, self.num_dv_reals)
         self.archive_dv.loc[index, :] = joint_dvj.loc[joint_dvj.index[:len(index)], :].values
         self.archive_obs.loc[index, :] = self.joint_obs.loc[joint_dvj.index[:len(index)], :].values
+        self.logger.log('Filling remaining archive slots using crowding distance comparisons')
         # use tournament selection, and the genetic operators to create new population
+        self.logger.log('Using tourament selection to create new population')
         new_population_index = self.tournament_selection(self.archive_dv, self.num_dv_reals)
         self.population_dv.loc[:, :] = self.archive_dv.loc[new_population_index, self.dv_names].values
         self.population_obs.loc[:, :] = self.archive_obs.loc[new_population_index, :].values
+        self.logger.log('Using tourament selection to create new population')
+        self.logger.log('Using Crossover and Mutation to introduce variation into population')
         to_update = Crossover.sbx(self.population_dv, self._get_bounds(), self.cross_prob, self.cross_dist)
         to_update | Mutation.polynomial(self.population_dv, self._get_bounds(), self.mut_prob, self.mut_dist)
         to_update = list(to_update)
+        self.logger.log('Using Crossover and Mutation to introduce variation into population')
         # calculate observations for updated individuals in populations
         self.population_obs.loc[to_update, :] = self._calc_obs(self.population_dv.loc[to_update, self.dv_names]).values
+        self.iter_report(self.archive_dv, self.archive_obs)
         self.logger.log('iteration number {}'.format(self.iter_num))
-        self.iter_num += 1
         return self.joint_dv.loc[fronts[0], :], self.joint_obs.loc[fronts[0], :]
 
     def get_fronts(self, ranks):
@@ -147,30 +172,27 @@ class NSGA_II(EvolAlg):
         return fronts
 
     def tournament_selection(self, dv_ensemble, num_to_select):
-        def _is_better(idx1, idx2):  # TODO - make this into method in NSGA-II - tournamemnt selection in GO class?
-            # should do this because code is the same except for this method
+        def _is_better(idx1, idx2):
             return bool(dv_ensemble.loc[idx1, 'rank'] < dv_ensemble.loc[idx2, 'rank'] or
                         (dv_ensemble.loc[idx1, 'rank'] == dv_ensemble.loc[idx2, 'rank'] and
-                         dv_ensemble.loc[idx1, 'crowding_distance'] > dv_ensemble.loc[idx2, 'crowding_distance'])
-                        )
-        first = self.dv_ensemble.index[-1] + 1
-        last = first + num_to_select
-        child_population_index = []
-        even = np.arange(0, (num_to_select // 2) * 2, 2)
-        odd = np.arange(1, (num_to_select // 2) * 2, 2)
-        index = np.array(dv_ensemble.index)
-        i = 0
-        for _ in range(2):
-            np.random.shuffle(index)
-            for idx1, idx2 in zip(index[even], index[odd]):
-                if _is_better(idx1, idx2):
-                    child_population_index.append(idx1)
-                else:
-                    child_population_index.append(idx2)
-                i += 1
-        if num_to_select % 2 == 1:  # i.e is odd
-            child_population_index.append(index[-1])
-        return child_population_index
+                         dv_ensemble.loc[idx1, 'crowding_distance'] > dv_ensemble.loc[idx2, 'crowding_distance']))
+        return Selection.tournament_selection(dv_ensemble.index, num_to_select, comparison_key=_is_better)
 
+    def iter_report(self, dv_ensemble, obs_ensemble):
+        dv = dv_ensemble.copy()
+        oe = obs_ensemble.copy()
+        self.logger.log('removing previous csv files of dv and oe')
+        dv_file_name = 'dv_ensemble_curr.csv'
+        oe_file_name = 'obs_ensemble_curr.csv'
+        try:
+            os.remove(dv_file_name)
+            os.remove(oe_file_name)
+        except FileNotFoundError:
+            self.logger.warn('Cannot find previous obs_ensemble or dv_ensemble csv')
+        self.logger.log('removing previous csv files of dv and oe')
+        self.logger.log('Writing csv files of dv_ensemble and obs_ensemble')
+        dv.to_csv(dv_file_name)
+        oe.to_csv(oe_file_name)
+        self.logger.log('Writing csv files of dv_ensemble and obs_ensemble')
 
 # old class of NSGA_II for safety purposes find before commit on 30/01/19

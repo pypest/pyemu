@@ -8,6 +8,7 @@ import time
 
 import pyemu
 from .ensemble_method import EnsembleMethod
+import matplotlib.pyplot as plt
 
 
 class ParetoObjFunc(object):
@@ -101,8 +102,9 @@ class ParetoObjFunc(object):
         # can do in case that prev instance of ensemble (eg cdf's) exists, but need to figure out a way to do initially
         # maybe run model for small number of par realisations - at points along pareto front without feasibility
         # need to think about this
-        min_idx = front.idxmin(axis=0)
-        max_idx = front.idxmax(axis=0)
+        signed_front = self.obs_obj_signs * front
+        min_idx = signed_front.idxmin(axis=0)
+        max_idx = signed_front.idxmax(axis=0)
         nadir = []  # nadir objective vector for front (not accounting for obs obj signs)
         for obj, idx in zip(min_idx.index, min_idx.values):
             nadir.append(front.loc[idx, obj])
@@ -854,7 +856,6 @@ class EvolAlg(EnsembleMethod):
             elif self.when_calculate == -1:  # calculate ensemble only for initial point then propagate
                 if self._initialized is False:
                     midpoint = self._get_bounds().mean(axis=0) # calculate
-                    time.sleep(0.1)
                     midpoint = pd.DataFrame(data=midpoint, index=self.dv_names).T  # dv dataframe using mean of dvs
                     eval_ensemble = self._evaluation_ensemble(midpoint, self.par_ensemble)
                     failed_runs, stack = super()._calc_obs(eval_ensemble)

@@ -34,14 +34,32 @@ def multiplicitive_parameter_interaction(d_vars, pars):
     else:
         even = np.arange(len(pars) // 2) * 2 + 2
         odd = np.arange(len(pars) // 2) * 2 + 1
-    return np.array([(np.sin(np.pi * d_vars[0]) + 1) * pars[0] + np.sum(d_vars[even] * pars[even]),
-                     np.sum(d_vars[odd] * d_vars[even])])
+    return np.array([np.sum(d_vars[odd] * pars[odd]),
+                     2 * d_vars[0] * pars[0] + np.sum(d_vars[even] * pars[even])])
 
 
 def nonlinear_parameter_interaction(d_vars, pars):
     if len(d_vars) != len(pars):
         raise Exception('Should have same number of parameters and decision variables')
-    return None # Change this soon
+    if len(pars) % 2 == 0:
+        even = np.arange(len(pars) // 2 - 1) * 2 + 2
+        odd = even + 1
+    else:
+        even = np.arange(len(pars) // 2) * 2 + 2
+        odd = np.arange(len(pars) // 2) * 2 + 1
+    # Kind of a note to self... Idk
+    # with additive interaction - only get uniform uncertainty actross obj space
+    # with multiplicative interaction - much more options. In particular, cannot change distribution but can change
+    # uncertainty at each point in decision space - this is important as can affect pareto front
+    # with nonlinear interaction can change shape of  distribution and uncertainty.
+    # need to think about what role the shape of the distribution has in the optimisation process...
+    # distribution taken into account in risk calc - so not signifcant diff between nult and nonlin - what matters
+    # most is linearity in decision variables - as these are what can cause weird pareto front shapes (by affecting the
+    # uncertainty in regards to objective space
+    f1 = np.sum(np.exp(d_vars[odd] * pars[odd]) - 1)
+    f2 = np.abs(np.cos(20 * np.pi * d_vars[0])) * (np.exp(d_vars[0] * pars[0]) - 1) + \
+         np.sum(np.exp(d_vars[even] * pars[even]) - 1)
+    return np.array([f1, f2])
 
 
 class BenchmarkTestProblem:
@@ -428,7 +446,7 @@ class ZDT6(DeterministicBenchmark):
 
     @staticmethod
     def bounds():
-        return [(0, 1) if i == 0 else (-5, 5) for i in range(ZDT6.number_decision_variables())]
+        return [(0, 1) for _ in range(ZDT6.number_decision_variables())]
 
     @staticmethod
     def calculate_objectives(d_vars, pars):
@@ -638,7 +656,7 @@ class IOWrapper:
         model = test_functions[args.benchmark_function.lower()]
         d_vars, pars = self.read_input_file(args.input_file, model)
         objectives = model.calculate_objectives(d_vars, pars)
-        if args.stochastic is not None:
+        if args.stochastic:
             stochastic_component = parameter_interactions[args.stochastic](d_vars, pars)
             objectives = objectives + stochastic_component
         if model.constrained():
@@ -705,6 +723,7 @@ class IOWrapper:
 
 
 if __name__ == '__main__':
+    print('running')
     IOWrapper()
 
 

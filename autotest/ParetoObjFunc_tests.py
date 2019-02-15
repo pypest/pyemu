@@ -12,7 +12,7 @@ srn = pyemu.Pst(os.path.join('StochasticProblemSuite', 'SRN.pst'))
 simple = pyemu.Pst(os.path.join('StochasticProblemSuite', 'Simple.pst'))
 xsec_objectives = {'h01_04': 'max', 'h01_06': 'min'}
 srn_objectives = {'obj1': 'min', 'obj2': 'min'}
-simple_objecives = srn_objectives
+simple_objectives = srn_objectives
 logger = pyemu.Logger(True)
 
 
@@ -105,14 +105,14 @@ def test_nsga2_non_dominated_sort():
     rank = obj_func.nsga2_non_dominated_sort(obj_df, risk=0.5)
     for i, idx in enumerate(obj_df.index):
         assert rank[idx] == i + 1
-    obj_func = ParetoObjFunc(simple, obj_function_dict=simple_objecives, logger=logger)
+    obj_func = ParetoObjFunc(simple, obj_function_dict=simple_objectives, logger=logger)
     d_vars = []
     for i in range(1, 5):
         for j in range(1, 5):
             d_vars.append([i, j])
     d_vars = np.array(d_vars).T
     objectives = np.array([d_vars[0], 1 / d_vars[0] + d_vars[1]])
-    obj_df = pyemu.ParameterEnsemble(pst=simple, data=objectives.T, columns=simple_objecives.keys())
+    obj_df = pyemu.ParameterEnsemble(pst=simple, data=objectives.T, columns=simple_objectives.keys())
     rank = obj_func.nsga2_non_dominated_sort(obj_df, risk=0.5)
     for idx in rank.index:
         assert rank.loc[idx] == d_vars[1, idx]
@@ -135,7 +135,7 @@ def test_nsga2_non_dominated_sort():
 
 
 def test_spea2_fitness_assignment():
-    obj_func = ParetoObjFunc(simple, obj_function_dict=simple_objecives, logger=logger)
+    obj_func = ParetoObjFunc(simple, obj_function_dict=simple_objectives, logger=logger)
     obs_values = []
     for i in range(1, 4):
         for j in range(1, 4):
@@ -154,15 +154,48 @@ def test_spea2_fitness_assignment():
     assert np.isclose(fitness.loc[index[8]], 18.30287)
 
 
+def test_set_cdf():
+    obj_func = ParetoObjFunc(pst=simple, obj_function_dict=simple_objectives, logger=logger)
+    obs_ensemble = pd.DataFrame(data=np.arange(12).reshape((4, 3)), columns=['obj1', 'random_obs', 'obj2'])
+    obj_func.set_cdf_df(obs_ensemble, 4)
+    assert np.all(np.isclose(obj_func.cdf_dfs['cdf_1'].values,
+                             (obs_ensemble.loc[:, simple_objectives.keys()] -
+                              obs_ensemble.loc[:, simple_objectives.keys()].mean(axis=0)).values))
+    assert np.all(np.isclose(obj_func.cdf_loc.values, obs_ensemble.loc[:, simple_objectives.keys()].mean(axis=0).values))
+    try:
+        obj_func.set_cdf_df(obs_ensemble, 3)
+    except Exception as e:
+        assert str(e) == 'incorrect number of realisations supplied'
+    obs_ensemble = pd.DataFrame(data=np.arange(24).reshape((8, 3)), columns=['obj1', 'random_obs', 'obj2'])
+    obj_func.set_cdf_df(obs_ensemble, 4)
+    assert np.all(np.isclose(obj_func.cdf_dfs['cdf_1'].values,
+                             (obs_ensemble.loc[:3, simple_objectives.keys()] -
+                              obs_ensemble.loc[:3, simple_objectives.keys()].mean(axis=0)).values))
+    assert np.all(np.isclose(obj_func.cdf_loc.loc['cdf_1', :].values,
+                             obs_ensemble.loc[:3, simple_objectives.keys()].mean(axis=0).values))
+
+
+def test_partial_recalculation_risk_shift():
+    obj_func = ParetoObjFunc(pst=simple, obj_function_dict=simple_objectives, logger=logger)
+    obs_ensemble = pd.DataFrame(data=np.arange(24).reshape((8, 3)), columns=['obj1', 'random_obs', 'obj2'])
+    obj_func.set_cdf_df(obs_ensemble, 4)
+    obs = pd.DataFrame(data=[[0, 12, 0], [1, 11, 1], [2, 10, 3]], columns=['obj1', 'random_obs', 'obj2'])
+    risk_shifted = obj_func.partial_recalculation_risk_shift(obs, risk=0)
+    # TODO need to keep going with this
+
+
+
 
 
 if __name__ == '__main__':
-    # test_init()
-    # test_is_feasible()
-    # test_constraint_violation_vector()
-    # test_objective_vector()
-    # test_dominates()
-    # test_is_nondominated_kung()
-    # test_crowding_distance()
-    # test_nsga2_non_dominated_sort()
+    test_init()
+    test_is_feasible()
+    test_constraint_violation_vector()
+    test_objective_vector()
+    test_dominates()
+    test_is_nondominated_kung()
+    test_crowding_distance()
+    test_nsga2_non_dominated_sort()
     test_spea2_fitness_assignment()
+    test_set_cdf()
+    test_partial_recalculation_risk_shift()
