@@ -1841,3 +1841,23 @@ class ParameterEnsemble(Ensemble):
         df = run_sweep(self,slave_dir=slave_dir,num_slaves=num_slaves)
         return ObservationEnsemble.from_dataframe(pst=self.pst,df=df)
 
+    def get_deviations(self):
+        """get the deviations of the ensemble value from the mean vector
+
+        Returns
+        -------
+            en : pyemu.Ensemble
+                Ensemble of deviations from the mean
+        """
+        bt = False
+        if not self.istransformed:
+            bt = True
+            self._transform()
+        mean_vec = self.mean()
+
+        df = self.loc[:,:].copy()
+        for col in df.columns:
+            df.loc[:,col] -= mean_vec[col]
+        if bt:
+            self._back_transform()
+        return type(self).from_dataframe(pst=self.pst,df=df)
