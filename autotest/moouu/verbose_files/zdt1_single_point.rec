@@ -1,5 +1,5 @@
-2019-02-13 14:45:06.481005 starting: opening C:\Users\Violet\pyemu\autotest\moouu\verbose_files\zdt1_single_point.rec for logging
-2019-02-13 14:45:06.914874 using NSGA-II as evolutionary algorithm.
+2019-02-23 16:58:56.224600 starting: opening C:\Users\Violet\pyemu\autotest\moouu\verbose_files\zdt1_single_point.rec for logging
+2019-02-23 16:59:19.254678 using NSGA-II as evolutionary algorithm.
 Parameters:
 pst zdt1.pst
 parcov None
@@ -14,113 +14,15 @@ cross_prob 0.9
 cross_dist 15
 mut_prob 0.01
 mut_dist 20
-2019-02-13 14:45:06.914874 when_calculate set as 1
+2019-02-23 16:59:19.256584 when_calculate set as 1
 will recalculate uncertainty at 3 points every 1 iterations
-2019-02-13 14:45:06.918834 2 obs objective functions registered
-2019-02-13 14:45:06.919842 obs obj function: obj1, direction: min
-2019-02-13 14:45:06.919842 obs obj function: obj2, direction: min
-2019-02-13 14:45:06.919842 0 pi objective functions registered
-2019-02-13 14:45:06.953743 starting: evaluate initial dv ensemble of size 20
-2019-02-13 14:45:06.963715 updating stack using decision variables
-2019-02-13 14:45:06.970696 starting: running model with mean parameters
-2019-02-13 14:45:06.970696 starting: removing existing sweep in/out files
-2019-02-13 14:45:06.971694 finished: removing existing sweep in/out files took: 0:00:00.000998
-2019-02-13 14:45:06.972694 starting: evaluating ensemble of size 20 locally with sweep
-2019-02-13 14:45:31.973709 finished: evaluating ensemble of size 20 locally with sweep took: 0:00:25.001015
-2019-02-13 14:45:31.973709 starting: reading sweep out csv sweep_out.csv
-2019-02-13 14:45:31.978695 finished: reading sweep out csv sweep_out.csv took: 0:00:00.004986
-2019-02-13 14:45:31.978695 total runs:20
-2019-02-13 14:45:31.979691 finished: running model with mean parameters took: 0:00:25.008995
-2019-02-13 14:45:31.979691 starting: finding best points to run stack evaluation
-2019-02-13 14:46:11.551130 finished: finding best points to run stack evaluation took: 0:00:39.571439
-2019-02-13 14:46:11.593785 starting: running stack evaluation at 3 points
-2019-02-13 14:46:11.593785 starting: removing existing sweep in/out files
-2019-02-13 14:46:11.594785 finished: removing existing sweep in/out files took: 0:00:00.001000
-2019-02-13 14:46:11.595784 starting: evaluating ensemble of size 3 locally with sweep
-2019-02-13 14:46:22.787438 finished: evaluating ensemble of size 3 locally with sweep took: 0:00:11.191654
-2019-02-13 14:46:22.787438 starting: reading sweep out csv sweep_out.csv
-2019-02-13 14:46:22.793452 finished: reading sweep out csv sweep_out.csv took: 0:00:00.006014
-2019-02-13 14:46:22.793452 total runs:23
-2019-02-13 14:46:22.793452 finished: running stack evaluation at 3 points took: 0:00:11.199667
-2019-02-13 14:46:22.895178 starting: archiving 20 solutions
-2019-02-13 14:46:23.012837 finished: evaluate initial dv ensemble of size 20 took: 0:01:16.059094
-2019-02-13 14:46:23.012837 starting: initialising NSGA-II
-2019-02-13 14:46:23.281290 finished: initialising NSGA-II took: 0:00:00.268453
-2019-02-13 14:46:23.282256 starting: iteration number 1
-2019-02-13 14:46:23.307192 starting: Sorting population into non-dominated fronts
-2019-02-13 14:46:24.251691 finished: Sorting population into non-dominated fronts took: 0:00:00.944499
-2019-02-13 14:46:24.252681 indices in front 0:[14, 30, 20, 11, 34, 31, 22, 8, 36, 24, 26, 6]
-2019-02-13 14:46:24.252681 indices in front 1:[23, 21, 25, 38, 17, 29, 15, 33, 7, 5, 37, 2, 1, 16]
-2019-02-13 14:46:24.252681 indices in front 2:[32, 35, 0, 19, 27, 18, 10, 4, 3, 28, 39]
-2019-02-13 14:46:24.253676 indices in front 3:[13, 12, 9]
-2019-02-13 14:46:24.253676 starting: Filling archive with fronts
-2019-02-13 14:46:24.270643 finished: Filling archive with fronts took: 0:00:00.016967
-2019-02-13 14:46:24.270643 starting: Filling remaining archive slots using crowding distance comparisons
-2019-02-13 14:46:24.291561 finished: Filling remaining archive slots using crowding distance comparisons took: 0:00:00.020918
-2019-02-13 14:46:24.291561 starting: Using tourament selection to create new population
-2019-02-13 14:46:24.295576 finished: Using tourament selection to create new population took: 0:00:00.004015
-2019-02-13 14:46:24.296546 starting: Using Crossover and Mutation to introduce variation into population
-2019-02-13 14:46:24.336465 finished: Using Crossover and Mutation to introduce variation into population took: 0:00:00.039919
-2019-02-13 14:46:24.338434 updating stack using decision variables
-2019-02-13 14:46:24.340427 starting: running model with mean parameters
-2019-02-13 14:46:24.341427 starting: removing existing sweep in/out files
-2019-02-13 14:46:24.343281 finished: removing existing sweep in/out files took: 0:00:00.001854
-2019-02-13 14:46:24.343281 starting: evaluating ensemble of size 20 locally with sweep
-2019-02-13 14:46:49.345247 finished: evaluating ensemble of size 20 locally with sweep took: 0:00:25.001966
-2019-02-13 14:46:49.345247 starting: reading sweep out csv sweep_out.csv
-2019-02-13 14:46:49.350235 finished: reading sweep out csv sweep_out.csv took: 0:00:00.004988
-2019-02-13 14:46:49.350235 total runs:43
-2019-02-13 14:46:49.350235 finished: running model with mean parameters took: 0:00:25.009808
-2019-02-13 14:46:49.351231 starting: finding best points to run stack evaluation
-2019-02-13 14:47:26.941856 finished: finding best points to run stack evaluation took: 0:00:37.590625
-2019-02-13 14:47:26.955820 starting: running stack evaluation at 3 points
-2019-02-13 14:47:26.955820 starting: removing existing sweep in/out files
-2019-02-13 14:47:26.956816 finished: removing existing sweep in/out files took: 0:00:00.000996
-2019-02-13 14:47:26.957812 starting: evaluating ensemble of size 3 locally with sweep
-2019-02-13 14:47:38.175659 finished: evaluating ensemble of size 3 locally with sweep took: 0:00:11.217847
-2019-02-13 14:47:38.175659 starting: reading sweep out csv sweep_out.csv
-2019-02-13 14:47:38.180643 finished: reading sweep out csv sweep_out.csv took: 0:00:00.004984
-2019-02-13 14:47:38.180643 total runs:46
-2019-02-13 14:47:38.182639 finished: running stack evaluation at 3 points took: 0:00:11.226819
-2019-02-13 14:47:38.277419 finished: archiving 20 solutions took: 0:01:15.382241
-2019-02-13 14:47:38.451945 starting: removing previous csv files of dv and oe
-2019-02-13 14:47:38.452919 finished: removing previous csv files of dv and oe took: 0:00:00.000974
-2019-02-13 14:47:38.452919 starting: Writing csv files of dv_ensemble and obs_ensemble
-2019-02-13 14:47:38.480840 finished: Writing csv files of dv_ensemble and obs_ensemble took: 0:00:00.027921
-2019-02-13 14:47:38.480840 finished: iteration number 1 took: 0:01:15.198584
-2019-02-13 14:47:38.482841 starting: iteration number 2
-2019-02-13 14:47:38.486851 starting: Sorting population into non-dominated fronts
-2019-02-13 14:47:39.458261 finished: Sorting population into non-dominated fronts took: 0:00:00.971410
-2019-02-13 14:47:39.458261 indices in front 0:[38, 37, 24, 25, 27, 30]
-2019-02-13 14:47:39.458261 indices in front 1:[26, 11, 20, 9, 7, 35, 5, 4, 36, 2]
-2019-02-13 14:47:39.459228 indices in front 2:[31, 34, 0, 19, 1, 3, 6, 8, 10]
-2019-02-13 14:47:39.459228 indices in front 3:[17, 33, 12, 39, 13, 14, 15, 16, 22]
-2019-02-13 14:47:39.459228 indices in front 4:[18, 32, 23]
-2019-02-13 14:47:39.459228 indices in front 5:[21, 28, 29]
-2019-02-13 14:47:39.460224 starting: Filling archive with fronts
-2019-02-13 14:47:39.480473 finished: Filling archive with fronts took: 0:00:00.020249
-2019-02-13 14:47:39.480473 starting: Filling remaining archive slots using crowding distance comparisons
-2019-02-13 14:47:39.493440 finished: Filling remaining archive slots using crowding distance comparisons took: 0:00:00.012967
-2019-02-13 14:47:39.494435 starting: Using tourament selection to create new population
-2019-02-13 14:47:39.498425 finished: Using tourament selection to create new population took: 0:00:00.003990
-2019-02-13 14:47:39.499422 starting: Using Crossover and Mutation to introduce variation into population
-2019-02-13 14:47:39.539315 finished: Using Crossover and Mutation to introduce variation into population took: 0:00:00.039893
-2019-02-13 14:47:39.541313 updating stack using decision variables
-2019-02-13 14:47:39.543305 starting: running model with mean parameters
-2019-02-13 14:47:39.544304 starting: removing existing sweep in/out files
-2019-02-13 14:47:39.545301 finished: removing existing sweep in/out files took: 0:00:00.000997
-2019-02-13 14:47:39.545301 starting: evaluating ensemble of size 20 locally with sweep
-2019-02-13 14:48:04.545565 finished: evaluating ensemble of size 20 locally with sweep took: 0:00:25.000264
-2019-02-13 14:48:04.545565 starting: reading sweep out csv sweep_out.csv
-2019-02-13 14:48:04.550578 finished: reading sweep out csv sweep_out.csv took: 0:00:00.005013
-2019-02-13 14:48:04.550578 total runs:66
-2019-02-13 14:48:04.550578 finished: running model with mean parameters took: 0:00:25.007273
-2019-02-13 14:48:04.551548 starting: finding best points to run stack evaluation
-2019-02-13 14:48:04.553541 Obs_df contains potential for error when sorting with Kung's Algorithm. Applying a fix by sorting small reigon using non_dom_continuous method
-2019-02-13 14:48:04.558530 fix finished
-2019-02-13 14:49:10.495805 finished: finding best points to run stack evaluation took: 0:01:05.944257
-2019-02-13 14:49:10.504793 starting: running stack evaluation at 3 points
-2019-02-13 14:49:10.504793 starting: removing existing sweep in/out files
-2019-02-13 14:49:10.506768 finished: removing existing sweep in/out files took: 0:00:00.001975
-2019-02-13 14:49:10.506768 starting: evaluating ensemble of size 3 locally with sweep
-2019-02-13 14:49:13.455744 ERROR: error starting condor master: run() returned non-zero
+2019-02-23 16:59:19.261457 2 obs objective functions registered
+2019-02-23 16:59:19.261861 obs obj function: obj1, direction: min
+2019-02-23 16:59:19.261861 obs obj function: obj2, direction: min
+2019-02-23 16:59:19.262879 0 pi objective functions registered
+2019-02-23 16:59:19.487217 starting: evaluate initial dv ensemble of size 20
+2019-02-23 16:59:19.553042 updating stack using decision variables
+2019-02-23 16:59:19.602995 starting: running model with mean parameters
+2019-02-23 16:59:19.604042 starting: removing existing sweep in/out files
+2019-02-23 16:59:19.605894 finished: removing existing sweep in/out files took: 0:00:00.001852
+2019-02-23 16:59:19.612141 starting: evaluating ensemble of size 20 locally with sweep

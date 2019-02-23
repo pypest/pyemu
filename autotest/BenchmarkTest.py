@@ -3,6 +3,7 @@
 run benchmark (ZDT) scripts with multi objective optimisation under uncertainty
 """
 import os
+print(os.getcwd())
 from pest_file_creator import *
 from pyemu.prototypes.NSGA_II import *
 import pyemu
