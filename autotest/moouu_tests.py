@@ -1322,10 +1322,10 @@ def run_freyebrg_nsga_sweep():
             evolAlg.initialize(obj_func_dict=odict, dv_ensemble=dv_ensemble, risk=risk, par_ensemble=par_ensemble,
                                when_calculate=when_calc)  # , num_dv_reals=5)
             evolAlg.dv_ensemble.to_csv(os.path.join("{0}.dv_ensemble.0.csv".format(m_d)))
-            evolAlg.obs_ensemble.to_csv(os.path.join("{0}.dv_ensemble.0.csv".format(m_d)))
+            evolAlg.obs_ensemble.to_csv(os.path.join("{0}.obs_ensemble.0.csv".format(m_d)))
 
             for i in range(20):
-                #dvdf, odf = evolAlg.update()
+                evolAlg.update()
                 #dvdf.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d,i + 1)))
                 evolAlg.population_dv.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d, i + 1)))
                 evolAlg.population_obs.to_csv(os.path.join("{0}.obs_ensemble.{1}.csv".format(m_d,i + 1)))
@@ -1336,62 +1336,70 @@ def run_freyebrg_nsga_sweep():
 def plot_freyberg_nsga_sweep():
     results_dirs = [d for d in os.listdir(".") if "freyberg_nsgaii" in d and os.path.isdir(d)]
     print(results_dirs)
-
+    plt_dir = "freyberg_nsga_plots"
+    if os.path.exists(plt_dir):
+        shutil.rmtree(plt_dir)
+    os.mkdir(plt_dir)
     cases = [r.split('_')[2] for r in results_dirs]
     risks = [r.split('_')[-1] for r in results_dirs]
     #print(results_dirs)
     oname = "sfrc40_1_03650.00"
     oname2 = "gw_malo1c_19791230"
-    fig, axes = plt.subplots(3,2,figsize=(5,8))
-    xmx,xmn = -1.0e+10,1.0e+10
-    ymx, ymn = -1.0e+10, 1.0e+10
-    for r_d,case,risk in zip(results_dirs,cases,risks):
-        #print(r_d)
-        #need to fix this for next run:
-        obs_files = [f for f in os.listdir(r_d) if r_d in f and "obs_ensemble" in f]
-        iter_num = [int(f.split('.')[-2]) for f in obs_files]
-        obs_file = obs_files[iter_num.index(max(iter_num))]
-        print(obs_file)
-        #continue
-        if risk == "tolerant":
-            jax = 0
-        elif risk == "averse":
-            jax = 1
-        else:
-            raise Exception(risk)
 
-        if case == "noreuse":
-            iax = 0
-        elif case == "nnresuse":
-            iax = 1
-        elif case == "fullreuse":
-            iax = 2
-        else:
-            raise Exception(case)
+    for iter_num in range(0,21):
+        print(iter_num)
+        fig, axes = plt.subplots(3,2,figsize=(5,8))
+        xmx,xmn = -1.0e+10,1.0e+10
+        ymx, ymn = -1.0e+10, 1.0e+10
+        for r_d,case,risk in zip(results_dirs,cases,risks):
+            #print(r_d)
+            #need to fix this for next run:
+            obs_files = [f for f in os.listdir(r_d) if r_d in f and "obs_ensemble" in f]
+            inum = [int(f.split('.')[-2]) for f in obs_files]
+            obs_file = obs_files[inum.index(iter_num)]
+            print(obs_file)
+            #continue
+            if risk == "tolerant":
+                jax = 0
+            elif risk == "averse":
+                jax = 1
+            else:
+                raise Exception(risk)
 
-        ax = axes[iax,jax]
+            if case == "noreuse":
+                iax = 0
+            elif case == "nnresuse":
+                iax = 1
+            elif case == "fullreuse":
+                iax = 2
+            else:
+                raise Exception(case)
 
-        obs_df = pd.read_csv(os.path.join(r_d,obs_file),index_col=0).loc[:,[oname,oname2]]
-        print(obs_df.columns)
+            ax = axes[iax,jax]
 
-        ax.scatter(obs_df.loc[:,oname] *1000,obs_df.loc[:,oname2],marker='.',color='b')
-        xlim = ax.get_xlim()
-        xmx = max(xmx,xlim[1])
-        xmn = min(xmn,xlim[0])
-        ylim = ax.get_ylim()
-        ymx = max(xmx, ylim[1])
-        ymn = min(xmn, ylim[0])
-        ax.set_title("{0} : {1}".format(case,risk))
-        ax.set_xlabel("nitrate concentration in SW reach 40 ($\\frac{mg}{l}$)")
-        ax.set_ylabel("total nitrate load ($kg$)")
-    for ax in axes.flatten():
-       ax.set_xlim(xmn*.9,xmx*1.1)
-       ax.set_ylim(ymn*.9,ymx*1.1)
-       ax.grid()
+            obs_df = pd.read_csv(os.path.join(r_d,obs_file),index_col=0).loc[:,[oname,oname2]]
+            print(obs_df.columns)
 
-    plt.tight_layout()
-    plt.savefig("freyberg_nsgaii_sweep.pdf")
+            ax.scatter(obs_df.loc[:,oname] *1000,obs_df.loc[:,oname2],marker='.',color='b')
+            xlim = ax.get_xlim()
+            xmx = max(xmx,xlim[1])
+            xmn = min(xmn,xlim[0])
+            ylim = ax.get_ylim()
+            ymx = max(xmx, ylim[1])
+            ymn = min(xmn, ylim[0])
+            ax.set_title("{0} : {1}".format(case,risk))
+            ax.set_xlabel("nitrate concentration in SW reach 40 ($\\frac{mg}{l}$)")
+            ax.set_ylabel("total nitrate load ($kg$)")
+        for ax in axes.flatten():
+           ax.set_xlim(xmn*.9,xmx*1.1)
+           ax.set_ylim(ymn*.9,ymx*1.1)
+           #ax.set_xlim(-5,30)
+           #ax.set_ylim(0,5000000)
+           ax.grid()
 
+        plt.tight_layout()
+        plt.savefig(os.path.join(plt_dir,"freyberg_{0:03d}.pdf".format(iter_num)))
+        plt.close()
 
 
 if __name__ == "__main__":
@@ -1436,5 +1444,5 @@ if __name__ == "__main__":
     #redis_freyberg()
     #invest()
     #setup_for_freyberg_nsga_runs(num_dv_reals=100,num_par_reals=100)
-    run_freyebrg_nsga_sweep()
-    #plot_freyberg_nsga_sweep()
+    #run_freyebrg_nsga_sweep()
+    plot_freyberg_nsga_sweep()
