@@ -76,17 +76,25 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
     else:
         assert sr is not None,"if 'ml' is not passed, 'sr' must be passed"
         if ibound is None:
-
             print("ibound not passed, using array of ones")
             ibound = {k:np.ones((sr.nrow,sr.ncol)) for k in prefix_dict.keys()}
         #assert ibound is not None,"if 'ml' is not pass, 'ibound' must be passed"
+
+    if isinstance(ibound, np.ndarray):
+        assert np.ndim(ibound) == 2 or np.ndim(ibound) == 3, \
+            "ibound needs to be either 3d np.ndarry or k_dict of 2d arrays. " \
+            "Array of {0} dimensions passed".format(np.ndim(ibound))
+        if np.ndim(ibound) == 2:
+            ibound = {0: ibound}
+        else:
+            ibound = {k: arr for k, arr in enumerate(ibound)}
+
 
     try:
         xcentergrid = sr.xcentergrid
         ycentergrid = sr.ycentergrid
     except Exception as e:
-        raise Exception("error getting xcentergrid and/or ycentergrid from 'sr':{0}".\
-                        format(str(e)))
+        raise Exception("error getting xcentergrid and/or ycentergrid from 'sr':{0}".format(str(e)))
     start = int(float(every_n_cell) / 2.0)
 
     #build a generic prefix_dict
@@ -95,9 +103,18 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
 
     #check prefix_dict
     for k, prefix in prefix_dict.items():
-        assert k < len(ibound),"layer index {0} > nlay {1}".format(k,len(ibound))
         if not isinstance(prefix,list):
             prefix_dict[k] = [prefix]
+        if np.all([isinstance(v, dict) for v in ibound.values()]):
+            for p in prefix_dict[k]:
+                if np.any([p.startswith(key) for key in ibound.keys()]):
+                    ib_sel = next(key for key in ibound.keys() if p.startswith(key))
+                else:
+                    ib_sel = 'general_zn'
+                assert k < len(ibound[ib_sel]), "layer index {0} > nlay {1}".format(k, len(ibound[ib_sel]))
+        else:
+            assert k < len(ibound),"layer index {0} > nlay {1}".format(k,len(ibound))
+
 
     #try:
         #ibound = ml.bas6.ibound.array
@@ -107,62 +124,69 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
     pp_files,tpl_files = [],[]
     pp_names = copy.copy(PP_NAMES)
     pp_names.extend(["k","i","j"])
-    for k in range(len(ibound)):
-        pp_df = None
-        ib = ibound[k]
-        assert ib.shape == xcentergrid.shape,"ib.shape != xcentergrid.shape for k {0}".\
-            format(k)
-        pp_count = 0
-        #skip this layer if not in prefix_dict
-        if k not in prefix_dict.keys():
-            continue
-        #cycle through rows and cols
-        for i in range(start,ib.shape[0]-start,every_n_cell):
-            for j in range(start,ib.shape[1]-start,every_n_cell):
-                # skip if this is an inactive cell
-                if ib[i,j] == 0:
-                    continue
 
-                # get the attributes we need
-                x = xcentergrid[i,j]
-                y = ycentergrid[i,j]
-                name = "pp_{0:04d}".format(pp_count)
-                parval1 = 1.0
+    if not np.all([isinstance(v, dict) for v in ibound.values()]):
+        ibound = {"general_zn": ibound}
+    for par in ibound.keys():
+        for k in range(len(ibound[par])):
+            pp_df = None
+            ib = ibound[par][k]
+            assert ib.shape == xcentergrid.shape,"ib.shape != xcentergrid.shape for k {0}".\
+                format(k)
+            pp_count = 0
+            #skip this layer if not in prefix_dict
+            if k not in prefix_dict.keys():
+                continue
+            #cycle through rows and cols
+            for i in range(start,ib.shape[0]-start,every_n_cell):
+                for j in range(start,ib.shape[1]-start,every_n_cell):
+                    # skip if this is an inactive cell
+                    if ib[i,j] == 0:
+                        continue
 
-                #decide what to use as the zone
-                zone = 1
-                if use_ibound_zones:
-                    zone = ib[i,j]
-                #stick this pilot point into a dataframe container
+                    # get the attributes we need
+                    x = xcentergrid[i,j]
+                    y = ycentergrid[i,j]
+                    name = "pp_{0:04d}".format(pp_count)
+                    parval1 = 1.0
 
-                if pp_df is None:
-                    data = {"name": name, "x": x, "y": y, "zone": zone,
-                            "parval1": parval1, "k":k, "i":i, "j":j}
-                    pp_df = pd.DataFrame(data=data,index=[0],columns=pp_names)
-                else:
-                    data = [name, x, y, zone, parval1, k, i, j]
-                    pp_df.loc[pp_count,:] = data
-                pp_count += 1
-        #if we found some acceptable locs...
-        if pp_df is not None:
-            for prefix in prefix_dict[k]:
-                base_filename = prefix+"pp.dat"
-                pp_filename = os.path.join(pp_dir, base_filename)
-                # write the base pilot point file
-                write_pp_file(pp_filename, pp_df)
+                    #decide what to use as the zone
+                    zone = 1
+                    if use_ibound_zones:
+                        zone = ib[i,j]
+                    #stick this pilot point into a dataframe container
 
-                tpl_filename = os.path.join(tpl_dir, base_filename + ".tpl")
-                #write the tpl file
-                pilot_points_to_tpl(pp_df, tpl_filename,
-                                    name_prefix=prefix)
-                pp_df.loc[:,"tpl_filename"] = tpl_filename
-                pp_df.loc[:,"pp_filename"] = pp_filename
-                pp_df.loc[:,"pargp"] = prefix
-                #save the parameter names and parval1s for later
-                par_info.append(pp_df.copy())
-                #save the pp_filename and tpl_filename for later
-                pp_files.append(pp_filename)
-                tpl_files.append(tpl_filename)
+                    if pp_df is None:
+                        data = {"name": name, "x": x, "y": y, "zone": zone,
+                                "parval1": parval1, "k":k, "i":i, "j":j}
+                        pp_df = pd.DataFrame(data=data,index=[0],columns=pp_names)
+                    else:
+                        data = [name, x, y, zone, parval1, k, i, j]
+                        pp_df.loc[pp_count,:] = data
+                    pp_count += 1
+            #if we found some acceptable locs...
+            if pp_df is not None:
+                for prefix in prefix_dict[k]:
+                    # if parameter prefix relates to current zone definition
+                    if prefix.startswith(par) or (
+                            ~np.any([prefix.startswith(p) for p in ibound.keys()]) and par == "general_zn"):
+                        base_filename = prefix+"pp.dat"
+                        pp_filename = os.path.join(pp_dir, base_filename)
+                        # write the base pilot point file
+                        write_pp_file(pp_filename, pp_df)
+
+                        tpl_filename = os.path.join(tpl_dir, base_filename + ".tpl")
+                        #write the tpl file
+                        pilot_points_to_tpl(pp_df, tpl_filename,
+                                            name_prefix=prefix)
+                        pp_df.loc[:,"tpl_filename"] = tpl_filename
+                        pp_df.loc[:,"pp_filename"] = pp_filename
+                        pp_df.loc[:,"pargp"] = prefix
+                        #save the parameter names and parval1s for later
+                        par_info.append(pp_df.copy())
+                        #save the pp_filename and tpl_filename for later
+                        pp_files.append(pp_filename)
+                        tpl_files.append(tpl_filename)
 
     par_info = pd.concat(par_info)
     for key,default in pst_config["par_defaults"].items():
@@ -177,7 +201,10 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
             print("error importing shapefile, try pip install pyshp...{0}"\
                   .format(str(e)))
             return par_info
-        shp = shapefile.Writer(shapeType=shapefile.POINT)
+        try:
+            shp = shapefile.Writer(target=shapename,shapeType=shapefile.POINT)
+        except:
+            shp = shapefile.Writer(shapeType=shapefile.POINT)
         for name,dtype in par_info.dtypes.iteritems():
             if dtype == object:
                 shp.field(name=name,fieldType='C',size=50)
@@ -189,10 +216,13 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
                 raise Exception("unrecognized field type in par_info:{0}:{1}".format(name,dtype))
 
         #some pandas awesomeness..
-        par_info.apply(lambda x:shp.poly([[[x.x,x.y]]],shapeType=shapefile.POINT), axis=1)
+        par_info.apply(lambda x:shp.point(x.x,x.y), axis=1)
         par_info.apply(lambda x:shp.record(*x),axis=1)
+        try:
+            shp.save(shapename)
+        except:
+            shp.close()
 
-        shp.save(shapename)
         shp = shapefile.Reader(shapename)
         assert shp.numRecords == par_info.shape[0]
     return par_info
@@ -281,8 +311,10 @@ def write_pp_shapfile(pp_df,shapename=None):
 
     if shapename is None:
         shapename = "pp_locs.shp"
-
-    shp = shapefile.Writer(shapeType=shapefile.POINT)
+    try:
+        shp = shapefile.Writer(shapeType=shapefile.POINT)
+    except:
+        shp = shapefile.Writer(target=shapename, shapeType=shapefile.POINT)
     for name, dtype in dfs[0].dtypes.iteritems():
         if dtype == object:
             shp.field(name=name, fieldType='C', size=50)
@@ -296,10 +328,15 @@ def write_pp_shapfile(pp_df,shapename=None):
 
     # some pandas awesomeness..
     for df in dfs:
-        df.apply(lambda x: shp.poly([[[x.x, x.y]]]), axis=1)
+        #df.apply(lambda x: shp.poly([[[x.x, x.y]]]), axis=1)
+        df.apply(lambda x: shp.point(x.x, x.y), axis=1)
         df.apply(lambda x: shp.record(*x), axis=1)
 
-    shp.save(shapename)
+    try:
+        shp.save(shapename)
+    except:
+        shp.close()
+
 
 
 

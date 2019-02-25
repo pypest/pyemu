@@ -178,6 +178,18 @@ def pseudo_inv_test():
     jpi = jco.pseudo_inv(maxsing=1)
     jpi = jco.pseudo_inv(maxsing=19)
 
+    u1,s1,v1 = jco.pseudo_inv_components(2)
+    print(s1.shape)
+    assert s1.shape[0] == 2
+    u2, s2, v2 = jco.pseudo_inv_components(2,truncate=False)
+    assert s2.shape == jco.shape
+
+    d = u1 - u2[:,:2]
+    assert d.x.max() == 0.0
+
+
+
+
 def cov_identity_test():
     import os
     import numpy as np
@@ -613,14 +625,61 @@ def sparse_get_sparse_test():
     assert d.sum() == 0
 
 
+def df_tests():
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
+
+    nrow = 5
+    ncol = 5
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    x = np.random.random((nrow, ncol))
+
+    m = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
+
+    df = pd.DataFrame(data=x,columns=cnames,index=rnames)
+
+    #sub
+    d = m - df
+    assert d.x.max() == 0.0
+
+    d = df - m.x #returns a df
+    #print(d.max())
+
+    # add
+    d = (m + df) - (df * 2)
+    assert d.x.max() == 0.0
+    d = (df * 2) - (m + df).x #returns a df
+
+    # mul
+    d = (m * df.T) - np.dot(m.x,df.T.values)
+    assert d.x.max() == 0.0
+
+    # hadamard
+    d = (m.hadamard_product(df)) - (m.x * df)
+    assert d.x.max() == 0.0
+
+
+
+
+
+
+
+
+
 if __name__ == "__main__":
+    #df_tests()
     # cov_scale_offset_test()
-    coo_tests()
+    #coo_tests()
     # indices_test()
     # mat_test()
     # load_jco_test()
     # extend_test()
-    # pseudo_inv_test()
+    pseudo_inv_test()
     # drop_test()
     # get_test()
     # cov_identity_test()

@@ -1496,7 +1496,7 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.', par_cols=['strhc1']):
     return df
 
 
-def apply_sfr_seg_parameters(reach_pars=False):
+def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
     """apply the SFR segement multiplier parameters.  Expected to be run in the same dir
     as the model exists
 
@@ -1517,36 +1517,43 @@ def apply_sfr_seg_parameters(reach_pars=False):
 
     """
     import flopy
-    assert os.path.exists("sfr_seg_pars.config")
+    bak_sfr_file = None
+    if seg_pars:
+        assert os.path.exists("sfr_seg_pars.config")
 
-    with open("sfr_seg_pars.config",'r') as f:
-        pars = {}
-        for line in f:
-            line = line.strip().split()
-            pars[line[0]] = line[1]
-    bak_sfr_file = pars["nam_file"]+"_backup_.sfr"
-    #m = flopy.modflow.Modflow.load(pars["nam_file"],model_ws=pars["model_ws"],load_only=["sfr"],check=False)
-    m = flopy.modflow.Modflow.load(pars["nam_file"], load_only=[], check=False)
-    sfr = flopy.modflow.ModflowSfr2.load(os.path.join(bak_sfr_file),m)
+        with open("sfr_seg_pars.config",'r') as f:
+            pars = {}
+            for line in f:
+                line = line.strip().split()
+                pars[line[0]] = line[1]
+        bak_sfr_file = pars["nam_file"]+"_backup_.sfr"
+        #m = flopy.modflow.Modflow.load(pars["nam_file"],model_ws=pars["model_ws"],load_only=["sfr"],check=False)
+        m = flopy.modflow.Modflow.load(pars["nam_file"], load_only=[], check=False)
+        sfr = flopy.modflow.ModflowSfr2.load(os.path.join(bak_sfr_file), m)
+        sfrfile = pars["sfr_filename"]
+        mlt_df = pd.read_csv(pars["mult_file"], delim_whitespace=False, index_col=0)
 
-    mlt_df = pd.read_csv(pars["mult_file"],delim_whitespace=False,index_col=0)
-
-    idx_cols = ['nseg', 'icalc', 'outseg', 'iupseg', 'iprior', 'nstrpts']
-    present_cols = [c for c in idx_cols if c in mlt_df.columns]
-    mlt_cols = mlt_df.columns.drop(present_cols)
-    for key,val in m.sfr.segment_data.items():
-        df = pd.DataFrame.from_records(val)
-        df.loc[:,mlt_cols] *= mlt_df.loc[:,mlt_cols]
-        val = df.to_records(index=False)
-        sfr.segment_data[key] = val
+        idx_cols = ['nseg', 'icalc', 'outseg', 'iupseg', 'iprior', 'nstrpts']
+        present_cols = [c for c in idx_cols if c in mlt_df.columns]
+        mlt_cols = mlt_df.columns.drop(present_cols)
+        for key, val in m.sfr.segment_data.items():
+            df = pd.DataFrame.from_records(val)
+            df.loc[:, mlt_cols] *= mlt_df.loc[:, mlt_cols]
+            val = df.to_records(index=False)
+            sfr.segment_data[key] = val
     if reach_pars:
         assert os.path.exists("sfr_reach_pars.config")
-
         with open("sfr_reach_pars.config", 'r') as f:
             r_pars = {}
             for line in f:
                 line = line.strip().split()
                 r_pars[line[0]] = line[1]
+        if bak_sfr_file is None:  # will be the case is seg_pars is false
+            bak_sfr_file = r_pars["nam_file"]+"_backup_.sfr"
+            #m = flopy.modflow.Modflow.load(pars["nam_file"],model_ws=pars["model_ws"],load_only=["sfr"],check=False)
+            m = flopy.modflow.Modflow.load(r_pars["nam_file"], load_only=[], check=False)
+            sfr = flopy.modflow.ModflowSfr2.load(os.path.join(bak_sfr_file), m)
+            sfrfile = r_pars["sfr_filename"]
         r_mlt_df = pd.read_csv(r_pars["mult_file"],sep=',',index_col=0)
         r_idx_cols = ["node", "k", "i", "j", "iseg", "ireach", "reachID", "outreach"]
         r_mlt_cols = r_mlt_df.columns.drop(r_idx_cols)
@@ -1554,11 +1561,11 @@ def apply_sfr_seg_parameters(reach_pars=False):
         r_df.loc[:, r_mlt_cols] *= r_mlt_df.loc[:, r_mlt_cols]
         sfr.reach_data = r_df.to_records(index=False)
     #m.remove_package("sfr")
-    sfr.write_file(filename=pars["sfr_filename"])
+    sfr.write_file(filename=sfrfile)
     return sfr
 
-def apply_sfr_parameters(reach_pars=False):
-    sfr = apply_sfr_seg_parameters(reach_pars=reach_pars)
+def apply_sfr_parameters(seg_pars=True, reach_pars=False):
+    sfr = apply_sfr_seg_parameters(seg_pars=seg_pars, reach_pars=reach_pars)
     return sfr
 
 

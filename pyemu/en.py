@@ -1282,7 +1282,8 @@ class ParameterEnsemble(Ensemble):
         if len(how_groups["gaussian"]) > 0:
             gset = set(how_groups["gaussian"])
             par_gaussian = par_org.loc[gset, :]
-            par_gaussian.sort_values(by="parnme", inplace=True)
+            #par_gaussian.sort_values(by="parnme", inplace=True)
+            par_gaussian.sort_index(inplace=True)
             pst.parameter_data = par_gaussian
 
             if cov is not None:
@@ -1301,14 +1302,16 @@ class ParameterEnsemble(Ensemble):
 
         if len(how_groups["uniform"]) > 0:
             par_uniform = par_org.loc[how_groups["uniform"],:]
-            par_uniform.sort_values(by="parnme",inplace=True)
+            #par_uniform.sort_values(by="parnme",inplace=True)
+            par_uniform.sort_index(inplace=True)
             pst.parameter_data = par_uniform
             pe_uniform = ParameterEnsemble.from_uniform_draw(pst,num_reals=num_reals)
             pes.append(pe_uniform)
 
         if len(how_groups["triangular"]) > 0:
             par_tri = par_org.loc[how_groups["triangular"],:]
-            par_tri.sort_values(by="parnme", inplace=True)
+            #par_tri.sort_values(by="parnme", inplace=True)
+            par_tri.sort_index(inplace=True)
             pst.parameter_data = par_tri
             pe_tri = ParameterEnsemble.from_triangular_draw(pst,num_reals=num_reals)
             pes.append(pe_tri)
@@ -1416,7 +1419,8 @@ class ParameterEnsemble(Ensemble):
 
         """
         if self.istransformed:
-            raise Exception("ParameterEnsemble already transformed")
+            #raise Exception("ParameterEnsemble already transformed")
+            return
 
         istransformed = self.pst.parameter_data.loc[:,"partrans"] == "log"
         if inplace:
@@ -1837,3 +1841,23 @@ class ParameterEnsemble(Ensemble):
         df = run_sweep(self,slave_dir=slave_dir,num_slaves=num_slaves)
         return ObservationEnsemble.from_dataframe(pst=self.pst,df=df)
 
+    def get_deviations(self):
+        """get the deviations of the ensemble value from the mean vector
+
+        Returns
+        -------
+            en : pyemu.Ensemble
+                Ensemble of deviations from the mean
+        """
+        bt = False
+        if not self.istransformed:
+            bt = True
+            self._transform()
+        mean_vec = self.mean()
+
+        df = self.loc[:,:].copy()
+        for col in df.columns:
+            df.loc[:,col] -= mean_vec[col]
+        if bt:
+            self._back_transform()
+        return type(self).from_dataframe(pst=self.pst,df=df)

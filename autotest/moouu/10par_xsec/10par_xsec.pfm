@@ -1,13 +1,13 @@
-PEST++ performance logger started at:  2018-10-03 13:54:03
-        ( time = 2018-10-03 13:54:03,  elapsed time = 1ms )
+PEST++ performance logger started at:  2019-02-19 09:15:11
+        ( time = 2019-02-19 09:15:11,  elapsed time = 1ms )
   starting to process control file
-          ( time = 2018-10-03 13:54:03,  elapsed time = 798us )
+          ( time = 2019-02-19 09:15:11,  elapsed time = 602us )
   finished processing control file
-          ( time = 2018-10-03 13:54:03,  elapsed time = 3ms )
+          ( time = 2019-02-19 09:15:11,  elapsed time = 3ms )
     starting to read parameter csv file
-            ( time = 2018-10-03 13:54:03,  elapsed time = 854us )
+            ( time = 2019-02-19 09:15:11,  elapsed time = 1ms )
     finished reading parameter csv file
-            ( time = 2018-10-03 13:54:15,  elapsed time = 11sec )
+            ( time = 2019-02-19 09:15:23,  elapsed time = 11sec )
       starting to read parameter csv file
-              ( time = 2018-10-03 13:54:15,  elapsed time = 75us )
+              ( time = 2019-02-19 09:15:23,  elapsed time = 66us )
       finished reading parameter csv file
