@@ -1803,8 +1803,9 @@ class PstFromFlopyModel(object):
             par_dfs["sfr"] = [df]  # may need df for both segs and reaches
             self.tpl_files.append("sfr_seg_pars.dat.tpl")
             self.in_files.append("sfr_seg_pars.dat")
-            self.tpl_files.append("sfr_seg_temporal_pars.dat.tpl")
-            self.in_files.append("sfr_seg_temporal_pars.dat")
+            if include_temporal_pars:
+                self.tpl_files.append("sfr_seg_temporal_pars.dat.tpl")
+                self.in_files.append("sfr_seg_temporal_pars.dat")
         if self.m.sfr.reachinput:
             if include_temporal_pars:
                 raise NotImplementedError("temporal pars is not set up for reach data style")
