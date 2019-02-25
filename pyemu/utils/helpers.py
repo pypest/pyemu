@@ -3562,7 +3562,8 @@ def apply_list_pars():
                     fmts += " %9G"
         np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].values, fmt=fmts)
 
-def apply_hfb_pars():
+
+def apply_hfb_pars(par_file='hfb6_pars.csv'):
     """ a function to apply HFB multiplier parameters.  Used to implement
     the parameterization constructed by write_hfb_zone_multipliers_template()
 
@@ -3574,7 +3575,7 @@ def apply_hfb_pars():
 
     should be added to the forward_run.py script
     """
-    hfb_pars = pd.read_csv('hfb6_pars.csv')
+    hfb_pars = pd.read_csv(par_file)
 
     hfb_mults_contents = open(hfb_pars.mlt_file.values[0], 'r').readlines()
     skiprows = sum([1 if i.strip().startswith('#') else 0 for i in hfb_mults_contents]) + 1
@@ -3597,9 +3598,11 @@ def apply_hfb_pars():
     # write the results
     with open(hfb_pars.model_file.values[0], 'w') as ofp:
         [ofp.write('{0}\n'.format(line.strip())) for line in header]
-
+        ofp.flush()
         hfb_org[['lay', 'irow1','icol1','irow2','icol2', 'hydchr']].to_csv(ofp, sep=' ',
-                header=None, index=None)
+                header=None, index=None, mode='a', line_terminator='\n')
+    # hfb_org[['lay', 'irow1', 'icol1', 'irow2', 'icol2', 'hydchr']].to_csv(os.path.join('temp', 'test.csv'), sep=' ',
+    #                header=None, index=None)
 
 def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None,
                     longnames=False):
