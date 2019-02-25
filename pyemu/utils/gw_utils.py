@@ -1380,13 +1380,22 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
 
     if include_temporal_pars:
         # include only stress periods that are explicitly listed in segment data
+        pnames,tpl_str = [],[]
         tmp_df = pd.DataFrame(data={c:1.0 for c in par_cols},index=list(m.sfr.segment_data.keys()))
         tmp_df.sort_index(inplace=True)
         tmp_df.to_csv(os.path.join(model_ws,"sfr_seg_temporal_pars.dat"))
         for par_col in par_cols:
             print(par_col)
-            tmp_df.loc[:,par_col] = tmp_df.index.map(lambda x: "~   {0}_{1:04d}   ~".format(par_col,int(x)))
-        write_df_tpl(filename=os.path.join(model_ws,"sfr_seg_temporal_pars.dat.tpl"),df=df)
+            parnme = tmp_df.index.map(lambda x: "{0}_{1:04d}_tmp".format(par_col,int(x)))
+            tmp_df.loc[:,par_col] = parnme.map(lambda x: "~   {0}  ~".format(x))
+            tpl_str.extend(list(tmp_df.loc[:,par_col].values))
+            pnames.extend(list(parnme.values))
+        write_df_tpl(filename=os.path.join(model_ws,"sfr_seg_temporal_pars.dat.tpl"),df=tmp_df)
+        pargp = [pname.split('_')[0]+"_tmp" for pname in pnames]
+        tmp_df = pd.DataFrame(data={"parnme":pnames,"pargp":pargp},index=pnames)
+        tmp_df.loc[:,"org_value"] = 1.0
+        tmp_df.loc[:,"tpl_str"] = tpl_str
+        df = df.append(tmp_df)
 
     # write the config file used by apply_sfr_pars()
     with open(os.path.join(model_ws, "sfr_seg_pars.config"), 'w') as f:
@@ -1396,6 +1405,16 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
         f.write("sfr_filename {0}\n".format(m.sfr.file_name[0]))
         if include_temporal_pars:
             f.write("time_mult_file sfr_seg_temporal_pars.dat\n")
+
+
+    # set some useful par info
+    df.loc[:, "pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
+    df.loc[:, "parubnd"] = 1.25
+    df.loc[:, "parlbnd"] = 0.75
+    hpars = df.loc[df.pargp.apply(lambda x: x.startswith("hcond")), "parnme"]
+    df.loc[hpars, "parubnd"] = 100.0
+    df.loc[hpars, "parlbnd"] = 0.01
+
     return df
 
 def setup_sfr_reach_parameters(nam_file,model_ws='.', par_cols=['strhc1']):

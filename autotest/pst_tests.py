@@ -506,7 +506,8 @@ def from_flopy():
 
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
-                                             model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True)
+                                             model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True,
+                                             temporal_sfr_pars=True)
     pe = helper.draw(100)
 
     # go again testing passing list to sfr_pars
@@ -1163,7 +1164,7 @@ def lt_gt_constraint_names_test():
 if __name__ == "__main__":
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
-    pst_from_flopy_geo_draw_test()
+    #pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
     # res_stats_test()
@@ -1173,7 +1174,7 @@ if __name__ == "__main__":
     # setattr_test()
     # run_array_pars()
     # from_flopy_zone_pars()
-    #from_flopy()
+    from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
     #from_flopy_test_reachinput_test()
