@@ -1236,7 +1236,7 @@ def apply_sft_obs():
 
 
 def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff", "hcond1", "hcond2", "pptsw"],
-                             tie_hcond=True):
+                             tie_hcond=True, include_temporal_pars=False):
     """Setup multiplier parameters for SFR segment data.  Just handles the
     standard input case, not all the cryptic SFR options.  Loads the dis, bas, and sfr files
     with flopy using model_ws.  However, expects that apply_sfr_seg_parameters() will be called
@@ -1253,7 +1253,10 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
             flopy modflow model object
         par_cols : list(str)
             segment data entires to parameterize
-        tie_hcond : flag to use same mult par for hcond1 and hcond2 for a given segment.  Default is True
+        tie_hcond : bool
+            flag to use same mult par for hcond1 and hcond2 for a given segment.  Default is True
+        include_temporal_pars : bool
+            flag to include spatially-global multipliers for each par_col for each stress period.  Default is False
 
     Returns
     -------
@@ -1353,31 +1356,46 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
     if df.empty:
         warnings.warn("No sfr segment parameters have been set up, either none of {0} were found or all were zero.".
                       format(','.join(par_cols)), PyemuWarning)
-    else:
-        # set not par cols to 1.0
-        seg_data.loc[:, notpar_cols] = "1.0"
+        return df
 
-        #write the template file
-        write_df_tpl(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"), seg_data, sep=',')
+    # set not par cols to 1.0
+    seg_data.loc[:, notpar_cols] = "1.0"
 
-        #write the config file used by apply_sfr_pars()
-        with open(os.path.join(model_ws,"sfr_seg_pars.config"),'w') as f:
-            f.write("nam_file {0}\n".format(nam_file))
-            f.write("model_ws {0}\n".format(model_ws))
-            f.write("mult_file sfr_seg_pars.dat\n")
-            f.write("sfr_filename {0}".format(m.sfr.file_name[0]))
+    #write the template file
+    write_df_tpl(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"), seg_data, sep=',')
 
-        #make sure the tpl file exists and has the same num of pars
-        parnme = parse_tpl_file(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"))
-        assert len(parnme) == df.shape[0]
 
-        #set some useful par info
-        df.loc[:,"pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
-        df.loc[:,"parubnd"] = 1.25
-        df.loc[:,"parlbnd"] = 0.75
-        hpars = df.loc[df.pargp.apply(lambda x: x.startswith("hcond")),"parnme"]
-        df.loc[hpars,"parubnd"] = 100.0
-        df.loc[hpars, "parlbnd"] = 0.01
+
+    #make sure the tpl file exists and has the same num of pars
+    parnme = parse_tpl_file(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"))
+    assert len(parnme) == df.shape[0]
+
+    #set some useful par info
+    df.loc[:,"pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
+    df.loc[:,"parubnd"] = 1.25
+    df.loc[:,"parlbnd"] = 0.75
+    hpars = df.loc[df.pargp.apply(lambda x: x.startswith("hcond")),"parnme"]
+    df.loc[hpars,"parubnd"] = 100.0
+    df.loc[hpars, "parlbnd"] = 0.01
+
+    if include_temporal_pars:
+        # include only stress periods that are explicitly listed in segment data
+        tmp_df = pd.DataFrame(data={c:1.0 for c in par_cols},index=list(m.sfr.segment_data.keys()))
+        tmp_df.sort_index(inplace=True)
+        tmp_df.to_csv(os.path.join(model_ws,"sfr_seg_temporal_pars.dat"))
+        for par_col in par_cols:
+            print(par_col)
+            tmp_df.loc[:,par_col] = tmp_df.index.map(lambda x: "~   {0}_{1:04d}   ~".format(par_col,int(x)))
+        write_df_tpl(filename=os.path.join(model_ws,"sfr_seg_temporal_pars.dat.tpl"),df=df)
+
+    # write the config file used by apply_sfr_pars()
+    with open(os.path.join(model_ws, "sfr_seg_pars.config"), 'w') as f:
+        f.write("nam_file {0}\n".format(nam_file))
+        f.write("model_ws {0}\n".format(model_ws))
+        f.write("mult_file sfr_seg_pars.dat\n")
+        f.write("sfr_filename {0}\n".format(m.sfr.file_name[0]))
+        if include_temporal_pars:
+            f.write("time_mult_file sfr_seg_temporal_pars.dat\n")
     return df
 
 def setup_sfr_reach_parameters(nam_file,model_ws='.', par_cols=['strhc1']):
@@ -1543,10 +1561,7 @@ def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
     bak_sfr_file = pars["nam_file"] + "_backup_.sfr"
     sfr = flopy.modflow.ModflowSfr2.load(os.path.join(bak_sfr_file), m)
     sfrfile = pars["sfr_filename"]
-    time_mlt_df = None
-    if "time_mult_file" in pars:
-        time_mult_file = pars["time_mult_file"]
-        time_mlt_df = pd.read_csv(pars["time_mult_file"], delim_whitespace=False, index_col=0)
+
 
     mlt_df = pd.read_csv(pars["mult_file"], delim_whitespace=False, index_col=0)
     present_cols = [c for c in idx_cols if c in mlt_df.columns]
@@ -1562,6 +1577,17 @@ def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
         df = pd.DataFrame.from_records(m.sfr.reach_data)
         df.loc[:, mlt_cols] *= mlt_df.loc[:, mlt_cols]
         sfr.reach_data = df.to_records(index=False)
+
+
+    if "time_mult_file" in pars:
+        time_mult_file = pars["time_mult_file"]
+        time_mlt_df = pd.read_csv(pars["time_mult_file"], delim_whitespace=False, index_col=0)
+        for kper,sdata in m.sfr.segment_data.items():
+            assert kper in time_mlt_df.index,"gw_utils.apply_sfr_seg_parameters() error: kper "+\
+                                             "{0} not in time_mlt_df index".format(kper)
+            for col in time_mlt_df.columns:
+                sdata[col] *= time_mlt_df.loc[kper,col]
+
 
     sfr.write_file(filename=sfrfile)
     return sfr
