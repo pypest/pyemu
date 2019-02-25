@@ -1,9 +1,10 @@
 import os
 import sys
+from shutil import copyfile
 import multiprocessing as mp
 import copy
 import numpy as np
-
+import pandas as pd
 import pyemu
 # from pyemu.prototypes.sampler import Parstat
 from .ensemble_method import EnsembleMethod
@@ -12,6 +13,7 @@ from pyemu.mat import Cov
 from ..logger import Logger
 from pyemu.pst import Pst
 from pyemu.mat import Matrix
+from pyemu.pst.pst_utils import write_to_template, parse_tpl_file, parse_ins_file
 
 
 class Assimilator(EnsembleMethod):
@@ -59,19 +61,12 @@ class Assimilator(EnsembleMethod):
 
         self.threshold_percent = 0.1  # 0.1% of eigen will be removed
 
-        # Time Cycle info. example
-        # {[ ['file_1.tpl', 'file_1.dat'],
-        #    ['file_2.tpl', 'file_2.dat'],
-        #    ['out_file.ins', 'out_file.out']}
-
-        self.cycle_update_files = {}
-
     def __init2__(self, pst, num_slaves=0, use_approx_prior=True,
                   submit_file=None, verbose=False, port=4004, slave_dir="template"):
         """
         (This might need to be rewritten)
         The goal of this function is to bypass the __init__ function in esembble method
-        so that a covariance matrix is not passed as it can be huge and there is no need to computed
+        so that a covariance matrix is not passed since it can be huge and there is no need to computed it
         explicitly
         :return:
         """
@@ -231,8 +226,8 @@ class Assimilator(EnsembleMethod):
 
         self.enforce_bounds = enforce_bounds
 
-        if False:  # it is better
-            # todo: Jeremy, what us this?
+        if False:  # deactiavet for now
+            # todo: Jeremy, what is this?
             if restart_obsensemble is not None:
                 self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
                 failed_runs, self.obsensemble = self._load_obs_ensemble(restart_obsensemble)
@@ -246,34 +241,36 @@ class Assimilator(EnsembleMethod):
                 self.obsensemble = self.forecast()
                 self.logger.log("evaluating initial ensembles")
 
-        # todo: check this ... what is that?
-        if False:
-            if not self.parensemble.istransformed:
-                self.parensemble._transform(inplace=True)
-            if not self.parensemble_0.istransformed:
-                self.parensemble_0._transform(inplace=True)
+        # Transformation
+        if not self.parensemble.istransformed:
+            self.parensemble._transform(inplace=True)
+        if not self.parensemble_0.istransformed:
+            self.parensemble_0._transform(inplace=True)
         self._initialized = True
 
     def forcast(self):
         """ This simply moves the ensemble forward by running the model
                once for each realization"""
 
-        if self.parensemble is None:
+        if not (self.parensemble is None):
             parensemble = self.parensemble
         self.logger.log("evaluating ensemble")
         failed_runs, obsensemble = self._calc_obs(self.parensemble)
-
+        obsensemble_0 = self.obsensemble_0
         if failed_runs is not None:
             self.logger.warn("dropping failed realizations")
             parensemble.loc[failed_runs, :] = np.NaN
             parensemble = parensemble.dropna()
             obsensemble.loc[failed_runs, :] = np.NaN
             obsensemble = obsensemble.dropna()
+            obsensemble_0.loc[failed_runs, :] = np.NaN
+            obsensemble_0 = obsensemble_0.dropna()
             self.obsensemble = obsensemble
             self.parensemble = parensemble
+            self.obsensemble_0 = obsensemble_0
         else:
             self.obsensemble = obsensemble
-
+        self.failed_runs = failed_runs
         self.logger.log("evaluating ensemble")
 
     def _calc_delta_obs(self, obsensemble, scaled=False):
@@ -295,20 +292,6 @@ class Assimilator(EnsembleMethod):
         else:
             return self._calc_delta(parensemble, None)
 
-    def generate_priors(self):
-        """
-        Use parameter groups dataframe from Pst to generate prior realizations
-        :return:
-        """
-        # ToDo: Any plans to deal with nonGaussian distributions?
-        # Todo: it's critical to avoid generating the covariance matrix explicitlty since we do not need it.
-        self.parensemble_0 = pyemu.ParameterEnsemble.from_gaussian_draw(self.pst,
-                                                                        self.parcov, num_reals=self.num_reals)
-
-        pass
-
-    def model_evalutions(self):
-        pass
 
     def update(self):
 
@@ -354,19 +337,30 @@ class Assimilator(EnsembleMethod):
         self.logger.log("calculate scaled delta par")
 
         # error ensemble
-        err_ens = self.obsensemble_0.loc[:, self.pst.nnz_obs_names] - \
-                  self.pst.observation_data.loc[self.pst.nnz_obs_names, :]['obsval']
+        obs_nms = self.pst.nnz_obs_names
+        if self.type == 'Kalman Filter':
+            stat_nm = self.dynamic_states['parnme'].values
+            for snm in stat_nm:
+                obs_nms.remove(snm)
+            pass
+
+        err_ens = self.obsensemble_0.loc[:, obs_nms] - \
+                  self.pst.observation_data.loc[obs_nms, :]['obsval']
         err_ens = err_ens / np.sqrt(err_ens.shape[0] - 1)
         err_ens = Matrix(x=err_ens.values, row_names=err_ens.index, col_names=err_ens.columns)
 
         # Innovation matrix (deviation arround the mean)
-        Ddash = self.obsensemble_0.loc[:, self.pst.nnz_obs_names] - self.obsensemble.loc[:, self.pst.nnz_obs_names]
+        Ddash = self.obsensemble_0.loc[:, obs_nms] - self.obsensemble.loc[:, obs_nms]
         Ddash = Matrix(x=Ddash.values, row_names=Ddash.index, col_names=Ddash.columns)
         Ddash = Ddash.T
 
         C = delta_obs.T + err_ens.T
         m, N = C.shape
-        u, s, v = np.linalg.svd(C.as_2d)
+        try:
+            u, s, v = np.linalg.svd(C.as_2d)
+        except:
+            xxccc = 1
+            pass
         ns = len(s)
         s_perc = 100.0 * s / np.sum(s)
         s_ = np.power(s, -2.0)
@@ -380,7 +374,9 @@ class Assimilator(EnsembleMethod):
         X1 = np.dot(ss_, u.T)
         X1 = np.dot(X1, Ddash.as_2d)
         X1 = np.dot(u, X1)
-        X1 = np.dot(delta_obs.as_2d, X1)
+        delobs = delta_obs.df().loc[:, obs_nms]
+        #X1 = np.dot(delta_obs.as_2d, X1)
+        X1 = np.dot(delobs, X1)
 
         # This is the change in parameter values
         del_par = np.dot(delta_par.as_2d.T, X1)
@@ -397,12 +393,14 @@ class Assimilator(EnsembleMethod):
         # TODO: add exceptions and warnings
         if self.type == "Smoother":
             self.smoother()
-        elif self.type == "Kalman_filter":
+
+        elif self.type == 'Kalman Filter':
             self.enkf()
+
         elif self.type == "Kalman_smoother":
             self.enks()
         else:
-            print("We should'nt be here....")  # TODO: ???
+            print("You should'nt be here....")  # TODO: ???
 
     def smoother(self):
         if self.iterate:
@@ -420,54 +418,181 @@ class Assimilator(EnsembleMethod):
 
     def enkf(self):
         """
-        
-        Loop over time windows and apply da
+        Ensemble Kalman Filter (EnKF)
+        Successively update parameters and states
+        """
+
+        # Global pst is to hold data about all cycles, while pst will hold data about current cycle.
+        self.global_pst = self.pst
+        self.pst = []
+        cycles = self.global_pst.observation_data['cycle'].unique()
+        cycles = np.sort(cycles).tolist()
+        self.all_ensembles = []
+        if self.iterate:
+            # TODO: Chen_oliver algorithm
+            pass
+        else:
+            for icycle in cycles:
+                if icycle < 0:
+                    continue
+                self.logger.log("data assimilation for cycle = {}".format(icycle))
+
+                # before assimilation, misc parameters are updated.
+                self.update_misc_pars(icycle)
+
+                # generate child pst object for current cycle
+                self.generate_child_pst(icycle)
+
+                if icycle == 0:
+                    # first cycle initialization
+                    temp_pst = self.pst # todo: this is ugly
+                    self.pst = self.global_pst
+                    self.initialize()
+                    self.pst = temp_pst
+                else:
+
+                    self.parensemble.index = np.arange(len(self.parensemble))
+                    self.obsensemble_0.index = np.arange(len(self.obsensemble_0))
+                    self.obsensemble.index = np.arange(len(self.obsensemble))
+
+                # run forward models ...
+                self.forcast()
+
+                # Before updating, we need to setup the forecast matrix, which consists of
+                # prior static parameters and prior dynamic states. Notice that prior dynamic
+                # states are model output results from
+                stat_nm_L = self.dynamic_states['parnme'].values.tolist()
+                stat_nm_U = [nm.upper() for nm in stat_nm_L]
+                sweep_out = pd.read_csv(self.pst.pestpp_options.get("sweep_output_csv_file", "sweep_out.csv"))
+                if not(self.failed_runs is None):
+                    sweep_out.loc[self.failed_runs, :] = np.NaN
+                    sweep_out = sweep_out.dropna()
+                    sweep_out.index = self.parensemble.index
+                self.parensemble[stat_nm_L] = sweep_out[stat_nm_U]
+                if True:
+                    self.parensemble.to_csv("cycle_{}_prior.csv".format(icycle))
+
+                #  compute the posteriors...
+                # todo: force min/max values of parameters after updated
+                self.update()
+                if True:
+                    self.parensemble_a.to_csv("cycle_{}_posterior.csv".format(icycle))
+                self.parensemble = self.parensemble_a
+
+
+    def generate_child_pst(self, icycle):
+        """
+
+        :param icycle:
         :return:
         """
+        # get current static parameters and remove misc parameters as they will not participate in DA
+        mask = (self.global_pst.parameter_data['cycle'] < 0) | (self.global_pst.parameter_data['cycle'] == icycle)
+        param = self.global_pst.parameter_data[mask]
+        param = param[~param['parnme'].isin(self.local_misc_par)]
 
-        for cycle_index, time_point in enumerate(self.timeline):
-            if cycle_index >= len(self.timeline) - 1:
-                # Logging : Last Update cycle has finished
-                break
+        # get curret obs
+        mask = (self.global_pst.observation_data['cycle'] < 0) | (self.global_pst.observation_data['cycle'] == icycle)
+        obs = self.global_pst.observation_data[mask] # this includes both states and obs
 
-            print("Print information about this assimilation Cycle ???")  # should be handeled in Logger
+        # get in/out files
+        mask = (self.global_pst.io_files['cycle'] < 0) | (self.global_pst.io_files['cycle'] == icycle)
+        curr_files = self.global_pst.io_files[mask]
+        curr_files = curr_files[curr_files['Type'] != 'misc']
 
-            # each cycle should have a dictionary of template files and instruction files to update the model inout
-            # files
-            # get current cycle update information
-            current_cycle_files = self.cycle_update_files[cycle_index]
+        # collect in/out files and ins/tpl
+        infiles = [];
+        outfiles = [];
+        insfiles = [];
+        tplfiles = []
+        stats = []
+        for iline, rec in curr_files.iterrows():
+            if rec['tpl/ins'].split('.')[-1] == 'tpl':
+                infiles.append(rec['in/out'])
+                tplfiles.append(rec['tpl/ins'])
+            elif rec['tpl/ins'].split('.')[-1] == 'ins':
+                outfiles.append(rec['in/out'])
+                insfiles.append(rec['tpl/ins'])
+                if rec['Type'] == 'stat':
+                    stat_ = parse_ins_file(os.path.join(self.slave_dir, rec['tpl/ins']))
+                    stats = stats + stat_
+            else:
+                raise ValueError("Unrecognized file type. Only tpl and ins are allowed ")
 
-            #  (1)  update model input files for this cycle
-            self.model_temporal_evolotion(cycle_index, current_cycle_files)
+        # dynamic state should be in both obs and param sections
+        obs_states = obs[obs['obsnme'].isin(stats)]
+        dynamic_states = pd.DataFrame(columns=param.columns)
+        dynamic_states['parnme'] = obs_states['obsnme'].values
+        dynamic_states['partrans'] = 'none' # todo: we need to expose this to users
+        dynamic_states['parval1'] = obs_states['obsval'].values
+        dynamic_states['pargp'] = obs_states['obgnme'].values
+        dynamic_states.index = obs_states['obsnme'].values
+        self.dynamic_states = dynamic_states
 
-            # (2) generate new Pst object for the current time cycle
-            current_pst = copy.deepcopy(self.pst)
-            # update observation dataframe
-            # update parameter dataframe
-            # update in/out files if needed
+        # generate pst
+        stat_par_names = param['parnme'].values.tolist() + dynamic_states['parnme'].values.tolist()
+        pst = pyemu.Pst.from_par_obs_names(par_names=stat_par_names,
+                                           obs_names=obs['obsnme'].values)
+        pst.control_data.noptmax = 0
+        pst.pestpp_options["sweep_parameter_csv_file"] = self.global_pst.pestpp_options["sweep_parameter_csv_file"]
+        pst.model_command = self.global_pst.model_command
 
-            # At this stage the problem is equivalent to smoother problem
-            self.smoother(current_pst)
+        pst.input_files = infiles
+        pst.output_files = outfiles
+        pst.template_files = tplfiles
+        pst.instruction_files = insfiles
 
-            # how to save results for this cycle???
+        param_stat = pd.concat([param, dynamic_states])
+        for field in pst.parameter_data.columns:
+            if field in param_stat.columns:
+                pst.parameter_data[field] = param_stat[field].values
+        for field in pst.observation_data.columns:
+            if field in obs.columns:
+                pst.observation_data[field] = obs[field].values
 
+        fname = os.path.splitext(self.global_pst.filename)[0] + "_{}".format(icycle) + ".pst"
+        pst_file = os.path.join(self.slave_dir, fname)
+        pst.filename = fname
+        pst.write(new_filename=pst_file)
 
+        # Todo: This is bad ...!!! we need to allow the user to specify the master folder in a better way
+        copyfile(pst_file, fname)
+        self.pst = pst
 
-    def model_temporal_evolotion(self, time_index, cycle_files):
+        # update pst obj associtaed with par_ens and obs_env
+        if isinstance(self.par_ens, pyemu.en.ParameterEnsemble):
+            self.par_ens.pst = pst
+        if isinstance(self.obs_ens, pyemu.en.ParameterEnsemble):
+            self.obs_ens.pst = pst
+
+    def update_misc_pars(self, icycle):
         """
-         - The function prepares the model for this time cycle
-         - Any time-dependant forcing should be handled here. This includes temporal stresses, boundary conditions, and
-         initial conditions.
-         - Two options are available (1) template files to update input parameters
-                                     (2) use results from previous cycle to update input files using instruction
-                                     files.
-                                     (3) the user must prepare a pair of files : .tpl(or .ins) and corresponding file to change
-        :param time_index:
+        Update model input files that are related to miscellaneous parameters.
+        Miscellaneous parameters are any input parameter that will not be updated in DA
+        :param icycle:
         :return:
         """
-        for file in cycle_files:
-            # generate log here about files being updated
-            self.update_inputfile(file[0], file[1])  # Jeremy: do we have something like this in python?
+        self.logger.log("updating miscellaneous model input files for cycle number {} ...".format(icycle))
+        io_files = self.global_pst.io_files[
+            (self.global_pst.io_files["cycle"] < 0) | (self.global_pst.io_files["cycle"] == icycle)]
+
+        # update misc files
+        misc_io_files = io_files[io_files['Type'] == 'misc']
+        unique_iofiles = misc_io_files['in/out'].unique()
+        self.local_misc_par = []  # clear record in case it is populated by previous cycle.
+        for par_file in unique_iofiles:
+            tpl_file = misc_io_files.loc[misc_io_files['in/out'] == par_file, 'tpl/ins'].values[0]
+            tpl_file = os.path.join(self.slave_dir, tpl_file)
+            parnames = parse_tpl_file(tpl_file)
+            self.local_misc_par = self.local_misc_par + parnames
+            parvals = {}
+            for par in parnames:
+                val = self.global_pst.parameter_data[self.global_pst.parameter_data['parnme']
+                                                     == par]['parval1'].values[0]
+                parvals[par] = val
+
+            write_to_template(parvals, tpl_file, os.path.join(self.slave_dir, par_file))
+
 
 
 if __name__ == "__main__":

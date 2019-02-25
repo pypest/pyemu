@@ -72,12 +72,12 @@ pst = pyemu.Pst.from_par_obs_names(par_names= parnames,
 pyemu.utils.simple_tpl_from_pars(parnames, tplfilename = r".\template\tplfile.tpl")
 pyemu.utils.simple_ins_from_obs2(obsnames, insfilename = r".\template\insfile.ins")
 
-
+pst.parameter_data['partrans'] = 'none'
 pst.control_data.noptmax = 0
 # assign obs values and weights
 pst.observation_data['obsval'] = obs
 pst.observation_data['obsnme'] = obsnames
-pst.observation_data['weight'] = 10
+pst.observation_data['weight'] = 100
 pst.pestpp_options["sweep_parameter_csv_file"] = "sweep_in.csv"
 pst.model_command = sys.executable + " " + "forward_run.py"
 

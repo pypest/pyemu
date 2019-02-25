@@ -1,0 +1,16 @@
+,in/out,tpl/ins,cycle,Type
+0,stat_heads_in.csv,stats_head.tpl,-1,stat
+1,stat_heads_out.csv,stat_heads.ins,-1,stat
+2,obs_hob.csv,obs_hob_0.ins,0,obs
+3,obs_hob.csv,obs_hob_1.ins,1,obs
+4,obs_hob.csv,obs_hob_2.ins,2,obs
+5,obs_hob.csv,obs_hob_3.ins,3,obs
+6,par_k.csv,par_k.tpl,-1,par
+7,misc_dis.csv,misc_dis1.tpl,0,misc
+8,misc_dis.csv,misc_dis2.tpl,1,misc
+9,misc_dis.csv,misc_dis2.tpl,2,misc
+10,misc_dis.csv,misc_dis2.tpl,3,misc
+9,misc_hob.csv,misc_hob1.tpl,0,misc
+10,misc_hob.csv,misc_hob2.tpl,1,misc
+11,misc_hob.csv,misc_hob2.tpl,2,misc
+12,misc_hob.csv,misc_hob2.tpl,3,misc

@@ -377,7 +377,7 @@ if __name__ == "__main__":
         tpl_file = r"D:\Workspace\trash\template\freyberg.rch.tpl"
         Restart().update_input_files(pars = par_dict, in_files = [infile], tpl_files = [tpl_file],
                                      output_dir = os.path.abspath(infile), exe_swp = exe_f)
-    if False: # test "extract outputs"
+    if True: # test "extract outputs"
         exe_f = r"D:\Workspace\projects\mississippi\pyemu\bin\win\pestpp-swp.exe"
         outfs = [r"D:\Workspace\trash\template\freyberg.truth.hds"]
         ins_files = [r"D:\Workspace\trash\template\freyberg.hds.ins"]
