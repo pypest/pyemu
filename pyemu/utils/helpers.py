@@ -1448,6 +1448,9 @@ class PstFromFlopyModel(object):
     sfr_pars : bool or list
         setup parameters for the stream flow routing modflow package.
         If list is passed it defiend the parameters to set up.
+    sfr_temporal_pars : bool
+        flag to include stress-period level spatially-global multipler parameters in addition to
+        the spatially-discrete `sfr_pars`.  Requires `sfr_pars` to be passed.  Default is False
     grid_geostruct : pyemu.geostats.GeoStruct
         the geostatistical structure to build the prior parameter covariance matrix
         elements for grid-based parameters.  If None, a generic GeoStruct is created
@@ -1563,7 +1566,7 @@ class PstFromFlopyModel(object):
     def __init__(self,model,new_model_ws,org_model_ws=None,pp_props=[],const_props=[],
                  temporal_bc_props=[],temporal_list_props=[],grid_props=[],
                  grid_geostruct=None,pp_space=None,
-                 zone_props=[],pp_geostruct=None,par_bounds_dict=None,sfr_pars=False,
+                 zone_props=[],pp_geostruct=None,par_bounds_dict=None,sfr_pars=False, temporal_sfr_pars=False,
                  temporal_list_geostruct=None,remove_existing=False,k_zone_dict=None,
                  mflist_waterbudget=True,mfhyd=True,hds_kperk=[],use_pp_zones=False,
                  obssim_smp_pairs=None,external_tpl_in_pairs=None,
@@ -1717,13 +1720,16 @@ class PstFromFlopyModel(object):
         self.setup_list_pars()
         self.setup_array_pars()
 
+        if not sfr_pars and temporal_sfr_pars:
+            self.logger.lraise("use of `temporal_sfr_pars` requires `sfr_pars`")
+
         if sfr_pars:
             if isinstance(sfr_pars, str):
                 sfr_pars = [sfr_pars]
             if isinstance(sfr_pars, list):
-                self.setup_sfr_pars(sfr_pars)
+                self.setup_sfr_pars(sfr_pars,include_temporal_pars=temporal_sfr_pars)
             else:
-                self.setup_sfr_pars()
+                self.setup_sfr_pars(include_temporal_pars=temporal_sfr_pars)
 
         if hfb_pars:
             self.setup_hfb_pars()
@@ -1777,16 +1783,17 @@ class PstFromFlopyModel(object):
         self.frun_post_lines.append("pyemu.gw_utils.apply_sfr_obs()")
 
 
-    def setup_sfr_pars(self, par_cols=None):
+    def setup_sfr_pars(self, par_cols=None, include_temporal_pars=False):
         """setup multiplier parameters for sfr segment data
         Adding support for reachinput (and isfropt = 1)"""
         assert self.m.sfr is not None, "can't find sfr package..."
         if isinstance(par_cols, str):
             par_cols = [par_cols]
-        reach_pars = False # default to False
+        reach_pars = False  # default to False
         seg_pars = True
         par_dfs = {}
-        df = pyemu.gw_utils.setup_sfr_seg_parameters(self.m, par_cols=par_cols)  # now just pass model
+        df = pyemu.gw_utils.setup_sfr_seg_parameters(self.m, par_cols=par_cols,
+                                                     include_temporal_pars=include_temporal_pars)  # now just pass model
         # self.par_dfs["sfr"] = df
         if df.empty:
             warnings.warn("No sfr segment parameters have been set up", PyemuWarning)
@@ -1796,7 +1803,12 @@ class PstFromFlopyModel(object):
             par_dfs["sfr"] = [df]  # may need df for both segs and reaches
             self.tpl_files.append("sfr_seg_pars.dat.tpl")
             self.in_files.append("sfr_seg_pars.dat")
-        if self.m.sfr.reachinput:  # setup reaches
+            if include_temporal_pars:
+                self.tpl_files.append("sfr_seg_temporal_pars.dat.tpl")
+                self.in_files.append("sfr_seg_temporal_pars.dat")
+        if self.m.sfr.reachinput:
+            # if include_temporal_pars:
+            #     raise NotImplementedError("temporal pars is not set up for reach data style")
             df = pyemu.gw_utils.setup_sfr_reach_parameters(self.m, par_cols=par_cols)
             if df.empty:
                 warnings.warn("No sfr reach parameters have been set up", PyemuWarning)
@@ -2694,6 +2706,9 @@ class PstFromFlopyModel(object):
             else:
                 struct_dict[self.spatial_list_geostruct] = [self.par_dfs["hfb"]]
 
+        if "sfr" in self.par_dfs.keys():
+            self.logger.warn("geospatial prior not implemented for SFR pars")
+
         if len(struct_dict) > 0:
             if sparse:
                 cov = pyemu.helpers.sparse_geostatistical_prior_builder(self.pst,
@@ -2761,6 +2776,8 @@ class PstFromFlopyModel(object):
                     self.ins_files.append(ins_file)
                     self.out_files.append(out_file)
             self.log("instantiating control file from i/o files")
+            self.logger.statement("tpl files: {0}".format(",".join(self.tpl_files)))
+            self.logger.statement("ins files: {0}".format(",".join(self.ins_files)))
             pst = pyemu.Pst.from_io_files(tpl_files=self.tpl_files,
                                           in_files=self.in_files,
                                           ins_files=self.ins_files,

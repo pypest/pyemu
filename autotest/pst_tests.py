@@ -506,7 +506,8 @@ def from_flopy():
 
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
-                                             model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True)
+                                             model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True,
+                                             temporal_sfr_pars=True)
     pe = helper.draw(100)
 
     # go again testing passing list to sfr_pars
@@ -687,10 +688,10 @@ def from_flopy_reachinput():
         return
     import pyemu
 
-    if platform.platform().lower().startswith('win'):
-        tempchek = os.path.join("..", "..", "bin", "win", "tempchek.exe")
-    else:
-        tempchek = None  # os.path.join("..", "..", "bin", "linux", "tempchek")
+    # if platform.platform().lower().startswith('win'):
+    #     tempchek = os.path.join("..", "..", "bin", "win", "tempchek.exe")
+    # else:
+    #     tempchek = None  # os.path.join("..", "..", "bin", "linux", "tempchek")
 
     bd = os.getcwd()
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_reaches")
@@ -703,14 +704,21 @@ def from_flopy_reachinput():
                     ["strhc1", "flow"],
                     ["flow", "runoff"],
                     ["not_a_par", "not_a_par2"],
-                    "strhc1"]
+                    "strhc1",
+                    ["strhc1", "flow", "runoff"]]
     for i, sfr_par in enumerate(args_to_test):  # if i=2 no reach pars, i==3 no pars, i=4 no seg pars
         for f in ["sfr_reach_pars.config", "sfr_seg_pars.config"]:  # clean up
             if os.path.exists(f):
                 os.remove(f)
+        if i < 5:
+            include_temporal_pars = False
+        else:
+            include_temporal_pars = True
         helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                                  hds_kperk=[0, 0], remove_existing=True,
-                                                 model_exe_name="mfnwt", sfr_pars=sfr_par, sfr_obs=True)
+                                                 model_exe_name="mfnwt", sfr_pars=sfr_par,
+                                                 temporal_sfr_pars=include_temporal_pars,
+                                                 sfr_obs=True)
         os.chdir(new_model_ws)
         mult_files = []
         spars = {}
@@ -746,32 +754,32 @@ def from_flopy_reachinput():
                 raise Exception("error applying sfr pars, check tpl(s) and datafiles: {0}".format(str(e)))
 
             # test using tempchek for writing tpl file
-            par = helper.pst.parameter_data
-            if rpars == {}:
-                par_file = "{}.par".format(spars['nam_file'])
-            else:
-                par_file = "{}.par".format(rpars['nam_file'])
-            with open(par_file, 'w') as f:
-                f.write('single point\n')
-                f.flush()
-                par[['parnme', 'parval1', 'scale', 'offset']].to_csv(f, sep=' ', header=False, index=False, mode='a')
-            if tempchek is not None:
-                for mult in mult_files:
-                    tpl_file = "{}.tpl".format(mult)
-                    try:
-                        pyemu.os_utils.run("{} {} {} {}".format(tempchek, tpl_file, mult, par_file))
-                    except Exception as e:
-                        raise Exception("error running tempchek on template file {0} and data file {1} : {0}".
-                                        format(mult, "{}.tpl".format(tpl_file), str(e)))
-                try:
-                    exec(helper.frun_pre_lines[0])
-                except Exception as e:
-                    raise Exception("error applying sfr pars, check tpl(s) and datafiles: {0}".format(str(e)))
-        except:
+            # par = helper.pst.parameter_data
+            # if rpars == {}:
+            #     par_file = "{}.par".format(spars['nam_file'])
+            # else:
+            #     par_file = "{}.par".format(rpars['nam_file'])
+            # with open(par_file, 'w') as f:
+            #     f.write('single point\n')
+            #     f.flush()
+            #     par[['parnme', 'parval1', 'scale', 'offset']].to_csv(f, sep=' ', header=False, index=False, mode='a')
+            # if tempchek is not None:
+                # for mult in mult_files:
+                #     tpl_file = "{}.tpl".format(mult)
+                #     try:
+                #         pyemu.os_utils.run("{} {} {} {}".format(tempchek, tpl_file, mult, par_file))
+                #     except Exception as e:
+                #         raise Exception("error running tempchek on template file {1} and data file {0} : {2}".
+                #                         format(mult, tpl_file, str(e)))
+                # try:
+                #     exec(helper.frun_pre_lines[0])
+                # except Exception as e:
+                #     raise Exception("error applying sfr pars, check tpl(s) and datafiles: {0}".format(str(e)))
+        except Exception as e:
             if i == 3:  # scenario 3 should not set up any parameters
                 pass
             else:
-                raise Exception()
+                raise Exception(str(e))
         os.chdir(bd)
 
 
@@ -1163,7 +1171,7 @@ def lt_gt_constraint_names_test():
 if __name__ == "__main__":
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
-    pst_from_flopy_geo_draw_test()
+    #pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
     # res_stats_test()
@@ -1176,7 +1184,7 @@ if __name__ == "__main__":
     #from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
-    #from_flopy_test_reachinput_test()
+    from_flopy_reachinput()
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
