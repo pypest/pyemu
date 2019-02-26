@@ -84,22 +84,21 @@ def freyberg_test():
     shutil.copy2(tmp,os.path.join(new_model_ws,"mfnwt"+ext))
     ph.pst.control_data.noptmax = 0
     ph.pst.write(os.path.join(new_model_ws,"test.pst"))
-    # todo: jwhite disabled on Feb 26 2019 - something weird in travis using the old binaries...
-    # print("{0} {1}".format(pp_exe_name,"test.pst"), new_model_ws)
-    # pyemu.os_utils.run("{0} {1}".format(pp_exe_name,"test.pst"),cwd=new_model_ws)
-    # for ext in ["rec",'rei',"par"]:
-    #     assert os.path.exists(os.path.join(new_model_ws,"test.{0}".format(ext))),ext
-    # ph.pst.parrep(os.path.join(new_model_ws,"test.par"))
-    # res = pyemu.pst_utils.read_resfile(os.path.join(new_model_ws,"test.rei"))
-    # ph.pst.observation_data.loc[res.name,"obsval"] = res.modelled
-    # ph.pst.write(os.path.join(new_model_ws,"test.pst"))
-    # print("{0} {1}".format(pp_exe_name, "test.pst"), new_model_ws)
-    #
-    # pyemu.os_utils.run("{0} {1}".format(pp_exe_name,"test.pst"),cwd=new_model_ws)
-    # for ext in ["rec",'rei',"par","iobj"]:
-    #     assert os.path.exists(os.path.join(new_model_ws,"test.{0}".format(ext))),ext
-    # df = pd.read_csv(os.path.join(new_model_ws,"test.iobj"))
-    # assert df.total_phi.iloc[0] < 1.0e-10
+    print("{0} {1}".format(pp_exe_name,"test.pst"), new_model_ws)
+    pyemu.os_utils.run("{0} {1}".format(pp_exe_name,"test.pst"),cwd=new_model_ws)
+    for ext in ["rec",'rei',"par"]:
+        assert os.path.exists(os.path.join(new_model_ws,"test.{0}".format(ext))),ext
+    ph.pst.parrep(os.path.join(new_model_ws,"test.par"))
+    res = pyemu.pst_utils.read_resfile(os.path.join(new_model_ws,"test.rei"))
+    ph.pst.observation_data.loc[res.name,"obsval"] = res.modelled
+    ph.pst.write(os.path.join(new_model_ws,"test.pst"))
+    print("{0} {1}".format(pp_exe_name, "test.pst"), new_model_ws)
+
+    pyemu.os_utils.run("{0} {1}".format(pp_exe_name,"test.pst"),cwd=new_model_ws)
+    for ext in ["rec",'rei',"par","iobj"]:
+        assert os.path.exists(os.path.join(new_model_ws,"test.{0}".format(ext))),ext
+    df = pd.read_csv(os.path.join(new_model_ws,"test.iobj"))
+    assert df.total_phi.iloc[0] < 1.0e-10
     pe = ph.draw(30)
     pe.to_csv(os.path.join(new_model_ws,"par_en.csv"))
     ph.pst.pestpp_options["ies_par_en"] = "par_en.csv"
@@ -108,7 +107,7 @@ def freyberg_test():
     master_dir = "test_master"
     pyemu.os_utils.start_slaves(new_model_ws,ies_exe_name,"test.pst",
                                 num_slaves=10,slave_root='.',
-                                master_dir=master_dir,silent_master=True)
+                                master_dir=master_dir,silent_master=False)
     df = pd.read_csv(os.path.join(master_dir,"test.phi.meas.csv"),index_col=0)
     init_phi = df.loc[0,"mean"]
     final_phi = df.loc[1,"mean"]
