@@ -1789,7 +1789,7 @@ class PstFromFlopyModel(object):
         assert self.m.sfr is not None, "can't find sfr package..."
         if isinstance(par_cols, str):
             par_cols = [par_cols]
-        reach_pars = False # default to False
+        reach_pars = False  # default to False
         seg_pars = True
         par_dfs = {}
         df = pyemu.gw_utils.setup_sfr_seg_parameters(self.m, par_cols=par_cols,
@@ -1807,8 +1807,8 @@ class PstFromFlopyModel(object):
                 self.tpl_files.append("sfr_seg_temporal_pars.dat.tpl")
                 self.in_files.append("sfr_seg_temporal_pars.dat")
         if self.m.sfr.reachinput:
-            if include_temporal_pars:
-                raise NotImplementedError("temporal pars is not set up for reach data style")
+            # if include_temporal_pars:
+            #     raise NotImplementedError("temporal pars is not set up for reach data style")
             df = pyemu.gw_utils.setup_sfr_reach_parameters(self.m, par_cols=par_cols)
             if df.empty:
                 warnings.warn("No sfr reach parameters have been set up", PyemuWarning)

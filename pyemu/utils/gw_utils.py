@@ -1381,10 +1381,10 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
     if include_temporal_pars:
         # include only stress periods that are explicitly listed in segment data
         pnames,tpl_str = [],[]
-        tmp_df = pd.DataFrame(data={c:1.0 for c in par_cols},index=list(m.sfr.segment_data.keys()))
+        tmp_df = pd.DataFrame(data={c:1.0 for c in cols},index=list(m.sfr.segment_data.keys()))
         tmp_df.sort_index(inplace=True)
         tmp_df.to_csv(os.path.join(model_ws,"sfr_seg_temporal_pars.dat"))
-        for par_col in par_cols:
+        for par_col in cols:
             print(par_col)
             parnme = tmp_df.index.map(lambda x: "{0}_{1:04d}_tmp".format(par_col,int(x)))
             tmp_df.loc[:,par_col] = parnme.map(lambda x: "~   {0}  ~".format(x))
@@ -1416,6 +1416,7 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
     df.loc[hpars, "parlbnd"] = 0.01
 
     return df
+
 
 def setup_sfr_reach_parameters(nam_file,model_ws='.', par_cols=['strhc1']):
     """Setup multiplier paramters for reach data, when reachinput option is specififed in sfr.
@@ -1662,7 +1663,7 @@ def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
     #m.remove_package("sfr")
     if pars is not None and "time_mult_file" in pars:
         time_mult_file = pars["time_mult_file"]
-        time_mlt_df = pd.read_csv(pars["time_mult_file"], delim_whitespace=False, index_col=0)
+        time_mlt_df = pd.read_csv(time_mult_file, delim_whitespace=False, index_col=0)
         for kper, sdata in m.sfr.segment_data.items():
             assert kper in time_mlt_df.index, "gw_utils.apply_sfr_seg_parameters() error: kper " + \
                                               "{0} not in time_mlt_df index".format(kper)
