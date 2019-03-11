@@ -63,6 +63,7 @@ class RegData(object):
                 v = v.replace('[','').replace(']','')
                 super(RegData,self).__setattr__(v,d)
                 self.optional_dict[v] = o
+        self.should_write = ["phimlim","phimaccept","fracphim"]
 
     def write(self,f):
         """ write the regularization section to an open
@@ -84,6 +85,18 @@ class RegData(object):
             f.write("\n")
 
 
+    def write_keyword(self,f):
+        for vline in REG_VARIABLE_LINES:
+            vraw = vline.strip().split()
+            for v in vraw:
+                v = v.replace("[",'').replace("]",'')
+                if v not in self.should_write:
+                    continue
+                if v not in self.optional_dict.keys():
+                    raise Exception("RegData missing attribute {0}".format(v))
+                f.write("{0:30} {1:>10}\n".format(v,self.__getattribute__(v)))
+
+
 class SvdData(object):
     """ an object that encapsulates the singular value decomposition
     section of the PEST control file
@@ -93,6 +106,13 @@ class SvdData(object):
         self.maxsing = kwargs.pop("maxsing",10000000)
         self.eigthresh = kwargs.pop("eigthresh",1.0e-6)
         self.eigwrite = kwargs.pop("eigwrite",1)
+
+
+    def write_keyword(self,f):
+        f.write("{0:30} {1:>10}\n".format("svdmode",self.svdmode))
+        f.write("{0:30} {1:>10}\n".format("maxsing",self.maxsing))
+        f.write("{0:30} {1:>10}\n".format("eigthresh",self.eigthresh))
+        f.write("{0:30} {1:>10}\n".format("eigwrite",self.eigwrite))
 
     def write(self,f):
         """ write an SVD section to a file handle
@@ -160,6 +180,10 @@ class ControlData(object):
 
         self._df.index = self._df.name.apply(lambda x:x.replace('[',''))\
             .apply(lambda x: x.replace(']',''))
+        super(ControlData, self).__setattr__("keyword_accessed", ["pestmode","noptmax"])
+        counters = ["npar","nobs","npargp","nobsgp","nprior","ntplfle","ninsfle"]
+        super(ControlData, self).__setattr__("counters", counters)
+        #self.keyword_accessed = ["pestmode","noptmax"]
 
     def __setattr__(self, key, value):
         if key == "_df":
@@ -167,6 +191,9 @@ class ControlData(object):
             return
         assert key in self._df.index, str(key)+" not found in attributes"
         self._df.loc[key,"value"] = self._df.loc[key,"type"](value)
+        #super(ControlData, self).__getattr__("keyword_accessed").append(key)
+        if key not in self.counters:
+            self.keyword_accessed.append(key)
 
     def __getattr__(self, item):
         if item == "_df":
@@ -288,6 +315,16 @@ class ControlData(object):
 
         """
         return self._df.apply(lambda x: self.formatters[x["type"]](x["value"]),axis=1)
+
+
+    def write_keyword(self,f):
+        kw = super(ControlData, self).__getattribute__("keyword_accessed")
+        f.write("* control data keyword\n")
+        for n,v in zip(self._df.name,self.formatted_values):
+            if n not in kw:
+                continue
+            f.write("{0:30} {1}\n".format(n,v))
+
 
     def write(self,f):
         """ write control data section to a file

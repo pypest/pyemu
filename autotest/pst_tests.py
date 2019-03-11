@@ -1168,7 +1168,18 @@ def lt_gt_constraint_names_test():
     assert pst.less_than_pi_constraints.shape[0] == 0
     assert pst.greater_than_pi_constraints.shape[0] == 0
 
+
+def new_format_test():
+    import pyemu
+    pst_files = [f for f in os.listdir("pst") if f.endswith(".pst")]
+    pst = pyemu.Pst(os.path.join("pst",pst_files[0]))
+    pst.write_new("test.pst")
+
+
+
+
 if __name__ == "__main__":
+    new_format_test()
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
     #pst_from_flopy_geo_draw_test()
@@ -1184,7 +1195,7 @@ if __name__ == "__main__":
     #from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
-    from_flopy_reachinput()
+    #from_flopy_reachinput()
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()

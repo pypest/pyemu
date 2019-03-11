@@ -1226,6 +1226,54 @@ class Pst(object):
 
 
 
+    def write_new(self,new_filename,external=True):
+        self.new_filename = new_filename
+        self.rectify_pgroups()
+        self.rectify_pi()
+        self._update_control_section()
+        self.sanity_checks()
+
+        f_out = open(new_filename, 'w')
+        if self.with_comments:
+            for line in self.comments.get("initial", []):
+                f_out.write(line + '\n')
+        f_out.write("pcf\n")
+        self.control_data.write_keyword(f_out)
+
+        if self.with_comments:
+            for line in self.comments.get("* singular value decompisition",[]):
+                f_out.write(line)
+        self.svd_data.write_keyword(f_out)
+
+        if self.control_data.pestmode.lower().startswith("r"):
+            self.reg_data.write_keyword(f_out)
+
+        for k,v in self.pestpp_options.items():
+            f_out.write("{0:30} {1:>10}\n".format(k,v))
+
+
+
+        f_out.write("\n* parameter groups\n")
+        pargp_filename = new_filename.lower().replace(".pst",".pargrp_data.csv")
+        self.parameter_groups.to_csv(pargp_filename,index=False)
+        f_out.write("external {0} header=True delimiter=','\n".format(pargp_filename))
+
+        f_out.write("\n* parameter data\n")
+        par_filename = new_filename.lower().replace(".pst", ".par_data.csv")
+        self.parameter_data.to_csv(pargp_filename,index=False)
+        f_out.write("external {0} header=True delimiter=','\n".format(par_filename))
+
+        f_out.write("\n* observation data\n")
+        obs_filename = new_filename.lower().replace(".pst", ".obs_data.csv")
+        self.observation_data.to_csv(obs_filename,index=False)
+        f_out.write("external {0} header=True delimiter=','\n".format(obs_filename))
+
+        if self.prior_information.shape[0] > 0:
+            f_out.write("\n* prior information\n")
+            pi_filename = new_filename.lower().replace(".pst", ".pi_data.csv")
+            self.prior_information.to_csv(pi_filename,index=False)
+            f_out.write("external {0} header=True delimiter=','\n".format(pi_filename))
+
     def write(self,new_filename,update_regul=False):
         """write a pest control file
 
