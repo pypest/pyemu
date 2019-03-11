@@ -76,9 +76,9 @@ pst_config["pargp_format"] = {"pargpnme":SFMT,"inctyp":SFMT,"derinc":FFMT,"force
                       "derincmul":FFMT,"dermthd":SFMT,"splitthresh":FFMT,
                       "splitreldiff":FFMT,"splitaction":SFMT}
 
-pst_config["pargp_converters"] = {"pargpnme":str_con,"inctype":str_con,
-                         "dermethd":str_con,
-                         "splitaction":str_con}
+pst_config["pargp_converters"] = {"pargpnme":str_con,"inctyp":str_con,
+                         "dermethd":str_con,"derinc":np.float,"derinclb":np.float,
+                         "splitaction":str_con,"forcen":str_con,"derincmul":np.float}
 pst_config["pargp_defaults"] = {"pargpnme":"pargp","inctyp":"relative","derinc":0.01,
                        "derinclb":0.0,"forcen":"switch","derincmul":2.0,
                      "dermthd":"parabolic","splitthresh":1.0e-5,

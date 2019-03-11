@@ -249,7 +249,7 @@ class ControlData(object):
         return v,t,f
 
 
-    def parse_values_from_lines(self,lines):
+    def parse_values_from_lines(self,lines,iskeyword=False):
         """ cast the string lines for a pest control file into actual inputs
 
         Parameters
@@ -258,6 +258,53 @@ class ControlData(object):
             strings from pest control file
 
         """
+
+        if iskeyword:
+            extra = {}
+            for line in lines:
+                raw = line.strip().split()
+                if len(raw) == 0 or raw[0] == "#":
+                    continue
+                name = raw[0].strip().lower()
+
+                value = raw[1].strip()
+                v,t,f = self._parse_value(value)
+                if name not in self._df.index:
+                    extra[name] = v
+                else:
+                    # if the parsed values type isn't right
+                    if t != self._df.loc[name, "type"]:
+
+                        # if a float was expected and int return, not a problem
+                        if t == np.int32 and self._df.loc[name, "type"] == np.float64:
+                            self._df.loc[name, "value"] = np.float64(v)
+
+
+                        # if this is a required input, throw
+                        elif self._df.loc[name, "required"]:
+                            raise Exception("wrong type found for variable " + name + ":" + str(t))
+                        else:
+
+                            # else, since this problem is usually a string, check for acceptable values
+                            found = False
+                            for nname, avalues in self.accept_values.items():
+                                if v in avalues:
+                                    if t == self._df.loc[nname, "type"]:
+                                        self._df.loc[nname, "value"] = v
+                                        found = True
+                                        break
+                            if not found:
+                                warnings.warn("non-conforming value found for " + \
+                                              name + ":" + str(v) + "...ignoring", PyemuWarning)
+
+
+                    else:
+                        self._df.loc[name, "value"] = v
+            return extra
+
+
+
+
         assert len(lines) == len(CONTROL_VARIABLE_LINES),\
         "ControlData error: len of lines not equal to " +\
         str(len(CONTROL_VARIABLE_LINES))

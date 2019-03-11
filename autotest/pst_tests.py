@@ -1172,10 +1172,33 @@ def lt_gt_constraint_names_test():
 def new_format_test():
     import pyemu
     pst_files = [f for f in os.listdir("pst") if f.endswith(".pst")]
-    pst = pyemu.Pst(os.path.join("pst",pst_files[0]))
-    pst.write_new("test.pst")
+    for pst_file in pst_files:
+        try:
+            pst = pyemu.Pst(os.path.join("pst",pst_file))
+        except:
+            print("error loading",pst_file)
+            continue
+        npar,nobs,npr = pst.npar,pst.nobs,pst.nprior
+        pst.write_new("test.pst")
 
+        pst_new = pyemu.Pst("test.pst",flex=True)
+        npar1, nobs1, npr1 = pst_new.npar, pst_new.nobs, pst_new.nprior
+        assert npar == npar1
+        assert nobs == nobs1
+        assert npr == npr1,"{0}: {1},{2}".format(pst_file,npr,npr1)
 
+        pst_new.write("test.pst")
+        pst_new = pyemu.Pst("test.pst")
+        npar1, nobs1, npr1 = pst_new.npar, pst_new.nobs, pst_new.nprior
+        assert npar == npar1
+        assert nobs == nobs1
+        assert npr == npr1, "{0}: {1},{2}".format(pst_file, npr, npr1)
+        pst_new.write_new("test.pst")
+        pst_new = pyemu.Pst("test.pst",flex=True)
+        npar1, nobs1, npr1 = pst_new.npar, pst_new.nobs, pst_new.nprior
+        assert npar == npar1
+        assert nobs == nobs1
+        assert npr == npr1, "{0}: {1},{2}".format(pst_file, npr, npr1)
 
 
 if __name__ == "__main__":
