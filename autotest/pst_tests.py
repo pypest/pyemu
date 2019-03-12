@@ -1152,6 +1152,28 @@ def new_format_test():
         assert npr == npr1, "{0}: {1},{2}".format(pst_file, npr, npr1)
 
 
+    pst_new.parameter_data.loc[:,"counter"] = 1
+    pst_new.observation_data.loc[:,"x"] = 999.0
+    pst_new.observation_data.loc[:,'y'] = 888.0
+    pst_new.write("test.pst",version=2)
+    pst_new = pyemu.Pst("test.pst")
+    assert "counter" in pst_new.parameter_data.columns
+    assert "x" in pst_new.observation_data.columns
+    assert "y" in pst_new.observation_data.columns
+
+    lines = open("test.pst").readlines()
+    for i,line in enumerate(lines):
+        lines[i] = line.replace("header=True","header=False")
+    with open("test.pst",'w') as f:
+        [f.write(line) for line in lines]
+    try:
+        pst_new = pyemu.Pst("test.pst")
+    except:
+        pass
+    else:
+        raise Exception()
+
+
 if __name__ == "__main__":
     new_format_test()
     #lt_gt_constraint_names_test()

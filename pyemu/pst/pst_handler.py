@@ -63,6 +63,7 @@ class Pst(object):
         """pyemu.pst.pst_controldata.SvdData: singular value decomposition (SVD) object loaded from pst control file"""
         self.reg_data = RegData()
         """pyemu.pst.pst_controldata.RegData: regularization data object loaded from pst control file"""
+        self._version = 1
         if load:
             assert os.path.exists(filename),\
                 "pst file not found:{0}".format(filename)
@@ -652,6 +653,18 @@ class Pst(object):
         raw = lines[0].strip().split()
         if raw[0].lower() == "external":
             filename = raw[1]
+            #check for other items
+            if len(raw) > 2:
+                for arg in raw[2:]:
+                    if "header" in arg.lower():
+                        rraw = arg.split('=')
+                        assert len(rraw) == 2
+                        if rraw[1].lower() != "true":
+                            raise NotImplementedError("non-header external files not support")
+                    else:
+                        PyemuWarning("unsupported external file option found: '{0}', ignoring".format(arg))
+
+
             assert os.path.exists(filename),"Pst._cast_df_from_lines() error: external file '{0}' not found".format(filename)
             df = pd.read_csv(filename)
             df.columns = df.columns.str.lower()
@@ -911,17 +924,17 @@ class Pst(object):
                 break
         assert line.startswith("pcf"), "Pst.load() error: first noncomment line must start with 'pcf', not '{0}'".format(line)
         raw = line.strip().split()
-        version = 1
+
         if len(raw) > 1 and "version" in raw[1].lower():
             raw = raw[1].split('=')
             if len(raw) > 1:
                 try:
-                    version = int(raw[1])
+                    self._version = int(raw[1])
                 except:
                     pass
-        if version == 1:
+        if self._version == 1:
             self._load_version1(filename)
-        elif version == 2:
+        elif self._version == 2:
             self._load_version2(filename)
         else:
             raise Exception("Pst.load() error: version must be 1 or 2, not '{0}'".format(version))
@@ -1430,7 +1443,7 @@ class Pst(object):
             f_out.write("external {0} header=True\n".format(pi_filename))
 
 
-    def write(self,new_filename,update_regul=True,version=1):
+    def write(self,new_filename,update_regul=True,version=None):
         """main entry point to write a pest control file.
 
          Parameters
@@ -1441,9 +1454,14 @@ class Pst(object):
             flag to update zero-order Tikhonov prior information
             equations to prefer the current parameter values
         version : int
-            flag for which version of control file to write (must be 1 or 2)
+            flag for which version of control file to write (must be 1 or 2).
+            if None, uses Pst._version, which set in the constructor and modified
+            during the load
 
         """
+        if version is None:
+            version = self._version
+
         if version == 1:
             return self._write_version1(new_filename=new_filename,update_regul=update_regul)
         elif version == 2:
