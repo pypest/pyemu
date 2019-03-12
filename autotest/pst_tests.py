@@ -1112,6 +1112,7 @@ def lt_gt_constraint_names_test():
 
 
 def new_format_test():
+    import numpy as np
     import pyemu
     pst_files = [f for f in os.listdir("pst") if f.endswith(".pst")]
     for pst_file in pst_files:
@@ -1124,6 +1125,8 @@ def new_format_test():
         npar,nobs,npr = pst.npar,pst.nobs,pst.nprior
         ppo = pst.pestpp_options
         pst.write("test.pst",version=2)
+
+
 
         pst_new = pyemu.Pst("test.pst")
         npar1, nobs1, npr1 = pst_new.npar, pst_new.nobs, pst_new.nprior
@@ -1150,6 +1153,12 @@ def new_format_test():
         assert npar == npar1
         assert nobs == nobs1
         assert npr == npr1, "{0}: {1},{2}".format(pst_file, npr, npr1)
+
+
+    pst_new.parameter_groups.loc[:,:] = np.NaN
+    pst_new.parameter_groups.dropna(inplace=True)
+    pst_new.write("test.pst",version=2)
+    pst_new = pyemu.Pst("test.pst")
 
 
     pst_new.parameter_data.loc[:,"counter"] = 1

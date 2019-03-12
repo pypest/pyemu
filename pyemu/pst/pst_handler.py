@@ -792,17 +792,17 @@ class Pst(object):
 
         # read anything until par groups
         while True:
-            if next_section.startswith("* parameter groups"):
+            if next_section.startswith("* parameter groups") or next_section.startswith("* parameter data"):
                 break
             next_section, section_lines, c = self._read_section_comments(f, False)
 
         # parameter groups
         section = "* parameter groups"
-        assert next_section == section
-        next_section, section_lines, self.comments[section] = self._read_section_comments(f, False)
-        self.parameter_groups = self._cast_df_from_lines(next_section,section_lines,self.pargp_fieldnames,
-                                                        self.pargp_converters, self.pargp_defaults)
-        self.parameter_groups.index = self.parameter_groups.pargpnme
+        if next_section == section:
+            next_section, section_lines, self.comments[section] = self._read_section_comments(f, False)
+            self.parameter_groups = self._cast_df_from_lines(next_section,section_lines,self.pargp_fieldnames,
+                                                            self.pargp_converters, self.pargp_defaults)
+            self.parameter_groups.index = self.parameter_groups.pargpnme
 
         # parameter data
         section = "* parameter data"
@@ -1403,8 +1403,6 @@ class Pst(object):
 
         for k,v in self.pestpp_options.items():
             f_out.write("{0:30} {1:>10}\n".format(k,v))
-
-
 
         f_out.write("* parameter groups\n")
         pargp_filename = new_filename.lower().replace(".pst",".pargrp_data.csv")
