@@ -1122,23 +1122,31 @@ def new_format_test():
             continue
         print(pst_file)
         npar,nobs,npr = pst.npar,pst.nobs,pst.nprior
+        ppo = pst.pestpp_options
         pst.write("test.pst",version=2)
 
         pst_new = pyemu.Pst("test.pst")
         npar1, nobs1, npr1 = pst_new.npar, pst_new.nobs, pst_new.nprior
+        ppo1 = pst_new.pestpp_options
+        assert len(ppo) == len(ppo1)
         assert npar == npar1
         assert nobs == nobs1
         assert npr == npr1,"{0}: {1},{2}".format(pst_file,npr,npr1)
 
+
         pst_new.write("test.pst",version=1)
         pst_new = pyemu.Pst("test.pst")
         npar1, nobs1, npr1 = pst_new.npar, pst_new.nobs, pst_new.nprior
+        ppo1 = pst_new.pestpp_options
+        assert len(ppo) == len(ppo1)
         assert npar == npar1
         assert nobs == nobs1
         assert npr == npr1, "{0}: {1},{2}".format(pst_file, npr, npr1)
         pst_new.write("test.pst",version=2)
         pst_new = pyemu.Pst("test.pst")
         npar1, nobs1, npr1 = pst_new.npar, pst_new.nobs, pst_new.nprior
+        ppo1 = pst_new.pestpp_options
+        assert len(ppo) == len(ppo1)
         assert npar == npar1
         assert nobs == nobs1
         assert npr == npr1, "{0}: {1},{2}".format(pst_file, npr, npr1)

@@ -751,19 +751,31 @@ class Pst(object):
             iskeyword = True
         next_section, section_lines, self.comments[section] = self._read_section_comments(f,False)
 
-        self.control_data.parse_values_from_lines(section_lines,iskeyword=iskeyword)
+        self.pestpp_options = self.control_data.parse_values_from_lines(section_lines,iskeyword=iskeyword)
 
-        # read anything until the SVD section
-        while True:
-            if next_section.startswith("* singular value") or next_section.startswith("* parameter groups"):
-                break
-            next_section, section_lines, c = self._read_section_comments(f,False)
+        # # read anything until the SVD section
+        # while True:
+        #     if next_section.startswith("* singular value") or next_section.startswith("* parameter groups"):
+        #         break
+        #     next_section, section_lines, c = self._read_section_comments(f,False)
+        #
+        # # SVD
+        # if next_section.startswith("* singular value"):
+        #     section = "* singular value decomposition"
+        #     next_section, section_lines,self.comments[section] = self._read_section_comments(f, False)
+        #     self.svd_data.parse_values_from_lines(section_lines)
 
-        # SVD
-        if next_section.startswith("* singular value"):
-            section = "* singular value decomposition"
-            next_section, section_lines,self.comments[section] = self._read_section_comments(f, False)
-            self.svd_data.parse_values_from_lines(section_lines)
+        # handle svd and regul options
+        if len(self.pestpp_options) > 0:
+            ppo = self.pestpp_options
+            svd_opts = ["svdmode","eigthresh","maxsing","eigwrite"]
+            for svd_opt in svd_opts:
+                if svd_opt in ppo:
+                    self.svd_data.__setattr__(svd_opt, ppo.pop(svd_opt))
+            for reg_opt in self.reg_data.should_write:
+                if reg_opt in ppo:
+                    self.reg_data.__setattr__(reg_opt, ppo.pop(reg_opt))
+
 
         # read anything until par groups
         while True:
@@ -873,6 +885,8 @@ class Pst(object):
             #next_line,comments = self._read_line_comments(f,True)
             final_comments.extend(comments)
             self.comments["final"] = final_comments
+
+
 
     def load(self,filename):
         """ entry point load the pest control file.  sniffs the first non-comment line to detect the version (if present)
