@@ -37,7 +37,7 @@ class Pst(object):
         a control file object
 
     """
-    def __init__(self, filename, load=True, resfile=None,flex=False):
+    def __init__(self, filename, load=True, resfile=None):
 
         self.parameter_data = None
         """pandas.DataFrame:  parameter data loaded from pst control file"""
@@ -66,10 +66,8 @@ class Pst(object):
         if load:
             assert os.path.exists(filename),\
                 "pst file not found:{0}".format(filename)
-            if flex:
-                self.flex_load(filename)
-            else:
-                self.load(filename)
+
+            self.load(filename)
 
     def __setattr__(self, key, value):
         if key == "model_command":
@@ -724,7 +722,12 @@ class Pst(object):
             self.prior_information.index = self.prior_information.pilbl
             self.prior_information.loc[:,"extra"] = extra
 
-    def flex_load(self,filename):
+    def _load_version2(self,filename):
+        """load a version 2 control file
+
+
+
+        """
         self.lcount  = 0
         self.comments = {}
         self.prior_information = self.null_prior
@@ -871,9 +874,50 @@ class Pst(object):
             final_comments.extend(comments)
             self.comments["final"] = final_comments
 
+    def load(self,filename):
+        """ entry point load the pest control file.  sniffs the first non-comment line to detect the version (if present)
 
-    def load(self, filename):
-        """load the pest control file information
+        Parameters
+        ----------
+        filename : str
+            pst filename
+
+        Raises
+        ------
+            lots of exceptions for incorrect format
+        """
+        assert os.path.exists(filename), "couldn't find control file {0}".format(filename)
+        f = open(filename, 'r')
+
+        while True:
+            line = f.readline()
+            if line == "":
+                raise Exception("Pst.load() error: EOF when trying to find first line - #sad")
+            if line.strip().split()[0].lower() == "pcf":
+                break
+        assert line.startswith("pcf"), "Pst.load() error: first noncomment line must start with 'pcf', not '{0}'".format(line)
+        raw = line.strip().split()
+        version = 1
+        if len(raw) > 1 and "version" in raw[1].lower():
+            raw = raw[1].split('=')
+            if len(raw) > 1:
+                try:
+                    version = int(raw[1])
+                except:
+                    pass
+        if version == 1:
+            self._load_version1(filename)
+        elif version == 2:
+            self._load_version2(filename)
+        else:
+            raise Exception("Pst.load() error: version must be 1 or 2, not '{0}'".format(version))
+
+
+
+
+
+    def _load_version1(self, filename):
+        """load a version 1 pest control file information
 
         Parameters
         ----------
@@ -1308,7 +1352,7 @@ class Pst(object):
 
 
 
-    def write_new(self,new_filename,external=True):
+    def _write_version2(self,new_filename,update_regul=True,external=True):
         self.new_filename = new_filename
         self.rectify_pgroups()
         self.rectify_pi()
@@ -1319,7 +1363,7 @@ class Pst(object):
         if self.with_comments:
             for line in self.comments.get("initial", []):
                 f_out.write(line + '\n')
-        f_out.write("pcf\n")
+        f_out.write("pcf version=2\n")
         self.control_data.write_keyword(f_out)
 
         if self.with_comments:
@@ -1372,8 +1416,29 @@ class Pst(object):
             f_out.write("external {0} header=True\n".format(pi_filename))
 
 
-    def write(self,new_filename,update_regul=False):
-        """write a pest control file
+    def write(self,new_filename,update_regul=True,version=1):
+        """main entry point to write a pest control file.
+
+         Parameters
+        ----------
+        new_filename : str
+            name of the new pest control file
+        update_regul : (boolean)
+            flag to update zero-order Tikhonov prior information
+            equations to prefer the current parameter values
+        version : int
+            flag for which version of control file to write (must be 1 or 2)
+
+        """
+        if version == 1:
+            return self._write_version1(new_filename=new_filename,update_regul=update_regul)
+        elif version == 2:
+            return self._write_version2(new_filename=new_filename, update_regul=update_regul)
+        else:
+            raise Exception("Pst.write() error: version must be 1 or 2, not '{0}'".format(version))
+
+    def _write_version1(self,new_filename,update_regul=False):
+        """write a version 1 pest control file
 
         Parameters
         ----------
