@@ -847,37 +847,59 @@ class Pst(object):
                                                                                                    next_section)
         next_section, section_lines,self.comments[section] = self._read_section_comments(f, False)
 
-        # model io
-        section = "* model input/output"
+        # model input
+        section = "* model input"
         assert next_section == section, "Pst.flex_load() error, looking for {0}, found {1}".format(section,
                                                                                                    next_section)
         next_section, section_lines, self.comments[section] = self._read_section_comments(f, True)
         if section_lines[0].strip().split()[0].lower() == "external":
             filename = section_lines[0].strip().split()[1]
-            assert os.path.exists(filename),"Pst.flex_load() external i/o file '{0}' not found".format(filename)
+            assert os.path.exists(filename),"Pst.flex_load() external template data file '{0}' not found".format(filename)
             df = pd.read_csv(filename)
             df.columns = df.columns.str.lower()
-            assert "pest_file" in df.columns,"Pst.flex_load() external i/o file must have 'pest_file' in columns"
-            assert "model_file" in df.columns, "Pst.flex_load() external i/o file must have 'model_file' in columns"
+            assert "pest_file" in df.columns,"Pst.flex_load() external template data file must have 'pest_file' in columns"
+            assert "model_file" in df.columns, "Pst.flex_load() external template data file must have 'model_file' in columns"
             for pfile,mfile in zip(df.pest_file,df.model_file):
-                if pfile.lower().endswith(".tpl"):
-                    self.template_files.append(pfile)
-                    self.input_files.append(mfile)
-                elif pfile.lower().endswith(".ins"):
-                    self.instruction_files.append(pfile)
-                    self.output_files.append(mfile)
+                #if pfile.lower().endswith(".tpl"):
+                self.template_files.append(pfile)
+                self.input_files.append(mfile)
+                # elif pfile.lower().endswith(".ins"):
+                #     self.instruction_files.append(pfile)
+                #     self.output_files.append(mfile)
         else:
-            ntpl,nins = self.control_data.ntplfle, self.control_data.ninsfle
-            assert len(section_lines) == ntpl + nins
+            #ntpl,nins = self.control_data.ntplfle, self.control_data.ninsfle
+            #assert len(section_lines) == ntpl + nins
             for iline,line in enumerate(section_lines):
                 raw = line.split()
-                if iline < ntpl:
-                    self.template_files.append(raw[0])
-                    self.input_files.append(raw[1])
-                else:
-                    self.instruction_files.append(raw[0])
-                    self.output_files.append(raw[1])
+                #if iline < ntpl:
+                self.template_files.append(raw[0])
+                self.input_files.append(raw[1])
+                # else:
+                #     self.instruction_files.append(raw[0])
+                #     self.output_files.append(raw[1])
 
+
+        # model input
+        section = "* model output"
+        assert next_section == section, "Pst.flex_load() error, looking for {0}, found {1}".format(section,
+                                                                                                   next_section)
+        next_section, section_lines, self.comments[section] = self._read_section_comments(f, True)
+        if section_lines[0].strip().split()[0].lower() == "external":
+            filename = section_lines[0].strip().split()[1]
+            assert os.path.exists(filename), "Pst.flex_load() external instruction data file '{0}' not found".format(
+                filename)
+            df = pd.read_csv(filename)
+            df.columns = df.columns.str.lower()
+            assert "pest_file" in df.columns, "Pst.flex_load() external instruction data file must have 'pest_file' in columns"
+            assert "model_file" in df.columns, "Pst.flex_load() external instruction data file must have 'model_file' in columns"
+            for pfile, mfile in zip(df.pest_file, df.model_file):
+                self.instruction_files.append(pfile)
+                self.output_files.append(mfile)
+        else:
+            for iline, line in enumerate(section_lines):
+                raw = line.split()
+                self.instruction_files.append(raw[0])
+                self.output_files.append(raw[1])
 
         # prior info
         section = "* prior information"
@@ -1423,15 +1445,22 @@ class Pst(object):
         for mc in self.model_command:
             f_out.write("{0}\n".format(mc))
 
-        f_out.write("* model input/output\n")
-        io_filename = new_filename.lower().replace(".pst",".io_data.csv")
+        f_out.write("* model input\n")
+        io_filename = new_filename.lower().replace(".pst",".tplfile_data.csv")
         pfiles = self.template_files
-        pfiles.extend(self.instruction_files)
+        #pfiles.extend(self.instruction_files)
         mfiles = self.input_files
-        mfiles.extend(self.output_files)
+        #mfiles.extend(self.output_files)
         io_df = pd.DataFrame({"pest_file":pfiles,"model_file":mfiles})
         io_df.to_csv(io_filename)
+        f_out.write("external {0} header=True\n".format(io_filename))
 
+        f_out.write("* model output\n")
+        io_filename = new_filename.lower().replace(".pst", ".insfile_data.csv")
+        pfiles = self.instruction_files
+        mfiles = self.output_files
+        io_df = pd.DataFrame({"pest_file": pfiles, "model_file": mfiles})
+        io_df.to_csv(io_filename)
         f_out.write("external {0} header=True\n".format(io_filename))
 
         if self.prior_information.shape[0] > 0:
