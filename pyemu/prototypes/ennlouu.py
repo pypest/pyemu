@@ -96,6 +96,10 @@ class EnsembleSQP(EnsembleMethod):
                 parameter ensemble evaluation - user beware!
         
         #TODO
+        # draw dec var en in tighter cluster around mean val (compared to ies and par priors)
+        # dec var en stats here are ``computational'' rather than (pseudo-) physical..
+        # implement within EnsembleMethod
+
         # rename some of above vars in accordance with opt parlance
         # add targeted func to Phi class in smoother.py
         # omitted args (from smoother.py): obsensemble=None, initial_lambda, regul_factor, 
@@ -147,7 +151,7 @@ class EnsembleSQP(EnsembleMethod):
         else:
             #self.logger.log("initializing by drawing {0} par and obs realizations".format(num_reals))
             self.logger.log("initializing by drawing {0} par realizations".format(num_reals))
-            self.parensemble_0 = pyemu.ParameterEnsemble.from_gaussian_draw(self.pst,
+            self.parensemble_0 = ParameterEnsemble.from_gaussian_draw(self.pst,
                                                                             self.parcov,num_reals=num_reals)
             self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
             self.parensemble = self.parensemble_0.copy()

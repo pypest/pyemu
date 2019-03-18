@@ -76,6 +76,10 @@ class EnsembleMethod(object):
             assert isinstance(parcov,Cov)
         else:
             parcov = Cov.from_parameter_data(self.pst)
+            #!
+            # #TODO: Add conditional here relating to SQP or dec vars
+            #!
+            parcov = Cov(x=parcov.x / 10.0, names=parcov.names, isdiagonal=True)
         if obscov is not None:
             assert isinstance(obscov,Cov)
         else:
