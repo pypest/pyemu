@@ -77,7 +77,7 @@ class EnsembleMethod(object):
         else:
             parcov = Cov.from_parameter_data(self.pst)
             #!
-            # #TODO: Add conditional here relating to SQP or dec vars
+            # #TODO: Add conditional relating to SQP or dec vars (assume all pars are dvs?). Also go tighter with sub-setting.
             #!
             parcov = Cov(x=parcov.x / 10.0, names=parcov.names, isdiagonal=True)
         if obscov is not None:
