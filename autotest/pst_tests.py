@@ -1170,17 +1170,17 @@ def new_format_test():
     assert "x" in pst_new.observation_data.columns
     assert "y" in pst_new.observation_data.columns
 
-    lines = open("test.pst").readlines()
-    for i,line in enumerate(lines):
-        lines[i] = line.replace("header=True","header=False")
-    with open("test.pst",'w') as f:
-        [f.write(line) for line in lines]
-    try:
-        pst_new = pyemu.Pst("test.pst")
-    except:
-        pass
-    else:
-        raise Exception()
+    # lines = open("test.pst").readlines()
+    # for i,line in enumerate(lines):
+    #     lines[i] = line.replace("header=True","header=False")
+    # with open("test.pst",'w') as f:
+    #     [f.write(line) for line in lines]
+    # try:
+    #     pst_new = pyemu.Pst("test.pst")
+    # except:
+    #     pass
+    # else:
+    #     raise Exception()
 
 
 if __name__ == "__main__":

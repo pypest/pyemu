@@ -1361,17 +1361,17 @@ class Pst(object):
         f_out.write("* parameter groups\n")
         pargp_filename = new_filename.lower().replace(".pst",".pargrp_data.csv")
         self.parameter_groups.to_csv(pargp_filename,index=False)
-        f_out.write("external {0} header=True\n".format(pargp_filename))
+        f_out.write("external {0}\n".format(pargp_filename))
 
         f_out.write("* parameter data\n")
         par_filename = new_filename.lower().replace(".pst", ".par_data.csv")
         self.parameter_data.to_csv(par_filename,index=False)
-        f_out.write("external {0} header=True\n".format(par_filename))
+        f_out.write("external {0}\n".format(par_filename))
 
         f_out.write("* observation data\n")
         obs_filename = new_filename.lower().replace(".pst", ".obs_data.csv")
         self.observation_data.to_csv(obs_filename,index=False)
-        f_out.write("external {0} header=True\n".format(obs_filename))
+        f_out.write("external {0}\n".format(obs_filename))
 
         f_out.write("* model command line\n")
         for mc in self.model_command:
@@ -1385,7 +1385,7 @@ class Pst(object):
         #mfiles.extend(self.output_files)
         io_df = pd.DataFrame({"pest_file":pfiles,"model_file":mfiles})
         io_df.to_csv(io_filename)
-        f_out.write("external {0} header=True\n".format(io_filename))
+        f_out.write("external {0}\n".format(io_filename))
 
         f_out.write("* model output\n")
         io_filename = new_filename.lower().replace(".pst", ".insfile_data.csv")
@@ -1393,13 +1393,13 @@ class Pst(object):
         mfiles = self.output_files
         io_df = pd.DataFrame({"pest_file": pfiles, "model_file": mfiles})
         io_df.to_csv(io_filename)
-        f_out.write("external {0} header=True\n".format(io_filename))
+        f_out.write("external {0}\n".format(io_filename))
 
         if self.prior_information.shape[0] > 0:
             f_out.write("* prior information\n")
             pi_filename = new_filename.lower().replace(".pst", ".pi_data.csv")
             self.prior_information.to_csv(pi_filename,index=False)
-            f_out.write("external {0} header=True\n".format(pi_filename))
+            f_out.write("external {0}\n".format(pi_filename))
 
 
     def write(self,new_filename,update_regul=True,version=None):
