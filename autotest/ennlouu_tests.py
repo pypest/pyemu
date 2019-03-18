@@ -14,8 +14,8 @@ def rosenbrock_2par_setup():
     par = pst.parameter_data
     par.loc[:,"partrans"] = "none"
     par.loc[:,"parval1"] = 2.0
-    par.loc[:,"parubnd"] = 5.0
-    par.loc[:,"parlbnd"] = -5.0
+    par.loc[:,"parubnd"] = 7.0
+    par.loc[:,"parlbnd"] = -3.0
     obs = pst.observation_data
     obs.loc[:,"obsval"] = 0.0
     obs.loc[:,"weight"] = 1.0
@@ -26,5 +26,13 @@ def rosenbrock_2par_setup():
 
     os.chdir(os.path.join("..",".."))
 
+def rosenbrock_2par_initialize():
+    import pyemu
+    os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
+    esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst")
+    esqp.initialize(num_reals=10)
+    os.chdir(os.path.join("..", ".."))
+
 if __name__ == "__main__":
 	#rosenbrock_2par_setup()
+    rosenbrock_2par_initialize()
