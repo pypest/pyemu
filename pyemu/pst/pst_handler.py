@@ -1384,7 +1384,7 @@ class Pst(object):
         mfiles = self.input_files
         #mfiles.extend(self.output_files)
         io_df = pd.DataFrame({"pest_file":pfiles,"model_file":mfiles})
-        io_df.to_csv(io_filename)
+        io_df.to_csv(io_filename,index=False)
         f_out.write("external {0}\n".format(io_filename))
 
         f_out.write("* model output\n")
@@ -1392,7 +1392,7 @@ class Pst(object):
         pfiles = self.instruction_files
         mfiles = self.output_files
         io_df = pd.DataFrame({"pest_file": pfiles, "model_file": mfiles})
-        io_df.to_csv(io_filename)
+        io_df.to_csv(io_filename,index=False)
         f_out.write("external {0}\n".format(io_filename))
 
         if self.prior_information.shape[0] > 0:
