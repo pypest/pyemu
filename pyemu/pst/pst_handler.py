@@ -748,12 +748,15 @@ class Pst(object):
         assert os.path.exists(filename), "couldn't find control file {0}".format(filename)
         f = open(filename, 'r')
         last_section = ""
+        req_sections = {"* parameter data":False, "* observation data":False,
+                        "* model command line":False,"* model input":False, "* model output":False}
         while True:
 
             next_section, section_lines, comments = self._read_section_comments(f, True)
 
 
             if "* control data" in last_section.lower():
+                req_sections[last_section] = True
                 iskeyword = False
                 if "keyword" in last_section.lower():
                     iskeyword = True
@@ -769,25 +772,30 @@ class Pst(object):
                             self.reg_data.__setattr__(reg_opt, ppo.pop(reg_opt))
 
             elif "* parameter groups" in last_section.lower():
+                req_sections[last_section] = True
                 self.parameter_groups = self._cast_df_from_lines(next_section, section_lines, self.pargp_fieldnames,
                                                                 self.pargp_converters, self.pargp_defaults)
                 self.parameter_groups.index = self.parameter_groups.pargpnme
 
             elif "* parameter data" in last_section.lower():
+                req_sections[last_section] = True
                 self.parameter_data = self._cast_df_from_lines(next_section, section_lines, self.par_fieldnames,
                                                                self.par_converters, self.par_defaults)
                 self.parameter_data.index = self.parameter_data.parnme
 
             elif "* observation data" in last_section.lower():
+                req_sections[last_section] = True
                 self.observation_data = self._cast_df_from_lines(next_section, section_lines, self.obs_fieldnames,
                                                                 self.obs_converters, self.obs_defaults)
                 self.observation_data.index = self.observation_data.obsnme
 
             elif "* model command line" in last_section.lower():
+                req_sections[last_section] = True
                 for line in section_lines:
                     self.model_command.append(line.strip())
 
             elif "* model input" in last_section.lower():
+                req_sections[last_section] = True
                 if section_lines[0].strip().split()[0].lower() == "external":
                     filename = section_lines[0].strip().split()[1]
                     assert os.path.exists(filename),"Pst.flex_load() external template data file '{0}' not found".format(filename)
@@ -796,25 +804,17 @@ class Pst(object):
                     assert "pest_file" in df.columns,"Pst.flex_load() external template data file must have 'pest_file' in columns"
                     assert "model_file" in df.columns, "Pst.flex_load() external template data file must have 'model_file' in columns"
                     for pfile,mfile in zip(df.pest_file,df.model_file):
-                        #if pfile.lower().endswith(".tpl"):
                         self.template_files.append(pfile)
                         self.input_files.append(mfile)
-                        # elif pfile.lower().endswith(".ins"):
-                        #     self.instruction_files.append(pfile)
-                        #     self.output_files.append(mfile)
+
                 else:
-                    #ntpl,nins = self.control_data.ntplfle, self.control_data.ninsfle
-                    #assert len(section_lines) == ntpl + nins
                     for iline,line in enumerate(section_lines):
                         raw = line.split()
-                        #if iline < ntpl:
                         self.template_files.append(raw[0])
                         self.input_files.append(raw[1])
-                        # else:
-                        #     self.instruction_files.append(raw[0])
-                        #     self.output_files.append(raw[1])
 
             elif "* model output" in last_section.lower():
+                req_sections[last_section] = True
                 if section_lines[0].strip().split()[0].lower() == "external":
                     filename = section_lines[0].strip().split()[1]
                     assert os.path.exists(filename), "Pst.flex_load() external instruction data file '{0}' not found".format(
@@ -833,201 +833,25 @@ class Pst(object):
                         self.output_files.append(raw[1])
 
             elif "* prior information" in last_section.lower():
+                req_sections[last_section] = True
                 self._cast_prior_df_from_lines(section_lines)
 
+            elif len(last_section) > 0:
+                print("Pst._load_version2() warning: unrecognized section: ", last_section)
+                self.comments[last_section] = section_lines
 
             last_section = next_section
             if next_section == None or len(section_lines) == 0:
                 break
 
+        not_found = []
+        for section,found in req_sections.items():
+            if not found:
+                not_found.append(section)
+        if len(not_found) > 0:
+            raise Exception("Pst._load_version2() error: the following required sections were"+\
+                    "not found:{0}".format(",".join(not_found)))
 
-
-
-    def _load_version2_ordered(self,filename):
-        """load a version 2 control file
-
-
-
-        """
-        self.lcount  = 0
-        self.comments = {}
-        self.prior_information = self.null_prior
-        assert os.path.exists(filename), "couldn't find control file {0}".format(filename)
-        f = open(filename, 'r')
-
-        # this should be the pcf line
-        section = "initial"
-        line,self.comments[section] = self._read_line_comments(f,False)
-
-        assert line.startswith("pcf")
-
-        line, pcf_comments = self._read_line_comments(f,False)
-
-        section = "* control data"
-        assert section in line, \
-            "Pst.load() error: looking for {0}, found: {1}".format(section,line)
-
-        iskeyword = False
-        if "keyword" in line.lower():
-            iskeyword = True
-        next_section, section_lines, self.comments[section] = self._read_section_comments(f,False)
-
-        self.pestpp_options = self.control_data.parse_values_from_lines(section_lines,iskeyword=iskeyword)
-
-        # # read anything until the SVD section
-        # while True:
-        #     if next_section.startswith("* singular value") or next_section.startswith("* parameter groups"):
-        #         break
-        #     next_section, section_lines, c = self._read_section_comments(f,False)
-        #
-        # # SVD
-        # if next_section.startswith("* singular value"):
-        #     section = "* singular value decomposition"
-        #     next_section, section_lines,self.comments[section] = self._read_section_comments(f, False)
-        #     self.svd_data.parse_values_from_lines(section_lines)
-
-        # handle svd and regul options
-        if len(self.pestpp_options) > 0:
-            ppo = self.pestpp_options
-            svd_opts = ["svdmode","eigthresh","maxsing","eigwrite"]
-            for svd_opt in svd_opts:
-                if svd_opt in ppo:
-                    self.svd_data.__setattr__(svd_opt, ppo.pop(svd_opt))
-            for reg_opt in self.reg_data.should_write:
-                if reg_opt in ppo:
-                    self.reg_data.__setattr__(reg_opt, ppo.pop(reg_opt))
-
-
-        # read anything until par groups
-        while True:
-            if next_section.startswith("* parameter groups") or next_section.startswith("* parameter data"):
-                break
-            next_section, section_lines, c = self._read_section_comments(f, False)
-
-        # parameter groups
-        section = "* parameter groups"
-        if next_section == section:
-            next_section, section_lines, self.comments[section] = self._read_section_comments(f, False)
-            self.parameter_groups = self._cast_df_from_lines(next_section,section_lines,self.pargp_fieldnames,
-                                                            self.pargp_converters, self.pargp_defaults)
-            self.parameter_groups.index = self.parameter_groups.pargpnme
-
-        # parameter data
-        section = "* parameter data"
-        assert next_section == section
-        next_section, section_lines,self.comments[section] = self._read_section_comments(f, False)
-        self.parameter_data = self._cast_df_from_lines(next_section, section_lines, self.par_fieldnames,
-                                                        self.par_converters, self.par_defaults)
-        self.parameter_data.index = self.parameter_data.parnme
-
-        # # oh the tied parameter bullshit, how do I hate thee
-        counts = self.parameter_data.partrans.value_counts()
-        if section_lines[0].strip().split()[0].lower() != "external" and "tied" in counts.index:
-            #the tied lines got cast into the parameter data lines
-            ntied = counts["tied"]
-            # self.tied = self.parameter_data.iloc[-ntied:,:2]
-            # self.tied.columns = self.tied_fieldnames
-            # self.tied.index = self.tied.parnme
-            tied = self.parameter_data.iloc[-ntied:,:2]
-            tied.columns = self.tied_fieldnames
-            tied.index = tied.parnme
-            self.parameter_data = self.parameter_data.iloc[:-ntied,:]
-            self.parameter_data.loc[:,'partied'] = np.NaN
-
-            self.parameter_data.loc[tied.index,"partied"] = tied.partied
-
-        # observation groups
-        section = "* observation groups"
-        if next_section == section:
-            next_section, section_lines, self.comments[section] = self._read_section_comments(f, False)
-
-        # observation data
-        section = "* observation data"
-        assert next_section == section, "Pst.flex_load() error, looking for {0}, found {1}".format(section,
-                                                                                                   next_section)
-        next_section, section_lines, self.comments[section] = self._read_section_comments(f, False)
-        self.observation_data = self._cast_df_from_lines(next_section, section_lines, self.obs_fieldnames,
-                                                        self.obs_converters, self.obs_defaults)
-        self.observation_data.index = self.observation_data.obsnme
-        # model commands
-        section = "* model command line"
-        assert next_section == section, "Pst.flex_load() error, looking for {0}, found {1}".format(section,
-                                                                                                   next_section)
-        next_section, section_lines,self.comments[section] = self._read_section_comments(f, False)
-
-        # model input
-        section = "* model input"
-        assert next_section == section, "Pst.flex_load() error, looking for {0}, found {1}".format(section,
-                                                                                                   next_section)
-        next_section, section_lines, self.comments[section] = self._read_section_comments(f, True)
-        if section_lines[0].strip().split()[0].lower() == "external":
-            filename = section_lines[0].strip().split()[1]
-            assert os.path.exists(filename),"Pst.flex_load() external template data file '{0}' not found".format(filename)
-            df = pd.read_csv(filename)
-            df.columns = df.columns.str.lower()
-            assert "pest_file" in df.columns,"Pst.flex_load() external template data file must have 'pest_file' in columns"
-            assert "model_file" in df.columns, "Pst.flex_load() external template data file must have 'model_file' in columns"
-            for pfile,mfile in zip(df.pest_file,df.model_file):
-                #if pfile.lower().endswith(".tpl"):
-                self.template_files.append(pfile)
-                self.input_files.append(mfile)
-                # elif pfile.lower().endswith(".ins"):
-                #     self.instruction_files.append(pfile)
-                #     self.output_files.append(mfile)
-        else:
-            #ntpl,nins = self.control_data.ntplfle, self.control_data.ninsfle
-            #assert len(section_lines) == ntpl + nins
-            for iline,line in enumerate(section_lines):
-                raw = line.split()
-                #if iline < ntpl:
-                self.template_files.append(raw[0])
-                self.input_files.append(raw[1])
-                # else:
-                #     self.instruction_files.append(raw[0])
-                #     self.output_files.append(raw[1])
-
-
-        # model input
-        section = "* model output"
-        assert next_section == section, "Pst.flex_load() error, looking for {0}, found {1}".format(section,
-                                                                                                   next_section)
-        next_section, section_lines, self.comments[section] = self._read_section_comments(f, True)
-        if section_lines[0].strip().split()[0].lower() == "external":
-            filename = section_lines[0].strip().split()[1]
-            assert os.path.exists(filename), "Pst.flex_load() external instruction data file '{0}' not found".format(
-                filename)
-            df = pd.read_csv(filename)
-            df.columns = df.columns.str.lower()
-            assert "pest_file" in df.columns, "Pst.flex_load() external instruction data file must have 'pest_file' in columns"
-            assert "model_file" in df.columns, "Pst.flex_load() external instruction data file must have 'model_file' in columns"
-            for pfile, mfile in zip(df.pest_file, df.model_file):
-                self.instruction_files.append(pfile)
-                self.output_files.append(mfile)
-        else:
-            for iline, line in enumerate(section_lines):
-                raw = line.split()
-                self.instruction_files.append(raw[0])
-                self.output_files.append(raw[1])
-
-        # prior info
-        section = "* prior information"
-        if next_section == section:
-            next_line, section_lines,self.comments[section] = self._read_section_comments(f, True)
-            self._cast_prior_df_from_lines(section_lines)
-
-        # any additional sections
-        final_comments = []
-
-        while True:
-
-            # TODO: catch a regul section
-            next_line, comments = self._read_line_comments(f, True)
-            if next_line is None:
-                break
-            self.other_lines.append(next_line)
-            #next_line,comments = self._read_line_comments(f,True)
-            final_comments.extend(comments)
-            self.comments["final"] = final_comments
 
 
 
