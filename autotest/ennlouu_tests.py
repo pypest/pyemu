@@ -32,7 +32,7 @@ def rosenbrock_2par_initialize():
     esqp.initialize(num_reals=5,)
     os.chdir(os.path.join("..", ".."))
 
-def rosenbrock_2par_initialize_diff_args():
+def rosenbrock_2par_initialize_diff_args_test():
     import numpy as np
     import pyemu
     import shutil
@@ -61,4 +61,4 @@ def rosenbrock_2par_initialize_diff_args():
 if __name__ == "__main__":
     #rosenbrock_2par_setup()
     #rosenbrock_2par_initialize()
-    rosenbrock_2par_initialize_diff_args()
+    rosenbrock_2par_initialize_diff_args_test()
