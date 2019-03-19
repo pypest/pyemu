@@ -78,8 +78,10 @@ class EnsembleMethod(object):
             parcov = Cov.from_parameter_data(self.pst)
             #!
             # #TODO: Add conditional relating to SQP or dec vars (assume all pars are dvs?). Also go tighter with sub-setting.
+            # #TODO: Spatial dec var correlation?
+            # Now andled in EnsembleSQP.initialize
             #!
-            parcov = Cov(x=parcov.x / 10.0, names=parcov.names, isdiagonal=True)
+            #parcov = Cov(x=parcov.x / 10.0, names=parcov.names, isdiagonal=True)
         if obscov is not None:
             assert isinstance(obscov,Cov)
         else:

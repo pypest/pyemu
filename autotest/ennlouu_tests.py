@@ -33,6 +33,9 @@ def rosenbrock_2par_initialize():
     esqp.initialize(num_reals=10)
     os.chdir(os.path.join("..", ".."))
 
+#def rosenbrock_2par_opt_and_draw_setting_invest():
+    # function for identifying appropr default values (for simple problem)
+
 if __name__ == "__main__":
 	#rosenbrock_2par_setup()
     rosenbrock_2par_initialize()

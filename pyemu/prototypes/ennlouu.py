@@ -151,8 +151,9 @@ class EnsembleSQP(EnsembleMethod):
         else:
             #self.logger.log("initializing by drawing {0} par and obs realizations".format(num_reals))
             self.logger.log("initializing by drawing {0} par realizations".format(num_reals))
-            self.parensemble_0 = ParameterEnsemble.from_gaussian_draw(self.pst,
-                                                                            self.parcov,num_reals=num_reals)
+            #self.parensemble_0 = ParameterEnsemble.from_gaussian_draw(self.pst,self.parcov,num_reals=num_reals)
+            self.parensemble_0 = ParameterEnsemble.from_uniform_draw(self.pst,num_reals=num_reals)
+            self.parensemble_0 = ParameterEnsemble.from_dataframe(df=self.parensemble_0 / 10.0,pst=self.pst)
             self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
             self.parensemble = self.parensemble_0.copy()
             self.parensemble_0.to_csv(self.pst.filename +\
