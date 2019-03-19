@@ -122,7 +122,7 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.statement("using full parcov.. forming inverse sqrt parcov matrix")
         self.parcov_inv_sqrt = self.parcov.inv.sqrt
 
-        if parensemble is not None:# and obsensemble is not None:
+        if parensemble is not None:
             self.logger.log("initializing with existing par ensembles")
             if isinstance(parensemble,str):
                 self.logger.log("loading parensemble from file")
@@ -149,7 +149,6 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("initializing with existing par ensemble")
 
         else:
-            #self.logger.log("initializing by drawing {0} par and obs realizations".format(num_reals))
             self.logger.log("initializing by drawing {0} par realizations".format(num_reals))
             #self.parensemble_0 = ParameterEnsemble.from_gaussian_draw(self.pst,self.parcov,num_reals=num_reals)
             self.parensemble_0 = ParameterEnsemble.from_uniform_draw(self.pst,num_reals=num_reals)
@@ -176,8 +175,8 @@ class EnsembleSQP(EnsembleMethod):
             # load prev obs ensemble
             self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
             failed_runs,self.obsensemble = self._load_obs_ensemble(restart_obsensemble)
-            assert self.obsensemble.shape[0] == self.obsensemble_0.shape[0]
-            assert list(self.obsensemble.columns) == list(self.obsensemble_0.columns)
+            #assert self.obsensemble.shape[0] == self.obsensemble_0.shape[0]
+            #assert list(self.obsensemble.columns) == list(self.obsensemble_0.columns)
             self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
 
         else:

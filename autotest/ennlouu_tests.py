@@ -21,7 +21,6 @@ def rosenbrock_2par_setup():
     obs.loc[:,"weight"] = 1.0
     pst.model_command = ["python rosenbrock_2par.py"]
     pst.control_data.noptmax = 0
-    #pst.pestpp_options["sweep_parameter_csv_file"] = os.path.join("sweep_in.csv")
     pst.write(os.path.join("rosenbrock_2par.pst"))
 
     os.chdir(os.path.join("..",".."))
@@ -30,12 +29,36 @@ def rosenbrock_2par_initialize():
     import pyemu
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst")
-    esqp.initialize(num_reals=10)
+    esqp.initialize(num_reals=5,)
+    os.chdir(os.path.join("..", ".."))
+
+def rosenbrock_2par_initialize_diff_args():
+    import numpy as np
+    import pyemu
+    import shutil
+    os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
+    for i,c in enumerate([(None,None),("sweep_in.cp.csv",None),("sweep_in.cp.csv","sweep_out.cp.csv")]):
+        esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst")
+        esqp.initialize(num_reals=1,parensemble=c[0],restart_obsensemble=c[1])
+        if i == 0:
+            shutil.copy("sweep_in.csv", "sweep_in.cp.csv") # default pestpp filename
+            shutil.copy("sweep_out.csv", "sweep_out.cp.csv") # default pestpp filename
+        shutil.copy("sweep_out.csv","sweep_out.{}.csv".format(i))
+        oe = pyemu.ObservationEnsemble.from_csv("sweep_out.{}.csv".format(i))
+        if i > 0:
+            oe_last = pyemu.ObservationEnsemble.from_csv("sweep_out.{}.csv".format(i-1))
+            print(oe.OBS, oe_last.OBS)
+            if np.isclose(oe.OBS, oe_last.OBS):
+                pass
+            else:
+                raise Exception("rosenbrock initialization example gives different answers with different args..")
     os.chdir(os.path.join("..", ".."))
 
 #def rosenbrock_2par_opt_and_draw_setting_invest():
     # function for identifying appropr default values (for simple problem)
 
+
 if __name__ == "__main__":
-	#rosenbrock_2par_setup()
-    rosenbrock_2par_initialize()
+    #rosenbrock_2par_setup()
+    #rosenbrock_2par_initialize()
+    rosenbrock_2par_initialize_diff_args()
