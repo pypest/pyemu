@@ -39,7 +39,7 @@ def rosenbrock_2par_initialize_diff_args_test():
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
     for i,c in enumerate([(None,None),("sweep_in.cp.csv",None),("sweep_in.cp.csv","sweep_out.cp.csv")]):
         esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst")
-        esqp.initialize(num_reals=1,parensemble=c[0],restart_obsensemble=c[1])
+        esqp.initialize(num_reals=1,parensemble=c[0],restart_obsensemble=c[1],draw_mult=0.05)
         if i == 0:
             shutil.copy("sweep_in.csv", "sweep_in.cp.csv") # default pestpp filename
             shutil.copy("sweep_out.csv", "sweep_out.cp.csv") # default pestpp filename

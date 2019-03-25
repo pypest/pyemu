@@ -69,7 +69,7 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.warn("pyemu's EnsembleSQP is for prototyping only.")
 
     def initialize(self,num_reals=1,enforce_bounds="reset",
-    			   parensemble=None,restart_obsensemble=None):
+    			   parensemble=None,restart_obsensemble=None,draw_mult=0.1):
 
         """
     	Description
@@ -94,14 +94,12 @@ class EnsembleSQP(EnsembleMethod):
                 an observation ensemble or filename to use as an
                 evaluated observation ensemble.  If not None, this will skip the initial
                 parameter ensemble evaluation - user beware!
+            draw_mult : float or int
+                a multiplier for scaling (uniform) parensemble draw variance.  Used for drawing
+                dec var en in tighter cluster around mean val (e.g., compared to ies and par priors).
+                Dec var en stats here are ``computational'' rather than (pseudo-) physical.
         
-        #TODO
-        # draw dec var en in tighter cluster around mean val (compared to ies and par priors)
-        # dec var en stats here are ``computational'' rather than (pseudo-) physical..
-        # implement within EnsembleMethod
-
         # rename some of above vars in accordance with opt parlance
-        # add targeted func to Phi class in smoother.py
         # omitted args (from smoother.py): obsensemble=None, initial_lambda, regul_factor, 
         use_approx_prior, build_empirical_prior
 
@@ -117,6 +115,8 @@ class EnsembleSQP(EnsembleMethod):
         #self.drop_bad_reals = drop_bad_reals
         #self.save_mats = save_mats
         self.total_runs = 0
+
+        self.draw_mult = draw_mult
 
         # could use approx here to start with for especially high dim problems
         self.logger.statement("using full parcov.. forming inverse sqrt parcov matrix")
@@ -152,7 +152,7 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("initializing by drawing {0} par realizations".format(num_reals))
             #self.parensemble_0 = ParameterEnsemble.from_gaussian_draw(self.pst,self.parcov,num_reals=num_reals)
             self.parensemble_0 = ParameterEnsemble.from_uniform_draw(self.pst,num_reals=num_reals)
-            self.parensemble_0 = ParameterEnsemble.from_dataframe(df=self.parensemble_0 / 10.0,pst=self.pst)
+            self.parensemble_0 = ParameterEnsemble.from_dataframe(df=self.parensemble_0 * self.draw_mult,pst=self.pst)
             self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
             self.parensemble = self.parensemble_0.copy()
             self.parensemble_0.to_csv(self.pst.filename +\
@@ -267,6 +267,7 @@ class EnsembleSQP(EnsembleMethod):
     	# Include Wolfe tests
     	# I is default Hessian at k = 0; allow user to specify
     	# Pure python limited memory (L-BFGS) version - truncation of change vectors
+        # Re-initialize ensemble at new mean upgrade locs - ala Oliver?
     	# Use Oliver et al. (2008) scaled formulation
     	# bound handling and update length limiting like PEST
         # `use_approx_prior`-like scaling of upgrade
