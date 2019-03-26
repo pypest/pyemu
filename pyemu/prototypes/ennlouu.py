@@ -69,7 +69,7 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.warn("pyemu's EnsembleSQP is for prototyping only.")
 
     def initialize(self,num_reals=1,enforce_bounds="reset",
-    			   parensemble=None,restart_obsensemble=None,draw_mult=0.1):
+    			   parensemble=None,restart_obsensemble=None,draw_mult=0.1,dec_var_group="obj_fn"):
 
         """
     	Description
@@ -117,6 +117,13 @@ class EnsembleSQP(EnsembleMethod):
         self.total_runs = 0
 
         self.draw_mult = draw_mult
+
+        self.dec_var_group = dec_var_group#.lower()
+        self.dec_var_obs = list(self.pst.observation_data.loc[self.pst.observation_data.obgnme == \
+                                                              self.dec_var_group, :].obsnme)
+        if len(self.dec_var_obs) != 1:
+            raise Exception("number of obs serving as opt obj function " + \
+                            "must equal 1, not {0} - see docstring".format(len(self.dec_var_obs)))
 
         # could use approx here to start with for especially high dim problems
         self.logger.statement("using full parcov.. forming inverse sqrt parcov matrix")
@@ -183,8 +190,7 @@ class EnsembleSQP(EnsembleMethod):
             # run the initial parameter ensemble
             self.logger.log("evaluating initial ensembles")
             failed_runs, self.obsensemble = self._calc_obs(self.parensemble) # run
-            self.obsensemble.to_csv(self.pst.filename +\
-                                      self.obsen_prefix.format(0))
+            self.obsensemble.to_csv(self.pst.filename + self.obsen_prefix.format(0))
             if self.raw_sweep_out is not None:
                 self.raw_sweep_out.to_csv(self.pst.filename + "_sweepraw0.csv")
             self.logger.log("evaluating initial ensembles")

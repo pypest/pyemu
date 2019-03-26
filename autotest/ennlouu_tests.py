@@ -19,6 +19,7 @@ def rosenbrock_2par_setup():
     obs = pst.observation_data
     obs.loc[:,"obsval"] = 0.0
     obs.loc[:,"weight"] = 1.0
+    obs.loc[:,"obgnme"] = "obj_fn"
     pst.model_command = ["python rosenbrock_2par.py"]
     pst.control_data.noptmax = 0
     pst.write(os.path.join("rosenbrock_2par.pst"))
@@ -59,6 +60,6 @@ def rosenbrock_2par_initialize_diff_args_test():
 
 
 if __name__ == "__main__":
-    #rosenbrock_2par_setup()
-    #rosenbrock_2par_initialize()
-    rosenbrock_2par_initialize_diff_args_test()
+    rosenbrock_2par_setup()
+    rosenbrock_2par_initialize()
+    #rosenbrock_2par_initialize_diff_args_test()

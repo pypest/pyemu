@@ -18,9 +18,9 @@ pargp                   relative              1.0000000000E-02       0.0  switch
 par1                   none                   factor                2.0000000000E+00      -3.0000000000E+00     7.0000000000E+00       pargp                 1.0000000000E+00      0.0000000000E+00      1          
 par2                   none                   factor                2.0000000000E+00      -3.0000000000E+00     7.0000000000E+00       pargp                 1.0000000000E+00      0.0000000000E+00      1
 * observation groups
-obgnme               
+obj_fn               
 * observation data
-obs                   0.0000000000E+00      1.0000000000E+00       obgnme
+obs                   0.0000000000E+00      1.0000000000E+00       obj_fn
 * model command line
 python rosenbrock_2par.py
 * model input/output
