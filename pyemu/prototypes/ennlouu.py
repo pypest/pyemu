@@ -98,6 +98,9 @@ class EnsembleSQP(EnsembleMethod):
                 a multiplier for scaling (uniform) parensemble draw variance.  Used for drawing
                 dec var en in tighter cluster around mean val (e.g., compared to ies and par priors).
                 Dec var en stats here are ``computational'' rather than (pseudo-) physical.
+            dec_var_group : str
+                obsgnme containing a single obs serving as optimization objective function.
+                Like ++opt_dec_var_groups(<group_names>) in PESTPP-OPT.
         
         # rename some of above vars in accordance with opt parlance
         # omitted args (from smoother.py): obsensemble=None, initial_lambda, regul_factor, 
@@ -212,12 +215,6 @@ class EnsembleSQP(EnsembleMethod):
             self.parensemble_0._transform(inplace=True)
 
         #self.phi = Phi(self)
-
-        # just for now assume obj func is encapsulated by an ``obs``
-        # will only ever be vector of phi
-        # tag obj func obsnme (as opposed to observations/constraints in pst) upfront - then can add check here 
-        # like ++opt_dec_var_groups(<group_names>)
-        #self.phi = 
 
 
         '''if self.drop_bad_reals is not None:
