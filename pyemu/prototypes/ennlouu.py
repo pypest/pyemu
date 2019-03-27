@@ -102,7 +102,8 @@ class EnsembleSQP(EnsembleMethod):
                 obsgnme containing a single obs serving as optimization objective function.
                 Like ++opt_dec_var_groups(<group_names>) in PESTPP-OPT.
         
-        # rename some of above vars in accordance with opt parlance
+        TODO: rename some of above vars in accordance with opt parlance
+        TODO: add failed run functionality
         # omitted args (from smoother.py): obsensemble=None, initial_lambda, regul_factor, 
         use_approx_prior, build_empirical_prior
 
@@ -270,15 +271,78 @@ class EnsembleSQP(EnsembleMethod):
         self._initialized = True
 
 
-    #def update():
+    def _calc_delta_par(self,parensemble):
+        '''
+        calc the scaled parameter ensemble differences from the mean
+        '''
+        return self._calc_delta(parensemble, self.parcov_inv_sqrt)
 
-    	# Include Wolfe tests
+    def _calc_delta_obs(self,obsensemble):
+        '''
+        calc the scaled observation ensemble differences from the mean
+        '''
+        return self._calc_delta(obsensemble.nonzero, self.obscov_inv_sqrt)
+
+
+    def update(self,localizer=None,use_approx=True,calc_only=False):#lambda_mults=[1.0],run_subset=None,
+        """
+
+        Parameters
+        -------
+
+        Example
+        -------
+
+        # Include Wolfe tests
+        # use of subset functionality for increased efficiency? not lambda, but step lengths?
     	# I is default Hessian at k = 0; allow user to specify
     	# Pure python limited memory (L-BFGS) version - truncation of change vectors
         # Re-initialize ensemble at new mean upgrade locs - ala Oliver?
     	# Use Oliver et al. (2008) scaled formulation
     	# bound handling and update length limiting like PEST
+    	# calc par and obs delta wrt one another rather than mean
         # `use_approx_prior`-like scaling of upgrade
+
+        """
+
+        self.iter_num += 1
+        self.logger.log("iteration {0}".format(self.iter_num))
+        self.logger.statement("{0} active realizations".format(self.obsensemble.shape[0]))
+
+        # some checks first
+        if self.obsensemble.shape[0] < 2:
+            self.logger.lraise("at least active 2 realizations are needed to update")
+        if not self._initialized:
+            self.logger.lraise("must call initialize() before update()")
+
+        # compute deviation of each ensemble member from mean (par and obs)
+        self.logger.log("calculate scaled delta obs")
+        scaled_delta_obs = self._calc_delta_obs(self.obsensemble)
+        self.logger.log("calculate scaled delta obs")
+        self.logger.log("calculate scaled delta par")
+        scaled_delta_par = self._calc_delta_par(self.parensemble)
+        self.logger.log("calculate scaled delta par")
+
+        #self.logger.log("calculate pseudo inv comps")
+        #u,s,v = scaled_delta_obs.pseudo_inv_components(eigthresh=self.pst.svd_data.eigthresh)
+        #s.col_names = s.row_names
+        #self.logger.log("calculate pseudo inv comps")
+
+        #self.logger.log("calculate obs diff matrix")
+
+        # mat inspections
+        #mat_prefix = self.pst.filename.replace('.pst', '') + ".{0}".format(self.iter_num)
+        #if self.save_mats:
+         #   np.savetxt(mat_prefix + ".obs_diff.dat", scaled_delta_obs.x, fmt="%15.6e")
+
+
+
+
+
+
+
+
+
 
 
 

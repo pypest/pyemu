@@ -56,11 +56,15 @@ def rosenbrock_2par_initialize_diff_args_test():
                 raise Exception("rosenbrock initialization example gives different answers with different args..")
     os.chdir(os.path.join("..", ".."))
 
+#def rosenbrock_2par_update():
+
+
 #def rosenbrock_2par_opt_and_draw_setting_invest():
     # function for identifying appropr default values (for simple problem)
 
 
 if __name__ == "__main__":
-    rosenbrock_2par_setup()
+    #rosenbrock_2par_setup()
     rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
+    #rosenbrock_2par_update()
