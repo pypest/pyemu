@@ -69,7 +69,7 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.warn("pyemu's EnsembleSQP is for prototyping only.")
 
     def initialize(self,num_reals=1,enforce_bounds="reset",
-    			   parensemble=None,restart_obsensemble=None,draw_mult=0.1,dec_var_group="obj_fn"):
+    			   parensemble=None,restart_obsensemble=None,draw_mult=0.1,obj_fn_group="obj_fn"):
 
         """
     	Description
@@ -95,10 +95,10 @@ class EnsembleSQP(EnsembleMethod):
                 evaluated observation ensemble.  If not None, this will skip the initial
                 parameter ensemble evaluation - user beware!
             draw_mult : float or int
-                a multiplier for scaling (uniform) parensemble draw variance.  Used for drawing
-                dec var en in tighter cluster around mean val (e.g., compared to ies and par priors).
-                Dec var en stats here are ``computational'' rather than (pseudo-) physical.
-            dec_var_group : str
+                (just for initial testing) a multiplier for scaling (uniform) parensemble draw variance.
+                Used for drawing dec var en in tighter cluster around mean val (e.g., compared to ies
+                and par priors). Dec var en stats here are ``computational'' rather than (pseudo-)physical.
+            obj_fn_group : str
                 obsgnme containing a single obs serving as optimization objective function.
                 Like ++opt_dec_var_groups(<group_names>) in PESTPP-OPT.
         
@@ -121,12 +121,12 @@ class EnsembleSQP(EnsembleMethod):
 
         self.draw_mult = draw_mult
 
-        self.dec_var_group = dec_var_group#.lower()
-        self.dec_var_obs = list(self.pst.observation_data.loc[self.pst.observation_data.obgnme == \
-                                                              self.dec_var_group, :].obsnme)
-        if len(self.dec_var_obs) != 1:
+        self.obj_fn_group = obj_fn_group#.lower()
+        self.obj_fn_obs = list(self.pst.observation_data.loc[self.pst.observation_data.obgnme == \
+                                                              self.obj_fn_group, :].obsnme)
+        if len(self.obj_fn_obs) != 1:
             raise Exception("number of obs serving as opt obj function " + \
-                            "must equal 1, not {0} - see docstring".format(len(self.dec_var_obs)))
+                            "must equal 1, not {0} - see docstring".format(len(self.obj_fn_obs)))
 
         # could use approx here to start with for especially high dim problems
         self.logger.statement("using full parcov.. forming inverse sqrt parcov matrix")

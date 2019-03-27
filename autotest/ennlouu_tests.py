@@ -60,6 +60,6 @@ def rosenbrock_2par_initialize_diff_args_test():
 
 
 if __name__ == "__main__":
-    rosenbrock_2par_setup()
+    #rosenbrock_2par_setup()
     rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
