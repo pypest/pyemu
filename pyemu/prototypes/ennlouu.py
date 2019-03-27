@@ -69,7 +69,7 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.warn("pyemu's EnsembleSQP is for prototyping only.")
 
     def initialize(self,num_reals=1,enforce_bounds="reset",
-    			   parensemble=None,restart_obsensemble=None,draw_mult=0.1,obj_fn_group="obj_fn"):
+    			   parensemble=None,restart_obsensemble=None,draw_mult=0.1,):#obj_fn_group="obj_fn"):
 
         """
     	Description
@@ -121,12 +121,17 @@ class EnsembleSQP(EnsembleMethod):
 
         self.draw_mult = draw_mult
 
-        self.obj_fn_group = obj_fn_group#.lower()
-        self.obj_fn_obs = list(self.pst.observation_data.loc[self.pst.observation_data.obgnme == \
-                                                              self.obj_fn_group, :].obsnme)
-        if len(self.obj_fn_obs) != 1:
-            raise Exception("number of obs serving as opt obj function " + \
-                            "must equal 1, not {0} - see docstring".format(len(self.obj_fn_obs)))
+        if self.pst.pestpp_options["opt_obj_func"] is None:
+            raise Exception("no pestpp_option['opt_obj_func'] entry passed")
+        else:
+            self.logger.warn("assuming pestpp_option['opt_obj_func'] points " + \
+                             "to a (single) obs for now (could also be a pi eq or filename)")
+        #self.obj_fn_group = obj_fn_group#.lower()
+        #self.obj_fn_obs = list(self.pst.observation_data.loc[self.pst.observation_data.obgnme == \
+         #                                                     self.obj_fn_group, :].obsnme)
+        #if len(self.obj_fn_obs) != 1:
+         #   raise Exception("number of obs serving as opt obj function " + \
+          #                  "must equal 1, not {0} - see docstring".format(len(self.obj_fn_obs)))
 
         # could use approx here to start with for especially high dim problems
         self.logger.statement("using full parcov.. forming inverse sqrt parcov matrix")
