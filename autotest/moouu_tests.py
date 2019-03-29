@@ -1465,7 +1465,7 @@ def nsgaii_4obj_test():
     evolAlg.dv_ensemble.to_csv(os.path.join("{0}.dv_ensemble.0.csv".format(m_d)))
     evolAlg.obs_ensemble.to_csv(os.path.join("{0}.obs_ensemble.0.csv".format(m_d)))
 
-    for i in range(5):
+    for i in range(50):
         evolAlg.update()
         # dvdf.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d,i + 1)))
         evolAlg.population_dv.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d, i + 1)))
@@ -1570,7 +1570,7 @@ if __name__ == "__main__":
     #apply_nsgaii_to_freyberg_neutral()
     #invest_plot()
     #setup_for_freyberg_nsga_runs()
-    #nsgaii_4obj_test()
+    nsgaii_4obj_test()
     plot_3obj_results()
     #redis_freyberg()
     #invest()
