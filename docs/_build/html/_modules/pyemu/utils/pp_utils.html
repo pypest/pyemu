@@ -1,0 +1,470 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>pyemu.utils.pp_utils &#8212; pyEMU 0.3 documentation</title>
+    <link rel="stylesheet" href="../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for pyemu.utils.pp_utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">max_colwidth</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="kn">from</span> <span class="nn">pyemu.pst.pst_utils</span> <span class="k">import</span> <span class="n">SFMT</span><span class="p">,</span><span class="n">IFMT</span><span class="p">,</span><span class="n">FFMT</span><span class="p">,</span><span class="n">pst_config</span>
+<span class="kn">from</span> <span class="nn">pyemu.utils.helpers</span> <span class="k">import</span> <span class="n">run</span>
+<span class="kn">from</span> <span class="nn">..pyemu_warnings</span> <span class="k">import</span> <span class="n">PyemuWarning</span>
+<span class="n">PP_FMT</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">SFMT</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="n">FFMT</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="n">FFMT</span><span class="p">,</span> <span class="s2">&quot;zone&quot;</span><span class="p">:</span> <span class="n">IFMT</span><span class="p">,</span> <span class="s2">&quot;tpl&quot;</span><span class="p">:</span> <span class="n">SFMT</span><span class="p">,</span>
+          <span class="s2">&quot;parval1&quot;</span><span class="p">:</span> <span class="n">FFMT</span><span class="p">}</span>
+<span class="n">PP_NAMES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">,</span><span class="s2">&quot;x&quot;</span><span class="p">,</span><span class="s2">&quot;y&quot;</span><span class="p">,</span><span class="s2">&quot;zone&quot;</span><span class="p">,</span><span class="s2">&quot;parval1&quot;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="setup_pilotpoints_grid"><a class="viewcode-back" href="../../../source/pyemu.utils.html#pyemu.utils.pp_utils.setup_pilotpoints_grid">[docs]</a><span class="k">def</span> <span class="nf">setup_pilotpoints_grid</span><span class="p">(</span><span class="n">ml</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">sr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">ibound</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">prefix_dict</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                           <span class="n">every_n_cell</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+                           <span class="n">use_ibound_zones</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                           <span class="n">pp_dir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="n">tpl_dir</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span>
+                           <span class="n">shapename</span><span class="o">=</span><span class="s2">&quot;pp.shp&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;setup grid-based pilot points.  Uses the ibound to determine</span>
+<span class="sd">    where to set pilot points. pilot points are given generic ``pp_``</span>
+<span class="sd">    names unless ``prefix_dict`` is passed.  Write template files and a</span>
+<span class="sd">    shapefile as well...hopefully this is useful to someone...</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ml : flopy.mbase</span>
+<span class="sd">        a flopy mbase dervied type.  If None, sr must not be None.</span>
+<span class="sd">    sr : flopy.utils.reference.SpatialReference</span>
+<span class="sd">        a spatial reference use to locate the model grid in space.  If None,</span>
+<span class="sd">        ml must not be None.  Default is None</span>
+<span class="sd">    ibound : numpy.ndarray</span>
+<span class="sd">        the modflow ibound integer array.  Used to set pilot points only in active areas (!=0).</span>
+<span class="sd">        If None and ml is None, then pilot points are set in all rows and columns according to</span>
+<span class="sd">        every_n_cell.  Default is None.</span>
+<span class="sd">    prefix_dict : dict</span>
+<span class="sd">        a dictionary of layer index, pilot point parameter prefixes.</span>
+<span class="sd">        Example : ``{0:[&quot;hk_&quot;],1:[&quot;vka_&quot;]}`` would setup pilot points with</span>
+<span class="sd">        the prefix ``&quot;hk&quot;`` for model layers 1 and ``&quot;vka&quot;`` for model layer 2 (zero based).</span>
+<span class="sd">        If None, a generic set of pilot points with the &quot;pp&quot; prefix are setup</span>
+<span class="sd">        for a generic nrowXncol grid. Default is None.</span>
+<span class="sd">    use_ibound_zones : bool</span>
+<span class="sd">        a flag to use the greater-than-zero values in the ibound as pilot point zones.  If False,ibound</span>
+<span class="sd">        values greater than zero are treated as a single zone.  Default is False.</span>
+<span class="sd">    pp_dir : str</span>
+<span class="sd">        directory to write pilot point files to.  Default is &#39;.&#39;</span>
+<span class="sd">    tpl_dir : str</span>
+<span class="sd">        directory to write pilot point template file to.  Default is &#39;.&#39;</span>
+<span class="sd">    shapename : str</span>
+<span class="sd">        name of shapefile to write that contains pilot point information. Default is &quot;pp.shp&quot;</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pp_df : pandas.DataFrame</span>
+<span class="sd">        a dataframe summarizing pilot point information (same information</span>
+<span class="sd">        written to shapename</span>
+<span class="sd">    Example</span>
+<span class="sd">    -------</span>
+<span class="sd">    ``&gt;&gt;&gt;import flopy``</span>
+
+<span class="sd">    ``&gt;&gt;&gt;from pyemu.utils import setup_pilotpoints_grid``</span>
+
+<span class="sd">    ``&gt;&gt;&gt;m = flopy.modflow.Modfow.load(&quot;mymodel.nam&quot;)``</span>
+
+<span class="sd">    ``&gt;&gt;&gt;setup_pilotpoints_grid(m,prefix_dict={0:[&#39;hk_&#39;],1:[&#39;vka_&#39;]},``</span>
+
+<span class="sd">    ``&gt;&gt;&gt;                       every_n_cell=3,shapename=&#39;layer1_pp.shp&#39;)``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="kn">import</span> <span class="nn">flopy</span>
+
+    <span class="k">if</span> <span class="n">ml</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ml</span><span class="p">,</span><span class="n">flopy</span><span class="o">.</span><span class="n">modflow</span><span class="o">.</span><span class="n">Modflow</span><span class="p">)</span>
+        <span class="n">sr</span> <span class="o">=</span> <span class="n">ml</span><span class="o">.</span><span class="n">sr</span>
+        <span class="k">if</span> <span class="n">ibound</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ibound</span> <span class="o">=</span> <span class="n">ml</span><span class="o">.</span><span class="n">bas6</span><span class="o">.</span><span class="n">ibound</span><span class="o">.</span><span class="n">array</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">sr</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span><span class="s2">&quot;if &#39;ml&#39; is not passed, &#39;sr&#39; must be passed&quot;</span>
+        <span class="k">if</span> <span class="n">ibound</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ibound not passed, using array of ones&quot;</span><span class="p">)</span>
+            <span class="n">ibound</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="n">sr</span><span class="o">.</span><span class="n">nrow</span><span class="p">,</span><span class="n">sr</span><span class="o">.</span><span class="n">ncol</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">prefix_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()}</span>
+        <span class="c1">#assert ibound is not None,&quot;if &#39;ml&#39; is not pass, &#39;ibound&#39; must be passed&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">xcentergrid</span> <span class="o">=</span> <span class="n">sr</span><span class="o">.</span><span class="n">xcentergrid</span>
+        <span class="n">ycentergrid</span> <span class="o">=</span> <span class="n">sr</span><span class="o">.</span><span class="n">ycentergrid</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;error getting xcentergrid and/or ycentergrid from &#39;sr&#39;:</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span>\
+                        <span class="nb">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">every_n_cell</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span>
+
+    <span class="c1">#build a generic prefix_dict</span>
+    <span class="k">if</span> <span class="n">prefix_dict</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">prefix_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:[</span><span class="s2">&quot;pp_</span><span class="si">{0:02d}</span><span class="s2">_&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">)]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">ml</span><span class="o">.</span><span class="n">nlay</span><span class="p">)}</span>
+
+    <span class="c1">#check prefix_dict</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="n">prefix_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">assert</span> <span class="n">k</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">ibound</span><span class="p">),</span><span class="s2">&quot;layer index </span><span class="si">{0}</span><span class="s2"> &gt; nlay </span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">k</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">ibound</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+            <span class="n">prefix_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">prefix</span><span class="p">]</span>
+
+    <span class="c1">#try:</span>
+        <span class="c1">#ibound = ml.bas6.ibound.array</span>
+    <span class="c1">#except Exception as e:</span>
+    <span class="c1">#    raise Exception(&quot;error getting model.bas6.ibound:{0}&quot;.format(str(e)))</span>
+    <span class="n">par_info</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">pp_files</span><span class="p">,</span><span class="n">tpl_files</span> <span class="o">=</span> <span class="p">[],[]</span>
+    <span class="n">pp_names</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">PP_NAMES</span><span class="p">)</span>
+    <span class="n">pp_names</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;k&quot;</span><span class="p">,</span><span class="s2">&quot;i&quot;</span><span class="p">,</span><span class="s2">&quot;j&quot;</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ibound</span><span class="p">)):</span>
+        <span class="n">pp_df</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">ib</span> <span class="o">=</span> <span class="n">ibound</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">ib</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">xcentergrid</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span><span class="s2">&quot;ib.shape != xcentergrid.shape for k </span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span>\
+            <span class="nb">format</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
+        <span class="n">pp_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1">#skip this layer if not in prefix_dict</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">prefix_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="k">continue</span>
+        <span class="c1">#cycle through rows and cols</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span><span class="n">ib</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">start</span><span class="p">,</span><span class="n">every_n_cell</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span><span class="n">ib</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">start</span><span class="p">,</span><span class="n">every_n_cell</span><span class="p">):</span>
+                <span class="c1"># skip if this is an inactive cell</span>
+                <span class="k">if</span> <span class="n">ib</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">continue</span>
+
+                <span class="c1"># get the attributes we need</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="n">xcentergrid</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
+                <span class="n">y</span> <span class="o">=</span> <span class="n">ycentergrid</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;pp_</span><span class="si">{0:04d}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pp_count</span><span class="p">)</span>
+                <span class="n">parval1</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+                <span class="c1">#decide what to use as the zone</span>
+                <span class="n">zone</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">use_ibound_zones</span><span class="p">:</span>
+                    <span class="n">zone</span> <span class="o">=</span> <span class="n">ib</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span>
+                <span class="c1">#stick this pilot point into a dataframe container</span>
+
+                <span class="k">if</span> <span class="n">pp_df</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="n">y</span><span class="p">,</span> <span class="s2">&quot;zone&quot;</span><span class="p">:</span> <span class="n">zone</span><span class="p">,</span>
+                            <span class="s2">&quot;parval1&quot;</span><span class="p">:</span> <span class="n">parval1</span><span class="p">,</span> <span class="s2">&quot;k&quot;</span><span class="p">:</span><span class="n">k</span><span class="p">,</span> <span class="s2">&quot;i&quot;</span><span class="p">:</span><span class="n">i</span><span class="p">,</span> <span class="s2">&quot;j&quot;</span><span class="p">:</span><span class="n">j</span><span class="p">}</span>
+                    <span class="n">pp_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span><span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">columns</span><span class="o">=</span><span class="n">pp_names</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">zone</span><span class="p">,</span> <span class="n">parval1</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span>
+                    <span class="n">pp_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">pp_count</span><span class="p">,:]</span> <span class="o">=</span> <span class="n">data</span>
+                <span class="n">pp_count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="c1">#if we found some acceptable locs...</span>
+        <span class="k">if</span> <span class="n">pp_df</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">prefix</span> <span class="ow">in</span> <span class="n">prefix_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]:</span>
+                <span class="n">base_filename</span> <span class="o">=</span> <span class="n">prefix</span><span class="o">+</span><span class="s2">&quot;pp.dat&quot;</span>
+                <span class="n">pp_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pp_dir</span><span class="p">,</span> <span class="n">base_filename</span><span class="p">)</span>
+                <span class="c1"># write the base pilot point file</span>
+                <span class="n">write_pp_file</span><span class="p">(</span><span class="n">pp_filename</span><span class="p">,</span> <span class="n">pp_df</span><span class="p">)</span>
+
+                <span class="n">tpl_filename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tpl_dir</span><span class="p">,</span> <span class="n">base_filename</span> <span class="o">+</span> <span class="s2">&quot;.tpl&quot;</span><span class="p">)</span>
+                <span class="c1">#write the tpl file</span>
+                <span class="n">pilot_points_to_tpl</span><span class="p">(</span><span class="n">pp_df</span><span class="p">,</span> <span class="n">tpl_filename</span><span class="p">,</span>
+                                    <span class="n">name_prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">)</span>
+                <span class="n">pp_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;tpl_filename&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tpl_filename</span>
+                <span class="n">pp_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;pp_filename&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pp_filename</span>
+                <span class="n">pp_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;pargp&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">prefix</span>
+                <span class="c1">#save the parameter names and parval1s for later</span>
+                <span class="n">par_info</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pp_df</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+                <span class="c1">#save the pp_filename and tpl_filename for later</span>
+                <span class="n">pp_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pp_filename</span><span class="p">)</span>
+                <span class="n">tpl_files</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tpl_filename</span><span class="p">)</span>
+
+    <span class="n">par_info</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">par_info</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span><span class="n">default</span> <span class="ow">in</span> <span class="n">pst_config</span><span class="p">[</span><span class="s2">&quot;par_defaults&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">par_info</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">par_info</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">default</span>
+
+    <span class="k">if</span> <span class="n">shapename</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span> <span class="nn">shapefile</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;error importing shapefile, try pip install pyshp...</span><span class="si">{0}</span><span class="s2">&quot;</span>\
+                  <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+            <span class="k">return</span> <span class="n">par_info</span>
+        <span class="n">shp</span> <span class="o">=</span> <span class="n">shapefile</span><span class="o">.</span><span class="n">Writer</span><span class="p">(</span><span class="n">shapeType</span><span class="o">=</span><span class="n">shapefile</span><span class="o">.</span><span class="n">POINT</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span><span class="n">dtype</span> <span class="ow">in</span> <span class="n">par_info</span><span class="o">.</span><span class="n">dtypes</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">dtype</span> <span class="o">==</span> <span class="nb">object</span><span class="p">:</span>
+                <span class="n">shp</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span><span class="n">fieldType</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">,</span><span class="n">size</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">]:</span>
+                <span class="n">shp</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">fieldType</span><span class="o">=</span><span class="s1">&#39;N&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">decimal</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">float</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
+                <span class="n">shp</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">fieldType</span><span class="o">=</span><span class="s1">&#39;N&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">decimal</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;unrecognized field type in par_info:</span><span class="si">{0}</span><span class="s2">:</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="n">dtype</span><span class="p">))</span>
+
+        <span class="c1">#some pandas awesomeness..</span>
+        <span class="n">par_info</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">shp</span><span class="o">.</span><span class="n">poly</span><span class="p">([[[</span><span class="n">x</span><span class="o">.</span><span class="n">x</span><span class="p">,</span><span class="n">x</span><span class="o">.</span><span class="n">y</span><span class="p">]]],</span><span class="n">shapeType</span><span class="o">=</span><span class="n">shapefile</span><span class="o">.</span><span class="n">POINT</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">par_info</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span><span class="n">shp</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="o">*</span><span class="n">x</span><span class="p">),</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">shp</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">shapename</span><span class="p">)</span>
+        <span class="n">shp</span> <span class="o">=</span> <span class="n">shapefile</span><span class="o">.</span><span class="n">Reader</span><span class="p">(</span><span class="n">shapename</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">shp</span><span class="o">.</span><span class="n">numRecords</span> <span class="o">==</span> <span class="n">par_info</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">par_info</span></div>
+
+
+<div class="viewcode-block" id="pp_file_to_dataframe"><a class="viewcode-back" href="../../../source/pyemu.utils.html#pyemu.utils.pp_utils.pp_file_to_dataframe">[docs]</a><span class="k">def</span> <span class="nf">pp_file_to_dataframe</span><span class="p">(</span><span class="n">pp_filename</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot; read a pilot point file to a pandas Dataframe</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pp_filename : str</span>
+<span class="sd">        pilot point file</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    df : pandas.DataFrame</span>
+<span class="sd">        a dataframe with pp_utils.PP_NAMES for columns</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">pp_filename</span><span class="p">,</span> <span class="n">delim_whitespace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                     <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">PP_NAMES</span><span class="p">,</span><span class="n">usecols</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">])</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="nb">str</span><span class="o">.</span><span class="n">lower</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="pp_tpl_to_dataframe"><a class="viewcode-back" href="../../../source/pyemu.utils.html#pyemu.utils.pp_utils.pp_tpl_to_dataframe">[docs]</a><span class="k">def</span> <span class="nf">pp_tpl_to_dataframe</span><span class="p">(</span><span class="n">tpl_filename</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; read a pilot points template file to a pandas dataframe</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    tpl_filename : str</span>
+<span class="sd">        pilot points template file</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    df : pandas.DataFrame</span>
+<span class="sd">        a dataframe with &quot;parnme&quot; included</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">inlines</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">tpl_filename</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+    <span class="n">header</span> <span class="o">=</span> <span class="n">inlines</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">marker</span> <span class="o">=</span> <span class="n">header</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">marker</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="n">usecols</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">]</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">tpl_filename</span><span class="p">,</span> <span class="n">delim_whitespace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">skiprows</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                     <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">PP_NAMES</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span><span class="n">usecols</span><span class="o">=</span><span class="n">usecols</span><span class="p">)</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="nb">str</span><span class="o">.</span><span class="n">lower</span><span class="p">)</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;parnme&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">marker</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">inlines</span><span class="p">]</span>
+
+
+    <span class="k">return</span> <span class="n">df</span></div>
+
+<div class="viewcode-block" id="write_pp_shapfile"><a class="viewcode-back" href="../../../source/pyemu.utils.html#pyemu.utils.pp_utils.write_pp_shapfile">[docs]</a><span class="k">def</span> <span class="nf">write_pp_shapfile</span><span class="p">(</span><span class="n">pp_df</span><span class="p">,</span><span class="n">shapename</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;write pilot points dataframe to a shapefile</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pp_df : pandas.DataFrame or str</span>
+<span class="sd">        pilot point dataframe or a pilot point filename.  Dataframe</span>
+<span class="sd">        must include &quot;x&quot; and &quot;y&quot;</span>
+<span class="sd">    shapename : str</span>
+<span class="sd">        shapefile name.  If None, pp_df must be str and shapefile</span>
+<span class="sd">        is saved as &lt;pp_df&gt;.shp</span>
+
+<span class="sd">    Note</span>
+<span class="sd">    ----</span>
+<span class="sd">        requires pyshp</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">shapefile</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;error importing shapefile: </span><span class="si">{0}</span><span class="s2">, </span><span class="se">\n</span><span class="s2">try pip install pyshp...&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pp_df</span><span class="p">,</span><span class="nb">list</span><span class="p">):</span>
+        <span class="n">pp_df</span> <span class="o">=</span> <span class="p">[</span><span class="n">pp_df</span><span class="p">]</span>
+    <span class="n">dfs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">pp</span> <span class="ow">in</span> <span class="n">pp_df</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pp</span><span class="p">,</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+            <span class="n">dfs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pp</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pp</span><span class="p">,</span><span class="nb">str</span><span class="p">):</span>
+            <span class="n">dfs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pp_file_to_dataframe</span><span class="p">(</span><span class="n">pp</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;unsupported arg type:</span><span class="si">{0}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">pp</span><span class="p">)))</span>
+
+    <span class="k">if</span> <span class="n">shapename</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">shapename</span> <span class="o">=</span> <span class="s2">&quot;pp_locs.shp&quot;</span>
+
+    <span class="n">shp</span> <span class="o">=</span> <span class="n">shapefile</span><span class="o">.</span><span class="n">Writer</span><span class="p">(</span><span class="n">shapeType</span><span class="o">=</span><span class="n">shapefile</span><span class="o">.</span><span class="n">POINT</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="n">dfs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtypes</span><span class="o">.</span><span class="n">iteritems</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">dtype</span> <span class="o">==</span> <span class="nb">object</span><span class="p">:</span>
+            <span class="n">shp</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">fieldType</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">]:</span>
+            <span class="n">shp</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">fieldType</span><span class="o">=</span><span class="s1">&#39;N&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">decimal</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">dtype</span> <span class="ow">in</span> <span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">]:</span>
+            <span class="n">shp</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">fieldType</span><span class="o">=</span><span class="s1">&#39;N&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">decimal</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;unrecognized field type in pp_df:</span><span class="si">{0}</span><span class="s2">:</span><span class="si">{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">dtype</span><span class="p">))</span>
+
+
+    <span class="c1"># some pandas awesomeness..</span>
+    <span class="k">for</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">dfs</span><span class="p">:</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">shp</span><span class="o">.</span><span class="n">poly</span><span class="p">([[[</span><span class="n">x</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="o">.</span><span class="n">y</span><span class="p">]]]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">shp</span><span class="o">.</span><span class="n">record</span><span class="p">(</span><span class="o">*</span><span class="n">x</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">shp</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">shapename</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="write_pp_file"><a class="viewcode-back" href="../../../source/pyemu.utils.html#pyemu.utils.pp_utils.write_pp_file">[docs]</a><span class="k">def</span> <span class="nf">write_pp_file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">pp_df</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;write a pilot points dataframe to a pilot points file</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    filename : str</span>
+<span class="sd">        pilot points file to write</span>
+<span class="sd">    pp_df : pandas.DataFrame</span>
+<span class="sd">        a dataframe that has columns &quot;x&quot;,&quot;y&quot;,&quot;zone&quot;, and &quot;value&quot;</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+       <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">pp_df</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">col_space</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                                <span class="n">columns</span><span class="o">=</span><span class="n">PP_NAMES</span><span class="p">,</span>
+                                <span class="n">formatters</span><span class="o">=</span><span class="n">PP_FMT</span><span class="p">,</span>
+                                <span class="n">justify</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">,</span>
+                                <span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="pilot_points_to_tpl"><a class="viewcode-back" href="../../../source/pyemu.utils.html#pyemu.utils.pp_utils.pilot_points_to_tpl">[docs]</a><span class="k">def</span> <span class="nf">pilot_points_to_tpl</span><span class="p">(</span><span class="n">pp_file</span><span class="p">,</span><span class="n">tpl_file</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span><span class="n">name_prefix</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;write a template file for a pilot points file</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    pp_file : str</span>
+<span class="sd">        pilot points file</span>
+<span class="sd">    tpl_file : str</span>
+<span class="sd">        template file name to write.  If None, append &quot;.tpl&quot; to</span>
+<span class="sd">        the pp_file arg. Default is None</span>
+<span class="sd">    name_prefix : str</span>
+<span class="sd">        name to prepend to parameter names for each pilot point.  For example,</span>
+<span class="sd">        if ``name_prefix = &quot;hk_&quot;``, then each pilot point parameter will be named</span>
+<span class="sd">        &quot;hk_0001&quot;,&quot;hk_0002&quot;, etc.  If None, parameter names from pp_df.name</span>
+<span class="sd">        are used.  Default is None.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">        pp_df : pandas.DataFrame</span>
+<span class="sd">            a dataframe with pilot point information (name,x,y,zone,parval1)</span>
+<span class="sd">             with the parameter information (parnme,tpl_str)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pp_file</span><span class="p">,</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">):</span>
+        <span class="n">pp_df</span> <span class="o">=</span> <span class="n">pp_file</span>
+        <span class="k">assert</span> <span class="n">tpl_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">pp_file</span><span class="p">)</span>
+        <span class="n">pp_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">pp_file</span><span class="p">,</span> <span class="n">delim_whitespace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">PP_NAMES</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">tpl_file</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">tpl_file</span> <span class="o">=</span> <span class="n">pp_file</span> <span class="o">+</span> <span class="s2">&quot;.tpl&quot;</span>
+
+    <span class="k">if</span> <span class="n">name_prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">digits</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">pp_df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])))</span>
+        <span class="n">fmt</span> <span class="o">=</span> <span class="s2">&quot;{0:0&quot;</span><span class="o">+</span><span class="n">digits</span><span class="o">+</span><span class="s2">&quot;d}&quot;</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">name_prefix</span><span class="o">+</span><span class="n">fmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">pp_df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="n">pp_df</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="n">too_long</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">12</span><span class="p">:</span>
+            <span class="n">too_long</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">too_long</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;the following parameter names are too long:&quot;</span> <span class="o">+</span>\
+                        <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">too_long</span><span class="p">))</span>
+
+    <span class="n">tpl_entries</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;~    </span><span class="si">{0}</span><span class="s2">    ~&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">]</span>
+    <span class="n">pp_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;tpl&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tpl_entries</span>
+    <span class="n">pp_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span><span class="s2">&quot;parnme&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">names</span>
+
+
+    <span class="n">f_tpl</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">tpl_file</span><span class="p">,</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+    <span class="n">f_tpl</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;ptf ~</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">f_tpl</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">pp_df</span><span class="o">.</span><span class="n">to_string</span><span class="p">(</span><span class="n">col_space</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                              <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">,</span><span class="s2">&quot;x&quot;</span><span class="p">,</span><span class="s2">&quot;y&quot;</span><span class="p">,</span><span class="s2">&quot;zone&quot;</span><span class="p">,</span><span class="s2">&quot;tpl&quot;</span><span class="p">],</span>
+                              <span class="n">formatters</span><span class="o">=</span><span class="n">PP_FMT</span><span class="p">,</span>
+                              <span class="n">justify</span><span class="o">=</span><span class="s2">&quot;left&quot;</span><span class="p">,</span>
+                              <span class="n">header</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                              <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">pp_df</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, Jeremy White, Mike Fienen, John Doherty.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.11</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

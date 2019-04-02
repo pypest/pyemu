@@ -417,7 +417,7 @@ class Schur(LinearAnalysis):
                         obscov=self.obscov, predictions=cond_preds,verbose=False)
         return la_cond
 
-    def get_par_contribution(self,parlist_dict=None):
+    def get_par_contribution(self,parlist_dict=None,include_prior_results=False):
         """get a dataframe the prior and posterior uncertainty
         reduction as a result of some parameter becoming perfectly known
 
@@ -429,6 +429,9 @@ class Schur(LinearAnalysis):
             row labels in returned dataframe.  If None, each adjustable parameter
             is sequentially treated as known and the returned dataframe
             has row labels for each adjustable parameter
+        include_prior_results : bool
+            flag to return a multi-indexed dataframe with both conditional
+            prior and posterior forecast uncertainty estimates.  Default is False
 
         Returns
         -------
@@ -437,7 +440,8 @@ class Schur(LinearAnalysis):
             The dataframe has index (row labels) of the keys in parlist_dict
             and a column labels of forecast names.  The values in the dataframe
             are the posterior variance of the forecast conditional on perfect
-            knowledge of the parameters in the values of parlist_dict
+            knowledge of the parameters in the values of parlist_dict.  Varies
+            depending on `include_prior_results`.
 
         Example
         -------
@@ -486,15 +490,26 @@ class Schur(LinearAnalysis):
         df = pd.DataFrame(results,index=names)
         #base = df.loc["base",df.columns.get_level_values(1)=="post"]
         #df = 1.0 - (df.loc[:,df.columns.get_level_values(1)=="post"] / base)
-        df = df.xs("post",level=1,drop_level=True,axis=1)
-        self.log("calculating contribution from parameters")
-        return df
 
-    def get_par_group_contribution(self):
+        self.log("calculating contribution from parameters")
+        if include_prior_results:
+            return df
+        else:
+            df = df.xs("post", level=1, drop_level=True, axis=1)
+            return df
+
+    def get_par_group_contribution(self, include_prior_results=False):
         """get the forecast uncertainty contribution from each parameter
         group.  Just some sugar for get_contribution_dataframe() - this method
         automatically constructs the parlist_dict argument where the keys are the
         group names and the values are the adjustable parameters in the groups
+
+        Parameters
+        ----------
+        include_prior_results : bool
+            flag to return a multi-indexed dataframe with both conditional
+            prior and posterior forecast uncertainty estimates.  Default is False
+
 
         Returns
         -------
@@ -504,6 +519,7 @@ class Schur(LinearAnalysis):
             and a column labels of forecast names.  The values in the dataframe
             are the posterior variance of the forecast conditional on perfect
             knowledge of the adjustable parameters in each parameter groups
+            Varies depending on `include_prior_results`.
 
         """
         pargrp_dict = {}
@@ -513,7 +529,7 @@ class Schur(LinearAnalysis):
             #pargrp_dict[grp] = list(par.loc[idxs,"parnme"])
             pargrp_dict[grp] = [pname for pname in list(par.loc[idxs,"parnme"])
                                 if pname in self.jco.col_names and pname in self.parcov.row_names]
-        return self.get_par_contribution(pargrp_dict)
+        return self.get_par_contribution(pargrp_dict,include_prior_results=include_prior_results)
 
     def get_added_obs_importance(self,obslist_dict=None,base_obslist=None,
                                  reset_zero_weight=False):
@@ -604,13 +620,17 @@ class Schur(LinearAnalysis):
 
         if base_obslist is None:
             base_obslist = []
-
+        else:
+            if type(base_obslist) != list:
+                self.logger.lraise("Schur.get_added_obs)_importance: base_obslist must be" +
+                                   " type 'list', not {0}".format(str(type(base_obslist))))
         # if needed reset the zero-weight obs in obslist_dict
         if obslist_dict is not None and reset:
             z_obs = []
             for case,obslist in obslist_dict.items():
                 if not isinstance(obslist,list):
                     obslist_dict[case] = [obslist]
+                    obslist = [obslist]
                 inboth = set(base_obslist).intersection(set(obslist))
                 if len(inboth) > 0:
                     raise Exception("observation(s) listed in both "+\
@@ -667,6 +687,7 @@ class Schur(LinearAnalysis):
             case_obslist = list(base_obslist)
             dedup_obslist = [oname for oname in obslist if oname not in case_obslist]
             case_obslist.extend(dedup_obslist)
+            #print(self.pst.observation_data.loc[case_obslist,:])
             case_post = self.get(par_names=self.jco.par_names,
                                  obs_names=case_obslist).posterior_forecast
             for forecast,pt in case_post.items():

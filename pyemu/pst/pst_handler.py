@@ -10,9 +10,12 @@ import warnings
 import numpy as np
 import pandas as pd
 pd.options.display.max_colwidth = 100
+import pyemu
+from ..pyemu_warnings import PyemuWarning
 from pyemu.pst.pst_controldata import ControlData, SvdData, RegData
 from pyemu.pst import pst_utils
 from pyemu.plot import plot_utils
+#from pyemu.utils.os_utils import run
 
 class Pst(object):
     """basic class for handling pest control files to support linear analysis
@@ -34,8 +37,14 @@ class Pst(object):
         a control file object
 
     """
-    def __init__(self, filename, load=True, resfile=None,flex=False):
+    def __init__(self, filename, load=True, resfile=None):
 
+        self.parameter_data = None
+        """pandas.DataFrame:  parameter data loaded from pst control file"""
+        self.observation_data = None
+        """pandas.DataFrame:  observation data loaded from pst control file"""
+        self.prior_information = None
+        """pandas.DataFrame:  prior_information data loaded from pst control file"""
 
         self.filename = filename
         self.resfile = resfile
@@ -44,19 +53,22 @@ class Pst(object):
         self.with_comments = False
         self.comments = {}
         self.other_sections = {}
+        self.new_filename = None
         for key,value in pst_utils.pst_config.items():
             self.__setattr__(key,copy.copy(value))
-        self.tied = None
+        #self.tied = None
         self.control_data = ControlData()
+        """pyemu.pst.pst_controldata.ControlData:  control data object loaded from pst control file"""
         self.svd_data = SvdData()
+        """pyemu.pst.pst_controldata.SvdData: singular value decomposition (SVD) object loaded from pst control file"""
         self.reg_data = RegData()
+        """pyemu.pst.pst_controldata.RegData: regularization data object loaded from pst control file"""
+        self._version = 1
         if load:
             assert os.path.exists(filename),\
                 "pst file not found:{0}".format(filename)
-            if flex:
-                self.flex_load(filename)
-            else:
-                self.load(filename)
+
+            self.load(filename)
 
     def __setattr__(self, key, value):
         if key == "model_command":
@@ -104,14 +116,16 @@ class Pst(object):
         components = {}
         ogroups = self.observation_data.groupby("obgnme").groups
         rgroups = self.res.groupby("group").groups
-        for og in ogroups.keys():
-            assert og in rgroups.keys(),"Pst.adjust_weights_res() obs group " +\
-                "not found: " + str(og)
-            og_res_df = self.res.ix[rgroups[og]]
-            og_res_df.index = og_res_df.name
+        self.res.index = self.res.name
+        for og,onames in ogroups.items():
+            #assert og in rgroups.keys(),"Pst.phi_componentw obs group " +\
+            #    "not found: " + str(og)
+            #og_res_df = self.res.ix[rgroups[og]]
+            og_res_df = self.res.loc[onames,:].dropna()
+            #og_res_df.index = og_res_df.name
             og_df = self.observation_data.ix[ogroups[og]]
             og_df.index = og_df.obsnme
-            og_res_df = og_res_df.loc[og_df.index,:]
+            #og_res_df = og_res_df.loc[og_df.index,:]
             assert og_df.shape[0] == og_res_df.shape[0],\
             " Pst.phi_components error: group residual dataframe row length" +\
             "doesn't match observation data group dataframe row length" + \
@@ -167,6 +181,8 @@ class Pst(object):
             something to use as Pst.res attribute
 
         """
+        if isinstance(res,str):
+            res = pst_utils.read_resfile(res)
         self.__res = res
 
     @property
@@ -194,9 +210,15 @@ class Pst(object):
                 if not os.path.exists(self.resfile):
                     self.resfile = self.resfile.replace(".res", ".rei")
                     if not os.path.exists(self.resfile):
-                        raise Exception("Pst.res: " +
-                                        "could not residual file case.res" +
-                                        " or case.rei")
+                        if self.new_filename is not None:
+                            self.resfile = self.new_filename.replace(".pst",".res")
+                            if not os.path.exists(self.resfile):
+                                self.resfile = self.resfile.replace(".res","rei")
+                                if not os.path.exists(self.resfile):
+                                    raise Exception("Pst.res: " +
+                                                    "could not residual file case.res" +
+                                                    " or case.rei")
+
 
             res = pst_utils.read_resfile(self.resfile)
             missing_bool = self.observation_data.obsnme.apply\
@@ -284,6 +306,19 @@ class Pst(object):
         self.control_data.npar = self.parameter_data.shape[0]
         return self.control_data.npar
 
+    @property
+    def pars_in_groups(self):
+        """
+        return a dictionary of  parameter names in each parameter group.
+
+        Returns:
+            dictionary
+        """
+        pargp = self.par_groups
+        allpars = dict()
+        for cpg in pargp:
+            allpars[cpg] = [i for i in self.parameter_data.loc[self.parameter_data.pargp == cpg, 'parnme']]
+        return allpars
 
     @property
     def forecast_names(self):
@@ -335,6 +370,23 @@ class Pst(object):
             if obs.loc[obs.obgnme==g,"weight"].sum() > 0.0:
                 og.append(g)
         return og
+
+    @property
+    def adj_par_groups(self):
+        """get the parameter groups with atleast one adjustable parameter
+
+        Returns
+        -------
+        adj_par_groups : list
+            a list of parameter groups with  at least one adjustable parameter
+
+        """
+        adj_pargp = []
+        for pargp in self.par_groups:
+            ptrans = self.parameter_data.loc[self.parameter_data.pargp==pargp,"partrans"].values
+            if "log" in ptrans or "none" in ptrans:
+                adj_pargp.append(pargp)
+        return adj_pargp
 
 
     @property
@@ -480,6 +532,17 @@ class Pst(object):
             return True
         return False
 
+    @property
+    def tied(self):
+        par = self.parameter_data
+        tied_pars = par.loc[par.partrans=="tied","parnme"]
+        if tied_pars.shape[0] == 0:
+            return None
+        if "partied" not in par.columns:
+            par.loc[:,"partied"] = np.NaN
+        tied = par.loc[tied_pars,["parnme","partied"]]
+        return tied
+
     @staticmethod
     def _read_df(f,nrows,names,converters,defaults=None):
         """ a private method to read part of an open file into a pandas.DataFrame.
@@ -504,32 +567,52 @@ class Pst(object):
 
         """
         seek_point = f.tell()
-        df = pd.read_csv(f, header=None,names=names,
-                         nrows=nrows,delim_whitespace=True,
-                         converters=converters, index_col=False,
-                         comment='#')
-
-        # in case there was some extra junk at the end of the lines
-        if df.shape[1] > len(names):
-            df = df.iloc[:,len(names)]
-            df.columns = names
-
-        if defaults is not None:
+        line = f.readline()
+        raw = line.strip().split()
+        if raw[0].lower() == "external":
+            filename = raw[1]
+            assert os.path.exists(filename),"Pst._read_df() error: external file '{0}' not found".format(filename)
+            df = pd.read_csv(filename,index_col=False,comment='#')
+            df.columns = df.columns.str.lower()
             for name in names:
-                df.loc[:,name] = df.loc[:,name].fillna(defaults[name])
-        elif np.any(pd.isnull(df)):
-            raise Exception("NANs found")
-        f.seek(seek_point)
-        extras = []
-        for i in range(nrows):
-            line = f.readline()
-            extra = np.NaN
-            if '#' in line:
-                raw = line.strip().split('#')
-                extra = ' # '.join(raw[1:])
-            extras.append(extra)
+                assert name in df.columns,"Pst._read_df() error: name" +\
+                "'{0}' not in external file '{1}' columns".format(name,filename)
+                if name in converters:
+                    df.loc[:,name] = df.loc[:,name].apply(converters[name])
+            if defaults is not None:
+                for name in names:
+                    df.loc[:, name] = df.loc[:, name].fillna(defaults[name])
+        else:
+            if nrows is None:
+                raise Exception("Pst._read_df() error: non-external sections require nrows")
+            f.seek(seek_point)
+            df = pd.read_csv(f, header=None,names=names,
+                             nrows=nrows,delim_whitespace=True,
+                             converters=converters, index_col=False,
+                             comment='#')
 
-        df.loc[:,"extra"] = extras
+            # in case there was some extra junk at the end of the lines
+            if df.shape[1] > len(names):
+                df = df.iloc[:,len(names)]
+                df.columns = names
+            isnull = pd.isnull(df)
+            if defaults is not None:
+                for name in names:
+                    df.loc[:,name] = df.loc[:,name].fillna(defaults[name])
+
+            elif np.any(pd.isnull(df).values.flatten()):
+                raise Exception("NANs found")
+            f.seek(seek_point)
+            extras = []
+            for i in range(nrows):
+                line = f.readline()
+                extra = np.NaN
+                if '#' in line:
+                    raw = line.strip().split('#')
+                    extra = ' # '.join(raw[1:])
+                extras.append(extra)
+
+            df.loc[:,"extra"] = extras
 
         return df
 
@@ -567,20 +650,41 @@ class Pst(object):
 
 
     def _cast_df_from_lines(self,name,lines, fieldnames, converters, defaults):
-        extra = []
-        raw = []
-        for line in lines:
+        raw = lines[0].strip().split()
+        if raw[0].lower() == "external":
+            filename = raw[1]
+            #check for other items
+            if len(raw) > 2:
+                for arg in raw[2:]:
+                    if "header" in arg.lower():
+                        rraw = arg.split('=')
+                        assert len(rraw) == 2
+                        if rraw[1].lower() != "true":
+                            raise NotImplementedError("non-header external files not support")
+                    else:
+                        PyemuWarning("unsupported external file option found: '{0}', ignoring".format(arg))
 
-            if '#' in line:
-                er = line.strip().split('#')
-                extra.append('#'.join(er[1:]))
-                r = er[0].split()
-            else:
-                r = line.strip().split()
-                extra.append(np.NaN)
-            raw.append(r)
-        found_fieldnames = fieldnames[:len(raw[0])]
-        df = pd.DataFrame(raw,columns=found_fieldnames)
+
+            assert os.path.exists(filename),"Pst._cast_df_from_lines() error: external file '{0}' not found".format(filename)
+            df = pd.read_csv(filename)
+            df.columns = df.columns.str.lower()
+
+        else:
+            extra = []
+            raw = []
+            for line in lines:
+
+                if '#' in line:
+                    er = line.strip().split('#')
+                    extra.append('#'.join(er[1:]))
+                    r = er[0].split()
+                else:
+                    r = line.strip().split()
+                    extra.append(np.NaN)
+                raw.append(r)
+            found_fieldnames = fieldnames[:len(raw[0])]
+            df = pd.DataFrame(raw,columns=found_fieldnames)
+            df.loc[:, "extra"] = extra
         for col in fieldnames:
             if col not in df.columns:
                 df.loc[:,col] = np.NaN
@@ -589,152 +693,212 @@ class Pst(object):
             if col in converters:
 
                 df.loc[:,col] = df.loc[:,col].apply(converters[col])
-        df.loc[:,"extra"] = extra
+
         return df
 
 
     def _cast_prior_df_from_lines(self,lines):
-        pilbl, obgnme, weight, equation = [], [], [], []
-        extra = []
-        for line in lines:
-            if '#' in line:
-                er = line.split('#')
-                raw = er[0].split()
-                extra.append('#'.join(er[1:]))
-            else:
-                extra.append(np.NaN)
-                raw = line.split()
-            pilbl.append(raw[0].lower())
-            obgnme.append(raw[-1].lower())
-            weight.append(float(raw[-2]))
-            eq = ' '.join(raw[1:-2])
-            equation.append(eq)
+        if lines[0].strip().split()[0].lower() == "external":
+            filename = lines[0].strip().split()[1]
+            assert os.path.exists(filename),"Pst._cast_prior_df_from_lines() error: external file" +\
+                                            "'{0}' not found".format(filename)
+            df = pd.read_csv(filename)
+            df.columns = df.columns.str.lower()
+            for field in pst_utils.pst_config["prior_fieldnames"]:
+                assert field in df.columns,"Pst._cast_prior_df_from_lines() error: external file" +\
+                                            "'{0}' missing required field '{1}'".format(filename,field)
+            self.prior_information = df
+            self.prior_information.index = self.prior_information.pilbl
 
-        self.prior_information = pd.DataFrame({"pilbl": pilbl,
-                                               "equation": equation,
-                                               "weight": weight,
-                                               "obgnme": obgnme})
-        self.prior_information.index = self.prior_information.pilbl
-        self.prior_information.loc[:,"extra"] = extra
 
-    def flex_load(self,filename):
+        else:
+            pilbl, obgnme, weight, equation = [], [], [], []
+            extra = []
+            for line in lines:
+                if '#' in line:
+                    er = line.split('#')
+                    raw = er[0].split()
+                    extra.append('#'.join(er[1:]))
+                else:
+                    extra.append(np.NaN)
+                    raw = line.split()
+                pilbl.append(raw[0].lower())
+                obgnme.append(raw[-1].lower())
+                weight.append(float(raw[-2]))
+                eq = ' '.join(raw[1:-2])
+                equation.append(eq)
+
+            self.prior_information = pd.DataFrame({"pilbl": pilbl,
+                                                   "equation": equation,
+                                                   "weight": weight,
+                                                   "obgnme": obgnme})
+            self.prior_information.index = self.prior_information.pilbl
+            self.prior_information.loc[:,"extra"] = extra
+
+
+    def _load_version2(self,filename):
+        """load a version 2 control file
+
+
+
+        """
         self.lcount  = 0
         self.comments = {}
         self.prior_information = self.null_prior
         assert os.path.exists(filename), "couldn't find control file {0}".format(filename)
         f = open(filename, 'r')
-
-        # this should be the pcf line
-        section = "initial"
-        line,self.comments[section] = self._read_line_comments(f,False)
-
-        assert line.startswith("pcf")
-
-        line, pcf_comments = self._read_line_comments(f,False)
-
-        section = "* control data"
-        assert section in line, \
-            "Pst.load() error: looking for {0}, found: {1}".format(section,line)
-
-        next_section, section_lines, self.comments[section] = self._read_section_comments(f,False)
-        self.control_data.parse_values_from_lines(section_lines)
-
-        # read anything until the SVD section
+        last_section = ""
+        req_sections = {"* parameter data":False, "* observation data":False,
+                        "* model command line":False,"* model input":False, "* model output":False}
         while True:
-            if next_section.startswith("* singular value") or next_section.startswith("* parameter groups"):
+
+            next_section, section_lines, comments = self._read_section_comments(f, True)
+
+
+            if "* control data" in last_section.lower():
+                req_sections[last_section] = True
+                iskeyword = False
+                if "keyword" in last_section.lower():
+                    iskeyword = True
+                self.pestpp_options = self.control_data.parse_values_from_lines(section_lines, iskeyword=iskeyword)
+                if len(self.pestpp_options) > 0:
+                    ppo = self.pestpp_options
+                    svd_opts = ["svdmode","eigthresh","maxsing","eigwrite"]
+                    for svd_opt in svd_opts:
+                        if svd_opt in ppo:
+                            self.svd_data.__setattr__(svd_opt, ppo.pop(svd_opt))
+                    for reg_opt in self.reg_data.should_write:
+                        if reg_opt in ppo:
+                            self.reg_data.__setattr__(reg_opt, ppo.pop(reg_opt))
+
+            elif "* parameter groups" in last_section.lower():
+                req_sections[last_section] = True
+                self.parameter_groups = self._cast_df_from_lines(next_section, section_lines, self.pargp_fieldnames,
+                                                                self.pargp_converters, self.pargp_defaults)
+                self.parameter_groups.index = self.parameter_groups.pargpnme
+
+            elif "* parameter data" in last_section.lower():
+                req_sections[last_section] = True
+                self.parameter_data = self._cast_df_from_lines(next_section, section_lines, self.par_fieldnames,
+                                                               self.par_converters, self.par_defaults)
+                self.parameter_data.index = self.parameter_data.parnme
+
+            elif "* observation data" in last_section.lower():
+                req_sections[last_section] = True
+                self.observation_data = self._cast_df_from_lines(next_section, section_lines, self.obs_fieldnames,
+                                                                self.obs_converters, self.obs_defaults)
+                self.observation_data.index = self.observation_data.obsnme
+
+            elif "* model command line" in last_section.lower():
+                req_sections[last_section] = True
+                for line in section_lines:
+                    self.model_command.append(line.strip())
+
+            elif "* model input" in last_section.lower():
+                req_sections[last_section] = True
+                if section_lines[0].strip().split()[0].lower() == "external":
+                    filename = section_lines[0].strip().split()[1]
+                    assert os.path.exists(filename),"Pst.flex_load() external template data file '{0}' not found".format(filename)
+                    df = pd.read_csv(filename)
+                    df.columns = df.columns.str.lower()
+                    assert "pest_file" in df.columns,"Pst.flex_load() external template data file must have 'pest_file' in columns"
+                    assert "model_file" in df.columns, "Pst.flex_load() external template data file must have 'model_file' in columns"
+                    for pfile,mfile in zip(df.pest_file,df.model_file):
+                        self.template_files.append(pfile)
+                        self.input_files.append(mfile)
+
+                else:
+                    for iline,line in enumerate(section_lines):
+                        raw = line.split()
+                        self.template_files.append(raw[0])
+                        self.input_files.append(raw[1])
+
+            elif "* model output" in last_section.lower():
+                req_sections[last_section] = True
+                if section_lines[0].strip().split()[0].lower() == "external":
+                    filename = section_lines[0].strip().split()[1]
+                    assert os.path.exists(filename), "Pst.flex_load() external instruction data file '{0}' not found".format(
+                        filename)
+                    df = pd.read_csv(filename)
+                    df.columns = df.columns.str.lower()
+                    assert "pest_file" in df.columns, "Pst.flex_load() external instruction data file must have 'pest_file' in columns"
+                    assert "model_file" in df.columns, "Pst.flex_load() external instruction data file must have 'model_file' in columns"
+                    for pfile, mfile in zip(df.pest_file, df.model_file):
+                        self.instruction_files.append(pfile)
+                        self.output_files.append(mfile)
+                else:
+                    for iline, line in enumerate(section_lines):
+                        raw = line.split()
+                        self.instruction_files.append(raw[0])
+                        self.output_files.append(raw[1])
+
+            elif "* prior information" in last_section.lower():
+                req_sections[last_section] = True
+                self._cast_prior_df_from_lines(section_lines)
+
+            elif len(last_section) > 0:
+                print("Pst._load_version2() warning: unrecognized section: ", last_section)
+                self.comments[last_section] = section_lines
+
+            last_section = next_section
+            if next_section == None or len(section_lines) == 0:
                 break
-            next_section, section_lines, c = self._read_section_comments(f,False)
 
-        # SVD
-        if next_section.startswith("* singular value"):
-            section = "* singular value decomposition"
-            next_section, section_lines,self.comments[section] = self._read_section_comments(f, False)
-            self.svd_data.parse_values_from_lines(section_lines)
+        not_found = []
+        for section,found in req_sections.items():
+            if not found:
+                not_found.append(section)
+        if len(not_found) > 0:
+            raise Exception("Pst._load_version2() error: the following required sections were"+\
+                    "not found:{0}".format(",".join(not_found)))
 
-        # read anything until par groups
+
+
+
+    def load(self,filename):
+        """ entry point load the pest control file.  sniffs the first non-comment line to detect the version (if present)
+
+        Parameters
+        ----------
+        filename : str
+            pst filename
+
+        Raises
+        ------
+            lots of exceptions for incorrect format
+        """
+        assert os.path.exists(filename), "couldn't find control file {0}".format(filename)
+        f = open(filename, 'r')
+
         while True:
-            if next_section.startswith("* parameter groups"):
+            line = f.readline()
+            if line == "":
+                raise Exception("Pst.load() error: EOF when trying to find first line - #sad")
+            if line.strip().split()[0].lower() == "pcf":
                 break
-            next_section, section_lines, c = self._read_section_comments(f, False)
+        assert line.startswith("pcf"), "Pst.load() error: first noncomment line must start with 'pcf', not '{0}'".format(line)
+        raw = line.strip().split()
 
-        # parameter groups
-        section = "* parameter groups"
-        assert next_section == section
-        next_section, section_lines, self.comments[section] = self._read_section_comments(f, False)
-        self.parameter_groups = self._cast_df_from_lines(next_section,section_lines,self.pargp_fieldnames,
-                                                        self.pargp_converters, self.pargp_defaults)
-
-        # parameter data
-        section = "* parameter data"
-        assert next_section == section
-        next_section, section_lines,self.comments[section] = self._read_section_comments(f, False)
-        self.parameter_data = self._cast_df_from_lines(next_section, section_lines, self.par_fieldnames,
-                                                        self.par_converters, self.par_defaults)
-
-        # # oh the tied parameter bullshit, how do I hate thee
-        counts = self.parameter_data.partrans.value_counts()
-        if "tied" in counts.index:
-            #the tied lines got cast into the parameter data lines
-            ntied = counts["tied"]
-            self.tied = self.parameter_data.iloc[-ntied:,:2]
-            self.tied.columns = self.tied_fieldnames
-            self.tied.index = self.tied.parnme
-            self.parameter_data = self.parameter_data.iloc[:-ntied,:]
-
-        # observation groups
-        section = "* observation groups"
-        assert next_section == section
-        next_section, section_lines, self.comments[section] = self._read_section_comments(f, False)
-
-        # observation data
-        section = "* observation data"
-        assert next_section == section
-        next_section, section_lines, self.comments[section] = self._read_section_comments(f, False)
-        self.observation_data = self._cast_df_from_lines(next_section, section_lines, self.obs_fieldnames,
-                                                        self.obs_converters, self.obs_defaults)
-        # model commands
-        section = "* model command line"
-        assert next_section == section
-        next_section, section_lines,self.comments[section] = self._read_section_comments(f, False)
-
-        # model io
-        section = "* model input/output"
-        assert next_section == section
-        next_section, section_lines, self.comments[section] = self._read_section_comments(f, True)
-        ntpl,nins = self.control_data.ntplfle, self.control_data.ninsfle
-        assert len(section_lines) == ntpl + nins
-        for iline,line in enumerate(section_lines):
-            raw = line.split()
-            if iline < ntpl:
-                self.template_files.append(raw[0])
-                self.input_files.append(raw[1])
-            else:
-                self.instruction_files.append(raw[0])
-                self.output_files.append(raw[1])
+        if len(raw) > 1 and "version" in raw[1].lower():
+            raw = raw[1].split('=')
+            if len(raw) > 1:
+                try:
+                    self._version = int(raw[1])
+                except:
+                    pass
+        if self._version == 1:
+            self._load_version1(filename)
+        elif self._version == 2:
+            self._load_version2(filename)
+        else:
+            raise Exception("Pst.load() error: version must be 1 or 2, not '{0}'".format(version))
 
 
-        # prior info
-        section = "* prior information"
-        if next_section == section:
-            next_line, section_lines,self.comments[section] = self._read_section_comments(f, True)
-            self._cast_prior_df_from_lines(section_lines)
-
-        # any additional sections
-        final_comments = []
-
-        while True:
-            # TODO: catch a regul section
-            next_line, comments = self._read_line_comments(f, True)
-            if next_line is None:
-                break
-            self.other_lines.append(next_line)
-            #next_line,comments = self._read_line_comments(f,True)
-            final_comments.extend(comments)
-            self.comments["final"] = final_comments
 
 
-    def load(self, filename):
-        """load the pest control file information
+
+    def _load_version1(self, filename):
+        """load a version 1 pest control file information
 
         Parameters
         ----------
@@ -752,9 +916,13 @@ class Pst(object):
 
         #control section
         line = f.readline()
+
         assert "* control data" in line,\
             "Pst.load() error: looking for control" +\
             " data section, found:" + line
+        iskeyword = False
+        if "keyword" in line.lower():
+            iskeyword = True
         control_lines = []
         while True:
             line = f.readline()
@@ -764,7 +932,7 @@ class Pst(object):
             if line.startswith('*'):
                 break
             control_lines.append(line)
-        self.control_data.parse_values_from_lines(control_lines)
+        self.control_data.parse_values_from_lines(control_lines,iskeyword)
 
 
         #anything between control data and SVD
@@ -798,14 +966,14 @@ class Pst(object):
         assert "* parameter groups" in line.lower(),\
             "Pst.load() error: looking for parameter" +\
             " group section, found:" + line
-        try:
-            self.parameter_groups = self._read_df(f,self.control_data.npargp,
-                                                  self.pargp_fieldnames,
-                                                  self.pargp_converters,
-                                                  self.pargp_defaults)
-            self.parameter_groups.index = self.parameter_groups.pargpnme
-        except Exception as e:
-            raise Exception("Pst.load() error reading parameter groups: {0}".format(str(e)))
+        #try:
+        self.parameter_groups = self._read_df(f,self.control_data.npargp,
+                                              self.pargp_fieldnames,
+                                              self.pargp_converters,
+                                              self.pargp_defaults)
+        self.parameter_groups.index = self.parameter_groups.pargpnme
+        #except Exception as e:
+        #    raise Exception("Pst.load() error reading parameter groups: {0}".format(str(e)))
 
         #parameter data
         line = f.readline()
@@ -828,31 +996,45 @@ class Pst(object):
             # tied_lines = [f.readline().lower().strip().split() for _ in range(counts["tied"])]
             # self.tied = pd.DataFrame(tied_lines,columns=["parnme","partied"])
             # self.tied.index = self.tied.pop("parnme")
-            self.tied = self._read_df(f,counts["tied"],self.tied_fieldnames,
+            tied = self._read_df(f,counts["tied"],self.tied_fieldnames,
                                       self.tied_converters)
-            self.tied.index = self.tied.parnme
-        # obs groups - just read past for now
-        line = f.readline()
-        assert "* observation groups" in line.lower(),\
-            "Pst.load() error: looking for obs" +\
-            " group section, found:" + line
-        [f.readline() for _ in range(self.control_data.nobsgp)]
+            tied.index = tied.parnme
+            self.parameter_data.loc[:,"partied"] = np.NaN
+            self.parameter_data.loc[tied.index,"partied"] = tied.partied
 
-        # observation data
+        # obs groups - just read past for now
+
         line = f.readline()
-        assert "* observation data" in line.lower(),\
-            "Pst.load() error: looking for observation" +\
-            " data section, found:" + line
-        if self.control_data.nobs > 0:
-            try:
-                self.observation_data = self._read_df(f,self.control_data.nobs,
-                                                      self.obs_fieldnames,
-                                                      self.obs_converters)
-                self.observation_data.index = self.observation_data.obsnme
-            except:
-                raise Exception("Pst.load() error reading observation data")
+        # assert "* observation groups" in line.lower(),\
+        #     "Pst.load() error: looking for obs" +\
+        #     " group section, found:" + line
+        # [f.readline() for _ in range(self.control_data.nobsgp)]
+        if "* observation groups" in line:
+            while True:
+                seekpoint = f.tell()
+                line = f.readline()
+                if line == "":
+                    raise Exception("Pst.load() error: EOF when searching for '* observation data'")
+                if line.startswith("*"):
+                    f.seek(seekpoint)
+                    break
+            line = f.readline()
+            assert "* observation data" in line.lower(), \
+                "Pst.load() error: looking for observation" + \
+                " data section, found:" + line
         else:
-            raise Exception("nobs == 0")
+
+            assert "* observation data" in line.lower(),\
+                "Pst.load() error: looking for observation" +\
+                " data section, found:" + line
+
+        try:
+            self.observation_data = self._read_df(f,self.control_data.nobs,
+                                                  self.obs_fieldnames,
+                                                  self.obs_converters)
+            self.observation_data.index = self.observation_data.obsnme
+        except Exception as e:
+            raise Exception("Pst.load() error reading observation data: {0}".format(str(e)))
         #model command line
         line = f.readline()
         assert "* model command line" in line.lower(),\
@@ -866,6 +1048,7 @@ class Pst(object):
         assert "* model input/output" in line.lower(), \
             "Pst.load() error; looking for model " +\
             " i/o section, found:" + line
+
         for i in range(self.control_data.ntplfle):
             raw = f.readline().strip().split()
             self.template_files.append(raw[0])
@@ -939,7 +1122,7 @@ class Pst(object):
             values.append('')
         for key, value in zip(keys, values):
             if key in self.pestpp_options:
-                print("Pst.load() warning: duplicate pest++ option found:" + str(key))
+                print("Pst.load() warning: duplicate pest++ option found:" + str(key),PyemuWarning)
             self.pestpp_options[key] = value
 
     def _update_control_section(self):
@@ -960,7 +1143,7 @@ class Pst(object):
         self.control_data.ninsfle = len(self.instruction_files)
         self.control_data.numcom = len(self.model_command)
 
-    def _rectify_pgroups(self):
+    def rectify_pgroups(self):
         """ private method to synchronize parameter groups section with
         the parameter data section
 
@@ -1007,7 +1190,8 @@ class Pst(object):
         def parse(eqs):
             raw = eqs.split('=')
             rhs = float(raw[1])
-            raw = re.split('[+,-]',raw[0].lower().strip())
+            raw = [i for i in re.split('[###]',
+                    raw[0].lower().strip().replace(' + ','###').replace(' - ','###')) if i != '']
             # in case of a leading '-' or '+'
             if len(raw[0]) == 0:
                 raw = raw[1:]
@@ -1081,7 +1265,6 @@ class Pst(object):
         self.prior_information.loc[pilbl,"weight"] = weight
         self.prior_information.loc[pilbl,"obgnme"] = obs_group
 
-
     def rectify_pi(self):
         """ rectify the prior information equation with the current state of the
         parameter_data dataframe.  Equations that list fixed, tied or missing parameters
@@ -1108,7 +1291,10 @@ class Pst(object):
             for line in self.comments.get(name, []):
                 f.write(line+'\n')
         if df.loc[:,columns].isnull().values.any():
-            warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
+            #warnings.warn("WARNING: NaNs in {0} dataframe".format(name))
+            csv_name = "pst.{0}.nans.csv".format(name.replace(" ",'_').replace('*',''))
+            df.to_csv(csv_name)
+            raise Exception("NaNs in {0} dataframe, csv written to {1}".format(name, csv_name))
         def ext_fmt(x):
             if pd.notnull(x):
                 return " # {0}".format(x)
@@ -1126,8 +1312,124 @@ class Pst(object):
                                                   header=False,
                                                   index=False) + '\n')
 
-    def write(self,new_filename,update_regul=False):
-        """write a pest control file
+    def sanity_checks(self):
+
+        dups = self.parameter_data.parnme.value_counts()
+        dups = dups.loc[dups>1]
+        if dups.shape[0] > 0:
+            warnings.warn("duplicate parameter names: {0}".format(','.join(list(dups.index))),PyemuWarning)
+        dups = self.observation_data.obsnme.value_counts()
+        dups = dups.loc[dups>1]
+        if dups.shape[0] > 0:
+            warnings.warn("duplicate observation names: {0}".format(','.join(list(dups.index))),PyemuWarning)
+
+        if self.npar_adj == 0:
+            warnings.warn("no adjustable pars",PyemuWarning)
+
+        if self.nnz_obs == 0:
+            warnings.warn("no non-zero weight obs",PyemuWarning)
+
+        #print("noptmax: {0}".format(self.control_data.noptmax))
+
+
+
+    def _write_version2(self,new_filename,update_regul=True,external=True):
+        self.new_filename = new_filename
+        self.rectify_pgroups()
+        self.rectify_pi()
+        self._update_control_section()
+        self.sanity_checks()
+
+        f_out = open(new_filename, 'w')
+        if self.with_comments:
+            for line in self.comments.get("initial", []):
+                f_out.write(line + '\n')
+        f_out.write("pcf version=2\n")
+        self.control_data.write_keyword(f_out)
+
+        if self.with_comments:
+            for line in self.comments.get("* singular value decompisition",[]):
+                f_out.write(line)
+        self.svd_data.write_keyword(f_out)
+
+        if self.control_data.pestmode.lower().startswith("r"):
+            self.reg_data.write_keyword(f_out)
+
+        for k,v in self.pestpp_options.items():
+            f_out.write("{0:30} {1:>10}\n".format(k,v))
+
+        f_out.write("* parameter groups\n")
+        pargp_filename = new_filename.lower().replace(".pst",".pargrp_data.csv")
+        self.parameter_groups.to_csv(pargp_filename,index=False)
+        f_out.write("external {0}\n".format(pargp_filename))
+
+        f_out.write("* parameter data\n")
+        par_filename = new_filename.lower().replace(".pst", ".par_data.csv")
+        self.parameter_data.to_csv(par_filename,index=False)
+        f_out.write("external {0}\n".format(par_filename))
+
+        f_out.write("* observation data\n")
+        obs_filename = new_filename.lower().replace(".pst", ".obs_data.csv")
+        self.observation_data.to_csv(obs_filename,index=False)
+        f_out.write("external {0}\n".format(obs_filename))
+
+        f_out.write("* model command line\n")
+        for mc in self.model_command:
+            f_out.write("{0}\n".format(mc))
+
+        f_out.write("* model input\n")
+        io_filename = new_filename.lower().replace(".pst",".tplfile_data.csv")
+        pfiles = self.template_files
+        #pfiles.extend(self.instruction_files)
+        mfiles = self.input_files
+        #mfiles.extend(self.output_files)
+        io_df = pd.DataFrame({"pest_file":pfiles,"model_file":mfiles})
+        io_df.to_csv(io_filename,index=False)
+        f_out.write("external {0}\n".format(io_filename))
+
+        f_out.write("* model output\n")
+        io_filename = new_filename.lower().replace(".pst", ".insfile_data.csv")
+        pfiles = self.instruction_files
+        mfiles = self.output_files
+        io_df = pd.DataFrame({"pest_file": pfiles, "model_file": mfiles})
+        io_df.to_csv(io_filename,index=False)
+        f_out.write("external {0}\n".format(io_filename))
+
+        if self.prior_information.shape[0] > 0:
+            f_out.write("* prior information\n")
+            pi_filename = new_filename.lower().replace(".pst", ".pi_data.csv")
+            self.prior_information.to_csv(pi_filename,index=False)
+            f_out.write("external {0}\n".format(pi_filename))
+
+
+    def write(self,new_filename,update_regul=True,version=None):
+        """main entry point to write a pest control file.
+
+         Parameters
+        ----------
+        new_filename : str
+            name of the new pest control file
+        update_regul : (boolean)
+            flag to update zero-order Tikhonov prior information
+            equations to prefer the current parameter values
+        version : int
+            flag for which version of control file to write (must be 1 or 2).
+            if None, uses Pst._version, which set in the constructor and modified
+            during the load
+
+        """
+        if version is None:
+            version = self._version
+
+        if version == 1:
+            return self._write_version1(new_filename=new_filename,update_regul=update_regul)
+        elif version == 2:
+            return self._write_version2(new_filename=new_filename, update_regul=update_regul)
+        else:
+            raise Exception("Pst.write() error: version must be 1 or 2, not '{0}'".format(version))
+
+    def _write_version1(self,new_filename,update_regul=False):
+        """write a version 1 pest control file
 
         Parameters
         ----------
@@ -1139,10 +1441,11 @@ class Pst(object):
 
 
         """
-
-        self._rectify_pgroups()
+        self.new_filename = new_filename
+        self.rectify_pgroups()
         self.rectify_pi()
         self._update_control_section()
+        self.sanity_checks()
 
         f_out = open(new_filename, 'w')
         if self.with_comments:
@@ -1167,7 +1470,7 @@ class Pst(object):
 
         self._write_df("* parameter groups", f_out, self.parameter_groups,
                        self.pargp_format, self.pargp_fieldnames)
-
+        self.parameter_groups.loc[:,"pargpnme"] = pargpnme
 
         self._write_df("* parameter data",f_out, self.parameter_data,
                        self.par_format, self.par_fieldnames)
@@ -1205,7 +1508,8 @@ class Pst(object):
 
         if self.nprior > 0:
             if self.prior_information.isnull().values.any():
-                print("WARNING: NaNs in prior_information dataframe")
+                #print("WARNING: NaNs in prior_information dataframe")
+                warnings.warn("NaNs in prior_information dataframe",PyemuWarning)
             f_out.write("* prior information\n")
             #self.prior_information.index = self.prior_information.pop("pilbl")
             max_eq_len = self.prior_information.equation.apply(lambda x:len(x)).max()
@@ -1321,9 +1625,9 @@ class Pst(object):
         new_pst.output_files = self.output_files
 
         if self.tied is not None:
-            print("Pst.get() warning: not checking for tied parameter " +
-                  "compatibility in new Pst instance")
-            new_pst.tied = self.tied.copy()
+            warnings.warn("Pst.get() not checking for tied parameter " +
+                  "compatibility in new Pst instance",PyemuWarning)
+            #new_pst.tied = self.tied.copy()
         new_pst.other_lines = self.other_lines
         new_pst.pestpp_options = self.pestpp_options
         new_pst.regul_lines = self.regul_lines
@@ -1369,7 +1673,7 @@ class Pst(object):
 
 
 
-    def adjust_weights_recfile(self, recfile=None):
+    def adjust_weights_recfile(self, recfile=None,original_ceiling=True):
         """adjusts the weights by group of the observations based on the phi components
         in a pest record file so that total phi is equal to the number of
         non-zero weighted observations
@@ -1379,6 +1683,9 @@ class Pst(object):
         recfile : str
             record file name.  If None, try to use a record file
             with the Pst case name.  Default is None
+        original_ceiling : bool
+            flag to keep weights from increasing - this is generally a good idea.
+            Default is True
 
         """
         if recfile is None:
@@ -1405,9 +1712,9 @@ class Pst(object):
             raise Exception("Pst.pwtadj2(): no complete phi component" +
                             " records found in recfile")
         self._adjust_weights_by_phi_components(
-            iter_components[last_complete_iter])
+            iter_components[last_complete_iter],original_ceiling)
 
-    def adjust_weights_resfile(self, resfile=None):
+    def adjust_weights_resfile(self, resfile=None,original_ceiling=True):
         """adjusts the weights by group of the observations based on the phi components
         in a pest residual file so that total phi is equal to the number of
         non-zero weighted observations
@@ -1417,15 +1724,66 @@ class Pst(object):
         resfile : str
             residual file name.  If None, try to use a residual file
             with the Pst case name.  Default is None
+        original_ceiling : bool
+            flag to keep weights from increasing - this is generally a good idea.
+            Default is True
+
 
         """
         if resfile is not None:
             self.resfile = resfile
             self.__res = None
         phi_comps = self.phi_components
-        self._adjust_weights_by_phi_components(phi_comps)
+        self._adjust_weights_by_phi_components(phi_comps,original_ceiling)
 
-    def _adjust_weights_by_phi_components(self, components):
+    def adjust_weights_discrepancy(self, resfile=None,original_ceiling=True):
+        """adjusts the weights of each non-zero weight observation based
+        on the residual in the pest residual file so each observations contribution
+        to phi is 1.0
+
+        Parameters
+        ----------
+        resfile : str
+            residual file name.  If None, try to use a residual file
+            with the Pst case name.  Default is None
+        original_ceiling : bool
+            flag to keep weights from increasing - this is generally a good idea.
+            Default is True
+
+        """
+        if resfile is not None:
+            self.resfile = resfile
+            self.__res = None
+        obs = self.observation_data.loc[self.nnz_obs_names,:]
+        swr = (self.res.loc[self.nnz_obs_names,:].residual * obs.weight)**2
+        factors =  (1.0/swr).apply(np.sqrt)
+        if original_ceiling:
+            factors = factors.apply(lambda x: 1.0 if x > 1.0 else x)
+        self.observation_data.loc[self.nnz_obs_names,"weight"] *= factors
+
+
+        # nz_groups = obs.groupby(obs["weight"].map(lambda x: x == 0)).groups
+        # ogroups = obs.groupby("obgnme").groups
+        # for ogroup, idxs in ogroups.items():
+        #     if self.control_data.pestmode.startswith("regul") \
+        #             and "regul" in ogroup.lower():
+        #         continue
+        #     og_phi = components[ogroup]
+        #     nz_groups = obs.loc[idxs, :].groupby(obs.loc[idxs, "weight"]. \
+        #                                          map(lambda x: x == 0)).groups
+        #     og_nzobs = 0
+        #     if False in nz_groups.keys():
+        #         og_nzobs = len(nz_groups[False])
+        #     if og_nzobs == 0 and og_phi > 0:
+        #         raise Exception("Pst.adjust_weights_by_phi_components():"
+        #                         " no obs with nonzero weight," +
+        #                         " but phi > 0 for group:" + str(ogroup))
+        #     if og_phi > 0:
+        #         factor = np.sqrt(float(og_nzobs) / float(og_phi))
+        #         obs.loc[idxs, "weight"] = obs.weight[idxs] * factor
+        # self.observation_data = obs
+
+    def _adjust_weights_by_phi_components(self, components,original_ceiling):
         """resets the weights of observations by group to account for
         residual phi components.
 
@@ -1433,6 +1791,8 @@ class Pst(object):
         ----------
         components : dict
             a dictionary of obs group:phi contribution pairs
+        original_ceiling : bool
+            flag to keep weights from increasing
 
         """
         obs = self.observation_data
@@ -1454,6 +1814,8 @@ class Pst(object):
                                 " but phi > 0 for group:" + str(ogroup))
             if og_phi > 0:
                 factor = np.sqrt(float(og_nzobs) / float(og_phi))
+                if original_ceiling:
+                    factor = min(factor,1.0)
                 obs.loc[idxs,"weight"] = obs.weight[idxs] * factor
         self.observation_data = obs
 
@@ -1488,7 +1850,7 @@ class Pst(object):
                 weight_mult = np.sqrt(target_phis[item] / actual_phi)
                 self.observation_data.loc[obs_idxs[item], "weight"] *= weight_mult
             else:
-                print("Pst.__reset_weights() warning: phi group {0} has zero phi, skipping...".format(item))
+                ("Pst.__reset_weights() warning: phi group {0} has zero phi, skipping...".format(item))
 
     def adjust_weights_by_list(self,obslist,weight):
         """reset the weight for a list of observation names.  Supports the
@@ -1504,14 +1866,16 @@ class Pst(object):
         """
 
         obs = self.observation_data
-        obs = self.observation_data
         if not isinstance(obslist,list):
             obslist = [obslist]
-        obslist = [str(i).lower() for i in obslist]
-        groups = obs.groupby([lambda x:x in obslist,
-                             obs.weight.apply(lambda x:x==0.0)]).groups
-        if (True,True) in groups:
-            obs.loc[groups[True,True],"weight"] = weight
+        obslist = set([str(i).lower() for i in obslist])
+        #groups = obs.groupby([lambda x:x in obslist,
+        #                     obs.weight.apply(lambda x:x==0.0)]).groups
+        #if (True,True) in groups:
+        #    obs.loc[groups[True,True],"weight"] = weight
+        reset_names = obs.loc[obs.apply(lambda x: x.obsnme in obslist and x.weight==0,axis=1),"obsnme"]
+        if len(reset_names) > 0:
+            obs.loc[reset_names,"weight"] = weight
 
     def adjust_weights(self,obs_dict=None,
                               obsgrp_dict=None):
@@ -1553,8 +1917,10 @@ class Pst(object):
                 if obs.loc[oname,"weight"] == 0.0:
                     obs.loc[oname,"weight"] = 1.0
 
-            res_groups = self.res.groupby("name").groups
-            obs_groups = self.observation_data.groupby("obsnme").groups
+            #res_groups = self.res.groupby("name").groups
+            res_groups = self.res.groupby(self.res.index).groups
+            #obs_groups = self.observation_data.groupby("obsnme").groups
+            obs_groups = self.observation_data.groupby(self.observation_data.index).groups
             self.__reset_weights(obs_dict, res_groups, obs_groups)
 
 
@@ -1634,7 +2000,7 @@ class Pst(object):
 
         """
         self.enforce_bounds()
-
+        self.add_transform_columns()
         par_groups = self.parameter_data.groupby("pargp").groups
         inctype = self.parameter_groups.groupby("inctyp").groups
         for itype,inc_groups in inctype.items():
@@ -1670,7 +2036,7 @@ class Pst(object):
         for col in ["parval1","parlbnd","parubnd","increment"]:
             if col not in self.parameter_data.columns:
                 continue
-            self.parameter_data.loc[:,col+"_trans"] = (self.parameter_data.parval1 *
+            self.parameter_data.loc[:,col+"_trans"] = (self.parameter_data.loc[:,col] *
                                                           self.parameter_data.scale) +\
                                                          self.parameter_data.offset
             #isnotfixed = self.parameter_data.partrans != "fixed"
@@ -1729,57 +2095,6 @@ class Pst(object):
                                            ins_files=ins_files,out_files=out_files,
                                          pst_filename=pst_filename)
 
-    def add_parameters(self,template_file,in_file=None,pst_path=None):
-        """ add new parameters to a control file
-
-        Parameters
-        ----------
-            tpl_file : str
-                template file
-            in_file : str(optional
-                model input file. If None, tpl_file.replace(".tpl","") is used
-            pst_path : str(optional)
-                the path to append to the template_file and in_file in the control file.  If
-                not None, then any existing path in front of the template or in file is split off
-                and pst_path is prepended.  Default is None
-
-        Returns
-        -------
-        new_par_data : pandas.DataFrame
-            the data for the new parameters that were added
-
-        Note
-        ----
-        populates the new parameter information with default values
-
-        """
-        assert os.path.exists(template_file)
-
-        # get the parameter names in the template file
-        parnme = pst_utils.parse_tpl_file(template_file)
-
-        # find "new" parameters that are not already in the control file
-        new_parnme = [p for p in parnme if p not in self.parameter_data.parnme]
-
-        if len(new_parnme) == 0:
-            raise Exception("no new parameters found in template file {0}".format(template_file))
-
-        # extend parameter_data
-        new_par_data = pst_utils.populate_dataframe(new_parnme,pst_utils.pst_config["par_fieldnames"],
-                                                    pst_utils.pst_config["par_defaults"],
-                                                    pst_utils.pst_config["par_dtype"])
-        new_par_data.loc[new_parnme,"parnme"] = new_parnme
-        self.parameter_data = self.parameter_data.append(new_par_data)
-        if in_file is None:
-            in_file = tpl_file.replace('.tpl','')
-        if pst_path is not None:
-            template_file = os.path.join(pst_path,os.path.split(template_file)[-1])
-            in_file = os.path.join(pst_path, os.path.split(in_file)[-1])
-        self.template_files.append(template_file)
-        self.input_files.append(in_file)
-
-        return new_par_data
-
 
     def add_parameters(self,template_file,in_file=None,pst_path=None):
         """ add new parameters to a control file
@@ -1815,7 +2130,7 @@ class Pst(object):
         new_parnme = [p for p in parnme if p not in self.parameter_data.parnme]
 
         if len(new_parnme) == 0:
-            warnings.warn("no new parameters found in template file {0}".format(template_file))
+            warnings.warn("no new parameters found in template file {0}".format(template_file),PyemuWarning)
             new_par_data = None
         else:
             # extend pa
@@ -1836,7 +2151,7 @@ class Pst(object):
         return new_par_data
 
 
-    def add_observations(self,ins_file,out_file,pst_path=None,inschek=True):
+    def add_observations(self,ins_file,out_file=None,pst_path=None,inschek=True):
         """ add new parameters to a control file
 
         Parameters
@@ -1844,7 +2159,7 @@ class Pst(object):
             ins_file : str
                 instruction file
             out_file : str
-                model output file
+                model output file.  If None, then ins_file.replace(".ins","") is used.  Default is None
             pst_path : str(optional)
                 the path to append to the instruction file and out file in the control file.  If
                 not None, then any existing path in front of the template or in file is split off
@@ -1863,6 +2178,8 @@ class Pst(object):
 
         """
         assert os.path.exists(ins_file),"{0}, {1}".format(os.getcwd(),ins_file)
+        if out_file is None:
+            out_file = ins_file.replace(".ins","")
         assert ins_file != out_file, "doh!"
 
         # get the parameter names in the template file
@@ -1888,17 +2205,18 @@ class Pst(object):
         new_obs_data.loc[new_obsnme,"obsnme"] = new_obsnme
         new_obs_data.index = new_obsnme
         self.observation_data = self.observation_data.append(new_obs_data)
-
+        cwd = '.'
         if pst_path is not None:
+            cwd = os.path.join(*os.path.split(ins_file)[:-1])
             ins_file = os.path.join(pst_path,os.path.split(ins_file)[-1])
             out_file = os.path.join(pst_path, os.path.split(out_file)[-1])
         self.instruction_files.append(ins_file)
         self.output_files.append(out_file)
         df = None
         if inschek:
-            df = pst_utils._try_run_inschek(ins_file,out_file)
+            df = pst_utils._try_run_inschek(ins_file,out_file,cwd=cwd)
         if df is not None:
-            print(self.observation_data.index,df.index)
+            #print(self.observation_data.index,df.index)
             self.observation_data.loc[df.index,"obsval"] = df.obsval
             new_obs_data.loc[df.index,"obsval"] = df.obsval
         return new_obs_data
@@ -2019,7 +2337,7 @@ class Pst(object):
 
 
     def write_par_summary_table(self,filename=None,group_names=None,
-                                sigma_range = 4.0,caption=None):
+                                sigma_range = 4.0):
         """write a stand alone parameter summary latex table
 
 
@@ -2033,8 +2351,6 @@ class Pst(object):
         sigma_range : float
             number of standard deviations represented by parameter bounds.  Default
             is 4.0, implying 95% confidence bounds
-        caption : str
-            table caption.  Default is None
 
         Returns
         -------
@@ -2052,9 +2368,9 @@ class Pst(object):
                   "stdev":"standard deviation","pargp":"type","count":"count"}
 
         li = par.partrans == "log"
-        par.loc[li,"parval1"] = par.parval1.apply(np.log10)
-        par.loc[li, "parval1"] = par.parubnd.apply(np.log10)
-        par.loc[li, "parval1"] = par.parlbnd.apply(np.log10)
+        par.loc[li,"parval1"] = par.parval1.loc[li].apply(np.log10)
+        par.loc[li, "parubnd"] = par.parubnd.loc[li].apply(np.log10)
+        par.loc[li, "parlbnd"] = par.parlbnd.loc[li].apply(np.log10)
         par.loc[:,"stdev"] = (par.parubnd - par.parlbnd) / sigma_range
 
         data = {c:[] for c in cols}
@@ -2089,23 +2405,21 @@ class Pst(object):
 
         preamble = '\\documentclass{article}\n\\usepackage{booktabs}\n'+ \
                     '\\usepackage{pdflscape}\n\\usepackage{longtable}\n' + \
-                    '\\usepackage{booktabs}\n\\begin{document}\n\\begin{center}\n'+\
-                    '\\begin{table}\n'
+                    '\\usepackage{booktabs}\n\\usepackage{nopageno}\n\\begin{document}\n'
 
         if filename is None:
             filename = self.filename.replace(".pst",".par.tex")
 
         with open(filename,'w') as f:
             f.write(preamble)
-            if caption is not None:
-                f.write("\\caption{"+caption+"}\n")
+            f.write("\\begin{center}\nParameter Summary\n\\end{center}\n")
+            f.write("\\begin{center}\n\\begin{landscape}\n")
             pargp_df.to_latex(f, index=False, longtable=True)
-            f.write("\\end{table}\n")
+            f.write("\\end{landscape}\n")
             f.write("\\end{center}\n")
             f.write("\\end{document}\n")
 
-    def write_obs_summary_table(self,filename=None,group_names=None,
-                               caption=None):
+    def write_obs_summary_table(self,filename=None,group_names=None):
         """write a stand alone observation summary latex table
 
 
@@ -2116,8 +2430,6 @@ class Pst(object):
                 group_names: dict
                     par group names : table names for example {"w0":"well stress period 1"}.
                     Default is None
-                caption : str
-                    table caption. Default is None
 
                 Returns
                 -------
@@ -2167,8 +2479,7 @@ class Pst(object):
 
         preamble = '\\documentclass{article}\n\\usepackage{booktabs}\n' + \
                    '\\usepackage{pdflscape}\n\\usepackage{longtable}\n' + \
-                   '\\usepackage{booktabs}\n\\begin{document}\n\\begin{center}\n' + \
-                   '\\begin{table}\n'
+                   '\\usepackage{booktabs}\n\\usepackage{nopageno}\n\\begin{document}\n'
 
         if filename is None:
             filename = self.filename.replace(".pst", ".obs.tex")
@@ -2176,11 +2487,123 @@ class Pst(object):
         with open(filename, 'w') as f:
 
             f.write(preamble)
+
+            f.write("\\begin{center}\nObservation Summary\n\\end{center}\n")
+            f.write("\\begin{center}\n\\begin{landscape}\n")
             f.write("\\setlength{\\LTleft}{-4.0cm}\n")
-            if caption is not None:
-                f.write("\\caption{"+caption+"}\n")
             obsg_df.to_latex(f, index=False, longtable=True)
-            f.write("\\end{table}\n")
+            f.write("\\end{landscape}\n")
             f.write("\\end{center}\n")
             f.write("\\end{document}\n")
 
+
+    def run(self,exe_name="pestpp",cwd=None):
+        """run a command related to the pst instance. If
+        write() has been called, then the filename passed to write
+        is in the command, otherwise the original constructor
+        filename is used
+
+        exe_name : str
+            the name of the executable to call.  Default is "pestpp"
+        cwd : str
+            the directory to execute the command in.  If None,
+            os.path.split(self.filename) is used to find
+            cwd.  Default is None
+
+
+        """
+        filename = self.filename
+        if self.new_filename is not None:
+            filename = self.new_filename
+        cmd_line = "{0} {1}".format(exe_name,os.path.split(filename)[-1])
+        if cwd is None:
+            cwd = os.path.join(*os.path.split(filename)[:-1])
+            if cwd == '':
+                cwd = '.'
+        print("executing {0} in dir {1}".format(cmd_line, cwd))
+        pyemu.utils.os_utils.run(cmd_line,cwd=cwd)
+
+
+    def _is_less_const(self,name):
+        constraint_tags = ["l_", "less"]
+        return True in [True for c in constraint_tags if name.startswith(c)]
+
+    @property
+    def less_than_obs_constraints(self):
+        """get the names of the observations that
+        are listed as less than inequality constraints.  Zero-
+        weighted obs are skipped
+
+        Returns
+        -------
+        pandas.Series : obsnme of obseravtions that are non-zero weighted
+                        less than constraints
+
+        """
+
+
+        obs = self.observation_data
+        lt_obs = obs.loc[obs.apply(lambda x: self._is_less_const(x.obgnme) \
+                                             and x.weight != 0.0,axis=1),"obsnme"]
+        return lt_obs
+
+    @property
+    def less_than_pi_constraints(self):
+        """get the names of the prior information eqs that
+        are listed as less than inequality constraints.  Zero-
+        weighted pi are skipped
+
+        Returns
+        -------
+        pandas.Series : pilbl of prior information that are non-zero weighted
+                        less than constraints
+
+        """
+
+        pi = self.prior_information
+        lt_pi = pi.loc[pi.apply(lambda x: self._is_less_const(x.obgnme) \
+                                             and x.weight != 0.0, axis=1), "pilbl"]
+        return lt_pi
+
+
+    def _is_greater_const(self,name):
+        constraint_tags = ["g_", "greater"]
+        return True in [True for c in constraint_tags if name.startswith(c)]
+
+    @property
+    def greater_than_obs_constraints(self):
+        """get the names of the observations that
+        are listed as greater than inequality constraints.  Zero-
+        weighted obs are skipped
+
+        Returns
+        -------
+        pandas.Series : obsnme of obseravtions that are non-zero weighted
+                        greater than constraints
+
+        """
+
+
+
+        obs = self.observation_data
+        gt_obs = obs.loc[obs.apply(lambda x: self._is_greater_const(x.obgnme) \
+                                             and x.weight != 0.0,axis=1),"obsnme"]
+        return gt_obs
+
+    @property
+    def greater_than_pi_constraints(self):
+        """get the names of the prior information eqs that
+        are listed as greater than inequality constraints.  Zero-
+        weighted pi are skipped
+
+        Returns
+        -------
+        pandas.Series : pilbl of prior information that are non-zero weighted
+                        greater than constraints
+
+        """
+
+        pi = self.prior_information
+        gt_pi = pi.loc[pi.apply(lambda x: self._is_greater_const(x.obgnme) \
+                                          and x.weight != 0.0, axis=1), "pilbl"]
+        return gt_pi

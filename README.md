@@ -3,7 +3,8 @@ pyEMU
 
 python modules for model-independent FOSM (first-order, second-moment) (a.k.a linear-based, a.k.a. Bayes linear) uncertainty analyses and data-worth analyses, non-linear uncertainty analyses and interfacing with PEST and PEST++.  pyEMU now also has a pure python (pandas and numpy) implementation of ordinary kriging for geostatistical interpolation.   
 
-[![Build Status](https://travis-ci.org/jtwhite79/pyemu.svg?branch=develop)](https://travis-ci.org/jtwhite79/pyemu)
+[![Travis Status](https://travis-ci.org/jtwhite79/pyemu.svg?branch=master)](https://travis-ci.org/jtwhite79/pyemu)
+[![Appveyor Status](https://ci.appveyor.com/api/projects/status/github/jtwhite79/pyemu?branch=master&svg=true)](https://ci.appveyor.com/project/jtwhite79/pyemu)
 [![Coverage Status](https://coveralls.io/repos/github/jtwhite79/pyemu/badge.svg?branch=develop)](https://coveralls.io/github/jtwhite79/pyemu?branch=develop)
 
 Read the docs
@@ -41,6 +42,15 @@ Version 0.4 of pyemu includes
 * more enhancements to the iterative ensemble smoother including bad realization handling.  This has now been tested and applied succcessfully upto 30,000 parameters - yeah, that's not a typo.
 * more enhancements to the routines to setup a pest interface any MODFLOW model that can be loaded with flopy (https://github.com/modflowpy/flopy) using combinations of uniform, zone, pilot points, and grid-scale array multiplier parameters, as well as time-varying boundary condition multipliers. This functionality creates the entire set of files needed to implement inversion and uncertainty analysis including writing the forward run script, setups up pilot points (including solving for interpolation factors) and building a geostatistical-based prior covariance matrix.
 
+Version 0.5 of pyemu includes
+
+* support for reading and writing the new pest control file format with comments (!)
+* work on the multivariate Gaussian draws to speed things up
+* Even more work on the PstFromFlopy helper class.  It has lots of kewl stuff now
+* addition of a sparse matrix handler and a new JCO binary format for really large numbers of pars (>100K)
+* more work towards getting pestpp and modflow buidling the Travis YML, moving towards having execution tests.
+* the ensemble smoother in pyemu has been marked with a DeprecationWarning and will be retired in the next release.
+
 A publication documenting pyEMU and an example application can be found here:
 
 [http://dx.doi.org/10.1016/j.envsoft.2016.08.017](http://dx.doi.org/10.1016/j.envsoft.2016.08.017)
@@ -57,7 +67,7 @@ Several example ipython notebooks are provided to demostrate typical workflows f
 Links
 =====
 
-[https://github.com/dwelter/pestpp](https://github.com/dwelter/pestpp)
+[https://github.com/jtwhite79/pestpp](https://github.com/jtwhite79/pestpp)
 
 [PEST - http://www.pesthomepage.org/](http://www.pesthomepage.org/)
 

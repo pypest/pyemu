@@ -155,18 +155,18 @@ def extend_test():
     assert third.x[:,6].sum() == 3
     assert third.x[6,:].sum() == 3
     try:
-        forth = pyemu.concat([first,third])
+        forth = pyemu.mat.concat([first,third])
     except:
         pass
     else:
         raise Exception()
 
     forth = pyemu.Matrix(x=first.x,row_names=first.row_names,col_names=[str(i) for i in range(first.shape[1])])
-    x = pyemu.concat([first,forth])
+    x = pyemu.mat.concat([first,forth])
     print(x)
 
     fifth = pyemu.Matrix(x=first.x, row_names=[str(i) for i in range(first.shape[0])], col_names=first.col_names)
-    x = pyemu.concat([first,fifth])
+    x = pyemu.mat.concat([first,fifth])
     print(x)
 
 
@@ -177,6 +177,18 @@ def pseudo_inv_test():
     print(jco.shape)
     jpi = jco.pseudo_inv(maxsing=1)
     jpi = jco.pseudo_inv(maxsing=19)
+
+    u1,s1,v1 = jco.pseudo_inv_components(2)
+    print(s1.shape)
+    assert s1.shape[0] == 2
+    u2, s2, v2 = jco.pseudo_inv_components(2,truncate=False)
+    assert s2.shape == jco.shape
+
+    d = u1 - u2[:,:2]
+    assert d.x.max() == 0.0
+
+
+
 
 def cov_identity_test():
     import os
@@ -269,6 +281,27 @@ def cov_replace_test():
     assert cov1.x[-1,-1] == 2.0
 
 
+def cov_scale_offset_test():
+    import os
+    import numpy as np
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+
+
+    par = pst.parameter_data
+    par.loc[:,"partrans"] = "none"
+    cov1 = pyemu.Cov.from_parameter_data(pst)
+    par.loc[:,"offset"] = 100
+    cov2 = pyemu.Cov.from_parameter_data(pst)
+
+    d = np.abs((cov1.x - cov2.x)).sum()
+    assert d == 0.0,d
+
+    pyemu.Cov.from_parameter_data(pst,scale_offset=False)
+    assert np.abs(cov1.x - cov2.x).sum() == 0.0
+
+
 def from_names_test():
     import os
     import pyemu
@@ -324,8 +357,8 @@ def indices_test():
     import numpy as np
     import pyemu
 
-    nrow = 10000
-    ncol = 10000
+    nrow = 1000
+    ncol = 1000
 
     rnames = ["row_{0}".format(i) for i in range(nrow)]
     cnames = ["col_{0}".format(i) for i in range(ncol)]
@@ -356,21 +389,309 @@ def indices_test():
     assert np.allclose(idx1,idx2)
 
 
+def coo_tests():
+    import os
+    from datetime import datetime
+    import numpy as np
+    import pyemu
+
+    nrow = 100
+    ncol = 1000
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    x = np.random.random((nrow,ncol))
+
+    m = pyemu.Matrix(x=x,row_names=rnames, col_names=cnames)
+    assert m.shape[0] == len(rnames)
+    assert m.shape[1] == len(cnames)
+
+    mname = os.path.join("temp","temp.jcb")
+
+    pyemu.mat.save_coo(m.to_sparse(), m.row_names, m.col_names, mname)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+    m.to_coo(mname)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x,mm.x)
+    os.remove(mname)
+
+    m.to_coo(mname,chunk=1)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+    m.to_coo(mname,chunk=100000)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x,mm.x)
+    os.remove(mname)
+
+    m.to_coo(mname,chunk=1000)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+
+
+    m.to_binary(mname)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+    m.to_binary(mname)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+    m.to_binary(mname)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+    m.to_binary(mname)
+    mm = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m.x, mm.x)
+    os.remove(mname)
+
+
+def sparse_constructor_test():
+    import os
+    from datetime import datetime
+    import numpy as np
+    import pyemu
+
+    nrow = 100
+    ncol = 100
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    x = np.random.random((nrow, ncol))
+
+    m = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+
+    mname = os.path.join("temp","test.jcb")
+    m.to_binary(mname)
+    sm = pyemu.SparseMatrix.from_binary(mname)
+
+    sm.to_coo(mname)
+    m1 = sm.to_matrix()
+    m = pyemu.Matrix.from_binary(mname)
+    assert np.array_equal(m1.x,m.x)
+
+def sparse_extend_test():
+    import os
+    from datetime import datetime
+    import numpy as np
+    import pyemu
+
+    nrow = 5
+    ncol = 5
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    x = np.random.random((nrow, ncol))
+
+    m = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+
+    try:
+        sm.block_extend_ip(m)
+    except:
+        pass
+    else:
+        raise Exception()
+
+    m = pyemu.Matrix(x,row_names=['t{0}'.format(i) for i in range(nrow)],col_names=m.col_names)
+    try:
+        sm.block_extend_ip(m)
+    except:
+        pass
+    else:
+        raise Exception()
+
+
+    m = pyemu.Matrix(x,row_names=['r{0}'.format(i) for i in range(nrow)],
+                     col_names=['r{0}'.format(i) for i in range(ncol)])
+    sm.block_extend_ip(m)
+    m1 = sm.to_matrix()
+    d = m.x - m1.x[m.shape[0]:,m.shape[1]:]
+    assert d.sum() == 0
+
+    m = pyemu.Cov(x=np.atleast_2d(np.ones(nrow)),names=['p{0}'.format(i) for i in range(nrow)],isdiagonal=True)
+    sm.block_extend_ip(m)
+    d = m.as_2d - sm.to_matrix().x[-nrow:,-nrow:]
+    assert d.sum() == 0
+
+    m1 = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
+
+    sm1 = pyemu.SparseMatrix.from_matrix(m1)
+    sm2 = pyemu.SparseMatrix.from_matrix(m)
+    sm1.block_extend_ip(sm2)
+
+    m2 = sm1.to_matrix()
+    d = m.as_2d - m2.x[m.shape[0]:,m.shape[1]:]
+    assert d.sum() == 0
+
+
+def sparse_get_test():
+    import os
+    from datetime import datetime
+    import numpy as np
+    import pyemu
+
+    nrow = 5
+    ncol = 5
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    x = np.random.random((nrow, ncol))
+
+    m = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_matrix(rnames[0],cnames)
+    d = m1.x - m.x[0,:]
+    assert d.sum() == 0
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_matrix(rnames[:2], cnames)
+    d = m1.x - m.x[:2, :]
+    assert d.sum() == 0
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_matrix(rnames, cnames[0])
+    d = m1.x - m.x[:, 0]
+    assert d.sum() == 0
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_matrix(rnames, cnames[:2])
+    d = m1.x - m.x[:, :2]
+    assert d.sum() == 0
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_matrix(rnames, cnames)
+    d = m1.x - m.x
+    assert d.sum() == 0
+
+
+def sparse_get_sparse_test():
+    import os
+    from datetime import datetime
+    import numpy as np
+    import pyemu
+
+    nrow = 5
+    ncol = 5
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    x = np.random.random((nrow, ncol))
+
+    m = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_matrix(rnames[0],cnames)
+    d = m1.x - m.x[0,:]
+    assert d.sum() == 0
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_sparse_matrix(rnames[:2], cnames).to_matrix()
+    d = m1.x - m.x[:2, :]
+    assert d.sum() == 0
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_sparse_matrix(rnames, cnames[0]).to_matrix()
+    d = m1.x - m.x[:, 0]
+    assert d.sum() == 0
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_sparse_matrix(rnames, cnames[:2]).to_matrix()
+    d = m1.x - m.x[:, :2]
+    assert d.sum() == 0
+
+    sm = pyemu.SparseMatrix.from_matrix(m)
+    m1 = sm.get_sparse_matrix(rnames, cnames).to_matrix()
+    d = m1.x - m.x
+    assert d.sum() == 0
+
+
+def df_tests():
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
+
+    nrow = 5
+    ncol = 5
+
+    rnames = ["row_{0}".format(i) for i in range(nrow)]
+    cnames = ["col_{0}".format(i) for i in range(ncol)]
+
+    x = np.random.random((nrow, ncol))
+
+    m = pyemu.Matrix(x=x, row_names=rnames, col_names=cnames)
+
+    df = pd.DataFrame(data=x,columns=cnames,index=rnames)
+
+    #sub
+    d = m - df
+    assert d.x.max() == 0.0
+
+    d = df - m.x #returns a df
+    #print(d.max())
+
+    # add
+    d = (m + df) - (df * 2)
+    assert d.x.max() == 0.0
+    d = (df * 2) - (m + df).x #returns a df
+
+    # mul
+    d = (m * df.T) - np.dot(m.x,df.T.values)
+    assert d.x.max() == 0.0
+
+    # hadamard
+    d = (m.hadamard_product(df)) - (m.x * df)
+    assert d.x.max() == 0.0
+
+
+
+
+
+
+
+
+
 if __name__ == "__main__":
-    #concat_test()
+    #df_tests()
+    # cov_scale_offset_test()
+    #coo_tests()
     # indices_test()
-    #mat_test()
+    # mat_test()
     # load_jco_test()
-    #extend_test()
-    # pseudo_inv_test()
+    # extend_test()
+    pseudo_inv_test()
     # drop_test()
     # get_test()
     # cov_identity_test()
-    hadamard_product_test()
+    # hadamard_product_test()
     # get_diag_test()
     # to_pearson_test()
     # sigma_range_test()
     # cov_replace_test()
     # from_names_test()
-    # from_uncfile_test()
+    #from_uncfile_test()
     # copy_test()
+    # sparse_constructor_test()
+    # sparse_extend_test()
+    # sparse_get_test()
+    # sparse_get_sparse_test()

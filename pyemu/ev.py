@@ -317,13 +317,18 @@ class ErrVar(LinearAnalysis):
                 results[key].append(val)
         return pd.DataFrame(results, index=singular_values)
 
-    def get_identifiability_dataframe(self,singular_value):
+
+    def get_identifiability_dataframe(self,singular_value=None,precondition=False):
         """get the parameter identifiability as a pandas dataframe
 
         Parameters
         ----------
         singular_value : int
-            the singular spectrum truncation point
+            the singular spectrum truncation point. Defaults to minimum of
+            non-zero-weighted observations and adjustable parameters
+        precondition : bool
+            flag to use the preconditioned hessian (xtqt + sigma_theta^-1).
+            Default is False
 
         Returns
         -------
@@ -332,8 +337,14 @@ class ErrVar(LinearAnalysis):
             identifiability in the column labeled "ident"
 
         """
+        if singular_value is None:
+            singular_value = int(min(self.pst.nnz_obs, self.pst.npar_adj))
         #v1_df = self.qhalfx.v[:, :singular_value].to_dataframe() ** 2
-        v1_df = self.xtqx.v[:, :singular_value].to_dataframe() ** 2
+        xtqx = self.xtqx
+        if precondition:
+            xtqx = xtqx + self.parcov.inv
+        #v1_df = self.xtqx.v[:, :singular_value].to_dataframe() ** 2
+        v1_df = xtqx.v[:, :singular_value].to_dataframe() ** 2
         v1_df["ident"] = v1_df.sum(axis=1)
         return v1_df
 

@@ -6,11 +6,62 @@ import struct
 import warnings
 from datetime import datetime
 import numpy as np
-import pandas
+import pandas as pd
 import scipy.linalg as la
 from scipy.io import FortranFile
+import scipy.sparse
 
 from pyemu.pst.pst_handler import Pst
+from ..pyemu_warnings import PyemuWarning
+
+def save_coo(x, row_names, col_names,  filename, chunk=None):
+    """write a PEST-compatible binary file.  The data format is
+    [int,int,float] for i,j,value.  It is autodetected during
+    the read with Matrix.from_binary().
+
+    Parameters
+    ----------
+    x : numpy.sparse
+        coo sparse matrix
+    row_names : list
+        list of row_names
+    col_names : list
+        list of col_names
+    filename : str
+        filename to save binary file
+    droptol : float
+        absolute value tolerance to make values smaller than zero.  Default is None
+    chunk : int
+        number of elements to write in a single pass.  Default is None
+
+    """
+
+    f = open(filename, 'wb')
+    # print("counting nnz")
+    # write the header
+    header = np.array((x.shape[1], x.shape[0], x.nnz),
+                      dtype=Matrix.binary_header_dt)
+    header.tofile(f)
+
+    data = np.core.records.fromarrays([x.row, x.col, x.data], dtype=Matrix.coo_rec_dt)
+    data.tofile(f)
+
+    for name in col_names:
+        if len(name) > Matrix.new_par_length:
+            name = name[:Matrix.new_par_length - 1]
+        elif len(name) < Matrix.new_par_length:
+            for i in range(len(name), Matrix.new_par_length):
+                name = name + ' '
+        f.write(name.encode())
+    for name in row_names:
+        if len(name) > Matrix.new_obs_length:
+            name = name[:Matrix.new_obs_length - 1]
+        elif len(name) < Matrix.new_obs_length:
+            for i in range(len(name), Matrix.new_obs_length):
+                name = name + ' '
+        f.write(name.encode())
+    f.close()
+
 
 def concat(mats):
     """Concatenate Matrix objects.  Tries either axis.
@@ -142,9 +193,13 @@ class Matrix(object):
                                 ('icount', integer)])
     binary_rec_dt = np.dtype([('j', integer),
                             ('dtemp', double)])
+    coo_rec_dt = np.dtype([('i', integer),('j', integer),
+                          ('dtemp', double)])
 
     par_length = 12
     obs_length = 20
+    new_par_length = 200
+    new_obs_length = 200
 
     def __init__(self, x=None, row_names=[], col_names=[], isdiagonal=False,
                  autoalign=True):
@@ -286,6 +341,8 @@ class Matrix(object):
                               isdiagonal=self.isdiagonal)
 
 
+
+
     def __sub__(self, other):
         """numpy.ndarray.__sub__() overload.  Tries to speedup by
          checking for scalars of diagonal matrices on either side of operator
@@ -306,6 +363,9 @@ class Matrix(object):
                           col_names=self.col_names,
                           isdiagonal=self.isdiagonal)
         else:
+            if isinstance(other,pd.DataFrame):
+                other = Matrix.from_dataframe(other)
+
             if isinstance(other, np.ndarray):
                 assert self.shape == other.shape, "Matrix.__sub__() shape" +\
                                                   "mismatch: " +\
@@ -384,6 +444,10 @@ class Matrix(object):
         if np.isscalar(other):
             return type(self)(x=self.x + other,row_names=self.row_names,
                               col_names=self.col_names,isdiagonal=self.isdiagonal)
+
+        if isinstance(other,pd.DataFrame):
+            other = Matrix.from_dataframe(other)
+
         if isinstance(other, np.ndarray):
             assert self.shape == other.shape, \
                 "Matrix.__add__(): shape mismatch: " +\
@@ -394,6 +458,7 @@ class Matrix(object):
             else:
                 return type(self)(x=self.x + other, row_names=self.row_names,
                                   col_names=self.col_names)
+
         elif isinstance(other, Matrix):
             if self.autoalign and other.autoalign \
                     and not self.element_isaligned(other):
@@ -456,6 +521,10 @@ class Matrix(object):
         """
         if np.isscalar(other):
             return type(self)(x=self.x * other)
+
+        if isinstance(other,pd.DataFrame):
+            other = Matrix.from_dataframe(other)
+
         if isinstance(other, np.ndarray):
             assert self.shape == other.shape, \
                 "Matrix.hadamard_product(): shape mismatch: " + \
@@ -525,11 +594,16 @@ class Matrix(object):
         Returns:
             Matrix : Matrix
         """
+
+        if isinstance(other, pd.DataFrame):
+            other = Matrix.from_dataframe(other)
+
         if np.isscalar(other):
             return type(self)(x=self.x.copy() * other,
                               row_names=self.row_names,
                               col_names=self.col_names,
                               isdiagonal=self.isdiagonal)
+
         elif isinstance(other, np.ndarray):
             assert self.shape[1] == other.shape[0], \
                 "Matrix.__mul__(): matrices are not aligned: " +\
@@ -538,7 +612,7 @@ class Matrix(object):
                 return type(self)(x=np.dot(np.diag(self.__x.flatten()).transpose(),
                                            other))
             else:
-                return type(self)(x=np.dot(self.__x, other))
+                return type(self)(x=np.atleast_2d(np.dot(self.__x, other)))
         elif isinstance(other, Matrix):
             if self.autoalign and other.autoalign\
                and not self.mult_isaligned(other):
@@ -607,9 +681,13 @@ class Matrix(object):
 
         """
 
+        # if isinstance(other,pd.DataFrame):
+        #     other = Matrix.from_dataframe(other)
+
         if np.isscalar(other):
             return type(self)(x=self.x.copy() * other,row_names=self.row_names,\
                               col_names=self.col_names,isdiagonal=self.isdiagonal)
+
         elif isinstance(other, np.ndarray):
             assert self.shape[0] == other.shape[1], \
                 "Matrix.__rmul__(): matrices are not aligned: " +\
@@ -918,8 +996,8 @@ class Matrix(object):
         #return max(1,np.argmin(sthresh))
         return max(1,ising)
 
-    def pseudo_inv_components(self,maxsing=None,eigthresh=1.0e-5):
-        """ Get the truncated SVD components
+    def pseudo_inv_components(self,maxsing=None,eigthresh=1.0e-5,truncate=True):
+        """ Get the (optionally) truncated SVD components
 
         Parameters
         ----------
@@ -929,24 +1007,41 @@ class Matrix(object):
         eigthresh : float
             the ratio of largest to smallest singular components to use
             for truncation.  Ignored if maxsing is not None
+        truncate : bool
+            flag to truncate components. If False, U, s, and V will be zeroed out instead of truncated.
+            Default is True
 
         Returns
         -------
         u : Matrix
-            truncated left singular vectors
+            (optionally) truncated left singular vectors
         s : Matrix
-            truncated singular value matrix
+            (optionally) truncated singular value matrix
         v : Matrix
-            truncated right singular vectors
+            (optionally) truncated right singular vectors
 
         """
 
         if maxsing is None:
             maxsing = self.get_maxsing(eigthresh=eigthresh)
+        else:
+             maxsing = min(self.get_maxsing(eigthresh=eigthresh),maxsing)
 
-        s = self.s[:maxsing,:maxsing]
-        v = self.v[:,:maxsing]
-        u = self.u[:,:maxsing]
+        s = self.full_s.copy()
+        v = self.v.copy()
+        u = self.u.copy()
+        if truncate:
+
+            s = s[:maxsing,:maxsing]
+            v = v[:,:maxsing]
+            u = u[:,:maxsing]
+        else:
+            new_s = self.full_s.copy()
+            s = new_s
+            s.x[maxsing:, maxsing:] = 0.0
+            v.x[:, maxsing:] = 0.0
+            u.x[:, maxsing:] = 0.0
+
         return u,s,v
 
     def pseudo_inv(self,maxsing=None,eigthresh=1.0e-5):
@@ -1073,6 +1168,41 @@ class Matrix(object):
                    isdiagonal=False)
 
 
+    @staticmethod
+    def find_rowcol_indices(names,row_names,col_names,axis=None):
+        self_row_idxs = {row_names[i]: i for i in range(len(row_names))}
+        self_col_idxs = {col_names[i]: i for i in range(len(col_names))}
+
+        scol = set(col_names)
+        srow = set(row_names)
+        row_idxs = []
+        col_idxs = []
+        for name in names:
+            name = name.lower()
+            if name not in scol \
+                    and name not in srow:
+                raise Exception('Matrix.indices(): name not found: ' + name)
+            if name in scol:
+                col_idxs.append(self_col_idxs[name])
+            if name.lower() in srow:
+                row_idxs.append(self_row_idxs[name])
+        if axis is None:
+            return np.array(row_idxs, dtype=np.int32), \
+                   np.array(col_idxs, dtype=np.int32)
+        elif axis == 0:
+            if len(row_idxs) != len(names):
+                raise Exception("Matrix.indices(): " +
+                                "not all names found in row_names")
+            return np.array(row_idxs, dtype=np.int32)
+        elif axis == 1:
+            if len(col_idxs) != len(names):
+                raise Exception("Matrix.indices(): " +
+                                "not all names found in col_names")
+            return np.array(col_idxs, dtype=np.int32)
+        else:
+            raise Exception("Matrix.indices(): " +
+                            "axis argument must 0 or 1, not:" + str(axis))
+
     def indices(self, names, axis=None):
         """get the row and col indices of names. If axis is None, two ndarrays
                 are returned, corresponding the indices of names for each axis
@@ -1090,38 +1220,7 @@ class Matrix(object):
             indices of names.
 
         """
-        self_row_idxs = {self.row_names[i]:i for i in range(self.shape[0])}
-        self_col_idxs = {self.col_names[i]:i for i in range(self.shape[1])}
-
-        scol = set(self.col_names)
-        srow = set(self.row_names)
-        row_idxs = []
-        col_idxs = []
-        for name in names:
-            name = name.lower()
-            if name not in scol \
-                    and name not in srow:
-                raise Exception('Matrix.indices(): name not found: ' + name)
-            if name in scol:
-                col_idxs.append(self_col_idxs[name])
-            if name.lower() in srow:
-                row_idxs.append(self_row_idxs[name])
-        if axis is None:
-            return np.array(row_idxs, dtype=np.int32),\
-                np.array(col_idxs, dtype=np.int32)
-        elif axis == 0:
-            if len(row_idxs) != len(names):
-                raise Exception("Matrix.indices(): " +
-                                "not all names found in row_names")
-            return np.array(row_idxs, dtype=np.int32)
-        elif axis == 1:
-            if len(col_idxs) != len(names):
-                raise Exception("Matrix.indices(): " +
-                                "not all names found in col_names")
-            return np.array(col_idxs, dtype=np.int32)
-        else:
-            raise Exception("Matrix.indices(): " +
-                            "axis argument must 0 or 1, not:" + str(axis))
+        return Matrix.find_rowcol_indices(names,self.row_names,self.col_names,axis=axis)
 
 
 
@@ -1143,7 +1242,7 @@ class Matrix(object):
             indices of names.
 
         """
-        warnings.warn("Matrix.old_indices() is deprecated - only here for testing. Use Matrix.indices()")
+        warnings.warn("Matrix.old_indices() is deprecated - only here for testing. Use Matrix.indices()",PyemuWarning)
         row_idxs, col_idxs = [], []
         for name in names:
             if name.lower() not in self.col_names \
@@ -1408,7 +1507,83 @@ class Matrix(object):
                           row_names=self.row_names,
                           col_names=[col_name],isdiagonal=False)
 
-    def to_binary(self, filename,droptol=None):
+
+    def to_coo(self,filename,droptol=None,chunk=None):
+        """write a new format binary file.  The data format is
+        [int,int,float] for i,j,value.  It is autodetected during
+        the read with Matrix.from_binary().
+
+        Parameters
+        ----------
+        filename : str
+            filename to save binary file
+        droptol : float
+            absolute value tolerance to make values smaller than zero.  Default is None
+        chunk : int
+            number of elements to write in a single pass.  Default is None
+
+        """
+        if self.isdiagonal:
+            #raise NotImplementedError()
+            self.__x = self.as_2d
+            self.isdiagonal = False
+        if droptol is not None:
+            self.x[np.abs(self.x) < droptol] = 0.0
+        f = open(filename, 'wb')
+        #print("counting nnz")
+        nnz = np.count_nonzero(self.x) #number of non-zero entries
+        # write the header
+        header = np.array((self.shape[1], self.shape[0], nnz),
+                          dtype=self.binary_header_dt)
+        header.tofile(f)
+        # get the indices of non-zero entries
+        #print("getting nnz idxs")
+        row_idxs, col_idxs = np.nonzero(self.x)
+
+        if chunk is None:
+            flat = self.x[row_idxs, col_idxs].flatten()
+            data = np.core.records.fromarrays([row_idxs,col_idxs,flat],dtype=self.coo_rec_dt)
+            data.tofile(f)
+        else:
+
+            start,end = 0,min(chunk,row_idxs.shape[0])
+            while True:
+                #print(row_idxs[start],row_idxs[end])
+                #print("chunk",start,end)
+                flat = self.x[row_idxs[start:end],col_idxs[start:end]].flatten()
+                data = np.core.records.fromarrays([row_idxs[start:end],col_idxs[start:end],
+                                                   flat],
+                                                  dtype=self.coo_rec_dt)
+                data.tofile(f)
+                if end == row_idxs.shape[0]:
+                    break
+                start = end
+                end = min(row_idxs.shape[0],start + chunk)
+
+
+        for name in self.col_names:
+            if len(name) > self.new_par_length:
+                warnings.warn("par name '{0}' greater than {1} chars"\
+                              .format(name,self.new_par_length))
+                name = name[:self.new_par_length - 1]
+            elif len(name) < self.new_par_length:
+                for i in range(len(name), self.new_par_length):
+                    name = name + ' '
+            f.write(name.encode())
+        for name in self.row_names:
+            if len(name) > self.new_obs_length:
+                warnings.warn("obs name '{0}' greater than {1} chars"\
+                              .format(name, self.new_obs_length))
+                name = name[:self.new_obs_length - 1]
+            elif len(name) < self.new_obs_length:
+                for i in range(len(name), self.new_obs_length):
+                    name = name + ' '
+            f.write(name.encode())
+        f.close()
+
+
+
+    def to_binary(self, filename,droptol=None, chunk=None):
         """write a PEST-compatible binary file.  The format is the same
         as the format used to storage a PEST Jacobian matrix
 
@@ -1418,8 +1593,12 @@ class Matrix(object):
             filename to save binary file
         droptol : float
             absolute value tolerance to make values smaller than zero.  Default is None
+        chunk : int
+            number of elements to write in a single pass.  Default is None
 
         """
+        if np.any(np.isnan(self.x)):
+            raise Exception("Matrix.to_binary(): nans found")
         if self.isdiagonal:
             #raise NotImplementedError()
             self.__x = self.as_2d
@@ -1436,15 +1615,34 @@ class Matrix(object):
         row_idxs, col_idxs = np.nonzero(self.x)
         icount = row_idxs + 1 + col_idxs * self.shape[0]
         # flatten the array
-        flat = self.x[row_idxs, col_idxs].flatten()
+        #flat = self.x[row_idxs, col_idxs].flatten()
         # zip up the index position and value pairs
         #data = np.array(list(zip(icount, flat)), dtype=self.binary_rec_dt)
-        data = np.core.records.fromarrays([icount,flat],dtype=self.binary_rec_dt)
-        # write
-        data.tofile(f)
+
+
+        if chunk is None:
+            flat = self.x[row_idxs, col_idxs].flatten()
+            data = np.core.records.fromarrays([icount, flat], dtype=self.binary_rec_dt)
+            # write
+            data.tofile(f)
+        else:
+            start,end = 0,min(chunk,row_idxs.shape[0])
+            while True:
+                #print(row_idxs[start],row_idxs[end])
+                flat = self.x[row_idxs[start:end], col_idxs[start:end]].flatten()
+                data = np.core.records.fromarrays([icount[start:end],
+                                                   flat],
+                                                  dtype=self.binary_rec_dt)
+                data.tofile(f)
+                if end == row_idxs.shape[0]:
+                    break
+                start = end
+                end = min(row_idxs.shape[0],start + chunk)
+
 
         for name in self.col_names:
             if len(name) > self.par_length:
+                warnings.warn("par name '{0}' greater than {1} chars".format(name, self.par_length))
                 name = name[:self.par_length - 1]
             elif len(name) < self.par_length:
                 for i in range(len(name), self.par_length):
@@ -1452,15 +1650,18 @@ class Matrix(object):
             f.write(name.encode())
         for name in self.row_names:
             if len(name) > self.obs_length:
+                warnings.warn("obs name '{0}' greater than {1} chars".format(name, self.obs_length))
                 name = name[:self.obs_length - 1]
             elif len(name) < self.obs_length:
                 for i in range(len(name), self.obs_length):
                     name = name + ' '
             f.write(name.encode())
+
         f.close()
 
+
     @classmethod
-    def from_binary(cls, filename):
+    def from_binary(cls,filename):
         """class method load from PEST-compatible binary file into a
         Matrix instance
 
@@ -1474,6 +1675,14 @@ class Matrix(object):
         Matrix : Matrix
 
         """
+        x,row_names,col_names = Matrix.read_binary(filename)
+        if np.any(np.isnan(x)):
+            warnings.warn("Matrix.from_binary(): nans in matrix",PyemuWarning)
+        return cls(x=x, row_names=row_names, col_names=col_names)
+
+    @staticmethod
+    def read_binary(filename, sparse=False):
+
 
         f = open(filename, 'rb')
         # the header datatype
@@ -1485,42 +1694,70 @@ class Matrix(object):
                   " Matrix.from_fortranfile()")
             f.close()
             return Matrix.from_fortranfile(filename)
-
-        if itemp1 >= 0:
-           raise TypeError('Matrix.from_binary(): Jco produced by ' +
-                           'deprecated version of PEST,' +
-                           'Use JcoTRANS to convert to new format')
-        #icount = np.fromfile(f,np.int32,1)
-        #print(itemp1,itemp2,icount)
         ncol, nrow = abs(itemp1), abs(itemp2)
-        x = np.zeros((nrow, ncol))
-        # read all data records
-        # using this a memory hog, but really fast
-        data = np.fromfile(f, Matrix.binary_rec_dt, icount)
-        icols = ((data['j'] - 1) // nrow) + 1
-        irows = data['j'] - ((icols - 1) * nrow)
-        x[irows - 1, icols - 1] = data["dtemp"]
-        # read obs and parameter names
-        col_names = []
-        row_names = []
-        for j in range(ncol):
-            name = struct.unpack(str(Matrix.par_length) + "s",
-                                 f.read(Matrix.par_length))[0]\
-                                  .strip().lower().decode()
-            col_names.append(name)
-        for i in range(nrow):
-            name = struct.unpack(str(Matrix.obs_length) + "s",
-                                 f.read(Matrix.obs_length))[0]\
-                                  .strip().lower().decode()
-            row_names.append(name)
-        f.close()
-        assert len(row_names) == x.shape[0],\
-          "Matrix.from_binary() len(row_names) (" + str(len(row_names)) +\
-          ") != x.shape[0] (" + str(x.shape[0]) + ")"
-        assert len(col_names) == x.shape[1],\
-          "Matrix.from_binary() len(col_names) (" + str(len(col_names)) +\
-          ") != self.shape[1] (" + str(x.shape[1]) + ")"
-        return cls(x=x,row_names=row_names,col_names=col_names)
+        if itemp1 >= 0:
+            # raise TypeError('Matrix.from_binary(): Jco produced by ' +
+            #                 'deprecated version of PEST,' +
+            #                 'Use JcoTRANS to convert to new format')
+            print("new binary format detected...")
+
+            data = np.fromfile(f, Matrix.coo_rec_dt, icount)
+            if sparse:
+                data = scipy.sparse.coo_matrix((data["dtemp"],(data["i"],data['j'])),shape=(nrow,ncol))
+            else:
+                x = np.zeros((nrow, ncol))
+                x[data['i'], data['j']] = data["dtemp"]
+                data = x
+            # read obs and parameter names
+            col_names = []
+            row_names = []
+            for j in range(ncol):
+                name = struct.unpack(str(Matrix.new_par_length) + "s",
+                                     f.read(Matrix.new_par_length))[0] \
+                    .strip().lower().decode()
+                col_names.append(name)
+            for i in range(nrow):
+                name = struct.unpack(str(Matrix.new_obs_length) + "s",
+                                     f.read(Matrix.new_obs_length))[0] \
+                    .strip().lower().decode()
+                row_names.append(name)
+            f.close()
+        else:
+
+            # read all data records
+            # using this a memory hog, but really fast
+            data = np.fromfile(f, Matrix.binary_rec_dt, icount)
+            icols = ((data['j'] - 1) // nrow) + 1
+            irows = data['j'] - ((icols - 1) * nrow)
+            if sparse:
+                data = scipy.sparse.coo_matrix((data["dtemp"],(irows-1,icols-1)),shape=(nrow,ncol))
+            else:
+                x = np.zeros((nrow, ncol))
+                x[irows - 1, icols - 1] = data["dtemp"]
+                data = x
+            # read obs and parameter names
+            col_names = []
+            row_names = []
+            for j in range(ncol):
+                name = struct.unpack(str(Matrix.par_length) + "s",
+                                     f.read(Matrix.par_length))[0]\
+                                      .strip().lower().decode()
+                col_names.append(name)
+            for i in range(nrow):
+
+                name = struct.unpack(str(Matrix.obs_length) + "s",
+                                     f.read(Matrix.obs_length))[0]\
+                                      .strip().lower().decode()
+                row_names.append(name)
+            f.close()
+        assert len(row_names) == data.shape[0],\
+          "Matrix.read_binary() len(row_names) (" + str(len(row_names)) +\
+          ") != x.shape[0] (" + str(data.shape[0]) + ")"
+        assert len(col_names) == data.shape[1],\
+          "Matrix.read_binary() len(col_names) (" + str(len(col_names)) +\
+          ") != self.shape[1] (" + str(data.shape[1]) + ")"
+        return data,row_names,col_names
+
 
     @classmethod
     def from_fortranfile(cls, filename):
@@ -1610,8 +1847,9 @@ class Matrix(object):
                 f_out.write(c + '\n')
             f_out.close()
 
+
     @classmethod
-    def from_ascii(cls, filename):
+    def from_ascii(cls,filename):
         """load a pest-compatible ASCII Matrix/vector file into a
         Matrix instance
 
@@ -1621,6 +1859,13 @@ class Matrix(object):
             name of the file to read
 
         """
+        x,row_names,col_names,isdiag = Matrix.read_ascii(filename)
+        return cls(x=x,row_names=row_names,col_names=col_names,isdiagonal=isdiag)
+
+
+    @staticmethod
+    def read_ascii(filename):
+
         f = open(filename, 'r')
         raw = f.readline().strip().split()
         nrow, ncol, icode = int(raw[0]), int(raw[1]), int(raw[2])
@@ -1694,8 +1939,7 @@ class Matrix(object):
             if diag_delta < diag_tol:
                 isdiagonal = True
                 x = np.atleast_2d(np.diag(x)).transpose()
-        return cls(x=x,row_names=row_names,col_names=col_names,
-                   isdiagonal=isdiagonal)
+        return x,row_names,col_names,isdiagonal
 
     def df(self):
         """wrapper of Matrix.to_dataframe()
@@ -1716,10 +1960,10 @@ class Matrix(object):
         Matrix : Matrix
 
         """
-        assert isinstance(df, pandas.DataFrame)
+        assert isinstance(df, pd.DataFrame)
         row_names = copy.deepcopy(list(df.index))
         col_names = copy.deepcopy(list(df.columns))
-        return cls(x=df.as_matrix(),row_names=row_names,col_names=col_names)
+        return cls(x=df.values,row_names=row_names,col_names=col_names)
 
 
     @classmethod
@@ -1769,11 +2013,11 @@ class Matrix(object):
             x = np.diag(self.__x[:, 0])
         else:
             x = self.__x
-        return pandas.DataFrame(data=x,index=self.row_names,columns=self.col_names)
+        return pd.DataFrame(data=x,index=self.row_names,columns=self.col_names)
 
 
     def to_sparse(self, trunc=0.0):
-        """get the CSR sparse Matrix representation of the Matrix
+        """get the COO sparse Matrix representation of the Matrix
 
         Returns
         -------
@@ -1795,7 +2039,7 @@ class Matrix(object):
                     jidx.append(j)
                     data.append(val)
         # csr_Matrix( (data,(row,col)), shape=(3,3)
-        return sparse.csr_matrix((data, (iidx, jidx)), shape=(self.shape))
+        return sparse.coo_matrix((data, (iidx, jidx)), shape=(self.shape))
 
 
     def extend(self,other,inplace=False):
@@ -2155,9 +2399,9 @@ class Cov(Matrix):
             self._Matrix__x = self.as_2d
             self.isdiagonal = False
 
-        print("allocating other_x")
+        #print("allocating other_x")
         other_x = other.as_2d
-        print("replacing")
+        #print("replacing")
         for i,ii in zip(self_idxs,other_idxs):
             self._Matrix__x[i,self_idxs] = other_x[ii,other_idxs].copy()
         #print("resetting")
@@ -2247,7 +2491,7 @@ class Cov(Matrix):
         return cls(x=x,names=onames,isdiagonal=True)
 
     @classmethod
-    def from_parbounds(cls, pst_file, sigma_range = 4.0):
+    def from_parbounds(cls, pst_file, sigma_range = 4.0,scale_offset=True):
         """Instantiates a  Cov from a pest control file parameter data section.
         Calls Cov.from_parameter_data()
 
@@ -2260,6 +2504,9 @@ class Cov(Matrix):
             deviation (sigma). For example, if sigma_range = 4, the bounds
             represent 4 * sigma.  Default is 4.0, representing approximately
             95% confidence of implied normal distribution
+        scale_offset : bool
+            flag to apply scale and offset to parameter upper and lower
+            bounds before calculating varaince.  Default is True
 
         Returns
         -------
@@ -2269,10 +2516,10 @@ class Cov(Matrix):
         if not pst_file.endswith(".pst"):
             pst_file += ".pst"
         new_pst = Pst(pst_file)
-        return Cov.from_parameter_data(new_pst, sigma_range)
+        return Cov.from_parameter_data(new_pst, sigma_range, scale_offset)
 
     @classmethod
-    def from_parameter_data(cls, pst, sigma_range = 4.0):
+    def from_parameter_data(cls, pst, sigma_range = 4.0, scale_offset=True):
         """load Covariances from a pandas dataframe of
         pyemu.Pst.parameter_data
 
@@ -2284,6 +2531,9 @@ class Cov(Matrix):
             deviation (sigma). For example, if sigma_range = 4, the bounds
             represent 4 * sigma.  Default is 4.0, representing approximately
             95% confidence of implied normal distribution
+        scale_offset : bool
+            flag to apply scale and offset to parameter upper and lower
+            bounds before calculating varaince.  Default is True
 
         Returns
         -------
@@ -2298,8 +2548,12 @@ class Cov(Matrix):
             t = row["partrans"]
             if t in ["fixed", "tied"]:
                 continue
-            lb = row.parlbnd * row.scale + row.offset
-            ub = row.parubnd * row.scale + row.offset
+            if scale_offset:
+                lb = row.parlbnd * row.scale + row.offset
+                ub = row.parubnd * row.scale + row.offset
+            else:
+                lb = row.parlbnd
+                ub = row.parubnd
 
             if t == "log":
                 var = ((np.log10(np.abs(ub)) - np.log10(np.abs(lb))) / sigma_range) ** 2
@@ -2310,9 +2564,11 @@ class Cov(Matrix):
                                 "variance for parameter {0} is nan".\
                                 format(row["parnme"]))
             if (var == 0.0):
-                raise Exception("Cov.from_parameter_data() error: " +\
-                                "variance for parameter {0} is 0.0".\
-                                format(row["parnme"]))
+                s = "Cov.from_parameter_data() error: " +\
+                                "variance for parameter {0} is 0.0.".format(row["parnme"])
+                s += "  This might be from enforcement of scale/offset and log transform."
+                s += "  Try changing 'scale_offset' arg"
+                raise Exception(s)
             x[idx] = var
             names.append(row["parnme"].lower())
             idx += 1
@@ -2376,7 +2632,8 @@ class Cov(Matrix):
                         if line2.strip().lower().startswith("end"):
                             break
                         if line2.startswith('file'):
-                            cov = Matrix.from_ascii(line2.split()[1])
+                            filename = line2.split()[1].replace("'",'').replace('"','')
+                            cov = Matrix.from_ascii(filename)
 
                         elif line2.startswith('variance_multiplier'):
                             var = float(line2.split()[1])
@@ -2441,7 +2698,8 @@ class Cov(Matrix):
                         if line2.strip().lower().startswith("end"):
                             break
                         if line2.startswith('file'):
-                            cov = Matrix.from_ascii(line2.split()[1])
+                            filename = line2.split()[1].replace("'", '').replace('"', '')
+                            cov = Matrix.from_ascii(filename)
                             nentries += len(cov.row_names)
                         elif line2.startswith('variance_multiplier'):
                             var = float(line2.split()[1])
@@ -2506,3 +2764,158 @@ class Cov(Matrix):
              pearson[i+1:,i] = pearson[i,i+1:]
         return Matrix(x=pearson,row_names=self.row_names,
                       col_names=self.col_names)
+
+
+
+class SparseMatrix(object):
+    """Note: less rigid about references since this class is for big matrices and
+    don't want to be making copies"""
+    def __init__(self,x,row_names,col_names):
+        assert isinstance(x,scipy.sparse.coo_matrix)
+        assert x.shape[0] == len(row_names)
+        assert x.shape[1] == len(col_names)
+        self.x = x
+        self.row_names = list(row_names)
+        self.col_names = list(col_names)
+
+
+    @property
+    def shape(self):
+        return self.x.shape
+
+    @classmethod
+    def from_binary(cls,filename):
+        x,row_names,col_names = Matrix.read_binary(filename,sparse=True)
+        return cls(x=x,row_names=row_names,col_names=col_names)
+
+
+
+    def to_coo(self,filename):
+        save_coo(self.x,row_names=self.row_names,col_names=self.col_names,filename=filename)
+
+
+
+    @classmethod
+    def from_coo(cls,filename):
+        return SparseMatrix.from_binary(filename)
+
+    # @classmethod
+    # def from_csv(cls,filename):
+    #     pass
+    #
+    #
+    # def to_csv(self,filename):
+    #     pass
+
+
+    def to_matrix(self):
+        x = np.zeros(self.shape)
+        for i,j,d in zip(self.x.row,self.x.col,self.x.data):
+            x[i,j] = d
+        return Matrix(x=x,row_names=self.row_names,col_names=self.col_names)
+
+
+    @classmethod
+    def from_matrix(cls, matrix, droptol=None):
+        iidx,jidx = matrix.as_2d.nonzero()
+        coo = scipy.sparse.coo_matrix((matrix.as_2d[iidx,jidx],(iidx,jidx)),shape=matrix.shape)
+        return cls(x=coo,row_names=matrix.row_names,col_names=matrix.col_names)
+
+
+    def block_extend_ip(self,other):
+        """designed for combining dense martrices into a sparse block diagonal matrix.
+        other must not have any rows or columns in common with self """
+        ss = set(self.row_names)
+        os = set(other.row_names)
+        inter = ss.intersection(os)
+        if len(inter) > 0:
+            raise Exception("SparseMatrix.block_extend_ip(): error shares the following rows:{0}".
+                            format(','.join(inter)))
+        ss = set(self.col_names)
+        os = set(other.col_names)
+        inter = ss.intersection(os)
+        if len(inter) > 0:
+            raise Exception("SparseMatrix.block_extend_ip(): error shares the following cols:{0}".
+                            format(','.join(inter)))
+
+        if isinstance(other,Matrix):
+            iidx,jidx = other.as_2d.nonzero()
+            # this looks terrible but trying to do this as close to "in place" as possible
+            self.x = scipy.sparse.coo_matrix((np.append(self.x.data,other.as_2d[iidx,jidx]),
+                                              (np.append(self.x.row,(iidx+self.shape[0])),
+                                               np.append(self.x.col,(jidx+self.shape[1])))),
+                                             shape=(self.shape[0]+other.shape[0],self.shape[1]+other.shape[1]))
+            self.row_names.extend(other.row_names)
+            self.col_names.extend(other.col_names)
+
+        elif isinstance(other,SparseMatrix):
+            self.x = scipy.sparse.coo_matrix((np.append(self.x.data, other.x.data),
+                                              (np.append(self.x.row, (self.shape[0] + other.x.row)),
+                                               np.append(self.x.col, (self.shape[1] + other.x.col)))),
+                                             shape=(self.shape[0] + other.shape[0], self.shape[1] + other.shape[1]))
+            self.row_names.extend(other.row_names)
+            self.col_names.extend(other.col_names)
+
+
+        else:
+            raise NotImplementedError("SparseMatrix.block_extend_ip() 'other' arg only supports Matrix types ")
+
+
+    def get_matrix(self,row_names,col_names):
+        if not isinstance(row_names,list):
+            row_names = [row_names]
+        if not isinstance(col_names,list):
+            col_names = [col_names]
+
+        iidx = Matrix.find_rowcol_indices(row_names,self.row_names,self.col_names,axis=0)
+        jidx = Matrix.find_rowcol_indices(col_names,self.row_names,self.col_names,axis=1)
+
+        imap = {ii:i for i,ii in enumerate(iidx)}
+        jmap = {jj:j for j,jj in enumerate(jidx)}
+
+        iset = set(iidx)
+        jset = set(jidx)
+
+        x = np.zeros((len(row_names),len(col_names)))
+        # for i,idx in enumerate(iidx):
+        #     for j,jdx in enumerate(jidx):
+        #         if jdx in jset and idx in iset:
+        #             x[i,j] = self.x[idx,jdx]
+
+        for i,j,d in zip(self.x.row,self.x.col,self.x.data):
+            if i in iset and j in jset:
+                x[imap[i],jmap[j]] = d
+        return Matrix(x=x,row_names=row_names,col_names=col_names)
+
+    def get_sparse_matrix(self,row_names,col_names):
+        if not isinstance(row_names,list):
+            row_names = [row_names]
+        if not isinstance(col_names,list):
+            col_names = [col_names]
+
+        iidx = Matrix.find_rowcol_indices(row_names,self.row_names,self.col_names,axis=0)
+        jidx = Matrix.find_rowcol_indices(col_names,self.row_names,self.col_names,axis=1)
+
+        imap = {ii:i for i,ii in enumerate(iidx)}
+        jmap = {jj:j for j,jj in enumerate(jidx)}
+
+        iset = set(iidx)
+        jset = set(jidx)
+
+        x = np.zeros((len(row_names),len(col_names)))
+        # for i,idx in enumerate(iidx):
+        #     for j,jdx in enumerate(jidx):
+        #         if jdx in jset and idx in iset:
+        #             x[i,j] = self.x[idx,jdx]
+        ii,jj,data = [],[],[]
+        for i,j,d in zip(self.x.row,self.x.col,self.x.data):
+            if i in iset and j in jset:
+                ii.append(i)
+                jj.append(j)
+                data.append(d)
+        coo = scipy.sparse.coo_matrix((data,(ii,jj)),shape=(len(row_names),len(col_names)))
+        return SparseMatrix(x=coo,row_names=row_names,col_names=col_names)
+
+
+
+

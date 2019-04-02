@@ -10,9 +10,11 @@ from datetime import datetime
 import multiprocessing as mp
 import warnings
 import numpy as np
+import scipy.sparse
 import pandas as pd
-from pyemu.mat.mat_handler import Cov
+from pyemu.mat.mat_handler import Cov,SparseMatrix
 from pyemu.utils.pp_utils import pp_file_to_dataframe
+from ..pyemu_warnings import PyemuWarning
 
 EPSILON = 1.0e-7
 
@@ -105,6 +107,51 @@ class GeoStruct(object):
         f.write("END STRUCTURE\n\n")
         for v in self.variograms:
             v.to_struct_file(f)
+
+    def sparse_covariance_matrix(self,x,y,names):
+        """build a pyemu.Cov instance from GeoStruct
+
+                Parameters
+                ----------
+                x : (iterable of floats)
+                    x-coordinate locations
+                y : (iterable of floats)
+                    y-coordinate locations
+                names : (iterable of str)
+                   (parameter) names of locations.
+
+                Returns
+                -------
+                sparse : pyemu.SparseMatrix
+                    the sparse covariance matrix implied by this GeoStruct for the x,y pairs.
+
+                Example
+                -------
+                ``>>>pp_df = pyemu.pp_utils.pp_file_to_dataframe("hkpp.dat")``
+
+                ``>>>cov = gs.covariance_matrix(pp_df.x,pp_df.y,pp_df.name)``
+
+
+                """
+
+        if not isinstance(x, np.ndarray):
+            x = np.array(x)
+        if not isinstance(y, np.ndarray):
+            y = np.array(y)
+        assert x.shape[0] == y.shape[0]
+        assert x.shape[0] == len(names)
+
+        iidx = [i for i in range(len(names))]
+        jidx = list(iidx)
+        data = list(np.zeros(x.shape[0])+self.nugget)
+
+        for v in self.variograms:
+            v.add_sparse_covariance_matrix(x,y,names,iidx,jidx,data)
+        coo = scipy.sparse.coo_matrix((data,(iidx,jidx)),shape=(len(names),len(names)))
+        coo.eliminate_zeros()
+        coo.sum_duplicates()
+        return SparseMatrix(coo,row_names=names,col_names=names)
+
 
     def covariance_matrix(self,x,y,names=None,cov=None):
         """build a pyemu.Cov instance from GeoStruct
@@ -259,7 +306,11 @@ class GeoStruct(object):
         if "ax" in kwargs:
             ax = kwargs.pop("ax")
         else:
-            import matplotlib.pyplot as plt
+            try:
+                import matplotlib.pyplot as plt
+            except Exception as e:
+                raise Exception("error importing matplotlib: {0}".format(str(e)))
+
             ax = plt.subplot(111)
         legend = kwargs.pop("legend",False)
         individuals = kwargs.pop("individuals",False)
@@ -523,8 +574,22 @@ class OrdinaryKrige(object):
         assert 'name' in point_data.columns,"point_data missing 'name'"
         assert 'x' in point_data.columns, "point_data missing 'x'"
         assert 'y' in point_data.columns, "point_data missing 'y'"
-        self.point_data = point_data
+        #check for duplicates in point data
+        unique_name = point_data.name.unique()
+        if len(unique_name) != point_data.shape[0]:
+            warnings.warn("duplicates detected in point_data..attempting to rectify",PyemuWarning)
+            ux_std = point_data.groupby(point_data.name).std()['x']
+            if ux_std.max() > 0.0:
+                raise Exception("duplicate point_info entries with name {0} have different x values"
+                                .format(uname))
+            uy_std = point_data.groupby(point_data.name).std()['y']
+            if uy_std.max() > 0.0:
+                raise Exception("duplicate point_info entries with name {0} have different y values"
+                                .format(uname))
 
+            self.point_data = point_data.drop_duplicates(subset=["name"])
+        else:
+            self.point_data = point_data.copy()
         self.point_data.index = self.point_data.name
         self.check_point_data_dist()
         self.interp_data = None
@@ -532,9 +597,9 @@ class OrdinaryKrige(object):
         #X, Y = np.meshgrid(point_data.x,point_data.y)
         #self.point_data_dist = pd.DataFrame(data=np.sqrt((X - X.T) ** 2 + (Y - Y.T) ** 2),
         #                                    index=point_data.name,columns=point_data.name)
-        self.point_cov_df = self.geostruct.covariance_matrix(point_data.x,
-                                                            point_data.y,
-                                                            point_data.name).to_dataframe()
+        self.point_cov_df = self.geostruct.covariance_matrix(self.point_data.x,
+                                                            self.point_data.y,
+                                                            self.point_data.name).to_dataframe()
         #for name in self.point_cov_df.index:
         #    self.point_cov_df.loc[name,name] -= self.geostruct.nugget
 
@@ -566,7 +631,7 @@ class OrdinaryKrige(object):
             if dist.min() < EPSILON**2:
                 print(iname,ix,iy)
                 warnings.warn("points {0} and {1} are too close. This will cause a singular kriging matrix ".\
-                              format(iname,dist.idxmin()))
+                              format(iname,dist.idxmin()),PyemuWarning)
                 drop_idxs = dist.loc[dist<=EPSILON**2]
                 drop.extend([pt for pt in list(drop_idxs.index) if pt not in drop])
         if rectify and len(drop) > 0:
@@ -577,6 +642,8 @@ class OrdinaryKrige(object):
 
     #def prep_for_ppk2fac(self,struct_file="structure.dat",pp_file="points.dat",):
     #    pass
+
+
 
     def calc_factors_grid(self,spatial_reference,zone_array=None,minpts_interp=1,
                           maxpts_interp=20,search_radius=1.0e+10,verbose=False,
@@ -683,14 +750,14 @@ class OrdinaryKrige(object):
         if zone_array is not None:
             assert zone_array.shape == x.shape
             if "zone" not in self.point_data.columns:
-                warnings.warn("'zone' columns not in point_data, assigning generic zone")
+                warnings.warn("'zone' columns not in point_data, assigning generic zone",PyemuWarning)
                 self.point_data.loc[:,"zone"] = 1
             pt_data_zones = self.point_data.zone.unique()
             dfs = []
             for pt_data_zone in pt_data_zones:
                 if pt_data_zone not in zone_array:
                     warnings.warn("pt zone {0} not in zone array {1}, skipping".\
-                                  format(pt_data_zone,np.unique(zone_array)))
+                                  format(pt_data_zone,np.unique(zone_array)),PyemuWarning)
                     continue
                 xzone,yzone = x.copy(),y.copy()
                 xzone[zone_array!=pt_data_zone] = np.NaN
@@ -1055,7 +1122,11 @@ class Vario2d(object):
         kwargs are passed to matplotlib.pyplot.plot()
 
         """
-        import matplotlib.pyplot as plt
+        try:
+            import matplotlib.pyplot as plt
+        except Exception as e:
+            raise Exception("error importing matplotlib: {0}".format(str(e)))
+
         ax = kwargs.pop("ax",plt.subplot(111))
         x = np.linspace(0,self.a*3,100)
         y = self.inv_h(x)
@@ -1063,6 +1134,82 @@ class Vario2d(object):
         ax.set_ylabel("$\gamma$")
         ax.plot(x,y,**kwargs)
         return ax
+
+
+    def add_sparse_covariance_matrix(self,x,y,names,iidx,jidx,data):
+
+        """build a pyemu.SparseMatrix instance implied by Vario2d
+
+        Parameters
+        ----------
+        x : (iterable of floats)
+            x-coordinate locations
+        y : (iterable of floats)
+            y-coordinate locations
+        names : (iterable of str)
+            names of locations. If None, cov must not be None
+        iidx : 1-D ndarray
+            i row indices
+        jidx : 1-D ndarray
+            j col indices
+        data : 1-D ndarray
+            nonzero entries
+
+
+        Returns
+        -------
+        None
+
+        """
+        if not isinstance(x, np.ndarray):
+            x = np.array(x)
+        if not isinstance(y, np.ndarray):
+            y = np.array(y)
+        assert x.shape[0] == y.shape[0]
+
+
+        assert x.shape[0] == len(names)
+        #     c = np.zeros((len(names), len(names)))
+        #     np.fill_diagonal(c, self.contribution)
+        #     cov = Cov(x=c, names=names)
+        # elif cov is not None:
+        #     assert cov.shape[0] == x.shape[0]
+        #     names = cov.row_names
+        #     c = np.zeros((len(names), 1)) + self.contribution
+        #     cont = Cov(x=c, names=names, isdiagonal=True)
+        #     cov += cont
+        #
+        # else:
+        #     raise Exception("Vario2d.covariance_matrix() requires either" +
+        #                     "names or cov arg")
+        # rc = self.rotation_coefs
+        for i,name in enumerate(names):
+            iidx.append(i)
+            jidx.append(i)
+            data.append(self.contribution)
+
+        for i1, (n1, x1, y1) in enumerate(zip(names, x, y)):
+            dx = x1 - x[i1 + 1:]
+            dy = y1 - y[i1 + 1:]
+            dxx, dyy = self._apply_rotation(dx, dy)
+            h = np.sqrt(dxx * dxx + dyy * dyy)
+
+            h[h < 0.0] = 0.0
+            cv = self._h_function(h)
+            if np.any(np.isnan(cv)):
+                raise Exception("nans in cv for i1 {0}".format(i1))
+            #cv[h>self.a] = 0.0
+            j = list(np.arange(i1+1,x.shape[0]))
+            i = [i1] * len(j)
+            iidx.extend(i)
+            jidx.extend(j)
+            data.extend(list(cv))
+            # replicate across the diagonal
+            iidx.extend(j)
+            jidx.extend(i)
+            data.extend(list(cv))
+
+
 
     def covariance_matrix(self,x,y,names=None,cov=None):
         """build a pyemu.Cov instance implied by Vario2d
@@ -1546,6 +1693,8 @@ def _read_structure_attributes(f):
             variogram_info[line[1]] = float(line[2])
         elif line[0] == "end":
             break
+        elif line[0] == "mean":
+            warnings.warn("'mean' attribute not supported, skipping",PyemuWarning)
         else:
             raise Exception("unrecognized line in structure definition:{0}".\
                             format(line[0]))
@@ -1827,7 +1976,7 @@ def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
                         ','.join(list(diff)))
 
     arr = np.zeros((nrow,ncol),dtype=np.float) + fill_value
-    pp_dict = {name:val for name,val in zip(pp_data.index,pp_data.parval1)}
+    pp_dict = {int(name):val for name,val in zip(pp_data.index,pp_data.parval1)}
     try:
         pp_dict_log = {name:np.log10(val) for name,val in zip(pp_data.index,pp_data.parval1)}
     except:
@@ -1859,7 +2008,7 @@ def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
     arr[arr<lower_lim] = lower_lim
     arr[arr>upper_lim] = upper_lim
 
-    print(out_file,arr.min(),pp_data.parval1.min(),lower_lim)
+    #print(out_file,arr.min(),pp_data.parval1.min(),lower_lim)
 
     if out_file is not None:
         np.savetxt(out_file,arr,fmt="%15.6E",delimiter='')

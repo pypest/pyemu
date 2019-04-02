@@ -41,17 +41,30 @@ class LinearAnalysis(object):
         the file extension.  If None, the observation noise covariance matrix is
         constructed from the weights in the control file represented
         by the pst argument. Can also be a pyemu.Cov instance
-    predictions : (varies)
+    predictions or forecasts : (varies)
         prediction (aka forecast) sensitivity vectors.  If str, a filename
         is assumed and predictions are loaded from a file using the file extension.
         Can also be a pyemu.Matrix instance, a numpy.ndarray or a collection
         of pyemu.Matrix or numpy.ndarray.
+        Note: only one of "predictions" or "forecasts" can be used (they are synonymous)
     ref_var : (float)
         reference variance
     verbose : (either bool or string)
         controls log file / screen output.  If str, a filename is assumed and
             and log file is written to verbose
-    
+    sigma_range : float
+        defines range of upper bound - lower bound in terms of standard
+        deviation (sigma). For example, if sigma_range = 4, the bounds
+        represent 4 * sigma.  Default is 4.0, representing approximately
+        95% confidence of implied normal distribution.  This arg is only
+        used if constructing parcov from parameter bounds.
+
+    scale_offset : True
+        flag to apply parameter scale and offset to parameter bounds
+        when calculating prior parameter covariance matrix from
+        bounds.  This arg is onlyused if constructing parcov
+        from parameter bounds.Default is True.
+
     Note
     ----
     the class makes heavy use of property decorator to encapsulate
@@ -60,7 +73,8 @@ class LinearAnalysis(object):
     """
     def __init__(self, jco=None, pst=None, parcov=None, obscov=None,
                  predictions=None, ref_var=1.0, verbose=False,
-                 resfile=False, forecasts=None,**kwargs):
+                 resfile=False, forecasts=None,sigma_range=4.0,
+                 scale_offset=True,**kwargs):
         self.logger = Logger(verbose)
         self.log = self.logger.log
         self.jco_arg = jco
@@ -82,6 +96,9 @@ class LinearAnalysis(object):
         if forecasts is not None and predictions is not None:
             raise Exception("can't pass both forecasts and predictions")
 
+
+        self.sigma_range = sigma_range
+        self.scale_offset = scale_offset
 
         #private attributes - access is through @decorated functions
         self.__pst = None
@@ -130,7 +147,7 @@ class LinearAnalysis(object):
         try:
             pi = self.pst.prior_information
         except:
-            self.logger.warn("unable to access self.pst: can't tell if " +
+            self.logger.statement("unable to access self.pst: can't tell if " +
                              " any prior information needs to be dropped.")
         if pi is not None:
             self.drop_prior_information()
@@ -142,7 +159,7 @@ class LinearAnalysis(object):
             try:
                 self.adjust_obscov_resfile(resfile=resfile)
             except:
-                self.logger.warn("unable to a find a residuals file for " +\
+                self.logger.statement("unable to a find a residuals file for " +\
                                 " scaling obscov")
                 self.resfile = None
                 self.res = None
@@ -281,12 +298,16 @@ class LinearAnalysis(object):
             # if the arg is a string ending with "pst"
             # then load parcov from parbounds
             if self.parcov_arg.lower().endswith(".pst"):
-                self.__parcov = Cov.from_parbounds(self.parcov_arg)
+                self.__parcov = Cov.from_parbounds(self.parcov_arg,
+                                                   sigma_range=self.sigma_range,
+                                                   scale_offset=self.scale_offset)
             else:
                 self.__parcov = self.__fromfile(self.parcov_arg, astype=Cov)
         # if the arg is a pst object
         elif isinstance(self.parcov_arg,Pst):
-            self.__parcov = Cov.from_parameter_data(self.parcov_arg)
+            self.__parcov = Cov.from_parameter_data(self.parcov_arg,
+                                                    sigma_range=self.sigma_range,
+                                                    scale_offset=self.scale_offset)
         else:
             raise Exception("linear_analysis.__load_parcov(): " +
                             "parcov_arg must be a " +
@@ -371,13 +392,14 @@ class LinearAnalysis(object):
                 if arg.shape[1] == 1:
                     vecs.append(arg)
                 else:
-                    assert arg.shape[0] == self.jco.shape[1],\
-                    "linear_analysis.__load_predictions(): " +\
-                    "multi-prediction matrix(npar,npred) not aligned " +\
-                    "with jco(nobs,npar): " + str(arg.shape) +\
-                    ' ' + str(self.jco.shape)
-                    #for pred_name in arg.row_names:
-                    #    vecs.append(arg.extract(row_names=pred_name).T)
+                    if self.jco is not None:
+                        assert arg.shape[0] == self.jco.shape[1],\
+                        "linear_analysis.__load_predictions(): " +\
+                        "multi-prediction matrix(npar,npred) not aligned " +\
+                        "with jco(nobs,npar): " + str(arg.shape) +\
+                        ' ' + str(self.jco.shape)
+                        #for pred_name in arg.row_names:
+                        #    vecs.append(arg.extract(row_names=pred_name).T)
                     mat = arg
             elif isinstance(arg, str):
                 if arg.lower() in self.jco.row_names:
@@ -460,7 +482,9 @@ class LinearAnalysis(object):
         except:
             fnames = []
         if len(fnames) > 0:
-            raise Exception("forecasts with non-zero weight in pst: {0}".format(','.join(fnames)))
+            self.logger.warn("forecasts with non-zero weight in pst: {0}...".format(','.join(fnames)) +
+                             "\n -> re-setting these forecast weights to zero...")
+            self.pst.observation_data.loc[fnames,"weight"] = 0.0
         self.log("loading forecasts")
         self.logger.statement("forecast names: {0}".format(','.join(mat.col_names)))
         return self.__predictions
@@ -834,7 +858,7 @@ class LinearAnalysis(object):
         """drop regularization and prior information observation from the jco
         """
         if self.pst_arg is None:
-            self.logger.warn("linear_analysis.clean(): not pst object")
+            self.logger.statement("linear_analysis.clean(): not pst object")
             return
         if not self.pst.estimation and self.pst.nprior > 0:
             self.drop_prior_information()
@@ -848,7 +872,7 @@ class LinearAnalysis(object):
             the value to assign to the pst attribute
 
         """
-        self.logger.warn("resetting pst")
+        self.logger.statement("resetting pst")
         self.__pst = None
         self.pst_arg = arg
 
@@ -861,7 +885,7 @@ class LinearAnalysis(object):
             the value to assign to the parcov attribute.  If None,
             the private __parcov attribute is cleared but not reset
         """
-        self.logger.warn("resetting parcov")
+        self.logger.statement("resetting parcov")
         self.__parcov = None
         if arg is not None:
             self.parcov_arg = arg
@@ -876,7 +900,7 @@ class LinearAnalysis(object):
             the value to assign to the obscov attribute.  If None,
             the private __obscov attribute is cleared but not reset
         """
-        self.logger.warn("resetting obscov")
+        self.logger.statement("resetting obscov")
         self.__obscov = None
         if arg is not None:
             self.obscov_arg = arg
@@ -886,7 +910,7 @@ class LinearAnalysis(object):
         """drop the prior information from the jco and pst attributes
         """
         if self.jco is None:
-            self.logger.warn("can't drop prior info, LinearAnalysis.jco is None")
+            self.logger.statement("can't drop prior info, LinearAnalysis.jco is None")
             return
         nprior_str = str(self.pst.nprior)
         self.log("removing " + nprior_str + " prior info from jco, pst, and " +
@@ -1022,6 +1046,7 @@ class LinearAnalysis(object):
         jco = self.jco.to_dataframe()
         weights = self.pst.observation_data.loc[jco.index,"weight"].copy().values
         jco = (jco.T * weights).T
+
         dss_sum = jco.apply(np.linalg.norm)
         css = (dss_sum / float(self.pst.nnz_obs)).to_frame()
         css.columns = ["pest_css"]

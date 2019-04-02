@@ -25,11 +25,12 @@ def henry_setup():
 def henry():
     import os
     import pyemu
+    from pyemu.prototypes.smoother import EnsembleSmoother
     os.chdir(os.path.join("smoother", "henry_pc"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
     pst = pyemu.Pst(os.path.join("henry.pst"))
-    es = pyemu.EnsembleSmoother(pst, num_slaves=15,verbose="ies.log")
+    es = EnsembleSmoother(pst, num_slaves=15,verbose="ies.log")
     es.initialize(210, init_lambda=1.0)
     for i in range(10):
         es.update(lambda_mults=[0.2,5.0],run_subset=45)
@@ -160,6 +161,7 @@ def freyberg_check_phi_calc():
     import pandas as pd
     import pyemu
     import shutil
+    from pyemu.prototypes.smoother import EnsembleSmoother
     os.chdir(os.path.join("smoother","freyberg"))
     xy = pd.read_csv("freyberg.xy")
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
@@ -209,7 +211,7 @@ def freyberg_check_phi_calc():
     #pst.write("temp.pst")
     obscov = pyemu.Cov.from_observation_data(pst)
 
-    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=1,
+    es = EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=1,
                                 verbose=True)
 
     es.initialize(num_reals=3)
@@ -236,7 +238,7 @@ def freyberg():
     import os
     import pandas as pd
     import pyemu
-
+    from pyemu.prototypes.smoother import EnsembleSmoother
     os.chdir(os.path.join("smoother","freyberg"))
 
     #if not os.path.exists("freyberg.xy"):
@@ -292,7 +294,7 @@ def freyberg():
     pst.write("temp.pst")
     obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
 
-    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=20,
+    es = EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=20,
                                 verbose=True,port=4006)
 
     es.initialize(100,init_lambda=10.0,enforce_bounds="reset",regul_factor=0.0,use_approx_prior=True)
@@ -307,7 +309,7 @@ def freyberg_emp():
     import os
     import pandas as pd
     import pyemu
-
+    from pyemu.prototypes.smoother import EnsembleSmoother
     os.chdir(os.path.join("smoother","freyberg"))
 
     #if not os.path.exists("freyberg.xy"):
@@ -364,7 +366,7 @@ def freyberg_emp():
     obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
     pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,parcov,num_reals=100,use_homegrown=True)
     oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst,num_reals=100)
-    es = pyemu.EnsembleSmoother(pst,num_slaves=20,
+    es = EnsembleSmoother(pst,num_slaves=20,
                                 verbose=True,port=4006)
 
     es.initialize(parensemble=pe,obsensemble=oe,init_lambda=10.0,enforce_bounds="reset",regul_factor=0.0,
@@ -380,7 +382,7 @@ def freyerg_reg_compare():
     import os
     import pandas as pd
     import pyemu
-
+    from pyemu.prototypes.smoother import EnsembleSmoother
     os.chdir(os.path.join("smoother", "freyberg"))
 
     if not os.path.exists("freyberg.xy"):
@@ -444,7 +446,7 @@ def freyerg_reg_compare():
     pst.write("temp.pst")
     obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
     pyemu.Ensemble.reseed()
-    es = pyemu.EnsembleSmoother(pst, parcov=parcov, obscov=obscov, num_slaves=20,
+    es = EnsembleSmoother(pst, parcov=parcov, obscov=obscov, num_slaves=20,
                                 verbose=True)
 
     es.initialize(300, init_lambda=100.0, enforce_bounds="reset", regul_factor=0.0)
@@ -455,7 +457,7 @@ def freyerg_reg_compare():
     noreg_obs = es.obsensemble.copy()
     noreg_iobj = pd.read_csv("freyberg.pst.iobj.actual.csv")
 
-    es = pyemu.EnsembleSmoother(pst, parcov=parcov, obscov=obscov, num_slaves=20,
+    es = EnsembleSmoother(pst, parcov=parcov, obscov=obscov, num_slaves=20,
                                 verbose=True)
 
     es.initialize(300, init_lambda=100.0, enforce_bounds="reset", regul_factor=1.0)
@@ -513,7 +515,7 @@ def freyberg_condor():
     import os
     import pandas as pd
     import pyemu
-
+    from pyemu.prototypes.smoother import EnsembleSmoother
     os.chdir(os.path.join("smoother","freyberg"))
 
     x, y, names = [], [], []
@@ -560,7 +562,7 @@ def freyberg_condor():
     pst.write("temp.pst")
     obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
 
-    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=20,
+    es = EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=20,
                                 verbose=True,submit_file="freyberg.sub")
 
     #gs.variograms[0].a=10000
@@ -1081,7 +1083,7 @@ def chenoliver():
     import os
     import numpy as np
     import pyemu
-
+    from pyemu.prototypes.smoother import EnsembleSmoother
     os.chdir(os.path.join("smoother","chenoliver"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv") and "bak" not in f]
     [os.remove(csv_file) for csv_file in csv_files]
@@ -1092,7 +1094,7 @@ def chenoliver():
     obscov = pyemu.Cov(x=np.ones((1,1)),names=["obs"],isdiagonal=True)
 
     num_reals = 100
-    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
+    es = EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
                                 num_slaves=15,verbose=True)
     es.initialize(num_reals=num_reals,enforce_bounds=None,init_lambda=10.0,regul_factor=1.0,use_approx_prior=False)
     for it in range(25):
@@ -1104,7 +1106,7 @@ def chenoliver_existing():
     import os
     import numpy as np
     import pyemu
-
+    from pyemu.prototypes.smoother import EnsembleSmoother
     os.chdir(os.path.join("smoother","chenoliver"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv") and "bak" not in f]
     [os.remove(csv_file) for csv_file in csv_files]
@@ -1115,7 +1117,7 @@ def chenoliver_existing():
     #obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
 
     num_reals = 100
-    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
+    es = EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
                                 num_slaves=10,verbose=True)
     es.initialize(num_reals=num_reals,enforce_bounds=None)
 
@@ -1141,7 +1143,7 @@ def chenoliver_condor():
     import os
     import numpy as np
     import pyemu
-
+    from pyemu.prototypes.smoother import EnsembleSmoother
     os.chdir(os.path.join("smoother","chenoliver"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv") and "bak" not in f]
     [os.remove(csv_file) for csv_file in csv_files]
@@ -1151,7 +1153,7 @@ def chenoliver_condor():
     obscov = pyemu.Cov(x=np.ones((1,1))*16.0,names=["obs"],isdiagonal=True)
     
     num_reals = 100
-    es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
+    es = EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
                                 num_slaves=10,verbose=True,
                                 submit_file="chenoliver.sub")
     es.initialize(num_reals=num_reals,enforce_bounds=None)
@@ -1166,7 +1168,7 @@ def tenpar_phi():
     import pandas as pd
     import flopy
     import pyemu
-
+    from pyemu.prototypes.smoother import EnsembleSmoother,Phi
     os.chdir(os.path.join("smoother", "10par_xsec"))
     # bak_obj = pd.read_csv("iobj.bak",skipinitialspace=True)
     # bak_obj_act = pd.read_csv("iobj.actual.bak")
@@ -1191,7 +1193,7 @@ def tenpar_phi():
     obs.loc["h01_09", 'obgnme'] = "l_test"
     obs.loc["h01_09", 'obsval'] = 2.0
 
-    es = pyemu.EnsembleSmoother(pst, parcov=cov,
+    es = EnsembleSmoother(pst, parcov=cov,
                                 num_slaves=10, port=4005, verbose=True,
                                 drop_bad_reals=14000.)
 
@@ -1209,7 +1211,7 @@ def tenpar_phi():
                   restart_obsensemble="10par_xsec.oe.restart.bak", init_lambda=10000.0,
                   regul_factor=1.0)
 
-    phi = pyemu.smoother.Phi(es,es.obsensemble.shape[0])
+    phi = Phi(es,es.obsensemble.shape[0])
     phi.update()
     #phi.write()
     es.update(lambda_mults=[.1, 1000.0], calc_only=False, use_approx=False, localizer=lz)
@@ -1224,63 +1226,65 @@ def tenpar_test():
     import pandas as pd
     import flopy
     import pyemu
-
+    from pyemu.prototypes.smoother import EnsembleSmoother
     os.chdir(os.path.join("smoother", "10par_xsec"))
-    try:
-        #bak_obj = pd.read_csv("iobj.bak",skipinitialspace=True)
-        #bak_obj_act = pd.read_csv("iobj.actual.bak")
-        bak_upgrade1 = pd.read_csv("upgrade_1.bak.csv")
-        bak_upgrade2 = pd.read_csv("upgrade_2.bak.csv")
+
+    #try:
+    #bak_obj = pd.read_csv("iobj.bak",skipinitialspace=True)
+    #bak_obj_act = pd.read_csv("iobj.actual.bak")
+    bak_upgrade1 = pd.read_csv("upgrade_1.bak.csv")
+    bak_upgrade2 = pd.read_csv("upgrade_2.bak.csv")
 
 
-        csv_files = [f for f in os.listdir('.') if f.endswith(".csv") and ".bak" not in f]
-        [os.remove(csv_file) for csv_file in csv_files]
-        pst = pyemu.Pst("10par_xsec.pst")
-        par = pst.parameter_data
-        par.loc["stage", "partrans"] = "fixed"
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv") and ".bak" not in f]
+    [os.remove(csv_file) for csv_file in csv_files]
+    pst = pyemu.Pst("10par_xsec.pst")
+    par = pst.parameter_data
+    par.loc["stage", "partrans"] = "fixed"
 
-        v = pyemu.utils.ExpVario(contribution=0.25, a=60.0)
-        gs = pyemu.utils.GeoStruct(variograms=[v], transform="log")
-        par = pst.parameter_data
-        k_names = par.loc[par.parnme.apply(lambda x: x.startswith('k')), "parnme"]
-        sr = flopy.utils.SpatialReference(delc=[10], delr=np.zeros((10)) + 10.0)
+    v = pyemu.utils.ExpVario(contribution=0.25, a=60.0)
+    gs = pyemu.utils.GeoStruct(variograms=[v], transform="log")
+    par = pst.parameter_data
+    k_names = par.loc[par.parnme.apply(lambda x: x.startswith('k')), "parnme"]
+    sr = flopy.utils.SpatialReference(delc=[10], delr=np.zeros((10)) + 10.0)
 
-        cov = gs.covariance_matrix(sr.xcentergrid[0, :], sr.ycentergrid[0, :], k_names)
+    cov = gs.covariance_matrix(sr.xcentergrid[0, :], sr.ycentergrid[0, :], k_names)
 
-        obs = pst.observation_data
-        obs.loc["h01_09", "weight"] = 100.0
-        obs.loc["h01_09", 'obgnme'] = "lt_test"
-        obs.loc["h01_09", 'obsval'] = 2.0
+    obs = pst.observation_data
+    obs.loc["h01_09", "weight"] = 100.0
+    obs.loc["h01_09", 'obgnme'] = "lt_test"
+    obs.loc["h01_09", 'obsval'] = 2.0
 
-        es = pyemu.EnsembleSmoother(pst, parcov=cov,
-                                    num_slaves=10, port=4005, verbose=True,
-                                    drop_bad_reals=14000.)
 
-        lz = es.get_localizer().to_dataframe()
-        # the k pars upgrad of h01_04 and h01_06 are localized
-        upgrad_pars = [pname for pname in lz.columns if "_" in pname and \
-                       int(pname.split('_')[1]) > 4]
-        lz.loc["h01_04", upgrad_pars] = 0.0
-        upgrad_pars = [pname for pname in lz.columns if '_' in pname and \
-                       int(pname.split('_')[1]) > 6]
-        lz.loc["h01_06", upgrad_pars] = 0.0
-        lz = pyemu.Matrix.from_dataframe(lz).T
+    es = EnsembleSmoother(pst, parcov=cov,
+                                num_slaves=10, port=4005, verbose=True,
+                                drop_bad_reals=14000.)
 
-        es.initialize(parensemble="10par_xsec.pe.bak",obsensemble="10par_xsec.oe.bak",
-                      restart_obsensemble="10par_xsec.oe.restart.bak",init_lambda=10000.0,
-                      use_approx_prior=False)
-        # just for force full upgrade testing for
-        es.iter_num = 2
-        es.update(lambda_mults=[.1, 1000.0],calc_only=True,use_approx=False,localizer=lz)
+    lz = es.get_localizer().to_dataframe()
+    # the k pars upgrad of h01_04 and h01_06 are localized
+    upgrad_pars = [pname for pname in lz.columns if "_" in pname and \
+                   int(pname.split('_')[1]) > 4]
+    lz.loc["h01_04", upgrad_pars] = 0.0
+    upgrad_pars = [pname for pname in lz.columns if '_' in pname and \
+                   int(pname.split('_')[1]) > 6]
+    lz.loc["h01_06", upgrad_pars] = 0.0
+    lz = pyemu.Matrix.from_dataframe(lz).T
 
-        #obj = pd.read_csv("10par_xsec.pst.iobj.csv")
-        #obj_act = pd.read_csv("10par_xsec.pst.iobj.actual.csv")
-        upgrade1 = pd.read_csv("10par_xsec.pst.upgrade_1.0003.csv")
-        upgrade2 = pd.read_csv("10par_xsec.pst.upgrade_2.0003.csv")
+    es.initialize(parensemble="10par_xsec.pe.bak",obsensemble="10par_xsec.oe.bak",
+                  restart_obsensemble="10par_xsec.oe.restart.bak",init_lambda=10000.0,
+                  use_approx_prior=False)
+    # just for force full upgrade testing for
+    es.iter_num = 2
+    es.update(lambda_mults=[.1, 1000.0],calc_only=True,use_approx=False,localizer=lz)
 
-    except Exception as e:
-        os.chdir(os.path.join("..", ".."))
-        raise Exception(str(e))
+    #obj = pd.read_csv("10par_xsec.pst.iobj.csv")
+    #obj_act = pd.read_csv("10par_xsec.pst.iobj.actual.csv")
+    upgrade1 = pd.read_csv("10par_xsec.pst.upgrade_1.0003.csv")
+    upgrade2 = pd.read_csv("10par_xsec.pst.upgrade_2.0003.csv")
+
+    # except Exception as e:
+    #     os.chdir(os.path.join("..", ".."))
+    #     raise Exception(str(e))
 
     os.chdir(os.path.join("..", ".."))
 
@@ -1300,7 +1304,7 @@ def tenpar_fixed():
     import numpy as np
     import flopy
     import pyemu
-
+    from pyemu.prototypes.smoother import EnsembleSmoother
     os.chdir(os.path.join("smoother","10par_xsec"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
@@ -1316,7 +1320,7 @@ def tenpar_fixed():
 
     cov = gs.covariance_matrix(sr.xcentergrid[0,:],sr.ycentergrid[0,:],k_names)
 
-    es = pyemu.EnsembleSmoother(pst,parcov=cov,
+    es = EnsembleSmoother(pst,parcov=cov,
                                 num_slaves=10,port=4005,verbose=True,
                                 drop_bad_reals=14000.)
     lz = es.get_localizer().to_dataframe()
@@ -1343,7 +1347,7 @@ def tenpar():
     import numpy as np
     import flopy
     import pyemu
-
+    from pyemu.prototypes.smoother import EnsembleSmoother
     os.chdir(os.path.join("smoother","10par_xsec"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
@@ -1363,7 +1367,7 @@ def tenpar():
 
 
 
-    es = pyemu.EnsembleSmoother("10par_xsec.pst",parcov=cov,
+    es = EnsembleSmoother("10par_xsec.pst",parcov=cov,
                                 num_slaves=10,port=4005,verbose=True,
                                 drop_bad_reals=14000.)
     lz = es.get_localizer().to_dataframe()
@@ -1392,6 +1396,7 @@ def tenpar_opt():
     import matplotlib.pyplot as plt
     import flopy
     import pyemu
+    from pyemu.prototypes.smoother import EnsembleSmoother
     os.chdir(os.path.join("smoother","10par_xsec"))
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
@@ -1420,7 +1425,7 @@ def tenpar_opt():
     pst.write("10par_xsec_opt.pst")
     pst.write(os.path.join("template","10par_xsec_opt.pst"))
 
-    es = pyemu.EnsembleSmoother("10par_xsec_opt.pst",parcov=cov,
+    es = EnsembleSmoother("10par_xsec_opt.pst",parcov=cov,
                                 num_slaves=10,port=4005,verbose=True)
     lz = es.get_localizer().to_dataframe()
     #the k pars upgrad of h01_04 and h01_06 are localized
@@ -1446,7 +1451,7 @@ def tenpar_opt():
     oe_ieq = pd.read_csv("10par_xsec_opt.pst.obsensemble.{0:04d}.csv".format(niter))
 
     #obs.loc["h01_09","weight"] = 0.0
-    es = pyemu.EnsembleSmoother("10par_xsec.pst", parcov=cov,
+    es = EnsembleSmoother("10par_xsec.pst", parcov=cov,
                                 num_slaves=10, port=4005, verbose=True)
     lz = es.get_localizer().to_dataframe()
     # the k pars upgrad of h01_04 and h01_06 are localized
@@ -1549,6 +1554,7 @@ def tenpar_restart():
     import numpy as np
     import flopy
     import pyemu
+    from pyemu.prototypes.smoother import EnsembleSmoother
 
     os.chdir(os.path.join("smoother","10par_xsec"))
 
@@ -1565,7 +1571,7 @@ def tenpar_restart():
     dia_parcov.drop(list(k_names),axis=1)
     cov = dia_parcov.extend(full_cov)
 
-    es = pyemu.EnsembleSmoother("10par_xsec.pst",parcov=cov,
+    es = EnsembleSmoother("10par_xsec.pst",parcov=cov,
                                 num_slaves=10,port=4005,verbose=True)
     lz = es.get_localizer().to_dataframe()
     #the k pars upgrad of h01_04 and h01_06 are localized
@@ -1591,6 +1597,7 @@ def tenpar_failed_runs():
     import numpy as np
     import pyemu
 
+    from pyemu.prototypes.smoother import EnsembleSmoother
     os.chdir(os.path.join("smoother","10par_xsec"))
     #csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     #[os.remove(csv_file) for csv_file in csv_files]
@@ -1607,7 +1614,7 @@ def tenpar_failed_runs():
     dia_parcov.drop(list(k_names),axis=1)
     cov = dia_parcov.extend(full_cov)
 
-    es = pyemu.EnsembleSmoother("10par_xsec.pst",parcov=cov,
+    es = EnsembleSmoother("10par_xsec.pst",parcov=cov,
                                 num_slaves=2,
                                 verbose=True)
     lz = es.get_localizer().to_dataframe()

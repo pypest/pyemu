@@ -1,0 +1,7 @@
+,layer,mlt_file,model_file,org_file,suffix,prefix,attr_name,tpl_file
+0,0,arr_mlt/hk0.dat_gr,./hk_Layer_1.ref,arr_org/hk_Layer_1.ref,_gr,hk0,hk,hk0.dat_gr.tpl
+1,0,arr_mlt/vka0.dat_gr,./vka1.ref,arr_org/vka1.ref,_gr,vka0,vka,vka0.dat_gr.tpl
+2,0,arr_mlt/ss0.dat_gr,./ss_layer_1.ref,arr_org/ss_layer_1.ref,_gr,ss0,ss,ss0.dat_gr.tpl
+3,0,arr_mlt/sy0.dat_gr,./sy_layer_1.ref,arr_org/sy_layer_1.ref,_gr,sy0,sy,sy0.dat_gr.tpl
+4,0,arr_mlt/rech0.dat_gr,./rech_0.ref,arr_org/rech_0.ref,_gr,rech0,rech,rech0.dat_gr.tpl
+5,0,arr_mlt/strt0.dat_gr,./strt_layer_1.ref,arr_org/strt_layer_1.ref,_gr,strt0,strt,strt0.dat_gr.tpl

@@ -6,8 +6,10 @@ users shouldn't need to deal with these classes explicitly
 from __future__ import print_function, division
 import os
 import copy
+import warnings
 import numpy as np
 import pandas
+from ..pyemu_warnings import PyemuWarning
 pandas.options.display.max_colwidth = 100
 #from pyemu.pst.pst_handler import SFMT,SFMT_LONG,FFMT,IFMT
 
@@ -61,6 +63,7 @@ class RegData(object):
                 v = v.replace('[','').replace(']','')
                 super(RegData,self).__setattr__(v,d)
                 self.optional_dict[v] = o
+        self.should_write = ["phimlim","phimaccept","fracphim"]
 
     def write(self,f):
         """ write the regularization section to an open
@@ -82,6 +85,18 @@ class RegData(object):
             f.write("\n")
 
 
+    def write_keyword(self,f):
+        for vline in REG_VARIABLE_LINES:
+            vraw = vline.strip().split()
+            for v in vraw:
+                v = v.replace("[",'').replace("]",'')
+                if v not in self.should_write:
+                    continue
+                if v not in self.optional_dict.keys():
+                    raise Exception("RegData missing attribute {0}".format(v))
+                f.write("{0:30} {1:>10}\n".format(v,self.__getattribute__(v)))
+
+
 class SvdData(object):
     """ an object that encapsulates the singular value decomposition
     section of the PEST control file
@@ -91,6 +106,13 @@ class SvdData(object):
         self.maxsing = kwargs.pop("maxsing",10000000)
         self.eigthresh = kwargs.pop("eigthresh",1.0e-6)
         self.eigwrite = kwargs.pop("eigwrite",1)
+
+
+    def write_keyword(self,f):
+        f.write("{0:30} {1:>10}\n".format("svdmode",self.svdmode))
+        f.write("{0:30} {1:>10}\n".format("maxsing",self.maxsing))
+        f.write("{0:30} {1:>10}\n".format("eigthresh",self.eigthresh))
+        f.write("{0:30} {1:>10}\n".format("eigwrite",self.eigwrite))
 
     def write(self,f):
         """ write an SVD section to a file handle
@@ -158,6 +180,10 @@ class ControlData(object):
 
         self._df.index = self._df.name.apply(lambda x:x.replace('[',''))\
             .apply(lambda x: x.replace(']',''))
+        super(ControlData, self).__setattr__("keyword_accessed", ["pestmode","noptmax"])
+        counters = ["npar","nobs","npargp","nobsgp","nprior","ntplfle","ninsfle"]
+        super(ControlData, self).__setattr__("counters", counters)
+        #self.keyword_accessed = ["pestmode","noptmax"]
 
     def __setattr__(self, key, value):
         if key == "_df":
@@ -165,6 +191,9 @@ class ControlData(object):
             return
         assert key in self._df.index, str(key)+" not found in attributes"
         self._df.loc[key,"value"] = self._df.loc[key,"type"](value)
+        #super(ControlData, self).__getattr__("keyword_accessed").append(key)
+        if key not in self.counters:
+            self.keyword_accessed.append(key)
 
     def __getattr__(self, item):
         if item == "_df":
@@ -220,7 +249,7 @@ class ControlData(object):
         return v,t,f
 
 
-    def parse_values_from_lines(self,lines):
+    def parse_values_from_lines(self,lines,iskeyword=False):
         """ cast the string lines for a pest control file into actual inputs
 
         Parameters
@@ -229,6 +258,53 @@ class ControlData(object):
             strings from pest control file
 
         """
+
+        if iskeyword:
+            extra = {}
+            for line in lines:
+                raw = line.strip().split()
+                if len(raw) == 0 or raw[0] == "#":
+                    continue
+                name = raw[0].strip().lower()
+
+                value = raw[1].strip()
+                v,t,f = self._parse_value(value)
+                if name not in self._df.index:
+                    extra[name] = v
+                else:
+                    # if the parsed values type isn't right
+                    if t != self._df.loc[name, "type"]:
+
+                        # if a float was expected and int return, not a problem
+                        if t == np.int32 and self._df.loc[name, "type"] == np.float64:
+                            self._df.loc[name, "value"] = np.float64(v)
+
+
+                        # if this is a required input, throw
+                        elif self._df.loc[name, "required"]:
+                            raise Exception("wrong type found for variable " + name + ":" + str(t))
+                        else:
+
+                            # else, since this problem is usually a string, check for acceptable values
+                            found = False
+                            for nname, avalues in self.accept_values.items():
+                                if v in avalues:
+                                    if t == self._df.loc[nname, "type"]:
+                                        self._df.loc[nname, "value"] = v
+                                        found = True
+                                        break
+                            if not found:
+                                warnings.warn("non-conforming value found for " + \
+                                              name + ":" + str(v) + "...ignoring", PyemuWarning)
+
+
+                    else:
+                        self._df.loc[name, "value"] = v
+            return extra
+
+
+
+
         assert len(lines) == len(CONTROL_VARIABLE_LINES),\
         "ControlData error: len of lines not equal to " +\
         str(len(CONTROL_VARIABLE_LINES))
@@ -262,9 +338,9 @@ class ControlData(object):
                                     found = True
                                     break
                         if not found:
-                            print("warning: non-conforming value found for " +\
-                                  name + ":" + str(v))
-                            print("ignoring...")
+                            warnings.warn("non-conforming value found for " +\
+                                  name + ":" + str(v) + "...ignoring",PyemuWarning)
+
 
                 else:
                     self._df.loc[name,"value"] = v
@@ -286,6 +362,16 @@ class ControlData(object):
 
         """
         return self._df.apply(lambda x: self.formatters[x["type"]](x["value"]),axis=1)
+
+
+    def write_keyword(self,f):
+        kw = super(ControlData, self).__getattribute__("keyword_accessed")
+        f.write("* control data keyword\n")
+        for n,v in zip(self._df.name,self.formatted_values):
+            if n not in kw:
+                continue
+            f.write("{0:30} {1}\n".format(n,v))
+
 
     def write(self,f):
         """ write control data section to a file

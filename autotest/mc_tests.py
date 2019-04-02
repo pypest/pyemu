@@ -6,7 +6,7 @@ if not os.path.exists("temp"):
 def mc_test():
     import os
     import numpy as np
-    from pyemu import MonteCarlo
+    from pyemu import MonteCarlo, Cov
     jco = os.path.join("pst","pest.jcb")
     pst = jco.replace(".jcb",".pst")
 
@@ -15,7 +15,9 @@ def mc_test():
         os.mkdir(out_dir)
 
     #write testing
-    mc = MonteCarlo(jco=jco,verbose=True)
+    mc = MonteCarlo(jco=jco,verbose=True,sigma_range=6)
+    cov = Cov.from_parameter_data(mc.pst,sigma_range=6)
+    assert np.abs((mc.parcov.x - cov.x).sum()) == 0.0
     mc.draw(10,obs=True)
     mc.write_psts(os.path.join("temp","real_"))
     mc.parensemble.to_parfiles(os.path.join("mc","real_"))
@@ -131,7 +133,7 @@ def from_dataframe_test():
 
     pstc = Pst(pst)
     par = pstc.parameter_data
-    par.sort_values(by="parnme",ascending=False,inplace=True)
+    par.sort_index(ascending=False,inplace=True)
     cov = Cov.from_parameter_data(pstc)
     pe = ParameterEnsemble.from_gaussian_draw(pst=mc.pst,cov=cov)
 
@@ -215,7 +217,8 @@ def pnulpar_test():
     mc = pyemu.MonteCarlo(jco=os.path.join("mc","freyberg_ord.jco"))
     par_dir = os.path.join("mc","prior_par_draws")
     par_files = [os.path.join(par_dir,f) for f in os.listdir(par_dir) if f.endswith('.par')]
-    mc.parensemble.read_parfiles(par_files)
+    #mc.parensemble.read_parfiles(par_files)
+    mc.parensemble = pyemu.ParameterEnsemble.from_parfiles(pst=mc.pst,parfile_names=par_files)
     real_num = [int(os.path.split(f)[-1].split('.')[0].split('_')[1]) for f in par_files]
     mc.parensemble.index = real_num
     #print(mc.parensemble)
@@ -228,8 +231,8 @@ def pnulpar_test():
     par_files = [os.path.join(par_dir, f) for f in os.listdir(par_dir) if f.endswith('.par')]
     real_num = [int(os.path.split(f)[-1].split('.')[0].split('_')[1]) for f in par_files]
 
-    en_pnul = pyemu.ParameterEnsemble(mc.pst)
-    en_pnul.read_parfiles(par_files)
+    en_pnul = pyemu.ParameterEnsemble.from_parfiles(pst=mc.pst,parfile_names=par_files)
+    #en_pnul.read_parfiles(par_files)
     en_pnul.index = real_num
     en.sort_index(axis=1, inplace=True)
     en.sort_index(axis=0, inplace=True)
@@ -316,7 +319,7 @@ def pe_to_csv_test():
         mc.parensemble._transform()
     fname = os.path.join("temp","test.csv")
     mc.parensemble.to_csv(fname)
-    df = pd.read_csv(fname)
+    df = pd.read_csv(fname,index_col=0)
     pe = pyemu.ParameterEnsemble.from_dataframe(pst=pst,df=df)
     pe1 = pe.copy()
     pe.enforce()
@@ -628,11 +631,12 @@ def to_from_binary_test():
 
     pe1 = pyemu.ParameterEnsemble.from_binary(mc.pst,pe_name)
     oe1 = pyemu.ObservationEnsemble.from_binary(mc.pst,oe_name)
-
+    pe1.index = pe1.index.map(np.int)
+    oe1.index = oe1.index.map(np.int)
     d = (oe - oe1).apply(np.abs)
     assert d.max().max() == 0.0
     d = (pe - pe1).apply(np.abs)
-    assert d.max().max() == 0.0
+    assert d.max().max() == 0.0, d
 
 
 def add_base_test():
@@ -668,26 +672,208 @@ def add_base_test():
         raise Exception()
 
 
+
+def sparse_draw_test():
+    import os
+    import numpy as np
+    import pyemu
+    from datetime import datetime
+
+    v = pyemu.geostats.ExpVario(contribution=1.0, a=1.0)
+    gs = pyemu.geostats.GeoStruct(variograms=[v])
+
+    npar = 20
+    pst = pyemu.pst_utils.generic_pst(["p{0:010d}".format(i) for i in range(npar)], ["o1"])
+
+    pst.parameter_data.loc[:, "partrans"] = "none"
+    par = pst.parameter_data
+    par.loc[:, "x"] = np.random.random(npar) * 10.0
+    par.loc[:, "y"] = np.random.random(npar) * 10.0
+
+    par.loc[pst.par_names[0], "pargp"] = "zero"
+    par.loc[pst.par_names[1:10], "pargp"] = "one"
+    par.loc[pst.par_names[11:20], "pargp"] = "two"
+    print(pst.parameter_data.pargp.unique())
+
+    cov = gs.covariance_matrix(par.x, par.y, par.parnme)
+
+    num_reals = 100000
+
+    pe_base = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,cov=cov,num_reals=num_reals,group_chunks=True,
+                                                         use_homegrown=True)
+
+    scov = pyemu.SparseMatrix.from_matrix(cov)
+    pe_sparse = pyemu.ParameterEnsemble.from_sparse_gaussian_draw(pst=pst,cov=scov,num_reals=num_reals)
+
+    d = pe_base.mean() - pe_sparse.mean()
+    assert d.apply(np.abs).max() < 0.05
+    d = pe_base.std() - pe_sparse.std()
+    assert d.apply(np.abs).max() < 0.05
+
+
+def triangular_draw_test():
+    import os
+    import matplotlib.pyplot as plt
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    pst.parameter_data.loc[:,"partrans"] = "none"
+    pe = pyemu.ParameterEnsemble.from_triangular_draw(pst,1000)
+    #print(pst.par_names)
+    #pe.iloc[:,0].hist()
+
+    #plt.show()
+
+
+def invest():
+
+    import os
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    import pyemu
+
+    df = pd.read_csv(os.path.join("temp", "sweep_in.csv"), index_col=0)
+    print(df.shape)
+    #df = df.loc[:, df.std() != 0]
+    print(df.shape)
+
+    pyemu.plot.plot_utils.ensemble_helper(df.iloc[:, [0, 1]])
+    plt.show()
+
+
+def mixed_par_draw_test():
+    import os
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    pname = pst.par_names[0]
+    pst.parameter_data.loc[pname,"partrans"] = "none"
+    npar = pst.npar
+    num_reals = 100
+    pe1 = pyemu.ParameterEnsemble.from_mixed_draws(pst, {}, num_reals=num_reals)
+
+    pe2 = pyemu.ParameterEnsemble.from_mixed_draws(pst, {},default="uniform",num_reals=num_reals)
+    pe3 = pyemu.ParameterEnsemble.from_mixed_draws(pst, {}, default="triangular", num_reals=num_reals)
+
+    # ax = plt.subplot(111)
+    # pe1.loc[:,pname].hist(ax=ax,alpha=0.5,bins=25)
+    # pe2.loc[:, pname].hist(ax=ax,alpha=0.5,bins=25)
+    # pe3.loc[:, pname].hist(ax=ax,alpha=0.5,bins=25)
+    # plt.show()
+
+    how = {}
+
+    for p in pst.adj_par_names[:10]:
+        how[p] = "gaussian"
+    for p in pst.adj_par_names[12:30]:
+        how[p] = "uniform"
+    for p in pst.adj_par_names[40:100]:
+        how[p] = "triangular"
+    #for pnames in how.keys():
+    #    pst.parameter_data.loc[::3,"partrans"] = "fixed"
+
+    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst,how)
+    pst.parameter_data.loc[pname, "partrans"] = "none"
+    how = {p:"uniform" for p in pst.par_names}
+    how["junk"] = "uniform"
+    try:
+        pe = pyemu.ParameterEnsemble.from_mixed_draws(pst,how)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    try:
+        pe = pyemu.ParameterEnsemble.from_mixed_draws(pst,{p:"junk" for p in pst.par_names})
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    try:
+        pe = pyemu.ParameterEnsemble.from_mixed_draws(pst,{},default="junk")
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    cov = pyemu.Cov.from_parameter_data(pst)
+    cov.drop(pst.par_names[:2],0)
+    how = {p:"gaussian" for p in pst.par_names}
+    try:
+        pe = pyemu.ParameterEnsemble.from_mixed_draws(pst, how,cov=cov)
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    how = {p: "uniform" for p in pst.par_names}
+    pe = pyemu.ParameterEnsemble.from_mixed_draws(pst, how, cov=cov)
+
+
+    #cov.drop(pst.par_names[:2], 0)
+    assert pst.npar == npar
+
+
+def ensemble_deviations_test():
+    import os
+    import numpy as np
+    import pandas as pd
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+
+    pe = pyemu.ParameterEnsemble.from_uniform_draw(pst,num_reals=10)
+    dev = pe.get_deviations()
+    assert dev.shape == pe.shape
+    assert type(dev) == type(pe)
+
+    oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst=pst,num_reals=10)
+    dev = oe.get_deviations()
+    assert dev.shape == oe.shape
+    assert type(dev) == type(oe)
+
+    df = pd.DataFrame(index=np.arange(10), columns=pst.par_names)
+    df.loc[:,:]= 1.0
+    pe = pyemu.ParameterEnsemble.from_dataframe(pst=pst,df=df)
+    dev = pe.get_deviations()
+    assert dev.max().max() == 0.0
+    assert dev.min().min() == 0.0
+
+    df = pd.DataFrame(index=np.arange(10), columns=pst.obs_names)
+    df.loc[:, :] = 1.0
+    oe = pyemu.ObservationEnsemble.from_dataframe(pst=pst, df=df)
+    dev = oe.get_deviations()
+    assert dev.max().max() == 0.0
+    assert dev.min().min() == 0.0
+
+
 if __name__ == "__main__":
-    #binary_ensemble_dev()
-    to_from_binary_test()
-    ensemble_covariance_test()
-    homegrown_draw_test()
-    change_weights_test()
-    phi_vector_test()
-    par_diagonal_draw_test()
-    obs_id_draw_test()
-    diagonal_cov_draw_test()
-    pe_to_csv_test()
-    scale_offset_test()
-    mc_test()
-    fixed_par_test()
-    uniform_draw_test()
-    gaussian_draw_test()
-    parfile_test()
-    write_regul_test()
+    # ensemble_deviations_test()
+    # mixed_par_draw_test()
+    # triangular_draw_test()
+    # sparse_draw_test()
+    # binary_ensemble_dev()
+    # to_from_binary_test()
+    # ensemble_covariance_test()
+    # homegrown_draw_test()
+    # change_weights_test()
+    # phi_vector_test()
+    # par_diagonal_draw_test()
+    # obs_id_draw_test()
+    # diagonal_cov_draw_test()
+    # pe_to_csv_test()
+    # scale_offset_test()
+    # mc_test()
+    # fixed_par_test()
+    # uniform_draw_test()
+    # gaussian_draw_test()
+    # parfile_test()
+    # write_regul_test()
     from_dataframe_test()
-    ensemble_seed_test()
-    pnulpar_test()
-    enforce_test()
-    add_base_test()
+    # ensemble_seed_test()
+    # pnulpar_test()
+    # enforce_test()
+    # add_base_test()
