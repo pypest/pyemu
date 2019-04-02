@@ -1224,18 +1224,20 @@ def apply_sft_obs():
             times.append(float(line.strip()))
     df = pd.read_csv(sft_file,skiprows=1,delim_whitespace=True)
     df.columns = [c.lower().replace("-", "_") for c in df.columns]
-
+    df = df.loc[df.time.apply(lambda x: x in times), :]
+    print(df.dtypes)
     #normalize
     for c in df.columns:
+        print(c)
         df.loc[df.loc[:,c].apply(lambda x: x<1e-30),c] = 0.0
         df.loc[df.loc[:, c] > 1e+30, c] = 1.0e+30
     df.loc[:,"sfr_node"] = df.sfr_node.apply(np.int)
-    df = df.loc[df.time.apply(lambda x: x in times),:]
+
     df.to_csv(sft_file+".processed",sep=' ',index=False)
     return df
 
 
-def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff", "hcond1", "hcond2", "pptsw"],
+def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff", "hcond1", "pptsw"],
                              tie_hcond=True, include_temporal_pars=False):
     """Setup multiplier parameters for SFR segment data.  Just handles the
     standard input case, not all the cryptic SFR options.  Loads the dis, bas, and sfr files
@@ -1277,7 +1279,7 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
     except Exception as e:
         return
     if par_cols is None:
-        par_cols = ["flow", "runoff", "hcond1", "hcond2", "pptsw"]
+        par_cols = ["flow", "runoff", "hcond1", "pptsw"]
     if tie_hcond:
         if "hcond1" not in par_cols or "hcond2" not in par_cols:
             tie_hcond = False
