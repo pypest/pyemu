@@ -23,6 +23,25 @@ nr,nc = 4,2
 
 abet = string.ascii_uppercase
 
+def res_from_en(ensemble):
+    # alternative to use ensemble 
+    try: #substitute ensemble for res, 'base' if there, otherwise mean
+        df=pd.read_csv(ensemble)
+        df.columns=df.columns.str.lower()
+        df.real_name=df.real_name.str.lower()
+        df.drop('real_name',axis=1,inplace=True)
+        df=df.T.copy()
+        if 'base' in df.columns:
+            df['modelled']=df['base']
+            df['std']=df.std(axis=0)
+        else:
+            df['modelled']=df.mean(axis=1)
+            df['std']=df.std(axis=1)
+        res=df[['modelled','std']]
+    except:
+        logger.statement("couldn't find ensemble file {0} to use as res".format(ensemble))
+    return(res)
+
 def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
                                subplots=False,figsize=(11,8.5),pt_color='b'):
     """ helper function to plot gaussian distrbutions from prior and posterior
@@ -256,10 +275,16 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
     if logger is None:
         logger=Logger('Default_Loggger.log',echo=False)
     logger.log("plot res_1to1")
-    if pst.res is None:
-        logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
+    try:
+        res=pst.res
+    except:
+        logger.statement("res_1to1: pst.res is None, couldn't find residuals file")
+    try:
+        res=res_from_en(kwargs['ensemble'])
+    except:
+        logger.statement("res_1to1: could not find ensemble file {0}".format(kwargs['ensemble']))
+
     obs = pst.observation_data
-    res = pst.res
 
     if "grouper" in kwargs:
         raise NotImplementedError()
@@ -385,10 +410,16 @@ def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
     if logger is None:
         logger=Logger('Default_Loggger.log',echo=False)
     logger.log("plot res_obs_v_sim")
-    if pst.res is None:
-        logger.lraise("res_obs_v_sim: pst.res is None, couldn't find residuals file")
+    try:
+        res=pst.res
+    except:
+        logger.statement("res_obs_v_sim: pst.res is None, couldn't find residuals file")
+    try:
+        res=res_from_en(kwargs['ensemble'])
+    except:
+        logger.statement("res_obs_v_sim: could not find ensemble file {0}".format(kwargs['ensemble']))
+
     obs = pst.observation_data
-    res = pst.res
 
     if "grouper" in kwargs:
         raise NotImplementedError()
@@ -417,20 +448,34 @@ def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
             logger.log("plotting obs_v_sim for {0}".format(g))
             continue
 
-        # parse datetimes
+        # parse datetimes 
+        # suffix in decreasing magnitude (yearmonthday)
         try:
             obs_g.loc[:, "datetime_str"] = obs_g.obsnme.apply(lambda x: x.split('_')[-1])
-        except Exception as e:
-            logger.warn("res_obs_v_sim error forming datetime_str:{0}".
-                        format(str(e)))
+        except:
+            logger.statement("res_obs_v_sim error forming datetime_str")
             continue
-
+        # Default datetime
         try:
             obs_g.loc[:, "datetime"] = pd.to_datetime(obs_g.datetime_str,format="%Y%m%d")
-        except Exception as e:
-            logger.warn("res_obs_v_sim error casting datetime: {0}".
-                        format(str(e)))
-            continue
+        except:
+            logger.statement("res_obs_v_sim error casting datetime using default {0}".format(g))   
+  
+        # abbreviated date format ALWAY 2 digit year, mabye followed by 2 digit month, maybe followed by 2 digit day        
+        obs_g['datetime']=0
+        try:
+            obs_g.loc[obs_g['datetime_str'].str.len()==2,'datetime']=pd.to_datetime(obs_g['datetime_str']+'1231',format='%y%m%d')
+        except:
+            logger.statement("res_obs_v_sim error casting datetime using %y {0}".format(g)) 
+        try:
+            obs_g.loc[obs_g['datetime_str'].str.len()==4,'datetime']=pd.to_datetime(obs_g['datetime_str'].astype(str)+'01',format='%y%m%d')+datetime.timedelta(months=1)-datetime.timedelta(days=1)
+        except:
+            logger.statement("res_obs_v_sim error casting datetime using %y%m {0}".format(g)) 
+        try:
+            obs_g.loc[obs_g['datetime_str'].str.len()==6,'datetime']=pd.to_datetime(obs_g['datetime_str'].astype(str),format='%y%m%d')
+        except:
+            logger.statement("res_obs_v_sim error casting datetime using %y%m%d {0}".format(g)) 
+
 
         if ax_count % (nr * nc) == 0:
             plt.tight_layout()
