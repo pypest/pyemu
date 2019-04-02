@@ -23,6 +23,25 @@ nr,nc = 4,2
 
 abet = string.ascii_uppercase
 
+def res_from_en(ensemble):
+    # alternative to use ensemble 
+    try: #substitute ensemble for res, 'base' if there, otherwise mean
+        df=pd.read_csv(ensemble)
+        df.columns=df.columns.str.lower()
+        df.real_name=df.real_name.str.lower()
+        df.drop('real_name',axis=1,inplace=True)
+        df=df.T.copy()
+        if 'base' in df.columns:
+            df['modelled']=df['base']
+            df['std']=df.std(axis=0)
+        else:
+            df['modelled']=df.mean(axis=1)
+            df['std']=df.std(axis=1)
+        res=df[['modelled','std']]
+    except:
+        logger.statement("couldn't find ensemble file {0} to use as res".format(ensemble))
+    return(res)
+
 def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
                                subplots=False,figsize=(11,8.5),pt_color='b'):
     """ helper function to plot gaussian distrbutions from prior and posterior
@@ -256,10 +275,16 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
     if logger is None:
         logger=Logger('Default_Loggger.log',echo=False)
     logger.log("plot res_1to1")
-    if pst.res is None:
-        logger.lraise("res_1to1: pst.res is None, couldn't find residuals file")
+    try:
+        res=pst.res
+    except:
+        logger.statement("res_1to1: pst.res is None, couldn't find residuals file")
+    try:
+        res=res_from_en(kwargs['ensemble'])
+    except:
+        logger.statement("res_1to1: could not find ensemble file {0}".format(kwargs['ensemble']))
+
     obs = pst.observation_data
-    res = pst.res
 
     if "grouper" in kwargs:
         raise NotImplementedError()
@@ -385,10 +410,16 @@ def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
     if logger is None:
         logger=Logger('Default_Loggger.log',echo=False)
     logger.log("plot res_obs_v_sim")
-    if pst.res is None:
-        logger.lraise("res_obs_v_sim: pst.res is None, couldn't find residuals file")
+    try:
+        res=pst.res
+    except:
+        logger.statement("res_obs_v_sim: pst.res is None, couldn't find residuals file")
+    try:
+        res=res_from_en(kwargs['ensemble'])
+    except:
+        logger.statement("res_obs_v_sim: could not find ensemble file {0}".format(kwargs['ensemble']))
+
     obs = pst.observation_data
-    res = pst.res
 
     if "grouper" in kwargs:
         raise NotImplementedError()
@@ -417,20 +448,34 @@ def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
             logger.log("plotting obs_v_sim for {0}".format(g))
             continue
 
-        # parse datetimes
+        # parse datetimes 
+        # suffix in decreasing magnitude (yearmonthday)
         try:
             obs_g.loc[:, "datetime_str"] = obs_g.obsnme.apply(lambda x: x.split('_')[-1])
-        except Exception as e:
-            logger.warn("res_obs_v_sim error forming datetime_str:{0}".
-                        format(str(e)))
+        except:
+            logger.statement("res_obs_v_sim error forming datetime_str")
             continue
-
+        # Default datetime
         try:
             obs_g.loc[:, "datetime"] = pd.to_datetime(obs_g.datetime_str,format="%Y%m%d")
-        except Exception as e:
-            logger.warn("res_obs_v_sim error casting datetime: {0}".
-                        format(str(e)))
-            continue
+        except:
+            logger.statement("res_obs_v_sim error casting datetime using default {0}".format(g))   
+  
+        # abbreviated date format ALWAY 2 digit year, mabye followed by 2 digit month, maybe followed by 2 digit day        
+        obs_g['datetime']=0
+        try:
+            obs_g.loc[obs_g['datetime_str'].str.len()==2,'datetime']=pd.to_datetime(obs_g['datetime_str']+'1231',format='%y%m%d')
+        except:
+            logger.statement("res_obs_v_sim error casting datetime using %y {0}".format(g)) 
+        try:
+            obs_g.loc[obs_g['datetime_str'].str.len()==4,'datetime']=pd.to_datetime(obs_g['datetime_str'].astype(str)+'01',format='%y%m%d')+datetime.timedelta(months=1)-datetime.timedelta(days=1)
+        except:
+            logger.statement("res_obs_v_sim error casting datetime using %y%m {0}".format(g)) 
+        try:
+            obs_g.loc[obs_g['datetime_str'].str.len()==6,'datetime']=pd.to_datetime(obs_g['datetime_str'].astype(str),format='%y%m%d')
+        except:
+            logger.statement("res_obs_v_sim error casting datetime using %y%m%d {0}".format(g)) 
+
 
         if ax_count % (nr * nc) == 0:
             plt.tight_layout()
@@ -935,6 +980,169 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                 plt.close(fig)
     logger.log("pyemu.plot_utils.ensemble_helper()")
 
+def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',logger=None,filename=None,**kwargs):
+    """helper function to plot first and second moment change histograms
+
+    Parameters
+    ----------
+    ensemble1 : varies
+        str or pd.DataFrames
+    ensemble2 : varies
+        str or pd.DataFrame
+    pst : pyemu.Pst
+        pst instance
+    facecolor : str
+        the histogram facecolor.
+    filename : str
+        the name of the pdf to create. If None, return figs without saving.  Default is None.
+
+    """
+    if logger is None:
+        logger=Logger('Default_Loggger.log',echo=False)
+    logger.log("plot ensemble change")
+
+    if isinstance(ensemble1, str):
+        ensemble1 = pd.read_csv(ensemble1,index_col=0)
+    ensemble1.columns = ensemble1.columns.str.lower()
+
+    if isinstance(ensemble2, str):
+        ensemble2 = pd.read_csv(ensemble2,index_col=0)
+    ensemble2.columns = ensemble2.columns.str.lower()
+
+    # better to ensure this is caught by pestpp-ies ensemble csvs
+    unnamed1 = [col for col in ensemble1.columns if "unnamed:" in col]
+    if len(unnamed1) != 0:
+        ensemble1 = ensemble1.iloc[:,:-1] # ensure unnamed col result of poor csv read only (ie last col)
+    unnamed2 = [col for col in ensemble2.columns if "unnamed:" in col]
+    if len(unnamed2) != 0:
+        ensemble2 = ensemble2.iloc[:,:-1] # ensure unnamed col result of poor csv read only (ie last col)
+
+    d = set(ensemble1.columns).symmetric_difference(set(ensemble2. columns))
+
+    if len(d) != 0:
+        logger.lraise("ensemble1 does not have the same columns as ensemble2: {0}".
+                      format(','.join(d)))
+    if "grouper" in kwargs:
+        raise NotImplementedError()
+    else:
+        en_cols = set(ensemble1.columns)
+        if len(en_cols.symmetric_difference(set(pst.par_names))) == 0:
+            par = pst.parameter_data.loc[pst.adj_par_names,:]
+            grouper = par.groupby(par.pargp).groups
+            grouper["all"] = pst.adj_par_names
+            li = par.partrans == "log"
+            ensemble1.loc[:,li] = ensemble1.loc[:,li].apply(np.log10)
+            ensemble2.loc[:, li] = ensemble2.loc[:, li].apply(np.log10)
+        elif len(en_cols.symmetric_difference(set(pst.obs_names))) == 0:
+            obs = pst.observation_data.loc[pst.nnz_obs_names,:]
+            grouper = obs.groupby(obs.obgnme).groups
+            grouper["all"] = pst.nnz_obs_names
+        else:
+            logger.lraise("could not match ensemble cols with par or obs...")
+
+    en1_mn, en1_std = ensemble1.mean(axis=0), ensemble1.std(axis=0)
+    en2_mn, en2_std = ensemble2.mean(axis=0), ensemble2.std(axis=0)
+
+    # mn_diff = 100.0 * ((en1_mn - en2_mn) / en1_mn)
+    # std_diff = 100 * ((en1_std - en2_std) / en1_std)
+
+    mn_diff = -1 * (en2_mn - en1_mn)
+    std_diff = 100 * (((en1_std - en2_std) / en1_std))
+    #set en1_std==0 to nan
+    std_diff[en1_std.index[en1_std==0]] = np.nan
+
+
+
+    #diff = ensemble1 - ensemble2
+    #mn_diff = diff.mean(axis=0)
+    #std_diff = diff.std(axis=0)
+
+
+    fig = plt.figure(figsize=figsize)
+    if "fig_title" in kwargs:
+        plt.figtext(0.5,0.5,kwargs["fig_title"])
+    else:
+        plt.figtext(0.5, 0.5, "pyemu.Pst.plot(kind='1to1')\nfrom pest control file '{0}'\n at {1}"
+                    .format(pst.filename, str(datetime.now())), ha="center")
+    #if plot_hexbin:
+    #    pdfname = pst.filename.replace(".pst", ".1to1.hexbin.pdf")
+    #else:
+    #    pdfname = pst.filename.replace(".pst", ".1to1.pdf")
+    figs = []
+    ax_count = 0
+    for g, names in grouper.items():
+        logger.log("plotting change for {0}".format(g))
+
+        mn_g = mn_diff.loc[names]
+        std_g = std_diff.loc[names]
+
+        if mn_g.shape[0] == 0:
+            logger.statement("no entries for group '{0}'".format(g))
+            logger.log("plotting change for {0}".format(g))
+            continue
+
+        if ax_count % (nr * nc) == 0:
+            if ax_count > 0:
+                plt.tight_layout()
+            #pdf.savefig()
+            #plt.close(fig)
+            figs.append(fig)
+            fig = plt.figure(figsize=figsize)
+            axes = get_page_axes()
+            ax_count = 0
+
+        ax = axes[ax_count]
+        mn_g.hist(ax=ax,facecolor=facecolor,alpha=0.5,edgecolor=None,bins=bins)
+        #mx = max(mn_g.max(), mn_g.min(),np.abs(mn_g.max()),np.abs(mn_g.min())) * 1.2
+        #ax.set_xlim(-mx,mx)
+
+        #std_g.hist(ax=ax,facecolor='b',alpha=0.5,edgecolor=None)
+
+
+
+        #ax.set_xlim(xlim)
+        ax.set_yticklabels([])
+        ax.set_xlabel("mean change",labelpad=0.1)
+        ax.set_title("{0}) mean change group:{1}, {2} entries\nmax:{3:10G}, min:{4:10G}".
+                     format(abet[ax_count], g, mn_g.shape[0],mn_g.max(),mn_g.min()), loc="left")
+        ax.grid()
+        ax_count += 1
+
+        ax = axes[ax_count]
+        std_g.hist(ax=ax, facecolor=facecolor, alpha=0.5, edgecolor=None, bins=bins)
+        # std_g.hist(ax=ax,facecolor='b',alpha=0.5,edgecolor=None)
+
+
+
+        # ax.set_xlim(xlim)
+        ax.set_yticklabels([])
+        ax.set_xlabel("sigma percent reduction", labelpad=0.1)
+        ax.set_title("{0}) sigma change group:{1}, {2} entries\nmax:{3:10G}, min:{4:10G}".
+                     format(abet[ax_count], g, mn_g.shape[0], std_g.max(), std_g.min()), loc="left")
+        ax.grid()
+        ax_count += 1
+
+        logger.log("plotting change for {0}".format(g))
+
+    for a in range(ax_count, nr * nc):
+        axes[a].set_axis_off()
+        axes[a].set_yticks([])
+        axes[a].set_xticks([])
+
+    plt.tight_layout()
+    #pdf.savefig()
+    #plt.close(fig)
+    figs.append(fig)
+    if filename is not None:
+        plt.tight_layout()
+        with PdfPages(filename) as pdf:
+            for fig in figs:
+                pdf.savefig(fig)
+                plt.close(fig)
+        logger.log("plot ensemble change")
+    else:
+        logger.log("plot ensemble change")
+        return figs
 
 def _process_ensemble_arg(ensemble,facecolor, logger):
     ensembles = {}
