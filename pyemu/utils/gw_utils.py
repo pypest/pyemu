@@ -1217,18 +1217,28 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
 
 
 def apply_sft_obs():
+    # this is for dealing with the missing 'e' problem
+    def try_cast(x):
+        try:
+            return float(x)
+        except:
+            return 0.0
+
     times = []
     with open("sft_obs.config") as f:
         sft_file = f.readline().strip()
         for line in f:
             times.append(float(line.strip()))
-    df = pd.read_csv(sft_file,skiprows=1,delim_whitespace=True)
+    df = pd.read_csv(sft_file,skiprows=1,delim_whitespace=True)#,nrows=10000000)
     df.columns = [c.lower().replace("-", "_") for c in df.columns]
     df = df.loc[df.time.apply(lambda x: x in times), :]
-    print(df.dtypes)
+    #print(df.dtypes)
     #normalize
     for c in df.columns:
-        print(c)
+        #print(c)
+        if not "node" in c:
+            df.loc[:,c] = df.loc[:,c].apply(try_cast)
+        #print(df.loc[df.loc[:,c].apply(lambda x : type(x) == str),:])
         df.loc[df.loc[:,c].apply(lambda x: x<1e-30),c] = 0.0
         df.loc[df.loc[:, c] > 1e+30, c] = 1.0e+30
     df.loc[:,"sfr_node"] = df.sfr_node.apply(np.int)
