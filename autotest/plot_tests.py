@@ -5,7 +5,7 @@ import pandas as pd
 import pyemu
 
 if not os.path.exists("temp"):
-    mkdir("temp")
+    os.mkdir("temp")
 
 def plot_summary_test():
 
@@ -247,6 +247,6 @@ if __name__ == "__main__":
     ensemble_summary_test()
     ensemble_plot_test()
     ensemble_1to1_test()
-    
+
     ensemble_change_test()
 
