@@ -1113,6 +1113,7 @@ def apply_hds_obs(hds_file):
         data = hds.get_data(kstpkper=(kstp,kper))
         #jwhite 15jan2018 fix for really large values that are getting some
         #trash added to them...
+        data[np.isnan(data)] = 0.0
         data[data>1.0e+20] = 1.0e+20
         data[data<-1.0e+20] = -1.0e+20
         df_kper = df.loc[df.kper==kper,:]
