@@ -275,14 +275,17 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
     if logger is None:
         logger=Logger('Default_Loggger.log',echo=False)
     logger.log("plot res_1to1")
-    try:
-        res=pst.res
-    except:
-        logger.statement("res_1to1: pst.res is None, couldn't find residuals file")
-    try:
-        res=res_from_en(kwargs['ensemble'])
-    except:
-        logger.statement("res_1to1: could not find ensemble file {0}".format(kwargs['ensemble']))
+
+    if "ensemble" in kwargs:
+        try:
+            res=res_from_en(kwargs['ensemble'])
+        except:
+            logger.statement("res_1to1: could not find ensemble file {0}".format(kwargs['ensemble']))
+    else:
+        try:
+            res = pst.res
+        except:
+            logger.statement("res_1to1: pst.res is None, couldn't find residuals file")
 
     obs = pst.observation_data
 
@@ -410,15 +413,17 @@ def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
     if logger is None:
         logger=Logger('Default_Loggger.log',echo=False)
     logger.log("plot res_obs_v_sim")
-    try:
-        res=pst.res
-    except:
-        logger.statement("res_obs_v_sim: pst.res is None, couldn't find residuals file")
-    try:
-        res=res_from_en(kwargs['ensemble'])
-    except:
-        logger.statement("res_obs_v_sim: could not find ensemble file {0}".format(kwargs['ensemble']))
 
+    if "ensemble" in kwargs:
+        try:
+            res=res_from_en(kwargs['ensemble'])
+        except:
+            logger.statement("res_obs_v_sim: could not find ensemble file {0}".format(kwargs['ensemble']))
+    else:
+        try:
+            res = pst.res
+        except:
+            logger.statement("res_obs_v_sim: pst.res is None, couldn't find residuals file")
     obs = pst.observation_data
 
     if "grouper" in kwargs:

@@ -4,6 +4,9 @@ import numpy as np
 import pandas as pd
 import pyemu
 
+if not os.path.exists("temp"):
+    os.mkdir("temp")
+
 def plot_summary_test():
 
     try:
@@ -239,11 +242,11 @@ def ensemble_change_test():
     #plt.show()
 
 if __name__ == "__main__":
-    #plot_summary_test()
-    #pst_plot_test()
-    #ensemble_summary_test()
+    plot_summary_test()
+    pst_plot_test()
+    ensemble_summary_test()
     ensemble_plot_test()
-    #ensemble_1to1_test()
-    #cov_test()
-    #ensemble_change_test()
+    ensemble_1to1_test()
+
+    ensemble_change_test()
 
