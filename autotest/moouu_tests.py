@@ -408,8 +408,12 @@ def setup_freyberg_pest_interface(num_reals=100000):
         par.loc[pr_pars, "parlbnd"] = 0.1
 
         rc_pars = par.loc[par.parnme.apply(lambda x: "rc1" in x), "parnme"]
-        par.loc[rc_pars, "parubnd"] = 10.0
-        par.loc[rc_pars, "parlbnd"] = 0.1
+        #par.loc[rc_pars, "parubnd"] = 10.0
+        #par.loc[rc_pars, "parlbnd"] = 0.1
+        par.loc[rc_pars, "parubnd"] = 1e-7
+        par.loc[rc_pars, "parlbnd"] = 1e-9
+        par.loc[rc_pars,"parval1"] = 1e-8
+
 
         rc_pars = par.loc[par.parnme.apply(lambda x: "scn" in x), "parnme"]
         par.loc[rc_pars, "parubnd"] = 1.5
@@ -550,23 +554,33 @@ def setup_freyberg_pest_interface(num_reals=100000):
     set_par_bounds(ph.pst,ph.m.model_ws)
     print(ph.pst.npar)
 
-
-    # tie nitrate loading rates by zones
-
-
     df_ssm.loc[:, "i"] = df_ssm.parnme.apply(lambda x: int(x[1:3]))
     df_ssm.loc[:, "j"] = df_ssm.parnme.apply(lambda x: int(x[-2:]))
 
-    df_ssm.loc[:,"zone"] = df_ssm.apply(lambda x: zarr[x.i,x.j],axis=1)
-    z_grps = df_ssm.groupby(df_ssm.zone).groups
+    # tie nitrate loading rates by zones
+    # df_ssm.loc[:,"zone"] = df_ssm.apply(lambda x: zarr[x.i,x.j],axis=1)
+    # z_grps = df_ssm.groupby(df_ssm.zone).groups
+    # ssm_adj_pars = []
+    # for z,znames in z_grps.items():
+    #     ph.pst.parameter_data.loc[znames[0],"partrans"] = "none"
+    #     ph.pst.parameter_data.loc[znames[1:],"partrans"] = "tied"
+    #     ph.pst.parameter_data.loc[znames[1:], "partied"] = znames[0]
+    #     ssm_adj_pars.append(znames[0])
+    ph.pst.parameter_data.loc[df_ssm.parnme,"partrans"] = "fixed"
+    ph.pst.parameter_data.loc[df_ssm.parnme,"parval1"] = 0.0
     ssm_adj_pars = []
-    for z,znames in z_grps.items():
-        ph.pst.parameter_data.loc[znames[0],"partrans"] = "none"
-        ph.pst.parameter_data.loc[znames[1:],"partrans"] = "tied"
-        ph.pst.parameter_data.loc[znames[1:], "partied"] = znames[0]
-        ssm_adj_pars.append(znames[0])
-
-    print(np.unique(zarr))
+    j_range = np.arange(0,2)
+    for i in range(2,ph.m.nrow,2):
+        i_range = np.arange(i-2,i)
+        df_ssm_range = df_ssm.loc[df_ssm.apply(lambda x: x.i in i_range and x.j in j_range,axis=1),:]
+        print(i_range,df_ssm_range)
+        if df_ssm_range.shape[0] < 4:
+            continue
+        ph.pst.parameter_data.loc[df_ssm_range.parnme[0],"partrans"] = "none"
+        ph.pst.parameter_data.loc[df_ssm_range.parnme[1:],"partrans"] = "tied"
+        ph.pst.parameter_data.loc[df_ssm_range.parnme[1:], "partied"] = df_ssm_range.parnme[0]
+        ph.pst.parameter_data.loc[df_ssm_range.parnme,"parval1"] = 1.0
+        ssm_adj_pars.append(df_ssm_range.parnme[0])
 
     ph.write_forward_run()
     #ph.pst.parameter_data.loc[df_ssm.parnme, "partrans"] = "fixed"
@@ -1409,19 +1423,26 @@ def plot_freyberg_nsga_sweep():
 def invest_plot():
     df = pd.read_csv(os.path.join("master_dec_var_sweep_mean","sweep_out.csv"))
     df.columns = df.columns.str.lower()
-    obj1 = "gw_we1c_19791230"
-    obj2 = "gw_st1c_19791230"
-    obj3 = "gw_coco1c_19791230"
+    # obj1 = "gw_we1c_19791230"
+    # obj2 = "gw_st1c_19791230"'
+    # obj3 = "gw_coco1c_19791230"
+    # obj4 = "gw_malo1c_19791230"
+    # from mpl_toolkits.mplot3d import Axes3D
+    # fig = plt.figure(figsize=(6,6))
+    # ax = plt.subplot(111, projection="3d")
+    # ax.scatter(-df.loc[:,obj1],-df.loc[:,obj2],-df.loc[:,obj4],s=0.1, alpha=0.5)
+    # ax.set_xlabel("WEL N mass")
+    # ax.set_ylabel("SW N mass")
+    # ax.set_zlabel("load N mass")
+    #ax.view_init(elev=8., azim=-85)
 
-    from mpl_toolkits.mplot3d import Axes3D
-    fig = plt.figure(figsize=(6,6))
-    ax = plt.subplot(111, projection="3d")
+    obj1 = "ucn1_00_023_008_000"
+    obj2 = "ucn1_00_023_008_000"
+    ax = plt.subplot(111)
+    print(df.loc[:,obj1])
+    ax.scatter(df.loc[:,obj1],df.loc[:,obj2],s=0.1)
 
-    ax.scatter(-df.loc[:,obj1],-df.loc[:,obj2],-df.loc[:,obj3],s=0.1, alpha=0.5)
-    ax.set_xlabel("WEL N mass")
-    ax.set_ylabel("SW N mass")
-    ax.set_zlabel("DRN N mass")
-    ax.view_init(elev=8., azim=-85)
+
     plt.show()
 
     print(df.columns)
@@ -1484,6 +1505,7 @@ def plot_3obj_results():
     obj1 = "gw_we1c_19791230"
     obj2 = "gw_st1c_19791230"
     obj3 = "gw_coco1c_19791230"
+    obj4 = "gw_malo1c_19791230"
     logger = pyemu.Logger("temp.log")
     odict = {obj1: "max", obj2: "max", obj3: "max"}
     obj = pyemu.moouu.ParetoObjFunc(pst=pst, obj_function_dict=odict, logger=logger)
@@ -1558,8 +1580,9 @@ if __name__ == "__main__":
     #run_freyberg_par_sweep()
     #process_freyberg_par_sweep()
     #setup_freyberg_transport()
-    #setup_freyberg_pest_interface(num_reals=50000)
+    #setup_freyberg_pest_interface(num_reals=10000)
     #run_freyberg_dec_var_sweep_mean_parvals()
+
     #process_freyberg_dec_var_sweep()
     #plot_freyberg_domain()
     #redis_freyberg()
@@ -1568,10 +1591,10 @@ if __name__ == "__main__":
     #process_sweep_loop()
     #apply_nsgaii_to_freyberg_tolerant()
     #apply_nsgaii_to_freyberg_neutral()
-    #invest_plot()
+    invest_plot()
     #setup_for_freyberg_nsga_runs()
-    nsgaii_4obj_test()
-    plot_3obj_results()
+    #nsgaii_4obj_test()
+    #plot_3obj_results()
     #redis_freyberg()
     #invest()
     #setup_for_freyberg_nsga_runs(num_dv_reals=100,num_par_reals=100)
