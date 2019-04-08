@@ -404,7 +404,8 @@ def read_hob_test():
     import os
     import pyemu
     hob_file = os.path.join("utils","HOB.txt")
-    pyemu.gw_utils.modflow_hob_to_instruction_file(hob_file)
+    df = pyemu.gw_utils.modflow_hob_to_instruction_file(hob_file)
+    print(df.obsnme)
 
 
 def read_pval_test():
@@ -1619,7 +1620,7 @@ if __name__ == "__main__":
     #sfr_reach_obs_test()
     #gage_obs_test()
     #setup_pp_test()
-    sfr_helper_test()
+    #sfr_helper_test()
     # gw_sft_ins_test()
     # par_knowledge_test()
     # grid_obs_test()
@@ -1649,7 +1650,7 @@ if __name__ == "__main__":
     # write_tpl_test()
     # pp_to_shapefile_test()
     # read_pval_test()
-    # read_hob_test()
+    read_hob_test()
     #setup_pp_test()
     # pp_to_tpl_test()
     # setup_ppcov_complex()

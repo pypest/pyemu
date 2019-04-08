@@ -3346,13 +3346,14 @@ class PstFromFlopyModel(object):
         if self.m.hob is None:
             return
         hob_out_unit = self.m.hob.iuhobsv
-        #hob_out_fname = os.path.join(self.m.model_ws,self.m.get_output_attribute(unit=hob_out_unit))
-        hob_out_fname = os.path.join(self.org_model_ws,self.m.get_output_attribute(unit=hob_out_unit))
+        new_hob_out_fname = os.path.join(self.m.model_ws,self.m.get_output_attribute(unit=hob_out_unit))
+        org_hob_out_fname = os.path.join(self.org_model_ws,self.m.get_output_attribute(unit=hob_out_unit))
 
-        if not os.path.exists(hob_out_fname):
+        if not os.path.exists(org_hob_out_fname):
             self.logger.warn("could not find hob out file: {0}...skipping".format(hob_out_fname))
             return
-        hob_df = pyemu.gw_utils.modflow_hob_to_instruction_file(hob_out_fname)
+        shutil.copy2(org_hob_out_fname,new_hob_out_fname)
+        hob_df = pyemu.gw_utils.modflow_hob_to_instruction_file(new_hob_out_fname)
         self.obs_dfs["hob"] = hob_df
         self.tmp_files.append(os.path.split(hob_out_fname))
 
