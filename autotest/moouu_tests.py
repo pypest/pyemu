@@ -485,9 +485,9 @@ def setup_freyberg_pest_interface(num_reals=100000):
     tpl_file = write_ssm_tpl(os.path.join("template","freyberg_mt.ssm"))
     df_ssm = ph.pst.add_parameters(tpl_file,pst_path='.')
     ph.pst.parameter_data.loc[df_ssm.parnme,"partrans"] = "none"
-    ph.pst.parameter_data.loc[df_ssm.parnme, "parval1"] = 1.0
-    ph.pst.parameter_data.loc[df_ssm.parnme, "parlbnd"] = 0.0
-    ph.pst.parameter_data.loc[df_ssm.parnme, "parubnd"] = 2.0
+    ph.pst.parameter_data.loc[df_ssm.parnme, "parval1"] = 5.0
+    ph.pst.parameter_data.loc[df_ssm.parnme, "parlbnd"] = 1.0
+    ph.pst.parameter_data.loc[df_ssm.parnme, "parubnd"] = 10.0
 
     # copy the original prsity array to arr_org
     new_model_ws = ph.m.model_ws
@@ -579,7 +579,7 @@ def setup_freyberg_pest_interface(num_reals=100000):
         ph.pst.parameter_data.loc[df_ssm_range.parnme[0],"partrans"] = "none"
         ph.pst.parameter_data.loc[df_ssm_range.parnme[1:],"partrans"] = "tied"
         ph.pst.parameter_data.loc[df_ssm_range.parnme[1:], "partied"] = df_ssm_range.parnme[0]
-        ph.pst.parameter_data.loc[df_ssm_range.parnme,"parval1"] = 1.0
+        ph.pst.parameter_data.loc[df_ssm_range.parnme,"parval1"] = 5.0
         ssm_adj_pars.append(df_ssm_range.parnme[0])
 
     ph.write_forward_run()
@@ -1436,29 +1436,36 @@ def invest_plot():
     # ax.set_zlabel("load N mass")
     #ax.view_init(elev=8., azim=-85)
 
-    obj1 = "ucn1_00_023_008_000"
-    obj2 = "ucn1_00_023_008_000"
+    obj1 = "ucn1_00_023_003_000"
+    #obj2 = "sfrc40_1_03650.00"
+    obj2 = "gw_malo1c_19791230"
     ax = plt.subplot(111)
     print(df.loc[:,obj1])
     ax.scatter(df.loc[:,obj1],df.loc[:,obj2],s=0.1)
-
+    ax.set_xlabel("gw concen")
+    ax.set_ylabel("mass loading")
 
     plt.show()
 
     print(df.columns)
 
-def nsgaii_4obj_test():
-    obj1 = "gw_we1c_19791230"
-    obj2 = "gw_st1c_19791230"
-    obj3 = "gw_coco1c_19791230"
-    obj4 = "gw_malo1c_19791230"
+def nsgaii_3obj_test():
+    # obj1 = "gw_we1c_19791230"
+    # obj2 = "gw_st1c_19791230"
+    # obj3 = "gw_coco1c_19791230"
+    # obj4 = "gw_malo1c_19791230"
+
+    obj1 = "ucn1_00_023_003_000"
+    obj2 = "sfrc40_1_03650.00"
+    obj2 = "gw_malo1c_19791230"
+
     t_d = "template_temp"
     cases = ["fullreuse", "nnresuse", "noreuse"]
     when_calcs = [-1, 1, 0]
     num_slaves = 20
 
     #max since these values are negative
-    odict = {obj1: "max", obj2: "max", obj3: "max",obj4:"max"}
+    odict = {obj1: "min", obj2: "min", obj3: "max"}
 
     pst = pyemu.Pst(os.path.join(t_d, "freyberg.pst"))
     # df = pd.read_csv(os.path.join(t_d,"dv_ensemble.csv"),index_col=0)
@@ -1486,7 +1493,7 @@ def nsgaii_4obj_test():
     evolAlg.dv_ensemble.to_csv(os.path.join("{0}.dv_ensemble.0.csv".format(m_d)))
     evolAlg.obs_ensemble.to_csv(os.path.join("{0}.obs_ensemble.0.csv".format(m_d)))
 
-    for i in range(50):
+    for i in range(100):
         evolAlg.update()
         # dvdf.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d,i + 1)))
         evolAlg.population_dv.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d, i + 1)))
@@ -1579,9 +1586,11 @@ if __name__ == "__main__":
     #setup_freyberg_pest_interface()
     #run_freyberg_par_sweep()
     #process_freyberg_par_sweep()
+
     #setup_freyberg_transport()
     #setup_freyberg_pest_interface(num_reals=10000)
     #run_freyberg_dec_var_sweep_mean_parvals()
+    #invest_plot()
 
     #process_freyberg_dec_var_sweep()
     #plot_freyberg_domain()
@@ -1591,9 +1600,9 @@ if __name__ == "__main__":
     #process_sweep_loop()
     #apply_nsgaii_to_freyberg_tolerant()
     #apply_nsgaii_to_freyberg_neutral()
-    invest_plot()
+
     #setup_for_freyberg_nsga_runs()
-    #nsgaii_4obj_test()
+    nsgaii_3obj_test()
     #plot_3obj_results()
     #redis_freyberg()
     #invest()
