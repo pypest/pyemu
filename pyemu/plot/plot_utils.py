@@ -238,7 +238,7 @@ def get_page_axes(count=nr*nc):
     #[ax.set_yticks([]) for ax in axes]
     return axes
 
-def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
+def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,histogram=False,**kwargs):
     """ make 1-to-1 plots and also observed vs residual by observation group
     Parameters
     ----------
@@ -346,26 +346,36 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
 
         ax_count += 1
 
-        ax = axes[ax_count]
-        ax.scatter(obs_g.obsval, obs_g.res, marker='.', s=10, color='b')
-        ylim = ax.get_ylim()
-        mx = max(np.abs(ylim[0]), np.abs(ylim[1]))
-        if obs_g.shape[0] == 1:
-            mx *= 1.1
-        ax.set_ylim(-mx, mx)
-        #show a zero residuals line
-        ax.plot(xlim, [0,0], 'k--', lw=1.0)
-        meanres= obs_g.res.mean()
-        # show mean residuals line
-        ax.plot(xlim,[meanres,meanres], 'r-', lw=1.0)
-        ax.set_xlim(xlim)
-        ax.set_ylabel("residual",labelpad=0.1)
-        ax.set_xlabel("observed",labelpad=0.1)
-        ax.set_title("{0}) group:{1}, {2} observations".
-                     format(abet[ax_count], g, obs_g.shape[0]), loc="left")
-        ax.grid()
-        ax_count += 1
-
+        if histogram==False:
+            ax = axes[ax_count]
+            ax.scatter(obs_g.obsval, obs_g.res, marker='.', s=10, color='b')
+            ylim = ax.get_ylim()
+            mx = max(np.abs(ylim[0]), np.abs(ylim[1]))
+            if obs_g.shape[0] == 1:
+                mx *= 1.1
+            ax.set_ylim(-mx, mx)
+            #show a zero residuals line
+            ax.plot(xlim, [0,0], 'k--', lw=1.0)
+            meanres= obs_g.res.mean()
+            # show mean residuals line
+            ax.plot(xlim,[meanres,meanres], 'r-', lw=1.0)
+            ax.set_xlim(xlim)
+            ax.set_ylabel("residual",labelpad=0.1)
+            ax.set_xlabel("observed",labelpad=0.1)
+            ax.set_title("{0}) group:{1}, {2} observations".
+                         format(abet[ax_count], g, obs_g.shape[0]), loc="left")
+            ax.grid()
+            ax_count += 1
+        else:
+            ax = axes[ax_count]
+            ax.hist(obs_g.res, 50, color='b')
+            meanres= obs_g.res.mean()
+            ax.axvline(meanres, color='r', lw=1)
+            b,t = ax.get_ylim()
+            ax.text(meanres + meanres/10,
+                     t - t/10,
+                     'Mean: {:.2f}'.format(meanres))
+            ax_count += 1
         logger.log("plotting 1to1 for {0}".format(g))
 
     for a in range(ax_count, nr * nc):
