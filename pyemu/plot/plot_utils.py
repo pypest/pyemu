@@ -5,6 +5,7 @@ import pandas as pd
 from datetime import datetime
 import string
 from pyemu.logger import Logger
+from pyemu.pst import pst_utils
 font = {'size'   : 6}
 try:
     import matplotlib
@@ -22,25 +23,6 @@ nr,nc = 4,2
 #page_gs = GridSpec(nr,nc)
 
 abet = string.ascii_uppercase
-
-def res_from_en(ensemble):
-    # alternative to use ensemble 
-    try: #substitute ensemble for res, 'base' if there, otherwise mean
-        df=pd.read_csv(ensemble)
-        df.columns=df.columns.str.lower()
-        df.real_name=df.real_name.str.lower()
-        df.drop('real_name',axis=1,inplace=True)
-        df=df.T.copy()
-        if 'base' in df.columns:
-            df['modelled']=df['base']
-            df['std']=df.std(axis=0)
-        else:
-            df['modelled']=df.mean(axis=1)
-            df['std']=df.std(axis=1)
-        res=df[['modelled','std']]
-    except:
-        logger.statement("couldn't find ensemble file {0} to use as res".format(ensemble))
-    return(res)
 
 def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
                                subplots=False,figsize=(11,8.5),pt_color='b'):
@@ -256,7 +238,7 @@ def get_page_axes(count=nr*nc):
     #[ax.set_yticks([]) for ax in axes]
     return axes
 
-def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
+def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,histogram=False,**kwargs):
     """ make 1-to-1 plots and also observed vs residual by observation group
     Parameters
     ----------
@@ -278,14 +260,14 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
 
     if "ensemble" in kwargs:
         try:
-            res=res_from_en(kwargs['ensemble'])
+            res=pst_utils.res_from_en(pst,kwargs['ensemble'])
         except:
             logger.statement("res_1to1: could not find ensemble file {0}".format(kwargs['ensemble']))
     else:
         try:
             res = pst.res
         except:
-            logger.statement("res_1to1: pst.res is None, couldn't find residuals file")
+            logger.lraise("res_phi_pie: pst.res is None, couldn't find residuals file")
 
     obs = pst.observation_data
 
@@ -364,26 +346,36 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,**kwargs):
 
         ax_count += 1
 
-        ax = axes[ax_count]
-        ax.scatter(obs_g.obsval, obs_g.res, marker='.', s=10, color='b')
-        ylim = ax.get_ylim()
-        mx = max(np.abs(ylim[0]), np.abs(ylim[1]))
-        if obs_g.shape[0] == 1:
-            mx *= 1.1
-        ax.set_ylim(-mx, mx)
-        #show a zero residuals line
-        ax.plot(xlim, [0,0], 'k--', lw=1.0)
-        meanres= obs_g.res.mean()
-        # show mean residuals line
-        ax.plot(xlim,[meanres,meanres], 'r-', lw=1.0)
-        ax.set_xlim(xlim)
-        ax.set_ylabel("residual",labelpad=0.1)
-        ax.set_xlabel("observed",labelpad=0.1)
-        ax.set_title("{0}) group:{1}, {2} observations".
-                     format(abet[ax_count], g, obs_g.shape[0]), loc="left")
-        ax.grid()
-        ax_count += 1
-
+        if histogram==False:
+            ax = axes[ax_count]
+            ax.scatter(obs_g.obsval, obs_g.res, marker='.', s=10, color='b')
+            ylim = ax.get_ylim()
+            mx = max(np.abs(ylim[0]), np.abs(ylim[1]))
+            if obs_g.shape[0] == 1:
+                mx *= 1.1
+            ax.set_ylim(-mx, mx)
+            #show a zero residuals line
+            ax.plot(xlim, [0,0], 'k--', lw=1.0)
+            meanres= obs_g.res.mean()
+            # show mean residuals line
+            ax.plot(xlim,[meanres,meanres], 'r-', lw=1.0)
+            ax.set_xlim(xlim)
+            ax.set_ylabel("residual",labelpad=0.1)
+            ax.set_xlabel("observed",labelpad=0.1)
+            ax.set_title("{0}) group:{1}, {2} observations".
+                         format(abet[ax_count], g, obs_g.shape[0]), loc="left")
+            ax.grid()
+            ax_count += 1
+        else:
+            ax = axes[ax_count]
+            ax.hist(obs_g.res, 50, color='b')
+            meanres= obs_g.res.mean()
+            ax.axvline(meanres, color='r', lw=1)
+            b,t = ax.get_ylim()
+            ax.text(meanres + meanres/10,
+                     t - t/10,
+                     'Mean: {:.2f}'.format(meanres))
+            ax_count += 1
         logger.log("plotting 1to1 for {0}".format(g))
 
     for a in range(ax_count, nr * nc):
@@ -416,14 +408,15 @@ def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
 
     if "ensemble" in kwargs:
         try:
-            res=res_from_en(kwargs['ensemble'])
+            res=pst_utils.res_from_en(pst,kwargs['ensemble'])
         except:
-            logger.statement("res_obs_v_sim: could not find ensemble file {0}".format(kwargs['ensemble']))
+            logger.statement("res_1to1: could not find ensemble file {0}".format(kwargs['ensemble']))
     else:
         try:
             res = pst.res
         except:
-            logger.statement("res_obs_v_sim: pst.res is None, couldn't find residuals file")
+            logger.lraise("res_phi_pie: pst.res is None, couldn't find residuals file")
+
     obs = pst.observation_data
 
     if "grouper" in kwargs:
@@ -453,7 +446,7 @@ def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
             logger.log("plotting obs_v_sim for {0}".format(g))
             continue
 
-        # parse datetimes 
+        # parse datetimes
         # suffix in decreasing magnitude (yearmonthday)
         try:
             obs_g.loc[:, "datetime_str"] = obs_g.obsnme.apply(lambda x: x.split('_')[-1])
@@ -464,22 +457,22 @@ def res_obs_v_sim(pst,logger=None, filename=None,  **kwargs):
         try:
             obs_g.loc[:, "datetime"] = pd.to_datetime(obs_g.datetime_str,format="%Y%m%d")
         except:
-            logger.statement("res_obs_v_sim error casting datetime using default {0}".format(g))   
-  
-        # abbreviated date format ALWAY 2 digit year, mabye followed by 2 digit month, maybe followed by 2 digit day        
+            logger.statement("res_obs_v_sim error casting datetime using default {0}".format(g))
+
+        # abbreviated date format ALWAY 2 digit year, mabye followed by 2 digit month, maybe followed by 2 digit day
         obs_g['datetime']=0
         try:
             obs_g.loc[obs_g['datetime_str'].str.len()==2,'datetime']=pd.to_datetime(obs_g['datetime_str']+'1231',format='%y%m%d')
         except:
-            logger.statement("res_obs_v_sim error casting datetime using %y {0}".format(g)) 
+            logger.statement("res_obs_v_sim error casting datetime using %y {0}".format(g))
         try:
             obs_g.loc[obs_g['datetime_str'].str.len()==4,'datetime']=pd.to_datetime(obs_g['datetime_str'].astype(str)+'01',format='%y%m%d')+datetime.timedelta(months=1)-datetime.timedelta(days=1)
         except:
-            logger.statement("res_obs_v_sim error casting datetime using %y%m {0}".format(g)) 
+            logger.statement("res_obs_v_sim error casting datetime using %y%m {0}".format(g))
         try:
             obs_g.loc[obs_g['datetime_str'].str.len()==6,'datetime']=pd.to_datetime(obs_g['datetime_str'].astype(str),format='%y%m%d')
         except:
-            logger.statement("res_obs_v_sim error casting datetime using %y%m%d {0}".format(g)) 
+            logger.statement("res_obs_v_sim error casting datetime using %y%m%d {0}".format(g))
 
 
         if ax_count % (nr * nc) == 0:
@@ -633,10 +626,20 @@ def res_phi_pie(pst,logger=None, **kwargs):
     if logger is None:
         logger=Logger('Default_Loggger.log',echo=False)
     logger.log("plot res_phi_pie")
-    if pst.res is None:
-        logger.lraise("res_phi_pie: pst.res is None, couldn't find residuals file")
+
+    if "ensemble" in kwargs:
+        try:
+            res=pst_utils.res_from_en(pst,kwargs['ensemble'])
+        except:
+            logger.statement("res_1to1: could not find ensemble file {0}".format(kwargs['ensemble']))
+    else:
+        try:
+            res = pst.res
+        except:
+            logger.lraise("res_phi_pie: pst.res is None, couldn't find residuals file")
+
     obs = pst.observation_data
-    res = pst.res
+
     phi_comps = pst.phi_components
     norm_phi_comps = pst.phi_components_normalized
     if "include_zero" not in kwargs or kwargs["include_zero"] is True:
@@ -825,7 +828,7 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
     facecolor : str
         the histogram facecolor.  Only applies if ensemble is a single thing
     plot_cols : enumerable
-        a collection of columns (in form of a list of parameters, or a dict with keys for 
+        a collection of columns (in form of a list of parameters, or a dict with keys for
         parsing plot axes and values of parameters) from the ensemble(s) to plot.  If None,
         (the union of) all cols are plotted. Default is None
     filename : str

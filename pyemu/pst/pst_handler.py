@@ -210,14 +210,17 @@ class Pst(object):
                 if not os.path.exists(self.resfile):
                     self.resfile = self.resfile.replace(".res", ".rei")
                     if not os.path.exists(self.resfile):
-                        if self.new_filename is not None:
-                            self.resfile = self.new_filename.replace(".pst",".res")
-                            if not os.path.exists(self.resfile):
-                                self.resfile = self.resfile.replace(".res","rei")
+                        self.resfile = self.resfile.replace(".rei", ".base.rei")
+                        if not os.path.exists(self.resfile):
+                            if self.new_filename is not None:
+                                self.resfile = self.new_filename.replace(".pst",".res")
                                 if not os.path.exists(self.resfile):
-                                    raise Exception("Pst.res: " +
-                                                    "could not residual file case.res" +
-                                                    " or case.rei")
+                                    self.resfile = self.resfile.replace(".res","rei")
+                                    if not os.path.exists(self.resfile):
+                                        raise Exception("Pst.res: " +
+                                                        "could not residual file case.res" +
+                                                        " or case.rei" + " or case.base.rei" +
+                                                        " or case.obs.csv")
 
 
             res = pst_utils.read_resfile(self.resfile)
