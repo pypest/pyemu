@@ -1597,6 +1597,9 @@ class Matrix(object):
             number of elements to write in a single pass.  Default is None
 
         """
+        print(self.x)
+        print(type(self.x))
+
         if np.any(np.isnan(self.x)):
             raise Exception("Matrix.to_binary(): nans found")
         if self.isdiagonal:
@@ -1656,6 +1659,7 @@ class Matrix(object):
                 for i in range(len(name), self.obs_length):
                     name = name + ' '
             f.write(name.encode())
+
         f.close()
 
 
@@ -1743,6 +1747,7 @@ class Matrix(object):
                                       .strip().lower().decode()
                 col_names.append(name)
             for i in range(nrow):
+
                 name = struct.unpack(str(Matrix.obs_length) + "s",
                                      f.read(Matrix.obs_length))[0]\
                                       .strip().lower().decode()

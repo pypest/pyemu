@@ -13,7 +13,7 @@ else:
     
 
 mf_exe_name = os.path.join(bin_path,"mfnwt")
-pp_exe_name = os.path.join(bin_path, "pestpp-inv")
+pp_exe_name = os.path.join(bin_path, "pestpp-glm")
 ies_exe_name = os.path.join(bin_path, "pestpp-ies")
 swp_exe_name = os.path.join(bin_path, "pestpp-swp")
 
@@ -107,7 +107,7 @@ def freyberg_test():
     master_dir = "test_master"
     pyemu.os_utils.start_slaves(new_model_ws,ies_exe_name,"test.pst",
                                 num_slaves=10,slave_root='.',
-                                master_dir=master_dir,silent_master=True)
+                                master_dir=master_dir,silent_master=False)
     df = pd.read_csv(os.path.join(master_dir,"test.phi.meas.csv"),index_col=0)
     init_phi = df.loc[0,"mean"]
     final_phi = df.loc[1,"mean"]
@@ -130,7 +130,7 @@ def fake_run_test():
 
     new_cwd = "fake_test"
     pst = pyemu.helpers.setup_fake_forward_run(pst, "fake.pst", org_cwd=new_model_ws,new_cwd=new_cwd)
-    pyemu.os_utils.run("{0} {1}".format(pp_exe_name, "fake.pst"), cwd=new_cwd)
+    #pyemu.os_utils.run("{0} {1}".format(pp_exe_name, "fake.pst"), cwd=new_cwd)
     pyemu.os_utils.run("{0} {1}".format(ies_exe_name, "fake.pst"), cwd=new_cwd)
 
 

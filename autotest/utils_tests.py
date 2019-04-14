@@ -404,7 +404,8 @@ def read_hob_test():
     import os
     import pyemu
     hob_file = os.path.join("utils","HOB.txt")
-    pyemu.gw_utils.modflow_hob_to_instruction_file(hob_file)
+    df = pyemu.gw_utils.modflow_hob_to_instruction_file(hob_file)
+    print(df.obsnme)
 
 
 def read_pval_test():
@@ -1211,10 +1212,47 @@ def sfr_helper_test():
     import flopy
 
     #setup the process
-    df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters("supply2.nam",model_ws="utils")
+
+    m = flopy.modflow.Modflow.load("supply2.nam",model_ws="utils",check=False)
+    sd = m.sfr.segment_data[0].copy()
+
+    sd["flow"] = 1.0
+    sd["pptsw"] = 1.0
+
+    m.sfr.segment_data = {k:sd.copy() for k in range(m.nper)}
+
+    df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters(m, include_temporal_pars=True)
     print(df_sfr)
     os.chdir("utils")
 
+    # change the name of the sfr file that will be created
+    pars = {}
+    with open("sfr_seg_pars.config") as f:
+        for line in f:
+            line = line.strip().split()
+            pars[line[0]] = line[1]
+    pars["sfr_filename"] = "test.sfr"
+    with open("sfr_seg_pars.config", 'w') as f:
+        for k, v in pars.items():
+            f.write("{0} {1}\n".format(k, v))
+            # change some hcond1 values
+    df = pd.read_csv("sfr_seg_temporal_pars.dat", delim_whitespace=False, index_col=0)
+    df.loc[:, "flow"] = 10.0
+    df.to_csv("sfr_seg_temporal_pars.dat", sep=',')
+
+    sd1 = pyemu.gw_utils.apply_sfr_seg_parameters().segment_data
+    m1 = flopy.modflow.Modflow.load("supply2.nam", load_only=["sfr"], check=False)
+    os.chdir("..")
+    for kper,sd in m1.sfr.segment_data.items():
+        #print(sd["flow"],sd1[kper]["flow"])
+        for i1,i2 in zip(sd["flow"],sd1[kper]["flow"]):
+            assert i1 * 10 == i2,"{0},{1}".format(i1,i2)
+
+
+
+    df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters("supply2.nam", model_ws="utils", include_temporal_pars=True)
+
+    os.chdir("utils")
     # change the name of the sfr file that will be created
     pars = {}
     with open("sfr_seg_pars.config") as f:
@@ -1660,7 +1698,7 @@ if __name__ == "__main__":
     # write_tpl_test()
     # pp_to_shapefile_test()
     # read_pval_test()
-    # read_hob_test()
+    read_hob_test()
     #setup_pp_test()
     # pp_to_tpl_test()
     # setup_ppcov_complex()

@@ -137,55 +137,6 @@ def load_test():
     if len(exceptions) > 0:
         raise Exception('\n'.join(exceptions))
 
-
-def flex_load_test():
-    import os
-    from pyemu import Pst, pst_utils
-    pst_dir = os.path.join("pst")
-    temp_dir = "temp"
-    if not os.path.exists(temp_dir):
-        os.mkdir(temp_dir)
-    # just testing all sorts of different pst files
-    pst_files = os.listdir(pst_dir)
-    exceptions = []
-    load_fails = []
-    for pst_file in pst_files:
-        if pst_file.endswith(".pst") and not "missing" in pst_file:
-            # if not pst_file.startswith("LPR"):
-            #    continue
-            print(pst_file)
-            p = Pst(os.path.join(pst_dir, pst_file), flex=True)
-            out_name = os.path.join(temp_dir, pst_file)
-            print("write")
-            p.write(out_name, update_regul=True)
-            p = Pst(out_name)
-        #  try:
-        #      p = Pst(os.path.join(pst_dir,pst_file),flex=True)
-        #  except Exception as e:
-        #      exceptions.append(pst_file + " read fail: " + str(e))
-        #      load_fails.append(pst_file)
-        #      continue
-        #  out_name = os.path.join(temp_dir,pst_file)
-        #  print(out_name)
-        # #p.write(out_name,update_regul=True)
-        #  try:
-        #      p.write(out_name,update_regul=True)
-        #  except Exception as e:
-        #      exceptions.append(pst_file + " write fail: " + str(e))
-        #      continue
-        #  print(pst_file)
-        #  try:
-        #      p = Pst(out_name)
-        #  except Exception as e:
-        #      exceptions.append(pst_file + " reload fail: " + str(e))
-        #      continue
-
-    # with open("load_fails.txt",'w') as f:
-    #    [f.write(pst_file+'\n') for pst_file in load_fails]
-    if len(exceptions) > 0:
-        raise Exception('\n'.join(exceptions))
-
-
 def comments_test():
     import os
     import pyemu
@@ -506,7 +457,8 @@ def from_flopy():
 
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
-                                             model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True)
+                                             model_exe_name="mfnwt", sfr_pars=True, sfr_obs=True,
+                                             temporal_sfr_pars=True)
     pe = helper.draw(100)
 
     # go again testing passing list to sfr_pars
@@ -687,10 +639,10 @@ def from_flopy_reachinput():
         return
     import pyemu
 
-    if platform.platform().lower().startswith('win'):
-        tempchek = os.path.join("..", "..", "bin", "win", "tempchek.exe")
-    else:
-        tempchek = None  # os.path.join("..", "..", "bin", "linux", "tempchek")
+    # if platform.platform().lower().startswith('win'):
+    #     tempchek = os.path.join("..", "..", "bin", "win", "tempchek.exe")
+    # else:
+    #     tempchek = None  # os.path.join("..", "..", "bin", "linux", "tempchek")
 
     bd = os.getcwd()
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_reaches")
@@ -703,14 +655,21 @@ def from_flopy_reachinput():
                     ["strhc1", "flow"],
                     ["flow", "runoff"],
                     ["not_a_par", "not_a_par2"],
-                    "strhc1"]
+                    "strhc1",
+                    ["strhc1", "flow", "runoff"]]
     for i, sfr_par in enumerate(args_to_test):  # if i=2 no reach pars, i==3 no pars, i=4 no seg pars
         for f in ["sfr_reach_pars.config", "sfr_seg_pars.config"]:  # clean up
             if os.path.exists(f):
                 os.remove(f)
+        if i < 5:
+            include_temporal_pars = False
+        else:
+            include_temporal_pars = True
         helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                                  hds_kperk=[0, 0], remove_existing=True,
-                                                 model_exe_name="mfnwt", sfr_pars=sfr_par, sfr_obs=True)
+                                                 model_exe_name="mfnwt", sfr_pars=sfr_par,
+                                                 temporal_sfr_pars=include_temporal_pars,
+                                                 sfr_obs=True)
         os.chdir(new_model_ws)
         mult_files = []
         spars = {}
@@ -746,32 +705,32 @@ def from_flopy_reachinput():
                 raise Exception("error applying sfr pars, check tpl(s) and datafiles: {0}".format(str(e)))
 
             # test using tempchek for writing tpl file
-            par = helper.pst.parameter_data
-            if rpars == {}:
-                par_file = "{}.par".format(spars['nam_file'])
-            else:
-                par_file = "{}.par".format(rpars['nam_file'])
-            with open(par_file, 'w') as f:
-                f.write('single point\n')
-                f.flush()
-                par[['parnme', 'parval1', 'scale', 'offset']].to_csv(f, sep=' ', header=False, index=False, mode='a')
-            if tempchek is not None:
-                for mult in mult_files:
-                    tpl_file = "{}.tpl".format(mult)
-                    try:
-                        pyemu.os_utils.run("{} {} {} {}".format(tempchek, tpl_file, mult, par_file))
-                    except Exception as e:
-                        raise Exception("error running tempchek on template file {0} and data file {1} : {0}".
-                                        format(mult, "{}.tpl".format(tpl_file), str(e)))
-                try:
-                    exec(helper.frun_pre_lines[0])
-                except Exception as e:
-                    raise Exception("error applying sfr pars, check tpl(s) and datafiles: {0}".format(str(e)))
-        except:
+            # par = helper.pst.parameter_data
+            # if rpars == {}:
+            #     par_file = "{}.par".format(spars['nam_file'])
+            # else:
+            #     par_file = "{}.par".format(rpars['nam_file'])
+            # with open(par_file, 'w') as f:
+            #     f.write('single point\n')
+            #     f.flush()
+            #     par[['parnme', 'parval1', 'scale', 'offset']].to_csv(f, sep=' ', header=False, index=False, mode='a')
+            # if tempchek is not None:
+                # for mult in mult_files:
+                #     tpl_file = "{}.tpl".format(mult)
+                #     try:
+                #         pyemu.os_utils.run("{} {} {} {}".format(tempchek, tpl_file, mult, par_file))
+                #     except Exception as e:
+                #         raise Exception("error running tempchek on template file {1} and data file {0} : {2}".
+                #                         format(mult, tpl_file, str(e)))
+                # try:
+                #     exec(helper.frun_pre_lines[0])
+                # except Exception as e:
+                #     raise Exception("error applying sfr pars, check tpl(s) and datafiles: {0}".format(str(e)))
+        except Exception as e:
             if i == 3:  # scenario 3 should not set up any parameters
                 pass
             else:
-                raise Exception()
+                raise Exception(str(e))
         os.chdir(bd)
 
 
@@ -908,15 +867,6 @@ def write_tables_test():
     group_names = {"w0": "wells t"}
     pst.write_par_summary_table(group_names=group_names)
     pst.write_obs_summary_table(group_names={"calhead": "calibration heads"})
-
-
-def flex_test():
-    import os
-    import pyemu
-    pst = pyemu.Pst(os.path.join("pst", "pest_comments.pst"), flex=True)
-    pst.with_comments = True
-    pst.write(os.path.join("temp", "pest_comments.pst"))
-
 
 def test_e_clean():
     import os
@@ -1160,10 +1110,84 @@ def lt_gt_constraint_names_test():
     assert pst.less_than_pi_constraints.shape[0] == 0
     assert pst.greater_than_pi_constraints.shape[0] == 0
 
+
+def new_format_test():
+    import numpy as np
+    import pyemu
+    pst_files = [f for f in os.listdir("pst") if f.endswith(".pst")]
+    for pst_file in pst_files:
+        try:
+            pst = pyemu.Pst(os.path.join("pst", pst_file))
+        except:
+            print("error loading",pst_file)
+            continue
+        print(pst_file)
+        npar,nobs,npr = pst.npar,pst.nobs,pst.nprior
+        ppo = pst.pestpp_options
+        pst.write("test.pst",version=2)
+
+
+
+        pst_new = pyemu.Pst("test.pst")
+        npar1, nobs1, npr1 = pst_new.npar, pst_new.nobs, pst_new.nprior
+        ppo1 = pst_new.pestpp_options
+        assert len(ppo) == len(ppo1)
+        assert npar == npar1
+        assert nobs == nobs1
+        assert npr == npr1,"{0}: {1},{2}".format(pst_file,npr,npr1)
+
+
+        pst_new.write("test.pst",version=1)
+        pst_new = pyemu.Pst("test.pst")
+        npar1, nobs1, npr1 = pst_new.npar, pst_new.nobs, pst_new.nprior
+        ppo1 = pst_new.pestpp_options
+        assert len(ppo) == len(ppo1)
+        assert npar == npar1
+        assert nobs == nobs1
+        assert npr == npr1, "{0}: {1},{2}".format(pst_file, npr, npr1)
+        pst_new.write("test.pst",version=2)
+        pst_new = pyemu.Pst("test.pst")
+        npar1, nobs1, npr1 = pst_new.npar, pst_new.nobs, pst_new.nprior
+        ppo1 = pst_new.pestpp_options
+        assert len(ppo) == len(ppo1)
+        assert npar == npar1
+        assert nobs == nobs1
+        assert npr == npr1, "{0}: {1},{2}".format(pst_file, npr, npr1)
+
+
+    pst_new.parameter_groups.loc[:,:] = np.NaN
+    pst_new.parameter_groups.dropna(inplace=True)
+    pst_new.write("test.pst",version=2)
+    pst_new = pyemu.Pst("test.pst")
+
+
+    pst_new.parameter_data.loc[:,"counter"] = 1
+    pst_new.observation_data.loc[:,"x"] = 999.0
+    pst_new.observation_data.loc[:,'y'] = 888.0
+    pst_new.write("test.pst",version=2)
+    pst_new = pyemu.Pst("test.pst")
+    assert "counter" in pst_new.parameter_data.columns
+    assert "x" in pst_new.observation_data.columns
+    assert "y" in pst_new.observation_data.columns
+
+    # lines = open("test.pst").readlines()
+    # for i,line in enumerate(lines):
+    #     lines[i] = line.replace("header=True","header=False")
+    # with open("test.pst",'w') as f:
+    #     [f.write(line) for line in lines]
+    # try:
+    #     pst_new = pyemu.Pst("test.pst")
+    # except:
+    #     pass
+    # else:
+    #     raise Exception()
+
+
 if __name__ == "__main__":
+    new_format_test()
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
-    pst_from_flopy_geo_draw_test()
+    #pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
     # res_stats_test()
@@ -1176,7 +1200,7 @@ if __name__ == "__main__":
     #from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
-    #from_flopy_test_reachinput_test()
+    #from_flopy_reachinput()
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
@@ -1188,11 +1212,9 @@ if __name__ == "__main__":
     # smp_dateparser_test()
     # pst_manip_test()
     # tpl_ins_test()
-    # flex_test()
     # comments_test()
     # test_e_clean()
     # load_test()
-    # flex_load_test()
     # res_test()
     # smp_test()
     # from_io_with_inschek_test()
