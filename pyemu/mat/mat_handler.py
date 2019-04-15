@@ -1,6 +1,7 @@
 """Matrix, Jco and Cov classes for easy linear algebra
 """
 from __future__ import print_function, division
+import os
 import copy
 import struct
 import warnings
@@ -2411,7 +2412,7 @@ class Cov(Matrix):
         #self.reset_x(self_x)
         #self.isdiagonal = False
 
-    def to_uncfile(self, unc_file, covmat_file="Cov.mat", var_mult=1.0):
+    def to_uncfile(self, unc_file, covmat_file="Cov.mat", var_mult=1.0, include_path=True):
         """write a PEST-compatible uncertainty file
 
         Parameters
@@ -2431,7 +2432,10 @@ class Cov(Matrix):
         if covmat_file:
             f = open(unc_file, 'w')
             f.write("START COVARIANCE_MATRIX\n")
-            f.write(" file " + covmat_file + "\n")
+            if include_path:
+                f.write(" file " + covmat_file + "\n")
+            else:
+                f.write(" file " + os.path.split(covmat_file)[-1] + "\n")
             f.write(" variance_multiplier {0:15.6E}\n".format(var_mult))
             f.write("END COVARIANCE_MATRIX\n")
             f.close()
