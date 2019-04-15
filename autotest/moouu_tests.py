@@ -1292,7 +1292,7 @@ def setup_for_freyberg_nsga_runs(num_dv_reals=100,num_par_reals=100):
     os.remove(os.path.join(t_d, "sweep_in.csv"))
     pst = pyemu.Pst(os.path.join(t_d, "freyberg.pst"))
     par = pst.parameter_data
-    dv_names = list(par.loc[par.apply(lambda x: x.parnme.startswith('k') and x.partrans != "tied", axis=1), "parnme"])
+    dv_names = list(par.loc[par.apply(lambda x: x.parnme.startswith('k') and x.partrans == "none" , axis=1), "parnme"])
     par_names = [n for n in pst.par_names if n not in dv_names]
     df = pd.read_csv(os.path.join("template", "sweep_in.csv"), index_col=0, nrows=max(num_dv_reals,num_par_reals))
     df.columns = df.columns.str.lower()
@@ -1457,7 +1457,7 @@ def nsgaii_3obj_test():
 
     obj1 = "ucn1_00_023_003_000"
     obj2 = "sfrc40_1_03650.00"
-    obj2 = "gw_malo1c_19791230"
+    obj3 = "gw_malo1c_19791230"
 
     t_d = "template_temp"
     cases = ["fullreuse", "nnresuse", "noreuse"]
@@ -1509,12 +1509,70 @@ def plot_3obj_results():
     inums = list(oe_files.keys())
     inums.sort()
 
-    obj1 = "gw_we1c_19791230"
-    obj2 = "gw_st1c_19791230"
-    obj3 = "gw_coco1c_19791230"
-    obj4 = "gw_malo1c_19791230"
+    obj1 = "ucn1_00_023_003_000"
+    obj2 = "sfrc40_1_03650.00"
+    obj3 = "gw_malo1c_19791230"
+
+    # max since these values are negative
+
+
     logger = pyemu.Logger("temp.log")
-    odict = {obj1: "max", obj2: "max", obj3: "max"}
+    odict = {obj1: "min", obj2: "min", obj3: "max"}
+    obj = pyemu.moouu.ParetoObjFunc(pst=pst, obj_function_dict=odict, logger=logger)
+    plt_d = "freyberg_3obj_plots"
+    if os.path.exists(plt_d):
+        shutil.rmtree(plt_d)
+    os.mkdir(plt_d)
+    oes = []
+    xmn,xmx = 1.0e+10,-1.0e+10
+    ymn, ymx = 1.0e+10, -1.0e+10
+    zmn, zmx = 1.0e+10, -1.0e+10
+
+    for inum in inums:
+        df = pd.read_csv(os.path.join(m_d,oe_files[inum]),index_col=0)
+        oes.append(df)
+        xmn = min(xmn,df.loc[:,obj1].min())
+        xmx = max(xmx, df.loc[:, obj1].max())
+        ymn = min(ymn, df.loc[:, obj2].min())
+        ymx = max(ymx, df.loc[:, obj2].max())
+
+    for inum,df in enumerate(oes):
+        fig, axes = plt.subplots(1, 3, figsize=(6, 18))
+        for ax,objs in zip(axes,[[obj1,obj2],[obj2,obj3],[obj1,obj3]]):
+            ax.scatter(df.loc[:,objs[0]], df.loc[:, objs[1]], color="0.5",s=2.0, alpha=0.5)
+            nondom = obj.is_nondominated_kung(df)
+            ax.scatter(df.loc[nondom, objs[0]], df.loc[nondom, objs[1]], color="r", s=6.0)
+
+            ax.set_xlabel(objs[0])
+            ax.set_ylabel(objs[1])
+
+            ax.set_xlim(xmn,xmx)
+            ax.set_ylim(ymn,ymx)
+
+        plt.savefig(os.path.join(plt_d,"nsga_{0:03d}.png".format(inum)))
+        if inum != len(oes) - 1:
+            plt.close(fig)
+    plt.show()
+
+
+
+def plot_3obj_results_3d():
+    m_d = "freyberg_nsgaii_3obj_master"
+    pst = pyemu.Pst(os.path.join(m_d,"freyberg.pst"))
+    oe_files = [f for f in os.listdir(m_d) if "obs_ensemble" in f and "curr" not in f]
+    oe_files = {int(f.split('.')[-2]):f for f in oe_files}
+    inums = list(oe_files.keys())
+    inums.sort()
+
+    obj1 = "ucn1_00_023_003_000"
+    obj2 = "sfrc40_1_03650.00"
+    obj3 = "gw_malo1c_19791230"
+
+    # max since these values are negative
+
+
+    logger = pyemu.Logger("temp.log")
+    odict = {obj1: "min", obj2: "min", obj3: "max"}
     obj = pyemu.moouu.ParetoObjFunc(pst=pst, obj_function_dict=odict, logger=logger)
     from mpl_toolkits.mplot3d import Axes3D
     plt_d = "freyberg_3obj_plots"
@@ -1555,7 +1613,7 @@ def plot_3obj_results():
         plt.savefig(os.path.join(plt_d,"nsga_{0:03d}.png".format(inum)))
         if inum != len(oes) - 1:
             plt.close(fig)
-    plt.show()
+
 
 
 if __name__ == "__main__":
@@ -1602,8 +1660,8 @@ if __name__ == "__main__":
     #apply_nsgaii_to_freyberg_neutral()
 
     #setup_for_freyberg_nsga_runs()
-    nsgaii_3obj_test()
-    #plot_3obj_results()
+    #nsgaii_3obj_test()
+    plot_3obj_results()
     #redis_freyberg()
     #invest()
     #setup_for_freyberg_nsga_runs(num_dv_reals=100,num_par_reals=100)
