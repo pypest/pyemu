@@ -261,8 +261,8 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,histogram=False,**k
     if "ensemble" in kwargs:
         try:
             res=pst_utils.res_from_en(pst,kwargs['ensemble'])
-        except:
-            logger.statement("res_1to1: could not find ensemble file {0}".format(kwargs['ensemble']))
+        except Exception as e:
+            logger.lraise("res_1to1: error loading ensemble file: {0}".format( str(e)))
     else:
         try:
             res = pst.res
@@ -1210,7 +1210,8 @@ def _process_ensemble_arg(ensemble,facecolor, logger):
 
     return ensembles
 
-def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,skip_groups=[],**kwargs):
+def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
+                      skip_groups=[],base_ensemble=None,**kwargs):
     """helper function to plot ensemble 1-to-1 plots sbowing the simulated range
 
     Parameters
@@ -1225,6 +1226,9 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,sk
         the histogram facecolor.  Only applies if ensemble is a single thing
     filename : str
         the name of the pdf to create. If None, return figs without saving.  Default is None.
+    base_ensemble : varies
+        an optional ensemble argument for the observations + noise ensemble.
+        This will be plotted as a transparent red bar on the 1to1 plot.
 
     """
     if logger is None:
@@ -1232,6 +1236,9 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,sk
     logger.log("plot res_1to1")
     obs = pst.observation_data
     ensembles = _process_ensemble_arg(ensemble,facecolor,logger)
+
+    if base_ensemble is not None:
+        base_ensemble = _process_ensemble_arg(base_ensemble,"r",logger)
 
     if "grouper" in kwargs:
         raise NotImplementedError()
@@ -1290,7 +1297,12 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,sk
             ex = en_g.max()
             en = en_g.min()
             [ax.plot([ov,ov],[een,eex],color=c) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
-
+        if base_ensemble is not None:
+            for c, en in base_ensemble.items():
+                en_g = en.loc[:, obs_g.obsnme]
+                ex = en_g.max()
+                en = en_g.min()
+                [ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
 
         ax.plot([mn,mx],[mn,mx],'k--',lw=1.0)
         xlim = (mn,mx)
