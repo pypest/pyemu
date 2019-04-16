@@ -1282,27 +1282,32 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
             ax_count = 0
 
         ax = axes[ax_count]
-
-        mx = obs_g.obsval.max()
-        mn =  obs_g.obsval.min()
-
+        if base_ensemble is None:
+            mx = obs_g.obsval.max()
+            mn =  obs_g.obsval.min()
+        else:
+            mn = base_ensemble["r"].loc[:,names].min().min()
+            mx = base_ensemble["r"].loc[:, names].max().max()
         #if obs_g.shape[0] == 1:
         mx *= 1.1
         mn *= 0.9
         #ax.axis('square')
+        if base_ensemble is not None:
+            obs_gg = obs_g.sort_values(by="obsval")
 
+            for c, en in base_ensemble.items():
+                en_g = en.loc[:, obs_gg.obsnme]
+                ex = en_g.max()
+                en = en_g.min()
+                #[ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
+                ax.fill_between(obs_gg.obsval,en,ex,facecolor=c,alpha=0.2)
         #ax.scatter([obs_g.sim], [obs_g.obsval], marker='.', s=10, color='b')
         for c,en in ensembles.items():
             en_g = en.loc[:,obs_g.obsnme]
             ex = en_g.max()
             en = en_g.min()
             [ax.plot([ov,ov],[een,eex],color=c) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
-        if base_ensemble is not None:
-            for c, en in base_ensemble.items():
-                en_g = en.loc[:, obs_g.obsnme]
-                ex = en_g.max()
-                en = en_g.min()
-                [ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
+
 
         ax.plot([mn,mx],[mn,mx],'k--',lw=1.0)
         xlim = (mn,mx)
@@ -1321,19 +1326,30 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
         ax_count += 1
         ax = axes[ax_count]
         #ax.scatter(obs_g.obsval, obs_g.res, marker='.', s=10, color='b')
+
+        if base_ensemble is not None:
+            obs_gg = obs_g.sort_values(by="obsval")
+
+            for c, en in base_ensemble.items():
+                en_g = en.loc[:, obs_gg.obsnme].subtract(obs_gg.obsval)
+                ex = en_g.max()
+                en = en_g.min()
+                #[ax.plot([ov, ov], [een, eex], color=c,alpha=0.3) for ov, een, eex in zip(obs_g.obsval.values, en.values, ex.values)]
+                ax.fill_between(obs_gg.obsval,en,ex,facecolor=c,alpha=0.2)
+
         for c,en in ensembles.items():
             en_g = en.loc[:,obs_g.obsnme].subtract(obs_g.obsval,axis=1)
             ex = en_g.max()
             en = en_g.min()
             [ax.plot([ov,ov],[een,eex],color=c) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
-        if base_ensemble is not None:
-            if base_ensemble is not None:
-                for c, en in base_ensemble.items():
-                    en_g = en.loc[:, obs_g.obsnme].subtract(obs_g.obsval,axis=1)
-                    ex = en_g.max()
-                    en = en_g.min()
-                    [ax.plot([ov, ov], [een, eex], color=c, alpha=0.3) for ov, een, eex in
-                     zip(obs_g.obsval.values, en.values, ex.values)]
+        # if base_ensemble is not None:
+        #     if base_ensemble is not None:
+        #         for c, en in base_ensemble.items():
+        #             en_g = en.loc[:, obs_g.obsnme].subtract(obs_g.obsval,axis=1)
+        #             ex = en_g.max()
+        #             en = en_g.min()
+        #             [ax.plot([ov, ov], [een, eex], color=c, alpha=0.3) for ov, een, eex in
+        #              zip(obs_g.obsval.values, en.values, ex.values)]
         ylim = ax.get_ylim()
         mx = max(np.abs(ylim[0]), np.abs(ylim[1]))
         if obs_g.shape[0] == 1:
