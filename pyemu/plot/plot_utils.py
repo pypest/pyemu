@@ -1326,6 +1326,14 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
             ex = en_g.max()
             en = en_g.min()
             [ax.plot([ov,ov],[een,eex],color=c) for ov,een,eex in zip(obs_g.obsval.values,en.values,ex.values)]
+        if base_ensemble is not None:
+            if base_ensemble is not None:
+                for c, en in base_ensemble.items():
+                    en_g = en.loc[:, obs_g.obsnme].subtract(obs_g.obsval,axis=1)
+                    ex = en_g.max()
+                    en = en_g.min()
+                    [ax.plot([ov, ov], [een, eex], color=c, alpha=0.3) for ov, een, eex in
+                     zip(obs_g.obsval.values, en.values, ex.values)]
         ylim = ax.get_ylim()
         mx = max(np.abs(ylim[0]), np.abs(ylim[1]))
         if obs_g.shape[0] == 1:
