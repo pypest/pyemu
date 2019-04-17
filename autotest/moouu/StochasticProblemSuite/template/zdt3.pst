@@ -81,7 +81,7 @@ objective
 obj1  1  10.0  objective
 obj2  1  10.0  objective
 * model command line
-C:\Users\Violet\Anaconda3\python.exe StochasticProblemSuite.py zdt3 --stochastic additive
+C:\Users\Violet\Anaconda3\python.exe StochasticProblemSuite.py zdt3 --stochastic nonlinear
 * model input/output
 zdt3.tpl input.dat
 zdt3.ins output.dat
