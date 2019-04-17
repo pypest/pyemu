@@ -105,15 +105,17 @@ class EnsembleMethod(object):
         raise Exception("EnsembleMethod.initialize() must be implemented by the derived types")
 
     def _add_missing_pars(self, parensemble):
+        self.pst.add_transform_columns()
         missing_pars = set(self.pst.par_names) - set(parensemble.columns)
         if len(missing_pars) > 0:
+            c = "parval1"
             try:
-                parval1 = self.pst.parameter_data.loc[missing_pars, 'parval1_trans']
-            except KeyError:
-                self.pst.add_transform_columns()
-                parval1 = self.pst.parameter_data.loc[missing_pars, 'parval1_trans']
+                if parensemble.istransformed:
+                    c = "parval1_trans"
+            except:
+                pass
             parensemble = parensemble.reindex(columns=self.pst.par_names)
-            parensemble.loc[:, missing_pars] = parval1.values
+            parensemble.loc[:, missing_pars] = self.pst.parameter_data.loc[missing_pars,"parval1"].values
         return parensemble
 
     def _calc_delta(self,ensemble,scaling_matrix=None):
