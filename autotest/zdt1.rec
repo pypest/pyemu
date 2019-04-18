@@ -1,0 +1,13 @@
+             sweep.exe - a parameteric sweep utility
+for PEST(++) datasets 
+
+                 by the PEST++ developement team
+
+
+
+using control file: "zdt1.pst"
+
+Error prococessing control file: zdt1.pst
+
+PestFileError:  Error opening file: "zdt1.pst"
+

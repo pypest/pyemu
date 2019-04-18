@@ -1,9 +1,53 @@
-PEST++ performance logger started at:  16:59:38
-        ( time = 16:59:39,  elapsed time = 3ms )
+PEST++ performance logger started at:  12:29:52
+        ( time = 12:29:52,  elapsed time = 3ms )
   starting to process control file
-          ( time = 16:59:39,  elapsed time = 3ms )
+          ( time = 12:29:52,  elapsed time = 1ms )
   finished processing control file
-          ( time = 16:59:39,  elapsed time = 13ms )
-    starting to read parameter csv file
-            ( time = 16:59:39,  elapsed time = 14ms )
-    finished reading parameter csv file
+          ( time = 12:29:52,  elapsed time = 1ms )
+    starting basic model IO error checking
+            ( time = 12:29:52,  elapsed time = 1ms )
+    finished basic model IO error checking
+            ( time = 12:29:52,  elapsed time = 24ms )
+      starting to read parameter csv file
+              ( time = 12:29:52,  elapsed time = 133ms )
+      finished reading parameter csv file
+              ( time = 12:46:54,  elapsed time = 17min )
+        starting to read parameter csv file
+                ( time = 12:46:54,  elapsed time = 98ms )
+        finished reading parameter csv file
+                ( time = 13:04:04,  elapsed time = 17min )
+          starting to read parameter csv file
+                  ( time = 13:04:04,  elapsed time = 100ms )
+          finished reading parameter csv file
+                  ( time = 13:21:13,  elapsed time = 17min )
+            starting to read parameter csv file
+                    ( time = 13:21:14,  elapsed time = 101ms )
+            finished reading parameter csv file
+                    ( time = 13:42:46,  elapsed time = 21min )
+              starting to read parameter csv file
+                      ( time = 13:42:46,  elapsed time = 101ms )
+              finished reading parameter csv file
+                      ( time = 13:59:47,  elapsed time = 17min )
+                starting to read parameter csv file
+                        ( time = 13:59:47,  elapsed time = 98ms )
+                finished reading parameter csv file
+                        ( time = 14:16:47,  elapsed time = 17min )
+                  starting to read parameter csv file
+                          ( time = 14:16:47,  elapsed time = 98ms )
+                  finished reading parameter csv file
+                          ( time = 14:33:47,  elapsed time = 17min )
+                    starting to read parameter csv file
+                            ( time = 14:33:47,  elapsed time = 98ms )
+                    finished reading parameter csv file
+                            ( time = 14:50:52,  elapsed time = 17min )
+                      starting to read parameter csv file
+                              ( time = 14:50:52,  elapsed time = 101ms )
+                      finished reading parameter csv file
+                              ( time = 15:07:58,  elapsed time = 17min )
+                        starting to read parameter csv file
+                                ( time = 15:07:58,  elapsed time = 20ms )
+                        finished reading parameter csv file
+                                ( time = 15:11:21,  elapsed time = 3min )
+                          starting to read parameter csv file
+                                  ( time = 15:11:21,  elapsed time = 715us )
+                          finished reading parameter csv file
