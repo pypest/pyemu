@@ -2615,7 +2615,9 @@ class Pst(object):
 
     def get_par_change_limits(self):
         """  calculate the various parameter change limits used in pest.
-        Works in control file values space (not log transformed space)
+        Works in control file values space (not log transformed space).  Also
+        adds columns for effective upper and lower which account for par bounds and the
+        value of parchglim
 
         Returns
         -------
@@ -2661,5 +2663,16 @@ class Pst(object):
         rdelta = base_vals.apply(np.abs) * rpm
         change_df.loc[:,"rel_upper"] = base_vals + rdelta
         change_df.loc[:,"rel_lower"] = base_vals - rdelta
+
+        change_df.loc[:,"chg_upper"] = np.NaN
+        change_df.loc[fpars,"chg_upper"] = change_df.fac_upper[fpars]
+        change_df.loc[rpars, "chg_upper"] = change_df.rel_upper[rpars]
+        change_df.loc[:, "chg_lower"] = np.NaN
+        change_df.loc[fpars, "chg_lower"] = change_df.fac_lower[fpars]
+        change_df.loc[rpars, "chg_lower"] = change_df.rel_lower[rpars]
+
+        # effective limits
+        change_df.loc[:,"eff_upper"] = change_df.loc[:,["parubnd","chg_upper"]].max()
+        change_df.loc[:,"eff_lower"] = change_df.loc[:, ["parlbnd", "chg_lower"]].min()
 
         return change_df
