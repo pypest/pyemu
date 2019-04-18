@@ -1188,7 +1188,7 @@ def change_limit_test():
     import pyemu
     pst = pyemu.Pst(os.path.join("pst","pest.pst"))
     #print(pst.parameter_data)
-    cols = ["parval1", "rel_upper", "rel_lower", "fac_upper", "fac_lower"]
+    cols = ["parval1", "rel_upper", "rel_lower", "fac_upper", "fac_lower","chg_upper","chg_lower"]
     pst.control_data.relparmax = 3
     pst.control_data.facparmax = 3
     par = pst.parameter_data
@@ -1218,7 +1218,8 @@ def change_limit_test():
     assert df.fac_lower.mean() == -3.0
     assert np.abs(df.fac_upper.mean() + 0.33333) < 1.0e-3
 
-
+    print(df.loc[:,["eff_upper","eff_lower"]])
+    print(df.loc[:,cols])
 
 
 if __name__ == "__main__":

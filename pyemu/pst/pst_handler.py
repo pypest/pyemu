@@ -2672,7 +2672,7 @@ class Pst(object):
         change_df.loc[rpars, "chg_lower"] = change_df.rel_lower[rpars]
 
         # effective limits
-        change_df.loc[:,"eff_upper"] = change_df.loc[:,["parubnd","chg_upper"]].max()
-        change_df.loc[:,"eff_lower"] = change_df.loc[:, ["parlbnd", "chg_lower"]].min()
+        change_df.loc[:,"eff_upper"] = change_df.loc[:,["parubnd","chg_upper"]].min(axis=1)
+        change_df.loc[:,"eff_lower"] = change_df.loc[:, ["parlbnd", "chg_lower"]].max(axis=1)
 
         return change_df
