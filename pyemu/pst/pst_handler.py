@@ -2610,3 +2610,56 @@ class Pst(object):
         gt_pi = pi.loc[pi.apply(lambda x: self._is_greater_const(x.obgnme) \
                                           and x.weight != 0.0, axis=1), "pilbl"]
         return gt_pi
+
+
+
+    def get_par_change_limits(self):
+        """  calculate the various parameter change limits used in pest.
+        Works in control file values space (not log transformed space)
+
+        Returns
+        -------
+            df : pandas.DataFrame
+                a copy of self.parameter_data with columns for relative and factor change limits
+        Note
+        ----
+            does not yet support absolute parameter change limits!
+
+        """
+        par = self.parameter_data
+        fpars = par.loc[par.parchglim=="factor","parnme"]
+        rpars = par.loc[par.parchglim == "relative", "parnme"]
+        apars = par.loc[par.parchglim == "absolute", "parnme"]
+
+        change_df = par.copy()
+
+        fpm = self.control_data.facparmax
+        rpm = self.control_data.relparmax
+        facorig = self.control_data.facorig
+        base_vals = par.parval1.copy()
+
+        # apply zero value correction
+        base_vals[base_vals==0] = par.loc[base_vals==0,"parubnd"] / 4.0
+
+        # apply facorig
+        replace_pars = base_vals.index.map(lambda x: par.loc[x,"partrans"]!="log" and np.abs(base_vals.loc[x]) < facorig*np.abs(base_vals.loc[x]))
+        #print(facorig,replace_pars)
+        base_vals.loc[replace_pars] = base_vals.loc[replace_pars] * facorig
+
+        # negative fac pars
+        nfpars = par.loc[base_vals.apply(lambda x: x < 0)].index
+        change_df.loc[nfpars, "fac_upper"] = base_vals / fpm
+        change_df.loc[nfpars, "fac_lower"] = base_vals * fpm
+
+        # postive fac pars
+        pfpars = par.loc[base_vals.apply(lambda x: x > 0)].index
+        change_df.loc[pfpars, "fac_upper"] = base_vals * fpm
+        change_df.loc[pfpars, "fac_lower"] = base_vals / fpm
+
+        # relative
+
+        rdelta = base_vals.apply(np.abs) * rpm
+        change_df.loc[:,"rel_upper"] = base_vals + rdelta
+        change_df.loc[:,"rel_lower"] = base_vals - rdelta
+
+        return change_df
