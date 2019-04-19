@@ -2610,3 +2610,69 @@ class Pst(object):
         gt_pi = pi.loc[pi.apply(lambda x: self._is_greater_const(x.obgnme) \
                                           and x.weight != 0.0, axis=1), "pilbl"]
         return gt_pi
+
+
+
+    def get_par_change_limits(self):
+        """  calculate the various parameter change limits used in pest.
+        Works in control file values space (not log transformed space).  Also
+        adds columns for effective upper and lower which account for par bounds and the
+        value of parchglim
+
+        Returns
+        -------
+            df : pandas.DataFrame
+                a copy of self.parameter_data with columns for relative and factor change limits
+        Note
+        ----
+            does not yet support absolute parameter change limits!
+
+        """
+        par = self.parameter_data
+        fpars = par.loc[par.parchglim=="factor","parnme"]
+        rpars = par.loc[par.parchglim == "relative", "parnme"]
+        apars = par.loc[par.parchglim == "absolute", "parnme"]
+
+        change_df = par.copy()
+
+        fpm = self.control_data.facparmax
+        rpm = self.control_data.relparmax
+        facorig = self.control_data.facorig
+        base_vals = par.parval1.copy()
+
+        # apply zero value correction
+        base_vals[base_vals==0] = par.loc[base_vals==0,"parubnd"] / 4.0
+
+        # apply facorig
+        replace_pars = base_vals.index.map(lambda x: par.loc[x,"partrans"]!="log" and np.abs(base_vals.loc[x]) < facorig*np.abs(base_vals.loc[x]))
+        #print(facorig,replace_pars)
+        base_vals.loc[replace_pars] = base_vals.loc[replace_pars] * facorig
+
+        # negative fac pars
+        nfpars = par.loc[base_vals.apply(lambda x: x < 0)].index
+        change_df.loc[nfpars, "fac_upper"] = base_vals / fpm
+        change_df.loc[nfpars, "fac_lower"] = base_vals * fpm
+
+        # postive fac pars
+        pfpars = par.loc[base_vals.apply(lambda x: x > 0)].index
+        change_df.loc[pfpars, "fac_upper"] = base_vals * fpm
+        change_df.loc[pfpars, "fac_lower"] = base_vals / fpm
+
+        # relative
+
+        rdelta = base_vals.apply(np.abs) * rpm
+        change_df.loc[:,"rel_upper"] = base_vals + rdelta
+        change_df.loc[:,"rel_lower"] = base_vals - rdelta
+
+        change_df.loc[:,"chg_upper"] = np.NaN
+        change_df.loc[fpars,"chg_upper"] = change_df.fac_upper[fpars]
+        change_df.loc[rpars, "chg_upper"] = change_df.rel_upper[rpars]
+        change_df.loc[:, "chg_lower"] = np.NaN
+        change_df.loc[fpars, "chg_lower"] = change_df.fac_lower[fpars]
+        change_df.loc[rpars, "chg_lower"] = change_df.rel_lower[rpars]
+
+        # effective limits
+        change_df.loc[:,"eff_upper"] = change_df.loc[:,["parubnd","chg_upper"]].min(axis=1)
+        change_df.loc[:,"eff_lower"] = change_df.loc[:, ["parlbnd", "chg_lower"]].max(axis=1)
+
+        return change_df

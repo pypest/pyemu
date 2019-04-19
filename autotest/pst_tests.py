@@ -1183,8 +1183,48 @@ def new_format_test():
     #     raise Exception()
 
 
+def change_limit_test():
+    import numpy as np
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    #print(pst.parameter_data)
+    cols = ["parval1", "rel_upper", "rel_lower", "fac_upper", "fac_lower","chg_upper","chg_lower"]
+    pst.control_data.relparmax = 3
+    pst.control_data.facparmax = 3
+    par = pst.parameter_data
+
+    par.loc[:,"parval1"] = 1.0
+    df = pst.get_par_change_limits()
+    assert df.rel_upper.mean() == 4.0
+    assert df.rel_lower.mean() == -2.0
+    assert df.fac_upper.mean() == 3.0
+    assert np.abs(df.fac_lower.mean() -  0.33333) < 1.0e-3
+
+    pst.control_data.facorig = 2.0
+    par.loc[:,"partrans"] = "none"
+    df = pst.get_par_change_limits()
+    assert df.rel_upper.mean() == 8.0
+    assert df.rel_lower.mean() == -4.0
+    assert df.fac_upper.mean() == 6.0
+    assert np.abs(df.fac_lower.mean() - 0.66666) < 1.0e-3
+
+    pst.control_data.facorig = 0.001
+    par.loc[:, "partrans"] = "none"
+    par.loc[:, "parval1"] = -1.0
+    df = pst.get_par_change_limits()
+    #print(df.loc[:, cols])
+    assert df.rel_upper.mean() == 2.0
+    assert df.rel_lower.mean() == -4.0
+    assert df.fac_lower.mean() == -3.0
+    assert np.abs(df.fac_upper.mean() + 0.33333) < 1.0e-3
+
+    print(df.loc[:,["eff_upper","eff_lower"]])
+    print(df.loc[:,cols])
+
+
 if __name__ == "__main__":
-    new_format_test()
+    change_limit_test()
+    #new_format_test()
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
     #pst_from_flopy_geo_draw_test()
