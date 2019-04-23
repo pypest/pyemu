@@ -276,15 +276,18 @@ def setup_freyberg_transport(plot=True):
     mt_nam = "freyberg_mt.nam"
 
     mf = flopy.modflow.Modflow.load(mf_nam,model_ws=org_model_ws,verbose=True,version="mfnwt",exe_name="mfnwt")
-    mf.dis.nper = 1
+    mf.dis.nper = 2
     #mf.dis.nlay = 1
     #mf.dis.botm = mf.dis.botm[-1]
-    mf.dis.perlen = 3650.0
-    mf.external_path = '.'
+    mf.dis.perlen = [3650.0,365.0,365.0]
+
+    mf.dis.steady = False
+
+    #mf.external_path = '.'
     rdata = mf.sfr.reach_data
     #print(rdata)
-    upstrm = 33
-    dwstrm = 32.5
+    upstrm = 34
+    dwstrm = 33.5
     total_length = mf.dis.delc.array.max() * mf.nrow
     slope = (upstrm - dwstrm) / total_length
 
@@ -293,9 +296,7 @@ def setup_freyberg_transport(plot=True):
     rdata["strtop"] = strtop
     rdata["slope"] = slope
     #rdata["strhc1"] *= 10
-
-
-
+    mf.sfr.reach_data = rdata
     sdata = mf.sfr.segment_data[0]
     print(sdata)
     print(sdata.dtype)
@@ -305,9 +306,12 @@ def setup_freyberg_transport(plot=True):
     #sdata["hcond1"][:] *= 10.0
 
     mf.change_model_ws(new_model_ws,reset_external=True)
-    mf.rch.rech[0] *= 1.0
-    mf.wel.stress_period_data[0]["flux"][:] = -400
-    mf.wel.stress_period_data[0]["k"][:] = 0
+    mf.rch.rech[0] *= 0.5
+    mf.rch.rech[1] = mf.rch.rech[0].array * 0.75
+    mf.wel.stress_period_data[0]["flux"][:] = -150
+    mf.wel.stress_period_data[0]["k"][:] = 2
+    mf.wel.stress_period_data[1]["flux"][:] = -300
+    mf.wel.stress_period_data[1]["k"][:] = 2
 
     ib = mf.bas6.ibound[0].array
     drn_data = []
@@ -322,23 +326,27 @@ def setup_freyberg_transport(plot=True):
     ib[ib<0] = 1
     mf.bas6.ibound = ib
 
+    mf.upw.ss = 0.00001
+    mf.upw.sy = 0.01
+    mf.upw.laytyp = [1,1,1]
     #mf.upw.vka[1] *= 100.0
-    mf.upw.hk[0] = 15
-    mf.upw.vka[0] = 1.5
+    mf.upw.hk[0] = 5
+    mf.upw.vka[0] = .5
 
-    mf.upw.hk[1] = 0.25
-    mf.upw.vka[1] = 0.25
+    mf.upw.hk[1] = .1
+    mf.upw.vka[1] = .1
 
-    mf.upw.hk[2] = 30.0
-    mf.upw.vka[2] = 3.0
-
+    mf.upw.hk[2] = 5.0
+    mf.upw.vka[2] = .5
+    print(mf.upw.hk.array)
 
     mf.write_input()
     mf.run_model()
 
     hds = flopy.utils.HeadFile(os.path.join(new_model_ws,mf_nam.replace(".nam",".hds")),model=mf)
 
-    mf.dis.top = hds.get_data()[0,:,:] * 1.05
+    mf.dis.top = hds.get_data(kstpkper=(0,0))[0,:,:] * 1.05
+    mf.bas6.strt = hds.get_data(kstpkper=(0,0))
     #print(mf.dis.model_top)
     mf.write_input()
     mf.run_model()
@@ -355,13 +363,13 @@ def setup_freyberg_transport(plot=True):
         plt.show()
 
         mlist = flopy.utils.MfListBudget(os.path.join(new_model_ws,mf_nam.replace(".nam",".list")))
-        df = mlist.get_dataframes(diff=True)[1]
+        df = mlist.get_dataframes(diff=True)[0]
         df.plot(kind="bar")
         plt.show()
 
     mt = flopy.mt3d.Mt3dms.load(mt_nam,model_ws=org_model_ws,verbose=True,exe_name="mt3dusgs",modflowmodel=mf)
 
-    mt.btn.nper = 1
+    mt.btn.nper = 2
     mt.btn.perlen = 3650.0
     #mt.external_path = '.'
     mt.remove_package("SSM")
@@ -1271,7 +1279,7 @@ if __name__ == "__main__":
     #run_freyberg_par_sweep()
     #process_freyberg_par_sweep()
 
-    # setup_freyberg_transport()
+    setup_freyberg_transport()
     # setup_freyberg_pest_interface(num_reals=100)
     # run_freyberg_dec_var_sweep_mean_parvals()
     # invest_plot()
