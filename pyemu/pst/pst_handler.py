@@ -2386,6 +2386,8 @@ class Pst(object):
                     '\\usepackage{pdflscape}\n\\usepackage{longtable}\n' + \
                     '\\usepackage{booktabs}\n\\usepackage{nopageno}\n\\begin{document}\n'
 
+        if filename == "none":
+            return pargp_df
         if filename is None:
             filename = self.filename.replace(".pst",".par.tex")
 
@@ -2397,6 +2399,7 @@ class Pst(object):
             f.write("\\end{landscape}\n")
             f.write("\\end{center}\n")
             f.write("\\end{document}\n")
+        return pargp_df
 
     def write_obs_summary_table(self,filename=None,group_names=None):
         """write a stand alone observation summary latex table
@@ -2460,6 +2463,10 @@ class Pst(object):
                    '\\usepackage{pdflscape}\n\\usepackage{longtable}\n' + \
                    '\\usepackage{booktabs}\n\\usepackage{nopageno}\n\\begin{document}\n'
 
+
+        if filename == "none":
+            return obsg_df
+
         if filename is None:
             filename = self.filename.replace(".pst", ".obs.tex")
 
@@ -2475,6 +2482,7 @@ class Pst(object):
             f.write("\\end{center}\n")
             f.write("\\end{document}\n")
 
+        return obsg_df
 
     def run(self,exe_name="pestpp",cwd=None):
         """run a command related to the pst instance. If
