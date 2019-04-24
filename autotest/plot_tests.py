@@ -149,7 +149,7 @@ def ensemble_plot_test():
 
 
     pyemu.plot_utils.ensemble_helper({"b": pe, "y": csv_file}, filename=csv_file + ".pdf",
-                                     plot_cols=pst.par_names[:10], sync_bins=Falsedd,
+                                     plot_cols=pst.par_names[:10], sync_bins=False,
                                      deter_vals=deter_vals,deter_range=True)
 
 
