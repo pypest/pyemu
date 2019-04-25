@@ -639,19 +639,21 @@ def res_phi_pie(pst,logger=None, **kwargs):
             logger.lraise("res_phi_pie: pst.res is None, couldn't find residuals file")
 
     obs = pst.observation_data
-
+    phi = pst.phi
     phi_comps = pst.phi_components
     norm_phi_comps = pst.phi_components_normalized
+    keys = list(phi_comps.keys())
     if "include_zero" not in kwargs or kwargs["include_zero"] is True:
-        phi_comps = {k:v for k,v in phi_comps.items() if v > 0.0}
-        norm_phi_comps = {k:norm_phi_comps[k] for k in phi_comps.keys()}
+        phi_comps = {k:phi_comps[k] for k in keys if phi_comps[k] > 0.0}
+        keys = list(phi_comps.keys())
+        norm_phi_comps = {k:norm_phi_comps[k] for k in keys}
     if "ax" in kwargs:
         ax = kwargs["ax"]
     else:
         fig = plt.figure(figsize=figsize)
         ax = plt.subplot(1,1,1,aspect="equal")
-    labels = ["{0}\n{1:4G}\n({2:3.1f}%)".format(k,v,100. * (v / pst.phi)) for k,v in phi_comps.items()]
-    ax.pie([float(v) for v in norm_phi_comps.values()],labels=labels)
+    labels = ["{0}\n{1:4G}\n({2:3.1f}%)".format(k,phi_comps[k],100. * (phi_comps[k] / phi)) for k in keys]
+    ax.pie([float(norm_phi_comps[k]) for k in keys],labels=labels)
     logger.log("plot res_phi_pie")
     if "filename" in kwargs:
         plt.savefig(kwargs["filename"])
