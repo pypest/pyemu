@@ -2207,8 +2207,11 @@ class PstFromFlopyModel(object):
             else:
                 ib = {'general_zn': self.k_zone_dict}
         else:
-            ib = {k:self.m.bas6.ibound[k].array for k in range(self.m.nlay)}
-
+            ib = {}
+            for k in range(self.m.nlay):
+                a = self.m.bas6.ibound[k].array.copy()
+                a[a>0] = 1
+                ib[k] = a
             for k,i in ib.items():
                 if np.any(i<0):
                     u,c = np.unique(i[i>0], return_counts=True)

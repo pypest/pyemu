@@ -1222,8 +1222,37 @@ def change_limit_test():
     print(df.loc[:,cols])
 
 
+def from_flopy_pp_test():
+    import numpy as np
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    m.change_model_ws("temp")
+    ib = m.bas6.ibound.array
+    ib[ib>0] = 3
+    m.bas6.ibound = ib
+    m.write_input()
+
+    new_model_ws = "temp_pst_from_flopy"
+    pp_props = [["upw.ss", [0, 1]]]
+
+    obssim_smp_pairs = None
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, "temp",
+                                             pp_props=pp_props,
+                                             remove_existing=True,
+                                             pp_space=4,
+                                             use_pp_zones=False,
+                                             hds_kperk=[0, 0], build_prior=False)
+
+
+
 if __name__ == "__main__":
-    change_limit_test()
+    #change_limit_test()
     #new_format_test()
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
@@ -1236,7 +1265,8 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    # from_flopy_zone_pars()
+    #from_flopy_zone_pars()
+    from_flopy_pp_test()
     #from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
