@@ -936,7 +936,7 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
 
     """
     assert isinstance(cov,pyemu.Cov)
-
+    print("getting CC matrix")
     cc_mat = cov.get(pst.adj_par_names).to_pearson()
     #print(pst.parameter_data.dtypes)
     try:
@@ -946,11 +946,12 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
     pi_num = pst.prior_information.shape[0] + 1
     pilbl, obgnme, weight, equation = [], [], [], []
     sadj_names = set(pst.adj_par_names)
+    print("processing")
     for i,iname in enumerate(cc_mat.row_names):
         if iname not in sadj_names:
             continue
         for j,jname in enumerate(cc_mat.row_names[i+1:]):
-            if jname not in pst.adj_par_names:
+            if jname not in sadj_names:
                 continue
             #print(i,iname,i+j+1,jname)
             cc = cc_mat.x[i,j+i+1]
