@@ -948,8 +948,8 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
             #            logger.warn("error plotting histogram for {0}:{1}".
             #                        format(pc,str(e)))
             vals = en.loc[:,plot_col].values.flatten()
-            print(plot_bins)
-            print(vals)
+            #print(plot_bins)
+            #print(vals)
             ax.hist(vals,bins=plot_bins,edgecolor="none",alpha=0.5,normed=True,facecolor=fc)
             v = None
             if deter_vals is not None:
