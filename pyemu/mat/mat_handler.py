@@ -1459,7 +1459,7 @@ class Matrix(object):
             self.__x = np.delete(self.__x, idxs, 1)
             keep_names = [name for name in self.col_names if name not in names]
             assert len(keep_names) == self.__x.shape[1],"shape-name mismatch:"+\
-                   "{0}:{0}".format(len(keep_names),self.__x.shape)
+                   "{0}:{1}".format(len(keep_names),self.__x.shape)
             self.col_names = keep_names
             # idxs = np.sort(idxs)
             # for idx in idxs[::-1]:

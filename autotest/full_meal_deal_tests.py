@@ -28,7 +28,7 @@ def freyberg_test():
     import pandas as pd
     try:
         import flopy
-    except:
+    except Exception as e:
         return
     import pyemu
 
@@ -142,7 +142,7 @@ def freyberg_kl_pp_compare():
     import pandas as pd
     try:
         import flopy
-    except:
+    except Exception as e:
         return
     import pyemu
 
@@ -225,7 +225,7 @@ def run_sweep_test():
     import pandas as pd
     try:
         import flopy
-    except:
+    except Exception as e:
         return
     import pyemu
 

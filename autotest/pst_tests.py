@@ -944,29 +944,6 @@ def try_process_ins_test():
     assert diff.sum() < 1.0e+10
 
 
-def rectify_pgroup_test():
-    import os
-    import pyemu
-    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
-    npar = pst.npar
-    tpl_file = os.path.join("temp", "crap.in.tpl")
-    with open(tpl_file, 'w') as f:
-        f.write("ptf ~\n")
-        f.write("  ~junk1   ~\n")
-        f.write("  ~ {0}  ~\n".format(pst.parameter_data.parnme[0]))
-    # print(pst.parameter_groups)
-
-    pst.add_parameters(tpl_file, "crap.in", pst_path="temp")
-
-    # print(pst.parameter_groups)
-    pst.rectify_pgroups()
-    # print(pst.parameter_groups)
-
-    pst.parameter_groups.loc["pargp", "inctyp"] = "absolute"
-    print(pst.parameter_groups)
-    pst.write(os.path.join('temp', "test.pst"))
-    print(pst.parameter_groups)
-
 
 def sanity_check_test():
     import os

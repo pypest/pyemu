@@ -474,7 +474,6 @@ class LinearAnalysis(object):
             #    vecs.append(extract.get(row_names=row_name).T)
             # call obscov to load __obscov so that __obscov
             # (priavte) can be manipulated
-            self.obscov
             self.__obscov.drop(row_names, axis=0)
         self.__predictions = mat
         try:
