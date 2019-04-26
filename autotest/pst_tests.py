@@ -944,29 +944,6 @@ def try_process_ins_test():
     assert diff.sum() < 1.0e+10
 
 
-def rectify_pgroup_test():
-    import os
-    import pyemu
-    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
-    npar = pst.npar
-    tpl_file = os.path.join("temp", "crap.in.tpl")
-    with open(tpl_file, 'w') as f:
-        f.write("ptf ~\n")
-        f.write("  ~junk1   ~\n")
-        f.write("  ~ {0}  ~\n".format(pst.parameter_data.parnme[0]))
-    # print(pst.parameter_groups)
-
-    pst.add_parameters(tpl_file, "crap.in", pst_path="temp")
-
-    # print(pst.parameter_groups)
-    pst.rectify_pgroups()
-    # print(pst.parameter_groups)
-
-    pst.parameter_groups.loc["pargp", "inctyp"] = "absolute"
-    print(pst.parameter_groups)
-    pst.write(os.path.join('temp', "test.pst"))
-    print(pst.parameter_groups)
-
 
 def sanity_check_test():
     import os
@@ -1222,8 +1199,37 @@ def change_limit_test():
     print(df.loc[:,cols])
 
 
+def from_flopy_pp_test():
+    import numpy as np
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    m.change_model_ws("temp")
+    ib = m.bas6.ibound.array
+    ib[ib>0] = 3
+    m.bas6.ibound = ib
+    m.write_input()
+
+    new_model_ws = "temp_pst_from_flopy"
+    pp_props = [["upw.ss", [0, 1]]]
+
+    obssim_smp_pairs = None
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, "temp",
+                                             pp_props=pp_props,
+                                             remove_existing=True,
+                                             pp_space=4,
+                                             use_pp_zones=False,
+                                            build_prior=False)
+
+
+
 if __name__ == "__main__":
-    change_limit_test()
+    #change_limit_test()
     #new_format_test()
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
@@ -1236,7 +1242,8 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    # from_flopy_zone_pars()
+    #from_flopy_zone_pars()
+    from_flopy_pp_test()
     #from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()

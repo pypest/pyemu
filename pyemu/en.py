@@ -133,7 +133,6 @@ class Ensemble(pd.DataFrame):
                                         cov.row_names)
             vals = self.mean_values.loc[names]
             cov = cov.get(names)
-            pass
         else:
             vals = self.mean_values
             names = self.names
@@ -1062,7 +1061,6 @@ class ParameterEnsemble(Ensemble):
                 raise Exception("ParameterEnsemble::from_gaussian_draw() error: cov and pst share no common names")
             vals = vals.loc[common_names]
             cov = cov.get(common_names)
-            pass
         else:
             common_names = cov.row_names
 

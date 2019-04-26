@@ -1856,6 +1856,30 @@ class Pst(object):
                 ("Pst.__reset_weights() warning: phi group {0} has zero phi, skipping...".format(item))
 
 
+    def _adjust_weights_by_list(self, obslist, weight):
+        """a private method to reset the weight for a list of observation names.  Supports the
+        data worth analyses in pyemu.Schur class.  This method only adjusts
+        observation weights in the current weight is nonzero.  User beware!
+        Parameters
+        ----------
+        obslist : list
+            list of observation names
+        weight : (float)
+            new weight to assign
+        """
+
+        obs = self.observation_data
+        if not isinstance(obslist, list):
+            obslist = [obslist]
+        obslist = set([str(i).lower() for i in obslist])
+        # groups = obs.groupby([lambda x:x in obslist,
+        #                     obs.weight.apply(lambda x:x==0.0)]).groups
+        # if (True,True) in groups:
+        #    obs.loc[groups[True,True],"weight"] = weight
+        reset_names = obs.loc[obs.apply(lambda x: x.obsnme in obslist and x.weight == 0, axis=1), "obsnme"]
+        if len(reset_names) > 0:
+            obs.loc[reset_names, "weight"] = weight
+
     def adjust_weights(self,obs_dict=None,
                               obsgrp_dict=None):
         """reset the weights of observation groups to contribute a specified
@@ -2386,6 +2410,8 @@ class Pst(object):
                     '\\usepackage{pdflscape}\n\\usepackage{longtable}\n' + \
                     '\\usepackage{booktabs}\n\\usepackage{nopageno}\n\\begin{document}\n'
 
+        if filename == "none":
+            return pargp_df
         if filename is None:
             filename = self.filename.replace(".pst",".par.tex")
 
@@ -2397,6 +2423,7 @@ class Pst(object):
             f.write("\\end{landscape}\n")
             f.write("\\end{center}\n")
             f.write("\\end{document}\n")
+        return pargp_df
 
     def write_obs_summary_table(self,filename=None,group_names=None):
         """write a stand alone observation summary latex table
@@ -2460,6 +2487,10 @@ class Pst(object):
                    '\\usepackage{pdflscape}\n\\usepackage{longtable}\n' + \
                    '\\usepackage{booktabs}\n\\usepackage{nopageno}\n\\begin{document}\n'
 
+
+        if filename == "none":
+            return obsg_df
+
         if filename is None:
             filename = self.filename.replace(".pst", ".obs.tex")
 
@@ -2475,6 +2506,7 @@ class Pst(object):
             f.write("\\end{center}\n")
             f.write("\\end{document}\n")
 
+        return obsg_df
 
     def run(self,exe_name="pestpp",cwd=None):
         """run a command related to the pst instance. If
