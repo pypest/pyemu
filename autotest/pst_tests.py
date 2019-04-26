@@ -1224,7 +1224,7 @@ def from_flopy_pp_test():
                                              remove_existing=True,
                                              pp_space=4,
                                              use_pp_zones=False,
-                                             hds_kperk=[0, 0], build_prior=False)
+                                            build_prior=False)
 
 
 
