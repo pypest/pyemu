@@ -1049,7 +1049,7 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
             par = pst.parameter_data.loc[pst.adj_par_names,:]
             grouper = par.groupby(par.pargp).groups
             grouper["all"] = pst.adj_par_names
-            li = par.partrans == "log"
+            li = par.loc[par.partrans == "log","parnme"]
             ensemble1.loc[:,li] = ensemble1.loc[:,li].apply(np.log10)
             ensemble2.loc[:, li] = ensemble2.loc[:, li].apply(np.log10)
         elif len(en_cols.symmetric_difference(set(pst.obs_names))) == 0:

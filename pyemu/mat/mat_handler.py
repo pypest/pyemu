@@ -1598,8 +1598,8 @@ class Matrix(object):
             number of elements to write in a single pass.  Default is None
 
         """
-        print(self.x)
-        print(type(self.x))
+        #print(self.x)
+        #print(type(self.x))
 
         if np.any(np.isnan(self.x)):
             raise Exception("Matrix.to_binary(): nans found")
