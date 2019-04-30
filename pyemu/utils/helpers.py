@@ -3672,7 +3672,7 @@ def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_r
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme}, index=parnme)
     # df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
-    df.loc[:, "pargp"] = "{0}_{1}".format(name, suffix.replace('_', ''))
+    df.loc[:, "pargp"] = "{0}_{1}".format(suffix.replace('_', ''), name)
     df.loc[:, "tpl"] = tpl_file
     return df
 
