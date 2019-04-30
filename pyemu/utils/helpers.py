@@ -2085,7 +2085,7 @@ class PstFromFlopyModel(object):
                 f.write("\n")
         df = pd.DataFrame({"parnme":parnme},index=parnme)
         #df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
-        df.loc[:,"pargp"] = "{0}_{1}".format(name,self.cn_suffix.replace('_',''))
+        df.loc[:,"pargp"] = "{0}_{1}".format(self.cn_suffix.replace('_',''),name)
         df.loc[:,"tpl"] = tpl_file
         return df
 
@@ -3731,7 +3731,7 @@ def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
     if spatial_reference is not None:
         df.loc[:,'x'] = x
         df.loc[:,'y'] = y
-    df.loc[:, "pargp"] = "{0}{1}".format(suffix.replace('_', ''), name)
+    df.loc[:, "pargp"] = "{0}_{1}".format(suffix.replace('_', ''), name)
     df.loc[:, "tpl"] = tpl_file
     return df
 
@@ -3789,7 +3789,7 @@ def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
                 f.write(pname)
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme}, index=parnme)
-    df.loc[:, "pargp"] = "{0}{1}".format(suffix.replace("_", ''), name)
+    df.loc[:, "pargp"] = "{0}_{1}".format(suffix.replace("_", ''), name)
     return df
 
 

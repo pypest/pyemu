@@ -607,6 +607,7 @@ def from_flopy_zone_pars():
                                              use_pp_zones=True,
                                              k_zone_dict=k_zone_dict,
                                              hds_kperk=[0, 0], build_prior=False)
+    print(helper.pst.par_groups)
 
 
 
@@ -1242,8 +1243,8 @@ if __name__ == "__main__":
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    #from_flopy_zone_pars()
-    from_flopy_pp_test()
+    from_flopy_zone_pars()
+    #from_flopy_pp_test()
     #from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
