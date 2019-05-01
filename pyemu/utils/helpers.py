@@ -2477,7 +2477,7 @@ class PstFromFlopyModel(object):
                     else:
                         assert 'general_zn' in self.k_zone_dict.keys(), \
                             "Neither {0} nor 'general_zn' are in k_zone_dict keys: {1}".format(attr_name,
-                                                                                               k_zone_dict.keys())
+                                                                                               self.k_zone_dict.keys())
                         k_zone_dict = self.k_zone_dict['general_zn']
                 else:
                     k_zone_dict = self.k_zone_dict
