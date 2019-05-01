@@ -570,17 +570,17 @@ def from_flopy_zone_pars():
     m.write_input()
 
     new_model_ws = "temp_pst_from_flopy"
-    grid_props = [["upw.ss", [0, 1]], ["upw.ss", 1], ["upw.ss", 2], ["extra.pr", 0],
+    grid_props = [["upw.ss", [0, 1]], ["upw.ss", 1], ["upw.ss", 2], ["extra.prsity", 0],
                 ["rch.rech", 0], ["rch.rech", [1, 2]]]
     const_props = [["rch.rech", i] for i in range(m.nper)]
-    grid_props = grid_props.extend(["extra.pr", 0])
-    zone_props = [["extra.pr", 0], ["extra.pr", 2], ["upw.vka", 1], ["upw.vka", 2]]
+    grid_props = grid_props.extend(["extra.prsity", 0])
+    zone_props = [["extra.prsity", 0], ["extra.prsity", 2], ["upw.vka", 1], ["upw.vka", 2]]
 
     zn_arr = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "hk.zones"), dtype=int)
     zn_arr2 = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "rand.zones"), dtype=int)
 
-    pp_props = [["upw.hk", [0, 1]], ["extra.pr", 1], ["upw.ss", 1], ["upw.ss", 2], ["upw.vka", 2]]
-    k_zone_dict = {"upw.hk": {k: zn_arr for k in range(3)}, "extra.pr": {k: zn_arr2 for k in range(3)},
+    pp_props = [["upw.hk", [0, 1]], ["extra.prsity", 1], ["upw.ss", 1], ["upw.ss", 2], ["upw.vka", 2]]
+    k_zone_dict = {"upw.hk": {k: zn_arr for k in range(3)}, "extra.prsity": {k: zn_arr2 for k in range(3)},
                    "general_zn": {k: zn_arr for k in range(3)}}
     obssim_smp_pairs = None
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
@@ -595,7 +595,7 @@ def from_flopy_zone_pars():
                                              k_zone_dict=k_zone_dict,
                                              hds_kperk=[0, 0], build_prior=False)
 
-    k_zone_dict = {"upw.vka": {k: zn_arr for k in range(3)}, "extra.pr": {k: zn_arr2 for k in range(3)}}
+    k_zone_dict = {"upw.vka": {k: zn_arr for k in range(3)}, "extra.prsity": {k: zn_arr2 for k in range(3)}}
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              const_props=const_props,
                                              grid_props=grid_props,

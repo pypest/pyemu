@@ -2077,7 +2077,7 @@ class PstFromFlopyModel(object):
                     else:
                         pname = "{0}{1}".format(name,self.cn_suffix)
                         if len(pname) > 12:
-                            self.logger.lraise("zone pname too long:{0}".\
+                            self.logger.warn("zone pname too long for pest:{0}".\
                                                format(pname))
                         parnme.append(pname)
                         pname = " ~   {0}    ~".format(pname)
@@ -2117,7 +2117,7 @@ class PstFromFlopyModel(object):
                     else:
                         pname = "{0}{1:03d}{2:03d}".format(name,i,j)
                         if len(pname) > 12:
-                            self.logger.lraise("grid pname too long:{0}".\
+                            self.logger.warn("grid pname too long for pest:{0}".\
                                                format(pname))
                         parnme.append(pname)
                         pname = ' ~     {0}   ~ '.format(pname)
@@ -2477,7 +2477,7 @@ class PstFromFlopyModel(object):
                     else:
                         assert 'general_zn' in self.k_zone_dict.keys(), \
                             "Neither {0} nor 'general_zn' are in k_zone_dict keys: {1}".format(attr_name,
-                                                                                               k_zone_dict.keys())
+                                                                                               self.k_zone_dict.keys())
                         k_zone_dict = self.k_zone_dict['general_zn']
                 else:
                     k_zone_dict = self.k_zone_dict
@@ -3664,7 +3664,7 @@ def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_r
                     else:
                         pname = "{0}{1}".format(name, suffix)
                         if len(pname) > 12:
-                            raise("zone pname too long:{0}". \
+                            warnings.warn("zone pname too long for pest:{0}". \
                                                format(pname))
                     parnme.append(pname)
                     pname = " ~   {0}    ~".format(pname)
@@ -3717,7 +3717,7 @@ def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
                     else:
                         pname = "{0}{1:03d}{2:03d}".format(name, i, j)
                         if len(pname) > 12:
-                            raise("grid pname too long:{0}". \
+                            warnings.warn("grid pname too long for pest:{0}". \
                                                format(pname))
                     parnme.append(pname)
                     pname = ' ~     {0}   ~ '.format(pname)
@@ -3782,7 +3782,7 @@ def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
 
                         pname = "{0}_zn{1}".format(name, zval)
                         if len(pname) > 12:
-                            raise("zone pname too long:{0}". \
+                            warnings.warn("zone pname too long for pest:{0}". \
                                               format(pname))
                     parnme.append(pname)
                     pname = " ~   {0}    ~".format(pname)
