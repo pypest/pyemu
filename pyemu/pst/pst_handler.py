@@ -1424,6 +1424,10 @@ class Pst(object):
         if version is None:
             version = self._version
 
+        vstring = "noptmax:{0}, npar_adj:{1}, nnz_obs:{2}".format(self.control_data.noptmax,
+                                                                  self.npar_adj,self.nnz_obs)
+        print(vstring)
+
         if version == 1:
             return self._write_version1(new_filename=new_filename,update_regul=update_regul)
         elif version == 2:
