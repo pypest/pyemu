@@ -164,9 +164,12 @@ def res_from_en(pst,enfile):
     converters = {"name": str_con, "group": str_con}
     try: #substitute ensemble for res, 'base' if there, otherwise mean
         obs=pst.observation_data
-        df=pd.read_csv(enfile,converters=converters)
-        df.columns=df.columns.str.lower()
-        df=df.set_index('real_name').T.rename_axis('name').rename_axis(None,1)
+        if isinstance(enfile,str):
+            df=pd.read_csv(enfile,converters=converters)
+            df.columns=df.columns.str.lower()
+            df = df.set_index('real_name').T.rename_axis('name').rename_axis(None, 1)
+        else:
+            df = enfile.T
         if 'base' in df.columns:
             df['modelled']=df['base']
             df['std']=df.std(axis=1)
@@ -179,9 +182,9 @@ def res_from_en(pst,enfile):
         res_df['measured']=obs['obsval'].copy()
         res_df['weight']=obs['weight'].copy()
         res_df['residual']=res_df['measured']-res_df['modelled']
-    except:
-        raise Exception("Pst.res_from_en: could not find :" + enfile)
-    return(res_df)
+    except Exception as e:
+        raise Exception("Pst.res_from_en:{0}".format(str(e)))
+    return res_df
 
 def read_parfile(parfile):
     """load a pest-compatible .par file into a pandas.DataFrame

@@ -1,6 +1,7 @@
 """Matrix, Jco and Cov classes for easy linear algebra
 """
 from __future__ import print_function, division
+import os
 import copy
 import struct
 import warnings
@@ -1458,7 +1459,7 @@ class Matrix(object):
             self.__x = np.delete(self.__x, idxs, 1)
             keep_names = [name for name in self.col_names if name not in names]
             assert len(keep_names) == self.__x.shape[1],"shape-name mismatch:"+\
-                   "{0}:{0}".format(len(keep_names),self.__x.shape)
+                   "{0}:{1}".format(len(keep_names),self.__x.shape)
             self.col_names = keep_names
             # idxs = np.sort(idxs)
             # for idx in idxs[::-1]:
@@ -1597,8 +1598,8 @@ class Matrix(object):
             number of elements to write in a single pass.  Default is None
 
         """
-        print(self.x)
-        print(type(self.x))
+        #print(self.x)
+        #print(type(self.x))
 
         if np.any(np.isnan(self.x)):
             raise Exception("Matrix.to_binary(): nans found")
@@ -2411,7 +2412,7 @@ class Cov(Matrix):
         #self.reset_x(self_x)
         #self.isdiagonal = False
 
-    def to_uncfile(self, unc_file, covmat_file="Cov.mat", var_mult=1.0):
+    def to_uncfile(self, unc_file, covmat_file="Cov.mat", var_mult=1.0, include_path=True):
         """write a PEST-compatible uncertainty file
 
         Parameters
@@ -2431,7 +2432,10 @@ class Cov(Matrix):
         if covmat_file:
             f = open(unc_file, 'w')
             f.write("START COVARIANCE_MATRIX\n")
-            f.write(" file " + covmat_file + "\n")
+            if include_path:
+                f.write(" file " + covmat_file + "\n")
+            else:
+                f.write(" file " + os.path.split(covmat_file)[-1] + "\n")
             f.write(" variance_multiplier {0:15.6E}\n".format(var_mult))
             f.write("END COVARIANCE_MATRIX\n")
             f.close()

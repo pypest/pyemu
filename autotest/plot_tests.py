@@ -73,6 +73,7 @@ def pst_plot_test():
     pst.plot(kind="1to1",include_zero=True)
     pst.plot(kind="1to1", include_zero=True,fig_title="1to1")
     fig = pst.plot(kind="1to1", include_zero=True, fig_title="1to1")
+    pst.plot(kind="1to1", include_zero=True, fig_title="1to1",histogram=True)
     #
     #
     pst.plot(kind="obs_v_sim")
@@ -144,13 +145,11 @@ def ensemble_plot_test():
     deter_vals = pst.parameter_data.parval1.apply(np.log10).to_dict()
     pyemu.plot_utils.ensemble_helper({"b": pe, "y": csv_file}, filename=csv_file + ".pdf",
                                      plot_cols=pst.par_names[:10], sync_bins=False,
-                                     func_dict={pst.par_names[0]: np.log10},
                                      deter_vals=deter_vals)
 
 
     pyemu.plot_utils.ensemble_helper({"b": pe, "y": csv_file}, filename=csv_file + ".pdf",
                                      plot_cols=pst.par_names[:10], sync_bins=False,
-                                     func_dict={pst.par_names[0]: np.log10},
                                      deter_vals=deter_vals,deter_range=True)
 
 
@@ -166,6 +165,10 @@ def ensemble_1to1_test():
     oe1 = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst,num_reals=num_reals)
     pst.observation_data.loc[pst.nnz_obs_names,"weight"] *= 10.0
     oe2 = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst, num_reals=num_reals)
+
+    pst.observation_data.loc[pst.nnz_obs_names, "weight"] /= 100.0
+    oe_base = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst, num_reals=num_reals)
+
     print(oe1.loc[:,pst.nnz_obs_names].std())
     print(oe2.loc[:,pst.nnz_obs_names].std())
 
@@ -173,7 +176,11 @@ def ensemble_1to1_test():
 
     pyemu.plot_utils.ensemble_res_1to1({"0.5":oe1,"b":oe2},pst,filename=os.path.join("temp","e1to1.pdf"))
 
+    pyemu.plot_utils.ensemble_res_1to1({"0.5": oe1, "b": oe2}, pst, filename=os.path.join("temp", "e1to1_noise.pdf"),
+                                       base_ensemble=oe_base)
 
+    pyemu.plot_utils.res_phi_pie(pst=pst,ensemble=oe1)
+    pyemu.plot_utils.res_1to1(pst=pst, ensemble=oe1)
 
 def ensemble_summary_test():
     try:
@@ -239,14 +246,15 @@ def ensemble_change_test():
     pyemu.plot_utils.ensemble_change_summary(pe1,pe2,pst=pst)
     print(pe1.mean(),pe1.std())
     print(pe2.mean(),pe2.std())
+    pyemu.plot_utils.ensemble_change_summary(pe1,pe2,pst)
     #plt.show()
 
 if __name__ == "__main__":
-    plot_summary_test()
-    pst_plot_test()
-    ensemble_summary_test()
+    #plot_summary_test()
+    #pst_plot_test()
+    #ensemble_summary_test()
     ensemble_plot_test()
-    ensemble_1to1_test()
+    #ensemble_1to1_test()
 
-    ensemble_change_test()
+    #ensemble_change_test()
 

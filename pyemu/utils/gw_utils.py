@@ -2392,7 +2392,7 @@ def write_hfb_template(m):
 
     assert m.hfb6 is not None
     hfb_file = os.path.join(m.model_ws,m.hfb6.file_name[0])
-    assert os.path.exists(hfb_file),"couldn't find hfb_file".format(hfb_file)
+    assert os.path.exists(hfb_file),"couldn't find hfb_file {0}".format(hfb_file)
     f_in = open(hfb_file,'r')
     tpl_file = hfb_file+".tpl"
     f_tpl = open(tpl_file,'w')

@@ -1855,30 +1855,30 @@ class Pst(object):
             else:
                 ("Pst.__reset_weights() warning: phi group {0} has zero phi, skipping...".format(item))
 
-    def adjust_weights_by_list(self,obslist,weight):
-        """reset the weight for a list of observation names.  Supports the
-        data worth analyses in pyemu.Schur class
 
+    def _adjust_weights_by_list(self, obslist, weight):
+        """a private method to reset the weight for a list of observation names.  Supports the
+        data worth analyses in pyemu.Schur class.  This method only adjusts
+        observation weights in the current weight is nonzero.  User beware!
         Parameters
         ----------
         obslist : list
             list of observation names
         weight : (float)
             new weight to assign
-
         """
 
         obs = self.observation_data
-        if not isinstance(obslist,list):
+        if not isinstance(obslist, list):
             obslist = [obslist]
         obslist = set([str(i).lower() for i in obslist])
-        #groups = obs.groupby([lambda x:x in obslist,
+        # groups = obs.groupby([lambda x:x in obslist,
         #                     obs.weight.apply(lambda x:x==0.0)]).groups
-        #if (True,True) in groups:
+        # if (True,True) in groups:
         #    obs.loc[groups[True,True],"weight"] = weight
-        reset_names = obs.loc[obs.apply(lambda x: x.obsnme in obslist and x.weight==0,axis=1),"obsnme"]
+        reset_names = obs.loc[obs.apply(lambda x: x.obsnme in obslist and x.weight == 0, axis=1), "obsnme"]
         if len(reset_names) > 0:
-            obs.loc[reset_names,"weight"] = weight
+            obs.loc[reset_names, "weight"] = weight
 
     def adjust_weights(self,obs_dict=None,
                               obsgrp_dict=None):
@@ -2410,6 +2410,8 @@ class Pst(object):
                     '\\usepackage{pdflscape}\n\\usepackage{longtable}\n' + \
                     '\\usepackage{booktabs}\n\\usepackage{nopageno}\n\\begin{document}\n'
 
+        if filename == "none":
+            return pargp_df
         if filename is None:
             filename = self.filename.replace(".pst",".par.tex")
 
@@ -2421,6 +2423,7 @@ class Pst(object):
             f.write("\\end{landscape}\n")
             f.write("\\end{center}\n")
             f.write("\\end{document}\n")
+        return pargp_df
 
     def write_obs_summary_table(self,filename=None,group_names=None):
         """write a stand alone observation summary latex table
@@ -2484,6 +2487,10 @@ class Pst(object):
                    '\\usepackage{pdflscape}\n\\usepackage{longtable}\n' + \
                    '\\usepackage{booktabs}\n\\usepackage{nopageno}\n\\begin{document}\n'
 
+
+        if filename == "none":
+            return obsg_df
+
         if filename is None:
             filename = self.filename.replace(".pst", ".obs.tex")
 
@@ -2499,6 +2506,7 @@ class Pst(object):
             f.write("\\end{center}\n")
             f.write("\\end{document}\n")
 
+        return obsg_df
 
     def run(self,exe_name="pestpp",cwd=None):
         """run a command related to the pst instance. If
@@ -2610,3 +2618,69 @@ class Pst(object):
         gt_pi = pi.loc[pi.apply(lambda x: self._is_greater_const(x.obgnme) \
                                           and x.weight != 0.0, axis=1), "pilbl"]
         return gt_pi
+
+
+
+    def get_par_change_limits(self):
+        """  calculate the various parameter change limits used in pest.
+        Works in control file values space (not log transformed space).  Also
+        adds columns for effective upper and lower which account for par bounds and the
+        value of parchglim
+
+        Returns
+        -------
+            df : pandas.DataFrame
+                a copy of self.parameter_data with columns for relative and factor change limits
+        Note
+        ----
+            does not yet support absolute parameter change limits!
+
+        """
+        par = self.parameter_data
+        fpars = par.loc[par.parchglim=="factor","parnme"]
+        rpars = par.loc[par.parchglim == "relative", "parnme"]
+        apars = par.loc[par.parchglim == "absolute", "parnme"]
+
+        change_df = par.copy()
+
+        fpm = self.control_data.facparmax
+        rpm = self.control_data.relparmax
+        facorig = self.control_data.facorig
+        base_vals = par.parval1.copy()
+
+        # apply zero value correction
+        base_vals[base_vals==0] = par.loc[base_vals==0,"parubnd"] / 4.0
+
+        # apply facorig
+        replace_pars = base_vals.index.map(lambda x: par.loc[x,"partrans"]!="log" and np.abs(base_vals.loc[x]) < facorig*np.abs(base_vals.loc[x]))
+        #print(facorig,replace_pars)
+        base_vals.loc[replace_pars] = base_vals.loc[replace_pars] * facorig
+
+        # negative fac pars
+        nfpars = par.loc[base_vals.apply(lambda x: x < 0)].index
+        change_df.loc[nfpars, "fac_upper"] = base_vals / fpm
+        change_df.loc[nfpars, "fac_lower"] = base_vals * fpm
+
+        # postive fac pars
+        pfpars = par.loc[base_vals.apply(lambda x: x > 0)].index
+        change_df.loc[pfpars, "fac_upper"] = base_vals * fpm
+        change_df.loc[pfpars, "fac_lower"] = base_vals / fpm
+
+        # relative
+
+        rdelta = base_vals.apply(np.abs) * rpm
+        change_df.loc[:,"rel_upper"] = base_vals + rdelta
+        change_df.loc[:,"rel_lower"] = base_vals - rdelta
+
+        change_df.loc[:,"chg_upper"] = np.NaN
+        change_df.loc[fpars,"chg_upper"] = change_df.fac_upper[fpars]
+        change_df.loc[rpars, "chg_upper"] = change_df.rel_upper[rpars]
+        change_df.loc[:, "chg_lower"] = np.NaN
+        change_df.loc[fpars, "chg_lower"] = change_df.fac_lower[fpars]
+        change_df.loc[rpars, "chg_lower"] = change_df.rel_lower[rpars]
+
+        # effective limits
+        change_df.loc[:,"eff_upper"] = change_df.loc[:,["parubnd","chg_upper"]].min(axis=1)
+        change_df.loc[:,"eff_lower"] = change_df.loc[:, ["parlbnd", "chg_lower"]].max(axis=1)
+
+        return change_df

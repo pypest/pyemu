@@ -615,7 +615,7 @@ class Schur(LinearAnalysis):
         if base_obslist is not None and reset:
             # check for zero
             self.log("resetting zero weight obs in base_obslist")
-            self.pst.adjust_weights_by_list(base_obslist, weight)
+            self.pst._adjust_weights_by_list(base_obslist, weight)
             self.log("resetting zero weight obs in base_obslist")
 
         if base_obslist is None:
@@ -638,7 +638,7 @@ class Schur(LinearAnalysis):
                                     ','.join(inboth))
                 z_obs.extend(obslist)
             self.log("resetting zero weight obs in obslist_dict")
-            self.pst.adjust_weights_by_list(z_obs, weight)
+            self.pst._adjust_weights_by_list(z_obs, weight)
             self.log("resetting zero weight obs in obslist_dict")
 
         # for a comprehensive obslist_dict
@@ -783,7 +783,7 @@ class Schur(LinearAnalysis):
             self.pst.observation_data.index = self.pst.observation_data.obsnme
             for name,obslist in obslist_dict.items():
                 self.log("resetting weights in obs in group {0}".format(name))
-                self.pst.adjust_weights_by_list(obslist,weight)
+                self.pst._adjust_weights_by_list(obslist,weight)
                 self.log("resetting weights in obs in group {0}".format(name))
 
         for case,obslist in obslist_dict.items():
@@ -1025,4 +1025,6 @@ class Schur(LinearAnalysis):
 
         self.reset_parcov(org_parcov)
         return pd.DataFrame(iter_results,index=iter_names)
+
+
 

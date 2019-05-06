@@ -936,7 +936,8 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
 
     """
     assert isinstance(cov,pyemu.Cov)
-    cc_mat = cov.to_pearson()
+    print("getting CC matrix")
+    cc_mat = cov.get(pst.adj_par_names).to_pearson()
     #print(pst.parameter_data.dtypes)
     try:
         ptrans = pst.parameter_data.partrans.apply(lambda x:x.decode()).to_dict()
@@ -944,11 +945,13 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
         ptrans = pst.parameter_data.partrans.to_dict()
     pi_num = pst.prior_information.shape[0] + 1
     pilbl, obgnme, weight, equation = [], [], [], []
+    sadj_names = set(pst.adj_par_names)
+    print("processing")
     for i,iname in enumerate(cc_mat.row_names):
-        if iname not in pst.adj_par_names:
+        if iname not in sadj_names:
             continue
         for j,jname in enumerate(cc_mat.row_names[i+1:]):
-            if jname not in pst.adj_par_names:
+            if jname not in sadj_names:
                 continue
             #print(i,iname,i+j+1,jname)
             cc = cc_mat.x[i,j+i+1]
@@ -2074,7 +2077,7 @@ class PstFromFlopyModel(object):
                     else:
                         pname = "{0}{1}".format(name,self.cn_suffix)
                         if len(pname) > 12:
-                            self.logger.lraise("zone pname too long:{0}".\
+                            self.logger.warn("zone pname too long for pest:{0}".\
                                                format(pname))
                         parnme.append(pname)
                         pname = " ~   {0}    ~".format(pname)
@@ -2082,7 +2085,7 @@ class PstFromFlopyModel(object):
                 f.write("\n")
         df = pd.DataFrame({"parnme":parnme},index=parnme)
         #df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
-        df.loc[:,"pargp"] = "{0}_{1}".format(name,self.cn_suffix.replace('_',''))
+        df.loc[:,"pargp"] = "{0}_{1}".format(self.cn_suffix.replace('_',''),name)
         df.loc[:,"tpl"] = tpl_file
         return df
 
@@ -2114,7 +2117,7 @@ class PstFromFlopyModel(object):
                     else:
                         pname = "{0}{1:03d}{2:03d}".format(name,i,j)
                         if len(pname) > 12:
-                            self.logger.lraise("grid pname too long:{0}".\
+                            self.logger.warn("grid pname too long for pest:{0}".\
                                                format(pname))
                         parnme.append(pname)
                         pname = ' ~     {0}   ~ '.format(pname)
@@ -2205,8 +2208,11 @@ class PstFromFlopyModel(object):
             else:
                 ib = {'general_zn': self.k_zone_dict}
         else:
-            ib = {k:self.m.bas6.ibound[k].array for k in range(self.m.nlay)}
-
+            ib = {}
+            for k in range(self.m.nlay):
+                a = self.m.bas6.ibound[k].array.copy()
+                a[a>0] = 1
+                ib[k] = a
             for k,i in ib.items():
                 if np.any(i<0):
                     u,c = np.unique(i[i>0], return_counts=True)
@@ -2471,7 +2477,7 @@ class PstFromFlopyModel(object):
                     else:
                         assert 'general_zn' in self.k_zone_dict.keys(), \
                             "Neither {0} nor 'general_zn' are in k_zone_dict keys: {1}".format(attr_name,
-                                                                                               k_zone_dict.keys())
+                                                                                               self.k_zone_dict.keys())
                         k_zone_dict = self.k_zone_dict['general_zn']
                 else:
                     k_zone_dict = self.k_zone_dict
@@ -3661,7 +3667,7 @@ def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_r
                     else:
                         pname = "{0}{1}".format(name, suffix)
                         if len(pname) > 12:
-                            raise("zone pname too long:{0}". \
+                            warnings.warn("zone pname too long for pest:{0}". \
                                                format(pname))
                     parnme.append(pname)
                     pname = " ~   {0}    ~".format(pname)
@@ -3669,7 +3675,7 @@ def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_r
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme}, index=parnme)
     # df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
-    df.loc[:, "pargp"] = "{0}_{1}".format(name, suffix.replace('_', ''))
+    df.loc[:, "pargp"] = "{0}_{1}".format(suffix.replace('_', ''), name)
     df.loc[:, "tpl"] = tpl_file
     return df
 
@@ -3714,7 +3720,7 @@ def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
                     else:
                         pname = "{0}{1:03d}{2:03d}".format(name, i, j)
                         if len(pname) > 12:
-                            raise("grid pname too long:{0}". \
+                            warnings.warn("grid pname too long for pest:{0}". \
                                                format(pname))
                     parnme.append(pname)
                     pname = ' ~     {0}   ~ '.format(pname)
@@ -3728,7 +3734,7 @@ def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
     if spatial_reference is not None:
         df.loc[:,'x'] = x
         df.loc[:,'y'] = y
-    df.loc[:, "pargp"] = "{0}{1}".format(suffix.replace('_', ''), name)
+    df.loc[:, "pargp"] = "{0}_{1}".format(suffix.replace('_', ''), name)
     df.loc[:, "tpl"] = tpl_file
     return df
 
@@ -3779,14 +3785,14 @@ def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
 
                         pname = "{0}_zn{1}".format(name, zval)
                         if len(pname) > 12:
-                            raise("zone pname too long:{0}". \
+                            warnings.warn("zone pname too long for pest:{0}". \
                                               format(pname))
                     parnme.append(pname)
                     pname = " ~   {0}    ~".format(pname)
                 f.write(pname)
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme}, index=parnme)
-    df.loc[:, "pargp"] = "{0}{1}".format(suffix.replace("_", ''), name)
+    df.loc[:, "pargp"] = "{0}_{1}".format(suffix.replace("_", ''), name)
     return df
 
 
