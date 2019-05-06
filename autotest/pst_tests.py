@@ -376,7 +376,7 @@ def from_flopy():
                                          remove_existing=True,
                                          model_exe_name="mfnwt", temporal_list_props=temp_list_props,
                                          spatial_list_props=spat_list_props, hfb_pars=True)
-
+    return
     par = ph.pst.parameter_data
     pe = ph.draw(100)
 
@@ -1245,7 +1245,7 @@ if __name__ == "__main__":
     # run_array_pars()
     #from_flopy_zone_pars()
     #from_flopy_pp_test()
-    #from_flopy()
+    from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
     #from_flopy_reachinput()
@@ -1266,7 +1266,7 @@ if __name__ == "__main__":
     # res_test()
     # smp_test()
     # from_io_with_inschek_test()
-    pestpp_args_test()
+    #pestpp_args_test()
     # reweight_test()
     # reweight_res_test()
     # run_test()

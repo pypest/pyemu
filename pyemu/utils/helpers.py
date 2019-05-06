@@ -7,6 +7,7 @@ import os
 import multiprocessing as mp
 import warnings
 from datetime import datetime
+import platform
 import struct
 import shutil
 import copy
@@ -3084,7 +3085,7 @@ class PstFromFlopyModel(object):
         #f_tpl.write("index ")
         #f_tpl.write(df.loc[:,names].to_string(index_names=True))
         #f_tpl.close()
-        write_df_tpl(tpl_name,df.loc[:,names],sep=' ',index_label="index")
+        write_df_tpl(tpl_name,df.loc[:,names],sep=' ',index_label="index", quotechar=" ")
         self.par_dfs["temporal_list"] = df
 
 
@@ -3992,6 +3993,9 @@ def write_df_tpl(filename,df,sep=',',tpl_marker='~',**kwargs):
     file handle before df.to_csv() and you pass mode='a' to to_csv()
 
     """
+    if "line_terminator" not in kwargs:
+        if "win" in platform.platform().lower():
+            kwargs["line_terminator"] = "\n"
     with open(filename,'w') as f:
         f.write("ptf {0}\n".format(tpl_marker))
         f.flush()
