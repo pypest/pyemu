@@ -376,7 +376,7 @@ def from_flopy():
                                          remove_existing=True,
                                          model_exe_name="mfnwt", temporal_list_props=temp_list_props,
                                          spatial_list_props=spat_list_props, hfb_pars=True)
-    return
+
     par = ph.pst.parameter_data
     pe = ph.draw(100)
 

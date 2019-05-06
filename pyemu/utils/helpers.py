@@ -4002,7 +4002,6 @@ def write_df_tpl(filename,df,sep=',',tpl_marker='~',**kwargs):
         df.to_csv(f,sep=sep,mode='a',**kwargs)
 
 
-
 def setup_fake_forward_run(pst,new_pst_name,org_cwd='.',bak_suffix="._bak",new_cwd='.'):
     """setup a fake forward run for a pst.  The fake
     forward run simply copies existing backup versions of
