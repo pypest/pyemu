@@ -204,7 +204,12 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
     par = pst.parameter_data
     par_ens = []
     pars_in_cov = set()
-    for gs,items in struct_dict.items():
+    keys = list(struct_dict.keys())
+    keys.sort()
+
+    for gs in keys:
+    #for gs,items in struct_dict.items():
+        items = struct_dict[gs]
         if verbose: print("processing ",gs)
         if isinstance(gs,str):
             gss = pyemu.geostats.read_struct_file(gs)
@@ -216,6 +221,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
                 gs = gss
         if not isinstance(items,list):
             items = [items]
+        #items.sort()
         for item in items:
             if isinstance(item,str):
                 assert os.path.exists(item),"file {0} not found".\
@@ -1638,7 +1644,7 @@ class PstFromFlopyModel(object):
         self.temporal_list_geostruct = temporal_list_geostruct
         if self.temporal_list_geostruct is None:
             v = pyemu.geostats.ExpVario(contribution=1.0,a=180.0) # 180 correlation length
-            self.temporal_list_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+            self.temporal_list_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="temporal_list_geostruct")
 
         self.spatial_list_props = spatial_list_props
         self.spatial_list_geostruct = spatial_list_geostruct
@@ -1646,7 +1652,7 @@ class PstFromFlopyModel(object):
             dist = 10 * float(max(self.m.dis.delr.array.max(),
                                   self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0, a=dist)
-            self.spatial_list_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+            self.spatial_list_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="spatial_list_geostruct")
 
         self.obssim_smp_pairs = obssim_smp_pairs
         self.hds_kperk = hds_kperk
@@ -2146,7 +2152,7 @@ class PstFromFlopyModel(object):
             dist = 10 * float(max(self.m.dis.delr.array.max(),
                                            self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0,a=dist)
-            self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+            self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="grid_geostruct")
 
     def pp_prep(self, mlt_df):
         """ prepare pilot point based parameterizations
@@ -2173,7 +2179,7 @@ class PstFromFlopyModel(object):
             pp_dist = self.pp_space * float(max(self.m.dis.delr.array.max(),
                                            self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0,a=pp_dist)
-            self.pp_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+            self.pp_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="pp_geostruct")
 
         pp_df = mlt_df.loc[mlt_df.suffix==self.pp_suffix,:]
         layers = pp_df.layer.unique()
@@ -2362,7 +2368,7 @@ class PstFromFlopyModel(object):
             kl_dist = 10.0 * float(max(self.m.dis.delr.array.max(),
                                            self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0,a=kl_dist)
-            self.kl_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+            self.kl_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="kl_geostruct")
 
         kl_df = mlt_df.loc[mlt_df.suffix==self.kl_suffix,:]
         layers = kl_df.layer.unique()
