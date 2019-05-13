@@ -102,7 +102,11 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
         prefix_dict = {k:["pp_{0:02d}_".format(k)] for k in range(ml.nlay)}
 
     #check prefix_dict
-    for k, prefix in prefix_dict.items():
+    keys = list(prefix_dict.keys())
+    keys.sort()
+    #for k, prefix in prefix_dict.items():
+    for k in keys:
+        prefix = prefix_dict[k]
         if not isinstance(prefix,list):
             prefix_dict[k] = [prefix]
         if np.all([isinstance(v, dict) for v in ibound.values()]):
@@ -127,7 +131,9 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
 
     if not np.all([isinstance(v, dict) for v in ibound.values()]):
         ibound = {"general_zn": ibound}
-    for par in ibound.keys():
+    par_keys = list(ibound.keys())
+    par_keys.sort()
+    for par in par_keys:
         for k in range(len(ibound[par])):
             pp_df = None
             ib = ibound[par][k]
