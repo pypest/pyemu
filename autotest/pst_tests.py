@@ -990,7 +990,7 @@ def pst_from_flopy_geo_draw_test():
                                          spatial_list_props=spat_list_props)
 
 
-    num_reals = 100000
+    num_reals = 1000
     pe1 = ph.draw(num_reals=num_reals, sigma_range=6)
     pyemu.Ensemble.reseed()
     pe2 = pyemu.ParameterEnsemble.from_gaussian_draw(ph.pst, ph.build_prior(sigma_range=6), num_reals=num_reals)
@@ -1217,7 +1217,7 @@ def from_flopy_pp_test():
     m.write_input()
 
     new_model_ws = "temp_pst_from_flopy"
-    pp_props = [["upw.ss", [0, 1]]]
+    pp_props = [["upw.ss", [0, 1]],["upw.hk",[1,0]],["upw.vka",1]]
 
     obssim_smp_pairs = None
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, "temp",
@@ -1227,7 +1227,21 @@ def from_flopy_pp_test():
                                              use_pp_zones=False,
                                             build_prior=False)
 
+    new_model_ws = "temp_pst_from_flopy"
+    props = ["upw.ss","upw.hk","upw.vka"]
+    pp_props = []
+    for k in range(m.nlay):
+        for p in props:
+            pp_props.append([p,k])
+    #pp_props = [["upw.ss", [0,], ["upw.hk", [1, 0]], ["upw.vka", 1]]
 
+    obssim_smp_pairs = None
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, "temp",
+                                             pp_props=pp_props,
+                                             remove_existing=True,
+                                             pp_space=4,
+                                             use_pp_zones=False,
+                                             build_prior=True)
 
 if __name__ == "__main__":
     #change_limit_test()
@@ -1244,8 +1258,8 @@ if __name__ == "__main__":
     # setattr_test()
     # run_array_pars()
     #from_flopy_zone_pars()
-    #from_flopy_pp_test()
-    from_flopy()
+    from_flopy_pp_test()
+    #from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
     #from_flopy_reachinput()
