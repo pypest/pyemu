@@ -990,7 +990,7 @@ def pst_from_flopy_geo_draw_test():
                                          spatial_list_props=spat_list_props)
 
 
-    num_reals = 1000
+    num_reals = 100000
     pe1 = ph.draw(num_reals=num_reals, sigma_range=6)
     pyemu.Ensemble.reseed()
     pe2 = pyemu.ParameterEnsemble.from_gaussian_draw(ph.pst, ph.build_prior(sigma_range=6), num_reals=num_reals)
@@ -1248,7 +1248,7 @@ if __name__ == "__main__":
     #new_format_test()
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
-    #pst_from_flopy_geo_draw_test()
+    pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
     # res_stats_test()
@@ -1258,7 +1258,7 @@ if __name__ == "__main__":
     # setattr_test()
     # run_array_pars()
     #from_flopy_zone_pars()
-    from_flopy_pp_test()
+    #from_flopy_pp_test()
     #from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
