@@ -2183,14 +2183,21 @@ class PstFromFlopyModel(object):
 
         pp_df = mlt_df.loc[mlt_df.suffix==self.pp_suffix,:]
         layers = pp_df.layer.unique()
+        layers.sort()
         pp_dict = {l:list(pp_df.loc[pp_df.layer==l,"prefix"].unique()) for l in layers}
         # big assumption here - if prefix is listed more than once, use the lowest layer index
+        pp_dict_sort = {}
         for i,l in enumerate(layers):
             p = set(pp_dict[l])
+            pl = list(p)
+            pl.sort()
+            pp_dict_sort[l] = pl
             for ll in layers[i+1:]:
                 pp = set(pp_dict[ll])
-                d = pp - p
-                pp_dict[ll] = list(d)
+                d = list(pp - p)
+                d.sort()
+                pp_dict_sort[ll] = d
+        pp_dict = pp_dict_sort
 
 
         pp_array_file = {p:m for p,m in zip(pp_df.prefix,pp_df.mlt_file)}
@@ -2275,7 +2282,7 @@ class PstFromFlopyModel(object):
                 self.logger.warn("multiple k values for {0},forming composite zone array...".format(pg))
                 ib_k = np.zeros((self.m.nrow,self.m.ncol))
                 for k in ks:
-                    t = ib[k].copy()
+                    t = ib["general_zn"][k].copy()
                     t[t<1] = 0
                     ib_k[t>0] = t[t>0]
             k = int(ks[0])
