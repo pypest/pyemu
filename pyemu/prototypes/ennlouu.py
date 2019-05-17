@@ -69,7 +69,8 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.warn("pyemu's EnsembleSQP is for prototyping only.")
 
     def initialize(self,num_reals=1,enforce_bounds="reset",
-    			   parensemble=None,restart_obsensemble=None,draw_mult=0.1,):#obj_fn_group="obj_fn"):
+    			   parensemble=None,restart_obsensemble=None,draw_mult=1.0,
+                   hess=False):#obj_fn_group="obj_fn"):
 
         """
     	Description
@@ -95,15 +96,18 @@ class EnsembleSQP(EnsembleMethod):
                 evaluated observation ensemble.  If not None, this will skip the initial
                 parameter ensemble evaluation - user beware!
             draw_mult : float or int
-                (just for initial testing) a multiplier for scaling (uniform) parensemble draw variance.
-                Used for drawing dec var en in tighter cluster around mean val (e.g., compared to ies
-                and par priors). Dec var en stats here are ``computational'' rather than (pseudo-)physical.
+                (just for initial testing, especially on Rosenbrock) a multiplier for scaling (uniform)
+                parensemble draw variance.  Used for drawing dec var en in tighter cluster around mean val
+                (e.g., compared to ies and par priors). Dec var en stats here are ``computational'' rather
+                than (pseudo-)physical.  If bounds physically credible, as should be, no need to scale down.
             obj_fn_group : str
                 obsgnme containing a single obs serving as optimization objective function.
                 Like ++opt_dec_var_groups(<group_names>) in PESTPP-OPT.
+            hess : pyemu.Matrix or str (optional)
+                a matrix or filename to use as initial Hessian (primarily for restarting)
+
         
         TODO: rename some of above vars in accordance with opt parlance
-        TODO: add failed run functionality
         # omitted args (from smoother.py): obsensemble=None, initial_lambda, regul_factor, 
         use_approx_prior, build_empirical_prior
 
@@ -119,9 +123,9 @@ class EnsembleSQP(EnsembleMethod):
         #self.drop_bad_reals = drop_bad_reals
         #self.save_mats = save_mats
         self.total_runs = 0
-
         self.draw_mult = draw_mult
 
+        # identify phi obs
         if self.pst.pestpp_options["opt_obj_func"] is None:
             raise Exception("no pestpp_option['opt_obj_func'] entry passed")
         else:
@@ -138,13 +142,14 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.statement("using full parcov.. forming inverse sqrt parcov matrix")
         self.parcov_inv_sqrt = self.parcov.inv.sqrt
 
+        # define dec var ensemble
+        #TODO: add parcov load option here too
         if parensemble is not None:
             self.logger.log("initializing with existing par ensembles")
             if isinstance(parensemble,str):
                 self.logger.log("loading parensemble from file")
                 if not os.path.exists(parensemble):
-                    self.logger.lraise("can not find parensemble file: {0}".\
-                                       format(parensemble))
+                    self.logger.lraise("can not find parensemble file: {0}".format(parensemble))
                 df = pd.read_csv(parensemble,index_col=0)
                 #df.index = [str(i) for i in df.index]
                 self.parensemble_0 = ParameterEnsemble.from_dataframe(df=df,pst=self.pst)
@@ -159,34 +164,29 @@ class EnsembleSQP(EnsembleMethod):
                                 ", not {0}".format(type(parensemble)))
 
             self.parensemble = self.parensemble_0.copy()
-
-            #assert self.parensemble_0.shape[0] == self.obsensemble_0.shape[0]
-            num_reals = self.parensemble.shape[0] # defined here if par ensemble passed
             self.logger.log("initializing with existing par ensemble")
 
         else:
             self.logger.log("initializing by drawing {0} par realizations".format(num_reals))
-            #self.parensemble_0 = ParameterEnsemble.from_gaussian_draw(self.pst,self.parcov,num_reals=num_reals)
             self.parensemble_0 = ParameterEnsemble.from_uniform_draw(self.pst,num_reals=num_reals)
             self.parensemble_0 = ParameterEnsemble.from_dataframe(df=self.parensemble_0 * self.draw_mult,pst=self.pst)
             self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
             self.parensemble = self.parensemble_0.copy()
-            self.parensemble_0.to_csv(self.pst.filename +\
-                                      self.paren_prefix.format(0))
+            self.parensemble_0.to_csv(self.pst.filename + self.paren_prefix.format(0))
             self.logger.log("initializing by drawing {0} par realizations".format(num_reals))
 
-
-        # repeated from above...
-        # could use approx here to start with for especially high dim problems
-        self.logger.statement("using full parcov.. forming inverse sqrt parcov matrix")
-        self.parcov_inv_sqrt = self.parcov.inv.sqrt
-
+        self.num_reals = self.parensemble.shape[0]  # defined here if par ensemble passed
         # self.obs0_matrix = self.obsensemble_0.nonzero.as_pyemu_matrix()
         # self.par0_matrix = self.parensemble_0.as_pyemu_matrix()
-        
-        # repeated
-        self.enforce_bounds = enforce_bounds
 
+        # Hessian
+        #if hess is not None:
+            #TODO: add supporting for loading Hessian or assoc grad col vectors
+        #else:
+            #TODO: check dims and , N_p x N_p or N_u x N_u?
+            #self.hessian = Matrix(x=np.eye((len(onames), len(pnames))),row_names=onames,col_names=pnames)
+
+        # define phi en by loading prev or computing
         if restart_obsensemble is not None:
             # load prev obs ensemble
             self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
@@ -219,6 +219,8 @@ class EnsembleSQP(EnsembleMethod):
             self.parensemble._transform(inplace=True)
         if not self.parensemble_0.istransformed:
             self.parensemble_0._transform(inplace=True)
+
+        # assert self.parensemble_0.shape[0] == self.obsensemble_0.shape[0]
 
         #self.phi = Phi(self)
 
@@ -284,25 +286,23 @@ class EnsembleSQP(EnsembleMethod):
         return self._calc_delta(obsensemble.nonzero, self.obscov_inv_sqrt)
 
 
-    def update(self,localizer=None,use_approx=True,calc_only=False):#lambda_mults=[1.0],run_subset=None,
+    def update(self,step_mult=[0.5,0.8,1.0]):
+        #localizer=None,use_approx=True,calc_only=False,lambda_mults=[1.0],run_subset=None,
         """
+        Description
 
         Parameters
         -------
 
         Example
         -------
+        ``>>>import pyemu``
+        ``>>>esqp = pyemu.EnsembleSQP(pst="pest.pst")``
+        ``>>>esqp.initialize(num_reals=100)``
+        ``>>>esqp.update(step_mult=[0.5, 0.8, 1.0],run_subset=num_reals/len(step_mult))``
 
-        # Include Wolfe tests
-        # use of subset functionality for increased efficiency? not lambda, but step lengths?
-    	# I is default Hessian at k = 0; allow user to specify
-    	# Pure python limited memory (L-BFGS) version - truncation of change vectors
-        # Re-initialize ensemble at new mean upgrade locs - ala Oliver?
-    	# Use Oliver et al. (2008) scaled formulation
-    	# bound handling and update length limiting like PEST
-    	# calc par and obs delta wrt one another rather than mean
-        # `use_approx_prior`-like scaling of upgrade
-
+    	#TODO: calc par and obs delta wrt one another rather than mean?
+    	#TODO: sub-setting
         """
 
         self.iter_num += 1
@@ -336,13 +336,9 @@ class EnsembleSQP(EnsembleMethod):
          #   np.savetxt(mat_prefix + ".obs_diff.dat", scaled_delta_obs.x, fmt="%15.6e")
 
 
+        self.logger.log("calcs for  lambda {0}".format(cur_lam_mult))
 
+        if calc_only:
+            return
 
-
-
-
-
-
-
-
-
+        # now run ensemble through
