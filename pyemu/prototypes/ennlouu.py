@@ -70,7 +70,7 @@ class EnsembleSQP(EnsembleMethod):
 
     def initialize(self,num_reals=1,enforce_bounds="reset",
     			   parensemble=None,restart_obsensemble=None,draw_mult=1.0,
-                   hess=False):#obj_fn_group="obj_fn"):
+                   hess=None):#obj_fn_group="obj_fn"):
 
         """
     	Description
@@ -180,11 +180,13 @@ class EnsembleSQP(EnsembleMethod):
         # self.par0_matrix = self.parensemble_0.as_pyemu_matrix()
 
         # Hessian
-        #if hess is not None:
+        if hess is not None:
             #TODO: add supporting for loading Hessian or assoc grad col vectors
-        #else:
-            #TODO: check dims and , N_p x N_p or N_u x N_u?
-            #self.hessian = Matrix(x=np.eye((len(onames), len(pnames))),row_names=onames,col_names=pnames)
+            pass
+        else:
+            onames = self.pst.nnz_obs_names
+            pnames = self.pst.adj_par_names
+            self.hessian = Matrix(x=np.eye(len(pnames),len(pnames)), row_names=pnames, col_names=pnames)
 
         # define phi en by loading prev or computing
         if restart_obsensemble is not None:
