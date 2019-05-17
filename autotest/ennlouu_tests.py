@@ -19,8 +19,8 @@ def rosenbrock_2par_setup():
     obs = pst.observation_data
     obs.loc[:,"obsval"] = 0.0
     obs.loc[:,"weight"] = 1.0
-    #obs.loc[:,"obgnme"] = "obj_fn"
-    pst.pestpp_options["opt_obj_func"] = "obj_fn"
+    obs.loc[:,"obgnme"] = "obj_fn"
+    #pst.pestpp_options["opt_obj_func"] = "obj_fn"
     pst.model_command = ["python rosenbrock_2par.py"]
     pst.control_data.noptmax = 0
     pst.write(os.path.join("rosenbrock_2par.pst"))
@@ -33,7 +33,7 @@ def rosenbrock_2par_initialize():
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst")
     esqp.initialize(num_reals=5,draw_mult=0.1)
     os.chdir(os.path.join("..", ".."))
-
+'''
 def rosenbrock_2par_initialize_diff_args_test():
     import numpy as np
     import pyemu
@@ -55,7 +55,7 @@ def rosenbrock_2par_initialize_diff_args_test():
             else:
                 raise Exception("rosenbrock initialization example gives different answers with different args..")
     os.chdir(os.path.join("..", ".."))
-
+'''
 def rosenbrock_2par_update():
     import pyemu
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
@@ -67,8 +67,8 @@ def rosenbrock_2par_update():
 #def rosenbrock_2par_opt_and_draw_setting_invest():
     # function for identifying appropr default values (for simple problem)
 
+#TODO: copy test dirs and make changes in there...
 
 if __name__ == "__main__":
-    #rosenbrock_2par_setup()
+    rosenbrock_2par_setup()
     rosenbrock_2par_initialize()
-    #rosenbrock_2par_initialize_diff_args_test()

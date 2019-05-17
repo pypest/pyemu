@@ -125,12 +125,13 @@ class EnsembleSQP(EnsembleMethod):
         self.total_runs = 0
         self.draw_mult = draw_mult
 
-        # identify phi obs
-        if self.pst.pestpp_options["opt_obj_func"] is None:
-            raise Exception("no pestpp_option['opt_obj_func'] entry passed")
-        else:
-            self.logger.warn("assuming pestpp_option['opt_obj_func'] points " + \
-                             "to a (single) obs for now (could also be a pi eq or filename)")
+        #TODO: self-identify phi obs
+        # new pestpp ++ arg?
+        # #if self.pst.pestpp_options[""] is None:
+         #   raise Exception("no pestpp_option['opt_obj_func'] entry passed")
+        #else:
+        #self.logger.warn("assuming pestpp_option[''] points " + \
+         #                "to a (single) obs for now (could also be a pi eq or filename)")
         #self.obj_fn_group = obj_fn_group#.lower()
         #self.obj_fn_obs = list(self.pst.observation_data.loc[self.pst.observation_data.obgnme == \
          #                                                     self.obj_fn_group, :].obsnme)
@@ -184,9 +185,9 @@ class EnsembleSQP(EnsembleMethod):
             #TODO: add supporting for loading Hessian or assoc grad col vectors
             pass
         else:
-            onames = self.pst.nnz_obs_names
             pnames = self.pst.adj_par_names
             self.hessian = Matrix(x=np.eye(len(pnames),len(pnames)), row_names=pnames, col_names=pnames)
+            self.hessian_0 = self.hessian.copy()
 
         # define phi en by loading prev or computing
         if restart_obsensemble is not None:
