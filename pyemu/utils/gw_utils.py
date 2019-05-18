@@ -73,6 +73,7 @@ def modflow_hob_to_instruction_file(hob_file):
     hob_df = pd.read_csv(hob_file,delim_whitespace=True,skiprows=1,
                          header=None,names=["simval","obsval","obsnme"])
 
+    hob_df.loc[:,"obsnme"] = hob_df.obsnme.apply(str.lower)
     hob_df.loc[:,"ins_line"] = hob_df.obsnme.apply(lambda x:"l1 !{0:s}!".format(x))
     hob_df.loc[0,"ins_line"] = hob_df.loc[0,"ins_line"].replace('l1','l2')
 
@@ -1113,6 +1114,7 @@ def apply_hds_obs(hds_file):
         data = hds.get_data(kstpkper=(kstp,kper))
         #jwhite 15jan2018 fix for really large values that are getting some
         #trash added to them...
+        data[np.isnan(data)] = 0.0
         data[data>1.0e+20] = 1.0e+20
         data[data<-1.0e+20] = -1.0e+20
         df_kper = df.loc[df.kper==kper,:]
@@ -1217,26 +1219,38 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
 
 
 def apply_sft_obs():
+    # this is for dealing with the missing 'e' problem
+    def try_cast(x):
+        try:
+            return float(x)
+        except:
+            return 0.0
+
     times = []
     with open("sft_obs.config") as f:
         sft_file = f.readline().strip()
         for line in f:
             times.append(float(line.strip()))
-    df = pd.read_csv(sft_file,skiprows=1,delim_whitespace=True)
+    df = pd.read_csv(sft_file,skiprows=1,delim_whitespace=True)#,nrows=10000000)
     df.columns = [c.lower().replace("-", "_") for c in df.columns]
-
+    df = df.loc[df.time.apply(lambda x: x in times), :]
+    #print(df.dtypes)
     #normalize
     for c in df.columns:
+        #print(c)
+        if not "node" in c:
+            df.loc[:,c] = df.loc[:,c].apply(try_cast)
+        #print(df.loc[df.loc[:,c].apply(lambda x : type(x) == str),:])
         df.loc[df.loc[:,c].apply(lambda x: x<1e-30),c] = 0.0
         df.loc[df.loc[:, c] > 1e+30, c] = 1.0e+30
     df.loc[:,"sfr_node"] = df.sfr_node.apply(np.int)
-    df = df.loc[df.time.apply(lambda x: x in times),:]
+
     df.to_csv(sft_file+".processed",sep=' ',index=False)
     return df
 
 
-def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff", "hcond1", "hcond2", "pptsw"],
-                             tie_hcond=True):
+def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff", "hcond1", "pptsw"],
+                             tie_hcond=True, include_temporal_pars=False):
     """Setup multiplier parameters for SFR segment data.  Just handles the
     standard input case, not all the cryptic SFR options.  Loads the dis, bas, and sfr files
     with flopy using model_ws.  However, expects that apply_sfr_seg_parameters() will be called
@@ -1253,7 +1267,10 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
             flopy modflow model object
         par_cols : list(str)
             segment data entires to parameterize
-        tie_hcond : flag to use same mult par for hcond1 and hcond2 for a given segment.  Default is True
+        tie_hcond : bool
+            flag to use same mult par for hcond1 and hcond2 for a given segment.  Default is True
+        include_temporal_pars : bool
+            flag to include spatially-global multipliers for each par_col for each stress period.  Default is False
 
     Returns
     -------
@@ -1274,7 +1291,7 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
     except Exception as e:
         return
     if par_cols is None:
-        par_cols = ["flow", "runoff", "hcond1", "hcond2", "pptsw"]
+        par_cols = ["flow", "runoff", "hcond1", "pptsw"]
     if tie_hcond:
         if "hcond1" not in par_cols or "hcond2" not in par_cols:
             tie_hcond = False
@@ -1353,32 +1370,67 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
     if df.empty:
         warnings.warn("No sfr segment parameters have been set up, either none of {0} were found or all were zero.".
                       format(','.join(par_cols)), PyemuWarning)
-    else:
-        # set not par cols to 1.0
-        seg_data.loc[:, notpar_cols] = "1.0"
+        return df
 
-        #write the template file
-        write_df_tpl(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"), seg_data, sep=',')
+    # set not par cols to 1.0
+    seg_data.loc[:, notpar_cols] = "1.0"
 
-        #write the config file used by apply_sfr_pars()
-        with open(os.path.join(model_ws,"sfr_seg_pars.config"),'w') as f:
-            f.write("nam_file {0}\n".format(nam_file))
-            f.write("model_ws {0}\n".format(model_ws))
-            f.write("mult_file sfr_seg_pars.dat\n")
-            f.write("sfr_filename {0}".format(m.sfr.file_name[0]))
+    #write the template file
+    write_df_tpl(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"), seg_data, sep=',')
 
-        #make sure the tpl file exists and has the same num of pars
-        parnme = parse_tpl_file(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"))
-        assert len(parnme) == df.shape[0]
 
-        #set some useful par info
-        df.loc[:,"pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
-        df.loc[:,"parubnd"] = 1.25
-        df.loc[:,"parlbnd"] = 0.75
-        hpars = df.loc[df.pargp.apply(lambda x: x.startswith("hcond")),"parnme"]
-        df.loc[hpars,"parubnd"] = 100.0
-        df.loc[hpars, "parlbnd"] = 0.01
+
+    #make sure the tpl file exists and has the same num of pars
+    parnme = parse_tpl_file(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"))
+    assert len(parnme) == df.shape[0]
+
+    #set some useful par info
+    df.loc[:,"pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
+    df.loc[:,"parubnd"] = 1.25
+    df.loc[:,"parlbnd"] = 0.75
+    hpars = df.loc[df.pargp.apply(lambda x: x.startswith("hcond")),"parnme"]
+    df.loc[hpars,"parubnd"] = 100.0
+    df.loc[hpars, "parlbnd"] = 0.01
+
+    if include_temporal_pars:
+        # include only stress periods that are explicitly listed in segment data
+        pnames,tpl_str = [],[]
+        tmp_df = pd.DataFrame(data={c:1.0 for c in cols},index=list(m.sfr.segment_data.keys()))
+        tmp_df.sort_index(inplace=True)
+        tmp_df.to_csv(os.path.join(model_ws,"sfr_seg_temporal_pars.dat"))
+        for par_col in cols:
+            print(par_col)
+            parnme = tmp_df.index.map(lambda x: "{0}_{1:04d}_tmp".format(par_col,int(x)))
+            tmp_df.loc[:,par_col] = parnme.map(lambda x: "~   {0}  ~".format(x))
+            tpl_str.extend(list(tmp_df.loc[:,par_col].values))
+            pnames.extend(list(parnme.values))
+        write_df_tpl(filename=os.path.join(model_ws,"sfr_seg_temporal_pars.dat.tpl"),df=tmp_df)
+        pargp = [pname.split('_')[0]+"_tmp" for pname in pnames]
+        tmp_df = pd.DataFrame(data={"parnme":pnames,"pargp":pargp},index=pnames)
+        tmp_df.loc[:,"org_value"] = 1.0
+        tmp_df.loc[:,"tpl_str"] = tpl_str
+        df = df.append(tmp_df)
+
+    # write the config file used by apply_sfr_pars()
+    with open(os.path.join(model_ws, "sfr_seg_pars.config"), 'w') as f:
+        f.write("nam_file {0}\n".format(nam_file))
+        f.write("model_ws {0}\n".format(model_ws))
+        f.write("mult_file sfr_seg_pars.dat\n")
+        f.write("sfr_filename {0}\n".format(m.sfr.file_name[0]))
+        if include_temporal_pars:
+            f.write("time_mult_file sfr_seg_temporal_pars.dat\n")
+
+
+    # set some useful par info
+    df.loc[:, "pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
+    df.loc[:, "parubnd"] = 1.25
+    df.loc[:, "parlbnd"] = 0.75
+    hpars = df.loc[df.pargp.apply(lambda x: x.startswith("hcond")), "parnme"]
+    df.loc[hpars, "parubnd"] = 100.0
+    df.loc[hpars, "parlbnd"] = 0.01
+
     return df
+
 
 def setup_sfr_reach_parameters(nam_file,model_ws='.', par_cols=['strhc1']):
     """Setup multiplier paramters for reach data, when reachinput option is specififed in sfr.
@@ -1516,8 +1568,64 @@ def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
 
 
     """
+
+    if not seg_pars and not reach_pars:
+        raise Exception("gw_utils.apply_sfr_pars() error: both seg_pars and reach_pars are False")
+    #if seg_pars and reach_pars:
+    #    raise Exception("gw_utils.apply_sfr_pars() error: both seg_pars and reach_pars are True")
+
     import flopy
-    bak_sfr_file = None
+    bak_sfr_file,pars = None,None
+
+    # if seg_pars:
+    #     config_file = "sfr_seg_pars.config"
+    #     idx_cols = ['nseg', 'icalc', 'outseg', 'iupseg', 'iprior', 'nstrpts']
+    # else:
+    #     config_file = "sfr_reach_pars.config"
+    #     idx_cols = ["node", "k", "i", "j", "iseg", "ireach", "reachID", "outreach"]
+    #
+    # assert os.path.exists(config_file),"gw_utils.apply_sfr_pars() error: config file {0} missing".format(config_file)
+    # with open(config_file, 'r') as f:
+    #     pars = {}
+    #     for line in f:
+    #         line = line.strip().split()
+    #         pars[line[0]] = line[1]
+    #
+    # m = flopy.modflow.Modflow.load(pars["nam_file"], load_only=[], check=False)
+    # bak_sfr_file = pars["nam_file"] + "_backup_.sfr"
+    # sfr = flopy.modflow.ModflowSfr2.load(os.path.join(bak_sfr_file), m)
+    # sfrfile = pars["sfr_filename"]
+    #
+    #
+    # mlt_df = pd.read_csv(pars["mult_file"], delim_whitespace=False, index_col=0)
+    # present_cols = [c for c in idx_cols if c in mlt_df.columns]
+    # mlt_cols = mlt_df.columns.drop(present_cols)
+    #
+    # if seg_pars:
+    #     for key, val in m.sfr.segment_data.items():
+    #         df = pd.DataFrame.from_records(val)
+    #         df.loc[:, mlt_cols] *= mlt_df.loc[:, mlt_cols]
+    #         val = df.to_records(index=False)
+    #         sfr.segment_data[key] = val
+    # else:
+    #     df = pd.DataFrame.from_records(m.sfr.reach_data)
+    #     df.loc[:, mlt_cols] *= mlt_df.loc[:, mlt_cols]
+    #     sfr.reach_data = df.to_records(index=False)
+    #
+    #
+    # if "time_mult_file" in pars:
+    #     time_mult_file = pars["time_mult_file"]
+    #     time_mlt_df = pd.read_csv(pars["time_mult_file"], delim_whitespace=False, index_col=0)
+    #     for kper,sdata in m.sfr.segment_data.items():
+    #         assert kper in time_mlt_df.index,"gw_utils.apply_sfr_seg_parameters() error: kper "+\
+    #                                          "{0} not in time_mlt_df index".format(kper)
+    #         for col in time_mlt_df.columns:
+    #             sdata[col] *= time_mlt_df.loc[kper,col]
+    #
+    #
+    # sfr.write_file(filename=sfrfile)
+    # return sfr
+
     if seg_pars:
         assert os.path.exists("sfr_seg_pars.config")
 
@@ -1532,6 +1640,10 @@ def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
         sfr = flopy.modflow.ModflowSfr2.load(os.path.join(bak_sfr_file), m)
         sfrfile = pars["sfr_filename"]
         mlt_df = pd.read_csv(pars["mult_file"], delim_whitespace=False, index_col=0)
+        time_mlt_df = None
+        if "time_mult_file" in pars:
+            time_mult_file = pars["time_mult_file"]
+            time_mlt_df = pd.read_csv(pars["time_mult_file"], delim_whitespace=False,index_col=0)
 
         idx_cols = ['nseg', 'icalc', 'outseg', 'iupseg', 'iprior', 'nstrpts']
         present_cols = [c for c in idx_cols if c in mlt_df.columns]
@@ -1560,7 +1672,18 @@ def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
         r_df = pd.DataFrame.from_records(m.sfr.reach_data)
         r_df.loc[:, r_mlt_cols] *= r_mlt_df.loc[:, r_mlt_cols]
         sfr.reach_data = r_df.to_records(index=False)
+
+
     #m.remove_package("sfr")
+    if pars is not None and "time_mult_file" in pars:
+        time_mult_file = pars["time_mult_file"]
+        time_mlt_df = pd.read_csv(time_mult_file, delim_whitespace=False, index_col=0)
+        for kper, sdata in m.sfr.segment_data.items():
+            assert kper in time_mlt_df.index, "gw_utils.apply_sfr_seg_parameters() error: kper " + \
+                                              "{0} not in time_mlt_df index".format(kper)
+            for col in time_mlt_df.columns:
+                sdata[col] *= time_mlt_df.loc[kper, col]
+
     sfr.write_file(filename=sfrfile)
     return sfr
 
@@ -2269,7 +2392,7 @@ def write_hfb_template(m):
 
     assert m.hfb6 is not None
     hfb_file = os.path.join(m.model_ws,m.hfb6.file_name[0])
-    assert os.path.exists(hfb_file),"couldn't find hfb_file".format(hfb_file)
+    assert os.path.exists(hfb_file),"couldn't find hfb_file {0}".format(hfb_file)
     f_in = open(hfb_file,'r')
     tpl_file = hfb_file+".tpl"
     f_tpl = open(tpl_file,'w')

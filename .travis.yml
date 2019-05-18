@@ -31,6 +31,8 @@ matrix:
       env: TEST_SCRIPT="smoother_tests.py"
     - name: "full meal deal tests"
       env: TEST_SCRIPT="full_meal_deal_tests.py"
+    - name: "plot tests"
+      env: TEST_SCRIPT="plot_tests.py"
 
 
 

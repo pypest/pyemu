@@ -76,9 +76,9 @@ pst_config["pargp_format"] = {"pargpnme":SFMT,"inctyp":SFMT,"derinc":FFMT,"force
                       "derincmul":FFMT,"dermthd":SFMT,"splitthresh":FFMT,
                       "splitreldiff":FFMT,"splitaction":SFMT}
 
-pst_config["pargp_converters"] = {"pargpnme":str_con,"inctype":str_con,
-                         "dermethd":str_con,
-                         "splitaction":str_con}
+pst_config["pargp_converters"] = {"pargpnme":str_con,"inctyp":str_con,
+                         "dermethd":str_con,"derinc":np.float,"derinclb":np.float,
+                         "splitaction":str_con,"forcen":str_con,"derincmul":np.float}
 pst_config["pargp_defaults"] = {"pargpnme":"pargp","inctyp":"relative","derinc":0.01,
                        "derinclb":0.0,"forcen":"switch","derincmul":2.0,
                      "dermthd":"parabolic","splitthresh":1.0e-5,
@@ -148,6 +148,43 @@ def read_resfile(resfile):
         f.close()
         return res_df
 
+def res_from_en(pst,enfile):
+    """load ensemble file for residual into a pandas.DataFrame
+
+        Parameters
+        ----------
+        enfile : str
+            ensemble file name
+
+        Returns
+        -------
+        pandas.DataFrame : pandas.DataFrame
+
+        """
+    converters = {"name": str_con, "group": str_con}
+    try: #substitute ensemble for res, 'base' if there, otherwise mean
+        obs=pst.observation_data
+        if isinstance(enfile,str):
+            df=pd.read_csv(enfile,converters=converters)
+            df.columns=df.columns.str.lower()
+            df = df.set_index('real_name').T.rename_axis('name').rename_axis(None, 1)
+        else:
+            df = enfile.T
+        if 'base' in df.columns:
+            df['modelled']=df['base']
+            df['std']=df.std(axis=1)
+        else:
+            df['modelled']=df.mean(axis=1)
+            df['std']=df.std(axis=1)
+        #probably a more pandastic way to do this
+        res_df=df[['modelled','std']].copy()
+        res_df['group']=obs.loc[:,'obgnme'].copy()
+        res_df['measured']=obs['obsval'].copy()
+        res_df['weight']=obs['weight'].copy()
+        res_df['residual']=res_df['measured']-res_df['modelled']
+    except Exception as e:
+        raise Exception("Pst.res_from_en:{0}".format(str(e)))
+    return res_df
 
 def read_parfile(parfile):
     """load a pest-compatible .par file into a pandas.DataFrame
@@ -679,7 +716,7 @@ def get_phi_comps_from_recfile(recfile):
 def del_rw(action, name, exc):
     os.chmod(name, stat.S_IWRITE)
     os.remove(name)
-    
+
 def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
                  port=4004,rel_path=None):
 
