@@ -16,4 +16,4 @@ setup(name="pyemu",
       license='New BSD',
       platforms='Windows, Mac OS-X, linux',
       packages = ["pyemu","pyemu.pst","pyemu.plot","pyemu.utils","pyemu.mat","pyemu.prototypes"],
-      version="0.7")
+      version="0.8")
