@@ -70,7 +70,7 @@ class EnsembleSQP(EnsembleMethod):
 
     def initialize(self,num_reals=1,enforce_bounds="reset",
     			   parensemble=None,restart_obsensemble=None,draw_mult=1.0,
-                   hess=None):#obj_fn_group="obj_fn"):
+                   hess=None,):#obj_fn_group="obj_fn"):
 
         """
     	Description
@@ -104,7 +104,7 @@ class EnsembleSQP(EnsembleMethod):
                 obsgnme containing a single obs serving as optimization objective function.
                 Like ++opt_dec_var_groups(<group_names>) in PESTPP-OPT.
             hess : pyemu.Matrix or str (optional)
-                a matrix or filename to use as initial Hessian (primarily for restarting)
+            a matrix or filename to use as initial Hessian (for restarting)
 
         
         TODO: rename some of above vars in accordance with opt parlance
@@ -143,6 +143,9 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.statement("using full parcov.. forming inverse sqrt parcov matrix")
         self.parcov_inv_sqrt = self.parcov.inv.sqrt
 
+        # this matrix gets used a lot, so only calc once and store
+        self.obscov_inv_sqrt = self.obscov.get(self.pst.nnz_obs_names).inv.sqrt
+
         # define dec var ensemble
         #TODO: add parcov load option here too
         if parensemble is not None:
@@ -180,14 +183,6 @@ class EnsembleSQP(EnsembleMethod):
         # self.obs0_matrix = self.obsensemble_0.nonzero.as_pyemu_matrix()
         # self.par0_matrix = self.parensemble_0.as_pyemu_matrix()
 
-        # Hessian
-        if hess is not None:
-            #TODO: add supporting for loading Hessian or assoc grad col vectors
-            pass
-        else:
-            pnames = self.pst.adj_par_names
-            self.hessian = Matrix(x=np.eye(len(pnames),len(pnames)), row_names=pnames, col_names=pnames)
-            self.hessian_0 = self.hessian.copy()
 
         # define phi en by loading prev or computing
         if restart_obsensemble is not None:
@@ -224,6 +219,19 @@ class EnsembleSQP(EnsembleMethod):
             self.parensemble_0._transform(inplace=True)
 
         # assert self.parensemble_0.shape[0] == self.obsensemble_0.shape[0]
+
+
+        # Hessian
+        if hess is not None:
+            #TODO: add supporting for loading Hessian or assoc grad col vectors
+            pass
+            if not np.all(np.linalg.eigvals(self.hessian.as_2d) > 0):
+                self.logger.lraise("Hessian matrix is not positive definite")
+        else:
+            pnames = self.pst.adj_par_names
+            self.hessian = Matrix(x=np.eye(len(pnames),len(pnames)), row_names=pnames, col_names=pnames)
+        self.hessian_0 = self.hessian.copy()
+
 
         #self.phi = Phi(self)
 
@@ -289,20 +297,51 @@ class EnsembleSQP(EnsembleMethod):
         return self._calc_delta(obsensemble.nonzero, self.obscov_inv_sqrt)
 
 
-    def update(self,step_mult=[0.5,0.8,1.0]):
-        #localizer=None,use_approx=True,calc_only=False,lambda_mults=[1.0],run_subset=None,
+    def _calc_en_cov_decvar(self,parensemble):
+        '''
+        calc the dec var ensemble (approx) covariance vector (e.g., eq (8) of Dehdari and Oliver 2012 SPE)
+        '''
+        return self._calc_en_cov_crosscov(parensemble, parensemble)
+
+    def _calc_en_crosscov_decvar_phi(self,parensemble,obsensemble):
+        '''
+        calc the dec var-phi ensemble (approx) cross-covariance vector (e.g., eq (9) of Dehdari and Oliver 2012 SPE)
+        '''
+        return self._calc_en_cov_crosscov(parensemble, obsensemble)
+
+    def _calc_en_cov_crosscov(self,ensemble1,ensemble2):
+        '''
+        general func for calc of ensemble (approx) covariances and cross-covariances. Method not already elsewhere?
+        '''
+        mean1, mean2 = np.array(ensemble1.mean(axis=0)), np.array(ensemble2.mean(axis=0))
+        delta1, delta2 = ensemble1.as_pyemu_matrix(), ensemble2.as_pyemu_matrix()
+        for i in range(ensemble1.shape[0]):
+            delta1.x[i, :] -= mean1
+            delta2.x[i, :] -= mean2
+        en_cov_crosscov = 1.0 / (ensemble1.shape[0] - 1.0) * ((delta1.x * delta2.x).sum(axis=0))
+        #en_cov_crosscov = en_cov_crosscov.as_pyemu_matrix()
+        return en_cov_crosscov
+
+
+    def update(self,step_mult=[1.0],):#localizer=None,use_approx=True,calc_only=False,run_subset=None,
         """
-        Description
+        Perform one update
 
         Parameters
         -------
+        step_mult : list
+            a list of step size (length) multipliers to test.  Each mult value will require
+            evaluating the parameter ensemble (or a subset thereof).
+        run_subset : int
+            the number of realizations to test for each step_mult value.
 
         Example
         -------
         ``>>>import pyemu``
         ``>>>esqp = pyemu.EnsembleSQP(pst="pest.pst")``
         ``>>>esqp.initialize(num_reals=100)``
-        ``>>>esqp.update(step_mult=[0.5, 0.8, 1.0],run_subset=num_reals/len(step_mult))``
+        ``>>>for it in range(5):``
+        ``>>>    esqp.update(step_mult=[1.0],run_subset=num_reals/len(step_mult))``
 
     	#TODO: calc par and obs delta wrt one another rather than mean?
     	#TODO: sub-setting
@@ -318,13 +357,15 @@ class EnsembleSQP(EnsembleMethod):
         if not self._initialized:
             self.logger.lraise("must call initialize() before update()")
 
-        # compute deviation of each ensemble member from mean (par and obs)
-        self.logger.log("calculate scaled delta obs")
-        scaled_delta_obs = self._calc_delta_obs(self.obsensemble)
-        self.logger.log("calculate scaled delta obs")
-        self.logger.log("calculate scaled delta par")
-        scaled_delta_par = self._calc_delta_par(self.parensemble)
-        self.logger.log("calculate scaled delta par")
+        # TODO: compute dec var covariance and dec var-phi cross covariance matrices - they are actually vectors
+        self.logger.log("compute dec var en covariance vector")
+        en_cov_decvar = self._calc_en_cov_decvar(self.parensemble)
+        self.logger.log("compute dec var en covariance vector")
+        self.logger.log("compute dec var-phi en cross-covariance vector")
+        en_crosscov_decvar_phi = self._calc_en_crosscov_decvar_phi(self.parensemble,self.obsensemble)
+        self.logger.log("compute dec var-phi en cross-covariance vector")
+
+        # TODO: SVD on dec var en cov matrix
 
         #self.logger.log("calculate pseudo inv comps")
         #u,s,v = scaled_delta_obs.pseudo_inv_components(eigthresh=self.pst.svd_data.eigthresh)
@@ -341,7 +382,19 @@ class EnsembleSQP(EnsembleMethod):
 
         self.logger.log("calcs for  lambda {0}".format(cur_lam_mult))
 
-        if calc_only:
-            return
 
-        # now run ensemble through
+
+        # TODO: run sweep
+        # TODO: localize
+        # TODO: compute gradient vector and undertake gradient-related checks
+        # TODO: compute search direction
+        # TODO: compute new dec var set using each step size
+        # TODO: run sweep
+        # TODO: undertake Wolfe and other en tests
+        # TODO: constraint and feasibility KKT checks here
+        # TODO: select best upgrade
+        # TODO: check for convergence in terms of dec var and phi changes
+        # TODO: update Hessian via BFGS (incl L-BFGS, scaling, logging)
+        # TODO: check for Hessian positive-definite-ness
+        # TODO: save Hessian
+

@@ -33,7 +33,7 @@ def rosenbrock_2par_initialize():
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst")
     esqp.initialize(num_reals=5,draw_mult=0.1)
     os.chdir(os.path.join("..", ".."))
-'''
+
 def rosenbrock_2par_initialize_diff_args_test():
     import numpy as np
     import pyemu
@@ -55,13 +55,13 @@ def rosenbrock_2par_initialize_diff_args_test():
             else:
                 raise Exception("rosenbrock initialization example gives different answers with different args..")
     os.chdir(os.path.join("..", ".."))
-'''
+
 def rosenbrock_2par_update():
     import pyemu
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst")
-    esqp.initialize(num_reals=5,draw_mult=0.1)
-    esqp.update(step_mult=[0.5, 0.8, 1.0])#run_subset=num_reals/len(step_mult)
+    esqp.initialize(num_reals=3,draw_mult=0.1)
+    esqp.update() #step_mult=[0.5, 0.8, 1.0],run_subset=num_reals/len(step_mult)
     os.chdir(os.path.join("..", ".."))
 
 #def rosenbrock_2par_opt_and_draw_setting_invest():
@@ -70,5 +70,7 @@ def rosenbrock_2par_update():
 #TODO: copy test dirs and make changes in there...
 
 if __name__ == "__main__":
-    rosenbrock_2par_setup()
-    rosenbrock_2par_initialize()
+    #rosenbrock_2par_setup()
+    #rosenbrock_2par_initialize()
+    #rosenbrock_2par_initialize_diff_args_test()
+    rosenbrock_2par_update()
