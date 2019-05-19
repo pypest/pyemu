@@ -231,6 +231,8 @@ class EnsembleSQP(EnsembleMethod):
             pnames = self.pst.adj_par_names
             self.hessian = Matrix(x=np.eye(len(pnames),len(pnames)), row_names=pnames, col_names=pnames)
         self.hessian_0 = self.hessian.copy()
+        self.inv_hessian = self.hessian.inv
+        self.inv_hessian_0 = self.inv_hessian.copy()
 
 
         #self.phi = Phi(self)
@@ -398,10 +400,29 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: downhill check, warn if grad == 0
         self.logger.log("phi gradient checks")
 
+        # compute (quasi-)Newton search direction
+        self.logger.log("calculate search direction")
+        self.search_d = self.inv_hessian * self.en_phi_grad
+        self.logger.log("calculate search direction")
 
-        # TODO: compute search direction
-        # TODO: compute new dec var set using each step size
+        # TODO: update mean dec var values and re-draw
+        # TODO: test multiple step sizes (multipliers?) (define step_lengths = [])
+        # pseudo
+        # step_lengths = []
+        # for i,v in enumerate(step_mult):
+            # step_lengths.append(v)
+        # new_mean = old_mean + (step_size * self.search_d)
+        # re-draw
+
         # TODO: run sweep
+        # run the ensemble for diff step size lengths
+        self.logger.log("evaluating ensembles for step sizes : {0}".\
+                        format(','.join(["{0:8.3E}".format(l) for l in step_lengths])))
+        #failed_runs, self.obsensemble = self._calc_obs(self.parensemble)  # run
+        self.obsensemble.to_csv(self.pst.filename + self.obsen_prefix.format(0))
+        self.logger.log("evaluating ensembles for step sizes : {0}".\
+                        format(','.join(["{0:8.3E}".format(l) for l in step_lengths])))
+
         # TODO: undertake Wolfe and other en tests
         # TODO: constraint and feasibility KKT checks here
         # TODO: select best upgrade
