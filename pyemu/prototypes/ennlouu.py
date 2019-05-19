@@ -325,6 +325,20 @@ class EnsembleSQP(EnsembleMethod):
                                  row_names=['cov'],col_names=self.pst.adj_par_names)
         return en_cov_crosscov
 
+    def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,step,
+                          limited_memory=False,)#scaling_method="ZhangReynolds"):
+        '''
+        see Oliver, Reynolds and Liu (2008) from pg. 180 for overview.
+        '''
+        H = curr_inv_hess
+        grad_diff = curr_grad - new_grad
+        ys = grad_diff,step
+        Hy = H,grad_diff
+        yHy = grad_diff, Hy
+        H += (ys + yHy) * step,step / ys**2
+        H -= ((Hy,step) + (step,Hy)) / ys
+        return H #return others too for tests, e.g., grad diff?
+
 
     def update(self,step_mult=[1.0],):#localizer=None,use_approx=True,calc_only=False,run_subset=None,
         """
@@ -404,6 +418,7 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.log("calculate search direction")
         self.search_d = self.inv_hessian * self.en_phi_grad
         self.logger.log("calculate search direction")
+        # TODO: prefer to have a function like `find_direction`?
 
         # TODO: update mean dec var values and re-draw
         # TODO: test multiple step sizes (multipliers?) (define step_lengths = [])
@@ -412,6 +427,7 @@ class EnsembleSQP(EnsembleMethod):
         # for i,v in enumerate(step_mult):
             # step_lengths.append(v)
         # new_mean = old_mean + (step_size * self.search_d)
+        # to pst
         # re-draw
 
         # TODO: run sweep
@@ -427,7 +443,18 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: constraint and feasibility KKT checks here
         # TODO: select best upgrade
         # TODO: check for convergence in terms of dec var and phi changes
-        # TODO: update Hessian via BFGS (incl L-BFGS, scaling, logging)
-        # TODO: check for Hessian positive-definite-ness (and yTs > 0)
-        # TODO: save Hessian
+
+        # TODO: update Hessian via BFGS (incl L-BFGS, scaling)
+        self.logger.log("updating Hessian using the BFGS algorithm")
+        self.inv_hessian = self._BFGS_hess_update(self.inv_hessian,limited_memory=False)
+        self.logger.log("updating Hessian using the BFGS algorithm")
+        # copy Hessian
+
+
+        # Hessian checks, e.g.,  positive-definite-ness
+        if not np.all(np.linalg.eigvals(self.hessian.as_2d) > 0):
+            self.logger.lraise("Hessian matrix is not positive definite")
+        # TODO: check yT.s > 0
+
+        # TODO: save Hessian (as csv)
 
