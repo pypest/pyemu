@@ -311,7 +311,7 @@ class EnsembleSQP(EnsembleMethod):
 
     def _calc_en_cov_crosscov(self,ensemble1,ensemble2):
         '''
-        general func for calc of ensemble (approx) covariances and cross-covariances. Method not already elsewhere?
+        general func for calc of ensemble (approx) covariances and cross-covariances.
         '''
         mean1, mean2 = np.array(ensemble1.mean(axis=0)), np.array(ensemble2.mean(axis=0))
         delta1, delta2 = ensemble1.as_pyemu_matrix(), ensemble2.as_pyemu_matrix()
@@ -319,7 +319,8 @@ class EnsembleSQP(EnsembleMethod):
             delta1.x[i, :] -= mean1
             delta2.x[i, :] -= mean2
         en_cov_crosscov = 1.0 / (ensemble1.shape[0] - 1.0) * ((delta1.x * delta2.x).sum(axis=0))
-        #en_cov_crosscov = en_cov_crosscov.as_pyemu_matrix()
+        en_cov_crosscov = Matrix(x=(np.expand_dims(en_cov_crosscov, axis=0)), \
+                                 row_names=['cov'],col_names=self.pst.adj_par_names)
         return en_cov_crosscov
 
 
@@ -357,36 +358,47 @@ class EnsembleSQP(EnsembleMethod):
         if not self._initialized:
             self.logger.lraise("must call initialize() before update()")
 
-        # TODO: compute dec var covariance and dec var-phi cross covariance matrices - they are actually vectors
+        # compute dec var covariance and dec var-phi cross covariance matrices - they are actually vectors
         self.logger.log("compute dec var en covariance vector")
-        en_cov_decvar = self._calc_en_cov_decvar(self.parensemble)
+        self.en_cov_decvar = self._calc_en_cov_decvar(self.parensemble)
         self.logger.log("compute dec var en covariance vector")
         self.logger.log("compute dec var-phi en cross-covariance vector")
-        en_crosscov_decvar_phi = self._calc_en_crosscov_decvar_phi(self.parensemble,self.obsensemble)
+        self.en_crosscov_decvar_phi = self._calc_en_crosscov_decvar_phi(self.parensemble,self.obsensemble)
         self.logger.log("compute dec var-phi en cross-covariance vector")
 
         # TODO: SVD on dec var en cov matrix
-
         #self.logger.log("calculate pseudo inv comps")
         #u,s,v = scaled_delta_obs.pseudo_inv_components(eigthresh=self.pst.svd_data.eigthresh)
         #s.col_names = s.row_names
         #self.logger.log("calculate pseudo inv comps")
-
-        #self.logger.log("calculate obs diff matrix")
 
         # mat inspections
         #mat_prefix = self.pst.filename.replace('.pst', '') + ".{0}".format(self.iter_num)
         #if self.save_mats:
          #   np.savetxt(mat_prefix + ".obs_diff.dat", scaled_delta_obs.x, fmt="%15.6e")
 
-
-        self.logger.log("calcs for  lambda {0}".format(cur_lam_mult))
-
-
-
         # TODO: run sweep
         # TODO: localize
-        # TODO: compute gradient vector and undertake gradient-related checks
+
+        # compute gradient vector and undertake gradient-related checks
+        # see e.g. eq (9) in Liu and Reynolds (2019 SPE)
+        self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
+        self.inv_en_cov_decvar = self.en_cov_decvar.pseudo_inv(eigthresh=self.pst.svd_data.eigthresh)
+        self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
+
+        self.logger.log("calculate pseudo inv comps")
+        u,s,v = self.en_cov_decvar.pseudo_inv_components(eigthresh=self.pst.svd_data.eigthresh)
+        self.logger.log("calculate pseudo inv comps")
+
+        self.logger.log("calculate phi gradient vector")
+        self.en_phi_grad = self.inv_en_cov_decvar * self.en_crosscov_decvar_phi # --> 2 x 2
+        self.logger.log("calculate phi gradient vector")
+
+        self.logger.log("phi gradient checks")
+        # TODO: downhill check, warn if grad == 0
+        self.logger.log("phi gradient checks")
+
+
         # TODO: compute search direction
         # TODO: compute new dec var set using each step size
         # TODO: run sweep
@@ -395,6 +407,6 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: select best upgrade
         # TODO: check for convergence in terms of dec var and phi changes
         # TODO: update Hessian via BFGS (incl L-BFGS, scaling, logging)
-        # TODO: check for Hessian positive-definite-ness
+        # TODO: check for Hessian positive-definite-ness (and yTs > 0)
         # TODO: save Hessian
 
