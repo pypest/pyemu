@@ -325,12 +325,12 @@ class EnsembleSQP(EnsembleMethod):
                                  row_names=['cov'],col_names=self.pst.adj_par_names)
         return en_cov_crosscov
 
-    def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,step,
-                          limited_memory=False,)#scaling_method="ZhangReynolds"):
+    def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,step,):#scaling_method="ZhangReynolds")
         '''
         see Oliver, Reynolds and Liu (2008) from pg. 180 for overview.
         '''
-        H = curr_inv_hess
+        # TODO
+        # H = curr_inv_hess
         grad_diff = curr_grad - new_grad
         ys = grad_diff,step
         Hy = H,grad_diff
@@ -339,8 +339,14 @@ class EnsembleSQP(EnsembleMethod):
         H -= ((Hy,step) + (step,Hy)) / ys
         return H #return others too for tests, e.g., grad diff?
 
+    def _LBFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,step,idx,trunc_thresh):#scaling_method="ZhangReynolds")
+        '''
+        Use this for large problems
+        '''
+        # TODO
 
-    def update(self,step_mult=[1.0],):#localizer=None,use_approx=True,calc_only=False,run_subset=None,
+
+    def update(self,step_mult=[1.0],alg="BFGS"):#localizer=None,use_approx=True,calc_only=False,run_subset=None,
         """
         Perform one update
 
@@ -351,6 +357,10 @@ class EnsembleSQP(EnsembleMethod):
             evaluating the parameter ensemble (or a subset thereof).
         run_subset : int
             the number of realizations to test for each step_mult value.
+        alg : string
+            flag indicating which Hessian updating method to use. Options include "BFGS"
+            (classic Broyden–Fletcher–Goldfarb–Shanno) (suited to small problems) or "LBFGS"
+            (a limited-memory version of BFGS) (suited to large problems).
 
         Example
         -------
@@ -445,9 +455,12 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: check for convergence in terms of dec var and phi changes
 
         # TODO: update Hessian via BFGS (incl L-BFGS, scaling)
-        self.logger.log("updating Hessian using the BFGS algorithm")
-        self.inv_hessian = self._BFGS_hess_update(self.inv_hessian,limited_memory=False)
-        self.logger.log("updating Hessian using the BFGS algorithm")
+        self.logger.log("updating Hessian using BFGS")
+        if alg == "BFGS":
+            self.inv_hessian = self._BFGS_hess_update(self.inv_hessian,)
+        else:
+            self.inv_hessian = self._LBFGS_hess_update(self.inv_hessian,)
+        self.logger.log("updating Hessian using BFGS")
         # copy Hessian
 
 
