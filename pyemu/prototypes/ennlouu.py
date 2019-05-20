@@ -380,14 +380,12 @@ class EnsembleSQP(EnsembleMethod):
         self.en_cov_decvar = self._calc_en_cov_decvar(self.parensemble)
         # and need mean for upgrades
         self.parensemble_mean = np.array(self.parensemble.mean(axis=0))
+        self.parensemble_mean = Matrix(x=np.expand_dims(self.parensemble_mean, axis=0),\
+                                       row_names=['mean'], col_names=self.pst.adj_par_names)
         self.logger.log("compute dec var en covariance vector")
         self.logger.log("compute dec var-phi en cross-covariance vector")
         self.en_crosscov_decvar_phi = self._calc_en_crosscov_decvar_phi(self.parensemble,self.obsensemble)
         self.logger.log("compute dec var-phi en cross-covariance vector")
-
-        # TODO: SVD on dec var en cov matrix
-        # TODO: run sweep
-        # TODO: localize
 
         # compute gradient vector and undertake gradient-related checks
         # see e.g. eq (9) in Liu and Reynolds (2019 SPE)
@@ -395,12 +393,17 @@ class EnsembleSQP(EnsembleMethod):
         self.inv_en_cov_decvar = self.en_cov_decvar.pseudo_inv(eigthresh=self.pst.svd_data.eigthresh)
         self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
 
+        # TODO: SVD on dec var en cov matrix
         self.logger.log("calculate pseudo inv comps")
         u,s,v = self.en_cov_decvar.pseudo_inv_components(eigthresh=self.pst.svd_data.eigthresh)
         self.logger.log("calculate pseudo inv comps")
 
         self.logger.log("calculate phi gradient vector")
         self.en_phi_grad = self.inv_en_cov_decvar * self.en_crosscov_decvar_phi # --> 2 x 2
+        # TODO: temp
+        self.en_phi_grad = Matrix(x=self.en_phi_grad.x[:1,:],\
+                                  col_names=self.en_phi_grad.col_names,
+                                  row_names=['mean'])#row_names=self.en_phi_grad.row_names[:1],)
         self.logger.log("calculate phi gradient vector")
 
         self.logger.log("phi gradient checks")
@@ -409,28 +412,28 @@ class EnsembleSQP(EnsembleMethod):
 
         # compute (quasi-)Newton search direction
         self.logger.log("calculate search direction")
-        self.search_d = self.inv_hessian * self.en_phi_grad
+        self.search_d = self.inv_hessian * self.en_phi_grad.T # TODO: check transpose
         self.logger.log("calculate search direction")
         # TODO: prefer to have a function like `find_direction`?
 
         # TODO: update mean dec var values and re-draw
         # TODO: handling of fixed, transformed etc. dec vars here
         # TODO: test multiple step sizes (multipliers?)
-
         step_lengths = []
         base_step = 1.0 # wildass starting guess, just to check plumbing before implementing line search algorithm
-        # TODO: line search for getting alpha, e.g., Powell (1978)
+        # TODO: line search for getting "base" alpha, e.g., Powell (1978)
         for istep,step in enumerate(step_mult):
             step_size = base_step * step
             step_lengths.append(step_size)
             self.logger.log("undertaking calcs for step size (multiplier) : {0}...".format(step_size))
 
             self.logger.log("computing mean dec var upgrade".format(step_size))
-            self.parensemble_mean_1 = self.parensemble_mean + (step_size * self.search_d)
+            self.parensemble_mean_1 = self.parensemble_mean + (step_size * self.search_d.T) # TODO: check transpose
+            # convert to ParameterEnsemble
             # TODO: save to csv
             self.logger.log("computing mean dec var upgrade".format(step_size))
 
-            self.logger.log("drawing {0} dec var realizations centred around new mean".format(num_reals))
+            self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
             # TODO: when using uniform draws, mean changes don't matter, only bounds...
             #self.parensemble_1 = ParameterEnsemble.from_uniform_draw(self.pst, num_reals=num_reals)
             # TODO: better way to do this?
@@ -443,18 +446,23 @@ class EnsembleSQP(EnsembleMethod):
             self.parensemble_1.to_csv(self.pst.filename + self.paren_prefix.format(0))
             self.logger.log("drawing {0} dec var realizations centred around new mean".format(num_reals))
 
+            self.logger.log("undertaking calcs for step size (multiplier) : {0}...".format(step_size))
+
             # TODO: localization
+
+            # subset if needed
+            # and combine lambda par ensembles into one par ensemble for evaluation
 
             # TODO: run sweep
             # run the ensemble for diff step size lengths
             self.logger.log("evaluating ensembles for step sizes : {0}". \
                             format(','.join(["{0:8.3E}".format(s) for s in step_size])))
             failed_runs, self.obsensemble = self._calc_obs(self.parensemble)  # run
+            # TODO: unpack lambda obs ensembles from combined obs ensemble
+            # TODO: failed run handling
             self.obsensemble.to_csv(self.pst.filename + self.obsen_prefix.format(0))
             self.logger.log("evaluating ensembles for step sizes : {0}". \
                             format(','.join(["{0:8.3E}".format(s) for s in step_size])))
-
-            self.logger.log("undertaking calcs for step size (multiplier) : {0}...".format(step_size))
 
         # TODO: undertake Wolfe and other en tests
         # TODO: constraint and feasibility KKT checks here
