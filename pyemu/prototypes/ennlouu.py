@@ -96,7 +96,7 @@ class EnsembleSQP(EnsembleMethod):
                 evaluated observation ensemble.  If not None, this will skip the initial
                 parameter ensemble evaluation - user beware!
             draw_mult : float or int
-                (just for initial testing, especially on Rosenbrock) a multiplier for scaling (uniform)
+                (just for initial testing, especially on Rosenbrock) a multiplier for scaling
                 parensemble draw variance.  Used for drawing dec var en in tighter cluster around mean val
                 (e.g., compared to ies and par priors). Dec var en stats here are ``computational'' rather
                 than (pseudo-)physical.  If bounds physically credible, as should be, no need to scale down.
@@ -172,7 +172,8 @@ class EnsembleSQP(EnsembleMethod):
 
         else:
             self.logger.log("initializing by drawing {0} par realizations".format(num_reals))
-            self.parensemble_0 = ParameterEnsemble.from_uniform_draw(self.pst,num_reals=num_reals)
+            #self.parensemble_0 = ParameterEnsemble.from_uniform_draw(self.pst,num_reals=num_reals)
+            self.parensemble_0 = ParameterEnsemble.from_gaussian_draw(self.pst,self.parcov,num_reals=num_reals)
             self.parensemble_0 = ParameterEnsemble.from_dataframe(df=self.parensemble_0 * self.draw_mult,pst=self.pst)
             self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
             self.parensemble = self.parensemble_0.copy()
@@ -430,9 +431,13 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("computing mean dec var upgrade".format(step_size))
 
             self.logger.log("drawing {0} dec var realizations centred around new mean".format(num_reals))
-            # TODO: reflect upgrade in pst obj
-            self.parensemble_1 = ParameterEnsemble.from_uniform_draw(self.pst, num_reals=num_reals)
-            self.parensemble_1 = ParameterEnsemble.from_dataframe(df=self.parensemble_0 * self.draw_mult, pst=self.pst)
+            # TODO: when using uniform draws, mean changes don't matter, only bounds...
+            #self.parensemble_1 = ParameterEnsemble.from_uniform_draw(self.pst, num_reals=num_reals)
+            # TODO: better way to do this?
+            self.pst.parameter_data.loc[:,"parval1"] += pd.DataFrame(self.parensemble_mean,\
+                                                                     index=self.pst.adj_par_names,columns=['parval1'])
+            self.parensemble_1 = ParameterEnsemble.from_gaussian_draw(self.pst, self.parcov, num_reals=num_reals)
+            self.parensemble_1 = ParameterEnsemble.from_dataframe(df=self.parensemble_1 * self.draw_mult, pst=self.pst)
             self.parensemble_1.enforce(enforce_bounds=enforce_bounds)
             self.parensemble = self.parensemble_1.copy()
             self.parensemble_1.to_csv(self.pst.filename + self.paren_prefix.format(0))
@@ -449,7 +454,7 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("evaluating ensembles for step sizes : {0}". \
                             format(','.join(["{0:8.3E}".format(s) for s in step_size])))
 
-            self.logger.log("undertaking calcs for step size (multiplier) : {0}".format(step_size))
+            self.logger.log("undertaking calcs for step size (multiplier) : {0}...".format(step_size))
 
         # TODO: undertake Wolfe and other en tests
         # TODO: constraint and feasibility KKT checks here
