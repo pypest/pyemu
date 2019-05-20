@@ -412,7 +412,7 @@ class EnsembleSQP(EnsembleMethod):
 
         # compute (quasi-)Newton search direction
         self.logger.log("calculate search direction")
-        self.search_d = self.inv_hessian * self.en_phi_grad.T # TODO: check transpose
+        self.search_d = -1 * (self.inv_hessian * self.en_phi_grad.T) # TODO: check transpose
         self.logger.log("calculate search direction")
         # TODO: prefer to have a function like `find_direction`?
 
