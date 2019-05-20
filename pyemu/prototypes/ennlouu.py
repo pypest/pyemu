@@ -429,22 +429,22 @@ class EnsembleSQP(EnsembleMethod):
 
             self.logger.log("computing mean dec var upgrade".format(step_size))
             self.parensemble_mean_1 = self.parensemble_mean + (step_size * self.search_d.T) # TODO: check transpose
-            # convert to ParameterEnsemble
-            # TODO: save to csv
+            np.savetxt(self.pst.filename + "_en_mean_step_{0}_it_{1}.dat".format(step_size,self.iter_num),\
+                       self.parensemble_mean_1.x,fmt="%15.6e")
             self.logger.log("computing mean dec var upgrade".format(step_size))
 
             self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
             # TODO: when using uniform draws, mean changes don't matter, only bounds...
             #self.parensemble_1 = ParameterEnsemble.from_uniform_draw(self.pst, num_reals=num_reals)
+            # shift parval1
             # TODO: better way to do this?
-            self.pst.parameter_data.loc[:,"parval1"] += pd.DataFrame(self.parensemble_mean,\
-                                                                     index=self.pst.adj_par_names,columns=['parval1'])
-            self.parensemble_1 = ParameterEnsemble.from_gaussian_draw(self.pst, self.parcov, num_reals=num_reals)
+            self.pst.parameter_data.loc[:,"parval1"] += pd.Series(np.squeeze(self.parensemble_mean_1.x, axis=0)).values
+            self.parensemble_1 = ParameterEnsemble.from_gaussian_draw(self.pst, self.parcov, num_reals=self.num_reals)
             self.parensemble_1 = ParameterEnsemble.from_dataframe(df=self.parensemble_1 * self.draw_mult, pst=self.pst)
-            self.parensemble_1.enforce(enforce_bounds=enforce_bounds)
+            self.parensemble_1.enforce(enforce_bounds=self.enforce_bounds)
             self.parensemble = self.parensemble_1.copy()
             self.parensemble_1.to_csv(self.pst.filename + self.paren_prefix.format(0))
-            self.logger.log("drawing {0} dec var realizations centred around new mean".format(num_reals))
+            self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
 
             self.logger.log("undertaking calcs for step size (multiplier) : {0}...".format(step_size))
 
@@ -452,19 +452,18 @@ class EnsembleSQP(EnsembleMethod):
 
             # subset if needed
             # and combine lambda par ensembles into one par ensemble for evaluation
-
             # TODO: run sweep
             # run the ensemble for diff step size lengths
-            self.logger.log("evaluating ensembles for step sizes : {0}". \
-                            format(','.join(["{0:8.3E}".format(s) for s in step_size])))
-            failed_runs, self.obsensemble = self._calc_obs(self.parensemble)  # run
+            self.logger.log("evaluating ensembles for step size : {0}".\
+                            format(','.join("{0:8.3E}".format(step_size))))
+            failed_runs_1, self.obsensemble_1 = self._calc_obs(self.parensemble_1) # run
             # TODO: unpack lambda obs ensembles from combined obs ensemble
             # TODO: failed run handling
-            self.obsensemble.to_csv(self.pst.filename + self.obsen_prefix.format(0))
-            self.logger.log("evaluating ensembles for step sizes : {0}". \
-                            format(','.join(["{0:8.3E}".format(s) for s in step_size])))
+            self.obsensemble_1.to_csv(self.pst.filename + ".{0}".format(self.iter_num) + self.obsen_prefix.format(0))
+            self.logger.log("evaluating ensembles for step size : {0}".\
+                            format(','.join("{0:8.3E}".format(step_size))))
 
-        # TODO: undertake Wolfe and other en tests
+        # TODO: undertake Wolfe and en tests
         # TODO: constraint and feasibility KKT checks here
         # TODO: select best upgrade
         # TODO: check for convergence in terms of dec var and phi changes
@@ -490,5 +489,5 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.lraise("Hessian matrix is not positive definite")
         # TODO: check yT.s > 0
 
-        # TODO: save Hessian (as csv)
+        # TODO: save Hessian vectors (as csv)
 
