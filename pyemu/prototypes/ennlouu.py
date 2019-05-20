@@ -273,16 +273,6 @@ class EnsembleSQP(EnsembleMethod):
           #  self.current_lambda = 10.0**(np.floor(np.log10(x)))
         #self.logger.statement("current lambda:{0:15.6g}".format(self.current_lambda))
 
-        #self.delta_par_prior = self._calc_delta_par(self.parensemble_0)
-        #u,s,v = self.delta_par_prior.pseudo_inv_components(eigthresh=self.pst.svd_data.eigthresh)
-        #self.Am = u * s.inv
-        #if self.save_mats:
-         #   np.savetxt(self.pst.filename.replace(".pst",'.') + "0.prior_par_diff.dat", self.delta_par_prior.x, fmt="%15.6e")
-         #   np.savetxt(self.pst.filename.replace(".pst",'.') + "0.am_u.dat",u.x,fmt="%15.6e")
-         #   np.savetxt(self.pst.filename.replace(".pst", '.') + "0.am_v.dat", v.x, fmt="%15.6e")
-         #   np.savetxt(self.pst.filename.replace(".pst",'.') + "0.am_s_inv.dat", s.inv.as_2d, fmt="%15.6e")
-         #   np.savetxt(self.pst.filename.replace(".pst",'.') + "0.am.dat", self.Am.x, fmt="%15.6e")
-
         self._initialized = True
 
 
@@ -330,7 +320,7 @@ class EnsembleSQP(EnsembleMethod):
         see Oliver, Reynolds and Liu (2008) from pg. 180 for overview.
         '''
         # TODO
-        # H = curr_inv_hess
+        H = curr_inv_hess
         grad_diff = curr_grad - new_grad
         ys = grad_diff,step
         Hy = H,grad_diff
@@ -395,16 +385,6 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.log("compute dec var-phi en cross-covariance vector")
 
         # TODO: SVD on dec var en cov matrix
-        #self.logger.log("calculate pseudo inv comps")
-        #u,s,v = scaled_delta_obs.pseudo_inv_components(eigthresh=self.pst.svd_data.eigthresh)
-        #s.col_names = s.row_names
-        #self.logger.log("calculate pseudo inv comps")
-
-        # mat inspections
-        #mat_prefix = self.pst.filename.replace('.pst', '') + ".{0}".format(self.iter_num)
-        #if self.save_mats:
-         #   np.savetxt(mat_prefix + ".obs_diff.dat", scaled_delta_obs.x, fmt="%15.6e")
-
         # TODO: run sweep
         # TODO: localize
 
@@ -433,24 +413,43 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: prefer to have a function like `find_direction`?
 
         # TODO: update mean dec var values and re-draw
-        # TODO: handling of fixed, transfortmed etc. dec vars here
-        # TODO: test multiple step sizes (multipliers?) (define step_lengths = [])
-        # pseudo
-        # step_lengths = []
-        # for istep,step in enumerate(step_mult):
-            # step_lengths.append(step)
-        # new_mean = self.parensemble_mean + (step_size * self.search_d)
-        # to pst
-        # re-draw
+        # TODO: handling of fixed, transformed etc. dec vars here
+        # TODO: test multiple step sizes (multipliers?)
 
-        # TODO: run sweep
-        # run the ensemble for diff step size lengths
-        self.logger.log("evaluating ensembles for step sizes : {0}".\
-                        format(','.join(["{0:8.3E}".format(l) for l in step_lengths])))
-        #failed_runs, self.obsensemble = self._calc_obs(self.parensemble)  # run
-        self.obsensemble.to_csv(self.pst.filename + self.obsen_prefix.format(0))
-        self.logger.log("evaluating ensembles for step sizes : {0}".\
-                        format(','.join(["{0:8.3E}".format(l) for l in step_lengths])))
+        step_lengths = []
+        base_step = 1.0 # wildass starting guess, just to check plumbing before implementing line search algorithm
+        # TODO: line search for getting alpha, e.g., Powell (1978)
+        for istep,step in enumerate(step_mult):
+            step_size = base_step * step
+            step_lengths.append(step_size)
+            self.logger.log("undertaking calcs for step size (multiplier) : {0}...".format(step_size))
+
+            self.logger.log("computing mean dec var upgrade".format(step_size))
+            self.parensemble_mean_1 = self.parensemble_mean + (step_size * self.search_d)
+            # TODO: save to csv
+            self.logger.log("computing mean dec var upgrade".format(step_size))
+
+            self.logger.log("drawing {0} dec var realizations centred around new mean".format(num_reals))
+            # TODO: reflect upgrade in pst obj
+            self.parensemble_1 = ParameterEnsemble.from_uniform_draw(self.pst, num_reals=num_reals)
+            self.parensemble_1 = ParameterEnsemble.from_dataframe(df=self.parensemble_0 * self.draw_mult, pst=self.pst)
+            self.parensemble_1.enforce(enforce_bounds=enforce_bounds)
+            self.parensemble = self.parensemble_1.copy()
+            self.parensemble_1.to_csv(self.pst.filename + self.paren_prefix.format(0))
+            self.logger.log("drawing {0} dec var realizations centred around new mean".format(num_reals))
+
+            # TODO: localization
+
+            # TODO: run sweep
+            # run the ensemble for diff step size lengths
+            self.logger.log("evaluating ensembles for step sizes : {0}". \
+                            format(','.join(["{0:8.3E}".format(s) for s in step_size])))
+            failed_runs, self.obsensemble = self._calc_obs(self.parensemble)  # run
+            self.obsensemble.to_csv(self.pst.filename + self.obsen_prefix.format(0))
+            self.logger.log("evaluating ensembles for step sizes : {0}". \
+                            format(','.join(["{0:8.3E}".format(s) for s in step_size])))
+
+            self.logger.log("undertaking calcs for step size (multiplier) : {0}".format(step_size))
 
         # TODO: undertake Wolfe and other en tests
         # TODO: constraint and feasibility KKT checks here
@@ -458,13 +457,19 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: check for convergence in terms of dec var and phi changes
 
         # TODO: update Hessian via BFGS (incl L-BFGS, scaling)
-        self.logger.log("updating Hessian using BFGS")
+        self.logger.log("updating Hessian using L-BFGS/BFGS")
+        if self.iter_num == 1: # zero grad
+            curr_grad = Matrix(x=np.zeros((self.en_cov_decvar.shape)), \
+                               row_names=self.en_cov_decvar.row_names,col_names=self.en_cov_decvar.col_names)
+        else: # prev
+            pass #curr_grad =
         if alg == "BFGS":
             self.inv_hessian = self._BFGS_hess_update(self.inv_hessian,)
         else:
             self.inv_hessian = self._LBFGS_hess_update(self.inv_hessian,)
-        self.logger.log("updating Hessian using BFGS")
+        self.logger.log("updating Hessian using L-BFGS/BFGS")
         # copy Hessian
+        # write vectors
 
 
         # Hessian checks, e.g.,  positive-definite-ness
