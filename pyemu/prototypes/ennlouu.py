@@ -316,16 +316,17 @@ class EnsembleSQP(EnsembleMethod):
                                  row_names=['cov'],col_names=self.pst.adj_par_names)
         return en_cov_crosscov
 
-    def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,step,):#scaling_method="ZhangReynolds")
+    def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par):#scaling_method="ZhangReynolds")
         '''
         see Oliver, Reynolds and Liu (2008) from pg. 180 for overview.
         '''
         # TODO
         H = curr_inv_hess
-        grad_diff = curr_grad - new_grad
-        ys = grad_diff,step
-        Hy = H,grad_diff
-        yHy = grad_diff, Hy
+        y = curr_grad - new_grad
+        s = delta_par
+        ys = y,s
+        Hy = H,y
+        yHy = y, Hy
         H += (ys + yHy) * step,step / ys**2
         H -= ((Hy,step) + (step,Hy)) / ys
         return H #return others too for tests, e.g., grad diff?
@@ -431,14 +432,13 @@ class EnsembleSQP(EnsembleMethod):
             self.parensemble_mean_1 = self.parensemble_mean + (step_size * self.search_d.T) # TODO: check transpose
             np.savetxt(self.pst.filename + "_en_mean_step_{0}_it_{1}.dat".format(step_size,self.iter_num),\
                        self.parensemble_mean_1.x,fmt="%15.6e")
+            # shift parval1
+            self.pst.parameter_data.loc[:,"parval1"] += pd.Series(np.squeeze(self.parensemble_mean_1.x, axis=0)).values
             self.logger.log("computing mean dec var upgrade".format(step_size))
 
             self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
             # TODO: when using uniform draws, mean changes don't matter, only bounds...
-            #self.parensemble_1 = ParameterEnsemble.from_uniform_draw(self.pst, num_reals=num_reals)
-            # shift parval1
-            # TODO: better way to do this?
-            self.pst.parameter_data.loc[:,"parval1"] += pd.Series(np.squeeze(self.parensemble_mean_1.x, axis=0)).values
+            # self.parensemble_1 = ParameterEnsemble.from_uniform_draw(self.pst, num_reals=num_reals)
             self.parensemble_1 = ParameterEnsemble.from_gaussian_draw(self.pst, self.parcov, num_reals=self.num_reals)
             self.parensemble_1 = ParameterEnsemble.from_dataframe(df=self.parensemble_1 * self.draw_mult, pst=self.pst)
             self.parensemble_1.enforce(enforce_bounds=self.enforce_bounds)
@@ -468,15 +468,23 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: select best upgrade
         # TODO: check for convergence in terms of dec var and phi changes
 
+        # calc dec var changes (after picking best alpha etc)
+        # this is needed for Hessian updating via BFGS but also needed for checks
+        self.delta_parensemble_mean = self.parensemble_mean - self.parensemble_mean_1
+        # TODO: dec var change related checks here
+
         # TODO: update Hessian via BFGS (incl L-BFGS, scaling)
         self.logger.log("updating Hessian using L-BFGS/BFGS")
-        if self.iter_num == 1: # zero grad
-            curr_grad = Matrix(x=np.zeros((self.en_cov_decvar.shape)), \
+        if self.iter_num == 1: # no pre-existing grad info
+            curr_grad = Matrix(x=np.zeros((self.en_cov_decvar.shape)),\
                                row_names=self.en_cov_decvar.row_names,col_names=self.en_cov_decvar.col_names)
-        else: # prev
+        else: # prev grad info
             pass #curr_grad =
+
         if alg == "BFGS":
-            self.inv_hessian = self._BFGS_hess_update(self.inv_hessian,)
+            self.inv_hessian = self._BFGS_hess_update(self.inv_hessian,\
+                                                      curr_grad, self.en_phi_grad,
+                                                      self.delta_parensemble_mean)
         else:
             self.inv_hessian = self._LBFGS_hess_update(self.inv_hessian,)
         self.logger.log("updating Hessian using L-BFGS/BFGS")
