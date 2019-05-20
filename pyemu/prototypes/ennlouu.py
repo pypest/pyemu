@@ -387,6 +387,8 @@ class EnsembleSQP(EnsembleMethod):
         # compute dec var covariance and dec var-phi cross covariance matrices - they are actually vectors
         self.logger.log("compute dec var en covariance vector")
         self.en_cov_decvar = self._calc_en_cov_decvar(self.parensemble)
+        # and need mean for upgrades
+        self.parensemble_mean = np.array(self.parensemble.mean(axis=0))
         self.logger.log("compute dec var en covariance vector")
         self.logger.log("compute dec var-phi en cross-covariance vector")
         self.en_crosscov_decvar_phi = self._calc_en_crosscov_decvar_phi(self.parensemble,self.obsensemble)
@@ -431,12 +433,13 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: prefer to have a function like `find_direction`?
 
         # TODO: update mean dec var values and re-draw
+        # TODO: handling of fixed, transfortmed etc. dec vars here
         # TODO: test multiple step sizes (multipliers?) (define step_lengths = [])
         # pseudo
         # step_lengths = []
-        # for i,v in enumerate(step_mult):
-            # step_lengths.append(v)
-        # new_mean = old_mean + (step_size * self.search_d)
+        # for istep,step in enumerate(step_mult):
+            # step_lengths.append(step)
+        # new_mean = self.parensemble_mean + (step_size * self.search_d)
         # to pst
         # re-draw
 
