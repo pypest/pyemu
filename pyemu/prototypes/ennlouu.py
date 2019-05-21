@@ -320,16 +320,17 @@ class EnsembleSQP(EnsembleMethod):
         '''
         see Oliver, Reynolds and Liu (2008) from pg. 180 for overview.
         '''
-        # TODO
-        H = curr_inv_hess
-        y = curr_grad - new_grad
-        s = delta_par
-        ys = y,s
-        Hy = H,y
-        yHy = y, Hy
-        H += (ys + yHy) * step,step / ys**2
-        H -= ((Hy,step) + (step,Hy)) / ys
-        return H #return others too for tests, e.g., grad diff?
+        # TODO: scaling and Nocedal's efficient implementation
+        # TODO: okay to carry these with self?
+        self.H = curr_inv_hess
+        self.y = curr_grad - new_grad
+        self.s = delta_par
+        ys = self.y.T * self.s
+        Hy = self.H * self.y.T #y.T?
+        yHy = self.y * Hy #y.T
+        self.H += (ys + yHy) * (self.s.T * self.s) / ys**2
+        self.H -= ((Hy,step) + (step,Hy)) / ys
+        return self.H #return others too for tests, e.g., grad diff?
 
     def _LBFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,step,idx,trunc_thresh):#scaling_method="ZhangReynolds")
         '''
@@ -476,8 +477,8 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: update Hessian via BFGS (incl L-BFGS, scaling)
         self.logger.log("updating Hessian using L-BFGS/BFGS")
         if self.iter_num == 1: # no pre-existing grad info
-            curr_grad = Matrix(x=np.zeros((self.en_cov_decvar.shape)),\
-                               row_names=self.en_cov_decvar.row_names,col_names=self.en_cov_decvar.col_names)
+            curr_grad = Matrix(x=np.zeros((self.en_phi_grad.shape)),\
+                               row_names=self.en_phi_grad.row_names,col_names=self.en_phi_grad.col_names)
         else: # prev grad info
             pass #curr_grad =
 
