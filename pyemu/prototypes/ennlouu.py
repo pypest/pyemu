@@ -312,7 +312,7 @@ class EnsembleSQP(EnsembleMethod):
             delta1.x[i, :] -= mean1
             delta2.x[i, :] -= mean2
         en_cov_crosscov = 1.0 / (ensemble1.shape[0] - 1.0) * ((delta1.x * delta2.x).sum(axis=0))
-        en_cov_crosscov = Matrix(x=(np.expand_dims(en_cov_crosscov, axis=0)), \
+        en_cov_crosscov = Matrix(x=(np.expand_dims(en_cov_crosscov, axis=0)),\
                                  row_names=['cov'],col_names=self.pst.adj_par_names)
         return en_cov_crosscov
 
@@ -320,17 +320,19 @@ class EnsembleSQP(EnsembleMethod):
         '''
         see Oliver, Reynolds and Liu (2008) from pg. 180 for overview.
         '''
-        # TODO: scaling and Nocedal's efficient implementation
+        # TODO: scaling and Nocedal's efficient implementation. Cross-ref below math.
         # TODO: okay to carry these with self?
         self.H = curr_inv_hess
-        self.y = curr_grad - new_grad
-        self.s = delta_par
+        self.y = (curr_grad - new_grad).T  # start with column vector
+        self.s = delta_par.T  # start with column vector
         ys = self.y.T * self.s
-        Hy = self.H * self.y.T #y.T?
-        yHy = self.y * Hy #y.T
-        self.H += (ys + yHy) * (self.s.T * self.s) / ys**2
-        self.H -= ((Hy,step) + (step,Hy)) / ys
-        return self.H #return others too for tests, e.g., grad diff?
+        Hy = self.H * self.y
+        yHy = self.y.T * Hy
+        #self.H += ((ys + yHy) * (self.s.T * self.s)) / ys**2 # CHECK
+        #self.H -= ((Hy,self.s) + (self.s,Hy)) / ys
+        self.H += (self.y * self.y.T) / (self.s.T * self.y)
+        self.H -= (self.H * self.s * self.s.T * self.H.T) / (self.s.T * self.H * self.s)
+        return self.H # TODO: return others too for tests, e.g., grad diff?
 
     def _LBFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,step,idx,trunc_thresh):#scaling_method="ZhangReynolds")
         '''
@@ -339,9 +341,9 @@ class EnsembleSQP(EnsembleMethod):
         # TODO
 
 
-    def update(self,step_mult=[1.0],alg="BFGS"):#localizer=None,use_approx=True,calc_only=False,run_subset=None,
+    def update(self,step_mult=[1.0],alg="BFGS"):#localizer=None,run_subset=None,
         """
-        Perform one update
+        Perform one quasi-Newton update
 
         Parameters
         -------
@@ -395,16 +397,15 @@ class EnsembleSQP(EnsembleMethod):
         self.inv_en_cov_decvar = self.en_cov_decvar.pseudo_inv(eigthresh=self.pst.svd_data.eigthresh)
         self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
 
-        # TODO: SVD on dec var en cov matrix
-        self.logger.log("calculate pseudo inv comps")
-        u,s,v = self.en_cov_decvar.pseudo_inv_components(eigthresh=self.pst.svd_data.eigthresh)
-        self.logger.log("calculate pseudo inv comps")
+        # TODO: SVD on sparse form of dec var en cov matrix (do SVD on A where Cuu = AA^T - see Dehdari and Oliver)
+        #self.logger.log("calculate pseudo inv comps")
+        #u,s,v = self.en_cov_decvar.pseudo_inv_components(eigthresh=self.pst.svd_data.eigthresh)
+        #self.logger.log("calculate pseudo inv comps")
 
         self.logger.log("calculate phi gradient vector")
         self.en_phi_grad = self.inv_en_cov_decvar * self.en_crosscov_decvar_phi # --> 2 x 2
         # TODO: temp
-        self.en_phi_grad = Matrix(x=self.en_phi_grad.x[:1,:],\
-                                  col_names=self.en_phi_grad.col_names,
+        self.en_phi_grad = Matrix(x=self.en_phi_grad.x[:1,:],col_names=self.en_phi_grad.col_names,
                                   row_names=['mean'])#row_names=self.en_phi_grad.row_names[:1],)
         self.logger.log("calculate phi gradient vector")
 
@@ -414,9 +415,9 @@ class EnsembleSQP(EnsembleMethod):
 
         # compute (quasi-)Newton search direction
         self.logger.log("calculate search direction")
-        self.search_d = -1 * (self.inv_hessian * self.en_phi_grad.T) # TODO: check transpose
+        self.search_d = -1 * (self.inv_hessian * self.en_phi_grad.T)  # TODO: check transpose
         self.logger.log("calculate search direction")
-        # TODO: prefer to have a function like `find_direction`?
+        # TODO: prefer to have a function like `find_direction`? Y
 
         # TODO: update mean dec var values and re-draw
         # TODO: handling of fixed, transformed etc. dec vars here
@@ -430,7 +431,7 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("undertaking calcs for step size (multiplier) : {0}...".format(step_size))
 
             self.logger.log("computing mean dec var upgrade".format(step_size))
-            self.parensemble_mean_1 = self.parensemble_mean + (step_size * self.search_d.T) # TODO: check transpose
+            self.parensemble_mean_1 = self.parensemble_mean + (step_size * self.search_d.T)  # TODO: check transpose
             np.savetxt(self.pst.filename + "_en_mean_step_{0}_it_{1}.dat".format(step_size,self.iter_num),\
                        self.parensemble_mean_1.x,fmt="%15.6e")
             # shift parval1
@@ -438,9 +439,10 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("computing mean dec var upgrade".format(step_size))
 
             self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
-            # TODO: when using uniform draws, mean changes don't matter, only bounds...
             # self.parensemble_1 = ParameterEnsemble.from_uniform_draw(self.pst, num_reals=num_reals)
             self.parensemble_1 = ParameterEnsemble.from_gaussian_draw(self.pst, self.parcov, num_reals=self.num_reals)
+            # TODO: update the parcov empirically based on success or otherwise of previous iteration in terms of phi
+            # TODO: alternatively tighten/widen search region to reflect representativeness of gradient (mechanistic)
             self.parensemble_1 = ParameterEnsemble.from_dataframe(df=self.parensemble_1 * self.draw_mult, pst=self.pst)
             self.parensemble_1.enforce(enforce_bounds=self.enforce_bounds)
             self.parensemble = self.parensemble_1.copy()
@@ -449,7 +451,7 @@ class EnsembleSQP(EnsembleMethod):
 
             self.logger.log("undertaking calcs for step size (multiplier) : {0}...".format(step_size))
 
-            # TODO: localization
+            # TODO: localization (with respect to gradient-dec var relationship only)
 
             # subset if needed
             # and combine lambda par ensembles into one par ensemble for evaluation
@@ -464,7 +466,7 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("evaluating ensembles for step size : {0}".\
                             format(','.join("{0:8.3E}".format(step_size))))
 
-        # TODO: undertake Wolfe and en tests
+        # TODO: undertake Wolfe and en tests. No - our need is superseded by parallel alpha tests
         # TODO: constraint and feasibility KKT checks here
         # TODO: select best upgrade
         # TODO: check for convergence in terms of dec var and phi changes
@@ -474,7 +476,7 @@ class EnsembleSQP(EnsembleMethod):
         self.delta_parensemble_mean = self.parensemble_mean - self.parensemble_mean_1
         # TODO: dec var change related checks here
 
-        # TODO: update Hessian via BFGS (incl L-BFGS, scaling)
+        # update Hessian via quasi-Newton methods - BFGS
         self.logger.log("updating Hessian using L-BFGS/BFGS")
         if self.iter_num == 1: # no pre-existing grad info
             curr_grad = Matrix(x=np.zeros((self.en_phi_grad.shape)),\
@@ -486,8 +488,10 @@ class EnsembleSQP(EnsembleMethod):
             self.inv_hessian = self._BFGS_hess_update(self.inv_hessian,\
                                                       curr_grad, self.en_phi_grad,
                                                       self.delta_parensemble_mean)
-        else:
-            self.inv_hessian = self._LBFGS_hess_update(self.inv_hessian,)
+        else:  # LBFGS
+            self.inv_hessian = self._LBFGS_hess_update(self.inv_hessian,\
+                                                      curr_grad, self.en_phi_grad,
+                                                      self.delta_parensemble_mean,L)
         self.logger.log("updating Hessian using L-BFGS/BFGS")
         # copy Hessian
         # write vectors
@@ -496,7 +500,7 @@ class EnsembleSQP(EnsembleMethod):
         # Hessian checks, e.g.,  positive-definite-ness
         if not np.all(np.linalg.eigvals(self.hessian.as_2d) > 0):
             self.logger.lraise("Hessian matrix is not positive definite")
-        # TODO: check yT.s > 0
+        # TODO: check yT.s > 0 (curvature condition)
 
         # TODO: save Hessian vectors (as csv)
 
