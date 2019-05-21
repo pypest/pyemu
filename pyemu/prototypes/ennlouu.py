@@ -394,7 +394,7 @@ class EnsembleSQP(EnsembleMethod):
         # compute gradient vector and undertake gradient-related checks
         # see e.g. eq (9) in Liu and Reynolds (2019 SPE)
         self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
-        self.inv_en_cov_decvar = self.en_cov_decvar.pseudo_inv(eigthresh=self.pst.svd_data.eigthresh)
+        self.inv_en_cov_decvar = self.en_cov_decvar.pseudo_inv(eigthresh=self.pst.svd_data.eigthresh) # TODO: maxsing=1?
         self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
 
         # TODO: SVD on sparse form of dec var en cov matrix (do SVD on A where Cuu = AA^T - see Dehdari and Oliver)
@@ -404,7 +404,7 @@ class EnsembleSQP(EnsembleMethod):
 
         self.logger.log("calculate phi gradient vector")
         self.en_phi_grad = self.inv_en_cov_decvar * self.en_crosscov_decvar_phi # --> 2 x 2
-        # TODO: temp
+        # TODO: temp hack
         self.en_phi_grad = Matrix(x=self.en_phi_grad.x[:1,:],col_names=self.en_phi_grad.col_names,
                                   row_names=['mean'])#row_names=self.en_phi_grad.row_names[:1],)
         self.logger.log("calculate phi gradient vector")
