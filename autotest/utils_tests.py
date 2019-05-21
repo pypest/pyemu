@@ -1201,8 +1201,10 @@ def gw_sft_ins_test():
     sft_outfile = os.path.join("utils","test_sft.out")
     #pyemu.gw_utils.setup_sft_obs(sft_outfile)
     #pyemu.gw_utils.setup_sft_obs(sft_outfile,start_datetime="1-1-1970")
-    pyemu.gw_utils.setup_sft_obs(sft_outfile, start_datetime="1-1-1970",times=[10950.00])
 
+    df = pyemu.gw_utils.setup_sft_obs(sft_outfile, start_datetime="1-1-1970",times=[10950.00])
+
+    #print(df)
 
 def sfr_helper_test():
     import os
@@ -1621,7 +1623,7 @@ if __name__ == "__main__":
     #gage_obs_test()
     #setup_pp_test()
     #sfr_helper_test()
-    # gw_sft_ins_test()
+    gw_sft_ins_test()
     # par_knowledge_test()
     # grid_obs_test()
     # hds_timeseries_test()
@@ -1651,7 +1653,7 @@ if __name__ == "__main__":
     # pp_to_shapefile_test()
     # read_pval_test()
     # read_hob_test()
-    setup_pp_test()
+    #setup_pp_test()
     # pp_to_tpl_test()
     # setup_ppcov_complex()
     # ppcov_complex_test()
