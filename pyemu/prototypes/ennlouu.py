@@ -321,7 +321,7 @@ class EnsembleSQP(EnsembleMethod):
                                      row_names=['cross-cov'],col_names=self.pst.adj_par_names)
         return en_cov_crosscov
 
-    def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par):
+    def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,selfscale=True):
         '''
         see Oliver, Reynolds and Liu (2008) from pg. 180 for overview.
         '''
@@ -343,6 +343,11 @@ class EnsembleSQP(EnsembleMethod):
         self.H += (self.y * self.y.T).x / (self.s.T * self.y).x
         self.H -= (self.H * self.s * self.s.T * self.H.T).x / (self.s.T * self.H * self.s).x
 
+        # TODO: add self-scale funtionality here
+        if selfscale:
+            hess_scale = (self.s.T * self.y).x / (self.y.T * self.H * self.y).x
+            self.H *= hess_scale
+
         return self.H # TODO: return others too for tests, e.g., grad diff?
 
     def _LBFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,step,idx,trunc_thresh):#scaling_method="ZhangReynolds")
@@ -352,7 +357,7 @@ class EnsembleSQP(EnsembleMethod):
         # TODO
 
 
-    def update(self,step_mult=[1.0],alg="BFGS"):#localizer=None,run_subset=None,
+    def update(self,step_mult=[1.0],alg="BFGS",hess_selfscaling=True):#localizer=None,run_subset=None,
         """
         Perform one quasi-Newton update
 
@@ -420,7 +425,11 @@ class EnsembleSQP(EnsembleMethod):
 
         # compute (quasi-)Newton search direction
         self.logger.log("calculate search direction")
-        self.search_d = -1 * (self.inv_hessian * self.en_phi_grad)
+        if hess_selfscaling:
+            self.inv_hessian_scaled = self.inv_hessian * 275.
+            self.search_d = -1 * (self.inv_hessian_scaled * self.en_phi_grad)
+        else:
+            self.search_d = -1 * (self.inv_hessian * self.en_phi_grad)
         self.logger.log("calculate search direction")
         # TODO: prefer to have a function like `find_direction`? Y
 
