@@ -312,8 +312,13 @@ class EnsembleSQP(EnsembleMethod):
             delta1.x[i, :] -= mean1
             delta2.x[i, :] -= mean2
         en_cov_crosscov = 1.0 / (ensemble1.shape[0] - 1.0) * ((delta1.x * delta2.x).sum(axis=0))
-        en_cov_crosscov = Matrix(x=(np.expand_dims(en_cov_crosscov, axis=0)),\
-                                 row_names=['cov'],col_names=self.pst.adj_par_names)
+        if ensemble1.shape[1] == ensemble2.shape[1]:  # diag cov matrix
+            en_cov_crosscov = np.diag(en_cov_crosscov)
+            en_cov_crosscov = Matrix(x=en_cov_crosscov,
+                                     row_names=self.pst.adj_par_names,col_names=self.pst.adj_par_names)
+        else:  # cross-cov always a vector
+            en_cov_crosscov = Matrix(x=(np.expand_dims(en_cov_crosscov, axis=0)),
+                                     row_names=['cross-cov'],col_names=self.pst.adj_par_names)
         return en_cov_crosscov
 
     def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par):#scaling_method="ZhangReynolds")
@@ -387,6 +392,7 @@ class EnsembleSQP(EnsembleMethod):
         self.parensemble_mean = Matrix(x=np.expand_dims(self.parensemble_mean, axis=0),\
                                        row_names=['mean'], col_names=self.pst.adj_par_names)
         self.logger.log("compute dec var en covariance vector")
+
         self.logger.log("compute dec var-phi en cross-covariance vector")
         self.en_crosscov_decvar_phi = self._calc_en_crosscov_decvar_phi(self.parensemble,self.obsensemble)
         self.logger.log("compute dec var-phi en cross-covariance vector")
@@ -394,7 +400,7 @@ class EnsembleSQP(EnsembleMethod):
         # compute gradient vector and undertake gradient-related checks
         # see e.g. eq (9) in Liu and Reynolds (2019 SPE)
         self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
-        self.inv_en_cov_decvar = self.en_cov_decvar.pseudo_inv(eigthresh=self.pst.svd_data.eigthresh) # TODO: maxsing=1?
+        self.inv_en_cov_decvar = self.en_cov_decvar.pseudo_inv(eigthresh=self.pst.svd_data.eigthresh)
         self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
 
         # TODO: SVD on sparse form of dec var en cov matrix (do SVD on A where Cuu = AA^T - see Dehdari and Oliver)
@@ -403,10 +409,7 @@ class EnsembleSQP(EnsembleMethod):
         #self.logger.log("calculate pseudo inv comps")
 
         self.logger.log("calculate phi gradient vector")
-        self.en_phi_grad = self.inv_en_cov_decvar * self.en_crosscov_decvar_phi # --> 2 x 2
-        # TODO: temp hack
-        self.en_phi_grad = Matrix(x=self.en_phi_grad.x[:1,:],col_names=self.en_phi_grad.col_names,
-                                  row_names=['mean'])#row_names=self.en_phi_grad.row_names[:1],)
+        self.en_phi_grad = self.inv_en_cov_decvar * self.en_crosscov_decvar_phi.T # --> 2 x 2
         self.logger.log("calculate phi gradient vector")
 
         self.logger.log("phi gradient checks")
@@ -415,7 +418,7 @@ class EnsembleSQP(EnsembleMethod):
 
         # compute (quasi-)Newton search direction
         self.logger.log("calculate search direction")
-        self.search_d = -1 * (self.inv_hessian * self.en_phi_grad.T)  # TODO: check transpose
+        self.search_d = -1 * (self.inv_hessian * self.en_phi_grad)
         self.logger.log("calculate search direction")
         # TODO: prefer to have a function like `find_direction`? Y
 
@@ -423,7 +426,7 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: handling of fixed, transformed etc. dec vars here
         # TODO: test multiple step sizes (multipliers?)
         step_lengths = []
-        base_step = 1.0 # wildass starting guess, just to check plumbing before implementing line search algorithm
+        base_step = 1.0  # wildass starting guess, just to check plumbing before implementing line search algorithm
         # TODO: line search for getting "base" alpha, e.g., Powell (1978)
         for istep,step in enumerate(step_mult):
             step_size = base_step * step
@@ -431,7 +434,8 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("undertaking calcs for step size (multiplier) : {0}...".format(step_size))
 
             self.logger.log("computing mean dec var upgrade".format(step_size))
-            self.parensemble_mean_1 = self.parensemble_mean + (step_size * self.search_d.T)  # TODO: check transpose
+            self.search_d.col_names = ['mean'] # TODO: temp hack
+            self.parensemble_mean_1 = self.parensemble_mean + (step_size * self.search_d.T)
             np.savetxt(self.pst.filename + "_en_mean_step_{0}_it_{1}.dat".format(step_size,self.iter_num),\
                        self.parensemble_mean_1.x,fmt="%15.6e")
             # shift parval1
@@ -443,6 +447,7 @@ class EnsembleSQP(EnsembleMethod):
             self.parensemble_1 = ParameterEnsemble.from_gaussian_draw(self.pst, self.parcov, num_reals=self.num_reals)
             # TODO: update the parcov empirically based on success or otherwise of previous iteration in terms of phi
             # TODO: alternatively tighten/widen search region to reflect representativeness of gradient (mechanistic)
+            # TODO: two sets of bounds: one hard on dec var and one for ensemble just to get grad
             self.parensemble_1 = ParameterEnsemble.from_dataframe(df=self.parensemble_1 * self.draw_mult, pst=self.pst)
             self.parensemble_1.enforce(enforce_bounds=self.enforce_bounds)
             self.parensemble = self.parensemble_1.copy()
