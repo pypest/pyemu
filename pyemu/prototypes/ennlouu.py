@@ -321,22 +321,25 @@ class EnsembleSQP(EnsembleMethod):
                                      row_names=['cross-cov'],col_names=self.pst.adj_par_names)
         return en_cov_crosscov
 
-    def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par):#scaling_method="ZhangReynolds")
+    def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par):
         '''
         see Oliver, Reynolds and Liu (2008) from pg. 180 for overview.
         '''
         # TODO: scaling and Nocedal's efficient implementation. Cross-ref below math.
         # TODO: okay to carry these with self?
         self.H = curr_inv_hess
-        self.y = (curr_grad - new_grad).T  # start with column vector
+        self.y = (curr_grad - new_grad)  # start with column vector
         self.s = delta_par.T  # start with column vector
-        ys = self.y.T * self.s
-        Hy = self.H * self.y
-        yHy = self.y.T * Hy
+        if (self.y.T * self.s).x <= 0:
+            self.logger.lraise("curvature condition violated; Hessian matrix will not be positive definite")
+        #ys = self.y.T * self.s
+        #Hy = self.H * self.y
+        #yHy = self.y.T * Hy
         #self.H += ((ys + yHy) * (self.s.T * self.s)) / ys**2 # CHECK
         #self.H -= ((Hy,self.s) + (self.s,Hy)) / ys
-        self.H += (self.y * self.y.T) / (self.s.T * self.y)
-        self.H -= (self.H * self.s * self.s.T * self.H.T) / (self.s.T * self.H * self.s)
+        self.H += (self.y * self.y.T).x / (self.s.T * self.y).x
+        self.H -= (self.H * self.s * self.s.T * self.H.T).x / (self.s.T * self.H * self.s).x
+
         return self.H # TODO: return others too for tests, e.g., grad diff?
 
     def _LBFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,step,idx,trunc_thresh):#scaling_method="ZhangReynolds")
@@ -426,7 +429,7 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: handling of fixed, transformed etc. dec vars here
         # TODO: test multiple step sizes (multipliers?)
         step_lengths = []
-        base_step = 1.0  # wildass starting guess, just to check plumbing before implementing line search algorithm
+        base_step = 0.0001  # wildass starting guess, just to check plumbing before implementing line search algorithm
         # TODO: line search for getting "base" alpha, e.g., Powell (1978)
         for istep,step in enumerate(step_mult):
             step_size = base_step * step
@@ -434,7 +437,7 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("undertaking calcs for step size (multiplier) : {0}...".format(step_size))
 
             self.logger.log("computing mean dec var upgrade".format(step_size))
-            self.search_d.col_names = ['mean'] # TODO: temp hack
+            self.search_d.col_names = ['mean']  # TODO: temp hack
             self.parensemble_mean_1 = self.parensemble_mean + (step_size * self.search_d.T)
             np.savetxt(self.pst.filename + "_en_mean_step_{0}_it_{1}.dat".format(step_size,self.iter_num),\
                        self.parensemble_mean_1.x,fmt="%15.6e")
@@ -460,11 +463,11 @@ class EnsembleSQP(EnsembleMethod):
 
             # subset if needed
             # and combine lambda par ensembles into one par ensemble for evaluation
-            # TODO: run sweep
+
             # run the ensemble for diff step size lengths
             self.logger.log("evaluating ensembles for step size : {0}".\
                             format(','.join("{0:8.3E}".format(step_size))))
-            failed_runs_1, self.obsensemble_1 = self._calc_obs(self.parensemble_1) # run
+            failed_runs_1, self.obsensemble_1 = self._calc_obs(self.parensemble_1)  # run
             # TODO: unpack lambda obs ensembles from combined obs ensemble
             # TODO: failed run handling
             self.obsensemble_1.to_csv(self.pst.filename + ".{0}".format(self.iter_num) + self.obsen_prefix.format(0))
@@ -498,8 +501,7 @@ class EnsembleSQP(EnsembleMethod):
                                                       curr_grad, self.en_phi_grad,
                                                       self.delta_parensemble_mean,L)
         self.logger.log("updating Hessian using L-BFGS/BFGS")
-        # copy Hessian
-        # write vectors
+        # copy Hessian, write vectors
 
 
         # Hessian checks, e.g.,  positive-definite-ness
