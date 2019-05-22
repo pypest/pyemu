@@ -331,12 +331,15 @@ class EnsembleSQP(EnsembleMethod):
         self.y = (curr_grad - new_grad)  # start with column vector
         self.s = delta_par.T  # start with column vector
         if (self.y.T * self.s).x <= 0:
-            self.logger.lraise("curvature condition violated; Hessian matrix will not be positive definite")
+            self.logger.lraise("curvature condition violated: yTs = {}; should be > 0".format((self.y.T * self.s).x) +
+                               "  Hessian matrix will not be positive definite")
+
         #ys = self.y.T * self.s
         #Hy = self.H * self.y
         #yHy = self.y.T * Hy
         #self.H += ((ys + yHy) * (self.s.T * self.s)) / ys**2 # CHECK
         #self.H -= ((Hy,self.s) + (self.s,Hy)) / ys
+
         self.H += (self.y * self.y.T).x / (self.s.T * self.y).x
         self.H -= (self.H * self.s * self.s.T * self.H.T).x / (self.s.T * self.H * self.s).x
 
@@ -412,12 +415,8 @@ class EnsembleSQP(EnsembleMethod):
         #self.logger.log("calculate pseudo inv comps")
 
         self.logger.log("calculate phi gradient vector")
-        self.en_phi_grad = self.inv_en_cov_decvar * self.en_crosscov_decvar_phi.T # --> 2 x 2
+        self.en_phi_grad = self.inv_en_cov_decvar * self.en_crosscov_decvar_phi.T
         self.logger.log("calculate phi gradient vector")
-
-        self.logger.log("phi gradient checks")
-        # TODO: downhill check, warn if grad == 0
-        self.logger.log("phi gradient checks")
 
         # compute (quasi-)Newton search direction
         self.logger.log("calculate search direction")
@@ -425,11 +424,18 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.log("calculate search direction")
         # TODO: prefer to have a function like `find_direction`? Y
 
+        self.logger.log("phi gradient-related checks")
+        if (self.search_d.T * self.en_phi_grad).x > 0:
+            self.logger.lraise("search direction does not point down-hill! :facepalm:")
+        if (self.search_d.T * self.en_phi_grad).x == 0:
+            self.logger.warn("gradient is zero (unless Hessian is NOT pos definite, which is trapped elsewhere)")
+        self.logger.log("phi gradient-related checks")
+
         # TODO: update mean dec var values and re-draw
         # TODO: handling of fixed, transformed etc. dec vars here
         # TODO: test multiple step sizes (multipliers?)
         step_lengths = []
-        base_step = 0.0001  # wildass starting guess, just to check plumbing before implementing line search algorithm
+        base_step = 1e-5  # wildass starting guess, just to check plumbing before implementing alpha testing
         # TODO: line search for getting "base" alpha, e.g., Powell (1978)
         for istep,step in enumerate(step_mult):
             step_size = base_step * step

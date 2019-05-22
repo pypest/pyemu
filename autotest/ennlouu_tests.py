@@ -59,9 +59,9 @@ def rosenbrock_2par_initialize_diff_args_test():
 def rosenbrock_2par_single_update():
     import pyemu
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
-    esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst")
-    esqp.initialize(num_reals=2,draw_mult=0.1)
-    esqp.update() #step_mult=[0.5, 0.8, 1.0],run_subset=num_reals/len(step_mult)
+    esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst", )
+    esqp.initialize(num_reals=5,draw_mult=0.01)
+    esqp.update(step_mult=[0.05]) #step_mult=[0.5, 0.8, 1.0],run_subset=num_reals/len(step_mult)
     os.chdir(os.path.join("..", ".."))
 
 def rosenbrock_2par_multiple_update(nit=5):
