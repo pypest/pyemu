@@ -1104,11 +1104,11 @@ def nsgaii_3obj_test():
     evolAlg.dv_ensemble.to_csv(os.path.join("{0}.dv_ensemble.0.csv".format(m_d)))
     evolAlg.obs_ensemble.to_csv(os.path.join("{0}.obs_ensemble.0.csv".format(m_d)))
 
-    #for i in range(1):
-    #    evolAlg.update()
-        # dvdf.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d,i + 1)))
-    #    evolAlg.population_dv.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d, i + 1)))
-    #    evolAlg.population_obs.to_csv(os.path.join("{0}.obs_ensemble.{1}.csv".format(m_d, i + 1)))
+    for i in range(100):
+        evolAlg.update()
+        #dvdf.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d,i + 1)))
+        evolAlg.population_dv.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d, i + 1)))
+        evolAlg.population_obs.to_csv(os.path.join("{0}.obs_ensemble.{1}.csv".format(m_d, i + 1)))
     os.chdir("..")
 
 
@@ -1285,9 +1285,9 @@ if __name__ == "__main__":
     #process_freyberg_par_sweep()
 
     #setup_freyberg_transport()
-    #setup_freyberg_pest_interface(num_reals=10)
+    #setup_freyberg_pest_interface(num_reals=1000)
     #run_freyberg_dec_var_sweep_mean_parvals()
-    setup_for_freyberg_nsga_runs()
+    #setup_for_freyberg_nsga_runs()
     nsgaii_3obj_test()
     #invest_plot()
     plot_3obj_results()
