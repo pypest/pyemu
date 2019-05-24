@@ -276,7 +276,7 @@ def setup_freyberg_transport(plot=True):
     mt_nam = "freyberg_mt.nam"
 
     mf = flopy.modflow.Modflow.load(mf_nam,model_ws=org_model_ws,verbose=True,version="mfnwt",exe_name="mfnwt")
-    mf.dis.nper = 2
+    mf.dis.nper = 1
     #mf.dis.nlay = 1
     #mf.dis.botm = mf.dis.botm[-1]
     mf.dis.perlen = [3650.0,365.0,365.0]
@@ -369,7 +369,7 @@ def setup_freyberg_transport(plot=True):
 
     mt = flopy.mt3d.Mt3dms.load(mt_nam,model_ws=org_model_ws,verbose=True,exe_name="mt3dusgs",modflowmodel=mf)
 
-    mt.btn.nper = 2
+    mt.btn.nper = 1
     mt.btn.perlen = 3650.0
     #mt.external_path = '.'
     mt.remove_package("SSM")
@@ -381,7 +381,7 @@ def setup_freyberg_transport(plot=True):
                 continue
             spd.append([0,i,j,2.0,15])
 
-    flopy.mt3d.Mt3dSsm(mt,crch=0.0,stress_period_data=spd,mxss=10000)
+    flopy.mt3d.Mt3dSsm(mt,crch=0.0,stress_period_data={0:spd,1:-1,2:-1},mxss=10000)
     flopy.mt3d.Mt3dRct(mt,ireact=1,rc1=0.0075,igetsc=0)
     mt.change_model_ws(new_model_ws,reset_external=True)
     mt.sft.nsfinit = 40
@@ -457,6 +457,7 @@ def setup_freyberg_pest_interface(num_reals=100000):
                     if line == '':
                         break
                     raw = line.strip().split()
+                    print(line)
                     i = int(raw[1]) - 1
                     j = int(raw[2]) - 1
                     pname = "k{0:02d}_{1:02d}".format(i, j)
@@ -478,8 +479,8 @@ def setup_freyberg_pest_interface(num_reals=100000):
     k_zone_dict = {k:zarr for k in range(3)}
 
     ph = pyemu.helpers.PstFromFlopyModel("freyberg.nam",org_model_ws=org_model_ws,new_model_ws="template",remove_existing=True,
-                                         grid_props=props,spatial_bc_props=["wel.flux",0],hds_kperk=[[0,0],[0,1],[0,2]],
-                                         mflist_waterbudget=True,sfr_pars=True,build_prior=False,
+                                         const_props=props,hds_kperk=[[0,0],[0,1],[0,2]],
+                                         mflist_waterbudget=True,sfr_pars=False,build_prior=False,
                                          extra_post_cmds=["mt3dusgs freyberg_mt.nam >mt_stdout"],
                                          model_exe_name="mfnwt",k_zone_dict=k_zone_dict)
 
@@ -576,6 +577,7 @@ def setup_freyberg_pest_interface(num_reals=100000):
     #     ssm_adj_pars.append(znames[0])
     ph.pst.parameter_data.loc[df_ssm.parnme,"partrans"] = "fixed"
     ph.pst.parameter_data.loc[df_ssm.parnme,"parval1"] = 0.0
+    ph.pst.parameter_data.loc[df_ssm.parnme, "parlbnd"] = 0.0
     ssm_adj_pars = []
     j_range = np.arange(0,2)
     for i in range(2,ph.m.nrow,2):
@@ -870,10 +872,14 @@ def invest():
 
     df1 = pd.read_csv(os.path.join("master_dec_var_sweep_mean","dec_var_sweep_in.csv"),index_col=0)
     df1.columns = df1.columns.str.lower()
-    # df2 = pd.read_csv(os.path.join("freyberg_nsgaii_3obj_master","dec_var_sweep_in.csv"),index_col=0)
-    df2 = pd.read_csv(os.path.join("freyberg_nsgaii_3obj_master", "dv_ensemble.csv"), index_col=0)
+    df2 = pd.read_csv(os.path.join("freyberg_nsgaii_3obj_master","dec_var_sweep_in.csv"),index_col=0)
+    #df2 = pd.read_csv(os.path.join("freyberg_nsgaii_3obj_master", "dv_ensemble.csv"), index_col=0)
     df2.columns = df2.columns.str.lower()
 
+    dmax = (df1 - df2).dropna(axis=1).max()
+    dmax = dmax.loc[dmax!=0]
+    print(df1.loc[:,dmax.index.values],df2.loc[:,dmax.index.values])
+    return
     pst = pyemu.Pst(os.path.join("template","freyberg.pst"))
     par = pst.parameter_data
     ssm_pars = par.loc[par.apply(lambda x: x.parnme.startswith("k") and x.partrans=="none",axis=1),"parnme"]
@@ -1098,11 +1104,11 @@ def nsgaii_3obj_test():
     evolAlg.dv_ensemble.to_csv(os.path.join("{0}.dv_ensemble.0.csv".format(m_d)))
     evolAlg.obs_ensemble.to_csv(os.path.join("{0}.obs_ensemble.0.csv".format(m_d)))
 
-    for i in range(1):
-        evolAlg.update()
+    #for i in range(1):
+    #    evolAlg.update()
         # dvdf.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d,i + 1)))
-        evolAlg.population_dv.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d, i + 1)))
-        evolAlg.population_obs.to_csv(os.path.join("{0}.obs_ensemble.{1}.csv".format(m_d, i + 1)))
+    #    evolAlg.population_dv.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d, i + 1)))
+    #    evolAlg.population_obs.to_csv(os.path.join("{0}.obs_ensemble.{1}.csv".format(m_d, i + 1)))
     os.chdir("..")
 
 
@@ -1276,13 +1282,16 @@ if __name__ == "__main__":
     #tenpar_dev()
     #setup_freyberg_transport()
     #setup_freyberg_pest_interface()
-    #run_freyberg_par_sweep()
     #process_freyberg_par_sweep()
 
-    setup_freyberg_transport()
-    # setup_freyberg_pest_interface(num_reals=100)
-    # run_freyberg_dec_var_sweep_mean_parvals()
-    # invest_plot()
+    #setup_freyberg_transport()
+    #setup_freyberg_pest_interface(num_reals=10)
+    #run_freyberg_dec_var_sweep_mean_parvals()
+    setup_for_freyberg_nsga_runs()
+    nsgaii_3obj_test()
+    #invest_plot()
+    plot_3obj_results()
+    #invest()
 
     #process_freyberg_dec_var_sweep()
     #plot_freyberg_domain()
@@ -1293,9 +1302,9 @@ if __name__ == "__main__":
     #apply_nsgaii_to_freyberg_tolerant()
     #apply_nsgaii_to_freyberg_neutral()
 
-    # setup_for_freyberg_nsga_runs()
-    # nsgaii_3obj_test()
-    plot_3obj_results()
+    #
+
+
     #invest()
     #to_gif()
     #redis_freyberg()
@@ -1307,412 +1316,3 @@ if __name__ == "__main__":
 
 
 
-# def run_freyberg_par_sweep():
-#
-#     #pyemu.os_utils.start_slaves("template","pestpp-swp","freyberg.pst",20,master_dir="master_par_sweep")
-#
-#     m_d = "master_par_sweep"
-#     if os.path.exists(m_d):
-#         shutil.rmtree(m_d)
-#     shutil.copytree("template", m_d)
-#     if os.path.exists("template_temp"):
-#         shutil.rmtree("template_temp")
-#     shutil.copytree("template", "template_temp")
-#     os.remove(os.path.join("template_temp", "sweep_in.csv"))
-#     os.chdir(m_d)
-#     pyemu.os_utils.start_slaves(os.path.join("..", "template_temp"), "pestpp-swp", "freyberg.pst", num_slaves=30,
-#                                 master_dir='.')
-#     os.chdir("..")
-#
-# def process_freyberg_par_sweep():
-#
-#     print("loading")
-#     df = pd.read_csv(os.path.join("master_par_sweep","sweep_out.csv"),index_col=0)
-#     df.columns = df.columns.str.lower()
-#     print("loaded")
-#     oname = "sfrc40_1_03650.00"
-#
-#     oname2 = "gw_malo1c_19791230"
-#     df.loc[:,oname].hist(bins=20)
-#     plt.show()
-#
-#     plt.scatter(df.loc[:,oname],df.loc[:,oname2],marker='.',c='0.5')
-#     plt.show()
-#     return
-#     vals = df.loc[:,oname].copy()
-#     vals.sort_values(inplace=True)
-#     print(vals)
-#     ninetyfith = int(df.shape[0] * 0.95)
-#     idx = vals.index.values
-#     idx_nf = idx[ninetyfith]
-#     val = vals.loc[idx_nf]
-#     par_df = pd.read_csv(os.path.join("template","sweep_in.csv"),index_col=0)
-#     pars = par_df.iloc[idx_nf,:]
-#     pst = pyemu.Pst(os.path.join("template","freyberg.pst"))
-#     pst.parameter_data.loc[:,"parval1"] = pars.loc[pst.par_names]
-#
-#     pst.write(os.path.join("template","freyberg_nf.pst"))
-#     pyemu.os_utils.run("pestpp freyberg_nf.pst",cwd="template")
-#     pst = pyemu.Pst(os.path.join("template","freyberg_nf.pst"))
-#
-#     assert np.abs(val - pst.res.loc[oname,"modelled"]) < 0.0001
-#     pst.observation_data.loc[:,"obsval"] = pst.res.loc[pst.obs_names,"modelled"]
-#     pst.write(os.path.join("template","freyberg_nf.pst"))
-#     pyemu.os_utils.run("pestpp freyberg_nf.pst",cwd="template")
-#
-#     par = pst.parameter_data
-#
-#     load_pars = set(
-#         par.loc[par.apply(lambda x: x.pargp == "pargp" and x.parnme.startswith("k"), axis=1), "parnme"].values)
-#     par.loc[par.parnme.apply(lambda x: x not in load_pars), "partrans"] = "fixed"
-#     pe = pyemu.ParameterEnsemble.from_uniform_draw(pst, num_reals=100000)
-#     pe.to_csv(os.path.join("template", "dec_var_sweep_in.csv"))
-#     pst.pestpp_options["sweep_parameter_csv_file"] = "dec_var_sweep_in.csv"
-#     pst.write(os.path.join("template", "freyberg_nf.pst"))
-
-# def write_ssm_tpl(ssm_file):
-#
-#     f_in = open(ssm_file,'r')
-#     tpl_file = ssm_file + ".tpl"
-#     f_tpl = open(tpl_file,'w')
-#     f_tpl.write("ptf ~\n")
-#     while True:
-#         line = f_in.readline()
-#         if line == '':
-#             break
-#         f_tpl.write(line)
-#         if "stress period" in line.lower():
-#             #f_tpl.write(line)
-#             while True:
-#                 line = f_in.readline()
-#                 if line == '':
-#                     break
-#                 raw = line.strip().split()
-#                 i = int(raw[1]) - 1
-#                 j = int(raw[2]) - 1
-#                 pname = "k{0:02d}_{1:02d}".format(i,j)
-#                 tpl_str = "~{0}~ ".format(pname)
-#                 line = line[:39] + tpl_str + line[48:]
-#                 #print(line)
-#                 f_tpl.write(line)
-
-
-
-# def run_freyberg_dec_var_sweep():
-#
-#     m_d = "master_dec_var_sweep"
-#     if os.path.exists(m_d):
-#         shutil.rmtree(m_d)
-#     shutil.copytree("template",m_d)
-#     if os.path.exists("template_temp"):
-#         shutil.rmtree("template_temp")
-#     shutil.copytree("template","template_temp")
-#     os.remove(os.path.join("template_temp","dec_var_sweep_in.csv"))
-#     os.chdir(m_d)
-#     pyemu.os_utils.start_slaves(os.path.join("..","template_temp"),"pestpp-swp","freyberg_nf.pst",num_slaves=15,master_dir='.')
-#
-#
-# def process_freyberg_dec_var_sweep():
-#
-#
-#     df1 = pd.read_csv(os.path.join("master_par_sweep","sweep_out.csv"),index_col=0,nrows=100000)
-#     df1.columns = df1.columns.str.lower()
-#     print(df1.shape)
-#
-#     df2 = pd.read_csv(os.path.join("master_dec_var_sweep_mean", "sweep_out.csv"), index_col=0, nrows=100000)
-#     df2.columns = df2.columns.str.lower()
-#     print(df2.shape)
-#
-#     oname = "sfrc40_1_03650.00"
-#     oname2 = "gw_malo1c_19791230"
-#     fig = plt.figure(figsize=(8,4))
-#     ax1 = plt.subplot(121)
-#     ax1.set_title("parameters sampled with dec vars")
-#     ax2 = plt.subplot(122)
-#     ax2.set_title("no parameters")
-#     axes = [ax1,ax2]
-#     for ax,df,stride in zip(axes,[df1,df2],[10,1]):
-#         ax.scatter(df.loc[:,oname].iloc[::stride]*1000.0,df.loc[:,oname2].iloc[::stride],
-#                    marker='.',s=5,color="0.5",alpha=0.5,label=None)
-#         ax.set_xlabel("reach 40 concentration ($\\frac{mg}{l}$)")
-#         ax.set_ylabel("total nitrate mass loading ($kg$)")
-#         # plt.show()
-#         odict = {oname:"min",oname2:"max"}
-#         odict_rev = {oname: "max", oname2: "min"}
-#         pst = pyemu.Pst(os.path.join("template","freyberg.pst"))
-#         logger = pyemu.Logger("temp.log")
-#         obj = pyemu.moouu.ParetoObjFunc(pst=pst,obj_function_dict=odict,logger=logger)
-#         nondom = obj.is_nondominated_kung(df)
-#
-#         ax.scatter(df.loc[nondom,oname]*1000,df.loc[nondom,oname2],marker=".",s=12,color='b',label="risk tolerant")
-#
-#         obj_rev = pyemu.moouu.ParetoObjFunc(pst=pst, obj_function_dict=odict_rev, logger=logger)
-#         nondom = obj_rev.is_nondominated_kung(df)
-#         ax.scatter(df.loc[nondom, oname] * 1000, df.loc[nondom, oname2], marker=".", s=12, color='r',label="risk averse")
-#
-#
-#     #df.loc[:,oname].hist()
-#
-#     xmx = max([ax.get_xlim()[1] for ax in axes])
-#     xmn = min([ax.get_xlim()[0] for ax in axes])
-#     ymx = max([ax.get_ylim()[1] for ax in axes])
-#     ymn = min([ax.get_ylim()[0] for ax in axes])
-#
-#     for ax in axes:
-#         ax.set_xlim(xmn,xmx)
-#         ax.set_ylim(ymn,ymx)
-#     ax2.legend()
-#     plt.tight_layout()
-#     plt.savefig("freyberg_bruteforce_truth.pdf")
-#     plt.show()
-
-# def apply_nsgaii_to_freyberg_neutral():
-#
-#
-#     df2 = pd.read_csv(os.path.join("master_dec_var_sweep_mean", "sweep_out.csv"), index_col=0, nrows=100000000)
-#     df2.columns = df2.columns.str.lower()
-#
-#     t_d = "template_temp"
-#     if not os.path.exists(t_d):
-#         shutil.copytree("template",t_d)
-#         os.remove(os.path.join(t_d,"sweep_in.csv"))
-#
-#     m_d = "frebyerg_nsgaii_neutral"
-#     if os.path.exists(m_d):
-#         shutil.rmtree(m_d)
-#     shutil.copytree(t_d,m_d)
-#     pst = pyemu.Pst(os.path.join(t_d,"freyberg.pst"))
-#     par = pst.parameter_data
-#     dv_names = list(par.loc[par.apply(lambda x : x.parnme.startswith('k') and x.partrans!="tied",axis=1),"parnme"])
-#     # dv_how = {p:"uniform" for p in dv_names}
-#     # pyemu.ParameterEnsemble.from_mixed_draws(pst=pst,how_dict=dv_how)
-#     # dv_ensemble = pyemu.ParameterEnsemble(pst=simple, data=data)
-#     dv_en = os.path.join("template","dv_en.csv")
-#
-#    # if not os.path.exists(dv_en):
-#     if True:
-#         df = pd.read_csv(os.path.join("template","sweep_in.csv"),index_col=0,nrows=20)
-#         df.columns = df.columns.str.lower()
-#         dv_ensemble = pyemu.ParameterEnsemble(pst=pst, data=df.loc[:, dv_names].copy()).dropna(axis=1)
-#         dv_ensemble.to_csv(dv_en)
-#     else:
-#         df = pd.read_csv(dv_en,index_col=0)
-#         dv_ensemble = pyemu.ParameterEnsemble.from_dataframe(pst=pst, df=df)
-#     print(dv_ensemble.max())
-#
-#     oname = "sfrc40_1_03650.00"
-#     oname2 = "gw_malo1c_19791230"
-#     odict = {oname: "min", oname2: "max"}
-#     os.chdir(m_d)
-#     shutil.copytree(os.path.join("..",t_d),t_d)
-#
-#     evolAlg = NSGA_II(pst="freyberg.pst", verbose=True, slave_dir=t_d,num_slaves=3)
-#     evolAlg.initialize(obj_func_dict=odict, dv_ensemble=dv_ensemble)#, num_dv_reals=5)
-#     obj_by_iter = [evolAlg.obs_ensemble.copy()]
-#     dv_by_iter = [evolAlg.dv_ensemble.copy()]
-#     evolAlg.dv_ensemble.to_csv(os.path.join("freyberg.dv_ensemble.0.csv"))
-#     evolAlg.obs_ensemble.to_csv(os.path.join("freyberg.obs_ensemble.0.csv"))
-#
-#     for i in range(20):
-#         dvdf,odf =  evolAlg.update()
-#         dvdf.to_csv(os.path.join("freyberg.dv_ensemble.{0}.csv".format(i+1)))
-#         evolAlg.obs_ensemble.to_csv(os.path.join("freyberg.obs_ensemble.{0}.csv".format(i+1)))
-#         obj_by_iter.append(odf.copy())
-#         dv_by_iter.append(dvdf)
-#
-#     #_, objective_df = evolAlg.update()
-#     #f1, f2 = simple_objectives.keys()
-#     #for dvdf in dv_by_iter:
-#     #    print(dvdf.max())
-#     fig = plt.figure(figsize=(6,6))
-#     ax = plt.subplot(111)
-#     #pst = pyemu.Pst(os.path.join("master_dec_var_sweep_mean", "freyberg.pst"))
-#     logger = pyemu.Logger("temp.log")
-#     obj = pyemu.moouu.ParetoObjFunc(pst=pst, obj_function_dict=odict, logger=logger)
-#     nondom = obj.is_nondominated_kung(df2)
-#
-#     #ax.scatter(df2.loc[nondom, oname] * 1000, df2.loc[nondom, oname2], marker=".", s=12, color='b',label="true")
-#
-#     ax.scatter(obj_by_iter[0].loc[:, oname] * 1000, obj_by_iter[0].loc[:, oname2],marker='.',color="0.5",label="initial",alpha=0.5)
-#     color_idx = np.linspace(0,1,len(obj_by_iter) - 1)
-#     for i,obj_df in enumerate(obj_by_iter[1:]):
-#         ax.scatter(obj_df.loc[:, oname] * 1000, obj_df.loc[:, oname2],marker='.',
-#                     color=cm.coolwarm(color_idx[i]),label="iter {0}".format(i+1))
-#     # x = np.linspace(0.1, 2)
-#     # y = 1 / x
-#     # plt.plot(x, y)
-#     ax.set_xlabel("reach 40 concentration ($\\frac{mg}{l}$")
-#     ax.set_ylabel("nitrate load ($kg$)")
-#     plt.savefig("freyberg_neutral.pdf")
-#     plt.show()
-#     os.chdir("..")
-#
-#
-# def apply_nsgaii_to_freyberg_tolerant():
-#
-#     df2 = pd.read_csv(os.path.join("master_dec_var_sweep_mean", "sweep_out.csv"), index_col=0, nrows=100000000)
-#     df2.columns = df2.columns.str.lower()
-#
-#     t_d = "template_temp"
-#     if not os.path.exists(t_d):
-#         shutil.copytree("template",t_d)
-#         os.remove(os.path.join(t_d,"sweep_in.csv"))
-#
-#     m_d = "frebyerg_nsgaii_tolerant"
-#     if os.path.exists(m_d):
-#         shutil.rmtree(m_d)
-#     shutil.copytree(t_d,m_d)
-#     pst = pyemu.Pst(os.path.join(t_d,"freyberg.pst"))
-#     par = pst.parameter_data
-#     dv_names = list(par.loc[par.apply(lambda x : x.parnme.startswith('k') and x.partrans!="tied",axis=1),"parnme"])
-#     # dv_how = {p:"uniform" for p in dv_names}
-#     # pyemu.ParameterEnsemble.from_mixed_draws(pst=pst,how_dict=dv_how)
-#     # dv_ensemble = pyemu.ParameterEnsemble(pst=simple, data=data)
-#     dv_en = os.path.join("template","dv_en.csv")
-#
-#    # if not os.path.exists(dv_en):
-#     if True:
-#         df = pd.read_csv(os.path.join("template","sweep_in.csv"),index_col=0,nrows=20)
-#         df.columns = df.columns.str.lower()
-#         dv_ensemble = pyemu.ParameterEnsemble(pst=pst, data=df.loc[:, dv_names].copy()).dropna(axis=1)
-#         dv_ensemble.to_csv(dv_en)
-#     else:
-#         df = pd.read_csv(dv_en,index_col=0)
-#         dv_ensemble = pyemu.ParameterEnsemble.from_dataframe(pst=pst, df=df)
-#
-#     par_names = [n for n in pst.par_names if n not in dv_names]
-#     df = pd.read_csv(os.path.join("template", "sweep_in.csv"), index_col=0, nrows=100)
-#     df.columns = df.columns.str.lower()
-#     par_ensemble = pyemu.ParameterEnsemble(pst=pst, data=df.loc[:, par_names].copy()).dropna(axis=1)
-#
-#
-#     oname = "sfrc40_1_03650.00"
-#     oname2 = "gw_malo1c_19791230"
-#     odict = {oname: "min", oname2: "max"}
-#     os.chdir(m_d)
-#     shutil.copytree(os.path.join("..",t_d),t_d)
-#
-#     evolAlg = NSGA_II(pst="freyberg.pst", verbose=True, slave_dir=t_d,num_slaves=10)
-#     evolAlg.initialize(obj_func_dict=odict, dv_ensemble=dv_ensemble,risk=0.001,par_ensemble=par_ensemble,when_calculate=1)#, num_dv_reals=5)
-#     obj_by_iter = [evolAlg.obs_ensemble.copy()]
-#     dv_by_iter = [evolAlg.dv_ensemble.copy()]
-#     evolAlg.dv_ensemble.to_csv(os.path.join("freyberg.dv_ensemble.0.csv"))
-#     evolAlg.obs_ensemble.to_csv(os.path.join("freyberg.obs_ensemble.0.csv"))
-#
-#     for i in range(20):
-#         dvdf,odf =  evolAlg.update()
-#         dvdf.to_csv(os.path.join("freyberg.dv_ensemble.{0}.csv".format(i+1)))
-#         evolAlg.obs_ensemble.to_csv(os.path.join("freyberg.obs_ensemble.{0}.csv".format(i+1)))
-#         obj_by_iter.append(odf.copy())
-#         dv_by_iter.append(dvdf)
-#
-#     #_, objective_df = evolAlg.update()
-#     #f1, f2 = simple_objectives.keys()
-#     #for dvdf in dv_by_iter:
-#     #    print(dvdf.max())
-#     fig = plt.figure(figsize=(6,6))
-#     ax = plt.subplot(111)
-#     #pst = pyemu.Pst(os.path.join("master_dec_var_sweep_mean", "freyberg.pst"))
-#     logger = pyemu.Logger("temp.log")
-#     obj = pyemu.moouu.ParetoObjFunc(pst=pst, obj_function_dict=odict, logger=logger)
-#     nondom = obj.is_nondominated_kung(df2)
-#
-#     #ax.scatter(df2.loc[nondom, oname] * 1000, df2.loc[nondom, oname2], marker=".", s=12, color='b',label="true")
-#
-#     ax.scatter(obj_by_iter[0].loc[:, oname] * 1000, obj_by_iter[0].loc[:, oname2],marker='.',color="0.5",label="initial",alpha=0.5)
-#     color_idx = np.linspace(0,1,len(obj_by_iter) - 1)
-#     for i,obj_df in enumerate(obj_by_iter[1:]):
-#         ax.scatter(obj_df.loc[:, oname] * 1000, obj_df.loc[:, oname2],marker='.',
-#                     color=cm.coolwarm(color_idx[i]),label="iter {0}".format(i+1))
-#     # x = np.linspace(0.1, 2)
-#     # y = 1 / x
-#     # plt.plot(x, y)
-#     ax.set_xlabel("reach 40 concentration ($\\frac{mg}{l}$")
-#     ax.set_ylabel("nitrate load ($kg$)")
-#     plt.savefig("freyberg_neutral.pdf")
-#     plt.show()
-#     os.chdir("..")
-
-
-#def sweep_loop():
-#
-#     m_d = "sweep_temp"
-#     if os.path.exists(m_d):
-#         shutil.rmtree(m_d)
-#     os.mkdir(m_d)
-#
-#     for x in range(20):
-#         np.random.seed(x)
-#         setup_freyberg_pest_interface(num_reals=50000)
-#         run_freyberg_par_sweep()
-#         shutil.copy2(os.path.join("master_par_sweep","sweep_out.csv"),os.path.join(m_d,"{0}_sweep_out.csv".format(x)))
-#         shutil.copy2(os.path.join("master_par_sweep", "sweep_in.csv"),
-#                      os.path.join(m_d, "{0}_sweep_in.csv".format(x)))
-#
-#
-# def process_sweep_loop():
-#
-#
-#     oname = "sfrc40_1_03650.00"
-#     oname2 = "gw_malo1c_19791230"
-#     m_d = "sweep_temp"
-#     files = [f for f in os.listdir(m_d) if "out" in f]
-#     dfs = []
-#     for f in files:
-#         df = pd.read_csv(os.path.join(m_d,f),index_col=0,nrows=100000000)
-#         df.columns = df.columns.str.lower()
-#         df = df.loc[:,[oname,oname2]]
-#         dfs.append(df)
-#     df1 = pd.concat(dfs)
-#     df1.index = np.arange(df1.shape[0])
-#
-#     df2 = pd.read_csv(os.path.join("master_dec_var_sweep_mean", "sweep_out.csv"), index_col=0, nrows=100000000)
-#     df2.columns = df2.columns.str.lower()
-#     print(df2.shape)
-#
-#     #oname = "sfrc40_1_03650.00"
-#     #oname2 = "gw_malo1c_19791230"
-#     fig = plt.figure(figsize=(6, 3))
-#     ax1 = plt.subplot(121)
-#     ax1.set_title("A) parameters sampled with decision variables")
-#     ax2 = plt.subplot(122)
-#     ax2.set_title("B) parameters held constant at initial values")
-#     axes = [ax1, ax2]
-#     for ax, df, stride in zip(axes, [df1, df2], [10, 1]):
-#         ax.scatter(df.loc[:, oname].iloc[::stride] * 1000.0, df.loc[:, oname2].iloc[::stride],
-#                    marker='.', s=5, color="0.5", alpha=0.5, label=None)
-#         ax.set_xlabel("reach 40 concentration ($\\frac{mg}{l}$)")
-#         ax.set_ylabel("total nitrate mass loading ($kg$)")
-#         # plt.show()
-#         odict = {oname: "min", oname2: "max"}
-#         odict_rev = {oname: "max", oname2: "min"}
-#         #pst = pyemu.Pst(os.path.join("template", "freyberg.pst"))
-#         pst = pyemu.Pst(os.path.join("master_dec_var_sweep_mean", "freyberg.pst"))
-#         logger = pyemu.Logger("temp.log")
-#         obj = pyemu.moouu.ParetoObjFunc(pst=pst, obj_function_dict=odict, logger=logger)
-#         print("kung 1",df.shape)
-#         nondom = obj.is_nondominated_kung(df)
-#
-#         ax.scatter(df.loc[nondom, oname] * 1000, df.loc[nondom, oname2], marker=".", s=12, color='b',
-#                    label="min-max")
-#
-#         obj_rev = pyemu.moouu.ParetoObjFunc(pst=pst, obj_function_dict=odict_rev, logger=logger)
-#         print("kung 2",df.shape)
-#         nondom = obj_rev.is_nondominated_kung(df)
-#         ax.scatter(df.loc[nondom, oname] * 1000, df.loc[nondom, oname2], marker=".", s=12, color='r',
-#                    label="max_min")
-#
-#     # df.loc[:,oname].hist()
-#
-#     xmx = max([ax.get_xlim()[1] for ax in axes])
-#     xmn = min([ax.get_xlim()[0] for ax in axes])
-#     ymx = max([ax.get_ylim()[1] for ax in axes])
-#     ymn = min([ax.get_ylim()[0] for ax in axes])
-#
-#     for ax in axes:
-#         ax.set_xlim(xmn, xmx)
-#         ax.set_ylim(ymn, ymx)
-#     ax2.legend()
-#     plt.tight_layout()
-#     plt.savefig("freyberg_bruteforce_truth.pdf")
-#     plt.show()

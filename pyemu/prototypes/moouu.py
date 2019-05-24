@@ -830,6 +830,7 @@ class EvolAlg(EnsembleMethod):
         dv = dv_ensemble.copy()
         if self.par_ensemble is None:  # MOO setting is being used
             eval_ensemble = self._add_missing_pars(dv)
+            print(eval_ensemble.loc[:,"k02_00"])
             failed_runs, oe = super(EvolAlg, self)._calc_obs(eval_ensemble)  # TODO: set up some fail run dv removal
         else:  # Do MOOUU
             if self.when_calculate == 0:  # calculate ensemble for every point - no reduction in evals
