@@ -173,8 +173,8 @@ class EnsembleSQP(EnsembleMethod):
         else:
             self.logger.log("initializing by drawing {0} par realizations".format(num_reals))
             #self.parensemble_0 = ParameterEnsemble.from_uniform_draw(self.pst,num_reals=num_reals)
-            self.parensemble_0 = ParameterEnsemble.from_gaussian_draw(self.pst,self.parcov,num_reals=num_reals)
-            self.parensemble_0 = ParameterEnsemble.from_dataframe(df=self.parensemble_0 * self.draw_mult,pst=self.pst)
+            self.parensemble_0 = ParameterEnsemble.from_gaussian_draw(self.pst, cov=self.parcov * self.draw_mult,
+                                                                      num_reals=num_reals)
             self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
             self.parensemble = self.parensemble_0.copy()
             self.parensemble_0.to_csv(self.pst.filename + self.paren_prefix.format(0))
@@ -316,17 +316,16 @@ class EnsembleSQP(EnsembleMethod):
             en_cov_crosscov = np.diag(en_cov_crosscov)
             en_cov_crosscov = Matrix(x=en_cov_crosscov,
                                      row_names=self.pst.adj_par_names,col_names=self.pst.adj_par_names)
-        else:  # cross-cov always a vector
+        else:  # cross-cov always a vector # TODO: generalize this - cov matrices and diagonalize externally
             en_cov_crosscov = Matrix(x=(np.expand_dims(en_cov_crosscov, axis=0)),
                                      row_names=['cross-cov'],col_names=self.pst.adj_par_names)
         return en_cov_crosscov
 
     def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,selfscale=True):
         '''
-        see Oliver, Reynolds and Liu (2008) from pg. 180 for overview.
+        see, e.g., Oliver, Reynolds and Liu (2008) from pg. 180 for overview.
         '''
         # TODO: scaling and Nocedal's efficient implementation. Cross-ref below math.
-        # TODO: okay to carry these with self?
         self.H = curr_inv_hess
         self.y = (curr_grad - new_grad)  # start with column vector
         self.s = delta_par.T  # start with column vector
@@ -426,8 +425,8 @@ class EnsembleSQP(EnsembleMethod):
         # compute (quasi-)Newton search direction
         self.logger.log("calculate search direction")
         if hess_selfscaling:
-            self.inv_hessian_scaled = self.inv_hessian * 275.
-            self.search_d = -1 * (self.inv_hessian_scaled * self.en_phi_grad)
+            self.inv_hessian = self.inv_hessian * 275.0
+            self.search_d = -1 * (self.inv_hessian * self.en_phi_grad)
         else:
             self.search_d = -1 * (self.inv_hessian * self.en_phi_grad)
         self.logger.log("calculate search direction")
@@ -437,7 +436,7 @@ class EnsembleSQP(EnsembleMethod):
         if (self.search_d.T * self.en_phi_grad).x > 0:
             self.logger.lraise("search direction does not point down-hill! :facepalm:")
         if (self.search_d.T * self.en_phi_grad).x == 0:
-            self.logger.warn("gradient is zero (unless Hessian is NOT pos definite, which is trapped elsewhere)")
+            self.logger.warn("phi gradient is zero!")
         self.logger.log("phi gradient-related checks")
 
         # TODO: update mean dec var values and re-draw
@@ -462,11 +461,12 @@ class EnsembleSQP(EnsembleMethod):
 
             self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
             # self.parensemble_1 = ParameterEnsemble.from_uniform_draw(self.pst, num_reals=num_reals)
-            self.parensemble_1 = ParameterEnsemble.from_gaussian_draw(self.pst, self.parcov, num_reals=self.num_reals)
+            self.parensemble_1 = ParameterEnsemble.from_gaussian_draw(self.pst, cov=self.parcov * self.draw_mult,
+                                                                      num_reals=self.num_reals)
             # TODO: update the parcov empirically based on success or otherwise of previous iteration in terms of phi
             # TODO: alternatively tighten/widen search region to reflect representativeness of gradient (mechanistic)
-            # TODO: two sets of bounds: one hard on dec var and one for ensemble just to get grad
-            self.parensemble_1 = ParameterEnsemble.from_dataframe(df=self.parensemble_1 * self.draw_mult, pst=self.pst)
+            # TODO: two sets of bounds: one hard on dec var and one (which can adapt during opt)
+            # TODO: for ensemble just to get grad
             self.parensemble_1.enforce(enforce_bounds=self.enforce_bounds)
             self.parensemble = self.parensemble_1.copy()
             self.parensemble_1.to_csv(self.pst.filename + self.paren_prefix.format(0))
