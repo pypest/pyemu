@@ -235,6 +235,7 @@ class EnsembleSQP(EnsembleMethod):
         self.inv_hessian = self.hessian.inv
         self.inv_hessian_0 = self.inv_hessian.copy()
 
+        self.curr_grad = None
 
         #self.phi = Phi(self)
 
@@ -316,7 +317,7 @@ class EnsembleSQP(EnsembleMethod):
             en_cov_crosscov = np.diag(en_cov_crosscov)
             en_cov_crosscov = Matrix(x=en_cov_crosscov,
                                      row_names=self.pst.adj_par_names,col_names=self.pst.adj_par_names)
-        else:  # cross-cov always a vector # TODO: generalize this - cov matrices and diagonalize externally
+        else:  # cross-cov always a vector
             en_cov_crosscov = Matrix(x=(np.expand_dims(en_cov_crosscov, axis=0)),
                                      row_names=['cross-cov'],col_names=self.pst.adj_par_names)
         return en_cov_crosscov
@@ -353,8 +354,9 @@ class EnsembleSQP(EnsembleMethod):
            # return self.H
 
         if (self.y.T * self.s).x <= 0:
-            self.logger.lraise("curvature condition violated: yTs = {}; should be > 0".format((self.y.T * self.s).x) +
-                               "  Hessian matrix will not be positive definite")
+            self.logger.warn("!! curvature condition violated: yTs = {}; should be > 0".format((self.y.T * self.s).x) +
+                               "  Hessian matrix will not be positive definite !!")
+            return self.H
 
         #ys = self.y.T * self.s
         #Hy = self.H * self.y
@@ -457,11 +459,9 @@ class EnsembleSQP(EnsembleMethod):
 
         # compute (quasi-)Newton search direction
         self.logger.log("calculate search direction")
-        # TODO: for first iteration can we make some assumption about step length from bounds? No, change in step length..
-        # TODO: I think we should only scale at update stage, for now - but need more runs..
+        # TODO: for first itn can we make some assumption about step length from bounds? will reduce number of runs
         # TODO: treat first Hess update differently - given changes in grad and dec vars from 0....
-        #if hess_self_scaling and self.iter_num == 1:
-            # TODO: direct query of if have prev it's grad info (i.e., once have step info - but not changes in step...)
+        #if hess_self_scaling and self.curr_grad is not None:  # TODO: i.e., once have step info - but not changes in step...
             #self.logger.log("scaling Hessian for search direction calc")
             #self.inv_hessian = self._BFGS_hess_update(self.inv_hessian,
              #                                         self.curr_grad, self.en_phi_grad,
@@ -489,7 +489,6 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: test multiple step sizes (multipliers?)
         step_lengths = []
         base_step = 1e-2  # start with 1.0 and progressively make smaller (will be 1.0 eventually if convex..)
-        # TODO: line search for getting "base" alpha, e.g., Powell (1978)
         for istep,step in enumerate(step_mult):
             step_size = base_step * step
             step_lengths.append(step_size)
@@ -513,8 +512,8 @@ class EnsembleSQP(EnsembleMethod):
             # TODO: two sets of bounds: one hard on dec var and one (which can adapt during opt)
             # TODO: for ensemble just to get grad
             self.parensemble_1.enforce(enforce_bounds=self.enforce_bounds)
-            self.parensemble = self.parensemble_1.copy()
-            self.parensemble_1.to_csv(self.pst.filename + self.paren_prefix.format(0))
+            self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num,step_size)
+                                      + self.paren_prefix.format(0))
             self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
 
             self.logger.log("undertaking calcs for step size (multiplier) : {0}...".format(step_size))
@@ -547,8 +546,10 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.log("updating Hessian via quasi-Newton")
         if self.iter_num == 1:  # no pre-existing grad info - self.curr_grad exists for all others.. #TODO: direct query
             self.curr_grad = Matrix(x=np.zeros((self.en_phi_grad.shape)),
-                               row_names=self.en_phi_grad.row_names,col_names=self.en_phi_grad.col_names)
+                                    row_names=self.en_phi_grad.row_names,col_names=self.en_phi_grad.col_names)
 
+        #if self.hess_scale_status:
+         #   hess_self_scaling = False # TODO: every iteration?
         if alg == "BFGS":
             self.inv_hessian = self._BFGS_hess_update(self.inv_hessian,
                                                       self.curr_grad, self.en_phi_grad,
