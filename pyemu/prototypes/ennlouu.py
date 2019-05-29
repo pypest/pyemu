@@ -488,7 +488,7 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: handling of fixed, transformed etc. dec vars here
         # TODO: test multiple step sizes (multipliers?)
         step_lengths = []
-        base_step = 1e-2  # start with 1.0 and progressively make smaller (will be 1.0 eventually if convex..)
+        base_step = 1.0 #1e-2  # start with 1.0 and progressively make smaller (will be 1.0 eventually if convex..)
         for istep,step in enumerate(step_mult):
             step_size = base_step * step
             step_lengths.append(step_size)
@@ -500,7 +500,7 @@ class EnsembleSQP(EnsembleMethod):
             np.savetxt(self.pst.filename + "_en_mean_step_{0}_it_{1}.dat".format(step_size,self.iter_num),\
                        self.parensemble_mean_1.x,fmt="%15.6e")
             # shift parval1
-            self.pst.parameter_data.loc[:,"parval1"] += pd.Series(np.squeeze(self.parensemble_mean_1.x, axis=0)).values
+            self.pst.parameter_data.loc[:,"parval1"] = pd.Series(np.squeeze(self.parensemble_mean_1.x, axis=0)).values
             self.logger.log("computing mean dec var upgrade".format(step_size))
 
             self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
@@ -529,7 +529,8 @@ class EnsembleSQP(EnsembleMethod):
             failed_runs_1, self.obsensemble_1 = self._calc_obs(self.parensemble_1)  # run
             # TODO: unpack lambda obs ensembles from combined obs ensemble
             # TODO: failed run handling
-            self.obsensemble_1.to_csv(self.pst.filename + ".{0}".format(self.iter_num) + self.obsen_prefix.format(0))
+            self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num,step_size)
+                                      + self.obsen_prefix.format(0))
             self.logger.log("evaluating ensembles for step size : {0}".\
                             format(','.join("{0:8.3E}".format(step_size))))
 
