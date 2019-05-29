@@ -321,14 +321,37 @@ class EnsembleSQP(EnsembleMethod):
                                      row_names=['cross-cov'],col_names=self.pst.adj_par_names)
         return en_cov_crosscov
 
-    def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,selfscale=True):
+    def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,self_scale=True,scale_only=False,
+                          damped=False):
         '''
         see, e.g., Oliver, Reynolds and Liu (2008) from pg. 180 for overview.
+
+        Used to perform classic (rank-two quasi-Newton) Hessian update as well (or optionally only) Hessian scaling.
+        This func does not implement Nocedal's ``efficient'' BFGS implementation - use L_BFGS for that implementation.
+
+        Parameters
+        -------
+        self_scale : bool
+            see EnsembleSQP.update args docstring
+        scale_only : bool
+            flag for performing Hessian scaling based on gradient and step information from prev iteration only.
+            This will be used only when full Hessian updating step is not achievable, e.g., based on curvature
+            condition violation TODO: needs to be automatically triggered or num_it=1... Bring in later
+        damped : bool
+            see EnsembleSQP.update args docstring
+
         '''
-        # TODO: scaling and Nocedal's efficient implementation. Cross-ref below math.
+        # TODO: Cross-ref below math.
         self.H = curr_inv_hess
-        self.y = (curr_grad - new_grad)  # start with column vector
+        self.y = new_grad - curr_grad  # start with column vector
         self.s = delta_par.T  # start with column vector
+
+        #if scale_only:
+            #hess_scale = (self.s.T * self.y).x / (self.y.T * self.H * self.y).x  # Oliver et al.
+         #   hess_scale = (self.s.T * self.y).x / (self.y.T * self.y).x  # Nocedal and Wright
+          #  self.H *= hess_scale
+           # return self.H
+
         if (self.y.T * self.s).x <= 0:
             self.logger.lraise("curvature condition violated: yTs = {}; should be > 0".format((self.y.T * self.s).x) +
                                "  Hessian matrix will not be positive definite")
@@ -342,12 +365,17 @@ class EnsembleSQP(EnsembleMethod):
         self.H += (self.y * self.y.T).x / (self.s.T * self.y).x
         self.H -= (self.H * self.s * self.s.T * self.H.T).x / (self.s.T * self.H * self.s).x
 
-        # TODO: add self-scale funtionality here
-        if selfscale:
-            hess_scale = (self.s.T * self.y).x / (self.y.T * self.H * self.y).x
+        # TODO: check self-scale functionality here
+        if self_scale:
+            #hess_scale = (self.s.T * self.y).x / (self.y.T * self.H * self.y).x  # Oliver et al.
+            hess_scale = (self.s.T * self.y).x / (self.y.T * self.y).x  # Nocedal and Wright
             self.H *= hess_scale
 
-        return self.H # TODO: return others too for tests, e.g., grad diff?
+        # Hessian positive-definite-ness check
+        if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):
+            self.logger.lraise("Hessian matrix is not positive definite")
+
+        return self.H
 
     def _LBFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,step,idx,trunc_thresh):#scaling_method="ZhangReynolds")
         '''
@@ -356,7 +384,7 @@ class EnsembleSQP(EnsembleMethod):
         # TODO
 
 
-    def update(self,step_mult=[1.0],alg="BFGS",hess_selfscaling=True):#localizer=None,run_subset=None,
+    def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=False):#localizer=None,run_subset=None,
         """
         Perform one quasi-Newton update
 
@@ -371,6 +399,10 @@ class EnsembleSQP(EnsembleMethod):
             flag indicating which Hessian updating method to use. Options include "BFGS"
             (classic Broyden–Fletcher–Goldfarb–Shanno) (suited to small problems) or "LBFGS"
             (a limited-memory version of BFGS) (suited to large problems).
+        hess_self_scaling : bool
+            indicate whether current Hessian is to be scaled - i.e., multiplied by a scalar reflecting
+            gradient and step information.  Highly recommended - particularly at early iterations.
+            See Nocedal and Wright.
 
         Example
         -------
@@ -380,8 +412,9 @@ class EnsembleSQP(EnsembleMethod):
         ``>>>for it in range(5):``
         ``>>>    esqp.update(step_mult=[1.0],run_subset=num_reals/len(step_mult))``
 
-    	#TODO: calc par and obs delta wrt one another rather than mean?
-    	#TODO: sub-setting
+    	# TODO: calc par and obs delta wrt one another rather than mean?
+    	# TODO: sub-setting
+    	# TODO: implement finite differences option too
         """
 
         self.iter_num += 1
@@ -424,26 +457,38 @@ class EnsembleSQP(EnsembleMethod):
 
         # compute (quasi-)Newton search direction
         self.logger.log("calculate search direction")
-        if hess_selfscaling:
-            self.inv_hessian = self.inv_hessian * 275.0
-            self.search_d = -1 * (self.inv_hessian * self.en_phi_grad)
-        else:
-            self.search_d = -1 * (self.inv_hessian * self.en_phi_grad)
+        # TODO: for first iteration can we make some assumption about step length from bounds? No, change in step length..
+        # TODO: I think we should only scale at update stage, for now - but need more runs..
+        # TODO: treat first Hess update differently - given changes in grad and dec vars from 0....
+        #if hess_self_scaling and self.iter_num == 1:
+            # TODO: direct query of if have prev it's grad info (i.e., once have step info - but not changes in step...)
+            #self.logger.log("scaling Hessian for search direction calc")
+            #self.inv_hessian = self._BFGS_hess_update(self.inv_hessian,
+             #                                         self.curr_grad, self.en_phi_grad,
+              #                                        self.curr_parensemble_mean,self.parensemble_mean
+               #                                       self_scale=hess_self_scaling,scale_only=False,
+                #                                      damped=False)
+            #self.hess_scale_status = True
+            #self.logger.log("scaling Hessian for search direction calc")
+            #self.search_d = -1 * (self.inv_hessian * self.en_phi_grad)
+        #else:
+        self.search_d = -1 * (self.inv_hessian * self.en_phi_grad)
+        #self.hess_scale_status = False
         self.logger.log("calculate search direction")
-        # TODO: prefer to have a function like `find_direction`? Y
 
-        self.logger.log("phi gradient-related checks")
+        self.logger.log("phi gradient- and search direction-related checks")
         if (self.search_d.T * self.en_phi_grad).x > 0:
             self.logger.lraise("search direction does not point down-hill! :facepalm:")
         if (self.search_d.T * self.en_phi_grad).x == 0:
             self.logger.warn("phi gradient is zero!")
-        self.logger.log("phi gradient-related checks")
+        self.logger.log("phi gradient- and search direction-related checks")
+        # TODO: using grad info only (with some expected step length), update Hessian from initial (potentially
+        # TODO: scaled identity?
 
-        # TODO: update mean dec var values and re-draw
         # TODO: handling of fixed, transformed etc. dec vars here
         # TODO: test multiple step sizes (multipliers?)
         step_lengths = []
-        base_step = 1e-5  # wildass starting guess, just to check plumbing before implementing alpha testing
+        base_step = 1e-2  # start with 1.0 and progressively make smaller (will be 1.0 eventually if convex..)
         # TODO: line search for getting "base" alpha, e.g., Powell (1978)
         for istep,step in enumerate(step_mult):
             step_size = base_step * step
@@ -496,33 +541,33 @@ class EnsembleSQP(EnsembleMethod):
 
         # calc dec var changes (after picking best alpha etc)
         # this is needed for Hessian updating via BFGS but also needed for checks
-        self.delta_parensemble_mean = self.parensemble_mean - self.parensemble_mean_1
-        # TODO: dec var change related checks here
+        self.delta_parensemble_mean = self.parensemble_mean_1 - self.parensemble_mean
+        # TODO: dec var change related checks here - like PEST's RELPARMAX/FACPARMAX
 
-        # update Hessian via quasi-Newton methods - BFGS
-        self.logger.log("updating Hessian using L-BFGS/BFGS")
-        if self.iter_num == 1: # no pre-existing grad info
-            curr_grad = Matrix(x=np.zeros((self.en_phi_grad.shape)),\
+        self.logger.log("updating Hessian via quasi-Newton")
+        if self.iter_num == 1:  # no pre-existing grad info - self.curr_grad exists for all others.. #TODO: direct query
+            self.curr_grad = Matrix(x=np.zeros((self.en_phi_grad.shape)),
                                row_names=self.en_phi_grad.row_names,col_names=self.en_phi_grad.col_names)
-        else: # prev grad info
-            pass #curr_grad =
 
         if alg == "BFGS":
-            self.inv_hessian = self._BFGS_hess_update(self.inv_hessian,\
-                                                      curr_grad, self.en_phi_grad,
-                                                      self.delta_parensemble_mean)
+            self.inv_hessian = self._BFGS_hess_update(self.inv_hessian,
+                                                      self.curr_grad, self.en_phi_grad,
+                                                      self.delta_parensemble_mean,
+                                                      self_scale=hess_self_scaling,scale_only=False,
+                                                      damped=False)
         else:  # LBFGS
-            self.inv_hessian = self._LBFGS_hess_update(self.inv_hessian,\
-                                                      curr_grad, self.en_phi_grad,
-                                                      self.delta_parensemble_mean,L)
-        self.logger.log("updating Hessian using L-BFGS/BFGS")
+            pass
+            #self.inv_hessian = self._LBFGS_hess_update(self.inv_hessian,
+             #                                          self.curr_grad, self.en_phi_grad,
+              #                                         self.delta_parensemble_mean,L,
+               #                                        self_scale=hess_self_scaling,scale_only=False)
+        self.logger.log("updating Hessian via quasi-Newton")
         # copy Hessian, write vectors
 
+        # track grad and dec vars for next iteration Hess scaling and updating
+        self.curr_grad = self.en_phi_grad
+        self.curr_parensemble_mean = self.parensemble_mean_1
 
-        # Hessian checks, e.g.,  positive-definite-ness
-        if not np.all(np.linalg.eigvals(self.hessian.as_2d) > 0):
-            self.logger.lraise("Hessian matrix is not positive definite")
-        # TODO: check yT.s > 0 (curvature condition)
 
         # TODO: save Hessian vectors (as csv)
 
