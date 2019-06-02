@@ -309,9 +309,9 @@ def setup_freyberg_transport(plot=True):
     mf.rch.rech[0] *= 0.5
     mf.rch.rech[1] = mf.rch.rech[0].array * 0.75
     mf.wel.stress_period_data[0]["flux"][:] = -150
-    mf.wel.stress_period_data[0]["k"][:] = 2
+    mf.wel.stress_period_data[0]["k"][:] = 0
     mf.wel.stress_period_data[1]["flux"][:] = -300
-    mf.wel.stress_period_data[1]["k"][:] = 2
+    mf.wel.stress_period_data[1]["k"][:] = 0
 
     ib = mf.bas6.ibound[0].array
     drn_data = []
@@ -325,6 +325,8 @@ def setup_freyberg_transport(plot=True):
     flopy.modflow.ModflowDrn(mf,stress_period_data=drn_data)
     ib[ib<0] = 1
     mf.bas6.ibound = ib
+    mf.bas6.ibound[1] = 0
+    mf.bas6.ibound[2] = 0
 
     mf.upw.ss = 0.00001
     mf.upw.sy = 0.01
@@ -333,8 +335,8 @@ def setup_freyberg_transport(plot=True):
     mf.upw.hk[0] = 5
     mf.upw.vka[0] = .5
 
-    mf.upw.hk[1] = .1
-    mf.upw.vka[1] = .1
+    mf.upw.hk[1] = .01
+    mf.upw.vka[1] = .01
 
     mf.upw.hk[2] = 5.0
     mf.upw.vka[2] = .5
@@ -371,6 +373,9 @@ def setup_freyberg_transport(plot=True):
 
     mt.btn.nper = 1
     mt.btn.perlen = 3650.0
+    mt.btn.icbund[1] = 0
+    mt.btn.icbund[2] = 0
+    mt.adv.mxelem = -1
     #mt.external_path = '.'
     mt.remove_package("SSM")
     spd = []
@@ -407,7 +412,8 @@ def setup_freyberg_pest_interface(num_reals=100000):
 
         par = pst.parameter_data
 
-        pr_pars = par.loc[par.parnme.apply(lambda x: "prst" in x), "parnme"]
+        pr_pars = par.loc[par.parnme.apply(lambda x: "pr" in x), "parnme"]
+        #par.loc[pr_pars,"parval1"]  = 0.01
         par.loc[pr_pars, "parubnd"] = 10.0
         par.loc[pr_pars, "parlbnd"] = 0.1
 
@@ -471,12 +477,12 @@ def setup_freyberg_pest_interface(num_reals=100000):
 
     props = []
     paks = ["upw.hk","upw.vka","extra.prst","extra.rc11","extra.scn1"]
-    for k in range(3):
+    for k in range(1):
         for p in paks:
             props.append([p,k])
     props.append(["rch.rech",0])
 
-    k_zone_dict = {k:zarr for k in range(3)}
+    k_zone_dict = {k:zarr for k in range(1)}
 
     ph = pyemu.helpers.PstFromFlopyModel("freyberg.nam",org_model_ws=org_model_ws,new_model_ws="template",remove_existing=True,
                                          const_props=props,hds_kperk=[[0,0],[0,1],[0,2]],
@@ -519,7 +525,7 @@ def setup_freyberg_pest_interface(num_reals=100000):
     df.loc[:, "upper_bound"] = np.NaN
     pr_rows = df.model_file.apply(lambda x: "prsity" in x)
     df.loc[pr_rows, "upper_bound"] = 0.35
-    df.loc[pr_rows, "lower_bound"] = 0.01
+    df.loc[pr_rows, "lower_bound"] = 0.001
     df.to_csv(os.path.join(new_model_ws, "arr_pars.csv"))
 
     bdir = os.getcwd()
@@ -579,12 +585,12 @@ def setup_freyberg_pest_interface(num_reals=100000):
     ph.pst.parameter_data.loc[df_ssm.parnme,"parval1"] = 0.0
     ph.pst.parameter_data.loc[df_ssm.parnme, "parlbnd"] = 0.0
     ssm_adj_pars = []
-    j_range = np.arange(0,2)
-    for i in range(2,ph.m.nrow,2):
-        i_range = np.arange(i-2,i)
+    j_range = np.arange(0,3)
+    for i in range(2,ph.m.nrow,3):
+        i_range = np.arange(i-3,i)
         df_ssm_range = df_ssm.loc[df_ssm.apply(lambda x: x.i in i_range and x.j in j_range,axis=1),:]
         print(i_range,df_ssm_range)
-        if df_ssm_range.shape[0] < 4:
+        if df_ssm_range.shape[0] < 9:
             continue
         ph.pst.parameter_data.loc[df_ssm_range.parnme[0],"partrans"] = "none"
         ph.pst.parameter_data.loc[df_ssm_range.parnme[1:],"partrans"] = "tied"
@@ -609,6 +615,9 @@ def setup_freyberg_pest_interface(num_reals=100000):
 
     pyemu.os_utils.run("pestpp freyberg.pst",cwd=ph.m.model_ws)
 
+    unc = flopy.utils.UcnFile(os.path.join(ph.new_model_ws, "MT3D001.UCN"), model=ph.m)
+    unc.plot(colorbar=True, masked_values=[1.0e30])
+    plt.show()
 
 
 
@@ -1098,13 +1107,13 @@ def nsgaii_3obj_test():
     os.chdir(m_d)
     shutil.copytree(os.path.join("..", t_d), t_d)
 
-    evolAlg = NSGA_II(pst="freyberg.pst", verbose=m_d + ".log", slave_dir=t_d, num_slaves=num_slaves,mutation_probability=0.25)
+    evolAlg = NSGA_II(pst="freyberg.pst", verbose=m_d + ".log", slave_dir=t_d, num_slaves=num_slaves,mutation_probability=0.1,crossover_probability=0.9)
     evolAlg.initialize(obj_func_dict=odict, dv_ensemble=dv_ensemble, risk=0.5, par_ensemble=None,
                        when_calculate=0)  # , num_dv_reals=5)
     evolAlg.dv_ensemble.to_csv(os.path.join("{0}.dv_ensemble.0.csv".format(m_d)))
     evolAlg.obs_ensemble.to_csv(os.path.join("{0}.obs_ensemble.0.csv".format(m_d)))
 
-    for i in range(100):
+    for i in range(300):
         evolAlg.update()
         #dvdf.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d,i + 1)))
         evolAlg.population_dv.to_csv(os.path.join("{0}.dv_ensemble.{1}.csv".format(m_d, i + 1)))
@@ -1286,10 +1295,11 @@ if __name__ == "__main__":
 
     #setup_freyberg_transport()
     #setup_freyberg_pest_interface(num_reals=1000)
+
     #run_freyberg_dec_var_sweep_mean_parvals()
     #setup_for_freyberg_nsga_runs()
     nsgaii_3obj_test()
-    #invest_plot()
+
     plot_3obj_results()
     #invest()
 
