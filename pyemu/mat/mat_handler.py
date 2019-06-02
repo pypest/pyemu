@@ -2410,7 +2410,7 @@ class Cov(Matrix):
             operates in place
 
         """
-        if isinstance(other,Cov):
+        if not isinstance(other,Cov):
             raise Exception("Cov.replace() other must be Cov, not {0}".\
             format(type(other)))
         # make sure the names of other are in self

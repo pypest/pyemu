@@ -2339,7 +2339,7 @@ class Pst(object):
 
     @staticmethod
     def _stats_nrmse(df):
-        return _stats_rmse(df) / (df.obsval.max() - df.obsval.min())
+        return Pst._stats_rmse(df) / (df.obsval.max() - df.obsval.min())
 
 
     def plot(self,kind=None,**kwargs):

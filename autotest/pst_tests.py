@@ -1251,7 +1251,7 @@ if __name__ == "__main__":
     pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
-    # res_stats_test()
+    #res_stats_test()
     # test_write_input_files()
     # add_obs_test()
     # add_pars_test()
