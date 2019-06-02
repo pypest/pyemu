@@ -1427,7 +1427,7 @@ class Matrix(object):
         if self.isdiagonal:
             self.__x = np.delete(self.__x, idxs, 0)
             keep_names = [name for name in self.row_names if name not in names]
-            if len(keep_names != self.__x.shape[0]):
+            if len(keep_names) != self.__x.shape[0]:
                 raise Exception("shape-name mismatch:"+\
                    "{0}:{0}".format(len(keep_names),self.__x.shape))
             self.row_names = keep_names
