@@ -226,9 +226,6 @@ class Matrix(object):
                 #x = x.transpose()
             else:
                 if len(row_names) > 0:
-                    #assert len(row_names) == x.shape[0],\
-                        'Matrix.__init__(): shape[0] != len(row_names) ' +\
-                        str(x.shape) + ' ' + str(len(row_names))
                     if len(row_names) != x.shape[0]:
                         raise Exception('Matrix.__init__(): shape[0] != len(row_names) ' +\
                         str(x.shape) + ' ' + str(len(row_names)))
