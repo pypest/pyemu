@@ -2059,7 +2059,7 @@ class Matrix(object):
                     jidx.append(j)
                     data.append(val)
         # csr_Matrix( (data,(row,col)), shape=(3,3)
-        return sparse.coo_matrix((data, (iidx, jidx)), shape=(self.shape))
+        return scipy.sparse.coo_matrix((data, (iidx, jidx)), shape=(self.shape))
 
 
     def extend(self,other,inplace=False):
