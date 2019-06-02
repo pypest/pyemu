@@ -1415,10 +1415,12 @@ class Matrix(object):
             raise Exception("Matrix.drop(): axis arg is required")
         if not isinstance(names, list):
             names = [names]
-        if axis == 1 and len(names) >= self.shape[1]:
-            raise Exception("can't drop all names along axis 1")
-        elif len(names) >= self.shape[0]:
-            raise Exception("can't drop all names along axis 0")
+        if axis == 1:
+            if len(names) >= self.shape[1]:
+                raise Exception("can't drop all names along axis 1")
+        else:
+            if len(names) >= self.shape[0]:
+                raise Exception("can't drop all names along axis 0")
 
         idxs = self.indices(names, axis=axis)
 
