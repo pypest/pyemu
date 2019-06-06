@@ -487,8 +487,8 @@ class EnsembleSQP(EnsembleMethod):
 
         # TODO: handling of fixed, transformed etc. dec vars here
         # TODO: test multiple step sizes (multipliers?)
-        step_lengths = []
-        base_step = 1.0 #1e-2  # start with 1.0 and progressively make smaller (will be 1.0 eventually if convex..)
+        step_lengths, mean_en_phi_per_alpha = [],pd.DataFrame()
+        base_step = 1.0  # start with 1.0 and progressively make smaller (will be 1.0 eventually if convex..)
         for istep,step in enumerate(step_mult):
             step_size = base_step * step
             step_lengths.append(step_size)
@@ -527,12 +527,17 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("evaluating ensembles for step size : {0}".\
                             format(','.join("{0:8.3E}".format(step_size))))
             failed_runs_1, self.obsensemble_1 = self._calc_obs(self.parensemble_1)  # run
-            # TODO: unpack lambda obs ensembles from combined obs ensemble
-            # TODO: failed run handling
             self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num,step_size)
                                       + self.obsen_prefix.format(0))
+            # just use mean phi as indicator of "best" for now..
+            mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
             self.logger.log("evaluating ensembles for step size : {0}".\
                             format(','.join("{0:8.3E}".format(step_size))))
+
+        min_mean__phi_per_alpha = pd.DataFrame.from_records(mean_en_phi_per_alpha)
+
+        # TODO: unpack lambda obs ensembles from combined obs ensemble
+        # TODO: failed run handling
 
         # TODO: undertake Wolfe and en tests. No - our need is superseded by parallel alpha tests
         # TODO: constraint and feasibility KKT checks here
