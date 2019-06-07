@@ -1500,7 +1500,8 @@ def hfb_zn_mult_test():
 
     org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
     nam_file = "freyberg.nam"
-    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    m = flopy.modflow.Modflow.load(
+        nam_file, model_ws=org_model_ws, check=False)
     try:
         pyemu.gw_utils.write_hfb_template(m)
     except:
@@ -1529,12 +1530,17 @@ def hfb_zn_mult_test():
     assert os.path.exists(tpl_file)
     hfb_pars = pd.read_csv(os.path.join('temp', 'hfb6_pars.csv'))
     hfb_tpl_contents = open(tpl_file, 'r').readlines()
-    mult_str = ''.join(hfb_tpl_contents[1:]).replace('~  hbz_0000  ~', '0.1').replace('~  hbz_0001  ~', '1.0').replace(
+    mult_str = ''.join(hfb_tpl_contents[1:]).replace(
+        '~  hbz_0000  ~', '0.1').replace(
+        '~  hbz_0001  ~', '1.0').replace(
         '~  hbz_0002  ~', '10.0')
     with open(hfb_pars.mlt_file.values[0], 'w') as mfp:
         mfp.write(mult_str)
     pyemu.helpers.apply_hfb_pars(os.path.join('temp', 'hfb6_pars.csv'))
-    # assert df.shape[0] == m.hfb6.hfb_data.shape[0]
+    with open(hfb_pars.mlt_file.values[0], 'r') as mfp:
+        for i, line in enumerate(mfp):
+            pass
+    assert i-1 == m.hfb6.hfb_data.shape[0]
 
 
 def read_runstor_test():
@@ -1670,7 +1676,7 @@ if __name__ == "__main__":
     #gage_obs_test()
     #setup_pp_test()
     #sfr_helper_test()
-    gw_sft_ins_test()
+    # gw_sft_ins_test()
     # par_knowledge_test()
     # grid_obs_test()
     # hds_timeseries_test()
