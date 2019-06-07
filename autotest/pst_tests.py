@@ -1217,7 +1217,7 @@ def from_flopy_pp_test():
     m.write_input()
 
     new_model_ws = "temp_pst_from_flopy"
-    pp_props = [["upw.ss", [0, 1]]]
+    pp_props = [["upw.ss", [0, 1]],["upw.hk",[1,0]],["upw.vka",1]]
 
     obssim_smp_pairs = None
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, "temp",
@@ -1227,23 +1227,37 @@ def from_flopy_pp_test():
                                              use_pp_zones=False,
                                             build_prior=False)
 
+    new_model_ws = "temp_pst_from_flopy"
+    props = ["upw.ss","upw.hk","upw.vka"]
+    pp_props = []
+    for k in range(m.nlay):
+        for p in props:
+            pp_props.append([p,k])
+    #pp_props = [["upw.ss", [0,], ["upw.hk", [1, 0]], ["upw.vka", 1]]
 
+    obssim_smp_pairs = None
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, "temp",
+                                             pp_props=pp_props,
+                                             remove_existing=True,
+                                             pp_space=4,
+                                             use_pp_zones=False,
+                                             build_prior=True)
 
 if __name__ == "__main__":
     #change_limit_test()
     #new_format_test()
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
-    #pst_from_flopy_geo_draw_test()
+    pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
-    # res_stats_test()
+    #res_stats_test()
     # test_write_input_files()
     # add_obs_test()
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    from_flopy_zone_pars()
+    #from_flopy_zone_pars()
     #from_flopy_pp_test()
     #from_flopy()
     # add_obs_test()
@@ -1266,7 +1280,7 @@ if __name__ == "__main__":
     # res_test()
     # smp_test()
     # from_io_with_inschek_test()
-    # pestpp_args_test()
+    #pestpp_args_test()
     # reweight_test()
     # reweight_res_test()
     # run_test()

@@ -922,7 +922,7 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
             ax_count = 0
 
         ax = axes[ax_count]
-        ax.set_title("{0}) {1}".format(abet[ax_count],label),loc="left")
+
         if sync_bins:
             mx,mn = -1.0e+30,1.0e+30
             for fc,en in ensembles.items():
@@ -931,10 +931,18 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                 #         emx,emn = en.loc[:,pc].max(),en.loc[:,pc].min()
                 #         mx = max(mx,emx)
                 #         mn = min(mn,emn)
-                emn = en.loc[:,plot_col].values.min()
-                emx = en.loc[:, plot_col].values.max()
+                emn = np.nanmin(en.loc[:,plot_col].values)
+                emx = np.nanmax(en.loc[:, plot_col].values)
                 mx = max(mx, emx)
                 mn = min(mn,emn)
+            if mx == -1.0e+30 and mn == 1.0e+30:
+                logger.warn("all NaNs for label: {0}".format(label))
+                ax.set_title("{0}) {1}, count:{2} - all NaN".format(abet[ax_count],
+                                                                    label, len(plot_col)), loc="left")
+                ax.set_yticks([])
+                ax.set_xticks([])
+                ax_count += 1
+                continue
             plot_bins = np.linspace(mn,mx,num=bins)
             logger.statement("{0} min:{1:5G}, max:{2:5G}".format(label,mn,mx))
         else:
@@ -952,6 +960,7 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
             vals = en.loc[:,plot_col].values.flatten()
             #print(plot_bins)
             #print(vals)
+
             ax.hist(vals,bins=plot_bins,edgecolor="none",alpha=0.5,normed=True,facecolor=fc)
             v = None
             if deter_vals is not None:
@@ -979,7 +988,13 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
                     logger.warn("error plotting std window for {0}".
                                 format(pc))
         ax.grid()
-
+        if len(ensembles) > 1:
+            ax.set_title("{0}) {1}, count: {2}".format(abet[ax_count], label,len(plot_col)), loc="left")
+        else:
+            ax.set_title("{0}) {1}, count:{2}\nmin:{3:3.1E}, max:{4:3.1E}".format(abet[ax_count],
+                                                                       label,len(plot_col),
+                                                                       np.nanmin(vals),
+                                                                       np.nanmax(vals)), loc="left")
         ax_count += 1
 
     for a in range(ax_count, nr * nc):
