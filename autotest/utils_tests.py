@@ -1661,7 +1661,7 @@ def fieldgen_dev():
 
 
 if __name__ == "__main__":
-    # fieldgen_dev()
+    #fieldgen_dev()
     # smp_test()
     # smp_dateparser_test()
     # smp_to_ins_test()
