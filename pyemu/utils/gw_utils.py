@@ -1903,20 +1903,22 @@ def load_sfr_out(sfr_out_file, selection=None):
                     dlines.append(draw)
                 df = pd.DataFrame(data=np.array(dlines)).iloc[:, [3, 4, 6, 7]]
                 df.columns = ["segment", "reach", "flaqx", "flout"]
-                df.loc[:, "segment"] = df.segment.apply(np.int)
-                df.loc[:, "reach"] = df.reach.apply(np.int)
-                df.loc[:, "flaqx"] = df.flaqx.apply(np.float)
-                df.loc[:, "flout"] = df.flout.apply(np.float)
+                df["segment"] = df.segment.astype(np.int)
+                df["reach"] = df.reach.astype(np.int)
+                df["flaqx"] = df.flaqx.astype(np.float)
+                df["flout"] = df.flout.astype(np.float)
                 df.index = df.apply(lambda x: "{0:03d}_{1:03d}".format(int(x.segment), int(x.reach)), axis=1)
                 if selection is None:  # setup for all segs, aggregate
                     gp = df.groupby(df.segment)
                     bot_reaches = gp[['reach']].max().apply(
                         lambda x: "{0:03d}_{1:03d}".format(int(x.name), int(x.reach)), axis=1)
-                    df2 = pd.DataFrame(index=gp.groups.keys(), columns=['flaqx', 'flout'])
-                    df2['flaqx'] = gp.flaqx.sum()  # only sum distributed output
-                    df2['flout'] = df.loc[bot_reaches, 'flout'].values  # take flow out of seg
+                    # only sum distributed output # take flow out of seg
+                    df2 = pd.DataFrame(
+                        {'flaqx':gp.flaqx.sum(), 
+                         'flout': df.loc[bot_reaches, 'flout'].values}, 
+                        index=gp.groups.keys())
                     # df = df.groupby(df.segment).sum()
-                    df2.loc[:,"segment"] = df2.index
+                    df2["segment"] = df2.index
                 elif isinstance(selection, str) and selection == 'all':
                     df2 = df
                 else:
