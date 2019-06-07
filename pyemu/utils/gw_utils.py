@@ -2362,7 +2362,7 @@ def write_hfb_zone_multipliers_template(m):
     header = hfb_file_contents[:skiprows]
 
     # read in the data
-    names = ['lay', 'irow1','icol1','irow2','icol2', 'hydchr']
+    names = ['lay', 'irow1', 'icol1', 'irow2', 'icol2', 'hydchr']
     hfb_in = pd.read_csv(hfb_file, skiprows=skiprows,
                          delim_whitespace=True, names=names).dropna()
     for cn in names[:-1]:
@@ -2386,7 +2386,7 @@ def write_hfb_zone_multipliers_template(m):
         ofp.write('ptf ~\n')
         [ofp.write('{0}\n'.format(line.strip())) for line in header]
         ofp.flush()
-        hfb_in[['lay', 'irow1','icol1','irow2','icol2', 'tpl']].to_csv(
+        hfb_in[['lay', 'irow1', 'icol1', 'irow2', 'icol2', 'tpl']].to_csv(
             ofp, sep=' ', quotechar=' ', header=None, index=None, mode='a')
 
     # make a lookup for lining up the necessary files to
@@ -2397,7 +2397,7 @@ def write_hfb_zone_multipliers_template(m):
         ofp.write('{0},{1},{2}\n'.format(
             os.path.join(m.model_ws, 'hfb6_org', m.hfb6.file_name[0]),
             os.path.join(m.model_ws, 'hfb6_mlt',
-                         os.path.basename(tpl_file).replace('.tpl','')),
+                         os.path.basename(tpl_file).replace('.tpl', '')),
             hfb_file))
 
     return hfb_mults, tpl_file

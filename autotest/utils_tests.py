@@ -1518,6 +1518,7 @@ def hfb_zn_mult_test():
     for i in range(m.nrow)[21:]:
         hfb_data.append([0, i, jcol1, i, jcol2, 0.003])
     flopy.modflow.ModflowHfb(m, 0, 0, len(hfb_data), hfb_data=hfb_data)
+    orig_len = len(m.hfb6.hfb_data)
     m.change_model_ws("temp")
     m.write_input()
     m.exe_name = "mfnwt"
@@ -1528,7 +1529,7 @@ def hfb_zn_mult_test():
 
     orig_vals, tpl_file = pyemu.gw_utils.write_hfb_zone_multipliers_template(m)
     assert os.path.exists(tpl_file)
-    hfb_pars = pd.read_csv(os.path.join('temp', 'hfb6_pars.csv'))
+    hfb_pars = pd.read_csv(os.path.join(m.model_ws, 'hfb6_pars.csv'))
     hfb_tpl_contents = open(tpl_file, 'r').readlines()
     mult_str = ''.join(hfb_tpl_contents[1:]).replace(
         '~  hbz_0000  ~', '0.1').replace(
@@ -1536,11 +1537,12 @@ def hfb_zn_mult_test():
         '~  hbz_0002  ~', '10.0')
     with open(hfb_pars.mlt_file.values[0], 'w') as mfp:
         mfp.write(mult_str)
-    pyemu.helpers.apply_hfb_pars(os.path.join('temp', 'hfb6_pars.csv'))
+    pyemu.helpers.apply_hfb_pars(os.path.join(m.model_ws, 'hfb6_pars.csv'))
     with open(hfb_pars.mlt_file.values[0], 'r') as mfp:
         for i, line in enumerate(mfp):
             pass
-    assert i-1 == m.hfb6.hfb_data.shape[0]
+    mhfb = flopy.modflow.ModflowHfb.load(hfb_pars.model_file.values[0], m)
+    assert i-1 == orig_len == len(mhfb.hfb_data)
 
 
 def read_runstor_test():
