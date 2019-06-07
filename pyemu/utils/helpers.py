@@ -7,6 +7,7 @@ import os
 import multiprocessing as mp
 import warnings
 from datetime import datetime
+import platform
 import struct
 import shutil
 import copy
@@ -203,7 +204,12 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
     par = pst.parameter_data
     par_ens = []
     pars_in_cov = set()
-    for gs,items in struct_dict.items():
+    keys = list(struct_dict.keys())
+    keys.sort()
+
+    for gs in keys:
+    #for gs,items in struct_dict.items():
+        items = struct_dict[gs]
         if verbose: print("processing ",gs)
         if isinstance(gs,str):
             gss = pyemu.geostats.read_struct_file(gs)
@@ -215,6 +221,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
                 gs = gss
         if not isinstance(items,list):
             items = [items]
+        #items.sort()
         for item in items:
             if isinstance(item,str):
                 assert os.path.exists(item),"file {0} not found".\
@@ -1637,7 +1644,7 @@ class PstFromFlopyModel(object):
         self.temporal_list_geostruct = temporal_list_geostruct
         if self.temporal_list_geostruct is None:
             v = pyemu.geostats.ExpVario(contribution=1.0,a=180.0) # 180 correlation length
-            self.temporal_list_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+            self.temporal_list_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="temporal_list_geostruct")
 
         self.spatial_list_props = spatial_list_props
         self.spatial_list_geostruct = spatial_list_geostruct
@@ -1645,7 +1652,7 @@ class PstFromFlopyModel(object):
             dist = 10 * float(max(self.m.dis.delr.array.max(),
                                   self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0, a=dist)
-            self.spatial_list_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+            self.spatial_list_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="spatial_list_geostruct")
 
         self.obssim_smp_pairs = obssim_smp_pairs
         self.hds_kperk = hds_kperk
@@ -2145,7 +2152,7 @@ class PstFromFlopyModel(object):
             dist = 10 * float(max(self.m.dis.delr.array.max(),
                                            self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0,a=dist)
-            self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+            self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="grid_geostruct")
 
     def pp_prep(self, mlt_df):
         """ prepare pilot point based parameterizations
@@ -2172,18 +2179,25 @@ class PstFromFlopyModel(object):
             pp_dist = self.pp_space * float(max(self.m.dis.delr.array.max(),
                                            self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0,a=pp_dist)
-            self.pp_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+            self.pp_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="pp_geostruct")
 
         pp_df = mlt_df.loc[mlt_df.suffix==self.pp_suffix,:]
         layers = pp_df.layer.unique()
+        layers.sort()
         pp_dict = {l:list(pp_df.loc[pp_df.layer==l,"prefix"].unique()) for l in layers}
         # big assumption here - if prefix is listed more than once, use the lowest layer index
+        pp_dict_sort = {}
         for i,l in enumerate(layers):
             p = set(pp_dict[l])
+            pl = list(p)
+            pl.sort()
+            pp_dict_sort[l] = pl
             for ll in layers[i+1:]:
                 pp = set(pp_dict[ll])
-                d = pp - p
-                pp_dict[ll] = list(d)
+                d = list(pp - p)
+                d.sort()
+                pp_dict_sort[ll] = d
+        pp_dict = pp_dict_sort
 
 
         pp_array_file = {p:m for p,m in zip(pp_df.prefix,pp_df.mlt_file)}
@@ -2268,7 +2282,7 @@ class PstFromFlopyModel(object):
                 self.logger.warn("multiple k values for {0},forming composite zone array...".format(pg))
                 ib_k = np.zeros((self.m.nrow,self.m.ncol))
                 for k in ks:
-                    t = ib[k].copy()
+                    t = ib["general_zn"][k].copy()
                     t[t<1] = 0
                     ib_k[t>0] = t[t>0]
             k = int(ks[0])
@@ -2361,7 +2375,7 @@ class PstFromFlopyModel(object):
             kl_dist = 10.0 * float(max(self.m.dis.delr.array.max(),
                                            self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0,a=kl_dist)
-            self.kl_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+            self.kl_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="kl_geostruct")
 
         kl_df = mlt_df.loc[mlt_df.suffix==self.kl_suffix,:]
         layers = kl_df.layer.unique()
@@ -3084,7 +3098,7 @@ class PstFromFlopyModel(object):
         #f_tpl.write("index ")
         #f_tpl.write(df.loc[:,names].to_string(index_names=True))
         #f_tpl.close()
-        write_df_tpl(tpl_name,df.loc[:,names],sep=' ',index_label="index")
+        write_df_tpl(tpl_name,df.loc[:,names],sep=' ',index_label="index", quotechar=" ")
         self.par_dfs["temporal_list"] = df
 
 
@@ -3995,11 +4009,13 @@ def write_df_tpl(filename,df,sep=',',tpl_marker='~',**kwargs):
     file handle before df.to_csv() and you pass mode='a' to to_csv()
 
     """
+    if "line_terminator" not in kwargs:
+        if "win" in platform.platform().lower():
+            kwargs["line_terminator"] = "\n"
     with open(filename,'w') as f:
         f.write("ptf {0}\n".format(tpl_marker))
         f.flush()
         df.to_csv(f,sep=sep,mode='a',**kwargs)
-
 
 
 def setup_fake_forward_run(pst,new_pst_name,org_cwd='.',bak_suffix="._bak",new_cwd='.'):

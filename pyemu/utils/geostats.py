@@ -87,6 +87,14 @@ class GeoStruct(object):
         assert transform in ["none","log"]
         self.transform = transform
 
+
+    def __lt__(self,other):
+        return self.name < other.name
+
+
+    def __gt__(self,other):
+        return self.name > other.name
+
     def to_struct_file(self, f):
         """ write a PEST-style structure file
 

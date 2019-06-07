@@ -1201,8 +1201,10 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
             #df_time.iloc[nstrm*(icomp):nstrm*(icomp+1),icomp_idx.loc["icomp"] = int(icomp+1)
             df_time.loc[idxs,"icomp"] = int(icomp+1)
 
-        df.loc[df_time.index,"ins_str"] = df_time.apply(lambda x: "l1 w w !sfrc{0}_{1}_{2}! !swgw{0}_{1}_{2}! !gwcn{0}_{1}_{2}!\n".\
-                                         format(x.sfr_node,x.icomp,x.time_str),axis=1)
+        #df.loc[df_time.index,"ins_str"] = df_time.apply(lambda x: "l1 w w !sfrc{0}_{1}_{2}! !swgw{0}_{1}_{2}! !gwcn{0}_{1}_{2}!\n".\
+        #                                 format(x.sfr_node,x.icomp,x.time_str),axis=1)
+        df.loc[df_time.index, "ins_str"] = df_time.apply(
+            lambda x: "l1 w w !sfrc{0}_{1}_{2}!\n".format(x.sfr_node, x.icomp, x.time_str), axis=1)
     df.index = np.arange(df.shape[0])
     if ins_file is None:
         ins_file = sft_file+".processed.ins"
