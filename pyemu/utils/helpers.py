@@ -1043,15 +1043,17 @@ def pst_from_parnames_obsnames(parnames, obsnames,
 
     return pyemu.Pst.from_io_files(tplfilename, modelinputfilename, insfilename, modeloutputfilename)
 
-def start_slaves(slave_dir, exe_rel_path, pst_rel_path, num_workers=num_slaves, worker_root=slave_root,
-                  port=port, rel_path=rel_path):
 
-    warnings.warn("deprecation warning:start_slaves() has been emancipated and renamed start_workers()",PyemuWarning)
+def start_slaves(slave_dir, exe_rel_path, pst_rel_path, num_slaves=None, slave_root="..",
+                 port=4004, rel_path=None, local=True, cleanup=True, master_dir=None,
+                 verbose=False, silent_master=False):
+    warnings.warn("deprecation warning:start_slaves() has been emancipated and renamed start_workers()", PyemuWarning)
     warnings.warn("amd start_workers has moved to pyemu.os_utils",PyemuWarning)
-
     from pyemu.utils import start_workers
-    start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=num_workers,worker_root=worker_root,
-                 port=port,rel_path=rel_path)
+    start_workers(worker_dir=slave_dir,exe_rel_path= exe_rel_path, pst_rel_path=pst_rel_path, num_workers=num_slaves,
+                  worker_root=slave_root, port=port, rel_path=rel_path,
+                  local=local, cleanup=cleanup, master_dir=master_dir, verbose=verbose, silent_master=silent_master)
+
 
 def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_root="..",
                  port=4004,rel_path=None,local=True,cleanup=True,master_dir=None,

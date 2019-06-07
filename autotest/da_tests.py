@@ -82,7 +82,6 @@ def run_truth_sweep():
                                 20,worker_root=os.path.join("da","freyberg"),master_dir=os.path.join("da","freyberg","truth_sweep"))
 
 
-
 def setup_daily_da():
 
     m = flopy.modflow.Modflow.load("freyberg_transient.nam",model_ws=os.path.join("da","freyberg","truth_template"),
@@ -241,3 +240,4 @@ if __name__ == "__main__":
     #process_truth_for_obs_states()
     freyberg_dev()
     #draw_forcing_ensemble()
+    #run_truth_sweep()
