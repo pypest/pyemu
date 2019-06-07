@@ -82,37 +82,46 @@ def rosenbrock_2par_grad_approx_invest():
     # en approx
     esqp = pyemu.EnsembleSQP(pst=pst)
     df = pd.DataFrame([(en_size, draw_m) for en_size in [10,20,30, 40, 50, 70, 100]
-                       for draw_m in [0.001,0.005,0.01]],
-                      columns=["en_size", "draw_m"])
+                       for draw_m in [0.0003,0.003,0.03]],columns=["en_size", "draw_m"])
+    # middle draw_m stdev approx corresp with derinc
 
-    rel_grad_diff, grad_diff_par1, grad_diff_par2 = [],[],[]
+    en_grad_par1, grad_diff_par1, en_grad_par2, grad_diff_par2 = [],[],[],[]
     for i,v in df.iterrows():
         esqp.initialize(num_reals=int(v[0]),draw_mult=v[1])
         en_phi_grad = esqp.update(grad_calc_only=True).T.to_dataframe()
 
-        en_phi_grad_rel = en_phi_grad.par1 / en_phi_grad.par2
-        rel_compare = en_phi_grad_rel[0] / jco_rel[0]
-        if rel_compare >= 10 or rel_compare <= 0.1:
-            raise Exception("ensemble (relative) grad approx is unacceptable.. " +
-                            "en grad is {} times that from finite diffs..".format(rel_compare))
-        rel_grad_diff.append(rel_compare)
-
+        en_grad_par1.append(en_phi_grad.par1[0])
+        en_grad_par2.append(en_phi_grad.par2[0])
         grad_diff_par1.append(en_phi_grad.par1[0] / jco.par1[0])
         grad_diff_par2.append(en_phi_grad.par2[0] / jco.par2[0])
+        # TODO: add below exceptions
+        #if (en_phi_grad.par1[0] / jco.par1[0] >= 10) or (en_phi_grad.par1[0] / jco.par1[0] <= 0.1):
+         #   raise Exception("ensemble grad approx for par1 is unacceptable.. " +
+          #                  "en grad is {} times that from finite diffs..".format(en_phi_grad.par1[0] / jco.par1[0]))
+        #if (en_phi_grad.par2[0] / jco.par2[0] >= 10) or (en_phi_grad.par2[0] / jco.par2[0] <= 0.1):
+         #   raise Exception("ensemble grad approx for par2 is unacceptable.. " +
+          #                  "en grad is {} times that from finite diffs..".format(en_phi_grad.par2[0] / jco.par2[0]))
 
-    df_rel = pd.concat((df, pd.DataFrame(data=rel_grad_diff, columns=["rel_grad_diff"])), axis=1)
     df_par1 = pd.concat((df, pd.DataFrame(data=grad_diff_par1, columns=["grad_diff_par1"])), axis=1)
     df_par2 = pd.concat((df, pd.DataFrame(data=grad_diff_par2, columns=["grad_diff_par2"])), axis=1)
-    dfs = [df_rel,df_par1,df_par2]
+    dfs = [df_par1,df_par2]
 
     # some plots
-    fig,axs = plt.subplots(1,3,sharey=True)
+    fontsize = 12
+    fig,axs = plt.subplots(1,2,sharey=True)
     for i,ax in enumerate(axs):
-        for dm in df_rel.draw_m.unique():
+        for dm in df_par1.draw_m.unique():
             df_, col = dfs[i], dfs[i].columns[-1]
             ax.plot(df_.loc[df_.draw_m == dm, "en_size"], df_.loc[df_.draw_m == dm, col],
-                 label="draw mult = {}".format(dm))
+                 label="draw mult = {}".format(dm),marker='o')
         ax.axhline(y=1,xmin=0,xmax=100,linestyle='--',color='k')
+        if i == 0:
+            ax.set_ylabel(
+                "$\\frac{(\\frac{\Delta \Phi}{\Delta \\mathtt{dec\ var}})_{en\ approx}}"
+                "{(\\frac{\Delta \Phi}{\Delta \\mathtt{dec\ var}})_{finite\ diffs}}$",
+                fontsize=fontsize)
+        ax.set_title("rosenbrock dec var {0}".format(i+1),fontsize=fontsize)
+        ax.set_xlabel("ensemble size $N_e$",fontsize=fontsize)
         ax.legend()
     plt.show()
     os.chdir(os.path.join("..", ".."))
