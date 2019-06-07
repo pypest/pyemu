@@ -1855,8 +1855,9 @@ def apply_sfr_obs():
 
 
 def load_sfr_out(sfr_out_file, selection=None):
-    """load an ASCII SFR output file into a dictionary of kper: dataframes.  aggregates
-    flow to aquifer for segments and returns and flow out at downstream end of segment.
+    """load an ASCII SFR output file into a dictionary of kper: dataframes.
+    aggregates flow to aquifer for segments and returns and flow out at
+    downstream end of segment.
 
     Parameters
     ----------
@@ -1877,10 +1878,13 @@ def load_sfr_out(sfr_out_file, selection=None):
     if selection is None:
         pass
     elif isinstance(selection, str):
-        assert selection == 'all', "If string passed as selection only 'all' allowed: {}".format(selection)
+        assert selection == 'all', \
+            "If string passed as selection only 'all' allowed: " \
+            "{}".format(selection)
     else:
-        assert isinstance(
-            selection, pd.DataFrame), "'selection needs to be pandas Dataframe. Type {} passed.".format(type(selection))
+        assert isinstance(selection, pd.DataFrame), \
+            "'selection needs to be pandas Dataframe. " \
+            "Type {} passed.".format(type(selection))
         assert np.all([sr in selection.columns for sr in ['segment', 'reach']]
                       ), "Either 'segment' or 'reach' not in selection columns"
     with open(sfr_out_file) as f:
@@ -1911,32 +1915,41 @@ def load_sfr_out(sfr_out_file, selection=None):
                 df["flout"] = df.flout.astype(np.float)
                 df.index = ["{0:03d}_{1:03d}".format(s, r) for s, r in
                             np.array([df.segment.values, df.reach.values]).T]
-                # df.index = df.apply(lambda x: "{0:03d}_{1:03d}".format(int(x.segment), int(x.reach)), axis=1)
+                # df.index = df.apply(
+                # lambda x: "{0:03d}_{1:03d}".format(
+                # int(x.segment), int(x.reach)), axis=1)
                 if selection is None:  # setup for all segs, aggregate
                     gp = df.groupby(df.segment)
                     bot_reaches = gp[['reach']].max().apply(
-                        lambda x: "{0:03d}_{1:03d}".format(int(x.name), int(x.reach)), axis=1)
+                        lambda x: "{0:03d}_{1:03d}".format(
+                            int(x.name), int(x.reach)), axis=1)
                     # only sum distributed output # take flow out of seg
                     df2 = pd.DataFrame(
-                        {'flaqx':gp.flaqx.sum(), 
-                         'flout': df.loc[bot_reaches, 'flout'].values}, 
+                        {'flaqx':gp.flaqx.sum(),
+                         'flout': df.loc[bot_reaches, 'flout'].values},
                         index=gp.groups.keys())
                     # df = df.groupby(df.segment).sum()
                     df2["segment"] = df2.index
                 elif isinstance(selection, str) and selection == 'all':
                     df2 = df
                 else:
-                    seg_reach_id = selection.apply(lambda x: "{0:03d}_{1:03d}".
-                                                   format(int(x.segment), int(x.reach)), axis=1).values
+                    seg_reach_id = selection.apply(
+                        lambda x: "{0:03d}_{1:03d}".format(
+                            int(x.segment), int(x.reach)), axis=1).values
                     for sr in seg_reach_id:
                         if sr not in df.index:
                             s, r = [x.lstrip('0') for x in sr.split('_')]
-                            warnings.warn("Requested segment reach pair ({0},{1}) is not in sfr output. Dropping...".
-                                          format(int(r), int(s)), PyemuWarning)
-                            seg_reach_id = np.delete(seg_reach_id, np.where(seg_reach_id == sr), axis=0)
+                            warnings.warn(
+                                "Requested segment reach pair ({0},{1}) "
+                                "is not in sfr output. Dropping...".ormat(
+                                    int(r), int(s)), PyemuWarning)
+                            seg_reach_id = np.delete(
+                                seg_reach_id,
+                                np.where(seg_reach_id == sr), axis=0)
                     df2 = df.loc[seg_reach_id].copy()
                 if kper in sfr_dict.keys():
-                    print("multiple entries found for kper {0}, replacing...".format(kper))
+                    print("multiple entries found for kper {0}, "
+                          "replacing...".format(kper))
                 sfr_dict[kper] = df2
     return sfr_dict
 
