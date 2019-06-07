@@ -2194,23 +2194,23 @@ Default values are provided for the TPL and INS
 </dd></dl>
 
 <dl class="function">
-<dt id="pyemu.utils.helpers.start_slaves">
-<code class="descclassname">pyemu.utils.helpers.</code><code class="descname">start_slaves</code><span class="sig-paren">(</span><em>slave_dir</em>, <em>exe_rel_path</em>, <em>pst_rel_path</em>, <em>num_slaves=None</em>, <em>slave_root='..'</em>, <em>port=4004</em>, <em>rel_path=None</em>, <em>local=True</em>, <em>cleanup=True</em>, <em>master_dir=None</em>, <em>verbose=False</em>, <em>silent_master=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/utils/helpers.html#start_slaves"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.utils.helpers.start_slaves" title="Permalink to this definition">¶</a></dt>
-<dd><p>start a group of pest(++) slaves on the local machine</p>
+<dt id="pyemu.utils.helpers.start_workers">
+<code class="descclassname">pyemu.utils.helpers.</code><code class="descname">start_workers</code><span class="sig-paren">(</span><em>worker_dir</em>, <em>exe_rel_path</em>, <em>pst_rel_path</em>, <em>num_workers=None</em>, <em>worker_root='..'</em>, <em>port=4004</em>, <em>rel_path=None</em>, <em>local=True</em>, <em>cleanup=True</em>, <em>master_dir=None</em>, <em>verbose=False</em>, <em>silent_master=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyemu/utils/helpers.html#start_workers"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyemu.utils.helpers.start_workers" title="Permalink to this definition">¶</a></dt>
+<dd><p>start a group of pest(++) workers on the local machine</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>slave_dir</strong> (<em>str</em>) – the path to a complete set of input files</li>
-<li><strong>exe_rel_path</strong> (<em>str</em>) – the relative path to the pest(++) executable from within the slave_dir</li>
-<li><strong>pst_rel_path</strong> (<em>str</em>) – the relative path to the pst file from within the slave_dir</li>
-<li><strong>num_slaves</strong> (<em>int</em>) – number of slaves to start. defaults to number of cores</li>
-<li><strong>slave_root</strong> (<em>str</em>) – the root to make the new slave directories in</li>
+<li><strong>worker_dir</strong> (<em>str</em>) – the path to a complete set of input files</li>
+<li><strong>exe_rel_path</strong> (<em>str</em>) – the relative path to the pest(++) executable from within the worker_dir</li>
+<li><strong>pst_rel_path</strong> (<em>str</em>) – the relative path to the pst file from within the worker_dir</li>
+<li><strong>num_workers</strong> (<em>int</em>) – number of workers to start. defaults to number of cores</li>
+<li><strong>worker_root</strong> (<em>str</em>) – the root to make the new worker directories in</li>
 <li><strong>rel_path</strong> (<em>str</em>) – the relative path to where pest(++) should be run from within the
-slave_dir, defaults to the uppermost level of the slave dir</li>
-<li><strong>local</strong> (<em>bool</em>) – flag for using “localhost” instead of hostname on slave command line</li>
-<li><strong>cleanup</strong> (<em>bool</em>) – flag to remove slave directories once processes exit</li>
+worker_dir, defaults to the uppermost level of the worker dir</li>
+<li><strong>local</strong> (<em>bool</em>) – flag for using “localhost” instead of hostname on worker command line</li>
+<li><strong>cleanup</strong> (<em>bool</em>) – flag to remove worker directories once processes exit</li>
 <li><strong>master_dir</strong> (<em>str</em>) – name of directory for master instance.  If master_dir
 exists, then it will be removed.  If master_dir is None,
 no master instance will be started</li>
@@ -2222,15 +2222,15 @@ no master instance will be started</li>
 </table>
 <div class="admonition note">
 <p class="first admonition-title">Note</p>
-<p class="last">if all slaves (and optionally master) exit gracefully, then the slave
+<p class="last">if all workers (and optionally master) exit gracefully, then the worker
 dirs will be removed unless cleanup is false</p>
 </div>
 <div class="admonition-example admonition">
 <p class="first admonition-title">Example</p>
 <p><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;import</span> <span class="pre">pyemu</span></code></p>
-<p>start 10 slaves using the directory “template” as the base case and
+<p>start 10 workers using the directory “template” as the base case and
 also start a master instance in a directory “master”.</p>
-<p class="last"><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;pyemu.helpers.start_slaves(&quot;template&quot;,&quot;pestpp&quot;,&quot;pest.pst&quot;,10,master_dir=&quot;master&quot;)</span></code></p>
+<p class="last"><code class="docutils literal notranslate"><span class="pre">&gt;&gt;&gt;pyemu.helpers.start_workers(&quot;template&quot;,&quot;pestpp&quot;,&quot;pest.pst&quot;,10,master_dir=&quot;master&quot;)</span></code></p>
 </div>
 </dd></dl>
 

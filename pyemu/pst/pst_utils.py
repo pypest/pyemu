@@ -717,13 +717,13 @@ def del_rw(action, name, exc):
     os.chmod(name, stat.S_IWRITE)
     os.remove(name)
 
-def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
+def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_root="..",
                  port=4004,rel_path=None):
 
 
-    warnings.warn("deprecation warning:start_slaves() has moved to the utils.helpers module",PyemuWarning)
-    from pyemu.utils import start_slaves
-    start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=num_slaves,slave_root=slave_root,
+    warnings.warn("deprecation warning:start_workers() has moved to the utils.helpers module",PyemuWarning)
+    from pyemu.utils import start_workers
+    start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=num_workers,worker_root=worker_root,
                  port=port,rel_path=rel_path)
 
 def res_from_obseravtion_data(observation_data):

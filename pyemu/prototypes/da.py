@@ -9,11 +9,11 @@ from .ensemble_method import EnsembleMethod
 
 
 class EnsembleKalmanFilter(EnsembleMethod):
-    def __init__(self, pst, parcov = None, obscov = None, num_slaves = 0,
-                 submit_file = None, verbose = False, port = 4004, slave_dir = "template"):
-        super(EnsembleKalmanFilter, self).__init__(pst=pst, parcov=parcov, obscov=obscov, num_slaves=num_slaves,
+    def __init__(self, pst, parcov = None, obscov = None, num_workers = 0,
+                 submit_file = None, verbose = False, port = 4004, worker_dir = "template"):
+        super(EnsembleKalmanFilter, self).__init__(pst=pst, parcov=parcov, obscov=obscov, num_workers=num_workers,
                                       submit_file=submit_file, verbose=verbose, port=port,
-                                      slave_dir=slave_dir)
+                                      worker_dir=worker_dir)
 
     def initialize(self,num_reals=1,enforce_bounds="reset",
                    parensemble=None,obsensemble=None,restart_obsensemble=None):

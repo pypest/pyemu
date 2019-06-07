@@ -23,7 +23,7 @@ except:
     pass
 
 import pyemu
-from pyemu.utils.os_utils import run, start_slaves
+from pyemu.utils.os_utils import run, start_workers
 
 
 
@@ -1043,32 +1043,40 @@ def pst_from_parnames_obsnames(parnames, obsnames,
 
     return pyemu.Pst.from_io_files(tplfilename, modelinputfilename, insfilename, modeloutputfilename)
 
+def start_slaves(slave_dir, exe_rel_path, pst_rel_path, num_workers=num_slaves, worker_root=slave_root,
+                  port=port, rel_path=rel_path):
 
+    warnings.warn("deprecation warning:start_slaves() has been emancipated and renamed start_workers()",PyemuWarning)
+    warnings.warn("amd start_workers has moved to pyemu.os_utils",PyemuWarning)
 
-def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
+    from pyemu.utils import start_workers
+    start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=num_workers,worker_root=worker_root,
+                 port=port,rel_path=rel_path)
+
+def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_root="..",
                  port=4004,rel_path=None,local=True,cleanup=True,master_dir=None,
                  verbose=False,silent_master=False):
-    """ start a group of pest(++) slaves on the local machine
+    """ start a group of pest(++) workers on the local machine
 
     Parameters
     ----------
-    slave_dir :  str
+    worker_dir :  str
         the path to a complete set of input files
     exe_rel_path : str
-        the relative path to the pest(++) executable from within the slave_dir
+        the relative path to the pest(++) executable from within the worker_dir
     pst_rel_path : str
-        the relative path to the pst file from within the slave_dir
-    num_slaves : int
-        number of slaves to start. defaults to number of cores
-    slave_root : str
-        the root to make the new slave directories in
+        the relative path to the pst file from within the worker_dir
+    num_workers : int
+        number of workers to start. defaults to number of cores
+    worker_root : str
+        the root to make the new worker directories in
     rel_path: str
         the relative path to where pest(++) should be run from within the
-        slave_dir, defaults to the uppermost level of the slave dir
+        worker_dir, defaults to the uppermost level of the worker dir
     local: bool
-        flag for using "localhost" instead of hostname on slave command line
+        flag for using "localhost" instead of hostname on worker command line
     cleanup: bool
-        flag to remove slave directories once processes exit
+        flag to remove worker directories once processes exit
     master_dir: str
         name of directory for master instance.  If master_dir
         exists, then it will be removed.  If master_dir is None,
@@ -1078,23 +1086,23 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
 
     Note
     ----
-    if all slaves (and optionally master) exit gracefully, then the slave
+    if all workers (and optionally master) exit gracefully, then the worker
     dirs will be removed unless cleanup is false
 
     Example
     -------
     ``>>>import pyemu``
 
-    start 10 slaves using the directory "template" as the base case and
+    start 10 workers using the directory "template" as the base case and
     also start a master instance in a directory "master".
 
-    ``>>>pyemu.helpers.start_slaves("template","pestpp","pest.pst",10,master_dir="master")``
+    ``>>>pyemu.helpers.start_workers("template","pestpp","pest.pst",10,master_dir="master")``
 
     """
 
-    warnings.warn("start_slaves has moved to pyemu.os_utils",PyemuWarning)
-    pyemu.os_utils.start_slaves(slave_dir=slave_dir,exe_rel_path=exe_rel_path,pst_rel_path=pst_rel_path
-                      ,num_slaves=num_slaves,slave_root=slave_root,port=port,rel_path=rel_path,
+    warnings.warn("start_workers has moved to pyemu.os_utils",PyemuWarning)
+    pyemu.os_utils.start_workers(worker_dir=worker_dir,exe_rel_path=exe_rel_path,pst_rel_path=pst_rel_path
+                      ,num_workers=num_workers,worker_root=worker_root,port=port,rel_path=rel_path,
                       local=local,cleanup=cleanup,master_dir=master_dir,verbose=verbose,
                       silent_master=silent_master)
 

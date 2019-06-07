@@ -459,21 +459,21 @@ def smp_to_ins_test():
         raise Exception("should have failed")
     pyemu.smp_utils.smp_to_ins(smp,ins,True)
 
-def master_and_slaves():
+def master_and_workers():
     import shutil
     import pyemu
-    slave_dir = os.path.join("..","verification","10par_xsec","template_mac")
+    worker_dir = os.path.join("..","verification","10par_xsec","template_mac")
     master_dir = os.path.join("temp","master")
     if not os.path.exists(master_dir):
         os.mkdir(master_dir)
-    assert os.path.exists(slave_dir)
-    pyemu.helpers.start_slaves(slave_dir,"pestpp","pest.pst",1,
-                               slave_root="temp",master_dir=master_dir)
+    assert os.path.exists(worker_dir)
+    pyemu.helpers.start_workers(worker_dir,"pestpp","pest.pst",1,
+                               worker_root="temp",master_dir=master_dir)
 
     #now try it from within the master dir
     base_cwd = os.getcwd()
     os.chdir(master_dir)
-    pyemu.helpers.start_slaves(os.path.join("..","..",slave_dir),
+    pyemu.helpers.start_workers(os.path.join("..","..",worker_dir),
                               "pestpp","pest.pst",3,
                               master_dir='.')
     os.chdir(base_cwd)
@@ -1614,7 +1614,7 @@ if __name__ == "__main__":
     # smp_to_ins_test()
     #read_runstor_test()
     #long_names()
-    #master_and_slaves()
+    #master_and_workers()
     #plot_id_bar_test()
     #pst_from_parnames_obsnames_test()
     #write_jactest_test()
@@ -1646,7 +1646,7 @@ if __name__ == "__main__":
     #more_kl_test()
     #zero_order_regul_test()
     # first_order_pearson_regul_test()
-    # master_and_slaves()
+    # master_and_workers()
     # smp_to_ins_test()
     # read_pestpp_runstorage_file_test()
     # write_tpl_test()

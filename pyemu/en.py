@@ -1836,8 +1836,8 @@ class ParameterEnsemble(Ensemble):
         self.loc["base",:] = self.pst.parameter_data.loc[self.columns,"parval1"]
 
 
-    def run(self,slave_dir, num_slaves=10):
-        df = run_sweep(self,slave_dir=slave_dir,num_slaves=num_slaves)
+    def run(self,worker_dir, num_workers=10):
+        df = run_sweep(self,worker_dir=worker_dir,num_workers=num_workers)
         return ObservationEnsemble.from_dataframe(pst=self.pst,df=df)
 
     def get_deviations(self):

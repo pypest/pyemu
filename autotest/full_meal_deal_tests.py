@@ -105,8 +105,8 @@ def freyberg_test():
     ph.pst.control_data.noptmax = 1
     ph.pst.write(os.path.join(new_model_ws, "test.pst"))
     master_dir = "test_master"
-    pyemu.os_utils.start_slaves(new_model_ws,ies_exe_name,"test.pst",
-                                num_slaves=10,slave_root='.',
+    pyemu.os_utils.start_workers(new_model_ws,ies_exe_name,"test.pst",
+                                num_workers=10,worker_root='.',
                                 master_dir=master_dir,silent_master=False)
     df = pd.read_csv(os.path.join(master_dir,"test.phi.meas.csv"),index_col=0)
     init_phi = df.loc[0,"mean"]
@@ -214,7 +214,7 @@ def freyberg_kl_pp_compare():
     ph.pst.parameter_data.loc[ph.pst.parameter_data.pargp == "pp_hk0", "partrans"] = "fixed"
     ph.pst.write(os.path.join(new_model_ws, "pest_kl.pst"))
 
-    pyemu.os_utils.start_slaves(new_model_ws,"pestpp-ies","pest_pp.pst", num_slaves=10,slave_root='.',
+    pyemu.os_utils.start_workers(new_model_ws,"pestpp-ies","pest_pp.pst", num_workers=10,worker_root='.',
                                 master_dir="pest_pp")
 
 
@@ -282,7 +282,7 @@ def run_sweep_test():
     pe = ph.draw(20)
     bd = os.getcwd()
     try:
-        oe = pe.run(slave_dir=new_model_ws)
+        oe = pe.run(worker_dir=new_model_ws)
         print(oe.shape)
     except Exception as e:
         os.chdir(bd)
@@ -291,7 +291,7 @@ def run_sweep_test():
     mc = pyemu.MonteCarlo(pst=ph.pst)
     mc.draw(20)
     try:
-        mc.run(slave_dir=new_model_ws)
+        mc.run(worker_dir=new_model_ws)
 
     except Exception as e:
         os.chdir(bd)
