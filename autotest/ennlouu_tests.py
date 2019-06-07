@@ -13,9 +13,9 @@ def rosenbrock_2par_setup():
     pst = pyemu.helpers.pst_from_io_files(tpl_file,in_file,ins_file,out_file)
     par = pst.parameter_data
     par.loc[:,"partrans"] = "none"
-    par.loc[:,"parval1"] = 1.0
-    par.loc[:,"parubnd"] = 7.0
-    par.loc[:,"parlbnd"] = -3.0
+    par.loc[:,"parval1"] = 2.0
+    par.loc[:,"parubnd"] = 8.0
+    par.loc[:,"parlbnd"] = -4.0
     obs = pst.observation_data
     obs.loc[:,"obsval"] = 0.0
     obs.loc[:,"weight"] = 1.0
@@ -68,11 +68,9 @@ def rosenbrock_2par_grad_approx_invest():
     import pyemu
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
     pst = pyemu.Pst("rosenbrock_2par.pst")
-    pst.parameter_data.parval1 *= 2
     esqp = pyemu.EnsembleSQP(pst=pst)
-    # for dm in [0.05,0.005,0.0005]
-    # for en_size in [30,50]
-    esqp.initialize(num_reals=30,draw_mult=0.01)
+    # [(en_size, draw_m) for en_size in [30,50] for draw_m in [0.01,0.001,0.0001]]
+    esqp.initialize(num_reals=30,draw_mult=0.001)
     en_phi_grad = esqp.update(grad_calc_only=True).T.to_dataframe()
     en_phi_grad_rel = en_phi_grad.par1 / en_phi_grad.par2
     pst.control_data.noptmax = -2
