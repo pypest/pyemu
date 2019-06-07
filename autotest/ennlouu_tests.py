@@ -66,31 +66,63 @@ def rosenbrock_2par_single_update():
 
 def rosenbrock_2par_grad_approx_invest():
     import pyemu
+    import pandas as pd
+    import matplotlib.pyplot as plt
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
     pst = pyemu.Pst("rosenbrock_2par.pst")
-    esqp = pyemu.EnsembleSQP(pst=pst)
-    # [(en_size, draw_m) for en_size in [30,50] for draw_m in [0.01,0.001,0.0001]]
-    esqp.initialize(num_reals=30,draw_mult=0.001)
-    en_phi_grad = esqp.update(grad_calc_only=True).T.to_dataframe()
-    en_phi_grad_rel = en_phi_grad.par1 / en_phi_grad.par2
+
+    # finite diffs
     pst.control_data.noptmax = -2
-    #pst.parameter_groups.derinc = 0.01
+    # pst.parameter_groups.derinc = 0.05
     pst.write(os.path.join("rosenbrock_2par_fds.pst"))
     pyemu.os_utils.run("pestpp rosenbrock_2par_fds.pst")
     jco = pyemu.Jco.from_binary("rosenbrock_2par_fds.jcb").to_dataframe()
     jco_rel = jco.par1 / jco.par2
-    compare = en_phi_grad_rel[0] / jco_rel[0]
-    if compare >= 1.5 or compare <= 0.5:
-        raise Exception("ensemble grad approx is unacceptable.. en grad is {} times that from finite diffs..".
-                        format(compare))
+
+    # en approx
+    esqp = pyemu.EnsembleSQP(pst=pst)
+    df = pd.DataFrame([(en_size, draw_m) for en_size in [10,20,30, 40, 50, 70, 100]
+                       for draw_m in [0.001,0.005,0.01]],
+                      columns=["en_size", "draw_m"])
+
+    rel_grad_diff, grad_diff_par1, grad_diff_par2 = [],[],[]
+    for i,v in df.iterrows():
+        esqp.initialize(num_reals=int(v[0]),draw_mult=v[1])
+        en_phi_grad = esqp.update(grad_calc_only=True).T.to_dataframe()
+
+        en_phi_grad_rel = en_phi_grad.par1 / en_phi_grad.par2
+        rel_compare = en_phi_grad_rel[0] / jco_rel[0]
+        if rel_compare >= 10 or rel_compare <= 0.1:
+            raise Exception("ensemble (relative) grad approx is unacceptable.. " +
+                            "en grad is {} times that from finite diffs..".format(rel_compare))
+        rel_grad_diff.append(rel_compare)
+
+        grad_diff_par1.append(en_phi_grad.par1[0] / jco.par1[0])
+        grad_diff_par2.append(en_phi_grad.par2[0] / jco.par2[0])
+
+    df_rel = pd.concat((df, pd.DataFrame(data=rel_grad_diff, columns=["rel_grad_diff"])), axis=1)
+    df_par1 = pd.concat((df, pd.DataFrame(data=grad_diff_par1, columns=["grad_diff_par1"])), axis=1)
+    df_par2 = pd.concat((df, pd.DataFrame(data=grad_diff_par2, columns=["grad_diff_par2"])), axis=1)
+    dfs = [df_rel,df_par1,df_par2]
+
+    # some plots
+    fig,axs = plt.subplots(1,3,sharey=True)
+    for i,ax in enumerate(axs):
+        for dm in df_rel.draw_m.unique():
+            df_, col = dfs[i], dfs[i].columns[-1]
+            ax.plot(df_.loc[df_.draw_m == dm, "en_size"], df_.loc[df_.draw_m == dm, col],
+                 label="draw mult = {}".format(dm))
+        ax.axhline(y=1,xmin=0,xmax=100,linestyle='--',color='k')
+        ax.legend()
+    plt.show()
     os.chdir(os.path.join("..", ".."))
 
 
-def rosenbrock_2par_multiple_update(nit=5):
+def rosenbrock_2par_multiple_update(nit=2):
     import pyemu
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst")
-    esqp.initialize(num_reals=3,draw_mult=0.1)
+    esqp.initialize(num_reals=3,draw_mult=0.01)
     for it in range(nit):
         esqp.update()
     os.chdir(os.path.join("..", ".."))
