@@ -1941,7 +1941,7 @@ def load_sfr_out(sfr_out_file, selection=None):
                             s, r = [x.lstrip('0') for x in sr.split('_')]
                             warnings.warn(
                                 "Requested segment reach pair ({0},{1}) "
-                                "is not in sfr output. Dropping...".ormat(
+                                "is not in sfr output. Dropping...".format(
                                     int(r), int(s)), PyemuWarning)
                             seg_reach_id = np.delete(
                                 seg_reach_id,
