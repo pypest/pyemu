@@ -43,8 +43,8 @@ def rosenbrock_2par_initialize_diff_args_test():
         esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst")
         esqp.initialize(num_reals=1,parensemble=c[0],restart_obsensemble=c[1],draw_mult=0.05)
         if i == 0:
-            shutil.copy("sweep_in.csv", "sweep_in.cp.csv") # default pestpp filename
-            shutil.copy("sweep_out.csv", "sweep_out.cp.csv") # default pestpp filename
+            shutil.copy("sweep_in.csv", "sweep_in.cp.csv")  # default pestpp filename
+            shutil.copy("sweep_out.csv", "sweep_out.cp.csv")  # default pestpp filename
         shutil.copy("sweep_out.csv","sweep_out.{}.csv".format(i))
         oe = pyemu.ObservationEnsemble.from_csv("sweep_out.{}.csv".format(i))
         if i > 0:
@@ -60,9 +60,33 @@ def rosenbrock_2par_single_update():
     import pyemu
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst", )
-    esqp.initialize(num_reals=5,draw_mult=0.001)
-    esqp.update(step_mult=[0.05]) #step_mult=[0.5, 0.8, 1.0],run_subset=num_reals/len(step_mult)
+    esqp.initialize(num_reals=2,draw_mult=0.001)
+    esqp.update(step_mult=[0.1,0.01,0.001,0.0001],hess_self_scaling=True)  #run_subset=num_reals/len(step_mult)
     os.chdir(os.path.join("..", ".."))
+
+def rosenbrock_2par_grad_approx_invest():
+    import pyemu
+    os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
+    pst = pyemu.Pst("rosenbrock_2par.pst")
+    pst.parameter_data.parval1 *= 2
+    esqp = pyemu.EnsembleSQP(pst=pst)
+    # for dm in [0.05,0.005,0.0005]
+    # for en_size in [30,50]
+    esqp.initialize(num_reals=30,draw_mult=0.01)
+    en_phi_grad = esqp.update(grad_calc_only=True).T.to_dataframe()
+    en_phi_grad_rel = en_phi_grad.par1 / en_phi_grad.par2
+    pst.control_data.noptmax = -2
+    #pst.parameter_groups.derinc = 0.01
+    pst.write(os.path.join("rosenbrock_2par_fds.pst"))
+    pyemu.os_utils.run("pestpp rosenbrock_2par_fds.pst")
+    jco = pyemu.Jco.from_binary("rosenbrock_2par_fds.jcb").to_dataframe()
+    jco_rel = jco.par1 / jco.par2
+    compare = en_phi_grad_rel[0] / jco_rel[0]
+    if compare >= 1.5 or compare <= 0.5:
+        raise Exception("ensemble grad approx is unacceptable.. en grad is {} times that from finite diffs..".
+                        format(compare))
+    os.chdir(os.path.join("..", ".."))
+
 
 def rosenbrock_2par_multiple_update(nit=5):
     import pyemu
@@ -82,4 +106,5 @@ if __name__ == "__main__":
     #rosenbrock_2par_setup()
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
-    rosenbrock_2par_single_update()
+    #rosenbrock_2par_single_update()
+    rosenbrock_2par_grad_approx_invest()

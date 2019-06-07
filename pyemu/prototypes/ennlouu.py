@@ -386,7 +386,8 @@ class EnsembleSQP(EnsembleMethod):
         # TODO
 
 
-    def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=False):#localizer=None,run_subset=None,
+    def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=False,
+               grad_calc_only=False):#localizer=None,run_subset=None,
         """
         Perform one quasi-Newton update
 
@@ -405,6 +406,8 @@ class EnsembleSQP(EnsembleMethod):
             indicate whether current Hessian is to be scaled - i.e., multiplied by a scalar reflecting
             gradient and step information.  Highly recommended - particularly at early iterations.
             See Nocedal and Wright.
+        grad_calc_only : bool
+            for testing ensemble based gradient approx (compared to finite differences)
 
         Example
         -------
@@ -456,6 +459,8 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.log("calculate phi gradient vector")
         self.en_phi_grad = self.inv_en_cov_decvar * self.en_crosscov_decvar_phi.T
         self.logger.log("calculate phi gradient vector")
+        if grad_calc_only:
+            return self.en_phi_grad
 
         # compute (quasi-)Newton search direction
         self.logger.log("calculate search direction")
