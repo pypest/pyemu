@@ -1909,7 +1909,9 @@ def load_sfr_out(sfr_out_file, selection=None):
                 df["reach"] = df.reach.astype(np.int)
                 df["flaqx"] = df.flaqx.astype(np.float)
                 df["flout"] = df.flout.astype(np.float)
-                df.index = df.apply(lambda x: "{0:03d}_{1:03d}".format(int(x.segment), int(x.reach)), axis=1)
+                df.index = ["{0:03d}_{1:03d}".format(s, r) for s, r in
+                            np.array([df.segment.values, df.reach.values]).T]
+                # df.index = df.apply(lambda x: "{0:03d}_{1:03d}".format(int(x.segment), int(x.reach)), axis=1)
                 if selection is None:  # setup for all segs, aggregate
                     gp = df.groupby(df.segment)
                     bot_reaches = gp[['reach']].max().apply(
