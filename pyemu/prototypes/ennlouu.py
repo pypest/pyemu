@@ -339,7 +339,7 @@ class EnsembleSQP(EnsembleMethod):
             This will be used only when full Hessian updating step is not achievable, e.g., based on curvature
             condition violation TODO: needs to be automatically triggered or num_it=1... Bring in later
         damped : bool
-            see EnsembleSQP.update args docstring
+            see EnsembleSQP.update args docstring # TODO: to test using `rosenbrock_2par_single_update()`
 
         '''
         # TODO: Cross-ref below math.
@@ -347,11 +347,11 @@ class EnsembleSQP(EnsembleMethod):
         self.y = new_grad - curr_grad  # start with column vector
         self.s = delta_par.T  # start with column vector
 
-        #if scale_only:
+        if scale_only:
             #hess_scale = (self.s.T * self.y).x / (self.y.T * self.H * self.y).x  # Oliver et al.
-         #   hess_scale = (self.s.T * self.y).x / (self.y.T * self.y).x  # Nocedal and Wright
-          #  self.H *= hess_scale
-           # return self.H
+            hess_scalar = float((self.s.T * self.y).x / (self.y.T * self.y).x)  # Nocedal and Wright
+            self.H *= hess_scalar
+            return self.H
 
         if (self.y.T * self.s).x <= 0:
             self.logger.warn("!! curvature condition violated: yTs = {}; should be > 0".format((self.y.T * self.s).x) +
@@ -524,24 +524,24 @@ class EnsembleSQP(EnsembleMethod):
             # and combine lambda par ensembles into one par ensemble for evaluation
 
             # run the ensemble for diff step size lengths
-            self.logger.log("evaluating ensembles for step size : {0}".\
+            self.logger.log("evaluating ensembles for step size : {0}".
                             format(','.join("{0:8.3E}".format(step_size))))
             failed_runs_1, self.obsensemble_1 = self._calc_obs(self.parensemble_1)  # run
             self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num,step_size)
                                       + self.obsen_prefix.format(0))
             # just use mean phi as indicator of "best" for now..
             mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
-            self.logger.log("evaluating ensembles for step size : {0}".\
+            self.logger.log("evaluating ensembles for step size : {0}".
                             format(','.join("{0:8.3E}".format(step_size))))
 
-        min_mean__phi_per_alpha = pd.DataFrame.from_records(mean_en_phi_per_alpha)
+        best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))
+        self.logger.log("best step length (alpha): {0}".format("{0:8.3E}".format(best_alpha)))
 
         # TODO: unpack lambda obs ensembles from combined obs ensemble
         # TODO: failed run handling
 
         # TODO: undertake Wolfe and en tests. No - our need is superseded by parallel alpha tests
         # TODO: constraint and feasibility KKT checks here
-        # TODO: select best upgrade
         # TODO: check for convergence in terms of dec var and phi changes
 
         # calc dec var changes (after picking best alpha etc)
@@ -549,26 +549,31 @@ class EnsembleSQP(EnsembleMethod):
         self.delta_parensemble_mean = self.parensemble_mean_1 - self.parensemble_mean
         # TODO: dec var change related checks here - like PEST's RELPARMAX/FACPARMAX
 
-        self.logger.log("updating Hessian via quasi-Newton")
-        if self.iter_num == 1:  # no pre-existing grad info - self.curr_grad exists for all others.. #TODO: direct query
+        self.logger.log("scaling and/or updating Hessian via quasi-Newton")
+        if self.iter_num == 1:  # no pre-existing grad or par delta info so scale only.. #TODO: direct query
             self.curr_grad = Matrix(x=np.zeros((self.en_phi_grad.shape)),
-                                    row_names=self.en_phi_grad.row_names,col_names=self.en_phi_grad.col_names)
+                                    row_names=self.en_phi_grad.row_names,col_names=self.en_phi_grad.col_names) # TODO: needed?
+            if hess_self_scaling:
+                scale_only = True
+        else:
+            scale_only = False  # try scale only for first it
 
         #if self.hess_scale_status:
          #   hess_self_scaling = False # TODO: every iteration?
+
         if alg == "BFGS":
             self.inv_hessian = self._BFGS_hess_update(self.inv_hessian,
                                                       self.curr_grad, self.en_phi_grad,
                                                       self.delta_parensemble_mean,
-                                                      self_scale=hess_self_scaling,scale_only=False,
+                                                      self_scale=hess_self_scaling,scale_only=scale_only,
                                                       damped=False)
         else:  # LBFGS
             pass
             #self.inv_hessian = self._LBFGS_hess_update(self.inv_hessian,
              #                                          self.curr_grad, self.en_phi_grad,
               #                                         self.delta_parensemble_mean,L,
-               #                                        self_scale=hess_self_scaling,scale_only=False)
-        self.logger.log("updating Hessian via quasi-Newton")
+               #                                        self_scale=hess_self_scaling,scale_only=scale_only)
+        self.logger.log("scaling and/or updating Hessian via quasi-Newton")
         # copy Hessian, write vectors
 
         # track grad and dec vars for next iteration Hess scaling and updating
