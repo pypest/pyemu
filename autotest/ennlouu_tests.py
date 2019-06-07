@@ -77,7 +77,6 @@ def rosenbrock_2par_grad_approx_invest():
     pst.write(os.path.join("rosenbrock_2par_fds.pst"))
     pyemu.os_utils.run("pestpp rosenbrock_2par_fds.pst")
     jco = pyemu.Jco.from_binary("rosenbrock_2par_fds.jcb").to_dataframe()
-    jco_rel = jco.par1 / jco.par2
 
     # en approx
     esqp = pyemu.EnsembleSQP(pst=pst)
@@ -127,13 +126,13 @@ def rosenbrock_2par_grad_approx_invest():
     os.chdir(os.path.join("..", ".."))
 
 
-def rosenbrock_2par_multiple_update(nit=2):
+def rosenbrock_2par_multiple_update(nit=10):
     import pyemu
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst")
-    esqp.initialize(num_reals=3,draw_mult=0.01)
+    esqp.initialize(num_reals=3,draw_mult=0.003)
     for it in range(nit):
-        esqp.update()
+        esqp.update(step_mult=[0.1,0.01,0.001,0.0001,0.00001,0.000001])
     os.chdir(os.path.join("..", ".."))
 
 #def rosenbrock_2par_opt_and_draw_setting_invest():
@@ -146,4 +145,5 @@ if __name__ == "__main__":
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    rosenbrock_2par_grad_approx_invest()
+    rosenbrock_2par_multiple_update()
+    #rosenbrock_2par_grad_approx_invest()

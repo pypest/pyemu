@@ -335,9 +335,9 @@ class EnsembleSQP(EnsembleMethod):
         self_scale : bool
             see EnsembleSQP.update args docstring
         scale_only : bool
-            flag for performing Hessian scaling based on gradient and step information from prev iteration only.
+            flag for only performing Hessian scaling (not updating) based on available gradient and step information.
             This will be used only when full Hessian updating step is not achievable, e.g., based on curvature
-            condition violation TODO: needs to be automatically triggered or num_it=1... Bring in later
+            condition violation. TODO: needs to be automatically triggered or num_it=1... Bring in later
         damped : bool
             see EnsembleSQP.update args docstring # TODO: to test using `rosenbrock_2par_single_update()`
 
@@ -347,15 +347,16 @@ class EnsembleSQP(EnsembleMethod):
         self.y = new_grad - curr_grad  # start with column vector
         self.s = delta_par.T  # start with column vector
 
+        if (self.y.T * self.s).x <= 0:
+            self.logger.warn("!! curvature condition violated: yTs = {}; should be > 0\n".format((self.y.T * self.s).x) +
+                             "  if we update Hessian matrix now it will not be positive definite !!\n" +
+                             "  However, let's use the change in grad and dec var info to scale the Hessian")
+            scale_only = True
+
         if scale_only:
             #hess_scale = (self.s.T * self.y).x / (self.y.T * self.H * self.y).x  # Oliver et al.
             hess_scalar = float((self.s.T * self.y).x / (self.y.T * self.y).x)  # Nocedal and Wright
-            self.H *= hess_scalar
-            return self.H
-
-        if (self.y.T * self.s).x <= 0:
-            self.logger.warn("!! curvature condition violated: yTs = {}; should be > 0".format((self.y.T * self.s).x) +
-                               "  Hessian matrix will not be positive definite !!")
+            self.H *= abs(hess_scalar)  # TODO: abs?
             return self.H
 
         #ys = self.y.T * self.s
@@ -364,14 +365,14 @@ class EnsembleSQP(EnsembleMethod):
         #self.H += ((ys + yHy) * (self.s.T * self.s)) / ys**2 # CHECK
         #self.H -= ((Hy,self.s) + (self.s,Hy)) / ys
 
-        self.H += (self.y * self.y.T).x / (self.s.T * self.y).x
-        self.H -= (self.H * self.s * self.s.T * self.H.T).x / (self.s.T * self.H * self.s).x
+        #self.H += (self.y * self.y.T).x / (self.s.T * self.y).x
+        #self.H -= (self.H * self.s * self.s.T * self.H.T).x / (self.s.T * self.H * self.s).x
 
         # TODO: check self-scale functionality here
         if self_scale:
             #hess_scale = (self.s.T * self.y).x / (self.y.T * self.H * self.y).x  # Oliver et al.
-            hess_scale = (self.s.T * self.y).x / (self.y.T * self.y).x  # Nocedal and Wright
-            self.H *= hess_scale
+            hess_scalar = float((self.s.T * self.y).x / (self.y.T * self.y).x)  # Nocedal and Wright
+            self.H *= hess_scalar
 
         # Hessian positive-definite-ness check
         if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):
@@ -426,6 +427,9 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.log("iteration {0}".format(self.iter_num))
         self.logger.statement("{0} active realizations".format(self.obsensemble.shape[0]))
 
+        if self.iter_num == 1:
+            self.parensemble_mean = None
+
         # some checks first
         if self.obsensemble.shape[0] < 2:
             self.logger.lraise("at least active 2 realizations are needed to update")
@@ -436,8 +440,9 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.log("compute dec var en covariance vector")
         self.en_cov_decvar = self._calc_en_cov_decvar(self.parensemble)
         # and need mean for upgrades
-        self.parensemble_mean = np.array(self.parensemble.mean(axis=0))
-        self.parensemble_mean = Matrix(x=np.expand_dims(self.parensemble_mean, axis=0),\
+        if self.parensemble_mean is None:
+            self.parensemble_mean = np.array(self.parensemble.mean(axis=0))
+            self.parensemble_mean = Matrix(x=np.expand_dims(self.parensemble_mean, axis=0),\
                                        row_names=['mean'], col_names=self.pst.adj_par_names)
         self.logger.log("compute dec var en covariance vector")
 
@@ -536,6 +541,9 @@ class EnsembleSQP(EnsembleMethod):
                                       + self.obsen_prefix.format(0))
             # just use mean phi as indicator of "best" for now..
             mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
+            if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
+                self.parensemble_mean_next = self.parensemble_mean_1.copy()
+                self.parensemble_next = self.parensemble_1.copy()
             self.logger.log("evaluating ensembles for step size : {0}".
                             format(','.join("{0:8.3E}".format(step_size))))
 
@@ -551,7 +559,7 @@ class EnsembleSQP(EnsembleMethod):
 
         # calc dec var changes (after picking best alpha etc)
         # this is needed for Hessian updating via BFGS but also needed for checks
-        self.delta_parensemble_mean = self.parensemble_mean_1 - self.parensemble_mean
+        self.delta_parensemble_mean = self.parensemble_mean_next - self.parensemble_mean
         # TODO: dec var change related checks here - like PEST's RELPARMAX/FACPARMAX
 
         self.logger.log("scaling and/or updating Hessian via quasi-Newton")
@@ -582,8 +590,9 @@ class EnsembleSQP(EnsembleMethod):
         # copy Hessian, write vectors
 
         # track grad and dec vars for next iteration Hess scaling and updating
-        self.curr_grad = self.en_phi_grad
-        self.curr_parensemble_mean = self.parensemble_mean_1
+        self.curr_grad = self.en_phi_grad.copy()
+        self.parensemble_mean = self.parensemble_mean_next.copy()
+        self.parensemble = self.parensemble_next.copy()
 
 
         # TODO: save Hessian vectors (as csv)
