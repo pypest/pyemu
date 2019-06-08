@@ -130,10 +130,39 @@ def rosenbrock_2par_multiple_update(nit=10):
     import pyemu
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst")
-    esqp.initialize(num_reals=3,draw_mult=0.003)
+    esqp.initialize(num_reals=25,draw_mult=0.003)
     for it in range(nit):
-        esqp.update(step_mult=[0.1,0.01,0.001,0.0001,0.00001,0.000001])
+        esqp.update(step_mult=[0.1,0.01,0.001,0.0001,0.00001])
     os.chdir(os.path.join("..", ".."))
+
+def rosenbrock_2par_phi_progress():
+    import pyemu
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
+    obs_ens = [x for x in os.listdir() if (x.endswith(".obsensemble.0000.csv"))
+               and not (x.startswith("rosenbrock_2par.pst.obs")) and not (x.startswith("rosenbrock_2par.pst_1"))]
+    oes = pd.DataFrame()
+    for obs_en in obs_ens:
+        it = int(obs_en.split(".")[2])
+        oe = pyemu.ObservationEnsemble.from_csv(path=obs_en)
+        oe.columns = [it]
+        oes = pd.concat((oes, oe),axis=1)  #TODO: better to scrape from self?
+    oes = oes.sort_index()
+    #oes = (np.log10(oes)).replace(-np.inf, 0)
+
+    fig,ax = plt.subplots(1,1)
+    for i,v in oes.iterrows():
+        ax.plot(v,marker="o",color="grey",linestyle='None')
+    ax.set_xlabel("iteration number",fontsize=11)
+    ax.set_ylabel("$\phi$", fontsize=11)
+    oes_mean = oes.mean()
+    oes_mean = oes_mean.sort_index()
+    ax.plot(oes_mean, color="k", linestyle='--', label="mean en")
+    #plt.legend()
+    os.chdir(os.path.join("..", ".."))
+
 
 #def rosenbrock_2par_opt_and_draw_setting_invest():
     # function for identifying appropr default values (for simple problem)
@@ -145,5 +174,6 @@ if __name__ == "__main__":
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    rosenbrock_2par_multiple_update()
+    #rosenbrock_2par_multiple_update()
+    rosenbrock_2par_phi_progress()
     #rosenbrock_2par_grad_approx_invest()

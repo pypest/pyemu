@@ -537,17 +537,21 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("evaluating ensembles for step size : {0}".
                             format(','.join("{0:8.3E}".format(step_size))))
             failed_runs_1, self.obsensemble_1 = self._calc_obs(self.parensemble_1)  # run
-            self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num,step_size)
-                                      + self.obsen_prefix.format(0))
             # just use mean phi as indicator of "best" for now..
             mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
             if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
                 self.parensemble_mean_next = self.parensemble_mean_1.copy()
                 self.parensemble_next = self.parensemble_1.copy()
+                [os.remove(x) for x in os.listdir() if (x.endswith("pst.obsensemble.0000.csv")) or
+                 (x.endswith(".obsensemble.0000.csv") and x.split(".")[2] == str(self.iter_num))]
+                self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
+                                          + self.obsen_prefix.format(0))
             self.logger.log("evaluating ensembles for step size : {0}".
                             format(','.join("{0:8.3E}".format(step_size))))
 
+        best_alpha_per_it = []
         best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))
+        best_alpha_per_it.append(best_alpha)
         self.logger.log("best step length (alpha): {0}".format("{0:8.3E}".format(best_alpha)))
 
         # TODO: unpack lambda obs ensembles from combined obs ensemble
