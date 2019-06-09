@@ -3610,11 +3610,12 @@ def apply_list_pars():
                     fmts += " %9G"
         np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].values, fmt=fmts)
 
-def apply_hfb_pars():
+def apply_hfb_pars(par_file='hfb6_pars.csv'):
     """ a function to apply HFB multiplier parameters.  Used to implement
     the parameterization constructed by write_hfb_zone_multipliers_template()
 
-    This is to account for the horrible HFB6 format that differs from other BCs making this a special case
+    This is to account for the horrible HFB6 format that differs from other
+    BCs making this a special case
 
     Note
     ----
@@ -3622,19 +3623,21 @@ def apply_hfb_pars():
 
     should be added to the forward_run.py script
     """
-    hfb_pars = pd.read_csv('hfb6_pars.csv')
+    hfb_pars = pd.read_csv(par_file)
 
     hfb_mults_contents = open(hfb_pars.mlt_file.values[0], 'r').readlines()
-    skiprows = sum([1 if i.strip().startswith('#') else 0 for i in hfb_mults_contents]) + 1
+    skiprows = sum([1 if i.strip().startswith('#') else 0
+                    for i in hfb_mults_contents]) + 1
     header = hfb_mults_contents[:skiprows]
 
     # read in the multipliers
     names = ['lay', 'irow1','icol1','irow2','icol2', 'hydchr']
-    hfb_mults = pd.read_csv(hfb_pars.mlt_file.values[0], skiprows=skiprows, delim_whitespace=True, names=names).dropna()
-
+    hfb_mults = pd.read_csv(hfb_pars.mlt_file.values[0], skiprows=skiprows,
+                            delim_whitespace=True, names=names).dropna()
 
     # read in the original file
-    hfb_org = pd.read_csv(hfb_pars.org_file.values[0], skiprows=skiprows, delim_whitespace=True, names=names).dropna()
+    hfb_org = pd.read_csv(hfb_pars.org_file.values[0], skiprows=skiprows,
+                          delim_whitespace=True, names=names).dropna()
 
     # multiply it out
     hfb_org.hydchr *= hfb_mults.hydchr
@@ -3643,11 +3646,12 @@ def apply_hfb_pars():
         hfb_mults[cn] = hfb_mults[cn].astype(np.int)
         hfb_org[cn] = hfb_org[cn].astype(np.int)
     # write the results
-    with open(hfb_pars.model_file.values[0], 'w') as ofp:
+    with open(hfb_pars.model_file.values[0], 'w', newline='') as ofp:
         [ofp.write('{0}\n'.format(line.strip())) for line in header]
+        ofp.flush()
+        hfb_org[['lay', 'irow1', 'icol1', 'irow2', 'icol2', 'hydchr']].to_csv(
+            ofp, sep=' ', header=None, index=None)
 
-        hfb_org[['lay', 'irow1','icol1','irow2','icol2', 'hydchr']].to_csv(ofp, sep=' ',
-                header=None, index=None)
 
 def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None,
                     longnames=False):
