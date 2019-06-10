@@ -337,7 +337,7 @@ class EnsembleSQP(EnsembleMethod):
         scale_only : bool
             flag for only performing Hessian scaling (not updating) based on available gradient and step information.
             This will be used only when full Hessian updating step is not achievable, e.g., based on curvature
-            condition violation. TODO: needs to be automatically triggered or num_it=1... Bring in later
+            condition violation.
         damped : bool
             see EnsembleSQP.update args docstring # TODO: to test using `rosenbrock_2par_single_update()`
 
@@ -356,19 +356,19 @@ class EnsembleSQP(EnsembleMethod):
         if scale_only:
             #hess_scale = (self.s.T * self.y).x / (self.y.T * self.H * self.y).x  # Oliver et al.
             hess_scalar = float((self.s.T * self.y).x / (self.y.T * self.y).x)  # Nocedal and Wright
-            self.H *= abs(hess_scalar)  # TODO: abs?
+            self.H *= abs(hess_scalar)  # TODO: abs? and .x?
             return self.H
 
-        #ys = self.y.T * self.s
-        #Hy = self.H * self.y
-        #yHy = self.y.T * Hy
-        #self.H += ((ys + yHy) * (self.s.T * self.s)) / ys**2 # CHECK
-        #self.H -= ((Hy,self.s) + (self.s,Hy)) / ys
+        ys = self.y.T * self.s  # inner product
+        yHy = self.y.T * self.H * self.y  # also a scalar
+        ssT = self.s * self.s.T  # outer prod
+        Hy =  self.H * self.y  # dot prod
 
-        #self.H += (self.y * self.y.T).x / (self.s.T * self.y).x
-        #self.H -= (self.H * self.s * self.s.T * self.H.T).x / (self.s.T * self.H * self.s).x
+        # expanded form of Nocedal and Wright (6.17)
+        self.H += (float(ys.x + yHy.x)) * ssT.x / float((ys ** 2).x)  # TODO: add scalar handling to mat_handler (Exception on line 473)
+        #self.H += (ys + yHy) * ssT / (ys ** 2)
+        self.H -= float((Hy.T * self.s).x + (self.s.T * Hy).x) / float(ys.x)
 
-        # TODO: check self-scale functionality here
         if self_scale:
             #hess_scale = (self.s.T * self.y).x / (self.y.T * self.H * self.y).x  # Oliver et al.
             hess_scalar = float((self.s.T * self.y).x / (self.y.T * self.y).x)  # Nocedal and Wright
@@ -379,6 +379,8 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.lraise("Hessian matrix is not positive definite")
 
         return self.H
+
+    # TODO: efficient/recursive BFGS
 
     def _LBFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,step,idx,trunc_thresh):#scaling_method="ZhangReynolds")
         '''
@@ -408,7 +410,7 @@ class EnsembleSQP(EnsembleMethod):
             gradient and step information.  Highly recommended - particularly at early iterations.
             See Nocedal and Wright.
         grad_calc_only : bool
-            for testing ensemble based gradient approx (compared to finite differences)
+            for testing ensemble based gradient approx (compared to finite differences).
 
         Example
         -------
@@ -497,6 +499,10 @@ class EnsembleSQP(EnsembleMethod):
 
         # TODO: handling of fixed, transformed etc. dec vars here
         # TODO: test multiple step sizes (multipliers?)
+
+        # TODO: bound handling - shorten entire upgrade if a dec var is out-of-bounds (via enforce).
+        # TODO: Or just on basis of mean en - some en members can be outside - ensemble only to get the grad direction.
+
         step_lengths, mean_en_phi_per_alpha = [],pd.DataFrame()
         base_step = 1.0  # start with 1.0 and progressively make smaller (will be 1.0 eventually if convex..)
         for istep,step in enumerate(step_mult):
@@ -521,7 +527,7 @@ class EnsembleSQP(EnsembleMethod):
             # TODO: alternatively tighten/widen search region to reflect representativeness of gradient (mechanistic)
             # TODO: two sets of bounds: one hard on dec var and one (which can adapt during opt)
             # TODO: for ensemble just to get grad
-            self.parensemble_1.enforce(enforce_bounds=self.enforce_bounds)
+            self.parensemble_1.enforce(enforce_bounds=self.enforce_bounds)  # TODO: skip here? Just ensure mean is in.
             self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num,step_size)
                                       + self.paren_prefix.format(0))
             self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))

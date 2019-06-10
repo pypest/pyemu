@@ -14,8 +14,8 @@ def rosenbrock_2par_setup():
     par = pst.parameter_data
     par.loc[:,"partrans"] = "none"
     par.loc[:,"parval1"] = 2.0
-    par.loc[:,"parubnd"] = 8.0
-    par.loc[:,"parlbnd"] = -4.0
+    par.loc[:,"parubnd"] = 5.0
+    par.loc[:,"parlbnd"] = -1.0
     obs = pst.observation_data
     obs.loc[:,"obsval"] = 0.0
     obs.loc[:,"weight"] = 1.0
@@ -122,15 +122,16 @@ def rosenbrock_2par_grad_approx_invest():
         ax.set_title("rosenbrock dec var {0}".format(i+1),fontsize=fontsize)
         ax.set_xlabel("ensemble size $N_e$",fontsize=fontsize)
         ax.legend()
-    plt.show()
+    #plt.show()
     os.chdir(os.path.join("..", ".."))
 
 
 def rosenbrock_2par_multiple_update(nit=10):
     import pyemu
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
-    esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst")
-    esqp.initialize(num_reals=25,draw_mult=0.003)
+    [os.remove(x) for x in os.listdir() if (x.endswith("obsensemble.0000.csv"))]
+    esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst")#,num_slaves=10)
+    esqp.initialize(num_reals=20,draw_mult=0.0003)
     for it in range(nit):
         esqp.update(step_mult=[0.1,0.01,0.001,0.0001,0.00001])
     os.chdir(os.path.join("..", ".."))
@@ -161,6 +162,7 @@ def rosenbrock_2par_phi_progress():
     oes_mean = oes_mean.sort_index()
     ax.plot(oes_mean, color="k", linestyle='--', label="mean en")
     #plt.legend()
+    plt.show()
     os.chdir(os.path.join("..", ".."))
 
 
@@ -174,6 +176,6 @@ if __name__ == "__main__":
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    #rosenbrock_2par_multiple_update()
-    rosenbrock_2par_phi_progress()
+    rosenbrock_2par_multiple_update()
+    #rosenbrock_2par_phi_progress()
     #rosenbrock_2par_grad_approx_invest()
