@@ -353,30 +353,27 @@ class EnsembleSQP(EnsembleMethod):
                              "  However, let's use the change in grad and dec var info to scale the Hessian")
             scale_only = True
 
-        if scale_only:
-            #hess_scale = (self.s.T * self.y).x / (self.y.T * self.H * self.y).x  # Oliver et al.
-            hess_scalar = float((self.s.T * self.y).x / (self.y.T * self.y).x)  # Nocedal and Wright
-            self.H *= abs(hess_scalar)  # TODO: abs? and .x?
-            return self.H
+        if self_scale:
+            # hess_scale = (self.y.T * self.s).x / (self.y.T * self.H * self.y).x  # Oliver et al. (equiv at it 0)
+            hess_scalar = float((self.y.T * self.s).x / (self.y.T * self.y).x)  # Nocedal and Wright
+            self.H *= abs(hess_scalar)  # TODO: abs?
+            if scale_only:
+                return self.H
 
         ys = self.y.T * self.s  # inner product
         yHy = self.y.T * self.H * self.y  # also a scalar
         ssT = self.s * self.s.T  # outer prod
-        Hy =  self.H * self.y  # dot prod
+        Hy = self.H * self.y  # dot prod
 
         # expanded form of Nocedal and Wright (6.17)
         self.H += (float(ys.x + yHy.x)) * ssT.x / float((ys ** 2).x)  # TODO: add scalar handling to mat_handler (Exception on line 473)
         #self.H += (ys + yHy) * ssT / (ys ** 2)
         self.H -= float((Hy.T * self.s).x + (self.s.T * Hy).x) / float(ys.x)
 
-        if self_scale:
-            #hess_scale = (self.s.T * self.y).x / (self.y.T * self.H * self.y).x  # Oliver et al.
-            hess_scalar = float((self.s.T * self.y).x / (self.y.T * self.y).x)  # Nocedal and Wright
-            self.H *= hess_scalar
-
         # Hessian positive-definite-ness check
         if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):
-            self.logger.lraise("Hessian matrix is not positive definite")
+            self.logger.warn("!! Hessian matrix is not positive definite !! Exit here! ")
+            #self.logger.lraise("Hessian matrix is not positive definite!")
 
         return self.H
 
