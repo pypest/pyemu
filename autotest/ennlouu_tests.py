@@ -161,6 +161,11 @@ def rosenbrock_2par_phi_progress():
     oes_mean = oes.mean()
     oes_mean = oes_mean.sort_index()
     ax.plot(oes_mean, color="k", linestyle='--', label="mean en")
+
+    ylim = ax.get_ylim()
+    hess_df = pd.read_csv("hess_progress.csv",index_col=0)
+    for i,v in hess_df.T.iterrows():
+        ax.text(x=float(i),y=(ylim[1]+(0.05 * (ylim[1]-ylim[0]))),s=v[0],fontsize=8,rotation=45,color='red')
     #plt.legend()
     plt.show()
     os.chdir(os.path.join("..", ".."))
@@ -173,10 +178,10 @@ def rosenbrock_2par_phi_progress():
 # TODO: test for switching between en and finite diffs
 
 if __name__ == "__main__":
-    rosenbrock_2par_setup()
+    #rosenbrock_2par_setup()
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
     #rosenbrock_2par_multiple_update()
-    #rosenbrock_2par_phi_progress()
+    rosenbrock_2par_phi_progress()
     #rosenbrock_2par_grad_approx_invest()

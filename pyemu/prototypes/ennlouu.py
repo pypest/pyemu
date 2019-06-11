@@ -236,6 +236,7 @@ class EnsembleSQP(EnsembleMethod):
         self.inv_hessian_0 = self.inv_hessian.copy()
 
         self.curr_grad = None
+        self.hess_progress = {}
 
         #self.phi = Phi(self)
 
@@ -346,7 +347,6 @@ class EnsembleSQP(EnsembleMethod):
         self.y = new_grad - curr_grad  # start with column vector
         self.s = delta_par.T  # start with column vector
 
-        hess_progress = {}
         if (self.y.T * self.s).x <= 0:
             self.logger.warn("!! curvature condition violated: yTs = {}; should be > 0\n"
                              .format(float((self.y.T * self.s).x)) +
@@ -355,8 +355,8 @@ class EnsembleSQP(EnsembleMethod):
             #if damped:
             #self.logger.warn("using (optional) damped version of BFGS alg implementation..")
             #else:
-            hess_progress[self.iter_num] = "yTs <= 0"
-            return self.H  #scale_only = True  # this precludes scaling as well
+            self.hess_progress[self.iter_num] = "yTs <= 0"
+            return self.H, self.hess_progress  #scale_only = True  # this precludes scaling as well
 
         # scale
         if self_scale:
@@ -365,8 +365,8 @@ class EnsembleSQP(EnsembleMethod):
             self.H *= hess_scalar
             self.H_cp = self.H.copy()
             if scale_only:
-                hess_progress[self.iter_num] = "scaled only"
-                return self.H
+                self.hess_progress[self.iter_num] = "scaled only"
+                return self.H, self.hess_progress
 
         # update
         ys = self.y.T * self.s  # inner product
@@ -380,14 +380,14 @@ class EnsembleSQP(EnsembleMethod):
         self.H -= float((Hy.T * self.s).x + (self.s.T * Hy).x) / float(ys.x)
 
         # Hessian positive-definite-ness check
-        if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):
+        if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):  # TODO: forgive very small negative eigenvalues?
             self.logger.warn("Hessian update causes pos-def status to be violated.. skip update (only scale) at this stage...\n")
-            hess_progress[self.iter_num] = "scaled only"
+            self.hess_progress[self.iter_num] = "scaled only"
             self.H = self.H_cp
         else:
-            hess_progress[self.iter_num] = "scaled and updated"
+            self.hess_progress[self.iter_num] = "scaled and updated"
 
-        return self.H, hess_progress
+        return self.H, self.hess_progress
 
     def _LBFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,idx,trunc_thresh=5):
         '''
@@ -601,7 +601,7 @@ class EnsembleSQP(EnsembleMethod):
          #   hess_self_scaling = False # TODO: every iteration?
 
         if alg == "BFGS":
-            self.inv_hessian,self.hess_progress_d = self._BFGS_hess_update(self.inv_hessian,
+            self.inv_hessian,hess_progress_d = self._BFGS_hess_update(self.inv_hessian,
                                                                            self.curr_grad, self.phi_grad,
                                                                            self.delta_parensemble_mean,
                                                                            self_scale=hess_self_scaling,
@@ -620,6 +620,9 @@ class EnsembleSQP(EnsembleMethod):
         self.curr_grad = self.phi_grad.copy()
         self.parensemble_mean = self.parensemble_mean_next.copy()
         self.parensemble = self.parensemble_next.copy()
+
+        hess_progress_df = pd.DataFrame.from_dict([hess_progress_d])
+        hess_progress_df.to_csv("hess_progress.csv")
 
 
         # TODO: save Hessian vectors (as csv)
