@@ -13,7 +13,7 @@ def rosenbrock_2par_setup():
     pst = pyemu.helpers.pst_from_io_files(tpl_file,in_file,ins_file,out_file)
     par = pst.parameter_data
     par.loc[:,"partrans"] = "none"
-    par.loc[:,"parval1"] = 3.0
+    par.loc[:,"parval1"] = 2.0
     par.loc[:,"parubnd"] = 8.0
     par.loc[:,"parlbnd"] = -2.0
     obs = pst.observation_data
@@ -169,13 +169,14 @@ def rosenbrock_2par_phi_progress():
 #def rosenbrock_2par_opt_and_draw_setting_invest():
     # function for identifying appropr default values (for simple problem)
 
-#TODO: copy test dirs and make changes in there...
+# TODO: copy test dirs and make changes in there...
+# TODO: test for switching between en and finite diffs
 
 if __name__ == "__main__":
     rosenbrock_2par_setup()
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    rosenbrock_2par_multiple_update()
-    rosenbrock_2par_phi_progress()
+    #rosenbrock_2par_multiple_update()
+    #rosenbrock_2par_phi_progress()
     #rosenbrock_2par_grad_approx_invest()

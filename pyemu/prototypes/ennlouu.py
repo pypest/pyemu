@@ -397,7 +397,7 @@ class EnsembleSQP(EnsembleMethod):
 
 
     def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=False,
-               grad_calc_only=False):#localizer=None,run_subset=None,
+               grad_calc_only=False,finite_diff_grad=False):#localizer=None,run_subset=None,
         """
         Perform one quasi-Newton update
 
@@ -418,6 +418,9 @@ class EnsembleSQP(EnsembleMethod):
             See Nocedal and Wright.
         grad_calc_only : bool
             for testing ensemble based gradient approx (compared to finite differences).
+        finite_diff_grad : bool
+            flag indicating whether to use finite differences as means of computing gradients
+            (rather than ensemble approx).  # TODO: could switch between these adaptively
 
         Example
         -------
@@ -445,36 +448,43 @@ class EnsembleSQP(EnsembleMethod):
         if not self._initialized:
             self.logger.lraise("must call initialize() before update()")
 
-        # compute dec var covariance and dec var-phi cross covariance matrices - they are actually vectors
-        self.logger.log("compute dec var en covariance vector")
-        self.en_cov_decvar = self._calc_en_cov_decvar(self.parensemble)
-        # and need mean for upgrades
-        if self.parensemble_mean is None:
-            self.parensemble_mean = np.array(self.parensemble.mean(axis=0))
-            self.parensemble_mean = Matrix(x=np.expand_dims(self.parensemble_mean, axis=0),\
-                                       row_names=['mean'], col_names=self.pst.adj_par_names)
-        self.logger.log("compute dec var en covariance vector")
+        if finite_diff_grad:
+            self.logger.log("compute phi grad using finite diffs")
+            # TODO: implement
+            self.logger.log("compute phi grad using finite diffs")
+        else:
+            self.logger.log("compute phi grad using ensemble approx")
+            # compute dec var covariance and dec var-phi cross covariance matrices - they are actually vectors
+            self.logger.log("compute dec var en covariance vector")
+            self.en_cov_decvar = self._calc_en_cov_decvar(self.parensemble)
+            # and need mean for upgrades
+            if self.parensemble_mean is None:
+                self.parensemble_mean = np.array(self.parensemble.mean(axis=0))
+                self.parensemble_mean = Matrix(x=np.expand_dims(self.parensemble_mean, axis=0),\
+                                           row_names=['mean'], col_names=self.pst.adj_par_names)
+            self.logger.log("compute dec var en covariance vector")
 
-        self.logger.log("compute dec var-phi en cross-covariance vector")
-        self.en_crosscov_decvar_phi = self._calc_en_crosscov_decvar_phi(self.parensemble,self.obsensemble)
-        self.logger.log("compute dec var-phi en cross-covariance vector")
+            self.logger.log("compute dec var-phi en cross-covariance vector")
+            self.en_crosscov_decvar_phi = self._calc_en_crosscov_decvar_phi(self.parensemble,self.obsensemble)
+            self.logger.log("compute dec var-phi en cross-covariance vector")
 
-        # compute gradient vector and undertake gradient-related checks
-        # see e.g. eq (9) in Liu and Reynolds (2019 SPE)
-        self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
-        self.inv_en_cov_decvar = self.en_cov_decvar.pseudo_inv(eigthresh=self.pst.svd_data.eigthresh)
-        self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
+            # compute gradient vector and undertake gradient-related checks
+            # see e.g. eq (9) in Liu and Reynolds (2019 SPE)
+            self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
+            self.inv_en_cov_decvar = self.en_cov_decvar.pseudo_inv(eigthresh=self.pst.svd_data.eigthresh)
+            self.logger.log("calculate pseudo inv of ensemble dec var covariance vector")
 
-        # TODO: SVD on sparse form of dec var en cov matrix (do SVD on A where Cuu = AA^T - see Dehdari and Oliver)
-        #self.logger.log("calculate pseudo inv comps")
-        #u,s,v = self.en_cov_decvar.pseudo_inv_components(eigthresh=self.pst.svd_data.eigthresh)
-        #self.logger.log("calculate pseudo inv comps")
+            # TODO: SVD on sparse form of dec var en cov matrix (do SVD on A where Cuu = AA^T - see Dehdari and Oliver)
+            #self.logger.log("calculate pseudo inv comps")
+            #u,s,v = self.en_cov_decvar.pseudo_inv_components(eigthresh=self.pst.svd_data.eigthresh)
+            #self.logger.log("calculate pseudo inv comps")
 
-        self.logger.log("calculate phi gradient vector")
-        self.en_phi_grad = self.inv_en_cov_decvar * self.en_crosscov_decvar_phi.T
-        self.logger.log("calculate phi gradient vector")
-        if grad_calc_only:
-            return self.en_phi_grad
+            self.logger.log("calculate phi gradient vector")
+            self.phi_grad = self.inv_en_cov_decvar * self.en_crosscov_decvar_phi.T
+            self.logger.log("calculate phi gradient vector")
+            if grad_calc_only:
+                return self.phi_grad
+            self.logger.log("compute phi grad using ensemble approx")
 
         # compute (quasi-)Newton search direction
         self.logger.log("calculate search direction")
@@ -483,26 +493,25 @@ class EnsembleSQP(EnsembleMethod):
         #if hess_self_scaling and self.curr_grad is not None:  # TODO: i.e., once have step info - but not changes in step...
             #self.logger.log("scaling Hessian for search direction calc")
             #self.inv_hessian = self._BFGS_hess_update(self.inv_hessian,
-             #                                         self.curr_grad, self.en_phi_grad,
+             #                                         self.curr_grad, self.phi_grad,
               #                                        self.curr_parensemble_mean,self.parensemble_mean
                #                                       self_scale=hess_self_scaling,scale_only=False,
                 #                                      damped=False)
             #self.hess_scale_status = True
             #self.logger.log("scaling Hessian for search direction calc")
-            #self.search_d = -1 * (self.inv_hessian * self.en_phi_grad)
+            #self.search_d = -1 * (self.inv_hessian * self.phi_grad)
         #else:
-        self.search_d = -1 * (self.inv_hessian * self.en_phi_grad)
+        self.search_d = -1 * (self.inv_hessian * self.phi_grad)
         #self.hess_scale_status = False
         self.logger.log("calculate search direction")
 
         self.logger.log("phi gradient- and search direction-related checks")
-        if (self.search_d.T * self.en_phi_grad).x > 0:
+        if (self.search_d.T * self.phi_grad).x > 0:
             self.logger.lraise("search direction does not point down-hill! :facepalm:")
-        if (self.search_d.T * self.en_phi_grad).x == 0:
+        if (self.search_d.T * self.phi_grad).x == 0:
             self.logger.warn("phi gradient is zero!")
         self.logger.log("phi gradient- and search direction-related checks")
-        # TODO: using grad info only (with some expected step length), update Hessian from initial (potentially
-        # TODO: scaled identity?
+        # TODO: using grad info only (with some expected step length), update Hessian from initial
 
         # TODO: handling of fixed, transformed etc. dec vars here
         # TODO: test multiple step sizes (multipliers?)
@@ -581,8 +590,8 @@ class EnsembleSQP(EnsembleMethod):
 
         self.logger.log("scaling and/or updating Hessian via quasi-Newton")
         if self.iter_num == 1:  # no pre-existing grad or par delta info so scale only.. #TODO: direct query
-            self.curr_grad = Matrix(x=np.zeros((self.en_phi_grad.shape)),
-                                    row_names=self.en_phi_grad.row_names,col_names=self.en_phi_grad.col_names) # TODO: needed?
+            self.curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
+                                    row_names=self.phi_grad.row_names,col_names=self.phi_grad.col_names)
             if hess_self_scaling:
                 scale_only = True
         else:
@@ -593,7 +602,7 @@ class EnsembleSQP(EnsembleMethod):
 
         if alg == "BFGS":
             self.inv_hessian,self.hess_progress_d = self._BFGS_hess_update(self.inv_hessian,
-                                                                           self.curr_grad, self.en_phi_grad,
+                                                                           self.curr_grad, self.phi_grad,
                                                                            self.delta_parensemble_mean,
                                                                            self_scale=hess_self_scaling,
                                                                            scale_only=scale_only,
@@ -601,14 +610,14 @@ class EnsembleSQP(EnsembleMethod):
         else:  # LBFGS
             pass
             #self.inv_hessian = self._LBFGS_hess_update(self.inv_hessian,
-             #                                          self.curr_grad, self.en_phi_grad,
+             #                                          self.curr_grad, self.phi_grad,
               #                                         self.delta_parensemble_mean,L,
                #                                        self_scale=hess_self_scaling,scale_only=scale_only)
         self.logger.log("scaling and/or updating Hessian via quasi-Newton")
         # copy Hessian, write vectors
 
         # track grad and dec vars for next iteration Hess scaling and updating
-        self.curr_grad = self.en_phi_grad.copy()
+        self.curr_grad = self.phi_grad.copy()
         self.parensemble_mean = self.parensemble_mean_next.copy()
         self.parensemble = self.parensemble_next.copy()
 
