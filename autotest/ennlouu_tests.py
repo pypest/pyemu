@@ -13,9 +13,9 @@ def rosenbrock_2par_setup():
     pst = pyemu.helpers.pst_from_io_files(tpl_file,in_file,ins_file,out_file)
     par = pst.parameter_data
     par.loc[:,"partrans"] = "none"
-    par.loc[:,"parval1"] = 2.0
-    par.loc[:,"parubnd"] = 5.0
-    par.loc[:,"parlbnd"] = -1.0
+    par.loc[:,"parval1"] = 3.0
+    par.loc[:,"parubnd"] = 8.0
+    par.loc[:,"parlbnd"] = -2.0
     obs = pst.observation_data
     obs.loc[:,"obsval"] = 0.0
     obs.loc[:,"weight"] = 1.0
@@ -151,7 +151,7 @@ def rosenbrock_2par_phi_progress():
         oe.columns = [it]
         oes = pd.concat((oes, oe),axis=1)  #TODO: better to scrape from self?
     oes = oes.sort_index()
-    #oes = (np.log10(oes)).replace(-np.inf, 0)
+    oes = (np.log10(oes)).replace(-np.inf, 0)
 
     fig,ax = plt.subplots(1,1)
     for i,v in oes.iterrows():
@@ -172,7 +172,7 @@ def rosenbrock_2par_phi_progress():
 #TODO: copy test dirs and make changes in there...
 
 if __name__ == "__main__":
-    #rosenbrock_2par_setup()
+    rosenbrock_2par_setup()
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
