@@ -342,42 +342,45 @@ class EnsembleSQP(EnsembleMethod):
             see EnsembleSQP.update args docstring # TODO: to test using `rosenbrock_2par_single_update()`
 
         '''
-        # TODO: Cross-ref below math.
         self.H = curr_inv_hess
         self.y = new_grad - curr_grad  # start with column vector
         self.s = delta_par.T  # start with column vector
 
         if (self.y.T * self.s).x <= 0:
-            self.logger.warn("!! curvature condition violated: yTs = {}; should be > 0\n".format((self.y.T * self.s).x) +
-                             "  if we update Hessian matrix now it will not be positive definite !!\n" +
-                             "  However, let's use the change in grad and dec var info to scale the Hessian")
-            scale_only = True
+            self.logger.warn("!! curvature condition violated: yTs = {}; should be > 0\n"
+                             .format(float((self.y.T * self.s).x)) +
+                             "  If we update (or scale) Hessian matrix now it will not be positive definite !!\n" +
+                             "  Skipping scaling/updating at this iteration (not recommended)...")
+                             #"  However, let's use the change in grad and dec var info to scale the Hessian")
+            #scale_only = True  # this precludes scaling as well
+            return self.H
 
+        # scale
         if self_scale:
-            # hess_scale = (self.y.T * self.s).x / (self.y.T * self.H * self.y).x  # Oliver et al. (equiv at it 0)
+            # hess_scale = float((self.y.T * self.s).x / (self.y.T * self.H * self.y).x)  # Oliver et al. (equiv at it 0)
             hess_scalar = float((self.y.T * self.s).x / (self.y.T * self.y).x)  # Nocedal and Wright
-            self.H *= abs(hess_scalar)  # TODO: abs?
+            self.H *= hess_scalar
+            self.H_cp = self.H.copy()
             if scale_only:
                 return self.H
 
+        # update
         ys = self.y.T * self.s  # inner product
         yHy = self.y.T * self.H * self.y  # also a scalar
         ssT = self.s * self.s.T  # outer prod
         Hy = self.H * self.y  # dot prod
 
-        # expanded form of Nocedal and Wright (6.17)
+        #  expanded form of Nocedal and Wright (6.17)
         self.H += (float(ys.x + yHy.x)) * ssT.x / float((ys ** 2).x)  # TODO: add scalar handling to mat_handler (Exception on line 473)
         #self.H += (ys + yHy) * ssT / (ys ** 2)
         self.H -= float((Hy.T * self.s).x + (self.s.T * Hy).x) / float(ys.x)
 
         # Hessian positive-definite-ness check
         if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):
-            self.logger.warn("!! Hessian matrix is not positive definite !! Exit here! ")
-            #self.logger.lraise("Hessian matrix is not positive definite!")
+            self.logger.warn("Hessian update causes pos-def status to be violated.. skip update (only scale) at this stage...\n")
+            self.H = self.H_cp
 
         return self.H
-
-    # TODO: efficient/recursive BFGS
 
     def _LBFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,step,idx,trunc_thresh):#scaling_method="ZhangReynolds")
         '''

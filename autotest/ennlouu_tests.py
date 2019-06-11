@@ -177,5 +177,5 @@ if __name__ == "__main__":
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
     rosenbrock_2par_multiple_update()
-    #rosenbrock_2par_phi_progress()
+    rosenbrock_2par_phi_progress()
     #rosenbrock_2par_grad_approx_invest()
