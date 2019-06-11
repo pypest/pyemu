@@ -121,7 +121,7 @@ class Pst(object):
             #assert og in rgroups.keys(),"Pst.phi_componentw obs group " +\
             #    "not found: " + str(og)
             #og_res_df = self.res.ix[rgroups[og]]
-            og_res_df = self.res.loc[onames,:].dropna()
+            og_res_df = self.res.loc[onames,:].dropna(axis=1)
             #og_res_df.index = og_res_df.name
             og_df = self.observation_data.ix[ogroups[og]]
             og_df.index = og_df.obsnme
@@ -129,9 +129,11 @@ class Pst(object):
             assert og_df.shape[0] == og_res_df.shape[0],\
             " Pst.phi_components error: group residual dataframe row length" +\
             "doesn't match observation data group dataframe row length" + \
-                str(og_df.shape) + " vs. " + str(og_res_df.shape)
-            components[og] = np.sum((og_res_df["residual"] *
-                                     og_df["weight"]) ** 2)
+                str(og_df.shape) + " vs. " + str(og_res_df.shape) + "," + og
+            # components[og] = np.sum((og_res_df["residual"] *
+            #                          og_df["weight"]) ** 2)
+            components[og] = np.sum(((og_df.loc[:,"obsval"] - og_res_df.loc[og_df.obsnme,"modelled"]) *
+                                     og_df.loc[:,"weight"]) ** 2)
         if not self.control_data.pestmode.startswith("reg") and \
             self.prior_information.shape[0] > 0:
             ogroups = self.prior_information.groupby("obgnme").groups
