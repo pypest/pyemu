@@ -1,9 +1,14 @@
-             PEST++ Version 4.1.9
+             PEST++ Version 4.1.12
 
                  by The PEST++ Development Team
 
 using control file: "freyberg_transient.pst"
 
+Note: 4 unused lines pest control file:
+  -->  line number 6: '2.000000E+01  -3.000000E+00   3.000000E-01   1.000000E-02        -7       999          lamforgive        noderforgive' 
+  -->  line number 10: '0         0         0         0             jcosave          verboserec          jcosaveitn          reisaveitn          parsaveitn        noparsaverun' 
+  -->  line number 12: '1' 
+  -->  line number 13: '10000000    1.000000E-06' 
 noptmax = 0, resetting max_run_fail = 1
 
 PEST++ run mode:- 
@@ -93,11 +98,11 @@ Model interface files:-
 Parameter group information
 NAME            INCREMENT TYPE     DERIVATIVE INCREMENT    INCREMENT LOWER BOUND  FORCE CENTRAL     INCREMENT MULTIPLIER
 grhk0                 RELATIVE                     0.01                        0         SWITCH                        2
-grsy0                 RELATIVE                     0.01                        0         SWITCH                        2
 grss0                 RELATIVE                     0.01                        0         SWITCH                        2
-grrech0               RELATIVE                     0.01                        0         SWITCH                        2
 grstrt0               RELATIVE                     0.01                        0         SWITCH                        2
+grrech0               RELATIVE                     0.01                        0         SWITCH                        2
 grvka0                RELATIVE                     0.01                        0         SWITCH                        2
+grsy0                 RELATIVE                     0.01                        0         SWITCH                        2
 welflux_k00           RELATIVE                     0.01                        0         SWITCH                        2
 
 
@@ -10110,25 +10115,25 @@ FINAL OPTIMISATION RESULTS
 
 Final composite objective function 
   Final phi                                           Total : 3.58105e-10
-  Contribution to phi from observation group  "vol_stream_" : 0.00000
-  Contribution to phi from observation group    "flx_total" : 0.00000
   Contribution to phi from observation group          "hds" : 3.58105e-10
-  Contribution to phi from observation group   "flx_in-out" : 0.00000
-  Contribution to phi from observation group  "vol_percent" : 0.00000
-  Contribution to phi from observation group  "vol_recharg" : 0.00000
-  Contribution to phi from observation group   "vol_in-out" : 0.00000
-  Contribution to phi from observation group  "flx_constan" : 0.00000
-  Contribution to phi from observation group  "flx_recharg" : 0.00000
-  Contribution to phi from observation group        "flout" : 0.00000
-  Contribution to phi from observation group  "flx_storage" : 0.00000
-  Contribution to phi from observation group    "vol_wells" : 0.00000
-  Contribution to phi from observation group  "flx_stream_" : 0.00000
-  Contribution to phi from observation group        "flaqx" : 0.00000
-  Contribution to phi from observation group    "vol_total" : 0.00000
-  Contribution to phi from observation group    "flx_wells" : 0.00000
-  Contribution to phi from observation group  "vol_constan" : 0.00000
-  Contribution to phi from observation group  "flx_percent" : 0.00000
   Contribution to phi from observation group  "vol_storage" : 0.00000
+  Contribution to phi from observation group  "flx_stream_" : 0.00000
+  Contribution to phi from observation group    "flx_total" : 0.00000
+  Contribution to phi from observation group  "flx_storage" : 0.00000
+  Contribution to phi from observation group   "vol_in-out" : 0.00000
+  Contribution to phi from observation group    "vol_total" : 0.00000
+  Contribution to phi from observation group        "flaqx" : 0.00000
+  Contribution to phi from observation group  "flx_percent" : 0.00000
+  Contribution to phi from observation group   "flx_in-out" : 0.00000
+  Contribution to phi from observation group  "flx_recharg" : 0.00000
+  Contribution to phi from observation group  "vol_recharg" : 0.00000
+  Contribution to phi from observation group    "flx_wells" : 0.00000
+  Contribution to phi from observation group    "vol_wells" : 0.00000
+  Contribution to phi from observation group  "vol_percent" : 0.00000
+  Contribution to phi from observation group  "vol_stream_" : 0.00000
+  Contribution to phi from observation group  "flx_constan" : 0.00000
+  Contribution to phi from observation group  "vol_constan" : 0.00000
+  Contribution to phi from observation group        "flout" : 0.00000
 
 
 Number of forward model runs performed during optimiztion: 1

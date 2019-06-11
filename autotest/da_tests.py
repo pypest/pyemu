@@ -101,7 +101,7 @@ def setup_daily_da():
     ph = pyemu.helpers.PstFromFlopyModel("freyberg_transient.nam",org_model_ws="temp",
                                          new_model_ws="daily_template",grid_props=grid_props,
                                          spatial_bc_props=[["wel.flux",0]],hds_kperk=[[0,0]],
-                                         remove_existing=True,model_exe_name="mfnwt",build_prior=False,
+                                         remove_existing=True,model_exe_name="mfnwt",build_prior=True,
                                          sfr_obs=sfr_obs_dict)
     ph.pst.control_data.noptmax = 0
     ph.pst.write(os.path.join("daily_template","freyberg_transient.pst"))
@@ -165,7 +165,8 @@ def process_truth_for_obs_states():
     truth_obs_states.to_csv(os.path.join("da","freyberg","daily_template","truth_states.csv"))
 
 
-def freyberg_test():
+def freyberg_dev():
+
     t_d = "daily_template"
     m_d = "daily_master"
     bd = os.getcwd()
@@ -193,7 +194,23 @@ def freyberg_test():
     obs.loc[:,"weight"] = 0.0
     # replace the obs vals in the pst with the truth states at the end of the first assimilation cycle
     obs.loc[truth_df.index,"obsval"] = truth_df.loc[:,"0"]
-    obs.loc[truth_df.index, "weight"] = 0.001 # oh, who knows...
+    obs.loc[truth_df.index, "weight"] = 100 # oh, who knows...
+
+    pst.control_data.noptmax = 3
+
+    pst.pestpp_options["ies_num_reals"] = 10
+    pst.pestpp_options["ies_lambda_mults"] = 1.0
+    pst.pestpp_options["lambda_scale_fac"] = 1.0
+    pst.pestpp_options["ies_subset_size"] = 10
+    pst.pestpp_options["overdue_giveup_fac"] = 1000.0
+    pst.write(os.path.join(t_d,"test.pst"))
+    pyemu.os_utils.start_slaves(t_d,"pestpp-ies","test.pst",num_slaves=3,master_dir="test")
+
+    enkf = pyemu.EnsembleKalmanFilter(pst=pst,num_slaves=3,slave_dir=t_d)
+    enkf.initialize(parensemble=os.path.join("test","test.0.par.csv"),
+                    obsensemble=os.path.join("test","test.base.obs.csv"),
+                    restart_obsensemble=os.path.join("test","test.0.obs.csv"))
+    init_phi = enkf.obsensemble.phi_vector
 
     sm = Assimilator(type='Smoother', iterate=False, mode='Stochastic', pst=pst, parens=None, err_ens=None,
                      num_slaves=20, slave_dir = 'daily_template')
@@ -203,7 +220,23 @@ def freyberg_test():
         enkf = pyemu.EnsembleKalmanFilter(pst=pst,num_slaves=5,slave_dir=t_d)
         enkf.initialize(num_reals=20)
 
+
     os.chdir(bd)
+
+
+def draw_forcing_ensemble():
+    t_d = os.path.join("da","freyberg","daily_template")
+    pst = pyemu.Pst(os.path.join(t_d,"freyberg_transient.pst"))
+    par = pst.parameter_data
+    forcing_groups = ["grrech0","grstrt0","welflux_k00"]
+    par.loc[par.pargp.apply(lambda x: x not in forcing_groups),"partrans"] = "fixed"
+    cov = pyemu.Cov.from_ascii(os.path.join(t_d,"freyberg_transient.pst.prior.cov")).to_dataframe()
+    cov = cov.loc[pst.adj_par_names,pst.adj_par_names]
+    cov = pyemu.Cov.from_dataframe(cov)
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=10000)
+    pe.to_csv(os.path.join("forcing.csv"))
+
+
 
 if __name__ == "__main__":
     #setup_freyberg_transient_model()
@@ -211,4 +244,5 @@ if __name__ == "__main__":
     #run_truth_sweep()
     #setup_daily_da()
     #process_truth_for_obs_states()
-    freyberg_test()
+    freyberg_dev()
+    #draw_forcing_ensemble()

@@ -613,6 +613,7 @@ class EnsembleSmoother(EnsembleMethod):
 
         self.logger.log("calculate pseudo inv comps")
         u,s,v = scaled_delta_obs.pseudo_inv_components(eigthresh=self.pst.svd_data.eigthresh)
+        s.col_names = s.row_names
         self.logger.log("calculate pseudo inv comps")
 
         self.logger.log("calculate obs diff matrix")

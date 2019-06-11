@@ -620,11 +620,11 @@ def try_process_ins_file(ins_file,out_file=None):
 
 
 
-def _try_run_inschek(ins_file,out_file):
+def _try_run_inschek(ins_file,out_file,cwd='.'):
 
     try:
-        pyemu.os_utils.run("inschek {0} {1}".format(ins_file, out_file))
-        obf_file = ins_file.replace(".ins", ".obf")
+        pyemu.os_utils.run("inschek {0} {1}".format(ins_file, out_file),cwd=cwd)
+        obf_file = os.path.join(cwd,ins_file.replace(".ins", ".obf"))
         df = pd.read_csv(obf_file, delim_whitespace=True,
                          skiprows=0, index_col=0, names=["obsval"])
         df.index = df.index.map(str.lower)
@@ -746,7 +746,7 @@ def clean_missing_exponent(pst_filename,clean_filename="clean.pst"):
             f.write(line+'\n')
 
 def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None,
-                    marker='~',includes_header=True,includes_index=True):
+                    marker='~',includes_header=True,includes_index=True,prefix=''):
 
     # process the csv_filename in case it is a dataframe
     if isinstance(csv_filename,str):
@@ -821,7 +821,7 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
                 f.write("l1 ") #skip the row (index) label
             for j,clabel in enumerate(clabels):
                 if rlabel in only_rlabels and clabel in only_clabels:
-                    oname = rlabel+"_"+clabel
+                    oname = prefix+rlabel+"_"+clabel
                     onames.append(oname)
                     ovals.append(df.iloc[i,j])
                 else:

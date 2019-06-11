@@ -13,7 +13,7 @@ else:
     
 
 mf_exe_name = os.path.join(bin_path,"mfnwt")
-pp_exe_name = os.path.join(bin_path, "pestpp")
+pp_exe_name = os.path.join(bin_path, "pestpp-inv")
 ies_exe_name = os.path.join(bin_path, "pestpp-ies")
 swp_exe_name = os.path.join(bin_path, "pestpp-swp")
 
@@ -301,7 +301,8 @@ def run_sweep_test():
 
 
 if __name__ == "__main__":
-    #freyberg_test()
+    freyberg_test()
     #freyberg_kl_pp_compare()
+    #import shapefile
     #run_sweep_test()
-    fake_run_test()
+    #fake_run_test()
