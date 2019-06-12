@@ -387,7 +387,7 @@ class EnsembleSQP(EnsembleMethod):
             self.hess_progress[self.iter_num] = "scaled only: {0}".format(hess_scalar)
             self.H = self.H_cp
         else:
-            self.hess_progress[self.iter_num] = "scaled ({0}) and\nupdated: H = {1}".format(hess_scalar,self.H.as_2d)
+            self.hess_progress[self.iter_num] = "scaled ({0}) and updated".format(hess_scalar) #,self.H.as_2d)
 
         return self.H, self.hess_progress
 
@@ -453,7 +453,16 @@ class EnsembleSQP(EnsembleMethod):
         if finite_diff_grad:
             self.logger.log("compute phi grad using finite diffs")
             # TODO: implement
-            # self.pst.....
+            self.pst.control_data.noptmax = -2
+            # self.pst.parameter_groups.derinc = 0.05
+            self.pst.write(os.path.join("rosenbrock_2par_fds.pst"))
+            pyemu.os_utils.run("pestpp rosenbrock_2par_fds.pst")
+            jco = pyemu.Jco.from_binary("rosenbrock_2par_fds.jcb").to_dataframe()
+            # TODO: get dims from npar_adj and pargp flagged as dec var
+            self.phi_grad = Matrix(x=jco.values,
+                                   row_names=self.pst.adj_par_names,col_names=['cross-cov'])
+            if grad_calc_only:
+                return self.phi_grad
             self.logger.log("compute phi grad using finite diffs")
         else:
             self.logger.log("compute phi grad using ensemble approx")
@@ -464,7 +473,7 @@ class EnsembleSQP(EnsembleMethod):
             # and need mean for upgrades
             if self.parensemble_mean is None:
                 self.parensemble_mean = np.array(self.parensemble.mean(axis=0))
-                self.parensemble_mean = Matrix(x=np.expand_dims(self.parensemble_mean, axis=0),\
+                self.parensemble_mean = Matrix(x=np.expand_dims(self.parensemble_mean, axis=0),
                                            row_names=['mean'], col_names=self.pst.adj_par_names)
             self.logger.log("compute dec var en covariance vector")
 
@@ -536,7 +545,7 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("computing mean dec var upgrade".format(step_size))
             self.search_d.col_names = ['mean']  # TODO: temp hack
             self.parensemble_mean_1 = self.parensemble_mean + (step_size * self.search_d.T)
-            np.savetxt(self.pst.filename + "_en_mean_step_{0}_it_{1}.dat".format(step_size,self.iter_num),\
+            np.savetxt(self.pst.filename + "_en_mean_step_{0}_it_{1}.dat".format(step_size,self.iter_num),
                        self.parensemble_mean_1.x,fmt="%15.6e")
             # shift parval1
             self.pst.parameter_data.loc[:,"parval1"] = pd.Series(np.squeeze(self.parensemble_mean_1.x, axis=0)).values

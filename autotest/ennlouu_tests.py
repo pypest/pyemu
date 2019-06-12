@@ -13,9 +13,9 @@ def rosenbrock_2par_setup():
     pst = pyemu.helpers.pst_from_io_files(tpl_file,in_file,ins_file,out_file)
     par = pst.parameter_data
     par.loc[:,"partrans"] = "none"
-    par.loc[:,"parval1"] = 2.0
-    par.loc[:,"parubnd"] = 8.0
-    par.loc[:,"parlbnd"] = -2.0
+    par.loc[:,"parval1"] = 3.0
+    par.loc[:,"parubnd"] = 9.0
+    par.loc[:,"parlbnd"] = -9.0
     obs = pst.observation_data
     obs.loc[:,"obsval"] = 0.0
     obs.loc[:,"weight"] = 1.0
@@ -132,9 +132,9 @@ def rosenbrock_2par_multiple_update(nit=10):
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
     [os.remove(x) for x in os.listdir() if (x.endswith("obsensemble.0000.csv"))]
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst")#,num_slaves=10)
-    esqp.initialize(num_reals=50,draw_mult=0.0003)
+    esqp.initialize(num_reals=50,draw_mult=0.0003)  # TODO: critical that draw_mult is refined as we go?
     for it in range(nit):
-        esqp.update(step_mult=np.logspace(-6,4,20))  #TODO: H becomes very small through updating and scaling--try larger alpha - is selection on basis of alpha testing working right? try with one alpha val. Add Hess updating to alpha testing step.
+        esqp.update(step_mult=np.logspace(-2,2,10))  #TODO: H becomes very small through updating and scaling--try larger alpha - is selection on basis of alpha testing working right? try with one alpha val. Add Hess updating to alpha testing step.
     os.chdir(os.path.join("..", ".."))  #TODO: want alpha to increase from it to it; getting nan paren vals when diff starting vals and when step mult is egt 0.01 with H = I -- large alpha/Hess forces all at bounds therefore no cov. feedback something about at bounds so don't waste runs.
 
 def rosenbrock_2par_phi_progress():
@@ -168,8 +168,8 @@ def rosenbrock_2par_phi_progress():
     alpha_df = pd.read_csv("best_alpha_per_it.csv",index_col=0).T
     hess_and_alpha = pd.concat((hess_df,alpha_df),1)
     for i,v in hess_and_alpha.iterrows():
-        ax.text(x=float(i),y=(ylim[1]+(0.05 * (ylim[1]-ylim[0]))),s=str(v[0]) +"\nalpha = "+ str(v[1]),
-                fontsize=6,rotation=45,color='m',ha='center', va='center')
+        ax.text(x=float(i),y=(ylim[1]+(0.05 * (ylim[1]-ylim[0]))),s=str(v[0]),
+                fontsize=5,rotation=45,color='m',ha='center', va='center')
     #plt.legend()
     plt.show()
     os.chdir(os.path.join("..", ".."))
