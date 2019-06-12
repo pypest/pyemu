@@ -197,12 +197,9 @@ class Assimilator(EnsembleMethod):
                 if not os.path.exists(obsensemble):
                     self.logger.lraise("can not find obsensemble file: {0}". \
                                        format(obsensemble))
-
-                df = pd.read_csv(obsensemble,index_col=0)
-                df.columns = df.columns.str.lower()
-                df = df.loc[:,self.pst.nnz_obs_names]
-                #df.index = [str(i) for i in df.index]
-                self.obsensemble_0 = pyemu.ObservationEnsemble.from_dataframe(df=df,pst=self.pst)
+                df = pd.read_csv(obsensemble, index_col=0).loc[:, self.pst.nnz_obs_names]
+                # df.index = [str(i) for i in df.index]
+                self.obsensemble_0 = ObservationEnsemble.from_dataframe(df=df, pst=self.pst)
                 self.logger.log("loading obsensemble from file")
 
             elif isinstance(obsensemble, ObservationEnsemble):
@@ -237,14 +234,18 @@ class Assimilator(EnsembleMethod):
                 assert self.obsensemble.shape[0] == self.obsensemble_0.shape[0]
                 assert list(self.obsensemble.columns) == list(self.obsensemble_0.columns)
                 self.logger.log("loading restart_obsensemble {0}".format(restart_obsensemble))
+
             else:
                 # run the initial parameter ensemble
                 self.logger.log("evaluating initial ensembles")
                 self.obsensemble = self.forecast()
                 self.logger.log("evaluating initial ensembles")
 
-        self.parensemble._transform(inplace=True)
-        self.parensemble_0._transform(inplace=True)
+        # Transformation
+        if not self.parensemble.istransformed:
+            self.parensemble._transform(inplace=True)
+        if not self.parensemble_0.istransformed:
+            self.parensemble_0._transform(inplace=True)
         self._initialized = True
 
     def forcast(self):
@@ -272,151 +273,10 @@ class Assimilator(EnsembleMethod):
         self.failed_runs = failed_runs
         self.logger.log("evaluating ensemble")
 
-
     def _calc_delta_obs(self, obsensemble, scaled=False):
         """
         compute the ensemble of deviation of model observable predictions from the meam
         :return:
-        """
-        return obsensemble
-
-    def analysis(self):
-
-        nz_names = self.pst.nnz_obs_names
-        nreals = self.obsensemble.shape[0]
-
-        h_dash = pyemu.Matrix.from_dataframe(self.obsensemble.get_deviations().loc[:,nz_names].T)
-
-        R = self.obscov
-
-        Chh = ((h_dash * h_dash.T) *  (1.0 / nreals - 1)) + R
-
-        Cinv = Chh.pseudo_inv(maxsing=1,eigthresh=self.pst.svd_data.eigthresh)
-
-        #Chh = None
-
-        d_dash = pyemu.Matrix.from_dataframe(self.obsensemble_0.loc[self.obsensemble.index,nz_names] - self.obsensemble.loc[:,nz_names]).T
-
-        k_dash = pyemu.Matrix.from_dataframe(self.parensemble.get_deviations().loc[:,self.pst.adj_par_names]).T
-
-        Chk = (k_dash * h_dash.T) * (1.0 / nreals - 1)
-
-        Chk_dot_Cinv = Chk * Cinv
-        #Chk = None
-        upgrade = Chk_dot_Cinv * d_dash
-        parensemble = self.parensemble.copy()
-        upgrade = upgrade.to_dataframe().T
-
-        upgrade.index = parensemble.index
-        parensemble += upgrade
-        parensemble = pyemu.ParameterEnsemble.from_dataframe(df=parensemble,pst=self.pst,istransformed=True)
-        parensemble.enforce()
-        return parensemble
-
-
-    def analysis_evensen(self):
-        """Ayman here!!!.  some peices that may be useful:
-        self.parcov = parameter covariance matrix
-        self.obscov = obseravtion noise covariance matrix
-        self.parensmeble = current parameter ensemble
-        self.obsensemble = current observation (model output) ensemble
-
-        the ensemble instances have two useful methods:
-        Ensemble.covariance_matrix() - get an empirical covariance matrix
-        Ensemble.get_deviations() - get an ensemble of deviations around the mean vector
-
-        If you use pyemu.Matrix (and pyemu.Cov) for the linear algebra parts, you don't
-        have to worry about the alignment of the matrices (pyemu will dynamically reorder/align
-        based in row and/or col names).  The Matrix instance also has a .inv for the inverse
-        as well as .s, .u and .v for the SVD components (gets dynamically evaluated if you try to
-        access these attributes)
-
-
-
-        Following Evensen 2003..
-        """
-
-        nz_names = self.pst.nnz_obs_names
-        nreals = self.obsensemble.shape[0]
-        self.parensemble._transform()
-        # nonzero weighted state deviations
-        HA_prime = self.obsensemble.get_deviations().loc[:,nz_names].T
-
-        # obs noise pertubations - move to constuctor
-        E = (self.obsensemble_0.loc[:,nz_names] - self.pst.observation_data.obsval.loc[nz_names]).T
-        #print(E)
-
-        # innovations:  account for any failed runs (use obsensemble index)
-        D_prime = (self.obsensemble_0.loc[self.obsensemble.index,nz_names] - self.obsensemble.loc[:,nz_names]).T
-
-        ES = HA_prime.loc[nz_names,E.columns] + E.loc[nz_names,:]
-        assert ES.shape == ES.dropna().shape
-
-        ES = pyemu.Matrix.from_dataframe(ES)
-
-        nrmin = min(self.pst.nnz_obs,self.obsensemble.shape[0])
-        U,s,v = ES.pseudo_inv_components(maxsing=nrmin,
-                                        eigthresh=ES.get_maxsing(self.pst.svd_data.eigthresh),
-                                        truncate=True)
-
-        #half assed inverse
-        s_inv = s.T
-        for i,sval in enumerate(np.diag(s.x)):
-           if sval == 0.0:
-               break
-           s_inv.x[i,i] = 1.0 / (sval * sval)
-
-        X1 = s_inv * U.T
-        X1.autoalign = False #since the row/col names don't mean anything for singular components and everything is aligned
-
-        X2 =  X1 * D_prime #these are aligned through the use of nz_names
-
-        X3 = U * X2 #also aligned
-
-        X4 = pyemu.Matrix.from_dataframe(HA_prime.T) * X3
-
-        I = np.identity(X4.shape[0])
-        X5 = X4 + I
-        #print(X5.x.sum(axis=1))
-
-
-        # deviations of adj pars
-        A_prime = pyemu.Matrix.from_dataframe(self.parensemble.get_deviations().loc[:,self.pst.adj_par_names]).T
-
-
-        upgrade = (A_prime * X4).to_dataframe().T
-
-        assert upgrade.shape == upgrade.dropna().shape
-
-        upgrade.index = self.parensemble.index
-        #print(upgrade)
-        parensemble = self.parensemble + upgrade
-
-        parensemble = pyemu.ParameterEnsemble.from_dataframe(df=parensemble,pst=self.pst,istransformed=True)
-
-        assert parensemble.shape == parensemble.dropna().shape
-        return parensemble
-
-
-    def update(self):
-        """update performs the analysis, then runs the forecast using the updated self.parensemble.
-        This can be called repeatedly to iterate..."""
-        parensemble = self.analysis_evensen()
-        obsensemble  = self.forecast(parensemble=parensemble)
-        # todo: check for phi improvement
-        if True:
-            self.obsensemble = obsensemble
-            self.parensemble = parensemble
-
-        self.iter_num += 1
-
-
-class Assimilator():
-    def __init__(self, type='Smoother', iterate=False, pst=None, mode='stochastic', options={}):
-        """
-        A clase to implement one or multiple update cycle. For the Ensemble smoother (ES), the update cycle includes all available
-        observations. Ror Ensemble Kalman Filter (EnKF), the update is acheived on multiple cycles (time windows); and finally the nsemble Kalman Smoother (EnKS)
-        updat parameters given all observations available up to a certain time
         """
         if scaled:
             return self._calc_delta(obsensemble.nonzero, self.obscov_inv_sqrt)

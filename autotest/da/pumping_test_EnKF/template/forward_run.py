@@ -73,7 +73,7 @@ def run_model():
     # read hydrualic conductivity file
     par_df = pd.read_csv("par_k.csv",  header=None)
     kh = par_df.values.reshape(50,50) # 10 was add to improve k
-    #kh = np.power(10,kh)
+    kh = np.power(10,kh)
     mf.upw.hk = kh
     mf.upw.vka = kh * 0.1
     mf.upw.ss = 1.0e-06

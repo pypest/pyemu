@@ -9,7 +9,7 @@ period 1 step 1
   PRINT BUDGET
   SAVE BUDGET
 
-period 2 step 10 
+period 2 step 40 
   SAVE HEAD
   PRINT BUDGET
   SAVE BUDGET

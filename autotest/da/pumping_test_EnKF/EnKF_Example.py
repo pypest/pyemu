@@ -73,9 +73,9 @@ par_df = pd.read_csv(r"input_file_init.csv")
 par_df['parval1'] = 10.0
 par_names = par_df['parnme'].values
 par_ens = pd.read_csv('kh_ensemble0.csv')
-par_ens = np.power(10.0,par_ens)
+#par_ens = np.power(10.0,par_ens)
 par_df['cycle'] = -1 # k parameters should be updated at each cycle
-#par_df['partrans'] = 'log'
+par_df['partrans'] = 'none'
 
 # since dynamic state will be updated like the static parameter, they should be augmented with par_ens
 parM = par_ens.values
@@ -131,7 +131,7 @@ global_obsname = obsnames + state_names
 pst = pyemu.Pst.from_par_obs_names(par_names=  global_parnames,
                                    obs_names= global_obsname)
 #pst.parameter_data['cycle'] = np.nan
-#pst.parameter_data['partrans'] = 'none'
+pst.parameter_data['partrans'] = 'none'
 gparameter_data = pd.concat([par_df, msc_df])
 gobservation_data = pd.concat([observation_data, state_data])
 
