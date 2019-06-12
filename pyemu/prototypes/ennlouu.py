@@ -453,6 +453,7 @@ class EnsembleSQP(EnsembleMethod):
         if finite_diff_grad:
             self.logger.log("compute phi grad using finite diffs")
             # TODO: implement
+            # self.pst.....
             self.logger.log("compute phi grad using finite diffs")
         else:
             self.logger.log("compute phi grad using ensemble approx")
@@ -523,7 +524,10 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: Or just on basis of mean en - some en members can be outside - ensemble only to get the grad direction.
 
         step_lengths, mean_en_phi_per_alpha = [],pd.DataFrame()
-        base_step = 1.0  # start with 1.0 and progressively make smaller (will be 1.0 eventually if convex..)
+        #base_step = 1.0  # start with 1.0 and progressively make smaller (will be 1.0 eventually if convex..)
+        # TODO: adjust wrt Hessian?
+        base_step = ((self.pst.parameter_data.parubnd.mean()-self.pst.parameter_data.parlbnd.mean()) * 0.2) \
+                    / abs(self.search_d.x.mean())  #0.25 / self.search_d.x.mean()
         for istep,step in enumerate(step_mult):
             step_size = base_step * step
             step_lengths.append(step_size)
