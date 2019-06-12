@@ -236,7 +236,7 @@ class EnsembleSQP(EnsembleMethod):
         self.inv_hessian_0 = self.inv_hessian.copy()
 
         self.curr_grad = None
-        self.hess_progress = {}
+        self.hess_progress, self.best_alpha_per_it = {},{}
 
         #self.phi = Phi(self)
 
@@ -347,15 +347,18 @@ class EnsembleSQP(EnsembleMethod):
         self.y = new_grad - curr_grad  # start with column vector
         self.s = delta_par.T  # start with column vector
 
-        if (self.y.T * self.s).x <= 0:
+        # curv condition related tests
+        ys = self.y.T * self.s  # inner product
+
+        if float(ys.x) <= 0:
             self.logger.warn("!! curvature condition violated: yTs = {}; should be > 0\n"
-                             .format(float((self.y.T * self.s).x)) +
+                             .format(float(ys.x)) +
                              "  If we update (or scale) Hessian matrix now it will not be positive definite !!\n" +
                              "  Skipping scaling/updating at this iteration (not recommended - see damping option)...")
             #if damped:
             #self.logger.warn("using (optional) damped version of BFGS alg implementation..")
             #else:
-            self.hess_progress[self.iter_num] = "yTs <= 0"
+            self.hess_progress[self.iter_num] = "!yTs = {0}!".format(float(ys.x))
             return self.H, self.hess_progress  #scale_only = True  # this precludes scaling as well
 
         # scale
@@ -365,11 +368,10 @@ class EnsembleSQP(EnsembleMethod):
             self.H *= hess_scalar
             self.H_cp = self.H.copy()
             if scale_only:
-                self.hess_progress[self.iter_num] = "scaled only"
+                self.hess_progress[self.iter_num] = "scaled only: {0}".format(hess_scalar)
                 return self.H, self.hess_progress
 
         # update
-        ys = self.y.T * self.s  # inner product
         yHy = self.y.T * self.H * self.y  # also a scalar
         ssT = self.s * self.s.T  # outer prod
         Hy = self.H * self.y
@@ -382,10 +384,10 @@ class EnsembleSQP(EnsembleMethod):
         # Hessian positive-definite-ness check
         if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):  # TODO: forgive very small negative eigenvalues?
             self.logger.warn("Hessian update causes pos-def status to be violated.. skip update (only scale) at this stage...\n")
-            self.hess_progress[self.iter_num] = "scaled only"
+            self.hess_progress[self.iter_num] = "scaled only: {0}".format(hess_scalar)
             self.H = self.H_cp
         else:
-            self.hess_progress[self.iter_num] = "scaled and updated"
+            self.hess_progress[self.iter_num] = "scaled ({0}) and\nupdated: H = {1}".format(hess_scalar,self.H.as_2d)
 
         return self.H, self.hess_progress
 
@@ -456,6 +458,7 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("compute phi grad using ensemble approx")
             # compute dec var covariance and dec var-phi cross covariance matrices - they are actually vectors
             self.logger.log("compute dec var en covariance vector")
+            # TODO: add check for parensemble var = 0 (all dec vars at (same) bounds)
             self.en_cov_decvar = self._calc_en_cov_decvar(self.parensemble)
             # and need mean for upgrades
             if self.parensemble_mean is None:
@@ -552,9 +555,6 @@ class EnsembleSQP(EnsembleMethod):
 
             # TODO: localization (with respect to gradient-dec var relationship only)
 
-            # subset if needed
-            # and combine lambda par ensembles into one par ensemble for evaluation
-
             # run the ensemble for diff step size lengths
             self.logger.log("evaluating ensembles for step size : {0}".
                             format(','.join("{0:8.3E}".format(step_size))))
@@ -571,12 +571,12 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("evaluating ensembles for step size : {0}".
                             format(','.join("{0:8.3E}".format(step_size))))
 
-        best_alpha_per_it = []
         best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))
-        best_alpha_per_it.append(best_alpha)
+        self.best_alpha_per_it[self.iter_num] = best_alpha
+        best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
+        best_alpha_per_it_df.to_csv("best_alpha_per_it.csv")
         self.logger.log("best step length (alpha): {0}".format("{0:8.3E}".format(best_alpha)))
 
-        # TODO: unpack lambda obs ensembles from combined obs ensemble
         # TODO: failed run handling
 
         # TODO: undertake Wolfe and en tests. No - our need is superseded by parallel alpha tests
@@ -602,11 +602,11 @@ class EnsembleSQP(EnsembleMethod):
 
         if alg == "BFGS":
             self.inv_hessian,hess_progress_d = self._BFGS_hess_update(self.inv_hessian,
-                                                                           self.curr_grad, self.phi_grad,
-                                                                           self.delta_parensemble_mean,
-                                                                           self_scale=hess_self_scaling,
-                                                                           scale_only=scale_only,
-                                                                           damped=False)
+                                                                      self.curr_grad, self.phi_grad,
+                                                                      self.delta_parensemble_mean,
+                                                                      self_scale=hess_self_scaling,
+                                                                      scale_only=scale_only,
+                                                                      damped=False)
         else:  # LBFGS
             pass
             #self.inv_hessian = self._LBFGS_hess_update(self.inv_hessian,

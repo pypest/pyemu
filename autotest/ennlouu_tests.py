@@ -128,13 +128,14 @@ def rosenbrock_2par_grad_approx_invest():
 
 def rosenbrock_2par_multiple_update(nit=10):
     import pyemu
+    import numpy as np
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
     [os.remove(x) for x in os.listdir() if (x.endswith("obsensemble.0000.csv"))]
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst")#,num_slaves=10)
-    esqp.initialize(num_reals=20,draw_mult=0.0003)
+    esqp.initialize(num_reals=50,draw_mult=0.0003)
     for it in range(nit):
-        esqp.update(step_mult=[0.1,0.01,0.001,0.0001,0.00001])
-    os.chdir(os.path.join("..", ".."))
+        esqp.update(step_mult=np.logspace(-6,4,20))  #TODO: H becomes very small through updating and scaling--try larger alpha - is selection on basis of alpha testing working right? try with one alpha val. Add Hess updating to alpha testing step.
+    os.chdir(os.path.join("..", ".."))  #TODO: want alpha to increase from it to it; getting nan paren vals when diff starting vals and when step mult is egt 0.01 with H = I -- large alpha/Hess forces all at bounds therefore no cov. feedback something about at bounds so don't waste runs.
 
 def rosenbrock_2par_phi_progress():
     import pyemu
@@ -157,15 +158,18 @@ def rosenbrock_2par_phi_progress():
     for i,v in oes.iterrows():
         ax.plot(v,marker="o",color="grey",linestyle='None')
     ax.set_xlabel("iteration number",fontsize=11)
-    ax.set_ylabel("$\phi$", fontsize=11)
+    ax.set_ylabel("log $\phi$", fontsize=11)
     oes_mean = oes.mean()
     oes_mean = oes_mean.sort_index()
     ax.plot(oes_mean, color="k", linestyle='--', label="mean en")
 
     ylim = ax.get_ylim()
-    hess_df = pd.read_csv("hess_progress.csv",index_col=0)
-    for i,v in hess_df.T.iterrows():
-        ax.text(x=float(i),y=(ylim[1]+(0.05 * (ylim[1]-ylim[0]))),s=v[0],fontsize=8,rotation=45,color='red')
+    hess_df = pd.read_csv("hess_progress.csv",index_col=0).T
+    alpha_df = pd.read_csv("best_alpha_per_it.csv",index_col=0).T
+    hess_and_alpha = pd.concat((hess_df,alpha_df),1)
+    for i,v in hess_and_alpha.iterrows():
+        ax.text(x=float(i),y=(ylim[1]+(0.05 * (ylim[1]-ylim[0]))),s=str(v[0]) +"\nalpha = "+ str(v[1]),
+                fontsize=6,rotation=45,color='m',ha='center', va='center')
     #plt.legend()
     plt.show()
     os.chdir(os.path.join("..", ".."))
@@ -182,6 +186,6 @@ if __name__ == "__main__":
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    #rosenbrock_2par_multiple_update()
-    rosenbrock_2par_phi_progress()
+    rosenbrock_2par_multiple_update()
+    #rosenbrock_2par_phi_progress()
     #rosenbrock_2par_grad_approx_invest()
