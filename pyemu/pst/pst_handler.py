@@ -1859,6 +1859,8 @@ class Pst(object):
 
         """
 
+        obs = self.observation_data
+        res = self.res
         for item in target_phis.keys():
             if item not in res_idxs.keys():
                 raise Exception("Pst.__reset_weights(): " + str(item) +\
@@ -1866,9 +1868,11 @@ class Pst(object):
             if item not in obs_idxs.keys():
                 raise Exception("Pst.__reset_weights(): " + str(item) +\
                 " not in observation group indices")
-            actual_phi = ((self.res.loc[res_idxs[item], "residual"] *
-                           self.observation_data.loc
-                           [obs_idxs[item], "weight"])**2).sum()
+            #actual_phi = ((self.res.loc[res_idxs[item], "residual"] *
+            #               self.observation_data.loc
+            #               [obs_idxs[item], "weight"])**2).sum()
+            actual_phi = (((obs.loc[obs_idxs[item],"obsval"] - res.loc[res_idxs[item], "modelled"]) *
+                          self.observation_data.loc[obs_idxs[item], "weight"])**2).sum()
             if actual_phi > 0.0:
                 weight_mult = np.sqrt(target_phis[item] / actual_phi)
                 self.observation_data.loc[obs_idxs[item], "weight"] *= weight_mult
