@@ -130,6 +130,11 @@ class Pst(object):
             " Pst.phi_components error: group residual dataframe row length" +\
             "doesn't match observation data group dataframe row length" + \
                 str(og_df.shape) + " vs. " + str(og_res_df.shape) + "," + og
+            if "modelled" not in og_res_df.columns:
+                print(og_res_df)
+                m = self.res.loc[onames,"modelled"]
+                print(m.loc[m.isna()])
+                raise Exception("'modelled' not in res df columns for group "+og)
             # components[og] = np.sum((og_res_df["residual"] *
             #                          og_df["weight"]) ** 2)
             components[og] = np.sum(((og_df.loc[:,"obsval"] - og_res_df.loc[og_df.obsnme,"modelled"]) *

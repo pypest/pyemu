@@ -95,10 +95,11 @@ class Schur(LinearAnalysis):
                 r = self.xtqx + pinv
                 r = r.inv
             except Exception as e:
-                self.xtqx.to_binary("xtqx.err.jcb")
+
                 pinv.to_ascii("parcov_inv.err.cov")
                 self.logger.warn("error forming schur's complement: {0}".
                                 format(str(e)))
+                self.xtqx.to_binary("xtqx.err.jcb")
                 self.logger.warn("problemtic xtqx saved to xtqx.err.jcb")
                 self.logger.warn("problematic inverse parcov saved to parcov_inv.err.cov")
                 raise Exception("error forming schur's complement: {0}".
@@ -202,6 +203,9 @@ class Schur(LinearAnalysis):
             return self.__posterior_prediction
         else:
             if self.predictions is not None:
+                if self.pst.nnz_obs == 0:
+                    self.log("no non-zero obs, posterior equals prior")
+                    return self.prior_prediction
                 self.log("propagating posterior to predictions")
 
                 post_cov = self.predictions.T *\
