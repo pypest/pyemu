@@ -416,7 +416,7 @@ class Schur(LinearAnalysis):
         # for pred in self.predictions:
         #     cond_preds.append(pred.get(keep_names, pred.col_names))
         cond_preds = self.predictions.get(row_names=keep_names)
-        la_cond = Schur(jco=self.jco.get(self.jco.row_names, keep_names),
+        la_cond = Schur(jco=self.jco.get(self.jco.row_names, keep_names),pst=self.pst,
                         parcov=self.parcov.condition_on(parameter_names),
                         obscov=self.obscov, predictions=cond_preds,verbose=False)
         return la_cond
