@@ -544,6 +544,17 @@ class EnsembleSQP(EnsembleMethod):
             self.parensemble_mean_1 = self.parensemble_mean + (step_size * self.search_d.T)
             # shift parval1
             self.pst.parameter_data.loc[:,"parval1"] = pd.Series(np.squeeze(self.parensemble_mean_1.x, axis=0)).values
+            # and bound handling TODO: bound handling here (on basis of mean en only)
+            par = self.pst.parameter_data
+            out_of_bounds = par.loc[(par.parubnd < par.parval1) | (par.parlbnd > par.parval1),:]
+            if out_of_bounds.shape[0] > 0:
+                self.logger.log("{0} mean dec vars for step {1} out-of-bounds: {2}..."\
+                                .format(out_of_bounds.shape[0],step_size,list(out_of_bounds.parnme)))
+                # TODO: some scaling/truncation strategy?
+                # TODO: could try new alpha (between smaller and the bound violating one)?
+                self.logger.log("{0} mean dec vars for step {1} out-of-bounds: {2}..."\
+                                .format(out_of_bounds.shape[0],step_size,list(out_of_bounds.parnme)))
+                continue
             np.savetxt(self.pst.filename + "_en_mean_step_{0}_it_{1}.dat".format(step_size,self.iter_num),
                        self.parensemble_mean_1.x,fmt="%15.6e")
 
