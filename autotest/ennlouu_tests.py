@@ -13,9 +13,10 @@ def rosenbrock_2par_setup():
     pst = pyemu.helpers.pst_from_io_files(tpl_file,in_file,ins_file,out_file)
     par = pst.parameter_data
     par.loc[:,"partrans"] = "none"
-    par.loc[:,"parval1"] = 3.0
-    par.loc[:,"parubnd"] = 9.0
-    par.loc[:,"parlbnd"] = -9.0
+    par.loc[:,"parval1"] = 4.0
+    par.loc[:,"parubnd"] = 6.0
+    par.loc[:,"parlbnd"] = -2.0
+    # TODO: repeat with log transform
     obs = pst.observation_data
     obs.loc[:,"obsval"] = 0.0
     obs.loc[:,"weight"] = 1.0
@@ -132,9 +133,10 @@ def rosenbrock_2par_multiple_update(nit=10):
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
     [os.remove(x) for x in os.listdir() if (x.endswith("obsensemble.0000.csv"))]
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_2par.pst")#,num_slaves=10)
-    esqp.initialize(num_reals=50,draw_mult=0.0003)  # TODO: critical that draw_mult is refined as we go?
+    esqp.initialize(num_reals=20,draw_mult=0.00003)  # TODO: critical that draw_mult is refined as we go?
     for it in range(nit):
-        esqp.update(step_mult=np.logspace(-2,2,10))  #TODO: H becomes very small through updating and scaling--try larger alpha - is selection on basis of alpha testing working right? try with one alpha val. Add Hess updating to alpha testing step.
+        esqp.update(step_mult=np.logspace(-5,2,8))  #np.linspace(0.5,1.1,14)#[0.1,0.05,0.01,0.005,0.001,0.0005,0.0001,0.00005,0.00001,0.000005,0.000001])
+        # #TODO: H becomes very small through updating and scaling--try larger alpha? is selection on basis of alpha testing working right? try with one alpha val. Add Hess updating to alpha testing step.
     os.chdir(os.path.join("..", ".."))  #TODO: want alpha to increase from it to it; getting nan paren vals when diff starting vals and when step mult is egt 0.01 with H = I -- large alpha/Hess forces all at bounds therefore no cov. feedback something about at bounds so don't waste runs.
 
 def rosenbrock_2par_phi_progress():
@@ -143,11 +145,18 @@ def rosenbrock_2par_phi_progress():
     import pandas as pd
     import matplotlib.pyplot as plt
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
-    obs_ens = [x for x in os.listdir() if (x.endswith(".obsensemble.0000.csv"))
-               and not (x.startswith("rosenbrock_2par.pst.obs")) and not (x.startswith("rosenbrock_2par.pst_1"))]
+    obs_ens = ["rosenbrock_2par.pst.obsensemble.0000.csv"]  #  from initialization sweep
+    obs_ens += [x for x in os.listdir() if (x.endswith(".obsensemble.0000.csv"))
+                and not (x.startswith("rosenbrock_2par.pst.obs"))
+                and not (x.startswith("rosenbrock_2par.pst_1"))]
+    #obs_ens = [x for x in os.listdir() if (x.endswith(".obsensemble.0000.csv"))
+     #          and not (x.startswith("rosenbrock_2par.pst.obs")) and not (x.startswith("rosenbrock_2par.pst_1"))]
     oes = pd.DataFrame()
     for obs_en in obs_ens:
-        it = int(obs_en.split(".")[2])
+        if obs_en != "rosenbrock_2par.pst.obsensemble.0000.csv":
+            it = int(obs_en.split(".")[2])
+        else:
+            it = 0
         oe = pyemu.ObservationEnsemble.from_csv(path=obs_en)
         oe.columns = [it]
         oes = pd.concat((oes, oe),axis=1)  #TODO: better to scrape from self?
@@ -181,11 +190,12 @@ def rosenbrock_2par_phi_progress():
 # TODO: copy test dirs and make changes in there...
 # TODO: test for switching between en and finite diffs
 
+
 if __name__ == "__main__":
     #rosenbrock_2par_setup()
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
     rosenbrock_2par_multiple_update()
-    #rosenbrock_2par_phi_progress()
+    rosenbrock_2par_phi_progress()
     #rosenbrock_2par_grad_approx_invest()

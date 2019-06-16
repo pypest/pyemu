@@ -382,7 +382,7 @@ class EnsembleSQP(EnsembleMethod):
         self.H -= float((Hy.T * self.s).x + (self.s.T * Hy).x) / float(ys.x)
 
         # Hessian positive-definite-ness check
-        if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):  # TODO: forgive very small negative eigenvalues?
+        if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):
             self.logger.warn("Hessian update causes pos-def status to be violated.. skip update (only scale) at this stage...\n")
             self.hess_progress[self.iter_num] = "scaled only: {0}".format(hess_scalar)
             self.H = self.H_cp
@@ -434,7 +434,6 @@ class EnsembleSQP(EnsembleMethod):
 
     	# TODO: calc par and obs delta wrt one another rather than mean?
     	# TODO: sub-setting
-    	# TODO: implement finite differences option too
         """
 
         self.iter_num += 1
@@ -452,7 +451,7 @@ class EnsembleSQP(EnsembleMethod):
 
         if finite_diff_grad:
             self.logger.log("compute phi grad using finite diffs")
-            # TODO: implement
+            # TODO: implement and add test for this
             self.pst.control_data.noptmax = -2
             # self.pst.parameter_groups.derinc = 0.05
             self.pst.write(os.path.join("rosenbrock_2par_fds.pst"))
@@ -468,7 +467,7 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("compute phi grad using ensemble approx")
             # compute dec var covariance and dec var-phi cross covariance matrices - they are actually vectors
             self.logger.log("compute dec var en covariance vector")
-            # TODO: add check for parensemble var = 0 (all dec vars at (same) bounds)
+            # TODO: add check for parensemble var = 0 (all dec vars at (same) bounds). Or draw around mean on bound?
             self.en_cov_decvar = self._calc_en_cov_decvar(self.parensemble)
             # and need mean for upgrades
             if self.parensemble_mean is None:
@@ -529,15 +528,13 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: handling of fixed, transformed etc. dec vars here
         # TODO: test multiple step sizes (multipliers?)
 
-        # TODO: bound handling - shorten entire upgrade if a dec var is out-of-bounds (via enforce).
-        # TODO: Or just on basis of mean en - some en members can be outside - ensemble only to get the grad direction.
-
         step_lengths, mean_en_phi_per_alpha = [],pd.DataFrame()
         #base_step = 1.0  # start with 1.0 and progressively make smaller (will be 1.0 eventually if convex..)
-        # TODO: adjust wrt Hessian?
-        base_step = ((self.pst.parameter_data.parubnd.mean()-self.pst.parameter_data.parlbnd.mean()) * 0.2) \
-                    / abs(self.search_d.x.mean())  #0.25 / self.search_d.x.mean()
-        for istep,step in enumerate(step_mult):
+        # TODO: adjust wrt Hessian?  related to line searching...
+        base_step = ((self.pst.parameter_data.parubnd.mean()-self.pst.parameter_data.parlbnd.mean()) * 0.1) \
+                    / abs(self.search_d.x.mean())
+        # TODO: handle log transforms here
+        for istep, step in enumerate(step_mult):
             step_size = base_step * step
             step_lengths.append(step_size)
             self.logger.log("undertaking calcs for step size (multiplier) : {0}...".format(step_size))
@@ -545,10 +542,11 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("computing mean dec var upgrade".format(step_size))
             self.search_d.col_names = ['mean']  # TODO: temp hack
             self.parensemble_mean_1 = self.parensemble_mean + (step_size * self.search_d.T)
-            np.savetxt(self.pst.filename + "_en_mean_step_{0}_it_{1}.dat".format(step_size,self.iter_num),
-                       self.parensemble_mean_1.x,fmt="%15.6e")
             # shift parval1
             self.pst.parameter_data.loc[:,"parval1"] = pd.Series(np.squeeze(self.parensemble_mean_1.x, axis=0)).values
+            np.savetxt(self.pst.filename + "_en_mean_step_{0}_it_{1}.dat".format(step_size,self.iter_num),
+                       self.parensemble_mean_1.x,fmt="%15.6e")
+
             self.logger.log("computing mean dec var upgrade".format(step_size))
 
             self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
@@ -559,14 +557,15 @@ class EnsembleSQP(EnsembleMethod):
             # TODO: alternatively tighten/widen search region to reflect representativeness of gradient (mechanistic)
             # TODO: two sets of bounds: one hard on dec var and one (which can adapt during opt)
             # TODO: for ensemble just to get grad
-            self.parensemble_1.enforce(enforce_bounds=self.enforce_bounds)  # TODO: skip here? Just ensure mean is in.
+            self.parensemble_1_wo_bound_enforce = self.parensemble_1.copy()  # passed to next it
+            self.parensemble_1.enforce(enforce_bounds=self.enforce_bounds)
             self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num,step_size)
                                       + self.paren_prefix.format(0))
             self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
 
             self.logger.log("undertaking calcs for step size (multiplier) : {0}...".format(step_size))
 
-            # TODO: localization (with respect to gradient-dec var relationship only)
+            # TODO: localization (with respect to gradient-dec var relationship only?). Cov localization?
 
             # run the ensemble for diff step size lengths
             self.logger.log("evaluating ensembles for step size : {0}".
@@ -576,9 +575,9 @@ class EnsembleSQP(EnsembleMethod):
             mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
             if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
                 self.parensemble_mean_next = self.parensemble_mean_1.copy()
-                self.parensemble_next = self.parensemble_1.copy()
-                [os.remove(x) for x in os.listdir() if (x.endswith("pst.obsensemble.0000.csv")) or
-                 (x.endswith(".obsensemble.0000.csv") and x.split(".")[2] == str(self.iter_num))]
+                self.parensemble_next = self.parensemble_1_wo_bound_enforce.copy() #self.parensemble_1.copy() TODO: check
+                [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
+                                                        and x.split(".")[2] == str(self.iter_num))]  #or (x.endswith("pst.obsensemble.0000.csv"))
                 self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
                                           + self.obsen_prefix.format(0))
             self.logger.log("evaluating ensembles for step size : {0}".
@@ -586,6 +585,7 @@ class EnsembleSQP(EnsembleMethod):
 
         best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))
         self.best_alpha_per_it[self.iter_num] = best_alpha
+        #self.best_alpha_per_it[self.iter_num] = "best alpha = " + best_alpha
         best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
         best_alpha_per_it_df.to_csv("best_alpha_per_it.csv")
         self.logger.log("best step length (alpha): {0}".format("{0:8.3E}".format(best_alpha)))
