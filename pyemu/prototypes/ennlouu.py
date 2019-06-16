@@ -524,13 +524,11 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.warn("phi gradient is zero!")
         self.logger.log("phi gradient- and search direction-related checks")
         # TODO: using grad info only (with some expected step length), update Hessian from initial
-
         # TODO: handling of fixed, transformed etc. dec vars here
-        # TODO: test multiple step sizes (multipliers?)
 
         step_lengths, mean_en_phi_per_alpha = [],pd.DataFrame()
         #base_step = 1.0  # start with 1.0 and progressively make smaller (will be 1.0 eventually if convex..)
-        # TODO: adjust wrt Hessian?  related to line searching...
+        # TODO: check notion of adjusting alpha wrt Hessian?  similar to line searching...
         base_step = ((self.pst.parameter_data.parubnd.mean()-self.pst.parameter_data.parlbnd.mean()) * 0.1) \
                     / abs(self.search_d.x.mean())
         # TODO: handle log transforms here
@@ -542,22 +540,24 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("computing mean dec var upgrade".format(step_size))
             self.search_d.col_names = ['mean']  # TODO: temp hack
             self.parensemble_mean_1 = self.parensemble_mean + (step_size * self.search_d.T)
+            #np.savetxt(self.pst.filename + "_en_mean_step_{0}_it_{1}.dat".format(step_size,self.iter_num),
+             #          self.parensemble_mean_1.x,fmt="%15.6e")
             # shift parval1
             self.pst.parameter_data.loc[:,"parval1"] = pd.Series(np.squeeze(self.parensemble_mean_1.x, axis=0)).values
-            # and bound handling TODO: bound handling here (on basis of mean en only)
+            # and bound handling
             par = self.pst.parameter_data
             out_of_bounds = par.loc[(par.parubnd < par.parval1) | (par.parlbnd > par.parval1),:]
             if out_of_bounds.shape[0] > 0:
                 self.logger.log("{0} mean dec vars for step {1} out-of-bounds: {2}..."\
                                 .format(out_of_bounds.shape[0],step_size,list(out_of_bounds.parnme)))
-                # TODO: some scaling/truncation strategy?
+                # TODO: or some scaling/truncation strategy?
                 # TODO: could try new alpha (between smaller and the bound violating one)?
+                #continue
+                par.loc[(par.parubnd < par.parval1), "parval1"] = par.parubnd
+                par.loc[(par.parlbnd > par.parval1), "parval1"] = par.parlbnd
+                # TODO: stop alpha testing from here...
                 self.logger.log("{0} mean dec vars for step {1} out-of-bounds: {2}..."\
                                 .format(out_of_bounds.shape[0],step_size,list(out_of_bounds.parnme)))
-                continue
-            np.savetxt(self.pst.filename + "_en_mean_step_{0}_it_{1}.dat".format(step_size,self.iter_num),
-                       self.parensemble_mean_1.x,fmt="%15.6e")
-
             self.logger.log("computing mean dec var upgrade".format(step_size))
 
             self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
@@ -568,8 +568,7 @@ class EnsembleSQP(EnsembleMethod):
             # TODO: alternatively tighten/widen search region to reflect representativeness of gradient (mechanistic)
             # TODO: two sets of bounds: one hard on dec var and one (which can adapt during opt)
             # TODO: for ensemble just to get grad
-            self.parensemble_1_wo_bound_enforce = self.parensemble_1.copy()  # passed to next it
-            self.parensemble_1.enforce(enforce_bounds=self.enforce_bounds)
+            #self.parensemble_1.enforce(enforce_bounds=self.enforce_bounds)  # suffic to check mean
             self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num,step_size)
                                       + self.paren_prefix.format(0))
             self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
@@ -586,7 +585,7 @@ class EnsembleSQP(EnsembleMethod):
             mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
             if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
                 self.parensemble_mean_next = self.parensemble_mean_1.copy()
-                self.parensemble_next = self.parensemble_1_wo_bound_enforce.copy() #self.parensemble_1.copy() TODO: check
+                self.parensemble_next = self.parensemble_1.copy()
                 [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
                                                         and x.split(".")[2] == str(self.iter_num))]  #or (x.endswith("pst.obsensemble.0000.csv"))
                 self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
