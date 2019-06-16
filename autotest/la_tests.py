@@ -440,7 +440,7 @@ def obscomp_test():
     print(df)
 
 if __name__ == "__main__":
-    obscomp_test()
+    #obscomp_test()
     #alternative_dw()
     #freyberg_verf_test()
     #forecast_pestpp_load_test()
@@ -450,7 +450,7 @@ if __name__ == "__main__":
     #par_contrib_test()
     #dataworth_test()
     #dataworth_next_test()
-    #schur_test_nonpest()
+    schur_test_nonpest()
     #la_test_io()
     #errvar_test_nonpest()
     #errvar_test()

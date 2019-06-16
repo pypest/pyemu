@@ -95,10 +95,11 @@ class Schur(LinearAnalysis):
                 r = self.xtqx + pinv
                 r = r.inv
             except Exception as e:
-                self.xtqx.to_binary("xtqx.err.jcb")
+
                 pinv.to_ascii("parcov_inv.err.cov")
                 self.logger.warn("error forming schur's complement: {0}".
                                 format(str(e)))
+                self.xtqx.to_binary("xtqx.err.jcb")
                 self.logger.warn("problemtic xtqx saved to xtqx.err.jcb")
                 self.logger.warn("problematic inverse parcov saved to parcov_inv.err.cov")
                 raise Exception("error forming schur's complement: {0}".
@@ -202,8 +203,13 @@ class Schur(LinearAnalysis):
             return self.__posterior_prediction
         else:
             if self.predictions is not None:
-                self.log("propagating posterior to predictions")
-
+                try:
+                    if self.pst.nnz_obs == 0:
+                        self.log("no non-zero obs, posterior equals prior")
+                        return self.prior_prediction
+                    self.log("propagating posterior to predictions")
+                except:
+                    pass
                 post_cov = self.predictions.T *\
                             self.posterior_parameter * self.predictions
                 self.__posterior_prediction = {n:v for n,v in
@@ -412,7 +418,11 @@ class Schur(LinearAnalysis):
         # for pred in self.predictions:
         #     cond_preds.append(pred.get(keep_names, pred.col_names))
         cond_preds = self.predictions.get(row_names=keep_names)
-        la_cond = Schur(jco=self.jco.get(self.jco.row_names, keep_names),
+        try:
+            pst = self.pst
+        except:
+            pst = None
+        la_cond = Schur(jco=self.jco.get(self.jco.row_names, keep_names),pst=pst,
                         parcov=self.parcov.condition_on(parameter_names),
                         obscov=self.obscov, predictions=cond_preds,verbose=False)
         return la_cond
