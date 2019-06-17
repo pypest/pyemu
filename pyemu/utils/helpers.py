@@ -1468,7 +1468,7 @@ class PstFromFlopyModel(object):
     sfr_pars : bool or list
         setup parameters for the stream flow routing modflow package.
         If list is passed it defiend the parameters to set up.
-    sfr_temporal_pars : bool
+    sfr_temporal_pars : bool, list or dict
         flag to include stress-period level spatially-global multipler parameters in addition to
         the spatially-discrete `sfr_pars`.  Requires `sfr_pars` to be passed.  Default is False
     grid_geostruct : pyemu.geostats.GeoStruct

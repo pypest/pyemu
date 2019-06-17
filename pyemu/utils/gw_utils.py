@@ -1298,17 +1298,6 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
     if tie_hcond:
         if "hcond1" not in par_cols or "hcond2" not in par_cols:
             tie_hcond = False
-    if include_temporal_pars is not None:
-        if include_temporal_pars is True:
-            tmp_par_cols = par_cols
-        elif isinstance(include_temporal_pars, str):
-            tmp_par_cols = [include_temporal_pars]
-        elif isinstance(include_temporal_pars, list):
-            tmp_par_cols = include_temporal_pars
-        include_temporal_pars = True
-    else:
-        tmp_par_cols = []
-        include_temporal_pars = False
         
     if isinstance(nam_file,flopy.modflow.mf.Modflow) and nam_file.sfr is not None:
         m = nam_file
@@ -1317,6 +1306,21 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
     else:
         # load MODFLOW model # is this needed? could we just pass the model if it has already been read in?
         m = flopy.modflow.Modflow.load(nam_file,load_only=["sfr"],model_ws=model_ws,check=False,forgive=False)
+    if include_temporal_pars:
+        if include_temporal_pars is True:
+            tmp_par_cols = {col: range(m.dis.nper) for col in par_cols}
+        elif isinstance(include_temporal_pars, str):
+            tmp_par_cols = {include_temporal_pars: range(m.dis.nper)}
+        elif isinstance(include_temporal_pars, list):
+            tmp_par_cols = {col: range(m.dis.nper)
+                            for col in include_temporal_pars}
+        elif isinstance(include_temporal_pars, dict):
+            tmp_par_cols = include_temporal_pars
+        include_temporal_pars = True
+    else:
+        tmp_par_cols = {}
+        include_temporal_pars = False
+
     #make backup copy of sfr file
     shutil.copy(os.path.join(model_ws,m.sfr.file_name[0]),os.path.join(model_ws,nam_file+"_backup_.sfr"))
 
@@ -1338,12 +1342,12 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
     #make sure all par cols are found and search of any data in kpers
     missing = []
     cols = par_cols.copy()
-    for par_col in set(par_cols + tmp_par_cols):
+    for par_col in set(par_cols + list(tmp_par_cols.keys())):
         if par_col not in seg_data.columns:
             if par_col in cols:
                 missing.append(cols.pop(cols.index(par_col)))
-            if par_col in tmp_par_cols:
-                tmp_par_cols.remove(par_col)
+            if par_col in tmp_par_cols.keys():
+                _ = tmp_par_cols.pop(par_col)
         # look across all kper in multiindex df to check for values entry - fill with absmax should capture entries
         else:
             seg_data.loc[:, par_col] = seg_data_all_kper.loc[:, (slice(None), par_col)].abs().max(level=1, axis=1)
@@ -1365,11 +1369,11 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
     tpl_str, pvals = [], []
     if include_temporal_pars:
         tmp_pnames, tmp_tpl_str = [], []
-        tmp_df = pd.DataFrame(data={c: 1.0 for c in tmp_par_cols},
+        tmp_df = pd.DataFrame(data={c: 1.0 for c in tmp_par_cols.keys()},
                               index=list(m.sfr.segment_data.keys()))
         tmp_df.sort_index(inplace=True)
         tmp_df.to_csv(os.path.join(model_ws, "sfr_seg_temporal_pars.dat"))
-    for par_col in set(cols + tmp_par_cols):
+    for par_col in set(cols + list(tmp_par_cols.keys())):
         print(par_col)
         prefix = par_col
         if tie_hcond and par_col == 'hcond2':
@@ -1381,8 +1385,8 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
             if par_col in cols:
                 # - add to notpar
                 notpar_cols.append(cols.pop(cols.index(par_col)))
-            if par_col in tmp_par_cols:
-                tmp_par_cols.remove(par_col)
+            if par_col in tmp_par_cols.keys():
+                _ = tmp_par_cols.pop(par_col)
         if par_col in cols:
             seg_data.loc[:, par_col] = seg_data.apply(lambda x: "~    {0}_{1:04d}   ~".
                                                       format(prefix, int(x.nseg)) if float(x[par_col]) != 0.0
@@ -1391,13 +1395,15 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
             pnames = seg_data.loc[org_vals.index, par_col]
             pvals.extend(list(org_vals.values))
             tpl_str.extend(list(pnames.values))
-        if par_col in tmp_par_cols:
+        if par_col in tmp_par_cols.keys():
             parnme = tmp_df.index.map(
-                lambda x: "{0}_{1:04d}_tmp".format(par_col, int(x)))
-            tmp_df.loc[:, par_col] = parnme.map(
+                lambda x: "{0}_{1:04d}_tmp".format(par_col, int(x))
+                if x in tmp_par_cols[par_col] else 1.0)
+            sel = parnme != 1.0
+            tmp_df.loc[sel, par_col] = parnme[sel].map(
                 lambda x: "~   {0}  ~".format(x))
-            tmp_tpl_str.extend(list(tmp_df.loc[:, par_col].values))
-            tmp_pnames.extend(list(parnme.values))
+            tmp_tpl_str.extend(list(tmp_df.loc[sel, par_col].values))
+            tmp_pnames.extend(list(parnme[sel].values))
     pnames = [t.replace('~','').strip() for t in tpl_str]
     df = pd.DataFrame({"parnme":pnames,"org_value":pvals,"tpl_str":tpl_str},index=pnames)
     df.drop_duplicates(inplace=True)
@@ -1423,13 +1429,15 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
         write_df_tpl(filename=os.path.join(model_ws,"sfr_seg_temporal_pars.dat.tpl"),df=tmp_df)
         pargp = [pname.split('_')[0]+"_tmp" for pname in tmp_pnames]
         tmp_df = pd.DataFrame(data={"parnme":tmp_pnames,"pargp":pargp},index=tmp_pnames)
-        tmp_df.loc[:,"org_value"] = 1.0
-        tmp_df.loc[:,"tpl_str"] = tmp_tpl_str
-        df = df.append(tmp_df[df.columns])
+        if not tmp_df.empty:
+            tmp_df.loc[:,"org_value"] = 1.0
+            tmp_df.loc[:,"tpl_str"] = tmp_tpl_str
+            df = df.append(tmp_df[df.columns])
     if df.empty:
         warnings.warn("No sfr segment parameters have been set up, "
                       "either none of {0} were found or all were zero.".
-                      format(','.join(set(par_cols + tmp_par_cols))),
+                      format(','.join(set(par_cols + 
+                                          list(tmp_par_cols.keys())))),
                       PyemuWarning)
         return df
 
