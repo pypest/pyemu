@@ -127,7 +127,7 @@ def rosenbrock_2par_grad_approx_invest():
     os.chdir(os.path.join("..", ".."))
 
 
-def rosenbrock_2par_multiple_update(nit=10):
+def rosenbrock_2par_multiple_update(nit=3):
     import pyemu
     import numpy as np
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
@@ -195,7 +195,7 @@ if __name__ == "__main__":
     #rosenbrock_2par_setup()
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
-    #rosenbrock_2par_single_update()
-    rosenbrock_2par_multiple_update()
-    rosenbrock_2par_phi_progress()
+    rosenbrock_2par_single_update()
+    #rosenbrock_2par_multiple_update()
+    #rosenbrock_2par_phi_progress()
     #rosenbrock_2par_grad_approx_invest()
