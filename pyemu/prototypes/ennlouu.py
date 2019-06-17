@@ -366,17 +366,16 @@ class EnsembleSQP(EnsembleMethod):
                 else:
                     damp_factor = 1.0
                 r = (damp_factor * self.y.x) + ((1.0 - damp_factor) * self.H.x * self.s.x)
+                rs = r.T * self.s
                 self.logger.log("using damped version of BFGS alg implementation..")
             else:
                 self.hess_progress[self.iter_num] = "!yTs = {0}!".format(float(ys.x))
                 return self.H, self.hess_progress
 
-        rs = r.T * self.s
-
         # scale
         if self_scale:
             self.logger.log("scaling Hessian...")
-            if damped:
+            if float(ys.x) <= 0 and damped:
                 hess_scalar = float((rs).x / (r.T * r).x)  # Nocedal and Wright
             else:
                 # hess_scale = float((self.y.T * self.s).x / (self.y.T * self.H * self.y).x)  # Oliver et al. (equiv at it 0)
@@ -385,7 +384,10 @@ class EnsembleSQP(EnsembleMethod):
             self.H_cp = self.H.copy()
             self.logger.log("scaling Hessian...")
             if scale_only:
-                self.hess_progress[self.iter_num] = "scaled only: {0}".format(hess_scalar)
+                if damped:
+                    self.hess_progress[self.iter_num] = "scaled (using dampening) only: {0}".format(hess_scalar)
+                else:
+                    self.hess_progress[self.iter_num] = "scaled only: {0}".format(hess_scalar)
                 return self.H, self.hess_progress
 
         # update
@@ -409,9 +411,12 @@ class EnsembleSQP(EnsembleMethod):
 
         # Hessian positive-definite-ness check
         if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):
-            self.logger.warn("Hessian update causes pos-def status to be violated.. skip update (only scale) at this stage...\n")
-            self.hess_progress[self.iter_num] = "scaled only: {0}".format(hess_scalar)
-            self.H = self.H_cp
+            if float(ys.x) <= 0 and damped:
+                self.logger.lraise("Hessian update causes pos-def status to be violated despite using dampening... \n")
+            else:
+                self.logger.warn("Hessian update causes pos-def status to be violated.. skip update (only scale) at this stage...\n")
+                self.hess_progress[self.iter_num] = "scaled only: {0}".format(hess_scalar)
+                self.H = self.H_cp
         else:
             self.hess_progress[self.iter_num] = "scaled ({0}) and updated".format(hess_scalar) #,self.H.as_2d)
 
@@ -644,8 +649,8 @@ class EnsembleSQP(EnsembleMethod):
         if self.iter_num == 1:  # no pre-existing grad or par delta info so scale only.. #TODO: direct query
             self.curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
                                     row_names=self.phi_grad.row_names,col_names=self.phi_grad.col_names)
-            if hess_self_scaling:
-                scale_only = True
+            #if hess_self_scaling:  TODO: don't scale for iteration 1 either?
+             #   scale_only = True
         else:
             scale_only = False  # try scale only for first it
 
