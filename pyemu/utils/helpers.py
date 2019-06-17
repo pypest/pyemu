@@ -1803,7 +1803,7 @@ class PstFromFlopyModel(object):
         self.frun_post_lines.append("pyemu.gw_utils.apply_sfr_obs()")
 
 
-    def setup_sfr_pars(self, par_cols=None, include_temporal_pars=False):
+    def setup_sfr_pars(self, par_cols=None, include_temporal_pars=None):
         """setup multiplier parameters for sfr segment data
         Adding support for reachinput (and isfropt = 1)"""
         assert self.m.sfr is not None, "can't find sfr package..."
@@ -1812,8 +1812,9 @@ class PstFromFlopyModel(object):
         reach_pars = False  # default to False
         seg_pars = True
         par_dfs = {}
-        df = pyemu.gw_utils.setup_sfr_seg_parameters(self.m, par_cols=par_cols,
-                                                     include_temporal_pars=include_temporal_pars)  # now just pass model
+        df = pyemu.gw_utils.setup_sfr_seg_parameters(
+            self.m, par_cols=par_cols, 
+            include_temporal_pars=include_temporal_pars)  # now just pass model
         # self.par_dfs["sfr"] = df
         if df.empty:
             warnings.warn("No sfr segment parameters have been set up", PyemuWarning)

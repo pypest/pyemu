@@ -1223,7 +1223,8 @@ def sfr_helper_test():
 
     m.sfr.segment_data = {k:sd.copy() for k in range(m.nper)}
 
-    df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters(m, include_temporal_pars=True)
+    df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters(
+        m, include_temporal_pars=['hcond1', 'flow'])
     print(df_sfr)
     os.chdir("utils")
 

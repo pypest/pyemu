@@ -1252,7 +1252,7 @@ def apply_sft_obs():
 
 
 def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
-                             tie_hcond=True, include_temporal_pars=False):
+                             tie_hcond=True, include_temporal_pars=None):
     """Setup multiplier parameters for SFR segment data.  Just handles the
     standard input case, not all the cryptic SFR options.  Loads the dis, bas, and sfr files
     with flopy using model_ws.  However, expects that apply_sfr_seg_parameters() will be called
@@ -1271,8 +1271,9 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
             segment data entires to parameterize
         tie_hcond : bool
             flag to use same mult par for hcond1 and hcond2 for a given segment.  Default is True
-        include_temporal_pars : bool
-            flag to include spatially-global multipliers for each par_col for each stress period.  Default is False
+        include_temporal_pars : list
+            list of spatially-global multipliers to set up for 
+            each stress period.  Default is None
 
     Returns
     -------
@@ -1297,7 +1298,7 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
     if tie_hcond:
         if "hcond1" not in par_cols or "hcond2" not in par_cols:
             tie_hcond = False
-    if include_temporal_pars:
+    if include_temporal_pars is not None:
         if include_temporal_pars is True:
             tmp_par_cols = par_cols
         elif isinstance(include_temporal_pars, str):
@@ -1376,8 +1377,9 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
         if seg_data.loc[:, par_col].sum() == 0.0:
             print("all zeros for {0}...skipping...".format(par_col))
             #seg_data.loc[:,par_col] = 1
-            # all zero so no need to set up - add to notpar
+            # all zero so no need to set up
             if par_col in cols:
+                # - add to notpar
                 notpar_cols.append(cols.pop(cols.index(par_col)))
             if par_col in tmp_par_cols:
                 tmp_par_cols.remove(par_col)
@@ -1392,7 +1394,7 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
         if par_col in tmp_par_cols:
             parnme = tmp_df.index.map(
                 lambda x: "{0}_{1:04d}_tmp".format(par_col, int(x)))
-            tmp_df.loc[:,par_col] = parnme.map(
+            tmp_df.loc[:, par_col] = parnme.map(
                 lambda x: "~   {0}  ~".format(x))
             tmp_tpl_str.extend(list(tmp_df.loc[:, par_col].values))
             tmp_pnames.extend(list(parnme.values))
@@ -1400,10 +1402,10 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
     df = pd.DataFrame({"parnme":pnames,"org_value":pvals,"tpl_str":tpl_str},index=pnames)
     df.drop_duplicates(inplace=True)
     if df.empty:
-        warnings.warn("No sfr segment parameters have been set up, either none of {0} were found or all were zero.".
+        warnings.warn("No spatial sfr segment parameters have been set up, "
+                      "either none of {0} were found or all were zero.".
                       format(','.join(par_cols)), PyemuWarning)
-        return df
-
+        # return df
     # set not par cols to 1.0
     seg_data.loc[:, notpar_cols] = "1.0"
 
@@ -1415,26 +1417,21 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
     assert len(parnme) == df.shape[0]
 
     #set some useful par info
-    df.loc[:,"pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
+    df["pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
 
     if include_temporal_pars:
-        # # include only stress periods that are explicitly listed in segment data
-        # pnames,tpl_str = [],[]
-        # tmp_df = pd.DataFrame(data={c:1.0 for c in cols},index=list(m.sfr.segment_data.keys()))
-        # tmp_df.sort_index(inplace=True)
-        # tmp_df.to_csv(os.path.join(model_ws,"sfr_seg_temporal_pars.dat"))
-        # for par_col in cols:
-        #     print(par_col)
-        #     parnme = tmp_df.index.map(lambda x: "{0}_{1:04d}_tmp".format(par_col,int(x)))
-        #     tmp_df.loc[:,par_col] = parnme.map(lambda x: "~   {0}  ~".format(x))
-        #     tpl_str.extend(list(tmp_df.loc[:,par_col].values))
-        #     pnames.extend(list(parnme.values))
         write_df_tpl(filename=os.path.join(model_ws,"sfr_seg_temporal_pars.dat.tpl"),df=tmp_df)
         pargp = [pname.split('_')[0]+"_tmp" for pname in tmp_pnames]
         tmp_df = pd.DataFrame(data={"parnme":tmp_pnames,"pargp":pargp},index=tmp_pnames)
         tmp_df.loc[:,"org_value"] = 1.0
         tmp_df.loc[:,"tpl_str"] = tmp_tpl_str
         df = df.append(tmp_df[df.columns])
+    if df.empty:
+        warnings.warn("No sfr segment parameters have been set up, "
+                      "either none of {0} were found or all were zero.".
+                      format(','.join(set(par_cols + tmp_par_cols))),
+                      PyemuWarning)
+        return df
 
     # write the config file used by apply_sfr_pars()
     with open(os.path.join(model_ws, "sfr_seg_pars.config"), 'w') as f:
@@ -1446,7 +1443,6 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
             f.write("time_mult_file sfr_seg_temporal_pars.dat\n")
 
     # set some useful par info
-    # df.loc[:, "pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
     df.loc[:, "parubnd"] = 1.25
     df.loc[:, "parlbnd"] = 0.75
     hpars = df.loc[df.pargp.apply(lambda x: x.startswith("hcond")), "parnme"]
@@ -1601,55 +1597,6 @@ def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
     import flopy
     bak_sfr_file,pars = None,None
 
-    # if seg_pars:
-    #     config_file = "sfr_seg_pars.config"
-    #     idx_cols = ['nseg', 'icalc', 'outseg', 'iupseg', 'iprior', 'nstrpts']
-    # else:
-    #     config_file = "sfr_reach_pars.config"
-    #     idx_cols = ["node", "k", "i", "j", "iseg", "ireach", "reachID", "outreach"]
-    #
-    # assert os.path.exists(config_file),"gw_utils.apply_sfr_pars() error: config file {0} missing".format(config_file)
-    # with open(config_file, 'r') as f:
-    #     pars = {}
-    #     for line in f:
-    #         line = line.strip().split()
-    #         pars[line[0]] = line[1]
-    #
-    # m = flopy.modflow.Modflow.load(pars["nam_file"], load_only=[], check=False)
-    # bak_sfr_file = pars["nam_file"] + "_backup_.sfr"
-    # sfr = flopy.modflow.ModflowSfr2.load(os.path.join(bak_sfr_file), m)
-    # sfrfile = pars["sfr_filename"]
-    #
-    #
-    # mlt_df = pd.read_csv(pars["mult_file"], delim_whitespace=False, index_col=0)
-    # present_cols = [c for c in idx_cols if c in mlt_df.columns]
-    # mlt_cols = mlt_df.columns.drop(present_cols)
-    #
-    # if seg_pars:
-    #     for key, val in m.sfr.segment_data.items():
-    #         df = pd.DataFrame.from_records(val)
-    #         df.loc[:, mlt_cols] *= mlt_df.loc[:, mlt_cols]
-    #         val = df.to_records(index=False)
-    #         sfr.segment_data[key] = val
-    # else:
-    #     df = pd.DataFrame.from_records(m.sfr.reach_data)
-    #     df.loc[:, mlt_cols] *= mlt_df.loc[:, mlt_cols]
-    #     sfr.reach_data = df.to_records(index=False)
-    #
-    #
-    # if "time_mult_file" in pars:
-    #     time_mult_file = pars["time_mult_file"]
-    #     time_mlt_df = pd.read_csv(pars["time_mult_file"], delim_whitespace=False, index_col=0)
-    #     for kper,sdata in m.sfr.segment_data.items():
-    #         assert kper in time_mlt_df.index,"gw_utils.apply_sfr_seg_parameters() error: kper "+\
-    #                                          "{0} not in time_mlt_df index".format(kper)
-    #         for col in time_mlt_df.columns:
-    #             sdata[col] *= time_mlt_df.loc[kper,col]
-    #
-    #
-    # sfr.write_file(filename=sfrfile)
-    # return sfr
-
     if seg_pars:
         assert os.path.exists("sfr_seg_pars.config")
 
@@ -1664,10 +1611,10 @@ def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
         sfr = flopy.modflow.ModflowSfr2.load(os.path.join(bak_sfr_file), m)
         sfrfile = pars["sfr_filename"]
         mlt_df = pd.read_csv(pars["mult_file"], delim_whitespace=False, index_col=0)
-        time_mlt_df = None
-        if "time_mult_file" in pars:
-            time_mult_file = pars["time_mult_file"]
-            time_mlt_df = pd.read_csv(pars["time_mult_file"], delim_whitespace=False,index_col=0)
+        # time_mlt_df = None
+        # if "time_mult_file" in pars:
+        #     time_mult_file = pars["time_mult_file"]
+        #     time_mlt_df = pd.read_csv(pars["time_mult_file"], delim_whitespace=False,index_col=0)
 
         idx_cols = ['nseg', 'icalc', 'outseg', 'iupseg', 'iprior', 'nstrpts']
         present_cols = [c for c in idx_cols if c in mlt_df.columns]
