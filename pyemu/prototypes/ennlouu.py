@@ -371,11 +371,16 @@ class EnsembleSQP(EnsembleMethod):
                 self.hess_progress[self.iter_num] = "!yTs = {0}!".format(float(ys.x))
                 return self.H, self.hess_progress
 
+        rs = r.T * self.s
+
         # scale
         if self_scale:
             self.logger.log("scaling Hessian...")
-            # hess_scale = float((self.y.T * self.s).x / (self.y.T * self.H * self.y).x)  # Oliver et al. (equiv at it 0)
-            hess_scalar = float((self.y.T * self.s).x / (self.y.T * self.y).x)  # Nocedal and Wright
+            if damped:
+                hess_scalar = float((rs).x / (r.T * r).x)  # Nocedal and Wright
+            else:
+                # hess_scale = float((self.y.T * self.s).x / (self.y.T * self.H * self.y).x)  # Oliver et al. (equiv at it 0)
+                hess_scalar = float((ys).x / (self.y.T * self.y).x)  # Nocedal and Wright
             self.H *= hess_scalar
             self.H_cp = self.H.copy()
             self.logger.log("scaling Hessian...")
@@ -391,7 +396,6 @@ class EnsembleSQP(EnsembleMethod):
 
         if damped:
             # expanded form of Nocedal and Wright (18.16)
-            rs = r.T * self.s
             Hr = self.H * r
             rHr = r.T * Hr
             self.H += (float(rs.x + rHr.x)) * ssT.x / float((rs ** 2).x)  # TODO: add scalar handling to mat_handler (Exception on line 473)
