@@ -366,7 +366,7 @@ class EnsembleSQP(EnsembleMethod):
                 else:
                     damp_factor = 1.0
                 r = (damp_factor * self.y.x) + ((1.0 - damp_factor) * self.H.x * self.s.x)
-                rs = r.T * self.s
+                rs = r.T * self.s.x
                 self.logger.log("using damped version of BFGS alg implementation..")
             else:
                 self.hess_progress[self.iter_num] = "!yTs = {0}!".format(float(ys.x))
