@@ -1251,7 +1251,7 @@ def apply_sft_obs():
     return df
 
 
-def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff", "hcond1", "pptsw"],
+def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
                              tie_hcond=True, include_temporal_pars=False):
     """Setup multiplier parameters for SFR segment data.  Just handles the
     standard input case, not all the cryptic SFR options.  Loads the dis, bas, and sfr files
@@ -1297,7 +1297,18 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
     if tie_hcond:
         if "hcond1" not in par_cols or "hcond2" not in par_cols:
             tie_hcond = False
-
+    if include_temporal_pars:
+        if include_temporal_pars is True:
+            tmp_par_cols = par_cols
+        elif isinstance(include_temporal_pars, str):
+            tmp_par_cols = [include_temporal_pars]
+        elif isinstance(include_temporal_pars, list):
+            tmp_par_cols = include_temporal_pars
+        include_temporal_pars = True
+    else:
+        tmp_par_cols = []
+        include_temporal_pars = False
+        
     if isinstance(nam_file,flopy.modflow.mf.Modflow) and nam_file.sfr is not None:
         m = nam_file
         nam_file = m.namefile
@@ -1326,10 +1337,12 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
     #make sure all par cols are found and search of any data in kpers
     missing = []
     cols = par_cols.copy()
-    for par_col in par_cols:
+    for par_col in set(par_cols + tmp_par_cols):
         if par_col not in seg_data.columns:
-            missing.append(par_col)
-            cols.remove(par_col)
+            if par_col in cols:
+                missing.append(cols.pop(cols.index(par_col)))
+            if par_col in tmp_par_cols:
+                tmp_par_cols.remove(par_col)
         # look across all kper in multiindex df to check for values entry - fill with absmax should capture entries
         else:
             seg_data.loc[:, par_col] = seg_data_all_kper.loc[:, (slice(None), par_col)].abs().max(level=1, axis=1)
@@ -1349,23 +1362,40 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
 
     #process par cols
     tpl_str, pvals = [], []
-    for par_col in cols:
+    if include_temporal_pars:
+        tmp_pnames, tmp_tpl_str = [], []
+        tmp_df = pd.DataFrame(data={c: 1.0 for c in tmp_par_cols},
+                              index=list(m.sfr.segment_data.keys()))
+        tmp_df.sort_index(inplace=True)
+        tmp_df.to_csv(os.path.join(model_ws, "sfr_seg_temporal_pars.dat"))
+    for par_col in set(cols + tmp_par_cols):
+        print(par_col)
         prefix = par_col
         if tie_hcond and par_col == 'hcond2':
             prefix = 'hcond1'
         if seg_data.loc[:, par_col].sum() == 0.0:
             print("all zeros for {0}...skipping...".format(par_col))
             #seg_data.loc[:,par_col] = 1
-        else:
+            # all zero so no need to set up - add to notpar
+            if par_col in cols:
+                notpar_cols.append(cols.pop(cols.index(par_col)))
+            if par_col in tmp_par_cols:
+                tmp_par_cols.remove(par_col)
+        if par_col in cols:
             seg_data.loc[:, par_col] = seg_data.apply(lambda x: "~    {0}_{1:04d}   ~".
                                                       format(prefix, int(x.nseg)) if float(x[par_col]) != 0.0
                                                       else "1.0", axis=1)
-
             org_vals = seg_data_org.loc[seg_data_org.loc[:, par_col] != 0.0, par_col]
             pnames = seg_data.loc[org_vals.index, par_col]
             pvals.extend(list(org_vals.values))
             tpl_str.extend(list(pnames.values))
-
+        if par_col in tmp_par_cols:
+            parnme = tmp_df.index.map(
+                lambda x: "{0}_{1:04d}_tmp".format(par_col, int(x)))
+            tmp_df.loc[:,par_col] = parnme.map(
+                lambda x: "~   {0}  ~".format(x))
+            tmp_tpl_str.extend(list(tmp_df.loc[:, par_col].values))
+            tmp_pnames.extend(list(parnme.values))
     pnames = [t.replace('~','').strip() for t in tpl_str]
     df = pd.DataFrame({"parnme":pnames,"org_value":pvals,"tpl_str":tpl_str},index=pnames)
     df.drop_duplicates(inplace=True)
@@ -1380,38 +1410,31 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
     #write the template file
     write_df_tpl(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"), seg_data, sep=',')
 
-
-
     #make sure the tpl file exists and has the same num of pars
     parnme = parse_tpl_file(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"))
     assert len(parnme) == df.shape[0]
 
     #set some useful par info
     df.loc[:,"pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
-    df.loc[:,"parubnd"] = 1.25
-    df.loc[:,"parlbnd"] = 0.75
-    hpars = df.loc[df.pargp.apply(lambda x: x.startswith("hcond")),"parnme"]
-    df.loc[hpars,"parubnd"] = 100.0
-    df.loc[hpars, "parlbnd"] = 0.01
 
     if include_temporal_pars:
-        # include only stress periods that are explicitly listed in segment data
-        pnames,tpl_str = [],[]
-        tmp_df = pd.DataFrame(data={c:1.0 for c in cols},index=list(m.sfr.segment_data.keys()))
-        tmp_df.sort_index(inplace=True)
-        tmp_df.to_csv(os.path.join(model_ws,"sfr_seg_temporal_pars.dat"))
-        for par_col in cols:
-            print(par_col)
-            parnme = tmp_df.index.map(lambda x: "{0}_{1:04d}_tmp".format(par_col,int(x)))
-            tmp_df.loc[:,par_col] = parnme.map(lambda x: "~   {0}  ~".format(x))
-            tpl_str.extend(list(tmp_df.loc[:,par_col].values))
-            pnames.extend(list(parnme.values))
+        # # include only stress periods that are explicitly listed in segment data
+        # pnames,tpl_str = [],[]
+        # tmp_df = pd.DataFrame(data={c:1.0 for c in cols},index=list(m.sfr.segment_data.keys()))
+        # tmp_df.sort_index(inplace=True)
+        # tmp_df.to_csv(os.path.join(model_ws,"sfr_seg_temporal_pars.dat"))
+        # for par_col in cols:
+        #     print(par_col)
+        #     parnme = tmp_df.index.map(lambda x: "{0}_{1:04d}_tmp".format(par_col,int(x)))
+        #     tmp_df.loc[:,par_col] = parnme.map(lambda x: "~   {0}  ~".format(x))
+        #     tpl_str.extend(list(tmp_df.loc[:,par_col].values))
+        #     pnames.extend(list(parnme.values))
         write_df_tpl(filename=os.path.join(model_ws,"sfr_seg_temporal_pars.dat.tpl"),df=tmp_df)
-        pargp = [pname.split('_')[0]+"_tmp" for pname in pnames]
-        tmp_df = pd.DataFrame(data={"parnme":pnames,"pargp":pargp},index=pnames)
+        pargp = [pname.split('_')[0]+"_tmp" for pname in tmp_pnames]
+        tmp_df = pd.DataFrame(data={"parnme":tmp_pnames,"pargp":pargp},index=tmp_pnames)
         tmp_df.loc[:,"org_value"] = 1.0
-        tmp_df.loc[:,"tpl_str"] = tpl_str
-        df = df.append(tmp_df)
+        tmp_df.loc[:,"tpl_str"] = tmp_tpl_str
+        df = df.append(tmp_df[df.columns])
 
     # write the config file used by apply_sfr_pars()
     with open(os.path.join(model_ws, "sfr_seg_pars.config"), 'w') as f:
@@ -1422,9 +1445,8 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
         if include_temporal_pars:
             f.write("time_mult_file sfr_seg_temporal_pars.dat\n")
 
-
     # set some useful par info
-    df.loc[:, "pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
+    # df.loc[:, "pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
     df.loc[:, "parubnd"] = 1.25
     df.loc[:, "parlbnd"] = 0.75
     hpars = df.loc[df.pargp.apply(lambda x: x.startswith("hcond")), "parnme"]
