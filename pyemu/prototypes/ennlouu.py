@@ -365,9 +365,14 @@ class EnsembleSQP(EnsembleMethod):
                                         / (self.s.T * self.H * self.s).x - (self.s.T * self.y).x)
                 else:
                     damp_factor = 1.0
-                r = (damp_factor * self.y.x) + ((1.0 - damp_factor) * self.H.x * self.s.x)
+                r = (damp_factor * self.y.x) + ((1.0 - damp_factor) * (self.H * self.s).x)
+                r = Matrix(x=r,row_names=self.y.row_names,col_names=self.y.col_names)
                 rs = r.T * self.s.x
                 self.logger.log("using damped version of BFGS alg implementation..")
+                hess_scalar = float(rs.x / (r.T * r).x)
+                if hess_scalar < 0:
+                    self.hess_progress[self.iter_num] = "skip scaling despite using dampening".format(float(rs.x))
+                    return self.H, self.hess_progress
             else:
                 self.hess_progress[self.iter_num] = "!yTs = {0}!".format(float(ys.x))
                 return self.H, self.hess_progress
@@ -376,10 +381,10 @@ class EnsembleSQP(EnsembleMethod):
         if self_scale:
             self.logger.log("scaling Hessian...")
             if float(ys.x) <= 0 and damped:
-                hess_scalar = float((rs).x / (r.T * r).x)  # Nocedal and Wright
+                hess_scalar = float(rs.x / (r.T * r).x)  # Nocedal and Wright
             else:
                 # hess_scale = float((self.y.T * self.s).x / (self.y.T * self.H * self.y).x)  # Oliver et al. (equiv at it 0)
-                hess_scalar = float((ys).x / (self.y.T * self.y).x)  # Nocedal and Wright
+                hess_scalar = float(ys.x / (self.y.T * self.y).x)  # Nocedal and Wright
             self.H *= hess_scalar
             self.H_cp = self.H.copy()
             self.logger.log("scaling Hessian...")
@@ -396,7 +401,7 @@ class EnsembleSQP(EnsembleMethod):
         ssT = self.s * self.s.T  # outer prod
         Hy = self.H * self.y
 
-        if damped:
+        if damped and float(ys.x) <= 0:
             # expanded form of Nocedal and Wright (18.16)
             Hr = self.H * r
             rHr = r.T * Hr
@@ -649,8 +654,8 @@ class EnsembleSQP(EnsembleMethod):
         if self.iter_num == 1:  # no pre-existing grad or par delta info so scale only.. #TODO: direct query
             self.curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
                                     row_names=self.phi_grad.row_names,col_names=self.phi_grad.col_names)
-            #if hess_self_scaling:  TODO: don't scale for iteration 1 either?
-             #   scale_only = True
+            if hess_self_scaling:
+                scale_only = True  # TODO: don't scale for iteration 1?
         else:
             scale_only = False  # try scale only for first it
 
