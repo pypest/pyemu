@@ -3,9 +3,12 @@ if not os.path.exists("temp"):
     os.mkdir("temp")
 
 
-def rosenbrock_2par_setup():
+def rosenbrock_setup(version):
     import pyemu
-    os.chdir(os.path.join("ennlouu","rosenbrock_2par"))
+    if version == "2par":
+        os.chdir(os.path.join("ennlouu","rosenbrock_2par"))
+    elif version == "high_dim":
+        os.chdir(os.path.join("ennlouu","rosenbrock_high_dim"))
     in_file = os.path.join("par.dat")
     tpl_file = in_file+".tpl"
     out_file = os.path.join("obs.dat")
@@ -13,19 +16,22 @@ def rosenbrock_2par_setup():
     pst = pyemu.helpers.pst_from_io_files(tpl_file,in_file,ins_file,out_file)
     par = pst.parameter_data
     par.loc[:,"partrans"] = "none"
-    #par.loc[:,"parval1"] = 4.0
-    par.loc["par1", "parval1"], par.loc["par2", "parval1"] = 0.45, 0.45
-    par.loc[:,"parubnd"] = 2.0
-    par.loc[:,"parlbnd"] = -2.0
+    par.loc[:,"parval1"] = 0.45
+    par.loc[:,"parubnd"] = 2.2
+    par.loc[:,"parlbnd"] = -2.2
     # TODO: repeat with log transform
     obs = pst.observation_data
     obs.loc[:,"obsval"] = 0.0
     obs.loc[:,"weight"] = 1.0
     obs.loc[:,"obgnme"] = "obj_fn"
     #pst.pestpp_options["opt_obj_func"] = "obj_fn"
-    pst.model_command = ["python rosenbrock_2par.py"]
     pst.control_data.noptmax = 0
-    pst.write(os.path.join("rosenbrock_2par.pst"))
+    if version == "2par":
+        pst.model_command = ["python rosenbrock_2par.py"]
+        pst.write(os.path.join("rosenbrock_2par.pst"))
+    elif version == "high_dim":
+        pst.model_command = ["python rosenbrock_high_dim.py"]
+        pst.write(os.path.join("rosenbrock_high_dim.pst"))
 
     os.chdir(os.path.join("..",".."))
 
@@ -193,10 +199,11 @@ def rosenbrock_2par_phi_progress():
 
 
 if __name__ == "__main__":
-    rosenbrock_2par_setup()
+    #rosenbrock_setup(version="2par")
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    rosenbrock_2par_multiple_update()
-    rosenbrock_2par_phi_progress()
+    #rosenbrock_2par_multiple_update()
+    #rosenbrock_2par_phi_progress()
     #rosenbrock_2par_grad_approx_invest()
+    rosenbrock_setup(version="high_dim")
