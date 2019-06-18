@@ -357,7 +357,7 @@ class EnsembleSQP(EnsembleMethod):
                              "  Skipping scaling/updating at this iteration (not recommended - see damping option)...")
             if damped:  # damped where required only
                 self.logger.log("using damped version of BFGS alg implementation..")
-                damp_par = 0.05  # TODO: allow user to pass but with default??
+                damp_par = 0.2  # TODO: allow user to pass but with default??
                 sHs = self.s.T * self.H * self.s  # a scalar
                 dampening_cond = damp_par * float(sHs.x)
                 if float(ys.x) < dampening_cond:

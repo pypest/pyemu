@@ -13,8 +13,9 @@ def rosenbrock_2par_setup():
     pst = pyemu.helpers.pst_from_io_files(tpl_file,in_file,ins_file,out_file)
     par = pst.parameter_data
     par.loc[:,"partrans"] = "none"
-    par.loc[:,"parval1"] = 4.0
-    par.loc[:,"parubnd"] = 6.0
+    #par.loc[:,"parval1"] = 4.0
+    par.loc["par1", "parval1"], par.loc["par2", "parval1"] = 0.45, 0.45
+    par.loc[:,"parubnd"] = 2.0
     par.loc[:,"parlbnd"] = -2.0
     # TODO: repeat with log transform
     obs = pst.observation_data
@@ -192,7 +193,7 @@ def rosenbrock_2par_phi_progress():
 
 
 if __name__ == "__main__":
-    #rosenbrock_2par_setup()
+    rosenbrock_2par_setup()
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
