@@ -374,7 +374,7 @@ class EnsembleSQP(EnsembleMethod):
                     self.hess_progress[self.iter_num] = "skip scaling despite using dampening".format(float(rs.x))
                     return self.H, self.hess_progress
             else:
-                self.hess_progress[self.iter_num] = "!yTs = {0}!".format(float(ys.x))
+                self.hess_progress[self.iter_num] = "yTs = {0:8.3E}".format(float(ys.x))
                 return self.H, self.hess_progress
 
         # scale
@@ -390,9 +390,9 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("scaling Hessian...")
             if scale_only:
                 if damped:
-                    self.hess_progress[self.iter_num] = "scaled (using dampening) only: {0}".format(hess_scalar)
+                    self.hess_progress[self.iter_num] = "scaled (using dampening) only: {0:8.3E}".format(hess_scalar)
                 else:
-                    self.hess_progress[self.iter_num] = "scaled only: {0}".format(hess_scalar)
+                    self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
                 return self.H, self.hess_progress
 
         # update
@@ -420,10 +420,10 @@ class EnsembleSQP(EnsembleMethod):
                 self.logger.lraise("Hessian update causes pos-def status to be violated despite using dampening... \n")
             else:
                 self.logger.warn("Hessian update causes pos-def status to be violated.. skip update (only scale) at this stage...\n")
-                self.hess_progress[self.iter_num] = "scaled only: {0}".format(hess_scalar)
+                self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
                 self.H = self.H_cp
         else:
-            self.hess_progress[self.iter_num] = "scaled ({0}) and updated".format(hess_scalar) #,self.H.as_2d)
+            self.hess_progress[self.iter_num] = "scaled ({0:8.3E}) and updated".format(hess_scalar) #,self.H.as_2d)
 
         return self.H, self.hess_progress
 
@@ -434,7 +434,7 @@ class EnsembleSQP(EnsembleMethod):
         # TODO
 
 
-    def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=True,
+    def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=False,
                grad_calc_only=False,finite_diff_grad=False):#localizer=None,run_subset=None,
         """
         Perform one quasi-Newton update

@@ -186,10 +186,11 @@ def rosenbrock_phi_progress(version):
     ylim = ax.get_ylim()
     hess_df = pd.read_csv("hess_progress.csv",index_col=0).T
     alpha_df = pd.read_csv("best_alpha_per_it.csv",index_col=0).T
+    hess_df.columns, alpha_df.columns = ["hess"], ["alpha"]
     hess_and_alpha = pd.concat((hess_df,alpha_df),1)
     for i,v in hess_and_alpha.iterrows():
-        ax.text(x=float(i),y=(ylim[1]+(0.05 * (ylim[1]-ylim[0]))),s=str(v[0]),
-                fontsize=5,rotation=45,color='m',ha='center', va='center')
+        ax.text(x=float(i),y=(ylim[1]+(0.05 * (ylim[1]-ylim[0]))),s="{0};\nalpha: {1}".format(v[0],v[1]),
+                fontsize=5,rotation=45,color='r',ha='center', va='center')
     #plt.legend()
     plt.show()
     os.chdir(os.path.join("..", ".."))
@@ -210,7 +211,8 @@ if __name__ == "__main__":
     #rosenbrock_multiple_update(version="2par")
     #rosenbrock_phi_progress(version="2par")
     #rosenbrock_2par_grad_approx_invest()
-    #rosenbrock_setup(version="high_dim")
+
+    rosenbrock_setup(version="high_dim")
     rosenbrock_multiple_update(version="high_dim")
     rosenbrock_phi_progress(version="high_dim")
 
