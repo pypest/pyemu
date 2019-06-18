@@ -1223,7 +1223,8 @@ def sfr_helper_test():
 
     m.sfr.segment_data = {k:sd.copy() for k in range(m.nper)}
 
-    df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters(m, include_temporal_pars=True)
+    df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters(
+        m, include_temporal_pars=['hcond1', 'flow'])
     print(df_sfr)
     os.chdir("utils")
 
@@ -1677,7 +1678,7 @@ if __name__ == "__main__":
     #sfr_reach_obs_test()
     #gage_obs_test()
     #setup_pp_test()
-    #sfr_helper_test()
+    sfr_helper_test()
     # gw_sft_ins_test()
     # par_knowledge_test()
     # grid_obs_test()
@@ -1698,7 +1699,7 @@ if __name__ == "__main__":
     # tpl_to_dataframe_test()
     # kl_test()
     # hfb_test()
-    hfb_zn_mult_test()
+    # hfb_zn_mult_test()
     #more_kl_test()
     #zero_order_regul_test()
     # first_order_pearson_regul_test()

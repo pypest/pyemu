@@ -466,7 +466,10 @@ def from_flopy():
 
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
-                                             model_exe_name="mfnwt", sfr_pars=['flow', 'not_a_par'], sfr_obs=True)
+                                             model_exe_name="mfnwt", 
+                                             sfr_pars=['flow', 'not_a_par'],
+                                             temporal_sfr_pars=True,
+                                             sfr_obs=True)
     try:
         pe = helper.draw(100)
     except:
@@ -665,7 +668,7 @@ def from_flopy_reachinput():
         if i < 5:
             include_temporal_pars = False
         else:
-            include_temporal_pars = True
+            include_temporal_pars = {'flow': [0], 'runoff': [2]}
         helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                                  hds_kperk=[0, 0], remove_existing=True,
                                                  model_exe_name="mfnwt", sfr_pars=sfr_par,
@@ -1248,7 +1251,7 @@ if __name__ == "__main__":
     #new_format_test()
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
-    pst_from_flopy_geo_draw_test()
+    # pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
     #res_stats_test()
@@ -1259,10 +1262,10 @@ if __name__ == "__main__":
     # run_array_pars()
     #from_flopy_zone_pars()
     #from_flopy_pp_test()
-    #from_flopy()
+    # from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
-    #from_flopy_reachinput()
+    from_flopy_reachinput()
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
