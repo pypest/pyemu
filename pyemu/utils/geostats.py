@@ -655,7 +655,7 @@ class OrdinaryKrige(object):
 
     def calc_factors_grid(self,spatial_reference,zone_array=None,minpts_interp=1,
                           maxpts_interp=20,search_radius=1.0e+10,verbose=False,
-                          var_filename=None, forgive=False):
+                          var_filename=None, forgive=False,num_threads=1):
         """ calculate kriging factors (weights) for a structured grid.
 
         Parameters
@@ -746,11 +746,19 @@ class OrdinaryKrige(object):
 
         # the simple case of no zone array: ignore point_data zones
         if zone_array is None:
-            df = self.calc_factors(x.ravel(),y.ravel(),
-                               minpts_interp=minpts_interp,
-                               maxpts_interp=maxpts_interp,
-                               search_radius=search_radius,
-                               verbose=verbose, forgive=forgive)
+            if num_threads == 1:
+                df = self.calc_factors_org(x.ravel(),y.ravel(),
+                                   minpts_interp=minpts_interp,
+                                   maxpts_interp=maxpts_interp,
+                                   search_radius=search_radius,
+                                   verbose=verbose, forgive=forgive)
+            else:
+                df = self.calc_factors_mp(x.ravel(), y.ravel(),
+                                           minpts_interp=minpts_interp,
+                                           maxpts_interp=maxpts_interp,
+                                           search_radius=search_radius,
+                                           verbose=verbose, forgive=forgive,
+                                          num_threads=num_threads)
             if var_filename is not None:
                 arr = df.err_var.values.reshape(x.shape)
                 np.savetxt(var_filename,arr,fmt="%15.6E")
@@ -770,12 +778,20 @@ class OrdinaryKrige(object):
                 xzone,yzone = x.copy(),y.copy()
                 xzone[zone_array!=pt_data_zone] = np.NaN
                 yzone[zone_array!=pt_data_zone] = np.NaN
-                df = self.calc_factors(xzone.ravel(),yzone.ravel(),
-                                       minpts_interp=minpts_interp,
-                                       maxpts_interp=maxpts_interp,
-                                       search_radius=search_radius,
-                                       verbose=verbose,pt_zone=pt_data_zone,
-                                       forgive=forgive)
+                if num_threads == 1:
+                    df = self.calc_factors_org(xzone.ravel(),yzone.ravel(),
+                                           minpts_interp=minpts_interp,
+                                           maxpts_interp=maxpts_interp,
+                                           search_radius=search_radius,
+                                           verbose=verbose,pt_zone=pt_data_zone,
+                                           forgive=forgive)
+                else:
+                    df = self.calc_factors_mp(xzone.ravel(), yzone.ravel(),
+                                           minpts_interp=minpts_interp,
+                                           maxpts_interp=maxpts_interp,
+                                           search_radius=search_radius,
+                                           verbose=verbose, pt_zone=pt_data_zone,
+                                           forgive=forgive,num_threads=num_threads)
                 dfs.append(df)
                 if var_filename is not None:
                     a = df.err_var.values.reshape(x.shape)
@@ -788,7 +804,33 @@ class OrdinaryKrige(object):
             np.savetxt(var_filename,arr,fmt="%15.6E")
         return df
 
-    def calc_factors(self,x,y,minpts_interp=1,maxpts_interp=20,
+    def dist_calcs(self,ix, iy, ptx_array, pty_array, ptnames, sqradius):
+        #  calc dist from this interp point to all point data...slow
+        dist = pd.Series((ptx_array - ix) ** 2 + (pty_array - iy) ** 2, ptnames)
+        dist.sort_values(inplace=True)
+        dist = dist.loc[dist <= sqradius]
+        return dist
+
+    def cov_points(self,ix, iy, pt_names):
+        interp_cov = self.geostruct.covariance_points(ix, iy, self.point_data.loc[pt_names, "x"],
+                                                      self.point_data.loc[pt_names, "y"])
+        return interp_cov
+
+    def form(self,pt_names, point_cov, interp_cov):
+        # form the linear algebra parts and solve
+        d = len(pt_names) + 1  # +1 for lagrange mult
+        A = np.ones((d, d))
+        A[:-1, :-1] = point_cov.values
+        A[-1, -1] = 0.0  # unbiaised constraint
+        rhs = np.ones((d, 1))
+        rhs[:-1, 0] = interp_cov
+        return A, rhs
+
+    def solve(self,A, rhs):
+        return np.linalg.solve(A, rhs)
+
+
+    def calc_factors_org(self,x,y,minpts_interp=1,maxpts_interp=20,
                      search_radius=1.0e+10,verbose=False,
                      pt_zone=None,forgive=False):
         """ calculate ordinary kriging factors (weights) for the points
@@ -835,6 +877,8 @@ class OrdinaryKrige(object):
 
         assert len(x) == len(y)
 
+
+
         # find the point data to use for each interp point
         sqradius = search_radius**2
         df = pd.DataFrame(data={'x':x,'y':y})
@@ -850,6 +894,9 @@ class OrdinaryKrige(object):
             pty_array = pt_data.loc[pt_data.zone==pt_zone,"y"].values
             ptnames = pt_data.loc[pt_data.zone==pt_zone,"name"].values
         #if verbose:
+
+
+
         print("starting interp point loop for {0} points".format(df.shape[0]))
         start_loop = datetime.now()
         for idx,(ix,iy) in enumerate(zip(df.x,df.y)):
@@ -867,9 +914,11 @@ class OrdinaryKrige(object):
             #     print("calc ipoint dist...",end='')
 
             #  calc dist from this interp point to all point data...slow
-            dist = pd.Series((ptx_array-ix)**2 + (pty_array-iy)**2,ptnames)
-            dist.sort_values(inplace=True)
-            dist = dist.loc[dist <= sqradius]
+            #dist = pd.Series((ptx_array-ix)**2 + (pty_array-iy)**2,ptnames)
+            #dist.sort_values(inplace=True)
+            #dist = dist.loc[dist <= sqradius]
+            #def dist_calcs(self, ix, iy, ptx_array, pty_array, ptnames, sqradius):
+            dist = self.dist_calcs(ix,iy, ptx_array, pty_array, ptnames, sqradius)
 
             # if too few points were found, skip
             if len(dist) < minpts_interp:
@@ -903,28 +952,30 @@ class OrdinaryKrige(object):
             #     print("forming ipt-to-point cov...",end='')
 
             # calc the interp point to points covariance
-            interp_cov = self.geostruct.covariance_points(ix,iy,self.point_data.loc[pt_names,"x"],
-                                                          self.point_data.loc[pt_names,"y"])
-
+            # interp_cov = self.geostruct.covariance_points(ix,iy,self.point_data.loc[pt_names,"x"],
+            #                                               self.point_data.loc[pt_names,"y"])
+            interp_cov = self.cov_points(ix,iy,pt_names)
             if verbose == 2:
                 td = (datetime.now()-start).total_seconds()
                 print("...took {0} seconds".format(td))
                 print("forming lin alg components...",end='')
 
             # form the linear algebra parts and solve
-            d = len(pt_names) + 1 # +1 for lagrange mult
-            A = np.ones((d,d))
-            A[:-1,:-1] = point_cov.values
-            A[-1,-1] = 0.0 #unbiaised constraint
-            rhs = np.ones((d,1))
-            rhs[:-1,0] = interp_cov
+            # d = len(pt_names) + 1 # +1 for lagrange mult
+            # A = np.ones((d,d))
+            # A[:-1,:-1] = point_cov.values
+            # A[-1,-1] = 0.0 #unbiaised constraint
+            # rhs = np.ones((d,1))
+            # rhs[:-1,0] = interp_cov
+            A, rhs = self.form(pt_names,point_cov,interp_cov)
+
             # if verbose == 2:
             #     td = (datetime.now()-start).total_seconds()
             #     print("...took {0}".format(td))
             #     print("solving...",end='')
             # # solve
             try:
-                facs = np.linalg.solve(A,rhs)
+                facs = self.solve(A, rhs)
             except Exception as e:
                 print("error solving for factors: {0}".format(str(e)))
                 print("point:",ix,iy)
@@ -966,6 +1017,183 @@ class OrdinaryKrige(object):
         td = (datetime.now() - start_loop).total_seconds()
         print("took {0} seconds".format(td))
         return df
+
+
+    def calc_factors_mp(self,x,y,minpts_interp=1,maxpts_interp=20,
+                     search_radius=1.0e+10,verbose=False,
+                     pt_zone=None,forgive=False,num_threads=1):
+        """ calculate ordinary kriging factors (weights) for the points
+        represented by arguments x and y
+
+        Parameters
+        ----------
+        x : (iterable of floats)
+            x-coordinates to calculate kriging factors for
+        y : (iterable of floats)
+            y-coordinates to calculate kriging factors for
+        minpts_interp : (int)
+            minimum number of point_data entires to use for interpolation at
+            a given x,y interplation point.  interpolation points with less
+            than minpts_interp point_data found will be skipped
+            (assigned np.NaN).  Defaut is 1
+        maxpts_interp : (int)
+            maximum number of point_data entries to use for interpolation at
+            a given x,y interpolation point.  A larger maxpts_interp will
+            yield "smoother" interplation, but using a large maxpts_interp
+            will slow the (already) slow kriging solution process and may
+            lead to memory errors. Default is 20.
+        search_radius : (float)
+            the size of the region around a given x,y interpolation point to search for
+            point_data entries. Default is 1.0e+10
+        verbose : (boolean)
+            a flag to  echo process to stdout during the interpolatino process.
+            Default is False
+        forgive : (boolean)
+            flag to continue if inversion of the kriging matrix failes at one or more
+            interpolation points.  Inversion usually fails if the kriging matrix is singular,
+            resulting from point_data entries closer than EPSILON distance.  If True,
+            warnings are issued for each failed inversion.  If False, an exception
+            is raised for failed matrix inversion.
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            a dataframe with information summarizing the ordinary kriging
+            process for each interpolation points
+
+
+        """
+
+        assert len(x) == len(y)
+
+
+        with mp.Manager() as manager:
+
+            point_pairs = manager.list()
+            for xx, yy in x, y:
+                point_pairs.append((xx, yy))
+            idist = manager.list()
+            inames = manager.list()
+            ifacts = manager.list()
+            err_var = manager.list()
+            for i in range(num_threads):
+                p = mp.Process(target=worker,args=(i,self.point_data,point_pairs,inames,idist,ifacts,err_var,
+                                                   self.point_cov_df,self.geostruct,EPSILON))
+                p.start()
+
+        df["idist"] = idist
+        df["inames"] = inames
+        df["ifacts"] = ifacts
+        df["err_var"] = err_var
+        if pt_zone is None:
+            self.interp_data = df
+        else:
+            if self.interp_data is None:
+                self.interp_data = df
+            else:
+                self.interp_data = self.interp_data.append(df)
+        td = (datetime.now() - start_loop).total_seconds()
+        print("took {0} seconds".format(td))
+        return df
+        return
+
+
+    @staticmethod
+    def worker(ithread,point_data,point_pairs,inames,idist,ifacts,err_var,point_cov_df,
+               geostruct,epsilon):
+        # find the point data to use for each interp point
+        sqradius = search_radius ** 2
+        df = pd.DataFrame(data={'x': x, 'y': y})
+        inames, idist, ifacts, err_var = [], [], [], []
+        sill = self.geostruct.sill
+        if pt_zone is None:
+            ptx_array = self.point_data.x.values
+            pty_array = self.point_data.y.values
+            ptnames = self.point_data.name.values
+        else:
+            pt_data = self.point_data
+            ptx_array = pt_data.loc[pt_data.zone == pt_zone, "x"].values
+            pty_array = pt_data.loc[pt_data.zone == pt_zone, "y"].values
+            ptnames = pt_data.loc[pt_data.zone == pt_zone, "name"].values
+        while True:
+            if len(point_pairs) == 0:
+                return
+            ix,iy = point_pairs.pop()
+
+            if np.isnan(ix) or np.isnan(iy): #if nans, skip
+                inames.append([])
+                idist.append([])
+                ifacts.append([])
+                err_var.append(np.NaN)
+                continue
+
+            #  calc dist from this interp point to all point data...slow
+            dist = pd.Series((ptx_array-ix)**2 + (pty_array-iy)**2,ptnames)
+            dist.sort_values(inplace=True)
+            dist = dist.loc[dist <= sqradius]
+
+            # if too few points were found, skip
+            if len(dist) < minpts_interp:
+                inames.append([])
+                idist.append([])
+                ifacts.append([])
+                err_var.append(sill)
+                continue
+
+            # only the maxpts_interp points
+            dist = dist.iloc[:maxpts_interp].apply(np.sqrt)
+            pt_names = dist.index.values
+            # if one of the points is super close, just use it and skip
+            if dist.min() <= epsilon:
+                ifacts.append([1.0])
+                idist.append([epsilon])
+                inames.append([dist.idxmin()])
+                err_var.append(geostruct.nugget)
+                continue
+
+            #vextract the point-to-point covariance matrix
+            point_cov = point_cov_df.loc[pt_names,pt_names]
+
+            # calc the interp point to points covariance
+            interp_cov = geostruct.covariance_points(ix,iy,point_data.loc[pt_names,"x"],
+                                                          point_data.loc[pt_names,"y"])
+
+            # form the linear algebra parts and solve
+            d = len(pt_names) + 1 # +1 for lagrange mult
+            A = np.ones((d,d))
+            A[:-1,:-1] = point_cov.values
+            A[-1,-1] = 0.0 #unbiaised constraint
+            rhs = np.ones((d,1))
+            rhs[:-1,0] = interp_cov
+
+            try:
+                facs = np.linalg.solve(A, rhs)
+            except Exception as e:
+                print("error solving for factors: {0}".format(str(e)))
+                print("point:",ix,iy)
+                print("dist:",dist)
+                print("A:", A)
+                print("rhs:", rhs)
+
+                inames.append([])
+                idist.append([])
+                ifacts.append([])
+                err_var.append(np.NaN)
+                continue
+
+            assert len(facs) - 1 == len(dist)
+
+            err_var.append(float(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)])))
+            inames.append(pt_names)
+
+            idist.append(dist.values)
+            ifacts.append(facs[:-1,0])
+            # if verbose == 2:
+            #     td = (datetime.now()-start).total_seconds()
+            #     print("...took {0}".format(td))
+
+
+
 
     def to_grid_factors_file(self, filename,points_file="points.junk",
                              zone_file="zone.junk"):
@@ -1334,9 +1562,9 @@ class Vario2d(object):
         len(cov) = len(xother) = len(yother)
 
         """
-        dx = x0 - xother
-        dy = y0 - yother
-        dxx,dyy = self._apply_rotation(dx,dy)
+        dxx = x0 - xother
+        dyy = y0 - yother
+        dxx,dyy = self._apply_rotation(dxx,dyy)
         h = np.sqrt(dxx*dxx + dyy*dyy)
         return self._h_function(h)
 
