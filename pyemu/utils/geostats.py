@@ -746,19 +746,14 @@ class OrdinaryKrige(object):
 
         # the simple case of no zone array: ignore point_data zones
         if zone_array is None:
-            if num_threads == 1:
-                df = self.calc_factors_org(x.ravel(),y.ravel(),
-                                   minpts_interp=minpts_interp,
-                                   maxpts_interp=maxpts_interp,
-                                   search_radius=search_radius,
-                                   verbose=verbose, forgive=forgive)
-            else:
-                df = self.calc_factors_mp(x.ravel(), y.ravel(),
-                                           minpts_interp=minpts_interp,
-                                           maxpts_interp=maxpts_interp,
-                                           search_radius=search_radius,
-                                           verbose=verbose, forgive=forgive,
-                                          num_threads=num_threads)
+
+            df = self.calc_factors(x.ravel(),y.ravel(),
+                               minpts_interp=minpts_interp,
+                               maxpts_interp=maxpts_interp,
+                               search_radius=search_radius,
+                               verbose=verbose, forgive=forgive,
+                               num_threads=num_threads)
+
             if var_filename is not None:
                 arr = df.err_var.values.reshape(x.shape)
                 np.savetxt(var_filename,arr,fmt="%15.6E")
@@ -778,20 +773,14 @@ class OrdinaryKrige(object):
                 xzone,yzone = x.copy(),y.copy()
                 xzone[zone_array!=pt_data_zone] = np.NaN
                 yzone[zone_array!=pt_data_zone] = np.NaN
-                if num_threads == 1:
-                    df = self.calc_factors_org(xzone.ravel(),yzone.ravel(),
-                                           minpts_interp=minpts_interp,
-                                           maxpts_interp=maxpts_interp,
-                                           search_radius=search_radius,
-                                           verbose=verbose,pt_zone=pt_data_zone,
-                                           forgive=forgive)
-                else:
-                    df = self.calc_factors_mp(xzone.ravel(), yzone.ravel(),
-                                           minpts_interp=minpts_interp,
-                                           maxpts_interp=maxpts_interp,
-                                           search_radius=search_radius,
-                                           verbose=verbose, pt_zone=pt_data_zone,
-                                           forgive=forgive,num_threads=num_threads)
+
+                df = self.calc_factors(xzone.ravel(),yzone.ravel(),
+                                       minpts_interp=minpts_interp,
+                                       maxpts_interp=maxpts_interp,
+                                       search_radius=search_radius,
+                                       verbose=verbose,pt_zone=pt_data_zone,
+                                       forgive=forgive,num_threads=num_threads)
+
                 dfs.append(df)
                 if var_filename is not None:
                     a = df.err_var.values.reshape(x.shape)
@@ -829,6 +818,19 @@ class OrdinaryKrige(object):
     def solve(self,A, rhs):
         return np.linalg.solve(A, rhs)
 
+
+
+    def calc_factors(self,x,y,minpts_interp=1,maxpts_interp=20,
+                     search_radius=1.0e+10,verbose=False,
+                     pt_zone=None,forgive=False,num_threads=1):
+        if num_threads == 1:
+            return self.calc_factors_org(x,y,minpts_interp,maxpts_interp,
+                                         search_radius,verbose,pt_zone,
+                                         forgive)
+        else:
+            return self.calc_factors_mp(x,y,minpts_interp,maxpts_interp,
+                                         search_radius,verbose,pt_zone,
+                                         forgive, num_threads)
 
     def calc_factors_org(self,x,y,minpts_interp=1,maxpts_interp=20,
                      search_radius=1.0e+10,verbose=False,
@@ -1065,26 +1067,39 @@ class OrdinaryKrige(object):
         """
 
         assert len(x) == len(y)
-
-
+        start_loop = datetime.now()
+        df = pd.DataFrame(data={'x': x, 'y': y})
+        print("starting interp point loop for {0} points".format(df.shape[0]))
         with mp.Manager() as manager:
 
             point_pairs = manager.list()
-            for xx, yy in x, y:
-                point_pairs.append((xx, yy))
             idist = manager.list()
             inames = manager.list()
             ifacts = manager.list()
             err_var = manager.list()
+            #start = mp.Value('d',0)
+            for i,(xx, yy) in enumerate(zip(x, y)):
+                point_pairs.append((i, xx, yy))
+                idist.append([])
+                inames.append([])
+                ifacts.append([])
+                err_var.append(np.NaN)
+            lock = mp.Lock()
+            procs = []
             for i in range(num_threads):
-                p = mp.Process(target=worker,args=(i,self.point_data,point_pairs,inames,idist,ifacts,err_var,
-                                                   self.point_cov_df,self.geostruct,EPSILON))
+                print("starting",i)
+                p = mp.Process(target=OrdinaryKrige.worker,args=(i,self.point_data,point_pairs,inames,idist,ifacts,err_var,
+                                                                 self.point_cov_df,self.geostruct,EPSILON,search_radius,
+                                                                 pt_zone,minpts_interp,maxpts_interp,lock))
                 p.start()
+                procs.append(p)
+            for p in procs:
+                p.join()
 
-        df["idist"] = idist
-        df["inames"] = inames
-        df["ifacts"] = ifacts
-        df["err_var"] = err_var
+            df["idist"] = idist
+            df["inames"] = inames
+            df["ifacts"] = ifacts
+            df["err_var"] = err_var
         if pt_zone is None:
             self.interp_data = df
         else:
@@ -1095,21 +1110,19 @@ class OrdinaryKrige(object):
         td = (datetime.now() - start_loop).total_seconds()
         print("took {0} seconds".format(td))
         return df
-        return
 
 
     @staticmethod
     def worker(ithread,point_data,point_pairs,inames,idist,ifacts,err_var,point_cov_df,
-               geostruct,epsilon):
+               geostruct,epsilon,search_radius,pt_zone,minpts_interp,maxpts_interp,lock):
         # find the point data to use for each interp point
         sqradius = search_radius ** 2
-        df = pd.DataFrame(data={'x': x, 'y': y})
-        inames, idist, ifacts, err_var = [], [], [], []
-        sill = self.geostruct.sill
+
+        sill = geostruct.sill
         if pt_zone is None:
-            ptx_array = self.point_data.x.values
-            pty_array = self.point_data.y.values
-            ptnames = self.point_data.name.values
+            ptx_array = point_data.x.values
+            pty_array = point_data.y.values
+            ptnames = point_data.name.values
         else:
             pt_data = self.point_data
             ptx_array = pt_data.loc[pt_data.zone == pt_zone, "x"].values
@@ -1118,13 +1131,20 @@ class OrdinaryKrige(object):
         while True:
             if len(point_pairs) == 0:
                 return
-            ix,iy = point_pairs.pop()
+            else:
+                try:
+                    idx, ix,iy = point_pairs.pop(0)
+                except IndexError:
+                    return
 
+            #if idx % 1000 == 0 and idx != 0:
+            #    print (ithread, idx,"done",datetime.now())
             if np.isnan(ix) or np.isnan(iy): #if nans, skip
-                inames.append([])
-                idist.append([])
-                ifacts.append([])
-                err_var.append(np.NaN)
+                #inames.append([])
+                #idist.append([])
+                #ifacts.append([])
+                #err_var.append(np.NaN)
+                #err_var.insert(idx,np.NaN)
                 continue
 
             #  calc dist from this interp point to all point data...slow
@@ -1134,10 +1154,11 @@ class OrdinaryKrige(object):
 
             # if too few points were found, skip
             if len(dist) < minpts_interp:
-                inames.append([])
-                idist.append([])
-                ifacts.append([])
-                err_var.append(sill)
+                #inames.append([])
+                #idist.append([])
+                #ifacts.append([])
+                #err_var.append(sill)
+                err_var[idx] = sill
                 continue
 
             # only the maxpts_interp points
@@ -1145,10 +1166,14 @@ class OrdinaryKrige(object):
             pt_names = dist.index.values
             # if one of the points is super close, just use it and skip
             if dist.min() <= epsilon:
-                ifacts.append([1.0])
-                idist.append([epsilon])
-                inames.append([dist.idxmin()])
-                err_var.append(geostruct.nugget)
+                #ifacts.append([1.0])
+                ifacts[idx] = [1.0]
+                #idist.append([epsilon])
+                idist[idx] = [epsilon]
+                #inames.append([dist.idxmin()])
+                inames[idx] = [dist.idxmin()]
+                #err_var.append(geostruct.nugget)
+                err_var[idx] = geostruct.nugget
                 continue
 
             #vextract the point-to-point covariance matrix
@@ -1175,19 +1200,25 @@ class OrdinaryKrige(object):
                 print("A:", A)
                 print("rhs:", rhs)
 
-                inames.append([])
-                idist.append([])
-                ifacts.append([])
-                err_var.append(np.NaN)
+                #inames.append([])
+                #idist.append([])
+                #ifacts.append([])
+                #err_var.append(np.NaN)
+                #err_var.insert(np.NaN)
                 continue
 
             assert len(facs) - 1 == len(dist)
 
-            err_var.append(float(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)])))
-            inames.append(pt_names)
+            #err_var.append(float(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)])))
+            err_var[idx] = float(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)]))
+            #inames.append(pt_names)
+            inames[idx] = pt_names
 
-            idist.append(dist.values)
-            ifacts.append(facs[:-1,0])
+            #idist.append(dist.values)
+            idist[idx] = dist.values
+
+            #ifacts.append(facs[:-1,0])
+            ifacts[idx] = facs[:-1,0]
             # if verbose == 2:
             #     td = (datetime.now()-start).total_seconds()
             #     print("...took {0}".format(td))
