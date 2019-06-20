@@ -354,7 +354,7 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.warn("!! curvature condition violated: yTs = {}; should be > 0\n"
                              .format(float(ys.x)) +
                              "  If we update (or scale) Hessian matrix now it will not be positive definite !!\n" +
-                             "  Skipping scaling/updating at this iteration (not recommended - see damping option)...")
+                             "  Either skipping scaling/updating (not recommended) or dampening...")
             if damped:  # damped where required only
                 self.logger.log("using damped version of BFGS alg implementation..")
                 damp_par = 0.2  # TODO: allow user to pass but with default??
@@ -369,7 +369,7 @@ class EnsembleSQP(EnsembleMethod):
                 r = Matrix(x=r,row_names=self.y.row_names,col_names=self.y.col_names)
                 rs = r.T * self.s.x
                 self.logger.log("using damped version of BFGS alg implementation..")
-                hess_scalar = float(rs.x / (r.T * r).x)
+                hess_scalar = float(rs.x / (r.T * r).x)  # Nocedal and Wright
                 if hess_scalar < 0:
                     self.hess_progress[self.iter_num] = "skip scaling despite using dampening".format(float(rs.x))
                     return self.H, self.hess_progress
@@ -380,10 +380,8 @@ class EnsembleSQP(EnsembleMethod):
         # scale
         if self_scale:
             self.logger.log("scaling Hessian...")
-            if float(ys.x) <= 0 and damped:
-                hess_scalar = float(rs.x / (r.T * r).x)  # Nocedal and Wright
-            else:
-                # hess_scale = float((self.y.T * self.s).x / (self.y.T * self.H * self.y).x)  # Oliver et al. (equiv at it 0)
+            if not (float(ys.x) <= 0 and damped):
+                # hess_scale = float((self.y.T * self.s).x / (self.y.T * self.H * self.y).x)  # Oliver et al.
                 hess_scalar = float(ys.x / (self.y.T * self.y).x)  # Nocedal and Wright
             self.H *= hess_scalar
             self.H_cp = self.H.copy()
@@ -414,16 +412,18 @@ class EnsembleSQP(EnsembleMethod):
             self.H -= float((Hy.T * self.s).x + (self.s.T * Hy).x) / float(ys.x)
         self.logger.log("updating Hessian...")
 
-        # Hessian positive-definite-ness check
-        if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):
-            if float(ys.x) <= 0 and damped:
-                self.logger.lraise("Hessian update causes pos-def status to be violated despite using dampening... \n")
-            else:
-                self.logger.warn("Hessian update causes pos-def status to be violated.. skip update (only scale) at this stage...\n")
-                self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
-                self.H = self.H_cp
-        else:
-            self.hess_progress[self.iter_num] = "scaled ({0:8.3E}) and updated".format(hess_scalar) #,self.H.as_2d)
+        # TODO: revive this check (or a variation thereof)! If not pos def when skipping this, math above must be wrong!
+        #  Hessian positive-definite-ness check? Unnecessary according to proposition (8.2) in Oliver et al.
+        #if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):
+         #   if float(ys.x) <= 0 and damped:
+          #      self.logger.lraise("Hessian update causes pos-def status to be violated despite using dampening... \n")
+           # else:
+            #    self.logger.warn("Hessian update causes pos-def status to be violated.. skip update (only scale) at this stage...\n")
+             #   self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
+              #  self.H = self.H_cp
+        #else:
+         #   self.hess_progress[self.iter_num] = "scaled ({0:8.3E}) and updated".format(hess_scalar) #,self.H.as_2d)
+        self.hess_progress[self.iter_num] = "scaled ({0:8.3E}) and updated".format(hess_scalar)  # ,self.H.as_2d)
 
         return self.H, self.hess_progress
 
@@ -434,7 +434,7 @@ class EnsembleSQP(EnsembleMethod):
         # TODO
 
 
-    def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=False,
+    def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=True,
                grad_calc_only=False,finite_diff_grad=False):#localizer=None,run_subset=None,
         """
         Perform one quasi-Newton update
