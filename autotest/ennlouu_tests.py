@@ -3,7 +3,7 @@ if not os.path.exists("temp"):
     os.mkdir("temp")
 
 
-def rosenbrock_setup(version):
+def rosenbrock_setup(version,initial_decvars=0.45):
     import pyemu
     if version == "2par":
         os.chdir(os.path.join("ennlouu","rosenbrock_2par"))
@@ -16,7 +16,7 @@ def rosenbrock_setup(version):
     pst = pyemu.helpers.pst_from_io_files(tpl_file,in_file,ins_file,out_file)
     par = pst.parameter_data
     par.loc[:,"partrans"] = "none"
-    par.loc[:,"parval1"] = 0.45
+    par.loc[:,"parval1"] = initial_decvars
     par.loc[:,"parubnd"] = 2.2
     par.loc[:,"parlbnd"] = -2.2
     # TODO: repeat with log transform
@@ -134,7 +134,7 @@ def rosenbrock_2par_grad_approx_invest():
     os.chdir(os.path.join("..", ".."))
 
 
-def rosenbrock_multiple_update(version,nit=20):
+def rosenbrock_multiple_update(version,nit=20,draw_mult=0.0003,en_size=20):
     import pyemu
     import numpy as np
     if version == "2par":
@@ -143,13 +143,13 @@ def rosenbrock_multiple_update(version,nit=20):
         os.chdir(os.path.join("ennlouu","rosenbrock_high_dim"))
     [os.remove(x) for x in os.listdir() if (x.endswith("obsensemble.0000.csv"))]
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(version))#,num_slaves=10)
-    esqp.initialize(num_reals=40,draw_mult=0.0003)  # TODO: critical that draw_mult is refined as we go?
+    esqp.initialize(num_reals=en_size,draw_mult=draw_mult)  # TODO: critical that draw_mult is refined as we go?
     for it in range(nit):
-        esqp.update(step_mult=np.logspace(-6,0,14))  #np.linspace(0.5,1.1,14)#[0.1,0.05,0.01,0.005,0.001,0.0005,0.0001,0.00005,0.00001,0.000005,0.000001])
+        esqp.update(step_mult=list(np.logspace(-6,0,14)))  #np.linspace(0.5,1.1,14)#[0.1,0.05,0.01,0.005,0.001,0.0005,0.0001,0.00005,0.00001,0.000005,0.000001])
         # #TODO: H becomes very small through updating and scaling--try larger alpha? is selection on basis of alpha testing working right? try with one alpha val. Add Hess updating to alpha testing step.
     os.chdir(os.path.join("..", ".."))  #TODO: want alpha to increase from it to it; getting nan paren vals when diff starting vals and when step mult is egt 0.01 with H = I -- large alpha/Hess forces all at bounds therefore no cov. feedback something about at bounds so don't waste runs.
 
-def rosenbrock_phi_progress(version):
+def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
     import pyemu
     import numpy as np
     import pandas as pd
@@ -192,8 +192,30 @@ def rosenbrock_phi_progress(version):
         ax.text(x=float(i),y=(ylim[1]+(0.05 * (ylim[1]-ylim[0]))),s="{0};\nalpha: {1}".format(v[0],v[1]),
                 fontsize=5,rotation=45,color='r',ha='center', va='center')
     #plt.legend()
-    plt.show()
+    #plt.show()
+    plt.savefig(label)
     os.chdir(os.path.join("..", ".."))
+
+def invest():
+    vars = {"initial_decvars": [0.45,0.9,1.6],
+            "draw_mult": [3e-2,3e-3,3e-4,3e-5,3e-6],
+            "en_size": [20],
+            }
+    #"alpha_base": [0.1, 0.2],
+
+    runs = [{'initial_decvars': a, 'draw_mult': b, 'en_size': c} for a in vars['initial_decvars']
+            for b in vars['draw_mult'] for c in vars['en_size']]
+
+    fails = []
+    for i,v in enumerate(runs):
+        rosenbrock_setup(version="2par",initial_decvars=v['initial_decvars'])
+        try:
+            rosenbrock_multiple_update(version="2par",draw_mult=v['draw_mult'],en_size=v['en_size'])
+        except:
+            fails.append(v)
+        rosenbrock_phi_progress(version="2par",label="phi_progress_ne{0}_initdv{1}_dm{2}.pdf".\
+                                format(v['en_size'],v['initial_decvars'],v['draw_mult']))
+        print("done!")
 
 
 #def rosenbrock_2par_opt_and_draw_setting_invest():
@@ -208,11 +230,13 @@ if __name__ == "__main__":
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    rosenbrock_multiple_update(version="2par")
+    #rosenbrock_multiple_update(version="2par")
     #rosenbrock_phi_progress(version="2par")
     #rosenbrock_2par_grad_approx_invest()
 
     #rosenbrock_setup(version="high_dim")
     #rosenbrock_multiple_update(version="high_dim")
     #rosenbrock_phi_progress(version="high_dim")
+
+    invest()
 

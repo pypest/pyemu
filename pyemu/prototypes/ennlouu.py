@@ -413,6 +413,7 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.log("updating Hessian...")
 
         # TODO: revive this check (or a variation thereof)! If not pos def when skipping this, math above must be wrong!
+        # TODO: forgive very small neg eigenvals?
         #  Hessian positive-definite-ness check? Unnecessary according to proposition (8.2) in Oliver et al.
         #if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):
          #   if float(ys.x) <= 0 and damped:
