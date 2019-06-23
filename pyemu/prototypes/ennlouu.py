@@ -560,6 +560,7 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.log("phi gradient- and search direction-related checks")
         if (self.search_d.T * self.phi_grad).x > 0:
             self.logger.lraise("search direction does not point down-hill! :facepalm:")
+            # TODO: rectify here rather than terminate
         if (self.search_d.T * self.phi_grad).x == 0:
             self.logger.warn("phi gradient is zero!")
         self.logger.log("phi gradient- and search direction-related checks")

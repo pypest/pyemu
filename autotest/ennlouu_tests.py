@@ -196,9 +196,9 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
     plt.savefig(label)
     os.chdir(os.path.join("..", ".."))
 
-def invest():
-    vars = {"initial_decvars": [0.45,0.9,1.6],
-            "draw_mult": [3e-2,3e-3,3e-4,3e-5,3e-6],
+def invest(version):
+    vars = {"initial_decvars": [0.45,1.6],
+            "draw_mult": [3e-3,3e-4,3e-5,3e-6],
             "en_size": [20],
             }
     #"alpha_base": [0.1, 0.2],
@@ -208,14 +208,15 @@ def invest():
 
     fails = []
     for i,v in enumerate(runs):
-        rosenbrock_setup(version="2par",initial_decvars=v['initial_decvars'])
+        rosenbrock_setup(version=version,initial_decvars=v['initial_decvars'])
         try:
-            rosenbrock_multiple_update(version="2par",draw_mult=v['draw_mult'],en_size=v['en_size'])
+            rosenbrock_multiple_update(version=version,draw_mult=v['draw_mult'],en_size=v['en_size'])
         except:
             fails.append(v)
-        rosenbrock_phi_progress(version="2par",label="phi_progress_ne{0}_initdv{1}_dm{2}.pdf".\
+            os.chdir(os.path.join("..", ".."))
+        rosenbrock_phi_progress(version=version,label="phi_progress_ne{0}_initdv{1}_dm{2}.pdf".\
                                 format(v['en_size'],v['initial_decvars'],v['draw_mult']))
-        print("done!")
+    print("done!")
 
 
 #def rosenbrock_2par_opt_and_draw_setting_invest():
@@ -238,5 +239,5 @@ if __name__ == "__main__":
     #rosenbrock_multiple_update(version="high_dim")
     #rosenbrock_phi_progress(version="high_dim")
 
-    invest()
+    invest(version="high_dim")
 
