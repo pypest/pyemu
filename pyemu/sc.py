@@ -612,7 +612,7 @@ class Schur(LinearAnalysis):
         # if we don't care about grouping obs, then just reset all weights at once
         if base_obslist is None and obslist_dict is None and reset:
             onames = [name for name in self.pst.zero_weight_obs_names
-                      if name in self.jco.obs_names and name in self.obscov.row_names]
+                      if name in self.jco.row_names and name in self.obscov.row_names]
             obs.loc[onames,"weight"] = weight
 
         # if needed reset the zero-weight obs in base_obslist
@@ -650,12 +650,12 @@ class Schur(LinearAnalysis):
             obs = self.pst.observation_data
             obs.index = obs.obsnme
             onames = [name for name in self.pst.zero_weight_obs_names
-                      if name in self.jco.obs_names and name in self.obscov.row_names]
+                      if name in self.jco.row_names and name in self.obscov.row_names]
             obs.loc[onames,"weight"] = weight
 
         if obslist_dict is None:
             obslist_dict = {name:name for name in self.pst.nnz_obs_names if name\
-                            in self.jco.obs_names and name in self.obscov.row_names}
+                            in self.jco.row_names and name in self.obscov.row_names}
 
         # reset the obs cov from the newly adjusted weights
         if reset:
@@ -692,7 +692,7 @@ class Schur(LinearAnalysis):
             dedup_obslist = [oname for oname in obslist if oname not in case_obslist]
             case_obslist.extend(dedup_obslist)
             #print(self.pst.observation_data.loc[case_obslist,:])
-            case_post = self.get(par_names=self.jco.par_names,
+            case_post = self.get(par_names=self.jco.col_names,
                                  obs_names=case_obslist).posterior_forecast
             for forecast,pt in case_post.items():
                 results[forecast].append(pt)
@@ -775,7 +775,7 @@ class Schur(LinearAnalysis):
         if reset and obslist_dict is None:
             obs = self.pst.observation_data
             onames = [name for name in self.pst.zero_weight_obs_names
-                      if name in self.jco.obs_names and name in self.obscov.row_names]
+                      if name in self.jco.row_names and name in self.obscov.row_names]
             obs.loc[onames,"weight"] = weight
 
         if obslist_dict is None:
@@ -812,7 +812,7 @@ class Schur(LinearAnalysis):
             self.log("calculating importance of observations by removing: " +
                      str(obslist) + '\n')
             # check for missing names
-            missing_onames = [oname for oname in obslist if oname not in self.jco.obs_names]
+            missing_onames = [oname for oname in obslist if oname not in self.jco.row_names]
             if len(missing_onames) > 0:
                 raise Exception("case {0} has observation names ".format(case_name) + \
                                 "not found: " + ','.join(missing_onames))
@@ -823,7 +823,7 @@ class Schur(LinearAnalysis):
 
             # calculate the increase in forecast variance by not using the obs
             # in obslist
-            case_post = self.get(par_names=self.jco.par_names,
+            case_post = self.get(par_names=self.jco.col_names,
                                  obs_names=diff_onames).posterior_forecast
 
             for forecast,pt in case_post.items():

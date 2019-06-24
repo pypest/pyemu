@@ -474,7 +474,11 @@ class LinearAnalysis(object):
             #    vecs.append(extract.get(row_names=row_name).T)
             # call obscov to load __obscov so that __obscov
             # (priavte) can be manipulated
-            self.__obscov.drop(row_names, axis=0)
+            # check if any forecasts are in the obscov
+            so_names = set(self.__obscov.row_names)
+            drop_names = [f for r in row_names if r in so_names]
+            if len(drop_names) > 0:
+                self.__obscov.drop(drop_names, axis=0)
         self.__predictions = mat
         try:
             fnames = [fname for fname in self.forecast_names if fname in self.pst.nnz_obs_names]
