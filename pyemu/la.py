@@ -476,7 +476,7 @@ class LinearAnalysis(object):
             # (priavte) can be manipulated
             # check if any forecasts are in the obscov
             so_names = set(self.__obscov.row_names)
-            drop_names = [f for r in row_names if r in so_names]
+            drop_names = [r for r in row_names if r in so_names]
             if len(drop_names) > 0:
                 self.__obscov.drop(drop_names, axis=0)
         self.__predictions = mat

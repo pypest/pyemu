@@ -223,6 +223,8 @@ class Matrix(object):
                 if len(row_names) != mx_dim:
                     raise Exception('Matrix.__init__(): diagonal shape[1] != len(row_names) ' +\
                     str(x.shape) + ' ' + str(len(row_names)))
+                if mx_dim != x.shape[0]:
+                    x = x.transpose()
                 #x = x.transpose()
             else:
                 if len(row_names) > 0:
