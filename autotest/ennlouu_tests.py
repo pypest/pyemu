@@ -134,7 +134,7 @@ def rosenbrock_2par_grad_approx_invest():
     os.chdir(os.path.join("..", ".."))
 
 
-def rosenbrock_multiple_update(version,nit=20,draw_mult=0.0003,en_size=20):
+def rosenbrock_multiple_update(version,nit=100,draw_mult=0.0003,en_size=20):
     import pyemu
     import numpy as np
     if version == "2par":
@@ -197,11 +197,13 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
     os.chdir(os.path.join("..", ".."))
 
 def invest(version):
-    vars = {"initial_decvars": [0.45,1.6],
-            "draw_mult": [3e-3,3e-4,3e-5,3e-6],
+    vars = {"initial_decvars": [1.6],
+            "draw_mult": [3e-5],
             "en_size": [20],
             }
+    #"initial_decvars": [0.45,0.9,1.6]
     #"alpha_base": [0.1, 0.2],
+    #"draw_mult": [3e-2,3e-3, 3e-4, 3e-5, 3e-6]
 
     runs = [{'initial_decvars': a, 'draw_mult': b, 'en_size': c} for a in vars['initial_decvars']
             for b in vars['draw_mult'] for c in vars['en_size']]
@@ -239,5 +241,6 @@ if __name__ == "__main__":
     #rosenbrock_multiple_update(version="high_dim")
     #rosenbrock_phi_progress(version="high_dim")
 
-    invest(version="high_dim")
+    invest(version="2par")
+    #invest(version="high_dim")
 

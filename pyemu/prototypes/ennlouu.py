@@ -371,7 +371,7 @@ class EnsembleSQP(EnsembleMethod):
                 self.logger.log("using damped version of BFGS alg implementation..")
                 hess_scalar = float(rs.x / (r.T * r).x)  # Nocedal and Wright
                 if hess_scalar < 0:
-                    self.hess_progress[self.iter_num] = "skip scaling despite using dampening".format(float(rs.x))
+                    self.hess_progress[self.iter_num] = "skip scaling despite using dampening"#.format(float(rs.x))
                     return self.H, self.hess_progress
             else:
                 self.hess_progress[self.iter_num] = "yTs = {0:8.3E}".format(float(ys.x))
@@ -383,6 +383,8 @@ class EnsembleSQP(EnsembleMethod):
             if not (float(ys.x) <= 0 and damped):
                 # hess_scale = float((self.y.T * self.s).x / (self.y.T * self.H * self.y).x)  # Oliver et al.
                 hess_scalar = float(ys.x / (self.y.T * self.y).x)  # Nocedal and Wright
+            if hess_scalar < 0:
+                self.logger.lraise("hessian scalar is not strictly positive!")
             self.H *= hess_scalar
             self.H_cp = self.H.copy()
             self.logger.log("scaling Hessian...")
