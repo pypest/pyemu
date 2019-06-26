@@ -417,16 +417,15 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: revive this check (or a variation thereof)! If not pos def when skipping this, math above must be wrong!
         # TODO: forgive very small neg eigenvals?
         #  Hessian positive-definite-ness check? Unnecessary according to proposition (8.2) in Oliver et al.
-        #if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):
-         #   if float(ys.x) <= 0 and damped:
-          #      self.logger.lraise("Hessian update causes pos-def status to be violated despite using dampening... \n")
-           # else:
-            #    self.logger.warn("Hessian update causes pos-def status to be violated.. skip update (only scale) at this stage...\n")
-             #   self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
-              #  self.H = self.H_cp
-        #else:
-         #   self.hess_progress[self.iter_num] = "scaled ({0:8.3E}) and updated".format(hess_scalar) #,self.H.as_2d)
-        self.hess_progress[self.iter_num] = "scaled ({0:8.3E}) and updated".format(hess_scalar)  # ,self.H.as_2d)
+        if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):
+            if float(ys.x) <= 0 and damped:
+                self.logger.lraise("Hessian update causes pos-def status to be violated despite using dampening... \n")
+            else:
+                self.logger.warn("Hessian update causes pos-def status to be violated.. skip update (only scale) at this stage...\n")
+                self.hess_progress[self.iter_num] = "scaled only: {0:8.3E}".format(hess_scalar)
+                self.H = self.H_cp
+        else:
+            self.hess_progress[self.iter_num] = "scaled ({0:8.3E}) and updated".format(hess_scalar) #,self.H.as_2d)
 
         return self.H, self.hess_progress
 
@@ -624,7 +623,28 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("evaluating ensembles for step size : {0}".
                             format(','.join("{0:8.3E}".format(step_size))))
             failed_runs_1, self.obsensemble_1 = self._calc_obs(self.parensemble_1)  # run
-            # just use mean phi as indicator of "best" for now..
+
+            #if constraints:
+                #self.logger.log("adopting filtering method to handle constraints")
+                #viol = 0
+                #for c in constraints:
+                     #if "gt" or "gte" in J:
+                         #viol_c =
+                     #elif "lt" or "lte" in J:
+                         #viol_c =
+                     #viol_c = np.abs(min(viol_c, 0.0))
+                     #viol += viol_c
+
+                #if viol < (1.0 - filter_thresh) * viol_prev \
+                #or mean_phi < (mean_phi_prev - filter_thresh) * viol  # TODO: prev it or if filter?
+                # self.logger.log("passes filter")
+                #filter += (viol,mean_phi)  # add new dominating pair
+                #if any pairs dominated by new pair:
+                    # self.logger.log("removing dominated pairs")
+                    #drop
+
+                # self.logger.log("adopting filtering method to handle constraints")
+            #else:
             mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
             if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
                 self.parensemble_mean_next = self.parensemble_mean_1.copy()
