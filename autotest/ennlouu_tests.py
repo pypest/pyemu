@@ -134,20 +134,33 @@ def rosenbrock_2par_grad_approx_invest():
     os.chdir(os.path.join("..", ".."))
 
 
-def rosenbrock_multiple_update(version,nit=100,draw_mult=0.0003,en_size=20):
+def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
+                               constraints=False,filter_thresh=1e-2):
     import pyemu
     import numpy as np
     if version == "2par":
-        os.chdir(os.path.join("ennlouu","rosenbrock_2par"))
+        if constraints:
+            os.chdir(os.path.join("ennlouu","rosenbrock_2par_constrained"))
+        else:
+            os.chdir(os.path.join("ennlouu","rosenbrock_2par"))
     elif version == "high_dim":
-        os.chdir(os.path.join("ennlouu","rosenbrock_high_dim"))
+        if constraints:
+            raise Exception
+        else:
+            os.chdir(os.path.join("ennlouu","rosenbrock_high_dim"))
     [os.remove(x) for x in os.listdir() if (x.endswith("obsensemble.0000.csv"))]
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(version))#,num_slaves=10)
-    esqp.initialize(num_reals=en_size,draw_mult=draw_mult)  # TODO: critical that draw_mult is refined as we go?
+    esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=constraints)
     for it in range(nit):
-        esqp.update(step_mult=list(np.logspace(-6,0,14)))  #np.linspace(0.5,1.1,14)#[0.1,0.05,0.01,0.005,0.001,0.0005,0.0001,0.00005,0.00001,0.000005,0.000001])
-        # #TODO: H becomes very small through updating and scaling--try larger alpha? is selection on basis of alpha testing working right? try with one alpha val. Add Hess updating to alpha testing step.
-    os.chdir(os.path.join("..", ".."))  #TODO: want alpha to increase from it to it; getting nan paren vals when diff starting vals and when step mult is egt 0.01 with H = I -- large alpha/Hess forces all at bounds therefore no cov. feedback something about at bounds so don't waste runs.
+        esqp.update(step_mult=list(np.logspace(-6,0,14)),filter_thresh=filter_thresh)
+    os.chdir(os.path.join("..", ".."))
+
+   #  TODO: critical that draw_mult is refined as we go?
+   #  TODO: H becomes very small through updating and scaling--try larger alpha? Add Hess updating to alpha testing step.
+   #  TODO: want alpha to increase from it to it; getting nan paren vals when diff starting vals and when step mult
+   # is egt 0.01 with H = I -- large alpha/Hess forces all at bounds therefore no cov.
+   # feedback something about at bounds so don't waste runs.
+
 
 def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
     import pyemu
@@ -241,6 +254,10 @@ if __name__ == "__main__":
     #rosenbrock_multiple_update(version="high_dim")
     #rosenbrock_phi_progress(version="high_dim")
 
-    invest(version="2par")
+    #invest(version="2par")
     #invest(version="high_dim")
+
+
+    rosenbrock_setup(version="2par",constraints=True)  # TODO: constraints from flag obgpnme in pst
+    rosenbrock_multiple_update(version="2par",constraints=True)
 
