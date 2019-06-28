@@ -227,7 +227,7 @@ class EnsembleSQP(EnsembleMethod):
         # need to start from feasible point in dec var space - otherwise, we're toast..
         if constraints:  # and constraints.shape[0] > 0:
             self.logger.log("checking here feasibility and initializing constraint filter")
-            mean_en_phi_filter_0, _filter_0 = self._filter_constraint_eval()
+            mean_en_phi_filter_0, _filter_0 = self._filter_constraint_eval(self.obsensemble)
             self.logger.log("checking here feasibility and initializing constraint filter")
 
         # Hessian
@@ -443,12 +443,29 @@ class EnsembleSQP(EnsembleMethod):
         '''
         # TODO
 
-    def _filter_constraint_eval(self,):
+    def _filter_constraint_eval(self,obsensemble):
         '''
         '''
         # TODO: description
 
+        viol = 0
+        # for c in constraints:
+        # if "gt" or "gte" in J:
+        # viol_c =
+        # elif "lt" or "lte" in J:
+        # viol_c =
+        # viol_c = np.abs(min(viol_c, 0.0))
+        # viol += viol_c
 
+        # if viol < (1.0 - filter_thresh) * viol_prev \
+        # or mean_phi < (mean_phi_prev - filter_thresh) * viol  # TODO: prev it or if filter?
+        # self.logger.log("passes filter")
+        # filter += (viol,mean_phi)  # add new dominating pair
+        # if any pairs dominated by new pair:
+        # self.logger.log("removing dominated pairs")
+        # drop
+
+        # self.logger.log("adopting filtering method to handle constraints")
         return mean_en_phi_per_alpha_filter, _filter
 
 
@@ -658,7 +675,7 @@ class EnsembleSQP(EnsembleMethod):
             # constraints = from pst # contain constraint val (pcf) and constraint from obsen
             if constraints:  # and constraints.shape[0] > 0:
                 self.logger.log("adopting filtering method to handle constraints")
-                mean_en_phi_per_alpha_filter,_filter = self._filter_constraint_eval()
+                mean_en_phi_per_alpha_filter,_filter = self._filter_constraint_eval(self.obsensemble_1)
                 self.logger.log("adopting filtering method to handle constraints")
 
         if constraints:

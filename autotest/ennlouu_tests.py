@@ -167,7 +167,11 @@ def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
         else:
             os.chdir(os.path.join("ennlouu","rosenbrock_high_dim"))
     [os.remove(x) for x in os.listdir() if (x.endswith("obsensemble.0000.csv"))]
-    esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(version))#,num_slaves=10)
+    if constraints:
+        ext = version + "_constrained"
+    else:
+        ext = version
+    esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(ext))#,num_slaves=10)
     esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=True)
     for it in range(nit):
         esqp.update(step_mult=list(np.logspace(-6,0,14)),filter_thresh=filter_thresh)
@@ -276,6 +280,6 @@ if __name__ == "__main__":
     #invest(version="high_dim")
 
 
-    rosenbrock_setup(version="2par",constraints=True)
+    #rosenbrock_setup(version="2par",constraints=True)
     rosenbrock_multiple_update(version="2par",constraints=True)
 
