@@ -224,10 +224,11 @@ class EnsembleSQP(EnsembleMethod):
         # assert self.parensemble_0.shape[0] == self.obsensemble_0.shape[0]
 
         # nothing really needs to be done here for unconstrained problems..
-        # need to start from feasible point in dec var space - otherwise, we're toast..
+        # need to start from feasible point in dec var space...
         if constraints:  # and constraints.shape[0] > 0:
             self.logger.log("checking here feasibility and initializing constraint filter")
-            mean_en_phi_filter_0, _filter_0 = self._filter_constraint_eval(self.obsensemble)
+            self._filter = []
+            mean_en_phi_filter_0, _filter_0 = self._filter_constraint_eval(self.obsensemble,self._filter)
             self.logger.log("checking here feasibility and initializing constraint filter")
 
         # Hessian
@@ -443,7 +444,7 @@ class EnsembleSQP(EnsembleMethod):
         '''
         # TODO
 
-    def _filter_constraint_eval(self,obsensemble):
+    def _filter_constraint_eval(self,obsensemble,filter,viol_prev,mean_phi_prev):
         '''
         '''
         # TODO: description
@@ -466,17 +467,23 @@ class EnsembleSQP(EnsembleMethod):
                     model_mean = obsensemble[c].mean()
                     constraint = self.pst.observation_data.loc[c,"obsval"]
                     viol += np.abs(min(constraint - model_mean, 0.0))
-        #viol
 
-        # if viol < (1.0 - filter_thresh) * viol_prev \
-        # or mean_phi < (mean_phi_prev - filter_thresh) * viol  # TODO: prev it or if filter?
-        # self.logger.log("passes filter")
-        # filter += (viol,mean_phi)  # add new dominating pair
-        # if any pairs dominated by new pair:
+        # constraint filtering
+        filter_thresh = 1e-2
+
+        if self.iter_num == 0:
+            if viol > 0:
+                self.logger.lraise("initial dec var violates constraints! we're toast!")
+            else:
+                viol_prev = 0.0
+
+        if (viol < (1.0 - filter_thresh) * viol_prev) or (mean_phi < (mean_phi_prev - filter_thresh) * viol):
+            self.logger.log("passes filter")
+            self._filter += (viol,mean_phi)  # add new dominating pair
+        #if any pairs dominated by new pair:
         # self.logger.log("removing dominated pairs")
         # drop
 
-        # self.logger.log("adopting filtering method to handle constraints")
         return mean_en_phi_per_alpha_filter, _filter
 
 
