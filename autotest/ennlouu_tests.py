@@ -34,7 +34,7 @@ def rosenbrock_setup(version,initial_decvars=0.45,constraints=False):
     obs.loc["obs","obgnme"] = "obj_fn"  #pst.pestpp_options["opt_obj_func"] = "obj_fn"
     if constraints:
         obs.loc["constraint", "obgnme"] = "g_constraint"  # inherit from pestpp_options
-        obs.loc["constraint", "obsval"] = 1.0  # inherit from pestpp_options
+        obs.loc["constraint", "obsval"] = 1.5  # inherit from pestpp_options
     obs.loc[:, "weight"] = 1.0
     pst.control_data.noptmax = 0
     if version == "2par":
@@ -280,6 +280,6 @@ if __name__ == "__main__":
     #invest(version="high_dim")
 
 
-    #rosenbrock_setup(version="2par",constraints=True)
+    rosenbrock_setup(version="2par",constraints=True,initial_decvars=2.0)
     rosenbrock_multiple_update(version="2par",constraints=True)
 

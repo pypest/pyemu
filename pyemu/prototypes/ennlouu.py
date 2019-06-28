@@ -448,14 +448,25 @@ class EnsembleSQP(EnsembleMethod):
         '''
         # TODO: description
 
+        constraint_gps = [x for x in self.pst.observation_data.obgnme if x.startswith("g_") or x.startswith("greater_")
+                           or x.startswith("l_") or x.startswith("less_")]
+        if len(constraint_gps) == 0:
+            self.logger.lraise("no constraint groups found")
+
         viol = 0
-        # for c in constraints:
-        # if "gt" or "gte" in J:
-        # viol_c =
-        # elif "lt" or "lte" in J:
-        # viol_c =
-        # viol_c = np.abs(min(viol_c, 0.0))
-        # viol += viol_c
+        for cg in constraint_gps:
+            cs = list(self.pst.observation_data.loc[self.pst.observation_data["obgnme"] == cg, "obsnme"])
+            if cg.startswith("g"):
+                for c in cs:
+                    model_mean = obsensemble[c].mean()
+                    constraint = self.pst.observation_data.loc[c,"obsval"]
+                    viol += np.abs(min(model_mean - constraint, 0.0))
+            else:
+                for c in cs:
+                    model_mean = obsensemble[c].mean()
+                    constraint = self.pst.observation_data.loc[c,"obsval"]
+                    viol += np.abs(min(constraint - model_mean, 0.0))
+        #viol
 
         # if viol < (1.0 - filter_thresh) * viol_prev \
         # or mean_phi < (mean_phi_prev - filter_thresh) * viol  # TODO: prev it or if filter?
