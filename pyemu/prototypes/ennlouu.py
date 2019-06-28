@@ -70,7 +70,7 @@ class EnsembleSQP(EnsembleMethod):
 
     def initialize(self,num_reals=1,enforce_bounds="reset",
     			   parensemble=None,restart_obsensemble=None,draw_mult=1.0,
-                   hess=None,):#obj_fn_group="obj_fn"):
+                   hess=None,constraints=False):#obj_fn_group="obj_fn"):
 
         """
     	Description
@@ -104,7 +104,9 @@ class EnsembleSQP(EnsembleMethod):
                 obsgnme containing a single obs serving as optimization objective function.
                 Like ++opt_dec_var_groups(<group_names>) in PESTPP-OPT.
             hess : pyemu.Matrix or str (optional)
-            a matrix or filename to use as initial Hessian (for restarting)
+                a matrix or filename to use as initial Hessian (for restarting)
+            constraints :
+                TODO: something derived from pestpp_options rather than bool
 
         
         TODO: rename some of above vars in accordance with opt parlance
@@ -197,7 +199,7 @@ class EnsembleSQP(EnsembleMethod):
         else:
             # run the initial parameter ensemble
             self.logger.log("evaluating initial ensembles")
-            failed_runs, self.obsensemble = self._calc_obs(self.parensemble) # run
+            failed_runs, self.obsensemble = self._calc_obs(self.parensemble)  # run
             self.obsensemble.to_csv(self.pst.filename + self.obsen_prefix.format(0))
             if self.raw_sweep_out is not None:
                 self.raw_sweep_out.to_csv(self.pst.filename + "_sweepraw0.csv")
@@ -221,6 +223,12 @@ class EnsembleSQP(EnsembleMethod):
 
         # assert self.parensemble_0.shape[0] == self.obsensemble_0.shape[0]
 
+        # nothing really needs to be done here for unconstrained problems..
+        # need to start from feasible point in dec var space - otherwise, we're toast..
+        if constraints:  # and constraints.shape[0] > 0:
+            self.logger.log("checking here feasibility and initializing constraint filter")
+            mean_en_phi_filter_0, _filter_0 = self._filter_constraint_eval()
+            self.logger.log("checking here feasibility and initializing constraint filter")
 
         # Hessian
         if hess is not None:
@@ -415,7 +423,7 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.log("updating Hessian...")
 
         # TODO: revive this check (or a variation thereof)! If not pos def when skipping this, math above must be wrong!
-        # TODO: forgive very small neg eigenvals?
+        # TODO: forgive very small neg eigenvals?  Yes. abs(1e-6). eigthresh=self.pst.svd_data.eigthresh
         #  Hessian positive-definite-ness check? Unnecessary according to proposition (8.2) in Oliver et al.
         if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):
             if float(ys.x) <= 0 and damped:
@@ -435,9 +443,18 @@ class EnsembleSQP(EnsembleMethod):
         '''
         # TODO
 
+    def _filter_constraint_eval(self,):
+        '''
+        '''
+        # TODO: description
+
+
+        return mean_en_phi_per_alpha_filter, _filter
+
 
     def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=True,
-               grad_calc_only=False,finite_diff_grad=False):#localizer=None,run_subset=None,
+               grad_calc_only=False,finite_diff_grad=False,
+               constraints=False):#localizer=None,run_subset=None,
         """
         Perform one quasi-Newton update
 
@@ -464,6 +481,8 @@ class EnsembleSQP(EnsembleMethod):
         finite_diff_grad : bool
             flag indicating whether to use finite differences as means of computing gradients
             (rather than ensemble approx).  # TODO: could switch between these adaptively
+        constraints :
+            TODO: something derived from pestpp_options rather than bool
 
         Example
         -------
@@ -624,27 +643,7 @@ class EnsembleSQP(EnsembleMethod):
                             format(','.join("{0:8.3E}".format(step_size))))
             failed_runs_1, self.obsensemble_1 = self._calc_obs(self.parensemble_1)  # run
 
-            #if constraints:
-                #self.logger.log("adopting filtering method to handle constraints")
-                #viol = 0
-                #for c in constraints:
-                     #if "gt" or "gte" in J:
-                         #viol_c =
-                     #elif "lt" or "lte" in J:
-                         #viol_c =
-                     #viol_c = np.abs(min(viol_c, 0.0))
-                     #viol += viol_c
-
-                #if viol < (1.0 - filter_thresh) * viol_prev \
-                #or mean_phi < (mean_phi_prev - filter_thresh) * viol  # TODO: prev it or if filter?
-                # self.logger.log("passes filter")
-                #filter += (viol,mean_phi)  # add new dominating pair
-                #if any pairs dominated by new pair:
-                    # self.logger.log("removing dominated pairs")
-                    #drop
-
-                # self.logger.log("adopting filtering method to handle constraints")
-            #else:
+            # unconstrained opt
             mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
             if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
                 self.parensemble_mean_next = self.parensemble_mean_1.copy()
@@ -656,9 +655,19 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("evaluating ensembles for step size : {0}".
                             format(','.join("{0:8.3E}".format(step_size))))
 
-        best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))
+            # constraints = from pst # contain constraint val (pcf) and constraint from obsen
+            if constraints:  # and constraints.shape[0] > 0:
+                self.logger.log("adopting filtering method to handle constraints")
+                mean_en_phi_per_alpha_filter,_filter = self._filter_constraint_eval()
+                self.logger.log("adopting filtering method to handle constraints")
+
+        if constraints:
+            best_alpha = float(mean_en_phi_per_alpha_filter.idxmin(axis=1))  # lowest phi that is acceptable to filter
+            # TODO: this is where Lagrangian should come in
+        else:
+            best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))
+
         self.best_alpha_per_it[self.iter_num] = best_alpha
-        #self.best_alpha_per_it[self.iter_num] = "best alpha = " + best_alpha
         best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
         best_alpha_per_it_df.to_csv("best_alpha_per_it.csv")
         self.logger.log("best step length (alpha): {0}".format("{0:8.3E}".format(best_alpha)))

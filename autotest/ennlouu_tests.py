@@ -3,16 +3,25 @@ if not os.path.exists("temp"):
     os.mkdir("temp")
 
 
-def rosenbrock_setup(version,initial_decvars=0.45):
+def rosenbrock_setup(version,initial_decvars=0.45,constraints=False):
     import pyemu
     if version == "2par":
-        os.chdir(os.path.join("ennlouu","rosenbrock_2par"))
+        if constraints:
+            os.chdir(os.path.join("ennlouu", "rosenbrock_2par_constrained"))
+        else:
+            os.chdir(os.path.join("ennlouu","rosenbrock_2par"))
     elif version == "high_dim":
-        os.chdir(os.path.join("ennlouu","rosenbrock_high_dim"))
+        if constraints:
+            raise Exception
+        else:
+            os.chdir(os.path.join("ennlouu","rosenbrock_high_dim"))
     in_file = os.path.join("par.dat")
     tpl_file = in_file+".tpl"
-    out_file = os.path.join("obs.dat")
-    ins_file = out_file+".ins"
+    out_file = [os.path.join("obs.dat")]
+    ins_file = [out_file[0]+".ins"]
+    if constraints:
+        out_file.append(os.path.join("constraint.dat"))
+        ins_file.append(out_file[1]+".ins")
     pst = pyemu.helpers.pst_from_io_files(tpl_file,in_file,ins_file,out_file)
     par = pst.parameter_data
     par.loc[:,"partrans"] = "none"
@@ -21,17 +30,26 @@ def rosenbrock_setup(version,initial_decvars=0.45):
     par.loc[:,"parlbnd"] = -2.2
     # TODO: repeat with log transform
     obs = pst.observation_data
-    obs.loc[:,"obsval"] = 0.0
-    obs.loc[:,"weight"] = 1.0
-    obs.loc[:,"obgnme"] = "obj_fn"
-    #pst.pestpp_options["opt_obj_func"] = "obj_fn"
+    obs.loc["obs","obsval"] = 0.0
+    obs.loc["obs","obgnme"] = "obj_fn"  #pst.pestpp_options["opt_obj_func"] = "obj_fn"
+    if constraints:
+        obs.loc["constraint", "obgnme"] = "g_constraint"  # inherit from pestpp_options
+        obs.loc["constraint", "obsval"] = 1.0  # inherit from pestpp_options
+    obs.loc[:, "weight"] = 1.0
     pst.control_data.noptmax = 0
     if version == "2par":
-        pst.model_command = ["python rosenbrock_2par.py"]
-        pst.write(os.path.join("rosenbrock_2par.pst"))
+        if constraints:
+            pst.model_command = ["python rosenbrock_2par_constrained.py"]
+            pst.write(os.path.join("rosenbrock_2par_constrained.pst"))
+        else:
+            pst.model_command = ["python rosenbrock_2par.py"]
+            pst.write(os.path.join("rosenbrock_2par.pst"))
     elif version == "high_dim":
-        pst.model_command = ["python rosenbrock_high_dim.py"]
-        pst.write(os.path.join("rosenbrock_high_dim.pst"))
+        if constraints:
+            raise Exception
+        else:
+            pst.model_command = ["python rosenbrock_high_dim.py"]
+            pst.write(os.path.join("rosenbrock_high_dim.pst"))
 
     os.chdir(os.path.join("..",".."))
 
@@ -150,7 +168,7 @@ def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
             os.chdir(os.path.join("ennlouu","rosenbrock_high_dim"))
     [os.remove(x) for x in os.listdir() if (x.endswith("obsensemble.0000.csv"))]
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(version))#,num_slaves=10)
-    esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=constraints)
+    esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=True)
     for it in range(nit):
         esqp.update(step_mult=list(np.logspace(-6,0,14)),filter_thresh=filter_thresh)
     os.chdir(os.path.join("..", ".."))
@@ -258,6 +276,6 @@ if __name__ == "__main__":
     #invest(version="high_dim")
 
 
-    rosenbrock_setup(version="2par",constraints=True)  # TODO: constraints from flag obgpnme in pst
+    rosenbrock_setup(version="2par",constraints=True)
     rosenbrock_multiple_update(version="2par",constraints=True)
 
