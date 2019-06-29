@@ -454,6 +454,7 @@ class EnsembleSQP(EnsembleMethod):
         if len(constraint_gps) == 0:
             self.logger.lraise("no constraint groups found")
 
+        # compute constrain violation
         viol = 0
         for cg in constraint_gps:
             cs = list(self.pst.observation_data.loc[self.pst.observation_data["obgnme"] == cg, "obsnme"])
@@ -468,23 +469,26 @@ class EnsembleSQP(EnsembleMethod):
                     constraint = self.pst.observation_data.loc[c,"obsval"]
                     viol += np.abs(min(constraint - model_mean, 0.0))
 
+        # mean phi
+        mean_en_phi_per_alpha = self.obsensemble_1.mean()
+
         # constraint filtering
         filter_thresh = 1e-2
-
         if self.iter_num == 0:
             if viol > 0:
                 self.logger.lraise("initial dec var violates constraints! we're toast!")
-            else:
-                viol_prev = 0.0
-
-        if (viol < (1.0 - filter_thresh) * viol_prev) or (mean_phi < (mean_phi_prev - filter_thresh) * viol):
-            self.logger.log("passes filter")
-            self._filter += (viol,mean_phi)  # add new dominating pair
+            else:  # just add to filter
+                self._filter += (viol,mean_en_phi_per_alpha)
+        else:
+            if (viol < (1.0 - filter_thresh) * viol_prev) or (mean_phi < (mean_phi_prev - filter_thresh) * viol):
+                # as per Liu and Reynolds (2019) SPE
+                self.logger.log("passes filter")
+                self._filter += (viol,mean_en_phi_per_alpha)  # add new dominating pair
         #if any pairs dominated by new pair:
         # self.logger.log("removing dominated pairs")
         # drop
 
-        return mean_en_phi_per_alpha_filter, _filter
+        return mean_en_phi_per_alpha, _filter
 
 
     def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=True,
@@ -678,27 +682,28 @@ class EnsembleSQP(EnsembleMethod):
                             format(','.join("{0:8.3E}".format(step_size))))
             failed_runs_1, self.obsensemble_1 = self._calc_obs(self.parensemble_1)  # run
 
-            # unconstrained opt
-            mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
-            if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
-                self.parensemble_mean_next = self.parensemble_mean_1.copy()
-                self.parensemble_next = self.parensemble_1.copy()
-                [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
-                                                        and x.split(".")[2] == str(self.iter_num))]  #or (x.endswith("pst.obsensemble.0000.csv"))
-                self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
-                                          + self.obsen_prefix.format(0))
-            self.logger.log("evaluating ensembles for step size : {0}".
-                            format(','.join("{0:8.3E}".format(step_size))))
-
             # constraints = from pst # contain constraint val (pcf) and constraint from obsen
             if constraints:  # and constraints.shape[0] > 0:
                 self.logger.log("adopting filtering method to handle constraints")
-                mean_en_phi_per_alpha_filter,_filter = self._filter_constraint_eval(self.obsensemble_1)
+                mean_en_phi_per_alpha,_filter = self._filter_constraint_eval(self.obsensemble_1)
+                print(self._filter)  #.to_csv()
                 self.logger.log("adopting filtering method to handle constraints")
+            else:  # unconstrained opt
+                mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
+                if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
+                    self.parensemble_mean_next = self.parensemble_mean_1.copy()
+                    self.parensemble_next = self.parensemble_1.copy()
+                    [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
+                                                            and x.split(".")[2] == str(
+                                self.iter_num))]  # or (x.endswith("pst.obsensemble.0000.csv"))
+                    self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
+                                              + self.obsen_prefix.format(0))
+            self.logger.log("evaluating ensembles for step size : {0}".format(','.join("{0:8.3E}".format(step_size))))
 
         if constraints:
-            best_alpha = float(mean_en_phi_per_alpha_filter.idxmin(axis=1))  # lowest phi that is acceptable to filter
-            # TODO: this is where Lagrangian should come in
+            best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))  # lowest phi that is acceptable to filter
+            # TODO: this is perhaps where Lagrangian should come in
+            # TODO: get min viol and min phi and find pair that is smallest distance from that origin... via trig
         else:
             best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))
 
