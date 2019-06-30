@@ -228,7 +228,7 @@ class EnsembleSQP(EnsembleMethod):
         if constraints:  # and constraints.shape[0] > 0:
             self.logger.log("checking here feasibility and initializing constraint filter")
             self._filter = []
-            self._filter = self._filter_constraint_eval(self.obsensemble,self._filter)
+            self._filter, mean_en_phi, viol = self._filter_constraint_eval(self.obsensemble,self._filter)
             df = pd.DataFrame(self._filter,columns=['beta','phi'])
             df.to_csv("filter.{0}.csv".format(self.iter_num))
             self.logger.log("checking here feasibility and initializing constraint filter")
@@ -500,7 +500,7 @@ class EnsembleSQP(EnsembleMethod):
                     self.logger.log("passes filter")
                     self._filter.append([viol,mean_en_phi[0]])
 
-        return self._filter
+        return self._filter, mean_en_phi, viol
 
 
     def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=True,
@@ -713,38 +713,44 @@ class EnsembleSQP(EnsembleMethod):
             # constraints = from pst # contain constraint val (pcf) and constraint from obsen
             if constraints:  # and constraints.shape[0] > 0:
                 self.logger.log("adopting filtering method to handle constraints")
-                #mean_en_phi_per_alpha, _filter = self._filter_constraint_eval(self.obsensemble_1)
-                self._filter = self._filter_constraint_eval(self.obsensemble_1, self._filter)
+                self._filter, mean_en_phi, viol = self._filter_constraint_eval(self.obsensemble_1, self._filter)
                 self.logger.log("adopting filtering method to handle constraints")
+
+                mean_en_phi_per_alpha["{0}".format(step_size)] = mean_en_phi_per_alpha
+                if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
+                    self.parensemble_mean_next = self.parensemble_mean_1.copy()
+                    self.parensemble_next = self.parensemble_1.copy()
+                    [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
+                                                            and x.split(".")[2] == str(self.iter_num))]
+                    self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size))
             else:  # unconstrained opt
                 mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
                 if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
                     self.parensemble_mean_next = self.parensemble_mean_1.copy()
                     self.parensemble_next = self.parensemble_1.copy()
                     [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
-                                                            and x.split(".")[2] == str(
-                                self.iter_num))]  # or (x.endswith("pst.obsensemble.0000.csv"))
+                                                            and x.split(".")[2] == str(self.iter_num))]
+                    # or (x.endswith("pst.obsensemble.0000.csv"))
                     self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
                                               + self.obsen_prefix.format(0))
             self.logger.log("evaluating ensembles for step size : {0}".format(','.join("{0:8.3E}".format(step_size))))
 
         if constraints:
-            best_alpha = float(mean_en_phi.idxmin(axis=1))  # lowest phi that is acceptable to filter
+            best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))  # lowest phi that is acceptable to filter
             # TODO: this is perhaps where Lagrangian should come in
             # TODO: get min viol and min phi and find pair that is smallest distance from that origin... via trig
+
+            df = pd.DataFrame(self._filter, columns=['beta', 'phi'])
+            df.to_csv("filter.{0}.csv".format(self.iter_num))
         else:
             best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))
-
-        df = pd.DataFrame([self._filter], columns=['beta', 'phi'])
-        df.to_csv("filter.{0}.csv".format(self.iter_num))
 
         self.best_alpha_per_it[self.iter_num] = best_alpha
         best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
         best_alpha_per_it_df.to_csv("best_alpha_per_it.csv")
-        self.logger.log("best step length (alpha): {0}".format("{0:8.3E}".format(best_alpha)))
+        #self.logger.log("best step length (alpha): {0}".format("{0:8.3E}".format(best_alpha)))
 
         # TODO: failed run handling
-
         # TODO: undertake Wolfe and en tests. No - our need is superseded by parallel alpha tests
         # TODO: constraint and feasibility KKT checks here
         # TODO: check for convergence in terms of dec var and phi changes
