@@ -227,10 +227,9 @@ class EnsembleSQP(EnsembleMethod):
         # need to start from feasible point in dec var space...
         if constraints:  # and constraints.shape[0] > 0:
             self.logger.log("checking here feasibility and initializing constraint filter")
-            self._filter = []
-            self._filter, mean_en_phi, viol = self._filter_constraint_eval(self.obsensemble,self._filter)
-            df = pd.DataFrame(self._filter,columns=['beta','phi'])
-            df.to_csv("filter.{0}.csv".format(self.iter_num))
+            self._filter = pd.DataFrame()
+            self._filter = self._filter_constraint_eval(self.obsensemble,self._filter)
+            self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
             self.logger.log("checking here feasibility and initializing constraint filter")
 
         # Hessian
@@ -452,7 +451,7 @@ class EnsembleSQP(EnsembleMethod):
         '''
         # TODO
 
-    def _filter_constraint_eval(self,obsensemble,filter):
+    def _filter_constraint_eval(self,obsensemble,filter,alpha=None):
         '''
         '''
         # TODO: description
@@ -487,20 +486,22 @@ class EnsembleSQP(EnsembleMethod):
             if viol > 0:
                 self.logger.lraise("initial dec var violates constraints! we're toast!")
             else:  # just add to filter
-                self._filter.append([viol,mean_en_phi[0]])
+                self._filter = pd.concat((self._filter, pd.DataFrame([[self.iter_num, 0, viol, mean_en_phi[0]]],
+                                                                     columns=['iter_num', 'alpha', 'beta', 'phi'])))
         else:
-            for f in self._filter:
+            for i,f in self._filter.iterrows():
                 # drop pairs that are dominated by new pair to be added
-                if (viol <= f[0]) and (mean_en_phi[0] <= f[1]):  #TODO: or viol < f[0]
-                    self._filter = [x for x in self._filter if x != f]
+                if (viol <= f['beta']) and (mean_en_phi[0] <= f['phi']):  #TODO: or viol < f[0]
+                    self._filter.drop([i],axis=0,inplace=True)
 
                 # add new dominating pair
-                if (viol < f[0] - (filter_thresh * f[0])) or (mean_en_phi[0] < f[1] - (filter_thresh * viol)):
+                if (viol < f['beta'] - (filter_thresh * f['beta'])) or (mean_en_phi[0] < f['phi'] - (filter_thresh * viol)):
                     # see slightly adjusted version in Liu and Reynolds (2019) SPE and accept if <=?
                     self.logger.log("passes filter")
-                    self._filter.append([viol,mean_en_phi[0]])
+                    self._filter = pd.concat((self._filter, pd.DataFrame([[self.iter_num, alpha, viol, mean_en_phi[0]]],
+                                                                         columns=['iter_num', 'alpha', 'beta', 'phi'])))
 
-        return self._filter, mean_en_phi, viol
+        return self._filter
 
 
     def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=True,
@@ -713,16 +714,11 @@ class EnsembleSQP(EnsembleMethod):
             # constraints = from pst # contain constraint val (pcf) and constraint from obsen
             if constraints:  # and constraints.shape[0] > 0:
                 self.logger.log("adopting filtering method to handle constraints")
-                self._filter, mean_en_phi, viol = self._filter_constraint_eval(self.obsensemble_1, self._filter)
+                self._filter = self._filter_constraint_eval(self.obsensemble_1, self._filter, step_size)
                 self.logger.log("adopting filtering method to handle constraints")
 
-                mean_en_phi_per_alpha["{0}".format(step_size)] = mean_en_phi_per_alpha
-                if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
-                    self.parensemble_mean_next = self.parensemble_mean_1.copy()
-                    self.parensemble_next = self.parensemble_1.copy()
-                    [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
-                                                            and x.split(".")[2] == str(self.iter_num))]
-                    self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size))
+                # Then, calc min viol and min phi for iteration = x. Then c = ((viol-min viol)**2 + (phi-min phi)**2)**0.5. If alpha where c is min is current alpha, copy paren
+
             else:  # unconstrained opt
                 mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
                 if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
@@ -740,8 +736,7 @@ class EnsembleSQP(EnsembleMethod):
             # TODO: this is perhaps where Lagrangian should come in
             # TODO: get min viol and min phi and find pair that is smallest distance from that origin... via trig
 
-            df = pd.DataFrame(self._filter, columns=['beta', 'phi'])
-            df.to_csv("filter.{0}.csv".format(self.iter_num))
+            self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
         else:
             best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))
 
