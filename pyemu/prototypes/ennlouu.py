@@ -228,7 +228,9 @@ class EnsembleSQP(EnsembleMethod):
         if constraints:  # and constraints.shape[0] > 0:
             self.logger.log("checking here feasibility and initializing constraint filter")
             self._filter = []
-            mean_en_phi_filter_0, _filter_0 = self._filter_constraint_eval(self.obsensemble,self._filter)
+            self._filter = self._filter_constraint_eval(self.obsensemble,self._filter)
+            df = pd.DataFrame([self._filter],columns=['beta','phi'])
+            df.to_csv("filter.{0}.csv".format(self.iter_num))
             self.logger.log("checking here feasibility and initializing constraint filter")
 
         # Hessian
@@ -444,7 +446,7 @@ class EnsembleSQP(EnsembleMethod):
         '''
         # TODO
 
-    def _filter_constraint_eval(self,obsensemble,filter,viol_prev,mean_phi_prev):
+    def _filter_constraint_eval(self,obsensemble,filter):
         '''
         '''
         # TODO: description
@@ -454,7 +456,7 @@ class EnsembleSQP(EnsembleMethod):
         if len(constraint_gps) == 0:
             self.logger.lraise("no constraint groups found")
 
-        # compute constrain violation
+        # compute constraint violation
         viol = 0
         for cg in constraint_gps:
             cs = list(self.pst.observation_data.loc[self.pst.observation_data["obgnme"] == cg, "obsnme"])
@@ -470,15 +472,16 @@ class EnsembleSQP(EnsembleMethod):
                     viol += np.abs(min(constraint - model_mean, 0.0))
 
         # mean phi
-        mean_en_phi_per_alpha = self.obsensemble_1.mean()
+        phi_obs = self.pst.observation_data.loc[self.pst.observation_data["obgnme"] == "obj_fn", "obsnme"]
+        mean_en_phi = obsensemble[phi_obs].mean()
 
         # constraint filtering
-        filter_thresh = 1e-2
+        filter_thresh = 1e-2  #TODO: invest influence of filter_thresh
         if self.iter_num == 0:
             if viol > 0:
                 self.logger.lraise("initial dec var violates constraints! we're toast!")
             else:  # just add to filter
-                self._filter += (viol,mean_en_phi_per_alpha)
+                self._filter += (viol,mean_en_phi[0])
         else:
             if (viol < (1.0 - filter_thresh) * viol_prev) or (mean_phi < (mean_phi_prev - filter_thresh) * viol):
                 # as per Liu and Reynolds (2019) SPE
@@ -488,7 +491,7 @@ class EnsembleSQP(EnsembleMethod):
         # self.logger.log("removing dominated pairs")
         # drop
 
-        return mean_en_phi_per_alpha, _filter
+        return self._filter
 
 
     def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=True,
