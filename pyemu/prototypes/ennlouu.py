@@ -229,7 +229,7 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("checking here feasibility and initializing constraint filter")
             self._filter = []
             self._filter = self._filter_constraint_eval(self.obsensemble,self._filter)
-            df = pd.DataFrame([self._filter],columns=['beta','phi'])
+            df = pd.DataFrame(self._filter,columns=['beta','phi'])
             df.to_csv("filter.{0}.csv".format(self.iter_num))
             self.logger.log("checking here feasibility and initializing constraint filter")
 
@@ -482,17 +482,18 @@ class EnsembleSQP(EnsembleMethod):
         mean_en_phi = obsensemble[phi_obs].mean()
 
         # constraint filtering
-        filter_thresh = 1e-2  #TODO: invest influence of filter_thresh
+        filter_thresh = 1e-4  #TODO: invest influence of filter_thresh
         if self.iter_num == 0:
             if viol > 0:
                 self.logger.lraise("initial dec var violates constraints! we're toast!")
             else:  # just add to filter
-                self._filter += (viol,mean_en_phi[0])
+                self._filter.append([viol,mean_en_phi[0]])
         else:
-            if (viol < (1.0 - filter_thresh) * viol_prev) or (mean_phi < (mean_phi_prev - filter_thresh) * viol):
-                # as per Liu and Reynolds (2019) SPE
-                self.logger.log("passes filter")
-                self._filter += (viol,mean_en_phi_per_alpha)  # add new dominating pair
+            for f in self._filter:
+                #  see slightly adjusted version in Liu and Reynolds (2019) SPE and accept if <=?
+                if (viol < f[0] - (filter_thresh * f[0])) or (mean_en_phi[0] < f[1] - (filter_thresh * viol)):
+                    self.logger.log("passes filter")
+                    self._filter.append([viol,mean_en_phi[0]])  # add new dominating pair
         #if any pairs dominated by new pair:
         # self.logger.log("removing dominated pairs")
         # drop
