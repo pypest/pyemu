@@ -1246,7 +1246,41 @@ def from_flopy_pp_test():
                                              use_pp_zones=False,
                                              build_prior=True)
 
+
+def process_output_files_test():
+
+    import os
+    from pyemu import Pst, pst_utils
+    # creation functionality
+    dir = os.path.join("..", "verification", "10par_xsec", "template_mac")
+    pst = Pst(os.path.join(dir, "pest.pst"))
+
+    tpl_files = [os.path.join(dir, f) for f in pst.template_files]
+    out_files = [os.path.join(dir, f) for f in pst.output_files]
+    ins_files = [os.path.join(dir, f) for f in pst.instruction_files]
+    in_files = [os.path.join(dir, f) for f in pst.input_files]
+
+    new_pst = Pst.from_io_files(tpl_files, in_files,
+                                ins_files, out_files,
+                                pst_filename=os.path.join("temp", "test.pst"))
+    #print(new_pst.observation_data)
+
+    new_pst.process_output_files()
+
+    try:
+        pst.process_output_files()
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+
+
+    return
+
+
 if __name__ == "__main__":
+    process_output_files_test()
     #change_limit_test()
     #new_format_test()
     #lt_gt_constraint_names_test()
@@ -1265,7 +1299,7 @@ if __name__ == "__main__":
     # from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
-    from_flopy_reachinput()
+    #from_flopy_reachinput()
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
@@ -1282,7 +1316,7 @@ if __name__ == "__main__":
     # load_test()
     # res_test()
     # smp_test()
-    # from_io_with_inschek_test()
+    #from_io_with_inschek_test()
     #pestpp_args_test()
     # reweight_test()
     # reweight_res_test()

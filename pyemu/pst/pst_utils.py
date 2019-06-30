@@ -874,8 +874,85 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
     return odf
 
 
+class Instruction(object):
+    def __init__(self,ins_string,marker):
+        self.ins_string = ins_string
+        self.marker = marker
+        self._check()
+    def _check(self):
+        s = self.ins_string
+        if s.lower().startswith('l'):
+            pass
+        elif s.startswith('!'):
+            pass
+        elif s.startswith('w'):
+            pass
+        elif s.startswith('['):
+            pass
+        elif s.startswith('('):
+            pass
+        elif s.startswith(self.marker):
+            pass
+        elif s.startswith('&'):
+            pass
+
+    def execute(self,out_file_handle):
+        pass
 
 
+
+def _process_instruction_file(pst,instruction_file):
+    instructions = []
+    with open(instruction_file,'r') as f:
+        first_line = f.readline().lower().strip().split()
+        if len(first_line) != 2:
+            raise Exception("first line of ins file must have two entries, not '{0}'".format(','.join(first_line)))
+        if first_line[0] != "pif":
+            raise Exception("first line of ins file '{0}' must start with 'pif', not '{1}'".\
+                            format(instruction_file,first_line[0]))
+        marker = first_line[1]
+        for line in f:
+            raw = line.strip().split()
+            for r in raw:
+                i = Instruction(r,marker)
+
+    return instructions
+
+
+def _process_output_file(output_file,instructions):
+    onames,ovals = [],[]
+    with open(output_file,'r') as f:
+        for instruction in instructions:
+            pass
+    return pd.Series(data=ovals,index=onames)
+
+
+def process_output_files(pst,pst_path='.'):
+    if not isinstance(pst,pyemu.Pst):
+        raise Exception("process_output_files error: 'pst' arg must be pyemu.Pst instance")
+    file_errors = []
+    for f in pst.instruction_files:
+        f = os.path.join(pst_path,f)
+        if not os.path.exists(os.path.join(pst_path,f)):
+            file_errors.append("ins file '{0}' not found".format(f))
+    for f in pst.output_files:
+        f = os.path.join(pst_path,f)
+        if not os.path.exists(os.path.join(pst_path,f)):
+            file_errors.append("output file '{0}' not found".format(f))
+    if len(file_errors) > 0:
+        raise Exception("process_output_files file errors: " + ",".join(file_errors))
+
+    for ins_file,out_file in zip(pst.instruction_files,pst.output_files):
+        try:
+            instructions = _process_instruction_file(pst,os.path.join(pst_path,ins_file))
+        except Exception as e:
+            raise Exception("process_output_files error processing instruction file" +
+                            "'{0}': {1}".format(ins_file,str(e)))
+        try:
+            obsvals = _process_output_file(os.path.join(pst_path,out_file),instructions)
+        except Exception as e:
+            raise Exception("process_output_files error processing output file" +
+                            "'{0}': {1}".format(out_file,str(e)))
 
 
 
