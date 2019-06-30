@@ -466,7 +466,7 @@ class EnsembleSQP(EnsembleMethod):
         viol = 0
         for cg in constraint_gps:
             cs = list(self.pst.observation_data.loc[self.pst.observation_data["obgnme"] == cg, "obsnme"])
-            if cg.startswith("g"):
+            if cg.startswith("g"):  #TODO: list of constraints to self at initialization/start of update
                 for c in cs:
                     model_mean = obsensemble[c].mean()
                     constraint = self.pst.observation_data.loc[c,"obsval"]
@@ -490,13 +490,15 @@ class EnsembleSQP(EnsembleMethod):
                 self._filter.append([viol,mean_en_phi[0]])
         else:
             for f in self._filter:
-                #  see slightly adjusted version in Liu and Reynolds (2019) SPE and accept if <=?
+                # drop pairs that are dominated by new pair to be added
+                if (viol <= f[0]) and (mean_en_phi[0] <= f[1]):  #TODO: or viol < f[0]
+                    self._filter = [x for x in self._filter if x != f]
+
+                # add new dominating pair
                 if (viol < f[0] - (filter_thresh * f[0])) or (mean_en_phi[0] < f[1] - (filter_thresh * viol)):
+                    # see slightly adjusted version in Liu and Reynolds (2019) SPE and accept if <=?
                     self.logger.log("passes filter")
-                    self._filter.append([viol,mean_en_phi[0]])  # add new dominating pair
-        #if any pairs dominated by new pair:
-        # self.logger.log("removing dominated pairs")
-        # drop
+                    self._filter.append([viol,mean_en_phi[0]])
 
         return self._filter
 
@@ -727,7 +729,7 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("evaluating ensembles for step size : {0}".format(','.join("{0:8.3E}".format(step_size))))
 
         if constraints:
-            best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))  # lowest phi that is acceptable to filter
+            best_alpha = float(mean_en_phi.idxmin(axis=1))  # lowest phi that is acceptable to filter
             # TODO: this is perhaps where Lagrangian should come in
             # TODO: get min viol and min phi and find pair that is smallest distance from that origin... via trig
         else:
