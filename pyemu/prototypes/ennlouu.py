@@ -319,13 +319,19 @@ class EnsembleSQP(EnsembleMethod):
         '''
         general func for calc of ensemble (approx) covariances and cross-covariances.
         '''
-        mean1, mean2 = np.array(ensemble1.mean(axis=0)), np.array(ensemble2.mean(axis=0))
-        delta1, delta2 = ensemble1.as_pyemu_matrix(), ensemble2.as_pyemu_matrix()
+        mean1 = np.array(ensemble1.mean(axis=0))
+        delta1 = ensemble1.as_pyemu_matrix()
+        if ensemble1.columns[0] != ensemble2.columns[0]:  # cross-cov
+            mean2 = np.array(ensemble2[self.phi_obs].mean(axis=0))
+            delta2 = Matrix(x=ensemble2.as_matrix(self.phi_obs),row_names=delta1.row_names,col_names=self.phi_obs)
+        else:  #cov
+            mean2 = np.array(ensemble2.mean(axis=0))
+            delta2 = ensemble2.as_pyemu_matrix()
         for i in range(ensemble1.shape[0]):
             delta1.x[i, :] -= mean1
             delta2.x[i, :] -= mean2
         en_cov_crosscov = 1.0 / (ensemble1.shape[0] - 1.0) * ((delta1.x * delta2.x).sum(axis=0))
-        if ensemble1.shape[1] == ensemble2.shape[1]:  # diag cov matrix
+        if ensemble1.columns[0] == ensemble2.columns[0]:  # diag cov matrix
             en_cov_crosscov = np.diag(en_cov_crosscov)
             en_cov_crosscov = Matrix(x=en_cov_crosscov,
                                      row_names=self.pst.adj_par_names,col_names=self.pst.adj_par_names)
@@ -553,12 +559,16 @@ class EnsembleSQP(EnsembleMethod):
 
         # get phi component of obsensemble  # TODO: remove "obj_fn" option from below and instead x.startwith("phi_")..
         #TODO: move to initialization
+        #TODO: similar for dec var par isolation
         #phi_obs_gp = [x for x in self.pst.observation_data.obgnme if "obj_fn" in x]
         phi_obs_gp = ['obj_fn']  #TODO: temp hack
         if len(phi_obs_gp) != 1:
             self.logger.lraise("number of objective function (phi) obs group found != 1")
         self.phi_obs_gp = phi_obs_gp[0]
-        self.phi_obs = self.pst.observation_data.loc[self.pst.observation_data["obgnme"] == phi_obs_gp, "obsnme"][0]
+        self.phi_obs = list(self.pst.observation_data.loc[self.pst.observation_data["obgnme"] == self.phi_obs_gp,
+                                                          "obsnme"])
+        if len(self.phi_obs) != 1:
+            self.logger.lraise("number of objective function (phi) obs found != 1")
 
         if finite_diff_grad:
             self.logger.log("compute phi grad using finite diffs")
@@ -569,10 +579,11 @@ class EnsembleSQP(EnsembleMethod):
             pyemu.os_utils.run("pestpp rosenbrock_2par_fds.pst")
             jco = pyemu.Jco.from_binary("rosenbrock_2par_fds.jcb").to_dataframe()
             # TODO: get dims from npar_adj and pargp flagged as dec var
-            self.phi_grad = Matrix(x=jco.values,
-                                   row_names=self.pst.adj_par_names,col_names=['cross-cov'])
-            if grad_calc_only:
-                return self.phi_grad
+            # TODO: operate on phi vector of jco only
+            #self.phi_grad = Matrix(x=jco.values,
+             #                      row_names=self.pst.adj_par_names,col_names=['cross-cov'])
+            #if grad_calc_only:
+             #   return self.phi_grad
             self.logger.log("compute phi grad using finite diffs")
         else:
             self.logger.log("compute phi grad using ensemble approx")
@@ -588,7 +599,8 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("compute dec var en covariance vector")
 
             self.logger.log("compute dec var-phi en cross-covariance vector")
-            self.en_crosscov_decvar_phi = self._calc_en_crosscov_decvar_phi(self.parensemble,self.obsensemble)
+            self.en_crosscov_decvar_phi = self._calc_en_crosscov_decvar_phi(self.parensemble,
+                                                                            self.obsensemble)
             self.logger.log("compute dec var-phi en cross-covariance vector")
 
             # compute gradient vector and undertake gradient-related checks
@@ -603,6 +615,7 @@ class EnsembleSQP(EnsembleMethod):
             #self.logger.log("calculate pseudo inv comps")
 
             self.logger.log("calculate phi gradient vector")
+            #self.phi_grad = self.inv_en_cov_decvar.T * self.en_crosscov_decvar_phi
             self.phi_grad = self.inv_en_cov_decvar * self.en_crosscov_decvar_phi.T
             self.logger.log("calculate phi gradient vector")
             if grad_calc_only:
