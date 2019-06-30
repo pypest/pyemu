@@ -280,6 +280,6 @@ if __name__ == "__main__":
     #invest(version="high_dim")
 
 
-    rosenbrock_setup(version="2par",constraints=True,initial_decvars=2.0)
-    rosenbrock_multiple_update(version="2par",constraints=True)
+    #rosenbrock_setup(version="2par",constraints=True,initial_decvars=2.0)
+    rosenbrock_multiple_update(version="2par",constraints=True,en_size=3)
 

@@ -551,6 +551,15 @@ class EnsembleSQP(EnsembleMethod):
         if not self._initialized:
             self.logger.lraise("must call initialize() before update()")
 
+        # get phi component of obsensemble  # TODO: remove "obj_fn" option from below and instead x.startwith("phi_")..
+        #TODO: move to initialization
+        #phi_obs_gp = [x for x in self.pst.observation_data.obgnme if "obj_fn" in x]
+        phi_obs_gp = ['obj_fn']  #TODO: temp hack
+        if len(phi_obs_gp) != 1:
+            self.logger.lraise("number of objective function (phi) obs group found != 1")
+        self.phi_obs_gp = phi_obs_gp[0]
+        self.phi_obs = self.pst.observation_data.loc[self.pst.observation_data["obgnme"] == phi_obs_gp, "obsnme"][0]
+
         if finite_diff_grad:
             self.logger.log("compute phi grad using finite diffs")
             # TODO: implement and add test for this
@@ -688,8 +697,8 @@ class EnsembleSQP(EnsembleMethod):
             # constraints = from pst # contain constraint val (pcf) and constraint from obsen
             if constraints:  # and constraints.shape[0] > 0:
                 self.logger.log("adopting filtering method to handle constraints")
-                mean_en_phi_per_alpha,_filter = self._filter_constraint_eval(self.obsensemble_1)
-                print(self._filter)  #.to_csv()
+                #mean_en_phi_per_alpha, _filter = self._filter_constraint_eval(self.obsensemble_1)
+                self._filter = self._filter_constraint_eval(self.obsensemble_1, self._filter)
                 self.logger.log("adopting filtering method to handle constraints")
             else:  # unconstrained opt
                 mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
@@ -709,6 +718,9 @@ class EnsembleSQP(EnsembleMethod):
             # TODO: get min viol and min phi and find pair that is smallest distance from that origin... via trig
         else:
             best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))
+
+        df = pd.DataFrame([self._filter], columns=['beta', 'phi'])
+        df.to_csv("filter.{0}.csv".format(self.iter_num))
 
         self.best_alpha_per_it[self.iter_num] = best_alpha
         best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
