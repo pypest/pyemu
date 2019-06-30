@@ -174,7 +174,7 @@ def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(ext))#,num_slaves=10)
     esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=True)
     for it in range(nit):
-        esqp.update(step_mult=list(np.logspace(-6,0,14)))  #filter_thresh=filter_thresh
+        esqp.update(step_mult=list(np.logspace(-6,0,14)),constraints=constraints)  #filter_thresh=filter_thresh
     os.chdir(os.path.join("..", ".."))
 
    #  TODO: critical that draw_mult is refined as we go?
