@@ -451,7 +451,7 @@ class EnsembleSQP(EnsembleMethod):
         '''
         # TODO
 
-    def _filter_constraint_eval(self,obsensemble,filter,alpha=None):
+    def _filter_constraint_eval(self,obsensemble,filter,alpha=None,biobj_weight=1.0,biobj_transf=True):
         '''
         '''
         # TODO: description
@@ -482,7 +482,7 @@ class EnsembleSQP(EnsembleMethod):
 
         # constraint filtering
         filter_thresh = 1e-4  #TODO: invest influence of filter_thresh
-        biobj_weight = 100.0  #TODO: invest
+        #TODO: invest biobj params - this should also be related to transforms on dec vars and constraints
         if self.iter_num == 0:
             if viol > 0:
                 self.logger.lraise("initial dec var violates constraints! we're toast!")
@@ -510,11 +510,18 @@ class EnsembleSQP(EnsembleMethod):
             curr_filter = self._filter.loc[self._filter['iter_num'] == self.iter_num, :]
             if curr_filter.shape[0] > 0 and curr_filter.loc[curr_filter['alpha'] == alpha,:].shape[0] > 0:
                 # TODO: but.. what is the price of violating constraints? We don't want to at all...
-                # TODO: either just pick min phi with constraint = 0, or weight constraint viol * 10, e.g.
-                min_beta, min_phi = curr_filter['beta'].min(), curr_filter['phi'].min()
-                curr_filter.loc[:, "dist_from_min_origin"] = (((curr_filter['beta'] - min_beta) * biobj_weight) ** 2 + (curr_filter['phi'] - min_phi) ** 2) ** 0.5
-                if curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0] == curr_filter['dist_from_min_origin'].min():
-                    acceptance = True
+                # TODO: either just pick min phi with constraint = 0, or weight constraint viol * 10, and transf?, e.g.
+                if biobj_transf:
+                    min_beta, min_phi = curr_filter['beta'].min(), np.log10(curr_filter['phi'].min())
+                    curr_filter.loc[:, "dist_from_min_origin"] = (((curr_filter['beta'] - min_beta) * biobj_weight) ** 2 + (np.log10(curr_filter['phi']) - min_phi) ** 2) ** 0.5
+                    if curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0] == curr_filter[
+                        'dist_from_min_origin'].min():
+                        acceptance = True
+                else:
+                    min_beta, min_phi = curr_filter['beta'].min(), curr_filter['phi'].min()
+                    curr_filter.loc[:, "dist_from_min_origin"] = (((curr_filter['beta'] - min_beta) * biobj_weight) ** 2 + (curr_filter['phi'] - min_phi) ** 2) ** 0.5
+                    if curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0] == curr_filter['dist_from_min_origin'].min():
+                        acceptance = True
 
 
         return self._filter, acceptance
@@ -522,7 +529,7 @@ class EnsembleSQP(EnsembleMethod):
 
     def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=True,
                grad_calc_only=False,finite_diff_grad=False,
-               constraints=False):#localizer=None,run_subset=None,
+               constraints=False,biobj_weight=1.0,biobj_transf=True):#localizer=None,run_subset=None,
         """
         Perform one quasi-Newton update
 
@@ -731,7 +738,8 @@ class EnsembleSQP(EnsembleMethod):
             if constraints:  # and constraints.shape[0] > 0:
                 # TODO: this is perhaps where Lagrangian should come in
                 self.logger.log("adopting filtering method to handle constraints")
-                self._filter, accept = self._filter_constraint_eval(self.obsensemble_1, self._filter, step_size)
+                self._filter, accept = self._filter_constraint_eval(self.obsensemble_1, self._filter, step_size,
+                                                                    biobj_weight=biobj_weight,biobj_transf=biobj_transf)
                 self.logger.log("adopting filtering method to handle constraints")
                 if accept:
                     best_alpha = step_size

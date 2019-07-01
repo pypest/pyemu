@@ -328,6 +328,6 @@ if __name__ == "__main__":
 
 
     #rosenbrock_setup(version="2par",constraints=True,initial_decvars=2.0)
-    #rosenbrock_multiple_update(version="2par",constraints=True,en_size=20)
+    rosenbrock_multiple_update(version="2par",constraints=True,en_size=20)
 
-    filter_plot(version="2par", constraints=True, log_phi=True)
+    #filter_plot(version="2par", constraints=True, log_phi=True)
