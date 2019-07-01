@@ -501,7 +501,8 @@ class EnsembleSQP(EnsembleMethod):
                     # see slightly adjusted version in Liu and Reynolds (2019) SPE and accept if <=?
                     self.logger.log("passes filter")
                     self._filter = pd.concat((self._filter, pd.DataFrame([[self.iter_num, alpha, viol, mean_en_phi[0]]],
-                                                                         columns=['iter_num', 'alpha', 'beta', 'phi'])))
+                                                                         columns=['iter_num', 'alpha', 'beta', 'phi'])),
+                                             ignore_index=True)
 
                     # now we assess filter pairs following new (acceptable) pair for curr iter to choose best....
                     curr_filter = self._filter.loc[self._filter['iter_num'] == self.iter_num, :]
