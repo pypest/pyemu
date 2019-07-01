@@ -228,7 +228,7 @@ class EnsembleSQP(EnsembleMethod):
         if constraints:  # and constraints.shape[0] > 0:
             self.logger.log("checking here feasibility and initializing constraint filter")
             self._filter = pd.DataFrame()
-            self._filter = self._filter_constraint_eval(self.obsensemble,self._filter)
+            self._filter, _accept = self._filter_constraint_eval(self.obsensemble,self._filter)
             self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
             self.logger.log("checking here feasibility and initializing constraint filter")
 
@@ -501,15 +501,21 @@ class EnsembleSQP(EnsembleMethod):
                     self._filter = pd.concat((self._filter, pd.DataFrame([[self.iter_num, alpha, viol, mean_en_phi[0]]],
                                                                          columns=['iter_num', 'alpha', 'beta', 'phi'])))
 
-            # now we assess filter pairs for curr iter to choose best....
-            curr_filter = self._filter.loc[self._filter['iter_num'] == self.iter_num, :]
-            if curr_filter.shape[0] > 0:
-                min_beta, min_phi = curr_filter['beta'].min(), curr_filter['phi'].min()
-                for i, f in curr_filter.iterrows():
-                    dist = ((A)**2 + (B)**2) ** 0.5
+        # now we assess filter pairs for curr iter to choose best....
+        curr_filter = self._filter.loc[self._filter['iter_num'] == self.iter_num, :]
+        if curr_filter.shape[0] > 0:
+            min_beta, min_phi = curr_filter['beta'].min(), curr_filter['phi'].min()
+            dist = ((viol - min_beta) ** 2 + (mean_en_phi[0] - min_phi) ** 2) ** 0.5
+            curr_filter.loc[(curr_filter['beta'] == viol) & (curr_filter['phi'] == mean_en_phi[0]),
+                            "dist_from_min_origin"] = dist
+            if dist == curr_filter['dist_from_min_origin'].min():
+                acceptance = True
+            else:
+                acceptance = False
+        else:
+            acceptance = False
 
-
-        return self._filter
+        return self._filter, acceptance
 
 
     def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=True,
@@ -719,14 +725,20 @@ class EnsembleSQP(EnsembleMethod):
                             format(','.join("{0:8.3E}".format(step_size))))
             failed_runs_1, self.obsensemble_1 = self._calc_obs(self.parensemble_1)  # run
 
-            # constraints = from pst # contain constraint val (pcf) and constraint from obsen
+            # TODO: constraints = from pst # contain constraint val (pcf) and constraint from obsen
             if constraints:  # and constraints.shape[0] > 0:
+                # TODO: this is perhaps where Lagrangian should come in
                 self.logger.log("adopting filtering method to handle constraints")
-                self._filter = self._filter_constraint_eval(self.obsensemble_1, self._filter, step_size)
+                self._filter, accept = self._filter_constraint_eval(self.obsensemble_1, self._filter, step_size)
                 self.logger.log("adopting filtering method to handle constraints")
-
-                # dist = ((viol-min viol)**2 + (phi-min phi)**2) ** 0.5.
-                    # #If alpha where c is min is current alpha, copy paren
+                if accept:
+                    best_alpha = step_size
+                    self.parensemble_mean_next = self.parensemble_mean_1.copy()
+                    self.parensemble_next = self.parensemble_1.copy()
+                    [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
+                                                            and x.split(".")[2] == str(self.iter_num))]
+                    self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
+                                              + self.obsen_prefix.format(0))
 
             else:  # unconstrained opt
                 mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
@@ -741,10 +753,6 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("evaluating ensembles for step size : {0}".format(','.join("{0:8.3E}".format(step_size))))
 
         if constraints:
-            best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))  # lowest phi that is acceptable to filter
-            # TODO: this is perhaps where Lagrangian should come in
-            # TODO: get min viol and min phi and find pair that is smallest distance from that origin... via trig
-
             self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
         else:
             best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))
