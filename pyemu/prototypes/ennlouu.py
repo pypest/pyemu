@@ -491,37 +491,33 @@ class EnsembleSQP(EnsembleMethod):
                                                                      columns=['iter_num', 'alpha', 'beta', 'phi'])))
                 acceptance = False
         else:
-            for i,f in self._filter.iterrows():
-                # drop pairs that are dominated by new pair to be added
-                if (viol <= f['beta']) and (mean_en_phi[0] <= f['phi']):  #TODO: or viol < f[0]
-                    self._filter.drop([i],axis=0,inplace=True)
+            acceptance = False  # until otherwise below
 
-                # add new dominating pair
-                if (viol < f['beta'] - (filter_thresh * f['beta'])) or (mean_en_phi[0] < f['phi'] - (filter_thresh * viol)):
-                    # see slightly adjusted version in Liu and Reynolds (2019) SPE and accept if <=?
-                    self.logger.log("passes filter")
-                    self._filter = pd.concat((self._filter, pd.DataFrame([[self.iter_num, alpha, viol, mean_en_phi[0]]],
-                                                                         columns=['iter_num', 'alpha', 'beta', 'phi'])),
-                                             ignore_index=True)
+            # drop pairs that are dominated by new pair
+            filter_drop_bool = (viol < self._filter['beta']) & (mean_en_phi.values[0] < self._filter['phi'])
+            self._filter = self._filter.drop(self._filter[(filter_drop_bool)].index)
 
-                    # now we assess filter pairs following new (acceptable) pair for curr iter to choose best....
-                    curr_filter = self._filter.loc[self._filter['iter_num'] == self.iter_num, :]
-                    if curr_filter.shape[0] > 0:
-                        min_beta, min_phi = curr_filter['beta'].min(), curr_filter['phi'].min()
-                        curr_filter.loc[:, "dist_from_min_origin"] = \
-                            (((curr_filter['beta'] - min_beta) * biobj_weight) ** 2 +
-                             (curr_filter['phi'] - min_phi) ** 2) ** 0.5  # boom!
-                        # TODO: but.. what is the price of violating constraints? We don't want to at all...
-                        # TODO: either just pick min phi with constraint = 0, or weight constraint viol * 10, e.g.
-                        if curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'][0] == \
-                                curr_filter['dist_from_min_origin'].min():
-                            acceptance = True
-                        else:
-                            acceptance = False
-                    else:
-                        acceptance = False
-                else:
-                    acceptance = False
+            # add new dominating pair
+            filter_accept_bool = (viol < self._filter['beta']) | (mean_en_phi.values[0] < self._filter['phi'])
+            if any(filter_accept_bool.values):
+                # see slightly adjusted version in Liu and Reynolds (2019) SPE and accept if <=?
+                self.logger.log("passes filter")
+                self._filter = pd.concat((self._filter, pd.DataFrame([[self.iter_num, alpha, viol, mean_en_phi[0]]],
+                                                                     columns=['iter_num', 'alpha', 'beta', 'phi'])),
+                                         ignore_index=True)
+
+            # now we assess filter pairs following new (acceptable) pair for curr iter to choose best....
+            curr_filter = self._filter.loc[self._filter['iter_num'] == self.iter_num, :]
+            if curr_filter.shape[0] > 0:
+                # TODO: but.. what is the price of violating constraints? We don't want to at all...
+                # TODO: either just pick min phi with constraint = 0, or weight constraint viol * 10, e.g.
+                min_beta, min_phi = curr_filter['beta'].min(), curr_filter['phi'].min()
+                curr_filter.loc[:, "dist_from_min_origin"] = (((curr_filter['beta'] - min_beta) *
+                                                               biobj_weight) ** 2 +
+                                                              (curr_filter['phi'] - min_phi) ** 2) ** 0.5
+                if curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0] == \
+                        curr_filter['dist_from_min_origin'].min():
+                    acceptance = True
 
 
         return self._filter, acceptance
