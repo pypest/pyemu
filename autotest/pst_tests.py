@@ -1250,33 +1250,41 @@ def from_flopy_pp_test():
 def process_output_files_test():
 
     import os
+    import numpy as np
     from pyemu import Pst, pst_utils
-    # creation functionality
-    dir = os.path.join("..", "verification", "10par_xsec", "template_mac")
-    pst = Pst(os.path.join(dir, "pest.pst"))
 
-    tpl_files = [os.path.join(dir, f) for f in pst.template_files]
-    out_files = [os.path.join(dir, f) for f in pst.output_files]
-    ins_files = [os.path.join(dir, f) for f in pst.instruction_files]
-    in_files = [os.path.join(dir, f) for f in pst.input_files]
-
-    new_pst = Pst.from_io_files(tpl_files, in_files,
-                                ins_files, out_files,
-                                pst_filename=os.path.join("temp", "test.pst"))
-    #print(new_pst.observation_data)
-
-    new_pst.process_output_files()
-
-    try:
-        pst.process_output_files()
-    except:
-        pass
-    else:
-        raise Exception("should have failed")
+    # ins_file = os.path.join("utils","hauraki_transient.mt3d.processed.ins")
+    # out_file = ins_file.replace(".ins","")
+    #
+    # i = pst_utils.InstructionFile(ins_file)
+    # print(i.read_output_file(out_file))
+    # return
 
 
+    ins_dir = "ins"
+    ins_files = [os.path.join(ins_dir,f) for f in os.listdir(ins_dir) if f.endswith(".ins")]
+    ins_files.sort()
+    out_files = [f.replace(".ins","") for f in ins_files]
+    print(ins_files)
+    i3 = pst_utils.InstructionFile(ins_files[2])
+    s3 = i3.read_output_file(out_files[2])
+    #print(s3)
+    assert s3["test"] == 1.23456
+    assert s3["h01_02"] == 1.024
 
-    return
+    i1 = pst_utils.InstructionFile(ins_files[0])
+    s1 = i1.read_output_file(out_files[0])
+    a1 = np.loadtxt(out_files[0]).flatten()
+    assert np.abs(s1.values - a1).sum() == 0.0
+
+    i2 = pst_utils.InstructionFile(ins_files[1])
+    s2 = i2.read_output_file(out_files[1])
+    assert s2["h01_02"] == 1.024
+
+
+
+
+
 
 
 if __name__ == "__main__":

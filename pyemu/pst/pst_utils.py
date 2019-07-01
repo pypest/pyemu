@@ -902,16 +902,18 @@ class Instruction(object):
 
 
 class InstructionFile(object):
-    def __init__(self,pst,ins_filename):
+    def __init__(self,ins_filename,pst=None):
         self._ins_linecount = 0
         self._out_linecount = 0
         self._ins_filename = ins_filename
-        self._pst = pst
+        #self._pst = pst
         self._marker = None
         self._ins_filehandle = None
         self._out_filehandle = None
         self._last_line = ''
-        self._full_oname_set = set(pst.obs_names)
+        self._full_oname_set = None
+        if pst is not None:
+            self._full_oname_set = set(pst.obs_names)
         self._found_oname_set = set()
 
         self._instruction_lines = []
@@ -931,12 +933,13 @@ class InstructionFile(object):
         self._marker = first_line[1]
         while True:
             line = self._readline_ins()
-            if len(line) == 0:
-                self.throw_ins_warning("empty line, breaking")
-                break
+
             if line is None:
                 break
-            if line[0].startswith('l'):
+            elif len(line) == 0:
+                self.throw_ins_warning("empty line, breaking")
+                break
+            elif line[0].startswith('l'):
                 pass
             elif line[0].startswith(self._marker):
                 pass
@@ -957,7 +960,7 @@ class InstructionFile(object):
                         if raw == 'dum':
                             pass
                         else:
-                            if raw not in self._full_oname_set:
+                            if self._full_oname_set is not None and raw not in self._full_oname_set:
                                 self.throw_ins_error("obs name '{0}' not in pst".format(raw))
                             elif raw in self._found_oname_set:
                                 self.throw_ins_error("obs name '{0}' is listed more than once".format(raw))
@@ -989,14 +992,17 @@ class InstructionFile(object):
 
     def read_output_file(self,output_file):
         self._out_filename = output_file
+        val_dict = {}
         for ins_line,ins_lcount in zip(self._instruction_lines,self._instruction_lcount):
             #try:
-            self._execute_ins_line(ins_line,ins_lcount)
+            val_dict.update(self._execute_ins_line(ins_line,ins_lcount))
             #except Exception as e:
             #    raise Exception(str(e))
+        return pd.Series(val_dict)
 
     def _execute_ins_line(self,ins_line,ins_lcount):
         cursor_pos = 0
+        val_dict = {}
         for ins in ins_line:
 
             #primary marker
@@ -1025,21 +1031,31 @@ class InstructionFile(object):
                                              format(nlines, ins, ins_lcount))
             if ins == 'w':
                 raw = line[cursor_pos:].split()
+                if line[0] == ' ':
+                    raw.insert(0,'')
                 if len(raw) == 1:
                     self.throw_out_error("no whitespaces found on output line {0} past {1}".format(line,cursor_pos))
-                cursor_pos = cursor_pos + line[cursor_pos:].index(raw[1])
+                cursor_pos = cursor_pos + line[cursor_pos:].index(" "+raw[1])
 
             if ins.startswith('!'):
                 oname = ins.replace('!','')
-                val_str = line[cursor_pos].split()[0]
+                val_str = line[cursor_pos:].split()[0]
                 try:
                     val = float(val_str)
                 except Exception as e:
                     self.throw_out_error("casting string '{0}' to float for instruction '{1}'".format(val_str,ins))
-                print(val)
 
+                if oname != "dum":
+                    val_dict[oname] = val
+                #ipos = line[cursor_pos:].index(val_str)
+                #val_len = len(val_str)
+                cursor_pos = cursor_pos + line[cursor_pos:].index(val_str) + len(val_str)
 
+                #print(val,cursor_pos)
 
+                #print(line[cursor_pos:])
+                #print('')
+        return val_dict
 
     def _readline_ins(self):
         if self._ins_filehandle is None:
@@ -1064,7 +1080,7 @@ class InstructionFile(object):
         if line == '':
             return None
         self._last_line = line
-        return line.lower().strip()
+        return line.lower()
 
 
 
@@ -1101,7 +1117,7 @@ def process_output_files(pst,pst_path='.'):
     ins_files = []
     for ins,out in zip(pst.instruction_files,pst.output_files):
         f = os.path.join(pst_path,ins)
-        i = InstructionFile(pst,ins)
+        i = InstructionFile(ins,pst=pst)
         i.read_output_file(out)
 
     # for f in pst.output_files:
