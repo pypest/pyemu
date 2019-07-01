@@ -501,6 +501,14 @@ class EnsembleSQP(EnsembleMethod):
                     self._filter = pd.concat((self._filter, pd.DataFrame([[self.iter_num, alpha, viol, mean_en_phi[0]]],
                                                                          columns=['iter_num', 'alpha', 'beta', 'phi'])))
 
+            # now we assess filter pairs for curr iter to choose best....
+            curr_filter = self._filter.loc[self._filter['iter_num'] == self.iter_num, :]
+            if curr_filter.shape[0] > 0:
+                min_beta, min_phi = curr_filter['beta'].min(), curr_filter['phi'].min()
+                for i, f in curr_filter.iterrows():
+                    dist = ((A)**2 + (B)**2) ** 0.5
+
+
         return self._filter
 
 
@@ -717,7 +725,8 @@ class EnsembleSQP(EnsembleMethod):
                 self._filter = self._filter_constraint_eval(self.obsensemble_1, self._filter, step_size)
                 self.logger.log("adopting filtering method to handle constraints")
 
-                # Then, calc min viol and min phi for iteration = x. Then c = ((viol-min viol)**2 + (phi-min phi)**2)**0.5. If alpha where c is min is current alpha, copy paren
+                # dist = ((viol-min viol)**2 + (phi-min phi)**2) ** 0.5.
+                    # #If alpha where c is min is current alpha, copy paren
 
             else:  # unconstrained opt
                 mean_en_phi_per_alpha["{0}".format(step_size)] = self.obsensemble_1.mean()
