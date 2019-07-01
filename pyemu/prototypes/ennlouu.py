@@ -733,6 +733,10 @@ class EnsembleSQP(EnsembleMethod):
                 self.logger.log("adopting filtering method to handle constraints")
                 if accept:
                     best_alpha = step_size
+                    self.best_alpha_per_it[self.iter_num] = best_alpha
+                    best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
+                    best_alpha_per_it_df.to_csv("best_alpha_per_it.csv")
+
                     self.parensemble_mean_next = self.parensemble_mean_1.copy()
                     self.parensemble_next = self.parensemble_1.copy()
                     [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
@@ -756,11 +760,10 @@ class EnsembleSQP(EnsembleMethod):
             self._filter.to_csv("filter.{0}.csv".format(self.iter_num))
         else:
             best_alpha = float(mean_en_phi_per_alpha.idxmin(axis=1))
-
-        self.best_alpha_per_it[self.iter_num] = best_alpha
-        best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
-        best_alpha_per_it_df.to_csv("best_alpha_per_it.csv")
-        #self.logger.log("best step length (alpha): {0}".format("{0:8.3E}".format(best_alpha)))
+            self.best_alpha_per_it[self.iter_num] = best_alpha
+            best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
+            best_alpha_per_it_df.to_csv("best_alpha_per_it.csv")
+            self.logger.log("best step length (alpha): {0}".format("{0:8.3E}".format(best_alpha)))
 
         # TODO: failed run handling
         # TODO: undertake Wolfe and en tests. No - our need is superseded by parallel alpha tests
