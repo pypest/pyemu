@@ -482,12 +482,14 @@ class EnsembleSQP(EnsembleMethod):
 
         # constraint filtering
         filter_thresh = 1e-4  #TODO: invest influence of filter_thresh
+        biobj_weight = 100.0  #TODO: invest
         if self.iter_num == 0:
             if viol > 0:
                 self.logger.lraise("initial dec var violates constraints! we're toast!")
             else:  # just add to filter
                 self._filter = pd.concat((self._filter, pd.DataFrame([[self.iter_num, 0, viol, mean_en_phi[0]]],
                                                                      columns=['iter_num', 'alpha', 'beta', 'phi'])))
+                acceptance = False
         else:
             for i,f in self._filter.iterrows():
                 # drop pairs that are dominated by new pair to be added
@@ -501,19 +503,25 @@ class EnsembleSQP(EnsembleMethod):
                     self._filter = pd.concat((self._filter, pd.DataFrame([[self.iter_num, alpha, viol, mean_en_phi[0]]],
                                                                          columns=['iter_num', 'alpha', 'beta', 'phi'])))
 
-        # now we assess filter pairs for curr iter to choose best....
-        curr_filter = self._filter.loc[self._filter['iter_num'] == self.iter_num, :]
-        if curr_filter.shape[0] > 0:
-            min_beta, min_phi = curr_filter['beta'].min(), curr_filter['phi'].min()
-            dist = ((viol - min_beta) ** 2 + (mean_en_phi[0] - min_phi) ** 2) ** 0.5
-            curr_filter.loc[(curr_filter['beta'] == viol) & (curr_filter['phi'] == mean_en_phi[0]),
-                            "dist_from_min_origin"] = dist
-            if dist == curr_filter['dist_from_min_origin'].min():
-                acceptance = True
-            else:
-                acceptance = False
-        else:
-            acceptance = False
+                    # now we assess filter pairs following new (acceptable) pair for curr iter to choose best....
+                    curr_filter = self._filter.loc[self._filter['iter_num'] == self.iter_num, :]
+                    if curr_filter.shape[0] > 0:
+                        min_beta, min_phi = curr_filter['beta'].min(), curr_filter['phi'].min()
+                        curr_filter.loc[:, "dist_from_min_origin"] = \
+                            (((curr_filter['beta'] - min_beta) * biobj_weight) ** 2 +
+                             (curr_filter['phi'] - min_phi) ** 2) ** 0.5  # boom!
+                        # TODO: but.. what is the price of violating constraints? We don't want to at all...
+                        # TODO: either just pick min phi with constraint = 0, or weight constraint viol * 10, e.g.
+                        if curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'][0] == \
+                                curr_filter['dist_from_min_origin'].min():
+                            acceptance = True
+                        else:
+                            acceptance = False
+                    else:
+                        acceptance = False
+                else:
+                    acceptance = False
+
 
         return self._filter, acceptance
 
