@@ -174,7 +174,7 @@ def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(ext))#,num_slaves=10)
     esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=True)
     for it in range(nit):
-        esqp.update(step_mult=list(np.logspace(-6,0,14)),constraints=constraints)  #filter_thresh=filter_thresh
+        esqp.update(step_mult=list(np.logspace(-6,0,14)),constraints=constraints)
     os.chdir(os.path.join("..", ".."))
 
    #  TODO: critical that draw_mult is refined as we go?
@@ -256,11 +256,58 @@ def invest(version):
     print("done!")
 
 
-#def rosenbrock_2par_opt_and_draw_setting_invest():
-    # function for identifying appropr default values (for simple problem)
-
 # TODO: copy test dirs and make changes in there...
 # TODO: test for switching between en and finite diffs
+
+def natural_sort_key(s):
+    import re
+    _nsre = re.compile('([0-9]+)')
+    return [int(text) if text.isdigit() else text.lower()
+            for text in re.split(_nsre, s)]
+
+def filter_plot(version,constraints,log_phi=False):
+    import pyemu
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    if version == "2par":
+        if constraints:
+            os.chdir(os.path.join("ennlouu", "rosenbrock_2par_constrained"))
+        else:
+            os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
+    elif version == "high_dim":
+        if constraints:
+            raise Exception
+        else:
+            os.chdir(os.path.join("ennlouu", "rosenbrock_high_dim"))
+
+    filter_per_it = [x for x in os.listdir() if "filter." in x and ".csv" in x]
+    filter_per_it.sort(key=natural_sort_key)
+    fig,ax = plt.subplots()
+    for i,f in enumerate(filter_per_it):
+        alpha = (i / len(filter_per_it)) * 1.0
+        if alpha == 0:
+            alpha += 0.1
+        df = pd.read_csv(f)
+        if log_phi:
+            ax.scatter(df['beta'],np.log10(df['phi']),c='purple',alpha=alpha)
+        else:
+            ax.scatter(df['beta'], df['phi'], c='purple', alpha=alpha)
+    ax.set_xlabel(r"$\beta$",fontsize=14)
+    if log_phi:
+        ax.set_ylabel("log $\phi$", fontsize=14)
+    else:
+        ax.set_ylabel(r"$\phi$", fontsize=14)
+
+    if log_phi:
+        plt.savefig("filter_plot_log10.pdf")
+    else:
+        plt.savefig("filter_plot.pdf")
+    os.chdir(os.path.join("..", ".."))
+
+
+
 
 
 if __name__ == "__main__":
@@ -280,6 +327,7 @@ if __name__ == "__main__":
     #invest(version="high_dim")
 
 
-    rosenbrock_setup(version="2par",constraints=True,initial_decvars=2.0)
-    rosenbrock_multiple_update(version="2par",constraints=True,en_size=5)
+    #rosenbrock_setup(version="2par",constraints=True,initial_decvars=2.0)
+    #rosenbrock_multiple_update(version="2par",constraints=True,en_size=20)
 
+    filter_plot(version="2par", constraints=True, log_phi=True)
