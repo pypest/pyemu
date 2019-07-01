@@ -901,58 +901,227 @@ class Instruction(object):
 
 
 
-def _process_instruction_file(pst,instruction_file):
-    instructions = []
-    with open(instruction_file,'r') as f:
-        first_line = f.readline().lower().strip().split()
-        if len(first_line) != 2:
-            raise Exception("first line of ins file must have two entries, not '{0}'".format(','.join(first_line)))
+class InstructionFile(object):
+    def __init__(self,pst,ins_filename):
+        self._ins_linecount = 0
+        self._out_linecount = 0
+        self._ins_filename = ins_filename
+        self._pst = pst
+        self._marker = None
+        self._ins_filehandle = None
+        self._out_filehandle = None
+        self._last_line = ''
+        self._full_oname_set = set(pst.obs_names)
+        self._found_oname_set = set()
+
+        self._instruction_lines = []
+        self._instruction_lcount = []
+
+        self.read_ins_file()
+
+    def read_ins_file(self):
+        self._instruction_lines = []
+        self._instruction_lcount = []
+        first_line = self._readline_ins()
+        if len(first_line) < 2:
+            raise Exception("first line of ins file must have atleast two entries, not '{0}'".format(','.join(first_line)))
         if first_line[0] != "pif":
-            raise Exception("first line of ins file '{0}' must start with 'pif', not '{1}'".\
-                            format(instruction_file,first_line[0]))
-        marker = first_line[1]
-        for line in f:
-            raw = line.strip().split()
-            for r in raw:
-                i = Instruction(r,marker)
+            raise Exception("first line of ins file '{0}' must start with 'pif', not '{1}'". \
+                            format(self._ins_filename, first_line[0]))
+        self._marker = first_line[1]
+        while True:
+            line = self._readline_ins()
+            if len(line) == 0:
+                self.throw_ins_warning("empty line, breaking")
+                break
+            if line is None:
+                break
+            if line[0].startswith('l'):
+                pass
+            elif line[0].startswith(self._marker):
+                pass
+            elif line[0].startswith('&'):
+                self.throw_ins_error("line continuation not supported")
+            else:
+                self.throw_ins_error("first token must be line advance ('l'), primary marker, or continuation ('&'),"+
+                                     "not: {0}".format(line[0]))
 
-    return instructions
+            for token in line[1:]:
+                for somarker,eomarker in zip(['!','[','(',self._marker],['!',']',')',self._marker]):
+                    #
+                    if token[0] == somarker:
+                        if eomarker not in token[1:]:
+                            self.throw_ins_error("unmatched observation marker '{0}', looking for '{1}' in token '{2}'".\
+                                                 format(somarker,eomarker,token))
+                        raw = token[1:].split(eomarker)[0].replace(somarker,'')
+                        if raw == 'dum':
+                            pass
+                        else:
+                            if raw not in self._full_oname_set:
+                                self.throw_ins_error("obs name '{0}' not in pst".format(raw))
+                            elif raw in self._found_oname_set:
+                                self.throw_ins_error("obs name '{0}' is listed more than once".format(raw))
+                            self._found_oname_set.add(raw)
+                        break
+                        #print(raw)
+
+            self._instruction_lines.append(line)
+            self._instruction_lcount.append(self._ins_linecount)
 
 
-def _process_output_file(output_file,instructions):
-    onames,ovals = [],[]
-    with open(output_file,'r') as f:
-        for instruction in instructions:
-            pass
-    return pd.Series(data=ovals,index=onames)
+    def throw_ins_warning(self,message,lcount=None):
+        if lcount is None:
+            lcount = self._ins_linecount
+        warnings.warn("InstructionFile error processing instruction file {0} on line number {1}: {2}".\
+                        format(self._ins_filename,lcount,message),PyemuWarning)
+
+    def throw_ins_error(self,message,lcount):
+        if lcount is None:
+            lcount = self._ins_linecount
+        raise Exception("InstructionFile error processing instruction file on line number {0}: {1}".\
+                        format(lcount,message))
+
+    def throw_out_error(self,message,lcount):
+        if lcount is None:
+            lcount = self._out_linecount
+        raise Exception("InstructionFile error processing output file on line number {0}: {1}".\
+                        format(lcount,message))
+
+    def read_output_file(self,output_file):
+        self._out_filename = output_file
+        for ins_line,ins_lcount in zip(self._instruction_lines,self._instruction_lcount):
+            #try:
+            self._execute_ins_line(ins_line,ins_lcount)
+            #except Exception as e:
+            #    raise Exception(str(e))
+
+    def _execute_ins_line(self,ins_line,ins_lcount):
+        cursor_pos = 0
+        for ins in ins_line:
+
+            #primary marker
+            if ins.startswith(self._marker):
+                mstr = ins.replace(self._marker,'')
+                while True:
+                    line = self._readline_output()
+                    if line is None:
+                        self.throw_out_error(
+                            "EOF when trying to find primary marker '{0}' from instruction file line {1}".format(mstr,ins_lcount))
+                    if mstr in line:
+                        break
+                cursor_pos = line.index(mstr) + len(mstr)
+
+            # line advance
+            if ins.startswith('l'):
+                try:
+                    nlines = int(ins[1:])
+                except Exception as e:
+                    self.throw_ins_error("casting line advance to int for instruction '{0}'". \
+                                         format(ins), ins_lcount)
+                for i in range(nlines):
+                    line = self._readline_output()
+                    if line is None:
+                        self.throw_out_error("EOF when trying to read {0} lines for line advance instruction '{1}', from instruction file line number {2}". \
+                                             format(nlines, ins, ins_lcount))
+            if ins == 'w':
+                raw = line[cursor_pos:].split()
+                if len(raw) == 1:
+                    self.throw_out_error("no whitespaces found on output line {0} past {1}".format(line,cursor_pos))
+                cursor_pos = cursor_pos + line[cursor_pos:].index(raw[1])
+
+            if ins.startswith('!'):
+                oname = ins.replace('!','')
+                val_str = line[cursor_pos].split()[0]
+                try:
+                    val = float(val_str)
+                except Exception as e:
+                    self.throw_out_error("casting string '{0}' to float for instruction '{1}'".format(val_str,ins))
+                print(val)
+
+
+
+
+    def _readline_ins(self):
+        if self._ins_filehandle is None:
+            if not os.path.exists(self._ins_filename):
+                raise Exception("instruction file '{0}' not found".format(self._ins_filename))
+            self._ins_filehandle = open(self._ins_filename,'r')
+        line = self._ins_filehandle.readline()
+        self._ins_linecount += 1
+        if line == '':
+            return None
+        self._last_line = line
+        return line.lower().strip().split()
+
+
+    def _readline_output(self):
+        if self._out_filehandle is None:
+            if not os.path.exists(self._out_filename):
+                raise Exception("output file '{0}' not found".format(self._out_filename))
+            self._out_filehandle = open(self._out_filename,'r')
+        line = self._out_filehandle.readline()
+        self._out_linecount += 1
+        if line == '':
+            return None
+        self._last_line = line
+        return line.lower().strip()
+
+
+
+# def _process_instruction_file(pst,instruction_file):
+#     instructions = []
+#     with open(instruction_file,'r') as f:
+#         first_line = f.readline().lower().strip().split()
+#         if len(first_line) != 2:
+#             raise Exception("first line of ins file must have two entries, not '{0}'".format(','.join(first_line)))
+#         if first_line[0] != "pif":
+#             raise Exception("first line of ins file '{0}' must start with 'pif', not '{1}'".\
+#                             format(instruction_file,first_line[0]))
+#         marker = first_line[1]
+#         for line in f:
+#             raw = line.strip().split()
+#             for r in raw:
+#                 i = Instruction(r,marker)
+#
+#     return instructions
+
+
+# def _process_output_file(output_file,instructions):
+#     onames,ovals = [],[]
+#     with open(output_file,'r') as f:
+#         for instruction in instructions:
+#             pass
+#     return pd.Series(data=ovals,index=onames)
 
 
 def process_output_files(pst,pst_path='.'):
     if not isinstance(pst,pyemu.Pst):
         raise Exception("process_output_files error: 'pst' arg must be pyemu.Pst instance")
     file_errors = []
-    for f in pst.instruction_files:
-        f = os.path.join(pst_path,f)
-        if not os.path.exists(os.path.join(pst_path,f)):
-            file_errors.append("ins file '{0}' not found".format(f))
-    for f in pst.output_files:
-        f = os.path.join(pst_path,f)
-        if not os.path.exists(os.path.join(pst_path,f)):
-            file_errors.append("output file '{0}' not found".format(f))
-    if len(file_errors) > 0:
-        raise Exception("process_output_files file errors: " + ",".join(file_errors))
+    ins_files = []
+    for ins,out in zip(pst.instruction_files,pst.output_files):
+        f = os.path.join(pst_path,ins)
+        i = InstructionFile(pst,ins)
+        i.read_output_file(out)
 
-    for ins_file,out_file in zip(pst.instruction_files,pst.output_files):
-        try:
-            instructions = _process_instruction_file(pst,os.path.join(pst_path,ins_file))
-        except Exception as e:
-            raise Exception("process_output_files error processing instruction file" +
-                            "'{0}': {1}".format(ins_file,str(e)))
-        try:
-            obsvals = _process_output_file(os.path.join(pst_path,out_file),instructions)
-        except Exception as e:
-            raise Exception("process_output_files error processing output file" +
-                            "'{0}': {1}".format(out_file,str(e)))
+    # for f in pst.output_files:
+    #     f = os.path.join(pst_path,f)
+    #     if not os.path.exists(os.path.join(pst_path,f)):
+    #         file_errors.append("output file '{0}' not found".format(f))
+    # if len(file_errors) > 0:
+    #     raise Exception("process_output_files file errors: " + ",".join(file_errors))
+    #
+    # for ins_file,out_file in zip(pst.instruction_files,pst.output_files):
+    #     try:
+    #         instructions = _process_instruction_file(pst,os.path.join(pst_path,ins_file))
+    #     except Exception as e:
+    #         raise Exception("process_output_files error processing instruction file" +
+    #                         "'{0}': {1}".format(ins_file,str(e)))
+    #     try:
+    #         obsvals = _process_output_file(os.path.join(pst_path,out_file),instructions)
+    #     except Exception as e:
+    #         raise Exception("process_output_files error processing output file" +
+    #                         "'{0}': {1}".format(out_file,str(e)))
 
 
 
