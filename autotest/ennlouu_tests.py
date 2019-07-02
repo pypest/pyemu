@@ -266,21 +266,23 @@ def natural_sort_key(s):
     return [int(text) if text.isdigit() else text.lower()
             for text in re.split(_nsre, s)]
 
-def filter_plot(version,constraints,log_phi=False):
+def filter_plot(problem,constraints,log_phi=False):
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
 
-    if version == "2par":
+    if problem == "2par":
         if constraints:
             os.chdir(os.path.join("ennlouu", "rosenbrock_2par_constrained"))
         else:
             os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
-    elif version == "high_dim":
+    elif problem == "high_dim":
         if constraints:
             raise Exception
         else:
             os.chdir(os.path.join("ennlouu", "rosenbrock_high_dim"))
+    elif problem == "supply2":
+        os.chdir(os.path.join("ennlouu", "supply2_deterministic", "temp"))
 
     filter_per_it = [x for x in os.listdir() if "filter." in x and ".csv" in x]
     filter_per_it.sort(key=natural_sort_key)
@@ -362,5 +364,5 @@ if __name__ == "__main__":
     #filter_plot(version="2par", constraints=True, log_phi=True)
 
     #supply2_setup()
-    supply2_update(en_size=2)
-
+    #supply2_update(en_size=2)
+    filter_plot(problem="supply2", constraints=True, log_phi=True)
