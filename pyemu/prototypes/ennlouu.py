@@ -333,10 +333,10 @@ class EnsembleSQP(EnsembleMethod):
         if ensemble1.columns[0] == ensemble2.columns[0]:  # diag cov matrix
             en_cov_crosscov = np.diag(en_cov_crosscov)
             en_cov_crosscov = Matrix(x=en_cov_crosscov,
-                                     row_names=self.pst.par_names,col_names=self.pst.par_names)  #TODO: only adj dec vars
+                                     row_names=self.pst.par_names,col_names=self.pst.par_names)  #TODO: here and elsewhere only adj dec vars
         else:  # cross-cov always a vector
             en_cov_crosscov = Matrix(x=(np.expand_dims(en_cov_crosscov, axis=0)),
-                                     row_names=['cross-cov'],col_names=self.pst.adj_par_names)
+                                     row_names=['cross-cov'],col_names=self.pst.par_names)
         return en_cov_crosscov
 
     def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,self_scale=True,scale_only=False,
@@ -494,15 +494,15 @@ class EnsembleSQP(EnsembleMethod):
             acceptance = False  # until otherwise below
 
             # drop pairs that are dominated by new pair
-            filter_drop_bool = (viol <= self._filter['beta']) & (mean_en_phi.values[0] <= self._filter['phi'])
+            filter_drop_bool = (viol <= self._filter['beta']) & (mean_en_phi <= self._filter['phi'])
             self._filter = self._filter.drop(self._filter[(filter_drop_bool)].index)
 
             # add new dominating pair
-            filter_accept_bool = (viol < self._filter['beta']) | (mean_en_phi.values[0] < self._filter['phi'])
+            filter_accept_bool = (viol < self._filter['beta']) | (mean_en_phi < self._filter['phi'])
             if all(filter_accept_bool.values):
                 # see slightly adjusted version in Liu and Reynolds (2019) SPE and accept if <=?
                 self.logger.log("passes filter")
-                self._filter = pd.concat((self._filter, pd.DataFrame([[self.iter_num, alpha, viol, mean_en_phi[0]]],
+                self._filter = pd.concat((self._filter, pd.DataFrame([[self.iter_num, alpha, viol, mean_en_phi]],
                                                                      columns=['iter_num', 'alpha', 'beta', 'phi'])),
                                          ignore_index=True)
 
@@ -529,7 +529,7 @@ class EnsembleSQP(EnsembleMethod):
 
     def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=True,
                grad_calc_only=False,finite_diff_grad=False,
-               constraints=False,biobj_weight=1.0,biobj_transf=True):#localizer=None,run_subset=None,
+               constraints=False,biobj_weight=1.0,biobj_transf=True,opt_direction="min"):#localizer=None,run_subset=None,
         """
         Perform one quasi-Newton update
 
@@ -558,6 +558,8 @@ class EnsembleSQP(EnsembleMethod):
             (rather than ensemble approx).  # TODO: could switch between these adaptively
         constraints :
             TODO: something derived from pestpp_options rather than bool
+        opt_direction : str
+            must be "min" or "max"
 
         Example
         -------
@@ -570,6 +572,11 @@ class EnsembleSQP(EnsembleMethod):
     	# TODO: calc par and obs delta wrt one another rather than mean?
     	# TODO: sub-setting
         """
+
+        if opt_direction is "min" or "max":
+            self.opt_direction = opt_direction
+        else:
+            self.logger.lraise("need proper opt_direction entry")
 
         self.iter_num += 1
         self.logger.log("iteration {0}".format(self.iter_num))
@@ -663,7 +670,10 @@ class EnsembleSQP(EnsembleMethod):
             #self.logger.log("scaling Hessian for search direction calc")
             #self.search_d = -1 * (self.inv_hessian * self.phi_grad)
         #else:
-        self.search_d = -1 * (self.inv_hessian * self.phi_grad)
+        if self.opt_direction == "max":
+            self.search_d = (self.inv_hessian * self.phi_grad)
+        else:
+            self.search_d = -1 * (self.inv_hessian * self.phi_grad)
         #self.hess_scale_status = False
         self.logger.log("calculate search direction")
 
@@ -693,10 +703,11 @@ class EnsembleSQP(EnsembleMethod):
             self.parensemble_mean_1 = self.parensemble_mean + (step_size * self.search_d.T)
             #np.savetxt(self.pst.filename + "_en_mean_step_{0}_it_{1}.dat".format(step_size,self.iter_num),
              #          self.parensemble_mean_1.x,fmt="%15.6e")
-            # shift parval1
-            self.pst.parameter_data.loc[:,"parval1"] = pd.Series(np.squeeze(self.parensemble_mean_1.x, axis=0)).values
-            # and bound handling
+            # shift parval1  #TODO: change below line to adj dec var pars only..
             par = self.pst.parameter_data
+            par.loc[par['partrans']=="none","parval1"] = pd.Series(np.squeeze(self.parensemble_mean_1.x, axis=0),
+                                                                   index=self.parensemble_mean_1.col_names,)
+            #  and bound handling
             out_of_bounds = par.loc[(par.parubnd < par.parval1) | (par.parlbnd > par.parval1),:]
             if out_of_bounds.shape[0] > 0:
                 self.logger.log("{0} mean dec vars for step {1} out-of-bounds: {2}..."

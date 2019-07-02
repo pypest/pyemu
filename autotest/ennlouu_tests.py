@@ -334,7 +334,8 @@ def supply2_update(nit=20,draw_mult=3e-5,en_size=20,biobj_weight=1.0,constraints
     esqp = pyemu.EnsembleSQP(pst="{}.pst".format(prefix))#,num_slaves=10)
     esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=True)
     for it in range(nit):
-        esqp.update(step_mult=list(np.logspace(-6,0,14)),constraints=constraints,biobj_weight=biobj_weight)
+        esqp.update(step_mult=list(np.logspace(-6,0,14)),constraints=constraints,biobj_weight=biobj_weight,
+                    opt_direction="max")
     os.chdir(os.path.join("..", ".."))
 
 
