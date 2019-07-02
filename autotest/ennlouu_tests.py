@@ -335,7 +335,7 @@ def supply2_update(nit=20,draw_mult=3e-5,en_size=20,biobj_weight=1.0,constraints
     esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=True)
     for it in range(nit):
         esqp.update(step_mult=list(np.logspace(-6,0,14)),constraints=constraints,biobj_weight=biobj_weight,
-                    opt_direction="max")
+                    opt_direction="max",biobj_transf=True)
     os.chdir(os.path.join("..", ".."))
 
 

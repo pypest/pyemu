@@ -451,7 +451,8 @@ class EnsembleSQP(EnsembleMethod):
         '''
         # TODO
 
-    def _filter_constraint_eval(self,obsensemble,filter,alpha=None,biobj_weight=1.0,biobj_transf=True):
+    def _filter_constraint_eval(self,obsensemble,filter,alpha=None,biobj_weight=1.0,biobj_transf=True,
+                                opt_direction="min"):
         '''
         '''
         # TODO: description
@@ -494,11 +495,17 @@ class EnsembleSQP(EnsembleMethod):
             acceptance = False  # until otherwise below
 
             # drop pairs that are dominated by new pair
-            filter_drop_bool = (viol <= self._filter['beta']) & (mean_en_phi <= self._filter['phi'])
+            if opt_direction == "max":
+                filter_drop_bool = (viol <= self._filter['beta']) & (mean_en_phi >= self._filter['phi'])
+            else:
+                filter_drop_bool = (viol <= self._filter['beta']) & (mean_en_phi <= self._filter['phi'])
             self._filter = self._filter.drop(self._filter[(filter_drop_bool)].index)
 
             # add new dominating pair
-            filter_accept_bool = (viol < self._filter['beta']) | (mean_en_phi < self._filter['phi'])
+            if opt_direction == "max":
+                filter_accept_bool = (viol < self._filter['beta']) | (mean_en_phi > self._filter['phi'])
+            else:
+                filter_accept_bool = (viol < self._filter['beta']) | (mean_en_phi < self._filter['phi'])
             if all(filter_accept_bool.values):
                 # see slightly adjusted version in Liu and Reynolds (2019) SPE and accept if <=?
                 self.logger.log("passes filter")
@@ -750,7 +757,8 @@ class EnsembleSQP(EnsembleMethod):
                 # TODO: this is perhaps where Lagrangian should come in
                 self.logger.log("adopting filtering method to handle constraints")
                 self._filter, accept = self._filter_constraint_eval(self.obsensemble_1, self._filter, step_size,
-                                                                    biobj_weight=biobj_weight,biobj_transf=biobj_transf)
+                                                                    biobj_weight=biobj_weight,biobj_transf=biobj_transf,
+                                                                    opt_direction=self.opt_direction)
                 self.logger.log("adopting filtering method to handle constraints")
                 if accept:
                     best_alpha = step_size
