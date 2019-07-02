@@ -176,7 +176,7 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("initializing by drawing {0} par realizations".format(num_reals))
             #self.parensemble_0 = ParameterEnsemble.from_uniform_draw(self.pst,num_reals=num_reals)
             self.parensemble_0 = ParameterEnsemble.from_gaussian_draw(self.pst, cov=self.parcov * self.draw_mult,
-                                                                      num_reals=num_reals)
+                                                                      num_reals=num_reals,)
             self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
             self.parensemble = self.parensemble_0.copy()
             self.parensemble_0.to_csv(self.pst.filename + self.paren_prefix.format(0))
