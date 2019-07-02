@@ -153,7 +153,7 @@ def rosenbrock_2par_grad_approx_invest():
 
 
 def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
-                               constraints=False,filter_thresh=1e-2):
+                               constraints=False,biobj_weight=1.0,biobj_transf=True): #filter_thresh=1e-2
     import pyemu
     import numpy as np
     if version == "2par":
@@ -167,6 +167,7 @@ def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
         else:
             os.chdir(os.path.join("ennlouu","rosenbrock_high_dim"))
     [os.remove(x) for x in os.listdir() if (x.endswith("obsensemble.0000.csv"))]
+    [os.remove(x) for x in os.listdir() if (x.startswith("filter.") and "csv" in x)]
     if constraints:
         ext = version + "_constrained"
     else:
@@ -174,7 +175,7 @@ def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(ext))#,num_slaves=10)
     esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=True)
     for it in range(nit):
-        esqp.update(step_mult=list(np.logspace(-6,0,14)),constraints=constraints)
+        esqp.update(step_mult=list(np.logspace(-6,0,14)),constraints=constraints,biobj_weight=biobj_weight)
     os.chdir(os.path.join("..", ".."))
 
    #  TODO: critical that draw_mult is refined as we go?
@@ -310,6 +311,8 @@ def filter_plot(version,constraints,log_phi=False):
 
 
 
+
+
 if __name__ == "__main__":
     #rosenbrock_setup(version="2par")
     #rosenbrock_2par_initialize()
@@ -328,6 +331,6 @@ if __name__ == "__main__":
 
 
     #rosenbrock_setup(version="2par",constraints=True,initial_decvars=2.0)
-    rosenbrock_multiple_update(version="2par",constraints=True,en_size=20)
+    #rosenbrock_multiple_update(version="2par",constraints=True,en_size=20,biobj_weight=5.0)
 
     #filter_plot(version="2par", constraints=True, log_phi=True)
