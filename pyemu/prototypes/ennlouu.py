@@ -678,7 +678,8 @@ class EnsembleSQP(EnsembleMethod):
         self.logger.log("calculate search direction")
 
         self.logger.log("phi gradient- and search direction-related checks")
-        if (self.search_d.T * self.phi_grad).x > 0:
+        if (opt_direction == "min" and (self.search_d.T * self.phi_grad).x > 0) or \
+                (opt_direction == "max" and (self.search_d.T * self.phi_grad).x < 0):
             self.logger.lraise("search direction does not point down-hill! :facepalm:")
             # TODO: rectify here rather than terminate
         if (self.search_d.T * self.phi_grad).x == 0:
