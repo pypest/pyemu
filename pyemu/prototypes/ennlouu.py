@@ -333,7 +333,7 @@ class EnsembleSQP(EnsembleMethod):
         if ensemble1.columns[0] == ensemble2.columns[0]:  # diag cov matrix
             en_cov_crosscov = np.diag(en_cov_crosscov)
             en_cov_crosscov = Matrix(x=en_cov_crosscov,
-                                     row_names=self.pst.adj_par_names,col_names=self.pst.adj_par_names)
+                                     row_names=self.pst.par_names,col_names=self.pst.par_names)  #TODO: only adj dec vars
         else:  # cross-cov always a vector
             en_cov_crosscov = Matrix(x=(np.expand_dims(en_cov_crosscov, axis=0)),
                                      row_names=['cross-cov'],col_names=self.pst.adj_par_names)
@@ -456,7 +456,7 @@ class EnsembleSQP(EnsembleMethod):
         '''
         # TODO: description
 
-        constraint_gps = [x for x in self.pst.observation_data.obgnme if x.startswith("g_") or x.startswith("greater_")
+        constraint_gps = [x for x in self.pst.obs_groups if x.startswith("g_") or x.startswith("greater_")
                            or x.startswith("l_") or x.startswith("less_")]
         if len(constraint_gps) == 0:
             self.logger.lraise("no constraint groups found")
@@ -477,7 +477,7 @@ class EnsembleSQP(EnsembleMethod):
                     viol += np.abs(min(constraint - model_mean, 0.0))
 
         # mean phi
-        phi_obs = self.pst.observation_data.loc[self.pst.observation_data["obgnme"] == "obj_fn", "obsnme"]
+        phi_obs = [x for x in self.pst.obs_groups if "obj_f" in x or "phi" in x][0]
         mean_en_phi = obsensemble[phi_obs].mean()
 
         # constraint filtering
@@ -487,7 +487,7 @@ class EnsembleSQP(EnsembleMethod):
             if viol > 0:
                 self.logger.lraise("initial dec var violates constraints! we're toast!")
             else:  # just add to filter
-                self._filter = pd.concat((self._filter, pd.DataFrame([[self.iter_num, 0, viol, mean_en_phi[0]]],
+                self._filter = pd.concat((self._filter, pd.DataFrame([[self.iter_num, 0, viol, mean_en_phi]],
                                                                      columns=['iter_num', 'alpha', 'beta', 'phi'])))
                 acceptance = False
         else:
@@ -587,8 +587,7 @@ class EnsembleSQP(EnsembleMethod):
         # get phi component of obsensemble  # TODO: remove "obj_fn" option from below and instead x.startwith("phi_")..
         #TODO: move to initialization
         #TODO: similar for dec var par isolation
-        #phi_obs_gp = [x for x in self.pst.observation_data.obgnme if "obj_fn" in x]
-        phi_obs_gp = ['obj_fn']  #TODO: temp hack
+        phi_obs_gp = [x for x in self.pst.obs_groups if "obj" in x or "phi" in x]  #TODO: do this and below in initialization (in filter)
         if len(phi_obs_gp) != 1:
             self.logger.lraise("number of objective function (phi) obs group found != 1")
         self.phi_obs_gp = phi_obs_gp[0]
@@ -622,7 +621,7 @@ class EnsembleSQP(EnsembleMethod):
             if self.parensemble_mean is None:
                 self.parensemble_mean = np.array(self.parensemble.mean(axis=0))
                 self.parensemble_mean = Matrix(x=np.expand_dims(self.parensemble_mean, axis=0),
-                                           row_names=['mean'], col_names=self.pst.adj_par_names)
+                                           row_names=['mean'], col_names=self.pst.par_names)
             self.logger.log("compute dec var en covariance vector")
 
             self.logger.log("compute dec var-phi en cross-covariance vector")
