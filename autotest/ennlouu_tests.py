@@ -267,7 +267,6 @@ def natural_sort_key(s):
             for text in re.split(_nsre, s)]
 
 def filter_plot(version,constraints,log_phi=False):
-    import pyemu
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
@@ -308,9 +307,35 @@ def filter_plot(version,constraints,log_phi=False):
     os.chdir(os.path.join("..", ".."))
 
 
+def supply2_setup():
+    import pyemu
+    os.chdir(os.path.join("ennlouu", "supply2_deterministic", "temp"))
+    # from "template_from_pestpp-opt_benchmarks"
+    pst = pyemu.Pst("supply2_pest.base.pst")
+    # TODO: opt_direction variable
+    # pst.parameter_data.loc[pst.parameter_data.pargp == pst.pestpp_options['opt_dec_var_groups'].split(",")[1], :]
+    # we want phi and constraints to appear in obsen; like PESTPP-IES, we will ignore pi eqs
+    # phi as an obs - see `convert.py` (from pst.prior_information.loc["pi_obj_func", "equation"])
+    # modify frun
+    # write convert.py
+    # write ins
+    # pst.write()
+    # pst.prior_information.drop(pst.prior_information.index, inplace=True)
 
 
-
+def supply2_update(nit=20,draw_mult=3e-5,en_size=20,biobj_weight=1.0,constraints=True):
+    #TODO: populate constraint bool on fly
+    import pyemu
+    import numpy as np
+    os.chdir(os.path.join("ennlouu","supply2_deterministic","temp"))
+    [os.remove(x) for x in os.listdir() if (x.endswith("obsensemble.0000.csv"))]
+    [os.remove(x) for x in os.listdir() if (x.startswith("filter.") and "csv" in x)]
+    prefix = "supply2_pest.base"
+    esqp = pyemu.EnsembleSQP(pst="{}.pst".format(prefix))#,num_slaves=10)
+    esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=True)
+    for it in range(nit):
+        esqp.update(step_mult=list(np.logspace(-6,0,14)),constraints=constraints,biobj_weight=biobj_weight)
+    os.chdir(os.path.join("..", ".."))
 
 
 if __name__ == "__main__":
@@ -334,3 +359,7 @@ if __name__ == "__main__":
     #rosenbrock_multiple_update(version="2par",constraints=True,en_size=20,biobj_weight=5.0)
 
     #filter_plot(version="2par", constraints=True, log_phi=True)
+
+    #supply2_setup()
+    supply2_update(en_size=5)
+
