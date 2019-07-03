@@ -200,6 +200,9 @@ class EnsembleSQP(EnsembleMethod):
             # run the initial parameter ensemble
             self.logger.log("evaluating initial ensembles")
             failed_runs, self.obsensemble = self._calc_obs(self.parensemble)  # run
+            if "supply2" in self.pst.filename:  #TODO: temp only until pyemu can evaluate pi eqs
+                self.obsensemble = self._append_pi_to_obs(self.obsensemble,"obj_func_en.csv","obj_func",
+                                                          "prior_info_en.csv")
             self.obsensemble.to_csv(self.pst.filename + self.obsen_prefix.format(0))
             #TODO: pyemu method for eval prior information equations
             if self.raw_sweep_out is not None:
@@ -288,6 +291,23 @@ class EnsembleSQP(EnsembleMethod):
         #self.logger.statement("current lambda:{0:15.6g}".format(self.current_lambda))
 
         self._initialized = True
+
+
+    def _append_pi_to_obs(self,obsensemble,phi_en_fname="obj_func_en.csv",phi_obsnme="obj_func",
+                          constraint_en_fname="prior_info_en.csv"):
+        '''
+        temp only until pyemu can evaluate pi equations - see convert.py
+        '''
+
+        # replace obj func obsensemble col as this is just for carrying purposes - we need ensemble grad info!
+        df = pd.DataFrame.from_csv(phi_en_fname)
+        obsensemble.loc[:,phi_obsnme] = df.loc[:,phi_obsnme]
+
+        # and constraints
+        df = pd.DataFrame.from_csv(constraint_en_fname)
+        obsensemble.loc[:,[x for x in self.pst.prior_information.pilbl if "const" in x]] = df.loc[:]
+
+        return obsensemble
 
 
     def _calc_delta_par(self,parensemble):
@@ -465,22 +485,32 @@ class EnsembleSQP(EnsembleMethod):
 
         # compute constraint violation
         viol = 0
+        constraints_violated = []
         for cg in constraint_gps:
             cs = list(self.pst.observation_data.loc[self.pst.observation_data["obgnme"] == cg, "obsnme"])
             if cg.startswith("g_") or cg.startswith("greater_"):  #TODO: list of constraints to self at initialization/start of update
                 for c in cs:
                     model_mean = obsensemble[c].mean()
                     constraint = self.pst.observation_data.loc[c,"obsval"]
-                    viol += np.abs(min(constraint - model_mean, 0.0))
+                    viol_ = np.abs(min(model_mean - constraint, 0.0))
+                    if viol_ > 0:
+                        constraints_violated.append((c, viol_))
+                    viol += viol_
             elif cg.startswith("l_") or cg.startswith("less_"):
                 for c in cs:
                     model_mean = obsensemble[c].mean()
                     constraint = self.pst.observation_data.loc[c,"obsval"]
-                    viol += np.abs(min(constraint - model_mean, 0.0))
+                    viol_ = np.abs(min(constraint - model_mean, 0.0))
+                    if viol_ > 0:
+                        constraints_violated.append((c, viol_))
+                    viol += viol_
+
 
         # mean phi
-        phi_obs = [x for x in self.pst.obs_groups if "obj_f" in x or "phi" in x][0]
-        mean_en_phi = obsensemble[phi_obs].mean()
+        phi_obs = [x for x in self.pst.obs_names if "obj_f" in x or "phi" in x]
+        if len(phi_obs) != 1:
+            self.logger.lraise("number of objective function (phi) obs not equal to one")
+        mean_en_phi = obsensemble[phi_obs[0]].mean()
 
         # constraint filtering
         filter_thresh = 1e-4  #TODO: invest influence of filter_thresh
@@ -752,6 +782,9 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("evaluating ensembles for step size : {0}".
                             format(','.join("{0:8.3E}".format(step_size))))
             failed_runs_1, self.obsensemble_1 = self._calc_obs(self.parensemble_1)  # run
+            if "supply2" in self.pst.filename:  #TODO: temp only until pyemu can evaluate pi eqs
+                self.obsensemble = self._append_pi_to_obs(self.obsensemble,"obj_func_en.csv","obj_func",
+                                                          "prior_info_en.csv")
 
             # TODO: constraints = from pst # contain constraint val (pcf) and constraint from obsen
             if constraints:  # and constraints.shape[0] > 0:

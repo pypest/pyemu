@@ -325,7 +325,7 @@ def supply2_setup():
     # pst.prior_information.drop(pst.prior_information.index, inplace=True)
 
 
-def supply2_update(nit=20,draw_mult=3e-5,en_size=20,biobj_weight=1.0,constraints=True):
+def supply2_update(nit=20,draw_mult=1e-5,en_size=20,biobj_weight=1.0,constraints=True):
     #TODO: populate constraint bool on fly
     import pyemu
     import numpy as np
@@ -333,12 +333,13 @@ def supply2_update(nit=20,draw_mult=3e-5,en_size=20,biobj_weight=1.0,constraints
     [os.remove(x) for x in os.listdir() if (x.endswith("obsensemble.0000.csv"))]
     [os.remove(x) for x in os.listdir() if (x.startswith("filter.") and "csv" in x)]
     prefix = "supply2_pest.base"
-    esqp = pyemu.EnsembleSQP(pst="{}.pst".format(prefix))#,num_slaves=10)
+    esqp = pyemu.EnsembleSQP(pst="{}.pst".format(prefix),)
     esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=True)
     for it in range(nit):
-        esqp.update(step_mult=list(np.logspace(-6,0,14)),constraints=constraints,biobj_weight=biobj_weight,
+        esqp.update(step_mult=list(np.logspace(-6,0,7)),constraints=constraints,biobj_weight=biobj_weight,
                     opt_direction="max",biobj_transf=True)
     os.chdir(os.path.join("..", ".."))
+    #TODO: s1r21_11 less than constraint modified..
 
 
 if __name__ == "__main__":
@@ -364,5 +365,5 @@ if __name__ == "__main__":
     #filter_plot(version="2par", constraints=True, log_phi=True)
 
     #supply2_setup()
-    supply2_update(en_size=2)
+    supply2_update(en_size=10,draw_mult=1e-5)
     #filter_plot(problem="supply2", constraints=True, log_phi=True)
