@@ -364,5 +364,5 @@ if __name__ == "__main__":
     #filter_plot(version="2par", constraints=True, log_phi=True)
 
     #supply2_setup()
-    #supply2_update(en_size=2)
-    filter_plot(problem="supply2", constraints=True, log_phi=True)
+    supply2_update(en_size=2)
+    #filter_plot(problem="supply2", constraints=True, log_phi=True)

@@ -201,6 +201,7 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("evaluating initial ensembles")
             failed_runs, self.obsensemble = self._calc_obs(self.parensemble)  # run
             self.obsensemble.to_csv(self.pst.filename + self.obsen_prefix.format(0))
+            #TODO: pyemu method for eval prior information equations
             if self.raw_sweep_out is not None:
                 self.raw_sweep_out.to_csv(self.pst.filename + "_sweepraw0.csv")
             self.logger.log("evaluating initial ensembles")
@@ -466,12 +467,12 @@ class EnsembleSQP(EnsembleMethod):
         viol = 0
         for cg in constraint_gps:
             cs = list(self.pst.observation_data.loc[self.pst.observation_data["obgnme"] == cg, "obsnme"])
-            if cg.startswith("g"):  #TODO: list of constraints to self at initialization/start of update
+            if cg.startswith("g_") or cg.startswith("greater_"):  #TODO: list of constraints to self at initialization/start of update
                 for c in cs:
                     model_mean = obsensemble[c].mean()
                     constraint = self.pst.observation_data.loc[c,"obsval"]
-                    viol += np.abs(min(model_mean - constraint, 0.0))
-            else:
+                    viol += np.abs(min(constraint - model_mean, 0.0))
+            elif cg.startswith("l_") or cg.startswith("less_"):
                 for c in cs:
                     model_mean = obsensemble[c].mean()
                     constraint = self.pst.observation_data.loc[c,"obsval"]
