@@ -1332,8 +1332,9 @@ class Pst(object):
             #formatters["extra"] = lambda x: " # {0}".format(x) if pd.notnull(x) else 'test'
             #formatters["extra"] = lambda x: ext_fmt(x)
 
-
-        f.write(df.to_string(col_space=0,formatters=formatters,
+        # only write out the dataframe if it contains data - could be empty
+        if len(df) > 0:
+            f.write(df.to_string(col_space=0,formatters=formatters,
                                                   columns=columns,
                                                   justify="right",
                                                   header=False,
@@ -1523,7 +1524,6 @@ class Pst(object):
             except Exception as e:
                 pass
             f_out.write(pst_utils.SFMT(str(group))+'\n')
-
         self._write_df("* observation data", f_out, self.observation_data,
                        self.obs_format, self.obs_fieldnames)
 
