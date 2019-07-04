@@ -498,7 +498,7 @@ class EnsembleSQP(EnsembleMethod):
                         viol_ = np.abs(min(model_mean - constraint, 0.0))
                         if viol_ > 0:
                             constraints_violated.append((c, viol_))
-                        viol += viol_
+                        viol += viol_ ** 2
             elif cg.startswith("l_") or cg.startswith("less_"):
                 if len(cs) > 0:
                     for c in cs:
@@ -507,7 +507,7 @@ class EnsembleSQP(EnsembleMethod):
                         viol_ = np.abs(min(constraint - model_mean, 0.0))
                         if viol_ > 0:
                             constraints_violated.append((c, viol_))
-                        viol += viol_
+                        viol += viol_ ** 2
 
 
         # mean phi
