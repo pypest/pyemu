@@ -726,6 +726,7 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: using grad info only (with some expected step length), update Hessian from initial
         # TODO: handling of fixed, transformed etc. dec vars here
 
+        self.parensemble_mean_next = None
         step_lengths, mean_en_phi_per_alpha = [],pd.DataFrame()
         #base_step = 1.0  # start with 1.0 and progressively make smaller (will be 1.0 eventually if convex..)
         # TODO: check notion of adjusting alpha wrt Hessian?  similar to line searching...
@@ -744,8 +745,9 @@ class EnsembleSQP(EnsembleMethod):
              #          self.parensemble_mean_1.x,fmt="%15.6e")
             # shift parval1  #TODO: change below line to adj dec var pars only..
             par = self.pst.parameter_data
-            par.loc[par['partrans']=="none","parval1"] = pd.Series(np.squeeze(self.parensemble_mean_1.x, axis=0),
-                                                                   index=self.parensemble_mean_1.col_names,)
+            par.loc[par['partrans']=="none","parval1"] = pd.Series(np.squeeze(self.parensemble_mean_1.x, axis=0),\
+                                                                   index=self.parensemble_mean_1.col_names,) * -1
+            # TODO: -1 here to account for par.scale
             #  and bound handling
             out_of_bounds = par.loc[(par.parubnd < par.parval1) | (par.parlbnd > par.parval1),:]
             if out_of_bounds.shape[0] > 0:
@@ -827,6 +829,12 @@ class EnsembleSQP(EnsembleMethod):
             best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
             best_alpha_per_it_df.to_csv("best_alpha_per_it.csv")
             self.logger.log("best step length (alpha): {0}".format("{0:8.3E}".format(best_alpha)))
+
+        # deal with unsuccessful iteration
+        if self.parensemble_mean_next is None:
+            self.logger.log("unsuccessful upgrade iteration: {0}".format("{0:8.3E}".format(best_alpha)))
+            self.parensemble_mean_next = self.parensemble_mean.copy()
+            self.parensemble_next = self.parensemble.copy()
 
         # TODO: failed run handling
         # TODO: undertake Wolfe and en tests. No - our need is superseded by parallel alpha tests
