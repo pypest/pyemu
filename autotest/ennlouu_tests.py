@@ -299,6 +299,7 @@ def filter_plot(problem,constraints,log_phi=False):
     ax.set_xlabel(r"$\beta$",fontsize=14)
     if log_phi:
         ax.set_ylabel("log $\phi$", fontsize=14)
+        plt.gcf().subplots_adjust(left=0.15)
     else:
         ax.set_ylabel(r"$\phi$", fontsize=14)
 
@@ -365,5 +366,5 @@ if __name__ == "__main__":
     #filter_plot(version="2par", constraints=True, log_phi=True)
 
     #supply2_setup()
-    supply2_update(en_size=10,draw_mult=1e-5)
+    supply2_update(en_size=20,draw_mult=1e-5)
     #filter_plot(problem="supply2", constraints=True, log_phi=True)

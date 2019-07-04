@@ -180,6 +180,7 @@ class EnsembleSQP(EnsembleMethod):
             self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
             self.parensemble = self.parensemble_0.copy()
             self.parensemble_0.to_csv(self.pst.filename + self.paren_prefix.format(0))
+            self.parensemble_0.to_csv(self.pst.filename + ".current" + self.paren_prefix.format(0))  # for `covert.py` for supply2 problem only...
             self.logger.log("initializing by drawing {0} par realizations".format(num_reals))
 
         self.num_reals = self.parensemble.shape[0]  # defined here if par ensemble passed
@@ -487,23 +488,26 @@ class EnsembleSQP(EnsembleMethod):
         viol = 0
         constraints_violated = []
         for cg in constraint_gps:
-            cs = list(self.pst.observation_data.loc[self.pst.observation_data["obgnme"] == cg, "obsnme"])
+            cs = list(self.pst.observation_data.loc[(self.pst.observation_data["obgnme"] == cg) & \
+                                                    (self.pst.observation_data["weight"] > 0), "obsnme"])
             if cg.startswith("g_") or cg.startswith("greater_"):  #TODO: list of constraints to self at initialization/start of update
-                for c in cs:
-                    model_mean = obsensemble[c].mean()
-                    constraint = self.pst.observation_data.loc[c,"obsval"]
-                    viol_ = np.abs(min(model_mean - constraint, 0.0))
-                    if viol_ > 0:
-                        constraints_violated.append((c, viol_))
-                    viol += viol_
+                if len(cs) > 0:  # TODO: improve effic here
+                    for c in cs:
+                        model_mean = obsensemble[c].mean()
+                        constraint = self.pst.observation_data.loc[c,"obsval"]
+                        viol_ = np.abs(min(model_mean - constraint, 0.0))
+                        if viol_ > 0:
+                            constraints_violated.append((c, viol_))
+                        viol += viol_
             elif cg.startswith("l_") or cg.startswith("less_"):
-                for c in cs:
-                    model_mean = obsensemble[c].mean()
-                    constraint = self.pst.observation_data.loc[c,"obsval"]
-                    viol_ = np.abs(min(constraint - model_mean, 0.0))
-                    if viol_ > 0:
-                        constraints_violated.append((c, viol_))
-                    viol += viol_
+                if len(cs) > 0:
+                    for c in cs:
+                        model_mean = obsensemble[c].mean()
+                        constraint = self.pst.observation_data.loc[c,"obsval"]
+                        viol_ = np.abs(min(constraint - model_mean, 0.0))
+                        if viol_ > 0:
+                            constraints_violated.append((c, viol_))
+                        viol += viol_
 
 
         # mean phi
@@ -550,15 +554,27 @@ class EnsembleSQP(EnsembleMethod):
                 # TODO: but.. what is the price of violating constraints? We don't want to at all...
                 # TODO: either just pick min phi with constraint = 0, or weight constraint viol * 10, and transf?, e.g.
                 if biobj_transf:
-                    min_beta, min_phi = curr_filter['beta'].min(), np.log10(curr_filter['phi'].min())
-                    curr_filter.loc[:, "dist_from_min_origin"] = (((curr_filter['beta'] - min_beta) * biobj_weight) ** 2 + (np.log10(curr_filter['phi']) - min_phi) ** 2) ** 0.5
+                    min_beta = curr_filter['beta'].min()
+                    if opt_direction == "max":
+                        minmax_phi = np.log10(curr_filter['phi'].max())
+                    else:
+                        minmax_phi = np.log10(curr_filter['phi'].min())
+                    curr_filter.loc[:, "dist_from_min_origin"] = (((curr_filter['beta'] - min_beta) * biobj_weight) \
+                                                                  ** 2 + (np.log10(curr_filter['phi']) - minmax_phi) \
+                                                                  ** 2) ** 0.5
                     if curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0] == curr_filter[
                         'dist_from_min_origin'].min():
                         acceptance = True
                 else:
-                    min_beta, min_phi = curr_filter['beta'].min(), curr_filter['phi'].min()
-                    curr_filter.loc[:, "dist_from_min_origin"] = (((curr_filter['beta'] - min_beta) * biobj_weight) ** 2 + (curr_filter['phi'] - min_phi) ** 2) ** 0.5
-                    if curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0] == curr_filter['dist_from_min_origin'].min():
+                    min_beta = curr_filter['beta'].min()
+                    if opt_direction == "max":
+                        minmax_phi = curr_filter['phi'].max()
+                    else:
+                        minmax_phi = curr_filter['phi'].min()
+                    curr_filter.loc[:, "dist_from_min_origin"] = (((curr_filter['beta'] - min_beta) * biobj_weight) \
+                                                                  ** 2 + (curr_filter['phi'] - minmax_phi) ** 2) ** 0.5
+                    if curr_filter.loc[curr_filter['alpha'] == alpha, 'dist_from_min_origin'].values[0] == \
+                            curr_filter['dist_from_min_origin'].min():
                         acceptance = True
 
 
@@ -774,6 +790,7 @@ class EnsembleSQP(EnsembleMethod):
             #self.parensemble_1.enforce(enforce_bounds=self.enforce_bounds)  # suffic to check mean
             self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num,step_size)
                                       + self.paren_prefix.format(0))
+            self.parensemble_1.to_csv(self.pst.filename + ".current" + self.paren_prefix.format(0))  #for `covert.py` for supply2 problem only...
             self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
 
             self.logger.log("undertaking calcs for step size (multiplier) : {0}...".format(step_size))
@@ -832,9 +849,10 @@ class EnsembleSQP(EnsembleMethod):
 
         # deal with unsuccessful iteration
         if self.parensemble_mean_next is None:
-            self.logger.log("unsuccessful upgrade iteration: {0}".format("{0:8.3E}".format(best_alpha)))
+            self.logger.log("unsuccessful upgrade iteration.. using previous mean par en and increasing draw mult")
             self.parensemble_mean_next = self.parensemble_mean.copy()
             self.parensemble_next = self.parensemble.copy()
+            # TODO: change draw mult if here
 
         # TODO: failed run handling
         # TODO: undertake Wolfe and en tests. No - our need is superseded by parallel alpha tests
