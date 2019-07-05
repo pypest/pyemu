@@ -343,6 +343,112 @@ def supply2_update(nit=20,draw_mult=1e-5,en_size=20,biobj_weight=1.0,constraints
     #TODO: s1r21_11 less than constraint modified..
 
 
+def get_gwm_decvar_vals(filename):
+    '''
+    Untouched from pestpp benchmark `opt_supply2_chance` dir: `risk_sweep.py`
+    '''
+    dv_vals = {}
+    with open(filename, 'r') as f:
+        while True:
+            line = f.readline()
+            if line == '':
+                raise Exception()
+            if "OPTIMAL RATES FOR EACH FLOW VARIABLE" in line:
+                [f.readline() for _ in range(4)]
+                while "----" not in line:
+                    line = f.readline()
+                    if "----" in line:
+                        break
+                    # print(line)
+                    raw = line.lower().strip().split()
+                    dv_vals[raw[0]] = float(raw[1])
+                [f.readline() for _ in range(7)]
+                while True:
+                    line = f.readline()
+                    if "----" in line:
+                        break
+                    raw = line.lower().strip().split()
+                    dv_vals[raw[0]] = float(raw[2])
+
+                return dv_vals
+
+def plot_mean_dev_var_bar(opt_par_en="supply2_pest.parensemble.0000.csv",three_risk_cols=True,include_gwm=True):
+    import os
+    import numpy as np
+    import pyemu
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    os.chdir(os.path.join("ennlouu","supply2_deterministic"))
+
+    # parse the gwm output file for dec var values
+    if include_gwm:
+        gwm_dvs = get_gwm_decvar_vals(os.path.join("baseline_opt","supply2.gwmout"))
+
+    fig = plt.figure(figsize=(190.0 / 25.4, 70.0 / 25.4))
+    ax1 = plt.subplot(111)
+    if three_risk_cols:
+        ax1 = plt.subplot(131)
+        ax2 = plt.subplot(132)
+        ax3 = plt.subplot(133)
+
+    #rdir = os.path.join(wdir_base, results_dir)
+    wdir = os.path.join("temp")
+    pst = pyemu.Pst(os.path.join(wdir, "supply2_pest.base.pst"))
+    dvs = pst.parameter_data.loc[pst.parameter_data.pargp.apply(lambda x: x in ["pumping", "external"]), "parnme"]
+
+    #par_files = [f for f in os.listdir(rdir) if f.endswith(".par")]
+    #print(par_files)
+    #dfs = [pd.read_csv(os.path.join(rdir, f), skiprows=1, header=None, names=["parnme", "parval1"],
+    #                   usecols=[0, 1], delim_whitespace=True, index_col=0).loc[dvs] for f in par_files]
+    #print(dfs[0])
+
+    df = pd.read_csv(os.path.join("temp",opt_par_en),index_col=0)
+    df = df.loc[:,dvs]
+    opt_mean_dec_var_df = df.mean()
+
+    if three_risk_cols:
+        risk_vals = np.array([float(f.split('_')[1]) for f in par_files])
+
+        # obj_func = np.array([df.loc["pi_obj_func","modelled"] for df in dfs])
+        #infeas = np.array([check_infeas(os.path.join(rdir, f.replace(".par", ".rec"))) for f in par_files])
+        #print(infeas)
+        # obj_func[infeas==True] = np.NaN
+        # ax.plot(risk_vals,obj_func,'b',lw=0.5,marker=".")
+
+        nu_idx = np.argwhere(risk_vals == 0.5)
+        in_idx = np.argwhere(infeas == 1)[0] - 1
+
+        labels = ["A) risk = {0}".format(risk_vals[0]), "B) risk = 0.5", "C) risk = {0}".format(risk_vals[in_idx][0])]
+
+        for ax, df, l in zip([ax1, ax2, ax3], [dfs[0], dfs[nu_idx], dfs[in_idx]], labels):
+            if "0.5" in l:
+                print(gwm_dvs)
+                df.loc[:, "gwm"] = df.index.map(lambda x: gwm_dvs[x])
+                df.plot(kind="bar", ax=ax, legend=False, alpha=0.5)
+            else:
+                df.plot(kind="bar", ax=ax, legend=False, alpha=0.5)
+            ax.set_xlabel("decision variable")
+            ax.text(0.01, 1.01, l, transform=ax.transAxes)
+    else:
+        opt_mean_dec_var_df.plot(kind="bar",ax=ax1,color="blue",legend=False,alpha=0.5)
+        ax1.set_xlabel("decision variable")
+        ax1.text(0.01, 1.01, "(a)", transform=ax1.transAxes)
+
+    ax1.set_ylabel("pumping rate ($\\frac{m^3}{d}$)")
+    ax1.set_ylim(0, 55000)
+    ax1.grid()
+    if three_risk_cols:
+        ax2.set_yticklabels([])
+        ax3.set_yticklabels([])
+        for ax in [ax1, ax2, ax3]:
+            ax.set_ylim(0, 55000)
+            ax.grid()
+    plt.tight_layout()
+    # plt.show()
+    plt.savefig("dec_vars.pdf")
+
+
 if __name__ == "__main__":
     #rosenbrock_setup(version="2par")
     #rosenbrock_2par_initialize()
@@ -366,5 +472,7 @@ if __name__ == "__main__":
     #filter_plot(version="2par", constraints=True, log_phi=True)
 
     #supply2_setup()
-    supply2_update(en_size=20,draw_mult=1e-3)
+    #supply2_update(en_size=20,draw_mult=1e-3)
     #filter_plot(problem="supply2", constraints=True, log_phi=True)
+    plot_mean_dev_var_bar(opt_par_en="supply2_pest.base.pst.14.1.4781945077061165e-26.parensemble.0000.csv",
+                          three_risk_cols=False,include_gwm=False)
