@@ -978,13 +978,13 @@ class InstructionFile(object):
         warnings.warn("InstructionFile error processing instruction file {0} on line number {1}: {2}".\
                         format(self._ins_filename,lcount,message),PyemuWarning)
 
-    def throw_ins_error(self,message,lcount):
+    def throw_ins_error(self,message,lcount=None):
         if lcount is None:
             lcount = self._ins_linecount
         raise Exception("InstructionFile error processing instruction file on line number {0}: {1}".\
                         format(lcount,message))
 
-    def throw_out_error(self,message,lcount):
+    def throw_out_error(self,message,lcount=None):
         if lcount is None:
             lcount = self._out_linecount
         raise Exception("InstructionFile error processing output file on line number {0}: {1}".\
@@ -1031,11 +1031,11 @@ class InstructionFile(object):
                                              format(nlines, ins, ins_lcount))
             if ins == 'w':
                 raw = line[cursor_pos:].split()
-                if line[0] == ' ':
+                if line[cursor_pos] == ' ':
                     raw.insert(0,'')
                 if len(raw) == 1:
                     self.throw_out_error("no whitespaces found on output line {0} past {1}".format(line,cursor_pos))
-                cursor_pos = cursor_pos + line[cursor_pos:].index(" "+raw[1])
+                cursor_pos = cursor_pos + line[cursor_pos:].index(" "+raw[1]) + 1
 
             if ins.startswith('!'):
                 oname = ins.replace('!','')
