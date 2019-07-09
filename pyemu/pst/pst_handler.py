@@ -2279,7 +2279,7 @@ class Pst(object):
                 model output values
 
         """
-        pst_utils.process_output_files(self,pst_path)
+        return pst_utils.process_output_files(self,pst_path)
 
 
     def get_res_stats(self,nonzero=True):

@@ -930,11 +930,19 @@ def rectify_pgroup_test():
 
 def try_process_ins_test():
     import os
+    import numpy as np
     import pandas as pd
     import pyemu
 
     ins_file = os.path.join("utils", "BH.mt3d.processed.ins")
     df = pyemu.pst_utils.try_process_ins_file(ins_file)
+
+    i = pyemu.pst_utils.InstructionFile(ins_file)
+    df2 = i.read_output_file(ins_file.replace(".ins",""))
+    diff = (df.obsval - df2).apply(np.abs).sum()
+    print(diff)
+    assert diff <1.0e-10
+
 
     # df1 = pyemu.pst_utils._try_run_inschek(ins_file,ins_file.replace(".ins",""))
     df1 = pd.read_csv(ins_file.replace(".ins", ".obf"), delim_whitespace=True, names=["obsnme", "obsval"], index_col=0)
@@ -1259,7 +1267,6 @@ def process_output_files_test():
     # i = pst_utils.InstructionFile(ins_file)
     # print(i.read_output_file(out_file))
     # return
-
 
     ins_dir = "ins"
     ins_files = [os.path.join(ins_dir,f) for f in os.listdir(ins_dir) if f.endswith(".ins")]

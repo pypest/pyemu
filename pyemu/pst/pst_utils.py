@@ -902,6 +902,18 @@ class Instruction(object):
 
 
 class InstructionFile(object):
+    """class for handling instruction files.
+
+    Parameters
+    ----------
+        ins_filename : str
+            instruction file name
+        pst : pyemu.Pst
+            optional Pst instance - used for checking that instruction file is
+            compatible with the control
+
+
+    """
     def __init__(self,ins_filename,pst=None):
         self._ins_linecount = 0
         self._out_linecount = 0
@@ -922,6 +934,16 @@ class InstructionFile(object):
         self.read_ins_file()
 
     def read_ins_file(self):
+        """read the instruction and do some minimal error checking
+
+        Parameters
+        ----------
+            None
+        Returns
+        -------
+            None
+
+        """
         self._instruction_lines = []
         self._instruction_lcount = []
         first_line = self._readline_ins()
@@ -981,24 +1003,65 @@ class InstructionFile(object):
 
 
     def throw_ins_warning(self,message,lcount=None):
+        """throw a verbose PyemuWarning
+
+        Parameters
+        ----------
+            message : str
+
+            lcount : int
+                optional line number.  If None, self._ins_linecount is used
+
+        """
         if lcount is None:
             lcount = self._ins_linecount
         warnings.warn("InstructionFile error processing instruction file {0} on line number {1}: {2}".\
                         format(self._ins_filename,lcount,message),PyemuWarning)
 
     def throw_ins_error(self,message,lcount=None):
+        """throw a verbose instruction file error
+
+        Parameters
+        ----------
+            message : str
+
+            lcount : int
+                optional line number.  If None, self._ins_linecount is used
+        """
         if lcount is None:
             lcount = self._ins_linecount
         raise Exception("InstructionFile error processing instruction file on line number {0}: {1}".\
                         format(lcount,message))
 
     def throw_out_error(self,message,lcount=None):
+        """throw a verbose output file error
+
+                Parameters
+                ----------
+                    message : str
+
+                    lcount : int
+                        optional line number.  If None, self._ins_linecount is used
+                """
         if lcount is None:
             lcount = self._out_linecount
         raise Exception("InstructionFile error processing output file on line number {0}: {1}".\
                         format(lcount,message))
 
     def read_output_file(self,output_file):
+        """process a model output file using self's instruction set
+
+        Parameters
+        ----------
+            output_file : str
+                the output file name
+
+        Returns
+        -------
+            pd.Series : a series with obsnme index and obsval values
+
+
+        """
         self._out_filename = output_file
         val_dict = {}
         for ins_line,ins_lcount in zip(self._instruction_lines,self._instruction_lcount):
@@ -1009,6 +1072,23 @@ class InstructionFile(object):
         return pd.Series(val_dict)
 
     def _execute_ins_line(self,ins_line,ins_lcount):
+        """private method to process output file lines with an instruction line
+
+        Parameters
+        ----------
+            ins_line : list(str)
+                tokenized instruction line
+            ins_lcount : int
+                the corresponding instruction file line number
+
+        Returns
+        -------
+            val_dict : dict
+                dict keyed on obsnme and valued with float values
+
+
+
+        """
         cursor_pos = 0
         val_dict = {}
         for ii,ins in enumerate(ins_line):
@@ -1084,6 +1164,15 @@ class InstructionFile(object):
         return val_dict
 
     def _readline_ins(self):
+        """consolidate private method to read the next instruction file line.  Casts to lower and splits
+        on whitespace
+
+        Returns
+        -------
+            list(str)
+
+
+        """
         if self._ins_filehandle is None:
             if not os.path.exists(self._ins_filename):
                 raise Exception("instruction file '{0}' not found".format(self._ins_filename))
@@ -1097,6 +1186,14 @@ class InstructionFile(object):
 
 
     def _readline_output(self):
+        """consolidate private method to read the next output file line.  Casts to lower
+
+        Returns
+        -------
+            str
+
+
+        """
         if self._out_filehandle is None:
             if not os.path.exists(self._out_filename):
                 raise Exception("output file '{0}' not found".format(self._out_filename))
@@ -1110,63 +1207,45 @@ class InstructionFile(object):
 
 
 
-# def _process_instruction_file(pst,instruction_file):
-#     instructions = []
-#     with open(instruction_file,'r') as f:
-#         first_line = f.readline().lower().strip().split()
-#         if len(first_line) != 2:
-#             raise Exception("first line of ins file must have two entries, not '{0}'".format(','.join(first_line)))
-#         if first_line[0] != "pif":
-#             raise Exception("first line of ins file '{0}' must start with 'pif', not '{1}'".\
-#                             format(instruction_file,first_line[0]))
-#         marker = first_line[1]
-#         for line in f:
-#             raw = line.strip().split()
-#             for r in raw:
-#                 i = Instruction(r,marker)
-#
-#     return instructions
-
-
-# def _process_output_file(output_file,instructions):
-#     onames,ovals = [],[]
-#     with open(output_file,'r') as f:
-#         for instruction in instructions:
-#             pass
-#     return pd.Series(data=ovals,index=onames)
 
 
 def process_output_files(pst,pst_path='.'):
+    """helper function to process output files using instruction files
+
+    Parameters
+    ----------
+        pst : pyemu.Pst
+
+        pst_path : str
+            path to instruction and output files to append to the front
+            of the names in the Pst instance
+
+    Returns
+    -------
+        df : pd.DataFrame
+            index of obsnme and obsval column
+
+
+
+    """
     if not isinstance(pst,pyemu.Pst):
         raise Exception("process_output_files error: 'pst' arg must be pyemu.Pst instance")
-    file_errors = []
-    ins_files = []
+    series = []
     for ins,out in zip(pst.instruction_files,pst.output_files):
+        ins = os.path.join(pst_path,ins)
+        out = os.path.join(pst_path,out)
+        if not os.path.exists(out):
+            warnings.warn("out file '{0}' not found".format(out),PyemuWarning)
         f = os.path.join(pst_path,ins)
         i = InstructionFile(ins,pst=pst)
-        i.read_output_file(out)
-
-    # for f in pst.output_files:
-    #     f = os.path.join(pst_path,f)
-    #     if not os.path.exists(os.path.join(pst_path,f)):
-    #         file_errors.append("output file '{0}' not found".format(f))
-    # if len(file_errors) > 0:
-    #     raise Exception("process_output_files file errors: " + ",".join(file_errors))
-    #
-    # for ins_file,out_file in zip(pst.instruction_files,pst.output_files):
-    #     try:
-    #         instructions = _process_instruction_file(pst,os.path.join(pst_path,ins_file))
-    #     except Exception as e:
-    #         raise Exception("process_output_files error processing instruction file" +
-    #                         "'{0}': {1}".format(ins_file,str(e)))
-    #     try:
-    #         obsvals = _process_output_file(os.path.join(pst_path,out_file),instructions)
-    #     except Exception as e:
-    #         raise Exception("process_output_files error processing output file" +
-    #                         "'{0}': {1}".format(out_file,str(e)))
-
-
-
+        try:
+            s = i.read_output_file(out)
+            series.append(s)
+        except Exception as e:
+            warnings.warn("error processing output file '{0}': {1}".format(out,str(e)))
+    series = pd.concat(series)
+    #print(series)
+    return series
 
 
 
