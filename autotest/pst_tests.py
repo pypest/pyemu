@@ -1277,22 +1277,22 @@ def process_output_files_test():
     i4 = pst_utils.InstructionFile(ins_files[3])
     s4 = i4.read_output_file(out_files[3])
     print(s4)
-    assert s4["h01_02"] == 1.024
-    assert s4["h01_10"] == 4.498
+    assert s4.loc["h01_02","obsval"] == 1.024
+    assert s4.loc["h01_10","obsval"] == 4.498
     i3 = pst_utils.InstructionFile(ins_files[2])
     s3 = i3.read_output_file(out_files[2])
     #print(s3)
-    assert s3["test"] == 1.23456
-    assert s3["h01_02"] == 1.024
+    assert s3.loc["test","obsval"] == 1.23456
+    assert s3.loc["h01_02","obsval"] == 1.024
 
     i1 = pst_utils.InstructionFile(ins_files[0])
     s1 = i1.read_output_file(out_files[0])
     a1 = np.loadtxt(out_files[0]).flatten()
-    assert np.abs(s1.values - a1).sum() == 0.0
+    assert np.abs(s1.obsval.values - a1).sum() == 0.0
 
     i2 = pst_utils.InstructionFile(ins_files[1])
     s2 = i2.read_output_file(out_files[1])
-    assert s2["h01_02"] == 1.024
+    assert s2.loc["h01_02","obsval"] == 1.024
 
 
 

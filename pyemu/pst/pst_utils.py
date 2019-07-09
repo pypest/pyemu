@@ -1064,7 +1064,7 @@ class InstructionFile(object):
 
         Returns
         -------
-            pd.Series : a series with obsnme index and obsval values
+            pd.DataFrame : a dataframe with obsnme index and obsval values
 
 
         """
@@ -1075,7 +1075,10 @@ class InstructionFile(object):
             val_dict.update(self._execute_ins_line(ins_line,ins_lcount))
             #except Exception as e:
             #    raise Exception(str(e))
-        return pd.Series(val_dict)
+        s = pd.Series(val_dict)
+        s.sort_index(inplace=True)
+
+        return pd.DataFrame({"obsval":s},index=s.index)
 
     def _execute_ins_line(self,ins_line,ins_lcount):
         """private method to process output file lines with an instruction line

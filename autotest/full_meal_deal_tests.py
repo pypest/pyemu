@@ -125,7 +125,7 @@ def fake_run_test():
     new_model_ws = "template1"
     if not os.path.exists(new_model_ws):
         freyberg_test()
-    pst = pyemu.Pst(os.path.join(new_model_ws,"test.pst"))
+    pst = pyemu.Pst(os.path.join(new_model_ws,"freyberg.pst"))
     pst.pestpp_options["ies_num_reals"] = 10
     pst.pestpp_options["ies_par_en"] = "par_en.csv"
     pst.control_data.noptmax = 0
@@ -139,11 +139,13 @@ def fake_run_test():
     if s is not None:
         assert s.dropna().shape[0] == pst.nobs
         obs = pst.observation_data
-        diff = (obs.obsval - s).apply(np.abs).sum()
-        assert diff < 1.0e-3
+
+        diff = (100 * (obs.obsval - s.obsval) / obs.obsval).apply(np.abs)
+
+        print(diff)
+        print(obs.loc[diff>0.0,"obsval"],s.loc[diff>0.0,"obsval"])
+        assert diff.sum() < 1.0e-3,diff.sum()
     pyemu.os_utils.run("{0} {1}".format(ies_exe_name, "fake.pst"), cwd=new_cwd)
-
-
 
 
 
