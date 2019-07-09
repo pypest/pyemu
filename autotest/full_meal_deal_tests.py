@@ -136,10 +136,11 @@ def fake_run_test():
     new_cwd = "fake_test"
     pst = pyemu.helpers.setup_fake_forward_run(pst, "fake.pst", org_cwd=new_model_ws,new_cwd=new_cwd)
     s = pst.process_output_files(new_cwd)
-    assert s.dropna().shape[0] == pst.nobs
-    obs = pst.observation_data
-    diff = (obs.obsval - s).apply(np.abs).sum()
-    assert diff < 1.0e-3
+    if s is not None:
+        assert s.dropna().shape[0] == pst.nobs
+        obs = pst.observation_data
+        diff = (obs.obsval - s).apply(np.abs).sum()
+        assert diff < 1.0e-3
     pyemu.os_utils.run("{0} {1}".format(ies_exe_name, "fake.pst"), cwd=new_cwd)
 
 
