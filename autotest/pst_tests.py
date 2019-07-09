@@ -1266,6 +1266,12 @@ def process_output_files_test():
     ins_files.sort()
     out_files = [f.replace(".ins","") for f in ins_files]
     print(ins_files)
+
+    i4 = pst_utils.InstructionFile(ins_files[3])
+    s4 = i4.read_output_file(out_files[3])
+    print(s4)
+    assert s4["h01_02"] == 1.024
+    assert s4["h01_10"] == 4.498
     i3 = pst_utils.InstructionFile(ins_files[2])
     s3 = i3.read_output_file(out_files[2])
     #print(s3)

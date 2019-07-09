@@ -950,9 +950,17 @@ class InstructionFile(object):
                                      "not: {0}".format(line[0]))
 
             for token in line[1:]:
-                for somarker,eomarker in zip(['!','[','(',self._marker],['!',']',')',self._marker]):
+                if token.startswith("t"):
+                    self.throw_ins_error("tab instruction not supported")
+                elif token.startswith(self._marker):
+                    if not token.endswith(self._marker):
+                        self.throw_ins_error("unbalanced secondary marker in token '{0}'".format(token))
+
+
+                for somarker,eomarker in zip(['!','[','('],['!',']',')']):
                     #
                     if token[0] == somarker:
+                        ofound = True
                         if eomarker not in token[1:]:
                             self.throw_ins_error("unmatched observation marker '{0}', looking for '{1}' in token '{2}'".\
                                                  format(somarker,eomarker,token))
@@ -1003,10 +1011,10 @@ class InstructionFile(object):
     def _execute_ins_line(self,ins_line,ins_lcount):
         cursor_pos = 0
         val_dict = {}
-        for ins in ins_line:
+        for ii,ins in enumerate(ins_line):
 
             #primary marker
-            if ins.startswith(self._marker):
+            if ii == 0 and ins.startswith(self._marker):
                 mstr = ins.replace(self._marker,'')
                 while True:
                     line = self._readline_output()
@@ -1018,7 +1026,7 @@ class InstructionFile(object):
                 cursor_pos = line.index(mstr) + len(mstr)
 
             # line advance
-            if ins.startswith('l'):
+            elif ins.startswith('l'):
                 try:
                     nlines = int(ins[1:])
                 except Exception as e:
@@ -1029,7 +1037,7 @@ class InstructionFile(object):
                     if line is None:
                         self.throw_out_error("EOF when trying to read {0} lines for line advance instruction '{1}', from instruction file line number {2}". \
                                              format(nlines, ins, ins_lcount))
-            if ins == 'w':
+            elif ins == 'w':
                 raw = line[cursor_pos:].split()
                 if line[cursor_pos] == ' ':
                     raw.insert(0,'')
@@ -1037,9 +1045,17 @@ class InstructionFile(object):
                     self.throw_out_error("no whitespaces found on output line {0} past {1}".format(line,cursor_pos))
                 cursor_pos = cursor_pos + line[cursor_pos:].index(" "+raw[1]) + 1
 
-            if ins.startswith('!'):
+
+            elif ins.startswith('!'):
                 oname = ins.replace('!','')
-                val_str = line[cursor_pos:].split()[0]
+                # look a head for a sec marker
+                if ii < len(ins_line) - 1 and ins_line[ii+1].startswith(self._marker):
+                    m = ins_line[ii+1].replace(self._marker,'')
+                    if m not in line[cursor_pos:]:
+                        self.throw_out_error("secondary marker '{0}' not found from cursor_pos {2}".format(m,cursor_pos))
+                    val_str = line[cursor_pos:].split(m)[0]
+                else:
+                    val_str = line[cursor_pos:].split()[0]
                 try:
                     val = float(val_str)
                 except Exception as e:
@@ -1055,6 +1071,16 @@ class InstructionFile(object):
 
                 #print(line[cursor_pos:])
                 #print('')
+
+            elif ins.startswith(self._marker):
+                m = ins.replace(self._marker,'')
+                if m not in line[cursor_pos:]:
+                    self.throw_out_error("secondary marker '{0}' not found from cursor_pos {2}".format(m,cursor_pos))
+                cursor_pos = cursor_pos + line[cursor_pos:].index(m) + len(m)
+
+            else:
+                self.throw_out_error("unrecognized instruction '{0}' on ins file line {1}".format(ins,ins_lcount))
+
         return val_dict
 
     def _readline_ins(self):
