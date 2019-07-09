@@ -938,8 +938,10 @@ def try_process_ins_test():
     df = pyemu.pst_utils.try_process_ins_file(ins_file)
 
     i = pyemu.pst_utils.InstructionFile(ins_file)
+
     df2 = i.read_output_file(ins_file.replace(".ins",""))
-    diff = (df.obsval - df2).apply(np.abs).sum()
+    
+    diff = (df.obsval - df2.obsval).apply(np.abs).sum()
     print(diff)
     assert diff <1.0e-10
 
@@ -1301,13 +1303,13 @@ def process_output_files_test():
 
 
 if __name__ == "__main__":
-    process_output_files_test()
+    #process_output_files_test()
     #change_limit_test()
     #new_format_test()
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
     # pst_from_flopy_geo_draw_test()
-    #try_process_ins_test()
+    try_process_ins_test()
     # write_tables_test()
     #res_stats_test()
     # test_write_input_files()
