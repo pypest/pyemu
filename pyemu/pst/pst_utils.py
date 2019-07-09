@@ -1243,6 +1243,8 @@ def process_output_files(pst,pst_path='.'):
             series.append(s)
         except Exception as e:
             warnings.warn("error processing output file '{0}': {1}".format(out,str(e)))
+    if len(series) == 0:
+        return None
     series = pd.concat(series)
     #print(series)
     return series
