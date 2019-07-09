@@ -586,7 +586,13 @@ def try_run_inschek(pst):
 
     """
     for ins_file,out_file in zip(pst.instruction_files,pst.output_files):
-        df = _try_run_inschek(ins_file,out_file)
+        df = None
+        try:
+            i = InstructionFile(ins_file,pst=pst)
+            df = i.read_output_file(out_file)
+        except Exception as e:
+            warnings.warn("error processing instruction file {0}, trying inschek: {1}".format(ins_file,str(e)))
+            df = _try_run_inschek(ins_file,out_file)
         if df is not None:
             pst.observation_data.loc[df.index, "obsval"] = df.obsval
 
