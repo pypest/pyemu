@@ -36,21 +36,6 @@ obs_location = np.linspace(1, n-1, 10).astype(int)
 np.savetxt( r".\template\obs_locations.dat", obs_location)
 obs = K[obs_location, ref_real]
 
-H = K[obs_location, :] # model predictions
-Ka = KF.EnsKF_evenson(H = H, K = K, d = obs, err_perc = 0.0, thr_perc = 0.1)
-
-#plt.figure()
-if 0:
-    plt.plot(Ka, color = [0,0.7,0.7])
-    plt.plot(Ka.mean(axis=1), label = "Estimated Field")
-    plt.plot(K[:,ref_real], 'r', label = "Reference Field")
-    plt.legend()
-    plt.show()
-
-
-
-
-
 
 # dimensions
 n, N = K.shape
@@ -99,6 +84,21 @@ sm = Assimilator(type='Smoother', iterate=False, mode='stochastic', pst= pst, pa
 sm.analysis()
 
 KKa = sm.parensemble_a.values.T
+plt.plot(KKa, color = [0,0.7,0.7])
+plt.plot(KKa.mean(axis=1), label = "Estimated Field", color = 'k')
+plt.plot(K[:,ref_real], 'r', label = "Reference Field")
+plt.legend()
+plt.show()
+
+
+sm = Assimilator(type='Smoother', iterate=False, mode='deterministic', pst= pst, parens=par_df, obs_ens = None,
+                 num_slaves= 5, num_real= 100)
+
+
+sm.analysis()
+plt.figure()
+KKa = sm.parensemble_a.values.T
+plt.plot(K, color = [0.7,0.7,0.7])
 plt.plot(KKa, color = [0,0.7,0.7])
 plt.plot(KKa.mean(axis=1), label = "Estimated Field", color = 'k')
 plt.plot(K[:,ref_real], 'r', label = "Reference Field")

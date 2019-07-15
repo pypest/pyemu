@@ -14,6 +14,9 @@ from ..logger import Logger
 from pyemu.pst import Pst
 from pyemu.mat import Matrix
 from pyemu.pst.pst_utils import write_to_template, parse_tpl_file, parse_ins_file
+from scipy.linalg import blas as blas
+from scipy.linalg import lapack as lap
+from scipy.stats import ortho_group
 
 
 class Assimilator(EnsembleMethod):
@@ -59,7 +62,7 @@ class Assimilator(EnsembleMethod):
         self.num_real = num_real
         self.enforce_bounds = enforce_bounds
 
-        self.threshold_percent = 0.1  # 0.1% of eigen will be removed
+
 
     def __init2__(self, pst, num_slaves=0, use_approx_prior=True,
                   submit_file=None, verbose=False, port=4004, slave_dir="template"):
@@ -293,7 +296,9 @@ class Assimilator(EnsembleMethod):
             return self._calc_delta(parensemble, None)
 
 
-    def update(self):
+    def update(self, truncation = 1e-3):
+
+        self.truncation = truncation
 
         if self.mode == 'stochastic':
             self.stochastic_update()
@@ -303,8 +308,9 @@ class Assimilator(EnsembleMethod):
             Determistic update (or least square filtering)
             """
             # Xa' = Xf' + C'H(H'CH + R) (do' - df')
+
             self.deterministic_update()
-            pass
+
 
     def stochastic_update(self):
 
@@ -364,7 +370,7 @@ class Assimilator(EnsembleMethod):
         ns = len(s)
         s_perc = 100.0 * s / np.sum(s)
         s_ = np.power(s, -2.0)
-        s_[s_perc < self.threshold_percent] = 0.0
+        s_[s_perc < self.truncation] = 0.0
         ss_ = np.zeros((m, m))
         np.fill_diagonal(ss_, s_)
         if m <= N:
@@ -382,6 +388,130 @@ class Assimilator(EnsembleMethod):
         del_par = np.dot(delta_par.as_2d.T, X1)
         self.parensemble_a = (self.parensemble.T + del_par).T
         self.parensemble_a = ParameterEnsemble.from_dataframe(df=self.parensemble_a,
+                                                              pst=self.pst,
+                                                              istransformed=True)
+
+    def deterministic_update(self):
+
+        """
+        Solve the anlaysis step
+        Xa = Xf + Cpo(Coo+ R) (do - df)
+        where Xa is the updated (posterior) ensemble of system parameters and (or) states
+              Xf is the forecast (prior) ensemble
+              Cpo is the cross covariance matrix of parameters and observation
+              Coo is the covariance matrix of observable predictions
+
+        :return:
+        """
+
+        self.iter_num += 1
+        mat_prefix = self.pst.filename.replace('.pst', '') + ".{0}".format(self.iter_num)
+        self.logger.log("iteration {0}".format(self.iter_num))
+        self.logger.statement("{0} active realizations".format(self.obsensemble.shape[0]))
+        if self.obsensemble.shape[0] < 2:
+            self.logger.lraise("at least active 2 realizations (really like 300) are needed to update")
+        if not self._initialized:
+            self.logger.lraise("must call initialize() before update()")
+
+        self.logger.log("calculate scaled delta obs")
+
+        delta_obs = self._calc_delta_obs(obsensemble=self.obsensemble, scaled=False)
+        self.logger.log("calculate scaled delta obs")
+        self.logger.log("calculate scaled delta par")
+        delta_par = self._calc_delta_par(parensemble=self.parensemble, scaled=False)
+        self.logger.log("calculate scaled delta par")
+
+        # error ensemble
+        obs_nms = self.pst.nnz_obs_names
+        if self.type == 'Kalman Filter':
+            stat_nm = self.dynamic_states['parnme'].values
+            for snm in stat_nm:
+                obs_nms.remove(snm)
+            pass
+
+        err_ens = self.obsensemble_0.loc[:, obs_nms] - \
+                  self.pst.observation_data.loc[obs_nms, :]['obsval']
+        err_ens = err_ens / np.sqrt(err_ens.shape[0] - 1)
+        err_ens = Matrix(x=err_ens.values, row_names=err_ens.index, col_names=err_ens.columns)
+
+        # Innovation matrix (deviation arround the mean)
+        Ddash = self.obsensemble_0.loc[:, obs_nms] - self.obsensemble.loc[:, obs_nms]
+        Ddash = Matrix(x=Ddash.values, row_names=Ddash.index, col_names=Ddash.columns)
+        Ddash = Ddash.T
+
+        C = delta_obs.T + err_ens.T
+        m, N = C.shape
+
+        #------------------------------
+        prior_k_mean = self.parensemble.mean().values
+        prior_h_mean = self.obsensemble.mean().values
+        H_dash = delta_obs.as_2d.T
+        K_dash = delta_par.as_2d.T
+        innov = self.pst.observation_data['obsval'].values - prior_h_mean
+
+        # SVD of matrix C
+        u, s, vt, ierr = lap.dgesvd(C.as_2d)
+        if ierr != 0: ValueError('Sqrt_KF: ierr from call dgesvd = {}'.format(ierr))
+
+        sig = s.copy()
+
+        s_ = np.power(s, 2.0)
+        sums_ = np.sum(s_)
+        if self.truncation is None:
+            s_perc = s_ / np.sum(s_)
+            truncation = self.truncation_percent / 100.0
+            s_ = s_[s_perc >= truncation]
+        else:
+            truncation = self.truncation
+            s_ = s_[s_ >= truncation]
+
+        p = len(s_)
+        print('      analysis: dominant sing. values and'
+              ' share {}, {}'.format(p, 100.0 * (np.sum(s_) / sums_)))
+
+        s_ = 1.0 / s_
+
+        u_ = u[:, 0:p]
+
+        x1 = s_[:, np.newaxis] * u_.T
+        x2 = blas.dgemv(alpha=1, a=x1, x=innov)
+        x3 = blas.dgemv(alpha=1, a=u_, x=x2)
+        x4 = blas.dgemv(alpha=1, a=H_dash.T, x=x3)
+
+        Ka = prior_k_mean + blas.dgemv(alpha=1, a=K_dash, x=x4)
+
+        # Compute perturbation
+        # Xa = Xf*Z*(sig^0.5)
+        # Z.Sig.Zt =  I - Y(C^-1)Y
+
+        # compute C^-1
+        sig = np.power(sig[0:p], -2.0)
+        x2 = sig[:, np.newaxis] * u_.T
+        c_1 = blas.dgemm(alpha=1, a=u_, b=x2)
+
+        # I - Y(C^-1)Y
+        c_1 = blas.dgemm(alpha=1, a=c_1, b=H_dash)
+        c_1 = blas.dgemm(alpha=1, a=H_dash.T, b=c_1)
+        diag = 1 - np.diag(c_1)
+        np.fill_diagonal(c_1, diag)
+
+        # decompose I - Y(C^-1)Y
+        u2, sig2, vt2, ierr = lap.dgesvd(c_1)
+        sig2[sig2 < 0] = 0
+        sig2 = np.power(sig2, 0.5)
+        p2 = len(sig2)
+        if p2 < N:
+            sig2 = np.append(sig2, np.zeros(N - p2))
+        x2 = u2 * sig2[np.newaxis, :]
+        x2 = blas.dgemm(alpha=1.0, a=x2, b=vt2)
+
+        x2 = blas.dgemm(alpha=1, a=K_dash, b=x2)
+        theta = ortho_group.rvs(N)
+        x2 = blas.dgemm(alpha=1, a=x2, b=theta.T)
+        Aa = Ka[:, np.newaxis] + x2
+        Aa = pd.DataFrame(Aa.T, columns = self.parensemble.columns)
+
+        self.parensemble_a = ParameterEnsemble.from_dataframe(df=Aa,
                                                               pst=self.pst,
                                                               istransformed=True)
 
@@ -475,8 +605,8 @@ class Assimilator(EnsembleMethod):
                 #  compute the posteriors...
                 # todo: force min/max values of parameters after updated
                 self.update()
-                if True:
-                    self.parensemble_a.to_csv("cycle_{}_posterior.csv".format(icycle))
+                # todo: give the user the option to write output
+                self.parensemble_a.to_csv("cycle_{}_posterior.csv".format(icycle))
                 self.parensemble = self.parensemble_a
 
 

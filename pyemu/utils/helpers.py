@@ -1010,7 +1010,7 @@ def simple_tpl_from_pars2(parnames, tplfilename='model.input.tpl'):
         ofp.write(',parnme,parval1\n')
         [ofp.write('{0},{1},~{2:^12}~\n'.format(i, cname, cname)) for i, cname in enumerate(parnames)]
 
-def simple_ins_from_obs2(obsnames = ['obs1'], marker = '!', obs_width = 100,  insfilename='model.output.ins'):
+def simple_ins_from_obs2(obsnames = ['obs1'], marker = '~', obs_width = 100,  insfilename='model.output.ins'):
     fid = open(insfilename, 'w')
     fid.write("pif %s\n" % (marker))
     obs_names = obsnames
