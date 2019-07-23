@@ -359,7 +359,8 @@ class EnsembleSQP(EnsembleMethod):
         else:  # cross-cov always a vector
             en_cov_crosscov = Matrix(x=(np.expand_dims(en_cov_crosscov, axis=0)),
                                      row_names=['cross-cov'],col_names=self.pst.par_names)
-        return en_cov_crosscov
+
+        return en_cov_crosscov, delta1
 
     def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,self_scale=True,scale_only=False,
                           damped=True):
@@ -581,9 +582,45 @@ class EnsembleSQP(EnsembleMethod):
         return self._filter, acceptance
 
 
+    def _cov_mat_adapt(self,en_cov,rank_mu=True,rank_one=False,learning_rate=0.5,mu_prop=0.25):
+        '''
+        covariance matrix adaptation evolutionary strategy for dec var cov matrix
+        see Fonseca et al. 2013 SPE
+
+        rank_mu : bool
+            perform rank-mu matrix update (i.e., for current iteration). default is True.
+        rank_one : bool
+            perform rank-one matrix update (i.e., based on prev iterations). default is False.
+        learning_rate : float
+            important variable ranging between 0.0 and 1.0. low values are ``safe'' but are of less benefit;
+            too large values may cause matrix degeneration.
+
+        '''
+
+        if learning_rate < 0 or learning_rate > 1:
+            self.logger.lraise("cov matrix adaptation learning rate not between 0.0 and 1.0")
+
+        if mu_prop <=0 or mu_prop > 1:
+            self.logger.lraise("ruh roh")
+
+        if rank_mu:
+            mu = int(en_cov.shape[0] * mu_prop) + 1
+            #TODO: sort ensemble
+            cov, delta = self._calc_en_cov_decvar(self.parensemble)
+            #TODO: truncate
+            en_cov = (1.0 - learning_rate) * en_cov + (learning_rate / mu) * (sub_delta_dec_var.T * sub_delta_dec_var)
+            if rank_one:
+                self.logger.lraise("TODO: implement rank-one cma")
+        else:
+            self.logger.lraise("rank_mu not True--skipping cov matrix adaptation")
+
+        return en_cov
+
+
     def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=True,
                grad_calc_only=False,finite_diff_grad=False,
-               constraints=False,biobj_weight=1.0,biobj_transf=True,opt_direction="min"):#localizer=None,run_subset=None,
+               constraints=False,biobj_weight=1.0,biobj_transf=True,opt_direction="min",
+               cma=False):#localizer=None,run_subset=None,
         """
         Perform one quasi-Newton update
 
@@ -614,6 +651,8 @@ class EnsembleSQP(EnsembleMethod):
             TODO: something derived from pestpp_options rather than bool
         opt_direction : str
             must be "min" or "max"
+        cma : bool
+            to perform or not to perform (dec var) covariance matrix adaptation (evolutionary strategy)
 
         Example
         -------
@@ -677,7 +716,8 @@ class EnsembleSQP(EnsembleMethod):
             # compute dec var covariance and dec var-phi cross covariance matrices - they are actually vectors
             self.logger.log("compute dec var en covariance vector")
             # TODO: add check for parensemble var = 0 (all dec vars at (same) bounds). Or draw around mean on bound?
-            self.en_cov_decvar = self._calc_en_cov_decvar(self.parensemble)
+            self.en_cov_decvar, delta_dec_var = self._calc_en_cov_decvar(self.parensemble)
+            self.en_cov_decvar = self._cov_mat_adapt(self.en_cov_decvar)  #TODO: put after updates next to BFGS calls
             # and need mean for upgrades
             if self.parensemble_mean is None:
                 self.parensemble_mean = np.array(self.parensemble.mean(axis=0))
@@ -686,8 +726,8 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("compute dec var en covariance vector")
 
             self.logger.log("compute dec var-phi en cross-covariance vector")
-            self.en_crosscov_decvar_phi = self._calc_en_crosscov_decvar_phi(self.parensemble,
-                                                                            self.obsensemble)
+            self.en_crosscov_decvar_phi, delta_dec_var = self._calc_en_crosscov_decvar_phi(self.parensemble,
+                                                                                           self.obsensemble)
             self.logger.log("compute dec var-phi en cross-covariance vector")
 
             # compute gradient vector and undertake gradient-related checks

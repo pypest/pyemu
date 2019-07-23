@@ -153,7 +153,8 @@ def rosenbrock_2par_grad_approx_invest():
 
 
 def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
-                               constraints=False,biobj_weight=1.0,biobj_transf=True): #filter_thresh=1e-2
+                               constraints=False,biobj_weight=1.0,biobj_transf=True,
+                               cma=False): #filter_thresh=1e-2
     import pyemu
     import numpy as np
     if version == "2par":
@@ -173,9 +174,9 @@ def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
     else:
         ext = version
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(ext))#,num_slaves=10)
-    esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=True)
+    esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=constraints)
     for it in range(nit):
-        esqp.update(step_mult=list(np.logspace(-6,0,14)),constraints=constraints,biobj_weight=biobj_weight)
+        esqp.update(step_mult=list(np.logspace(-6,0,14)),constraints=constraints,biobj_weight=biobj_weight,cma=cma)
     os.chdir(os.path.join("..", ".."))
 
    #  TODO: critical that draw_mult is refined as we go?
@@ -386,11 +387,14 @@ def plot_mean_dev_var_bar(opt_par_en="supply2_pest.parensemble.0000.csv",three_r
         gwm_dvs = get_gwm_decvar_vals(os.path.join("baseline_opt","supply2.gwmout"))
 
     fig = plt.figure(figsize=(190.0 / 25.4, 70.0 / 25.4))
-    ax1 = plt.subplot(111)
     if three_risk_cols:
+        fig = plt.figure(figsize=(190.0 / 25.4, 70.0 / 25.4))
         ax1 = plt.subplot(131)
         ax2 = plt.subplot(132)
         ax3 = plt.subplot(133)
+    else:
+        fig = plt.figure(figsize=(190.0 / 25.4 / 3, 70.0 / 25.4))
+        ax1 = plt.subplot(111)
 
     #rdir = os.path.join(wdir_base, results_dir)
     wdir = os.path.join("temp")
@@ -454,7 +458,7 @@ if __name__ == "__main__":
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    #rosenbrock_multiple_update(version="2par")
+    rosenbrock_multiple_update(version="2par")
     #rosenbrock_phi_progress(version="2par")
     #rosenbrock_2par_grad_approx_invest()
 
@@ -472,7 +476,8 @@ if __name__ == "__main__":
     #filter_plot(version="2par", constraints=True, log_phi=True)
 
     #supply2_setup()
-    #supply2_update(en_size=20,draw_mult=1e-3)
+    #supply2_update(en_size=20,draw_mult=1e-6)
     #filter_plot(problem="supply2", constraints=True, log_phi=True)
-    plot_mean_dev_var_bar(opt_par_en="supply2_pest.base.pst.14.1.4781945077061165e-26.parensemble.0000.csv",
-                          three_risk_cols=False,include_gwm=False)
+    #plot_mean_dev_var_bar(opt_par_en="supply2_pest.base.pst.5.2.0490312236469134e-07.parensemble.0000.csv",three_risk_cols=False,include_gwm=False)
+
+    rosenbrock_multiple_update(version="2par",cma=True)
