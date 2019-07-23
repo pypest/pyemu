@@ -311,19 +311,6 @@ class EnsembleSQP(EnsembleMethod):
         return obsensemble
 
 
-    def _calc_delta_par(self,parensemble):
-        '''
-        calc the scaled parameter ensemble differences from the mean
-        '''
-        return self._calc_delta(parensemble, self.parcov_inv_sqrt)
-
-    def _calc_delta_obs(self,obsensemble):
-        '''
-        calc the scaled observation ensemble differences from the mean
-        '''
-        return self._calc_delta(obsensemble.nonzero, self.obscov_inv_sqrt)
-
-
     def _calc_en_cov_decvar(self,parensemble):
         '''
         calc the dec var ensemble (approx) covariance vector (e.g., eq (8) of Dehdari and Oliver 2012 SPE)
@@ -345,12 +332,12 @@ class EnsembleSQP(EnsembleMethod):
         if ensemble1.columns[0] != ensemble2.columns[0]:  # cross-cov
             mean2 = np.array(ensemble2[self.phi_obs].mean(axis=0))
             delta2 = Matrix(x=ensemble2.as_matrix(self.phi_obs),row_names=delta1.row_names,col_names=self.phi_obs)
-        else:  #cov
+        else:  # cov
             mean2 = np.array(ensemble2.mean(axis=0))
             delta2 = ensemble2.as_pyemu_matrix()
-        for i in range(ensemble1.shape[0]):
-            delta1.x[i, :] -= mean1
-            delta2.x[i, :] -= mean2
+        #for i in range(ensemble1.shape[0]):
+        #    delta1.x[i, :] -= mean1
+        #    delta2.x[i, :] -= mean2
         en_cov_crosscov = 1.0 / (ensemble1.shape[0] - 1.0) * ((delta1.x * delta2.x).sum(axis=0))
         if ensemble1.columns[0] == ensemble2.columns[0]:  # diag cov matrix
             en_cov_crosscov = np.diag(en_cov_crosscov)
@@ -361,6 +348,14 @@ class EnsembleSQP(EnsembleMethod):
                                      row_names=['cross-cov'],col_names=self.pst.par_names)
 
         return en_cov_crosscov, delta1
+
+    def _calc_delta_(self,ensemble):
+        mean = np.array(ensemble.mean(axis=0))
+        delta = Matrix(x=ensemble.as_matrix(), row_names=ensemble.index, col_names=ensemble.columns)
+        for i in range(ensemble.shape[0]):
+            delta.x[i, :] -= mean
+
+        return delta
 
     def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,self_scale=True,scale_only=False,
                           damped=True):
@@ -582,7 +577,7 @@ class EnsembleSQP(EnsembleMethod):
         return self._filter, acceptance
 
 
-    def _cov_mat_adapt(self,en_cov,rank_mu=True,rank_one=False,learning_rate=0.5,mu_prop=0.25):
+    def _cov_mat_adapt(self,en_cov,delta,rank_mu=True,rank_one=False,learning_rate=0.5,mu_prop=0.25):
         '''
         covariance matrix adaptation evolutionary strategy for dec var cov matrix
         see Fonseca et al. 2013 SPE
@@ -594,6 +589,7 @@ class EnsembleSQP(EnsembleMethod):
         learning_rate : float
             important variable ranging between 0.0 and 1.0. low values are ``safe'' but are of less benefit;
             too large values may cause matrix degeneration.
+        #TODO: try only adapting diag for increased robustness?
 
         '''
 
@@ -604,11 +600,14 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.lraise("ruh roh")
 
         if rank_mu:
-            mu = int(en_cov.shape[0] * mu_prop) + 1
-            #TODO: sort ensemble
-            cov, delta = self._calc_en_cov_decvar(self.parensemble)
-            #TODO: truncate
-            en_cov = (1.0 - learning_rate) * en_cov + (learning_rate / mu) * (sub_delta_dec_var.T * sub_delta_dec_var)
+            par_en = self.parensemble.copy()
+            mu = int(par_en.shape[0] * mu_prop)
+            sorted_idx = self.obsensemble.sort_values(ascending=False, by=self.obsensemble.columns[0]).index
+            par_en.index = sorted_idx
+            par_en = par_en[:mu]
+            #TODO: separate _calc_en_cov_decvar func
+            sub_delta = self._calc_delta_(par_en)
+            en_cov = (1.0 - learning_rate) * en_cov + (learning_rate / mu) * (sub_delta.T * sub_delta)
             if rank_one:
                 self.logger.lraise("TODO: implement rank-one cma")
         else:
@@ -716,8 +715,7 @@ class EnsembleSQP(EnsembleMethod):
             # compute dec var covariance and dec var-phi cross covariance matrices - they are actually vectors
             self.logger.log("compute dec var en covariance vector")
             # TODO: add check for parensemble var = 0 (all dec vars at (same) bounds). Or draw around mean on bound?
-            self.en_cov_decvar, delta_dec_var = self._calc_en_cov_decvar(self.parensemble)
-            self.en_cov_decvar = self._cov_mat_adapt(self.en_cov_decvar)  #TODO: put after updates next to BFGS calls
+            self.en_cov_decvar, self.delta_dec_var = self._calc_en_cov_decvar(self.parensemble)
             # and need mean for upgrades
             if self.parensemble_mean is None:
                 self.parensemble_mean = np.array(self.parensemble.mean(axis=0))
@@ -726,9 +724,14 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("compute dec var en covariance vector")
 
             self.logger.log("compute dec var-phi en cross-covariance vector")
-            self.en_crosscov_decvar_phi, delta_dec_var = self._calc_en_crosscov_decvar_phi(self.parensemble,
-                                                                                           self.obsensemble)
+            self.en_crosscov_decvar_phi, self.delta_dec_var = self._calc_en_crosscov_decvar_phi(self.parensemble,
+                                                                                                self.obsensemble)
             self.logger.log("compute dec var-phi en cross-covariance vector")
+
+            if cma:
+                self.logger.log("undertaking dec var cov mat adaptation")
+                self.en_cov_decvar = self._cov_mat_adapt(self.en_cov_decvar, self.delta_dec_var)
+                self.logger.log("undertaking dec var cov mat adaptation")
 
             # compute gradient vector and undertake gradient-related checks
             # see e.g. eq (9) in Liu and Reynolds (2019 SPE)
@@ -898,6 +901,7 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: undertake Wolfe and en tests. No - our need is superseded by parallel alpha tests
         # TODO: constraint and feasibility KKT checks here
         # TODO: check for convergence in terms of dec var and phi changes
+
 
         # calc dec var changes (after picking best alpha etc)
         # this is needed for Hessian updating via BFGS but also needed for checks

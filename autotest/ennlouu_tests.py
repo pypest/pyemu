@@ -154,7 +154,7 @@ def rosenbrock_2par_grad_approx_invest():
 
 def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
                                constraints=False,biobj_weight=1.0,biobj_transf=True,
-                               cma=False): #filter_thresh=1e-2
+                               cma=True): #filter_thresh=1e-2
     import pyemu
     import numpy as np
     if version == "2par":
@@ -458,7 +458,7 @@ if __name__ == "__main__":
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    rosenbrock_multiple_update(version="2par")
+    #rosenbrock_multiple_update(version="2par")
     #rosenbrock_phi_progress(version="2par")
     #rosenbrock_2par_grad_approx_invest()
 
