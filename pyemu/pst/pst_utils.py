@@ -175,7 +175,7 @@ def res_from_en(pst,enfile):
             df['std']=df.std(axis=1)
         #probably a more pandastic way to do this
         res_df=df[['modelled','std']].copy()
-        res_df['group']=obs.loc[:,'obgnme'].copy()
+        res_df['group']=obs['obgnme'].copy()
         res_df['measured']=obs['obsval'].copy()
         res_df['weight']=obs['weight'].copy()
         res_df['residual']=res_df['measured']-res_df['modelled']
