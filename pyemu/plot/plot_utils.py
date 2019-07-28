@@ -367,14 +367,29 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,histogram=False,**k
             ax.grid()
             ax_count += 1
         else:
+            #need max and min res to set xlim, otherwise wonky figsize
+            mxr = obs_g.res.max()
+            mnr = obs_g.res.min()
+
+            #if obs_g.shape[0] == 1:
+            mxr *= 1.1
+            mnr *= 0.9
+            rlim = (mnr,mxr)
+
             ax = axes[ax_count]
-            ax.hist(obs_g.res, 50, color='b')
+            ax.hist(obs_g.res, bins=50, color='b')
             meanres= obs_g.res.mean()
             ax.axvline(meanres, color='r', lw=1)
             b,t = ax.get_ylim()
             ax.text(meanres + meanres/10,
                      t - t/10,
                      'Mean: {:.2f}'.format(meanres))
+            ax.set_xlim(rlim)
+            ax.set_ylabel("count",labelpad=0.1)
+            ax.set_xlabel("residual",labelpad=0.1)
+            ax.set_title("{0}) group:{1}, {2} observations".
+                         format(abet[ax_count], g, obs_g.shape[0]), loc="left")
+            ax.grid()
             ax_count += 1
         logger.log("plotting 1to1 for {0}".format(g))
 
@@ -1083,7 +1098,7 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
     mn_diff = -1 * (en2_mn - en1_mn)
     std_diff = 100 * (((en1_std - en2_std) / en1_std))
     #set en1_std==0 to nan
-    std_diff[en1_std.index[en1_std==0]] = np.nan
+    #std_diff[en1_std.index[en1_std==0]] = np.nan
 
 
 
@@ -1289,6 +1304,7 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
         logger.log("plotting 1to1 for {0}".format(g))
 
         obs_g = obs.loc[names, :]
+
         logger.statement("using control file obsvals to calculate residuals")
         if "include_zero" not in kwargs or kwargs["include_zero"] is False:
             obs_g = obs_g.loc[obs_g.weight > 0, :]
