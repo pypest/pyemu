@@ -1215,7 +1215,7 @@ def sfr_helper_test():
 
     #setup the process
 
-    m = flopy.modflow.Modflow.load("supply2.nam",model_ws="utils",check=False)
+    m = flopy.modflow.Modflow.load("supply2.nam",model_ws="utils",check=False,verbose=True,forgive=False,load_only=["dis","sfr"])
     sd = m.sfr.segment_data[0].copy()
 
     sd["flow"] = 1.0
@@ -1763,4 +1763,4 @@ if __name__ == "__main__":
     #ok_grid_test()
     # ok_grid_zone_test()
     # ppk2fac_verf_test()
-    ok_grid_invest()
+    #ok_grid_invest()

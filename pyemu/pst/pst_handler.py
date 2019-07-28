@@ -2269,6 +2269,19 @@ class Pst(object):
         """
         pst_utils.write_input_files(self)
 
+
+    def process_output_files(self,pst_path='.'):
+        """processing the model output files using the instruction files
+
+        Returns
+        -------
+            obsvals : pandas.Series
+                model output values
+
+        """
+        return pst_utils.process_output_files(self,pst_path)
+
+
     def get_res_stats(self,nonzero=True):
         """ get some common residual stats from the current obsvals,
         weights and grouping in self.observation_data and the modelled values in

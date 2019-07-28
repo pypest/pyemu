@@ -930,11 +930,21 @@ def rectify_pgroup_test():
 
 def try_process_ins_test():
     import os
+    import numpy as np
     import pandas as pd
     import pyemu
 
     ins_file = os.path.join("utils", "BH.mt3d.processed.ins")
     df = pyemu.pst_utils.try_process_ins_file(ins_file)
+
+    i = pyemu.pst_utils.InstructionFile(ins_file)
+
+    df2 = i.read_output_file(ins_file.replace(".ins",""))
+    
+    diff = (df.obsval - df2.obsval).apply(np.abs).sum()
+    print(diff)
+    assert diff <1.0e-10
+
 
     # df1 = pyemu.pst_utils._try_run_inschek(ins_file,ins_file.replace(".ins",""))
     df1 = pd.read_csv(ins_file.replace(".ins", ".obf"), delim_whitespace=True, names=["obsnme", "obsval"], index_col=0)
@@ -1246,13 +1256,60 @@ def from_flopy_pp_test():
                                              use_pp_zones=False,
                                              build_prior=True)
 
+
+def process_output_files_test():
+
+    import os
+    import numpy as np
+    from pyemu import Pst, pst_utils
+
+    # ins_file = os.path.join("utils","hauraki_transient.mt3d.processed.ins")
+    # out_file = ins_file.replace(".ins","")
+    #
+    # i = pst_utils.InstructionFile(ins_file)
+    # print(i.read_output_file(out_file))
+    # return
+
+    ins_dir = "ins"
+    ins_files = [os.path.join(ins_dir,f) for f in os.listdir(ins_dir) if f.endswith(".ins")]
+    ins_files.sort()
+    out_files = [f.replace(".ins","") for f in ins_files]
+    print(ins_files)
+
+    i4 = pst_utils.InstructionFile(ins_files[3])
+    s4 = i4.read_output_file(out_files[3])
+    print(s4)
+    assert s4.loc["h01_02","obsval"] == 1.024
+    assert s4.loc["h01_10","obsval"] == 4.498
+    i3 = pst_utils.InstructionFile(ins_files[2])
+    s3 = i3.read_output_file(out_files[2])
+    #print(s3)
+    assert s3.loc["test","obsval"] == 1.23456
+    assert s3.loc["h01_02","obsval"] == 1.024
+
+    i1 = pst_utils.InstructionFile(ins_files[0])
+    s1 = i1.read_output_file(out_files[0])
+    a1 = np.loadtxt(out_files[0]).flatten()
+    assert np.abs(s1.obsval.values - a1).sum() == 0.0
+
+    i2 = pst_utils.InstructionFile(ins_files[1])
+    s2 = i2.read_output_file(out_files[1])
+    assert s2.loc["h01_02","obsval"] == 1.024
+
+
+
+
+
+
+
 if __name__ == "__main__":
+    #process_output_files_test()
     #change_limit_test()
     #new_format_test()
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
     # pst_from_flopy_geo_draw_test()
-    #try_process_ins_test()
+    try_process_ins_test()
     # write_tables_test()
     #res_stats_test()
     # test_write_input_files()
@@ -1265,7 +1322,7 @@ if __name__ == "__main__":
     # from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
-    from_flopy_reachinput()
+    #from_flopy_reachinput()
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
@@ -1282,7 +1339,7 @@ if __name__ == "__main__":
     # load_test()
     # res_test()
     # smp_test()
-    # from_io_with_inschek_test()
+    #from_io_with_inschek_test()
     #pestpp_args_test()
     # reweight_test()
     # reweight_res_test()

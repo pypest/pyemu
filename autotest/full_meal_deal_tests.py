@@ -120,11 +120,12 @@ def freyberg_test():
 
 def fake_run_test():
     import os
+    import numpy as np
     import pyemu
     new_model_ws = "template1"
     if not os.path.exists(new_model_ws):
         freyberg_test()
-    pst = pyemu.Pst(os.path.join(new_model_ws,"test.pst"))
+    pst = pyemu.Pst(os.path.join(new_model_ws,"freyberg.pst"))
     pst.pestpp_options["ies_num_reals"] = 10
     pst.pestpp_options["ies_par_en"] = "par_en.csv"
     pst.control_data.noptmax = 0
@@ -134,7 +135,16 @@ def fake_run_test():
 
     new_cwd = "fake_test"
     pst = pyemu.helpers.setup_fake_forward_run(pst, "fake.pst", org_cwd=new_model_ws,new_cwd=new_cwd)
-    #pyemu.os_utils.run("{0} {1}".format(pp_exe_name, "fake.pst"), cwd=new_cwd)
+    s = pst.process_output_files(new_cwd)
+    if s is not None:
+        assert s.dropna().shape[0] == pst.nobs
+        obs = pst.observation_data
+
+        diff = (100 * (obs.obsval - s.obsval) / obs.obsval).apply(np.abs)
+
+        print(diff)
+        print(obs.loc[diff>0.0,"obsval"],s.loc[diff>0.0,"obsval"])
+        assert diff.sum() < 1.0e-3,diff.sum()
     pyemu.os_utils.run("{0} {1}".format(ies_exe_name, "fake.pst"), cwd=new_cwd)
 
 
@@ -305,8 +315,8 @@ def run_sweep_test():
 
 
 if __name__ == "__main__":
-    freyberg_test()
+    #freyberg_test()
     #freyberg_kl_pp_compare()
     #import shapefile
     #run_sweep_test()
-    #fake_run_test()
+    fake_run_test()
