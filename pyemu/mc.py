@@ -316,5 +316,5 @@ class MonteCarlo(LinearAnalysis):
             self.log("writing realized pest control file " + pst_name)
         self.log("writing realized pest control files")
 
-    def run(self,slave_dir,num_slaves=10):
-        self.obsensemble = self.parensemble.run(slave_dir,num_slaves=num_slaves)
+    def run(self,worker_dir,num_workers=10):
+        self.obsensemble = self.parensemble.run(worker_dir,num_workers=num_workers)

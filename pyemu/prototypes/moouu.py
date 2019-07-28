@@ -344,11 +344,11 @@ class ParetoObjFunc(object):
 
 
 class EvolAlg(EnsembleMethod):
-    def __init__(self, pst, parcov = None, obscov = None, num_slaves = 0, use_approx_prior = True,
-                 submit_file = None, verbose = False, port = 4004, slave_dir = "template"):
-        super(EvolAlg, self).__init__(pst=pst, parcov=parcov, obscov=obscov, num_slaves=num_slaves,
+    def __init__(self, pst, parcov = None, obscov = None, num_workers = 0, use_approx_prior = True,
+                 submit_file = None, verbose = False, port = 4004, worker_dir = "template"):
+        super(EvolAlg, self).__init__(pst=pst, parcov=parcov, obscov=obscov, num_workers=num_workers,
                                       submit_file=submit_file, verbose=verbose, port=port,
-                                      slave_dir=slave_dir)
+                                      worker_dir=worker_dir)
 
 
     def initialize(self,obj_func_dict,num_par_reals=100,num_dv_reals=100,
@@ -600,11 +600,11 @@ class EvolAlg(EnsembleMethod):
 
 
 class EliteDiffEvol(EvolAlg):
-    def __init__(self, pst, parcov = None, obscov = None, num_slaves = 0, use_approx_prior = True,
-                 submit_file = None, verbose = False, port = 4004, slave_dir = "template"):
-        super(EliteDiffEvol, self).__init__(pst=pst, parcov=parcov, obscov=obscov, num_slaves=num_slaves,
+    def __init__(self, pst, parcov = None, obscov = None, num_workers = 0, use_approx_prior = True,
+                 submit_file = None, verbose = False, port = 4004, worker_dir = "template"):
+        super(EliteDiffEvol, self).__init__(pst=pst, parcov=parcov, obscov=obscov, num_workers=num_workers,
                                       submit_file=submit_file, verbose=verbose, port=port,
-                                      slave_dir=slave_dir)
+                                      worker_dir=worker_dir)
 
 
     def update(self,mut_base = 0.8,cross_over_base=0.7,num_dv_reals=None):

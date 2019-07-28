@@ -7,6 +7,7 @@ import os
 import multiprocessing as mp
 import warnings
 from datetime import datetime
+import platform
 import struct
 import shutil
 import copy
@@ -22,7 +23,7 @@ except:
     pass
 
 import pyemu
-from pyemu.utils.os_utils import run, start_slaves
+from pyemu.utils.os_utils import run, start_workers
 
 
 
@@ -203,7 +204,12 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
     par = pst.parameter_data
     par_ens = []
     pars_in_cov = set()
-    for gs,items in struct_dict.items():
+    keys = list(struct_dict.keys())
+    keys.sort()
+
+    for gs in keys:
+    #for gs,items in struct_dict.items():
+        items = struct_dict[gs]
         if verbose: print("processing ",gs)
         if isinstance(gs,str):
             gss = pyemu.geostats.read_struct_file(gs)
@@ -215,6 +221,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
                 gs = gss
         if not isinstance(items,list):
             items = [items]
+        #items.sort()
         for item in items:
             if isinstance(item,str):
                 assert os.path.exists(item),"file {0} not found".\
@@ -936,7 +943,8 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
 
     """
     assert isinstance(cov,pyemu.Cov)
-    cc_mat = cov.to_pearson()
+    print("getting CC matrix")
+    cc_mat = cov.get(pst.adj_par_names).to_pearson()
     #print(pst.parameter_data.dtypes)
     try:
         ptrans = pst.parameter_data.partrans.apply(lambda x:x.decode()).to_dict()
@@ -944,11 +952,13 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
         ptrans = pst.parameter_data.partrans.to_dict()
     pi_num = pst.prior_information.shape[0] + 1
     pilbl, obgnme, weight, equation = [], [], [], []
+    sadj_names = set(pst.adj_par_names)
+    print("processing")
     for i,iname in enumerate(cc_mat.row_names):
-        if iname not in pst.adj_par_names:
+        if iname not in sadj_names:
             continue
         for j,jname in enumerate(cc_mat.row_names[i+1:]):
-            if jname not in pst.adj_par_names:
+            if jname not in sadj_names:
                 continue
             #print(i,iname,i+j+1,jname)
             cc = cc_mat.x[i,j+i+1]
@@ -1034,31 +1044,41 @@ def pst_from_parnames_obsnames(parnames, obsnames,
     return pyemu.Pst.from_io_files(tplfilename, modelinputfilename, insfilename, modeloutputfilename)
 
 
+def start_slaves(slave_dir, exe_rel_path, pst_rel_path, num_slaves=None, slave_root="..",
+                 port=4004, rel_path=None, local=True, cleanup=True, master_dir=None,
+                 verbose=False, silent_master=False):
+    warnings.warn("deprecation warning:start_slaves() has been emancipated and renamed start_workers()", PyemuWarning)
+    warnings.warn("amd start_workers has moved to pyemu.os_utils",PyemuWarning)
+    from pyemu.utils import start_workers
+    start_workers(worker_dir=slave_dir,exe_rel_path= exe_rel_path, pst_rel_path=pst_rel_path, num_workers=num_slaves,
+                  worker_root=slave_root, port=port, rel_path=rel_path,
+                  local=local, cleanup=cleanup, master_dir=master_dir, verbose=verbose, silent_master=silent_master)
 
-def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
+
+def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_root="..",
                  port=4004,rel_path=None,local=True,cleanup=True,master_dir=None,
                  verbose=False,silent_master=False):
-    """ start a group of pest(++) slaves on the local machine
+    """ start a group of pest(++) workers on the local machine
 
     Parameters
     ----------
-    slave_dir :  str
+    worker_dir :  str
         the path to a complete set of input files
     exe_rel_path : str
-        the relative path to the pest(++) executable from within the slave_dir
+        the relative path to the pest(++) executable from within the worker_dir
     pst_rel_path : str
-        the relative path to the pst file from within the slave_dir
-    num_slaves : int
-        number of slaves to start. defaults to number of cores
-    slave_root : str
-        the root to make the new slave directories in
+        the relative path to the pst file from within the worker_dir
+    num_workers : int
+        number of workers to start. defaults to number of cores
+    worker_root : str
+        the root to make the new worker directories in
     rel_path: str
         the relative path to where pest(++) should be run from within the
-        slave_dir, defaults to the uppermost level of the slave dir
+        worker_dir, defaults to the uppermost level of the worker dir
     local: bool
-        flag for using "localhost" instead of hostname on slave command line
+        flag for using "localhost" instead of hostname on worker command line
     cleanup: bool
-        flag to remove slave directories once processes exit
+        flag to remove worker directories once processes exit
     master_dir: str
         name of directory for master instance.  If master_dir
         exists, then it will be removed.  If master_dir is None,
@@ -1068,23 +1088,23 @@ def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root=
 
     Note
     ----
-    if all slaves (and optionally master) exit gracefully, then the slave
+    if all workers (and optionally master) exit gracefully, then the worker
     dirs will be removed unless cleanup is false
 
     Example
     -------
     ``>>>import pyemu``
 
-    start 10 slaves using the directory "template" as the base case and
+    start 10 workers using the directory "template" as the base case and
     also start a master instance in a directory "master".
 
-    ``>>>pyemu.helpers.start_slaves("template","pestpp","pest.pst",10,master_dir="master")``
+    ``>>>pyemu.helpers.start_workers("template","pestpp","pest.pst",10,master_dir="master")``
 
     """
 
-    warnings.warn("start_slaves has moved to pyemu.os_utils",PyemuWarning)
-    pyemu.os_utils.start_slaves(slave_dir=slave_dir,exe_rel_path=exe_rel_path,pst_rel_path=pst_rel_path
-                      ,num_slaves=num_slaves,slave_root=slave_root,port=port,rel_path=rel_path,
+    warnings.warn("start_workers has moved to pyemu.os_utils",PyemuWarning)
+    pyemu.os_utils.start_workers(worker_dir=worker_dir,exe_rel_path=exe_rel_path,pst_rel_path=pst_rel_path
+                      ,num_workers=num_workers,worker_root=worker_root,port=port,rel_path=rel_path,
                       local=local,cleanup=cleanup,master_dir=master_dir,verbose=verbose,
                       silent_master=silent_master)
 
@@ -1448,7 +1468,7 @@ class PstFromFlopyModel(object):
     sfr_pars : bool or list
         setup parameters for the stream flow routing modflow package.
         If list is passed it defiend the parameters to set up.
-    sfr_temporal_pars : bool
+    sfr_temporal_pars : bool, list or dict
         flag to include stress-period level spatially-global multipler parameters in addition to
         the spatially-discrete `sfr_pars`.  Requires `sfr_pars` to be passed.  Default is False
     grid_geostruct : pyemu.geostats.GeoStruct
@@ -1634,7 +1654,7 @@ class PstFromFlopyModel(object):
         self.temporal_list_geostruct = temporal_list_geostruct
         if self.temporal_list_geostruct is None:
             v = pyemu.geostats.ExpVario(contribution=1.0,a=180.0) # 180 correlation length
-            self.temporal_list_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+            self.temporal_list_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="temporal_list_geostruct")
 
         self.spatial_list_props = spatial_list_props
         self.spatial_list_geostruct = spatial_list_geostruct
@@ -1642,7 +1662,7 @@ class PstFromFlopyModel(object):
             dist = 10 * float(max(self.m.dis.delr.array.max(),
                                   self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0, a=dist)
-            self.spatial_list_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+            self.spatial_list_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="spatial_list_geostruct")
 
         self.obssim_smp_pairs = obssim_smp_pairs
         self.hds_kperk = hds_kperk
@@ -1783,7 +1803,7 @@ class PstFromFlopyModel(object):
         self.frun_post_lines.append("pyemu.gw_utils.apply_sfr_obs()")
 
 
-    def setup_sfr_pars(self, par_cols=None, include_temporal_pars=False):
+    def setup_sfr_pars(self, par_cols=None, include_temporal_pars=None):
         """setup multiplier parameters for sfr segment data
         Adding support for reachinput (and isfropt = 1)"""
         assert self.m.sfr is not None, "can't find sfr package..."
@@ -1792,8 +1812,9 @@ class PstFromFlopyModel(object):
         reach_pars = False  # default to False
         seg_pars = True
         par_dfs = {}
-        df = pyemu.gw_utils.setup_sfr_seg_parameters(self.m, par_cols=par_cols,
-                                                     include_temporal_pars=include_temporal_pars)  # now just pass model
+        df = pyemu.gw_utils.setup_sfr_seg_parameters(
+            self.m, par_cols=par_cols, 
+            include_temporal_pars=include_temporal_pars)  # now just pass model
         # self.par_dfs["sfr"] = df
         if df.empty:
             warnings.warn("No sfr segment parameters have been set up", PyemuWarning)
@@ -2074,7 +2095,7 @@ class PstFromFlopyModel(object):
                     else:
                         pname = "{0}{1}".format(name,self.cn_suffix)
                         if len(pname) > 12:
-                            self.logger.lraise("zone pname too long:{0}".\
+                            self.logger.warn("zone pname too long for pest:{0}".\
                                                format(pname))
                         parnme.append(pname)
                         pname = " ~   {0}    ~".format(pname)
@@ -2082,7 +2103,7 @@ class PstFromFlopyModel(object):
                 f.write("\n")
         df = pd.DataFrame({"parnme":parnme},index=parnme)
         #df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
-        df.loc[:,"pargp"] = "{0}_{1}".format(name,self.cn_suffix.replace('_',''))
+        df.loc[:,"pargp"] = "{0}_{1}".format(self.cn_suffix.replace('_',''),name)
         df.loc[:,"tpl"] = tpl_file
         return df
 
@@ -2114,7 +2135,7 @@ class PstFromFlopyModel(object):
                     else:
                         pname = "{0}{1:03d}{2:03d}".format(name,i,j)
                         if len(pname) > 12:
-                            self.logger.lraise("grid pname too long:{0}".\
+                            self.logger.warn("grid pname too long for pest:{0}".\
                                                format(pname))
                         parnme.append(pname)
                         pname = ' ~     {0}   ~ '.format(pname)
@@ -2142,7 +2163,7 @@ class PstFromFlopyModel(object):
             dist = 10 * float(max(self.m.dis.delr.array.max(),
                                            self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0,a=dist)
-            self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+            self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="grid_geostruct")
 
     def pp_prep(self, mlt_df):
         """ prepare pilot point based parameterizations
@@ -2169,18 +2190,25 @@ class PstFromFlopyModel(object):
             pp_dist = self.pp_space * float(max(self.m.dis.delr.array.max(),
                                            self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0,a=pp_dist)
-            self.pp_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+            self.pp_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="pp_geostruct")
 
         pp_df = mlt_df.loc[mlt_df.suffix==self.pp_suffix,:]
         layers = pp_df.layer.unique()
+        layers.sort()
         pp_dict = {l:list(pp_df.loc[pp_df.layer==l,"prefix"].unique()) for l in layers}
         # big assumption here - if prefix is listed more than once, use the lowest layer index
+        pp_dict_sort = {}
         for i,l in enumerate(layers):
             p = set(pp_dict[l])
+            pl = list(p)
+            pl.sort()
+            pp_dict_sort[l] = pl
             for ll in layers[i+1:]:
                 pp = set(pp_dict[ll])
-                d = pp - p
-                pp_dict[ll] = list(d)
+                d = list(pp - p)
+                d.sort()
+                pp_dict_sort[ll] = d
+        pp_dict = pp_dict_sort
 
 
         pp_array_file = {p:m for p,m in zip(pp_df.prefix,pp_df.mlt_file)}
@@ -2205,8 +2233,11 @@ class PstFromFlopyModel(object):
             else:
                 ib = {'general_zn': self.k_zone_dict}
         else:
-            ib = {k:self.m.bas6.ibound[k].array for k in range(self.m.nlay)}
-
+            ib = {}
+            for k in range(self.m.nlay):
+                a = self.m.bas6.ibound[k].array.copy()
+                a[a>0] = 1
+                ib[k] = a
             for k,i in ib.items():
                 if np.any(i<0):
                     u,c = np.unique(i[i>0], return_counts=True)
@@ -2262,7 +2293,7 @@ class PstFromFlopyModel(object):
                 self.logger.warn("multiple k values for {0},forming composite zone array...".format(pg))
                 ib_k = np.zeros((self.m.nrow,self.m.ncol))
                 for k in ks:
-                    t = ib[k].copy()
+                    t = ib["general_zn"][k].copy()
                     t[t<1] = 0
                     ib_k[t>0] = t[t>0]
             k = int(ks[0])
@@ -2355,7 +2386,7 @@ class PstFromFlopyModel(object):
             kl_dist = 10.0 * float(max(self.m.dis.delr.array.max(),
                                            self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0,a=kl_dist)
-            self.kl_geostruct = pyemu.geostats.GeoStruct(variograms=v)
+            self.kl_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="kl_geostruct")
 
         kl_df = mlt_df.loc[mlt_df.suffix==self.kl_suffix,:]
         layers = kl_df.layer.unique()
@@ -2471,7 +2502,7 @@ class PstFromFlopyModel(object):
                     else:
                         assert 'general_zn' in self.k_zone_dict.keys(), \
                             "Neither {0} nor 'general_zn' are in k_zone_dict keys: {1}".format(attr_name,
-                                                                                               k_zone_dict.keys())
+                                                                                               self.k_zone_dict.keys())
                         k_zone_dict = self.k_zone_dict['general_zn']
                 else:
                     k_zone_dict = self.k_zone_dict
@@ -3078,7 +3109,7 @@ class PstFromFlopyModel(object):
         #f_tpl.write("index ")
         #f_tpl.write(df.loc[:,names].to_string(index_names=True))
         #f_tpl.close()
-        write_df_tpl(tpl_name,df.loc[:,names],sep=' ',index_label="index")
+        write_df_tpl(tpl_name,df.loc[:,names],sep=' ',index_label="index", quotechar=" ")
         self.par_dfs["temporal_list"] = df
 
 
@@ -3580,11 +3611,12 @@ def apply_list_pars():
                     fmts += " %9G"
         np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].values, fmt=fmts)
 
-def apply_hfb_pars():
+def apply_hfb_pars(par_file='hfb6_pars.csv'):
     """ a function to apply HFB multiplier parameters.  Used to implement
     the parameterization constructed by write_hfb_zone_multipliers_template()
 
-    This is to account for the horrible HFB6 format that differs from other BCs making this a special case
+    This is to account for the horrible HFB6 format that differs from other
+    BCs making this a special case
 
     Note
     ----
@@ -3592,19 +3624,21 @@ def apply_hfb_pars():
 
     should be added to the forward_run.py script
     """
-    hfb_pars = pd.read_csv('hfb6_pars.csv')
+    hfb_pars = pd.read_csv(par_file)
 
     hfb_mults_contents = open(hfb_pars.mlt_file.values[0], 'r').readlines()
-    skiprows = sum([1 if i.strip().startswith('#') else 0 for i in hfb_mults_contents]) + 1
+    skiprows = sum([1 if i.strip().startswith('#') else 0
+                    for i in hfb_mults_contents]) + 1
     header = hfb_mults_contents[:skiprows]
 
     # read in the multipliers
     names = ['lay', 'irow1','icol1','irow2','icol2', 'hydchr']
-    hfb_mults = pd.read_csv(hfb_pars.mlt_file.values[0], skiprows=skiprows, delim_whitespace=True, names=names).dropna()
-
+    hfb_mults = pd.read_csv(hfb_pars.mlt_file.values[0], skiprows=skiprows,
+                            delim_whitespace=True, names=names).dropna()
 
     # read in the original file
-    hfb_org = pd.read_csv(hfb_pars.org_file.values[0], skiprows=skiprows, delim_whitespace=True, names=names).dropna()
+    hfb_org = pd.read_csv(hfb_pars.org_file.values[0], skiprows=skiprows,
+                          delim_whitespace=True, names=names).dropna()
 
     # multiply it out
     hfb_org.hydchr *= hfb_mults.hydchr
@@ -3613,11 +3647,12 @@ def apply_hfb_pars():
         hfb_mults[cn] = hfb_mults[cn].astype(np.int)
         hfb_org[cn] = hfb_org[cn].astype(np.int)
     # write the results
-    with open(hfb_pars.model_file.values[0], 'w') as ofp:
+    with open(hfb_pars.model_file.values[0], 'w', newline='') as ofp:
         [ofp.write('{0}\n'.format(line.strip())) for line in header]
+        ofp.flush()
+        hfb_org[['lay', 'irow1', 'icol1', 'irow2', 'icol2', 'hydchr']].to_csv(
+            ofp, sep=' ', header=None, index=None)
 
-        hfb_org[['lay', 'irow1','icol1','irow2','icol2', 'hydchr']].to_csv(ofp, sep=' ',
-                header=None, index=None)
 
 def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None,
                     longnames=False):
@@ -3658,7 +3693,7 @@ def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_r
                     else:
                         pname = "{0}{1}".format(name, suffix)
                         if len(pname) > 12:
-                            raise("zone pname too long:{0}". \
+                            warnings.warn("zone pname too long for pest:{0}". \
                                                format(pname))
                     parnme.append(pname)
                     pname = " ~   {0}    ~".format(pname)
@@ -3666,7 +3701,7 @@ def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_r
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme}, index=parnme)
     # df.loc[:,"pargp"] = "{0}{1}".format(self.cn_suffixname)
-    df.loc[:, "pargp"] = "{0}_{1}".format(name, suffix.replace('_', ''))
+    df.loc[:, "pargp"] = "{0}_{1}".format(suffix.replace('_', ''), name)
     df.loc[:, "tpl"] = tpl_file
     return df
 
@@ -3711,7 +3746,7 @@ def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
                     else:
                         pname = "{0}{1:03d}{2:03d}".format(name, i, j)
                         if len(pname) > 12:
-                            raise("grid pname too long:{0}". \
+                            warnings.warn("grid pname too long for pest:{0}". \
                                                format(pname))
                     parnme.append(pname)
                     pname = ' ~     {0}   ~ '.format(pname)
@@ -3725,7 +3760,7 @@ def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
     if spatial_reference is not None:
         df.loc[:,'x'] = x
         df.loc[:,'y'] = y
-    df.loc[:, "pargp"] = "{0}{1}".format(suffix.replace('_', ''), name)
+    df.loc[:, "pargp"] = "{0}_{1}".format(suffix.replace('_', ''), name)
     df.loc[:, "tpl"] = tpl_file
     return df
 
@@ -3776,14 +3811,14 @@ def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
 
                         pname = "{0}_zn{1}".format(name, zval)
                         if len(pname) > 12:
-                            raise("zone pname too long:{0}". \
+                            warnings.warn("zone pname too long for pest:{0}". \
                                               format(pname))
                     parnme.append(pname)
                     pname = " ~   {0}    ~".format(pname)
                 f.write(pname)
             f.write("\n")
     df = pd.DataFrame({"parnme": parnme}, index=parnme)
-    df.loc[:, "pargp"] = "{0}{1}".format(suffix.replace("_", ''), name)
+    df.loc[:, "pargp"] = "{0}_{1}".format(suffix.replace("_", ''), name)
     return df
 
 
@@ -3986,11 +4021,13 @@ def write_df_tpl(filename,df,sep=',',tpl_marker='~',**kwargs):
     file handle before df.to_csv() and you pass mode='a' to to_csv()
 
     """
+    if "line_terminator" not in kwargs:
+        if "win" in platform.platform().lower():
+            kwargs["line_terminator"] = "\n"
     with open(filename,'w') as f:
         f.write("ptf {0}\n".format(tpl_marker))
         f.flush()
         df.to_csv(f,sep=sep,mode='a',**kwargs)
-
 
 
 def setup_fake_forward_run(pst,new_pst_name,org_cwd='.',bak_suffix="._bak",new_cwd='.'):

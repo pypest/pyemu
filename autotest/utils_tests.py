@@ -459,21 +459,21 @@ def smp_to_ins_test():
         raise Exception("should have failed")
     pyemu.smp_utils.smp_to_ins(smp,ins,True)
 
-def master_and_slaves():
+def master_and_workers():
     import shutil
     import pyemu
-    slave_dir = os.path.join("..","verification","10par_xsec","template_mac")
+    worker_dir = os.path.join("..","verification","10par_xsec","template_mac")
     master_dir = os.path.join("temp","master")
     if not os.path.exists(master_dir):
         os.mkdir(master_dir)
-    assert os.path.exists(slave_dir)
-    pyemu.helpers.start_slaves(slave_dir,"pestpp","pest.pst",1,
-                               slave_root="temp",master_dir=master_dir)
+    assert os.path.exists(worker_dir)
+    pyemu.helpers.start_workers(worker_dir,"pestpp","pest.pst",1,
+                               worker_root="temp",master_dir=master_dir)
 
     #now try it from within the master dir
     base_cwd = os.getcwd()
     os.chdir(master_dir)
-    pyemu.helpers.start_slaves(os.path.join("..","..",slave_dir),
+    pyemu.helpers.start_workers(os.path.join("..","..",worker_dir),
                               "pestpp","pest.pst",3,
                               master_dir='.')
     os.chdir(base_cwd)
@@ -1201,8 +1201,10 @@ def gw_sft_ins_test():
     sft_outfile = os.path.join("utils","test_sft.out")
     #pyemu.gw_utils.setup_sft_obs(sft_outfile)
     #pyemu.gw_utils.setup_sft_obs(sft_outfile,start_datetime="1-1-1970")
-    pyemu.gw_utils.setup_sft_obs(sft_outfile, start_datetime="1-1-1970",times=[10950.00])
 
+    df = pyemu.gw_utils.setup_sft_obs(sft_outfile, start_datetime="1-1-1970",times=[10950.00])
+
+    #print(df)
 
 def sfr_helper_test():
     import os
@@ -1221,7 +1223,8 @@ def sfr_helper_test():
 
     m.sfr.segment_data = {k:sd.copy() for k in range(m.nper)}
 
-    df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters(m, include_temporal_pars=True)
+    df_sfr = pyemu.gw_utils.setup_sfr_seg_parameters(
+        m, include_temporal_pars=['hcond1', 'flow'])
     print(df_sfr)
     os.chdir("utils")
 
@@ -1487,6 +1490,62 @@ def hfb_test():
     assert df.shape[0] == m.hfb6.hfb_data.shape[0]
 
 
+def hfb_zn_mult_test():
+    import os
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+    import pandas as pd
+
+    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(
+        nam_file, model_ws=org_model_ws, check=False)
+    try:
+        pyemu.gw_utils.write_hfb_template(m)
+    except:
+        pass
+    else:
+        raise Exception()
+
+    hfb_data = []
+    jcol1, jcol2 = 14, 15
+    for i in range(m.nrow)[:11]:
+        hfb_data.append([0, i, jcol1, i, jcol2, 0.001])
+    for i in range(m.nrow)[11:21]:
+        hfb_data.append([0, i, jcol1, i, jcol2, 0.002])
+    for i in range(m.nrow)[21:]:
+        hfb_data.append([0, i, jcol1, i, jcol2, 0.003])
+    flopy.modflow.ModflowHfb(m, 0, 0, len(hfb_data), hfb_data=hfb_data)
+    orig_len = len(m.hfb6.hfb_data)
+    m.change_model_ws("temp")
+    m.write_input()
+    m.exe_name = "mfnwt"
+    try:
+        m.run_model()
+    except:
+        pass
+
+    orig_vals, tpl_file = pyemu.gw_utils.write_hfb_zone_multipliers_template(m)
+    assert os.path.exists(tpl_file)
+    hfb_pars = pd.read_csv(os.path.join(m.model_ws, 'hfb6_pars.csv'))
+    hfb_tpl_contents = open(tpl_file, 'r').readlines()
+    mult_str = ''.join(hfb_tpl_contents[1:]).replace(
+        '~  hbz_0000  ~', '0.1').replace(
+        '~  hbz_0001  ~', '1.0').replace(
+        '~  hbz_0002  ~', '10.0')
+    with open(hfb_pars.mlt_file.values[0], 'w') as mfp:
+        mfp.write(mult_str)
+    pyemu.helpers.apply_hfb_pars(os.path.join(m.model_ws, 'hfb6_pars.csv'))
+    with open(hfb_pars.mlt_file.values[0], 'r') as mfp:
+        for i, line in enumerate(mfp):
+            pass
+    mhfb = flopy.modflow.ModflowHfb.load(hfb_pars.model_file.values[0], m)
+    assert i-1 == orig_len == len(mhfb.hfb_data)
+
+
 def read_runstor_test():
     import os
     import numpy as np
@@ -1604,15 +1663,49 @@ def fieldgen_dev():
     plt.show()
 
 
-if __name__ == "__main__":
+def ok_grid_invest():
 
+    try:
+        import flopy
+    except:
+        return
+
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    nrow,ncol = 50,50
+    delr = np.ones((ncol)) * 1.0/float(ncol)
+    delc = np.ones((nrow)) * 1.0/float(nrow)
+
+    num_pts = 100
+    ptx = np.random.random(num_pts)
+    pty = np.random.random(num_pts)
+    ptname = ["p{0}".format(i) for i in range(num_pts)]
+    pts_data = pd.DataFrame({"x":ptx,"y":pty,"name":ptname})
+    pts_data.index = pts_data.name
+    pts_data = pts_data.loc[:,["x","y","name"]]
+
+
+    sr = flopy.utils.SpatialReference(delr=delr,delc=delc)
+    pts_data.loc["i0j0", :] = [sr.xcentergrid[0,0],sr.ycentergrid[0,0],"i0j0"]
+    pts_data.loc["imxjmx", :] = [sr.xcentergrid[-1, -1], sr.ycentergrid[-1, -1], "imxjmx"]
+    str_file = os.path.join("utils","struct_test.dat")
+    gs = pyemu.utils.geostats.read_struct_file(str_file)[0]
+    ok = pyemu.utils.geostats.OrdinaryKrige(gs,pts_data)
+    kf = ok.calc_factors_grid(sr,verbose=False,var_filename=os.path.join("temp","test_var.ref"),minpts_interp=1)
+    kf2 = ok.calc_factors_grid(sr, verbose=False, var_filename=os.path.join("temp", "test_var.ref"), minpts_interp=1,num_threads=10)
+    ok.to_grid_factors_file(os.path.join("temp","test.fac"))
+    diff = (kf.err_var - kf2.err_var).apply(np.abs).sum()
+    assert diff < 1.0e-10
+
+if __name__ == "__main__":
     #fieldgen_dev()
     # smp_test()
     # smp_dateparser_test()
     # smp_to_ins_test()
     #read_runstor_test()
     #long_names()
-    #master_and_slaves()
+    #master_and_workers()
     #plot_id_bar_test()
     #pst_from_parnames_obsnames_test()
     #write_jactest_test()
@@ -1620,7 +1713,7 @@ if __name__ == "__main__":
     #sfr_reach_obs_test()
     #gage_obs_test()
     #setup_pp_test()
-    #sfr_helper_test()
+    sfr_helper_test()
     # gw_sft_ins_test()
     # par_knowledge_test()
     # grid_obs_test()
@@ -1634,23 +1727,24 @@ if __name__ == "__main__":
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
     # geostat_prior_builder_test()
-    # geostat_draws_test()
+    #geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
     # mflist_budget_test()
     # mtlist_budget_test()
     # tpl_to_dataframe_test()
     # kl_test()
     # hfb_test()
+    # hfb_zn_mult_test()
     #more_kl_test()
     #zero_order_regul_test()
     # first_order_pearson_regul_test()
-    # master_and_slaves()
+    # master_and_workers()
     # smp_to_ins_test()
     # read_pestpp_runstorage_file_test()
     # write_tpl_test()
     # pp_to_shapefile_test()
     # read_pval_test()
-    read_hob_test()
+    # read_hob_test()
     #setup_pp_test()
     # pp_to_tpl_test()
     # setup_ppcov_complex()
@@ -1666,6 +1760,7 @@ if __name__ == "__main__":
     # covariance_matrix_test()
     # add_pi_obj_func_test()
     # ok_test()
-    # ok_grid_test()
+    #ok_grid_test()
     # ok_grid_zone_test()
     # ppk2fac_verf_test()
+    ok_grid_invest()

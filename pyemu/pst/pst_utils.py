@@ -164,9 +164,12 @@ def res_from_en(pst,enfile):
     converters = {"name": str_con, "group": str_con}
     try: #substitute ensemble for res, 'base' if there, otherwise mean
         obs=pst.observation_data
-        df=pd.read_csv(enfile,converters=converters)
-        df.columns=df.columns.str.lower()
-        df=df.set_index('real_name').T.rename_axis('name').rename_axis(None,1)
+        if isinstance(enfile,str):
+            df=pd.read_csv(enfile,converters=converters)
+            df.columns=df.columns.str.lower()
+            df = df.set_index('real_name').T.rename_axis('name').rename_axis(None, 1)
+        else:
+            df = enfile.T
         if 'base' in df.columns:
             df['modelled']=df['base']
             df['std']=df.std(axis=1)
@@ -179,9 +182,9 @@ def res_from_en(pst,enfile):
         res_df['measured']=obs['obsval'].copy()
         res_df['weight']=obs['weight'].copy()
         res_df['residual']=res_df['measured']-res_df['modelled']
-    except:
-        raise Exception("Pst.res_from_en: could not find :" + enfile)
-    return(res_df)
+    except Exception as e:
+        raise Exception("Pst.res_from_en:{0}".format(str(e)))
+    return res_df
 
 def read_parfile(parfile):
     """load a pest-compatible .par file into a pandas.DataFrame
@@ -714,13 +717,13 @@ def del_rw(action, name, exc):
     os.chmod(name, stat.S_IWRITE)
     os.remove(name)
 
-def start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=None,slave_root="..",
+def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_root="..",
                  port=4004,rel_path=None):
 
 
-    warnings.warn("deprecation warning:start_slaves() has moved to the utils.helpers module",PyemuWarning)
-    from pyemu.utils import start_slaves
-    start_slaves(slave_dir,exe_rel_path,pst_rel_path,num_slaves=num_slaves,slave_root=slave_root,
+    warnings.warn("deprecation warning:start_workers() has moved to the utils.helpers module",PyemuWarning)
+    from pyemu.utils import start_workers
+    start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=num_workers,worker_root=worker_root,
                  port=port,rel_path=rel_path)
 
 def res_from_obseravtion_data(observation_data):

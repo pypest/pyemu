@@ -95,10 +95,11 @@ class Schur(LinearAnalysis):
                 r = self.xtqx + pinv
                 r = r.inv
             except Exception as e:
-                self.xtqx.to_binary("xtqx.err.jcb")
+
                 pinv.to_ascii("parcov_inv.err.cov")
                 self.logger.warn("error forming schur's complement: {0}".
                                 format(str(e)))
+                self.xtqx.to_binary("xtqx.err.jcb")
                 self.logger.warn("problemtic xtqx saved to xtqx.err.jcb")
                 self.logger.warn("problematic inverse parcov saved to parcov_inv.err.cov")
                 raise Exception("error forming schur's complement: {0}".
@@ -202,8 +203,13 @@ class Schur(LinearAnalysis):
             return self.__posterior_prediction
         else:
             if self.predictions is not None:
-                self.log("propagating posterior to predictions")
-
+                try:
+                    if self.pst.nnz_obs == 0:
+                        self.log("no non-zero obs, posterior equals prior")
+                        return self.prior_prediction
+                    self.log("propagating posterior to predictions")
+                except:
+                    pass
                 post_cov = self.predictions.T *\
                             self.posterior_parameter * self.predictions
                 self.__posterior_prediction = {n:v for n,v in
@@ -412,7 +418,11 @@ class Schur(LinearAnalysis):
         # for pred in self.predictions:
         #     cond_preds.append(pred.get(keep_names, pred.col_names))
         cond_preds = self.predictions.get(row_names=keep_names)
-        la_cond = Schur(jco=self.jco.get(self.jco.row_names, keep_names),
+        try:
+            pst = self.pst
+        except:
+            pst = None
+        la_cond = Schur(jco=self.jco.get(self.jco.row_names, keep_names),pst=pst,
                         parcov=self.parcov.condition_on(parameter_names),
                         obscov=self.obscov, predictions=cond_preds,verbose=False)
         return la_cond
@@ -608,14 +618,14 @@ class Schur(LinearAnalysis):
         # if we don't care about grouping obs, then just reset all weights at once
         if base_obslist is None and obslist_dict is None and reset:
             onames = [name for name in self.pst.zero_weight_obs_names
-                      if name in self.jco.obs_names and name in self.obscov.row_names]
+                      if name in self.jco.row_names and name in self.obscov.row_names]
             obs.loc[onames,"weight"] = weight
 
         # if needed reset the zero-weight obs in base_obslist
         if base_obslist is not None and reset:
             # check for zero
             self.log("resetting zero weight obs in base_obslist")
-            self.pst.adjust_weights_by_list(base_obslist, weight)
+            self.pst._adjust_weights_by_list(base_obslist, weight)
             self.log("resetting zero weight obs in base_obslist")
 
         if base_obslist is None:
@@ -638,7 +648,7 @@ class Schur(LinearAnalysis):
                                     ','.join(inboth))
                 z_obs.extend(obslist)
             self.log("resetting zero weight obs in obslist_dict")
-            self.pst.adjust_weights_by_list(z_obs, weight)
+            self.pst._adjust_weights_by_list(z_obs, weight)
             self.log("resetting zero weight obs in obslist_dict")
 
         # for a comprehensive obslist_dict
@@ -646,12 +656,12 @@ class Schur(LinearAnalysis):
             obs = self.pst.observation_data
             obs.index = obs.obsnme
             onames = [name for name in self.pst.zero_weight_obs_names
-                      if name in self.jco.obs_names and name in self.obscov.row_names]
+                      if name in self.jco.row_names and name in self.obscov.row_names]
             obs.loc[onames,"weight"] = weight
 
         if obslist_dict is None:
             obslist_dict = {name:name for name in self.pst.nnz_obs_names if name\
-                            in self.jco.obs_names and name in self.obscov.row_names}
+                            in self.jco.row_names and name in self.obscov.row_names}
 
         # reset the obs cov from the newly adjusted weights
         if reset:
@@ -688,7 +698,7 @@ class Schur(LinearAnalysis):
             dedup_obslist = [oname for oname in obslist if oname not in case_obslist]
             case_obslist.extend(dedup_obslist)
             #print(self.pst.observation_data.loc[case_obslist,:])
-            case_post = self.get(par_names=self.jco.par_names,
+            case_post = self.get(par_names=self.jco.col_names,
                                  obs_names=case_obslist).posterior_forecast
             for forecast,pt in case_post.items():
                 results[forecast].append(pt)
@@ -771,7 +781,7 @@ class Schur(LinearAnalysis):
         if reset and obslist_dict is None:
             obs = self.pst.observation_data
             onames = [name for name in self.pst.zero_weight_obs_names
-                      if name in self.jco.obs_names and name in self.obscov.row_names]
+                      if name in self.jco.row_names and name in self.obscov.row_names]
             obs.loc[onames,"weight"] = weight
 
         if obslist_dict is None:
@@ -783,7 +793,7 @@ class Schur(LinearAnalysis):
             self.pst.observation_data.index = self.pst.observation_data.obsnme
             for name,obslist in obslist_dict.items():
                 self.log("resetting weights in obs in group {0}".format(name))
-                self.pst.adjust_weights_by_list(obslist,weight)
+                self.pst._adjust_weights_by_list(obslist,weight)
                 self.log("resetting weights in obs in group {0}".format(name))
 
         for case,obslist in obslist_dict.items():
@@ -808,7 +818,7 @@ class Schur(LinearAnalysis):
             self.log("calculating importance of observations by removing: " +
                      str(obslist) + '\n')
             # check for missing names
-            missing_onames = [oname for oname in obslist if oname not in self.jco.obs_names]
+            missing_onames = [oname for oname in obslist if oname not in self.jco.row_names]
             if len(missing_onames) > 0:
                 raise Exception("case {0} has observation names ".format(case_name) + \
                                 "not found: " + ','.join(missing_onames))
@@ -819,7 +829,7 @@ class Schur(LinearAnalysis):
 
             # calculate the increase in forecast variance by not using the obs
             # in obslist
-            case_post = self.get(par_names=self.jco.par_names,
+            case_post = self.get(par_names=self.jco.col_names,
                                  obs_names=diff_onames).posterior_forecast
 
             for forecast,pt in case_post.items():
@@ -1025,4 +1035,6 @@ class Schur(LinearAnalysis):
 
         self.reset_parcov(org_parcov)
         return pd.DataFrame(iter_results,index=iter_names)
+
+
 

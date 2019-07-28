@@ -466,7 +466,10 @@ def from_flopy():
 
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              hds_kperk=[0, 0], remove_existing=True,
-                                             model_exe_name="mfnwt", sfr_pars=['flow', 'not_a_par'], sfr_obs=True)
+                                             model_exe_name="mfnwt", 
+                                             sfr_pars=['flow', 'not_a_par'],
+                                             temporal_sfr_pars=True,
+                                             sfr_obs=True)
     try:
         pe = helper.draw(100)
     except:
@@ -570,17 +573,17 @@ def from_flopy_zone_pars():
     m.write_input()
 
     new_model_ws = "temp_pst_from_flopy"
-    grid_props = [["upw.ss", [0, 1]], ["upw.ss", 1], ["upw.ss", 2], ["extra.pr", 0],
+    grid_props = [["upw.ss", [0, 1]], ["upw.ss", 1], ["upw.ss", 2], ["extra.prsity", 0],
                 ["rch.rech", 0], ["rch.rech", [1, 2]]]
     const_props = [["rch.rech", i] for i in range(m.nper)]
-    grid_props = grid_props.extend(["extra.pr", 0])
-    zone_props = [["extra.pr", 0], ["extra.pr", 2], ["upw.vka", 1], ["upw.vka", 2]]
+    grid_props = grid_props.extend(["extra.prsity", 0])
+    zone_props = [["extra.prsity", 0], ["extra.prsity", 2], ["upw.vka", 1], ["upw.vka", 2]]
 
     zn_arr = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "hk.zones"), dtype=int)
     zn_arr2 = np.loadtxt(os.path.join("..", "examples", "Freyberg_Truth", "rand.zones"), dtype=int)
 
-    pp_props = [["upw.hk", [0, 1]], ["extra.pr", 1], ["upw.ss", 1], ["upw.ss", 2], ["upw.vka", 2]]
-    k_zone_dict = {"upw.hk": {k: zn_arr for k in range(3)}, "extra.pr": {k: zn_arr2 for k in range(3)},
+    pp_props = [["upw.hk", [0, 1]], ["extra.prsity", 1], ["upw.ss", 1], ["upw.ss", 2], ["upw.vka", 2]]
+    k_zone_dict = {"upw.hk": {k: zn_arr for k in range(3)}, "extra.prsity": {k: zn_arr2 for k in range(3)},
                    "general_zn": {k: zn_arr for k in range(3)}}
     obssim_smp_pairs = None
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
@@ -595,7 +598,7 @@ def from_flopy_zone_pars():
                                              k_zone_dict=k_zone_dict,
                                              hds_kperk=[0, 0], build_prior=False)
 
-    k_zone_dict = {"upw.vka": {k: zn_arr for k in range(3)}, "extra.pr": {k: zn_arr2 for k in range(3)}}
+    k_zone_dict = {"upw.vka": {k: zn_arr for k in range(3)}, "extra.prsity": {k: zn_arr2 for k in range(3)}}
     helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                              const_props=const_props,
                                              grid_props=grid_props,
@@ -607,6 +610,7 @@ def from_flopy_zone_pars():
                                              use_pp_zones=True,
                                              k_zone_dict=k_zone_dict,
                                              hds_kperk=[0, 0], build_prior=False)
+    print(helper.pst.par_groups)
 
 
 
@@ -664,7 +668,7 @@ def from_flopy_reachinput():
         if i < 5:
             include_temporal_pars = False
         else:
-            include_temporal_pars = True
+            include_temporal_pars = {'flow': [0], 'runoff': [2]}
         helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, org_model_ws,
                                                  hds_kperk=[0, 0], remove_existing=True,
                                                  model_exe_name="mfnwt", sfr_pars=sfr_par,
@@ -944,29 +948,6 @@ def try_process_ins_test():
     assert diff.sum() < 1.0e+10
 
 
-def rectify_pgroup_test():
-    import os
-    import pyemu
-    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
-    npar = pst.npar
-    tpl_file = os.path.join("temp", "crap.in.tpl")
-    with open(tpl_file, 'w') as f:
-        f.write("ptf ~\n")
-        f.write("  ~junk1   ~\n")
-        f.write("  ~ {0}  ~\n".format(pst.parameter_data.parnme[0]))
-    # print(pst.parameter_groups)
-
-    pst.add_parameters(tpl_file, "crap.in", pst_path="temp")
-
-    # print(pst.parameter_groups)
-    pst.rectify_pgroups()
-    # print(pst.parameter_groups)
-
-    pst.parameter_groups.loc["pargp", "inctyp"] = "absolute"
-    print(pst.parameter_groups)
-    pst.write(os.path.join('temp', "test.pst"))
-    print(pst.parameter_groups)
-
 
 def sanity_check_test():
     import os
@@ -1183,24 +1164,108 @@ def new_format_test():
     #     raise Exception()
 
 
+def change_limit_test():
+    import numpy as np
+    import pyemu
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
+    #print(pst.parameter_data)
+    cols = ["parval1", "rel_upper", "rel_lower", "fac_upper", "fac_lower","chg_upper","chg_lower"]
+    pst.control_data.relparmax = 3
+    pst.control_data.facparmax = 3
+    par = pst.parameter_data
+
+    par.loc[:,"parval1"] = 1.0
+    df = pst.get_par_change_limits()
+    assert df.rel_upper.mean() == 4.0
+    assert df.rel_lower.mean() == -2.0
+    assert df.fac_upper.mean() == 3.0
+    assert np.abs(df.fac_lower.mean() -  0.33333) < 1.0e-3
+
+    pst.control_data.facorig = 2.0
+    par.loc[:,"partrans"] = "none"
+    df = pst.get_par_change_limits()
+    assert df.rel_upper.mean() == 8.0
+    assert df.rel_lower.mean() == -4.0
+    assert df.fac_upper.mean() == 6.0
+    assert np.abs(df.fac_lower.mean() - 0.66666) < 1.0e-3
+
+    pst.control_data.facorig = 0.001
+    par.loc[:, "partrans"] = "none"
+    par.loc[:, "parval1"] = -1.0
+    df = pst.get_par_change_limits()
+    #print(df.loc[:, cols])
+    assert df.rel_upper.mean() == 2.0
+    assert df.rel_lower.mean() == -4.0
+    assert df.fac_lower.mean() == -3.0
+    assert np.abs(df.fac_upper.mean() + 0.33333) < 1.0e-3
+
+    print(df.loc[:,["eff_upper","eff_lower"]])
+    print(df.loc[:,cols])
+
+
+def from_flopy_pp_test():
+    import numpy as np
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    m.change_model_ws("temp")
+    ib = m.bas6.ibound.array
+    ib[ib>0] = 3
+    m.bas6.ibound = ib
+    m.write_input()
+
+    new_model_ws = "temp_pst_from_flopy"
+    pp_props = [["upw.ss", [0, 1]],["upw.hk",[1,0]],["upw.vka",1]]
+
+    obssim_smp_pairs = None
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, "temp",
+                                             pp_props=pp_props,
+                                             remove_existing=True,
+                                             pp_space=4,
+                                             use_pp_zones=False,
+                                            build_prior=False)
+
+    new_model_ws = "temp_pst_from_flopy"
+    props = ["upw.ss","upw.hk","upw.vka"]
+    pp_props = []
+    for k in range(m.nlay):
+        for p in props:
+            pp_props.append([p,k])
+    #pp_props = [["upw.ss", [0,], ["upw.hk", [1, 0]], ["upw.vka", 1]]
+
+    obssim_smp_pairs = None
+    helper = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws, "temp",
+                                             pp_props=pp_props,
+                                             remove_existing=True,
+                                             pp_space=4,
+                                             use_pp_zones=False,
+                                             build_prior=True)
+
 if __name__ == "__main__":
-    new_format_test()
+    #change_limit_test()
+    #new_format_test()
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
-    #pst_from_flopy_geo_draw_test()
+    # pst_from_flopy_geo_draw_test()
     #try_process_ins_test()
     # write_tables_test()
-    # res_stats_test()
+    #res_stats_test()
     # test_write_input_files()
     # add_obs_test()
     # add_pars_test()
     # setattr_test()
     # run_array_pars()
-    # from_flopy_zone_pars()
-    #from_flopy()
+    #from_flopy_zone_pars()
+    #from_flopy_pp_test()
+    # from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
-    #from_flopy_reachinput()
+    from_flopy_reachinput()
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
@@ -1218,7 +1283,7 @@ if __name__ == "__main__":
     # res_test()
     # smp_test()
     # from_io_with_inschek_test()
-    # pestpp_args_test()
+    #pestpp_args_test()
     # reweight_test()
     # reweight_res_test()
     # run_test()
