@@ -32,8 +32,8 @@ class EnsembleMethod(object):
         obscov : pyemu.Cov or str
             a measurement noise covariance matrix or filename. If None,
             obscov is constructed from observation weights.
-        num_slaves : int
-            number of slaves to use in (local machine) parallel evaluation of the parmaeter
+        num_workers : int
+            number of workers to use in (local machine) parallel evaluation of the parmaeter
             ensemble.  If 0, serial evaluation is used.  Ignored if submit_file is not None
         submit_file : str
             the name of a HTCondor submit file.  If not None, HTCondor is used to
@@ -41,26 +41,26 @@ class EnsembleMethod(object):
             as a system command
         port : int
             the TCP port number to communicate on for parallel run management
-        slave_dir : str
+        worker_dir : str
             path to a directory with a complete set of model files and PEST
             interface files
 
     """
 
-    def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,use_approx_prior=True,
-                 submit_file=None,verbose=False,port=4004,slave_dir="template"):
+    def __init__(self,pst,parcov=None,obscov=None,num_workers=0,use_approx_prior=True,
+                 submit_file=None,verbose=False,port=4004,worker_dir="template"):
         self.logger = Logger(verbose)
         if verbose is not False:
             self.logger.echo = True
-        self.num_slaves = int(num_slaves)
+        self.num_workers = int(num_workers)
         if submit_file is not None:
             if not os.path.exists(submit_file):
                 self.logger.lraise("submit_file {0} not found".format(submit_file))
-        elif num_slaves > 0:
-            if not os.path.exists(slave_dir):
-                self.logger.lraise("template dir {0} not found".format(slave_dir))
+        elif num_workers > 0:
+            if not os.path.exists(worker_dir):
+                self.logger.lraise("template dir {0} not found".format(worker_dir))
 
-        self.slave_dir = slave_dir
+        self.worker_dir = worker_dir
         self.submit_file = submit_file
         self.port = int(port)
         self.paren_prefix = ".parensemble.{0:04d}.csv"
@@ -235,10 +235,10 @@ class EnsembleMethod(object):
         self.logger.log("evaluating ensemble of size {0} locally with sweep".\
                         format(parensemble.shape[0]))
         parensemble.to_csv(self.sweep_in_csv)
-        if self.num_slaves > 0:
+        if self.num_workers > 0:
             master_thread = self._get_master_thread()
-            pyemu.utils.start_slaves(self.slave_dir,"pestpp-swp",self.pst.filename,
-                                     self.num_slaves,slave_root='..',port=self.port)
+            pyemu.utils.start_workers(self.worker_dir,"pestpp-swp",self.pst.filename,
+                                     self.num_workers,worker_root='..',port=self.port)
             master_thread.join()
         else:
             os.system("pestpp-swp {0}".format(self.pst.filename))

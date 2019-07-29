@@ -474,8 +474,11 @@ class LinearAnalysis(object):
             #    vecs.append(extract.get(row_names=row_name).T)
             # call obscov to load __obscov so that __obscov
             # (priavte) can be manipulated
-            self.obscov
-            self.__obscov.drop(row_names, axis=0)
+            # check if any forecasts are in the obscov
+            so_names = set(self.__obscov.row_names)
+            drop_names = [r for r in row_names if r in so_names]
+            if len(drop_names) > 0:
+                self.__obscov.drop(drop_names, axis=0)
         self.__predictions = mat
         try:
             fnames = [fname for fname in self.forecast_names if fname in self.pst.nnz_obs_names]
@@ -1041,8 +1044,10 @@ class LinearAnalysis(object):
 
         """
 
-        assert self.jco is not None
-        assert self.pst is not None
+        if self.jco is None:
+            raise Exception("jco is None")
+        if self.pst is None:
+            raise Exception("pst is None")
         jco = self.jco.to_dataframe()
         weights = self.pst.observation_data.loc[jco.index,"weight"].copy().values
         jco = (jco.T * weights).T
@@ -1069,11 +1074,35 @@ class LinearAnalysis(object):
         cso : pandas.DataFrame
 
         """
-        assert self.jco is not None
-        assert self.pst is not None
+        if self.jco is None:
+            raise Exception("jco is None")
+        if self.pst is None:
+            raise Exception("pst is None")
         weights = self.pst.observation_data.loc[self.jco.to_dataframe().index,"weight"].copy().values
         cso = np.diag(np.sqrt((self.qhalfx.x.dot(self.qhalfx.x.T))))/(float(self.pst.npar-1))
         cso_df = pd.DataFrame.from_dict({'obnme':self.jco.to_dataframe().index,'cso':cso})
         cso_df.index=cso_df['obnme']
         cso_df.drop('obnme', axis=1, inplace=True)
         return cso_df
+
+    def get_obs_competition_dataframe(self):
+        if self.jco is None:
+            raise Exception("jco is None")
+        if self.pst is None:
+            raise Exception("pst is None")
+        if self.pst.res is None:
+            raise Exception("res is None")
+        onames = self.pst.nnz_obs_names
+        weights = self.pst.observation_data.loc[onames,"weight"].to_dict()
+        residuals = self.pst.res.loc[onames,"residual"].to_dict()
+        jco = self.jco.to_dataframe()
+        df = pd.DataFrame(columns=onames,index=onames)
+        for i,oname in enumerate(onames):
+            df.loc[oname,oname] = 0.0
+            for ooname in onames[i+1:]:
+                oc = weights[oname] * weights[ooname] * np.dot(jco.loc[oname,:].values, jco.loc[ooname,:].values.transpose())
+                df.loc[oname,ooname] = oc
+                df.loc[ooname,oname] = oc
+        return df
+
+

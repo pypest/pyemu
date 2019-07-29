@@ -429,19 +429,28 @@ def alternative_dw():
         sc_o = pyemu.Schur(jco=ojcb,pst=zw_pst,parcov=sc.posterior_parameter,forecasts=sc.forecasts)
         print(sc_o.get_forecast_summary())
 
-
+def obscomp_test():
+    import os
+    import numpy as np
+    from pyemu import LinearAnalysis
+    w_dir = os.path.join("..", "verification", "Freyberg")
+    forecasts = ["travel_time", "sw_gw_0", "sw_gw_1"]
+    la = LinearAnalysis(jco=os.path.join(w_dir, "freyberg.jcb"), forecasts=forecasts, verbose=True)
+    df = la.get_obs_competition_dataframe()
+    print(df)
 
 if __name__ == "__main__":
+    #obscomp_test()
     #alternative_dw()
     #freyberg_verf_test()
     #forecast_pestpp_load_test()
     #map_test()
     #par_contrib_speed_test()
-    schur_test()
+    # schur_test()
     #par_contrib_test()
     #dataworth_test()
     #dataworth_next_test()
-    #schur_test_nonpest()
+    schur_test_nonpest()
     #la_test_io()
     #errvar_test_nonpest()
     #errvar_test()

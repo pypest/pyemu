@@ -79,9 +79,8 @@ def setup_truth():
 
 
 def run_truth_sweep():
-    pyemu.os_utils.start_slaves(os.path.join("da","freyberg","truth_template"),"pestpp-swp","freyberg_truth.pst",
-                                20,slave_root=os.path.join("da","freyberg"),master_dir=os.path.join("da","freyberg","truth_sweep"))
-
+    pyemu.os_utils.start_workers(os.path.join("da","freyberg","truth_template"),"pestpp-swp","freyberg_truth.pst",
+                                20,worker_root=os.path.join("da","freyberg"),master_dir=os.path.join("da","freyberg","truth_sweep"))
 
 
 def setup_daily_da():
@@ -204,9 +203,9 @@ def freyberg_dev():
     pst.pestpp_options["ies_subset_size"] = 10
     pst.pestpp_options["overdue_giveup_fac"] = 1000.0
     pst.write(os.path.join(t_d,"test.pst"))
-    pyemu.os_utils.start_slaves(t_d,"pestpp-ies","test.pst",num_slaves=3,master_dir="test")
+    pyemu.os_utils.start_workers(t_d,"pestpp-ies","test.pst",num_workers=3,master_dir="test")
 
-    enkf = pyemu.EnsembleKalmanFilter(pst=pst,num_slaves=3,slave_dir=t_d)
+    enkf = pyemu.EnsembleKalmanFilter(pst=pst,num_workers=3,worker_dir=t_d)
     enkf.initialize(parensemble=os.path.join("test","test.0.par.csv"),
                     obsensemble=os.path.join("test","test.base.obs.csv"),
                     restart_obsensemble=os.path.join("test","test.0.obs.csv"))
@@ -246,3 +245,4 @@ if __name__ == "__main__":
     #process_truth_for_obs_states()
     freyberg_dev()
     #draw_forcing_ensemble()
+    #run_truth_sweep()

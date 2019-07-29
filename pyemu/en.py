@@ -51,7 +51,6 @@ class Ensemble(pd.DataFrame):
         mean_values = kwargs.pop("mean_values",None)
 
         super(Ensemble,self).__init__(*args,**kwargs)
-
         if mean_values is None:
             raise Exception("Ensemble requires 'mean_values' kwarg")
         self._mean_values = mean_values
@@ -134,7 +133,6 @@ class Ensemble(pd.DataFrame):
                                         cov.row_names)
             vals = self.mean_values.loc[names]
             cov = cov.get(names)
-            pass
         else:
             vals = self.mean_values
             names = self.names
@@ -235,9 +233,11 @@ class Ensemble(pd.DataFrame):
         df = kwargs.pop("df")
         assert isinstance(df,pd.DataFrame)
         df.columns = [c.lower() for c in df.columns]
+
         mean_values = kwargs.pop("mean_values",df.mean(axis=0))
         e = cls(data=df,index=df.index,columns=df.columns,
                 mean_values=mean_values,**kwargs)
+
         return e
 
     @staticmethod
@@ -1061,7 +1061,6 @@ class ParameterEnsemble(Ensemble):
                 raise Exception("ParameterEnsemble::from_gaussian_draw() error: cov and pst share no common names")
             vals = vals.loc[common_names]
             cov = cov.get(common_names)
-            pass
         else:
             common_names = cov.row_names
 
@@ -1837,8 +1836,8 @@ class ParameterEnsemble(Ensemble):
         self.loc["base",:] = self.pst.parameter_data.loc[self.columns,"parval1"]
 
 
-    def run(self,slave_dir, num_slaves=10):
-        df = run_sweep(self,slave_dir=slave_dir,num_slaves=num_slaves)
+    def run(self,worker_dir, num_workers=10):
+        df = run_sweep(self,worker_dir=worker_dir,num_workers=num_workers)
         return ObservationEnsemble.from_dataframe(pst=self.pst,df=df)
 
     def get_deviations(self):

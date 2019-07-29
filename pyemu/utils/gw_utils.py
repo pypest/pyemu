@@ -73,6 +73,7 @@ def modflow_hob_to_instruction_file(hob_file):
     hob_df = pd.read_csv(hob_file,delim_whitespace=True,skiprows=1,
                          header=None,names=["simval","obsval","obsnme"])
 
+    hob_df.loc[:,"obsnme"] = hob_df.obsnme.apply(str.lower)
     hob_df.loc[:,"ins_line"] = hob_df.obsnme.apply(lambda x:"l1 !{0:s}!".format(x))
     hob_df.loc[0,"ins_line"] = hob_df.loc[0,"ins_line"].replace('l1','l2')
 
@@ -1113,6 +1114,7 @@ def apply_hds_obs(hds_file):
         data = hds.get_data(kstpkper=(kstp,kper))
         #jwhite 15jan2018 fix for really large values that are getting some
         #trash added to them...
+        data[np.isnan(data)] = 0.0
         data[data>1.0e+20] = 1.0e+20
         data[data<-1.0e+20] = -1.0e+20
         df_kper = df.loc[df.kper==kper,:]
@@ -1199,8 +1201,10 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
             #df_time.iloc[nstrm*(icomp):nstrm*(icomp+1),icomp_idx.loc["icomp"] = int(icomp+1)
             df_time.loc[idxs,"icomp"] = int(icomp+1)
 
-        df.loc[df_time.index,"ins_str"] = df_time.apply(lambda x: "l1 w w !sfrc{0}_{1}_{2}! !swgw{0}_{1}_{2}! !gwcn{0}_{1}_{2}!\n".\
-                                         format(x.sfr_node,x.icomp,x.time_str),axis=1)
+        #df.loc[df_time.index,"ins_str"] = df_time.apply(lambda x: "l1 w w !sfrc{0}_{1}_{2}! !swgw{0}_{1}_{2}! !gwcn{0}_{1}_{2}!\n".\
+        #                                 format(x.sfr_node,x.icomp,x.time_str),axis=1)
+        df.loc[df_time.index, "ins_str"] = df_time.apply(
+            lambda x: "l1 w w !sfrc{0}_{1}_{2}!\n".format(x.sfr_node, x.icomp, x.time_str), axis=1)
     df.index = np.arange(df.shape[0])
     if ins_file is None:
         ins_file = sft_file+".processed.ins"
@@ -1217,26 +1221,38 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
 
 
 def apply_sft_obs():
+    # this is for dealing with the missing 'e' problem
+    def try_cast(x):
+        try:
+            return float(x)
+        except:
+            return 0.0
+
     times = []
     with open("sft_obs.config") as f:
         sft_file = f.readline().strip()
         for line in f:
             times.append(float(line.strip()))
-    df = pd.read_csv(sft_file,skiprows=1,delim_whitespace=True)
+    df = pd.read_csv(sft_file,skiprows=1,delim_whitespace=True)#,nrows=10000000)
     df.columns = [c.lower().replace("-", "_") for c in df.columns]
-
+    df = df.loc[df.time.apply(lambda x: x in times), :]
+    #print(df.dtypes)
     #normalize
     for c in df.columns:
+        #print(c)
+        if not "node" in c:
+            df.loc[:,c] = df.loc[:,c].apply(try_cast)
+        #print(df.loc[df.loc[:,c].apply(lambda x : type(x) == str),:])
         df.loc[df.loc[:,c].apply(lambda x: x<1e-30),c] = 0.0
         df.loc[df.loc[:, c] > 1e+30, c] = 1.0e+30
     df.loc[:,"sfr_node"] = df.sfr_node.apply(np.int)
-    df = df.loc[df.time.apply(lambda x: x in times),:]
+
     df.to_csv(sft_file+".processed",sep=' ',index=False)
     return df
 
 
-def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff", "hcond1", "hcond2", "pptsw"],
-                             tie_hcond=True):
+def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
+                             tie_hcond=True, include_temporal_pars=None):
     """Setup multiplier parameters for SFR segment data.  Just handles the
     standard input case, not all the cryptic SFR options.  Loads the dis, bas, and sfr files
     with flopy using model_ws.  However, expects that apply_sfr_seg_parameters() will be called
@@ -1253,7 +1269,11 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
             flopy modflow model object
         par_cols : list(str)
             segment data entires to parameterize
-        tie_hcond : flag to use same mult par for hcond1 and hcond2 for a given segment.  Default is True
+        tie_hcond : bool
+            flag to use same mult par for hcond1 and hcond2 for a given segment.  Default is True
+        include_temporal_pars : list
+            list of spatially-global multipliers to set up for 
+            each stress period.  Default is None
 
     Returns
     -------
@@ -1274,11 +1294,11 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
     except Exception as e:
         return
     if par_cols is None:
-        par_cols = ["flow", "runoff", "hcond1", "hcond2", "pptsw"]
+        par_cols = ["flow", "runoff", "hcond1", "pptsw"]
     if tie_hcond:
         if "hcond1" not in par_cols or "hcond2" not in par_cols:
             tie_hcond = False
-
+        
     if isinstance(nam_file,flopy.modflow.mf.Modflow) and nam_file.sfr is not None:
         m = nam_file
         nam_file = m.namefile
@@ -1286,6 +1306,21 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
     else:
         # load MODFLOW model # is this needed? could we just pass the model if it has already been read in?
         m = flopy.modflow.Modflow.load(nam_file,load_only=["sfr"],model_ws=model_ws,check=False,forgive=False)
+    if include_temporal_pars:
+        if include_temporal_pars is True:
+            tmp_par_cols = {col: range(m.dis.nper) for col in par_cols}
+        elif isinstance(include_temporal_pars, str):
+            tmp_par_cols = {include_temporal_pars: range(m.dis.nper)}
+        elif isinstance(include_temporal_pars, list):
+            tmp_par_cols = {col: range(m.dis.nper)
+                            for col in include_temporal_pars}
+        elif isinstance(include_temporal_pars, dict):
+            tmp_par_cols = include_temporal_pars
+        include_temporal_pars = True
+    else:
+        tmp_par_cols = {}
+        include_temporal_pars = False
+
     #make backup copy of sfr file
     shutil.copy(os.path.join(model_ws,m.sfr.file_name[0]),os.path.join(model_ws,nam_file+"_backup_.sfr"))
 
@@ -1307,10 +1342,12 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
     #make sure all par cols are found and search of any data in kpers
     missing = []
     cols = par_cols.copy()
-    for par_col in par_cols:
+    for par_col in set(par_cols + list(tmp_par_cols.keys())):
         if par_col not in seg_data.columns:
-            missing.append(par_col)
-            cols.remove(par_col)
+            if par_col in cols:
+                missing.append(cols.pop(cols.index(par_col)))
+            if par_col in tmp_par_cols.keys():
+                _ = tmp_par_cols.pop(par_col)
         # look across all kper in multiindex df to check for values entry - fill with absmax should capture entries
         else:
             seg_data.loc[:, par_col] = seg_data_all_kper.loc[:, (slice(None), par_col)].abs().max(level=1, axis=1)
@@ -1330,55 +1367,98 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=["flow", "runoff",
 
     #process par cols
     tpl_str, pvals = [], []
-    for par_col in cols:
+    if include_temporal_pars:
+        tmp_pnames, tmp_tpl_str = [], []
+        tmp_df = pd.DataFrame(data={c: 1.0 for c in tmp_par_cols.keys()},
+                              index=list(m.sfr.segment_data.keys()))
+        tmp_df.sort_index(inplace=True)
+        tmp_df.to_csv(os.path.join(model_ws, "sfr_seg_temporal_pars.dat"))
+    for par_col in set(cols + list(tmp_par_cols.keys())):
+        print(par_col)
         prefix = par_col
         if tie_hcond and par_col == 'hcond2':
             prefix = 'hcond1'
         if seg_data.loc[:, par_col].sum() == 0.0:
             print("all zeros for {0}...skipping...".format(par_col))
             #seg_data.loc[:,par_col] = 1
-        else:
+            # all zero so no need to set up
+            if par_col in cols:
+                # - add to notpar
+                notpar_cols.append(cols.pop(cols.index(par_col)))
+            if par_col in tmp_par_cols.keys():
+                _ = tmp_par_cols.pop(par_col)
+        if par_col in cols:
             seg_data.loc[:, par_col] = seg_data.apply(lambda x: "~    {0}_{1:04d}   ~".
                                                       format(prefix, int(x.nseg)) if float(x[par_col]) != 0.0
                                                       else "1.0", axis=1)
-
             org_vals = seg_data_org.loc[seg_data_org.loc[:, par_col] != 0.0, par_col]
             pnames = seg_data.loc[org_vals.index, par_col]
             pvals.extend(list(org_vals.values))
             tpl_str.extend(list(pnames.values))
-
+        if par_col in tmp_par_cols.keys():
+            parnme = tmp_df.index.map(
+                lambda x: "{0}_{1:04d}_tmp".format(par_col, int(x))
+                if x in tmp_par_cols[par_col] else 1.0)
+            sel = parnme != 1.0
+            tmp_df.loc[sel, par_col] = parnme[sel].map(
+                lambda x: "~   {0}  ~".format(x))
+            tmp_tpl_str.extend(list(tmp_df.loc[sel, par_col].values))
+            tmp_pnames.extend(list(parnme[sel].values))
     pnames = [t.replace('~','').strip() for t in tpl_str]
     df = pd.DataFrame({"parnme":pnames,"org_value":pvals,"tpl_str":tpl_str},index=pnames)
     df.drop_duplicates(inplace=True)
     if df.empty:
-        warnings.warn("No sfr segment parameters have been set up, either none of {0} were found or all were zero.".
+        warnings.warn("No spatial sfr segment parameters have been set up, "
+                      "either none of {0} were found or all were zero.".
                       format(','.join(par_cols)), PyemuWarning)
-    else:
-        # set not par cols to 1.0
-        seg_data.loc[:, notpar_cols] = "1.0"
+        # return df
+    # set not par cols to 1.0
+    seg_data.loc[:, notpar_cols] = "1.0"
 
-        #write the template file
-        write_df_tpl(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"), seg_data, sep=',')
+    #write the template file
+    write_df_tpl(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"), seg_data, sep=',')
 
-        #write the config file used by apply_sfr_pars()
-        with open(os.path.join(model_ws,"sfr_seg_pars.config"),'w') as f:
-            f.write("nam_file {0}\n".format(nam_file))
-            f.write("model_ws {0}\n".format(model_ws))
-            f.write("mult_file sfr_seg_pars.dat\n")
-            f.write("sfr_filename {0}".format(m.sfr.file_name[0]))
+    #make sure the tpl file exists and has the same num of pars
+    parnme = parse_tpl_file(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"))
+    assert len(parnme) == df.shape[0]
 
-        #make sure the tpl file exists and has the same num of pars
-        parnme = parse_tpl_file(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"))
-        assert len(parnme) == df.shape[0]
+    #set some useful par info
+    df["pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
 
-        #set some useful par info
-        df.loc[:,"pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
-        df.loc[:,"parubnd"] = 1.25
-        df.loc[:,"parlbnd"] = 0.75
-        hpars = df.loc[df.pargp.apply(lambda x: x.startswith("hcond")),"parnme"]
-        df.loc[hpars,"parubnd"] = 100.0
-        df.loc[hpars, "parlbnd"] = 0.01
+    if include_temporal_pars:
+        write_df_tpl(filename=os.path.join(model_ws,"sfr_seg_temporal_pars.dat.tpl"),df=tmp_df)
+        pargp = [pname.split('_')[0]+"_tmp" for pname in tmp_pnames]
+        tmp_df = pd.DataFrame(data={"parnme":tmp_pnames,"pargp":pargp},index=tmp_pnames)
+        if not tmp_df.empty:
+            tmp_df.loc[:,"org_value"] = 1.0
+            tmp_df.loc[:,"tpl_str"] = tmp_tpl_str
+            df = df.append(tmp_df[df.columns])
+    if df.empty:
+        warnings.warn("No sfr segment parameters have been set up, "
+                      "either none of {0} were found or all were zero.".
+                      format(','.join(set(par_cols + 
+                                          list(tmp_par_cols.keys())))),
+                      PyemuWarning)
+        return df
+
+    # write the config file used by apply_sfr_pars()
+    with open(os.path.join(model_ws, "sfr_seg_pars.config"), 'w') as f:
+        f.write("nam_file {0}\n".format(nam_file))
+        f.write("model_ws {0}\n".format(model_ws))
+        f.write("mult_file sfr_seg_pars.dat\n")
+        f.write("sfr_filename {0}\n".format(m.sfr.file_name[0]))
+        if include_temporal_pars:
+            f.write("time_mult_file sfr_seg_temporal_pars.dat\n")
+
+    # set some useful par info
+    df.loc[:, "parubnd"] = 1.25
+    df.loc[:, "parlbnd"] = 0.75
+    hpars = df.loc[df.pargp.apply(lambda x: x.startswith("hcond")), "parnme"]
+    df.loc[hpars, "parubnd"] = 100.0
+    df.loc[hpars, "parlbnd"] = 0.01
+
     return df
+
 
 def setup_sfr_reach_parameters(nam_file,model_ws='.', par_cols=['strhc1']):
     """Setup multiplier paramters for reach data, when reachinput option is specififed in sfr.
@@ -1516,8 +1596,15 @@ def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
 
 
     """
+
+    if not seg_pars and not reach_pars:
+        raise Exception("gw_utils.apply_sfr_pars() error: both seg_pars and reach_pars are False")
+    #if seg_pars and reach_pars:
+    #    raise Exception("gw_utils.apply_sfr_pars() error: both seg_pars and reach_pars are True")
+
     import flopy
-    bak_sfr_file = None
+    bak_sfr_file,pars = None,None
+
     if seg_pars:
         assert os.path.exists("sfr_seg_pars.config")
 
@@ -1532,6 +1619,10 @@ def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
         sfr = flopy.modflow.ModflowSfr2.load(os.path.join(bak_sfr_file), m)
         sfrfile = pars["sfr_filename"]
         mlt_df = pd.read_csv(pars["mult_file"], delim_whitespace=False, index_col=0)
+        # time_mlt_df = None
+        # if "time_mult_file" in pars:
+        #     time_mult_file = pars["time_mult_file"]
+        #     time_mlt_df = pd.read_csv(pars["time_mult_file"], delim_whitespace=False,index_col=0)
 
         idx_cols = ['nseg', 'icalc', 'outseg', 'iupseg', 'iprior', 'nstrpts']
         present_cols = [c for c in idx_cols if c in mlt_df.columns]
@@ -1560,7 +1651,18 @@ def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
         r_df = pd.DataFrame.from_records(m.sfr.reach_data)
         r_df.loc[:, r_mlt_cols] *= r_mlt_df.loc[:, r_mlt_cols]
         sfr.reach_data = r_df.to_records(index=False)
+
+
     #m.remove_package("sfr")
+    if pars is not None and "time_mult_file" in pars:
+        time_mult_file = pars["time_mult_file"]
+        time_mlt_df = pd.read_csv(time_mult_file, delim_whitespace=False, index_col=0)
+        for kper, sdata in m.sfr.segment_data.items():
+            assert kper in time_mlt_df.index, "gw_utils.apply_sfr_seg_parameters() error: kper " + \
+                                              "{0} not in time_mlt_df index".format(kper)
+            for col in time_mlt_df.columns:
+                sdata[col] *= time_mlt_df.loc[kper, col]
+
     sfr.write_file(filename=sfrfile)
     return sfr
 
@@ -1730,8 +1832,9 @@ def apply_sfr_obs():
 
 
 def load_sfr_out(sfr_out_file, selection=None):
-    """load an ASCII SFR output file into a dictionary of kper: dataframes.  aggregates
-    flow to aquifer for segments and returns and flow out at downstream end of segment.
+    """load an ASCII SFR output file into a dictionary of kper: dataframes.
+    aggregates flow to aquifer for segments and returns and flow out at
+    downstream end of segment.
 
     Parameters
     ----------
@@ -1752,10 +1855,13 @@ def load_sfr_out(sfr_out_file, selection=None):
     if selection is None:
         pass
     elif isinstance(selection, str):
-        assert selection == 'all', "If string passed as selection only 'all' allowed: {}".format(selection)
+        assert selection == 'all', \
+            "If string passed as selection only 'all' allowed: " \
+            "{}".format(selection)
     else:
-        assert isinstance(
-            selection, pd.DataFrame), "'selection needs to be pandas Dataframe. Type {} passed.".format(type(selection))
+        assert isinstance(selection, pd.DataFrame), \
+            "'selection needs to be pandas Dataframe. " \
+            "Type {} passed.".format(type(selection))
         assert np.all([sr in selection.columns for sr in ['segment', 'reach']]
                       ), "Either 'segment' or 'reach' not in selection columns"
     with open(sfr_out_file) as f:
@@ -1780,34 +1886,47 @@ def load_sfr_out(sfr_out_file, selection=None):
                     dlines.append(draw)
                 df = pd.DataFrame(data=np.array(dlines)).iloc[:, [3, 4, 6, 7]]
                 df.columns = ["segment", "reach", "flaqx", "flout"]
-                df.loc[:, "segment"] = df.segment.apply(np.int)
-                df.loc[:, "reach"] = df.reach.apply(np.int)
-                df.loc[:, "flaqx"] = df.flaqx.apply(np.float)
-                df.loc[:, "flout"] = df.flout.apply(np.float)
-                df.index = df.apply(lambda x: "{0:03d}_{1:03d}".format(int(x.segment), int(x.reach)), axis=1)
+                df["segment"] = df.segment.astype(np.int)
+                df["reach"] = df.reach.astype(np.int)
+                df["flaqx"] = df.flaqx.astype(np.float)
+                df["flout"] = df.flout.astype(np.float)
+                df.index = ["{0:03d}_{1:03d}".format(s, r) for s, r in
+                            np.array([df.segment.values, df.reach.values]).T]
+                # df.index = df.apply(
+                # lambda x: "{0:03d}_{1:03d}".format(
+                # int(x.segment), int(x.reach)), axis=1)
                 if selection is None:  # setup for all segs, aggregate
                     gp = df.groupby(df.segment)
                     bot_reaches = gp[['reach']].max().apply(
-                        lambda x: "{0:03d}_{1:03d}".format(int(x.name), int(x.reach)), axis=1)
-                    df2 = pd.DataFrame(index=gp.groups.keys(), columns=['flaqx', 'flout'])
-                    df2['flaqx'] = gp.flaqx.sum()  # only sum distributed output
-                    df2['flout'] = df.loc[bot_reaches, 'flout'].values  # take flow out of seg
+                        lambda x: "{0:03d}_{1:03d}".format(
+                            int(x.name), int(x.reach)), axis=1)
+                    # only sum distributed output # take flow out of seg
+                    df2 = pd.DataFrame(
+                        {'flaqx':gp.flaqx.sum(),
+                         'flout': df.loc[bot_reaches, 'flout'].values},
+                        index=gp.groups.keys())
                     # df = df.groupby(df.segment).sum()
-                    df2.loc[:,"segment"] = df2.index
+                    df2["segment"] = df2.index
                 elif isinstance(selection, str) and selection == 'all':
                     df2 = df
                 else:
-                    seg_reach_id = selection.apply(lambda x: "{0:03d}_{1:03d}".
-                                                   format(int(x.segment), int(x.reach)), axis=1).values
+                    seg_reach_id = selection.apply(
+                        lambda x: "{0:03d}_{1:03d}".format(
+                            int(x.segment), int(x.reach)), axis=1).values
                     for sr in seg_reach_id:
                         if sr not in df.index:
                             s, r = [x.lstrip('0') for x in sr.split('_')]
-                            warnings.warn("Requested segment reach pair ({0},{1}) is not in sfr output. Dropping...".
-                                          format(int(r), int(s)), PyemuWarning)
-                            seg_reach_id = np.delete(seg_reach_id, np.where(seg_reach_id == sr), axis=0)
+                            warnings.warn(
+                                "Requested segment reach pair ({0},{1}) "
+                                "is not in sfr output. Dropping...".format(
+                                    int(r), int(s)), PyemuWarning)
+                            seg_reach_id = np.delete(
+                                seg_reach_id,
+                                np.where(seg_reach_id == sr), axis=0)
                     df2 = df.loc[seg_reach_id].copy()
                 if kper in sfr_dict.keys():
-                    print("multiple entries found for kper {0}, replacing...".format(kper))
+                    print("multiple entries found for kper {0}, "
+                          "replacing...".format(kper))
                 sfr_dict[kper] = df2
     return sfr_dict
 
@@ -2193,8 +2312,8 @@ def write_hfb_zone_multipliers_template(m):
     Returns
     -------
         (hfb_mults, tpl_filename) : (dict, str)
-            a dictionary with original unique HFB conductivity values and their corresponding parameter names
-            and the name of the template file
+            a dictionary with original unique HFB conductivity values and their
+            corresponding parameter names and the name of the template file
 
     """
     assert m.hfb6 is not None
@@ -2205,7 +2324,8 @@ def write_hfb_zone_multipliers_template(m):
     if not os.path.exists(os.path.join(m.model_ws, 'hfb6_org')):
         os.mkdir(os.path.join(m.model_ws, 'hfb6_org'))
     # copy down the original file
-    shutil.copy2(os.path.join(m.model_ws, m.hfb6.file_name[0]), os.path.join(m.model_ws,'hfb6_org', m.hfb6.file_name[0]))
+    shutil.copy2(os.path.join(m.model_ws, m.hfb6.file_name[0]),
+                 os.path.join(m.model_ws,'hfb6_org', m.hfb6.file_name[0]))
 
     if not os.path.exists(os.path.join(m.model_ws, 'hfb6_mlt')):
         os.mkdir(os.path.join(m.model_ws, 'hfb6_mlt'))
@@ -2214,41 +2334,48 @@ def write_hfb_zone_multipliers_template(m):
     hfb_file_contents = open(hfb_file, 'r').readlines()
 
     # navigate the header
-    skiprows = sum([1 if i.strip().startswith('#') else 0 for i in hfb_file_contents]) + 1
+    skiprows = sum([1 if i.strip().startswith('#') else 0
+                    for i in hfb_file_contents]) + 1
     header = hfb_file_contents[:skiprows]
 
     # read in the data
-    names = ['lay', 'irow1','icol1','irow2','icol2', 'hydchr']
-    hfb_in = pd.read_csv(hfb_file, skiprows=skiprows, delim_whitespace=True, names=names).dropna()
+    names = ['lay', 'irow1', 'icol1', 'irow2', 'icol2', 'hydchr']
+    hfb_in = pd.read_csv(hfb_file, skiprows=skiprows,
+                         delim_whitespace=True, names=names).dropna()
     for cn in names[:-1]:
         hfb_in[cn] = hfb_in[cn].astype(np.int)
 
     # set up a multiplier for each unique conductivity value
     unique_cond = hfb_in.hydchr.unique()
-    hfb_mults = dict(zip(unique_cond, ['hbz_{0:04d}'.format(i) for i in range(len(unique_cond))]))
+    hfb_mults = dict(zip(unique_cond, ['hbz_{0:04d}'.format(i)
+                                       for i in range(len(unique_cond))]))
     # set up the TPL line for each parameter and assign
     hfb_in['tpl'] = 'blank'
     for cn, cg in hfb_in.groupby('hydchr'):
-        hfb_in.loc[hfb_in.hydchr == cn, 'tpl'] = '~{0:^10s}~'.format(hfb_mults[cn])
+        hfb_in.loc[hfb_in.hydchr == cn, 'tpl'] = '~{0:^10s}~'.format(
+            hfb_mults[cn])
 
     assert 'blank' not in hfb_in.tpl
 
     # write out the TPL file
     tpl_file = os.path.join(m.model_ws, "hfb6.mlt.tpl")
-    with open(tpl_file, 'w') as ofp:
+    with open(tpl_file, 'w', newline='') as ofp:
         ofp.write('ptf ~\n')
         [ofp.write('{0}\n'.format(line.strip())) for line in header]
         ofp.flush()
-        hfb_in[['lay', 'irow1','icol1','irow2','icol2', 'tpl']].to_csv(ofp, sep=' ', quotechar=' ',
-                header=None, index=None, mode='a')
+        hfb_in[['lay', 'irow1', 'icol1', 'irow2', 'icol2', 'tpl']].to_csv(
+            ofp, sep=' ', quotechar=' ', header=None, index=None, mode='a')
 
-    # make a lookup for lining up the necessary files to perform multiplication with the
-    # helpers.apply_hfb_pars() function which must be added to the forward run script
+    # make a lookup for lining up the necessary files to
+    # perform multiplication with the helpers.apply_hfb_pars() function
+    # which must be added to the forward run script
     with open(os.path.join(m.model_ws, 'hfb6_pars.csv'), 'w') as ofp:
         ofp.write('org_file,mlt_file,model_file\n')
-        ofp.write('{0},{1},{2}\n'.format(os.path.join(m.model_ws, 'hfb6_org', m.hfb6.file_name[0]),
-                                         os.path.join(m.model_ws, 'hfb6_mlt', os.path.basename(tpl_file).replace('.tpl','')),
-                                         hfb_file))
+        ofp.write('{0},{1},{2}\n'.format(
+            os.path.join(m.model_ws, 'hfb6_org', m.hfb6.file_name[0]),
+            os.path.join(m.model_ws, 'hfb6_mlt',
+                         os.path.basename(tpl_file).replace('.tpl', '')),
+            hfb_file))
 
     return hfb_mults, tpl_file
 
@@ -2269,7 +2396,7 @@ def write_hfb_template(m):
 
     assert m.hfb6 is not None
     hfb_file = os.path.join(m.model_ws,m.hfb6.file_name[0])
-    assert os.path.exists(hfb_file),"couldn't find hfb_file".format(hfb_file)
+    assert os.path.exists(hfb_file),"couldn't find hfb_file {0}".format(hfb_file)
     f_in = open(hfb_file,'r')
     tpl_file = hfb_file+".tpl"
     f_tpl = open(tpl_file,'w')

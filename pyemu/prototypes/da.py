@@ -108,6 +108,7 @@ class Assimilator(EnsembleMethod):
     def initialize(self):
         ### The inialization is modefied from the Smoother
 
+
         """Initialize.  Depending on arguments, draws or loads
         initial parameter observations ensembles and runs the initial parameter
         ensemble

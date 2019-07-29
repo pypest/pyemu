@@ -209,8 +209,8 @@ class EnsembleSmoother(EnsembleMethod):
         obscov : pyemu.Cov or str
             a measurement noise covariance matrix or filename. If None,
             obscov is constructed from observation weights.
-        num_slaves : int
-            number of slaves to use in (local machine) parallel evaluation of the parmaeter
+        num_workers : int
+            number of workers to use in (local machine) parallel evaluation of the parmaeter
             ensemble.  If 0, serial evaluation is used.  Ignored if submit_file is not None
         use_approx_prior : bool
              a flag to use the MLE (approx) upgrade solution.  If True, a MAP
@@ -221,7 +221,7 @@ class EnsembleSmoother(EnsembleMethod):
             as a system command
         port : int
             the TCP port number to communicate on for parallel run management
-        slave_dir : str
+        worker_dir : str
             path to a directory with a complete set of model files and PEST
             interface files
         drop_bad_reals : float
@@ -235,14 +235,14 @@ class EnsembleSmoother(EnsembleMethod):
     ``>>>es = pyemu.EnsembleSmoother(pst="pest.pst")``
     """
 
-    def __init__(self,pst,parcov=None,obscov=None,num_slaves=0,submit_file=None,verbose=False,
-                 port=4004,slave_dir="template",drop_bad_reals=None,save_mats=False):
+    def __init__(self,pst,parcov=None,obscov=None,num_workers=0,submit_file=None,verbose=False,
+                 port=4004,worker_dir="template",drop_bad_reals=None,save_mats=False):
 
 
 
-        super(EnsembleSmoother,self).__init__(pst=pst,parcov=parcov,obscov=obscov,num_slaves=num_slaves,
+        super(EnsembleSmoother,self).__init__(pst=pst,parcov=parcov,obscov=obscov,num_workers=num_workers,
                                               submit_file=submit_file,verbose=verbose,port=port,
-                                              slave_dir=slave_dir)
+                                              worker_dir=worker_dir)
         self.logger.warn("pyemu's EnsembleSmoother is for prototyping only.  Use PESTPP-IES for a production " +
                       "implementation of iterative ensemble smoother")
         #self.use_approx_prior = bool(use_approx_prior)

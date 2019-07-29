@@ -30,7 +30,7 @@ def henry():
     csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
     [os.remove(csv_file) for csv_file in csv_files]
     pst = pyemu.Pst(os.path.join("henry.pst"))
-    es = EnsembleSmoother(pst, num_slaves=15,verbose="ies.log")
+    es = EnsembleSmoother(pst, num_workers=15,verbose="ies.log")
     es.initialize(210, init_lambda=1.0)
     for i in range(10):
         es.update(lambda_mults=[0.2,5.0],run_subset=45)
@@ -211,7 +211,7 @@ def freyberg_check_phi_calc():
     #pst.write("temp.pst")
     obscov = pyemu.Cov.from_observation_data(pst)
 
-    es = EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=1,
+    es = EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_workers=1,
                                 verbose=True)
 
     es.initialize(num_reals=3)
@@ -294,7 +294,7 @@ def freyberg():
     pst.write("temp.pst")
     obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
 
-    es = EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=20,
+    es = EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_workers=20,
                                 verbose=True,port=4006)
 
     es.initialize(100,init_lambda=10.0,enforce_bounds="reset",regul_factor=0.0,use_approx_prior=True)
@@ -366,7 +366,7 @@ def freyberg_emp():
     obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
     pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,parcov,num_reals=100,use_homegrown=True)
     oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst,num_reals=100)
-    es = EnsembleSmoother(pst,num_slaves=20,
+    es = EnsembleSmoother(pst,num_workers=20,
                                 verbose=True,port=4006)
 
     es.initialize(parensemble=pe,obsensemble=oe,init_lambda=10.0,enforce_bounds="reset",regul_factor=0.0,
@@ -446,7 +446,7 @@ def freyerg_reg_compare():
     pst.write("temp.pst")
     obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
     pyemu.Ensemble.reseed()
-    es = EnsembleSmoother(pst, parcov=parcov, obscov=obscov, num_slaves=20,
+    es = EnsembleSmoother(pst, parcov=parcov, obscov=obscov, num_workers=20,
                                 verbose=True)
 
     es.initialize(300, init_lambda=100.0, enforce_bounds="reset", regul_factor=0.0)
@@ -457,7 +457,7 @@ def freyerg_reg_compare():
     noreg_obs = es.obsensemble.copy()
     noreg_iobj = pd.read_csv("freyberg.pst.iobj.actual.csv")
 
-    es = EnsembleSmoother(pst, parcov=parcov, obscov=obscov, num_slaves=20,
+    es = EnsembleSmoother(pst, parcov=parcov, obscov=obscov, num_workers=20,
                                 verbose=True)
 
     es.initialize(300, init_lambda=100.0, enforce_bounds="reset", regul_factor=1.0)
@@ -562,7 +562,7 @@ def freyberg_condor():
     pst.write("temp.pst")
     obscov = pyemu.Cov.from_obsweights(os.path.join("temp.pst"))
 
-    es = EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_slaves=20,
+    es = EnsembleSmoother(pst,parcov=parcov,obscov=obscov,num_workers=20,
                                 verbose=True,submit_file="freyberg.sub")
 
     #gs.variograms[0].a=10000
@@ -1095,7 +1095,7 @@ def chenoliver():
 
     num_reals = 100
     es = EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
-                                num_slaves=15,verbose=True)
+                                num_workers=15,verbose=True)
     es.initialize(num_reals=num_reals,enforce_bounds=None,init_lambda=10.0,regul_factor=1.0,use_approx_prior=False)
     for it in range(25):
         es.update(use_approx=False)
@@ -1118,7 +1118,7 @@ def chenoliver_existing():
 
     num_reals = 100
     es = EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
-                                num_slaves=10,verbose=True)
+                                num_workers=10,verbose=True)
     es.initialize(num_reals=num_reals,enforce_bounds=None)
 
     obs1 = es.obsensemble.copy()
@@ -1126,7 +1126,7 @@ def chenoliver_existing():
     es.obsensemble_0.to_csv("obsen.csv")
 
     #es = pyemu.EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
-    #                            num_slaves=1,verbose=True)
+    #                            num_workers=1,verbose=True)
     es.initialize(parensemble="paren.csv",obsensemble="obsen.csv")
 
     obs2 = es.obsensemble.copy()
@@ -1154,7 +1154,7 @@ def chenoliver_condor():
     
     num_reals = 100
     es = EnsembleSmoother(pst,parcov=parcov,obscov=obscov,
-                                num_slaves=10,verbose=True,
+                                num_workers=10,verbose=True,
                                 submit_file="chenoliver.sub")
     es.initialize(num_reals=num_reals,enforce_bounds=None)
     for it in range(40):
@@ -1194,7 +1194,7 @@ def tenpar_phi():
     obs.loc["h01_09", 'obsval'] = 2.0
 
     es = EnsembleSmoother(pst, parcov=cov,
-                                num_slaves=10, port=4005, verbose=True,
+                                num_workers=10, port=4005, verbose=True,
                                 drop_bad_reals=14000.)
 
     lz = es.get_localizer().to_dataframe()
@@ -1257,7 +1257,7 @@ def tenpar_test():
 
 
     es = EnsembleSmoother(pst, parcov=cov,
-                                num_slaves=10, port=4005, verbose=True,
+                                num_workers=10, port=4005, verbose=True,
                                 drop_bad_reals=14000.)
 
     lz = es.get_localizer().to_dataframe()
@@ -1321,7 +1321,7 @@ def tenpar_fixed():
     cov = gs.covariance_matrix(sr.xcentergrid[0,:],sr.ycentergrid[0,:],k_names)
 
     es = EnsembleSmoother(pst,parcov=cov,
-                                num_slaves=10,port=4005,verbose=True,
+                                num_workers=10,port=4005,verbose=True,
                                 drop_bad_reals=14000.)
     lz = es.get_localizer().to_dataframe()
     #the k pars upgrad of h01_04 and h01_06 are localized
@@ -1368,7 +1368,7 @@ def tenpar():
 
 
     es = EnsembleSmoother("10par_xsec.pst",parcov=cov,
-                                num_slaves=10,port=4005,verbose=True,
+                                num_workers=10,port=4005,verbose=True,
                                 drop_bad_reals=14000.)
     lz = es.get_localizer().to_dataframe()
     #the k pars upgrad of h01_04 and h01_06 are localized
@@ -1426,7 +1426,7 @@ def tenpar_opt():
     pst.write(os.path.join("template","10par_xsec_opt.pst"))
 
     es = EnsembleSmoother("10par_xsec_opt.pst",parcov=cov,
-                                num_slaves=10,port=4005,verbose=True)
+                                num_workers=10,port=4005,verbose=True)
     lz = es.get_localizer().to_dataframe()
     #the k pars upgrad of h01_04 and h01_06 are localized
     upgrad_pars = [pname for pname in lz.columns if "_" in pname and\
@@ -1452,7 +1452,7 @@ def tenpar_opt():
 
     #obs.loc["h01_09","weight"] = 0.0
     es = EnsembleSmoother("10par_xsec.pst", parcov=cov,
-                                num_slaves=10, port=4005, verbose=True)
+                                num_workers=10, port=4005, verbose=True)
     lz = es.get_localizer().to_dataframe()
     # the k pars upgrad of h01_04 and h01_06 are localized
     upgrad_pars = [pname for pname in lz.columns if "_" in pname and \
@@ -1572,7 +1572,7 @@ def tenpar_restart():
     cov = dia_parcov.extend(full_cov)
 
     es = EnsembleSmoother("10par_xsec.pst",parcov=cov,
-                                num_slaves=10,port=4005,verbose=True)
+                                num_workers=10,port=4005,verbose=True)
     lz = es.get_localizer().to_dataframe()
     #the k pars upgrad of h01_04 and h01_06 are localized
     upgrad_pars = [pname for pname in lz.columns if "_" in pname and\
@@ -1615,7 +1615,7 @@ def tenpar_failed_runs():
     cov = dia_parcov.extend(full_cov)
 
     es = EnsembleSmoother("10par_xsec.pst",parcov=cov,
-                                num_slaves=2,
+                                num_workers=2,
                                 verbose=True)
     lz = es.get_localizer().to_dataframe()
     #the k pars upgrad of h01_04 and h01_06 are localized
