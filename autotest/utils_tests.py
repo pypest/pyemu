@@ -1567,7 +1567,7 @@ def fieldgen_dev():
 
 
 if __name__ == "__main__":
-    fieldgen_dev()
+    #fieldgen_dev()
     # smp_test()
     # smp_dateparser_test()
     # smp_to_ins_test()
@@ -1581,7 +1581,7 @@ if __name__ == "__main__":
     #sfr_reach_obs_test()
     #gage_obs_test()
     #setup_pp_test()
-    #sfr_helper_test()
+    sfr_helper_test()
     # gw_sft_ins_test()
     # par_knowledge_test()
     # grid_obs_test()
