@@ -352,6 +352,56 @@ class GeoStruct(object):
             s += str(v)
         return s
 
+    def spectralsim2d(self,delx,dely,num_reals=100):
+        # check that grid is regular
+        tol = 1.0e-6
+        if np.abs(delx.mean() - delx.min()) > tol:
+            raise Exception("GeoStruct::spectralsim2d() error: grid not regular")
+        if np.abs(dely.mean() - dely.min()) > tol:
+            raise Exception("GeoStruct::spectralsim2d() error: grid not regular")
+        if np.abs(delx.mean() - dely.mean()) > tol:
+            raise Exception("GeoStruct::spectralsim2d() error: grid not regular")
+
+        # pad the grid with 3X max range
+        mx_a = -1.0e10
+        for v in self.variograms:
+            mx_a = max(mx_a,v.a)
+        pad = int(np.ceil((mx_a * 3.0)/delx[0]))
+        pad = int(np.ceil(pad/8.)*8.)
+        full_delx = np.zeros((delx.shape[0]+(2*pad)))
+        full_dely = np.zeros((dely.shape[0] + (2 * pad)))
+        full_delx[:] = delx[0]
+        full_dely[:] = dely[0]
+
+        xdist = np.cumsum(full_delx)
+        ydist = np.cumsum(full_dely)
+        xdist -= xdist.min()
+        ydist -= ydist.min()
+        xgrid = np.zeros((xdist.shape[0],ydist.shape[0]))
+        ygrid = np.zeros_like(xgrid)
+        for i,d in enumerate(xdist):
+            xgrid[i,:] = d
+        for j,d in enumerate(ydist):
+            ygrid[:,j] = d
+        grid = np.array((xgrid,ygrid))
+        c = np.zeros_like(xgrid)
+        for v in self.variograms:
+            c += v.specsim_grid_contrib(grid)
+        if self.nugget > 0.0:
+            h = ((grid ** 2).sum(axis=0)) ** 0.5
+            c[np.where(h==0)] += self.nugget
+        fftc = np.abs(np.fft.fftn(c))
+        pts = np.prod(xgrid.shape)
+        sqrt_fftc = np.sqrt(fftc / pts)
+
+        for ireal in range(num_reals):
+            real = np.random.standard_normal(size=sqrt_fftc.shape)
+            imag = np.random.standard_normal(size=sqrt_fftc.shape)
+            epsilon = real + 1j * imag
+            rand = epsilon * sqrt_fftc
+            real = np.real(np.fft.ifftn(rand)) * pts
+            real = real[pad:-pad,pad:-pad]
+            print(real.shape)
 
 # class LinearUniversalKrige(object):
 #     def __init__(self,geostruct,point_data):
@@ -1537,6 +1587,13 @@ class Vario2d(object):
         for i in range(len(names)):
             cov.x[i+1:,i] = cov.x[i,i+1:]
         return cov
+
+    def specsim_grid_contrib(self,grid):
+        dx,dy = self._apply_rotation(grid[0,:,:],grid[1,:,:])
+        rot_grid = np.array((dx,dy))
+        h = ((rot_grid**2).sum(axis=0))**0.5
+        c = self._h_function(h)
+        return c
 
     def _apply_rotation(self,dx,dy):
         """ private method to rotate points

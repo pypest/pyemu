@@ -1698,7 +1698,43 @@ def ok_grid_invest():
     diff = (kf.err_var - kf2.err_var).apply(np.abs).sum()
     assert diff < 1.0e-10
 
+
+def specsim_test():
+    try:
+        import flopy
+    except:
+        return
+
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    nrow,ncol = 100,100
+    delr = np.ones((ncol)) * 1
+    delc = np.ones((nrow)) * 1
+    variograms = [pyemu.geostats.ExpVario(1.0,1.0)]
+    gs = pyemu.geostats.GeoStruct(nugget=1.0,variograms=variograms)
+    broke_delr = delr.copy()
+    broke_delr[0] = 0.0
+    broke_delc = delc.copy()
+    broke_delc[0] = 0.0
+    try:
+        gs.spectralsim2d(broke_delr,delc,num_reals=100)
+    except Exception as e:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    try:
+        gs.spectralsim2d(delr, broke_delc, num_reals=100)
+    except Exception as e:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    gs.spectralsim2d(delr, delc, num_reals=100)
+
 if __name__ == "__main__":
+    specsim_test()
     #fieldgen_dev()
     # smp_test()
     # smp_dateparser_test()
@@ -1713,7 +1749,7 @@ if __name__ == "__main__":
     #sfr_reach_obs_test()
     #gage_obs_test()
     #setup_pp_test()
-    sfr_helper_test()
+    #sfr_helper_test()
     # gw_sft_ins_test()
     # par_knowledge_test()
     # grid_obs_test()
