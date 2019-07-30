@@ -1711,8 +1711,8 @@ def specsim_test():
     nrow,ncol = 100,100
     delr = np.ones((ncol)) * 1
     delc = np.ones((nrow)) * 1
-    variograms = [pyemu.geostats.ExpVario(1.0,1.0)]
-    gs = pyemu.geostats.GeoStruct(nugget=1.0,variograms=variograms)
+    variograms = [pyemu.geostats.ExpVario(contribution=1.0,a=500.0)]
+    gs = pyemu.geostats.GeoStruct(nugget=0.0,variograms=variograms)
     broke_delr = delr.copy()
     broke_delr[0] = 0.0
     broke_delc = delc.copy()
@@ -1725,13 +1725,17 @@ def specsim_test():
         raise Exception("should have failed")
 
     try:
-        gs.spectralsim2d(delr, broke_delc, num_reals=100)
+        gs.spectralsim2d(delr, broke_delc, num_reals=10)
     except Exception as e:
         pass
     else:
         raise Exception("should have failed")
+    np.random.seed(1)
+    reals = gs.spectralsim2d(delr, delc, num_reals=1)
 
-    gs.spectralsim2d(delr, delc, num_reals=100)
+    import matplotlib.pyplot as plt
+    plt.imshow(reals[0])
+    plt.show()
 
 if __name__ == "__main__":
     specsim_test()

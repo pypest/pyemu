@@ -365,9 +365,10 @@ class GeoStruct(object):
         # pad the grid with 3X max range
         mx_a = -1.0e10
         for v in self.variograms:
-            mx_a = max(mx_a,v.a)
-        pad = int(np.ceil((mx_a * 3.0)/delx[0]))
+           mx_a = max(mx_a,v.a)
+        pad = int(np.ceil((mx_a * 2.0)/delx[0]))
         pad = int(np.ceil(pad/8.)*8.)
+
         full_delx = np.zeros((delx.shape[0]+(2*pad)))
         full_dely = np.zeros((dely.shape[0] + (2 * pad)))
         full_delx[:] = delx[0]
@@ -384,6 +385,10 @@ class GeoStruct(object):
         for j,d in enumerate(ydist):
             ygrid[:,j] = d
         grid = np.array((xgrid,ygrid))
+        domainsize = np.array((full_dely.shape[0],full_dely.shape[0]))
+        for i in range(2):
+            domainsize = domainsize[:,np.newaxis]
+        grid = np.min((grid, np.array(domainsize) - grid), axis=0)
         c = np.zeros_like(xgrid)
         for v in self.variograms:
             c += v.specsim_grid_contrib(grid)
@@ -393,7 +398,7 @@ class GeoStruct(object):
         fftc = np.abs(np.fft.fftn(c))
         pts = np.prod(xgrid.shape)
         sqrt_fftc = np.sqrt(fftc / pts)
-
+        reals = []
         for ireal in range(num_reals):
             real = np.random.standard_normal(size=sqrt_fftc.shape)
             imag = np.random.standard_normal(size=sqrt_fftc.shape)
@@ -401,7 +406,8 @@ class GeoStruct(object):
             rand = epsilon * sqrt_fftc
             real = np.real(np.fft.ifftn(rand)) * pts
             real = real[pad:-pad,pad:-pad]
-            print(real.shape)
+            reals.append(real)
+        return np.array(reals)
 
 # class LinearUniversalKrige(object):
 #     def __init__(self,geostruct,point_data):
