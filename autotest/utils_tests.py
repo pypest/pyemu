@@ -1733,9 +1733,7 @@ def specsim_test():
     np.random.seed(1)
     reals = gs.spectralsim2d(delr, delc, num_reals=1)
 
-    import matplotlib.pyplot as plt
-    plt.imshow(reals[0])
-    plt.show()
+    
 
 if __name__ == "__main__":
     specsim_test()
