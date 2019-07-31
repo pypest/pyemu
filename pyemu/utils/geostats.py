@@ -480,9 +480,8 @@ class SpecSim2d(object):
         pst.add_transform_columns()
         par = pst.parameter_data
 
-        # par en container
-        pe = pd.DataFrame(index=np.arange(num_reals),columns=gr_df.parnme)
-        # process each par group
+        # real and name containers
+        real_arrs,names = [],[]
         for gr_grp in gr_grps:
 
             gp_df = gr_df.loc[gr_df.pargp==gr_grp,:]
@@ -505,12 +504,19 @@ class SpecSim2d(object):
             self.geostruct.nugget = var * new_nug
             # reinitialize and draw
             self.initialize()
-            reals = self.draw_arrays(num_reals=num_reals,mean_value=1.0)
+            reals = self.draw_arrays(num_reals=num_reals,mean_value=mean_arr)
             # put the pieces into the par en
             reals = reals[:,gp_df.i,gp_df.j].reshape(num_reals,gp_df.shape[0])
-            pe.loc[:,gp_df.parnme] = reals
+            real_arrs.append(reals)
+            names.extend(list(gp_df.parnme.values))
             if logger is not None:
                 logger.log("spectral sim for pargp {0} with {1} parameters".format(gr_grp,gp_df.shape[0]))
+
+        # get into a dataframe
+        reals = real_arrs[0]
+        for r in real_arrs[1:]:
+            reals = np.append(reals,r,axis=1)
+        pe = pd.DataFrame(data=reals,columns=names)
         # reset to org conditions
         self.geostruct.nugget = org_nug
         self.geostruct.variograms[0].contribution = org_var

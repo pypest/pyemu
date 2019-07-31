@@ -1333,27 +1333,37 @@ def pst_from_flopy_specsim_draw_test():
                                          spatial_list_props=spat_list_props,build_prior=False)
 
 
-    num_reals = 10000
+    num_reals = 1000
     par = ph.pst.parameter_data
-    gr_par = par.loc[par.pargp.apply(lambda x: "gr" in x),:]
-    par.loc[gr_par.parnme,"parval1"] = 20#np.arange(1,gr_par.shape[0]+1)
+    par.loc[:,"parval1"] = 10
+    par.loc[:, "parubnd"] = 100
+    par.loc[:, "parlbnd"] = 1
 
-    par.loc[gr_par.parnme,"parubnd"] = 30#par.loc[gr_par.parnme,"parval1"].max()
-    par.loc[gr_par.parnme, "parlbnd"] = 0.001#par.loc[gr_par.parnme,"parval1"].min()
+    #gr_par = par.loc[par.pargp.apply(lambda x: "gr" in x),:]
+    #par.loc[gr_par.parnme,"parval1"] = 20#np.arange(1,gr_par.shape[0]+1)
+
+    #par.loc[gr_par.parnme,"parubnd"] = 30#par.loc[gr_par.parnme,"parval1"].max()
+    #par.loc[gr_par.parnme, "parlbnd"] = 0.001#par.loc[gr_par.parnme,"parval1"].min()
     #print(par.loc[gr_par.parnme,"parval1"])
-
+    li = par.partrans == "log"
     pe1 = ph.draw(num_reals=num_reals, sigma_range=6,use_specsim=True)
 
     pyemu.Ensemble.reseed()
     #print(ph.pst.parameter_data.loc[gr_par.parnme,"parval1"])
     pe2 = pyemu.ParameterEnsemble.from_gaussian_draw(ph.pst, ph.build_prior(sigma_range=6), num_reals=num_reals)
-
+    pe1._transform()
+    pe2._transform()
+    par_vals = par.parval1.copy()
+    par_vals.loc[li] = par_vals.loc[li].apply(np.log10)
     mn1, mn2 = pe1.mean(), pe2.mean()
     sd1, sd2 = pe1.std(), pe2.std()
 
+    for pname in par_vals.index:
+        print(pname,par_vals[pname],mn1[pname],mn2[pname])
+    return
     print(mn1)
     print(mn2)
-
+    print
     print(sd1)
     print(sd2)
 
