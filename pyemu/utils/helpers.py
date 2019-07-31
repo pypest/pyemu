@@ -2621,6 +2621,7 @@ class PstFromFlopyModel(object):
 
         self.log("drawing realizations")
         struct_dict = {}
+        gr_par_pe = None
         if self.pp_suffix in self.par_dfs.keys():
             pp_df = self.par_dfs[self.pp_suffix]
             pp_dfs = []
@@ -2632,7 +2633,7 @@ class PstFromFlopyModel(object):
             struct_dict[self.pp_geostruct] = pp_dfs
         if self.gr_suffix in self.par_dfs.keys():
             gr_df = self.par_dfs[self.gr_suffix]
-            gr_par_pe = None
+
             if not use_specsim:
                 gr_dfs = []
                 for pargp in gr_df.pargp.unique():
