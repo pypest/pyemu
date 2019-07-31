@@ -1708,32 +1708,52 @@ def specsim_test():
     import numpy as np
     import pandas as pd
     import pyemu
-    nrow,ncol = 100,100
+    nrow,ncol = 50,50
     delr = np.ones((ncol)) * 1
     delc = np.ones((nrow)) * 1
-    variograms = [pyemu.geostats.ExpVario(contribution=1.0,a=500.0)]
-    gs = pyemu.geostats.GeoStruct(nugget=0.0,variograms=variograms)
+    variograms = [pyemu.geostats.ExpVario(contribution=2.5,a=10.0,anisotropy=10,bearing=90)]
+    gs = pyemu.geostats.GeoStruct(variograms=variograms,transform="none",nugget=1.0)
     broke_delr = delr.copy()
     broke_delr[0] = 0.0
     broke_delc = delc.copy()
     broke_delc[0] = 0.0
+
+
     try:
-        gs.spectralsim2d(broke_delr,delc,num_reals=100)
+        ss = pyemu.geostats.SpecSim2d(geostruct=gs,delx=broke_delr,dely=delc)
     except Exception as e:
         pass
     else:
         raise Exception("should have failed")
 
     try:
-        gs.spectralsim2d(delr, broke_delc, num_reals=10)
+        ss = pyemu.geostats.SpecSim2d(geostruct=gs,delx=delr,dely=broke_delc)
     except Exception as e:
         pass
     else:
         raise Exception("should have failed")
     np.random.seed(1)
-    reals = gs.spectralsim2d(delr, delc, num_reals=1)
+    num_reals = 5000
+    ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
+    mean_value = 1.0
+    reals = ss.draw_arrays(num_reals=num_reals,mean_value=mean_value)
+    assert reals.shape == (num_reals,nrow,ncol)
+    var = np.var(reals,axis=0).mean()
+    mean = reals.mean()
 
-    
+    theo_var = ss.geostruct.nugget
+    for v in ss.geostruct.variograms:
+        theo_var += v.contribution
+    print(var,theo_var)
+    print(mean,mean_value)
+    assert np.abs(var - theo_var) < 0.1
+    assert np.abs(mean - mean_value) < 0.1
+
+
+
+    # import matplotlib.pyplot as plt
+    # plt.imshow(reals[0])
+    # plt.show()
 
 if __name__ == "__main__":
     specsim_test()

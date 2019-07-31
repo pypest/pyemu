@@ -139,16 +139,6 @@ def run_fieldgen(m,num_reals,struct_dict,cwd=None):
         return df
 
 
-
-
-
-
-
-
-
-
-
-
 def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=True):
     """ a helper function to construct a parameter ensenble from a full prior covariance matrix
     implied by the geostatistical structure(s) in struct_dict.  This function is much more efficient
@@ -1480,7 +1470,7 @@ class PstFromFlopyModel(object):
         in pyemu.pp_utils.setup_pilot_points_grid.  Default is None
     zone_props : list
         zone-based multiplier parameters.
-        A nested list of grid-scale model properties to parameterize using
+        A nested list of zone-based model properties to parameterize using
         name, iterable pairs.  For 3D properties, the iterable is zero-based
         layer indices (e.g., ["lpf.hk",[0,1,2,]] would setup a multiplier
         parameter for layer property file horizontal hydraulic conductivity for model
@@ -1566,6 +1556,25 @@ class PstFromFlopyModel(object):
         add HFB parameters.  uses pyemu.gw_utils.write_hfb_template().  the resulting
         HFB pars have parval1 equal to the values in the original file and use the
         spatial_list_geostruct to build geostatistical covariates between parameters
+    kl_props : list
+        karhunen-loeve based multiplier parameters.
+        A nested list of KL-based model properties to parameterize using
+        name, iterable pairs.  For 3D properties, the iterable is zero-based
+        layer indices (e.g., ["lpf.hk",[0,1,2,]] would setup a multiplier
+        parameter for layer property file horizontal hydraulic conductivity for model
+        layers 1,2, and 3 for unique zone values in the ibound array.
+        For time-varying properties (e.g. recharge), the iterable is for
+        zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
+        would setup zone-based multiplier parameters for recharge for stress
+        period 1,5,11,and 16.
+    kl_num_eig : int
+        number of KL-based eigenvector multiplier parameters to use for each
+        KL parameter set. default is 100
+    kl_geostruct: pyemu.geostats.Geostruct
+        the geostatistical structure to build the prior parameter covariance matrix
+        elements for KL-based parameters.  If None, a generic GeoStruct is created
+        using an "a" parameter that is 10 times the max cell size.  Default is None
+
 
     Returns
     -------
@@ -2163,7 +2172,7 @@ class PstFromFlopyModel(object):
             dist = 10 * float(max(self.m.dis.delr.array.max(),
                                            self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0,a=dist)
-            self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="grid_geostruct")
+            self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="grid_geostruct",transform="log")
 
     def pp_prep(self, mlt_df):
         """ prepare pilot point based parameterizations
@@ -2190,7 +2199,7 @@ class PstFromFlopyModel(object):
             pp_dist = self.pp_space * float(max(self.m.dis.delr.array.max(),
                                            self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0,a=pp_dist)
-            self.pp_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="pp_geostruct")
+            self.pp_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="pp_geostruct",transform="log")
 
         pp_df = mlt_df.loc[mlt_df.suffix==self.pp_suffix,:]
         layers = pp_df.layer.unique()
@@ -2386,7 +2395,7 @@ class PstFromFlopyModel(object):
             kl_dist = 10.0 * float(max(self.m.dis.delr.array.max(),
                                            self.m.dis.delc.array.max()))
             v = pyemu.geostats.ExpVario(contribution=1.0,a=kl_dist)
-            self.kl_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="kl_geostruct")
+            self.kl_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="kl_geostruct",transform="log")
 
         kl_df = mlt_df.loc[mlt_df.suffix==self.kl_suffix,:]
         layers = kl_df.layer.unique()
@@ -2589,7 +2598,7 @@ class PstFromFlopyModel(object):
 
 
 
-    def draw(self, num_reals=100, sigma_range=6):
+    def draw(self, num_reals=100, sigma_range=6,use_specsim=False):
         """ draw like a boss!
 
         Parameters
@@ -2599,6 +2608,9 @@ class PstFromFlopyModel(object):
             sigma_range : float
                 number of standard deviations represented by the parameter bounds.  Default
                 is 6.
+            use_specsim : bool
+                flag to use spectral simulation for grid-based parameters.  Requires a regular grid.
+                Default is False
 
         Returns
         -------
@@ -2620,13 +2632,30 @@ class PstFromFlopyModel(object):
             struct_dict[self.pp_geostruct] = pp_dfs
         if self.gr_suffix in self.par_dfs.keys():
             gr_df = self.par_dfs[self.gr_suffix]
-            gr_dfs = []
-            for pargp in gr_df.pargp.unique():
-                gp_df = gr_df.loc[gr_df.pargp==pargp,:]
-                p_df = gp_df.drop_duplicates(subset="parnme")
-                gr_dfs.append(p_df)
-            #gr_dfs = [gr_df.loc[gr_df.pargp==pargp,:].copy() for pargp in gr_df.pargp.unique()]
-            struct_dict[self.grid_geostruct] = gr_dfs
+            gr_par_pe = None
+            if not use_specsim:
+                gr_dfs = []
+                for pargp in gr_df.pargp.unique():
+                    gp_df = gr_df.loc[gr_df.pargp==pargp,:]
+                    p_df = gp_df.drop_duplicates(subset="parnme")
+                    gr_dfs.append(p_df)
+                #gr_dfs = [gr_df.loc[gr_df.pargp==pargp,:].copy() for pargp in gr_df.pargp.unique()]
+                struct_dict[self.grid_geostruct] = gr_dfs
+            else:
+                if not pyemu.geostats.SpecSim2d.grid_is_regular(self.m.dis.delr.array,self.m.dis.delc.array):
+                    self.logger.lraise("draw() error: can't use spectral simulation with irregular grid")
+                gr_df.loc[:,"i"] = gr_df.parnme.apply(lambda x: int(x[-6:-3]))
+                gr_df.loc[:,"j"] = gr_df.parnme.apply(lambda x: int(x[-3:]))
+                if gr_df.i.max() > self.m.nrow-1 or gr_df.i.min() < 0:
+                    self.logger.lraise("draw(): error parsing grid par names for 'i' index")
+                if gr_df.j.max() > self.m.ncol - 1 or gr_df.j.min() < 0:
+                    self.logger.lraise("draw(): error parsing grid par names for 'j' index")
+                self.log("spectral simulation for grid-scale pars")
+                ss = pyemu.geostats.SpecSim2d(delx=self.m.dis.delr.array,dely=self.m.dis.delc.array,
+                                              geostruct=self.grid_geostruct)
+                gr_par_pe = ss.grid_par_ensemble_helper(pst=self.pst,gr_df=gr_df,num_reals=num_reals,
+                                                        sigma_range=sigma_range,logger=self.logger)
+                self.log("spectral simulation for grid-scale pars")
         if "temporal_list" in self.par_dfs.keys():
             bc_df = self.par_dfs["temporal_list"]
             bc_df.loc[:,"y"] = 0
@@ -2650,7 +2679,8 @@ class PstFromFlopyModel(object):
             struct_dict[self.spatial_list_geostruct] = bc_dfs
         pe = geostatistical_draws(self.pst,struct_dict=struct_dict,num_reals=num_reals,
                              sigma_range=sigma_range)
-
+        if gr_par_pe is not None:
+            pe.loc[:,gr_par_pe.columns] = gr_par_pe.values
         self.log("drawing realizations")
         return pe
 

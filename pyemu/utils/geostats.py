@@ -38,6 +38,8 @@ EPSILON = 1.0e-7
 
 
 
+
+
 class GeoStruct(object):
     """a geostatistical structure object.  The object contains
     variograms and (optionally) nugget information.
@@ -352,62 +354,171 @@ class GeoStruct(object):
             s += str(v)
         return s
 
-    def spectralsim2d(self,delx,dely,num_reals=100):
-        # check that grid is regular
-        tol = 1.0e-6
+
+class SpecSim2d(object):
+
+    def __init__(self,delx,dely,geostruct):
+
+        self.geostruct = geostruct
+        self.delx = delx
+        self.dely = dely
+        self.pad = np.NaN
+        self.num_pts = np.NaN
+        self.sqrt_fftc = np.NaN
+        self.initialize()
+
+    @staticmethod
+    def grid_is_regular(delx, dely, tol=1.0e-6):
+        """check that a grid is regular using delx and dely vectors
+
+        Parameters
+        ----------
+            delx : 1-D np.ndarray
+                cell spacing in the x direction
+            dely : 1-D np.ndarray
+                cell spacing in the y direction
+        Returns
+        -------
+            is_regular : bool
+
+        """
         if np.abs(delx.mean() - delx.min()) > tol:
-            raise Exception("GeoStruct::spectralsim2d() error: grid not regular")
+            return False
         if np.abs(dely.mean() - dely.min()) > tol:
-            raise Exception("GeoStruct::spectralsim2d() error: grid not regular")
+            return False
         if np.abs(delx.mean() - dely.mean()) > tol:
-            raise Exception("GeoStruct::spectralsim2d() error: grid not regular")
+            return False
+        return True
 
-        # pad the grid with 3X max range
+    def initialize(self):
+
+
+        if not SpecSim2d.grid_is_regular(self.delx, self.dely):
+            raise Exception("SpectSim2d() error: grid not regular")
+
+        # pad the grid with 2X max range
         mx_a = -1.0e10
-        for v in self.variograms:
-           mx_a = max(mx_a,v.a)
-        pad = int(np.ceil((mx_a * 2.0)/delx[0]))
-        pad = int(np.ceil(pad/8.)*8.)
+        for v in self.geostruct.variograms:
+            mx_a = max(mx_a, v.a)
+        self.pad = int(np.ceil((mx_a * 2.0) / self.delx[0]))
+        self.pad = int(np.ceil(self.pad / 8.) * 8.)
 
-        full_delx = np.zeros((delx.shape[0]+(2*pad)))
-        full_dely = np.zeros((dely.shape[0] + (2 * pad)))
-        full_delx[:] = delx[0]
-        full_dely[:] = dely[0]
+        full_delx = np.zeros((self.delx.shape[0] + (2 * self.pad)))
+        full_dely = np.zeros((self.dely.shape[0] + (2 * self.pad)))
+        full_delx[:] = self.delx[0]
+        full_dely[:] = self.dely[0]
 
         xdist = np.cumsum(full_delx)
         ydist = np.cumsum(full_dely)
         xdist -= xdist.min()
         ydist -= ydist.min()
-        xgrid = np.zeros((xdist.shape[0],ydist.shape[0]))
+        xgrid = np.zeros((xdist.shape[0], ydist.shape[0]))
         ygrid = np.zeros_like(xgrid)
-        for i,d in enumerate(xdist):
-            xgrid[i,:] = d
-        for j,d in enumerate(ydist):
-            ygrid[:,j] = d
-        grid = np.array((xgrid,ygrid))
-        domainsize = np.array((full_dely.shape[0],full_dely.shape[0]))
+        for i, d in enumerate(xdist):
+            xgrid[i, :] = d
+        for j, d in enumerate(ydist):
+            ygrid[:, j] = d
+        grid = np.array((xgrid, ygrid))
+        domainsize = np.array((full_dely.shape[0], full_dely.shape[0]))
         for i in range(2):
-            domainsize = domainsize[:,np.newaxis]
+            domainsize = domainsize[:, np.newaxis]
         grid = np.min((grid, np.array(domainsize) - grid), axis=0)
         c = np.zeros_like(xgrid)
-        for v in self.variograms:
+        for v in self.geostruct.variograms:
             c += v.specsim_grid_contrib(grid)
-        if self.nugget > 0.0:
+        if self.geostruct.nugget > 0.0:
             h = ((grid ** 2).sum(axis=0)) ** 0.5
-            c[np.where(h==0)] += self.nugget
+            c[np.where(h == 0)] += self.geostruct.nugget
         fftc = np.abs(np.fft.fftn(c))
-        pts = np.prod(xgrid.shape)
-        sqrt_fftc = np.sqrt(fftc / pts)
+        self.num_pts = np.prod(xgrid.shape)
+        self.sqrt_fftc = np.sqrt(fftc / self.num_pts)
+
+    def draw_arrays(self,num_reals=1,mean_value=1.0):
         reals = []
+
         for ireal in range(num_reals):
-            real = np.random.standard_normal(size=sqrt_fftc.shape)
-            imag = np.random.standard_normal(size=sqrt_fftc.shape)
+            real = np.random.standard_normal(size=self.sqrt_fftc.shape)
+            imag = np.random.standard_normal(size=self.sqrt_fftc.shape)
             epsilon = real + 1j * imag
-            rand = epsilon * sqrt_fftc
-            real = np.real(np.fft.ifftn(rand)) * pts
-            real = real[pad:-pad,pad:-pad]
+            rand = epsilon * self.sqrt_fftc
+            real = np.real(np.fft.ifftn(rand)) * self.num_pts
+            real = real[self.pad:-self.pad, self.pad:-self.pad].transpose()
             reals.append(real)
-        return np.array(reals)
+        reals = np.array(reals)
+
+        if self.geostruct.transform == "log":
+            reals += np.log10(mean_value)
+            reals = 10**reals
+        else:
+            reals += mean_value
+        return reals
+
+    def grid_par_ensemble_helper(self,pst,gr_df,num_reals,sigma_range=6,logger=None):
+        if "i" not in gr_df.columns:
+            print(gr_df.columns)
+            raise Exception("SpecSim2d.grid_par_ensmeble_helper() error: 'i' not in gr_df")
+        if "j" not in gr_df.columns:
+            print(gr_df.columns)
+            raise Exception("SpecSim2d.grid_par_ensmeble_helper() error: 'j' not in gr_df")
+        if len(self.geostruct.variograms) > 1:
+            raise Exception("SpecSim2D grid_par_ensemble_helper() error: only a single variogram can be used...")
+
+        # scale the total contrib
+        org_var = self.geostruct.variograms[0].contribution
+        org_nug = self.geostruct.nugget
+        new_var = org_var
+        new_nug = org_nug
+        if self.geostruct.variograms[0].contribution + self.geostruct.nugget != 1.0:
+            print("SpecSim2d.grid_par_ensemble_helper() warning: scaling contribution and nugget to unity")
+            tot = org_var + org_nug
+            new_var = org_var / tot
+            new_nug = org_nug / tot
+            self.geostruct.variograms[0].contribution = new_var
+            self.geostruct.nugget = new_nug
+
+        gr_grps = gr_df.pargp.unique()
+        pst.add_transform_columns()
+        par = pst.parameter_data
+
+        # par en container
+        pe = pd.DataFrame(index=np.arange(num_reals),columns=gr_df.parnme)
+        # process each par group
+        for gr_grp in gr_grps:
+
+            gp_df = gr_df.loc[gr_df.pargp==gr_grp,:]
+            if logger is not None:
+                logger.log("spectral sim for pargp {0} with {1} parameters".format(gr_grp,gp_df.shape[0]))
+            gp_par = par.loc[gp_df.parnme,:]
+            # use the parval1 as the mean
+            mean_arr = np.zeros((self.dely.shape[0],self.delx.shape[0])) + np.NaN
+            mean_arr[gp_df.i,gp_df.j] = gp_par.parval1
+            # fill missing mean values
+            mean_arr[np.isnan(mean_arr)] = gp_par.parval1.mean()
+
+            # use the max upper and min lower (transformed) bounds for the variance
+            mx_ubnd = gp_par.parubnd_trans.max()
+            mn_lbnd = gp_par.parlbnd_trans.min()
+            var = ((mx_ubnd - mn_lbnd)/sigma_range)**2
+
+            # update the geostruct
+            self.geostruct.variograms[0].contribution = var * new_var
+            self.geostruct.nugget = var * new_nug
+            # reinitialize and draw
+            self.initialize()
+            reals = self.draw_arrays(num_reals=num_reals,mean_value=1.0)
+            # put the pieces into the par en
+            reals = reals[:,gp_df.i,gp_df.j].reshape(num_reals,gp_df.shape[0])
+            pe.loc[:,gp_df.parnme] = reals
+            if logger is not None:
+                logger.log("spectral sim for pargp {0} with {1} parameters".format(gr_grp,gp_df.shape[0]))
+        # reset to org conditions
+        self.geostruct.nugget = org_nug
+        self.geostruct.variograms[0].contribution = org_var
+        self.initialize()
+
+        return pe
+
+
 
 # class LinearUniversalKrige(object):
 #     def __init__(self,geostruct,point_data):
