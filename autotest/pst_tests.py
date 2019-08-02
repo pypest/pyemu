@@ -1333,7 +1333,7 @@ def pst_from_flopy_specsim_draw_test():
                                          spatial_list_props=spat_list_props,build_prior=False)
 
 
-    num_reals = 100
+    num_reals = 10000
     par = ph.pst.parameter_data
     par.loc[:,"parval1"] = 1
     par.loc[:, "parubnd"] = 10
@@ -1363,10 +1363,7 @@ def pst_from_flopy_specsim_draw_test():
 
     arr = np.zeros((ph.m.nrow,ph.m.ncol))
     arr[gr_par.i,gr_par.j] = real1
-    import matplotlib.pyplot as plt
-    plt.imshow(arr)
-    plt.show()
-    return
+
     par_vals = par.parval1.copy()
     par_vals.loc[li] = par_vals.loc[li].apply(np.log10)
     mn1, mn2 = pe1.mean(), pe2.mean()

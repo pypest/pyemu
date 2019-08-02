@@ -1709,19 +1709,18 @@ def specsim_test():
     import pandas as pd
     import pyemu
     num_reals = 100
-    nrow,ncol = 100,100
-    a = 10
-    contrib = 2.5
+    nrow,ncol = 40,20
+    a = 2500
+    contrib = 1.0
     nugget = 0
-    delr = np.ones((ncol)) * 1
-    delc = np.ones((nrow)) * 1
+    delr = np.ones((ncol)) * 250
+    delc = np.ones((nrow)) * 250
     variograms = [pyemu.geostats.ExpVario(contribution=contrib,a=a,anisotropy=1,bearing=0)]
     gs = pyemu.geostats.GeoStruct(variograms=variograms,transform="none",nugget=nugget)
     broke_delr = delr.copy()
     broke_delr[0] = 0.0
     broke_delc = delc.copy()
     broke_delc[0] = 0.0
-
 
     try:
         ss = pyemu.geostats.SpecSim2d(geostruct=gs,delx=broke_delr,dely=delc)

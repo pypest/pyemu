@@ -405,9 +405,9 @@ class SpecSim2d(object):
             self.effective_variograms.append(eff_v)
         # pad the grid with 2X max range
         mx_a = -1.0e10
-        for v in self.geostruct.variograms:
+        for v in self.effective_variograms:
             mx_a = max(mx_a, v.a)
-        self.pad = int(np.ceil((mx_a * 3) / self.delx[0]))
+        self.pad = int(np.ceil(mx_a * 3))
         self.pad = int(np.ceil(self.pad / 8.) * 8.)
 
         full_delx = np.ones((self.delx.shape[0] + (2 * self.pad)))
@@ -456,9 +456,6 @@ class SpecSim2d(object):
         reals = np.array(reals)
 
         if self.geostruct.transform == "log":
-            import matplotlib.pyplot as plt
-            plt.imshow(reals[-1,:,:])
-            plt.show()
             reals += np.log10(mean_value)
             reals = 10**reals
 
