@@ -1708,11 +1708,15 @@ def specsim_test():
     import numpy as np
     import pandas as pd
     import pyemu
-    nrow,ncol = 50,50
+    num_reals = 100
+    nrow,ncol = 100,100
+    a = 10
+    contrib = 2.5
+    nugget = 0
     delr = np.ones((ncol)) * 1
     delc = np.ones((nrow)) * 1
-    variograms = [pyemu.geostats.ExpVario(contribution=2.5,a=10.0,anisotropy=10,bearing=90)]
-    gs = pyemu.geostats.GeoStruct(variograms=variograms,transform="none",nugget=1.0)
+    variograms = [pyemu.geostats.ExpVario(contribution=contrib,a=a,anisotropy=1,bearing=0)]
+    gs = pyemu.geostats.GeoStruct(variograms=variograms,transform="none",nugget=nugget)
     broke_delr = delr.copy()
     broke_delr[0] = 0.0
     broke_delc = delc.copy()
@@ -1732,31 +1736,86 @@ def specsim_test():
         pass
     else:
         raise Exception("should have failed")
+
+    variograms = [pyemu.geostats.ExpVario(contribution=contrib, a=a, anisotropy=10, bearing=0)]
+    gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="log", nugget=nugget)
     np.random.seed(1)
-    num_reals = 5000
+
     ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
-    mean_value = 1.0
+    mean_value = 15.0
+    reals = ss.draw_arrays(num_reals=num_reals, mean_value=mean_value)
+    assert reals.shape == (num_reals, nrow, ncol)
+    reals = np.log10(reals)
+    mean_value = np.log10(mean_value)
+    var = np.var(reals, axis=0).mean()
+
+    mean = reals.mean()
+
+    theo_var = ss.geostruct.sill
+    print(var, theo_var)
+    print(mean, mean_value)
+    assert np.abs(var - theo_var) < 0.1
+    assert np.abs(mean - mean_value) < 0.1
+
+    np.random.seed(1)
+    variograms = [pyemu.geostats.ExpVario(contribution=contrib, a=a, anisotropy=10, bearing=0)]
+    gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="none", nugget=nugget)
+
+    ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
+    mean_value = 25.0
     reals = ss.draw_arrays(num_reals=num_reals,mean_value=mean_value)
     assert reals.shape == (num_reals,nrow,ncol)
     var = np.var(reals,axis=0).mean()
     mean = reals.mean()
 
-    theo_var = ss.geostruct.nugget
-    for v in ss.geostruct.variograms:
-        theo_var += v.contribution
+    theo_var = ss.geostruct.sill
     print(var,theo_var)
     print(mean,mean_value)
     assert np.abs(var - theo_var) < 0.1
     assert np.abs(mean - mean_value) < 0.1
 
 
+def aniso_invest():
 
-    # import matplotlib.pyplot as plt
-    # plt.imshow(reals[0])
-    # plt.show()
+    try:
+        import flopy
+    except:
+        return
+
+    import numpy as np
+    import pandas as pd
+    import pyemu
+    from  datetime import datetime
+    nrow,ncol = 1000,1000
+    delr = np.ones((ncol)) * 1
+    delc = np.ones((nrow)) * 1
+    variograms = [pyemu.geostats.ExpVario(contribution=2.5,a=200.0,anisotropy=10,bearing=95)]
+    gs = pyemu.geostats.GeoStruct(variograms=variograms,transform="none",nugget=0.0)
+
+    np.random.seed(1)
+    num_reals = 1
+    start = datetime.now()
+    ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
+    mean_value = 1.0
+    reals1 = ss.draw_arrays(num_reals=num_reals,mean_value=mean_value)
+    print((datetime.now() - start).total_seconds())
+
+    variograms = [pyemu.geostats.ExpVario(contribution=2.5, a=200.0, anisotropy=10, bearing=10)]
+    gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="none", nugget=0.0)
+    ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
+    reals2 = ss.draw_arrays(num_reals=num_reals, mean_value=mean_value)
+
+    import matplotlib.pyplot as plt
+    fig,axes = plt.subplots(1,2,figsize=(6,3))
+    axes[0].imshow(reals2[0])
+    axes[1].imshow(reals1[0])
+    axes[0].set_title("bearing: 10")
+    axes[1].set_title("bearing: 95")
+    plt.show()
 
 if __name__ == "__main__":
     specsim_test()
+    #aniso_invest()
     #fieldgen_dev()
     # smp_test()
     # smp_dateparser_test()
@@ -1775,7 +1834,7 @@ if __name__ == "__main__":
     # gw_sft_ins_test()
     # par_knowledge_test()
     # grid_obs_test()
-    # hds_timeseries_test()
+    #hds_timeseries_test()
     # postprocess_inactive_conc_test()
     # plot_summary_test()
     # load_sgems_expvar_test()

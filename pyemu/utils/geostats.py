@@ -365,6 +365,7 @@ class SpecSim2d(object):
         self.pad = np.NaN
         self.num_pts = np.NaN
         self.sqrt_fftc = np.NaN
+        self.effective_variograms = None
         self.initialize()
 
     @staticmethod
@@ -395,19 +396,26 @@ class SpecSim2d(object):
 
         if not SpecSim2d.grid_is_regular(self.delx, self.dely):
             raise Exception("SpectSim2d() error: grid not regular")
-
+        # since we checked for grid regularity, we now can work in unit space
+        # and use effective variograms:
+        self.effective_variograms = []
+        dist = self.delx[0]
+        for v in self.geostruct.variograms:
+            eff_v = type(v)(contribution=v.contribution,a=v.a/dist,bearing=v.bearing,anisotropy=v.anisotropy)
+            self.effective_variograms.append(eff_v)
         # pad the grid with 2X max range
         mx_a = -1.0e10
         for v in self.geostruct.variograms:
             mx_a = max(mx_a, v.a)
-        self.pad = int(np.ceil((mx_a * 2.0) / self.delx[0]))
+        self.pad = int(np.ceil((mx_a * 3) / self.delx[0]))
         self.pad = int(np.ceil(self.pad / 8.) * 8.)
 
-        full_delx = np.zeros((self.delx.shape[0] + (2 * self.pad)))
-        full_dely = np.zeros((self.dely.shape[0] + (2 * self.pad)))
-        full_delx[:] = self.delx[0]
-        full_dely[:] = self.dely[0]
-
+        full_delx = np.ones((self.delx.shape[0] + (2 * self.pad)))
+        full_dely = np.ones((self.dely.shape[0] + (2 * self.pad)))
+        #full_delx[:] = self.delx[0]
+        #full_dely[:] = self.dely[0]
+        print("SpecSim.initialize() summary: padding: {0}, full_delx X full_dely: {1} X {2}".\
+              format(self.pad,full_delx.shape[0],full_dely.shape[0]))
         xdist = np.cumsum(full_delx)
         ydist = np.cumsum(full_dely)
         xdist -= xdist.min()
@@ -424,7 +432,8 @@ class SpecSim2d(object):
             domainsize = domainsize[:, np.newaxis]
         grid = np.min((grid, np.array(domainsize) - grid), axis=0)
         c = np.zeros_like(xgrid)
-        for v in self.geostruct.variograms:
+        #for v in self.geostruct.variograms:
+        for v in self.effective_variograms:
             c += v.specsim_grid_contrib(grid)
         if self.geostruct.nugget > 0.0:
             h = ((grid ** 2).sum(axis=0)) ** 0.5
@@ -447,8 +456,12 @@ class SpecSim2d(object):
         reals = np.array(reals)
 
         if self.geostruct.transform == "log":
+            import matplotlib.pyplot as plt
+            plt.imshow(reals[-1,:,:])
+            plt.show()
             reals += np.log10(mean_value)
             reals = 10**reals
+
         else:
             reals += mean_value
         return reals
@@ -485,8 +498,7 @@ class SpecSim2d(object):
         for gr_grp in gr_grps:
 
             gp_df = gr_df.loc[gr_df.pargp==gr_grp,:]
-            if logger is not None:
-                logger.log("spectral sim for pargp {0} with {1} parameters".format(gr_grp,gp_df.shape[0]))
+
             gp_par = par.loc[gp_df.parnme,:]
             # use the parval1 as the mean
             mean_arr = np.zeros((self.dely.shape[0],self.delx.shape[0])) + np.NaN
@@ -503,14 +515,20 @@ class SpecSim2d(object):
             self.geostruct.variograms[0].contribution = var * new_var
             self.geostruct.nugget = var * new_nug
             # reinitialize and draw
+            if logger is not None:
+                logger.log("SpecSim: drawing {0} realization for group {1} with {4} pars, (log) variance {2} (sill {3})".\
+                  format(num_reals, gr_grp, var,self.geostruct.sill,gp_df.shape[0]))
             self.initialize()
             reals = self.draw_arrays(num_reals=num_reals,mean_value=mean_arr)
+
             # put the pieces into the par en
             reals = reals[:,gp_df.i,gp_df.j].reshape(num_reals,gp_df.shape[0])
             real_arrs.append(reals)
             names.extend(list(gp_df.parnme.values))
             if logger is not None:
-                logger.log("spectral sim for pargp {0} with {1} parameters".format(gr_grp,gp_df.shape[0]))
+                logger.log(
+                    "SpecSim: drawing {0} realization for group {1} with {4} pars, (log) variance {2} (sill {3})". \
+                    format(num_reals, gr_grp, var, self.geostruct.sill, gp_df.shape[0]))
 
         # get into a dataframe
         reals = real_arrs[0]

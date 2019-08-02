@@ -1333,11 +1333,11 @@ def pst_from_flopy_specsim_draw_test():
                                          spatial_list_props=spat_list_props,build_prior=False)
 
 
-    num_reals = 1000
+    num_reals = 100
     par = ph.pst.parameter_data
-    par.loc[:,"parval1"] = 10
-    par.loc[:, "parubnd"] = 100
-    par.loc[:, "parlbnd"] = 1
+    par.loc[:,"parval1"] = 1
+    par.loc[:, "parubnd"] = 10
+    par.loc[:, "parlbnd"] = .1
 
     #gr_par = par.loc[par.pargp.apply(lambda x: "gr" in x),:]
     #par.loc[gr_par.parnme,"parval1"] = 20#np.arange(1,gr_par.shape[0]+1)
@@ -1346,35 +1346,42 @@ def pst_from_flopy_specsim_draw_test():
     #par.loc[gr_par.parnme, "parlbnd"] = 0.001#par.loc[gr_par.parnme,"parval1"].min()
     #print(par.loc[gr_par.parnme,"parval1"])
     li = par.partrans == "log"
-    pe1 = ph.draw(num_reals=num_reals, sigma_range=6,use_specsim=True)
+    pe1 = ph.draw(num_reals=num_reals, sigma_range=2,use_specsim=True)
 
     pyemu.Ensemble.reseed()
     #print(ph.pst.parameter_data.loc[gr_par.parnme,"parval1"])
-    pe2 = pyemu.ParameterEnsemble.from_gaussian_draw(ph.pst, ph.build_prior(sigma_range=6), num_reals=num_reals)
+    #pe2 = pyemu.ParameterEnsemble.from_gaussian_draw(ph.pst, ph.build_prior(sigma_range=2), num_reals=num_reals)
+    pe2 = ph.draw(num_reals=num_reals,sigma_range=2)
+
     pe1._transform()
     pe2._transform()
+    gr_df = ph.par_dfs[ph.gr_suffix]
+    grps = gr_df.pargp.unique()
+    gr_par = gr_df.loc[gr_df.pargp==grps[0],:]
+    real1 = pe1.loc[pe1.index[-1],gr_par.parnme]
+    real2 = pe2.loc[0, gr_par.parnme]
+
+    arr = np.zeros((ph.m.nrow,ph.m.ncol))
+    arr[gr_par.i,gr_par.j] = real1
+    import matplotlib.pyplot as plt
+    plt.imshow(arr)
+    plt.show()
+    return
     par_vals = par.parval1.copy()
     par_vals.loc[li] = par_vals.loc[li].apply(np.log10)
     mn1, mn2 = pe1.mean(), pe2.mean()
     sd1, sd2 = pe1.std(), pe2.std()
-
+    diag = pyemu.Cov.from_parameter_data(ph.pst,sigma_range=2.0)
+    var_vals = {p:np.sqrt(v) for p,v in zip(diag.row_names,diag.x)}
     for pname in par_vals.index:
-        print(pname,par_vals[pname],mn1[pname],mn2[pname])
-    return
-    print(mn1)
-    print(mn2)
-    print
-    print(sd1)
-    print(sd2)
+        print(pname,par_vals[pname],mn1[pname],mn2[pname],var_vals[pname],sd1[pname],sd2[pname])
 
-    return
     diff_mn = mn1 - mn2
     diff_sd = sd1 - sd2
-    # print(mn1,mn2)
     print(diff_mn)
-    assert diff_mn.apply(np.abs).max() < 0.1
+    assert diff_mn.apply(np.abs).max() < 0.1, diff_mn.apply(np.abs).max()
     print(diff_sd)
-    assert diff_sd.apply(np.abs).max() < 0.1
+    assert diff_sd.apply(np.abs).max() < 0.1,diff_sd.apply(np.abs).max()
 
 
 
@@ -1384,8 +1391,8 @@ if __name__ == "__main__":
     #new_format_test()
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
-    pst_from_flopy_geo_draw_test()
-    #pst_from_flopy_specsim_draw_test()
+    #pst_from_flopy_geo_draw_test()
+    pst_from_flopy_specsim_draw_test()
     #try_process_ins_test()
     # write_tables_test()
     #res_stats_test()
