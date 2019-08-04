@@ -800,7 +800,7 @@ def pst_prior(pst,logger=None, filename=None, **kwargs):
         ax.set_title("{0}) group:{1}, {2} parameters".
                                  format(abet[ax_count],g,names.shape[0]),loc="left")
 
-        ax.set_yticks([])
+        ax.set_ylabel("count",labelpad=0.1)
         if islog:
             ax.set_xlabel("$log_{10}$ parameter value",labelpad=0.1)
         else:
@@ -1131,8 +1131,8 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
             continue
 
         if ax_count % (nr * nc) == 0:
-            if ax_count > 0:
-                plt.tight_layout()
+##            if ax_count > 0:
+##                plt.tight_layout()
             #pdf.savefig()
             #plt.close(fig)
             figs.append(fig)
@@ -1141,6 +1141,7 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
             ax_count = 0
 
         ax = axes[ax_count]
+        plt.tight_layout()
         mn_g.hist(ax=ax,facecolor=facecolor,alpha=0.5,edgecolor=None,bins=bins)
         #mx = max(mn_g.max(), mn_g.min(),np.abs(mn_g.max()),np.abs(mn_g.min())) * 1.2
         #ax.set_xlim(-mx,mx)
@@ -1150,10 +1151,11 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
 
 
         #ax.set_xlim(xlim)
-        ax.set_yticklabels([])
+        #ax.set_yticklabels([])
+        ax.set_ylabel("count",labelpad=0.1)
         ax.set_xlabel("mean change",labelpad=0.1)
-        ax.set_title("{0}) mean change group:{1}, {2} entries\nmax:{3:10G}, min:{4:10G}".
-                     format(abet[ax_count], g, mn_g.shape[0],mn_g.max(),mn_g.min()), loc="left")
+        ax.set_title("{0}) mean change\ngroup:{1}, {2} entries\nmean: {3:10G}\nmin:{4:6G}\nmax:{5:10G}".
+                     format(abet[ax_count], g, mn_g.shape[0],mn_g.mean(),mn_g.min(),mn_g.max()), loc="left")
         ax.grid()
         ax_count += 1
 
@@ -1164,10 +1166,10 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
 
 
         # ax.set_xlim(xlim)
-        ax.set_yticklabels([])
+        ax.set_ylabel("count",labelpad=0.1)
         ax.set_xlabel("sigma percent reduction", labelpad=0.1)
-        ax.set_title("{0}) sigma change group:{1}, {2} entries\nmax:{3:10G}, min:{4:10G}".
-                     format(abet[ax_count], g, mn_g.shape[0], std_g.max(), std_g.min()), loc="left")
+        ax.set_title("{0}) sigma change\ngroup:{1}, {2} entries\nmean: {3:10G}\nmin:{4:6G}\nmax:{5:10G}".
+                     format(abet[ax_count], g, mn_g.shape[0], std_g.mean(), std_g.min(), std_g.max()), loc="left")
         ax.grid()
         ax_count += 1
 
