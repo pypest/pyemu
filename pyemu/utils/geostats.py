@@ -362,7 +362,6 @@ class SpecSim2d(object):
         self.geostruct = geostruct
         self.delx = delx
         self.dely = dely
-        self.pad = np.NaN
         self.num_pts = np.NaN
         self.sqrt_fftc = np.NaN
         self.effective_variograms = None
@@ -392,10 +391,13 @@ class SpecSim2d(object):
         return True
 
     def initialize(self):
-
-
         if not SpecSim2d.grid_is_regular(self.delx, self.dely):
             raise Exception("SpectSim2d() error: grid not regular")
+
+        for v in self.geostruct.variograms:
+            if v.bearing % 90.0 != 0.0:
+                raise Exception("SpecSim2d only supports grid-aligned anisotropy...")
+
         # since we checked for grid regularity, we now can work in unit space
         # and use effective variograms:
         self.effective_variograms = []
@@ -407,27 +409,25 @@ class SpecSim2d(object):
         mx_a = -1.0e10
         for v in self.effective_variograms:
             mx_a = max(mx_a, v.a)
-        self.pad = int(np.ceil(mx_a * 3))
-        self.pad = int(np.ceil(self.pad / 8.) * 8.)
-
-        full_delx = np.ones((self.delx.shape[0] + (2 * self.pad)))
-        full_dely = np.ones((self.dely.shape[0] + (2 * self.pad)))
-        #full_delx[:] = self.delx[0]
-        #full_dely[:] = self.dely[0]
-        print("SpecSim.initialize() summary: padding: {0}, full_delx X full_dely: {1} X {2}".\
-              format(self.pad,full_delx.shape[0],full_dely.shape[0]))
+        mx_dim = max(self.delx.shape[0],self.dely.shape[0])
+        freq_pad = int(np.ceil(mx_a * 3))
+        freq_pad = int(np.ceil(freq_pad / 8.) * 8.)
+        full_delx = np.ones((mx_dim + (2 * freq_pad)))
+        full_dely = np.ones_like(full_delx)
+        print("SpecSim.initialize() summary: full_delx X full_dely: {0} X {1}".\
+              format(full_delx.shape[0],full_dely.shape[0]))
         xdist = np.cumsum(full_delx)
         ydist = np.cumsum(full_dely)
         xdist -= xdist.min()
         ydist -= ydist.min()
-        xgrid = np.zeros((xdist.shape[0], ydist.shape[0]))
+        xgrid = np.zeros((ydist.shape[0], xdist.shape[0]))
         ygrid = np.zeros_like(xgrid)
-        for i, d in enumerate(xdist):
-            xgrid[i, :] = d
-        for j, d in enumerate(ydist):
-            ygrid[:, j] = d
+        for j, d in enumerate(xdist):
+            xgrid[:, j] = d
+        for i, d in enumerate(ydist):
+            ygrid[i, :] = d
         grid = np.array((xgrid, ygrid))
-        domainsize = np.array((full_dely.shape[0], full_dely.shape[0]))
+        domainsize = np.array((full_dely.shape[0], full_delx.shape[0]))
         for i in range(2):
             domainsize = domainsize[:, np.newaxis]
         grid = np.min((grid, np.array(domainsize) - grid), axis=0)
@@ -451,10 +451,9 @@ class SpecSim2d(object):
             epsilon = real + 1j * imag
             rand = epsilon * self.sqrt_fftc
             real = np.real(np.fft.ifftn(rand)) * self.num_pts
-            real = real[self.pad:-self.pad, self.pad:-self.pad].transpose()
+            real = real[:self.dely.shape[0], :self.delx.shape[0]]
             reals.append(real)
         reals = np.array(reals)
-
         if self.geostruct.transform == "log":
             reals += np.log10(mean_value)
             reals = 10**reals
@@ -478,7 +477,7 @@ class SpecSim2d(object):
         org_nug = self.geostruct.nugget
         new_var = org_var
         new_nug = org_nug
-        if self.geostruct.variograms[0].contribution + self.geostruct.nugget != 1.0:
+        if self.geostruct.sill != 1.0:
             print("SpecSim2d.grid_par_ensemble_helper() warning: scaling contribution and nugget to unity")
             tot = org_var + org_nug
             new_var = org_var / tot
@@ -517,7 +516,6 @@ class SpecSim2d(object):
                   format(num_reals, gr_grp, var,self.geostruct.sill,gp_df.shape[0]))
             self.initialize()
             reals = self.draw_arrays(num_reals=num_reals,mean_value=mean_arr)
-
             # put the pieces into the par en
             reals = reals[:,gp_df.i,gp_df.j].reshape(num_reals,gp_df.shape[0])
             real_arrs.append(reals)
@@ -1727,8 +1725,10 @@ class Vario2d(object):
         return cov
 
     def specsim_grid_contrib(self,grid):
-        dx,dy = self._apply_rotation(grid[0,:,:],grid[1,:,:])
-        rot_grid = np.array((dx,dy))
+        rot_grid = grid
+        if self.bearing % 90. != 0:
+            dx,dy = self._apply_rotation(grid[0,:,:],grid[1,:,:])
+            rot_grid = np.array((dx,dy))
         h = ((rot_grid**2).sum(axis=0))**0.5
         c = self._h_function(h)
         return c

@@ -1325,13 +1325,15 @@ def pst_from_flopy_specsim_draw_test():
             hds_kperk.append([kper, k])
     temp_list_props = [["wel.flux", None]]
     spat_list_props = [["riv.cond", 0], ["riv.stage", 0]]
+    v = pyemu.geostats.ExpVario(a=2500,contribution=1.0)
+    gs = pyemu.geostats.GeoStruct(variograms=[v],transform="log")
     ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
                                          org_model_ws=org_model_ws,
                                          grid_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
                                          remove_existing=True,
                                          model_exe_name="mfnwt", temporal_list_props=temp_list_props,
-                                         spatial_list_props=spat_list_props,build_prior=False)
-
+                                         spatial_list_props=spat_list_props,build_prior=False,
+                                         grid_geostruct=gs)
 
     num_reals = 10000
     par = ph.pst.parameter_data

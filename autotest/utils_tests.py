@@ -1715,13 +1715,22 @@ def specsim_test():
     nugget = 0
     delr = np.ones((ncol)) * 250
     delc = np.ones((nrow)) * 250
-    variograms = [pyemu.geostats.ExpVario(contribution=contrib,a=a,anisotropy=1,bearing=0)]
+    variograms = [pyemu.geostats.ExpVario(contribution=contrib,a=a,anisotropy=1,bearing=10)]
     gs = pyemu.geostats.GeoStruct(variograms=variograms,transform="none",nugget=nugget)
     broke_delr = delr.copy()
     broke_delr[0] = 0.0
     broke_delc = delc.copy()
     broke_delc[0] = 0.0
 
+    try:
+        ss = pyemu.geostats.SpecSim2d(geostruct=gs,delx=broke_delr,dely=delc)
+    except Exception as e:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    variograms = [pyemu.geostats.ExpVario(contribution=contrib, a=a, anisotropy=1, bearing=00)]
+    gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="none", nugget=nugget)
     try:
         ss = pyemu.geostats.SpecSim2d(geostruct=gs,delx=broke_delr,dely=delc)
     except Exception as e:
@@ -1743,7 +1752,7 @@ def specsim_test():
     ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
     mean_value = 15.0
     reals = ss.draw_arrays(num_reals=num_reals, mean_value=mean_value)
-    assert reals.shape == (num_reals, nrow, ncol)
+    assert reals.shape == (num_reals, nrow, ncol),reals.shape
     reals = np.log10(reals)
     mean_value = np.log10(mean_value)
     var = np.var(reals, axis=0).mean()
@@ -1785,21 +1794,21 @@ def aniso_invest():
     import pandas as pd
     import pyemu
     from  datetime import datetime
-    nrow,ncol = 1000,1000
-    delr = np.ones((ncol)) * 1
-    delc = np.ones((nrow)) * 1
-    variograms = [pyemu.geostats.ExpVario(contribution=2.5,a=200.0,anisotropy=10,bearing=95)]
+    nrow,ncol = 40,20
+    delr = np.ones((ncol)) * 250
+    delc = np.ones((nrow)) * 250
+    variograms = [pyemu.geostats.ExpVario(contribution=2.5,a=2500.0,anisotropy=10,bearing=90)]
     gs = pyemu.geostats.GeoStruct(variograms=variograms,transform="none",nugget=0.0)
 
     np.random.seed(1)
-    num_reals = 1
+    num_reals = 100
     start = datetime.now()
     ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
     mean_value = 1.0
     reals1 = ss.draw_arrays(num_reals=num_reals,mean_value=mean_value)
     print((datetime.now() - start).total_seconds())
 
-    variograms = [pyemu.geostats.ExpVario(contribution=2.5, a=200.0, anisotropy=10, bearing=10)]
+    variograms = [pyemu.geostats.ExpVario(contribution=2.5, a=2000.0, anisotropy=10, bearing=0)]
     gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="none", nugget=0.0)
     ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
     reals2 = ss.draw_arrays(num_reals=num_reals, mean_value=mean_value)
@@ -1808,13 +1817,13 @@ def aniso_invest():
     fig,axes = plt.subplots(1,2,figsize=(6,3))
     axes[0].imshow(reals2[0])
     axes[1].imshow(reals1[0])
-    axes[0].set_title("bearing: 10")
-    axes[1].set_title("bearing: 95")
+    #axes[0].set_title("bearing: 10")
+    #axes[1].set_title("bearing: 95")
     plt.show()
 
 if __name__ == "__main__":
-    specsim_test()
-    #aniso_invest()
+    #specsim_test()
+    aniso_invest()
     #fieldgen_dev()
     # smp_test()
     # smp_dateparser_test()
