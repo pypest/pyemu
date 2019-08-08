@@ -356,7 +356,21 @@ class GeoStruct(object):
 
 
 class SpecSim2d(object):
+    """spectral simulation
 
+    Parameters
+    ----------
+        delx : `numpy.ndarray`
+            a 1-D array of x-dimension cell centers (or leading/trailing edges).  Only the
+            distance between points is important
+        dely : `numpy.ndarray`
+            a 1-D array of y-dimension cell centers (or leading/trailing edges).  Only the
+            distance between points is important
+        geostruct : `pyemu.geostats.Geostruct`
+            geostatistical structure object
+
+
+    """
     def __init__(self,delx,dely,geostruct):
 
         self.geostruct = geostruct
@@ -373,13 +387,19 @@ class SpecSim2d(object):
 
         Parameters
         ----------
-            delx : 1-D np.ndarray
-                cell spacing in the x direction
-            dely : 1-D np.ndarray
-                cell spacing in the y direction
+            delx : `numpy.ndarray`
+                a 1-D array of x-dimension cell centers (or leading/trailing edges).  Only the
+                distance between points is important
+            dely : `numpy.ndarray`
+                a 1-D array of y-dimension cell centers (or leading/trailing edges).  Only the
+                distance between points is important
+            tol : `float` (optional)
+                tolerance to determine grid regularity.  Default is 1.0e-6
+
         Returns
         -------
-            is_regular : bool
+            is_regular : `bool`
+                flag indicating if the grid defined by `delx` and `dely` is regular
 
         """
         if np.abs(delx.mean() - delx.min()) > tol:
@@ -391,6 +411,15 @@ class SpecSim2d(object):
         return True
 
     def initialize(self):
+        """prepare for spectral simulation.
+
+        Note
+        ----
+            `initialize()` can be called repeatedly is the underlying geostruct is changed.
+            This is called by the constructor.
+
+
+        """
         if not SpecSim2d.grid_is_regular(self.delx, self.dely):
             raise Exception("SpectSim2d() error: grid not regular")
 
@@ -405,17 +434,19 @@ class SpecSim2d(object):
         for v in self.geostruct.variograms:
             eff_v = type(v)(contribution=v.contribution,a=v.a/dist,bearing=v.bearing,anisotropy=v.anisotropy)
             self.effective_variograms.append(eff_v)
-        # pad the grid with 2X max range
+        # pad the grid with 3X max range
         mx_a = -1.0e10
         for v in self.effective_variograms:
             mx_a = max(mx_a, v.a)
         mx_dim = max(self.delx.shape[0],self.dely.shape[0])
         freq_pad = int(np.ceil(mx_a * 3))
         freq_pad = int(np.ceil(freq_pad / 8.) * 8.)
+        # use the max dimension so that simulation grid is square
         full_delx = np.ones((mx_dim + (2 * freq_pad)))
         full_dely = np.ones_like(full_delx)
         print("SpecSim.initialize() summary: full_delx X full_dely: {0} X {1}".\
               format(full_delx.shape[0],full_dely.shape[0]))
+
         xdist = np.cumsum(full_delx)
         ydist = np.cumsum(full_dely)
         xdist -= xdist.min()
@@ -431,18 +462,37 @@ class SpecSim2d(object):
         for i in range(2):
             domainsize = domainsize[:, np.newaxis]
         grid = np.min((grid, np.array(domainsize) - grid), axis=0)
+        # work out the contribution from each effective variogram and nugget
         c = np.zeros_like(xgrid)
-        #for v in self.geostruct.variograms:
         for v in self.effective_variograms:
             c += v.specsim_grid_contrib(grid)
         if self.geostruct.nugget > 0.0:
             h = ((grid ** 2).sum(axis=0)) ** 0.5
             c[np.where(h == 0)] += self.geostruct.nugget
+        # fft components
         fftc = np.abs(np.fft.fftn(c))
         self.num_pts = np.prod(xgrid.shape)
         self.sqrt_fftc = np.sqrt(fftc / self.num_pts)
 
     def draw_arrays(self,num_reals=1,mean_value=1.0):
+        """draw realizations
+
+        Parameters
+        ---------
+            num_reals : `int`
+                number of realizations to generate
+            mean_value : `float`
+                the mean value of the realizations
+
+        Returns
+        -------
+            reals : `numpy.ndarray`
+                a 3-D array of realizations.  Shape is (num_reals,self.dely.shape[0],self.delx.shape[0])
+        Note
+        ----
+            log transformation is respected and the returned `reals` array is in arithmatic space
+
+        """
         reals = []
 
         for ireal in range(num_reals):
@@ -463,6 +513,34 @@ class SpecSim2d(object):
         return reals
 
     def grid_par_ensemble_helper(self,pst,gr_df,num_reals,sigma_range=6,logger=None):
+        """wrapper around `SpecSim2d.draw()` designed to support `pyemu.PstFromFlopy` grid-based parameters
+
+        Parameters
+        ----------
+            pst : `pyemu.Pst`
+                a control file instance
+            gr_df : `pandas.DataFrame`
+                a dataframe listing `parval1`, `pargp`, `i`, `j` for each grid based parameter
+            num_reals : `int`
+                number of realizations to generate
+            sigma_range : `float` (optional)
+                number of standard deviations implied by parameter bounds in control file.
+                Default is 6
+            logger : `pyemu.Logger` (optional)
+                a logger instance for logging
+        Returns
+        -------
+            pe : `pyemu.ParameterEnsemble`
+                a untransformed parameter ensemble of realized grid-parameter values
+
+        Note
+        ----
+            the method processes each unique `pargp` value in `gr_df` and resets the sill of `self.geostruct` by
+            the maximum bounds-implied variance of each `pargp`.  This method makes repeated calls to
+            `self.initialize()` to deal with the geostruct changes.
+
+        """
+
         if "i" not in gr_df.columns:
             print(gr_df.columns)
             raise Exception("SpecSim2d.grid_par_ensmeble_helper() error: 'i' not in gr_df")
