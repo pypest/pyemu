@@ -148,13 +148,73 @@ def read_resfile(resfile):
         f.close()
         return res_df
 
-def res_from_en(pst,enfile):
-    """load ensemble file for residual into a pandas.DataFrame
+def approx_jco_from_ens(pst,obsen,paren):
+    """work in progress....load ensemble file for residual into a pandas.DataFrame
 
         Parameters
         ----------
-        enfile : str
-            ensemble file name
+        pst : (pyemu.Pst)
+            a Pst instance
+        obsen : str or ensemble
+            observation ensemble file name
+            or ensemble observations
+        paren : str or ensemble
+            parameter ensemble file name
+            or ensemble of parameters
+
+        Returns
+        -------
+        pandas.DataFrame : pandas.DataFrame
+            nobs by npar approximate jacobian from ensembles
+
+        """
+    converters = {"name": str_con, "group": str_con}
+    # load obs ensemble
+    try:
+        if isinstance(obsen,str):
+            obsdf=pd.read_csv(obsen,converters=converters)
+            obsdf.columns=obsdf.columns.str.lower()
+            obsdf = obsdf.set_index('real_name')
+        else:
+            obsdf = obsen
+    except Exception as e:
+        raise Exception("Error loading {0}. Pst.approx_jco_from_ens:{1}".format(obsen,str(e)))
+    #load par ensemble
+    try:
+        if isinstance(paren,str):
+            pardf=pd.read_csv(paren,converters=converters)
+            pardf.columns=pardf.columns.str.lower()
+            pardf = pardf.set_index('real_name')
+        else:
+            pardf = paren
+    except Exception as e:
+        raise Exception("Error loading {0}. Pst.approx_jco_from_ens:{1}".format(paren,str(e)))
+
+    #ensure same reals, possibly some obs dropped
+    reals=[i for i in pardf.index if i in obsdf.index]
+    Cd=pyemu.Cov.from_observation_data(pst)
+    Cm=pyemu.Cov.from_parameter_data(pst)
+    # Chen and Oliver: scaling matrix for model
+    #    variables Csc in Eq. 5 is typically chosen to be a diagonal
+    #    matrix with diagonal elements equal to the variance of the
+    #    prior distribution for each type of the model variables.
+    if Cm.isdiagonal:
+        Csc=Cm
+    else:
+        Csc=pyemu.Cov.get_diagonal_vector(Cm)
+    dmel=Csc.pow(-0.5)*(obsdf.loc[reals,:]-obsdf.loc[reals,:].mean())/(np.sqrt(reals)-1)
+    ddel=Cd.pow(-0.5)*(obsdf.loc[reals,:]-obsdf.loc[reals,:].mean())/(np.sqrt(reals)-1)
+    ajco=Cd.pow(0.5)*ddel*dmel.pow(-1)*Csc.pow(-0.5)
+    return(ajco)
+
+def res_from_en(pst,obsen):
+    """load observation ensemble file for residual into a pandas.DataFrame
+
+        Parameters
+        ----------
+        obsen : str or ensemble
+            observation ensemble file name
+            or ensemble observations
 
         Returns
         -------
@@ -164,12 +224,12 @@ def res_from_en(pst,enfile):
     converters = {"name": str_con, "group": str_con}
     try: #substitute ensemble for res, 'base' if there, otherwise mean
         obs=pst.observation_data
-        if isinstance(enfile,str):
-            df=pd.read_csv(enfile,converters=converters)
+        if isinstance(obsen,str):
+            df=pd.read_csv(obsen,converters=converters)
             df.columns=df.columns.str.lower()
             df = df.set_index('real_name').T.rename_axis('name').rename_axis(None, 1)
         else:
-            df = enfile.T
+            df = obsen.T
         if 'base' in df.columns:
             df['modelled']=df['base']
             df['std']=df.std(axis=1)
