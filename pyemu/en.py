@@ -967,7 +967,7 @@ class ParameterEnsemble(Ensemble):
                     covname = "trouble_{0}.cov".format(pargp)
                     print('saving toubled cov matrix to {0}'.format(covname))
                     cov_pg.to_ascii(covname)
-                    print(cov_pg.get_diagonal_vector())
+                    #print(cov_pg.get_diagonal_vector())
                     raise Exception("error inverting cov for par group '{0}'," + \
                                     "saved trouble cov to {1}".
                                     format(pargp, covname))

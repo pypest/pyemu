@@ -930,11 +930,21 @@ def rectify_pgroup_test():
 
 def try_process_ins_test():
     import os
+    import numpy as np
     import pandas as pd
     import pyemu
 
     ins_file = os.path.join("utils", "BH.mt3d.processed.ins")
     df = pyemu.pst_utils.try_process_ins_file(ins_file)
+
+    i = pyemu.pst_utils.InstructionFile(ins_file)
+
+    df2 = i.read_output_file(ins_file.replace(".ins",""))
+    
+    diff = (df.obsval - df2.obsval).apply(np.abs).sum()
+    print(diff)
+    assert diff <1.0e-10
+
 
     # df1 = pyemu.pst_utils._try_run_inschek(ins_file,ins_file.replace(".ins",""))
     df1 = pd.read_csv(ins_file.replace(".ins", ".obf"), delim_whitespace=True, names=["obsnme", "obsval"], index_col=0)
@@ -1246,12 +1256,142 @@ def from_flopy_pp_test():
                                              use_pp_zones=False,
                                              build_prior=True)
 
+
+def process_output_files_test():
+
+    import os
+    import numpy as np
+    from pyemu import Pst, pst_utils
+
+    # ins_file = os.path.join("utils","hauraki_transient.mt3d.processed.ins")
+    # out_file = ins_file.replace(".ins","")
+    #
+    # i = pst_utils.InstructionFile(ins_file)
+    # print(i.read_output_file(out_file))
+    # return
+
+    ins_dir = "ins"
+    ins_files = [os.path.join(ins_dir,f) for f in os.listdir(ins_dir) if f.endswith(".ins")]
+    ins_files.sort()
+    out_files = [f.replace(".ins","") for f in ins_files]
+    print(ins_files)
+
+    i4 = pst_utils.InstructionFile(ins_files[3])
+    s4 = i4.read_output_file(out_files[3])
+    print(s4)
+    assert s4.loc["h01_02","obsval"] == 1.024
+    assert s4.loc["h01_10","obsval"] == 4.498
+    i3 = pst_utils.InstructionFile(ins_files[2])
+    s3 = i3.read_output_file(out_files[2])
+    #print(s3)
+    assert s3.loc["test","obsval"] == 1.23456
+    assert s3.loc["h01_02","obsval"] == 1.024
+
+    i1 = pst_utils.InstructionFile(ins_files[0])
+    s1 = i1.read_output_file(out_files[0])
+    a1 = np.loadtxt(out_files[0]).flatten()
+    assert np.abs(s1.obsval.values - a1).sum() == 0.0
+
+    i2 = pst_utils.InstructionFile(ins_files[1])
+    s2 = i2.read_output_file(out_files[1])
+    assert s2.loc["h01_02","obsval"] == 1.024
+
+
+
+def pst_from_flopy_specsim_draw_test():
+    import shutil
+    import numpy as np
+    import pandas as pd
+    try:
+        import flopy
+    except:
+        return
+    import pyemu
+    org_model_ws = os.path.join("..", "examples", "freyberg_sfr_update")
+    nam_file = "freyberg.nam"
+    m = flopy.modflow.Modflow.load(nam_file, model_ws=org_model_ws, check=False)
+    flopy.modflow.ModflowRiv(m, stress_period_data={0: [[0, 0, 0, 30.0, 1.0, 25.0],
+                                                        [0, 0, 1, 31.0, 1.0, 25.0],
+                                                        [0, 0, 1, 31.0, 1.0, 25.0]]})
+    org_model_ws = "temp"
+    m.change_model_ws(org_model_ws)
+    m.write_input()
+
+    new_model_ws = "temp_pst_from_flopy"
+
+    hds_kperk = []
+    for k in range(m.nlay):
+        for kper in range(m.nper):
+            hds_kperk.append([kper, k])
+    temp_list_props = [["wel.flux", None]]
+    spat_list_props = [["riv.cond", 0], ["riv.stage", 0]]
+    v = pyemu.geostats.ExpVario(a=2500,contribution=1.0)
+    gs = pyemu.geostats.GeoStruct(variograms=[v],transform="log")
+    ph = pyemu.helpers.PstFromFlopyModel(nam_file, new_model_ws=new_model_ws,
+                                         org_model_ws=org_model_ws,
+                                         grid_props=[["rch.rech", 0], ["rch.rech", [1, 2]]],
+                                         remove_existing=True,
+                                         model_exe_name="mfnwt", temporal_list_props=temp_list_props,
+                                         spatial_list_props=spat_list_props,build_prior=False,
+                                         grid_geostruct=gs)
+
+    num_reals = 10000
+    par = ph.pst.parameter_data
+    par.loc[:,"parval1"] = 1
+    par.loc[:, "parubnd"] = 10
+    par.loc[:, "parlbnd"] = .1
+
+    #gr_par = par.loc[par.pargp.apply(lambda x: "gr" in x),:]
+    #par.loc[gr_par.parnme,"parval1"] = 20#np.arange(1,gr_par.shape[0]+1)
+
+    #par.loc[gr_par.parnme,"parubnd"] = 30#par.loc[gr_par.parnme,"parval1"].max()
+    #par.loc[gr_par.parnme, "parlbnd"] = 0.001#par.loc[gr_par.parnme,"parval1"].min()
+    #print(par.loc[gr_par.parnme,"parval1"])
+    li = par.partrans == "log"
+    pe1 = ph.draw(num_reals=num_reals, sigma_range=2,use_specsim=True)
+
+    pyemu.Ensemble.reseed()
+    #print(ph.pst.parameter_data.loc[gr_par.parnme,"parval1"])
+    #pe2 = pyemu.ParameterEnsemble.from_gaussian_draw(ph.pst, ph.build_prior(sigma_range=2), num_reals=num_reals)
+    pe2 = ph.draw(num_reals=num_reals,sigma_range=2)
+
+    pe1._transform()
+    pe2._transform()
+    gr_df = ph.par_dfs[ph.gr_suffix]
+    grps = gr_df.pargp.unique()
+    gr_par = gr_df.loc[gr_df.pargp==grps[0],:]
+    real1 = pe1.loc[pe1.index[-1],gr_par.parnme]
+    real2 = pe2.loc[0, gr_par.parnme]
+
+    arr = np.zeros((ph.m.nrow,ph.m.ncol))
+    arr[gr_par.i,gr_par.j] = real1
+
+    par_vals = par.parval1.copy()
+    par_vals.loc[li] = par_vals.loc[li].apply(np.log10)
+    mn1, mn2 = pe1.mean(), pe2.mean()
+    sd1, sd2 = pe1.std(), pe2.std()
+    diag = pyemu.Cov.from_parameter_data(ph.pst,sigma_range=2.0)
+    var_vals = {p:np.sqrt(v) for p,v in zip(diag.row_names,diag.x)}
+    for pname in par_vals.index:
+        print(pname,par_vals[pname],mn1[pname],mn2[pname],var_vals[pname],sd1[pname],sd2[pname])
+
+    diff_mn = mn1 - mn2
+    diff_sd = sd1 - sd2
+    print(diff_mn)
+    assert diff_mn.apply(np.abs).max() < 0.1, diff_mn.apply(np.abs).max()
+    print(diff_sd)
+    assert diff_sd.apply(np.abs).max() < 0.1,diff_sd.apply(np.abs).max()
+
+
+
 if __name__ == "__main__":
+    #process_output_files_test()
     #change_limit_test()
     #new_format_test()
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
-    # pst_from_flopy_geo_draw_test()
+    #pst_from_flopy_geo_draw_test()
+    pst_from_flopy_specsim_draw_test()
     #try_process_ins_test()
     # write_tables_test()
     #res_stats_test()
@@ -1265,7 +1405,7 @@ if __name__ == "__main__":
     # from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
-    from_flopy_reachinput()
+    #from_flopy_reachinput()
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
@@ -1282,7 +1422,7 @@ if __name__ == "__main__":
     # load_test()
     # res_test()
     # smp_test()
-    # from_io_with_inschek_test()
+    #from_io_with_inschek_test()
     #pestpp_args_test()
     # reweight_test()
     # reweight_res_test()

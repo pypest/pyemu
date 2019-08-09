@@ -646,7 +646,13 @@ def try_run_inschek(pst):
 
     """
     for ins_file,out_file in zip(pst.instruction_files,pst.output_files):
-        df = _try_run_inschek(ins_file,out_file)
+        df = None
+        try:
+            i = InstructionFile(ins_file,pst=pst)
+            df = i.read_output_file(out_file)
+        except Exception as e:
+            warnings.warn("error processing instruction file {0}, trying inschek: {1}".format(ins_file,str(e)))
+            df = _try_run_inschek(ins_file,out_file)
         if df is not None:
             pst.observation_data.loc[df.index, "obsval"] = df.obsval
 
@@ -934,11 +940,383 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
     return odf
 
 
+class Instruction(object):
+    def __init__(self,ins_string,marker):
+        self.ins_string = ins_string
+        self.marker = marker
+        self._check()
+    def _check(self):
+        s = self.ins_string
+        if s.lower().startswith('l'):
+            pass
+        elif s.startswith('!'):
+            pass
+        elif s.startswith('w'):
+            pass
+        elif s.startswith('['):
+            pass
+        elif s.startswith('('):
+            pass
+        elif s.startswith(self.marker):
+            pass
+        elif s.startswith('&'):
+            pass
+
+    def execute(self,out_file_handle):
+        pass
+
+
+
+class InstructionFile(object):
+    """class for handling instruction files.
+
+    Parameters
+    ----------
+        ins_filename : str
+            instruction file name
+        pst : pyemu.Pst
+            optional Pst instance - used for checking that instruction file is
+            compatible with the control
+
+
+    """
+    def __init__(self,ins_filename,pst=None):
+        self._ins_linecount = 0
+        self._out_linecount = 0
+        self._ins_filename = ins_filename
+        #self._pst = pst
+        self._marker = None
+        self._ins_filehandle = None
+        self._out_filehandle = None
+        self._last_line = ''
+        self._full_oname_set = None
+        if pst is not None:
+            self._full_oname_set = set(pst.obs_names)
+        self._found_oname_set = set()
+
+        self._instruction_lines = []
+        self._instruction_lcount = []
+
+        self.read_ins_file()
+
+    def read_ins_file(self):
+        """read the instruction and do some minimal error checking
+
+        Parameters
+        ----------
+            None
+        Returns
+        -------
+            None
+
+        """
+        self._instruction_lines = []
+        self._instruction_lcount = []
+        first_line = self._readline_ins()
+        if len(first_line) < 2:
+            raise Exception("first line of ins file must have atleast two entries, not '{0}'".format(','.join(first_line)))
+        if first_line[0] != "pif":
+            raise Exception("first line of ins file '{0}' must start with 'pif', not '{1}'". \
+                            format(self._ins_filename, first_line[0]))
+        self._marker = first_line[1]
+        while True:
+            line = self._readline_ins()
+
+            if line is None:
+                break
+            elif len(line) == 0:
+                self.throw_ins_warning("empty line, breaking")
+                break
+            elif line[0].startswith('l'):
+                pass
+            elif line[0].startswith(self._marker):
+                pass
+            elif line[0].startswith('&'):
+                self.throw_ins_error("line continuation not supported")
+            else:
+                self.throw_ins_error("first token must be line advance ('l'), primary marker, or continuation ('&'),"+
+                                     "not: {0}".format(line[0]))
+
+            for token in line[1:]:
+                if token.startswith("t"):
+                    self.throw_ins_error("tab instruction not supported")
+                elif token.startswith(self._marker):
+                    if not token.endswith(self._marker):
+                        self.throw_ins_error("unbalanced secondary marker in token '{0}'".format(token))
+
+
+                for somarker,eomarker in zip(['!','[','('],['!',']',')']):
+                    #
+                    if token[0] == somarker:
+                        ofound = True
+                        if eomarker not in token[1:]:
+                            self.throw_ins_error("unmatched observation marker '{0}', looking for '{1}' in token '{2}'".\
+                                                 format(somarker,eomarker,token))
+                        raw = token[1:].split(eomarker)[0].replace(somarker,'')
+                        if raw == 'dum':
+                            pass
+                        else:
+                            if self._full_oname_set is not None and raw not in self._full_oname_set:
+                                self.throw_ins_error("obs name '{0}' not in pst".format(raw))
+                            elif raw in self._found_oname_set:
+                                self.throw_ins_error("obs name '{0}' is listed more than once".format(raw))
+                            self._found_oname_set.add(raw)
+                        break
+                        #print(raw)
+
+            self._instruction_lines.append(line)
+            self._instruction_lcount.append(self._ins_linecount)
+
+
+    def throw_ins_warning(self,message,lcount=None):
+        """throw a verbose PyemuWarning
+
+        Parameters
+        ----------
+            message : str
+
+            lcount : int
+                optional line number.  If None, self._ins_linecount is used
+
+        """
+        if lcount is None:
+            lcount = self._ins_linecount
+        warnings.warn("InstructionFile error processing instruction file {0} on line number {1}: {2}".\
+                        format(self._ins_filename,lcount,message),PyemuWarning)
+
+    def throw_ins_error(self,message,lcount=None):
+        """throw a verbose instruction file error
+
+        Parameters
+        ----------
+            message : str
+
+            lcount : int
+                optional line number.  If None, self._ins_linecount is used
+        """
+        if lcount is None:
+            lcount = self._ins_linecount
+        raise Exception("InstructionFile error processing instruction file on line number {0}: {1}".\
+                        format(lcount,message))
+
+    def throw_out_error(self,message,lcount=None):
+        """throw a verbose output file error
+
+                Parameters
+                ----------
+                    message : str
+
+                    lcount : int
+                        optional line number.  If None, self._ins_linecount is used
+                """
+        if lcount is None:
+            lcount = self._out_linecount
+        raise Exception("InstructionFile error processing output file on line number {0}: {1}".\
+                        format(lcount,message))
+
+    def read_output_file(self,output_file):
+        """process a model output file using self's instruction set
+
+        Parameters
+        ----------
+            output_file : str
+                the output file name
+
+        Returns
+        -------
+            pd.DataFrame : a dataframe with obsnme index and obsval values
+
+
+        """
+        self._out_filename = output_file
+        val_dict = {}
+        for ins_line,ins_lcount in zip(self._instruction_lines,self._instruction_lcount):
+            #try:
+            val_dict.update(self._execute_ins_line(ins_line,ins_lcount))
+            #except Exception as e:
+            #    raise Exception(str(e))
+        s = pd.Series(val_dict)
+        s.sort_index(inplace=True)
+
+        return pd.DataFrame({"obsval":s},index=s.index)
+
+    def _execute_ins_line(self,ins_line,ins_lcount):
+        """private method to process output file lines with an instruction line
+
+        Parameters
+        ----------
+            ins_line : list(str)
+                tokenized instruction line
+            ins_lcount : int
+                the corresponding instruction file line number
+
+        Returns
+        -------
+            val_dict : dict
+                dict keyed on obsnme and valued with float values
+
+
+
+        """
+        cursor_pos = 0
+        val_dict = {}
+        for ii,ins in enumerate(ins_line):
+
+            #primary marker
+            if ii == 0 and ins.startswith(self._marker):
+                mstr = ins.replace(self._marker,'')
+                while True:
+                    line = self._readline_output()
+                    if line is None:
+                        self.throw_out_error(
+                            "EOF when trying to find primary marker '{0}' from instruction file line {1}".format(mstr,ins_lcount))
+                    if mstr in line:
+                        break
+                cursor_pos = line.index(mstr) + len(mstr)
+
+            # line advance
+            elif ins.startswith('l'):
+                try:
+                    nlines = int(ins[1:])
+                except Exception as e:
+                    self.throw_ins_error("casting line advance to int for instruction '{0}'". \
+                                         format(ins), ins_lcount)
+                for i in range(nlines):
+                    line = self._readline_output()
+                    if line is None:
+                        self.throw_out_error("EOF when trying to read {0} lines for line advance instruction '{1}', from instruction file line number {2}". \
+                                             format(nlines, ins, ins_lcount))
+            elif ins == 'w':
+                raw = line[cursor_pos:].split()
+                if line[cursor_pos] == ' ':
+                    raw.insert(0,'')
+                if len(raw) == 1:
+                    self.throw_out_error("no whitespaces found on output line {0} past {1}".format(line,cursor_pos))
+                cursor_pos = cursor_pos + line[cursor_pos:].index(" "+raw[1]) + 1
+
+
+            elif ins.startswith('!'):
+                oname = ins.replace('!','')
+                # look a head for a sec marker
+                if ii < len(ins_line) - 1 and ins_line[ii+1].startswith(self._marker):
+                    m = ins_line[ii+1].replace(self._marker,'')
+                    if m not in line[cursor_pos:]:
+                        self.throw_out_error("secondary marker '{0}' not found from cursor_pos {2}".format(m,cursor_pos))
+                    val_str = line[cursor_pos:].split(m)[0]
+                else:
+                    val_str = line[cursor_pos:].split()[0]
+                try:
+                    val = float(val_str)
+                except Exception as e:
+                    self.throw_out_error("casting string '{0}' to float for instruction '{1}'".format(val_str,ins))
+
+                if oname != "dum":
+                    val_dict[oname] = val
+                #ipos = line[cursor_pos:].index(val_str)
+                #val_len = len(val_str)
+                cursor_pos = cursor_pos + line[cursor_pos:].index(val_str) + len(val_str)
+
+                #print(val,cursor_pos)
+
+                #print(line[cursor_pos:])
+                #print('')
+
+            elif ins.startswith(self._marker):
+                m = ins.replace(self._marker,'')
+                if m not in line[cursor_pos:]:
+                    self.throw_out_error("secondary marker '{0}' not found from cursor_pos {2}".format(m,cursor_pos))
+                cursor_pos = cursor_pos + line[cursor_pos:].index(m) + len(m)
+
+            else:
+                self.throw_out_error("unrecognized instruction '{0}' on ins file line {1}".format(ins,ins_lcount))
+
+        return val_dict
+
+    def _readline_ins(self):
+        """consolidate private method to read the next instruction file line.  Casts to lower and splits
+        on whitespace
+
+        Returns
+        -------
+            list(str)
+
+
+        """
+        if self._ins_filehandle is None:
+            if not os.path.exists(self._ins_filename):
+                raise Exception("instruction file '{0}' not found".format(self._ins_filename))
+            self._ins_filehandle = open(self._ins_filename,'r')
+        line = self._ins_filehandle.readline()
+        self._ins_linecount += 1
+        if line == '':
+            return None
+        self._last_line = line
+        return line.lower().strip().split()
+
+
+    def _readline_output(self):
+        """consolidate private method to read the next output file line.  Casts to lower
+
+        Returns
+        -------
+            str
+
+
+        """
+        if self._out_filehandle is None:
+            if not os.path.exists(self._out_filename):
+                raise Exception("output file '{0}' not found".format(self._out_filename))
+            self._out_filehandle = open(self._out_filename,'r')
+        line = self._out_filehandle.readline()
+        self._out_linecount += 1
+        if line == '':
+            return None
+        self._last_line = line
+        return line.lower()
 
 
 
 
 
+def process_output_files(pst,pst_path='.'):
+    """helper function to process output files using instruction files
+
+    Parameters
+    ----------
+        pst : pyemu.Pst
+
+        pst_path : str
+            path to instruction and output files to append to the front
+            of the names in the Pst instance
+
+    Returns
+    -------
+        df : pd.DataFrame
+            index of obsnme and obsval column
+
+
+
+    """
+    if not isinstance(pst,pyemu.Pst):
+        raise Exception("process_output_files error: 'pst' arg must be pyemu.Pst instance")
+    series = []
+    for ins,out in zip(pst.instruction_files,pst.output_files):
+        ins = os.path.join(pst_path,ins)
+        out = os.path.join(pst_path,out)
+        if not os.path.exists(out):
+            warnings.warn("out file '{0}' not found".format(out),PyemuWarning)
+        f = os.path.join(pst_path,ins)
+        i = InstructionFile(ins,pst=pst)
+        try:
+            s = i.read_output_file(out)
+            series.append(s)
+        except Exception as e:
+            warnings.warn("error processing output file '{0}': {1}".format(out,str(e)))
+    if len(series) == 0:
+        return None
+    series = pd.concat(series)
+    #print(series)
+    return series
 
 
 
