@@ -69,8 +69,6 @@ def mat_test():
     newthird = third.get(row_names=["o1"])
     result = first.T * newthird * first
 
-    result.to_sparse()
-
     # drop testing
     second.drop("p2",axis=0)
     assert second.shape == (2, 2)

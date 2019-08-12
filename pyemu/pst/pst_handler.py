@@ -347,7 +347,7 @@ class Pst(object):
 
         """
         og = list(self.observation_data.groupby("obgnme").groups.keys())
-        
+
         return og
 
     @property
