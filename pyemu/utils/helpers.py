@@ -2684,7 +2684,7 @@ class PstFromFlopyModel(object):
         self.log("drawing realizations")
         return pe
 
-    def build_prior(self, fmt="ascii",filename=None,droptol=None, chunk=None, sparse=False,
+    def build_prior(self, fmt="ascii",filename=None,droptol=None, chunk=None,
                     sigma_range=6):
         """ build a prior parameter covariance matrix.
 
@@ -2701,8 +2701,6 @@ class PstFromFlopyModel(object):
                 Default is None
             chunk : int
                 chunk size to write in a single pass - for binary only
-            sparse : bool
-                flag to build a pyemu.SparseMatrix format cov matrix.  Default is False
             sigma_range : float
                 number of standard deviations represented by the parameter bounds.  Default
                 is 6.
@@ -2771,13 +2769,7 @@ class PstFromFlopyModel(object):
             self.logger.warn("geospatial prior not implemented for SFR pars")
 
         if len(struct_dict) > 0:
-            if sparse:
-                cov = pyemu.helpers.sparse_geostatistical_prior_builder(self.pst,
-                                                                        struct_dict=struct_dict,
-                                                                        sigma_range=sigma_range)
-
-            else:
-                cov = pyemu.helpers.geostatistical_prior_builder(self.pst,
+            cov = pyemu.helpers.geostatistical_prior_builder(self.pst,
                                                              struct_dict=struct_dict,
                                                              sigma_range=sigma_range)
         else:

@@ -1660,12 +1660,9 @@ class Matrix(object):
             data = np.fromfile(f, Matrix.binary_rec_dt, icount)
             icols = ((data['j'] - 1) // nrow) + 1
             irows = data['j'] - ((icols - 1) * nrow)
-            if sparse:
-                data = scipy.sparse.coo_matrix((data["dtemp"],(irows-1,icols-1)),shape=(nrow,ncol))
-            else:
-                x = np.zeros((nrow, ncol))
-                x[irows - 1, icols - 1] = data["dtemp"]
-                data = x
+            x = np.zeros((nrow, ncol))
+            x[irows - 1, icols - 1] = data["dtemp"]
+            data = x
             # read obs and parameter names
             col_names = []
             row_names = []
