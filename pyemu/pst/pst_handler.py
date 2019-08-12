@@ -319,20 +319,6 @@ class Pst(object):
         return self.control_data.npar
 
     @property
-    def pars_in_groups(self):
-        """
-        return a dictionary of  parameter names in each parameter group.
-
-        Returns:
-            dictionary
-        """
-        pargp = self.par_groups
-        allpars = dict()
-        for cpg in pargp:
-            allpars[cpg] = [i for i in self.parameter_data.loc[self.parameter_data.pargp == cpg, 'parnme']]
-        return allpars
-
-    @property
     def forecast_names(self):
         """get the forecast names from the pestpp options (if any).
         Returns None if no forecasts are named
@@ -361,7 +347,7 @@ class Pst(object):
 
         """
         og = list(self.observation_data.groupby("obgnme").groups.keys())
-        #og = list(map(pst_utils.SFMT, og))
+        
         return og
 
     @property

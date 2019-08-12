@@ -12,7 +12,6 @@ import struct
 import shutil
 import copy
 import numpy as np
-import scipy.sparse
 import pandas as pd
 import time
 pd.options.display.max_colwidth = 100
@@ -222,7 +221,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
                     df = pd.read_csv(item)
             else:
                 df = item
-            if df.columns.contains('pargp'):
+            if "pargp" in df.columns:
                 if verbose: print("working on pargroups {0}".format(df.pargp.unique().tolist()))
             for req in ['x','y','parnme']:
                 if req not in df.columns:
@@ -289,135 +288,6 @@ def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
     return geostatistical_prior_builder(pst=pst,struct_dict=struct_dict,
                                         sigma_range=sigma_range)
 
-def sparse_geostatistical_prior_builder(pst, struct_dict,sigma_range=4,verbose=False):
-    """ a helper function to construct a full prior covariance matrix using
-    a mixture of geostastical structures and parameter bounds information.
-    The covariance of parameters associated with geostatistical structures is defined
-    as a mixture of GeoStruct and bounds.  That is, the GeoStruct is used to construct a
-    pyemu.Cov, then the entire pyemu.Cov is scaled by the uncertainty implied by the bounds and
-    sigma_range. Sounds complicated...
-
-    Parameters
-    ----------
-    pst : pyemu.Pst
-        a control file (or the name of control file)
-    struct_dict : dict
-        a python dict of GeoStruct (or structure file), and list of pp tpl files pairs
-        If the values in the dict are pd.DataFrames, then they must have an
-        'x','y', and 'parnme' column.  If the filename ends in '.csv',
-        then a pd.DataFrame is loaded, otherwise a pilot points file is loaded.
-    sigma_range : float
-        a float representing the number of standard deviations implied by parameter bounds.
-        Default is 4.0, which implies 95% confidence parameter bounds.
-    verbose : bool
-        flag for stdout.
-
-    Returns
-    -------
-    Cov : pyemu.SparseMatrix
-        a sparse covariance matrix that includes all adjustable parameters in the control
-        file.
-
-    Example
-    -------
-    ``>>>import pyemu``
-
-    ``>>>pst = pyemu.Pst("pest.pst")``
-
-    ``>>>sd = {"struct.dat":["hkpp.dat.tpl","vka.dat.tpl"]}``
-
-    ``>>>cov = pyemu.helpers.sparse_geostatistical_prior_builder(pst,struct_dict=sd)``
-
-    ``>>>cov.to_coo("prior.jcb")``
-
-    """
-
-    if isinstance(pst,str):
-        pst = pyemu.Pst(pst)
-    assert isinstance(pst,pyemu.Pst),"pst arg must be a Pst instance, not {0}".\
-        format(type(pst))
-    if verbose: print("building diagonal cov")
-    full_cov = pyemu.Cov.from_parameter_data(pst,sigma_range=sigma_range)
-
-    full_cov_dict = {n:float(v) for n,v in zip(full_cov.col_names,full_cov.x)}
-
-    full_cov = None
-    par = pst.parameter_data
-    for gs,items in struct_dict.items():
-        if verbose: print("processing ",gs)
-        if isinstance(gs,str):
-            gss = pyemu.geostats.read_struct_file(gs)
-            if isinstance(gss,list):
-                warnings.warn("using first geostat structure in file {0}".\
-                              format(gs),PyemuWarning)
-                gs = gss[0]
-            else:
-                gs = gss
-        if not isinstance(items,list):
-            items = [items]
-        for item in items:
-            if isinstance(item,str):
-                assert os.path.exists(item),"file {0} not found".\
-                    format(item)
-                if item.lower().endswith(".tpl"):
-                    df = pyemu.pp_utils.pp_tpl_to_dataframe(item)
-                elif item.lower.endswith(".csv"):
-                    df = pd.read_csv(item)
-            else:
-                df = item
-            for req in ['x','y','parnme']:
-                if req not in df.columns:
-                    raise Exception("{0} is not in the columns".format(req))
-            missing = df.loc[df.parnme.apply(
-                    lambda x : x not in par.parnme),"parnme"]
-            if len(missing) > 0:
-                warnings.warn("the following parameters are not " + \
-                              "in the control file: {0}".\
-                              format(','.join(missing)),PyemuWarning)
-                df = df.loc[df.parnme.apply(lambda x: x not in missing)]
-            if "zone" not in df.columns:
-                df.loc[:,"zone"] = 1
-            zones = df.zone.unique()
-            aset = set(pst.adj_par_names)
-            for zone in zones:
-                df_zone = df.loc[df.zone==zone,:].copy()
-                df_zone = df_zone.loc[df_zone.parnme.apply(lambda x: x in aset), :]
-                if df_zone.shape[0] == 0:
-                    warnings.warn("all parameters in zone {0} tied and/or fixed, skipping...".format(zone),
-                                  PyemuWarning)
-                    continue
-                #df_zone.sort_values(by="parnme",inplace=True)
-                df_zone.sort_index(inplace=True)
-                if verbose: print("build cov matrix")
-                cov = gs.sparse_covariance_matrix(df_zone.x,df_zone.y,df_zone.parnme)
-                if verbose: print("done")
-
-                if verbose: print("getting diag var cov",df_zone.shape[0])
-                #tpl_var = np.diag(full_cov.get(list(df_zone.parnme)).x).max()
-                tpl_var = max([full_cov_dict[pn] for pn in df_zone.parnme])
-
-                if verbose: print("scaling full cov by diag var cov")
-                cov.x.data *= tpl_var
-
-                if full_cov is None:
-                    full_cov = cov
-                else:
-                    if verbose: print("extending SparseMatix")
-                    full_cov.block_extend_ip(cov)
-
-
-    if verbose: print("adding remaining parameters to diagonal")
-    fset = set(full_cov.row_names)
-    pset = set(pst.adj_par_names)
-    diff = list(pset.difference(fset))
-    diff.sort()
-    vals = np.array([full_cov_dict[d] for d in diff])
-    i = np.arange(vals.shape[0])
-    coo = scipy.sparse.coo_matrix((vals,(i,i)),shape=(vals.shape[0],vals.shape[0]))
-    cov = pyemu.SparseMatrix(x=coo,row_names=diff,col_names=diff)
-    full_cov.block_extend_ip(cov)
-
-    return full_cov
 
 def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
                                  par_knowledge_dict=None,verbose=False):
@@ -1031,72 +901,6 @@ def pst_from_parnames_obsnames(parnames, obsnames,
     modeloutputfilename = insfilename.replace('.ins','')
 
     return pyemu.Pst.from_io_files(tplfilename, modelinputfilename, insfilename, modeloutputfilename)
-
-
-def start_slaves(slave_dir, exe_rel_path, pst_rel_path, num_slaves=None, slave_root="..",
-                 port=4004, rel_path=None, local=True, cleanup=True, master_dir=None,
-                 verbose=False, silent_master=False):
-    warnings.warn("deprecation warning:start_slaves() has been emancipated and renamed start_workers()", PyemuWarning)
-    warnings.warn("amd start_workers has moved to pyemu.os_utils",PyemuWarning)
-    from pyemu.utils import start_workers
-    start_workers(worker_dir=slave_dir,exe_rel_path= exe_rel_path, pst_rel_path=pst_rel_path, num_workers=num_slaves,
-                  worker_root=slave_root, port=port, rel_path=rel_path,
-                  local=local, cleanup=cleanup, master_dir=master_dir, verbose=verbose, silent_master=silent_master)
-
-
-def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_root="..",
-                 port=4004,rel_path=None,local=True,cleanup=True,master_dir=None,
-                 verbose=False,silent_master=False):
-    """ start a group of pest(++) workers on the local machine
-
-    Parameters
-    ----------
-    worker_dir :  str
-        the path to a complete set of input files
-    exe_rel_path : str
-        the relative path to the pest(++) executable from within the worker_dir
-    pst_rel_path : str
-        the relative path to the pst file from within the worker_dir
-    num_workers : int
-        number of workers to start. defaults to number of cores
-    worker_root : str
-        the root to make the new worker directories in
-    rel_path: str
-        the relative path to where pest(++) should be run from within the
-        worker_dir, defaults to the uppermost level of the worker dir
-    local: bool
-        flag for using "localhost" instead of hostname on worker command line
-    cleanup: bool
-        flag to remove worker directories once processes exit
-    master_dir: str
-        name of directory for master instance.  If master_dir
-        exists, then it will be removed.  If master_dir is None,
-        no master instance will be started
-    verbose : bool
-        flag to echo useful information to stdout
-
-    Note
-    ----
-    if all workers (and optionally master) exit gracefully, then the worker
-    dirs will be removed unless cleanup is false
-
-    Example
-    -------
-    ``>>>import pyemu``
-
-    start 10 workers using the directory "template" as the base case and
-    also start a master instance in a directory "master".
-
-    ``>>>pyemu.helpers.start_workers("template","pestpp","pest.pst",10,master_dir="master")``
-
-    """
-
-    warnings.warn("start_workers has moved to pyemu.os_utils",PyemuWarning)
-    pyemu.os_utils.start_workers(worker_dir=worker_dir,exe_rel_path=exe_rel_path,pst_rel_path=pst_rel_path
-                      ,num_workers=num_workers,worker_root=worker_root,port=port,rel_path=rel_path,
-                      local=local,cleanup=cleanup,master_dir=master_dir,verbose=verbose,
-                      silent_master=silent_master)
-
 
 def read_pestpp_runstorage(filename,irun=0,with_metadata=False):
     """read pars and obs from a specific run in a pest++ serialized run storage file into

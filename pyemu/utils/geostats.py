@@ -13,7 +13,6 @@ from datetime import datetime
 import multiprocessing as mp
 import warnings
 import numpy as np
-import scipy.sparse
 import pandas as pd
 from pyemu.mat.mat_handler import Cov
 from pyemu.utils.pp_utils import pp_file_to_dataframe
@@ -1487,70 +1486,6 @@ class Vario2d(object):
         ax.set_ylabel("$\gamma$")
         ax.plot(x,y,**kwargs)
         return ax
-
-
-    def add_sparse_covariance_matrix(self,x,y,names,iidx,jidx,data):
-        """Adds the `Vario2d` contribution to `pyemu.SparseMatrix` components
-
-
-        Args:
-            x ([`float`]): x-coordinate locations
-            y ([`float`]): y-coordinate locations
-            names ([`str`]): names of locations. If None, cov must not be None
-            iidx (`numpy.ndarray`): row indices
-            jidx (`numpy.ndarray`): col indices
-            data (`numpy.ndarray`): nonzero entries
-
-        """
-        if not isinstance(x, np.ndarray):
-            x = np.array(x)
-        if not isinstance(y, np.ndarray):
-            y = np.array(y)
-        assert x.shape[0] == y.shape[0]
-
-
-        assert x.shape[0] == len(names)
-        #     c = np.zeros((len(names), len(names)))
-        #     np.fill_diagonal(c, self.contribution)
-        #     cov = Cov(x=c, names=names)
-        # elif cov is not None:
-        #     assert cov.shape[0] == x.shape[0]
-        #     names = cov.row_names
-        #     c = np.zeros((len(names), 1)) + self.contribution
-        #     cont = Cov(x=c, names=names, isdiagonal=True)
-        #     cov += cont
-        #
-        # else:
-        #     raise Exception("Vario2d.covariance_matrix() requires either" +
-        #                     "names or cov arg")
-        # rc = self.rotation_coefs
-        for i,name in enumerate(names):
-            iidx.append(i)
-            jidx.append(i)
-            data.append(self.contribution)
-
-        for i1, (n1, x1, y1) in enumerate(zip(names, x, y)):
-            dx = x1 - x[i1 + 1:]
-            dy = y1 - y[i1 + 1:]
-            dxx, dyy = self._apply_rotation(dx, dy)
-            h = np.sqrt(dxx * dxx + dyy * dyy)
-
-            h[h < 0.0] = 0.0
-            cv = self._h_function(h)
-            if np.any(np.isnan(cv)):
-                raise Exception("nans in cv for i1 {0}".format(i1))
-            #cv[h>self.a] = 0.0
-            j = list(np.arange(i1+1,x.shape[0]))
-            i = [i1] * len(j)
-            iidx.extend(i)
-            jidx.extend(j)
-            data.extend(list(cv))
-            # replicate across the diagonal
-            iidx.extend(j)
-            jidx.extend(i)
-            data.extend(list(cv))
-
-
 
     def covariance_matrix(self,x,y,names=None,cov=None):
         """build a pyemu.Cov instance implied by Vario2d
