@@ -1166,32 +1166,42 @@ def par_knowledge_test():
     import os
     import numpy as np
     import pyemu
-    pst_file = os.path.join("pst","pest.pst")
-    pst = pyemu.Pst(pst_file)
 
-    tpl_file = os.path.join("utils","pp_locs.tpl")
-    str_file = os.path.join("utils","structure.dat")
-    pp_df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
-    pkd = {"kr01c01":0.1}
-    try:
-        cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{str_file:tpl_file},
-                                                         par_knowledge_dict=pkd)
-    except:
-        return
-    else:
-        raise Exception("should have failed")
-    d1 = np.diag(cov.x)
+    pr_arr = np.zeros((2,2))
+    pr_arr[0,0] = 1.0
+    pr_arr[1,1] = 1.0
+    pr_arr[0,1] = 0.5
+    pr_arr[1,0] = 0.5
+    pr_cov = pyemu.Cov(x=pr_arr,names=["par1","par2"])
+    kd = {"par2":0.5}
+    new_cov = pyemu.helpers.condition_on_par_knowledge(pr_cov,kd)
 
-
-    df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
-    df.loc[:,"zone"] = np.arange(df.shape[0])
-    gs = pyemu.geostats.read_struct_file(str_file)
-    cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{gs:df},
-                                               sigma_range=4)
-    nnz = np.count_nonzero(cov.x)
-    assert nnz == pst.npar
-    d2 = np.diag(cov.x)
-    assert np.array_equiv(d1, d2)
+    # pst_file = os.path.join("pst","pest.pst")
+    # pst = pyemu.Pst(pst_file)
+    #
+    # tpl_file = os.path.join("utils","pp_locs.tpl")
+    # str_file = os.path.join("utils","structure.dat")
+    # pp_df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
+    # pkd = {"kr01c01":0.1}
+    # try:
+    #     cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{str_file:tpl_file},
+    #                                                      par_knowledge_dict=pkd)
+    # except:
+    #     return
+    # else:
+    #     raise Exception("should have failed")
+    # d1 = np.diag(cov.x)
+    #
+    #
+    # df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
+    # df.loc[:,"zone"] = np.arange(df.shape[0])
+    # gs = pyemu.geostats.read_struct_file(str_file)
+    # cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{gs:df},
+    #                                            sigma_range=4)
+    # nnz = np.count_nonzero(cov.x)
+    # assert nnz == pst.npar
+    # d2 = np.diag(cov.x)
+    # assert np.array_equiv(d1, d2)
 
 
 def gw_sft_ins_test():
@@ -1823,7 +1833,7 @@ def aniso_invest():
 
 if __name__ == "__main__":
     #specsim_test()
-    aniso_invest()
+    #aniso_invest()
     #fieldgen_dev()
     # smp_test()
     # smp_dateparser_test()
@@ -1840,7 +1850,7 @@ if __name__ == "__main__":
     #setup_pp_test()
     #sfr_helper_test()
     # gw_sft_ins_test()
-    # par_knowledge_test()
+    par_knowledge_test()
     # grid_obs_test()
     #hds_timeseries_test()
     # postprocess_inactive_conc_test()

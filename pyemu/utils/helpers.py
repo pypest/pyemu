@@ -568,30 +568,29 @@ def condition_on_par_knowledge(cov,par_knowledge_dict):
         raise Exception("par knowledge dict parameters not found: {0}".\
                         format(','.join(missing)))
     # build the selection matrix and sigma epsilon
-    #sel = cov.zero2d
-    #sel = pyemu.Matrix(x=np.zeros((cov.shape[0],1)),row_names=cov.row_names,col_names=['sel'])
+    #sel = pyemu.Cov(x=np.identity(cov.shape[0]),names=cov.row_names)
     sel = cov.zero2d
-    sigma_ep = cov.zero2d
+    sel = cov.to_pearson()
+    new_cov_diag = pyemu.Cov(x=np.diag(cov.as_2d.diagonal()),names=cov.row_names)
+    #new_cov_diag = cov.zero2d
+
     for parnme,var in par_knowledge_dict.items():
         idx = cov.row_names.index(parnme)
         #sel.x[idx,:] = 1.0
-        sel.x[idx,idx] = 1.0
-        sigma_ep.x[idx,idx] = var
-    #print(sigma_ep.x)
-    #q = sigma_ep.inv
-    #cov_inv = cov.inv
-    print(sel)
-    term2 = sel * cov * sel.T
-    #term2 += sigma_ep
-    #term2 = cov
-    print(term2)
-    term2 = term2.inv
-    term2 *= sel
-    term2 *= cov
+        #sel.x[idx,idx] = var
+        new_cov_diag.x[idx,idx] =  var #cov.x[idx,idx]
+    new_cov_diag = sel * new_cov_diag * sel.T
 
-    new_cov = cov - term2
+    for _ in range(2):
+        for parnme, var in par_knowledge_dict.items():
+            idx = cov.row_names.index(parnme)
+            # sel.x[idx,:] = 1.0
+            # sel.x[idx,idx] = var
+            new_cov_diag.x[idx, idx] = var  # cov.x[idx,idx]
+        new_cov_diag = sel * new_cov_diag * sel.T
 
-    return new_cov
+    print(new_cov_diag)
+    return new_cov_diag
 
 
 
