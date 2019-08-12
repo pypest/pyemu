@@ -2094,6 +2094,10 @@ class Cov(Matrix):
         mat = pyemu.Cov(x=data,names=names)
         mat.to_binary("mat.jco")
 
+    Notes:
+        `row_names` and `col_names` args are supported in the contructor
+        so support inheritance.  However, users should only pass `names`
+
     """
     def __init__(self, x=None, names=[],row_names=[],col_names=[],
                  isdiagonal=False, autoalign=True):
@@ -2102,8 +2106,18 @@ class Cov(Matrix):
         self.__zero = None
         #if len(row_names) > 0 and len(col_names) > 0:
         #    assert row_names == col_names
-        row_names = names
-        col_names = names
+        self.__identity = None
+        self.__zero = None
+        # if len(row_names) > 0 and len(col_names) > 0:
+        #    assert row_names == col_names
+        if len(names) != 0 and len(row_names) == 0:
+            row_names = names
+        if len(names) != 0 and len(col_names) == 0:
+            col_names = names
+        super(Cov, self).__init__(x=x, isdiagonal=isdiagonal,
+                                  row_names=row_names,
+                                  col_names=col_names,
+                                  autoalign=autoalign)
         super(Cov, self).__init__(x=x, isdiagonal=isdiagonal,
                                   row_names=row_names,
                                   col_names=col_names,
