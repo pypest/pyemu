@@ -108,9 +108,6 @@ def freyberg_test():
     pyemu.os_utils.start_workers(new_model_ws,ies_exe_name,"test.pst",
                                 num_workers=10,worker_root='.',
                                 master_dir=master_dir,silent_master=False)
-    pyemu.os_utils.start_slaves(new_model_ws, ies_exe_name, "test.pst",
-                                 num_slaves=10,slave_root='.',
-                                 master_dir=master_dir, silent_master=False)
 
     df = pd.read_csv(os.path.join(master_dir,"test.phi.meas.csv"),index_col=0)
     init_phi = df.loc[0,"mean"]
