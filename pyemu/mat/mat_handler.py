@@ -13,6 +13,48 @@ from scipy.io import FortranFile
 from pyemu.pst.pst_handler import Pst
 from ..pyemu_warnings import PyemuWarning
 
+def save_coo(x, row_names, col_names,  filename, chunk=None):
+    """write a PEST-compatible binary file.  The data format is
+    [int,int,float] for i,j,value.  It is autodetected during
+    the read with Matrix.from_binary().
+
+    Args:
+        x (`numpy.sparse`): coo sparse matrix
+        row_names ([`str`]): list of row names
+        col_names (['str]): list of col_names
+        filename (`str`):  filename
+        droptol (`float`): absolute value tolerance to make values
+            smaller than `droptol` zero.  Default is None (no dropping)
+        chunk (`int`): number of elements to write in a single pass.
+            Default is None
+
+    """
+
+    f = open(filename, 'wb')
+    # print("counting nnz")
+    # write the header
+    header = np.array((x.shape[1], x.shape[0], x.nnz),
+                      dtype=Matrix.binary_header_dt)
+    header.tofile(f)
+
+    data = np.core.records.fromarrays([x.row, x.col, x.data], dtype=Matrix.coo_rec_dt)
+    data.tofile(f)
+
+    for name in col_names:
+        if len(name) > Matrix.new_par_length:
+            name = name[:Matrix.new_par_length - 1]
+        elif len(name) < Matrix.new_par_length:
+            for _ in range(len(name), Matrix.new_par_length):
+                name = name + ' '
+        f.write(name.encode())
+    for name in row_names:
+        if len(name) > Matrix.new_obs_length:
+            name = name[:Matrix.new_obs_length - 1]
+        elif len(name) < Matrix.new_obs_length:
+            for i in range(len(name), Matrix.new_obs_length):
+                name = name + ' '
+        f.write(name.encode())
+    f.close()
 
 
 def concat(mats):
