@@ -15,7 +15,7 @@ import warnings
 import numpy as np
 import scipy.sparse
 import pandas as pd
-from pyemu.mat.mat_handler import Cov,SparseMatrix
+from pyemu.mat.mat_handler import Cov
 from pyemu.utils.pp_utils import pp_file_to_dataframe
 from ..pyemu_warnings import PyemuWarning
 
@@ -111,44 +111,6 @@ class GeoStruct(object):
         f.write("END STRUCTURE\n\n")
         for v in self.variograms:
             v.to_struct_file(f)
-
-    def sparse_covariance_matrix(self,x,y,names):
-        """build a sparse-format pyemu.Cov instance from `GeoStruct`
-
-        Args:
-            x ([`float`]): x-coordinate locations
-            y ([`float`]): y-coordinate locations
-            names ([`str`]): names of locations.
-
-        Returns:
-            cov (`pyemu.SparseMatrix`): the sparse covariance matrix
-                implied by this GeoStruct for the x,y pairs.
-
-        Example::
-
-            pp_df = pyemu.pp_utils.pp_file_to_dataframe("hkpp.dat")
-            cov = gs.covariance_matrix(pp_df.x,pp_df.y,pp_df.name)
-
-                """
-
-        if not isinstance(x, np.ndarray):
-            x = np.array(x)
-        if not isinstance(y, np.ndarray):
-            y = np.array(y)
-        assert x.shape[0] == y.shape[0]
-        assert x.shape[0] == len(names)
-
-        iidx = [i for i in range(len(names))]
-        jidx = list(iidx)
-        data = list(np.zeros(x.shape[0])+self.nugget)
-
-        for v in self.variograms:
-            v.add_sparse_covariance_matrix(x,y,names,iidx,jidx,data)
-        coo = scipy.sparse.coo_matrix((data,(iidx,jidx)),shape=(len(names),len(names)))
-        coo.eliminate_zeros()
-        coo.sum_duplicates()
-        return SparseMatrix(coo,row_names=names,col_names=names)
-
 
     def covariance_matrix(self,x,y,names=None,cov=None):
         """build a `pyemu.Cov` instance from `GeoStruct`
