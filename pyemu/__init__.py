@@ -14,7 +14,7 @@ from .ev import ErrVar
 from .en import Ensemble, ParameterEnsemble, ObservationEnsemble
 from .mc import MonteCarlo
 #from .inf import Influence
-from .mat import Matrix, Jco, Cov, SparseMatrix
+from .mat import Matrix, Jco, Cov
 from .pst import Pst, pst_utils
 from .utils import helpers, gw_utils, optimization,geostats, pp_utils, os_utils, smp_utils
 from .plot import plot_utils

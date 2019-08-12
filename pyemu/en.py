@@ -9,7 +9,7 @@ import math
 import numpy as np
 import pandas as pd
 
-from pyemu.mat.mat_handler import get_common_elements,Matrix,Cov,SparseMatrix
+from pyemu.mat.mat_handler import get_common_elements,Matrix,Cov
 from pyemu.pst.pst_utils import write_parfile,read_parfile
 from pyemu.plot.plot_utils import ensemble_helper
 from .utils.os_utils import run_sweep

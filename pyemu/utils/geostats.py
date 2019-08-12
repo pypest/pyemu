@@ -4,6 +4,7 @@ covariances between points and covariance matrices from
 (nested) geostistical structures, as well as 2-D spectral
 simulation for regular grids. Also support for reading
 and writing PEST structure files, as well as GSLIB and SGEMS files
+
 """
 from __future__ import print_function
 import os
@@ -1736,6 +1737,7 @@ class ExpVario(Vario2d):
         v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)
 
     """
+
     def __init__(self,contribution,a,anisotropy=1.0,bearing=0.0,name="var1"):
         super(ExpVario,self).__init__(contribution,a,anisotropy=anisotropy,
                                       bearing=bearing,name=name)

@@ -375,18 +375,6 @@ def indices_test():
     else:
         raise Exception()
 
-    cycles = 10
-    s = datetime.now()
-    for _ in range(cycles):
-        idx1 = m.old_indices(cnames,1)
-    t1 = (datetime.now() - s).total_seconds()
-
-    s = datetime.now()
-    for _ in range(cycles):
-        idx2 = m.indices(cnames,1)
-    t2 = (datetime.now() - s).total_seconds()
-    print(t1,t2)
-    assert np.allclose(idx1,idx2)
 
 
 def coo_tests():
