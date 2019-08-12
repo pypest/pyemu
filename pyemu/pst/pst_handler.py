@@ -1,5 +1,6 @@
 """This module contains most of the pyemu.Pst object definition.  This object
-is the primary mechanism for dealing with PEST control files
+is the primary mechanism for dealing with PEST control files.  Support is provided
+for constructing new control files as well as manipulating existing control files
 """
 
 from __future__ import print_function, division
@@ -21,30 +22,44 @@ class Pst(object):
     """basic class for handling pest control files to support linear analysis
     as well as replicate some of the functionality of the pest utilities
 
-    Parameters
-    ----------
-    filename : str
-        the name of the control file
-    load : (boolean)
-        flag to load the control file. Default is True
-    resfile : str
-        corresponding residual file.  If None, a residual file
-        with the control file base name is sought.  Default is None
+    Args:
+        filename (`str`):  the name of the control file
+        load (`bool`): flag to load the control file. Default is True
+        resfile (`str`): corresponding residual file.  If `None`, a residual file
+            with the control file base name is sought.  Default is `None`
 
-    Returns
-    -------
-    Pst : Pst
-        a control file object
+    Example::
+
+        pst = pyemu.Pst("my.pst")
+        pst.control_data.noptmax = -1
+        pst.write("my_new.pst")
 
     """
     def __init__(self, filename, load=True, resfile=None):
 
         self.parameter_data = None
-        """pandas.DataFrame:  parameter data loaded from pst control file"""
+        """pandas.DataFrame:  '* parameter data' information.  Columns are 
+        standard PEST variable names
+        
+        Example::
+            
+            pst.parameter_data.loc[:,"partrans"] = "log"
+            pst.parameter_data.loc[:,"parubnd"] = 10.0
+        
+        """
         self.observation_data = None
-        """pandas.DataFrame:  observation data loaded from pst control file"""
+        """pandas.DataFrame:  '* observation data' information.  Columns are standard PEST
+        variable names
+        
+        Example::
+        
+            pst.observation_data.loc[:,"weight"] = 1.0
+            pst.observation_data.loc[:,"obgnme"] = "obs_group"
+        
+        """
         self.prior_information = None
-        """pandas.DataFrame:  prior_information data loaded from pst control file"""
+        """pandas.DataFrame:  '* prior information' data.  Columns are standard PEST
+        variable names"""
 
         self.filename = filename
         self.resfile = resfile
@@ -58,11 +73,36 @@ class Pst(object):
             self.__setattr__(key,copy.copy(value))
         #self.tied = None
         self.control_data = ControlData()
-        """pyemu.pst.pst_controldata.ControlData:  control data object loaded from pst control file"""
+        """pyemu.pst.pst_controldata.ControlData:  '* control data' information.  
+        Accessible by argument name. 
+        
+        Example:: 
+            
+            pst.control_data.noptmax = 2
+            pst.control_data.pestmode = "estimation"
+            
+            
+        """
         self.svd_data = SvdData()
-        """pyemu.pst.pst_controldata.SvdData: singular value decomposition (SVD) object loaded from pst control file"""
+        """pyemu.pst.pst_controldata.SvdData: '* singular value decomposition' section information.  
+        Access with standard PEST variable names
+        
+        Example::
+        
+            pst.svd_data.maxsing = 100
+            
+        
+        """
         self.reg_data = RegData()
-        """pyemu.pst.pst_controldata.RegData: regularization data object loaded from pst control file"""
+        """pyemu.pst.pst_controldata.RegData: '* regularization' section information.
+        Access with standard PEST variable names.
+        
+        Example:: 
+        
+            pst.reg_data.phimlim = 1.00 #yeah right!
+
+        
+        """
         self._version = 1
         if load:
             if not os.path.exists(filename):
@@ -79,16 +119,34 @@ class Pst(object):
 
     @classmethod
     def from_par_obs_names(cls,par_names=["par1"],obs_names=["obs1"]):
+        """construct a shell `Pst` instance from parameter and observation names
+
+        Args:
+            par_names ([`str`]): list of parameter names.  Default is [`par1`]
+            obs_names ([`str`]): list of observation names.  Default is [`obs1`]
+
+        Notes:
+            While this method works, it does not make template or instruction files.
+            Users are encouraged to use `Pst.from_io_files()` for more usefulness
+
+        Example::
+
+            par_names = ["par1","par2"]
+            obs_names = ["obs1","obs2"]
+            pst = pyemu.Pst.from_par_obs_names(par_names,obs_names)
+
+        """
         return pst_utils.generic_pst(par_names=par_names,obs_names=obs_names)
 
     @property
     def phi(self):
-        """get the weighted total objective function
+        """get the weighted total objective function.
 
-        Returns
-        -------
-        phi : float
-            sum of squared residuals
+        Returns:
+            phi (`float`): sum of squared residuals
+
+        Notes:
+            Requires `Pst.res` (the residuals file) to be available
 
         """
         psum = 0.0
@@ -100,15 +158,12 @@ class Pst(object):
     def phi_components(self):
         """ get the individual components of the total objective function
 
-        Returns
-        -------
-        dict : dict
-            dictionary of observation group, contribution to total phi
+        Returns:
+            pcomp (`dict`): dictionary of observation group, contribution to total phi
 
-        Raises
-        ------
-        Assertion error if Pst.observation_data groups don't match
-        Pst.res groups
+
+        Notes:
+            Requires `Pst.res` (the residuals file) to be available
 
         """
 
@@ -165,15 +220,13 @@ class Pst(object):
         """ get the individual components of the total objective function
             normalized to the total PHI being 1.0
 
-        Returns
-        -------
-        dict : dict
-            dictionary of observation group, normalized contribution to total phi
+        Returns:
+            pcomp_norm: (`dict`):  dictionary of observation group,
+                normalized contribution to total phi
 
-        Raises
-        ------
-        Assertion error if self.observation_data groups don't match
-        self.res groups
+        Notes:
+            Requires `Pst.res` (the residuals file) to be available
+
 
         """
         # use a dictionary comprehension to go through and normalize each component of phi to the total
@@ -181,12 +234,12 @@ class Pst(object):
         return phi_components_normalized
 
     def set_res(self,res):
-        """ reset the private Pst.res attribute
+        """ reset the private `Pst.res` attribute.
 
-        Parameters
-        ----------
-        res : (varies)
-            something to use as Pst.res attribute
+        Args:
+            res : (`pandas.DataFrame` or `str`): something to use as Pst.res attribute.
+                If `res` is `str`, a dataframe is read from file `res`
+
 
         """
         if isinstance(res,str):
@@ -197,14 +250,13 @@ class Pst(object):
     def res(self):
         """get the residuals dataframe attribute
 
-        Returns
-        -------
-        res : pandas.DataFrame
+        Returns:
+            res (`pandas.DataFrame`): a dataframe containing the
+                residuals information.
 
-        Note
-        ----
-        if the Pst.__res attribute has not been loaded,
-        this call loads the res dataframe from a file
+        Notes:
+            if the Pst.__res attribute has not been loaded,
+                this call loads the res dataframe from a file
 
         """
         if self.__res is not None:
@@ -247,10 +299,8 @@ class Pst(object):
     def nprior(self):
         """number of prior information equations
 
-        Returns
-        -------
-        nprior : int
-            the number of prior info equations
+        Returns:
+            nprior (`int`): the number of prior info equations
 
         """
         self.control_data.nprior = self.prior_information.shape[0]
@@ -260,7 +310,7 @@ class Pst(object):
     def nnz_obs(self):
         """ get the number of non-zero weighted observations
 
-        Returns
+        Returns:
         -------
         nnz_obs : int
             the number of non-zeros weighted observations
