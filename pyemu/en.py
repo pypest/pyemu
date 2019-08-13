@@ -9,6 +9,8 @@ import math
 import numpy as np
 import pandas as pd
 
+from pyemu.pst.pst_handler import Pst
+
 from pyemu.mat.mat_handler import get_common_elements,Matrix,Cov
 from pyemu.pst.pst_utils import write_parfile,read_parfile
 from pyemu.plot.plot_utils import ensemble_helper
@@ -27,7 +29,7 @@ class EnLoc(object):
 
 class EnIloc(object):
     def __init__(self,df):
-        self._df = df
+        self._mydf = df
 
     def __getitem__(self,item):
         return type(self._mydf)(self._mydf.pst,df=self._mydf._df.iloc[item])
@@ -54,10 +56,13 @@ class Ensemble(object):
     def __init__(self,pst,df,istransformed=False):
 
         if not isinstance(df,pd.DataFrame):
-            raise Exception("'df' must be a dataframe, not {0}".format(type(df)))
+            if isinstance(df,pd.Series):
+                df = pd.DataFrame(df)
+            else:
+                raise Exception("'df' must be a dataframe, not {0}".format(type(df)))
         if isinstance(pst,str):
             pst = pyemu.Pst(pst)
-        if not isinstance(pst,pyemu.Pst):
+        if not isinstance(pst,Pst):
             raise Exception("'pst' must be a pyemu.Pst, not {0}".format(type(pst)))
 
         self._df = df.copy() # for safety
@@ -65,7 +70,27 @@ class Ensemble(object):
         self.pst = pst
         self.loc = EnLoc(self)
         self.iloc = EnIloc(self)
-        self.__istransformed = bool(istransformed)
+        self._istransformed = bool(istransformed)
+        self.index = self._df.index
+        self.columns = self._df.columns
+
+    def __repr__(self):
+        return self._df.__repr__()
+
+    def __str__(self):
+        return self._df.__str__()
+
+    def max(self,*args,**kwargs):
+        return self._df.max(*args,**kwargs)
+
+    def min(self,*args,**kwargs):
+        return self._df.min(*args,**kwargs)
+
+    def mean(self,*args,**kwargs):
+        return self._df.mean(*args,**kwargs)
+
+    def apply(self,*args,**kwargs):
+        return type(self)(pst=self.pst,df=self._df.apply(*args,**kwargs),istransformed=self.istransformed)
 
     @property
     def istransformed(self):
@@ -76,7 +101,7 @@ class Ensemble(object):
             `bool`: transformation status
 
         """
-        return copy.copy(self.__istransformed)
+        return copy.copy(self._istransformed)
 
     @property
     def shape(self):
@@ -125,62 +150,6 @@ class Ensemble(object):
         df = super(Ensemble,self).dropna(*args,**kwargs)
         return type(self)(df=df,pst=self.pst)
 
-    # jwhite -  13 Aug 2019 - removing this since most ensemble
-    # generation is through the classmethod constructors
-    # def draw(self,cov,num_reals=1,names=None):
-    #     """ draw random realizations from a multivariate
-    #         Gaussian distribution
-    #
-    #     Args:
-    #         cov (`pyemu.Cov`): covariance matrix to draw from
-    #         num_reals (`int`): number of realizations to generate
-    #         names ([`str`]): list of columns names to draw for.
-    #             If None, values all names are drawn
-    #
-    #     """
-    #     real_names = np.arange(num_reals,dtype=np.int64)
-    #
-    #     # make sure everything is cool WRT ordering
-    #     if names is not None:
-    #         vals = self.mean_values.loc[names]
-    #         cov = cov.get(names)
-    #     elif self.names != cov.row_names:
-    #         names = get_common_elements(self.names,
-    #                                     cov.row_names)
-    #         vals = self.mean_values.loc[names]
-    #         cov = cov.get(names)
-    #     else:
-    #         vals = self.mean_values
-    #         names = self.names
-    #
-    #     # generate random numbers
-    #     if cov.isdiagonal: #much faster
-    #         val_array = np.array([np.random.normal(mu,std,size=num_reals) for\
-    #                               mu,std in zip(vals,np.sqrt(cov.x))]).transpose()
-    #     else:
-    #         val_array = np.random.multivariate_normal(vals, cov.as_2d,num_reals)
-    #
-    #     self.loc[:,:] = np.NaN
-    #     self.dropna(inplace=True)
-    #
-    #     # this sucks - can only set by enlargement one row at a time
-    #     for rname,vals in zip(real_names,val_array):
-    #         self.loc[rname, names] = vals
-    #         # set NaNs to mean_values
-    #         idx = pd.isnull(self.loc[rname,:])
-    #         self.loc[rname,idx] = self.mean_values[idx]
-
-    # def enforce(self):
-    #     """ placeholder method for derived ParameterEnsemble type
-    #     to enforce parameter bounds
-    # 
-    # 
-    #     Raises
-    #     ------
-    #         Exception if called
-    #     """
-    #     raise Exception("Ensemble.enforce() must overloaded by derived types")
-
     def plot(self,bins=10,facecolor='0.5',plot_cols=None,
                     filename="ensemble.pdf",func_dict = None,
                     **kwargs):
@@ -208,10 +177,9 @@ class Ensemble(object):
         ensemble_helper(self,bins=bins,facecolor=facecolor,plot_cols=plot_cols,
                         filename=filename)
 
-
     def __sub__(self,other):
-        diff = super(Ensemble,self).__sub__(other)
-        return Ensemble.from_dataframe(df=diff)
+        diff = self._df - other._df
+        return type(self)(pst=self.pst,df=diff)
 
     # jwhite - 13 Aug 2019 - dont need this since the constructor now takes a df
     @classmethod
@@ -316,14 +284,16 @@ class Ensemble(object):
         if not self.istransformed:
             bt = True
             self._transform()
-        mean_vec = self.mean()
 
-        df = self.loc[:, :].copy()
+        mean_vec = self._df.mean()
+
+        df = self._df.loc[:, :].copy()
         for col in df.columns:
             df.loc[:, col] -= mean_vec[col]
         if bt:
             self._back_transform()
         return type(self).from_dataframe(pst=self.pst, df=df)
+
 
 
 class ObservationEnsemble(Ensemble):
@@ -347,8 +317,35 @@ class ObservationEnsemble(Ensemble):
             generate noise realizations for observations with zero weight
     """
 
-    def __init__(self,pst,df):
-        super(ObservationEnsemble,self).__init__(pst,df)
+    def __init__(self,pst,df,istransformed=False):
+        super(ObservationEnsemble,self).__init__(pst,df,istransformed)
+
+
+    def _transform(self,inplace=True):
+        """
+
+
+        :param inplace:
+        :return:
+        """
+        self._istransformed = True
+        if inplace:
+            return
+        else:
+            return ObservationEnsemble(pst=self.pst.get(),df=self._df.copy())
+
+    def _back_transform(self, inplace=True):
+        """
+
+
+        :param inplace:
+        :return:
+        """
+        self._istransformed = False
+        if inplace:
+            return
+        else:
+            return ObservationEnsemble(pst=self.pst.get(), df=self._df.copy())
 
 
     @property
@@ -547,7 +544,7 @@ class ParameterEnsemble(Ensemble):
 
         super(ParameterEnsemble,self).__init__(pst,df)
         # a flag for current log transform status
-        self.__istransformed = bool(istransformed)
+        self._istransformed = bool(istransformed)
         if "tied" in list(self.pst.parameter_data.partrans.values):
             warnings.warn("tied parameters are treated as fixed in "+\
                          "ParameterEnsemble",PyemuWarning)
@@ -689,7 +686,7 @@ class ParameterEnsemble(Ensemble):
     #             self.loc[:,fname] = fval
     #     istransformed = self.pst.parameter_data.loc[:,"partrans"] == "log"
     #     self.loc[:,istransformed] = 10.0**self.loc[:,istransformed]
-    #     self.__istransformed = False
+    #     self._istransformed = False
     #
     #     #self._applied_tied()
     #
@@ -1184,21 +1181,21 @@ class ParameterEnsemble(Ensemble):
 
         istransformed = self.pst.parameter_data.loc[:,"partrans"] == "log"
         if inplace:
-            self.loc[:,istransformed] = 10.0**(self.loc[:,istransformed])
-            self.loc[:,:] = (self.loc[:,:] -\
+            self._df.loc[:,istransformed] = 10.0**(self._df.loc[:,istransformed])
+            self._df.loc[:,:] = (self._df.loc[:,:] -\
                              self.pst.parameter_data.offset)/\
                              self.pst.parameter_data.scale
 
-            self.__istransformed = False
+            self._istransformed = False
         else:
             vals = (self.pst.parameter_data.parval1 -\
                     self.pst.parameter_data.offset) /\
                     self.pst.parameter_data.scale
-            new_en = ParameterEnsemble(pst=self.pst.get(),data=self.loc[:,:].copy(),
-                              columns=self.columns,
-                              mean_values=vals,istransformed=False)
-            new_en.loc[:,istransformed] = 10.0**(self.loc[:,istransformed])
-            new_en.loc[:,:] = (new_en.loc[:,:] -\
+            new_en = ParameterEnsemble(pst=self.pst.get(),
+                                       df=self._df.loc[:,:].copy(),
+                                       istransformed=False)
+            new_en._df.loc[:,istransformed] = 10.0**(self._df.loc[:,istransformed])
+            new_en._df.loc[:,:] = (new_en._df.loc[:,:] -\
                              new_en.pst.parameter_data.offset)/\
                              new_en.pst.parameter_data.scale
             return new_en
@@ -1229,19 +1226,19 @@ class ParameterEnsemble(Ensemble):
         istransformed = self.pst.parameter_data.loc[:,"partrans"] == "log"
         if inplace:
             #self.loc[:,istransformed] = np.log10(self.loc[:,istransformed])
-            self.loc[:,:] = (self.loc[:,:] * self.pst.parameter_data.scale) +\
+            self._df.loc[:,:] = (self._df.loc[:,:] * self.pst.parameter_data.scale) +\
                              self.pst.parameter_data.offset
-            self.loc[:,istransformed] = self.loc[:,istransformed].applymap(lambda x: math.log10(x))
+            self._df.loc[:,istransformed] = self._df.loc[:,istransformed].applymap(lambda x: math.log10(x))
 
-            self.__istransformed = True
+            self._istransformed = True
         else:
             vals = self.pst.parameter_data.parval1.copy()
-            new_en = ParameterEnsemble(pst=self.pst.get(),data=self.loc[:,:].copy(),
-                              columns=self.columns,
-                              mean_values=vals,istransformed=True)
-            new_en.loc[:,:] = (new_en.loc[:,:] * self.pst.parameter_data.scale) +\
+            new_en = ParameterEnsemble(pst=self.pst.get(),
+                                       data=self._dfloc[:,:].copy(),
+                                       istransformed=True)
+            new_en._df.loc[:,:] = (new_en._df.loc[:,:] * self.pst.parameter_data.scale) +\
                              new_en.pst.parameter_data.offset
-            new_en.loc[:,istransformed] = self.loc[:,istransformed].applymap(lambda x: math.log10(x))
+            new_en._df.loc[:,istransformed] = self._df.loc[:,istransformed].applymap(lambda x: math.log10(x))
             return new_en
 
 
@@ -1277,7 +1274,7 @@ class ParameterEnsemble(Ensemble):
 
         li = self.pst.parameter_data.loc[:,"partrans"] == "log"
         self.loc[:,li] = self.loc[:,li].applymap(lambda x: math.log10(x))
-        self.__istransformed = True
+        self._istransformed = True
 
         #make sure everything is cool WRT ordering
         common_names = get_common_elements(self.adj_names,
@@ -1309,14 +1306,14 @@ class ParameterEnsemble(Ensemble):
         if not inplace:
             new_en.enforce(enforce_bounds)
             new_en._df.loc[:,istransformed] = 10.0**new_en._df.loc[:,istransformed]
-            new_en.__istransformed = False
+            new_en._istransformed = False
 
             #new_en._back_transform()
             return new_en
 
         self.enforce(enforce_bounds)
         self._df.loc[:,istransformed] = 10.0**self._df.loc[:,istransformed]
-        self.__istransformed = False
+        self._istransformed = False
 
     def enforce(self,enforce_bounds="reset"):
         """ entry point for bounds enforcement.  This gets called for the
@@ -1523,7 +1520,7 @@ class ParameterEnsemble(Ensemble):
         if self.istransformed:
             self._back_transform(inplace=True)
             retrans = True
-        if self.isnull().values.any():
+        if self._df.isnull().values.any():
             warnings.warn("NaN in par ensemble",PyemuWarning)
         self.as_pyemu_matrix().to_coo(filename)
         if retrans:

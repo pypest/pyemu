@@ -326,71 +326,37 @@ def pe_to_csv_test():
 
     assert np.allclose(pe1.as_matrix(),pe.as_matrix())
 
-def diagonal_cov_draw_test():
-    import os
-    import numpy as np
-    from pyemu import MonteCarlo,Cov,Pst,ParameterEnsemble
-    jco = os.path.join("pst","pest.jcb")
-    pst = Pst(jco.replace(".jcb",".pst"))
-
-    mc = MonteCarlo(jco=jco,pst=pst)
-    num_reals = 100
-    mc.draw(num_reals,obs=True)
-    print(mc.obsensemble)
-    pe1 = mc.parensemble.copy()
-
-    cov = Cov(x=mc.parcov.as_2d,names=mc.parcov.row_names)
-    #print(type(cov))
-    mc = MonteCarlo(jco=jco,pst=pst)
-    mc.parensemble.reseed()
-    mc.draw(num_reals,cov=cov)
-    pe2 = mc.parensemble
-
-    pe3 = ParameterEnsemble.from_gaussian_draw(mc.pst,num_reals=num_reals,cov=mc.parcov)
-
-    #print(pe1-pe2)
-
 def obs_id_draw_test():
     import os
     import numpy as np
-    from pyemu import MonteCarlo,ObservationEnsemble
+    from pyemu import MonteCarlo,ObservationEnsemble, Pst
     from datetime import datetime
     jco = os.path.join("pst","pest.jcb")
-    pst = jco.replace(".jcb",".pst")
+    pst = Pst(jco.replace(".jcb",".pst"))
 
-    mc = MonteCarlo(jco=jco,pst=pst)
     num_reals = 100
-    oe = ObservationEnsemble.from_id_gaussian_draw(mc.pst,num_reals=num_reals)
+    oe = ObservationEnsemble.from_id_gaussian_draw(pst,num_reals=num_reals)
     print(oe.shape)
-    print(oe.head())
+    print(oe._df.head())
 
 
 def par_diagonal_draw_test():
     import os
     import numpy as np
-    from pyemu import MonteCarlo,Cov,ParameterEnsemble
+    from pyemu import MonteCarlo,Cov,ParameterEnsemble,Pst
     from datetime import datetime
     jco = os.path.join("pst","pest.jcb")
-    pst = jco.replace(".jcb",".pst")
-
-    mc = MonteCarlo(jco=jco,pst=pst)
+    pst = Pst(jco.replace(".jcb",".pst"))
     num_reals = 100
-
+    cov = Cov.from_parameter_data(pst)
     start = datetime.now()
-    mc.draw(num_reals=num_reals,how="gaussian")
-    print(mc.parensemble.head())
+    pe = ParameterEnsemble.from_gaussian_draw(pst=pst,cov=cov,num_reals=num_reals)
     print(datetime.now() - start)
-    vals = mc.pst.parameter_data.parval1.values
-    cov = Cov.from_parameter_data(mc.pst)
+    vals = pst.parameter_data.parval1.values
+
     start = datetime.now()
     val_array = np.random.multivariate_normal(vals, cov.as_2d,num_reals)
     print(datetime.now() - start)
-
-    start = datetime.now()
-    pe = ParameterEnsemble.from_gaussian_draw(mc.pst,cov,num_reals=num_reals)
-    print(datetime.now() - start)
-    print(mc.parensemble.head())
-    print(pe.head())
 
 
 def phi_vector_test():
@@ -399,53 +365,10 @@ def phi_vector_test():
     jco = os.path.join("pst","pest.jcb")
     pst = pyemu.Pst(jco.replace(".jcb",".pst"))
 
-    mc = pyemu.MonteCarlo(pst=pst)
     num_reals = 15
-    mc.draw(num_reals,obs=True)
-    print(mc.obsensemble.phi_vector)
-    print(float(mc.obsensemble.phi_vector.mean()))
-
-
-def change_weights_test():
-    import os
-    import numpy as np
-    import pyemu
-    from pyemu import MonteCarlo, ObservationEnsemble
-    from datetime import datetime
-    jco = os.path.join("pst", "pest.jcb")
-    pst = jco.replace(".jcb", ".pst")
-
-    mc = MonteCarlo(jco=jco, pst=pst)
-    print(mc.pst.nnz_obs_names)
-    ogcov = mc.obscov.to_dataframe().loc[mc.pst.nnz_obs_names,mc.pst.nnz_obs_names]
-
-    num_reals = 10000
-    oe = ObservationEnsemble.from_id_gaussian_draw(mc.pst, num_reals=num_reals)
-    for oname in mc.pst.nnz_obs_names:
-        w = mc.pst.observation_data.loc[oname,"weight"]
-        v = ogcov.loc[oname,oname]
-        est = np.std(oe.loc[:,oname])**2
-        pd = 100.0 * (np.abs(v-est)) / v
-        print(oname,np.std(oe.loc[:,oname])**2,ogcov.loc[oname,oname],pd,(1.0/w)**2)
-        assert pd < 10.0,"{0},{1},{2},{3}".format(oname,v,est,pd)
-        assert (1.0/w)**2 == v,"{0},{1},{2}".format(oname,v,(1.0/w)**2)
-
-    mc.pst.observation_data.loc[mc.pst.nnz_obs_names,"weight"] = 1000.0
-    mc.reset_obscov(pyemu.Cov.from_observation_data(mc.pst))
-    newcov = mc.obscov.to_dataframe().loc[mc.pst.nnz_obs_names,mc.pst.nnz_obs_names]
-    #print(mc.obsensemble.pst.observation_data.loc[mc.pst.nnz_obs_names,"weight"])
-
-    num_reals = 10000
-    oe = ObservationEnsemble.from_id_gaussian_draw(mc.pst, num_reals=num_reals)
-    for oname in mc.pst.nnz_obs_names:
-        w = mc.pst.observation_data.loc[oname, "weight"]
-        v = newcov.loc[oname, oname]
-        est = np.std(oe.loc[:, oname]) ** 2
-        pd = 100.0 * (np.abs(v - est)) / v
-        # print(oname,np.std(oe.loc[:,oname])**2,ogcov.loc[oname,oname],pd,(1.0/w)**2)
-        assert pd < 10.0, "{0},{1},{2},{3}".format(oname, v, est, pd)
-        assert (1.0 / w) ** 2 == v, "{0},{1},{2}".format(oname, v, (1.0 / w) ** 2)
-
+    oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst=pst,num_reals=num_reals)
+    print(oe.phi_vector)
+    print(float(oe.phi_vector.mean()))
 
 def homegrown_draw_test():
 
@@ -531,7 +454,7 @@ def ensemble_covariance_test():
     cov = gs.covariance_matrix(par.x, par.y, par.parnme)
     num_reals = 100000
 
-    mc = pyemu.MonteCarlo(pst=pst)
+    #mc = pyemu.MonteCarlo(pst=pst)
 
     peh = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov, num_reals=num_reals,use_homegrown=True)
 
@@ -618,7 +541,7 @@ def to_from_binary_test():
     cov = gs.covariance_matrix(par.x, par.y, par.parnme)
     num_reals = 1000
 
-    mc = pyemu.MonteCarlo(pst=pst)
+    #mc = pyemu.MonteCarlo(pst=pst)
 
     pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov, num_reals=num_reals, use_homegrown=True)
     oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst,num_reals=num_reals)
@@ -629,12 +552,15 @@ def to_from_binary_test():
     pe.to_binary(pe_name)
     oe.to_binary(oe_name)
 
-    pe1 = pyemu.ParameterEnsemble.from_binary(mc.pst,pe_name)
-    oe1 = pyemu.ObservationEnsemble.from_binary(mc.pst,oe_name)
-    pe1.index = pe1.index.map(np.int)
-    oe1.index = oe1.index.map(np.int)
+    pe1 = pyemu.ParameterEnsemble.from_binary(pst,pe_name)
+    oe1 = pyemu.ObservationEnsemble.from_binary(pst,oe_name)
+    pe1._df.index = pe1.index.map(np.int)
+    oe1._df.index = oe1.index.map(np.int)
+    print(oe)
+    print(oe1)
     d = (oe - oe1).apply(np.abs)
-    assert d.max().max() == 0.0
+    print(d)
+    assert d.max().max() == 0.0,d.max().max()
     d = (pe - pe1).apply(np.abs)
     assert d.max().max() == 0.0, d
 
@@ -814,24 +740,20 @@ def ensemble_deviations_test():
 
 
 if __name__ == "__main__":
-    # ensemble_deviations_test()
-    # mixed_par_draw_test()
-    # triangular_draw_test()
-    # sparse_draw_test()
-    # binary_ensemble_dev()
-    # to_from_binary_test()
-    # ensemble_covariance_test()
-    # homegrown_draw_test()
-    # change_weights_test()
-    # phi_vector_test()
-    # par_diagonal_draw_test()
-    # obs_id_draw_test()
-    # diagonal_cov_draw_test()
-    # pe_to_csv_test()
-    # scale_offset_test()
-    # mc_test()
-    # fixed_par_test()
-    # uniform_draw_test()
+    #ensemble_deviations_test()
+    #mixed_par_draw_test()
+    #triangular_draw_test()
+    #to_from_binary_test()
+    #ensemble_covariance_test()
+    #homegrown_draw_test()
+    #phi_vector_test()
+    #par_diagonal_draw_test()
+    #obs_id_draw_test()
+    pe_to_csv_test()
+    scale_offset_test()
+    mc_test()
+    fixed_par_test()
+    uniform_draw_test()
     gaussian_draw_test()
     # parfile_test()
     # write_regul_test()
