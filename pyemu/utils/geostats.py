@@ -74,14 +74,17 @@ class GeoStruct(object):
                  transform="none"):
         self.name = name
         self.nugget = float(nugget)
+        """`float`: the nugget effect contribution"""
         if not isinstance(variograms,list):
             variograms = [variograms]
         for vario in variograms:
             assert isinstance(vario,Vario2d)
         self.variograms = variograms
+        """[`pyemu.utils.geostats.Vario2d`]: a list of variogram instances"""
         transform = transform.lower()
         assert transform in ["none","log"]
         self.transform = transform
+        """`str`: the transformation of the `GeoStruct`.  Can be 'log' or 'none'"""
 
 
     def __lt__(self,other):
@@ -124,7 +127,7 @@ class GeoStruct(object):
                 names must not be None. Default is None
 
         Returns:
-            cov (`pyemu.Cov`): the covariance matrix implied by this
+            `pyemu.Cov`: the covariance matrix implied by this
                 GeoStruct for the x,y pairs. `cov` has row and column
                 names supplied by the names argument unless the "cov"
                 argument was passed.
@@ -177,8 +180,8 @@ class GeoStruct(object):
             pt1 ([`float`]): xy-pair
 
         Returns:
-            covariance (`float`): the covariance between pt0 and pt1 implied
-             by the GeoStruct
+            `float`: the covariance between pt0 and pt1 implied
+                by the GeoStruct
 
         """
         #raise Exception()
@@ -198,8 +201,7 @@ class GeoStruct(object):
             yother ([`float`]): y-coordinates of other points
 
         Returns:
-            cov : numpy.ndarray
-                a 1-D array of covariance between point x0,y0 and the
+            `numpy.ndarray`: a 1-D array of covariance between point x0,y0 and the
                 points contained in xother, yother.  len(cov) = len(xother) =
                 len(yother)
 
@@ -214,7 +216,7 @@ class GeoStruct(object):
     def sill(self):
         """ get the sill of the `GeoStruct`
         Returns:
-            sill (`float`): the sill of the (nested) `GeoStruct`, including
+            `float`: the sill of the (nested) `GeoStruct`, including
                 nugget and contribution from each variogram
         """
         sill = self.nugget
@@ -230,7 +232,7 @@ class GeoStruct(object):
             **kwargs : (dict)
                 keyword arguments to use for plotting.
         Returns:
-            ax (`matplotlib.pyplot.axis`): the axis with the GeoStruct plot
+            `matplotlib.pyplot.axis`: the axis with the GeoStruct plot
 
         Notes:
             optional arguments include "ax" (an existing axis),
@@ -271,7 +273,7 @@ class GeoStruct(object):
         """ the `str` representation of the `GeoStruct`
 
         Returns:
-            s (`str`): the str representation of the GeoStruct
+            `str`: the string representation of the GeoStruct
         """
         s = ''
         s += 'name:{0},nugget:{1},structures:\n'.format(self.name,self.nugget)
@@ -325,10 +327,8 @@ class SpecSim2d(object):
             tol : `float` (optional)
                 tolerance to determine grid regularity.  Default is 1.0e-6
 
-        Returns
-        -------
-            is_regular : `bool`
-                flag indicating if the grid defined by `delx` and `dely` is regular
+        Returns:
+            `bool`: flag indicating if the grid defined by `delx` and `dely` is regular
 
         """
         if np.abs(delx.mean() - delx.min()) > tol:
@@ -413,7 +413,7 @@ class SpecSim2d(object):
             mean_value (`float`): the mean value of the realizations
 
         Returns:
-            reals (`numpy.ndarray`): a 3-D array of realizations.  Shape
+            `numpy.ndarray`: a 3-D array of realizations.  Shape
                 is (num_reals,self.dely.shape[0],self.delx.shape[0])
         Notes:
             log transformation is respected and the returned `reals` array is
@@ -453,7 +453,7 @@ class SpecSim2d(object):
             logger (`pyemu.Logger` (optional)): a logger instance for logging
 
         Returns:
-            pe (`pyemu.ParameterEnsemble`): an untransformed parameter ensemble of
+            `pyemu.ParameterEnsemble`: an untransformed parameter ensemble of
                 realized grid-parameter values
 
         Notes:
@@ -866,8 +866,8 @@ class OrdinaryKrige(object):
                 kriging in python.  Default is 1.
 
         Returns:
-            interp (`pandas.DataFrame`): a dataframe with information summarizing the ordinary kriging
-            process for each grid node
+            `pandas.DataFrame`: a dataframe with information summarizing the ordinary kriging
+                process for each grid node
 
         Notes:
             this method calls OrdinaryKrige.calc_factors()
@@ -1014,8 +1014,7 @@ class OrdinaryKrige(object):
                 kriging in python.  Default is 1.
 
             Returns:
-                interp : pandas.DataFrame
-                    a dataframe with information summarizing the ordinary kriging
+                `pandas.DataFrame`: a dataframe with information summarizing the ordinary kriging
                     process for each interpolation points
 
             Notes:
@@ -1429,7 +1428,7 @@ class Vario2d(object):
         """ get the bearing of the Vario2d in radians
 
         Returns:
-            bearing_rads (`float`): the Vario2d bearing in radians
+            `float`: the Vario2d bearing in radians
         """
         return (np.pi / 180.0 ) * (90.0 - self.bearing)
 
@@ -1438,7 +1437,7 @@ class Vario2d(object):
         """ get the rotation coefficents in radians
 
         Returns:
-            rotation_coefs ([`float`]): the rotation coefficients implied by Vario2d.bearing
+            [`float`]: the rotation coefficients implied by `Vario2d.bearing`
 
 
         """
@@ -1454,7 +1453,7 @@ class Vario2d(object):
             h (`float`): the value of h_function to invert
 
         Returns:
-            inv_h (`float`): the inverse of h
+            `float`: the inverse of h
 
         """
         return self.contribution - self._h_function(h)
@@ -1466,7 +1465,7 @@ class Vario2d(object):
             **kwargs (`dict`): keyword arguments to use for plotting
 
         Returns:
-            ax : matplotlib.pyplot.axis
+            `matplotlib.pyplot.axis`
 
         Notes:
             optional arguments in kwargs include
@@ -1498,7 +1497,7 @@ class Vario2d(object):
             in place
 
         Returns:
-            cov : pyemu.Cov
+            `pyemu.Cov`: the covariance matrix for `x`, `y` implied by `Vario2d`
 
         Notes:
             either `names` or `cov` must not be None.
@@ -1577,8 +1576,7 @@ class Vario2d(object):
             yother ([`float`]): y-coordinates of other points
 
         Returns:
-            cov : numpy.ndarray
-                a 1-D array of covariance between point x0,y0 and the
+            `numpy.ndarray`: a 1-D array of covariance between point x0,y0 and the
                 points contained in xother, yother.  len(cov) = len(xother) =
                 len(yother)
 
@@ -1597,7 +1595,7 @@ class Vario2d(object):
             pt1 : ([`float`]): second point x and y
 
         Returns:
-            cov (`float`): covariance between pt0 and pt1
+            `float`: covariance between pt0 and pt1
 
         """
 
@@ -1611,7 +1609,7 @@ class Vario2d(object):
         """ get the str representation of Vario2d
 
         Returns:
-            s (`str`): string rep
+            `str`: string rep
         """
         s = "name:{0},contribution:{1},a:{2},anisotropy:{3},bearing:{4}\n".\
             format(self.name,self.contribution,self.a,\
@@ -1743,7 +1741,7 @@ def read_struct_file(struct_file,return_type=GeoStruct):
         return_type (`object`): the instance type to return.  Default is GeoStruct
 
     Returns:
-        GeoStruct ([`pyemu.GeoStruct`]): list of `GeoStruct` instances.  If
+        [`pyemu.GeoStruct`]: list of `GeoStruct` instances.  If
             only one `GeoStruct` is in the file, then a `GeoStruct` is returned
 
 
@@ -1983,8 +1981,7 @@ def gslib_2_dataframe(filename,attr_name=None,x_idx=0,y_idx=1):
             Default is 1 (second column)
 
     Returns:
-        df : pandas.DataFrame
-            a dataframe of info from the GSLIB file
+        `pandas.DataFrame`: a dataframe of info from the GSLIB file
 
     Notes:
         assigns generic point names ("pt0, pt1, etc)
@@ -2091,8 +2088,8 @@ def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
 
 
     Returns:
-        arr (`numpy.ndarray`): if out_file is None
-        out_file (`str`): if out_file it not None
+        `numpy.ndarray`: if out_file is None
+        `str`: if out_file it not None
 
     Example::
 

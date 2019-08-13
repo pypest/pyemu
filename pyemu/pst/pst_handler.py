@@ -24,8 +24,8 @@ class Pst(object):
 
     Args:
         filename (`str`):  the name of the control file
-        load (`bool`): flag to load the control file. Default is True
-        resfile (`str`): corresponding residual file.  If `None`, a residual file
+        load (`bool`, optional): flag to load the control file. Default is True
+        resfile (`str`, optional): corresponding residual file.  If `None`, a residual file
             with the control file base name is sought.  Default is `None`
 
     Example::
@@ -74,7 +74,7 @@ class Pst(object):
         #self.tied = None
         self.control_data = ControlData()
         """pyemu.pst.pst_controldata.ControlData:  '* control data' information.  
-        Accessible by argument name. 
+        Access with standard PEST variable names 
         
         Example:: 
             
@@ -143,7 +143,7 @@ class Pst(object):
         """get the weighted total objective function.
 
         Returns:
-            phi (`float`): sum of squared residuals
+            `float`: sum of squared residuals
 
         Notes:
             Requires `Pst.res` (the residuals file) to be available
@@ -159,7 +159,7 @@ class Pst(object):
         """ get the individual components of the total objective function
 
         Returns:
-            pcomp (`dict`): dictionary of observation group, contribution to total phi
+            `dict`: dictionary of observation group, contribution to total phi
 
 
         Notes:
@@ -221,7 +221,7 @@ class Pst(object):
             normalized to the total PHI being 1.0
 
         Returns:
-            pcomp_norm: (`dict`):  dictionary of observation group,
+            `dict`:  dictionary of observation group,
                 normalized contribution to total phi
 
         Notes:
@@ -251,7 +251,7 @@ class Pst(object):
         """get the residuals dataframe attribute
 
         Returns:
-            res (`pandas.DataFrame`): a dataframe containing the
+            `pandas.DataFrame`: a dataframe containing the
                 residuals information.
 
         Notes:
@@ -300,7 +300,7 @@ class Pst(object):
         """number of prior information equations
 
         Returns:
-            nprior (`int`): the number of prior info equations
+            `int`: the number of prior info equations
 
         """
         self.control_data.nprior = self.prior_information.shape[0]
@@ -311,7 +311,7 @@ class Pst(object):
         """ get the number of non-zero weighted observations
 
         Returns:
-            nnz_obs (`int`): the number of non-zeros weighted observations
+            `int`: the number of non-zeros weighted observations
 
         """
         nnz = 0
@@ -326,7 +326,7 @@ class Pst(object):
         """get the number of observations
 
         Returns:
-            nobs (`int`): the number of observations
+            `int`: the number of observations
 
         """
         self.control_data.nobs = self.observation_data.shape[0]
@@ -338,7 +338,7 @@ class Pst(object):
         """get the number of adjustable parameters (not fixed or tied)
 
         Returns:
-            npar_adj (`int`): the number of adjustable parameters
+            `int`: the number of adjustable parameters
 
         """
         pass
@@ -354,7 +354,7 @@ class Pst(object):
         """get number of parameters
 
         Returns:
-            npar (`int`): the number of parameters
+            `int`: the number of parameters
 
         """
         self.control_data.npar = self.parameter_data.shape[0]
@@ -366,7 +366,7 @@ class Pst(object):
         Returns None if no forecasts are named
 
         Returns:
-            forecast_names ([`str`]): a list of forecast names.
+            [`str`]: a list of forecast names.
 
         """
         if "forecasts" in self.pestpp_options.keys():
@@ -381,7 +381,7 @@ class Pst(object):
         """get the observation groups
 
         Returns:
-            obs_groups ([`str`]): a list of unique observation groups
+            [`str`]: a list of unique observation groups
 
         """
         og = self.observation_data.obgnme.unique().tolist()
@@ -393,7 +393,7 @@ class Pst(object):
          observation
 
         Returns:
-            nnz_obs_groups ([`str`]): a list of observation groups that contain at
+            [`str`]: a list of observation groups that contain at
                 least one non-zero weighted observation
 
         """
@@ -406,7 +406,7 @@ class Pst(object):
         """get the parameter groups with atleast one adjustable parameter
 
         Returns:
-            adj_pargp ([`str`]): a list of parameter groups with
+            [`str`]: a list of parameter groups with
                 at least one adjustable parameter
 
         """
@@ -421,7 +421,7 @@ class Pst(object):
         """get the parameter groups
 
         Returns:
-            par_groups ([`str`]): a list of parameter groups
+            [`str`]: a list of parameter groups
 
         """
         return self.parameter_data.pargp.unique().tolist()
@@ -432,7 +432,7 @@ class Pst(object):
         """get the prior info groups
 
         Returns:
-            prior_groups ([`str`]): a list of prior information groups
+            [`str`]: a list of prior information groups
 
         """
         og = self.prior_information.obgnme.unique().tolist()
@@ -443,7 +443,7 @@ class Pst(object):
         """ get the prior information names
 
         Returns:
-            prior_names ([`str`]): a list of prior information names
+            [`str`]: a list of prior information names
 
         """
         return self.prior_information.pilbl.tolist()
@@ -453,7 +453,7 @@ class Pst(object):
         """get the parameter names
 
         Returns:
-            par_names ([`str`]): a list of parameter names
+            [`str`]: a list of parameter names
         """
         return self.parameter_data.parnme.tolist()
 
@@ -462,7 +462,7 @@ class Pst(object):
         """ get the adjustable (not fixed or tied) parameter names
 
         Returns:
-            adj_par_names ([`str`]): list of adjustable (not fixed or tied)
+            [`str`]: list of adjustable (not fixed or tied)
                 parameter names
 
         """
@@ -476,7 +476,7 @@ class Pst(object):
         """get the observation names
 
         Returns:
-            obs_names ([`str`]): a list of observation names
+            [`str`]: a list of observation names
 
         """
         return self.observation_data.obsnme.tolist()
@@ -486,7 +486,7 @@ class Pst(object):
         """get the non-zero weight observation names
 
         Returns:
-            nnz_obs_names ([`str`]): a list of non-zero weighted observation names
+            [`str`]: a list of non-zero weighted observation names
 
         """
         obs = self.observation_data
@@ -498,7 +498,7 @@ class Pst(object):
         """ get the zero-weighted observation names
 
         Returns:
-         zero_weight_obs_names ([`str`]): a list of zero-weighted observation names
+            [`str`]: a list of zero-weighted observation names
 
         """
         obs = self.observation_data
@@ -511,7 +511,7 @@ class Pst(object):
 
         Returns:
 
-            estimation (`bool`): True if `control_data.pestmode` is estmation, False otherwise
+            `bool`: True if `control_data.pestmode` is estmation, False otherwise
 
         """
         return self.control_data.pestmode == "estimation"
@@ -521,7 +521,7 @@ class Pst(object):
         """ list of tied parameter names
 
         Returns:
-            tied (pandas.DataFrame): a dataframe of tied parameter information.
+            pandas.DataFrame: a dataframe of tied parameter information.
                 Columns of `tied` are `parnme` and `partied`.  Returns `None` if
                 no tied parameters are found.
 
@@ -550,7 +550,7 @@ class Pst(object):
 
         Returns:
         -------
-        df (`pandas.DataFrame`): dataframe of control file section info
+        pandas.DataFrame`: dataframe of control file section info
 
         """
         seek_point = f.tell()
@@ -1598,7 +1598,7 @@ class Pst(object):
                 is None
 
         Returns:
-            new_pst (`Pst`): a new Pst instance
+            `Pst`: a new Pst instance
 
         Notes:
             passing `par_names` as `None` and `obs_names` as `None` effectively
@@ -2103,7 +2103,7 @@ class Pst(object):
                 Default is None
 
         Returns:
-            new_pst (`Pst`): new control file instance with parameter and observation names
+            `Pst`: new control file instance with parameter and observation names
                 found in `tpl_files` and `ins_files`, repsectively.
 
         Notes:
@@ -2148,7 +2148,7 @@ class Pst(object):
                     file will reside, it is useful to pass `pst_path` as `.`.  Default is None
 
         Returns:
-            new_par_data (`pandas.DataFrame`): the data for the new parameters that were added.
+            `pandas.DataFrame`: the data for the new parameters that were added.
                 If no new parameters are in the new template file, returns None
 
         Notes:
@@ -2207,7 +2207,7 @@ class Pst(object):
             inschek (`bool`): flag to run inschek.  If successful, inscheck outputs are used as obsvals
 
         Returns:
-            new_obs_data (`pandas.DataFrame`): the data for the new observations that were added
+            `pandas.DataFrame`: the data for the new observations that were added
 
         Notes:
             populates the new observation information with default values
@@ -2296,7 +2296,7 @@ class Pst(object):
                 are located.  Default is "." (current python directory)
 
         Returns:
-            obsvals (`pandas.Series`): model output values
+            `pandas.Series`: model output values
 
         Notes:
             requires a complete set of model input files at relative path
@@ -2314,7 +2314,7 @@ class Pst(object):
                 obsvious to most users, but you never know....
 
         Returns:
-            stats (`pd.DataFrame`): a dataframe with columns for groups names and indices of statistic name.
+            `pd.DataFrame`: a dataframe with columns for groups names and indices of statistic name.
 
         Notes:
             Stats are derived from the current obsvals, weights and grouping in
@@ -2428,7 +2428,7 @@ class Pst(object):
                 is 4.0, implying 95% confidence bounds
 
         Returns:
-            pargp_df (`pandas.DataFrame`): the summary parameter group dataframe
+            `pandas.DataFrame`: the summary parameter group dataframe
 
 
         Example::
@@ -2514,7 +2514,7 @@ class Pst(object):
             Default is None
 
         Returns:
-            obsgp_df (`pandas.DataFrame`): the summary observation group dataframe
+            `pandas.DataFrame`: the summary observation group dataframe
 
 
         Example::
@@ -2629,7 +2629,7 @@ class Pst(object):
         are listed as active less than inequality constraints.
 
         Returns:
-            lt_obs (`pandas.Series`): names of obseravtions that are non-zero weighted
+            `pandas.Series`: names of obseravtions that are non-zero weighted
                 less than constraints (`obgnme` starts with "l_" or "less")
 
         Notes:
@@ -2649,7 +2649,7 @@ class Pst(object):
         are listed as active less than inequality constraints.
 
         Returns:
-            lt_pi (`pandas.Series`): names of prior information that are non-zero weighted
+            `pandas.Series`: names of prior information that are non-zero weighted
                 less than constraints (`obgnme` starts with "l_" or "less")
 
         Notes:
@@ -2673,7 +2673,7 @@ class Pst(object):
         are listed as active greater than inequality constraints.
 
         Returns:
-            gt_obs (`pandas.Series`): names obseravtions that are non-zero weighted
+            `pandas.Series`: names obseravtions that are non-zero weighted
                 greater than constraints (`obgnme` startsiwth "g_" or "greater")
 
         Notes:
@@ -2694,7 +2694,7 @@ class Pst(object):
         are listed as active greater than inequality constraints.
 
         Returns:
-            gt_pi (`pandas.Series`) names of prior information that are non-zero weighted
+            `pandas.Series` names of prior information that are non-zero weighted
                 greater than constraints (`obgnme` startsiwth "g_" or "greater")
 
 
@@ -2715,7 +2715,7 @@ class Pst(object):
 
 
         Returns:
-            change_df (`pandas.DataFrame`): a copy of `Pst.parameter_data`
+            `pandas.DataFrame`: a copy of `Pst.parameter_data`
                 with columns for relative and factor change limits
         Note
         ----
