@@ -63,7 +63,7 @@ def res_test():
     assert d < 1.0E-5
 
     p = Pst(os.path.join(pst_dir, "pest.pst"))
-    p.adjust_weights_resfile(original_ceiling=False)
+    p.adjust_weights_discrepancy(original_ceiling=False,bygroups=True)
 
     d = np.abs(p.phi - p.nnz_obs)
     assert d < 1.0E-5
@@ -238,7 +238,7 @@ def reweight_res_test():
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     print(pst.res.loc[pst.nnz_obs_names, :])
     print(pst.phi, pst.nnz_obs)
-    pst.adjust_weights_resfile()
+    pst.adjust_weights_discrepancy(bygroups=True)
     print(pst.phi, pst.nnz_obs)
     assert np.abs(pst.phi - pst.nnz_obs) < 1.0e-6
 
@@ -783,7 +783,7 @@ if __name__ == "__main__":
     # add_pi_test()
     # regdata_test()
     # nnz_groups_test()
-    adj_group_test()
+    # adj_group_test()
     # regul_rectify_test()
     # derivative_increment_tests()
     # tied_test()
@@ -794,7 +794,7 @@ if __name__ == "__main__":
     # comments_test()
     # test_e_clean()
     # load_test()
-    # res_test()
+    res_test()
     # smp_test()
     #from_io_with_inschek_test()
     #pestpp_args_test()

@@ -501,7 +501,7 @@ class Pst(object):
          zero_weight_obs_names ([`str`]): a list of zero-weighted observation names
 
         """
-        obs = pst.observation_data
+        obs = self.observation_data
         return obs.loc[obs.weight==0.0,"obsnme"].tolist()
 
 
@@ -1762,7 +1762,7 @@ class Pst(object):
     #     phi_comps = self.phi_components
     #     self._adjust_weights_by_phi_components(phi_comps,original_ceiling)
 
-    def adjust_weights_discrepancy(self, resfile=None,original_ceiling=True):
+    def adjust_weights_discrepancy(self, resfile=None,original_ceiling=True, bygroups=False):
         """adjusts the weights of each non-zero weight observation based
         on the residual in the pest residual file so each observations contribution
         to phi is 1.0 (e.g. Mozorov's discrepancy principal)
@@ -1772,6 +1772,11 @@ class Pst(object):
                 with the Pst case name.  Default is None
         original_ceiling (`bool`): flag to keep weights from increasing - this is
             generally a good idea. Default is True
+        bygroups (`bool`): flag to adjust weights by groups. If False, the weight
+            of each non-zero weighted observation is adjusted individually. If True,
+            intergroup weighting is preserved (the contribution to each group is used)
+            but this may result in some strangeness if some observations in a group have
+            a really low phi already.
 
         Example::
 
@@ -1784,12 +1789,16 @@ class Pst(object):
         if resfile is not None:
             self.resfile = resfile
             self.__res = None
-        obs = self.observation_data.loc[self.nnz_obs_names,:]
-        swr = (self.res.loc[self.nnz_obs_names,:].residual * obs.weight)**2
-        factors =  (1.0/swr).apply(np.sqrt)
-        if original_ceiling:
-            factors = factors.apply(lambda x: 1.0 if x > 1.0 else x)
-        self.observation_data.loc[self.nnz_obs_names,"weight"] *= factors
+        if bygroups:
+            phi_comps = self.phi_components
+            self._adjust_weights_by_phi_components(phi_comps,original_ceiling)
+        else:
+            obs = self.observation_data.loc[self.nnz_obs_names,:]
+            swr = (self.res.loc[self.nnz_obs_names,:].residual * obs.weight)**2
+            factors =  (1.0/swr).apply(np.sqrt)
+            if original_ceiling:
+                factors = factors.apply(lambda x: 1.0 if x > 1.0 else x)
+            self.observation_data.loc[self.nnz_obs_names,"weight"] *= factors
 
 
 
