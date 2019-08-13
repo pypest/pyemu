@@ -234,6 +234,30 @@ class Ensemble(object):
         assert isinstance(df,pd.DataFrame)
         return cls(pst=pst,df=df)
 
+    @classmethod
+    def from_binary(cls, pst, filename):
+        """instantiate an observation ensemble from a PEST binary-type file
+
+        Args:
+            pst (`pyemu.Pst`): a Pst instance
+            filename (`str`): the binary file name
+
+        Returns:
+            oe : ObservationEnsemble
+
+        Notes:
+            uses `pyemu.Matrix.from_binary()`
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            oe = pyemu.ObservationEnsemble.from_binary(pst=pst,filename="obs.jcb")
+
+        """
+        m = Matrix.from_binary(filename)
+        return cls(pst=pst, df=m.to_dataframe())
+
+
     @staticmethod
     def reseed():
         """method to reset the numpy.random seed using the `pyemu.en.SEED`
@@ -281,19 +305,25 @@ class Ensemble(object):
         return delta.T * delta
 
 
+
     def get_deviations(self):
         """get the deviations of the ensemble value from the mean vector
 
         Returns:
             `pyemu.Ensemble`: Ensemble of deviations from the mean
         """
+        bt = False
+        if not self.istransformed:
+            bt = True
+            self._transform()
+        mean_vec = self.mean()
 
-        mean_vec = self._df.mean()
-
-        df = self._df.loc[:,:].copy()
+        df = self.loc[:, :].copy()
         for col in df.columns:
-            df.loc[:,col] -= mean_vec[col]
-        return type(self)(pst=self.pst,df=df)
+            df.loc[:, col] -= mean_vec[col]
+        if bt:
+            self._back_transform()
+        return type(self).from_dataframe(pst=self.pst, df=df)
 
 
 class ObservationEnsemble(Ensemble):
@@ -434,28 +464,7 @@ class ObservationEnsemble(Ensemble):
         self.as_pyemu_matrix().to_coo(filename)
 
 
-    @classmethod
-    def from_binary(cls,pst,filename):
-        """instantiate an observation ensemble from a PEST binary-type file
 
-        Args:
-            pst (`pyemu.Pst`): a Pst instance
-            filename (`str`): the binary file name
-
-        Returns:
-            oe : ObservationEnsemble
-
-        Notes:
-            uses `pyemu.Matrix.from_binary()`
-
-        Example::
-
-            pst = pyemu.Pst("my.pst")
-            oe = pyemu.ObservationEnsemble.from_binary(pst=pst,filename="obs.jcb")
-
-        """
-        m = Matrix.from_binary(filename)
-        return ObservationEnsemble(pst=pst,df=m.to_dataframe())
 
     @property
     def phi_vector(self):
@@ -762,7 +771,7 @@ class ParameterEnsemble(Ensemble):
         df = pd.DataFrame(arr,index=real_names,columns=pst.par_names)
         df.loc[:,li] = 10.0**df.loc[:,li]
 
-        new_pe = cls.from_dataframe(pst=pst,df=pd.DataFrame(data=arr,columns=pst.par_names))
+        new_pe = cls(pst=pst,df=pd.DataFrame(data=arr,columns=pst.par_names))
         #new_pe._applied_tied()
         return new_pe
 
@@ -822,111 +831,11 @@ class ParameterEnsemble(Ensemble):
         df = pd.DataFrame(arr, index=real_names, columns=pst.par_names)
         df.loc[:, li] = 10.0 ** df.loc[:, li]
 
-        new_pe = cls.from_dataframe(pst=pst, df=pd.DataFrame(data=arr, columns=pst.par_names))
+        new_pe = cls(pst=pst, df=pd.DataFrame(data=arr, columns=pst.par_names))
         # new_pe._applied_tied()
         return new_pe
 
 
-    @classmethod
-    def from_sparse_gaussian_draw(cls,pst,cov,num_reals):
-        """ instantiate a parameter ensemble from a sparse covariance matrix.
-        This is an advanced user method that assumes you know what you are doing
-        - few guard rails...
-
-        Parameters
-        ----------
-        pst : pyemu.Pst
-            a control file instance
-        cov : (pyemu.SparseMatrix)
-            sparse covariance matrix to use for drawing
-        num_reals : int
-            number of realizations to generate
-
-        Returns
-        -------
-        ParameterEnsemble : ParameterEnsemble
-
-        """
-
-
-        assert isinstance(cov,SparseMatrix)
-        real_names = np.arange(num_reals, dtype=np.int64)
-
-        li = pst.parameter_data.partrans == "log"
-        vals = pst.parameter_data.parval1.copy()
-        vals.loc[li] = vals.loc[li].apply(np.log10)
-
-
-        par_cov = pst.parameter_data.loc[cov.row_names, :]
-        par_cov.loc[:, "idxs"] = np.arange(cov.shape[0])
-        # print("algning cov")
-        # cov.align(list(par_cov.parnme))
-        pargps = par_cov.pargp.unique()
-        print("reserving reals matrix")
-        reals = np.zeros((num_reals, cov.shape[0]))
-
-        for ipg, pargp in enumerate(pargps):
-            pnames = list(par_cov.loc[par_cov.pargp == pargp, "parnme"])
-            idxs = par_cov.loc[par_cov.pargp == pargp, "idxs"]
-            print("{0} of {1} drawing for par group '{2}' with {3} pars "
-                  .format(ipg + 1, len(pargps), pargp, len(idxs)))
-
-            snv = np.random.randn(num_reals, len(pnames))
-
-            print("...extracting cov from sparse matrix")
-            cov_pg = cov.get_matrix(col_names=pnames,row_names=pnames)
-            if len(pnames) == 1:
-                std = np.sqrt(cov_pg.x)
-                reals[:, idxs] = vals[pnames].values[0] + (snv * std)
-            else:
-                try:
-                    cov_pg.inv
-                except:
-                    covname = "trouble_{0}.cov".format(pargp)
-                    print('saving toubled cov matrix to {0}'.format(covname))
-                    cov_pg.to_ascii(covname)
-                    #print(cov_pg.get_diagonal_vector())
-                    raise Exception("error inverting cov for par group '{0}'," + \
-                                    "saved trouble cov to {1}".
-                                    format(pargp, covname))
-                v, w = np.linalg.eigh(cov_pg.as_2d)
-                # check for near zero eig values
-
-                # vdiag = np.diag(v)
-                for i in range(v.shape[0]):
-                    if v[i] > 1.0e-10:
-                        pass
-                    else:
-                        print("near zero eigen value found", v[i], \
-                              "at index", i, " of ", v.shape[0])
-                        v[i] = 0.0
-                vsqrt = np.sqrt(v)
-                vsqrt[i:] = 0.0
-                v = np.diag(vsqrt)
-                a = np.dot(w, v)
-                pg_vals = vals[pnames]
-                for i in range(num_reals):
-                    # v = snv[i,:]
-                    # p = np.dot(a,v)
-                    reals[i, idxs] = pg_vals + np.dot(a, snv[i, :])
-
-        df = pd.DataFrame(reals, columns=cov.row_names, index=real_names)
-        df.loc[:, li] = 10.0 ** df.loc[:, li]
-
-        # replace the realizations for fixed parameters with the original
-        # parval1 in the control file
-        print("handling fixed pars")
-        # pe.pst.parameter_data.index = pe.pst.parameter_data.parnme
-        par = pst.parameter_data
-        fixed_vals = par.loc[par.partrans == "fixed", "parval1"]
-        for fname, fval in zip(fixed_vals.index, fixed_vals.values):
-            # print(fname)
-            df.loc[:, fname] = fval
-
-        # print("apply tied")
-        new_pe = cls.from_dataframe(pst=pst, df=df)
-
-        return new_pe
 
     @classmethod
     def from_gaussian_draw(cls,pst,cov,num_reals=1,use_homegrown=True,group_chunks=False,
@@ -1123,7 +1032,7 @@ class ParameterEnsemble(Ensemble):
                 df.loc[:,fname] = fval
 
             #print("apply tied")
-        new_pe = cls.from_dataframe(pst=pst,df=df)
+        new_pe = cls(pst=pst,df=df)
         if enforce_bounds:
             new_pe.enforce()
         return new_pe
@@ -1213,7 +1122,7 @@ class ParameterEnsemble(Ensemble):
             else:
 
                 cov = Cov.from_parameter_data(pst,sigma_range=sigma_range)
-            pe_gauss = ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=num_reals,
+            pe_gauss = cls.from_gaussian_draw(pst,cov,num_reals=num_reals,
                                                             enforce_bounds=enforce_bounds)
             pes.append(pe_gauss)
 
@@ -1222,7 +1131,7 @@ class ParameterEnsemble(Ensemble):
             #par_uniform.sort_values(by="parnme",inplace=True)
             par_uniform.sort_index(inplace=True)
             pst.parameter_data = par_uniform
-            pe_uniform = ParameterEnsemble.from_uniform_draw(pst,num_reals=num_reals)
+            pe_uniform = cls.from_uniform_draw(pst,num_reals=num_reals)
             pes.append(pe_uniform)
 
         if len(how_groups["triangular"]) > 0:
@@ -1230,7 +1139,7 @@ class ParameterEnsemble(Ensemble):
             #par_tri.sort_values(by="parnme", inplace=True)
             par_tri.sort_index(inplace=True)
             pst.parameter_data = par_tri
-            pe_tri = ParameterEnsemble.from_triangular_draw(pst,num_reals=num_reals)
+            pe_tri = cls.from_triangular_draw(pst,num_reals=num_reals)
             pes.append(pe_tri)
 
 
@@ -1249,30 +1158,8 @@ class ParameterEnsemble(Ensemble):
         elif df.shape != df.dropna().shape:
             raise Exception("ParameterEnsemble.from_mixed_draws() error: NaNs in final parameter ensemble")
         pst.parameter_data = par_org
-        return ParameterEnsemble.from_dataframe(df=df,pst=pst)
+        return cls(df=df,pst=pst)
 
-
-
-
-    @classmethod
-    def from_binary(cls, pst, filename):
-        """instantiate an parameter obsemble from a jco-type file
-
-        Parameters
-        ----------
-        pst : pyemu.Pst
-            a Pst instance
-        filename : str
-            the binary file name
-
-        Returns
-        -------
-        pe : ParameterEnsemble
-
-        """
-        m = Matrix.from_binary(filename).to_dataframe()
-
-        return ParameterEnsemble.from_dataframe(df=m, pst=pst)
 
     def _back_transform(self,inplace=True):
         """ Private method to remove log10 transformation from ensemble
@@ -1388,8 +1275,8 @@ class ParameterEnsemble(Ensemble):
         if self.istransformed:
             self._back_transform()
 
-        istransformed = self.pst.parameter_data.loc[:,"partrans"] == "log"
-        self.loc[:,istransformed] = self.loc[:,istransformed].applymap(lambda x: math.log10(x))
+        li = self.pst.parameter_data.loc[:,"partrans"] == "log"
+        self.loc[:,li] = self.loc[:,li].applymap(lambda x: math.log10(x))
         self.__istransformed = True
 
         #make sure everything is cool WRT ordering
@@ -1399,9 +1286,7 @@ class ParameterEnsemble(Ensemble):
         projection_matrix = projection_matrix.get(common_names,common_names)
 
         if not inplace:
-            new_en = ParameterEnsemble(pst=self.pst.get(),data=self.loc[:,:].copy(),
-                                       columns=self.columns,
-                                       mean_values=self.mean_values.copy(),
+            new_en = ParameterEnsemble(pst=self.pst.get(),df=self._df.loc[:,:].copy(),
                                        istransformed=self.istransformed)
 
         for real in self.index:
@@ -1409,28 +1294,28 @@ class ParameterEnsemble(Ensemble):
                 log("projecting realization {0}".format(real))
 
             # null space projection of difference vector
-            pdiff = self.loc[real,common_names] - base
+            pdiff = self._df.loc[real,common_names] - base
             pdiff = np.dot(projection_matrix.x,
-                           (self.loc[real,common_names] - base)\
+                           (self._df.loc[real,common_names] - base)\
                            .values)
 
             if inplace:
-                self.loc[real,common_names] = base + pdiff
+                self._df.loc[real,common_names] = base + pdiff
             else:
-                new_en.loc[real,common_names] = base + pdiff
+                new_en._df.loc[real,common_names] = base + pdiff
 
             if log is not None:
                 log("projecting realization {0}".format(real))
         if not inplace:
             new_en.enforce(enforce_bounds)
-            new_en.loc[:,istransformed] = 10.0**new_en.loc[:,istransformed]
+            new_en._df.loc[:,istransformed] = 10.0**new_en._df.loc[:,istransformed]
             new_en.__istransformed = False
 
             #new_en._back_transform()
             return new_en
 
         self.enforce(enforce_bounds)
-        self.loc[:,istransformed] = 10.0**self.loc[:,istransformed]
+        self._df.loc[:,istransformed] = 10.0**self._df.loc[:,istransformed]
         self.__istransformed = False
 
     def enforce(self,enforce_bounds="reset"):
@@ -1479,25 +1364,7 @@ class ParameterEnsemble(Ensemble):
 
         """
         raise NotImplementedError()
-        # ub = self.ubnd
-        # lb = self.lbnd
-        # for id in self.index:
-        #     mx_diff = (self.loc[id,:] - ub) / ub
-        #     mn_diff = (lb - self.loc[id,:]) / lb
-        #
-        #     # if this real has a violation
-        #     mx = max(mx_diff.max(),mn_diff.max())
-        #     if mx > 1.0:
-        #         scale_factor = 1.0 / mx
-        #         self.loc[id,:] *= scale_factor
-        #
-        #     mx = ub - self.loc[id,:]
-        #     mn = lb - self.loc[id,:]
-        #     print(mx.loc[mx<0.0])
-        #     print(mn.loc[mn>0.0])
-        #     if (ub - self.loc[id,:]).min() < 0.0 or\
-        #                     (lb - self.loc[id,:]).max() > 0.0:
-        #         raise Exception()
+
 
     def enforce_drop(self):
         """ enforce parameter bounds on the ensemble by dropping
@@ -1510,10 +1377,10 @@ class ParameterEnsemble(Ensemble):
         for id in self.index:
             #mx = (ub - self.loc[id,:]).min()
             #mn = (lb - self.loc[id,:]).max()
-            if (ub - self.loc[id,:]).min() < 0.0 or\
-                            (lb - self.loc[id,:]).max() > 0.0:
+            if (ub - self._df.loc[id,:]).min() < 0.0 or\
+                            (lb - self._df.loc[id,:]).max() > 0.0:
                 drop.append(id)
-        self.loc[drop,:] = np.NaN
+        self._df.loc[drop,:] = np.NaN
         self.dropna(inplace=True)
 
 
@@ -1530,62 +1397,11 @@ class ParameterEnsemble(Ensemble):
         #    self.loc[self.loc[:,name] > ub[name],name] = ub[name]
         #    self.loc[self.loc[:,name] < lb[name],name] = lb[name]
 
-        val_arr = self.values
+        val_arr = self._df.values
         for iname, name in enumerate(self.columns):
             val_arr[val_arr[:,iname] > ub[name],iname] = ub[name]
             val_arr[val_arr[:, iname] < lb[name],iname] = lb[name]
 
-
-    def read_parfiles_prefix(self,prefix):
-        """ thin wrapper around read_parfiles using the pnulpar prefix concept.  Used to
-        fill ParameterEnsemble from PEST-type par files
-
-        Parameters
-        ----------
-        prefix : str
-            the par file prefix
-
-        """
-        raise Exception("ParameterEnsemble.read_parfiles_prefix() is deprecated.  Use ParameterEnsemble.from_parfiles()")
-
-        # pfile_count = 1
-        # parfile_names = []
-        # while True:
-        #     pfile_name = prefix +"{0:d}.par".format(pfile_count)
-        #     if not os.path.exists(pfile_name):
-        #         break
-        #     parfile_names.append(pfile_name)
-        #     pfile_count += 1
-        #
-        # if len(parfile_names) == 0:
-        #     raise Exception("ParameterEnsemble.read_parfiles_prefix() error: " + \
-        #                     "no parfiles found with prefix {0}".format(prefix))
-        #
-        # return self.read_parfiles(parfile_names)
-
-
-    def read_parfiles(self,parfile_names):
-        """ read the ParameterEnsemble realizations from par files.  Used to fill
-        the ParameterEnsemble with realizations from PEST-type par files
-
-        Parameters
-        ----------
-        parfile_names: list
-            list of par files to load
-
-        Note
-        ----
-        log transforms after loading according and possibly resets
-        self.__istransformed
-
-        """
-        raise Exception("ParameterEnsemble.read_parfiles() is deprecated.  Use ParameterEnsemble.from_parfiles()")
-        # for pfile in parfile_names:
-        #     assert os.path.exists(pfile),"ParameterEnsemble.read_parfiles() error: " +\
-        #                                  "file: {0} not found".format(pfile)
-        #     df = read_parfile(pfile)
-        #     self.loc[pfile] = df.loc[:,'parval1']
-        # self.loc[:,:] = self.loc[:,:].astype(np.float64)
 
     @classmethod
     def from_parfiles(cls,pst,parfile_names,real_names=None):
@@ -1632,8 +1448,6 @@ class ParameterEnsemble(Ensemble):
         df_all = pd.DataFrame(data=dfs).T
         df_all.columns = df.index
 
-
-
         if len(pst.par_names) != df_all.shape[1]:
             #if len(pst.par_names) < df_all.shape[1]:
             #    raise Exception("pst is not compatible with par files")
@@ -1653,7 +1467,7 @@ class ParameterEnsemble(Ensemble):
                               format(','.join(diff)),PyemuWarning)
                 df_all = df_all.loc[:, pst.par_names]
 
-        return ParameterEnsemble.from_dataframe(df=df_all,pst=pst)
+        return cls.from_dataframe(pst=pst,df=df_all)
 
 
     def to_csv(self,*args,**kwargs):
@@ -1680,7 +1494,7 @@ class ParameterEnsemble(Ensemble):
             retrans = True
         if self.isnull().values.any():
             warnings.warn("NaN in par ensemble",PyemuWarning)
-        super(ParameterEnsemble,self).to_csv(*args,**kwargs)
+        super(ParameterEnsemble,self)._df.to_csv(*args,**kwargs)
         if retrans:
             self._transform(inplace=True)
 
@@ -1741,7 +1555,7 @@ class ParameterEnsemble(Ensemble):
 
         for real in self.index:
             par_file = "{0}{1}.par".format(prefix,real)
-            par_df.loc[:,"parval1"] =self.loc[real,:]
+            par_df.loc[:,"parval1"] =self._df.loc[real,:]
             write_parfile(par_df,par_file)
 
 
@@ -1751,30 +1565,5 @@ class ParameterEnsemble(Ensemble):
         """
         if "base" in self.index:
             raise Exception("'base' already in index")
-        self.loc["base",:] = self.pst.parameter_data.loc[self.columns,"parval1"]
+        self._df.loc["base",:] = self.pst.parameter_data.loc[self.columns,"parval1"]
 
-
-    def run(self,worker_dir, num_workers=10):
-        df = run_sweep(self,worker_dir=worker_dir,num_workers=num_workers)
-        return ObservationEnsemble.from_dataframe(pst=self.pst,df=df)
-
-    def get_deviations(self):
-        """get the deviations of the ensemble value from the mean vector
-
-        Returns
-        -------
-            en : pyemu.Ensemble
-                Ensemble of deviations from the mean
-        """
-        bt = False
-        if not self.istransformed:
-            bt = True
-            self._transform()
-        mean_vec = self.mean()
-
-        df = self.loc[:,:].copy()
-        for col in df.columns:
-            df.loc[:,col] -= mean_vec[col]
-        if bt:
-            self._back_transform()
-        return type(self).from_dataframe(pst=self.pst,df=df)
