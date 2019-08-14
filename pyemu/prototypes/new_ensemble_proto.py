@@ -1,11 +1,13 @@
 import os
 import copy
+import warnings
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
 import pyemu
 
+SEED = 358183147 #from random.org on 5 Dec 2016
 
 class Loc(object):
     def __init__(self,ensemble):
@@ -69,7 +71,8 @@ class Ensemble(object):
     def __pow__(self, pow):
         return self._df ** pow
 
-
+    def reseed(self):
+        np.random.seed(SEED)
 
     def copy(self):
         return type(self)(pst=self.pst.get(),
@@ -80,13 +83,13 @@ class Ensemble(object):
     def istransformed(self):
         return copy.deepcopy(self._istransformed)
 
-    def _transform(self):
+    def transform(self):
         if self.transformed:
             return
         self._transformed = True
         return
 
-    def _back_transform(self):
+    def back_transform(self):
         if not self.transformed:
             return
         self._transformed = False
@@ -103,6 +106,10 @@ class Ensemble(object):
             lhs = self._df.__getattr__(item)
             if type(lhs) == type(self._df):
                 return type(self)(pst=pst,df=lhs,istransformed=self.istransformed)
+            elif "DataFrame" in str(lhs):
+                warnings.warn("return type uncaught, losing Ensemble type, returing DataFrame",pyemu.PyemuWarning)
+                print("return type uncaught, losing Ensemble type, returing DataFrame")
+                return lhs
             else:
                 return lhs
         else:
@@ -110,8 +117,37 @@ class Ensemble(object):
                                  "found in Ensemble or DataFrame attributes:{0}".format(item))
         return
 
-    def plot(self,*args,**kwargs):
-        self._df.plot(*args,**kwargs)
+        #def plot(self,*args,**kwargs):
+            #self._df.plot(*args,**kwargs)
+    def plot(self, bins=10, facecolor='0.5', plot_cols=None,
+             filename="ensemble.pdf", func_dict=None,
+             **kwargs):
+        """plot ensemble histograms to multipage pdf
+
+        Parameters
+        ----------
+        bins : int
+            number of bins
+        facecolor : str
+            color
+        plot_cols : list of str
+            subset of ensemble columns to plot.  If None, all are plotted.
+            Default is None
+        filename : str
+            pdf filename. Default is "ensemble.pdf"
+        func_dict : dict
+            a dict of functions to apply to specific columns (e.g., np.log10)
+
+        **kwargs : dict
+            keyword args to pass to plot_utils.ensemble_helper()
+
+        Returns
+        -------
+        None
+
+        """
+        pyemu.plot_utils.ensemble_helper(self, bins=bins, facecolor=facecolor, plot_cols=plot_cols,
+                        filename=filename)
 
     @classmethod
     def from_binary(cls, pst, filename):
@@ -128,7 +164,7 @@ class Ensemble(object):
     def to_csv(self,filename,*args,**kwargs):
         retrans = False
         if self.istransformed:
-            self._back_transform()
+            self.back_transform()
             retrans = True
         if self.isnull().values.any():
             warnings.warn("NaN in ensemble",PyemuWarning)
@@ -139,7 +175,7 @@ class Ensemble(object):
     def to_binary(self,filename):
         retrans = False
         if self.istransformed:
-            self._back_transform()
+            self.back_transform()
             retrans = True
         if self.isnull().values.any():
             warnings.warn("NaN in ensemble",PyemuWarning)
@@ -260,6 +296,36 @@ class Ensemble(object):
         df = pyemu.Matrix.from_binary(filename).to_dataframe()
         return cls(pst=pst,df=df)
 
+    def get_deviations(self,center_on=None):
+
+        mean_vec = self.mean()
+        if center_on is not None:
+            if center_on not in self.index:
+                raise Exception("'center_on' realization {0} not found".format(center_on))
+            mean_vec = self._df.loc[center_on,:].copy()
+
+        df = self._df.copy()
+        for col in df.columns:
+            df.loc[:,col] -= mean_vec[col]
+        return type(self)(pst=self.pst,df=df,istransformed=self.istransformed)
+
+    def as_pyemu_matrix(self,typ=pyemu.Matrix):
+        return typ.from_dataframe(self._df)
+
+    def covariance_matrix(self,localizer=None,center_on=None):
+        devs = self.get_deviations(center_on=center_on).as_pyemu_matrix
+        devs *= (1.0 / np.sqrt(float(self.shape[0] - 1.0)))
+
+        if localizer is not None:
+            delta = delta.T * delta
+            return delta.hadamard_product(localizer)
+
+        return delta.T * delta
+
+    def dropna(self, *args, **kwargs):
+        df = self._df.dropna(*args,**kwargs)
+        return type(self)(pst=self.pst,df=df,istransformed=self.istransformed)
+
 
 class ObservationEnsemble(Ensemble):
     def __init__(self,pst,df,istransformed=False):
@@ -285,6 +351,37 @@ class ObservationEnsemble(Ensemble):
                                      num_reals=num_reals,grouper=grouper)
         return cls(pst,df,istransformed=False)
 
+    @property
+    def phi_vector(self):
+        """property decorated method to get a vector of L2 norm (phi)
+        for the realizations.  The ObservationEnsemble.pst.weights can be
+        updated prior to calling this method to evaluate new weighting strategies
+
+        Return
+        ------
+        pandas.DataFrame : pandas.DataFrame
+
+        """
+        cols = self._df.columns
+        pst = self.pst
+        weights = self.pst.observation_data.loc[cols, "weight"]
+        obsval = self.pst.observation_data.loc[cols, "obsval"]
+        phi_vec = []
+        for idx in self._df.index.values:
+            simval = self._df.loc[idx, cols]
+            phi = (((simval - obsval) * weights) ** 2).sum()
+            phi_vec.append(phi)
+        return pd.Series(data=phi_vec, index=self.index)
+
+    def add_base(self):
+        if "base" in self.index:
+            raise Exception("'base' already in ensemble")
+        self.loc["base",:] = self.pst.observation_data.loc[self.columns,"obsval"]
+
+    @property
+    def nonzero(self):
+        df = self._df.loc[:, self.pst.nnz_obs_names]
+        return ObservationEnsemble(pst=self.pst.get(obs_names=self.pst.nnz_obs_names),df=df)
 
 class ParameterEnsemble(Ensemble):
     def __init__(self,pst,df,istransformed=False):
@@ -309,34 +406,283 @@ class ParameterEnsemble(Ensemble):
         df.loc[:,li] = 10.0**df.loc[:,li]
         return cls(pst,df,istransformed=False)
 
-
-    def _back_transform(self):
+    def back_transform(self):
 
         if not self.istransformed:
             return
-
         li = self.pst.parameter_data.loc[:,"partrans"] == "log"
-
         self.loc[:,li] = 10.0**(self._df.loc[:,li])
-        self.loc[:,:] = (self.loc[:,:] -\
-                         self.pst.parameter_data.offset)/\
-                         self.pst.parameter_data.scale
-
+        #self.loc[:,:] = (self.loc[:,:] -\
+        #                 self.pst.parameter_data.offset)/\
+        #                 self.pst.parameter_data.scale
         self._istransformed = False
 
-    def _transform(self):
+    def transform(self):
 
         if self.istransformed:
             return
-
         li = self.pst.parameter_data.loc[:,"partrans"] == "log"
-
-        self.loc[:,:] = (self.loc[:,:] * self.pst.parameter_data.scale) +\
-                         self.pst.parameter_data.offset
+        #self.loc[:,:] = (self.loc[:,:] * self.pst.parameter_data.scale) +\
+        #                 self.pst.parameter_data.offset
         self.loc[:, li] = self.loc[:, li].apply(np.log10)
         self._istransformed = True
 
+    def add_base(self):
+        if "base" in self.index:
+            raise Exception("'base' realization already in ensemble")
+        if self.istransformed:
+            self.pst.add_transform_columns()
+            self.loc["base", :] = self.pst.parameter_data.loc[self.columns, "parval1_trans"]
+        else:
+            self.loc["base",:] = self.pst.parameter_data.loc[self.columns,"parval1"]
 
+    @property
+    def adj_names(self):
+        """ Get the names of adjustable parameters in the ParameterEnsemble
+
+        Returns
+        -------
+        list : list
+            adjustable parameter names
+
+        """
+        return self.pst.parameter_data.parnme.loc[~self.fixed_indexer].to_list()
+
+    @property
+    def ubnd(self):
+        """ the upper bound vector while respecting current log transform status
+
+        Returns
+        -------
+        ubnd : pandas.Series
+
+        """
+        if not self.istransformed:
+            return self.pst.parameter_data.parubnd.copy()
+        else:
+            ub = self.pst.parameter_data.parubnd.copy()
+            ub[self.log_indexer] = np.log10(ub[self.log_indexer])
+            return ub
+
+    @property
+    def lbnd(self):
+        """ the lower bound vector while respecting current log transform status
+
+        Returns
+        -------
+        lbnd : pandas.Series
+
+        """
+        if not self.istransformed:
+            return self.pst.parameter_data.parlbnd.copy()
+        else:
+            lb = self.pst.parameter_data.parlbnd.copy()
+            lb[self.log_indexer] = np.log10(lb[self.log_indexer])
+            return lb
+
+    @property
+    def log_indexer(self):
+        """ indexer for log transform
+
+        Returns
+        -------
+        log_indexer : pandas.Series
+
+        """
+        istransformed = self.pst.parameter_data.partrans == "log"
+        return istransformed.values
+
+    @property
+    def fixed_indexer(self):
+        """ indexer for fixed status
+
+        Returns
+        -------
+        fixed_indexer : pandas.Series
+
+        """
+        # isfixed = self.pst.parameter_data.partrans == "fixed"
+        tf = set(["tied","fixed"])
+        isfixed = self.pst.parameter_data.partrans. \
+            apply(lambda x: x in tf)
+        return isfixed.values
+
+    def project(self,projection_matrix,center_on=None,og=None,
+                enforce_bounds="reset"):
+        """ project the ensemble using the null-space Monte Carlo method
+
+        Parameters
+        ----------
+        projection_matrix : pyemu.Matrix
+            projection operator - must already respect log transform
+
+        inplace : bool
+            project self or return a new ParameterEnsemble instance
+
+        log: pyemu.Logger
+            for logging progress
+
+        enforce_bounds : str
+            parameter bound enforcement flag. 'drop' removes
+            offending realizations, 'reset' resets offending values
+
+        Returns
+        -------
+        ParameterEnsemble : ParameterEnsemble
+            if inplace is False
+
+        """
+
+
+        self.transform()
+
+        #make sure everything is cool WRT ordering
+
+        base = self._df.mean()
+        if center_on is not None:
+            if center_on not in self._df.index:
+                raise Exception("'center_on' realization {0} not found".format(center_on))
+            base = self._df.loc[center_on,:].copy()
+        names = list(base.index)
+        projection_matrix = projection_matrix.get(names,names)
+
+        new_en = self.copy()
+
+        for real in new_en.index:
+            if log is not None:
+                log("projecting realization {0}".format(real))
+
+            # null space projection of difference vector
+            pdiff = self.loc[real,:] - base
+            pdiff = np.dot(projection_matrix.x,pdiff.values)
+            new_en.loc[real,common_names] = base + pdiff
+
+            if log is not None:
+                log("projecting realization {0}".format(real))
+
+        new_en.enforce(enforce_bounds)
+        new_en.loc[:,istransformed] = 10.0**new_en.loc[:,istransformed]
+        new_en.__istransformed = False
+
+        #new_en._back_transform()
+        return new_en
+
+    def enforce(self,enforce_bounds="reset",bound_tol=0.0):
+        """ entry point for bounds enforcement.  This gets called for the
+        draw method(s), so users shouldn't need to call this
+
+        Parameters
+        ----------
+        enforce_bounds : str
+            can be 'reset' to reset offending values or 'drop' to drop
+            offending realizations
+
+        """
+
+        if enforce_bounds.lower() == "reset":
+            self._enforce_reset(bound_tol=bound_tol)
+        elif enforce_bounds.lower() == "drop":
+            self._enforce_drop(bound_tol=bound_tol)
+        elif enforce_bounds.lower() == "scale":
+            self._enfore_scale(bound_tol=bound_tol)
+        else:
+            raise Exception("unrecognized enforce_bounds arg:"+\
+                            "{0}, should be 'reset' or 'drop'".\
+                            format(enforce_bounds))
+
+    def _enforce_scale(self, bound_tol):
+        self.back_transform()
+        ub = (self.ubnd * (1.0 - self.bound_tol)).to_dict()
+        lb = (self.lbnd * (1.0 + self.bound_tol)).to_dict()
+        base_vals = self.pst.parameter_data.loc[self._df.columns,"parval1"].copy()
+        for real in self._df.index:
+            sf = self._get_bnd_scale_factor(base_vals=base_vals,
+                                            new_values=self._df.loc[real,:],
+                                            ubnd=ub,lbnd=lb)
+
+    def _get_bnd_scale_factor(self,base_vals,new_values,ubnd,lbnd):
+        
+
+    def _enforce_drop(self, bound_tol):
+        """ enforce parameter bounds on the ensemble by dropping
+        violating realizations
+
+        Notes:
+            with a large (realistic) number of parameters, the
+            probability that any one parameter is out of
+            bounds is large, meaning most realization will
+            be dropped.
+
+        """
+        ub = (self.ubnd * (1.0 - self.bound_tol)).to_dict()
+        lb = (self.lbnd * (1.0 + self.bound_tol)).to_dict()
+        drop = []
+        for id in self._df.index:
+            #mx = (ub - self.loc[id,:]).min()
+            #mn = (lb - self.loc[id,:]).max()
+            if (ub - self._df.loc[id,:]).min() < 0.0 or\
+                            (lb - self._df.loc[id,:]).max() > 0.0:
+                drop.append(id)
+        self.loc[drop,:] = np.NaN
+        self.dropna(inplace=True)
+
+
+    def _enforce_reset(self, bound_tol):
+        """enforce parameter bounds on the ensemble by resetting
+        violating vals to bound
+        """
+
+        ub = (self.ubnd * (1.0 - self.bound_tol)).to_dict()
+        lb = (self.lbnd * (1.0 + self.bound_tol)).to_dict()
+
+        val_arr = self._df.values
+        for iname, name in enumerate(self.columns):
+            val_arr[val_arr[:,iname] > ub[name],iname] = ub[name]
+            val_arr[val_arr[:, iname] < lb[name],iname] = lb[name]
+
+
+def add_base_test():
+    pst = pyemu.Pst(os.path.join("..", "..", "autotest", "pst", "pest.pst"))
+    num_reals = 10
+    pe = ParameterEnsemble.from_gaussian_draw(pst,num_reals=num_reals)
+    oe = ObservationEnsemble.from_gaussian_draw(pst,num_reals=num_reals)
+    pet = pe.copy()
+    pet.transform()
+    pe.add_base()
+    pet.add_base()
+    assert "base" in pe.index
+    assert "base" in pet.index
+    p = pe.loc["base",:]
+    d = (pst.parameter_data.parval1 - pe.loc["base",:]).apply(np.abs)
+    pst.add_transform_columns()
+    d = (pst.parameter_data.parval1_trans - pet.loc["base", :]).apply(np.abs)
+    assert d.max() == 0.0
+    try:
+        pe.add_base()
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+
+    oe.add_base()
+    d = (pst.observation_data.loc[oe.columns,"obsval"] - oe.loc["base",:]).apply(np.abs)
+    assert d.max() == 0
+    try:
+        oe.add_base()
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+def nz_test():
+    pst = pyemu.Pst(os.path.join("..", "..", "autotest", "pst", "pest.pst"))
+    num_reals = 10
+    oe = ObservationEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    assert oe.shape[1] == pst.nobs
+    oe_nz = oe.nonzero
+    assert oe_nz.shape[1] == pst.nnz_obs
+    assert list(oe_nz.columns.values) == pst.nnz_obs_names
 
 def par_gauss_draw_consistency_test():
 
@@ -361,7 +707,7 @@ def par_gauss_draw_consistency_test():
     for pe in [pe1,pe2,pe3]:
         assert pe.shape[0] == num_reals
         assert pe.shape[1] == pst.npar
-        pe._transform()
+        pe.transform()
         d = (pe.mean() - theo_mean).apply(np.abs)
         assert d.max() < 0.01
         d = (pe.loc[:,pst.adj_par_names].std() - theo_std)
@@ -372,14 +718,14 @@ def par_gauss_draw_consistency_test():
 
         pe.to_binary("test.jcb")
         pe = ParameterEnsemble.from_binary(pst=pst, filename="test.jcb")
-        pe._transform()
+        pe.transform()
         pe._df.index = pe.index.map(np.int)
         d = (pe - pe_org).apply(np.abs)
         assert d.max().max() < 1.0e-10, d.max().sort_values(ascending=False)
 
         pe.to_csv("test.csv")
         pe = ParameterEnsemble.from_csv(pst=pst,filename="test.csv")
-        pe._transform()
+        pe.transform()
         d = (pe - pe_org).apply(np.abs)
         assert d.max().max() < 1.0e-10,d.max().sort_values(ascending=False)
 
@@ -394,7 +740,6 @@ def obs_gauss_draw_consistency_test():
     oe2 = ObservationEnsemble.from_gaussian_draw(pst,cov=cov,num_reals=num_reals)
     oe3 = ObservationEnsemble.from_gaussian_draw(pst,cov=cov,num_reals=num_reals,by_groups=False)
 
-    pst.add_transform_columns()
     theo_mean = pst.observation_data.obsval.copy()
     theo_mean.loc[pst.nnz_obs_names] = 0.0
     theo_std = 1.0 / pst.observation_data.loc[pst.nnz_obs_names,"weight"]
@@ -421,7 +766,86 @@ def obs_gauss_draw_consistency_test():
         d = (oe - oe_org).apply(np.abs)
         assert d.max().max() < 1.0e-10,d.max().sort_values(ascending=False)
 
+def phi_vector_test():
+    pst = pyemu.Pst(os.path.join("..", "..", "autotest", "pst", "pest.pst"))
+    num_reals = 10
+    oe1 = ObservationEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    pv = oe1.phi_vector
+
+    for real in oe1.index:
+        pst.res.loc[oe1.columns,"modelled"] = oe1.loc[real,:]
+        d = np.abs(pst.phi - pv.loc[real])
+        assert d < 1.0e-10
+
+def deviations_test():
+    pst = pyemu.Pst(os.path.join("..", "..", "autotest", "pst", "pest.pst"))
+    num_reals = 10
+    pe = ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    oe = ObservationEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    pe_devs = pe.get_deviations()
+    oe_devs = oe.get_deviations()
+    pe.add_base()
+    pe_base_devs = pe.get_deviations(center_on="base")
+    s = pe_base_devs.loc["base",:].apply(np.abs).sum()
+    assert s == 0.0
+    pe.transform()
+    pe_base_devs = pe.get_deviations(center_on="base")
+    s = pe_base_devs.loc["base", :].apply(np.abs).sum()
+    assert s == 0.0
+
+    oe.add_base()
+    oe_base_devs = oe.get_deviations(center_on="base")
+    s = oe_base_devs.loc["base", :].apply(np.abs).sum()
+    assert s == 0.0
+
+def as_pyemu_matrix_test():
+    pst = pyemu.Pst(os.path.join("..", "..", "autotest", "pst", "pest.pst"))
+    num_reals = 10
+    pe = ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    pe.add_base()
+    oe = ObservationEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    oe.add_base()
+
+    pe_mat = pe.as_pyemu_matrix()
+    assert type(pe_mat) == pyemu.Matrix
+    assert pe_mat.shape == pe.shape
+    pe._df.index = pe._df.index.map(str)
+    d = (pe_mat.to_dataframe() - pe._df).apply(np.abs).values.sum()
+    assert d == 0.0
+
+    oe_mat = oe.as_pyemu_matrix(typ=pyemu.Cov)
+    assert type(oe_mat) == pyemu.Cov
+    assert oe_mat.shape == oe.shape
+    oe._df.index = oe._df.index.map(str)
+    d = (oe_mat.to_dataframe() - oe._df).apply(np.abs).values.sum()
+    assert d == 0.0
+
+
+def dropna_test():
+    pst = pyemu.Pst(os.path.join("..", "..", "autotest", "pst", "pest.pst"))
+    num_reals = 10
+    pe = ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    pe.iloc[::3,:] = np.NaN
+    ped = pe.dropna()
+    assert type(ped) == ParameterEnsemble
+    assert ped.shape == pe._df.dropna().shape
+
+def enforce_test():
+    pst = pyemu.Pst(os.path.join("..", "..", "autotest", "pst", "pest.pst"))
+    num_reals = 10
+    pe = ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    pe._df.loc[0,:] += 1000
+    pe.enforce()
+
+def projection_test():
+    pass
 
 if __name__ == "__main__":
     #par_gauss_draw_consistency_test()
-    obs_gauss_draw_consistency_test()
+    #obs_gauss_draw_consistency_test()
+    #phi_vector_test()
+    #add_base_test()
+    #nz_test()
+    #deviations_test()
+    #as_pyemu_matrix_test()
+    dropna_test()
