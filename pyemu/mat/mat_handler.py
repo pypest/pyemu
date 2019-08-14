@@ -1674,7 +1674,7 @@ class Matrix(object):
             # raise TypeError('Matrix.from_binary(): Jco produced by ' +
             #                 'deprecated version of PEST,' +
             #                 'Use JcoTRANS to convert to new format')
-            print("new binary format detected...")
+            #print("new binary format detected...")
 
             data = np.fromfile(f, Matrix.coo_rec_dt, icount)
 

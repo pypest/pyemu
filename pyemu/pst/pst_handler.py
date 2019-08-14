@@ -1631,7 +1631,7 @@ class Pst(object):
         new_pargp = self.parameter_groups.copy()
         new_pargp.index = new_pargp.pargpnme.apply(str.strip)
         new_pargp_names = new_par.pargp.value_counts().index
-        new_pargp = new_pargp.loc[new_pargp_names,:]
+        new_pargp.reindex(new_pargp_names)
 
         new_pst = Pst(self.filename, resfile=self.resfile, load=False)
         new_pst.parameter_data = new_par
