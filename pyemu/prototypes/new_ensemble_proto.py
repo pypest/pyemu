@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -80,30 +81,148 @@ class Ensemble(object):
     def plot(self,*args,**kwargs):
         self._df.plot(*args,**kwargs)
 
+    @staticmethod
+    def _gaussian_draw(cov,mean_values,num_reals,grouper=None):
+
+        # make sure all cov names are found in mean_values
+        cov_names = set(cov.row_names)
+        mv_names = set(mean_values.index.values)
+        missing = cov_names - mv_names
+        if len(missing) > 0:
+            raise Exception("Ensemble._gaussian_draw() error: the following cov names are not in "
+                            "mean_values: {0}".format(','.join(missing)))
+        if cov.isdiagonal:
+            stds = {name: std for name, std in zip(cov.row_names, np.sqrt(cov.x.flatten()))}
+            snv = np.random.randn(num_reals, mean_values.shape[0])
+            reals = np.zeros_like(snv)
+            for i, name in enumerate(mean_values.index):
+                if name in cov_names:
+                    reals[:, i] = (snv[:, i] * stds[name]) + mean_values.loc[name]
+                #else:
+                #    reals[:, i] = mean_values.loc[name]
+        else:
+            reals = np.zeros((num_reals, mean_values.shape[0]))
+            # for i,v in enumerate(mean_values.values):
+            #    reals[:,i] = v
+            # cov_map = {n:i for n,i in zip(cov.row_names,np.arange(cov.shape[0]))}
+            mv_map = {n: i for n, i in zip(mean_values.index, np.arange(mean_values.shape[0]))}
+            if grouper is not None:
+
+                for grp_name,names in grouper.items():
+                    print(grp_name)
+                    idxs = [mv_map[name] for name in names]
+                    snv = np.random.randn(num_reals, len(names))
+                    cov_grp = cov.get(names)
+                    if len(names) == 1:
+                        std = np.sqrt(cov_grp.x)
+                        reals[:, idxs] = mean_values.loc[names].values[0] + (snv * std)
+                    else:
+                        try:
+                            cov_grp.inv
+                        except:
+                            covname = "trouble_{0}.cov".format(grp_name)
+                            cov_grp.to_ascii(covname)
+                            raise Exception("error inverting cov for group '{0}'," + \
+                                            "saved trouble cov to {1}".
+                                            format(grp_name, covname))
+
+
+                    a = Ensemble._get_eigen_projection_matrix(cov_grp.as_2d)
+
+                    # process each realization
+                    group_mean_values = mean_values.loc[names]
+                    for i in range(num_reals):
+                        reals[i, idxs] = group_mean_values + np.dot(a, snv[i, :])
+
+            else:
+                snv = np.random.randn(num_reals, cov.shape[0])
+                a = Ensemble._get_eigen_projection_matrix(cov.as_2d)
+                cov_mean_values = mean_values.loc[cov.row_names].values
+                idxs = [mv_map[name] for name in cov.row_names]
+                for i in range(num_reals):
+                    reals[i, idxs] = cov_mean_values + np.dot(a, snv[i, :])
+
+        df = pd.DataFrame(reals,columns=mean_values.index.values)
+        return df
+
+    @staticmethod
+    def _get_eigen_projection_matrix(x):
+        # eigen factorization
+        v, w = np.linalg.eigh(x)
+
+        # check for near zero eig values
+        for i in range(v.shape[0]):
+            if v[i] > 1.0e-10:
+                pass
+            else:
+                print("near zero eigen value found", v[i], \
+                      "at index", i, " of ", v.shape[0])
+                v[i] = 0.0
+
+        # form the projection matrix
+        vsqrt = np.sqrt(v)
+        vsqrt[i+1:] = 0.0
+        v = np.diag(vsqrt)
+        a = np.dot(w, v)
+
+        return a
+
     
-    def _gaussian_draw(self,cov,mean_values,num_reals):
-        if cov.isdiagonal
+
 
 class ParameterEnsemble(Ensemble):
     def __init__(self,pst,df,istransformed=False):
         super(ParameterEnsemble,self).__init__(pst,df,istransformed)
 
+    @classmethod
+    def from_gaussian_draw(cls,pst,cov=None,num_reals=100,group_chunks=True):
+
+        if cov is None:
+            cov = pyemu.Cov.from_parameter_data(pst)
+
+        par = pst.parameter_data
+        li = par.partrans == "log"
+        mean_values = par.parval1.copy()
+        mean_values.loc[li] = mean_values.loc[li].apply(np.log10)
+
+        grouper = None
+        if not cov.isdiagonal and group_chunks:
+
+            tf = set(["tied","fixed"])
+            adj_par = par.loc[par.partrans.apply(lambda x: x not in tf),:]
+            grouper = adj_par.groupby("pargp").groups
+            for grp in grouper.keys():
+                grouper[grp] = list(grouper[grp])
 
 
 
-df = pd.DataFrame(np.random.random(100))
-pst = "1"
-mdf = ParameterEnsemble(pst,df)
-#print(df.loc[:,0],mdf.loc[:,0])
-#print(type(df.loc[:,1:]),type(mdf.loc[:,1:]))
-print(type(mdf.drop(0)))
-print(mdf.some_method("i"))
-mdf.to_csv("test")
-#mdf.plot(kind="bar")
-#plt.show()
-#mdf.to_csv("test.csv")
-#mdf.plot()
-#plt.show()
+        df = Ensemble._gaussian_draw(cov=cov,mean_values=mean_values,
+                                     num_reals=num_reals,grouper=grouper)
+        df.loc[:,li] = 10.0**df.loc[:,li]
+        return cls(pst,df,istransformed=False)
 
 
+
+# df = pd.DataFrame(np.random.random(100))
+# pst = "1"
+# mdf = ParameterEnsemble(pst,df)
+# print(type(mdf.drop(0)))
+# print(mdf.some_method("i"))
+# mdf.to_csv("test")
+pst = pyemu.Pst(os.path.join("..","..","autotest","pst","pest.pst"))
+pst.parameter_data.loc[pst.par_names[3:],"partrans"] = "fixed"
+pst.parameter_data.loc[pst.par_names[0],"pargp"] = "test"
+
+pe = ParameterEnsemble.from_gaussian_draw(pst)
+print(pe.shape,pst.npar)
+print(pe)
+
+cov = pyemu.Cov.from_parameter_data(pst).to_2d()
+pe = ParameterEnsemble.from_gaussian_draw(pst,cov=cov)
+print(pe.shape,pst.npar)
+print(pe)
+
+pe = ParameterEnsemble.from_gaussian_draw(pst,cov=cov,group_chunks=False)
+print(pe.shape,pst.npar)
+print(pe)
 

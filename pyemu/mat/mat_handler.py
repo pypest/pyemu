@@ -843,7 +843,7 @@ class Matrix(object):
             return self.x
         return np.diag(self.x.flatten())
 
-    @property
+
     def to_2d(self):
         """ get a 2D `Matrix` representation of `Matrix`.  If not ``Matrix.isdiagonal`, simply
                 return a copy of `Matrix`, otherwise, constructs and returns a new `Matrix`
