@@ -10,6 +10,17 @@ import pyemu
 SEED = 358183147 #from random.org on 5 Dec 2016
 
 class Loc(object):
+    """thin wrapper around `pandas.DataFrame.loc` to make sure returned type
+    is `Ensemble` (instead of `pandas.DataFrame)`
+
+    Args:
+        ensemble (`pyemu.Ensemble`): an ensemble instance
+
+    Notes:
+        Users do not need to mess with this class - it is added
+        to each `Ensemble` instance
+
+    """
     def __init__(self,ensemble):
         self._ensemble = ensemble
 
@@ -24,6 +35,17 @@ class Loc(object):
 
 
 class Iloc(object):
+    """thin wrapper around `pandas.DataFrame.iloc` to make sure returned type
+        is `Ensemble` (instead of `pandas.DataFrame)`
+
+        Args:
+            ensemble (`pyemu.Ensemble`): an ensemble instance
+
+        Notes:
+            Users do not need to mess with this class - it is added
+            to each `Ensemble` instance
+
+    """
     def __init__(self,ensemble):
         self._ensemble = ensemble
 
@@ -37,9 +59,27 @@ class Iloc(object):
 
 
 class Ensemble(object):
+    """based class for handling ensembles of numeric values
+
+    Args:
+        pst (`pyemu.Pst`): a control file instance
+        df (`pandas.DataFrame`): a pandas dataframe.  Columns
+            should be parameter/observation names.  Index is
+            treated as realization names
+        istransformed (`bool`): flag to indicate parameter values
+            are in log space.  Not used for `ObservationEnsemble`
+
+    Example::
+
+        pst = pyemu.Pst("my.pst")
+        pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst)
+
+    """
     def __init__(self,pst,df,istransformed=False):
         self._df = df
+        """`pandas.DataFrame`: the underlying dataframe that stores the realized values"""
         self.pst = pst
+        """`pyemu.Pst`: control file instance"""
         self._istransformed = istransformed
         self.loc = Loc(self)
         self.iloc = Iloc(self)
@@ -72,24 +112,75 @@ class Ensemble(object):
         return self._df ** pow
 
     def reseed(self):
+        """reset the `numpy.random.seed`
+
+        Notes:
+            reseeds using the pyemu.en.SEED global variable
+
+        """
         np.random.seed(SEED)
 
     def copy(self):
+        """get a copy of `Ensemble`
+
+        Returns:
+            `Ensemble`: copy of this `Ensemble`
+
+        Notes:
+            copies both `Ensemble.pst` and `Ensemble._df`
+
+        """
         return type(self)(pst=self.pst.get(),
                           df=self._df.copy(),
                           istransformed=self.istransformed)
 
     @property
     def istransformed(self):
+        """the parameter transformation status
+
+        Returns:
+            `bool`: flag to indicate whether or not the `ParameterEnsemble` is
+                transformed with respect to log_{10}.  Not used for (and has no effect
+                on) `ObservationEnsemble`.
+
+        Notes:
+            parameter transformation status is only related to log_{10} and does not
+                include the effects of `scale` and/or `offset`
+
+        """
         return copy.deepcopy(self._istransformed)
 
     def transform(self):
+        """transform parameters with respect to `partrans` value.
+
+        Notes:
+            operates in place (None is returned).
+
+            Parameter transform is only related to log_{10} and does not
+                include the effects of `scale` and/or `offset`
+
+            `Ensemble.transform() is only provided for inhertance purposes.
+                    It only changes the `Ensemble._transformed` flag
+
+        """
         if self.transformed:
             return
         self._transformed = True
         return
 
     def back_transform(self):
+        """back transform parameters with respect to `partrans` value.
+
+            Notes:
+                operates in place (None is returned).
+
+                Parameter transform is only related to log_{10} and does not
+                    include the effects of `scale` and/or `offset`
+
+                `Ensemble.back_transform() is only provided for inhertance purposes.
+                    It only changes the `Ensemble._transformed` flag
+
+        """
         if not self.transformed:
             return
         self._transformed = False
@@ -124,26 +215,23 @@ class Ensemble(object):
              **kwargs):
         """plot ensemble histograms to multipage pdf
 
-        Parameters
-        ----------
-        bins : int
-            number of bins
-        facecolor : str
-            color
-        plot_cols : list of str
-            subset of ensemble columns to plot.  If None, all are plotted.
-            Default is None
-        filename : str
-            pdf filename. Default is "ensemble.pdf"
-        func_dict : dict
-            a dict of functions to apply to specific columns (e.g., np.log10)
+        Args:
+            bins (`int`): number of bins for the histograms
+            facecolor (`str`): matplotlib color (e.g. `r`,`g`, etc)
+            plot_cols ([`str`]): list of subset of ensemble columns to plot.
+                If None, all are plotted. Default is None
+            filename (`str`): multipage pdf filename. Default is "ensemble.pdf"
+            func_dict (`dict`): a dict of functions to apply to specific
+                columns. For example: {"par1": np.log10}
+            **kwargs (`dict`): addkeyword args to pass to `pyemu.plot_utils.ensemble_helper()`
 
-        **kwargs : dict
-            keyword args to pass to plot_utils.ensemble_helper()
 
-        Returns
-        -------
-        None
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst)
+            pe.transform() # plot log space (if needed)
+            pe.plot(bins=30)
 
         """
         pyemu.plot_utils.ensemble_helper(self, bins=bins, facecolor=facecolor, plot_cols=plot_cols,
@@ -151,17 +239,77 @@ class Ensemble(object):
 
     @classmethod
     def from_binary(cls, pst, filename):
+        """ create an `Ensemble` from a PEST-style binary file
+
+        Args:
+            pst (`pyemu.Pst`): a control file instance
+            filename (`str`): filename containing binary ensemble
+        Returns:
+            `Ensemble`
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            oe = pyemu.ObservationEnsemble.from_binary("obs.jcb")
+
+
+        """
         df = pyemu.Matrix.from_binary(filename).to_dataframe()
         return cls(pst=pst, df=df)
 
+
     @classmethod
     def from_csv(cls, pst, filename, *args, **kwargs):
+        """create an `Ensemble` from a CSV file
+
+        Args:
+            pst (`pyemu.Pst`): a control file instance
+            filename (`str`): filename containing CSV ensemble
+            *args ([`object`]: positional arguments to pass to
+                `pandas.read_csv()`.
+            **kwargs ({`str`:`object`}): keyword arguments to pass
+                to `pandas.read_csv()`.
+        Returns:
+            `Ensemble`
+        Notes:
+            uses `pandas.read_csv()` to load numeric values from
+            CSV file
+
+        Examples::
+
+            pst = pyemu.Pst("my.pst")
+            oe = pyemu.ObservationEnsemble.from_csv("obs.csv")
+
+        """
+
+
+
         if "index_col" not in kwargs:
             kwargs["index_col"] = 0
         df = pd.read_csv(filename,*args,**kwargs)
         return cls(pst=pst, df=df)
 
     def to_csv(self,filename,*args,**kwargs):
+        """write `Ensemble` to a CSV file
+
+        Args:
+            filename (`str`): file to write
+            *args ([`object`]: positional arguments to pass to
+                `pandas.DataFrame.to_csv()`.
+            **kwargs ({`str`:`object`}): keyword arguments to pass
+                to `pandas.DataFrame.to_csv()`.
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst)
+            oe.to_csv("obs.csv")
+
+        Notes:
+            back transforms `ParameterEnsemble` before writing so that
+            values are in arithmatic space
+
+        """
         retrans = False
         if self.istransformed:
             self.back_transform()
@@ -173,6 +321,23 @@ class Ensemble(object):
             self._transform()
 
     def to_binary(self,filename):
+        """write `Ensemble` to a PEST-style binary file
+
+                Args:
+                    filename (`str`): file to write
+
+                Example::
+
+                    pst = pyemu.Pst("my.pst")
+                    oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst)
+                    oe.to_binary("obs.csv")
+
+                Notes:
+                    back transforms `ParameterEnsemble` before writing so that
+                    values are in arithmatic space
+
+                """
+
         retrans = False
         if self.istransformed:
             self.back_transform()
@@ -277,26 +442,30 @@ class Ensemble(object):
     def _triangular_draw(mean_values,upper_bound_lower_bound,num_reals):
         pass
 
-    @classmethod
-    def from_binary(cls, pst, filename):
-        """instantiate an ensemble from a PEST-type binary file
-
-        Parameters
-        ----------
-        pst : pyemu.Pst
-            a Pst instance
-        filename : str
-            the binary file name
-
-        Returns
-        -------
-        pe : ParameterEnsemble
-
-        """
-        df = pyemu.Matrix.from_binary(filename).to_dataframe()
-        return cls(pst=pst,df=df)
 
     def get_deviations(self,center_on=None):
+        """get the deviations of the realizations around a certain
+        point in ensemble space
+
+        Args:
+            center_on (`str`, optional): a realization name to use as the centering
+                point in ensemble space.  If `None`, the mean vector is
+                treated as the centering point.  Default is None
+
+        Returns:
+            `Ensemble`: an ensemble of deviations around the centering point
+
+        Notes:
+            deviations are the Euclidean distances from the `center_on` value to
+                realized values for each column
+            `center_on=None` yields the classic ensemble smoother/ensemble Kalman
+                filter deviations
+
+        Example::
+
+
+
+        """
 
         mean_vec = self.mean()
         if center_on is not None:
@@ -310,9 +479,41 @@ class Ensemble(object):
         return type(self)(pst=self.pst,df=df,istransformed=self.istransformed)
 
     def as_pyemu_matrix(self,typ=pyemu.Matrix):
+        """get a `pyemu.Matrix` instance of `Ensemble
+
+        Args:
+            typ (`pyemu.Matrix` or `pyemu.Cov`): the type of matrix to return.
+                Default is `pyemu.Matrix`
+
+        Returns:
+            `pyemu.Matrix`: a matrix instance
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst)
+            oe.add_base()
+            oe_dev = oe.get_deviations(center_on="base")
+            oe.to_csv("obs_base_devs.csv")
+
+        """
         return typ.from_dataframe(self._df)
 
     def covariance_matrix(self,localizer=None,center_on=None):
+        """get a empirical covariance matrix implied by the
+        correlations between realizations
+
+        Args:
+            localizer (`pyemu.Matrix`, optional): a matrix to localize covariates
+                in the resulting covariance matrix.  Default is None
+            center_on (`str`, optional): a realization name to use as the centering
+                point in ensemble space.  If `None`, the mean vector is
+                treated as the centering point.  Default is None
+
+        Returns:
+            `pyemu.Cov`: the empirical (and optionally localized) covariance matrix
+
+        """
         devs = self.get_deviations(center_on=center_on).as_pyemu_matrix
         devs *= (1.0 / np.sqrt(float(self.shape[0] - 1.0)))
 
@@ -322,22 +523,92 @@ class Ensemble(object):
 
         return delta.T * delta
 
+
     def dropna(self, *args, **kwargs):
+        """override of `pandas.DataFrame.dropna()`
+
+        Args:
+            *args ([`object`]: positional arguments to pass to
+                `pandas.DataFrame.dropna()`.
+            **kwargs ({`str`:`object`}): keyword arguments to pass
+                to `pandas.DataFrame.dropna()`.
+
+        """
         df = self._df.dropna(*args,**kwargs)
         return type(self)(pst=self.pst,df=df,istransformed=self.istransformed)
 
 
 class ObservationEnsemble(Ensemble):
+    """observation noise ensemble class
+
+    Args:
+        pst (`pyemu.Pst`): a control file instance
+        df (`pandas.DataFrame`): a pandas dataframe.  Columns
+            should be observation names.  Index is
+            treated as realization names
+        istransformed (`bool`): flag to indicate parameter values
+            are in log space.  Not used for `ObservationEnsemble`
+
+    Example::
+
+        pst = pyemu.Pst("my.pst")
+        oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst)
+
+    """
     def __init__(self,pst,df,istransformed=False):
         super(ObservationEnsemble,self).__init__(pst,df,istransformed)
 
     @classmethod
     def from_gaussian_draw(cls,pst,cov=None,num_reals=100,by_groups=True):
+        """generate an `ObservationEnsemble` from a (multivariate) gaussian
+        distribution
+
+        Args:
+            pst (`pyemu.Pst`): a control file instance.
+            cov (`pyemu.Cov`): a covariance matrix describing the second
+                moment of the gaussian distribution.  If None, `cov` is
+                generated from the non-zero-weighted observation weights in `pst`.
+                Only observations listed in `cov` are sampled.  Other observations are
+                assigned the `obsval` value from `pst`.
+            num_reals (`int`): number of stochastic realizations to generate.  Default
+                is 100
+            by_groups (`bool`): flag to generate realzations be observation group.  This
+                assumes no correlation (covariates) between observation groups.
+
+        Returns:
+            `ObservationEnsemble`
+
+        Notes:
+
+            Only observations named in `cov` are sampled. Additional, `cov` is processed prior
+                to sampling to only include non-zero-weighted observations. So users must take
+                care to make sure observations have been assigned non-zero weights even if `cov`
+                is being passed
+            The default `cov` is generated from `pyemu.Cov.from_observation_data`, which assumes
+                observation noise standard deviations are the inverse of the weights listed in `pst`
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            # the easiest way - just relying on weights in pst
+            oe1 = pyemu.ObservationEnsemble.from_gaussian_draw(pst)
+
+            # generate the cov explicitly
+            cov = pyemu.Cov.from_observation_data(pst)
+            oe2 = pyemu.ObservationEnsemble.from_gaussian_draw(pst,cov=cov)
+
+            # give all but one observation zero weight.  This will
+            # result in an oe with only one randomly sampled observation noise
+            # vector since the cov is processed to remove any zero-weighted
+            # observations before sampling
+            pst.observation_data.loc[pst.nnz_obs_names[1:],"weight] = 0.0
+            oe3 = pyemu.ObservationEnsemble.from_gaussian_draw(pst,cov=cov)
+
+        """
         if cov is None:
             cov = pyemu.Cov.from_observation_data(pst)
         obs = pst.observation_data
         mean_values = obs.obsval.copy()
-        mean_values.loc[pst.nnz_obs_names] = 0.0
         # only draw for non-zero weights, get a new cov
         nz_cov = cov.get(pst.nnz_obs_names)
 
@@ -353,13 +624,14 @@ class ObservationEnsemble(Ensemble):
 
     @property
     def phi_vector(self):
-        """property decorated method to get a vector of L2 norm (phi)
-        for the realizations.  The ObservationEnsemble.pst.weights can be
-        updated prior to calling this method to evaluate new weighting strategies
+        """vector of L2 norm (phi) for the realizations (rows) of `Ensemble`.
 
-        Return
-        ------
-        pandas.DataFrame : pandas.DataFrame
+        Returns:
+            `pandas.Series`: series of realization name (`Ensemble.index`) and phi values
+
+        Notes:
+            The ObservationEnsemble.pst.weights can be updated prior to calling
+                this method to evaluate new weighting strategies
 
         """
         cols = self._df.columns
@@ -374,21 +646,96 @@ class ObservationEnsemble(Ensemble):
         return pd.Series(data=phi_vec, index=self.index)
 
     def add_base(self):
+        """add the control file `obsval` values as a realization
+
+        Notes:
+            adds the current `ObservationEnsemble.pst.observation_data.obsval` values
+                as a new realization named "base"
+
+        """
         if "base" in self.index:
             raise Exception("'base' already in ensemble")
         self.loc["base",:] = self.pst.observation_data.loc[self.columns,"obsval"]
 
     @property
     def nonzero(self):
+        """get a new `ObservationEnsemble` of just non-zero weighted observations
+
+        Returns:
+            `ObservationEnsemble`: non-zero weighted observation ensemble.
+
+        Notes:
+            The `pst` attribute of the returned `ObservationEnsemble` also only includes
+                non-zero weighted observations (and is therefore not valid for running
+                with PEST or PEST++)
+
+        """
         df = self._df.loc[:, self.pst.nnz_obs_names]
         return ObservationEnsemble(pst=self.pst.get(obs_names=self.pst.nnz_obs_names),df=df)
 
 class ParameterEnsemble(Ensemble):
+    """parameter ensemble class
+
+   Args:
+        pst (`pyemu.Pst`): a control file instance
+        df (`pandas.DataFrame`): a pandas dataframe.  Columns
+            should be parameter names.  Index is
+            treated as realization names
+        istransformed (`bool`): flag to indicate parameter values
+            are in log space (if `partrans` is "log" in `pst`)
+
+    Example::
+
+        pst = pyemu.Pst("my.pst")
+        pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst)
+
+    """
     def __init__(self,pst,df,istransformed=False):
         super(ParameterEnsemble,self).__init__(pst,df,istransformed)
 
     @classmethod
     def from_gaussian_draw(cls,pst,cov=None,num_reals=100,by_groups=True):
+        """generate an `ObservationEnsemble` from a (multivariate) gaussian
+        distribution
+
+        Args:
+            pst (`pyemu.Pst`): a control file instance.
+            cov (`pyemu.Cov`): a covariance matrix describing the second
+                moment of the gaussian distribution.  If None, `cov` is
+                generated from the bounds of the adjustable parameters in `pst`.
+                the (log) width of the bounds is assumed to represent a multiple of
+                the parameter standard deviation (this is the `sigma_range` argument
+                that can be passed to `pyemu.Cov.from_parameter_data`).
+            num_reals (`int`): number of stochastic realizations to generate.  Default
+                is 100
+            by_groups (`bool`): flag to generate realzations be parameter group.  This
+                assumes no correlation (covariates) between parameter groups.  For large
+                numbers of parameters, this help prevent memories but is slower.
+
+        Returns:
+            `ParameterEnsemble`
+
+        Notes:
+
+            Only parameters named in `cov` are sampled. Missing parameters are assigned values of
+            `pst.parameter_data.parval1` along the corresponding columns of `ParameterEnsemble`
+            The default `cov` is generated from `pyemu.Cov.from_observation_data`, which assumes
+                parameter bounds in `ParameterEnsemble.pst` represent some multiple of parameter
+                standard deviations.  Additionally, the default Cov only includes adjustable
+                parameters (`partrans` not "tied" or "fixed").
+            "tied" parameters are not sampled.
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            # the easiest way - just relying on weights in pst
+            oe1 = pyemu.ParameterEnsemble.from_gaussian_draw(pst)
+
+            # generate the cov explicitly with a sigma_range
+            cov = pyemu.Cov.from_parameter_data(pst,sigma_range=6)
+            oe2 = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov=cov)
+
+        """
         if cov is None:
             cov = pyemu.Cov.from_parameter_data(pst)
         par = pst.parameter_data
@@ -407,7 +754,15 @@ class ParameterEnsemble(Ensemble):
         return cls(pst,df,istransformed=False)
 
     def back_transform(self):
+        """back transform parameters with respect to `partrans` value.
 
+        Notes:
+            operates in place (None is returned).
+
+            Parameter transform is only related to log_{10} and does not
+                include the effects of `scale` and/or `offset`
+
+        """
         if not self.istransformed:
             return
         li = self.pst.parameter_data.loc[:,"partrans"] == "log"
@@ -418,7 +773,15 @@ class ParameterEnsemble(Ensemble):
         self._istransformed = False
 
     def transform(self):
+        """transform parameters with respect to `partrans` value.
 
+        Notes:
+            operates in place (None is returned).
+
+            Parameter transform is only related to log_{10} and does not
+                include the effects of `scale` and/or `offset`
+
+        """
         if self.istransformed:
             return
         li = self.pst.parameter_data.loc[:,"partrans"] == "log"
@@ -428,6 +791,13 @@ class ParameterEnsemble(Ensemble):
         self._istransformed = True
 
     def add_base(self):
+        """add the control file `obsval` values as a realization
+
+        Notes:
+            adds the current `ParameterEnsemble.pst.parameter_data.parval1` values
+                as a new realization named "base"
+
+        """
         if "base" in self.index:
             raise Exception("'base' realization already in ensemble")
         if self.istransformed:
@@ -438,12 +808,10 @@ class ParameterEnsemble(Ensemble):
 
     @property
     def adj_names(self):
-        """ Get the names of adjustable parameters in the ParameterEnsemble
+        """the names of adjustable parameters in `ParameterEnsemble`
 
-        Returns
-        -------
-        list : list
-            adjustable parameter names
+        Returns:
+            [`str`]: adjustable parameter names
 
         """
         return self.pst.parameter_data.parnme.loc[~self.fixed_indexer].to_list()
@@ -452,9 +820,9 @@ class ParameterEnsemble(Ensemble):
     def ubnd(self):
         """ the upper bound vector while respecting current log transform status
 
-        Returns
-        -------
-        ubnd : pandas.Series
+        Returns:
+            `pandas.Series`: (log-transformed) upper parameter bounds listed in
+                `ParameterEnsemble.pst.parameter_data.parubnd`
 
         """
         if not self.istransformed:
@@ -468,9 +836,9 @@ class ParameterEnsemble(Ensemble):
     def lbnd(self):
         """ the lower bound vector while respecting current log transform status
 
-        Returns
-        -------
-        lbnd : pandas.Series
+        Returns:
+            `pandas.Series`: (log-transformed) lower parameter bounds listed in
+                `ParameterEnsemble.pst.parameter_data.parlbnd`
 
         """
         if not self.istransformed:
@@ -482,11 +850,11 @@ class ParameterEnsemble(Ensemble):
 
     @property
     def log_indexer(self):
-        """ indexer for log transform
+        """ boolean indexer for log transform
 
-        Returns
-        -------
-        log_indexer : pandas.Series
+        Returns:
+            `numpy.ndarray(bool)`: boolean array indicating which parameters are log
+                transformed
 
         """
         istransformed = self.pst.parameter_data.partrans == "log"
@@ -494,11 +862,11 @@ class ParameterEnsemble(Ensemble):
 
     @property
     def fixed_indexer(self):
-        """ indexer for fixed status
+        """ boolean indexer for non-adjustable parameters
 
-        Returns
-        -------
-        fixed_indexer : pandas.Series
+        Returns:
+            `numpy.ndarray(bool)`: boolean array indicating which parameters have
+                `partrans` equal to "log" or "fixed"
 
         """
         # isfixed = self.pst.parameter_data.partrans == "fixed"
@@ -637,8 +1005,6 @@ class ParameterEnsemble(Ensemble):
             min_fac = min(umin, lmin)
 
             self._df.loc[ridx,:] = base_vals + (sign * real_dist * min_fac)
-
-
 
 
     def _enforce_drop(self, bound_tol):
@@ -898,8 +1264,7 @@ def enforce_test():
     pe.enforce(how="scale")
     assert (pe.loc[0,pst.par_names[1:]] - pst.parameter_data.loc[pst.par_names[1:], "parval1"]).apply(np.abs).max() == 0
 
-    # now check that all pars are in bounds
-
+    #check that all pars are in bounds
     pe = ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
     pe.enforce(how="scale")
     for ridx in pe._df.index:
@@ -909,8 +1274,6 @@ def enforce_test():
         lb_diff = real - pe.lbnd
         assert lb_diff.min() >= 0.0
 
-
-    return
 
     pe = ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
     pe._df.loc[0, :] += pst.parameter_data.parubnd

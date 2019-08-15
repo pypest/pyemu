@@ -1617,7 +1617,7 @@ class Vario2d(object):
         return s
 
 class ExpVario(Vario2d):
-    """ Exponetial variogram derived type
+    """ Exponential variogram derived type
 
      Args:
         contribution (float): sill of the variogram

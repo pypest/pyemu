@@ -2123,8 +2123,8 @@ class Cov(Matrix):
         x (`numpy.ndarray`): numeric values
         names ([`str`]): list of row and column names.
         isdigonal (`bool`): flag if the Matrix is diagonal
-        autoalign (`bool`): flag to control the autoalignment of Matrix
-            during linear algebra operations
+        autoalign (`bool`): flag to control the autoalignment of Matrix during
+            linear algebra operations
 
     Example::
 
@@ -2195,8 +2195,8 @@ class Cov(Matrix):
 
     def condition_on(self,conditioning_elements):
         """get a new Covariance object that is conditional on knowing some
-            elements.  uses Schur's complement for conditional Covariance
-            propagation
+        elements.  uses Schur's complement for conditional Covariance
+        propagation
 
         Args:
             conditioning_elements (['str']): list of names of elements to condition on
@@ -2390,7 +2390,7 @@ class Cov(Matrix):
                 95% confidence of implied normal distribution
             scale_offset (`bool`): flag to apply scale and offset to parameter upper and lower
                 bounds before calculating varaince. In some cases, not applying scale and
-                 offset can result in undefined (log) variance.  Default is True.
+                offset can result in undefined (log) variance.  Default is True.
 
         Returns:
             parcov (`Cov`): diagonal parameter `Cov` matrix
@@ -2418,7 +2418,7 @@ class Cov(Matrix):
                 95% confidence of implied normal distribution
             scale_offset (`bool`): flag to apply scale and offset to parameter upper and lower
                 bounds before calculating varaince. In some cases, not applying scale and
-                 offset can result in undefined (log) variance.  Default is True.
+                offset can result in undefined (log) variance.  Default is True.
 
         Returns:
             parcov (`Cov`): diagonal parameter `Cov` matrix
