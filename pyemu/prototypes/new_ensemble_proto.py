@@ -567,7 +567,7 @@ class ParameterEnsemble(Ensemble):
         #new_en._back_transform()
         return new_en
 
-    def enforce(self,enforce_bounds="reset",bound_tol=0.0):
+    def enforce(self,how="reset",bound_tol=0.0):
         """ entry point for bounds enforcement.  This gets called for the
         draw method(s), so users shouldn't need to call this
 
@@ -579,12 +579,12 @@ class ParameterEnsemble(Ensemble):
 
         """
 
-        if enforce_bounds.lower() == "reset":
+        if how.lower().strip() == "reset":
             self._enforce_reset(bound_tol=bound_tol)
-        elif enforce_bounds.lower() == "drop":
+        elif how.lower().strip() == "drop":
             self._enforce_drop(bound_tol=bound_tol)
-        elif enforce_bounds.lower() == "scale":
-            self._enfore_scale(bound_tol=bound_tol)
+        elif how.lower().strip() == "scale":
+            self._enforce_scale(bound_tol=bound_tol)
         else:
             raise Exception("unrecognized enforce_bounds arg:"+\
                             "{0}, should be 'reset' or 'drop'".\
@@ -592,16 +592,54 @@ class ParameterEnsemble(Ensemble):
 
     def _enforce_scale(self, bound_tol):
         self.back_transform()
-        ub = (self.ubnd * (1.0 - self.bound_tol)).to_dict()
-        lb = (self.lbnd * (1.0 + self.bound_tol)).to_dict()
+        ub = self.ubnd * (1.0 - bound_tol)
+        lb = self.lbnd * (1.0 + bound_tol)
         base_vals = self.pst.parameter_data.loc[self._df.columns,"parval1"].copy()
-        for real in self._df.index:
-            sf = self._get_bnd_scale_factor(base_vals=base_vals,
-                                            new_values=self._df.loc[real,:],
-                                            ubnd=ub,lbnd=lb)
+        ub_dist = (ub - base_vals).apply(np.abs)
+        lb_dist = (base_vals - lb).apply(np.abs)
 
-    def _get_bnd_scale_factor(self,base_vals,new_values,ubnd,lbnd):
-        
+        if ub_dist.min() <= 0.0:
+            raise Exception("Ensemble._enforce_scale() error: the following parameter" +\
+                            "are at or over ubnd: {0}".format(ub_dist.loc[ub_dist<=0.0].index.values))
+        if lb_dist.min() <= 0.0:
+            raise Exception("Ensemble._enforce_scale() error: the following parameter" +\
+                            "are at or under lbnd: {0}".format(lb_dist.loc[ub_dist<=0.0].index.values))
+        for ridx in self._df.index:
+            real = self._df.loc[ridx,:]
+            real_dist = (real - base_vals).apply(np.abs)
+            out_ubnd = (real - ub)
+            out_ubnd = out_ubnd.loc[out_ubnd>0.0]
+            ubnd_facs = ub_dist.loc[out_ubnd.index] / real_dist.loc[out_ubnd.index]
+
+            out_lbnd = (lb - real)
+            out_lbnd = out_lbnd.loc[out_lbnd > 0.0]
+            lbnd_facs = lb_dist.loc[out_lbnd.index] / real_dist.loc[out_lbnd.index]
+
+            if ubnd_facs.shape[0] == 0 and lbnd_facs.shape[0] == 0:
+                continue
+            lmin = 1.0
+            umin = 1.0
+            sign = np.ones((self.pst.npar_adj))
+            sign[real.loc[self.pst.adj_par_names] < base_vals.loc[self.pst.adj_par_names]] = -1.0
+            if ubnd_facs.shape[0] > 0:
+                umin = ubnd_facs.min()
+                umin_idx = ubnd_facs.idxmin()
+                print("enforce_scale ubnd controlling parameter, scale factor, " + \
+                      "current value for realization {0}: {1}, {2}, {3}". \
+                      format(ridx, umin_idx, umin, real.loc[umin_idx]))
+
+            if lbnd_facs.shape[0] > 0:
+                lmin = lbnd_facs.min()
+                lmin_idx = lbnd_facs.idxmin()
+                print("enforce_scale lbnd controlling parameter, scale factor, " + \
+                      "current value for realization {0}: {1}, {2}. {3}". \
+                      format(ridx, lmin_idx, lmin, real.loc[lmin_idx]))
+            min_fac = min(umin, lmin)
+
+            self._df.loc[ridx,:] = base_vals + (sign * real_dist * min_fac)
+
+
+
 
     def _enforce_drop(self, bound_tol):
         """ enforce parameter bounds on the ensemble by dropping
@@ -614,26 +652,25 @@ class ParameterEnsemble(Ensemble):
             be dropped.
 
         """
-        ub = (self.ubnd * (1.0 - self.bound_tol)).to_dict()
-        lb = (self.lbnd * (1.0 + self.bound_tol)).to_dict()
+        ub = self.ubnd * (1.0 - bound_tol)
+        lb = self.lbnd * (1.0 + bound_tol)
         drop = []
-        for id in self._df.index:
+        for ridx in self._df.index:
             #mx = (ub - self.loc[id,:]).min()
             #mn = (lb - self.loc[id,:]).max()
-            if (ub - self._df.loc[id,:]).min() < 0.0 or\
-                            (lb - self._df.loc[id,:]).max() > 0.0:
-                drop.append(id)
+            if (ub - self._df.loc[ridx,:]).min() < 0.0 or\
+                            (lb - self._df.loc[ridx,:]).max() > 0.0:
+                drop.append(ridx)
         self.loc[drop,:] = np.NaN
         self.dropna(inplace=True)
-
 
     def _enforce_reset(self, bound_tol):
         """enforce parameter bounds on the ensemble by resetting
         violating vals to bound
         """
 
-        ub = (self.ubnd * (1.0 - self.bound_tol)).to_dict()
-        lb = (self.lbnd * (1.0 + self.bound_tol)).to_dict()
+        ub = (self.ubnd * (1.0 - bound_tol)).to_dict()
+        lb = (self.lbnd * (1.0 + bound_tol)).to_dict()
 
         val_arr = self._df.values
         for iname, name in enumerate(self.columns):
@@ -832,10 +869,67 @@ def dropna_test():
 
 def enforce_test():
     pst = pyemu.Pst(os.path.join("..", "..", "autotest", "pst", "pest.pst"))
+
+    # make sure sanity check is working
     num_reals = 10
+    broke_pst = pst.get()
+    broke_pst.parameter_data.loc[:, "parval1"] = broke_pst.parameter_data.parubnd
+    pe = ParameterEnsemble.from_gaussian_draw(broke_pst, num_reals=num_reals)
+    try:
+        pe.enforce(how="scale")
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    broke_pst.parameter_data.loc[:, "parval1"] = broke_pst.parameter_data.parlbnd
+    pe = ParameterEnsemble.from_gaussian_draw(broke_pst, num_reals=num_reals)
+    try:
+        pe.enforce(how="scale")
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
+    # check that all pars at parval1 values don't change
+    num_reals = 1
     pe = ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
-    pe._df.loc[0,:] += 1000
+    pe._df.loc[:, :] = pst.parameter_data.parval1.values
+    pe._df.loc[0, pst.par_names[0]] = pst.parameter_data.parlbnd.loc[pst.par_names[0]] * 0.5
+    pe.enforce(how="scale")
+    assert (pe.loc[0,pst.par_names[1:]] - pst.parameter_data.loc[pst.par_names[1:], "parval1"]).apply(np.abs).max() == 0
+
+    # now check that all pars are in bounds
+
+    pe = ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    pe.enforce(how="scale")
+    for ridx in pe._df.index:
+        real = pe._df.loc[ridx,pst.adj_par_names]
+        ub_diff = pe.ubnd - real
+        assert ub_diff.min() >= 0.0
+        lb_diff = real - pe.lbnd
+        assert lb_diff.min() >= 0.0
+
+
+    return
+
+    pe = ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    pe._df.loc[0, :] += pst.parameter_data.parubnd
+    pe.enforce(how="scale")
+
+    pe = ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    pe._df.loc[0,:] += pst.parameter_data.parubnd
     pe.enforce()
+    assert (pe._df.loc[0,:] - pst.parameter_data.parubnd).apply(np.abs).sum() == 0.0
+
+
+    pe._df.loc[0, :] += pst.parameter_data.parubnd
+    pe._df.loc[1:,:] = pst.parameter_data.parval1.values
+    pe.enforce(how="drop")
+    assert pe.shape[0] == num_reals - 1
+
+
+
+
 
 def projection_test():
     pass
@@ -848,4 +942,5 @@ if __name__ == "__main__":
     #nz_test()
     #deviations_test()
     #as_pyemu_matrix_test()
-    dropna_test()
+    #dropna_test()
+    enforce_test()
