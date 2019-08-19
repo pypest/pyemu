@@ -243,7 +243,7 @@ class MonteCarlo(LinearAnalysis):
 
         # project the ensemble
         self.log("projecting parameter ensemble")
-        en = self.parensemble.project(self.get_null_proj(nsing),inplace=inplace,log=self.log)
+        en = self.parensemble.project(self.get_null_proj(nsing),log=self.log)
         self.log("projecting parameter ensemble")
         return en
 

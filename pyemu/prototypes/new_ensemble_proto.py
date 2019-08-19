@@ -875,34 +875,36 @@ class ParameterEnsemble(Ensemble):
             apply(lambda x: x in tf)
         return isfixed.values
 
-    def project(self,projection_matrix,center_on=None,og=None,
-                enforce_bounds="reset"):
+    def project(self,projection_matrix,center_on=None,
+                log=None,enforce_bounds="reset"):
         """ project the ensemble using the null-space Monte Carlo method
 
-        Parameters
-        ----------
-        projection_matrix : pyemu.Matrix
-            projection operator - must already respect log transform
+        Args:
+            projection_matrix (`pyemu.Matrix`): null-space projection operator.
+            center_on (`str`): the name of the realization to use as the centering
+                point for the null-space differening operation.  If `center_on` is `None`,
+                the `ParameterEnsemble` mean vector is used.  Default is `None`
+            log (`pyemu.Logger`, optional): for logging progress
+            enforce_bounds (`str`): parameter bound enforcement option to pass to
+                `ParameterEnsemble.enforce()`.  Valid options are `reset`, `drop`,
+                `scale` or `None`.  Default is `reset`.
 
-        inplace : bool
-            project self or return a new ParameterEnsemble instance
+        Returns:
+            `ParameterEnsemble`: untransformed, null-space projected ensemble.
 
-        log: pyemu.Logger
-            for logging progress
+        Example::
 
-        enforce_bounds : str
-            parameter bound enforcement flag. 'drop' removes
-            offending realizations, 'reset' resets offending values
-
-        Returns
-        -------
-        ParameterEnsemble : ParameterEnsemble
-            if inplace is False
+            ev = pyemu.ErrVar(jco="my.jco") #assumes my.pst exists
+            pe = pyemu.ParameterEnsemble.from_gaussian_draw(ev.pst)
+            pe_proj = pe.project(ev.get_null_proj(maxsing=25))
+            pe_proj.to_csv("proj_par.csv")
 
         """
 
-
-        self.transform()
+        retrans = False
+        if self.istransformed:
+            self.transform()
+            retrans = True
 
         #make sure everything is cool WRT ordering
 
@@ -923,16 +925,16 @@ class ParameterEnsemble(Ensemble):
             # null space projection of difference vector
             pdiff = self.loc[real,:] - base
             pdiff = np.dot(projection_matrix.x,pdiff.values)
-            new_en.loc[real,common_names] = base + pdiff
+            new_en.loc[real,names] = base + pdiff
 
             if log is not None:
                 log("projecting realization {0}".format(real))
 
         new_en.enforce(enforce_bounds)
-        new_en.loc[:,istransformed] = 10.0**new_en.loc[:,istransformed]
-        new_en.__istransformed = False
 
-        #new_en._back_transform()
+        new_en.back_transform()
+        if retrans:
+            self.transform()
         return new_en
 
     def enforce(self,how="reset",bound_tol=0.0):
@@ -944,6 +946,14 @@ class ParameterEnsemble(Ensemble):
         enforce_bounds : str
             can be 'reset' to reset offending values or 'drop' to drop
             offending realizations
+
+        Example::
+
+            pst = pyemu.Pst("my.pst")
+            pe = pyemu.ParameterEnsemble.from_gaussian_draw()
+            pe.enforce(how="scale)
+            pe.to_csv("par.csv")
+
 
         """
 
@@ -959,7 +969,10 @@ class ParameterEnsemble(Ensemble):
                             format(enforce_bounds))
 
     def _enforce_scale(self, bound_tol):
-        self.back_transform()
+        retrans = False
+        if self.istransformed:
+            self.back_transform()
+            retrans = True
         ub = self.ubnd * (1.0 - bound_tol)
         lb = self.lbnd * (1.0 + bound_tol)
         base_vals = self.pst.parameter_data.loc[self._df.columns,"parval1"].copy()
@@ -1006,6 +1019,8 @@ class ParameterEnsemble(Ensemble):
 
             self._df.loc[ridx,:] = base_vals + (sign * real_dist * min_fac)
 
+        if retrans:
+            self.transform()
 
     def _enforce_drop(self, bound_tol):
         """ enforce parameter bounds on the ensemble by dropping
@@ -1042,6 +1057,73 @@ class ParameterEnsemble(Ensemble):
         for iname, name in enumerate(self.columns):
             val_arr[val_arr[:,iname] > ub[name],iname] = ub[name]
             val_arr[val_arr[:, iname] < lb[name],iname] = lb[name]
+
+
+    @classmethod
+    def from_parfiles(cls, pst, parfile_names, real_names=None):
+        """ create a parameter ensemble from parfiles.  Accepts parfiles with less than the
+        parameters in the control (get NaNs in the ensemble) or extra parameters in the
+        parfiles (get dropped)
+
+        Parameters:
+            pst : pyemu.Pst
+
+            parfile_names : list of str
+                par file names
+
+            real_names : str
+                optional list of realization names. If None, a single integer counter is used
+
+        Returns:
+            pyemu.ParameterEnsemble
+
+
+        """
+        if isinstance(pst, str):
+            pst = pyemu.Pst(pst)
+        dfs = {}
+        if real_names is not None:
+            assert len(real_names) == len(parfile_names)
+        else:
+            real_names = np.arange(len(parfile_names))
+
+        for rname, pfile in zip(real_names, parfile_names):
+            assert os.path.exists(pfile), "ParameterEnsemble.from_parfiles() error: " + \
+                                          "file: {0} not found".format(pfile)
+            df = pyemu.pst_utils.read_parfile(pfile)
+            # check for scale differences - I don't who is dumb enough
+            # to change scale between par files and pst...
+            diff = df.scale - pst.parameter_data.scale
+            if diff.apply(np.abs).sum() > 0.0:
+                warnings.warn("differences in scale detected, applying scale in par file",
+                              PyemuWarning)
+                # df.loc[:,"parval1"] *= df.scale
+
+            dfs[rname] = df.parval1.values
+
+        df_all = pd.DataFrame(data=dfs).T
+        df_all.columns = df.index
+
+        if len(pst.par_names) != df_all.shape[1]:
+            # if len(pst.par_names) < df_all.shape[1]:
+            #    raise Exception("pst is not compatible with par files")
+            pset = set(pst.par_names)
+            dset = set(df_all.columns)
+            diff = pset.difference(dset)
+            if len(diff) > 0:
+                warnings.warn("the following parameters are not in the par files (getting NaNs) :{0}".
+                              format(','.join(diff)), PyemuWarning)
+                blank_df = pd.DataFrame(index=df_all.index, columns=diff)
+
+                df_all = pd.concat([df_all, blank_df], axis=1)
+
+            diff = dset.difference(pset)
+            if len(diff) > 0:
+                warnings.warn("the following par file parameters are not in the control (being dropped):{0}".
+                              format(','.join(diff)), PyemuWarning)
+                df_all = df_all.loc[:, pst.par_names]
+
+        return ParameterEnsemble(pst=pst,df=df_all)
 
 
 def add_base_test():
@@ -1201,6 +1283,7 @@ def deviations_test():
     s = oe_base_devs.loc["base", :].apply(np.abs).sum()
     assert s == 0.0
 
+
 def as_pyemu_matrix_test():
     pst = pyemu.Pst(os.path.join("..", "..", "autotest", "pst", "pest.pst"))
     num_reals = 10
@@ -1290,12 +1373,38 @@ def enforce_test():
     pe.enforce(how="drop")
     assert pe.shape[0] == num_reals - 1
 
+def pnulpar_test():
+    import os
+    import pyemu
+    dir = "mc"
+    ev = pyemu.ErrVar(jco=os.path.join("..","..","autotest","mc","freyberg_ord.jco"))
+    pst = ev.pst
+    par_dir = os.path.join("..","..","autotest","mc","prior_par_draws")
+    par_files = [os.path.join(par_dir,f) for f in os.listdir(par_dir) if f.endswith('.par')]
+    #mc.parensemble.read_parfiles(par_files)
+    pe = ParameterEnsemble.from_parfiles(pst=pst,parfile_names=par_files)
+    real_num = [int(os.path.split(f)[-1].split('.')[0].split('_')[1]) for f in par_files]
+    pe._df.index = real_num
+
+    pe_proj = pe.project(ev.get_null_proj(maxsing=1), enforce_bounds='reset')
 
 
+    par_dir = os.path.join("..","..","autotest","mc", "proj_par_draws")
+    par_files = [os.path.join(par_dir, f) for f in os.listdir(par_dir) if f.endswith('.par')]
+    real_num = [int(os.path.split(f)[-1].split('.')[0].split('_')[1]) for f in par_files]
 
-
-def projection_test():
-    pass
+    pe_pnul = ParameterEnsemble.from_parfiles(pst=pst,parfile_names=par_files)
+    #en_pnul.read_parfiles(par_files)
+    pe_pnul.index = real_num
+    pe_proj._df.sort_index(axis=1, inplace=True)
+    pe_proj._df.sort_index(axis=0, inplace=True)
+    pe_pnul._df.sort_index(axis=1, inplace=True)
+    pe_pnul._df.sort_index(axis=0, inplace=True)
+    #pe_pnul._df.index = pe_proj._df.index
+    print(pe_proj)
+    print(pe_pnul)
+    diff = 100.0 * ((pe_proj - pe_pnul) / pe_proj)
+    assert max(diff.max()) < 1.0e-4
 
 if __name__ == "__main__":
     #par_gauss_draw_consistency_test()
@@ -1306,4 +1415,5 @@ if __name__ == "__main__":
     #deviations_test()
     #as_pyemu_matrix_test()
     #dropna_test()
-    enforce_test()
+    #enforce_test()
+    pnulpar_test()

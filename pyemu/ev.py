@@ -667,3 +667,59 @@ class ErrVar(LinearAnalysis):
         self.log("calc third term parameter @" + str(singular_value))
         return result
 
+    def get_null_proj(self, maxsing=None, eigthresh=1.0e-6 ):
+        """ get a null-space projection matrix of XTQX
+
+        Args:
+            maxsing (`int`, optional): number of singular components
+                to use (the truncation point).  If None, `pyemu.Matrx.get_maxsing()
+                is used to determine the truncation point with `eigthresh`. Default
+                is None
+            eigthresh (`float`, optional): the ratio of smallest to largest singular
+                value to keep in the range (solution) space of XtQX.  Not used if
+                `maxsing` is not `None`.  Default is 1.0e-6
+
+
+        Returns:
+
+            `pyemu.Matrix` the null-space projection matrix (V2V2^T)
+
+        """
+        if maxsing is None:
+            maxsing = self.xtqx.get_maxsing(eigthresh=eigthresh)
+        print("using {0} singular components".format(maxsing))
+        self.log("forming null space projection matrix with " + \
+                 "{0} of {1} singular components".format(maxsing, self.jco.shape[1]))
+
+        v2_proj = (self.xtqx.v[:, maxsing:] * self.xtqx.v[:, maxsing:].T)
+        self.log("forming null space projection matrix with " + \
+                 "{0} of {1} singular components".format(maxsing, self.jco.shape[1]))
+
+        return v2_proj
+
+    def get_nsing(self, epsilon=1.0e-4):
+        """ get the number of solution space dimensions given
+        a ratio between the largest and smallest singular values
+
+        Parameters
+        ----------
+        epsilon: float
+            singular value ratio
+
+        Returns
+        -------
+        nsing : float
+            number of singular components above the epsilon ratio threshold
+
+        Note
+        -----
+            If nsing == nadj_par, then None is returned
+
+        """
+        mx = self.xtqx.shape[0]
+        nsing = mx - np.searchsorted(
+            np.sort((self.xtqx.s.x / self.xtqx.s.x.max())[:, 0]), epsilon)
+        if nsing == mx:
+            self.logger.warn("optimal nsing=npar")
+            nsing = None
+        return nsing
