@@ -869,7 +869,7 @@ if __name__ == "__main__":
     # mc_test()
     # fixed_par_test()
     # uniform_draw_test()
-    gaussian_draw_test()
+    #gaussian_draw_test()
     # parfile_test()
     # write_regul_test()
     #from_dataframe_test()

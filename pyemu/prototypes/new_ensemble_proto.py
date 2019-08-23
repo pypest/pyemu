@@ -1376,7 +1376,34 @@ def enforce_test():
 def pnulpar_test():
     import os
     import pyemu
-    dir = "mc"
+
+    mc = pyemu.MonteCarlo(jco=os.path.join("..", "..", "autotest", "mc", "freyberg_ord.jco"))
+    par_dir = os.path.join("..", "..", "autotest", "mc", "prior_par_draws")
+    par_files = [os.path.join(par_dir, f) for f in os.listdir(par_dir) if f.endswith('.par')]
+    # mc.parensemble.read_parfiles(par_files)
+    mc.parensemble = pyemu.ParameterEnsemble.from_parfiles(pst=mc.pst, parfile_names=par_files)
+    real_num = [int(os.path.split(f)[-1].split('.')[0].split('_')[1]) for f in par_files]
+    mc.parensemble.index = real_num
+    # print(mc.parensemble)
+    print(mc.parensemble.istransformed)
+    en = mc.project_parensemble(nsing=1, inplace=False, enforce_bounds='reset')
+    # en.index = [i+1 for i in en.index]
+    print(mc.parensemble.istransformed)
+
+
+    par_files = [os.path.join(par_dir, f) for f in os.listdir(par_dir) if f.endswith('.par')]
+    real_num = [int(os.path.split(f)[-1].split('.')[0].split('_')[1]) for f in par_files]
+
+    en_pnul = pyemu.ParameterEnsemble.from_parfiles(pst=mc.pst, parfile_names=par_files)
+    # en_pnul.read_parfiles(par_files)
+    en_pnul.index = real_num
+    en.sort_index(axis=1, inplace=True)
+    en.sort_index(axis=0, inplace=True)
+    en_pnul.sort_index(axis=1, inplace=True)
+    en_pnul.sort_index(axis=0, inplace=True)
+    diff = 100.0 * ((en - en_pnul) / en)
+    assert max(diff.max()) < 1.0e-4
+
     ev = pyemu.ErrVar(jco=os.path.join("..","..","autotest","mc","freyberg_ord.jco"))
     pst = ev.pst
     par_dir = os.path.join("..","..","autotest","mc","prior_par_draws")
@@ -1395,7 +1422,7 @@ def pnulpar_test():
 
     pe_pnul = ParameterEnsemble.from_parfiles(pst=pst,parfile_names=par_files)
     #en_pnul.read_parfiles(par_files)
-    pe_pnul.index = real_num
+    pe_pnul._df.index = real_num
     pe_proj._df.sort_index(axis=1, inplace=True)
     pe_proj._df.sort_index(axis=0, inplace=True)
     pe_pnul._df.sort_index(axis=1, inplace=True)
@@ -1403,8 +1430,9 @@ def pnulpar_test():
     #pe_pnul._df.index = pe_proj._df.index
     print(pe_proj)
     print(pe_pnul)
-    diff = 100.0 * ((pe_proj - pe_pnul) / pe_proj)
-    assert max(diff.max()) < 1.0e-4
+    diff = 100.0 * ((pe_proj._df - pe_pnul._df) / pe_proj._df)
+    print(diff)
+    assert max(diff.max()) < 1.0e-4,diff
 
 if __name__ == "__main__":
     #par_gauss_draw_consistency_test()
