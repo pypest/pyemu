@@ -232,12 +232,15 @@ def pnulpar_test():
     real_num = [int(os.path.split(f)[-1].split('.')[0].split('_')[1]) for f in par_files]
 
     en_pnul = pyemu.ParameterEnsemble.from_parfiles(pst=mc.pst,parfile_names=par_files)
+
     #en_pnul.read_parfiles(par_files)
     en_pnul.index = real_num
+    print(en_pnul)
     en.sort_index(axis=1, inplace=True)
     en.sort_index(axis=0, inplace=True)
     en_pnul.sort_index(axis=1, inplace=True)
     en_pnul.sort_index(axis=0, inplace=True)
+
     diff = 100.0 * ((en - en_pnul) / en)
     assert max(diff.max()) < 1.0e-4
 

@@ -902,17 +902,25 @@ class ParameterEnsemble(Ensemble):
         """
 
         retrans = False
-        if self.istransformed:
+        if not self.istransformed:
             self.transform()
             retrans = True
 
-        #make sure everything is cool WRT ordering
-
-        base = self._df.mean()
+        #base = self._df.mean()
+        self.pst.add_transform_columns()
+        base = self.pst.parameter_data.parval1_trans
         if center_on is not None:
-            if center_on not in self._df.index:
-                raise Exception("'center_on' realization {0} not found".format(center_on))
-            base = self._df.loc[center_on,:].copy()
+            if isinstance(center_on,pd.Series):
+                base = center_on
+            elif center_on in self._df.index:
+                base = self._df.loc[center_on,:].copy()
+            elif isinstance(center_on,"str"):
+                try:
+                    base = pyemu.pst_utils.read_parfile(center_on)
+                except:
+                    raise Exception("'center_on' arg not found in index and couldnt be loaded as a '.par' file")
+            else:
+                raise Exception("error processing 'center_on' arg.  should be realization names, par file, or series")
         names = list(base.index)
         projection_matrix = projection_matrix.get(names,names)
 
@@ -923,7 +931,7 @@ class ParameterEnsemble(Ensemble):
                 log("projecting realization {0}".format(real))
 
             # null space projection of difference vector
-            pdiff = self.loc[real,:] - base
+            pdiff = self._df.loc[real,names] - base
             pdiff = np.dot(projection_matrix.x,pdiff.values)
             new_en.loc[real,names] = base + pdiff
 
@@ -1377,61 +1385,32 @@ def pnulpar_test():
     import os
     import pyemu
 
-    mc = pyemu.MonteCarlo(jco=os.path.join("..", "..", "autotest", "mc", "freyberg_ord.jco"))
-    par_dir = os.path.join("..", "..", "autotest", "mc", "prior_par_draws")
-    par_files = [os.path.join(par_dir, f) for f in os.listdir(par_dir) if f.endswith('.par')]
-    # mc.parensemble.read_parfiles(par_files)
-    mc.parensemble = pyemu.ParameterEnsemble.from_parfiles(pst=mc.pst, parfile_names=par_files)
-    real_num = [int(os.path.split(f)[-1].split('.')[0].split('_')[1]) for f in par_files]
-    mc.parensemble.index = real_num
-    # print(mc.parensemble)
-    print(mc.parensemble.istransformed)
-    en = mc.project_parensemble(nsing=1, inplace=False, enforce_bounds='reset')
-    # en.index = [i+1 for i in en.index]
-    print(mc.parensemble.istransformed)
-
-
-    par_files = [os.path.join(par_dir, f) for f in os.listdir(par_dir) if f.endswith('.par')]
-    real_num = [int(os.path.split(f)[-1].split('.')[0].split('_')[1]) for f in par_files]
-
-    en_pnul = pyemu.ParameterEnsemble.from_parfiles(pst=mc.pst, parfile_names=par_files)
-    # en_pnul.read_parfiles(par_files)
-    en_pnul.index = real_num
-    en.sort_index(axis=1, inplace=True)
-    en.sort_index(axis=0, inplace=True)
-    en_pnul.sort_index(axis=1, inplace=True)
-    en_pnul.sort_index(axis=0, inplace=True)
-    diff = 100.0 * ((en - en_pnul) / en)
-    assert max(diff.max()) < 1.0e-4
-
     ev = pyemu.ErrVar(jco=os.path.join("..","..","autotest","mc","freyberg_ord.jco"))
+    ev.get_null_proj(maxsing=1).to_ascii("ev_new_proj.mat")
     pst = ev.pst
     par_dir = os.path.join("..","..","autotest","mc","prior_par_draws")
     par_files = [os.path.join(par_dir,f) for f in os.listdir(par_dir) if f.endswith('.par')]
-    #mc.parensemble.read_parfiles(par_files)
+
     pe = ParameterEnsemble.from_parfiles(pst=pst,parfile_names=par_files)
     real_num = [int(os.path.split(f)[-1].split('.')[0].split('_')[1]) for f in par_files]
     pe._df.index = real_num
 
     pe_proj = pe.project(ev.get_null_proj(maxsing=1), enforce_bounds='reset')
 
-
     par_dir = os.path.join("..","..","autotest","mc", "proj_par_draws")
     par_files = [os.path.join(par_dir, f) for f in os.listdir(par_dir) if f.endswith('.par')]
     real_num = [int(os.path.split(f)[-1].split('.')[0].split('_')[1]) for f in par_files]
 
     pe_pnul = ParameterEnsemble.from_parfiles(pst=pst,parfile_names=par_files)
-    #en_pnul.read_parfiles(par_files)
+
     pe_pnul._df.index = real_num
     pe_proj._df.sort_index(axis=1, inplace=True)
     pe_proj._df.sort_index(axis=0, inplace=True)
     pe_pnul._df.sort_index(axis=1, inplace=True)
     pe_pnul._df.sort_index(axis=0, inplace=True)
-    #pe_pnul._df.index = pe_proj._df.index
-    print(pe_proj)
-    print(pe_pnul)
+
     diff = 100.0 * ((pe_proj._df - pe_pnul._df) / pe_proj._df)
-    print(diff)
+
     assert max(diff.max()) < 1.0e-4,diff
 
 if __name__ == "__main__":
