@@ -9,25 +9,47 @@ from pyemu.la import LinearAnalysis
 from pyemu.mat import Cov, Matrix
 
 class Schur(LinearAnalysis):
-    """derived type for prior and posterior uncertainty and data-worth
-    analysis using Schur compliment
+    """prior and posterior uncertainty and data-worth analysis using Schur compliment
 
-    Parameters
-    ----------
-    **kwargs : dict
-        keyword arguments to pass to the LinearAnalysis constructor.  See
-        LinearAnalysis definition for argument types
+    Args:
+        jco (varies, optional): something that can be cast or loaded into a `pyemu.Jco`.  Can be a
+            str for a filename or `pyemu.Matrix`/`pyemu.Jco` object.
+        pst (varies, optional): something that can be cast into a `pyemu.Pst`.  Can be an `str` for a
+            filename or an existing `pyemu.Pst`.  If `None`, a pst filename is sought
+            with the same base name as the jco argument (if passed)
+        parcov (varies, optional): prior parameter covariance matrix.  If `str`, a filename is assumed and
+            the prior parameter covariance matrix is loaded from a file using
+            the file extension (".jcb"/".jco" for binary, ".cov"/".mat" for PEST-style ASCII matrix,
+            or ".unc" for uncertainty files).  If `None`, the prior parameter covariance matrix is
+            constructed from the parameter bounds in `LinearAnalysis.pst`.  Can also be a `pyemu.Cov` instance
+        obscov (varies, optional): observation noise covariance matrix.  If `str`, a filename is assumed and
+            the noise covariance matrix is loaded from a file using
+            the file extension (".jcb"/".jco" for binary, ".cov"/".mat" for PEST-style ASCII matrix,
+            or ".unc" for uncertainty files).  If `None`, the noise covariance matrix is
+            constructed from the obsevation weights in `LinearAnalysis.pst`.  Can also be a `pyemu.Cov` instance
+        forecasts (varies, optional): forecast sensitivity vectors.  If `str`, first an observation name is assumed (a row
+            in `LinearAnalysis.jco`).  If that is not found, a filename is assumed and predictions are
+            loaded from a file using the file extension.  If [`str`], a list of observation names is assumed.
+            Can also be a `pyemu.Matrix` instance, a `numpy.ndarray` or a collection
+            of `pyemu.Matrix` or `numpy.ndarray`.
+        ref_var (float, optional): reference variance.  Default is 1.0
+        verbose (`bool`): controls screen output.  If `str`, a filename is assumed and
+                and log file is written.
+        sigma_range (`float`, optional): defines range of upper bound - lower bound in terms of standard
+            deviation (sigma). For example, if sigma_range = 4, the bounds represent 4 * sigma.
+            Default is 4.0, representing approximately 95% confidence of implied normal distribution.
+            This arg is only used if constructing parcov from parameter bounds.
+        scale_offset (`bool`, optional): flag to apply parameter scale and offset to parameter bounds
+            when calculating prior parameter covariance matrix from bounds.  This arg is onlyused if
+            constructing parcov from parameter bounds.Default is True.
 
-    Note
-    ----
-    Same call signature as the base LinearAnalysis class
+    Examples::
 
-    Example
-    -------
-    ``>>>import pyemu``
+        #assumes "my.pst" exists
+        sc = pyemu.Schur(jco="my.jco",forecasts=["fore1","fore2"])
+        print(sc.get_forecast_summary())
+        print(sc.get_parameter_contribution())
 
-    ``>>>sc = pyemu.Schur(jco="pest.jcb")``
-    
     """
     def __init__(self,jco,**kwargs):
         self.__posterior_prediction = None
@@ -35,54 +57,46 @@ class Schur(LinearAnalysis):
         super(Schur,self).__init__(jco,**kwargs)
 
 
-    @property
-    def pandas(self):
-        """get a pandas dataframe of prior and posterior for all predictions
-
-        Returns:
-            pandas.DataFrame : pandas.DataFrame
-                a dataframe with prior and posterior uncertainty estimates
-                for all forecasts (predictions)
-        """
-        names,prior,posterior = [],[],[]
-        for iname,name in enumerate(self.posterior_parameter.row_names):
-            names.append(name)
-            posterior.append(np.sqrt(float(
-                self.posterior_parameter[iname, iname]. x)))
-            iprior = self.parcov.row_names.index(name)
-            prior.append(np.sqrt(float(self.parcov[iprior, iprior].x)))
-        for pred_name, pred_var in self.posterior_prediction.items():
-            names.append(pred_name)
-            posterior.append(np.sqrt(pred_var))
-            prior.append(self.prior_prediction[pred_name])
-        return pd.DataFrame({"posterior": posterior, "prior": prior},
-                                index=names)
+    # @property
+    # def pandas(self):
+    #     """get a pandas dataframe of prior and posterior for all predictions
+    #
+    #     Returns:
+    #         pandas.DataFrame : pandas.DataFrame
+    #             a dataframe with prior and posterior uncertainty estimates
+    #             for all forecasts (predictions)
+    #     """
+    #     names,prior,posterior = [],[],[]
+    #     for iname,name in enumerate(self.posterior_parameter.row_names):
+    #         names.append(name)
+    #         posterior.append(np.sqrt(float(
+    #             self.posterior_parameter[iname, iname]. x)))
+    #         iprior = self.parcov.row_names.index(name)
+    #         prior.append(np.sqrt(float(self.parcov[iprior, iprior].x)))
+    #     for pred_name, pred_var in self.posterior_prediction.items():
+    #         names.append(pred_name)
+    #         posterior.append(np.sqrt(pred_var))
+    #         prior.append(self.prior_prediction[pred_name])
+    #     return pd.DataFrame({"posterior": posterior, "prior": prior},
+    #                             index=names)
 
     @property
     def posterior_parameter(self):
-        """get the posterior parameter covariance matrix.  If Schur.__posterior_parameter
-        is None, the posterior parameter covariance matrix is calculated via
-        Schur compliment before returning
+        """posterior parameter covariance matrix.
 
-        Returns
-        -------
-        posterior_parameter : pyemu.Cov
-            the posterior parameter covariance matrix
+        Returns:
+            `pyemu.Cov`: the posterior parameter covariance matrix
 
-        Note
-        ----
-        returns a reference
+        Notes:
+             If Schur.__posterior_parameter is None, the posterior
+                parameter covariance matrix is calculated via Schur
+                compliment before returning
 
-        Example
-        -------
-        ``>>>import pyemu``
+        Example::
 
-        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
-
-        ``>>>post_cov = sc.posterior_parameter``
-
-        ``>>>post_cov.to_ascii("post.cov")``
-
+            sc = pyemu.Schur(jco="my.jcb")
+            post_cov = sc.posterior_parameter
+            post_cov.to_ascii("post.cov")
 
         """
         if self.__posterior_parameter is not None:
