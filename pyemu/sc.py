@@ -30,7 +30,9 @@ class Schur(LinearAnalysis):
         forecasts (varies, optional): forecast sensitivity vectors.  If `str`, first an observation name is assumed (a row
             in `LinearAnalysis.jco`).  If that is not found, a filename is assumed and predictions are
             loaded from a file using the file extension.  If [`str`], a list of observation names is assumed.
-            Can also be a `pyemu.Matrix` instance, a `numpy.ndarray` or a collection
+            Can also be a `pyemu.Matrix` instance, a `numpy.ndarray` or a collection.  Note if the PEST++ option
+            "++forecasts()" is set in the pest control file (under the `pyemu.Pst.pestpp_options` dictionary),
+            then there is no need to pass this argument (unless you want to analyze different forecasts)
             of `pyemu.Matrix` or `numpy.ndarray`.
         ref_var (float, optional): reference variance.  Default is 1.0
         verbose (`bool`): controls screen output.  If `str`, a filename is assumed and
@@ -124,93 +126,102 @@ class Schur(LinearAnalysis):
             self.log("Schur's complement")
             return self.__posterior_parameter
 
-    @property
-    def map_parameter_estimate(self):
-        """ get the posterior expectation for parameters using Bayes linear
-        estimation
-
-        Returns
-        -------
-        post_expt : pandas.DataFrame
-            a dataframe with prior and posterior parameter expectations
-
-        """
-        res = self.pst.res
-        assert res is not None
-        # build the prior expectation parameter vector
-        prior_expt = self.pst.parameter_data.loc[:,["parval1"]].copy()
-        islog = self.pst.parameter_data.partrans == "log"
-        prior_expt.loc[islog] = prior_expt.loc[islog].apply(np.log10)
-        prior_expt = Matrix.from_dataframe(prior_expt)
-        prior_expt.col_names = ["prior_expt"]
-        # build the residual vector
-        res_vec = Matrix.from_dataframe(res.loc[:,["residual"]])
-
-        # form the terms of Schur's complement
-        b = self.parcov * self.jco.T
-        c = ((self.jco * self.parcov * self.jco.T) + self.obscov).inv
-        bc = Matrix((b * c).x, row_names=b.row_names, col_names=c.col_names)
-
-        # calc posterior expectation
-        upgrade = bc * res_vec
-        upgrade.col_names = ["prior_expt"]
-        post_expt = prior_expt + upgrade
-
-        # post processing - back log transform
-        post_expt = pd.DataFrame(data=post_expt.x,index=post_expt.row_names,
-                                 columns=["post_expt"])
-        post_expt.loc[:,"prior_expt"] = prior_expt.x.flatten()
-        post_expt.loc[islog,:] = 10.0**post_expt.loc[islog,:]
-        # unc_sum = self.get_parameter_summary()
-        # post_expt.loc[:,"standard_deviation"] = unc_sum.post_var.apply(np.sqrt)
-        post_expt.sort_index(inplace=True)
-        return post_expt
-
-    @property
-    def map_forecast_estimate(self):
-        """ get the prior and posterior forecast (prediction) expectations.
-
-        Returns
-        -------
-        pandas.DataFrame : pandas.DataFrame
-            dataframe with prior and posterior forecast expected values
-
-        """
-        assert self.forecasts is not None
-        islog = self.pst.parameter_data.partrans == "log"
-        par_map = self.map_parameter_estimate
-        par_map.loc[islog,:] = np.log10(par_map.loc[islog,:])
-        par_map = Matrix.from_dataframe(par_map.loc[:,["post_expt"]])
-        posts,priors = [],[]
-        post_expt = (self.predictions.T * par_map).to_dataframe()
-        for fname in self.forecast_names:
-            #fname = forecast.col_names[0]
-            pr = self.pst.res.loc[fname,"modelled"]
-            priors.append(pr)
-            posts.append(pr + post_expt.loc[fname,"post_expt"])
-        return pd.DataFrame(data=np.array([priors,posts]).transpose(),
-                            columns=["prior_expt","post_expt"],
-                            index=self.forecast_names)
+    # @property
+    # def map_parameter_estimate(self):
+    #     """ get the posterior expectation for parameters using Bayes linear
+    #     estimation
+    #
+    #     Returns:
+    #         `pandas.DataFrame`: a dataframe with prior and posterior parameter expectations
+    #
+    #     """
+    #     res = self.pst.res
+    #     assert res is not None
+    #     # build the prior expectation parameter vector
+    #     prior_expt = self.pst.parameter_data.loc[:,["parval1"]].copy()
+    #     islog = self.pst.parameter_data.partrans == "log"
+    #     prior_expt.loc[islog] = prior_expt.loc[islog].apply(np.log10)
+    #     prior_expt = Matrix.from_dataframe(prior_expt)
+    #     prior_expt.col_names = ["prior_expt"]
+    #     # build the residual vector
+    #     res_vec = Matrix.from_dataframe(res.loc[:,["residual"]])
+    #
+    #     # form the terms of Schur's complement
+    #     b = self.parcov * self.jco.T
+    #     c = ((self.jco * self.parcov * self.jco.T) + self.obscov).inv
+    #     bc = Matrix((b * c).x, row_names=b.row_names, col_names=c.col_names)
+    #
+    #     # calc posterior expectation
+    #     upgrade = bc * res_vec
+    #     upgrade.col_names = ["prior_expt"]
+    #     post_expt = prior_expt + upgrade
+    #
+    #     # post processing - back log transform
+    #     post_expt = pd.DataFrame(data=post_expt.x,index=post_expt.row_names,
+    #                              columns=["post_expt"])
+    #     post_expt.loc[:,"prior_expt"] = prior_expt.x.flatten()
+    #     post_expt.loc[islog,:] = 10.0**post_expt.loc[islog,:]
+    #     # unc_sum = self.get_parameter_summary()
+    #     # post_expt.loc[:,"standard_deviation"] = unc_sum.post_var.apply(np.sqrt)
+    #     post_expt.sort_index(inplace=True)
+    #     return post_expt
+    #
+    # @property
+    # def map_forecast_estimate(self):
+    #     """ get the prior and posterior forecast (prediction) expectations.
+    #
+    #     Returns
+    #     -------
+    #     pandas.DataFrame : pandas.DataFrame
+    #         dataframe with prior and posterior forecast expected values
+    #
+    #     """
+    #     assert self.forecasts is not None
+    #     islog = self.pst.parameter_data.partrans == "log"
+    #     par_map = self.map_parameter_estimate
+    #     par_map.loc[islog,:] = np.log10(par_map.loc[islog,:])
+    #     par_map = Matrix.from_dataframe(par_map.loc[:,["post_expt"]])
+    #     posts,priors = [],[]
+    #     post_expt = (self.predictions.T * par_map).to_dataframe()
+    #     for fname in self.forecast_names:
+    #         #fname = forecast.col_names[0]
+    #         pr = self.pst.res.loc[fname,"modelled"]
+    #         priors.append(pr)
+    #         posts.append(pr + post_expt.loc[fname,"post_expt"])
+    #     return pd.DataFrame(data=np.array([priors,posts]).transpose(),
+    #                         columns=["prior_expt","post_expt"],
+    #                         index=self.forecast_names)
 
     @property
     def posterior_forecast(self):
-        """thin wrapper around posterior_prediction
+        """posterior forecast (e.g. prediction) variance(s)
+
+        Returns:
+            `dict`: dictionary of forecast names and FOSM-estimated posterior
+                variances
+
+        Notes:
+            sames as `LinearAnalysis.posterior_prediction`
+            See `Schur.get_forecast_summary()` for a
+                dataframe-based container of prior and posterior
+                variances
+
         """
         return self.posterior_prediction
 
     @property
     def posterior_prediction(self):
-        """get posterior forecast (prediction) variances
+        """posterior prediction (e.g. forecast) variance estimate(s)
 
-        Returns
-        -------
-        dict : dict
-            a dictionary of forecast names, posterior variance pairs
+       Returns:
+            `dict`: dictionary of forecast names and FOSM-estimated posterior
+                variances
 
-        Note
-        ----
-        This method is not as easy to use as Schur.get_forecast_summary(), please
-        use it instead
+        Notes:
+            sames as `LinearAnalysis.posterior_forecast`
+            See `Schur.get_forecast_summary()` for a
+                dataframe-based container of prior and posterior
+                variances
 
         """
         if self.__posterior_prediction is not None:
@@ -234,41 +245,27 @@ class Schur(LinearAnalysis):
                 self.__posterior_prediction = {}
             return self.__posterior_prediction
 
-    def get_parameter_summary(self,include_map=False):
-        """get a summary of the parameter uncertainty
+    def get_parameter_summary(self):
+        """summary of the FOSM-based parameter uncertainty (variance) estimate(s)
 
-        Parameters
-        ----------
-        include_map : bool
-            if True, add the prior and posterior expectations
-            and report standard deviation instead of variance
+        Returns:
+            `pandas.DataFrame`: dataframe of prior,posterior variances and percent
+                uncertainty reduction of each parameter
 
-        Returns
-        -------
-        pandas.DataFrame : pandas.DataFrame
-            dataframe of prior,posterior variances and percent
-            uncertainty reduction of each parameter
+        Notes:
+            this is the primary entry point for accessing parameter uncertainty estimates
+            "Prior" column in dataframe is the diagonal of `LinearAnalysis.parcov`
+            "precent_reduction" column in dataframe is calculated as
+                100.0 * (1.0 - (posterior variance / prior variance)
 
-        Note
-        ----
-        this is the primary method for accessing parameter uncertainty
-        estimates - use this!
+        Example::
 
-        Example
-        -------
-        ``>>>import matplotlib.pyplot as plt``
-
-        ``>>>import pyemu``
-
-        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
-
-        ``>>>sc = pyemu.Schur(jco="pest.jcb",forecasts=["fore1","fore2"])``
-
-        ``>>>par_sum = sc.get_parameter_summary()``
-
-        ``>>>par_sum.plot(kind="bar")``
-
-        ``>>>plt.show()``
+            sc = pyemu.Schur(jco="my.jcb",forecasts=["fore1","fore2"])
+            df = sc.get_parameter_summary()
+            df.loc[:,["prior","posterior"]].plot(kind="bar")
+            plt.show()
+            df.percent_reduction.plot(kind="bar")
+            plt.show()
 
         """
         prior_mat = self.parcov.get(self.posterior_parameter.col_names)
@@ -277,64 +274,33 @@ class Schur(LinearAnalysis):
         else:
             prior = np.diag(prior_mat.x)
         post = np.diag(self.posterior_parameter.x)
-        if include_map:
-            par_data = self.map_parameter_estimate
-            prior = pd.DataFrame(data=prior,index=prior_mat.col_names)
-            islog = self.pst.parameter_data.partrans == "log"
-            par_data.loc[islog,:] = np.log10(par_data.loc[islog,:])
-            par_data.loc[:,"prior_stdev"] = prior
-            post = pd.DataFrame(data=post,index=prior.index)
-            par_data.loc[:,"post_stdev"] = post
-            par_data.loc[:,"is_log"] = islog
-            return par_data
-        else:
-            ureduce = 100.0 * (1.0 - (post / prior))
 
-            return pd.DataFrame({"prior_var":prior,"post_var":post,
-                                     "percent_reduction":ureduce},
-                                    index=self.posterior_parameter.col_names)
+        ureduce = 100.0 * (1.0 - (post / prior))
 
-    def get_forecast_summary(self, include_map=False):
-        """get a summary of the forecast uncertainty
+        return pd.DataFrame({"prior_var":prior,"post_var":post,
+                                 "percent_reduction":ureduce},
+                                index=self.posterior_parameter.col_names)
 
-        Parameters
-        ----------
-        include_map : bool
-            if True, add the prior and posterior expectations
-            and report standard deviation instead of variance
+    def get_forecast_summary(self):
+        """summary of the FOSM-based forecast uncertainty (variance) estimate(s)
 
-        Returns
-        -------
-        pandas.DataFrame : pandas.DataFrame
-                dataframe of prior,posterior variances and percent
-                uncertainty reduction of each parameter
+        Returns:
+            `pandas.DataFrame`: dataframe of prior,posterior variances and percent
+                uncertainty reduction of each forecast (e.g. prediction)
 
-        Note
-        ----
-        this is the primary method for accessing forecast uncertainty
-        estimates - use this!
+        Notes:
+            this is the primary entry point for accessing forecast uncertainty estimates
+            "precent_reduction" column in dataframe is calculated as
+                100.0 * (1.0 - (posterior variance / prior variance)
 
-        Example
-        -------
-        ``>>>import matplotlib.pyplot as plt``
+        Examples::
 
-        ``>>>import pyemu``
-
-        This usage assumes you have set the ``++forecasts()`` argument in the
-        control file:
-
-        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
-
-        or, you can pass the forecasts directly, assuming the forecasts are
-        names of zero-weight observations:
-
-        ``>>>sc = pyemu.Schur(jco="pest.jcb",forecasts=["fore1","fore2"])``
-
-        ``>>>fore_sum = sc.get_forecast_summary()``
-
-        ``>>>fore_sum.plot(kind="bar")``
-
-        ``>>>plt.show()``
+            sc = pyemu.Schur(jco="my.jcb",forecasts=["fore1","fore2"])
+            df = sc.get_parameter_summary()
+            df.loc[:,["prior","posterior"]].plot(kind="bar")
+            plt.show()
+            df.percent_reduction.plot(kind="bar")
+            plt.show()
 
         """
         sum = {"prior_var":[], "post_var":[], "percent_reduction":[]}
@@ -345,40 +311,13 @@ class Schur(LinearAnalysis):
             sum["prior_var"].append(pr)
             sum["post_var"].append(pt)
             sum["percent_reduction"].append(ur)
-        df = pd.DataFrame(sum,index=self.prior_forecast.keys())
-
-        if include_map:
-            df.loc[:,"prior_stdev"] = df.pop("prior_var").apply(np.sqrt)
-            df.loc[:,"post_stdev"] = df.pop("post_var").apply(np.sqrt)
-            df.pop("percent_reduction")
-            forecast_map = self.map_forecast_estimate
-            df.loc[:,"prior_expt"] = forecast_map.prior_expt
-            df.loc[:,"post_expt"] = forecast_map.post_expt
-            return df
         return pd.DataFrame(sum,index=self.prior_forecast.keys())
 
     def __contribution_from_parameters(self, parameter_names):
         """private method get the prior and posterior uncertainty reduction as a result of
         some parameter becoming perfectly known
 
-        Parameters
-        ----------
-        parameter_names : list
-            parameter that are perfectly known
-
-        Returns
-        -------
-        dict : dict
-            dictionary of forecast name,  [prior uncertainty w/o parameter_names,
-                % posterior uncertainty w/o parameter names]
-
-        Note
-        ----
-        this method is used by get_parameter_contribution() method - don't
-        call this method directly
-
         """
-
 
         #get the prior and posterior for the base case
         bprior,bpost = self.prior_prediction, self.posterior_prediction
@@ -388,25 +327,21 @@ class Schur(LinearAnalysis):
         return cprior,cpost
 
     def get_conditional_instance(self, parameter_names):
-        """ get a new Schur instance that includes conditional update from
+        """ get a new `pyemu.Schur` instance that includes conditional update from
         some parameters becoming known perfectly
 
-        Parameters
-        ----------
-        parameter_names : list
-            parameters that are to be treated as notionally perfectly
-            known
+        Args:
+            parameter_names ([`str`]): list of parameters that are to be treated as
+                notionally perfectly known
 
-        Returns
-        -------
-        la_cond : Schur
-            a new Schur instance conditional on perfect knowledge
-            of some parameters
+        Returns:
+            `pyemu.Schur`: a new Schur instance conditional on perfect knowledge
+            of some parameters. The new instance has an updated `parcov` that is less
+            the names listed in `parameter_names`.
 
-        Note
-        ----
-        this method is used by the get_parameter_contribution() method -
-        don't call this method directly
+        Notes:
+            this method is primarily for use by the `LinearAnalysis.get_parameter_contribution()`
+                dataworth method.
 
         """
         if not isinstance(parameter_names, list):
@@ -445,35 +380,40 @@ class Schur(LinearAnalysis):
         """get a dataframe the prior and posterior uncertainty
         reduction as a result of some parameter becoming perfectly known
 
-        Parameters
-        ----------
-        parlist_dict : dict
-            a nested dictionary-list of groups of parameters
-            that are to be treated as perfectly known.  key values become
-            row labels in returned dataframe.  If None, each adjustable parameter
-            is sequentially treated as known and the returned dataframe
-            has row labels for each adjustable parameter
-        include_prior_results : bool
-            flag to return a multi-indexed dataframe with both conditional
-            prior and posterior forecast uncertainty estimates.  Default is False
+        Args:
+            parlist_dict : (`dict`): a nested dictionary-list of groups of parameters
+                that are to be treated as perfectly known.  key values become
+                row labels in returned dataframe.  If `None`, each adjustable parameter
+                is sequentially treated as known and the returned dataframe
+                has row labels for each adjustable parameter
+            include_prior_results (`bool`):  flag to return a multi-indexed dataframe with both conditional
+                prior and posterior forecast uncertainty estimates.  This is because
+                the notional learning about parameters potentially effects both the prior
+                and posterior forecast uncertainty estimates. If `False`, only posterior
+                results are returned.  Default is `False`
 
-        Returns
-        -------
-        pandas.DataFrame : pandas.DataFrame
-            a dataframe that summarizes the parameter contribution analysis.
-            The dataframe has index (row labels) of the keys in parlist_dict
-            and a column labels of forecast names.  The values in the dataframe
-            are the posterior variance of the forecast conditional on perfect
-            knowledge of the parameters in the values of parlist_dict.  Varies
-            depending on `include_prior_results`.
+        Returns:
+            `pandas.DataFrame`: a dataframe that summarizes the parameter contribution
+                dataworth analysis. The dataframe has index (row labels) of the keys in parlist_dict
+                and a column labels of forecast names.  The values in the dataframe
+                are the posterior variance of the forecast conditional on perfect
+                knowledge of the parameters in the values of parlist_dict.  One row in the
+                dataframe will be labeled `base` - this is the forecast uncertainty estimates
+                that include the effects of all adjustable parameters.  Percent decreases in
+                forecast uncertainty can be calculated by differencing all rows against the
+                "base" row.  Varies depending on `include_prior_results`.
 
-        Example
-        -------
-        ``>>>import pyemu``
+        Notes:
+            This is the primary dataworth method for assessing the contribution of one or more
+                parameters to forecast uncertainty.
 
-        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
+        Examples::
 
-        ``>>>df = sc.get_par_contribution()``
+            sc = pyemu.Schur(jco="my.jco")
+            parlist_dict = {"hk":["hk1","hk2"],"rech"["rech1","rech2"]}
+            df = sc.get_par_contribution(parlist_dict=parlist_dict)
+            percent_reduc = 100.0 * (df - df.base / df.base)
+
 
         """
         self.log("calculating contribution from parameters")
@@ -524,26 +464,37 @@ class Schur(LinearAnalysis):
 
     def get_par_group_contribution(self, include_prior_results=False):
         """get the forecast uncertainty contribution from each parameter
-        group.  Just some sugar for get_contribution_dataframe() - this method
-        automatically constructs the parlist_dict argument where the keys are the
-        group names and the values are the adjustable parameters in the groups
+        group
 
-        Parameters
-        ----------
-        include_prior_results : bool
-            flag to return a multi-indexed dataframe with both conditional
-            prior and posterior forecast uncertainty estimates.  Default is False
+        Args:
+            include_prior_results (`bool`):  flag to return a multi-indexed dataframe with both conditional
+                prior and posterior forecast uncertainty estimates.  This is because
+                the notional learning about parameters potentially effects both the prior
+                and posterior forecast uncertainty estimates. If `False`, only posterior
+                results are returned.  Default is `False`
 
 
-        Returns
-        -------
-        pandas.DataFrame : pandas.DataFrame
-            a dataframe that summarizes the parameter contribution analysis.
-            The dataframe has index (row labels) that are the parameter groups
-            and a column labels of forecast names.  The values in the dataframe
-            are the posterior variance of the forecast conditional on perfect
-            knowledge of the adjustable parameters in each parameter groups
-            Varies depending on `include_prior_results`.
+        Returns:
+
+            `pandas.DataFrame`: a dataframe that summarizes the parameter contribution analysis.
+                The dataframe has index (row labels) that are the parameter group names
+                and a column labels of forecast names.  The values in the dataframe
+                are the posterior variance of the forecast conditional on perfect
+                knowledge of the adjustable parameters in each parameter group.  One
+                row is labelled "base" - this is the variance of the forecasts that includes
+                the effects of all adjustable parameters. Varies depending on `include_prior_results`.
+
+        Notes:
+            Just some sugar for get_contribution_dataframe() - this method
+                automatically constructs the parlist_dict argument where the keys are the
+                group names and the values are the adjustable parameters in the groups
+
+        Example::
+
+            sc = pyemu.Schur(jco="my.jco")
+            df = sc.get_par_group_contribution()
+            percent_reduc = 100.0 * (df - df.base / df.base)
+
 
         """
         pargrp_dict = {}
@@ -554,6 +505,8 @@ class Schur(LinearAnalysis):
             pargrp_dict[grp] = [pname for pname in list(par.loc[idxs,"parnme"])
                                 if pname in self.jco.col_names and pname in self.parcov.row_names]
         return self.get_par_contribution(pargrp_dict,include_prior_results=include_prior_results)
+
+
 
     def get_added_obs_importance(self,obslist_dict=None,base_obslist=None,
                                  reset_zero_weight=False):
