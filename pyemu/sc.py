@@ -377,16 +377,16 @@ class Schur(LinearAnalysis):
         return la_cond
 
     def get_par_contribution(self,parlist_dict=None,include_prior_results=False):
-        """get a dataframe the prior and posterior uncertainty
+        """A dataworth method to get a dataframe the prior and posterior uncertainty
         reduction as a result of some parameter becoming perfectly known
 
         Args:
-            parlist_dict : (`dict`): a nested dictionary-list of groups of parameters
+            parlist_dict : (`dict`, optional): a nested dictionary-list of groups of parameters
                 that are to be treated as perfectly known.  key values become
                 row labels in returned dataframe.  If `None`, each adjustable parameter
                 is sequentially treated as known and the returned dataframe
                 has row labels for each adjustable parameter
-            include_prior_results (`bool`):  flag to return a multi-indexed dataframe with both conditional
+            include_prior_results (`bool`, optional):  flag to return a multi-indexed dataframe with both conditional
                 prior and posterior forecast uncertainty estimates.  This is because
                 the notional learning about parameters potentially effects both the prior
                 and posterior forecast uncertainty estimates. If `False`, only posterior
@@ -412,7 +412,6 @@ class Schur(LinearAnalysis):
             sc = pyemu.Schur(jco="my.jco")
             parlist_dict = {"hk":["hk1","hk2"],"rech"["rech1","rech2"]}
             df = sc.get_par_contribution(parlist_dict=parlist_dict)
-            percent_reduc = 100.0 * (df - df.base / df.base)
 
 
         """
@@ -463,11 +462,11 @@ class Schur(LinearAnalysis):
             return df
 
     def get_par_group_contribution(self, include_prior_results=False):
-        """get the forecast uncertainty contribution from each parameter
+        """A dataworth method to get the forecast uncertainty contribution from each parameter
         group
 
         Args:
-            include_prior_results (`bool`):  flag to return a multi-indexed dataframe with both conditional
+            include_prior_results (`bool`, optional):  flag to return a multi-indexed dataframe with both conditional
                 prior and posterior forecast uncertainty estimates.  This is because
                 the notional learning about parameters potentially effects both the prior
                 and posterior forecast uncertainty estimates. If `False`, only posterior
@@ -485,7 +484,7 @@ class Schur(LinearAnalysis):
                 the effects of all adjustable parameters. Varies depending on `include_prior_results`.
 
         Notes:
-            Just some sugar for get_contribution_dataframe() - this method
+            This method is just a thin wrapper around get_contribution_dataframe() - this method
                 automatically constructs the parlist_dict argument where the keys are the
                 group names and the values are the adjustable parameters in the groups
 
@@ -493,7 +492,7 @@ class Schur(LinearAnalysis):
 
             sc = pyemu.Schur(jco="my.jco")
             df = sc.get_par_group_contribution()
-            percent_reduc = 100.0 * (df - df.base / df.base)
+
 
 
         """
@@ -510,52 +509,54 @@ class Schur(LinearAnalysis):
 
     def get_added_obs_importance(self,obslist_dict=None,base_obslist=None,
                                  reset_zero_weight=False):
-        """get a dataframe fo the posterior uncertainty
-        as a results of added some observations
+        """A dataworth method to analyze the posterior uncertainty as a result of gathering
+         some additional observations
 
-        Parameters
-        ----------
-        obslist_dict : dict
-            a nested dictionary-list of groups of observations
-            that are to be treated as gained.  key values become
-            row labels in returned dataframe. If None, then every zero-weighted
-            observation is tested sequentially. Default is None
-        base_obslist : list
-            observation names to treat as the "existing" observations.
-            The values of obslist_dict will be added to this list during
-            each test.  If None, then the values in obslist_dict will
-            be treated as the entire calibration dataset.  That is, there
-            are no existing data. Default is None.  Standard practice would
-            be to pass this argument as Schur.pst.nnz_obs_names.
-        reset_zero_weight : (boolean or float)
-            a flag to reset observations with zero weight in either
-            obslist_dict or base_obslist. The value of reset_zero_weights
-            can be cast to a float,then that value will be assigned to
-            zero weight obs.  Otherwise, zero weight obs will be given a
-            weight of 1.0.  Default is False.
+        Args:
+            obslist_dict (`dict`, optional): a nested dictionary-list of groups of observations
+                that are to be treated as gained/collected.  key values become
+                row labels in returned dataframe. If `None`, then every zero-weighted
+                observation is tested sequentially. Default is `None`
+            base_obslist ([`str`], optional): observation names to treat as the "existing" observations.
+                The values of `obslist_dict` will be added to this list during
+                each test.  If `None`, then the values in each `obslist_dict` entry will
+                be treated as the entire calibration dataset.  That is, there
+                are no existing observations. Default is `None`.  Standard practice would
+                be to pass this argument as `pyemu.Schur.pst.nnz_obs_names` so that existing,
+                non-zero-weighted observations are accounted for in evaluating the worth of
+                new yet-to-be-collected observations.
+            reset_zero_weight (`bool`, optional)
+                a flag to reset observations with zero weight in either
+                `obslist_dict` or `base_obslist`. If `reset_zero_weights`
+                passed as a `float`,then that value will be assigned to
+                zero weight obs.  Otherwise, zero-weight obs will be given a
+                weight of 1.0.  Default is `False`.
 
-        Returns
-        -------
-        pandas.DataFrame : pandas.DataFrame
-            dataframe with row labels (index) of obslist_dict.keys() and
-            columns of forecast_name.  The values in the dataframe are the
-            posterior variance of the forecasts resulting from notional inversion
-            using the observations in obslist_dict[key value] plus the observations
-            in base_obslist (if any)
+        Returns:
+            `pandas.DataFrame`: a dataframe with row labels (index) of `obslist_dict.keys()` and
+                columns of forecast names.  The values in the dataframe are the
+                posterior variance of the forecasts resulting from notional inversion
+                using the observations in `obslist_dict[key value]` plus the observations
+                in `base_obslist` (if any).  One row in the dataframe is labeled "base" - this is
+                posterior forecast variance resulting from the notional calibration with the
+                observations in `base_obslist` (if `base_obslist` is `None`, then the "base" row is the
+                prior forecast variance).  Conceptually, the forecast variance should either not change or
+                decrease as a result of gaining additional observations.  The magnitude of the decrease
+                represents the worth of the potential new observation(s) being tested.
 
-        Note
-        ----
-        all observations listed in obslist_dict and base_obslist with zero
-        weights will be dropped unless reset_zero_weight is set
+        Notes:
+            Observations listed in `obslist_dict` and `base_obslist` with zero
+                weights are not included in the analysis unless `reset_zero_weight` is `True` or a float
+                greater than zero.  In most cases, users will want to reset zero-weighted observations as part
+                dataworth testing process.
 
-        Example
-        -------
-        ``>>>import pyemu``
+        Example::
 
-        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
-
-        ``>>>df = sc.get_added_obs_importance(base_obslist=sc.pst.nnz_obs_names,reset_zero=True)``
-
+            sc = pyemu.Schur("my.jco")
+            obslist_dict = {"hds":["head1","head2"],"flux":["flux1","flux2"]}
+            df = sc.get_added_obs_importance(obslist_dict=obslist_dict,
+                                             base_obslist=sc.pst.nnz_obs_names,
+                                             reset_zero_weight=True)
 
         """
 
@@ -682,42 +683,41 @@ class Schur(LinearAnalysis):
 
     def get_removed_obs_importance(self,obslist_dict=None,
                                    reset_zero_weight=False):
-        """get a dataframe the posterior uncertainty
-        as a result of losing some observations
+        """A dataworth method to analyze the posterior uncertainty as a result of losing
+         some existing observations
 
-        Parameters
-        ----------
-        obslist_dict : dict
-            dictionary of groups of observations
-            that are to be treated as lost.  key values become
-            row labels in returned dataframe. If None, then test every
-            (nonzero weight - see reset_zero_weight) observation
-        reset_zero_weight : bool or float
-            a flag to reset observations with zero weight in obslist_dict.
-            If the value of reset_zero_weights can be cast to a float,
-            then that value will be assigned to zero weight obs.  Otherwise,
-            zero weight obs will be given a weight of 1.0
+        Args:
+            obslist_dict (`dict`, optional): a nested dictionary-list of groups of observations
+                that are to be treated as lost.  key values become
+                row labels in returned dataframe. If `None`, then every zero-weighted
+                observation is tested sequentially. Default is `None`
+            reset_zero_weight (`bool`, optional)
+                a flag to reset observations with zero weight in either
+                `obslist_dict` or `base_obslist`. If `reset_zero_weights`
+                passed as a `float`,then that value will be assigned to
+                zero weight obs.  Otherwise, zero-weight obs will be given a
+                weight of 1.0.  Default is `False`.
 
-        Returns
-        -------
-        pandas.DataFrame : pandas.DataFrame
-            a dataframe with index of obslist_dict.keys() and columns
-            of forecast names.  The values in the dataframe are the posterior
-            variances of the forecasts resulting from losing the information
-            contained in obslist_dict[key value]
+        Returns:
+            `pandas.DataFrame`: A dataframe with index of obslist_dict.keys() and columns
+                of forecast names.  The values in the dataframe are the posterior
+                variances of the forecasts resulting from losing the information
+                contained in obslist_dict[key value]. One row in the dataframe is labeled "base" - this is
+                posterior forecast variance resulting from the notional calibration with the
+                non-zero-weighed observations in `Schur.pst`.  Conceptually, the forecast variance should
+                either not change or increase as a result of losing existing observations.  The magnitude
+                of the increase represents the worth of the existing observation(s) being tested.
 
-        Note
-        ----
-        all observations listed in obslist_dict with zero
-        weights will be dropped unless reset_zero_weight is set
+        Notes:
+            Observations listed in `obslist_dict` and `base_obslist` with zero
+                weights are not included in the analysis unless `reset_zero_weight` is `True` or a float
+                greater than zero.  In most cases, users will want to reset zero-weighted observations as part
+                dataworth testing process.
 
-        Example
-        -------
-        ``>>>import pyemu``
+        Example::
 
-        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
-
-        ``df = sc.get_removed_obs_importance()``
+            sc = pyemu.Schur("my.jco")
+            df = sc.get_removed_obs_importance(reset_zero_weight=True)
 
         """
 
@@ -810,7 +810,23 @@ class Schur(LinearAnalysis):
             self.reset_pst(org_pst)
         return df
 
-    def obs_group_importance(self):
+    def get_obs_group_dict(self):
+        """get a dictionary of observations grouped by observation group name
+
+        Returns:
+            `dict`: a dictionary of observations grouped by observation group name.
+                Useful for dataworth processing in `pyemu.Schur`
+
+        Notes:
+            only includes observations that are listed in `Schur.jco.row_names`
+
+        Example::
+
+            sc = pyemu.Schur("my.jco")
+            obsgrp_dict = sc.get_obs_group_dict()
+            df = sc.get_removed_obs_importance(obsgrp_dict=obsgrp_dict, reset_zero_weight=True)
+
+        """
         obsgrp_dict = {}
         obs = self.pst.observation_data
         obs.index = obs.obsnme
@@ -819,62 +835,131 @@ class Schur(LinearAnalysis):
         for grp, idxs in groups.items():
             obsgrp_dict[grp] = list(obs.loc[idxs,"obsnme"])
         return obsgrp_dict
-        
-    def get_removed_obs_group_importance(self):
-        return self.get_removed_obs_importance(self.obs_group_importance())
 
-    def get_added_obs_group_importance(self):
-        return self.get_added_obs_importance(self.obs_group_importance())
+
+
+    def get_removed_obs_group_importance(self,reset_zero_weight=False):
+        """A dataworth method to analyze the posterior uncertainty as a result of losing
+         existing observations, tested by observation groups
+
+        Args:
+            reset_zero_weight (`bool`, optional)
+                a flag to reset observations with zero weight in either
+                `obslist_dict` or `base_obslist`. If `reset_zero_weights`
+                passed as a `float`,then that value will be assigned to
+                zero weight obs.  Otherwise, zero-weight obs will be given a
+                weight of 1.0.  Default is `False`.
+
+        Returns:
+            `pandas.DataFrame`: A dataframe with index of observation group names and columns
+                of forecast names.  The values in the dataframe are the posterior
+                variances of the forecasts resulting from losing the information
+                contained in each observation group. One row in the dataframe is labeled "base" - this is
+                posterior forecast variance resulting from the notional calibration with the
+                non-zero-weighed observations in `Schur.pst`.  Conceptually, the forecast variance should
+                either not change or increase as a result of losing existing observations.  The magnitude
+                of the increase represents the worth of the existing observation(s) in each group being tested.
+
+        Notes:
+            Observations in `Schur.pst` with zero weights are not included in the analysis unless
+                `reset_zero_weight` is `True` or a float greater than zero.  In most cases, users
+                will want to reset zero-weighted observations as part dataworth testing process.
+
+        Example::
+
+            sc = pyemu.Schur("my.jco")
+            df = sc.get_removed_obs_group_importance(reset_zero_weight=True)
+
+        """
+        return self.get_removed_obs_importance(self.get_obs_group_dict(), reset_zero_weight=reset_zero_weight)
+
+
+    def get_added_obs_group_importance(self, reset_zero_weight=False):
+        """A dataworth method to analyze the posterior uncertainty as a result of gaining
+         existing observations, tested by observation groups
+
+        Args:
+            reset_zero_weight (`bool`, optional)
+                a flag to reset observations with zero weight in either
+                `obslist_dict` or `base_obslist`. If `reset_zero_weights`
+                passed as a `float`,then that value will be assigned to
+                zero weight obs.  Otherwise, zero-weight obs will be given a
+                weight of 1.0.  Default is `False`.
+
+        Returns:
+            `pandas.DataFrame`: A dataframe with index of observation group names and columns
+                of forecast names.  The values in the dataframe are the posterior
+                variances of the forecasts resulting from gaining the information
+                contained in each observation group. One row in the dataframe is labeled "base" - this is
+                posterior forecast variance resulting from the notional calibration with the
+                non-zero-weighed observations in `Schur.pst`.  Conceptually, the forecast variance should
+                either not change or decrease as a result of gaining new observations.  The magnitude
+                of the decrease represents the worth of the potential new observation(s) in each group
+                being tested.
+
+        Notes:
+            Observations in `Schur.pst` with zero weights are not included in the analysis unless
+                `reset_zero_weight` is `True` or a float greater than zero.  In most cases, users
+                will want to reset zero-weighted observations as part dataworth testing process.
+
+        Example::
+
+            sc = pyemu.Schur("my.jco")
+            df = sc.get_added_obs_group_importance(reset_zero_weight=True)
+
+        """
+        return self.get_added_obs_importance(self.get_obs_group_dict(), reset_zero_weight=reset_zero_weight)
 
     def next_most_important_added_obs(self,forecast=None,niter=3, obslist_dict=None,
                                       base_obslist=None,
                                       reset_zero_weight=False):
         """find the most important observation(s) by sequentially evaluating
-        the importance of the observations in obslist_dict. The most important observations
-        from each iteration is added to base_obslist and removed obslist_dict for the
-        next iteration.  In this way, the added observation importance values include
-        the conditional information from the last iteration.
+        the importance of the observations in `obslist_dict`.
 
-        Parameters
-        ----------
-        forecast : str
-            name of the forecast to use in the ranking process.  If
-            more than one forecast has been listed, this argument is required
-        niter : int
-            number of sequential iterations
-        obslist_dict dict:
-            nested dictionary-list of  groups of observations
-            that are to be treated as gained.  key values become
-            row labels in result dataframe. If None, then test every observation
-            individually
-        base_obslist : list
-            observation names to treat as the "existing" observations.
-            The values of obslist_dict will be added to this list during testing.
-            If None, then each list in the values of obslist_dict will be
-            treated as an individual calibration dataset.
-        reset_zero_weight : (boolean or float)
-            a flag to reset observations with zero weight in either
-            obslist_dict or base_obslist. If the value of reset_zero_weights
-            can be cast to a float,then that value will be assigned to
-            zero weight obs.  Otherwise, zero weight obs will be given a weight of 1.0
+        Args:
+            forecast (`str`, optional): name of the forecast to use in the ranking process.  If
+                more than one forecast has been listed, this argument is required.  This is because
+                the data worth must be ranked with respect to the variance reduction for a single
+                forecast
+            niter (`int`, optional):  number of sequential dataworth testing iterations.  Default is 3
+            obslist_dict (`dict`, optional): a nested dictionary-list of groups of observations
+                that are to be treated as gained/collected.  key values become
+                row labels in returned dataframe. If `None`, then every zero-weighted
+                observation is tested sequentially. Default is `None`
+            base_obslist ([`str`], optional): observation names to treat as the "existing" observations.
+                The values of `obslist_dict` will be added to this list during
+                each test.  If `None`, then the values in each `obslist_dict` entry will
+                be treated as the entire calibration dataset.  That is, there
+                are no existing observations. Default is `None`.  Standard practice would
+                be to pass this argument as `pyemu.Schur.pst.nnz_obs_names` so that existing,
+                non-zero-weighted observations are accounted for in evaluating the worth of
+                new yet-to-be-collected observations.
+            reset_zero_weight (`bool`, optional)
+                a flag to reset observations with zero weight in either
+                `obslist_dict` or `base_obslist`. If `reset_zero_weights`
+                passed as a `float`,then that value will be assigned to
+                zero weight obs.  Otherwise, zero-weight obs will be given a
+                weight of 1.0.  Default is `False`.
 
-        Returns
-        -------
-        pandas.DataFrame : pandas.DataFrame
-            DataFrame with columns of best obslist_dict key for each iteration.
-            Columns of forecast variance percent reduction for this iteration,
-            (percent reduction compared to initial base case)
+        Returns:
+            `pandas.DataFrame`: a dataFrame with columns of `obslist_dict` key for each iteration
+                the yields the largest variance reduction for the named `forecast`. Columns are forecast
+                variance percent reduction for each iteration (percent reduction compared to initial "base"
+                case with all non-zero weighted observations included in the notional calibration)
 
 
-        Example
-        -------
-        ``>>>import pyemu``
+        Notes:
+        The most important observations from each iteration is added to `base_obslist`
+            and removed `obslist_dict` for the next iteration.  In this way, the added
+            observation importance values include the conditional information from
+            the last iteration.
 
-        ``>>>sc = pyemu.Schur(jco="pest.jcb")``
 
-        ``>>>df = sc.next_most_added_importance_obs(forecast="fore1",``
+        Example::
 
-        ``>>>      base_obslist=sc.pst.nnz_obs_names,reset_zero=True``
+            sc = pyemu.Schur(jco="my.jco")
+            df = sc.next_most_important_added_obs(forecast="fore1",base_obslist=sc.pst.nnz_obs_names)
+
         """
 
 
@@ -894,9 +979,6 @@ class Schur(LinearAnalysis):
                     break
             if not found:
                 raise Exception("forecast {0} not found".format(forecast))
-
-
-
 
         if base_obslist:
             obs_being_used = list(base_obslist)
@@ -943,28 +1025,38 @@ class Schur(LinearAnalysis):
                    "unc_reduce_iter_base","unc_reduce_initial_base"]
         return pd.DataFrame(best_results,index=best_case,columns=columns)
 
+
     def next_most_par_contribution(self,niter=3,forecast=None,parlist_dict=None):
-        """find the largest parameter(s) contribution for prior and posterior
+        """find the parameter(s) contributing most to posterior
         forecast  by sequentially evaluating the contribution of parameters in
-        parlist_dict.  The largest contributing parameters from each iteration are
-        treated as known perfectly for the remaining iterations.  In this way, the
-        next iteration seeks the next most influential group of parameters.
+        `parlist_dict`.
 
-        Parameters
-        ----------
-        forecast : str
-            name of the forecast to use in the ranking process.  If
-            more than one forecast has been listed, this argument is required
-        parlist_dict : dict
-            a nested dictionary-list of groups of parameters
-            that are to be treated as perfectly known.  key values become
-            row labels in dataframe
+        Args:
+            forecast (`str`, optional): name of the forecast to use in the ranking process.  If
+                more than one forecast has been listed, this argument is required.  This is because
+                the data worth must be ranked with respect to the variance reduction for a single
+                forecast
+            niter (`int`, optional):  number of sequential dataworth testing iterations.  Default is 3
+            parlist_dict : dict
+                a nested dictionary-list of groups of parameters
+                that are to be treated as perfectly known.  key values become
+                row labels in dataframe
+            parlist_dict (`dict`, optional): a nested dictionary-list of groups of parameters
+                that are to be treated as perfectly known (zero uncertainty).  key values become
+                row labels in returned dataframe. If `None`, then every adustable parameter is tested
+                sequentially. Default is `None`. Conceptually, the forecast variance should
+                either not change or decrease as a result of knowing parameter perfectly.  The magnitude
+                of the decrease represents the worth of gathering information about the parameter(s) being
+                tested.
 
-        Returns
-        -------
-        pandas.DataFrame : pandas.DataFrame
-            a dataframe with index of iteration number and columns
-            of parlist_dict keys.  The values are the results of the knowing
+        Notes:
+            The largest contributing parameters from each iteration are
+                treated as known perfectly for the remaining iterations.  In this way, the
+                next iteration seeks the next most influential group of parameters.
+
+        Returns:
+            `pandas.DataFrame`: a dataframe with index of iteration number and columns
+            of `parlist_dict.keys()`.  The values are the results of the knowing
             each parlist_dict entry expressed as posterior variance reduction
 
         """
