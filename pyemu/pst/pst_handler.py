@@ -178,7 +178,7 @@ class Pst(object):
             #og_res_df = self.res.ix[rgroups[og]]
             og_res_df = self.res.loc[onames,:].dropna(axis=1)
             #og_res_df.index = og_res_df.name
-            og_df = self.observation_data.ix[ogroups[og]]
+            og_df = self.observation_data.loc[ogroups[og],:]
             og_df.index = og_df.obsnme
             #og_res_df = og_res_df.loc[og_df.index,:]
             assert og_df.shape[0] == og_res_df.shape[0],\
@@ -201,9 +201,9 @@ class Pst(object):
                 if og not in rgroups.keys():
                     raise Exception("Pst.adjust_weights_res() obs group " +\
                     "not found: " + str(og))
-                og_res_df = self.res.ix[rgroups[og]]
+                og_res_df = self.res.loc[rgroups[og],:]
                 og_res_df.index = og_res_df.name
-                og_df = self.prior_information.ix[ogroups[og]]
+                og_df = self.prior_information.loc[ogroups[og],:]
                 og_df.index = og_df.pilbl
                 og_res_df = og_res_df.loc[og_df.index,:]
                 if og_df.shape[0] != og_res_df.shape[0]:
@@ -1186,7 +1186,11 @@ class Pst(object):
                 need_groups.append(gp)
         self.parameter_groups.index = self.parameter_groups.pargpnme
         self.parameter_groups = self.parameter_groups.loc[need_groups,:]
-
+        idx = self.parameter_groups.index.drop_duplicates()
+        if idx.shape[0] != self.parameter_groups.shape[0]:
+            warnings.warn("dropping duplicate parameter groups",PyemuWarning)
+            self.parameter_groups = self.parameter_groups.loc[~self.parameter_groups.\
+                                    index.duplicated(keep='first'),:]
 
     def _parse_pi_par_names(self):
         """ private method to get the parameter names from prior information
@@ -1628,6 +1632,7 @@ class Pst(object):
                 new_res.index = new_res.name
                 new_res = new_res.loc[obs_names, :]
 
+        self.rectify_pgroups()
         new_pargp = self.parameter_groups.copy()
         new_pargp.index = new_pargp.pargpnme.apply(str.strip)
         new_pargp_names = new_par.pargp.value_counts().index

@@ -191,6 +191,10 @@ class Ensemble(object):
             return self.loc[item]
         elif item == "iloc":
             return self.iloc[item]
+        elif item == "index":
+            return self._df.index
+        elif item == "columns":
+            return self._df.columns
         elif item in set(dir(self)):
             return getattr(self,item)
         elif item in set(dir(self._df)):
@@ -695,7 +699,7 @@ class ParameterEnsemble(Ensemble):
 
     @classmethod
     def from_gaussian_draw(cls,pst,cov=None,num_reals=100,by_groups=True):
-        """generate an `ObservationEnsemble` from a (multivariate) gaussian
+        """generate a `ParameterEnsemble` from a (multivariate) (log) gaussian
         distribution
 
         Args:
@@ -752,6 +756,193 @@ class ParameterEnsemble(Ensemble):
                                      num_reals=num_reals,grouper=grouper)
         df.loc[:,li] = 10.0**df.loc[:,li]
         return cls(pst,df,istransformed=False)
+
+    @classmethod
+    def from_triangular_draw(cls, pst, num_reals=100):
+        """generate a `ParameterEnsemble` from a (multivariate) (log) triangular distribution
+
+        Args:
+            pst (`pyemu.Pst`): a control file instance
+            num_reals (`int`, optional): number of realizations to generate.  Default is 100
+
+        Returns:
+            `ParameterEnsemble`: a parameter ensemble drawn from the multivariate (log) triangular
+                distribution defined by the parameter upper and lower bounds and initial parameter
+                values in `pst`
+
+        Notes:
+            respects transformation status in `pst`: fixed and tied parameters are not realized,
+                log-transformed parameters are drawn in log space.  The returned `ParameterEnsemble`
+                is back transformed (not in log space)
+            uses numpy.random.triangular
+
+        Examples:
+
+            pst = pyemu.Pst("my.pst")
+            pe = pyemu.ParameterEnsemble.from_triangular_draw(pst)
+            pe.to_csv("my_tri_pe.csv")
+
+        """
+
+        li = pst.parameter_data.partrans == "log"
+        ub = pst.parameter_data.parubnd.copy()
+        ub.loc[li] = ub.loc[li].apply(np.log10)
+
+        lb = pst.parameter_data.parlbnd.copy()
+        lb.loc[li] = lb.loc[li].apply(np.log10)
+
+        pv = pst.parameter_data.parval1.copy()
+        pv.loc[li] = pv[li].apply(np.log10)
+
+        ub = ub.to_dict()
+        lb = lb.to_dict()
+        pv = pv.to_dict()
+
+        # set up some column names
+        # real_names = ["{0:d}".format(i)
+        #              for i in range(num_reals)]
+        real_names = np.arange(num_reals, dtype=np.int64)
+        arr = np.empty((num_reals, len(ub)))
+        adj_par_names = set(pst.adj_par_names)
+        for i, pname in enumerate(pst.parameter_data.parnme):
+            # print(pname, lb[pname], ub[pname])
+            if pname in adj_par_names:
+                arr[:, i] = np.random.triangular(lb[pname],
+                                                 pv[pname],
+                                                 ub[pname],
+                                                 size=num_reals)
+            else:
+                arr[:, i] = np.zeros((num_reals)) + \
+                            pst.parameter_data. \
+                                loc[pname, "parval1"]
+
+        df = pd.DataFrame(arr, index=real_names, columns=pst.par_names)
+        df.loc[:, li] = 10.0 ** df.loc[:, li]
+        new_pe = cls(pst=pst, df=pd.DataFrame(data=arr, columns=pst.par_names))
+        return new_pe
+
+    @classmethod
+    def from_uniform_draw(cls, pst, num_reals):
+        """ generate a `ParameterEnsemble` from a (multivariate) (log) uniform
+        distribution
+
+        Args:
+            pst (`pyemu.Pst`): a control file instance
+            num_reals (`int`, optional): number of realizations to generate.  Default is 100
+
+        Returns:
+            `ParameterEnsemble`: a parameter ensemble drawn from the multivariate (log) uniform
+                distribution defined by the parameter upper and lower bounds `pst`
+
+        Notes:
+            respects transformation status in `pst`: fixed and tied parameters are not realized,
+                log-transformed parameters are drawn in log space.  The returned `ParameterEnsemble`
+                is back transformed (not in log space)
+            uses numpy.random.uniform
+
+        Examples:
+
+            pst = pyemu.Pst("my.pst")
+            pe = pyemu.ParameterEnsemble.from_uniform_draw(pst)
+            pe.to_csv("my_uni_pe.csv")
+
+
+        """
+
+        li = pst.parameter_data.partrans == "log"
+        ub = pst.parameter_data.parubnd.copy()
+        ub.loc[li] = ub.loc[li].apply(np.log10)
+        ub = ub.to_dict()
+        lb = pst.parameter_data.parlbnd.copy()
+        lb.loc[li] = lb.loc[li].apply(np.log10)
+        lb = lb.to_dict()
+
+        real_names = np.arange(num_reals, dtype=np.int64)
+        arr = np.empty((num_reals, len(ub)))
+        adj_par_names = set(pst.adj_par_names)
+        for i, pname in enumerate(pst.parameter_data.parnme):
+            # print(pname,lb[pname],ub[pname])
+            if pname in adj_par_names:
+                arr[:, i] = np.random.uniform(lb[pname],
+                                              ub[pname],
+                                              size=num_reals)
+            else:
+                arr[:, i] = np.zeros((num_reals)) + \
+                            pst.parameter_data. \
+                                loc[pname, "parval1"]
+
+        df = pd.DataFrame(arr, index=real_names, columns=pst.par_names)
+        df.loc[:, li] = 10.0 ** df.loc[:, li]
+
+        new_pe = cls(pst=pst, df=pd.DataFrame(data=arr, columns=pst.par_names))
+        return new_pe
+
+
+    @classmethod
+    def from_parfiles(cls, pst, parfile_names, real_names=None):
+        """ create a parameter ensemble from parfiles.  Accepts parfiles with less than the
+        parameters in the control (get NaNs in the ensemble) or extra parameters in the
+        parfiles (get dropped)
+
+        Parameters:
+            pst : pyemu.Pst
+
+            parfile_names : list of str
+                par file names
+
+            real_names : str
+                optional list of realization names. If None, a single integer counter is used
+
+        Returns:
+            pyemu.ParameterEnsemble
+
+
+        """
+        if isinstance(pst, str):
+            pst = pyemu.Pst(pst)
+        dfs = {}
+        if real_names is not None:
+            assert len(real_names) == len(parfile_names)
+        else:
+            real_names = np.arange(len(parfile_names))
+
+        for rname, pfile in zip(real_names, parfile_names):
+            assert os.path.exists(pfile), "ParameterEnsemble.from_parfiles() error: " + \
+                                          "file: {0} not found".format(pfile)
+            df = pyemu.pst_utils.read_parfile(pfile)
+            # check for scale differences - I don't who is dumb enough
+            # to change scale between par files and pst...
+            diff = df.scale - pst.parameter_data.scale
+            if diff.apply(np.abs).sum() > 0.0:
+                warnings.warn("differences in scale detected, applying scale in par file",
+                              PyemuWarning)
+                # df.loc[:,"parval1"] *= df.scale
+
+            dfs[rname] = df.parval1.values
+
+        df_all = pd.DataFrame(data=dfs).T
+        df_all.columns = df.index
+
+        if len(pst.par_names) != df_all.shape[1]:
+            # if len(pst.par_names) < df_all.shape[1]:
+            #    raise Exception("pst is not compatible with par files")
+            pset = set(pst.par_names)
+            dset = set(df_all.columns)
+            diff = pset.difference(dset)
+            if len(diff) > 0:
+                warnings.warn("the following parameters are not in the par files (getting NaNs) :{0}".
+                              format(','.join(diff)), PyemuWarning)
+                blank_df = pd.DataFrame(index=df_all.index, columns=diff)
+
+                df_all = pd.concat([df_all, blank_df], axis=1)
+
+            diff = dset.difference(pset)
+            if len(diff) > 0:
+                warnings.warn("the following par file parameters are not in the control (being dropped):{0}".
+                              format(','.join(diff)), PyemuWarning)
+                df_all = df_all.loc[:, pst.par_names]
+
+        return ParameterEnsemble(pst=pst, df=df_all)
 
     def back_transform(self):
         """back transform parameters with respect to `partrans` value.
@@ -1067,71 +1258,7 @@ class ParameterEnsemble(Ensemble):
             val_arr[val_arr[:, iname] < lb[name],iname] = lb[name]
 
 
-    @classmethod
-    def from_parfiles(cls, pst, parfile_names, real_names=None):
-        """ create a parameter ensemble from parfiles.  Accepts parfiles with less than the
-        parameters in the control (get NaNs in the ensemble) or extra parameters in the
-        parfiles (get dropped)
 
-        Parameters:
-            pst : pyemu.Pst
-
-            parfile_names : list of str
-                par file names
-
-            real_names : str
-                optional list of realization names. If None, a single integer counter is used
-
-        Returns:
-            pyemu.ParameterEnsemble
-
-
-        """
-        if isinstance(pst, str):
-            pst = pyemu.Pst(pst)
-        dfs = {}
-        if real_names is not None:
-            assert len(real_names) == len(parfile_names)
-        else:
-            real_names = np.arange(len(parfile_names))
-
-        for rname, pfile in zip(real_names, parfile_names):
-            assert os.path.exists(pfile), "ParameterEnsemble.from_parfiles() error: " + \
-                                          "file: {0} not found".format(pfile)
-            df = pyemu.pst_utils.read_parfile(pfile)
-            # check for scale differences - I don't who is dumb enough
-            # to change scale between par files and pst...
-            diff = df.scale - pst.parameter_data.scale
-            if diff.apply(np.abs).sum() > 0.0:
-                warnings.warn("differences in scale detected, applying scale in par file",
-                              PyemuWarning)
-                # df.loc[:,"parval1"] *= df.scale
-
-            dfs[rname] = df.parval1.values
-
-        df_all = pd.DataFrame(data=dfs).T
-        df_all.columns = df.index
-
-        if len(pst.par_names) != df_all.shape[1]:
-            # if len(pst.par_names) < df_all.shape[1]:
-            #    raise Exception("pst is not compatible with par files")
-            pset = set(pst.par_names)
-            dset = set(df_all.columns)
-            diff = pset.difference(dset)
-            if len(diff) > 0:
-                warnings.warn("the following parameters are not in the par files (getting NaNs) :{0}".
-                              format(','.join(diff)), PyemuWarning)
-                blank_df = pd.DataFrame(index=df_all.index, columns=diff)
-
-                df_all = pd.concat([df_all, blank_df], axis=1)
-
-            diff = dset.difference(pset)
-            if len(diff) > 0:
-                warnings.warn("the following par file parameters are not in the control (being dropped):{0}".
-                              format(','.join(diff)), PyemuWarning)
-                df_all = df_all.loc[:, pst.par_names]
-
-        return ParameterEnsemble(pst=pst,df=df_all)
 
 
 def add_base_test():
@@ -1413,6 +1540,21 @@ def pnulpar_test():
 
     assert max(diff.max()) < 1.0e-4,diff
 
+def triangular_draw_test():
+    import os
+    import matplotlib.pyplot as plt
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("..","..","autotest","pst","pest.pst"))
+    pst.parameter_data.loc[:,"partrans"] = "none"
+    pe = ParameterEnsemble.from_triangular_draw(pst,1000)
+
+def uniform_draw_test():
+    import os
+    import numpy as np
+    pst = pyemu.Pst(os.path.join("..", "..", "autotest", "pst", "pest.pst"))
+    pe = ParameterEnsemble.from_uniform_draw(pst, 5000)
+
 if __name__ == "__main__":
     #par_gauss_draw_consistency_test()
     #obs_gauss_draw_consistency_test()
@@ -1423,4 +1565,8 @@ if __name__ == "__main__":
     #as_pyemu_matrix_test()
     #dropna_test()
     #enforce_test()
-    pnulpar_test()
+    #pnulpar_test()
+    #triangular_draw_test()
+    uniform_draw_test()
+
+
