@@ -12,7 +12,7 @@ import pandas as pd
 import re
 pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,_try_run_inschek,\
-    parse_tpl_file,try_process_ins_file
+    parse_tpl_file,try_process_ins_file,InstructionFile
 from pyemu.utils.os_utils import run
 from pyemu.utils.helpers import write_df_tpl
 from ..pyemu_warnings import PyemuWarning
@@ -23,20 +23,17 @@ PP_NAMES = ["name","x","y","zone","parval1"]
 
 def modflow_pval_to_template_file(pval_file,tpl_file=None):
     """write a template file for a modflow parameter value file.
-    Uses names in the first column in the pval file as par names.
 
-    Parameters
-    ----------
-    pval_file : str
-        parameter value file
-    tpl_file : str, optional
-        template file to write.  If None, use <pval_file>.tpl.
-        Default is None
 
-    Returns
-    -------
-    df : pandas.DataFrame
-        pandas DataFrame with control file parameter information
+    Args:
+        pval_file (`str`): the path and name of the existing modflow pval file
+        tpl_file (`str, optional):  template file to write.
+            If None, use "`pval_file`.tpl".Default is None
+    Notes:
+        Uses names in the first column in the pval file as par names.
+
+    Returns:
+        `pandas.DataFrame`: a dataFrame with control file parameter information
     """
 
     if tpl_file is None:
@@ -56,18 +53,17 @@ def modflow_pval_to_template_file(pval_file,tpl_file=None):
                                                           justify="left"))
     return pval_df
 
-def modflow_hob_to_instruction_file(hob_file):
+def modflow_hob_to_instruction_file(hob_file, ins_file=None):
     """write an instruction file for a modflow head observation file
 
-    Parameters
-    ----------
-    hob_file : str
-        modflow hob file
+    Args:
+        hob_file (`str`): the path and name of the existing modflow hob file
+        ins_file (`str`, optional): the name of the instruction file to write.
+            If `None`, `hob_file`+".ins" is used.  Default is `None`.
 
-    Returns
-    -------
-    df : pandas.DataFrame
-        pandas DataFrame with control file observation information
+    Returns:
+        `pandas.DataFrame`: a dataFrame with control file observation information
+
     """
 
     hob_df = pd.read_csv(hob_file,delim_whitespace=True,skiprows=1,
@@ -77,7 +73,8 @@ def modflow_hob_to_instruction_file(hob_file):
     hob_df.loc[:,"ins_line"] = hob_df.obsnme.apply(lambda x:"l1 !{0:s}!".format(x))
     hob_df.loc[0,"ins_line"] = hob_df.loc[0,"ins_line"].replace('l1','l2')
 
-    ins_file = hob_file + ".ins"
+    if ins_file is None:
+        ins_file = hob_file + ".ins"
     f_ins = open(ins_file, 'w')
     f_ins.write("pif ~\n")
     f_ins.write(hob_df.loc[:,["ins_line"]].to_string(col_space=0,
@@ -90,31 +87,26 @@ def modflow_hob_to_instruction_file(hob_file):
     f_ins.close()
     return hob_df
 
-def modflow_hydmod_to_instruction_file(hydmod_file):
+def modflow_hydmod_to_instruction_file(hydmod_file, ins_file=None):
     """write an instruction file for a modflow hydmod file
 
-    Parameters
-    ----------
-    hydmod_file : str
-        modflow hydmod file
+    Args:
+        hydmod_file (`str`): the path and name of the existing modflow hob file
+        ins_file (`str`, optional): the name of the instruction file to write.
+            If `None`, `hydmod_file`+".ins" is used.  Default is `None`.
 
+    Returns:
+        `pandas.DataFrame`: a dataFrame with control file observation information
 
-    Returns
-    -------
-    df : pandas.DataFrame
-        pandas DataFrame with control file observation information
-
-    Note
-    ----
-    calls modflow_read_hydmod_file()
+    Notes:
+        calls `pyemu.gw_utils.modflow_read_hydmod_file()`
     """
 
     hydmod_df, hydmod_outfile = modflow_read_hydmod_file(hydmod_file)
-
-
     hydmod_df.loc[:,"ins_line"] = hydmod_df.obsnme.apply(lambda x:"l1 w !{0:s}!".format(x))
 
-    ins_file = hydmod_outfile + ".ins"
+    if ins_file is None:
+        ins_file = hydmod_outfile + ".ins"
 
     with open(ins_file, 'w') as f_ins:
         f_ins.write("pif ~\nl1\n")
@@ -139,35 +131,25 @@ def modflow_hydmod_to_instruction_file(hydmod_file):
         df.index = df.obsnme
         return df
 
-
     return hydmod_df
 
 def modflow_read_hydmod_file(hydmod_file, hydmod_outfile=None):
-    """ read in a binary hydmod file and return a dataframe of the results
+    """ read a binary hydmod file and return a dataframe of the results
 
-    Parameters
-    ----------
-    hydmod_file : str
-        modflow hydmod binary file
-    hydmod_outfile : str
-        output file to write.  If None, use <hydmod_file>.dat.
-        Default is None
+    Args:
+        hydmod_file (`str`): The path and name of the existing modflow hydmod binary file
+        hydmod_outfile (`str`, optional): output file to write.  If `None`, use `hydmod_file`+".dat".
+            Default is `None`.
 
-    Returns
-    -------
-    df : pandas.DataFrame
-        pandas DataFrame with hymod_file values
-
-    Note
-    ----
-    requires flopy
+    Returns:
+        `pandas.DataFrame`: a dataFrame with hymod_file values
     """
     try:
         import flopy.utils as fu
     except Exception as e:
         print('flopy is not installed - cannot read {0}\n{1}'.format(hydmod_file, e))
         return
-    #print('Starting to read HYDMOD data from {0}'.format(hydmod_file))
+
     obs = fu.HydmodObs(hydmod_file)
     hyd_df = obs.get_dataframe()
 
@@ -200,197 +182,78 @@ def modflow_read_hydmod_file(hydmod_file, hydmod_outfile=None):
     return hyd_df[['obsnme','obsval']], hydmod_outfile
 
 
-def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
-                           every_n_cell=4,
-                           use_ibound_zones=False,
-                           pp_dir='.',tpl_dir='.',
-                           shapename="pp.shp"):
-    """ setup regularly-spaced (gridded) pilot point parameterization
-
-    Parameters
-    ----------
-    ml : flopy.mbase
-        a flopy mbase dervied type.  If None, sr must not be None.
-    sr : flopy.utils.reference.SpatialReference
-        a spatial reference use to locate the model grid in space.  If None,
-        ml must not be None.  Default is None
-    ibound : numpy.ndarray
-        the modflow ibound integer array.  Used to set pilot points only in active areas.
-        If None and ml is None, then pilot points are set in all rows and columns according to
-        every_n_cell.  Default is None.
-    prefix_dict : dict
-        a dictionary of pilot point parameter prefix, layer pairs.  example : {"hk":[0,1,2,3]} would
-        setup pilot points with the prefix "hk" for model layers 1 - 4 (zero based). If None, a generic set
-        of pilot points with the "pp" prefix are setup for a generic nrowXncol grid. Default is None
-    use_ibound_zones : bool
-        a flag to use the greater-than-zero values in the ibound as pilot point zones.  If False,ibound
-        values greater than zero are treated as a single zone.  Default is False.
-    pp_dir : str
-        directory to write pilot point files to.  Default is '.'
-    tpl_dir : str
-        directory to write pilot point template file to.  Default is '.'
-    shapename : str
-        name of shapefile to write that containts pilot point information. Default is "pp.shp"
-
-    Returns
-    -------
-        pp_df : pandas.DataFrame
-            a dataframe summarizing pilot point information (same information
-            written to shapename
-
-    """
-    from . import pp_utils
-    warnings.warn("setup_pilotpoint_grid has moved to pp_utils...",PyemuWarning)
-    return pp_utils.setup_pilotpoints_grid(ml=ml,sr=sr,ibound=ibound,
-                                           prefix_dict=prefix_dict,
-                                           every_n_cell=every_n_cell,
-                                           use_ibound_zones=use_ibound_zones,
-                                           pp_dir=pp_dir,tpl_dir=tpl_dir,
-                                           shapename=shapename)
-
-
-def pp_file_to_dataframe(pp_filename):
-
-
-    from . import pp_utils
-    warnings.warn("pp_file_to_dataframe has moved to pp_utils",PyemuWarning)
-    return pp_utils.pp_file_to_dataframe(pp_filename)
-
-def pp_tpl_to_dataframe(tpl_filename):
-
-    from . import pp_utils
-    warnings.warn("pp_tpl_to_dataframe has moved to pp_utils",PyemuWarning)
-    return pp_utils.pp_tpl_to_dataframe(tpl_filename)
-
-def write_pp_shapfile(pp_df,shapename=None):
-    from . import pp_utils
-    warnings.warn("write_pp_shapefile has moved to pp_utils",PyemuWarning)
-    pp_utils.write_pp_shapfile(pp_df,shapename=shapename)
-
-
-def write_pp_file(filename,pp_df):
-    from . import pp_utils
-    warnings.warn("write_pp_file has moved to pp_utils",PyemuWarning)
-    return pp_utils.write_pp_file(filename,pp_df)
-
-def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
-    from . import pp_utils
-    warnings.warn("pilot_points_to_tpl has moved to pp_utils",PyemuWarning)
-    return pp_utils.pilot_points_to_tpl(pp_file,tpl_file=tpl_file,
-                                        name_prefix=name_prefix)
-
-def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
-             upper_lim=1.0e+30,lower_lim=-1.0e+30,fill_value=1.0e+30):
-    from . import geostats as gs
-    warnings.warn("fac2real has moved to geostats",PyemuWarning)
-    return gs.fac2real(pp_file=pp_file,factors_file=factors_file,
-                       out_file=out_file,upper_lim=upper_lim,
-                       lower_lim=lower_lim,fill_value=fill_value)
-
-
 def setup_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",sw_filename="mtlist_sw.dat",
                             start_datetime="1-1-1970",gw_prefix='gw',sw_prefix="sw",
                             save_setup_file=False):
-    """ setup observations of gw (and optionally sw) mass budgets from mt3dusgs list file.  writes
-        an instruction file and also a _setup_.csv to use when constructing a pest
-        control file
+    """ setup observations of gw (and optionally sw) mass budgets from mt3dusgs list file.
 
-        Parameters
-        ----------
-        list_filename : str
-                modflow list file
-        gw_filename : str
-            output filename that will contain the gw budget observations. Default is
-            "mtlist_gw.dat"
-        sw_filename : str
-            output filename that will contain the sw budget observations. Default is
-            "mtlist_sw.dat"
-        start_datetime : str
-            an str that can be parsed into a pandas.TimeStamp.  used to give budget
-            observations meaningful names
-        gw_prefix : str
-            a prefix to add to the GW budget observations.  Useful if processing
-            more than one list file as part of the forward run process. Default is 'gw'.
-        sw_prefix : str
-            a prefix to add to the SW budget observations.  Useful if processing
-            more than one list file as part of the forward run process. Default is 'sw'.
-        save_setup_file : (boolean)
-            a flag to save _setup_<list_filename>.csv file that contains useful
-            control file information
+        Args:
+            list_filename (`str`): path and name of existing modflow list file
+            gw_filename (`str`, optional): output filename that will contain the gw budget
+                observations. Default is "mtlist_gw.dat"
+            sw_filename (`str`, optional): output filename that will contain the sw budget
+                observations. Default is "mtlist_sw.dat"
+            start_datetime (`str`, optional):  an str that can be parsed into a `pandas.TimeStamp`.
+                used to give budget observations meaningful names.  Default is "1-1-1970".
+            gw_prefix (`str`, optional): a prefix to add to the GW budget observations.
+                Useful if processing more than one list file as part of the forward run process.
+                Default is 'gw'.
+            sw_prefix (`str`, optional): a prefix to add to the SW budget observations.  Useful
+                if processing more than one list file as part of the forward run process.
+                Default is 'sw'.
+            save_setup_file (`bool`, optional): a flag to save _setup_<list_filename>.csv file
+                that contains useful control file information.  Default is `False`.
 
         Returns
         -------
-        frun_line, ins_filenames, df :str, list(str), pandas.DataFrame
-            the command to add to the forward run script, the names of the instruction
-            files and a dataframe with information for constructing a control file.  If INSCHEK fails
-            to run, df = None
+            `str`:  the command to add to the forward run script
+            `str`: the names of the instruction files that were created
+            `pandas.DataFrame`: a dataframe with information for constructing a control file
 
-        Note
-        ----
-        This function uses INSCHEK to get observation values; the observation values are
-        the values of the list file list_filename.  If INSCHEK fails to run, the obseravtion
-        values are set to 1.0E+10
 
-        the instruction files are named <out_filename>.ins
-
-        It is recommended to use the default value for gw_filename or sw_filename.
+        Notes:
+            This function uses INSCHEK to get observation values; the observation values are
+                the values of the list file list_filename.  If INSCHEK fails to run, the obseravtion
+                values are set to 1.0E+10
+            writes an instruction file and also a _setup_.csv to use when constructing a pest
+                control file
+            the instruction files are named <out_filename>.ins\
+            It is recommended to use the default value for gw_filename or sw_filename.
 
         """
     gw,sw = apply_mtlist_budget_obs(list_filename, gw_filename, sw_filename, start_datetime)
     gw_ins = gw_filename + ".ins"
     _write_mtlist_ins(gw_ins, gw, gw_prefix)
     ins_files = [gw_ins]
-    try:
-        run("inschek {0}.ins {0}".format(gw_filename))
-    except:
-        print("error running inschek")
+    i = InstructionFile(gw_filename+".ins")
+    df_gw = i.read_output_file(gw_filename)
+
     if sw is not None:
         sw_ins = sw_filename + ".ins"
         _write_mtlist_ins(sw_ins, sw, sw_prefix)
         ins_files.append(sw_ins)
-        try:
-            run("inschek {0}.ins {0}".format(sw_filename))
-        except:
-            print("error running inschek")
-    frun_line = "pyemu.gw_utils.apply_mtlist_budget_obs('{0}')".format(list_filename)
-    gw_obf = gw_filename + ".obf"
-    df_gw = None
-    if os.path.exists(gw_obf):
-        df_gw = pd.read_csv(gw_obf, delim_whitespace=True, header=None, names=["obsnme", "obsval"])
-        df_gw.loc[:, "obgnme"] = df_gw.obsnme.apply(lambda x: x[:-9])
-        sw_obf = sw_filename + ".obf"
-        if os.path.exists(sw_obf):
-            df_sw = pd.read_csv(sw_obf, delim_whitespace=True, header=None, names=["obsnme", "obsval"])
-            df_sw.loc[:, "obgnme"] = df_sw.obsnme.apply(lambda x: x[:-9])
-            df_gw = df_gw.append(df_sw)
+        i = InstructionFile(sw_filename+".ins")
+        df_sw = i.read_output_file(sw_filename)
+        df_gw = df_gw.append(df_sw)
+        df_gw.obsnme = df_gw.index.values
+    if save_setup_file:
+        df_gw.to_csv("_setup_" + os.path.split(list_filename)[-1] + '.csv', index=False)
 
-        if save_setup_file:
-            df_gw.to_csv("_setup_" + os.path.split(list_filename)[-1] + '.csv', index=False)
-        df_gw.index = df_gw.obsnme
+    frun_line = "pyemu.gw_utils.apply_mtlist_budget_obs('{0}')".format(list_filename)
     return frun_line,ins_files,df_gw
 
 def _write_mtlist_ins(ins_filename,df,prefix):
-    """ write an instruction file for a MODFLOW list file
-
-    Parameters
-    ----------
-    ins_filename : str
-        name of the instruction file to write
-    df : pandas.DataFrame
-        the dataframe of list file entries
-    prefix : str
-        the prefix to add to the column names to form
-        obseravtions names
+    """ write an instruction file for a MT3D-USGS list file
 
     """
     try:
         dt_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
     except:
         dt_str = df.index.map(lambda x: "{0:08.1f}".format(x).strip())
-    if prefix == '':
-        name_len = 11
-    else:
-        name_len = 11 - (len(prefix)+1)
+    # if prefix == '':
+    #     name_len = 11
+    # else:
+    #     name_len = 11 - (len(prefix)+1)
     with open(ins_filename,'w') as f:
         f.write('pif ~\nl1\n')
 
@@ -403,43 +266,31 @@ def _write_mtlist_ins(ins_filename,df,prefix):
                 #raw[0] = raw[0][:6]
                 #name = ''.join(raw)
                 if prefix == '':
-                    obsnme = "{1}_{2}".format(prefix,name[:name_len],dt)
+                    obsnme = "{1}_{2}".format(prefix,name,dt)
                 else:
-                    obsnme = "{0}_{1}_{2}".format(prefix, name[:name_len], dt)
+                    obsnme = "{0}_{1}_{2}".format(prefix, name, dt)
                 f.write(" w !{0}!".format(obsnme))
             f.write("\n")
 
 def apply_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",
                             sw_filename="mtlist_sw.dat",
                             start_datetime="1-1-1970"):
-    """ process an MT3D list file to extract mass budget entries.
+    """ process an MT3D-USGS list file to extract mass budget entries.
 
-    Parameters
-    ----------
-    list_filename : str
-        the mt3d list file
-    gw_filename : str
-        the name of the output file with gw mass budget information.
-        Default is "mtlist_gw.dat"
-    sw_filename : str
-        the name of the output file with sw mass budget information.
-        Default is "mtlist_sw.dat"
-    start_datatime : str
-        an str that can be cast to a pandas.TimeStamp.  Used to give
-        observations a meaningful name
+    Args:
+        list_filename (`str`): the path and name of an existing MT3D-USGS list file
+        gw_filename (`str`, optional): the name of the output file with gw mass
+            budget information. Default is "mtlist_gw.dat"
+        sw_filename (`str`): the name of the output file with sw mass budget information.
+            Default is "mtlist_sw.dat"
+        start_datatime (`str`): an str that can be cast to a pandas.TimeStamp.  Used to give
+            observations a meaningful name
 
     Returns
     -------
-    gw : pandas.DataFrame
-        the gw mass dataframe
-    sw : pandas.DataFrame (optional)
-        the sw mass dataframe
-
-    Note
-    ----
-    requires flopy
-
-    if SFT is not active, no SW mass budget will be returned
+        `pandas.DataFrame`: the gw mass budget dataframe
+        `pandas.DataFrame`: (optional) the sw mass budget dataframe.  If the SFT process is not active,
+            this returned value is `None`.
 
     """
     try:
@@ -462,110 +313,68 @@ def apply_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",
 def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
                             vol_filename="vol.dat",start_datetime="1-1'1970",prefix='',
                             save_setup_file=False):
-    """ setup observations of budget volume and flux from modflow list file.  writes
-    an instruction file and also a _setup_.csv to use when constructing a pest
-    control file
+    """ setup observations of budget volume and flux from modflow list file.
 
-    Parameters
-    ----------
-    list_filename : str
-            modflow list file
-    flx_filename : str
-        output filename that will contain the budget flux observations. Default is
-        "flux.dat"
-    vol_filename : str)
-        output filename that will contain the budget volume observations.  Default
-        is "vol.dat"
-    start_datetime : str
-        an str that can be parsed into a pandas.TimeStamp.  used to give budget
-        observations meaningful names
-    prefix : str
-        a prefix to add to the water budget observations.  Useful if processing
-        more than one list file as part of the forward run process. Default is ''.
-    save_setup_file : (boolean)
-        a flag to save _setup_<list_filename>.csv file that contains useful
-        control file information
+    Args:
+        list_filename (`str`): path and name of the existing modflow list file
+        flx_filename (`str`, optional): output filename that will contain the budget flux
+            observations. Default is "flux.dat"
+        vol_filename (`str`, optional): output filename that will contain the budget volume
+            observations.  Default is "vol.dat"
+        start_datetime (`str`, optional): a string that can be parsed into a pandas.TimeStamp.
+            This is used to give budget observations meaningful names.  Default is "1-1-1970".
+        prefix (`str`, optional): a prefix to add to the water budget observations.  Useful if
+            processing more than one list file as part of the forward run process. Default is ''.
+        save_setup_file (`bool`): a flag to save _setup_<list_filename>.csv file that contains useful
+            control file information
 
-    Returns
-    -------
-    df : pandas.DataFrame
-        a dataframe with information for constructing a control file.  If INSCHEK fails
-        to run, reutrns None
+    Returns:
+        `pandas.DataFrame`: a dataframe with information for constructing a control file.
 
-    Note
-    ----
-    This function uses INSCHEK to get observation values; the observation values are
-    the values of the list file list_filename.  If INSCHEK fails to run, the obseravtion
-    values are set to 1.0E+10
+    Notes:
 
-    the instruction files are named <flux_file>.ins and <vol_file>.ins, respectively
-
-    It is recommended to use the default values for flux_file and vol_file.
-
+        This method writes instruction files and also a _setup_.csv to use when constructing a pest
+            control file.  The instruction files are named <flux_file>.ins and <vol_file>.ins, respectively
+        It is recommended to use the default values for flux_file and vol_file.
 
     """
-
-
-
     flx,vol = apply_mflist_budget_obs(list_filename,flx_filename,vol_filename,
                                       start_datetime)
     _write_mflist_ins(flx_filename+".ins",flx,prefix+"flx")
     _write_mflist_ins(vol_filename+".ins",vol, prefix+"vol")
 
-    #run("inschek {0}.ins {0}".format(flx_filename))
-    #run("inschek {0}.ins {0}".format(vol_filename))
+    i = InstructionFile(flx_filename+".ins")
+    df = i.read_output_file(flx_filename)
+    i = InstructionFile(vol_filename+".ins")
+    df2 = i.read_output_file(vol_filename)
+    df = df.append(df2)
+    df.obsnme = df.index.values
+    if save_setup_file:
+        df.to_csv("_setup_" + os.path.split(list_filename)[-1] + '.csv', index=False)
 
-    try:
-        #os.system("inschek {0}.ins {0}".format(flx_filename))
-        #os.system("inschek {0}.ins {0}".format(vol_filename))
-        run("inschek {0}.ins {0}".format(flx_filename))
-        run("inschek {0}.ins {0}".format(vol_filename))
-
-    except:
-        print("error running inschek")
-        return None
-    flx_obf = flx_filename+".obf"
-    vol_obf = vol_filename + ".obf"
-    if os.path.exists(flx_obf) and os.path.exists(vol_obf):
-        df = pd.read_csv(flx_obf,delim_whitespace=True,header=None,names=["obsnme","obsval"])
-        df.loc[:,"obgnme"] = df.obsnme.apply(lambda x: x[:-9])
-        df2 = pd.read_csv(vol_obf, delim_whitespace=True, header=None, names=["obsnme", "obsval"])
-        df2.loc[:, "obgnme"] = df2.obsnme.apply(lambda x: x[:-9])
-        df = df.append(df2)
-        if save_setup_file:
-            df.to_csv("_setup_"+os.path.split(list_filename)[-1]+'.csv',index=False)
-        df.index = df.obsnme
-        return df
+    return df
 
 def apply_mflist_budget_obs(list_filename,flx_filename="flux.dat",
                             vol_filename="vol.dat",
                             start_datetime="1-1-1970"):
     """ process a MODFLOW list file to extract flux and volume water budget entries.
 
-    Parameters
-    ----------
-    list_filename : str
-        the modflow list file
-    flx_filename : str
-        the name of the output file with water budget flux information.
-        Default is "flux.dat"
-    vol_filename : str
-        the name of the output file with water budget volume information.
-        Default is "vol.dat"
-    start_datatime : str
-        an str that can be cast to a pandas.TimeStamp.  Used to give
-        observations a meaningful name
+   Args:
+        list_filename (`str`): path and name of the existing modflow list file
+        flx_filename (`str`, optional): output filename that will contain the budget flux
+            observations. Default is "flux.dat"
+        vol_filename (`str`, optional): output filename that will contain the budget volume
+            observations.  Default is "vol.dat"
+        start_datetime (`str`, optional): a string that can be parsed into a pandas.TimeStamp.
+            This is used to give budget observations meaningful names.  Default is "1-1-1970".
+        prefix (`str`, optional): a prefix to add to the water budget observations.  Useful if
+            processing more than one list file as part of the forward run process. Default is ''.
+        save_setup_file (`bool`): a flag to save _setup_<list_filename>.csv file that contains useful
+            control file information
 
-    Returns
-    -------
-    flx : pandas.DataFrame
-        the flux dataframe
-    vol : pandas.DataFrame
-        the volume dataframe
-
-    Note
-    ----
-    requires flopy
+    Returns:
+        `pandas.DataFrame`: a dataframe with flux budget information
+        `pandas.DataFrame`: a dataframe with cumulative budget information
 
     """
     try:
@@ -582,66 +391,47 @@ def apply_mflist_budget_obs(list_filename,flx_filename="flux.dat",
 def _write_mflist_ins(ins_filename,df,prefix):
     """ write an instruction file for a MODFLOW list file
 
-    Parameters
-    ----------
-    ins_filename : str
-        name of the instruction file to write
-    df : pandas.DataFrame
-        the dataframe of list file entries
-    prefix : str
-        the prefix to add to the column names to form
-        obseravtions names
-
     """
 
     dt_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
-    name_len = 11 - (len(prefix)+1)
     with open(ins_filename,'w') as f:
         f.write('pif ~\nl1\n')
-
         for dt in dt_str:
             f.write("l1 ")
             for col in df.columns:
-                obsnme = "{0}_{1}_{2}".format(prefix,col[:name_len],dt)
+                obsnme = "{0}_{1}_{2}".format(prefix,col,dt)
                 f.write(" w !{0}!".format(obsnme))
             f.write("\n")
 
 
 def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
                          model=None, postprocess_inact=None):
-    """a function to setup extracting time-series from a binary modflow
-    head save (or equivalent format - ucn, sub, etc).  Writes
-    an instruction file and a _set_ csv
+    """a function to setup a forward process to extract time-series style values
+    from a binary modflow head save (or equivalent format - ucn, sub, etc).
 
-    Parameters
-    ----------
-    hds_file : str
-        binary filename
-    kij_dict : dict
-        dictionary of site_name: [k,i,j] pairs
-    prefix : str
-        string to prepend to site_name when forming obsnme's.  Default is None
-    include_path : bool
-        flag to prepend hds_file path. Useful for setting up
-        process in separate directory for where python is running.
-    model : flopy.mbase
-        a flopy model.  If passed, the observation names will have the datetime of the
-        observation appended to them.  If None, the observation names will have the
-        stress period appended to them. Default is None.
-    postprocess_inact : float
-        Inactive flag in heads/ucn file e.g. mt.btn.cinit
+    Args:
+        hds_file (`str`): path and name of existing modflow head-save format binary file
+        kij_dict (`dict`): dictionary of site_name: [k,i,j] pairs. For example: `{"wel1":[0,1,1]}.
+        prefix (`str`, optional): string to prepend to site_name when forming observation names.  Default is None
+        include_path (`bool`, optional): flag to setup the binary file processing in directory where the hds_file
+        is located (if different from where python is running).  This is useful for setting up
+            the process in separate directory for where python is running.
+        model (`flopy.mbase`, optional): a `flopy.basemodel` instance.  If passed, the observation names will
+            have the datetime of the observation appended to them (using the flopy `start_datetime` attribute.
+            If None, the observation names will have the zero-based stress period appended to them. Default is None.
+        postprocess_inact (`float`, optional): Inactive value in heads/ucn file e.g. mt.btn.cinit.  If `None`, no
+            inactive value processing happens.  Default is `None`.
 
-    Returns
-    -------
+    Returns:
+        `str`: the forward run command to execute the binary file process during model runs.
+        `pandas.DataFrame`: a dataframe of observation information for use in the pest control file
 
+    Notes:
 
+        This function writes hds_timeseries.config that must be in the same
+            dir where apply_hds_timeseries() is called during the forward run
 
-    Note
-    ----
-    This function writes hds_timeseries.config that must be in the same
-    dir where apply_hds_timeseries() is called during the forward run
-
-    assumes model time units are days!!!
+        Assumes model time units are days
 
     """
 
@@ -735,7 +525,6 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
         raise Exception("error in apply_hds_timeseries(): {0}".format(str(e)))
     os.chdir(bd)
 
-    #df = _try_run_inschek(ins_file,ins_file.replace(".ins",""))
     df = try_process_ins_file(ins_file,ins_file.replace(".ins",""))
     if df is not None:
         df.loc[:,"weight"] = 0.0
@@ -748,7 +537,14 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
 
 
 def apply_hds_timeseries(config_file=None, postprocess_inact=None):
+    """process a modflow headsave format binary file
 
+    Args:
+        config_file (`str`, optional): configuration file written by `pyemu.gw_utils.setup_hds_timeseries`.
+            If `None`, looks for `hds_timeseries.config`
+        postprocess_inact
+
+    """
     import flopy
 
     if config_file is None:

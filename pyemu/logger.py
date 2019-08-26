@@ -10,22 +10,10 @@ class Logger(object):
     """ a basic class for logging events during the linear analysis calculations
         if filename is passed, then a file handle is opened.
 
-    Parameters
-    ----------
-    filename : str
-        Filename to write logged events to. If False, no file will be created,
-        and logged events will be displayed on standard out.
-    echo : bool
-        Flag to cause logged events to be echoed to the screen.
-
-    Attributes
-    ----------
-    items : dict
-        Dictionary holding events to be logged.  If a log entry is
-        not in `items`, then it is treated as a new entry with the string
-        being the key and the datetime as the value.  If a log entry is
-        in `items`, then the end time and delta time are written and
-        the item is popped from the keys.
+    Args:
+        filename (`str`): Filename to write logged events to. If False, no file will be created,
+            and logged events will be displayed on standard out.
+        echo (`bool`):  Flag to cause logged events to be echoed to the screen.
 
     """
     def __init__(self,filename, echo=False):
@@ -44,12 +32,10 @@ class Logger(object):
 
 
     def statement(self,phrase):
-        """ log a one time statement
+        """ log a one-time statement
 
-        Parameters
-        ----------
-        phrase : str
-            statement to log
+        Arg:
+            phrase (`str`): statement to log
 
         """
         t = datetime.now()
@@ -62,14 +48,14 @@ class Logger(object):
 
 
     def log(self,phrase):
-        """log something that happened.  The first time phrase is passed the
-        start time is saved.  The second time the phrase is logged, the
-        elapsed time is written
+        """log something that happened.
 
-        Parameters
-        ----------
-            phrase : str
-                the thing that happened
+        Arg:
+            phrase (`str`): statement to log
+
+        Notes:
+            The first time phrase is passed the start time is saved.
+                The second time the phrase is logged, the elapsed time is written
         """
         pass
         t = datetime.now()
@@ -94,10 +80,10 @@ class Logger(object):
     def warn(self,message):
         """write a warning to the log file.
 
-        Parameters
-        ----------
-        message : str
-            the warning text
+        Arg:
+            phrase (`str`): warning statement to log
+
+
         """
         s = str(datetime.now()) + " WARNING: " + message + '\n'
         if self.echo:
@@ -110,14 +96,9 @@ class Logger(object):
     def lraise(self,message):
         """log an exception, close the log file, then raise the exception
 
-        Parameters
-        ----------
-        message : str
-            the exception message
+        Arg:
+            phrase (`str`): exception statement to log and raise
 
-        Raises
-        ------
-            exception with message
         """
         s = str(datetime.now()) + " ERROR: " + message + '\n'
         print(s,end='')

@@ -16,54 +16,36 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
                            use_ibound_zones=False,
                            pp_dir='.',tpl_dir='.',
                            shapename="pp.shp"):
-    """setup grid-based pilot points.  Uses the ibound to determine
-    where to set pilot points. pilot points are given generic ``pp_``
-    names unless ``prefix_dict`` is passed.  Write template files and a
-    shapefile as well...hopefully this is useful to someone...
+    """ setup a regularly-spaced (gridded) pilot point parameterization
 
-    Parameters
-    ----------
-    ml : flopy.mbase
-        a flopy mbase dervied type.  If None, sr must not be None.
-    sr : flopy.utils.reference.SpatialReference
-        a spatial reference use to locate the model grid in space.  If None,
-        ml must not be None.  Default is None
-    ibound : numpy.ndarray
-        the modflow ibound integer array.  Used to set pilot points only in active areas (!=0).
-        If None and ml is None, then pilot points are set in all rows and columns according to
-        every_n_cell.  Default is None.
-    prefix_dict : dict
-        a dictionary of layer index, pilot point parameter prefixes.
-        Example : ``{0:["hk_"],1:["vka_"]}`` would setup pilot points with
-        the prefix ``"hk"`` for model layers 1 and ``"vka"`` for model layer 2 (zero based).
-        If None, a generic set of pilot points with the "pp" prefix are setup
-        for a generic nrowXncol grid. Default is None.
-    use_ibound_zones : bool
-        a flag to use the greater-than-zero values in the ibound as pilot point zones.  If False,ibound
-        values greater than zero are treated as a single zone.  Default is False.
-    pp_dir : str
-        directory to write pilot point files to.  Default is '.'
-    tpl_dir : str
-        directory to write pilot point template file to.  Default is '.'
-    shapename : str
-        name of shapefile to write that contains pilot point information. Default is "pp.shp"
+    Args:
+        ml (`flopy.mbase`, optional): a flopy mbase dervied type.  If None, `sr` must not be None.
+        sr (`flopy.utils.reference.SpatialReference`, optional):  a spatial reference use to
+            locate the model grid in space.  If None, `ml` must not be None.  Default is None
+        ibound (`numpy.ndarray`, optional): the modflow ibound integer array.  THis is used to
+            set pilot points only in active areas. If None and ml is None, then pilot points
+            are set in all rows and columns according to `every_n_cell`.  Default is None.
+        prefix_dict (`dict`): a dictionary of pilot point parameter prefix, layer pairs.
+            For example : {"hk":[0,1,2,3]} would setup pilot points with the prefix "hk" for
+             model layers 1 - 4 (zero based). If None, a generic set of pilot points with
+             the "pp" prefix are setup for a generic nrowXncol grid. Default is None
+        use_ibound_zones (`bool`): a flag to use the greater-than-zero values in the
+            ibound as pilot point zones.  If False,ibound values greater than zero are
+             treated as a single zone.  Default is False.
+        pp_dir (`str`, optional): directory to write pilot point files to.  Default is '.'
+        tpl_dir (`str`, optional): directory to write pilot point template file to.  Default is '.'
+        shapename (`str`, optional): name of shapefile to write that containts pilot
+            point information. Default is "pp.shp"
 
-    Returns
-    -------
-    pp_df : pandas.DataFrame
-        a dataframe summarizing pilot point information (same information
-        written to shapename
-    Example
-    -------
-    ``>>>import flopy``
+    Returns:
+        `pandas.DataFrame`: a dataframe summarizing pilot point information (same information
+            written to `shapename`
 
-    ``>>>from pyemu.utils import setup_pilotpoints_grid``
+    Example::
 
-    ``>>>m = flopy.modflow.Modfow.load("mymodel.nam")``
+        m = flopy.modflow.Modflow.load("my.nam")
+        df = pyemu.pp_utils.setup_pilotpoints_grid(ml=m)
 
-    ``>>>setup_pilotpoints_grid(m,prefix_dict={0:['hk_'],1:['vka_']},``
-
-    ``>>>                       every_n_cell=3,shapename='layer1_pp.shp')``
     """
 
     import flopy

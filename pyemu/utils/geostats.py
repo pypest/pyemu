@@ -2171,21 +2171,6 @@ def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
 
 def _parse_factor_line(line):
     """ function to parse a factor file line.  Used by fac2real()
-
-    Parameters
-    ----------
-    line : (str)
-        a factor line from a factor file
-
-    Returns
-    -------
-    inode : int
-        the inode of the grid node
-    itrans : int
-        flag for transformation of the grid node
-    fac_data : dict
-        a dictionary of point number, factor
-
     """
 
     raw = line.strip().split()

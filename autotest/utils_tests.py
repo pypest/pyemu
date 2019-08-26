@@ -644,6 +644,7 @@ def mflist_budget_test():
 
 def mtlist_budget_test():
     import pyemu
+    import pandas as pd
     import os
     try:
         import flopy
@@ -654,14 +655,22 @@ def mtlist_budget_test():
     assert os.path.exists(list_filename)
     frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(list_filename,start_datetime='1-1-1970')
     assert len(ins_files) == 2
+    out_df = pd.read_csv("mtlist_gw.dat",delim_whitespace=True)
+    diff = out_df.iloc[:, 1].values.flatten()- df.iloc[:out_df.shape[0]].values.flatten()
+    assert diff.sum() < 1.0e-10
 
     frun_line,ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(list_filename,start_datetime='1-1-1970',
                                                                      gw_prefix='')
     assert len(ins_files) == 2
+    out_df = pd.read_csv("mtlist_gw.dat", delim_whitespace=True)
+    diff = out_df.iloc[:, 1].values.flatten() - df.iloc[:out_df.shape[0]].values.flatten()
+    assert diff.sum() < 1.0e-10
 
     frun_line, ins_files, df = pyemu.gw_utils.setup_mtlist_budget_obs(list_filename, start_datetime=None)
     assert len(ins_files) == 2
-
+    out_df = pd.read_csv("mtlist_gw.dat", delim_whitespace=True)
+    diff = out_df.iloc[:, 1].values.flatten() - df.iloc[:out_df.shape[0]].values.flatten()
+    assert diff.sum() < 1.0e-10
 
 
 def geostat_prior_builder_test():
@@ -1774,7 +1783,7 @@ if __name__ == "__main__":
     #setup_pp_test()
     #sfr_helper_test()
     # gw_sft_ins_test()
-    par_knowledge_test()
+    #par_knowledge_test()
     # grid_obs_test()
     #hds_timeseries_test()
     # postprocess_inactive_conc_test()
@@ -1785,11 +1794,11 @@ if __name__ == "__main__":
     # gslib_2_dataframe_test()
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
-    geostat_prior_builder_test()
+    #geostat_prior_builder_test()
     #geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
     # mflist_budget_test()
-    # mtlist_budget_test()
+    mtlist_budget_test()
     # tpl_to_dataframe_test()
     # kl_test()
     # hfb_test()
