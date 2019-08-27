@@ -12,7 +12,7 @@ import pandas as pd
 from pyemu.mat.mat_handler import get_common_elements,Matrix,Cov
 from pyemu.pst.pst_utils import write_parfile,read_parfile
 from pyemu.plot.plot_utils import ensemble_helper
-from .utils.os_utils import run_sweep
+
 
 #warnings.filterwarnings("ignore",message="Pandas doesn't allow columns to be "+\
 #                                         "created via a new attribute name - see"+\
@@ -1837,9 +1837,6 @@ class ParameterEnsemble(Ensemble):
         self.loc["base",:] = self.pst.parameter_data.loc[self.columns,"parval1"]
 
 
-    def run(self,worker_dir, num_workers=10):
-        df = run_sweep(self,worker_dir=worker_dir,num_workers=num_workers)
-        return ObservationEnsemble.from_dataframe(pst=self.pst,df=df)
 
     def get_deviations(self):
         """get the deviations of the ensemble value from the mean vector

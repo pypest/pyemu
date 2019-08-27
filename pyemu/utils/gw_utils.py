@@ -120,7 +120,7 @@ def modflow_hydmod_to_instruction_file(hydmod_file, ins_file=None):
 
     df = try_process_output_file(hydmod_outfile+".ins")
     if df is not None:
-        df.obsnme = df.index.values
+        df.loc[:,"obsnme"] = df.index.values
         df.loc[:,"obgnme"] = df.obsnme.apply(lambda x: x[:-9])
         df.to_csv("_setup_"+os.path.split(hydmod_outfile)[-1]+'.csv',index=False)
         return df
@@ -348,7 +348,7 @@ def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
         raise Exception("error processing volume instruction file")
 
     df = df.append(df2)
-    df.obsnme = df.index.values
+    df.loc[:,"obsnme"] = df.index.values
     if save_setup_file:
         df.to_csv("_setup_" + os.path.split(list_filename)[-1] + '.csv', index=False)
 
@@ -531,7 +531,7 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
     os.chdir(bd)
 
 
-    df = try_process_output_file(ins_file.replace(".ins",""))
+    df = try_process_output_file(ins_file)
     if df is None:
         raise Exception("error processing {0} instruction file".format(ins_file))
 

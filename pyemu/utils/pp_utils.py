@@ -220,18 +220,17 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
 
 
 def pp_file_to_dataframe(pp_filename):
-
     """ read a pilot point file to a pandas Dataframe
 
-    Parameters
-    ----------
-    pp_filename : str
-        pilot point file
+    Args:
+        pp_filename (`str`): path and name of an existing pilot point file
 
-    Returns
-    -------
-    df : pandas.DataFrame
-        a dataframe with pp_utils.PP_NAMES for columns
+    Returns:
+        `pandas.DataFrame`: a dataframe with `pp_utils.PP_NAMES` for columns
+
+    Example::
+
+        df = pyemu.pp_utils.pp_file_to_dataframe("my_pp.dat")
 
     """
 
@@ -243,15 +242,20 @@ def pp_file_to_dataframe(pp_filename):
 def pp_tpl_to_dataframe(tpl_filename):
     """ read a pilot points template file to a pandas dataframe
 
-    Parameters
-    ----------
-    tpl_filename : str
-        pilot points template file
+    Args:
+        tpl_filename (`str`): path and name of an existing pilot points
+            template file
 
-    Returns
-    -------
-    df : pandas.DataFrame
-        a dataframe with "parnme" included
+    Returns:
+        `pandas.DataFrame`: a dataframe of pilot point info with "parnme" included
+
+    Notes:
+        Use for processing pilot points since the point point file itself may
+            have generic "names".
+
+    Example::
+
+        df = pyemu.pp_utils.pp_tpl_file_to_dataframe("my_pp.dat.tpl")
 
     """
     inlines = open(tpl_filename, 'r').readlines()
@@ -270,17 +274,15 @@ def pp_tpl_to_dataframe(tpl_filename):
 def write_pp_shapfile(pp_df,shapename=None):
     """write pilot points dataframe to a shapefile
 
-    Parameters
-    ----------
-    pp_df : pandas.DataFrame or str
-        pilot point dataframe or a pilot point filename.  Dataframe
-        must include "x" and "y"
-    shapename : str
-        shapefile name.  If None, pp_df must be str and shapefile
-        is saved as <pp_df>.shp
+    Args:
+        pp_df (`pandas.DataFrame`): pilot point dataframe (must include "x" and "y"
+            columns).  If `pp_df` is a string, it is assumed to be a pilot points file
+            and is loaded with `pp_utils.pp_file_to_dataframe`. Can also be a list of
+            `pandas.DataFrames` and/or filenames.
+        shapename (`str`): the shapefile name to write.  If `None`, `pp_df` must be a string
+            and shapefile is saved as `pp_df`+".shp"
 
-    Note
-    ----
+    Notes:
         requires pyshp
 
     """
@@ -334,12 +336,10 @@ def write_pp_shapfile(pp_df,shapename=None):
 def write_pp_file(filename,pp_df):
     """write a pilot points dataframe to a pilot points file
 
-    Parameters
-    ----------
-    filename : str
-        pilot points file to write
-    pp_df : pandas.DataFrame
-        a dataframe that has columns "x","y","zone", and "value"
+    Args:
+        filename (`str`): pilot points file to write
+        pp_df (`pandas.DataFrame`):  a dataframe that has
+            at least columns "x","y","zone", and "value"
 
     """
     with open(filename,'w') as f:
@@ -354,24 +354,20 @@ def write_pp_file(filename,pp_df):
 def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
     """write a template file for a pilot points file
 
-    Parameters
-    ----------
-    pp_file : str
-        pilot points file
-    tpl_file : str
-        template file name to write.  If None, append ".tpl" to
-        the pp_file arg. Default is None
-    name_prefix : str
-        name to prepend to parameter names for each pilot point.  For example,
-        if ``name_prefix = "hk_"``, then each pilot point parameter will be named
-        "hk_0001","hk_0002", etc.  If None, parameter names from pp_df.name
-        are used.  Default is None.
+    Args:
+        pp_file : (`str`): existing pilot points file
+        tpl_file (`str`): template file name to write.  If None,
+            `pp_file`+".tpl" is used.  Default is `None`.
+        name_prefix (`str`): name to prepend to parameter names for each
+            pilot point.  For example, if `name_prefix = "hk_"`, then each
+            pilot point parameters will be named "hk_0001","hk_0002", etc.
+            If None, parameter names from `pp_df.name` are used.
+            Default is None.
 
-    Returns
-    -------
-        pp_df : pandas.DataFrame
-            a dataframe with pilot point information (name,x,y,zone,parval1)
-             with the parameter information (parnme,tpl_str)
+    Returns:
+        `pandas.DataFrame`: a dataframe with pilot point information
+            (name,x,y,zone,parval1) with the parameter information
+            (parnme,tpl_str)
     """
 
     if isinstance(pp_file,pd.DataFrame):

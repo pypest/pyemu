@@ -250,7 +250,7 @@ def pp_to_tpl_test():
     import os
     import pyemu
     pp_file = os.path.join("utils","points1.dat")
-    pp_df = pyemu.gw_utils.pilot_points_to_tpl(pp_file,name_prefix="test_")
+    pp_df = pyemu.pp_utils.pilot_points_to_tpl(pp_file,name_prefix="test_")
     print(pp_df.columns)
 
 
@@ -258,7 +258,7 @@ def tpl_to_dataframe_test():
     import os
     import pyemu
     pp_file = os.path.join("utils","points1.dat")
-    pp_df = pyemu.gw_utils.pilot_points_to_tpl(pp_file,name_prefix="test_")
+    pp_df = pyemu.pp_utils.pilot_points_to_tpl(pp_file,name_prefix="test_")
     df_tpl = pyemu.pp_utils.pp_tpl_to_dataframe(pp_file+".tpl")
     assert df_tpl.shape[0] == pp_df.shape[0]
 
@@ -1790,7 +1790,7 @@ if __name__ == "__main__":
     # plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
-    # make_hydmod_insfile_test()
+    #make_hydmod_insfile_test()
     # gslib_2_dataframe_test()
     # sgems_to_geostruct_test()
     # #linearuniversal_krige_test()
@@ -1798,7 +1798,7 @@ if __name__ == "__main__":
     #geostat_draws_test()
     #jco_from_pestpp_runstorage_test()
     # mflist_budget_test()
-    mtlist_budget_test()
+    #mtlist_budget_test()
     # tpl_to_dataframe_test()
     # kl_test()
     # hfb_test()

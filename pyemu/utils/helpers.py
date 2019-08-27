@@ -1752,7 +1752,7 @@ class PstFromFlopyModel(object):
                 self.logger.lraise("'new_model_ws' already exists")
             else:
                 self.logger.warn("removing existing 'new_model_ws")
-                shutil.rmtree(new_model_ws,onerror=pyemu.os_utils.remove_readonly)
+                shutil.rmtree(new_model_ws, onerror=pyemu.os_utils._remove_readonly)
                 time.sleep(1)
         self.m.change_model_ws(new_model_ws,reset_external=True)
         self.m.exe_name = self.m.exe_name.replace(".exe",'')
