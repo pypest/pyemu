@@ -25,158 +25,42 @@ import pyemu
 from pyemu.utils.os_utils import run, start_workers
 
 
-
-def run(cmd_str,cwd='.',verbose=False):
-    """ an OS agnostic function to execute command
-
-    Parameters
-    ----------
-    cmd_str : str
-        the str to execute with os.system()
-
-    cwd : str
-        the directory to execute the command in
-
-    verbose : bool
-        flag to echo to stdout complete cmd str
-
-    Note
-    ----
-    uses platform to detect OS and adds .exe or ./ as appropriate
-
-    for Windows, if os.system returns non-zero, raises exception
-
-    Example
-    -------
-    ``>>>import pyemu``
-
-    ``>>>pyemu.helpers.run("pestpp pest.pst")``
-
-    """
-    warnings.warn("run() has moved to pyemu.os_utils",PyemuWarning)
-    pyemu.os_utils.run(cmd_str=cmd_str,cwd=cwd,verbose=verbose)
-
-
-def run_fieldgen(m,num_reals,struct_dict,cwd=None):
-    """run fieldgen and return a dataframe with the realizations
-
-    Parameters
-    ----------
-    m : flopy.mbase
-        a floy model instance
-    num_reals : int
-        number of realizations to generate
-    struct_dict : dict
-        key-value pairs of pyemu.GeoStruct instances and lists of prefix strings.  Example: {gs1:['hk','ss']}
-    cwd : str
-        working director where to execute fieldgen.  If None, m.model_ws is used.  Default is None
-
-    Returns
-    -------
-    df : pandas.DataFrame
-        a dataframe of realizations.  Columns are named to include structure, prefix and realization number.  Index
-        includes i-j position
-
-    Note
-    ----
-    only Ordinary kriging is supported
-    only a single zone is supported
-
-
-    """
-    if cwd is None:
-        cwd = m.model_ws
-    set_file = os.path.join(cwd,"settings.fig")
-    if not os.path.exists(set_file):
-        print("writing ",set_file)
-        with open(set_file,'w') as f:
-            f.write("date=dd/mm/yyyy\ncolrow=no\n")
-
-    m.sr.write_gridSpec(os.path.join(cwd,"grid.spc"))
-
-    np.savetxt(os.path.join(cwd,"zone.dat"),np.ones((m.nrow,m.ncol),dtype=np.int),fmt="%2d")
-    arrs = {}
-    for struct,prefixes in struct_dict.items():
-        args = ["grid.spc",'']
-
-        print(struct)
-        struct.to_struct_file(os.path.join(cwd,"pyemu_struct.dat"))
-
-        args.append("zone.dat")
-        args.append("f")
-        args.append("pyemu_struct.dat")
-        args.append(struct.name)
-        args.append("o")
-        args.append("10")
-        args.append(num_reals)
-        for prefix in prefixes:
-            prefix_args = list(args)
-            prefix_args.append(prefix)
-            prefix_args.append("f")
-            prefix_args.append(1.0)
-            prefix_args.append('')
-            rsp_file = "fieldgen_{0}.in".format(prefix)
-            with open(os.path.join(cwd,rsp_file),'w') as f:
-                for arg in prefix_args:
-                    f.write(str(arg)+'\n')
-            pyemu.os_utils.run("fieldgen <{0} >{1}".format(rsp_file,rsp_file.replace(".in",".stdout")),cwd=cwd)
-            real_files = ["{0}{1}.ref".format(prefix,i+1) for i in range(num_reals)]
-
-            for real_file in real_files:
-                assert os.path.exists(os.path.join(cwd,real_file)),"missing realization file: "+real_file
-                vals = []
-                with open(os.path.join(cwd,real_file),'r') as f:
-                    [vals.extend(line.strip().split()) for line in f]
-                arr = np.array(vals,dtype=np.float)#.reshape(m.nrow,m.ncol)
-                real_num = int(real_file.split('.')[0].replace(prefix,''))
-                arrs["{0}_{1}_{2}".format(struct.name,prefix,real_num)] = arr
-        ij = []
-        for i in range(m.nrow):
-            for j in range(m.ncol):
-                ij.append("{0}_{1}".format(i,j))
-        df = pd.DataFrame(arrs,index=ij)
-        return df
-
-
 def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=True):
-    """ a helper function to construct a parameter ensenble from a full prior covariance matrix
-    implied by the geostatistical structure(s) in struct_dict.  This function is much more efficient
-    for problems with lots of pars (>200K).
+    """construct a parameter ensemble from a prior covariance matrix
+    implied by geostatistical structure(s) and parameter bounds.
 
-    Parameters
-    ----------
-    pst : pyemu.Pst
-        a control file (or the name of control file)
-    struct_dict : dict
-        a python dict of GeoStruct (or structure file), and list of pp tpl files pairs
-        If the values in the dict are pd.DataFrames, then they must have an
-        'x','y', and 'parnme' column.  If the filename ends in '.csv',
-        then a pd.DataFrame is loaded, otherwise a pilot points file is loaded.
-    num_reals : int
-        number of realizations to draw.  Default is 100
-    sigma_range : float
-        a float representing the number of standard deviations implied by parameter bounds.
-        Default is 4.0, which implies 95% confidence parameter bounds.
-    verbose : bool
-        flag for stdout.
+    Args:
+        pst (`pyemu.Pst`): a control file (or the name of control file).  The
+            parameter bounds in `pst` are used to define the variance of each
+            parameter group.
+        struct_dict (`dict`): a dict of GeoStruct (or structure file), and list of
+            pilot point template files pairs. If the values in the dict are
+            `pd.DataFrames`, then they must have an 'x','y', and 'parnme' column.
+             If the filename ends in '.csv', then a pd.DataFrame is loaded,
+             otherwise a pilot points file is loaded.
+        num_reals (`int`, optional): number of realizations to draw.  Default is 100
+        sigma_range (`float`): a float representing the number of standard deviations
+            implied by parameter bounds. Default is 4.0, which implies 95% confidence parameter bounds.
+        verbose (`bool`, optional): flag to control output to stdout.  Default is True.
+            flag for stdout.
 
     Returns
-    -------
+        `pyemu.ParameterEnsemble`: the realized parameter ensemble.
 
-    par_ens : pyemu.ParameterEnsemble
+    Notes:
+        parameters are realized by parameter group.  The variance of each
+            parameter group is used to scale the resulting geostatistical
+            covariance matrix Therefore, the sill of the geostatistical structures
+            in `struct_dict` should be 1.0
 
 
-    Example
-    -------
-    ``>>>import pyemu``
+    Example::
 
-    ``>>>pst = pyemu.Pst("pest.pst")``
+        pst = pyemu.Pst("my.pst")
+        sd = {"struct.dat":["hkpp.dat.tpl","vka.dat.tpl"]}
+        pe = pyemu.helpers.geostatistical_draws(pst,struct_dict=sd}
+        pe.to_csv("my_pe.csv")
 
-    ``>>>sd = {"struct.dat":["hkpp.dat.tpl","vka.dat.tpl"]}``
-
-    ``>>>pe = pyemu.helpers.geostatistical_draws(pst,struct_dict=sd,num_reals=100)``
-
-    ``>>>pe.to_csv("par_ensemble.csv")``
 
     """
 
@@ -197,7 +81,6 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
     keys.sort()
 
     for gs in keys:
-    #for gs,items in struct_dict.items():
         items = struct_dict[gs]
         if verbose: print("processing ",gs)
         if isinstance(gs,str):
@@ -208,6 +91,8 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
                 gs = gss[0]
             else:
                 gs = gss
+        if gs.sill != 1.0:
+            warnings.warn("GeoStruct {0} sill != 1.0 - this is bad!".format(gs.name))
         if not isinstance(items,list):
             items = [items]
         #items.sort()
@@ -282,56 +167,40 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
     return par_ens
 
 
-def pilotpoint_prior_builder(pst, struct_dict,sigma_range=4):
-    warnings.warn("'pilotpoint_prior_builder' has been renamed to "+\
-                  "'geostatistical_prior_builder'",PyemuWarning)
-    return geostatistical_prior_builder(pst=pst,struct_dict=struct_dict,
-                                        sigma_range=sigma_range)
-
-
 def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
-                                 par_knowledge_dict=None,verbose=False):
-    """ a helper function to construct a full prior covariance matrix using
-    a mixture of geostastical structures and parameter bounds information.
-    The covariance of parameters associated with geostatistical structures is defined
-    as a mixture of GeoStruct and bounds.  That is, the GeoStruct is used to construct a
-    pyemu.Cov, then the entire pyemu.Cov is scaled by the uncertainty implied by the bounds and
-    sigma_range. Sounds complicated...
+                                 verbose=False):
+    """construct a full prior covariance matrix using geostastical structures
+    and parameter bounds information.
 
-    Parameters
-    ----------
-    pst : pyemu.Pst
-        a control file (or the name of control file)
-    struct_dict : dict
-        a python dict of GeoStruct (or structure file), and list of pp tpl files pairs
-        If the values in the dict are pd.DataFrames, then they must have an
-        'x','y', and 'parnme' column.  If the filename ends in '.csv',
-        then a pd.DataFrame is loaded, otherwise a pilot points file is loaded.
-    sigma_range : float
-        a float representing the number of standard deviations implied by parameter bounds.
-        Default is 4.0, which implies 95% confidence parameter bounds.
-    par_knowledge_dict : dict
-        used to condition on existing knowledge about parameters.  This functionality is
-        currently in dev - don't use it.
-    verbose : bool
-        stdout flag
-    Returns
-    -------
-    Cov : pyemu.Cov
-        a covariance matrix that includes all adjustable parameters in the control
-        file.
+    Args:
+        pst (`pyemu.Pst`): a control file instance (or the name of control file)
+        struct_dict (`dict`): a dict of GeoStruct (or structure file), and list of
+            pilot point template files pairs. If the values in the dict are
+            `pd.DataFrames`, then they must have an 'x','y', and 'parnme' column.
+             If the filename ends in '.csv', then a pd.DataFrame is loaded,
+             otherwise a pilot points file is loaded.
+        sigma_range (`float`): a float representing the number of standard deviations
+            implied by parameter bounds. Default is 4.0, which implies 95% confidence parameter bounds.
+        verbose (`bool`, optional): flag to control output to stdout.  Default is True.
+            flag for stdout.
 
-    Example
-    -------
-    ``>>>import pyemu``
+    Returns:
 
-    ``>>>pst = pyemu.Pst("pest.pst")``
+        `pyemu.Cov`: a covariance matrix that includes all adjustable parameters in the control
+            file.
 
-    ``>>>sd = {"struct.dat":["hkpp.dat.tpl","vka.dat.tpl"]}``
+    Notes:
+        The covariance of parameters associated with geostatistical structures is defined
+            as a mixture of GeoStruct and bounds.  That is, the GeoStruct is used to construct a
+            pyemu.Cov, then the entire pyemu.Cov is scaled by the uncertainty implied by the bounds and
+            sigma_range. Sounds complicated...
 
-    ``>>>cov = pyemu.helpers.geostatistical_prior_builder(pst,struct_dict=sd)``
+    Example::
 
-    ``>>>cov.to_ascii("prior.cov")``
+        pst = pyemu.Pst("my.pst")
+        sd = {"struct.dat":["hkpp.dat.tpl","vka.dat.tpl"]}
+        cov = pyemu.helpers.geostatistical_draws(pst,struct_dict=sd}
+        cov.to_binary("prior.jcb")
 
     """
 
@@ -425,7 +294,7 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
 
 
 
-def condition_on_par_knowledge(cov,par_knowledge_dict):
+def _condition_on_par_knowledge(cov,par_knowledge_dict):
     """  experimental function to include conditional prior information
     for one or more parameters in a full covariance matrix
     """
@@ -465,57 +334,42 @@ def condition_on_par_knowledge(cov,par_knowledge_dict):
 
 
 def kl_setup(num_eig,sr,struct,prefixes,
-             factors_file="kl_factors.dat",islog=True, basis_file=None,
+             factors_file="kl_factors.dat",
+             islog=True, basis_file=None,
              tpl_dir="."):
+
     """setup a karhuenen-Loeve based parameterization for a given
     geostatistical structure.
 
-    Parameters
-    ----------
-    num_eig : int
-        number of basis vectors to retain in the reduced basis
-    sr : flopy.reference.SpatialReference
+    Args:
+        num_eig (`int`): the number of basis vectors to retain in the
+            reduced basis
+        sr (`flopy.reference.SpatialReference`): a spatial reference instance
+        struct (`str`): a PEST-style structure file.  Can also be a
+            `pyemu.geostats.Geostruct` instance.
+        prefixes ([`str`]): a list of parameter prefixes to generate KL
+            parameterization for.
+        factors_file (`str`, optional): name of the PEST-style interpolation
+            factors file to write (can be processed with FAC2REAL).
+            Default is "kl_factors.dat".
+        islog (`bool`, optional): flag to indicate if the parameters are log transformed.
+            Default is True
+        basis_file (`str`, optional): the name of the PEST-style binary (e.g. jco)
+            file to write the reduced basis vectors to.  Default is None (not saved).
+        tpl_dir (`str`, optional): the directory to write the resulting
+            template files to.  Default is "." (current directory).
 
-    struct : str or pyemu.geostats.Geostruct
-        geostatistical structure (or file containing one)
+    Returns:
+        `pandas.DataFrame`: a dataframe of parameter information.
 
-    array_dict : dict
-        a dict of arrays to setup as KL-based parameters.  The key becomes the
-        parameter name prefix. The total number of parameters is
-        len(array_dict) * num_eig
+    Notes:
+        This is the companion function to `helpers.apply_kl()`
 
-    basis_file : str
-        the name of the PEST-format binary file where the reduced basis will be saved
+    Example::
 
-    tpl_file : str
-        the name of the template file to make.  The template
-        file is a csv file with the parameter names, the
-        original factor values,and the template entries.
-        The original values can be used to set the parval1
-        entries in the control file
-
-    Returns
-    -------
-    back_array_dict : dict
-        a dictionary of back transformed arrays.  This is useful to see
-        how much "smoothing" is taking place compared to the original
-        arrays.
-
-    Note
-    ----
-    requires flopy
-
-    Example
-    -------
-    ``>>>import flopy``
-
-    ``>>>import pyemu``
-
-    ``>>>m = flopy.modflow.Modflow.load("mymodel.nam")``
-
-    ``>>>a_dict = {"hk":m.lpf.hk[0].array}``
-
-    ``>>>ba_dict = pyemu.helpers.kl_setup(10,m.sr,"struct.dat",a_dict)``
+        m = flopy.modflow.Modflow.load("mymodel.nam")
+        prefixes = ["hk","vka","ss"]
+        df = pyemu.helpers.kl_setup(10,m.sr,"struct.dat",prefixes)
 
     """
 
@@ -561,7 +415,8 @@ def kl_setup(num_eig,sr,struct,prefixes,
     pyemu.pp_utils.write_pp_file(os.path.join("temp.dat"),pp_df)
 
 
-    eigen_basis_to_factor_file(sr.nrow,sr.ncol,trunc_basis,factors_file=factors_file,islog=islog)
+    _eigen_basis_to_factor_file(sr.nrow, sr.ncol, trunc_basis,
+                                factors_file=factors_file, islog=islog)
     dfs = []
     for prefix in prefixes:
         tpl_file = os.path.join(tpl_dir,"{0}.dat_kl.tpl".format(prefix))
@@ -600,7 +455,7 @@ def kl_setup(num_eig,sr,struct,prefixes,
     # return back_array_dict
 
 
-def eigen_basis_to_factor_file(nrow,ncol,basis,factors_file,islog=True):
+def _eigen_basis_to_factor_file(nrow, ncol, basis, factors_file, islog=True):
     assert nrow * ncol == basis.shape[0]
     with open(factors_file,'w') as f:
         f.write("junk.dat\n")
@@ -618,32 +473,22 @@ def eigen_basis_to_factor_file(nrow,ncol,basis,factors_file,islog=True):
 
 
 def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
-    """ Applies a KL parameterization transform from basis factors to model
-    input arrays.  Companion function to kl_setup()
+    """ Apply a KL parameterization transform from basis factors to model
+    input arrays.
 
-    Parameters
-    ----------
-    par_file : str
-        the csv file to get factor values from.  Must contain
-        the following columns: name, new_val, org_val
-    basis_file : str
-        the binary file that contains the reduced basis
+    Args:
+        par_file (`str`): the csv file to get factor values from.  Must contain
+            the following columns: "name", "new_val", "org_val"
+        basis_file (`str`): the PEST-style binary file that contains the reduced
+            basis
+        par_to_file_dict (`dict`): a mapping from KL parameter prefixes to array
+            file names.
+        arr_shape (tuple): a length 2 tuple of number of rows and columns
+            the resulting arrays should have.
 
-    par_to_file_dict : dict
-        a mapping from KL parameter prefixes to array file names.
-
-    Note
-    ----
-    This is the companion function to kl_setup.
-
-    This function should be called during the forward run
-
-    Example
-    -------
-    ``>>>import pyemu``
-
-    ``>>>pyemu.helpers.kl_apply("kl.dat","basis.dat",{"hk":"hk_layer_1.dat",(100,100))``
-
+        Notes:
+            This is the companion function to kl_setup.
+            This function should be called during the forward run
 
     """
     df = pd.read_csv(par_file)
@@ -674,31 +519,23 @@ def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
 
 def zero_order_tikhonov(pst, parbounds=True,par_groups=None,
                         reset=True):
-    """setup preferred-value regularization
+    """setup preferred-value regularization in a pest control file.
 
-    Parameters
-    ----------
-    pst : pyemu.Pst
-        the control file instance
-    parbounds : bool
-        flag to weight the prior information equations according
-        to parameter bound width - approx the KL transform. Default
-        is True
-    par_groups : list
-        parameter groups to build PI equations for.  If None, all
-        adjustable parameters are used. Default is None
+    Args:
+        pst (`pyemu.Pst`): the control file instance
+        parbounds (`bool`, optional): flag to weight the new prior information
+            equations according to parameter bound width - approx the KL
+            transform. Default is True
+        par_groups (`list`): a list of parameter groups to build PI equations for.
+            If None, all adjustable parameters are used. Default is None
+        reset (`bool`): a flag to remove any existing prior information equations
+            in the control file.  Default is True
 
-    reset : bool
-        flag to reset the prior_information attribute of the pst
-        instance.  Default is True
+    Example::
 
-    Example
-    -------
-    ``>>>import pyemu``
-
-    ``>>>pst = pyemu.Pst("pest.pst")``
-
-    ``>>>pyemu.helpers.zero_order_tikhonov(pst)``
+        pst = pyemu.Pst("my.pst")
+        pyemu.helpers.zero_order_tikhonov(pst)
+        pst.write("my_reg.pst")
 
     """
 
@@ -738,20 +575,15 @@ def zero_order_tikhonov(pst, parbounds=True,par_groups=None,
                           "weight": weight})
         pst.prior_information = pst.prior_information.append(pi)
     if parbounds:
-        regweight_from_parbound(pst)
+        _regweight_from_parbound(pst)
     if pst.control_data.pestmode == "estimation":
         pst.control_data.pestmode = "regularization"
 
 
-def regweight_from_parbound(pst):
+def _regweight_from_parbound(pst):
     """sets regularization weights from parameter bounds
     which approximates the KL expansion.  Called by
     zero_order_tikhonov().
-
-    Parameters
-    ----------
-    pst : pyemu.Pst
-        a control file instance
 
     """
 
@@ -773,32 +605,29 @@ def regweight_from_parbound(pst):
 
 def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
     """setup preferred-difference regularization from a covariance matrix.
-    The weights on the prior information equations are the Pearson
-    correlation coefficients implied by covariance matrix.
 
-    Parameters
-    ----------
-    pst : pyemu.Pst
-        pst instance
-    cov : pyemu.Cov
-        covariance matrix instance
-    reset : bool
-        drop all other pi equations.  If False, append to
-        existing pi equations
-    abs_drop_tol : float
-        tolerance to control how many pi equations are written.
-        If the Pearson C is less than abs_drop_tol, the prior information
-        equation will not be included in the control file
 
-    Example
-    -------
-    ``>>>import pyemu``
+    Args:
+        pst (`pyemu.Pst`): the PEST control file
+        cov (`pyemu.Cov`): a covariance matrix instance with
+            some or all of the parameters listed in `pst`.
+        reset (`bool`): a flag to remove any existing prior information equations
+            in the control file.  Default is True
+        abs_drop_tol (`float`, optional): tolerance to control how many pi equations
+            are written. If the absolute value of the Pearson CC is less than
+            abs_drop_tol, the prior information equation will not be included in
+            the control file.
 
-    ``>>>pst = pyemu.Pst("pest.pst")``
+    Notes:
+        The weights on the prior information equations are the Pearson
+            correlation coefficients implied by covariance matrix.
 
-    ``>>>cov = pyemu.Cov.from_ascii("prior.cov")``
+    Example::
 
-    ``>>>pyemu.helpers.first_order_pearson_tikhonov(pst,cov,abs_drop_tol=0.25)``
+        pst = pyemu.Pst("my.pst")
+        cov = pyemu.Cov.from_ascii("my.cov")
+        pyemu.helpers.first_order_pearson_tikhonov(pst,cov)
+        pst.write("my_reg.pst")
 
     """
     assert isinstance(cov,pyemu.Cov)
@@ -846,16 +675,18 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
     if pst.control_data.pestmode == "estimation":
         pst.control_data.pestmode = "regularization"
 
-def simple_tpl_from_pars(parnames, tplfilename='model.input.tpl'):
-    """
-    Make a template file just assuming a list of parameter names the values of which should be
-    listed in order in a model input file
-    Args:
-        parnames: list of names from which to make a template file
-        tplfilename: filename for TPL file (default: model.input.tpl)
 
-    Returns:
-        writes a file <tplfilename> with each parameter name on a line
+def simple_tpl_from_pars(parnames, tplfilename='model.input.tpl'):
+    """Make a simple template file from a list of parameter names.
+
+    Args:
+        parnames ([`str`]): list of parameter names to put in the
+            new template file
+        tplfilename (`str`): Name of the template file to create.  Default
+            is "model.input.tpl"
+
+    Notes:
+        writes a file `tplfilename` with each parameter name in `parnames` on a line
 
     """
     with open(tplfilename, 'w') as ofp:
@@ -864,15 +695,18 @@ def simple_tpl_from_pars(parnames, tplfilename='model.input.tpl'):
 
 
 def simple_ins_from_obs(obsnames, insfilename='model.output.ins'):
-    """
-    writes an instruction file that assumes wanting to read the values names in obsnames in order
-    one per line from a model output file
-    Args:
-        obsnames: list of obsnames to read in
-        insfilename: filename for INS file (default: model.output.ins)
+    """write a simple instruction file that reads the values named
+     in obsnames in order, one per line from a model output file
 
-    Returns:
-        writes a file <insfilename> with each observation read off a line
+    Args:
+        obsnames (`str`): list of observation names to put in the
+            new instruction file
+        insfilename (`str`): the name of the instruction file to
+            create. Default is "model.output.ins"
+
+    Notes:
+        writes a file `insfilename` with each observation read off
+        of a single line
 
     """
     with open(insfilename, 'w') as ofp:
@@ -881,17 +715,16 @@ def simple_ins_from_obs(obsnames, insfilename='model.output.ins'):
 
 def pst_from_parnames_obsnames(parnames, obsnames,
                                tplfilename='model.input.tpl', insfilename='model.output.ins'):
-    """
-    Creates a Pst object from a list of parameter names and a list of observation names.
-    Default values are provided for the TPL and INS
+    """Creates a Pst object from a list of parameter names and a list of observation names.
+
     Args:
-        parnames: list of names from which to make a template file
-        obsnames: list of obsnames to read in
-        tplfilename: filename for TPL file (default: model.input.tpl)
-        insfilename: filename for INS file (default: model.output.ins)
+        parnames (`str`): list of parameter names
+        obsnames (`str`): list of observation names
+        tplfilename (`str`): template filename. Default is  "model.input.tpl"
+        insfilename (`str`): instruction filename. Default is "model.output.ins"
 
     Returns:
-        Pst object
+        `pyemu.Pst`: the generic control file
 
     """
     simple_tpl_from_pars(parnames, tplfilename)
@@ -903,26 +736,19 @@ def pst_from_parnames_obsnames(parnames, obsnames,
     return pyemu.Pst.from_io_files(tplfilename, modelinputfilename, insfilename, modeloutputfilename)
 
 def read_pestpp_runstorage(filename,irun=0,with_metadata=False):
-    """read pars and obs from a specific run in a pest++ serialized run storage file into
-    pandas.DataFrame(s)
+    """read pars and obs from a specific run in a pest++ serialized
+    run storage file into dataframes.
 
-    Parameters
-    ----------
-    filename : str
-        the name of the run storage file
-    irun : int
-        the run id to process. If 'all', then all runs are read. Default is 0
-    with_metadata : bool
-        flag to return run stats and info txt as well
+    Args:
+        filename (`str`): the name of the run storage file
+        irun (`int`): the run id to process. If 'all', then all runs are
+            read. Default is 0
+        with_metadata (`bool`): flag to return run stats and info txt as well
 
-    Returns
-    -------
-    par_df : pandas.DataFrame
-        parameter information
-    obs_df : pandas.DataFrame
-        observation information
-    metadata : pandas.DataFrame
-        run status and info txt.
+    Returns:
+        `pandas.DataFrame`: parameter information
+        `pandas.DataFrame`: observation information
+        `pandas.DataFrame`: optionally run status and info txt.
 
     """
 
@@ -998,33 +824,32 @@ def read_pestpp_runstorage(filename,irun=0,with_metadata=False):
     else:
         return par_df,obs_df
 
-
-
 def jco_from_pestpp_runstorage(rnj_filename,pst_filename):
-    """ read pars and obs from a pest++ serialized run storage file (e.g., .rnj) and return 
-    pyemu.Jco.  This can then be passed to Jco.to_binary or Jco.to_coo, etc., to write jco file
-    in a subsequent step to avoid memory resource issues associated with very large problems.
+    """ read pars and obs from a pest++ serialized run storage
+    file (e.g., .rnj) and return jacobian matrix instance
 
-    Parameters
-    ----------
-    rnj_filename : str
-        the name of the run storage file
-    pst_filename : str
-        the name of the pst file
+    Args:
+        rnj_filename (`str`): the name of the run storage file
+        pst_filename (`str`): the name of the pst file
 
-    Returns
-    -------
-    jco_cols : pyemu.Jco
+    Notes:
+        This can then be passed to Jco.to_binary or Jco.to_coo, etc., to write jco
+            file in a subsequent step to avoid memory resource issues associated
+            with very large problems.
 
 
-    TODO
-    ----
-    Check rnj file contains transformed par vals (i.e., in model input space)
+    Returns:
+        `pyemu.Jco`: a jacobian matrix constructed from the run results and
+            pest control file information.
 
-    Currently only returns pyemu.Jco; doesn't write jco file due to memory
-    issues associated with very large problems
 
-    Compare rnj and jco from Freyberg problem in autotests
+    TODO:
+        Check rnj file contains transformed par vals (i.e., in model input space)
+
+        Currently only returns pyemu.Jco; doesn't write jco file due to memory
+        issues associated with very large problems
+
+        Compare rnj and jco from Freyberg problem in autotests
 
     """
 
@@ -1076,27 +901,24 @@ def jco_from_pestpp_runstorage(rnj_filename,pst_filename):
 
 
 def parse_dir_for_io_files(d):
-    """ a helper function to find template/input file pairs and
-    instruction file/output file pairs.  the return values from this
-    function can be passed straight to pyemu.Pst.from_io_files() classmethod
-    constructor. Assumes the template file names are <input_file>.tpl and
-    instruction file names are <output_file>.ins.
+    """ find template/input file pairs and instruction file/output file
+    pairs by extension.
 
-    Parameters
-    ----------
-    d : str
-        directory to search for interface files
+    Args:
+        d (`str`): directory to search for interface files
 
-    Returns
-    -------
-    tpl_files : list
-        list of template files in d
-    in_files : list
-        list of input files in d
-    ins_files : list
-        list of instruction files in d
-    out_files : list
-        list of output files in d
+    Notes:
+        the return values from this function can be passed straight to
+        `pyemu.Pst.from_io_files()` classmethod constructor. Assumes the
+        template file names are <input_file>.tpl and instruction file names
+         are <output_file>.ins.
+
+    Returns:
+
+        [`str`]: list of template files in d
+        [`str`]: list of input files in d
+        [`str`]: list of instruction files in d
+        [`str`]: list of output files in d
 
     """
 
@@ -2935,7 +2757,7 @@ class PstFromFlopyModel(object):
         #f_tpl.write("index ")
         #f_tpl.write(df.loc[:,names].to_string(index_names=True))
         #f_tpl.close()
-        write_df_tpl(tpl_name,df.loc[:,names],sep=' ',index_label="index", quotechar=" ")
+        _write_df_tpl(tpl_name, df.loc[:, names], sep=' ', index_label="index", quotechar=" ")
         self.par_dfs["temporal_list"] = df
 
 
@@ -3078,7 +2900,7 @@ class PstFromFlopyModel(object):
                 #df.to_csv(f)
             #    f.write("index ")
             #    f.write(df.to_string(index_names=False)+'\n')
-            write_df_tpl(os.path.join(self.m.model_ws,tpl_file),df,sep=' ',index_label="index")
+            _write_df_tpl(os.path.join(self.m.model_ws, tpl_file), df, sep=' ', index_label="index")
             self.tpl_files.append(tpl_file)
             self.in_files.append(in_file)
 
@@ -3648,112 +3470,20 @@ def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
     return df
 
 
-def _istextfile(filename, blocksize=512):
-    warnings.warn("_istextfile() has moved to os_utils",PyemuWarning)
-    return pyemu.os_utils._istextfile(filename,blocksize=blocksize)
-
-
-def plot_summary_distributions(df,ax=None,label_post=False,label_prior=False,
-                               subplots=False,figsize=(11,8.5),pt_color='b'):
-    """ helper function to plot gaussian distrbutions from prior and posterior
-    means and standard deviations
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        a dataframe and csv file.  Must have columns named:
-        'prior_mean','prior_stdev','post_mean','post_stdev'.  If loaded
-        from a csv file, column 0 is assumed to tbe the index
-    ax: matplotlib.pyplot.axis
-        If None, and not subplots, then one is created
-        and all distributions are plotted on a single plot
-    label_post: bool
-        flag to add text labels to the peak of the posterior
-    label_prior: bool
-        flag to add text labels to the peak of the prior
-    subplots: (boolean)
-        flag to use subplots.  If True, then 6 axes per page
-        are used and a single prior and posterior is plotted on each
-    figsize: tuple
-        matplotlib figure size
-
-    Returns
-    -------
-    figs : list
-        list of figures
-    axes : list
-        list of axes
-
-    Note
-    ----
-    This is useful for demystifying FOSM results
-
-    if subplots is False, a single axis is returned
-
-    Example
-    -------
-    ``>>>import matplotlib.pyplot as plt``
-
-    ``>>>import pyemu``
-
-    ``>>>pyemu.helpers.plot_summary_distributions("pest.par.usum.csv")``
-
-    ``>>>plt.show()``
-    """
-    warnings.warn("pyemu.helpers.plot_summary_distributions() has moved to plot_utils",PyemuWarning)
-    from pyemu import plot_utils
-    return plot_utils.plot_summary_distributions(df=df,ax=ax,label_post=label_post,
-                                                 label_prior=label_prior,subplots=subplots,
-                                                 figsize=figsize,pt_color=pt_color)
-
-
-def gaussian_distribution(mean, stdev, num_pts=50):
-    """ get an x and y numpy.ndarray that spans the +/- 4
-    standard deviation range of a gaussian distribution with
-    a given mean and standard deviation. useful for plotting
-
-    Parameters
-    ----------
-    mean : float
-        the mean of the distribution
-    stdev : float
-        the standard deviation of the distribution
-    num_pts : int
-        the number of points in the returned ndarrays.
-        Default is 50
-
-    Returns
-    -------
-    x : numpy.ndarray
-        the x-values of the distribution
-    y : numpy.ndarray
-        the y-values of the distribution
-
-    """
-    warnings.warn("pyemu.helpers.gaussian_distribution() has moved to plot_utils",PyemuWarning)
-    from pyemu import plot_utils
-    return plot_utils.gaussian_distribution(mean=mean,stdev=stdev,num_pts=num_pts)
-
-
 def build_jac_test_csv(pst,num_steps,par_names=None,forward=True):
     """ build a dataframe of jactest inputs for use with sweep
 
-    Parameters
-    ----------
-    pst : pyemu.Pst
+    Args:
+        pst (`pyemu.Pst`): existing control file
+        num_steps (`int`): number of pertubation steps for each parameter
+        par_names [`str`]: list of parameter names of pars to test.
+            If None, all adjustable pars are used. Default is None
+        forward (`bool`): flag to start with forward pertubations.
+            Default is True
 
-    num_steps : int
-        number of pertubation steps for each parameter
-    par_names : list
-        names of pars to test.  If None, all adjustable pars are used
-        Default is None
-    forward : bool
-        flag to start with forward pertubations.  Default is True
-
-    Returns
-    -------
-    df : pandas.DataFrame
-        the index of the dataframe is par name and the parval used.
+    Returns:
+        `pandas.DataFrame`: the sequence of model runs to evaluate
+            for the jactesting.
 
     """
     if isinstance(pst,str):
@@ -3822,7 +3552,7 @@ def build_jac_test_csv(pst,num_steps,par_names=None,forward=True):
     return df
 
 
-def write_df_tpl(filename,df,sep=',',tpl_marker='~',**kwargs):
+def _write_df_tpl(filename, df, sep=',', tpl_marker='~', **kwargs):
     """function write a pandas dataframe to a template file.
     Parameters
     ----------
@@ -3857,30 +3587,27 @@ def write_df_tpl(filename,df,sep=',',tpl_marker='~',**kwargs):
 
 
 def setup_fake_forward_run(pst,new_pst_name,org_cwd='.',bak_suffix="._bak",new_cwd='.'):
-    """setup a fake forward run for a pst.  The fake
-    forward run simply copies existing backup versions of
-    model output files to the outfiles pest(pp) is looking
-    for.  This is really a development option for debugging
+    """setup a fake forward run for a pst.
 
-    Parameters
-    ----------
-    pst : pyemu.Pst
+    Args:
+        pst (`pyemu.Pst`): existing control file
+        new_pst_name (`str`): new control file to write
+        org_cwd (`str`): existing working dir.  Default is "."
+        bak_suffix (`str`, optional): suffix to add to existing
+            model output files when making backup copies.
+        new_cwd (`str`): new working dir.  Default is ".".
 
-    new_pst_name : str
-
-    org_cwd : str
-        existing working dir
-    new_cwd : str
-        new working dir
+    Notes:
+        The fake forward run simply copies existing backup versions of
+            model output files to the outfiles pest(pp) is looking
+            for.  This is really a development option for debugging
+            PEST++ issues.
 
     """
 
 
     if new_cwd != org_cwd and not os.path.exists(new_cwd):
         os.mkdir(new_cwd)
-
-
-
     pairs = {}
 
     for output_file in pst.output_files:

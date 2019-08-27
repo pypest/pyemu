@@ -14,7 +14,7 @@ pd.options.display.max_colwidth = 100
 from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,\
     parse_tpl_file,try_process_output_file
 from pyemu.utils.os_utils import run
-from pyemu.utils.helpers import write_df_tpl
+from pyemu.utils.helpers import _write_df_tpl
 from ..pyemu_warnings import PyemuWarning
 PP_FMT = {"name": SFMT, "x": FFMT, "y": FFMT, "zone": IFMT, "tpl": SFMT,
           "parval1": FFMT}
@@ -1195,7 +1195,7 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
     seg_data.loc[:, notpar_cols] = "1.0"
 
     #write the template file
-    write_df_tpl(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"), seg_data, sep=',')
+    _write_df_tpl(os.path.join(model_ws, "sfr_seg_pars.dat.tpl"), seg_data, sep=',')
 
     #make sure the tpl file exists and has the same num of pars
     parnme = parse_tpl_file(os.path.join(model_ws,"sfr_seg_pars.dat.tpl"))
@@ -1205,7 +1205,7 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
     df["pargp"] = df.parnme.apply(lambda x: x.split('_')[0])
 
     if include_temporal_pars:
-        write_df_tpl(filename=os.path.join(model_ws,"sfr_seg_temporal_pars.dat.tpl"),df=tmp_df)
+        _write_df_tpl(filename=os.path.join(model_ws, "sfr_seg_temporal_pars.dat.tpl"), df=tmp_df)
         pargp = [pname.split('_')[0]+"_tmp" for pname in tmp_pnames]
         tmp_df = pd.DataFrame(data={"parnme":tmp_pnames,"pargp":pargp},index=tmp_pnames)
         if not tmp_df.empty:
@@ -1328,7 +1328,7 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.', par_cols=['strhc1']):
         reach_data.loc[:, notpar_cols] = "1.0"
 
         # write the template file
-        write_df_tpl(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"),reach_data,sep=',')
+        _write_df_tpl(os.path.join(model_ws, "sfr_reach_pars.dat.tpl"), reach_data, sep=',')
 
         # write the config file used by apply_sfr_pars()
         with open(os.path.join(model_ws, "sfr_reach_pars.config"), 'w') as f:
