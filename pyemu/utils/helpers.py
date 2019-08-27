@@ -3097,19 +3097,17 @@ class PstFromFlopyModel(object):
 
 
 def apply_array_pars(arr_par_file="arr_pars.csv"):
-    """ a function to apply array-based multipler parameters.  Used to implement
-    the parameterization constructed by PstFromFlopyModel during a forward run
+    """ a function to apply array-based multipler parameters.
 
-    Parameters
-    ----------
-    arr_par_file : str
-    path to csv file detailing parameter array multipliers
+    Args:
+        arr_par_file (`str`): path to csv file detailing parameter array multipliers.
+            This file is written by PstFromFlopy.
 
-    Note
-    ----
-    "arr_pars.csv" - is written by PstFromFlopy
-
-    the function should be added to the forward_run.py script but can be called on any correctly formatted csv
+    Notes:
+        Used to implement the parameterization constructed by
+            PstFromFlopyModel during a forward run
+        This function should be added to the forward_run.py script but can
+            be called on any correctly formatted csv
 
     """
     df = pd.read_csv(arr_par_file)
@@ -3160,14 +3158,13 @@ def apply_array_pars(arr_par_file="arr_pars.csv"):
         np.savetxt(model_file,np.atleast_2d(org_arr),fmt="%15.6E",delimiter='')
 
 def apply_list_pars():
-    """ a function to apply boundary condition multiplier parameters.  Used to implement
-    the parameterization constructed by PstFromFlopyModel during a forward run
+    """ a function to apply boundary condition multiplier parameters.
 
-    Note
-    ----
-    requires either "temporal_list_pars.csv" or "spatial_list_pars.csv"
-
-    should be added to the forward_run.py script
+    Notes:
+        Used to implement the parameterization constructed by
+            PstFromFlopyModel during a forward run
+        Requires either "temporal_list_pars.csv" or "spatial_list_pars.csv"
+        Should be added to the forward_run.py script
 
     """
     temp_file = "temporal_list_pars.dat"
@@ -3259,66 +3256,25 @@ def apply_list_pars():
                     fmts += " %9G"
         np.savetxt(os.path.join(model_ext_path, fname), df_list.loc[:, names].values, fmt=fmts)
 
-def apply_hfb_pars(par_file='hfb6_pars.csv'):
-    """ a function to apply HFB multiplier parameters.  Used to implement
-    the parameterization constructed by write_hfb_zone_multipliers_template()
-
-    This is to account for the horrible HFB6 format that differs from other
-    BCs making this a special case
-
-    Note
-    ----
-    requires "hfb_pars.csv"
-
-    should be added to the forward_run.py script
-    """
-    hfb_pars = pd.read_csv(par_file)
-
-    hfb_mults_contents = open(hfb_pars.mlt_file.values[0], 'r').readlines()
-    skiprows = sum([1 if i.strip().startswith('#') else 0
-                    for i in hfb_mults_contents]) + 1
-    header = hfb_mults_contents[:skiprows]
-
-    # read in the multipliers
-    names = ['lay', 'irow1','icol1','irow2','icol2', 'hydchr']
-    hfb_mults = pd.read_csv(hfb_pars.mlt_file.values[0], skiprows=skiprows,
-                            delim_whitespace=True, names=names).dropna()
-
-    # read in the original file
-    hfb_org = pd.read_csv(hfb_pars.org_file.values[0], skiprows=skiprows,
-                          delim_whitespace=True, names=names).dropna()
-
-    # multiply it out
-    hfb_org.hydchr *= hfb_mults.hydchr
-
-    for cn in names[:-1]:
-        hfb_mults[cn] = hfb_mults[cn].astype(np.int)
-        hfb_org[cn] = hfb_org[cn].astype(np.int)
-    # write the results
-    with open(hfb_pars.model_file.values[0], 'w', newline='') as ofp:
-        [ofp.write('{0}\n'.format(line.strip())) for line in header]
-        ofp.flush()
-        hfb_org[['lay', 'irow1', 'icol1', 'irow2', 'icol2', 'hydchr']].to_csv(
-            ofp, sep=' ', header=None, index=None)
 
 
-def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_reference=None,
-                    longnames=False):
-    """ write a constant (uniform) template file
+def write_const_tpl(name, tpl_file, suffix, zn_array=None,
+                    shape=None,longnames=False):
+    """ write a constant (uniform) template file for a 2-D array
 
-    Parameters
-    ----------
-    name : str
-        the base parameter name
-    tpl_file : str
-        the template file to write - include path
-    zn_array : numpy.ndarray
-        an array used to skip inactive cells
+    Args:
+        name (`str`): the base parameter name
+        tpl_file (`str`): the template file to write
+        zn_array (`numpy.ndarray`, optional): an array used to skip inactive cells,
+            and optionally get shape info.
+        shape (`tuple`): tuple nrow and ncol.  Either `zn_array` or `shape`
+            must be passed
+        longnames (`bool`): flag to use longer names that exceed 12 chars in length.
+            Default is False.
 
-    Returns
-    -------
-    df : pandas.DataFrame
-        a dataframe with parameter information
+    Returns:
+        `pandas.DataFrame`: a dataframe with parameter information
+
 
     """
 
@@ -3356,20 +3312,23 @@ def write_const_tpl(name, tpl_file, suffix, zn_array=None, shape=None, spatial_r
 
 def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
                    spatial_reference=None,longnames=False):
-    """ write a grid-based template file
-    Parameters
-    ----------
-    name : str
-        the base parameter name
-    tpl_file : str
-        the template file to write - include path
-    zn_array : numpy.ndarray
-        an array used to skip inactive cells
+    """ write a grid-based template file for a 2-D array
 
-    Returns
-    -------
-    df : pandas.DataFrame
-        a dataframe with parameter information
+    Args:
+        name (`str`): the base parameter name
+        tpl_file (`str`): the template file to write - include path
+        zn_array (`numpy.ndarray`, optional): zone array to identify
+            inactive cells.  Default is None
+        shape (`tuple`, optional): a length-two tuple of nrow and ncol.  Either
+            `zn_array` or `shape` must be passed.
+        spatial_reference (`flopy.utils.SpatialReference`): a spatial reference instance.
+            If `longnames` is True, then `spatial_reference` is used to add spatial info
+            to the parameter names.
+        longnames (`bool`): flag to use longer names that exceed 12 chars in length.
+            Default is False.
+
+    Returns:
+        `pandas.DataFrame`: a dataframe with parameter information
 
     """
 
@@ -3414,26 +3373,21 @@ def write_grid_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
 
 
 def write_zone_tpl(name, tpl_file, suffix, zn_array=None, shape=None,
-                   spatial_reference=None,longnames=False):
-    """ write a zone template file
+                    longnames=False):
+    """ write a zone-based template file for a 2-D array
 
-    Parameters
-    ----------
-    model : flopy model object
-        model from which to obtain workspace information, nrow, and ncol
-    name : str
-        the base parameter name
-    tpl_file : str
-        the template file to write
-    zn_array : numpy.ndarray
-        an array used to skip inactive cells
+    Args:
+        name (`str`): the base parameter name
+        tpl_file (`str`): the template file to write
+        zn_array (`numpy.ndarray`, optional): an array used to skip inactive cells,
+            and optionally get shape info.
+        shape (`tuple`): tuple nrow and ncol.  Either `zn_array` or `shape`
+            must be passed
+        longnames (`bool`): flag to use longer names that exceed 12 chars in length.
+            Default is False.
 
-    logger : a logger object
-        optional - a logger object to document errors, etc.
-    Returns
-    -------
-    df : pandas.DataFrame
-        a dataframe with parameter information
+    Returns:
+        `pandas.DataFrame`: a dataframe with parameter information
 
     """
 

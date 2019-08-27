@@ -2054,6 +2054,51 @@ def apply_gage_obs(return_obs_file=False):
         return df
 
 
+def apply_hfb_pars(par_file='hfb6_pars.csv'):
+    """ a function to apply HFB multiplier parameters.
+
+    Args:
+        par_file (`str`): the HFB parameter info file.
+            Default is `hfb_pars.csv`
+
+    Notes:
+        This is the companion function to
+            `gw_utils.write_hfb_zone_multipliers_template()`
+        This is to account for the horrible HFB6 format that differs from other
+            BCs making this a special case
+        Requires "hfb_pars.csv"
+        Should be added to the forward_run.py script
+    """
+    hfb_pars = pd.read_csv(par_file)
+
+    hfb_mults_contents = open(hfb_pars.mlt_file.values[0], 'r').readlines()
+    skiprows = sum([1 if i.strip().startswith('#') else 0
+                    for i in hfb_mults_contents]) + 1
+    header = hfb_mults_contents[:skiprows]
+
+    # read in the multipliers
+    names = ['lay', 'irow1','icol1','irow2','icol2', 'hydchr']
+    hfb_mults = pd.read_csv(hfb_pars.mlt_file.values[0], skiprows=skiprows,
+                            delim_whitespace=True, names=names).dropna()
+
+    # read in the original file
+    hfb_org = pd.read_csv(hfb_pars.org_file.values[0], skiprows=skiprows,
+                          delim_whitespace=True, names=names).dropna()
+
+    # multiply it out
+    hfb_org.hydchr *= hfb_mults.hydchr
+
+    for cn in names[:-1]:
+        hfb_mults[cn] = hfb_mults[cn].astype(np.int)
+        hfb_org[cn] = hfb_org[cn].astype(np.int)
+    # write the results
+    with open(hfb_pars.model_file.values[0], 'w', newline='') as ofp:
+        [ofp.write('{0}\n'.format(line.strip())) for line in header]
+        ofp.flush()
+        hfb_org[['lay', 'irow1', 'icol1', 'irow2', 'icol2', 'hydchr']].to_csv(
+            ofp, sep=' ', header=None, index=None)
+
+
 def write_hfb_zone_multipliers_template(m):
     """write a template file for an hfb using multipliers per zone (double yuck!)
 
