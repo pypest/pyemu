@@ -1614,18 +1614,18 @@ def apply_sfr_obs():
 
 def load_sfr_out(sfr_out_file, selection=None):
     """load an ASCII SFR output file into a dictionary of kper: dataframes.
-    aggregates flow to aquifer for segments and returns and flow out at
-    downstream end of segment.
 
-    Parameters
-    ----------
-    sfr_out_file : str
-        SFR ASCII output file
+    Args:
+        sfr_out_file (`str`): SFR ASCII output file
+        selection (`pandas.DataFrame`): a dataframe of `reach` and `segment` pairs to
+            load.  If `None`, all reach-segment pairs are loaded.  Default is `None`.
 
-    Returns
-    -------
-        sfr_dict : dict
-            dictionary of {kper:dataframe}
+    Notes:
+        aggregates flow to aquifer for segments and returns and flow out at
+            downstream end of segment.
+
+    Returns:
+        `dict`: dictionary of {kper:`pandas.DataFrame`} of SFR output.
 
     """
     assert os.path.exists(sfr_out_file),"couldn't find sfr out file {0}".\
@@ -1717,32 +1717,26 @@ def setup_sfr_reach_obs(sfr_out_file,seg_reach=None,ins_file=None,model=None,
     """setup observations using the sfr ASCII output file.  Setups
     sfr point observations using segment and reach numbers.
 
-    Parameters
-    ----------
-    sft_out_file : str
-        the existing SFR output file
-    seg_reach : dict, list or pandas.DataFrame
-        a dict, or list of SFR [segment,reach] pairs identifying observation locations.
-        If dict the key value in the dict is the base observation name.
-        If None, all reaches are used as individual observations. Default is None - THIS MAY SET UP A LOT OF OBS!
-    model : flopy.mbase
-        a flopy model.  If passed, the observation names will have the datetime of the
-        observation appended to them.  If None, the observation names will have the
-        stress period appended to them. Default is None.
-    include_path : bool
-        flag to prepend sfr_out_file path to sfr_obs.config.  Useful for setting up
-        process in separate directory for where python is running.
+    Args:
+        sft_out_file (`str`): the path and name of an existing SFR output file
+        seg_reach (varies): a dict, or list of SFR [segment,reach] pairs identifying
+            locations of interest.  If `dict`, the key value in the dict is the base
+            observation name. If None, all reaches are used as individual observations.
+            Default is None - THIS MAY SET UP A LOT OF OBS!
+        model (`flopy.mbase`): a flopy model.  If passed, the observation names will
+            have the datetime of the observation appended to them.  If None, the
+            observation names will have the stress period appended to them. Default is None.
+        include_path (`bool`): a flag to prepend sfr_out_file path to sfr_obs.config.  Useful
+            for setting up process in separate directory for where python is running.
 
 
-    Returns
-    -------
-    df : pd.DataFrame
-        dataframe of obsnme, obsval and obgnme if inschek run was successful.  Else None
+    Returns:
+        `pd.DataFrame`: a dataframe of observation names, values, and groups
 
-    Note
-    ----
-    This function writes "sfr_reach_obs.config" which must be kept in the dir where
-    "apply_sfr_reach_obs()" is being called during the forward run
+    Notes:
+        This is the companion function of `gw_utils.apply_sfr_reach_obs()`.
+        This function writes "sfr_reach_obs.config" which must be kept in the dir where
+            "apply_sfr_reach_obs()" is being called during the forward run
 
     """
     if seg_reach is None:
@@ -1841,19 +1835,16 @@ def setup_sfr_reach_obs(sfr_out_file,seg_reach=None,ins_file=None,model=None,
 
 
 def apply_sfr_reach_obs():
-    """apply the sfr reach observation process - pairs with setup_sfr_reach_obs().
-    requires sfr_reach_obs.config.  Writes <sfr_out_file>.processed, where
-    <sfr_out_file> is defined in "sfr_reach_obs.config"
+    """apply the sfr reach observation process.
 
+    Notes:
+        This is the companion function of `gw_utils.setup_sfr_reach_obs()`.
+        Requires sfr_reach_obs.config.
+        Writes <sfr_out_file>.processed, where <sfr_out_file> is defined in
+        "sfr_reach_obs.config"
 
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    df : pd.DataFrame
-        a dataframe of sfr aquifer and outflow ad segment,reach locations
+    Returns:
+        `pd.DataFrame`: a dataframe of sfr aquifer and outflow ad segment,reach locations
     """
     assert os.path.exists("sfr_reach_obs.config")
     df_key = pd.read_csv("sfr_reach_obs.config", index_col=0)
@@ -1884,38 +1875,29 @@ def apply_sfr_reach_obs():
 def modflow_sfr_gag_to_instruction_file(gage_output_file, ins_file=None, parse_filename=False):
     """writes an instruction file for an SFR gage output file to read Flow only at all times
 
-        Parameters
-        ----------
-            gage_output_file : str
-                the gage output filename (ASCII).
+    Args:
+        gage_output_file (`str`): the gage output filename (ASCII).
 
-            ins_file : str
-                the name of the instruction file to create.  If None, the name
-                is <gage_output_file>.ins.  Default is None
+        ins_file (`str`, optional): the name of the instruction file to
+            create.  If None, the name is `gage_output_file`+".ins".
+            Default is None
 
-            parse_filename : bool
-                if True, get the gage_num parameter by parsing the gage output file filename
-                if False, get the gage number from the file itself
+        parse_filename (`bool`): if True, get the gage_num parameter by
+            parsing the gage output file filename if False, get the gage
+            number from the file itself
 
-        Returns
-        -------
-            df : pandas.DataFrame
-                a dataframe with obsnme and obsval for the sfr simulated flows.
-                If inschek was not successfully run, then returns None
-            ins_file : str
-                file name of instructions file relating to gage output.
-            obs_file : str
-                file name of processed gage output for all times
+    Returns:
+        `pandas.DataFrame`: a dataframe with obsnme and obsval for the sfr simulated flows.
+        `str`: file name of instructions file relating to gage output.
+        `str`: file name of processed gage output for all times
 
+    Notes:
+        sets up observations for gage outputs only for the Flow column.
+        if parse_namefile is true, only text up to first '.' is used as the gage_num
 
-        Note
-        ----
-            sets up observations for gage outputs only for the Flow column.
-
-            if parse_namefile is true, only text up to first '.' is used as the gage_num
-
-        TODO : allow other observation types and align explicitly with times - now returns all values
-        """
+    TODO:
+        allow other observation types and align explicitly with times - now returns all values
+    """
 
     if ins_file is None:
         ins_file = gage_output_file + '.ins'
