@@ -26,7 +26,7 @@ def from_io_with_inschek_test():
 
 def tpl_ins_test():
     import os
-    from pyemu import Pst, pst_utils
+    from pyemu import Pst, pst_utils, helpers
     # creation functionality
     dir = os.path.join("..", "verification", "henry", "misc")
     files = os.listdir(dir)
@@ -40,7 +40,7 @@ def tpl_ins_test():
     out_files = [f.replace(".ins", ".junk") for f in ins_files]
     in_files = [f.replace(".tpl", ".junk") for f in tpl_files]
 
-    pst_utils.pst_from_io_files(tpl_files, in_files,
+    helpers.pst_from_io_files(tpl_files, in_files,
                                 ins_files, out_files,
                                 pst_filename=os.path.join("temp", "test.pst"))
     return
@@ -501,7 +501,7 @@ def try_process_ins_test():
     df1.loc[:, "obsnme"] = df1.index
     df1.index = df1.obsnme
     # df1 = df1.loc[df.obsnme,:]
-    diff = df.obsval - df1.obsval
+    diff = df2.obsval - df1.obsval
     print(diff.max(), diff.min())
     print(diff.sum())
     assert diff.sum() < 1.0e+10
@@ -760,7 +760,7 @@ if __name__ == "__main__":
     #csv_to_ins_test()
     #pst_from_flopy_geo_draw_test()
     #pst_from_flopy_specsim_draw_test()
-    #try_process_ins_test()
+    try_process_ins_test()
     # write_tables_test()
     #res_stats_test()
     # test_write_input_files()
@@ -788,7 +788,7 @@ if __name__ == "__main__":
     # comments_test()
     # test_e_clean()
     # load_test()
-    res_test()
+    #res_test()
     # smp_test()
     #from_io_with_inschek_test()
     #pestpp_args_test()

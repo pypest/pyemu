@@ -25,8 +25,6 @@ os.environ["PATH"] += os.pathsep + bin_path
 
 
 def _istextfile(filename, blocksize=512):
-
-
     """
         Function found from:
         https://eli.thegreenplace.net/2011/10/19/perls-guess-if-file-is-text-or-binary-implemented-in-python
