@@ -873,19 +873,19 @@ def plot_summary_test():
                          index_col=0)
     idx = list(par_df.index.map(lambda x: x.startswith("HK")))
     par_df = par_df.loc[idx,:]
-    ax = pyemu.helpers.plot_summary_distributions(par_df,label_post=True)
+    ax = pyemu.plot_utils.plot_summary_distributions(par_df,label_post=True)
     plt.savefig(os.path.join("temp","hk_par.png"))
     plt.close()
 
     df = os.path.join("utils","freyberg_pp.pred.usum.csv")
-    figs,axes = pyemu.helpers.plot_summary_distributions(df,subplots=True)
+    figs,axes = pyemu.plot_utils.plot_summary_distributions(df,subplots=True)
     #plt.show()
     for i,fig in enumerate(figs):
         plt.figure(fig.number)
         plt.savefig(os.path.join("temp","test_pred_{0}.png".format(i)))
         plt.close(fig)
     df = os.path.join("utils","freyberg_pp.par.usum.csv")
-    figs, axes = pyemu.helpers.plot_summary_distributions(df,subplots=True)
+    figs, axes = pyemu.plot_utils.plot_summary_distributions(df,subplots=True)
     for i,fig in enumerate(figs):
         plt.figure(fig.number)
         plt.savefig(os.path.join("temp","test_par_{0}.png".format(i)))
@@ -1481,7 +1481,7 @@ def hfb_zn_mult_test():
         '~  hbz_0002  ~', '10.0')
     with open(hfb_pars.mlt_file.values[0], 'w') as mfp:
         mfp.write(mult_str)
-    pyemu.helpers.apply_hfb_pars(os.path.join(m.model_ws, 'hfb6_pars.csv'))
+    pyemu.gw_utils.apply_hfb_pars(os.path.join(m.model_ws, 'hfb6_pars.csv'))
     with open(hfb_pars.mlt_file.values[0], 'r') as mfp:
         for i, line in enumerate(mfp):
             pass
@@ -1786,8 +1786,8 @@ if __name__ == "__main__":
     #par_knowledge_test()
     # grid_obs_test()
     #hds_timeseries_test()
-    postprocess_inactive_conc_test()
-    # plot_summary_test()
+    #postprocess_inactive_conc_test()
+    plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()
     #make_hydmod_insfile_test()

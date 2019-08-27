@@ -286,10 +286,6 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
                 # idx = np.argwhere(d==0.0)
                 # for i in idx:
                 #     print(full_cov.names[i])
-
-    if par_knowledge_dict is not None:
-        full_cov = condition_on_par_knowledge(full_cov,
-                    par_knowledge_dict=par_knowledge_dict)
     return full_cov
 
 
@@ -1016,11 +1012,9 @@ wildass_guess_par_bounds_dict = {"hk":[0.01,100.0],"vka":[0.1,10.0],
                                    }
 
 class PstFromFlopyModel(object):
-    """ a monster helper class to setup multiplier parameters for an
-        existing MODFLOW model.  does all kinds of coolness like building a
-        meaningful prior, assigning somewhat meaningful parameter groups and
-        bounds, writes a forward_run.py script with all the calls need to
-        implement multiplier parameters, run MODFLOW and post-process.
+    """ a monster helper class to setup a complex PEST interface around
+    an existing MODFLOW-2005-family model.
+
 
     Parameters
     ----------
@@ -1201,19 +1195,14 @@ class PstFromFlopyModel(object):
         using an "a" parameter that is 10 times the max cell size.  Default is None
 
 
-    Returns
-    -------
-    PstFromFlopyModel : PstFromFlopyModel
-
-    Attributes
-    ----------
-    pst : pyemu.Pst
-
-
-    Note
-    ----
-    works a lot better if TEMPCHEK, INSCHEK and PESTCHEK are available in the
-    system path variable
+    Notes:
+        Setup up multiplier parameters for an existing MODFLOW model.
+            Does all kinds of coolness like building a
+            meaningful prior, assigning somewhat meaningful parameter groups and
+            bounds, writes a forward_run.py script with all the calls need to
+            implement multiplier parameters, run MODFLOW and post-process.
+        Works a lot better if TEMPCHEK, INSCHEK and PESTCHEK are available in the
+        system path variable
 
     """
 
@@ -1250,8 +1239,8 @@ class PstFromFlopyModel(object):
         self.external_tpl_in_pairs = external_tpl_in_pairs
         self.external_ins_out_pairs = external_ins_out_pairs
 
-        self.setup_model(model, org_model_ws, new_model_ws)
-        self.add_external()
+        self._setup_model(model, org_model_ws, new_model_ws)
+        self._add_external()
 
         self.arr_mult_dfs = []
         self.par_bounds_dict = par_bounds_dict
@@ -1362,7 +1351,7 @@ class PstFromFlopyModel(object):
 
         self.tpl_files,self.in_files = [],[]
         self.ins_files,self.out_files = [],[]
-        self.setup_mult_dirs()
+        self._setup_mult_dirs()
 
         self.mlt_files = []
         self.org_files = []
@@ -1371,8 +1360,8 @@ class PstFromFlopyModel(object):
         self.par_dfs = {}
         self.mlt_dfs = []
 
-        self.setup_list_pars()
-        self.setup_array_pars()
+        self._setup_list_pars()
+        self._setup_array_pars()
 
         if not sfr_pars and temporal_sfr_pars:
             self.logger.lraise("use of `temporal_sfr_pars` requires `sfr_pars`")
@@ -1381,16 +1370,16 @@ class PstFromFlopyModel(object):
             if isinstance(sfr_pars, str):
                 sfr_pars = [sfr_pars]
             if isinstance(sfr_pars, list):
-                self.setup_sfr_pars(sfr_pars,include_temporal_pars=temporal_sfr_pars)
+                self._setup_sfr_pars(sfr_pars, include_temporal_pars=temporal_sfr_pars)
             else:
-                self.setup_sfr_pars(include_temporal_pars=temporal_sfr_pars)
+                self._setup_sfr_pars(include_temporal_pars=temporal_sfr_pars)
 
         if hfb_pars:
-            self.setup_hfb_pars()
+            self._setup_hfb_pars()
 
         self.mflist_waterbudget = mflist_waterbudget
         self.mfhyd = mfhyd
-        self.setup_observations()
+        self._setup_observations()
         self.build_pst()
         if build_prior:
             self.parcov = self.build_prior()
@@ -1413,7 +1402,7 @@ class PstFromFlopyModel(object):
 
 
 
-    def setup_sfr_obs(self):
+    def _setup_sfr_obs(self):
         """setup sfr ASCII observations"""
         if not self.sfr_obs:
             return
@@ -1437,7 +1426,7 @@ class PstFromFlopyModel(object):
         self.frun_post_lines.append("pyemu.gw_utils.apply_sfr_obs()")
 
 
-    def setup_sfr_pars(self, par_cols=None, include_temporal_pars=None):
+    def _setup_sfr_pars(self, par_cols=None, include_temporal_pars=None):
         """setup multiplier parameters for sfr segment data
         Adding support for reachinput (and isfropt = 1)"""
         assert self.m.sfr is not None, "can't find sfr package..."
@@ -1481,7 +1470,7 @@ class PstFromFlopyModel(object):
 
 
 
-    def setup_hfb_pars(self):
+    def _setup_hfb_pars(self):
         """setup non-mult parameters for hfb (yuck!)
 
         """
@@ -1493,7 +1482,7 @@ class PstFromFlopyModel(object):
         self.tpl_files.append(os.path.split(tpl_file)[-1])
         self.par_dfs["hfb"] = df
 
-    def setup_mult_dirs(self):
+    def _setup_mult_dirs(self):
         """ setup the directories to use for multiplier parameterization.  Directories
         are make within the PstFromFlopyModel.m.model_ws directory
 
@@ -1527,19 +1516,10 @@ class PstFromFlopyModel(object):
             os.mkdir(d)
             self.log("setting up '{0}' dir".format(d))
 
-    def setup_model(self,model,org_model_ws,new_model_ws):
+    def _setup_model(self, model, org_model_ws, new_model_ws):
         """ setup the flopy.mbase instance for use with multipler parameters.
         Changes model_ws, sets external_path and writes new MODFLOW input
         files
-
-        Parameters
-        ----------
-        model : flopy.mbase
-            flopy model instance
-        org_model_ws : str
-            the orginal model working space
-        new_model_ws : str
-            the new model working space
 
         """
         split_new_mws = [i for i in os.path.split(new_model_ws) if len(i) > 0]
@@ -1583,23 +1563,8 @@ class PstFromFlopyModel(object):
         self.m.write_input()
         self.log("writing new modflow input files")
 
-    def get_count(self,name):
+    def _get_count(self, name):
         """ get the latest counter for a certain parameter type.
-
-        Parameters
-        ----------
-        name : str
-            the parameter type
-
-        Returns
-        -------
-        count : int
-            the latest count for a parameter type
-
-        Note
-        ----
-        calling this function increments the counter for the passed
-        parameter type
 
         """
         if name not in self.mlt_counter:
@@ -1611,7 +1576,7 @@ class PstFromFlopyModel(object):
             #print(name,c)
         return c
 
-    def prep_mlt_arrays(self):
+    def _prep_mlt_arrays(self):
         """  prepare multipler arrays.  Copies existing model input arrays and
         writes generic (ones) multiplier arrays
 
@@ -1641,17 +1606,17 @@ class PstFromFlopyModel(object):
                 continue
             for pakattr,k_org in par_prop:
                 attr_name = pakattr.split('.')[1]
-                pak,attr = self.parse_pakattr(pakattr)
+                pak,attr = self._parse_pakattr(pakattr)
                 ks = np.arange(self.m.nlay)
                 if isinstance(attr,flopy.utils.Transient2d):
                     ks = np.arange(self.m.nper)
                 try:
-                    k_parse = self.parse_k(k_org,ks)
+                    k_parse = self._parse_k(k_org, ks)
                 except Exception as e:
                     self.logger.lraise("error parsing k {0}:{1}".
                                        format(k_org,str(e)))
                 org,mlt,mod,layer = [],[],[],[]
-                c = self.get_count(attr_name)
+                c = self._get_count(attr_name)
                 mlt_prefix = "{0}{1}".format(attr_name,c)
                 mlt_name = os.path.join(self.arr_mlt,"{0}.dat{1}"
                                         .format(mlt_prefix,suffix))
@@ -1661,14 +1626,14 @@ class PstFromFlopyModel(object):
                     if type(k) is np.int64:
                         k = int(k)
                     if isinstance(attr,flopy.utils.Util2d):
-                        fname = self.write_u2d(attr)
+                        fname = self._write_u2d(attr)
 
                         layer.append(k)
                     elif isinstance(attr,flopy.utils.Util3d):
-                        fname = self.write_u2d(attr[k])
+                        fname = self._write_u2d(attr[k])
                         layer.append(k)
                     elif isinstance(attr,flopy.utils.Transient2d):
-                        fname = self.write_u2d(attr.transient_2ds[k])
+                        fname = self._write_u2d(attr.transient_2ds[k])
                         layer.append(0) #big assumption here
                     mod.append(os.path.join(self.m.external_path,fname))
                     mlt.append(mlt_name)
@@ -1682,18 +1647,9 @@ class PstFromFlopyModel(object):
             mlt_df = pd.concat(mlt_dfs,ignore_index=True)
             return mlt_df
 
-    def write_u2d(self, u2d):
+    def _write_u2d(self, u2d):
         """ write a flopy.utils.Util2D instance to an ASCII text file using the
         Util2D filename
-
-        Parameters
-        ----------
-        u2d : flopy.utils.Util2D
-
-        Returns
-        -------
-        filename : str
-            the name of the file written (without path)
 
         """
         filename = os.path.split(u2d.filename)[-1]
@@ -1701,22 +1657,8 @@ class PstFromFlopyModel(object):
                    u2d.array,fmt="%15.6E")
         return filename
 
-    def write_const_tpl(self,name,tpl_file,zn_array):
+    def _write_const_tpl(self, name, tpl_file, zn_array):
         """ write a template file a for a constant (uniform) multiplier parameter
-
-        Parameters
-        ----------
-        name : str
-            the base parameter name
-        tpl_file : str
-            the template file to write
-        zn_array : numpy.ndarray
-            an array used to skip inactive cells
-
-        Returns
-        -------
-        df : pandas.DataFrame
-            a dataframe with parameter information
 
         """
         parnme = []
@@ -1741,22 +1683,8 @@ class PstFromFlopyModel(object):
         df.loc[:,"tpl"] = tpl_file
         return df
 
-    def write_grid_tpl(self,name,tpl_file,zn_array):
+    def _write_grid_tpl(self, name, tpl_file, zn_array):
         """ write a template file a for grid-based multiplier parameters
-
-        Parameters
-        ----------
-        name : str
-            the base parameter name
-        tpl_file : str
-            the template file to write
-        zn_array : numpy.ndarray
-            an array used to skip inactive cells
-
-        Returns
-        -------
-        df : pandas.DataFrame
-            a dataframe with parameter information
 
         """
         parnme,x,y = [],[],[]
@@ -1784,7 +1712,7 @@ class PstFromFlopyModel(object):
 
 
 
-    def grid_prep(self):
+    def _grid_prep(self):
         """ prepare grid-based parameterizations
 
         """
@@ -1799,17 +1727,8 @@ class PstFromFlopyModel(object):
             v = pyemu.geostats.ExpVario(contribution=1.0,a=dist)
             self.grid_geostruct = pyemu.geostats.GeoStruct(variograms=v,name="grid_geostruct",transform="log")
 
-    def pp_prep(self, mlt_df):
-        """ prepare pilot point based parameterizations
-
-        Parameters
-        ----------
-        mlt_df : pandas.DataFrame
-            a dataframe with multiplier array information
-
-        Note
-        ----
-        calls pyemu.pp_utils.setup_pilot_points_grid()
+    def _pp_prep(self, mlt_df):
+        """ prepare pilot point based parameterization
 
 
         """
@@ -1997,18 +1916,8 @@ class PstFromFlopyModel(object):
         mlt_df.loc[mlt_df.suffix==self.pp_suffix,"tpl_file"] = np.NaN
 
 
-    def kl_prep(self,mlt_df):
+    def _kl_prep(self, mlt_df):
         """ prepare KL based parameterizations
-
-        Parameters
-        ----------
-        mlt_df : pandas.DataFrame
-            a dataframe with multiplier array information
-
-        Note
-        ----
-        calls pyemu.helpers.setup_kl()
-
 
         """
         if len(self.kl_props) == 0:
@@ -2064,11 +1973,11 @@ class PstFromFlopyModel(object):
         # calc factors for each layer
 
 
-    def setup_array_pars(self):
+    def _setup_array_pars(self):
         """ main entry point for setting up array multipler parameters
 
         """
-        mlt_df = self.prep_mlt_arrays()
+        mlt_df = self._prep_mlt_arrays()
         if mlt_df is None:
             return
         mlt_df.loc[:,"tpl_file"] = mlt_df.mlt_file.apply(lambda x: os.path.split(x)[-1]+".tpl")
@@ -2159,17 +2068,17 @@ class PstFromFlopyModel(object):
 
         if self.pp_suffix in mlt_df.suffix.values:
             self.log("setting up pilot point process")
-            self.pp_prep(mlt_df)
+            self._pp_prep(mlt_df)
             self.log("setting up pilot point process")
 
         if self.gr_suffix in mlt_df.suffix.values:
             self.log("setting up grid process")
-            self.grid_prep()
+            self._grid_prep()
             self.log("setting up grid process")
 
         if self.kl_suffix in mlt_df.suffix.values:
             self.log("setting up kl process")
-            self.kl_prep(mlt_df)
+            self._kl_prep(mlt_df)
             self.log("setting up kl process")
 
         mlt_df.to_csv(os.path.join(self.m.model_ws,"arr_pars.csv"))
@@ -2206,13 +2115,13 @@ class PstFromFlopyModel(object):
         self.logger.statement("forward_run line:{0}".format(line))
         self.frun_pre_lines.append(line)
 
-    def setup_observations(self):
+    def _setup_observations(self):
         """ main entry point for setting up observations
 
         """
-        obs_methods = [self.setup_water_budget_obs,self.setup_hyd,
-                       self.setup_smp,self.setup_hob,self.setup_hds,
-                       self.setup_sfr_obs]
+        obs_methods = [self._setup_water_budget_obs, self._setup_hyd,
+                       self._setup_smp, self._setup_hob, self._setup_hds,
+                       self._setup_sfr_obs]
         obs_types = ["mflist water budget obs","hyd file",
                      "external obs-sim smp files","hob","hds","sfr"]
         self.obs_dfs = {}
@@ -2224,23 +2133,23 @@ class PstFromFlopyModel(object):
 
 
     def draw(self, num_reals=100, sigma_range=6,use_specsim=False):
-        """ draw like a boss!
+        """ draw from the geostatistically-implied parameter covariance matrix
 
-        Parameters
-        ----------
-            num_reals : int
-                number of realizations to generate. Default is 100
-            sigma_range : float
-                number of standard deviations represented by the parameter bounds.  Default
-                is 6.
-            use_specsim : bool
-                flag to use spectral simulation for grid-based parameters.  Requires a regular grid.
-                Default is False
+        Args:
+            num_reals (`int`): number of realizations to generate. Default is 100
+            sigma_range (`float`): number of standard deviations represented by
+                the parameter bounds.  Default is 6.
+            use_specsim (`bool`): flag to use spectral simulation for grid-based
+                parameters.  Requires a regular grid but is wicked fast.  Default is False
 
-        Returns
+        Notes:
+            operates on parameters by groups to avoid having to construct a very large
+                covariance matrix for problems with more the 30K parameters.
+            uses `helpers.geostatitical_draw()`
+
+        Returns:
         -------
-            cov : pyemu.Cov
-            a full covariance matrix
+            `pyemu.ParameterEnsemble`: The realized parameter ensemble
 
         """
 
@@ -2312,29 +2221,23 @@ class PstFromFlopyModel(object):
 
     def build_prior(self, fmt="ascii",filename=None,droptol=None, chunk=None,
                     sigma_range=6):
-        """ build a prior parameter covariance matrix.
+        """ build and optionally save the prior parameter covariance matrix.
 
-        Parameters
-        ----------
-            fmt : str
-                the format to save the cov matrix.  Options are "ascii","binary","uncfile", "coo".
-                default is "ascii"
-            filename : str
-                the filename to save the prior cov matrix to.  If None, the name is formed using
+        Args:
+            fmt (`str`, optional): the format to save the cov matrix.  Options are "ascii","binary","uncfile", "coo".
+                Default is "ascii".  If "none" (lower case string, not None), then no file is created.
+            filename (`str`, optional): the filename to save the prior cov matrix to.  If None, the name is formed using
                 model nam_file name.  Default is None.
-            droptol : float
-                tolerance for dropping near-zero values when writing compressed binary.
-                Default is None
-            chunk : int
-                chunk size to write in a single pass - for binary only
-            sigma_range : float
-                number of standard deviations represented by the parameter bounds.  Default
+            droptol (`float`, optional): tolerance for dropping near-zero values when writing compressed binary.
+                Default is None.
+            chunk (`int`, optional): chunk size to write in a single pass - for binary only.  Default
+                is None (no chunking).
+            sigma_range (`float`): number of standard deviations represented by the parameter bounds.  Default
                 is 6.
 
-        Returns
-        -------
-            cov : pyemu.Cov
-            a full covariance matrix
+        Returns:
+            `pyemu.Cov`: the full prior parameter covariance matrix, generated by processing parameters by
+                groups
 
         """
 
@@ -2417,20 +2320,16 @@ class PstFromFlopyModel(object):
         return cov
 
     def build_pst(self,filename=None):
-        """ build the pest control file using the parameterizations and
+        """ build the pest control file using the parameters and
         observations.
 
-        Parameters
-        ----------
-            filename : str
-                the filename to save the pst to.  If None, the name if formed from
-                the model namfile name.  Default is None.
-
-        Note
-        ----
-        calls pyemu.Pst.from_io_files
-
-        calls PESTCHEK
+        Args:
+            filename (`str`): the filename to save the contorl file to.  If None, the
+                name if formed from the model namfile name.  Default is None.  The control
+                is saved in the `PstFromFlopy.m.model_ws` directory.
+        Notes:
+            calls pyemu.Pst.from_io_files
+            calls PESTCHEK
 
         """
         self.logger.statement("changing dir in to {0}".format(self.m.model_ws))
@@ -2534,8 +2433,8 @@ class PstFromFlopyModel(object):
         os.chdir("..")
         self.log("running pestchek on {0}".format(self.pst_name))
 
-    def add_external(self):
-        """ add external (existing) template files and instrution files to the
+    def _add_external(self):
+        """ add external (existing) template files and/or instruction files to the
         Pst instance
 
         """
@@ -2574,6 +2473,10 @@ class PstFromFlopyModel(object):
     def write_forward_run(self):
         """ write the forward run script forward_run.py
 
+        Notes:
+            This method can be called repeatedly, especially after any
+                changed to the pre- and/or post-processing routines.
+
         """
         with open(os.path.join(self.m.model_ws,self.forward_run_file),'w') as f:
             f.write("import os\nimport numpy as np\nimport pandas as pd\nimport flopy\n")
@@ -2592,21 +2495,8 @@ class PstFromFlopyModel(object):
             for line in self.frun_post_lines:
                 f.write(line+'\n')
 
-    def parse_k(self,k,vals):
+    def _parse_k(self, k, vals):
         """ parse the iterable from a property or boundary condition argument
-
-        Parameters
-        ----------
-        k : int or iterable int
-            the iterable
-        vals : iterable of ints
-            the acceptable values that k may contain
-
-        Returns
-        -------
-        k_vals : iterable of int
-            parsed k values
-
         """
         try:
             k = int(k)
@@ -2625,26 +2515,9 @@ class PstFromFlopyModel(object):
                                 format(k,str(e)))
             return k_vals
 
-    def parse_pakattr(self,pakattr):
+    def _parse_pakattr(self, pakattr):
         """ parse package-iterable pairs from a property or boundary condition
         argument
-
-        Parameters
-        ----------
-        pakattr : iterable len 2
-
-
-        Returns
-        -------
-        pak : flopy.PakBase
-            the flopy package from the model instance
-        attr : (varies)
-            the flopy attribute from pak.  Could be Util2D, Util3D,
-            Transient2D, or MfList
-        attrname : (str)
-            the name of the attribute for MfList type.  Only returned if
-            attr is MfList.  For example, if attr is MfList and pak is
-            flopy.modflow.ModflowWel, then attrname can only be "flux"
 
         """
 
@@ -2682,13 +2555,13 @@ class PstFromFlopyModel(object):
             self.logger.lraise("unrecognized attr:{0}".format(attrname))
 
 
-    def setup_list_pars(self):
+    def _setup_list_pars(self):
         """ main entry point for setting up list multiplier
                 parameters
 
                 """
-        tdf = self.setup_temporal_list_pars()
-        sdf = self.setup_spatial_list_pars()
+        tdf = self._setup_temporal_list_pars()
+        sdf = self._setup_spatial_list_pars()
         if tdf is None and sdf is None:
             return
         os.chdir(self.m.model_ws)
@@ -2702,7 +2575,7 @@ class PstFromFlopyModel(object):
         self.logger.statement("forward_run line:{0}".format(line))
         self.frun_pre_lines.append(line)
 
-    def setup_temporal_list_pars(self):
+    def _setup_temporal_list_pars(self):
         
         if len(self.temporal_list_props) == 0:
             return
@@ -2717,11 +2590,11 @@ class PstFromFlopyModel(object):
             if not isinstance(self.temporal_list_props[0],list):
                 self.temporal_list_props = [self.temporal_list_props]
         for pakattr,k_org in self.temporal_list_props:
-            pak,attr,col = self.parse_pakattr(pakattr)
-            k_parse = self.parse_k(k_org,np.arange(self.m.nper))
-            c = self.get_count(pakattr)
+            pak,attr,col = self._parse_pakattr(pakattr)
+            k_parse = self._parse_k(k_org, np.arange(self.m.nper))
+            c = self._get_count(pakattr)
             for k in k_parse:
-                bc_filenames.append(self.list_helper(k,pak,attr,col))
+                bc_filenames.append(self._list_helper(k, pak, attr, col))
                 bc_cols.append(col)
                 pak_name = pak.name[0].lower()
                 bc_pak.append(pak_name)
@@ -2764,7 +2637,7 @@ class PstFromFlopyModel(object):
         self.log("processing temporal_list_props")
         return True
 
-    def setup_spatial_list_pars(self):
+    def _setup_spatial_list_pars(self):
         
         if len(self.spatial_list_props) == 0:
             return
@@ -2780,8 +2653,8 @@ class PstFromFlopyModel(object):
             if not isinstance(self.spatial_list_props[0], list):
                 self.spatial_list_props = [self.spatial_list_props]
         for pakattr, k_org in self.spatial_list_props:
-            pak, attr, col = self.parse_pakattr(pakattr)
-            k_parse = self.parse_k(k_org, np.arange(self.m.nlay))
+            pak, attr, col = self._parse_pakattr(pakattr)
+            k_parse = self._parse_k(k_org, np.arange(self.m.nlay))
             if len(k_parse) > 1:
                 self.logger.lraise("spatial_list_pars error: each set of spatial list pars can only be applied "+\
                                    "to a single layer (e.g. [wel.flux,0].\n"+\
@@ -2790,7 +2663,7 @@ class PstFromFlopyModel(object):
             # # horrible special case for HFB since it cannot vary over time
             #if type(pak) != flopy.modflow.mfhfb.ModflowHfb:
             for k in range(self.m.nper):
-                bc_filenames.append(self.list_helper(k, pak, attr, col))
+                bc_filenames.append(self._list_helper(k, pak, attr, col))
                 bc_cols.append(col)
                 pak_name = pak.name[0].lower()
                 bc_pak.append(pak_name)
@@ -2912,23 +2785,9 @@ class PstFromFlopyModel(object):
         return True
 
 
- 
-
-
-    def list_helper(self,k,pak,attr,col):
+    def _list_helper(self, k, pak, attr, col):
         """ helper to setup list multiplier parameters for a given
         k, pak, attr set.
-
-        Parameters
-        ----------
-        k : int or iterable of int
-            the zero-based stress period indices
-        pak : flopy.PakBase=
-            the MODFLOW package
-        attr : MfList
-            the MfList instance
-        col : str
-            the column name in the MfList recarray to parameterize
 
         """
         # special case for horrible HFB6 exception
@@ -2942,19 +2801,10 @@ class PstFromFlopyModel(object):
         return filename_model
 
 
-    def setup_hds(self):
+    def _setup_hds(self):
         """ setup modflow head save file observations for given kper (zero-based
         stress period index) and k (zero-based layer index) pairs using the
         kperk argument.
-
-        Note
-        ----
-            this can setup a shit-ton of observations
-
-            this is useful for dataworth analyses or for monitoring
-            water levels as forecasts
-
-
 
         """
         if self.hds_kperk is None or len(self.hds_kperk) == 0:
@@ -2993,7 +2843,7 @@ class PstFromFlopyModel(object):
         self.frun_post_lines.append("pyemu.gw_utils.apply_hds_obs('{0}')".format(hds_file))
         self.tmp_files.append(hds_file)
 
-    def setup_smp(self):
+    def _setup_smp(self):
         """ setup observations from PEST-style SMP file pairs
 
         """
@@ -3016,10 +2866,8 @@ class PstFromFlopyModel(object):
             shutil.copy2(sim_smp,new_sim_smp)
             pyemu.smp_utils.smp_to_ins(new_sim_smp)
 
-    def setup_hob(self):
+    def _setup_hob(self):
         """ setup observations from the MODFLOW HOB package
-
-
         """
 
         if self.m.hob is None:
@@ -3036,10 +2884,8 @@ class PstFromFlopyModel(object):
         self.obs_dfs["hob"] = hob_df
         self.tmp_files.append(os.path.split(hob_out_fname))
 
-    def setup_hyd(self):
+    def _setup_hyd(self):
         """ setup observations from the MODFLOW HYDMOD package
-
-
         """
         if self.m.hyd is None:
             return
@@ -3060,7 +2906,7 @@ class PstFromFlopyModel(object):
             self.obs_dfs["hyd"] = df
             self.tmp_files.append(os.path.split(new_hyd_out)[-1])
 
-    def setup_water_budget_obs(self):
+    def _setup_water_budget_obs(self):
         """ setup observations from the MODFLOW list file for
         volume and flux water buget information
 
