@@ -259,7 +259,7 @@ def tpl_to_dataframe_test():
     import pyemu
     pp_file = os.path.join("utils","points1.dat")
     pp_df = pyemu.gw_utils.pilot_points_to_tpl(pp_file,name_prefix="test_")
-    df_tpl = pyemu.gw_utils.pp_tpl_to_dataframe(pp_file+".tpl")
+    df_tpl = pyemu.pp_utils.pp_tpl_to_dataframe(pp_file+".tpl")
     assert df_tpl.shape[0] == pp_df.shape[0]
 
 # def to_mps_test():
@@ -688,7 +688,7 @@ def geostat_prior_builder_test():
     d1 = np.diag(cov.x)
 
 
-    df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
+    df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
     gs = pyemu.geostats.read_struct_file(str_file)
     cov = pyemu.helpers.geostatistical_prior_builder(pst_file,{gs:df},
@@ -737,7 +737,7 @@ def geostat_draws_test():
     pe = pyemu.helpers.geostatistical_draws(pst, {str_file: tpl_file})
     assert (pe.shape == pe.dropna().shape)
 
-    df = pyemu.gw_utils.pp_tpl_to_dataframe(tpl_file)
+    df = pyemu.pp_utils.pp_tpl_to_dataframe(tpl_file)
     df.loc[:,"zone"] = np.arange(df.shape[0])
     gs = pyemu.geostats.read_struct_file(str_file)
     pe = pyemu.helpers.geostatistical_draws(pst_file,{gs:df},
@@ -1786,7 +1786,7 @@ if __name__ == "__main__":
     #par_knowledge_test()
     # grid_obs_test()
     #hds_timeseries_test()
-    # postprocess_inactive_conc_test()
+    postprocess_inactive_conc_test()
     # plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()

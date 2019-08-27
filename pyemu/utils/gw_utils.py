@@ -187,38 +187,38 @@ def setup_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",sw_filenam
                             save_setup_file=False):
     """ setup observations of gw (and optionally sw) mass budgets from mt3dusgs list file.
 
-        Args:
-            list_filename (`str`): path and name of existing modflow list file
-            gw_filename (`str`, optional): output filename that will contain the gw budget
-                observations. Default is "mtlist_gw.dat"
-            sw_filename (`str`, optional): output filename that will contain the sw budget
-                observations. Default is "mtlist_sw.dat"
-            start_datetime (`str`, optional):  an str that can be parsed into a `pandas.TimeStamp`.
-                used to give budget observations meaningful names.  Default is "1-1-1970".
-            gw_prefix (`str`, optional): a prefix to add to the GW budget observations.
-                Useful if processing more than one list file as part of the forward run process.
-                Default is 'gw'.
-            sw_prefix (`str`, optional): a prefix to add to the SW budget observations.  Useful
-                if processing more than one list file as part of the forward run process.
-                Default is 'sw'.
-            save_setup_file (`bool`, optional): a flag to save _setup_<list_filename>.csv file
-                that contains useful control file information.  Default is `False`.
+    Args:
+        list_filename (`str`): path and name of existing modflow list file
+        gw_filename (`str`, optional): output filename that will contain the gw budget
+            observations. Default is "mtlist_gw.dat"
+        sw_filename (`str`, optional): output filename that will contain the sw budget
+            observations. Default is "mtlist_sw.dat"
+        start_datetime (`str`, optional):  an str that can be parsed into a `pandas.TimeStamp`.
+            used to give budget observations meaningful names.  Default is "1-1-1970".
+        gw_prefix (`str`, optional): a prefix to add to the GW budget observations.
+            Useful if processing more than one list file as part of the forward run process.
+            Default is 'gw'.
+        sw_prefix (`str`, optional): a prefix to add to the SW budget observations.  Useful
+            if processing more than one list file as part of the forward run process.
+            Default is 'sw'.
+        save_setup_file (`bool`, optional): a flag to save _setup_<list_filename>.csv file
+            that contains useful control file information.  Default is `False`.
 
-        Returns
-        -------
-            `str`:  the command to add to the forward run script
-            `str`: the names of the instruction files that were created
-            `pandas.DataFrame`: a dataframe with information for constructing a control file
+    Returns:
+        `str`:  the command to add to the forward run script
+        `str`: the names of the instruction files that were created
+        `pandas.DataFrame`: a dataframe with information for constructing a control file
 
 
-        Notes:
-            This function uses INSCHEK to get observation values; the observation values are
-                the values of the list file list_filename.  If INSCHEK fails to run, the obseravtion
-                values are set to 1.0E+10
-            writes an instruction file and also a _setup_.csv to use when constructing a pest
-                control file
-            the instruction files are named <out_filename>.ins\
-            It is recommended to use the default value for gw_filename or sw_filename.
+    Notes:
+        This function uses INSCHEK to get observation values; the observation values are
+            the values of the list file list_filename.  If INSCHEK fails to run, the obseravtion
+            values are set to 1.0E+10
+        writes an instruction file and also a _setup_.csv to use when constructing a pest
+            control file
+        the instruction files are named <out_filename>.ins\
+        It is recommended to use the default value for gw_filename or sw_filename.
+        This is the companion function of `gw_utils.apply_mtlist_budget_obs()`.
 
         """
     gw,sw = apply_mtlist_budget_obs(list_filename, gw_filename, sw_filename, start_datetime)
@@ -286,12 +286,13 @@ def apply_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",
         start_datatime (`str`): an str that can be cast to a pandas.TimeStamp.  Used to give
             observations a meaningful name
 
-    Returns
-    -------
+    Returns:
         `pandas.DataFrame`: the gw mass budget dataframe
         `pandas.DataFrame`: (optional) the sw mass budget dataframe.  If the SFT process is not active,
             this returned value is `None`.
 
+    Notes:
+        this is the companion function of `gw_utils.setup_mtlist_budget_obs()`.
     """
     try:
         import flopy
@@ -336,6 +337,7 @@ def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
         This method writes instruction files and also a _setup_.csv to use when constructing a pest
             control file.  The instruction files are named <flux_file>.ins and <vol_file>.ins, respectively
         It is recommended to use the default values for flux_file and vol_file.
+        This is the companion function of `gw_utils.setup_mflist_budget_obs()`.
 
     """
     flx,vol = apply_mflist_budget_obs(list_filename,flx_filename,vol_filename,
@@ -371,6 +373,9 @@ def apply_mflist_budget_obs(list_filename,flx_filename="flux.dat",
             processing more than one list file as part of the forward run process. Default is ''.
         save_setup_file (`bool`): a flag to save _setup_<list_filename>.csv file that contains useful
             control file information
+
+    Notes:
+        this is the companion function of `gw_utils.setup_mflist_budget_obs()`.
 
     Returns:
         `pandas.DataFrame`: a dataframe with flux budget information
@@ -432,6 +437,8 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
             dir where apply_hds_timeseries() is called during the forward run
 
         Assumes model time units are days
+
+        this is the companion function of `gw_utils.apply_hds_timeseries()`.
 
     """
 
@@ -537,12 +544,17 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
 
 
 def apply_hds_timeseries(config_file=None, postprocess_inact=None):
-    """process a modflow headsave format binary file
+    """process a modflow headsave format binary file using a previously written
+    configuration file
 
     Args:
         config_file (`str`, optional): configuration file written by `pyemu.gw_utils.setup_hds_timeseries`.
             If `None`, looks for `hds_timeseries.config`
-        postprocess_inact
+        postprocess_inact (`float`, optional): Inactive value in heads/ucn file e.g. mt.btn.cinit.  If `None`, no
+            inactive value processing happens.  Default is `None`.
+
+    Notes:
+        this is the companion function of `gw_utils.setup_hds_timeseries()`.
 
     """
     import flopy
@@ -589,7 +601,7 @@ def apply_hds_timeseries(config_file=None, postprocess_inact=None):
 
 
 def _setup_postprocess_hds_timeseries(hds_file, df, config_file, prefix=None, model=None):
-    """Dirty function to post process concentrations in inactive/dry cells"""
+    """Dirty function to setup post processing concentrations in inactive/dry cells"""
     warnings.warn(
         "Setting up post processing of hds or ucn timeseries obs. "
         "Prepending 'pp' to obs name may cause length to exceed 20 chars", PyemuWarning)
@@ -617,7 +629,7 @@ def _setup_postprocess_hds_timeseries(hds_file, df, config_file, prefix=None, mo
 
 
 def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
-
+    """private function to post processing binary files"""
     import flopy
 
     if config_file is None:
@@ -667,45 +679,33 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
     return df
 
 def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
-    """a function to setup using all values from a
-    layer-stress period pair for observations.  Writes
-    an instruction file and a _setup_ csv used
-    construct a control file.
+    """a function to setup using all values from a layer-stress period
+    pair for observations.
 
-    Parameters
-    ----------
-    hds_file : str
-        a MODFLOW head-save file.  If the hds_file endswith 'ucn',
-        then the file is treated as a UcnFile type.
-    kperk_pairs : iterable
-        an iterable of pairs of kper (zero-based stress
-        period index) and k (zero-based layer index) to
-        setup observations for.  If None, then a shit-ton
-        of observations may be produced!
-    skip : variable
-        a value or function used to determine which values
-        to skip when setting up observations.  If np.scalar(skip)
-        is True, then values equal to skip will not be used.
-        If skip can also be a np.ndarry with dimensions equal to the model.
-        Obscervations are set up only for cells with Non-zero values in the array.
-        If not np.ndarray or np.scalar(skip), then skip will be treated as a lambda function that
-        returns np.NaN if the value should be skipped.
-    prefix : str
-        the prefix to use for the observation names. default is "hds".
+    Args:
+        hds_file (`str`): path and name of an existing MODFLOW head-save file.
+            If the hds_file endswith 'ucn', then the file is treated as a UcnFile type.
+        kperk_pairs ([(int,int)]): a list of len two tuples which are pairs of kper
+            (zero-based stress period index) and k (zero-based layer index) to
+            setup observations for.  If None, then all layers and stress period records
+             found in the file will be used.  Caution: a shit-ton of observations may be produced!
+        skip (variable): a value or function used to determine which values
+            to skip when setting up observations.  If np.scalar(skip)
+            is True, then values equal to skip will not be used.
+            If skip can also be a np.ndarry with dimensions equal to the model.
+            Observations are set up only for cells with Non-zero values in the array.
+            If not np.ndarray or np.scalar(skip), then skip will be treated as a lambda function that
+            returns np.NaN if the value should be skipped.
+        prefix (`str`): the prefix to use for the observation names. default is "hds".
 
-    Returns
-    -------
-    (forward_run_line, df) : str, pd.DataFrame
-        a python code str to add to the forward run script and the setup info for the observations
+    Returns:
+        `str`: the forward run script line needed to execute the headsave file observation
+            operation
+        `pandas.DataFrame`: a dataframe of pest control file information
 
-    Note
-    ----
-    requires flopy
-
-    writes <hds_file>.dat.ins instruction file
-
-    writes _setup_<hds_file>.csv which contains much
-    useful information for construction a control file
+    Notes:
+        Writes an instruction file and a _setup_ csv used construct a control file.
+        This is the companion function to `gw_utils.apply_hds_obs()`.
 
 
     """
@@ -832,20 +832,14 @@ def last_kstp_from_kper(hds,kper):
     """ function to find the last time step (kstp) for a
     give stress period (kper) in a modflow head save file.
 
+    Args:
+        hds (`flopy.utils.HeadFile`): head save file
 
-    Parameters
-    ----------
-    hds : flopy.utils.HeadFile
+        kper (`int`): the zero-index stress period number
 
-    kper : int
-        the zero-index stress period number
-
-    Returns
-    -------
-    kstp : int
-        the zero-based last time step during stress period
-        kper in the head save file
-
+    Returns:
+        `int`: the zero-based last time step during stress period
+            kper in the head save file
 
     """
     #find the last kstp with this kper
@@ -859,25 +853,22 @@ def last_kstp_from_kper(hds,kper):
     return kstp
 
 
-def apply_hds_obs(hds_file):
+def apply_hds_obs(hds_file, inact_abs_val=1.0e+20):
     """ process a modflow head save file.  A companion function to
-    setup_hds_obs that is called during the forward run process
+    `gw_utils.setup_hds_obsI()` that is called during the forward run process
 
-    Parameters
-    ----------
-    hds_file : str
-        a modflow head save filename. if hds_file ends with 'ucn',
-        then the file is treated as a UcnFile type.
+    Args:
+        hds_file (`str`): a modflow head save filename. if hds_file ends with 'ucn',
+            then the file is treated as a UcnFile type.
+        inact_abs_val (`float`, optional): the value that marks the mininum and maximum
+            active value.  values in the headsave file greater than `inact_abs_val` or less
+            than -`inact_abs_val` are reset to `inact_abs_val`
 
-    Note
-    ----
-    requires flopy
 
-    writes <hds_file>.dat
-
-    expects <hds_file>.dat.ins to exist
-
-    uses pyemu.pst_utils.parse_ins_file to get observation names
+    Returns:
+        `pandas.DataFrame`: a dataframe with extracted simulated values.
+    Notes:
+        This is the companion function to `gw_utils.setup_hds_obs()`.
 
     """
 
@@ -911,46 +902,38 @@ def apply_hds_obs(hds_file):
         #jwhite 15jan2018 fix for really large values that are getting some
         #trash added to them...
         data[np.isnan(data)] = 0.0
-        data[data>1.0e+20] = 1.0e+20
-        data[data<-1.0e+20] = -1.0e+20
+        data[data>np.abs(inact_abs_val)] = np.abs(inact_abs_val)
+        data[data<-np.abs(inact_abs_val)] = -np.abs(inact_abs_val)
         df_kper = df.loc[df.kper==kper,:]
         df.loc[df_kper.index,"obsval"] = data[df_kper.k,df_kper.i,df_kper.j]
     assert df.dropna().shape[0] == df.shape[0]
     df.loc[:,["obsnme","obsval"]].to_csv(out_file,index=False,sep=" ")
+    return df
 
 
 def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1):
-    """writes an instruction file for a mt3d-usgs sft output file
+    """writes a post-processor and instruction file for a mt3d-usgs sft output file
 
-    Parameters
-    ----------
-        sft_file : str
-            the sft output file (ASCII)
-        ins_file : str
-            the name of the instruction file to create.  If None, the name
-            is <sft_file>.ins.  Default is None
-        start_datetime : str
-            a pandas.to_datetime() compatible str.  If not None,
+    Args:
+        sft_file (`str`): path and name of an existing sft output file (ASCII)
+        ins_file (`str`, optional): the name of the instruction file to create.
+            If None, the name is `sft_file`+".ins".  Default is `None`.
+        start_datetime (`str`): a pandas.to_datetime() compatible str.  If not None,
             then the resulting observation names have the datetime
             suffix.  If None, the suffix is the output totim.  Default
-            is None
-        times : iterable
-            a container of times to make observations for.  If None, all times are used.
-            Default is None.
-        ncomp : int
-            number of components in transport model. Default is 1.
+            is `None`.
+        times ([`float`]): a list of times to make observations for.  If None, all times
+            found in the file are used. Default is None.
+        ncomp (`int`): number of components in transport model. Default is 1.
+
+    Notes:
+        this is the companion function to `gw_utils.apply_sft_obs()`.
 
 
-    Returns
-    -------
-        df : pandas.DataFrame
-            a dataframe with obsnme and obsval for the sft simulated concentrations and flows.
-            If inschek was not successfully run, then returns None
+    Returns:
+        `pandas.DataFrame`: a dataframe with observation names and values for the sft simulated
+            concentrations.
 
-
-    Note
-    ----
-        setups up observations for SW conc, GW conc and flowgw for all times and reaches.
     """
 
     df = pd.read_csv(sft_file,skiprows=1,delim_whitespace=True)
@@ -1008,7 +991,6 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
     with open(ins_file,'w') as f:
         f.write("pif ~\nl1\n")
         [f.write(i) for i in df.ins_str]
-    #df = _try_run_inschek(ins_file,sft_file+".processed")
     df = try_process_ins_file(ins_file,sft_file+".processed")
     if df is not None:
         return df
@@ -1017,6 +999,16 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
 
 
 def apply_sft_obs():
+    """process an mt3d-usgs sft ASCII output file using a previous-written
+    config file
+
+    Returns:
+        `pandas.DataFrame`: a dataframe of extracted simulated outputs
+
+    Notes:
+        this is the companion function to `gw_utils.setup_sft_obs()`.
+
+    """
     # this is for dealing with the missing 'e' problem
     def try_cast(x):
         try:
@@ -1049,39 +1041,31 @@ def apply_sft_obs():
 
 def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
                              tie_hcond=True, include_temporal_pars=None):
-    """Setup multiplier parameters for SFR segment data.  Just handles the
-    standard input case, not all the cryptic SFR options.  Loads the dis, bas, and sfr files
-    with flopy using model_ws.  However, expects that apply_sfr_seg_parameters() will be called
-    from within model_ws at runtime.
+    """Setup multiplier parameters for SFR segment data.
 
-    Parameters
-    ----------
-        nam_file : str
-            MODFLOw name file.  DIS, BAS, and SFR must be available as pathed in the nam_file
-        model_ws : str
-            model workspace for flopy to load the MODFLOW model from
-        OR
-        nam_file : flopy.modflow.mf.Modflow
-            flopy modflow model object
-        par_cols : list(str)
-            segment data entires to parameterize
-        tie_hcond : bool
-            flag to use same mult par for hcond1 and hcond2 for a given segment.  Default is True
-        include_temporal_pars : list
-            list of spatially-global multipliers to set up for 
+    Args:
+        nam_file (`str`): MODFLOw name file.  DIS, BAS, and SFR must be
+            available as pathed in the nam_file.  Optionally, `nam_file` can be
+            an existing `flopy.modflow.Modflow`.
+        model_ws (`str`): model workspace for flopy to load the MODFLOW model from
+
+        par_cols ([`str`]): a list of segment data entires to parameterize
+        tie_hcond (`bool`):  flag to use same mult par for hcond1 and hcond2 for a
+            given segment.  Default is `True`.
+        include_temporal_pars ([`str`]):  list of spatially-global multipliers to set up for
             each stress period.  Default is None
 
-    Returns
-    -------
-        df : pandas.DataFrame
-            a dataframe with useful parameter setup information
+    Returns:
+        `pandas.DataFrame`: a dataframe with useful parameter setup information
 
-    Note
-    ----
-        the number (and numbering) of segment data entries must consistent across
-        all stress periods.
-        writes <nam_file>+"_backup_.sfr" as the backup of the original sfr file
-        skips values = 0.0 since multipliers don't work for these
+    Notes:
+         This function handles the standard input case, not all the cryptic SFR options.  Loads the
+            dis, bas, and sfr files with flopy using model_ws.
+        This is the companion function to `gw_utils.apply_sfr_seg_parameters()`.
+        The number (and numbering) of segment data entries must consistent across
+            all stress periods.
+        Writes `nam_file`+"_backup_.sfr" as the backup of the original sfr file
+        Skips values = 0.0 since multipliers don't work for these
 
     """
 
@@ -1258,32 +1242,28 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
 
 def setup_sfr_reach_parameters(nam_file,model_ws='.', par_cols=['strhc1']):
     """Setup multiplier paramters for reach data, when reachinput option is specififed in sfr.
-    Similare to setup_sfr_seg_parameters() method will apply params to sfr reachdata
-    Can load the dis, bas, and sfr files with flopy using model_ws. Or can pass a model object (SFR loading can be slow)
-    However, expects that apply_sfr_reach_parameters() will be called
-    from within model_ws at runtime.
 
-    Parameters
-    ----------
-        nam_file : str
-            MODFLOw name file.  DIS, BAS, and SFR must be available as pathed in the nam_file
-        model_ws : str
-            model workspace for flopy to load the MODFLOW model from
-        OR
-        nam_file : flopy.modflow.mf.Modflow
-            flopy modflow model object
 
-        par_cols : list(str)
-            segment data entires to parameterize
+    Args:
+        nam_file (`str`): MODFLOw name file.  DIS, BAS, and SFR must be
+            available as pathed in the nam_file.  Optionally, `nam_file` can be
+            an existing `flopy.modflow.Modflow`.
+        model_ws (`str`): model workspace for flopy to load the MODFLOW model from
+        par_cols ([`str`]): a list of segment data entires to parameterize
+        tie_hcond (`bool`):  flag to use same mult par for hcond1 and hcond2 for a
+            given segment.  Default is `True`.
+        include_temporal_pars ([`str`]):  list of spatially-global multipliers to set up for
+            each stress period.  Default is None
 
-    Returns
-    -------
-        df : pandas.DataFrame
-            a dataframe with useful parameter setup information
+    Returns:
+        `pandas.DataFrame`: a dataframe with useful parameter setup information
 
-    Note
-    ----
-        skips values = 0.0 since multipliers don't work for these
+    Notes:
+        Similar to `gw_utils.setup_sfr_seg_parameters()`, method will apply params to sfr reachdata
+        Can load the dis, bas, and sfr files with flopy using model_ws. Or can pass a model object
+            (SFR loading can be slow)
+        This is the companion function of `gw_utils.apply_sfr_reach_parameters()`
+        Skips values = 0.0 since multipliers don't work for these
 
     """
     try:
@@ -1373,22 +1353,21 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.', par_cols=['strhc1']):
 
 
 def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
-    """apply the SFR segement multiplier parameters.  Expected to be run in the same dir
-    as the model exists
+    """apply the SFR segement multiplier parameters.
 
-    Parameters
-    ----------
-        reach_pars : bool
-            if reach paramters need to be applied
+    Args:
+        seg_pars (`bool`, optional): flag to apply segment-based parameters.
+            Default is True
+        reach_pars (`bool`, optional): flag to apply reach-based paramters.
+            Default is False
 
-    Returns
-    -------
-        sfr : flopy.modflow.ModflowSfr instance
+    Returns:
+        `flopy.modflow.ModflowSfr`: the modified SFR package instance
 
-    Note
-    ----
+    Notes:
         expects "sfr_seg_pars.config" to exist
-        expects <nam_file>+"_backup_.sfr" to exist
+        expects `nam_file`+"_backup_.sfr" to exist
+
 
 
     """
@@ -1463,6 +1442,23 @@ def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
     return sfr
 
 def apply_sfr_parameters(seg_pars=True, reach_pars=False):
+    """thin wrapper around `gw_utils.apply_sfr_seg_parameters()`
+
+    Args:
+        seg_pars (`bool`, optional): flag to apply segment-based parameters.
+            Default is True
+        reach_pars (`bool`, optional): flag to apply reach-based paramters.
+            Default is False
+
+    Returns:
+        `flopy.modflow.ModflowSfr`: the modified SFR package instance
+
+    Notes:
+        expects "sfr_seg_pars.config" to exist
+        expects `nam_file`+"_backup_.sfr" to exist
+
+
+    """
     sfr = apply_sfr_seg_parameters(seg_pars=seg_pars, reach_pars=reach_pars)
     return sfr
 
@@ -1473,32 +1469,25 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
     the ability to aggregate flows for groups of segments.  Applies
     only flow to aquier and flow out.
 
-    Parameters
-    ----------
-    sft_out_file : str
-        the existing SFR output file
-    seg_group_dict : dict
-        a dictionary of SFR segements to aggregate together for a single obs.
-        the key value in the dict is the base observation name. If None, all segments
-        are used as individual observations. Default is None
-    model : flopy.mbase
-        a flopy model.  If passed, the observation names will have the datetime of the
-        observation appended to them.  If None, the observation names will have the
-        stress period appended to them. Default is None.
-    include_path : bool
-        flag to prepend sfr_out_file path to sfr_obs.config.  Useful for setting up
-        process in separate directory for where python is running.
+    Args:
+        sft_out_file (`str`): the name and path to an existing SFR output file
+        seg_group_dict (`dict`): a dictionary of SFR segements to aggregate together for a single obs.
+            the key value in the dict is the base observation name. If None, all segments
+            are used as individual observations. Default is None
+        model (`flopy.mbase`): a flopy model.  If passed, the observation names will have
+            the datetime of the observation appended to them.  If None, the observation names
+            will have the stress period appended to them. Default is None.
+        include_path (`bool`): flag to prepend sfr_out_file path to sfr_obs.config.  Useful for setting up
+            process in separate directory for where python is running.
 
 
-    Returns
-    -------
-    df : pd.DataFrame
-        dataframe of obsnme, obsval and obgnme if inschek run was successful.  Else None
+    Returns:
+        `pandas.DataFrame`: dataframe of observation name, simulated value and group.
 
-    Note
-    ----
-    This function writes "sfr_obs.config" which must be kept in the dir where
-    "apply_sfr_obs()" is being called during the forward run
+    Notes:
+        This is the companion function of `gw_utils.apply_sfr_obs()`.
+        This function writes "sfr_obs.config" which must be kept in the dir where
+            "gw_utils.apply_sfr_obs()" is being called during the forward run
 
     """
 
@@ -1586,19 +1575,15 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
 
 
 def apply_sfr_obs():
-    """apply the sfr observation process - pairs with setup_sfr_obs().
-    requires sfr_obs.config.  Writes <sfr_out_file>.processed, where
-    <sfr_out_file> is defined in "sfr_obs.config"
+    """apply the sfr observation process
 
+    Notes:
+        This is the companion function of `gw_utils.setup_sfr_obs()`.
+        requires sfr_obs.config.
+        Writes <sfr_out_file>.processed, where <sfr_out_file> is defined in "sfr_obs.config"
 
-    Parameters
-    ----------
-    None
-
-    Returns
-    -------
-    df : pd.DataFrame
-        a dataframe of aggregrated sfr segment aquifer and outflow
+    Returns:
+        `pandas.DataFrame`: a dataframe of aggregrated sfr segment aquifer and outflow
     """
     assert os.path.exists("sfr_obs.config")
     df_key = pd.read_csv("sfr_obs.config",index_col=0)
