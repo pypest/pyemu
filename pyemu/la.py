@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 from pyemu.mat.mat_handler import Matrix, Jco, Cov
 from pyemu.pst.pst_handler import Pst
-from pyemu.utils.helpers import _istextfile
+from pyemu.utils.os_utils import _istextfile
 from .logger import Logger
 
 class LinearAnalysis(object):
