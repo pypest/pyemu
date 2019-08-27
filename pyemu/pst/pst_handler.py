@@ -2182,9 +2182,9 @@ class Pst(object):
         else:
             # extend pa
             # rameter_data
-            new_par_data = pst_utils.populate_dataframe(new_parnme,pst_utils.pst_config["par_fieldnames"],
-                                                        pst_utils.pst_config["par_defaults"],
-                                                        pst_utils.pst_config["par_dtype"])
+            new_par_data = pst_utils._populate_dataframe(new_parnme, pst_utils.pst_config["par_fieldnames"],
+                                                         pst_utils.pst_config["par_defaults"],
+                                                         pst_utils.pst_config["par_dtype"])
             new_par_data.loc[new_parnme,"parnme"] = new_parnme
             self.parameter_data = self.parameter_data.append(new_par_data)
         if in_file is None:
@@ -2248,9 +2248,9 @@ class Pst(object):
             raise Exception("no new observations found in instruction file {0}".format(ins_file))
 
         # extend observation_data
-        new_obs_data = pst_utils.populate_dataframe(new_obsnme,pst_utils.pst_config["obs_fieldnames"],
-                                                    pst_utils.pst_config["obs_defaults"],
-                                                    pst_utils.pst_config["obs_dtype"])
+        new_obs_data = pst_utils._populate_dataframe(new_obsnme, pst_utils.pst_config["obs_fieldnames"],
+                                                     pst_utils.pst_config["obs_defaults"],
+                                                     pst_utils.pst_config["obs_dtype"])
         new_obs_data.loc[new_obsnme,"obsnme"] = new_obsnme
         new_obs_data.index = new_obsnme
         self.observation_data = self.observation_data.append(new_obs_data)

@@ -1109,41 +1109,41 @@ def parse_dir_for_io_files(d):
 
 
 def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
-    """generate a Pst instance from the model io files.  If 'inschek'
-    is available (either in the current directory or registered
-    with the system variables) and the model output files are available
-    , then the observation values in the control file will be set to the
-    values of the model-simulated equivalents to observations.  This can be
-    useful for testing
+    """ create a Pst instance from model interface files.
 
-    Parameters
-    ----------
-    tpl_files : list
-        list of pest template files
-    in_files : list
-        list of corresponding model input files
-    ins_files : list
-        list of pest instruction files
-    out_files: list
-        list of corresponding model output files
-    pst_filename : str
-        name of file to write the control file to.  If None,
-        control file is not written.  Default is None
+    Args:
+        tpl_files ([`str`]): list of template file names
+        in_files ([`str`]): list of model input file names (pairs with template files)
+        ins_files ([`str`]): list of instruction file names
+        out_files ([`str`]): list of model output file names (pairs with instruction files)
+        pst_filename (`str`): name of control file to write.  If None, no file is written.
+            Default is None
 
-    Returns
-    -------
-    pst : pyemu.Pst
+    Returns:
+        `Pst`: new control file instance with parameter and observation names
+            found in `tpl_files` and `ins_files`, repsectively.
+
+    Notes:
+        calls `pyemu.helpers.pst_from_io_files()`
+        Assigns generic values for parameter info.  Tries to use INSCHEK
+            to set somewhat meaningful observation values
+        all file paths are relatively to where python is running.
+
+    TODO:
+        add pst_path option
+        make in_files and out_files optional
+
+    Example::
+
+        tpl_files = ["my.tpl"]
+        in_files = ["my.in"]
+        ins_files = ["my.ins"]
+        out_files = ["my.out"]
+        pst = pyemu.Pst.from_io_files(tpl_files,in_files,ins_files,out_files)
+        pst.control_data.noptmax = 0
+        pst.write("my.pst)
 
 
-    Example
-    -------
-    ``>>>import pyemu``
-
-    this will construct a new Pst instance from template and instruction files
-    found in the current directory, assuming that the naming convention follows
-    that listed in parse_dir_for_io_files()
-
-    ``>>>pst = pyemu.helpers.pst_from_io_files(*pyemu.helpers.parse_dir_for_io_files('.'))``
 
     """
     par_names = set()
@@ -1180,7 +1180,7 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     new_pst.output_files = out_files
 
     #try to run inschek to find the observtion values
-    pyemu.pst_utils.try_run_inschek_pst(new_pst)
+    pyemu.pst_utils.try_process_output_pst(new_pst)
 
     if pst_filename:
         new_pst.write(pst_filename,update_regul=True)

@@ -490,15 +490,9 @@ def try_process_ins_test():
     import pyemu
 
     ins_file = os.path.join("utils", "BH.mt3d.processed.ins")
-    df = pyemu.pst_utils.try_process_ins_file(ins_file)
-
     i = pyemu.pst_utils.InstructionFile(ins_file)
-
     df2 = i.read_output_file(ins_file.replace(".ins",""))
-    
-    diff = (df.obsval - df2.obsval).apply(np.abs).sum()
-    print(diff)
-    assert diff <1.0e-10
+
 
 
     # df1 = pyemu.pst_utils._try_run_inschek(ins_file,ins_file.replace(".ins",""))
