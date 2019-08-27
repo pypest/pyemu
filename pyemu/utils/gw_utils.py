@@ -11,8 +11,8 @@ import numpy as np
 import pandas as pd
 import re
 pd.options.display.max_colwidth = 100
-from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,_try_run_inschek,\
-    parse_tpl_file,try_process_ins_file,InstructionFile
+from pyemu.pst.pst_utils import SFMT,IFMT,FFMT,pst_config,\
+    parse_tpl_file,try_process_output_file
 from pyemu.utils.os_utils import run
 from pyemu.utils.helpers import write_df_tpl
 from ..pyemu_warnings import PyemuWarning
@@ -118,17 +118,11 @@ def modflow_hydmod_to_instruction_file(hydmod_file, ins_file=None):
     hydmod_df.loc[:,"weight"] = 1.0
     hydmod_df.loc[:,"obgnme"] = "obgnme"
 
-    try:
-        os.system("inschek {0}.ins {0}".format(hydmod_outfile))
-    except:
-        print("error running inschek")
-
-    obs_obf = hydmod_outfile + ".obf"
-    if os.path.exists(obs_obf):
-        df = pd.read_csv(obs_obf,delim_whitespace=True,header=None,names=["obsnme","obsval"])
+    df = try_process_output_file(hydmod_outfile+".ins")
+    if df is not None:
+        df.obsnme = df.index.values
         df.loc[:,"obgnme"] = df.obsnme.apply(lambda x: x[:-9])
         df.to_csv("_setup_"+os.path.split(hydmod_outfile)[-1]+'.csv',index=False)
-        df.index = df.obsnme
         return df
 
     return hydmod_df
@@ -211,9 +205,6 @@ def setup_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",sw_filenam
 
 
     Notes:
-        This function uses INSCHEK to get observation values; the observation values are
-            the values of the list file list_filename.  If INSCHEK fails to run, the obseravtion
-            values are set to 1.0E+10
         writes an instruction file and also a _setup_.csv to use when constructing a pest
             control file
         the instruction files are named <out_filename>.ins\
@@ -225,15 +216,18 @@ def setup_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",sw_filenam
     gw_ins = gw_filename + ".ins"
     _write_mtlist_ins(gw_ins, gw, gw_prefix)
     ins_files = [gw_ins]
-    i = InstructionFile(gw_filename+".ins")
-    df_gw = i.read_output_file(gw_filename)
 
+    df_gw = try_process_output_file(gw_ins,gw_filename)
+    if df_gw is None:
+        raise Exception("error processing groundwater instruction file")
     if sw is not None:
         sw_ins = sw_filename + ".ins"
         _write_mtlist_ins(sw_ins, sw, sw_prefix)
         ins_files.append(sw_ins)
-        i = InstructionFile(sw_filename+".ins")
-        df_sw = i.read_output_file(sw_filename)
+
+        df_sw = try_process_output_file(sw_ins,sw_filename)
+        if df_sw is None:
+            raise Exception("error processing surface water instruction file")
         df_gw = df_gw.append(df_sw)
         df_gw.obsnme = df_gw.index.values
     if save_setup_file:
@@ -345,10 +339,14 @@ def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
     _write_mflist_ins(flx_filename+".ins",flx,prefix+"flx")
     _write_mflist_ins(vol_filename+".ins",vol, prefix+"vol")
 
-    i = InstructionFile(flx_filename+".ins")
-    df = i.read_output_file(flx_filename)
-    i = InstructionFile(vol_filename+".ins")
-    df2 = i.read_output_file(vol_filename)
+    df = try_process_output_file(flx_filename+".ins")
+    if df is None:
+        raise Exception("error processing flux instruction file")
+
+    df2 = try_process_output_file(vol_filename+".ins")
+    if df2 is None:
+        raise Exception("error processing volume instruction file")
+
     df = df.append(df2)
     df.obsnme = df.index.values
     if save_setup_file:
@@ -532,13 +530,16 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
         raise Exception("error in apply_hds_timeseries(): {0}".format(str(e)))
     os.chdir(bd)
 
-    df = try_process_ins_file(ins_file,ins_file.replace(".ins",""))
-    if df is not None:
-        df.loc[:,"weight"] = 0.0
-        if prefix is not None:
-            df.loc[:,"obgnme"] = df.index.map(lambda x: '_'.join(x.split('_')[:2]))
-        else:
-            df.loc[:, "obgnme"] = df.index.map(lambda x: x.split('_')[0])
+
+    df = try_process_output_file(ins_file.replace(".ins",""))
+    if df is None:
+        raise Exception("error processing {0} instruction file".format(ins_file))
+
+    df.loc[:,"weight"] = 0.0
+    if prefix is not None:
+        df.loc[:,"obgnme"] = df.index.map(lambda x: '_'.join(x.split('_')[:2]))
+    else:
+        df.loc[:, "obgnme"] = df.index.map(lambda x: x.split('_')[0])
     frun_line = "pyemu.gw_utils.apply_hds_timeseries('{0}',{1})\n".format(config_file, postprocess_inact)
     return frun_line,df
 
@@ -991,11 +992,9 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
     with open(ins_file,'w') as f:
         f.write("pif ~\nl1\n")
         [f.write(i) for i in df.ins_str]
-    df = try_process_ins_file(ins_file,sft_file+".processed")
-    if df is not None:
-        return df
-    else:
-        return None
+    #df = try_process_ins_file(ins_file,sft_file+".processed")
+    df = try_process_output_file(ins_file,sft_file+".processed")
+    return df
 
 
 def apply_sft_obs():
@@ -1562,11 +1561,7 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
         pth = '.'
     bd = os.getcwd()
     os.chdir(pth)
-    try:
-        #df = _try_run_inschek(os.path.split(ins_file)[-1],os.path.split(sfr_out_file+".processed")[-1])
-        df = try_process_ins_file(os.path.split(ins_file)[-1],os.path.split(sfr_out_file+".processed")[-1])
-    except Exception as e:
-        pass
+    df = try_process_output_file(os.path.split(ins_file)[-1],os.path.split(sfr_out_file+".processed")[-1])
     os.chdir(bd)
     if df is not None:
         df.loc[:,"obsnme"] = df.index.values
@@ -1823,8 +1818,8 @@ def setup_sfr_reach_obs(sfr_out_file,seg_reach=None,ins_file=None,model=None,
     bd = os.getcwd()
     os.chdir(pth)
     try:
-        #df = _try_run_inschek(os.path.split(ins_file)[-1],os.path.split(sfr_out_file+".processed")[-1])
-        df = try_process_ins_file(os.path.split(ins_file)[-1], os.path.split(sfr_out_file+".reach_processed")[-1])
+        df = try_process_output_file(os.path.split(ins_file)[-1],os.path.split(sfr_out_file+".processed")[-1])
+
     except Exception as e:
         pass
     os.chdir(bd)
@@ -1931,47 +1926,32 @@ def modflow_sfr_gag_to_instruction_file(gage_output_file, ins_file=None, parse_f
         ofp.write('pif ~\n')
         [ofp.write('{0}\n'.format(line)) for line in inslines]
 
-    df = _try_run_inschek(ins_file, gage_output_file)
-    if df is not None:
-        return df, ins_file, gage_output_file
-    else:
-        print("Inschek didn't run so nothing returned")
-        return None
+    df = try_process_output_file(ins_file, gage_output_file)
+    return df, ins_file, gage_output_file
 
 def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
-    """writes an instruction file for a mt3d-usgs sft output file
+    """setup a forward run post processor routine for the modflow gage file
 
-    Parameters
-    ----------
-        gage_file : str
-            the gage output file (ASCII)
-        ins_file : str
-            the name of the instruction file to create.  If None, the name
-            is <gage_file>.processed.ins.  Default is None
-        start_datetime : str
-            a pandas.to_datetime() compatible str.  If not None,
-            then the resulting observation names have the datetime
-            suffix.  If None, the suffix is the output totim.  Default
-            is None
-        times : iterable
-            a container of times to make observations for.  If None, all times are used.
-            Default is None.
+    Args:
+        gage_file (`str`): the gage output file (ASCII)
+        ins_file (`str`, optional): the name of the instruction file to create.  If None, the name
+            is `gage_file`+".processed.ins".  Default is `None`
+        start_datetime (`str`): a `pandas.to_datetime()` compatible `str`.  If not `None`,
+            then the resulting observation names have the datetime suffix.  If `None`,
+            the suffix is the output totim.  Default is `None`.
+        times ([`float`]):  a container of times to make observations for.  If None,
+            all times are used. Default is None.
 
-
-    Returns
-    -------
-        df : pandas.DataFrame
-            a dataframe with obsnme and obsval for the sft simulated concentrations and flows.
-            If inschek was not successfully run, then returns None
-        ins_file : str
-            file name of instructions file relating to gage output.
-        obs_file : str
-            file name of processed gage output (processed according to times passed above.)
+    Returns:
+        `pandas.DataFrame`: a dataframe with observation name and simulated values for the
+            values in the gage file.
+        `str`: file name of instructions file that was created relating to gage output.
+        `str`: file name of processed gage output (processed according to times passed above.)
 
 
-    Note
-    ----
-        setups up observations for gage outputs (all columns).
+    Notes:
+         setups up observations for gage outputs (all columns).
+         This is the companion function of `gw_utils.apply_gage_obs()`
     """
 
     with open(gage_file, 'r') as f:
@@ -2035,14 +2015,23 @@ def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
     with open(ins_file, 'w') as f:
         f.write("pif ~\nl1\n")
         [f.write(i) for i in df.ins_str]
-    df = _try_run_inschek(ins_file, gage_file+".processed")
-    if df is not None:
-        return df, ins_file, obs_file
-    else:
-        return None
+    df = try_process_output_file(ins_file, gage_file+".processed")
+    return df, ins_file, obs_file
 
 
 def apply_gage_obs(return_obs_file=False):
+    """apply the modflow gage obs post-processor
+
+    Args:
+        return_obs_file (`bool`): flag to return the processed
+            observation file.  Default is `False`.
+
+    Notes:
+        This is the companion function of `gw_utils.setup_gage_obs()`
+
+
+
+    """
     times = []
     with open("gage_obs.config") as f:
         gage_file = f.readline().strip()
@@ -2068,18 +2057,17 @@ def apply_gage_obs(return_obs_file=False):
 def write_hfb_zone_multipliers_template(m):
     """write a template file for an hfb using multipliers per zone (double yuck!)
 
-    Parameters
-    ----------
-        m : flopy.modflow.Modflow instance with an HFB file
+    Args:
+        m (`flopy.modflow.Modflow`): a model instance with an HFB package
 
-    Returns
-    -------
-        (hfb_mults, tpl_filename) : (dict, str)
-            a dictionary with original unique HFB conductivity values and their
-            corresponding parameter names and the name of the template file
+    Returns:
+        `dict`: a dictionary with original unique HFB conductivity values and their
+            corresponding parameter names
+        `str`: the template filename that was created
 
     """
-    assert m.hfb6 is not None
+    if m.hfb6 is None:
+        raise Exception("no HFB package found")
     # find the model file
     hfb_file = os.path.join(m.model_ws, m.hfb6.file_name[0])
 
@@ -2146,14 +2134,13 @@ def write_hfb_zone_multipliers_template(m):
 def write_hfb_template(m):
     """write a template file for an hfb (yuck!)
 
-    Parameters
-    ----------
-        m : flopy.modflow.Modflow instance with an HFB file
+   Args:
+        m (`flopy.modflow.Modflow`): a model instance with an HFB package
 
-    Returns
-    -------
-        (tpl_filename, df) : (str, pandas.DataFrame)
-            the name of the template file and a dataframe with useful info.
+    Returns:
+        `str`: name of the template file that was created
+        `pandas.DataFrame`: a dataframe with use control file info for the
+            HFB parameters
 
     """
 

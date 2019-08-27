@@ -1180,7 +1180,7 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
     new_pst.output_files = out_files
 
     #try to run inschek to find the observtion values
-    pyemu.pst_utils.try_run_inschek(new_pst)
+    pyemu.pst_utils.try_run_inschek_pst(new_pst)
 
     if pst_filename:
         new_pst.write(pst_filename,update_regul=True)

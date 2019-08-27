@@ -575,7 +575,19 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
                               pst_filename=pst_filename)
 
 
-def try_run_inschek(pst):
+def try_process_output_file(ins_file,output_file=None):
+
+    if output_file is None:
+        output_file = ins_file.replace(".ins","")
+    df = None
+    try:
+        i = InstructionFile(ins_file)
+        df = i.read_output_file(output_file)
+    except Exception as e:
+        print("error processing instruction/output file pair: {0}".format(str(e)))
+    return df
+
+def try_run_inschek_pst(pst):
     """ attempt to run INSCHEK for each instruction file, model output
     file pair in a pyemu.Pst.  If the run is successful, the INSCHEK written
     .obf file is used to populate the pst.observation_data.obsval attribute
