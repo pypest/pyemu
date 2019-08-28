@@ -36,14 +36,14 @@ class Loc(object):
 
 class Iloc(object):
     """thin wrapper around `pandas.DataFrame.iloc` to make sure returned type
-        is `Ensemble` (instead of `pandas.DataFrame)`
+    is `Ensemble` (instead of `pandas.DataFrame)`
 
-        Args:
-            ensemble (`pyemu.Ensemble`): an ensemble instance
+    Args:
+        ensemble (`pyemu.Ensemble`): an ensemble instance
 
-        Notes:
-            Users do not need to mess with this class - it is added
-            to each `Ensemble` instance
+    Notes:
+        Users do not need to mess with this class - it is added
+        to each `Ensemble` instance
 
     """
     def __init__(self,ensemble):
@@ -140,12 +140,12 @@ class Ensemble(object):
 
         Returns:
             `bool`: flag to indicate whether or not the `ParameterEnsemble` is
-                transformed with respect to log_{10}.  Not used for (and has no effect
-                on) `ObservationEnsemble`.
+            transformed with respect to log_{10}.  Not used for (and has no effect
+            on) `ObservationEnsemble`.
 
         Notes:
             parameter transformation status is only related to log_{10} and does not
-                include the effects of `scale` and/or `offset`
+            include the effects of `scale` and/or `offset`
 
         """
         return copy.deepcopy(self._istransformed)
@@ -157,10 +157,10 @@ class Ensemble(object):
             operates in place (None is returned).
 
             Parameter transform is only related to log_{10} and does not
-                include the effects of `scale` and/or `offset`
+            include the effects of `scale` and/or `offset`
 
             `Ensemble.transform() is only provided for inhertance purposes.
-                    It only changes the `Ensemble._transformed` flag
+            It only changes the `Ensemble._transformed` flag
 
         """
         if self.transformed:
@@ -171,14 +171,14 @@ class Ensemble(object):
     def back_transform(self):
         """back transform parameters with respect to `partrans` value.
 
-            Notes:
-                operates in place (None is returned).
+        Notes:
+            operates in place (None is returned).
 
-                Parameter transform is only related to log_{10} and does not
-                    include the effects of `scale` and/or `offset`
+            Parameter transform is only related to log_{10} and does not
+            include the effects of `scale` and/or `offset`
 
-                `Ensemble.back_transform() is only provided for inhertance purposes.
-                    It only changes the `Ensemble._transformed` flag
+            `Ensemble.back_transform() is only provided for inhertance purposes.
+            It only changes the `Ensemble._transformed` flag
 
         """
         if not self.transformed:
@@ -248,8 +248,9 @@ class Ensemble(object):
         Args:
             pst (`pyemu.Pst`): a control file instance
             filename (`str`): filename containing binary ensemble
+
         Returns:
-            `Ensemble`
+            `Ensemble`: the ensembled loaded from the binary file
 
         Example::
 
@@ -327,20 +328,20 @@ class Ensemble(object):
     def to_binary(self,filename):
         """write `Ensemble` to a PEST-style binary file
 
-                Args:
-                    filename (`str`): file to write
+        Args:
+            filename (`str`): file to write
 
-                Example::
+        Example::
 
-                    pst = pyemu.Pst("my.pst")
-                    oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst)
-                    oe.to_binary("obs.csv")
+            pst = pyemu.Pst("my.pst")
+            oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst)
+            oe.to_binary("obs.csv")
 
-                Notes:
-                    back transforms `ParameterEnsemble` before writing so that
-                    values are in arithmatic space
+        Notes:
+            back transforms `ParameterEnsemble` before writing so that
+            values are in arithmatic space
 
-                """
+        """
 
         retrans = False
         if self.istransformed:
@@ -461,13 +462,10 @@ class Ensemble(object):
 
         Notes:
             deviations are the Euclidean distances from the `center_on` value to
-                realized values for each column
+            realized values for each column
+
             `center_on=None` yields the classic ensemble smoother/ensemble Kalman
-                filter deviations
-
-        Example::
-
-
+            filter deviations
 
         """
 
@@ -585,11 +583,12 @@ class ObservationEnsemble(Ensemble):
         Notes:
 
             Only observations named in `cov` are sampled. Additional, `cov` is processed prior
-                to sampling to only include non-zero-weighted observations. So users must take
-                care to make sure observations have been assigned non-zero weights even if `cov`
-                is being passed
+            to sampling to only include non-zero-weighted observations. So users must take
+            care to make sure observations have been assigned non-zero weights even if `cov`
+            is being passed
+
             The default `cov` is generated from `pyemu.Cov.from_observation_data`, which assumes
-                observation noise standard deviations are the inverse of the weights listed in `pst`
+            observation noise standard deviations are the inverse of the weights listed in `pst`
 
         Example::
 
@@ -635,7 +634,7 @@ class ObservationEnsemble(Ensemble):
 
         Notes:
             The ObservationEnsemble.pst.weights can be updated prior to calling
-                this method to evaluate new weighting strategies
+            this method to evaluate new weighting strategies
 
         """
         cols = self._df.columns
@@ -670,8 +669,8 @@ class ObservationEnsemble(Ensemble):
 
         Notes:
             The `pst` attribute of the returned `ObservationEnsemble` also only includes
-                non-zero weighted observations (and is therefore not valid for running
-                with PEST or PEST++)
+            non-zero weighted observations (and is therefore not valid for running
+            with PEST or PEST++)
 
         """
         df = self._df.loc[:, self.pst.nnz_obs_names]
@@ -717,16 +716,19 @@ class ParameterEnsemble(Ensemble):
                 numbers of parameters, this help prevent memories but is slower.
 
         Returns:
-            `ParameterEnsemble`
+            `ParameterEnsemble`: the parameter ensemble realized from the gaussian
+            distribution
 
         Notes:
 
             Only parameters named in `cov` are sampled. Missing parameters are assigned values of
             `pst.parameter_data.parval1` along the corresponding columns of `ParameterEnsemble`
+
             The default `cov` is generated from `pyemu.Cov.from_observation_data`, which assumes
-                parameter bounds in `ParameterEnsemble.pst` represent some multiple of parameter
-                standard deviations.  Additionally, the default Cov only includes adjustable
-                parameters (`partrans` not "tied" or "fixed").
+            parameter bounds in `ParameterEnsemble.pst` represent some multiple of parameter
+            standard deviations.  Additionally, the default Cov only includes adjustable
+            parameters (`partrans` not "tied" or "fixed").
+
             "tied" parameters are not sampled.
 
         Example::
@@ -767,13 +769,14 @@ class ParameterEnsemble(Ensemble):
 
         Returns:
             `ParameterEnsemble`: a parameter ensemble drawn from the multivariate (log) triangular
-                distribution defined by the parameter upper and lower bounds and initial parameter
-                values in `pst`
+            distribution defined by the parameter upper and lower bounds and initial parameter
+            values in `pst`
 
         Notes:
             respects transformation status in `pst`: fixed and tied parameters are not realized,
-                log-transformed parameters are drawn in log space.  The returned `ParameterEnsemble`
-                is back transformed (not in log space)
+            log-transformed parameters are drawn in log space.  The returned `ParameterEnsemble`
+            is back transformed (not in log space)
+
             uses numpy.random.triangular
 
         Examples:
@@ -832,12 +835,13 @@ class ParameterEnsemble(Ensemble):
 
         Returns:
             `ParameterEnsemble`: a parameter ensemble drawn from the multivariate (log) uniform
-                distribution defined by the parameter upper and lower bounds `pst`
+            distribution defined by the parameter upper and lower bounds `pst`
 
         Notes:
             respects transformation status in `pst`: fixed and tied parameters are not realized,
-                log-transformed parameters are drawn in log space.  The returned `ParameterEnsemble`
-                is back transformed (not in log space)
+            log-transformed parameters are drawn in log space.  The returned `ParameterEnsemble`
+            is back transformed (not in log space)
+
             uses numpy.random.uniform
 
         Examples:
@@ -880,21 +884,19 @@ class ParameterEnsemble(Ensemble):
 
     @classmethod
     def from_parfiles(cls, pst, parfile_names, real_names=None):
-        """ create a parameter ensemble from parfiles.  Accepts parfiles with less than the
-        parameters in the control (get NaNs in the ensemble) or extra parameters in the
+        """ create a parameter ensemble from PEST-style parameter value files.
+        Accepts parfiles with less than the parameters in the control
+        (get NaNs in the ensemble) or extra parameters in the
         parfiles (get dropped)
 
-        Parameters:
-            pst : pyemu.Pst
-
-            parfile_names : list of str
-                par file names
-
-            real_names : str
-                optional list of realization names. If None, a single integer counter is used
+        Args:
+            pst (`pyemu.Pst`): control file instance
+            parfile_names (`[str`]): par file names
+            real_names (`str`): optional list of realization names.
+                If None, a single integer counter is used
 
         Returns:
-            pyemu.ParameterEnsemble
+            `ParameterEnsemble`: parameter ensemble loaded from par files
 
 
         """
@@ -951,7 +953,7 @@ class ParameterEnsemble(Ensemble):
             operates in place (None is returned).
 
             Parameter transform is only related to log_{10} and does not
-                include the effects of `scale` and/or `offset`
+            include the effects of `scale` and/or `offset`
 
         """
         if not self.istransformed:
@@ -970,7 +972,7 @@ class ParameterEnsemble(Ensemble):
             operates in place (None is returned).
 
             Parameter transform is only related to log_{10} and does not
-                include the effects of `scale` and/or `offset`
+            include the effects of `scale` and/or `offset`
 
         """
         if self.istransformed:
@@ -1013,7 +1015,7 @@ class ParameterEnsemble(Ensemble):
 
         Returns:
             `pandas.Series`: (log-transformed) upper parameter bounds listed in
-                `ParameterEnsemble.pst.parameter_data.parubnd`
+            `ParameterEnsemble.pst.parameter_data.parubnd`
 
         """
         if not self.istransformed:
@@ -1029,7 +1031,7 @@ class ParameterEnsemble(Ensemble):
 
         Returns:
             `pandas.Series`: (log-transformed) lower parameter bounds listed in
-                `ParameterEnsemble.pst.parameter_data.parlbnd`
+            `ParameterEnsemble.pst.parameter_data.parlbnd`
 
         """
         if not self.istransformed:
@@ -1045,7 +1047,7 @@ class ParameterEnsemble(Ensemble):
 
         Returns:
             `numpy.ndarray(bool)`: boolean array indicating which parameters are log
-                transformed
+            transformed
 
         """
         istransformed = self.pst.parameter_data.partrans == "log"
@@ -1057,7 +1059,7 @@ class ParameterEnsemble(Ensemble):
 
         Returns:
             `numpy.ndarray(bool)`: boolean array indicating which parameters have
-                `partrans` equal to "log" or "fixed"
+            `partrans` equal to "log" or "fixed"
 
         """
         # isfixed = self.pst.parameter_data.partrans == "fixed"
@@ -1140,11 +1142,9 @@ class ParameterEnsemble(Ensemble):
         """ entry point for bounds enforcement.  This gets called for the
         draw method(s), so users shouldn't need to call this
 
-        Parameters
-        ----------
-        enforce_bounds : str
-            can be 'reset' to reset offending values or 'drop' to drop
-            offending realizations
+        Args:
+            enforce_bounds (`str`): can be 'reset' to reset offending values or 'drop' to drop
+                offending realizations
 
         Example::
 
