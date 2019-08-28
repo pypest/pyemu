@@ -1310,7 +1310,7 @@ def par_gauss_draw_consistency_test():
     pst.parameter_data.loc[pst.par_names[3::2],"partrans"] = "fixed"
     pst.parameter_data.loc[pst.par_names[0],"pargp"] = "test"
 
-    num_reals = 10000
+    num_reals = 100000
 
     pe1 = ParameterEnsemble.from_gaussian_draw(pst,num_reals=num_reals)
     sigma_range = 4
@@ -1557,16 +1557,16 @@ def uniform_draw_test():
 
 if __name__ == "__main__":
     #par_gauss_draw_consistency_test()
-    #obs_gauss_draw_consistency_test()
-    #phi_vector_test()
-    #add_base_test()
-    #nz_test()
-    #deviations_test()
-    #as_pyemu_matrix_test()
-    #dropna_test()
-    #enforce_test()
-    #pnulpar_test()
-    #triangular_draw_test()
-    uniform_draw_test()
+    obs_gauss_draw_consistency_test()
+    # phi_vector_test()
+    # add_base_test()
+    # nz_test()
+    # deviations_test()
+    # as_pyemu_matrix_test()
+    # dropna_test()
+    # enforce_test()
+    # pnulpar_test()
+    # triangular_draw_test()
+    # uniform_draw_test()
 
 
