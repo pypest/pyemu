@@ -9,7 +9,7 @@ from pyemu.la import LinearAnalysis
 from pyemu.mat import Cov, Matrix
 
 class Schur(LinearAnalysis):
-    """prior and posterior uncertainty and data-worth analysis using Schur compliment
+    """FOSM-based prior and posterior uncertainty and data-worth analysis using Schur compliment
 
     Args:
         jco (varies, optional): something that can be cast or loaded into a `pyemu.Jco`.  Can be a
@@ -44,6 +44,12 @@ class Schur(LinearAnalysis):
         scale_offset (`bool`, optional): flag to apply parameter scale and offset to parameter bounds
             when calculating prior parameter covariance matrix from bounds.  This arg is onlyused if
             constructing parcov from parameter bounds.Default is True.
+
+    Note:
+        This class is the primary entry point for FOSM-based uncertainty and
+        dataworth analyses
+
+        This class replicates and extends the behavior of the PEST PREDUNC utilities.
 
     Examples::
 
@@ -88,11 +94,6 @@ class Schur(LinearAnalysis):
 
         Returns:
             `pyemu.Cov`: the posterior parameter covariance matrix
-
-        Notes:
-             If Schur.__posterior_parameter is None, the posterior
-                parameter covariance matrix is calculated via Schur
-                compliment before returning
 
         Example::
 
@@ -198,13 +199,13 @@ class Schur(LinearAnalysis):
 
         Returns:
             `dict`: dictionary of forecast names and FOSM-estimated posterior
-                variances
+            variances
 
-        Notes:
-            sames as `LinearAnalysis.posterior_prediction`
-            See `Schur.get_forecast_summary()` for a
-                dataframe-based container of prior and posterior
-                variances
+        Note:
+            Sames as `LinearAnalysis.posterior_prediction`
+
+            See `Schur.get_forecast_summary()` for a dataframe-based container of prior and posterior
+            variances
 
         """
         return self.posterior_prediction
@@ -215,13 +216,13 @@ class Schur(LinearAnalysis):
 
        Returns:
             `dict`: dictionary of forecast names and FOSM-estimated posterior
-                variances
+            variances
 
-        Notes:
+        Note:
             sames as `LinearAnalysis.posterior_forecast`
-            See `Schur.get_forecast_summary()` for a
-                dataframe-based container of prior and posterior
-                variances
+
+            See `Schur.get_forecast_summary()` for a dataframe-based container of prior and posterior
+            variances
 
         """
         if self.__posterior_prediction is not None:
@@ -250,13 +251,14 @@ class Schur(LinearAnalysis):
 
         Returns:
             `pandas.DataFrame`: dataframe of prior,posterior variances and percent
-                uncertainty reduction of each parameter
+            uncertainty reduction of each parameter
 
-        Notes:
-            this is the primary entry point for accessing parameter uncertainty estimates
-            "Prior" column in dataframe is the diagonal of `LinearAnalysis.parcov`
-            "precent_reduction" column in dataframe is calculated as
-                100.0 * (1.0 - (posterior variance / prior variance)
+        Note:
+            This is the primary entry point for accessing parameter uncertainty estimates
+
+            The "Prior" column in dataframe is the diagonal of `LinearAnalysis.parcov`
+            "precent_reduction" column in dataframe is calculated as 100.0 * (1.0 -
+            (posterior variance / prior variance)
 
         Example::
 
@@ -286,12 +288,12 @@ class Schur(LinearAnalysis):
 
         Returns:
             `pandas.DataFrame`: dataframe of prior,posterior variances and percent
-                uncertainty reduction of each forecast (e.g. prediction)
+            uncertainty reduction of each forecast (e.g. prediction)
 
-        Notes:
-            this is the primary entry point for accessing forecast uncertainty estimates
+        Note:
+            This is the primary entry point for accessing forecast uncertainty estimates
             "precent_reduction" column in dataframe is calculated as
-                100.0 * (1.0 - (posterior variance / prior variance)
+            100.0 * (1.0 - (posterior variance / prior variance)
 
         Examples::
 
@@ -339,9 +341,9 @@ class Schur(LinearAnalysis):
             of some parameters. The new instance has an updated `parcov` that is less
             the names listed in `parameter_names`.
 
-        Notes:
-            this method is primarily for use by the `LinearAnalysis.get_parameter_contribution()`
-                dataworth method.
+        Note:
+            This method is primarily for use by the `LinearAnalysis.get_parameter_contribution()`
+            dataworth method.
 
         """
         if not isinstance(parameter_names, list):
@@ -394,18 +396,18 @@ class Schur(LinearAnalysis):
 
         Returns:
             `pandas.DataFrame`: a dataframe that summarizes the parameter contribution
-                dataworth analysis. The dataframe has index (row labels) of the keys in parlist_dict
-                and a column labels of forecast names.  The values in the dataframe
-                are the posterior variance of the forecast conditional on perfect
-                knowledge of the parameters in the values of parlist_dict.  One row in the
-                dataframe will be labeled `base` - this is the forecast uncertainty estimates
-                that include the effects of all adjustable parameters.  Percent decreases in
-                forecast uncertainty can be calculated by differencing all rows against the
-                "base" row.  Varies depending on `include_prior_results`.
+            dataworth analysis. The dataframe has index (row labels) of the keys in parlist_dict
+            and a column labels of forecast names.  The values in the dataframe
+            are the posterior variance of the forecast conditional on perfect
+            knowledge of the parameters in the values of parlist_dict.  One row in the
+            dataframe will be labeled `base` - this is the forecast uncertainty estimates
+            that include the effects of all adjustable parameters.  Percent decreases in
+            forecast uncertainty can be calculated by differencing all rows against the
+            "base" row.  Varies depending on `include_prior_results`.
 
-        Notes:
+        Note:
             This is the primary dataworth method for assessing the contribution of one or more
-                parameters to forecast uncertainty.
+            parameters to forecast uncertainty.
 
         Examples::
 
@@ -476,17 +478,17 @@ class Schur(LinearAnalysis):
         Returns:
 
             `pandas.DataFrame`: a dataframe that summarizes the parameter contribution analysis.
-                The dataframe has index (row labels) that are the parameter group names
-                and a column labels of forecast names.  The values in the dataframe
-                are the posterior variance of the forecast conditional on perfect
-                knowledge of the adjustable parameters in each parameter group.  One
-                row is labelled "base" - this is the variance of the forecasts that includes
-                the effects of all adjustable parameters. Varies depending on `include_prior_results`.
+            The dataframe has index (row labels) that are the parameter group names
+            and a column labels of forecast names.  The values in the dataframe
+            are the posterior variance of the forecast conditional on perfect
+            knowledge of the adjustable parameters in each parameter group.  One
+            row is labelled "base" - this is the variance of the forecasts that includes
+            the effects of all adjustable parameters. Varies depending on `include_prior_results`.
 
-        Notes:
+        Note:
             This method is just a thin wrapper around get_contribution_dataframe() - this method
-                automatically constructs the parlist_dict argument where the keys are the
-                group names and the values are the adjustable parameters in the groups
+            automatically constructs the parlist_dict argument where the keys are the
+            group names and the values are the adjustable parameters in the groups
 
         Example::
 
@@ -534,21 +536,21 @@ class Schur(LinearAnalysis):
 
         Returns:
             `pandas.DataFrame`: a dataframe with row labels (index) of `obslist_dict.keys()` and
-                columns of forecast names.  The values in the dataframe are the
-                posterior variance of the forecasts resulting from notional inversion
-                using the observations in `obslist_dict[key value]` plus the observations
-                in `base_obslist` (if any).  One row in the dataframe is labeled "base" - this is
-                posterior forecast variance resulting from the notional calibration with the
-                observations in `base_obslist` (if `base_obslist` is `None`, then the "base" row is the
-                prior forecast variance).  Conceptually, the forecast variance should either not change or
-                decrease as a result of gaining additional observations.  The magnitude of the decrease
-                represents the worth of the potential new observation(s) being tested.
+            columns of forecast names.  The values in the dataframe are the
+            posterior variance of the forecasts resulting from notional inversion
+            using the observations in `obslist_dict[key value]` plus the observations
+            in `base_obslist` (if any).  One row in the dataframe is labeled "base" - this is
+            posterior forecast variance resulting from the notional calibration with the
+            observations in `base_obslist` (if `base_obslist` is `None`, then the "base" row is the
+            prior forecast variance).  Conceptually, the forecast variance should either not change or
+            decrease as a result of gaining additional observations.  The magnitude of the decrease
+            represents the worth of the potential new observation(s) being tested.
 
-        Notes:
+        Note:
             Observations listed in `obslist_dict` and `base_obslist` with zero
-                weights are not included in the analysis unless `reset_zero_weight` is `True` or a float
-                greater than zero.  In most cases, users will want to reset zero-weighted observations as part
-                dataworth testing process.
+            weights are not included in the analysis unless `reset_zero_weight` is `True` or a float
+            greater than zero.  In most cases, users will want to reset zero-weighted observations as part
+            dataworth testing process.
 
         Example::
 
@@ -700,19 +702,19 @@ class Schur(LinearAnalysis):
 
         Returns:
             `pandas.DataFrame`: A dataframe with index of obslist_dict.keys() and columns
-                of forecast names.  The values in the dataframe are the posterior
-                variances of the forecasts resulting from losing the information
-                contained in obslist_dict[key value]. One row in the dataframe is labeled "base" - this is
-                posterior forecast variance resulting from the notional calibration with the
-                non-zero-weighed observations in `Schur.pst`.  Conceptually, the forecast variance should
-                either not change or increase as a result of losing existing observations.  The magnitude
-                of the increase represents the worth of the existing observation(s) being tested.
+            of forecast names.  The values in the dataframe are the posterior
+            variances of the forecasts resulting from losing the information
+            contained in obslist_dict[key value]. One row in the dataframe is labeled "base" - this is
+            posterior forecast variance resulting from the notional calibration with the
+            non-zero-weighed observations in `Schur.pst`.  Conceptually, the forecast variance should
+            either not change or increase as a result of losing existing observations.  The magnitude
+            of the increase represents the worth of the existing observation(s) being tested.
 
-        Notes:
+        Note:
             Observations listed in `obslist_dict` and `base_obslist` with zero
-                weights are not included in the analysis unless `reset_zero_weight` is `True` or a float
-                greater than zero.  In most cases, users will want to reset zero-weighted observations as part
-                dataworth testing process.
+            weights are not included in the analysis unless `reset_zero_weight` is `True` or a float
+            greater than zero.  In most cases, users will want to reset zero-weighted observations as part
+            dataworth testing process.
 
         Example::
 
@@ -815,9 +817,9 @@ class Schur(LinearAnalysis):
 
         Returns:
             `dict`: a dictionary of observations grouped by observation group name.
-                Useful for dataworth processing in `pyemu.Schur`
+            Useful for dataworth processing in `pyemu.Schur`
 
-        Notes:
+        Note:
             only includes observations that are listed in `Schur.jco.row_names`
 
         Example::
@@ -852,18 +854,18 @@ class Schur(LinearAnalysis):
 
         Returns:
             `pandas.DataFrame`: A dataframe with index of observation group names and columns
-                of forecast names.  The values in the dataframe are the posterior
-                variances of the forecasts resulting from losing the information
-                contained in each observation group. One row in the dataframe is labeled "base" - this is
-                posterior forecast variance resulting from the notional calibration with the
-                non-zero-weighed observations in `Schur.pst`.  Conceptually, the forecast variance should
-                either not change or increase as a result of losing existing observations.  The magnitude
-                of the increase represents the worth of the existing observation(s) in each group being tested.
+            of forecast names.  The values in the dataframe are the posterior
+            variances of the forecasts resulting from losing the information
+            contained in each observation group. One row in the dataframe is labeled "base" - this is
+            posterior forecast variance resulting from the notional calibration with the
+            non-zero-weighed observations in `Schur.pst`.  Conceptually, the forecast variance should
+            either not change or increase as a result of losing existing observations.  The magnitude
+            of the increase represents the worth of the existing observation(s) in each group being tested.
 
-        Notes:
+        Note:
             Observations in `Schur.pst` with zero weights are not included in the analysis unless
-                `reset_zero_weight` is `True` or a float greater than zero.  In most cases, users
-                will want to reset zero-weighted observations as part dataworth testing process.
+            `reset_zero_weight` is `True` or a float greater than zero.  In most cases, users
+            will want to reset zero-weighted observations as part dataworth testing process.
 
         Example::
 
@@ -888,19 +890,19 @@ class Schur(LinearAnalysis):
 
         Returns:
             `pandas.DataFrame`: A dataframe with index of observation group names and columns
-                of forecast names.  The values in the dataframe are the posterior
-                variances of the forecasts resulting from gaining the information
-                contained in each observation group. One row in the dataframe is labeled "base" - this is
-                posterior forecast variance resulting from the notional calibration with the
-                non-zero-weighed observations in `Schur.pst`.  Conceptually, the forecast variance should
-                either not change or decrease as a result of gaining new observations.  The magnitude
-                of the decrease represents the worth of the potential new observation(s) in each group
-                being tested.
+            of forecast names.  The values in the dataframe are the posterior
+            variances of the forecasts resulting from gaining the information
+            contained in each observation group. One row in the dataframe is labeled "base" - this is
+            posterior forecast variance resulting from the notional calibration with the
+            non-zero-weighed observations in `Schur.pst`.  Conceptually, the forecast variance should
+            either not change or decrease as a result of gaining new observations.  The magnitude
+            of the decrease represents the worth of the potential new observation(s) in each group
+            being tested.
 
-        Notes:
+        Note:
             Observations in `Schur.pst` with zero weights are not included in the analysis unless
-                `reset_zero_weight` is `True` or a float greater than zero.  In most cases, users
-                will want to reset zero-weighted observations as part dataworth testing process.
+            `reset_zero_weight` is `True` or a float greater than zero.  In most cases, users
+            will want to reset zero-weighted observations as part dataworth testing process.
 
         Example::
 
@@ -943,13 +945,13 @@ class Schur(LinearAnalysis):
 
         Returns:
             `pandas.DataFrame`: a dataFrame with columns of `obslist_dict` key for each iteration
-                the yields the largest variance reduction for the named `forecast`. Columns are forecast
-                variance percent reduction for each iteration (percent reduction compared to initial "base"
-                case with all non-zero weighted observations included in the notional calibration)
+            the yields the largest variance reduction for the named `forecast`. Columns are forecast
+            variance percent reduction for each iteration (percent reduction compared to initial "base"
+            case with all non-zero weighted observations included in the notional calibration)
 
 
-        Notes:
-        The most important observations from each iteration is added to `base_obslist`
+        Note:
+            The most important observations from each iteration is added to `base_obslist`
             and removed `obslist_dict` for the next iteration.  In this way, the added
             observation importance values include the conditional information from
             the last iteration.
@@ -1049,10 +1051,10 @@ class Schur(LinearAnalysis):
                 of the decrease represents the worth of gathering information about the parameter(s) being
                 tested.
 
-        Notes:
+        Note:
             The largest contributing parameters from each iteration are
-                treated as known perfectly for the remaining iterations.  In this way, the
-                next iteration seeks the next most influential group of parameters.
+            treated as known perfectly for the remaining iterations.  In this way, the
+            next iteration seeks the next most influential group of parameters.
 
         Returns:
             `pandas.DataFrame`: a dataframe with index of iteration number and columns

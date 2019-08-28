@@ -1,11 +1,4 @@
-"""Geostatistical analyses within the pyemu framework.
-Support for Ordinary Kriging as well as construction of
-covariances between points and covariance matrices from
-(nested) geostistical structures, as well as 2-D spectral
-simulation for regular grids. Also support for reading
-and writing PEST structure files, as well as GSLIB and SGEMS files
 
-"""
 from __future__ import print_function
 import os
 import copy
@@ -58,16 +51,10 @@ class GeoStruct(object):
             transformation of the property being represented by the `GeoStruct`.
             Default is "none"
 
-    Attributes:
-        variograms ([`pyemu.Vario2d`]): the `Vario2d` instances associated with the `GeoStruct`
-        name (`str`): the name of the `GeoStruct`
-        transform (`str`): the transform of the `GeoStruct`.  Can be either "log" or "none"
-
     Example::
 
         v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)
         gs = pyemu.utils.geostats.GeoStruct(variograms=v,nugget=0.5)
-
 
     """
     def __init__(self,nugget=0.0,variograms=[],name="struct1",
@@ -128,13 +115,13 @@ class GeoStruct(object):
 
         Returns:
             `pyemu.Cov`: the covariance matrix implied by this
-                GeoStruct for the x,y pairs. `cov` has row and column
-                names supplied by the names argument unless the "cov"
-                argument was passed.
+            GeoStruct for the x,y pairs. `cov` has row and column
+            names supplied by the names argument unless the "cov"
+            argument was passed.
 
-        Notes:
+        Note:
             either "names" or "cov" must be passed.  If "cov" is passed, cov.shape
-                must equal len(x) and len(y).
+            must equal len(x) and len(y).
 
         Example::
 
@@ -181,7 +168,7 @@ class GeoStruct(object):
 
         Returns:
             `float`: the covariance between pt0 and pt1 implied
-                by the GeoStruct
+            by the GeoStruct
 
         """
         #raise Exception()
@@ -202,8 +189,8 @@ class GeoStruct(object):
 
         Returns:
             `numpy.ndarray`: a 1-D array of covariance between point x0,y0 and the
-                points contained in xother, yother.  len(cov) = len(xother) =
-                len(yother)
+            points contained in xother, yother.  len(cov) = len(xother) =
+            len(yother)
 
         """
 
@@ -215,9 +202,11 @@ class GeoStruct(object):
     @property
     def sill(self):
         """ get the sill of the `GeoStruct`
+
         Returns:
             `float`: the sill of the (nested) `GeoStruct`, including
-                nugget and contribution from each variogram
+            nugget and contribution from each variogram
+
         """
         sill = self.nugget
         for v in self.variograms:
@@ -234,7 +223,7 @@ class GeoStruct(object):
         Returns:
             `matplotlib.pyplot.axis`: the axis with the GeoStruct plot
 
-        Notes:
+        Note:
             optional arguments include "ax" (an existing axis),
             "individuals" (plot each variogram on a separate axis),
             "legend" (add a legend to the plot(s)).  All other kwargs
@@ -342,11 +331,11 @@ class SpecSim2d(object):
     def initialize(self):
         """prepare for spectral simulation.
 
-        Note
-        ----
+        Note:
             `initialize()` prepares for simulation by undertaking
             the fast FFT on the wave number matrix and should be called
             if the `SpecSim2d.geostruct` is changed.
+
             This method is called by the constructor.
 
 
@@ -414,10 +403,10 @@ class SpecSim2d(object):
 
         Returns:
             `numpy.ndarray`: a 3-D array of realizations.  Shape
-                is (num_reals,self.dely.shape[0],self.delx.shape[0])
-        Notes:
+            is (num_reals,self.dely.shape[0],self.delx.shape[0])
+        Note:
             log transformation is respected and the returned `reals` array is
-                in arithmatic space
+            in arithmatic space
 
         """
         reals = []
@@ -454,12 +443,12 @@ class SpecSim2d(object):
 
         Returns:
             `pyemu.ParameterEnsemble`: an untransformed parameter ensemble of
-                realized grid-parameter values
+            realized grid-parameter values
 
-        Notes:
+        Note:
             the method processes each unique `pargp` value in `gr_df` and resets the sill of `self.geostruct` by
-                the maximum bounds-implied variance of each `pargp`.  This method makes repeated calls to
-                `self.initialize()` to deal with the geostruct changes.
+            the maximum bounds-implied variance of each `pargp`.  This method makes repeated calls to
+            `self.initialize()` to deal with the geostruct changes.
 
         """
 
@@ -538,191 +527,6 @@ class SpecSim2d(object):
         return pe
 
 
-
-# class LinearUniversalKrige(object):
-#     def __init__(self,geostruct,point_data):
-#         if isinstance(geostruct,str):
-#             geostruct = read_struct_file(geostruct)
-#         assert isinstance(geostruct,GeoStruct),"need a GeoStruct, not {0}".\
-#             format(type(geostruct))
-#         self.geostruct = geostruct
-#         if isinstance(point_data,str):
-#             point_data = pp_file_to_dataframe(point_data)
-#         assert isinstance(point_data,pd.DataFrame)
-#         assert 'name' in point_data.columns,"point_data missing 'name'"
-#         assert 'x' in point_data.columns, "point_data missing 'x'"
-#         assert 'y' in point_data.columns, "point_data missing 'y'"
-#         assert "value" in point_data.columns,"point_data missing 'value'"
-#         self.point_data = point_data
-#         self.point_data.index = self.point_data.name
-#         self.interp_data = None
-#         self.spatial_reference = None
-#         #X, Y = np.meshgrid(point_data.x,point_data.y)
-#         #self.point_data_dist = pd.DataFrame(data=np.sqrt((X - X.T) ** 2 + (Y - Y.T) ** 2),
-#         #                                    index=point_data.name,columns=point_data.name)
-#         self.point_cov_df = self.geostruct.covariance_matrix(point_data.x,
-#                                                             point_data.y,
-#                                                             point_data.name).to_dataframe()
-#         #for name in self.point_cov_df.index:
-#         #    self.point_cov_df.loc[name,name] -= self.geostruct.nugget
-#
-#
-#     def estimate_grid(self,spatial_reference,zone_array=None,minpts_interp=1,
-#                           maxpts_interp=20,search_radius=1.0e+10,verbose=False,
-#                           var_filename=None):
-#
-#         self.spatial_reference = spatial_reference
-#         self.interp_data = None
-#         #assert isinstance(spatial_reference,SpatialReference)
-#         try:
-#             x = self.spatial_reference.xcentergrid.copy()
-#             y = self.spatial_reference.ycentergrid.copy()
-#         except Exception as e:
-#             raise Exception("spatial_reference does not have proper attributes:{0}"\
-#                             .format(str(e)))
-#
-#         if var_filename is not None:
-#             arr = np.zeros((self.spatial_reference.nrow,
-#                             self.spatial_reference.ncol)) - 1.0e+30
-#
-#         df = self.estimate(x.ravel(),y.ravel(),
-#                            minpts_interp=minpts_interp,
-#                            maxpts_interp=maxpts_interp,
-#                            search_radius=search_radius,
-#                            verbose=verbose)
-#         if var_filename is not None:
-#             arr = df.err_var.values.reshape(x.shape)
-#             np.savetxt(var_filename,arr,fmt="%15.6E")
-#         arr = df.estimate.values.reshape(x.shape)
-#         return arr
-#
-#
-#     def estimate(self,x,y,minpts_interp=1,maxpts_interp=20,
-#                      search_radius=1.0e+10,verbose=False):
-#         assert len(x) == len(y)
-#
-#         # find the point data to use for each interp point
-#         sqradius = search_radius**2
-#         df = pd.DataFrame(data={'x':x,'y':y})
-#         inames,idist,ifacts,err_var = [],[],[],[]
-#         estimates = []
-#         sill = self.geostruct.sill
-#         pt_data = self.point_data
-#         ptx_array = pt_data.x.values
-#         pty_array = pt_data.y.values
-#         ptnames = pt_data.name.values
-#         #if verbose:
-#         print("starting interp point loop for {0} points".format(df.shape[0]))
-#         start_loop = datetime.now()
-#         for idx,(ix,iy) in enumerate(zip(df.x,df.y)):
-#             if np.isnan(ix) or np.isnan(iy): #if nans, skip
-#                 inames.append([])
-#                 idist.append([])
-#                 ifacts.append([])
-#                 err_var.append(np.NaN)
-#                 continue
-#             if verbose:
-#                 istart = datetime.now()
-#                 print("processing interp point:{0} of {1}".format(idx,df.shape[0]))
-#             # if verbose == 2:
-#             #     start = datetime.now()
-#             #     print("calc ipoint dist...",end='')
-#
-#             #  calc dist from this interp point to all point data...slow
-#             dist = pd.Series((ptx_array-ix)**2 + (pty_array-iy)**2,ptnames)
-#             dist.sort_values(inplace=True)
-#             dist = dist.loc[dist <= sqradius]
-#
-#             # if too few points were found, skip
-#             if len(dist) < minpts_interp:
-#                 inames.append([])
-#                 idist.append([])
-#                 ifacts.append([])
-#                 err_var.append(sill)
-#                 estimates.append(np.NaN)
-#                 continue
-#
-#             # only the maxpts_interp points
-#             dist = dist.iloc[:maxpts_interp].apply(np.sqrt)
-#             pt_names = dist.index.values
-#             # if one of the points is super close, just use it and skip
-#             if dist.min() <= EPSILON:
-#                 ifacts.append([1.0])
-#                 idist.append([EPSILON])
-#                 inames.append([dist.idxmin()])
-#                 err_var.append(self.geostruct.nugget)
-#                 estimates.append(self.point_data.loc[dist.idxmin(),"value"])
-#                 continue
-#             # if verbose == 2:
-#             #     td = (datetime.now()-start).total_seconds()
-#             #     print("...took {0}".format(td))
-#             #     start = datetime.now()
-#             #     print("extracting pt cov...",end='')
-#
-#             #vextract the point-to-point covariance matrix
-#             point_cov = self.point_cov_df.loc[pt_names,pt_names]
-#             # if verbose == 2:
-#             #     td = (datetime.now()-start).total_seconds()
-#             #     print("...took {0}".format(td))
-#             #     print("forming ipt-to-point cov...",end='')
-#
-#             # calc the interp point to points covariance
-#             ptx = self.point_data.loc[pt_names,"x"]
-#             pty = self.point_data.loc[pt_names,"y"]
-#             interp_cov = self.geostruct.covariance_points(ix,iy,ptx,pty)
-#
-#             if verbose == 2:
-#                 td = (datetime.now()-start).total_seconds()
-#                 print("...took {0}".format(td))
-#                 print("forming lin alg components...",end='')
-#
-#             # form the linear algebra parts and solve
-#             d = len(pt_names) + 3 # +1 for lagrange mult + 2 for x and y coords
-#             npts = len(pt_names)
-#             A = np.ones((d,d))
-#             A[:npts,:npts] = point_cov.values
-#             A[npts,npts] = 0.0 #unbiaised constraint
-#             A[-2,:npts] = ptx #x coords for linear trend
-#             A[:npts,-2] = ptx
-#             A[-1,:npts] = pty #y coords for linear trend
-#             A[:npts,-1] = pty
-#             A[npts:,npts:] = 0
-#             print(A)
-#             rhs = np.ones((d,1))
-#             rhs[:npts,0] = interp_cov
-#             rhs[-2,0] = ix
-#             rhs[-1,0] = iy
-#             # if verbose == 2:
-#             #     td = (datetime.now()-start).total_seconds()
-#             #     print("...took {0}".format(td))
-#             #     print("solving...",end='')
-#             # # solve
-#             facs = np.linalg.solve(A,rhs)
-#             assert len(facs) - 3 == len(dist)
-#             estimate = facs[-3] + (ix * facs[-2]) + (iy * facs[-1])
-#             estimates.append(estimate[0])
-#             err_var.append(float(sill + facs[-1] - sum([f*c for f,c in zip(facs[:-1],interp_cov)])))
-#             inames.append(pt_names)
-#
-#             idist.append(dist.values)
-#             ifacts.append(facs[:-1,0])
-#             # if verbose == 2:
-#             #     td = (datetime.now()-start).total_seconds()
-#             #     print("...took {0}".format(td))
-#             if verbose:
-#                 td = (datetime.now()-istart).total_seconds()
-#                 print("point took {0}".format(td))
-#         df["idist"] = idist
-#         df["inames"] = inames
-#         df["ifacts"] = ifacts
-#         df["err_var"] = err_var
-#         df["estimate"] = estimates
-#         self.interp_data = df
-#         td = (datetime.now() - start_loop).total_seconds()
-#         print("took {0}".format(td))
-#         return df
-
-
 class OrdinaryKrige(object):
     """ Ordinary Kriging using Pandas and Numpy.
 
@@ -731,12 +535,12 @@ class OrdinaryKrige(object):
         point_data (`pandas.DataFrame`): the conditioning points to use for kriging.
             `point_data` must contain columns "name", "x", "y".
 
-    Notes:
+    Note:
         if `point_data` is an `str`, then it is assumed to be a pilot points file
-            and is loaded as such using `pyemu.pp_utils.pp_file_to_dataframe()`
+        and is loaded as such using `pyemu.pp_utils.pp_file_to_dataframe()`
 
         If zoned interpolation is used for grid-based interpolation, then
-            `point_data` must also contain a "zone" column
+        `point_data` must also contain a "zone" column
 
 
     Example::
@@ -799,9 +603,9 @@ class OrdinaryKrige(object):
                 by dropping additional points that are
                 closer than EPSILON distance.  Default is False
 
-        Notes:
+        Note:
             this method will issue warnings for points that are closer
-                than EPSILON distance
+            than EPSILON distance
 
         """
 
@@ -867,10 +671,11 @@ class OrdinaryKrige(object):
 
         Returns:
             `pandas.DataFrame`: a dataframe with information summarizing the ordinary kriging
-                process for each grid node
+            process for each grid node
 
-        Notes:
+        Note:
             this method calls OrdinaryKrige.calc_factors()
+
             this method is the main entry point for grid-based kriging factor generation
 
 
@@ -1013,13 +818,13 @@ class OrdinaryKrige(object):
             num_threads (`int`): number of multiprocessing workers to use to try to speed up
                 kriging in python.  Default is 1.
 
-            Returns:
-                `pandas.DataFrame`: a dataframe with information summarizing the ordinary kriging
-                    process for each interpolation points
+        Returns:
+            `pandas.DataFrame`: a dataframe with information summarizing the ordinary kriging
+            process for each interpolation points
 
-            Notes:
-                this method calls either `OrdinaryKrige.calc_factors_org()` or
-                `OrdinaryKrige.calc_factors_mp()` depending on the value of `num_threads`
+        Note:
+            this method calls either `OrdinaryKrige.calc_factors_org()` or
+            `OrdinaryKrige.calc_factors_mp()` depending on the value of `num_threads`
         """
         if num_threads == 1:
             return self._calc_factors_org(x,y,minpts_interp,maxpts_interp,
@@ -1351,8 +1156,8 @@ class OrdinaryKrige(object):
             zone_file (`str`): zone filename to add to the header of the factors file.
                 This is notused by the fac2real() method.  Default is "zone.junk"
 
-        Notes:
-        this method should be called after OrdinaryKirge.calc_factors_grid()
+        Note:
+            this method should be called after OrdinaryKirge.calc_factors_grid()
 
         """
         if self.interp_data is None:
@@ -1389,7 +1194,7 @@ class Vario2d(object):
             to anisotropy ellipse. Default is 0.0
         name (`str`, optinoal): name of the variogram.  Default is "var1"
 
-    Notes:
+    Note:
         This base class should not be instantiated directly as it does not implement
         an h_function() method.
 
@@ -1467,7 +1272,7 @@ class Vario2d(object):
         Returns:
             `matplotlib.pyplot.axis`
 
-        Notes:
+        Note:
             optional arguments in kwargs include
             "ax" (existing `matplotlib.pyplot.axis`).  Other
             kwargs are passed to `matplotlib.pyplot.plot()`
@@ -1499,7 +1304,7 @@ class Vario2d(object):
         Returns:
             `pyemu.Cov`: the covariance matrix for `x`, `y` implied by `Vario2d`
 
-        Notes:
+        Note:
             either `names` or `cov` must not be None.
 
         """
@@ -1577,8 +1382,8 @@ class Vario2d(object):
 
         Returns:
             `numpy.ndarray`: a 1-D array of covariance between point x0,y0 and the
-                points contained in xother, yother.  len(cov) = len(xother) =
-                len(yother)
+            points contained in xother, yother.  len(cov) = len(xother) =
+            len(yother)
 
         """
         dxx = x0 - xother
@@ -1617,9 +1422,9 @@ class Vario2d(object):
         return s
 
 class ExpVario(Vario2d):
-    """ Exponential variogram derived type
+    """Gaussian variogram derived type
 
-     Args:
+    Args:
         contribution (float): sill of the variogram
         a (`float`): (practical) range of correlation
         anisotropy (`float`, optional): Anisotropy ratio. Default is 1.0
@@ -1630,6 +1435,7 @@ class ExpVario(Vario2d):
     Example::
 
         v = pyemu.utils.geostats.ExpVario(a=1000,contribution=1.0)
+
 
     """
 
@@ -1658,7 +1464,7 @@ class GauVario(Vario2d):
 
         v = pyemu.utils.geostats.GauVario(a=1000,contribution=1.0)
 
-    Notes:
+    Note:
         the Gaussian variogram can be unstable (not invertible) for long ranges.
 
     """
@@ -1701,16 +1507,6 @@ class SphVario(Vario2d):
     def _h_function(self,h):
         """ private method for the spherical variogram "h" function
 
-        Parameters
-        ----------
-        h : (float or numpy.ndarray)
-            distance(s)
-
-        Returns
-        -------
-        h_function : float or numpy.ndarray
-            the value of the "h" function implied by the SphVario
-
         """
 
         hh = h / self.a
@@ -1742,7 +1538,7 @@ def read_struct_file(struct_file,return_type=GeoStruct):
 
     Returns:
         [`pyemu.GeoStruct`]: list of `GeoStruct` instances.  If
-            only one `GeoStruct` is in the file, then a `GeoStruct` is returned
+        only one `GeoStruct` is in the file, then a `GeoStruct` is returned
 
 
     Example::
@@ -1799,15 +1595,6 @@ def read_struct_file(struct_file,return_type=GeoStruct):
 def _read_variogram(f):
     """Function to instantiate a Vario2d from a PEST-style structure file
 
-    Parameters
-    ----------
-    f : (file handle)
-        file handle opened for reading
-
-    Returns
-    -------
-    Vario2d : Vario2d
-        Vario2d derived type
 
     """
 
@@ -1841,19 +1628,6 @@ def _read_variogram(f):
 def _read_structure_attributes(f):
     """ function to read information from a PEST-style structure file
 
-    Parameters
-    ----------
-    f : (file handle)
-        file handle open for reading
-
-    Returns
-    -------
-    nugget : float
-        the GeoStruct nugget
-    transform : str
-        the GeoStruct transformation
-    variogram_info : dict
-        dictionary of structure-level variogram information
 
     """
 
@@ -1893,8 +1667,7 @@ def read_sgems_variogram_xml(xml_file,return_type=GeoStruct):
         xml_file (`str`): SGEMS variogram XML file
         return_type (`object`): the instance type to return.  Default is `GeoStruct`
 
-    Returns
-    -------
+    Returns:
         gs : `GeoStruct`
 
 
@@ -1983,7 +1756,7 @@ def gslib_2_dataframe(filename,attr_name=None,x_idx=0,y_idx=1):
     Returns:
         `pandas.DataFrame`: a dataframe of info from the GSLIB file
 
-    Notes:
+    Note:
         assigns generic point names ("pt0, pt1, etc)
 
     Example::
@@ -2029,15 +1802,11 @@ def load_sgems_exp_var(filename):
     """ read an SGEM experimental variogram into a sequence of
     pandas.DataFrames
 
-    Parameters
-    ----------
-    filename : (str)
-        an SGEMS experimental variogram XML file
+    Args:
+        filename (`str`): an SGEMS experimental variogram XML file
 
-    Returns
-    -------
-    dfs : list
-        a list of pandas.DataFrames of x, y, pairs for each
+    Returns:
+        [`pandas.DataFrame`]: a list of pandas.DataFrames of x, y, pairs for each
         division in the experimental variogram
 
     """
@@ -2089,6 +1858,7 @@ def fac2real(pp_file=None,factors_file="factors.dat",out_file="test.ref",
 
     Returns:
         `numpy.ndarray`: if out_file is None
+
         `str`: if out_file it not None
 
     Example::

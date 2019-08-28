@@ -42,7 +42,6 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',
-    'IPython.sphinxext.ipython_console_highlighting',
     'sphinx.ext.inheritance_diagram']
 
 # Napoleon settings

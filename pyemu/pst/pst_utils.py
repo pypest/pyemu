@@ -1,6 +1,3 @@
-"""This module contains helpers and default values that support
-the pyemu.Pst object.
-"""
 from __future__ import print_function, division
 import os, sys
 import stat
@@ -125,9 +122,8 @@ def read_resfile(resfile):
 
     Returns:
         `pandas.DataFrame`: a dataframe of info from the residuals file.
-            Column names are the names from the residuals file: "name", "group",
-            "measured", "modelled" (with two "L"s), "residual", "weight".
-
+        Column names are the names from the residuals file: "name", "group",
+        "measured", "modelled" (with two "L"s), "residual", "weight".
 
     Example::
 
@@ -162,12 +158,13 @@ def res_from_en(pst,enfile):
 
     Returns:
         `pandas.DataFrame`: a dataframe with the same columns as a
-            residual dataframe (a la `pst_utils.read_resfile()`)
+        residual dataframe (a la `pst_utils.read_resfile()`)
 
-    Notes:
-          If a "base" realization is found in the ensemble, it is used
-            as the "modelled" column in the residuals dataframe.  Otherwise,
-            the mean of the ensemble is used as "modelled"
+    Note:
+        If a "base" realization is found in the ensemble, it is used
+        as the "modelled" column in the residuals dataframe.  Otherwise,
+        the mean of the ensemble is used as "modelled"
+
     Example::
 
         df = pyemu.pst_utils.res_from_en("my.0.obs.csv")
@@ -207,7 +204,7 @@ def read_parfile(parfile):
 
     Returns:
         `pandas.DataFrame`: a dataframe with columns of "parnme", "parval1",
-            "scale" and "offset"
+        "scale" and "offset"
 
     Example::
 
@@ -311,12 +308,13 @@ def write_input_files(pst):
     Args:
         pst (`pyemu.Pst`): a Pst instance
 
-    Notes:
+    Note:
 
         This function uses template files with the current parameter \
-            values (stored in `pst.parameter_data.parval1`).
+        values (stored in `pst.parameter_data.parval1`).
+
         This is a simple implementation of what PEST does.  It does not
-            handle all the special cases, just a basic function...user beware
+        handle all the special cases, just a basic function...user beware
 
     """
     par = pst.parameter_data
@@ -405,9 +403,9 @@ def parse_ins_file(ins_file):
     Returns:
         [`str`]: a list of observation names found in `ins_file`
 
-    Notes:
+    Note:
         This is a basic function for parsing instruction files to
-            look for observation names.
+        look for observation names.
 
     Example::
 
@@ -470,7 +468,7 @@ def _parse_ins_string(string):
 def _populate_dataframe(index, columns, default_dict, dtype):
     """ helper function to populate a generic Pst dataframe attribute.
 
-    Notes:
+    Note:
         This function is called as part of constructing a generic Pst instance
 
     """
@@ -495,8 +493,8 @@ def generic_pst(par_names=["par1"],obs_names=["obs1"],addreg=False):
 
     Returns:
         `pyemu.Pst`: a new control file instance. This instance does not have
-            all the info needed to run, but is a placeholder that can then be
-            filled in later.
+        all the info needed to run, but is a placeholder that can then be
+        filled in later.
 
     Example::
 
@@ -555,11 +553,11 @@ def try_process_output_file(ins_file,output_file=None):
 
     Returns:
         `pandas.DataFrame`: a dataframe of observation name and simulated outputs
-            extracted from `output_file`.
+        extracted from `output_file`.
 
-    Notes:
+    Note:
         If an exception is raised when processing the output file, the exception
-            is echoed to the screen and `None` is returned.
+        is echoed to the screen and `None` is returned.
 
     Example::
 
@@ -586,15 +584,14 @@ def try_process_output_pst(pst):
 
     Returns:
         `pandas.DataFrame`: a dataframe of observation names and simulated outputs
-            extracted from model output files.
+        extracted from model output files.
 
-    Notes:
-
+    Note:
         This function first tries to process the output files using the
-            InstructionFile class,  If that failes, then it tries to run
-            INSCHEK. If an instructionfile is processed successfully,
-            the extract simulated values are used to populate the
-            `pst.observation_data.obsval` attribute.
+        InstructionFile class,  If that failes, then it tries to run
+        INSCHEK. If an instructionfile is processed successfully,
+        the extract simulated values are used to populate the
+        `pst.observation_data.obsval` attribute.
 
 
     """
@@ -637,9 +634,9 @@ def get_phi_comps_from_recfile(recfile):
     Returns:
         `dict`:  nested dictionary of iteration number, {group,contribution}
 
-    Notes:
+    Note:
         It is really poor form to use the record file in this way.  Please only
-            use this as a last resort!
+        use this as a last resort!
 
     """
     iiter = 1
@@ -677,8 +674,8 @@ def res_from_obseravtion_data(observation_data):
 
     Returns:
         `pandas.DataFrame`: a dataframe with the same columns as the
-            residual dataframe ("name","group","measured","modelled",
-            "residual","weight").
+        residual dataframe ("name","group","measured","modelled",
+        "residual","weight").
 
 
 
@@ -741,11 +738,11 @@ def csv_to_ins_file(csv_filename,ins_filename=None,only_cols=None,only_rows=None
 
     Returns:
         `pandas.DataFrame`: a dataframe of observation names and values found in
-            `csv_filename`
+        `csv_filename`
 
-    Notes:
-          resulting observation names in `ins_filename` are a combiation of index and
-            header values.
+    Note:
+        resulting observation names in `ins_filename` are a combiation of index and
+        header values.
 
 
     """
@@ -876,7 +873,7 @@ class InstructionFile(object):
     def read_ins_file(self):
         """read the instruction and do some minimal error checking.
 
-        Notes:
+        Note:
 
             This is called by the constructor
 
@@ -986,7 +983,7 @@ class InstructionFile(object):
         Returns:
 
             `pd.DataFrame`: a dataframe with observation names and simulated values
-                extracted from `output_file`
+            extracted from `output_file`
 
 
         """
@@ -1127,7 +1124,7 @@ def process_output_files(pst,pst_path='.'):
 
     Returns:
         `pd.DataFrame`: dataframe of observation names and simulated values
-            extracted from the model output files listed in `pst`
+        extracted from the model output files listed in `pst`
 
     Example::
 

@@ -1,5 +1,3 @@
-""" module of utilities for groundwater modeling
-"""
 
 import os
 import copy
@@ -24,16 +22,15 @@ PP_NAMES = ["name","x","y","zone","parval1"]
 def modflow_pval_to_template_file(pval_file,tpl_file=None):
     """write a template file for a modflow parameter value file.
 
-
     Args:
         pval_file (`str`): the path and name of the existing modflow pval file
-        tpl_file (`str, optional):  template file to write.
-            If None, use "`pval_file`.tpl".Default is None
-    Notes:
+        tpl_file (`str`, optional):  template file to write. If None, use
+            `pval_file` +".tpl". Default is None
+    Note:
         Uses names in the first column in the pval file as par names.
 
     Returns:
-        `pandas.DataFrame`: a dataFrame with control file parameter information
+        **pandas.DataFrame**: a dataFrame with control file parameter information
     """
 
     if tpl_file is None:
@@ -59,10 +56,10 @@ def modflow_hob_to_instruction_file(hob_file, ins_file=None):
     Args:
         hob_file (`str`): the path and name of the existing modflow hob file
         ins_file (`str`, optional): the name of the instruction file to write.
-            If `None`, `hob_file`+".ins" is used.  Default is `None`.
+            If `None`, `hob_file` +".ins" is used.  Default is `None`.
 
     Returns:
-        `pandas.DataFrame`: a dataFrame with control file observation information
+        **pandas.DataFrame**: a dataFrame with control file observation information
 
     """
 
@@ -93,12 +90,12 @@ def modflow_hydmod_to_instruction_file(hydmod_file, ins_file=None):
     Args:
         hydmod_file (`str`): the path and name of the existing modflow hob file
         ins_file (`str`, optional): the name of the instruction file to write.
-            If `None`, `hydmod_file`+".ins" is used.  Default is `None`.
+            If `None`, `hydmod_file` +".ins" is used.  Default is `None`.
 
     Returns:
-        `pandas.DataFrame`: a dataFrame with control file observation information
+        **pandas.DataFrame**: a dataFrame with control file observation information
 
-    Notes:
+    Note:
         calls `pyemu.gw_utils.modflow_read_hydmod_file()`
     """
 
@@ -132,11 +129,11 @@ def modflow_read_hydmod_file(hydmod_file, hydmod_outfile=None):
 
     Args:
         hydmod_file (`str`): The path and name of the existing modflow hydmod binary file
-        hydmod_outfile (`str`, optional): output file to write.  If `None`, use `hydmod_file`+".dat".
+        hydmod_outfile (`str`, optional): output file to write.  If `None`, use `hydmod_file` +".dat".
             Default is `None`.
 
     Returns:
-        `pandas.DataFrame`: a dataFrame with hymod_file values
+        **pandas.DataFrame**: a dataFrame with hymod_file values
     """
     try:
         import flopy.utils as fu
@@ -195,20 +192,25 @@ def setup_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",sw_filenam
         sw_prefix (`str`, optional): a prefix to add to the SW budget observations.  Useful
             if processing more than one list file as part of the forward run process.
             Default is 'sw'.
-        save_setup_file (`bool`, optional): a flag to save _setup_<list_filename>.csv file
+        save_setup_file (`bool`, optional): a flag to save "_setup_"+ `list_filename` +".csv" file
             that contains useful control file information.  Default is `False`.
 
     Returns:
-        `str`:  the command to add to the forward run script
-        `str`: the names of the instruction files that were created
-        `pandas.DataFrame`: a dataframe with information for constructing a control file
+        tuple containing
+
+        - **str**:  the command to add to the forward run script
+        - **str**: the names of the instruction files that were created
+        - **pandas.DataFrame**: a dataframe with information for constructing a control file
 
 
-    Notes:
+    Note:
         writes an instruction file and also a _setup_.csv to use when constructing a pest
             control file
-        the instruction files are named <out_filename>.ins\
-        It is recommended to use the default value for gw_filename or sw_filename.
+
+        the instruction files are named `out_filename` +".ins"
+
+        It is recommended to use the default value for `gw_filename` or `sw_filename`.
+
         This is the companion function of `gw_utils.apply_mtlist_budget_obs()`.
 
         """
@@ -281,11 +283,13 @@ def apply_mtlist_budget_obs(list_filename,gw_filename="mtlist_gw.dat",
             observations a meaningful name
 
     Returns:
-        `pandas.DataFrame`: the gw mass budget dataframe
-        `pandas.DataFrame`: (optional) the sw mass budget dataframe.  If the SFT process is not active,
-            this returned value is `None`.
+        2-element tuple containing
 
-    Notes:
+        - **pandas.DataFrame**: the gw mass budget dataframe
+        - **pandas.DataFrame**: (optional) the sw mass budget dataframe.
+          If the SFT process is not active, this returned value is `None`.
+
+    Note:
         this is the companion function of `gw_utils.setup_mtlist_budget_obs()`.
     """
     try:
@@ -320,18 +324,20 @@ def setup_mflist_budget_obs(list_filename,flx_filename="flux.dat",
             This is used to give budget observations meaningful names.  Default is "1-1-1970".
         prefix (`str`, optional): a prefix to add to the water budget observations.  Useful if
             processing more than one list file as part of the forward run process. Default is ''.
-        save_setup_file (`bool`): a flag to save _setup_<list_filename>.csv file that contains useful
+        save_setup_file (`bool`): a flag to save "_setup_"+ `list_filename` +".csv" file that contains useful
             control file information
 
     Returns:
-        `pandas.DataFrame`: a dataframe with information for constructing a control file.
+        **pandas.DataFrame**: a dataframe with information for constructing a control file.
 
-    Notes:
-
+    Note:
         This method writes instruction files and also a _setup_.csv to use when constructing a pest
-            control file.  The instruction files are named <flux_file>.ins and <vol_file>.ins, respectively
+        control file.  The instruction files are named <flux_file>.ins and <vol_file>.ins, respectively
+
         It is recommended to use the default values for flux_file and vol_file.
+
         This is the companion function of `gw_utils.setup_mflist_budget_obs()`.
+
 
     """
     flx,vol = apply_mflist_budget_obs(list_filename,flx_filename,vol_filename,
@@ -372,12 +378,15 @@ def apply_mflist_budget_obs(list_filename,flx_filename="flux.dat",
         save_setup_file (`bool`): a flag to save _setup_<list_filename>.csv file that contains useful
             control file information
 
-    Notes:
+    Note:
         this is the companion function of `gw_utils.setup_mflist_budget_obs()`.
 
     Returns:
-        `pandas.DataFrame`: a dataframe with flux budget information
-        `pandas.DataFrame`: a dataframe with cumulative budget information
+        tuple containing
+
+
+        - **pandas.DataFrame**: a dataframe with flux budget information
+        - **pandas.DataFrame**: a dataframe with cumulative budget information
 
     """
     try:
@@ -414,7 +423,7 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
 
     Args:
         hds_file (`str`): path and name of existing modflow head-save format binary file
-        kij_dict (`dict`): dictionary of site_name: [k,i,j] pairs. For example: `{"wel1":[0,1,1]}.
+        kij_dict (`dict`): dictionary of site_name: [k,i,j] pairs. For example: `{"wel1":[0,1,1]}`.
         prefix (`str`, optional): string to prepend to site_name when forming observation names.  Default is None
         include_path (`bool`, optional): flag to setup the binary file processing in directory where the hds_file
         is located (if different from where python is running).  This is useful for setting up
@@ -426,13 +435,16 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
             inactive value processing happens.  Default is `None`.
 
     Returns:
-        `str`: the forward run command to execute the binary file process during model runs.
-        `pandas.DataFrame`: a dataframe of observation information for use in the pest control file
+        tuple containing
 
-    Notes:
+        - **str**: the forward run command to execute the binary file process during model runs.
+
+        - **pandas.DataFrame**: a dataframe of observation information for use in the pest control file
+
+    Note:
 
         This function writes hds_timeseries.config that must be in the same
-            dir where apply_hds_timeseries() is called during the forward run
+        dir where `apply_hds_timeseries()` is called during the forward run
 
         Assumes model time units are days
 
@@ -554,7 +566,7 @@ def apply_hds_timeseries(config_file=None, postprocess_inact=None):
         postprocess_inact (`float`, optional): Inactive value in heads/ucn file e.g. mt.btn.cinit.  If `None`, no
             inactive value processing happens.  Default is `None`.
 
-    Notes:
+    Note:
         this is the companion function of `gw_utils.setup_hds_timeseries()`.
 
     """
@@ -689,7 +701,7 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
         kperk_pairs ([(int,int)]): a list of len two tuples which are pairs of kper
             (zero-based stress period index) and k (zero-based layer index) to
             setup observations for.  If None, then all layers and stress period records
-             found in the file will be used.  Caution: a shit-ton of observations may be produced!
+            found in the file will be used.  Caution: a shit-ton of observations may be produced!
         skip (variable): a value or function used to determine which values
             to skip when setting up observations.  If np.scalar(skip)
             is True, then values equal to skip will not be used.
@@ -700,12 +712,15 @@ def setup_hds_obs(hds_file,kperk_pairs=None,skip=None,prefix="hds"):
         prefix (`str`): the prefix to use for the observation names. default is "hds".
 
     Returns:
-        `str`: the forward run script line needed to execute the headsave file observation
-            operation
-        `pandas.DataFrame`: a dataframe of pest control file information
+        tuple containing
 
-    Notes:
+        - **str**: the forward run script line needed to execute the headsave file observation
+          operation
+        - **pandas.DataFrame**: a dataframe of pest control file information
+
+    Note:
         Writes an instruction file and a _setup_ csv used construct a control file.
+
         This is the companion function to `gw_utils.apply_hds_obs()`.
 
 
@@ -839,8 +854,8 @@ def last_kstp_from_kper(hds,kper):
         kper (`int`): the zero-index stress period number
 
     Returns:
-        `int`: the zero-based last time step during stress period
-            kper in the head save file
+        **int**: the zero-based last time step during stress period
+        kper in the head save file
 
     """
     #find the last kstp with this kper
@@ -864,11 +879,9 @@ def apply_hds_obs(hds_file, inact_abs_val=1.0e+20):
         inact_abs_val (`float`, optional): the value that marks the mininum and maximum
             active value.  values in the headsave file greater than `inact_abs_val` or less
             than -`inact_abs_val` are reset to `inact_abs_val`
-
-
     Returns:
-        `pandas.DataFrame`: a dataframe with extracted simulated values.
-    Notes:
+        **pandas.DataFrame**: a dataframe with extracted simulated values.
+    Note:
         This is the companion function to `gw_utils.setup_hds_obs()`.
 
     """
@@ -927,13 +940,12 @@ def setup_sft_obs(sft_file,ins_file=None,start_datetime=None,times=None,ncomp=1)
             found in the file are used. Default is None.
         ncomp (`int`): number of components in transport model. Default is 1.
 
-    Notes:
+    Note:
         this is the companion function to `gw_utils.apply_sft_obs()`.
 
-
     Returns:
-        `pandas.DataFrame`: a dataframe with observation names and values for the sft simulated
-            concentrations.
+        **pandas.DataFrame**: a dataframe with observation names and values for the sft simulated
+        concentrations.
 
     """
 
@@ -1002,9 +1014,9 @@ def apply_sft_obs():
     config file
 
     Returns:
-        `pandas.DataFrame`: a dataframe of extracted simulated outputs
+        **pandas.DataFrame**: a dataframe of extracted simulated outputs
 
-    Notes:
+    Note:
         this is the companion function to `gw_utils.setup_sft_obs()`.
 
     """
@@ -1047,7 +1059,6 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
             available as pathed in the nam_file.  Optionally, `nam_file` can be
             an existing `flopy.modflow.Modflow`.
         model_ws (`str`): model workspace for flopy to load the MODFLOW model from
-
         par_cols ([`str`]): a list of segment data entires to parameterize
         tie_hcond (`bool`):  flag to use same mult par for hcond1 and hcond2 for a
             given segment.  Default is `True`.
@@ -1055,15 +1066,19 @@ def setup_sfr_seg_parameters(nam_file, model_ws='.', par_cols=None,
             each stress period.  Default is None
 
     Returns:
-        `pandas.DataFrame`: a dataframe with useful parameter setup information
+        **pandas.DataFrame**: a dataframe with useful parameter setup information
 
-    Notes:
+    Note:
          This function handles the standard input case, not all the cryptic SFR options.  Loads the
             dis, bas, and sfr files with flopy using model_ws.
-        This is the companion function to `gw_utils.apply_sfr_seg_parameters()`.
+
+        This is the companion function to `gw_utils.apply_sfr_seg_parameters()` .
+
         The number (and numbering) of segment data entries must consistent across
             all stress periods.
-        Writes `nam_file`+"_backup_.sfr" as the backup of the original sfr file
+
+        Writes `nam_file` +"_backup_.sfr" as the backup of the original sfr file
+
         Skips values = 0.0 since multipliers don't work for these
 
     """
@@ -1255,13 +1270,16 @@ def setup_sfr_reach_parameters(nam_file,model_ws='.', par_cols=['strhc1']):
             each stress period.  Default is None
 
     Returns:
-        `pandas.DataFrame`: a dataframe with useful parameter setup information
+        **pandas.DataFrame**: a dataframe with useful parameter setup information
 
-    Notes:
+    Note:
         Similar to `gw_utils.setup_sfr_seg_parameters()`, method will apply params to sfr reachdata
+
         Can load the dis, bas, and sfr files with flopy using model_ws. Or can pass a model object
             (SFR loading can be slow)
+
         This is the companion function of `gw_utils.apply_sfr_reach_parameters()`
+
         Skips values = 0.0 since multipliers don't work for these
 
     """
@@ -1357,15 +1375,16 @@ def apply_sfr_seg_parameters(seg_pars=True, reach_pars=False):
     Args:
         seg_pars (`bool`, optional): flag to apply segment-based parameters.
             Default is True
-        reach_pars (`bool`, optional): flag to apply reach-based paramters.
+        reach_pars (`bool`, optional): flag to apply reach-based parameters.
             Default is False
 
     Returns:
-        `flopy.modflow.ModflowSfr`: the modified SFR package instance
+        **flopy.modflow.ModflowSfr**: the modified SFR package instance
 
-    Notes:
+    Note:
         expects "sfr_seg_pars.config" to exist
-        expects `nam_file`+"_backup_.sfr" to exist
+
+        expects `nam_file` +"_backup_.sfr" to exist
 
 
 
@@ -1446,15 +1465,16 @@ def apply_sfr_parameters(seg_pars=True, reach_pars=False):
     Args:
         seg_pars (`bool`, optional): flag to apply segment-based parameters.
             Default is True
-        reach_pars (`bool`, optional): flag to apply reach-based paramters.
+        reach_pars (`bool`, optional): flag to apply reach-based parameters.
             Default is False
 
     Returns:
-        `flopy.modflow.ModflowSfr`: the modified SFR package instance
+        **flopy.modflow.ModflowSfr**: the modified SFR package instance
 
-    Notes:
+    Note:
         expects "sfr_seg_pars.config" to exist
-        expects `nam_file`+"_backup_.sfr" to exist
+
+        expects `nam_file` +"_backup_.sfr" to exist
 
 
     """
@@ -1481,12 +1501,13 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
 
 
     Returns:
-        `pandas.DataFrame`: dataframe of observation name, simulated value and group.
+        **pandas.DataFrame**: dataframe of observation name, simulated value and group.
 
-    Notes:
+    Note:
         This is the companion function of `gw_utils.apply_sfr_obs()`.
+
         This function writes "sfr_obs.config" which must be kept in the dir where
-            "gw_utils.apply_sfr_obs()" is being called during the forward run
+        "gw_utils.apply_sfr_obs()" is being called during the forward run
 
     """
 
@@ -1572,13 +1593,15 @@ def setup_sfr_obs(sfr_out_file,seg_group_dict=None,ins_file=None,model=None,
 def apply_sfr_obs():
     """apply the sfr observation process
 
-    Notes:
+    Note:
         This is the companion function of `gw_utils.setup_sfr_obs()`.
-        requires sfr_obs.config.
-        Writes <sfr_out_file>.processed, where <sfr_out_file> is defined in "sfr_obs.config"
+
+        requires `sfr_obs.config`.
+
+        Writes `sfr_out_file`+".processed", where `sfr_out_file` is defined in "sfr_obs.config"
 
     Returns:
-        `pandas.DataFrame`: a dataframe of aggregrated sfr segment aquifer and outflow
+        **pandas.DataFrame**: a dataframe of aggregrated sfr segment aquifer and outflow
     """
     assert os.path.exists("sfr_obs.config")
     df_key = pd.read_csv("sfr_obs.config",index_col=0)
@@ -1615,12 +1638,12 @@ def load_sfr_out(sfr_out_file, selection=None):
         selection (`pandas.DataFrame`): a dataframe of `reach` and `segment` pairs to
             load.  If `None`, all reach-segment pairs are loaded.  Default is `None`.
 
-    Notes:
+    Note:
         aggregates flow to aquifer for segments and returns and flow out at
-            downstream end of segment.
+        downstream end of segment.
 
     Returns:
-        `dict`: dictionary of {kper:`pandas.DataFrame`} of SFR output.
+        **dict**: dictionary of {kper:`pandas.DataFrame`} of SFR output.
 
     """
     assert os.path.exists(sfr_out_file),"couldn't find sfr out file {0}".\
@@ -1728,10 +1751,11 @@ def setup_sfr_reach_obs(sfr_out_file,seg_reach=None,ins_file=None,model=None,
     Returns:
         `pd.DataFrame`: a dataframe of observation names, values, and groups
 
-    Notes:
+    Note:
         This is the companion function of `gw_utils.apply_sfr_reach_obs()`.
+
         This function writes "sfr_reach_obs.config" which must be kept in the dir where
-            "apply_sfr_reach_obs()" is being called during the forward run
+        "apply_sfr_reach_obs()" is being called during the forward run
 
     """
     if seg_reach is None:
@@ -1832,14 +1856,17 @@ def setup_sfr_reach_obs(sfr_out_file,seg_reach=None,ins_file=None,model=None,
 def apply_sfr_reach_obs():
     """apply the sfr reach observation process.
 
-    Notes:
+    Note:
         This is the companion function of `gw_utils.setup_sfr_reach_obs()`.
+
         Requires sfr_reach_obs.config.
+
         Writes <sfr_out_file>.processed, where <sfr_out_file> is defined in
         "sfr_reach_obs.config"
 
     Returns:
         `pd.DataFrame`: a dataframe of sfr aquifer and outflow ad segment,reach locations
+
     """
     assert os.path.exists("sfr_reach_obs.config")
     df_key = pd.read_csv("sfr_reach_obs.config", index_col=0)
@@ -1874,7 +1901,7 @@ def modflow_sfr_gag_to_instruction_file(gage_output_file, ins_file=None, parse_f
         gage_output_file (`str`): the gage output filename (ASCII).
 
         ins_file (`str`, optional): the name of the instruction file to
-            create.  If None, the name is `gage_output_file`+".ins".
+            create.  If None, the name is `gage_output_file` +".ins".
             Default is None
 
         parse_filename (`bool`): if True, get the gage_num parameter by
@@ -1882,13 +1909,16 @@ def modflow_sfr_gag_to_instruction_file(gage_output_file, ins_file=None, parse_f
             number from the file itself
 
     Returns:
-        `pandas.DataFrame`: a dataframe with obsnme and obsval for the sfr simulated flows.
-        `str`: file name of instructions file relating to gage output.
-        `str`: file name of processed gage output for all times
+        tuple containing
 
-    Notes:
+        - **pandas.DataFrame**: a dataframe with obsnme and obsval for the sfr simulated flows.
+        - **str**: file name of instructions file relating to gage output.
+        - **str**: file name of processed gage output for all times
+
+    Note:
         sets up observations for gage outputs only for the Flow column.
-        if parse_namefile is true, only text up to first '.' is used as the gage_num
+
+        If `parse_namefile` is true, only text up to first '.' is used as the gage_num
 
     TODO:
         allow other observation types and align explicitly with times - now returns all values
@@ -1943,14 +1973,17 @@ def setup_gage_obs(gage_file,ins_file=None,start_datetime=None,times=None):
             all times are used. Default is None.
 
     Returns:
-        `pandas.DataFrame`: a dataframe with observation name and simulated values for the
-            values in the gage file.
-        `str`: file name of instructions file that was created relating to gage output.
-        `str`: file name of processed gage output (processed according to times passed above.)
+        tuple containing
+
+        - **pandas.DataFrame**: a dataframe with observation name and simulated values for the
+          values in the gage file.
+        - **str**: file name of instructions file that was created relating to gage output.
+        - **str**: file name of processed gage output (processed according to times passed above.)
 
 
-    Notes:
+    Note:
          setups up observations for gage outputs (all columns).
+
          This is the companion function of `gw_utils.apply_gage_obs()`
     """
 
@@ -2026,7 +2059,7 @@ def apply_gage_obs(return_obs_file=False):
         return_obs_file (`bool`): flag to return the processed
             observation file.  Default is `False`.
 
-    Notes:
+    Note:
         This is the companion function of `gw_utils.setup_gage_obs()`
 
 
@@ -2061,12 +2094,15 @@ def apply_hfb_pars(par_file='hfb6_pars.csv'):
         par_file (`str`): the HFB parameter info file.
             Default is `hfb_pars.csv`
 
-    Notes:
+    Note:
         This is the companion function to
-            `gw_utils.write_hfb_zone_multipliers_template()`
+        `gw_utils.write_hfb_zone_multipliers_template()`
+
         This is to account for the horrible HFB6 format that differs from other
-            BCs making this a special case
+        BCs making this a special case
+
         Requires "hfb_pars.csv"
+
         Should be added to the forward_run.py script
     """
     hfb_pars = pd.read_csv(par_file)
@@ -2106,9 +2142,11 @@ def write_hfb_zone_multipliers_template(m):
         m (`flopy.modflow.Modflow`): a model instance with an HFB package
 
     Returns:
-        `dict`: a dictionary with original unique HFB conductivity values and their
-            corresponding parameter names
-        `str`: the template filename that was created
+        tuple containing
+
+        - **dict**: a dictionary with original unique HFB conductivity values and their
+          corresponding parameter names
+        - **str**: the template filename that was created
 
     """
     if m.hfb6 is None:
@@ -2183,9 +2221,12 @@ def write_hfb_template(m):
         m (`flopy.modflow.Modflow`): a model instance with an HFB package
 
     Returns:
-        `str`: name of the template file that was created
-        `pandas.DataFrame`: a dataframe with use control file info for the
-            HFB parameters
+        tuple containing
+
+        - **str**: name of the template file that was created
+
+        - **pandas.DataFrame**: a dataframe with use control file info for the
+          HFB parameters
 
     """
 

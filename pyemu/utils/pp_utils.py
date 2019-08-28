@@ -26,20 +26,20 @@ def setup_pilotpoints_grid(ml=None,sr=None,ibound=None,prefix_dict=None,
             set pilot points only in active areas. If None and ml is None, then pilot points
             are set in all rows and columns according to `every_n_cell`.  Default is None.
         prefix_dict (`dict`): a dictionary of pilot point parameter prefix, layer pairs.
-            For example : {"hk":[0,1,2,3]} would setup pilot points with the prefix "hk" for
-             model layers 1 - 4 (zero based). If None, a generic set of pilot points with
-             the "pp" prefix are setup for a generic nrowXncol grid. Default is None
+            For example : `{"hk":[0,1,2,3]}` would setup pilot points with the prefix "hk" for
+            model layers 1 - 4 (zero based). If None, a generic set of pilot points with
+            the "pp" prefix are setup for a generic nrow by ncol grid. Default is None
         use_ibound_zones (`bool`): a flag to use the greater-than-zero values in the
-            ibound as pilot point zones.  If False,ibound values greater than zero are
-             treated as a single zone.  Default is False.
+            ibound as pilot point zones.  If False ,ibound values greater than zero are
+            treated as a single zone.  Default is False.
         pp_dir (`str`, optional): directory to write pilot point files to.  Default is '.'
         tpl_dir (`str`, optional): directory to write pilot point template file to.  Default is '.'
-        shapename (`str`, optional): name of shapefile to write that containts pilot
+        shapename (`str`, optional): name of shapefile to write that contains pilot
             point information. Default is "pp.shp"
 
     Returns:
         `pandas.DataFrame`: a dataframe summarizing pilot point information (same information
-            written to `shapename`
+        written to `shapename`
 
     Example::
 
@@ -251,7 +251,7 @@ def pp_tpl_to_dataframe(tpl_filename):
 
     Notes:
         Use for processing pilot points since the point point file itself may
-            have generic "names".
+        have generic "names".
 
     Example::
 
@@ -279,8 +279,8 @@ def write_pp_shapfile(pp_df,shapename=None):
             columns).  If `pp_df` is a string, it is assumed to be a pilot points file
             and is loaded with `pp_utils.pp_file_to_dataframe`. Can also be a list of
             `pandas.DataFrames` and/or filenames.
-        shapename (`str`): the shapefile name to write.  If `None`, `pp_df` must be a string
-            and shapefile is saved as `pp_df`+".shp"
+        shapename (`str`): the shapefile name to write.  If `None` , `pp_df` must be a string
+            and shapefile is saved as `pp_df` +".shp"
 
     Notes:
         requires pyshp
@@ -366,8 +366,8 @@ def pilot_points_to_tpl(pp_file,tpl_file=None,name_prefix=None):
 
     Returns:
         `pandas.DataFrame`: a dataframe with pilot point information
-            (name,x,y,zone,parval1) with the parameter information
-            (parnme,tpl_str)
+        (name,x,y,zone,parval1) with the parameter information
+        (parnme,tpl_str)
     """
 
     if isinstance(pp_file,pd.DataFrame):

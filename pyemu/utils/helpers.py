@@ -36,8 +36,8 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
         struct_dict (`dict`): a dict of GeoStruct (or structure file), and list of
             pilot point template files pairs. If the values in the dict are
             `pd.DataFrames`, then they must have an 'x','y', and 'parnme' column.
-             If the filename ends in '.csv', then a pd.DataFrame is loaded,
-             otherwise a pilot points file is loaded.
+            If the filename ends in '.csv', then a pd.DataFrame is loaded,
+            otherwise a pilot points file is loaded.
         num_reals (`int`, optional): number of realizations to draw.  Default is 100
         sigma_range (`float`): a float representing the number of standard deviations
             implied by parameter bounds. Default is 4.0, which implies 95% confidence parameter bounds.
@@ -49,9 +49,9 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
 
     Notes:
         parameters are realized by parameter group.  The variance of each
-            parameter group is used to scale the resulting geostatistical
-            covariance matrix Therefore, the sill of the geostatistical structures
-            in `struct_dict` should be 1.0
+        parameter group is used to scale the resulting geostatistical
+        covariance matrix Therefore, the sill of the geostatistical structures
+        in `struct_dict` should be 1.0
 
 
     Example::
@@ -185,15 +185,14 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
             flag for stdout.
 
     Returns:
-
         `pyemu.Cov`: a covariance matrix that includes all adjustable parameters in the control
-            file.
+        file.
 
     Notes:
         The covariance of parameters associated with geostatistical structures is defined
-            as a mixture of GeoStruct and bounds.  That is, the GeoStruct is used to construct a
-            pyemu.Cov, then the entire pyemu.Cov is scaled by the uncertainty implied by the bounds and
-            sigma_range. Sounds complicated...
+        as a mixture of GeoStruct and bounds.  That is, the GeoStruct is used to construct a
+        pyemu.Cov, then the entire pyemu.Cov is scaled by the uncertainty implied by the bounds and
+        sigma_range. Sounds complicated...
 
     Example::
 
@@ -616,7 +615,7 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
 
     Notes:
         The weights on the prior information equations are the Pearson
-            correlation coefficients implied by covariance matrix.
+        correlation coefficients implied by covariance matrix.
 
     Example::
 
@@ -742,9 +741,11 @@ def read_pestpp_runstorage(filename,irun=0,with_metadata=False):
         with_metadata (`bool`): flag to return run stats and info txt as well
 
     Returns:
-        `pandas.DataFrame`: parameter information
-        `pandas.DataFrame`: observation information
-        `pandas.DataFrame`: optionally run status and info txt.
+        tuple containing
+
+        - **pandas.DataFrame**: parameter information
+        - **pandas.DataFrame**: observation information
+        - **pandas.DataFrame**: optionally run status and info txt.
 
     """
 
@@ -830,13 +831,13 @@ def jco_from_pestpp_runstorage(rnj_filename,pst_filename):
 
     Notes:
         This can then be passed to Jco.to_binary or Jco.to_coo, etc., to write jco
-            file in a subsequent step to avoid memory resource issues associated
-            with very large problems.
+        file in a subsequent step to avoid memory resource issues associated
+        with very large problems.
 
 
     Returns:
         `pyemu.Jco`: a jacobian matrix constructed from the run results and
-            pest control file information.
+        pest control file information.
 
 
     TODO:
@@ -907,14 +908,15 @@ def parse_dir_for_io_files(d):
         the return values from this function can be passed straight to
         `pyemu.Pst.from_io_files()` classmethod constructor. Assumes the
         template file names are <input_file>.tpl and instruction file names
-         are <output_file>.ins.
+        are <output_file>.ins.
 
     Returns:
+        tuple containing
 
-        [`str`]: list of template files in d
-        [`str`]: list of input files in d
-        [`str`]: list of instruction files in d
-        [`str`]: list of output files in d
+        - **[`str`]**: list of template files in d
+        - **[`str`]**: list of input files in d
+        - **[`str`]**: list of instruction files in d
+        - **[`str`]**: list of output files in d
 
     """
 
@@ -939,12 +941,14 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
 
     Returns:
         `Pst`: new control file instance with parameter and observation names
-            found in `tpl_files` and `ins_files`, repsectively.
+        found in `tpl_files` and `ins_files`, repsectively.
 
     Notes:
         calls `pyemu.helpers.pst_from_io_files()`
+
         Assigns generic values for parameter info.  Tries to use INSCHEK
-            to set somewhat meaningful observation values
+        to set somewhat meaningful observation values
+
         all file paths are relatively to where python is running.
 
     TODO:
@@ -1016,191 +1020,164 @@ class PstFromFlopyModel(object):
     an existing MODFLOW-2005-family model.
 
 
-    Parameters
-    ----------
-    model : flopy.mbase
-        a loaded flopy model instance. If model is an str, it is treated as a
-        MODFLOW nam file (requires org_model_ws)
-    new_model_ws : str
-        a directory where the new version of MODFLOW input files and PEST(++)
-        files will be written
-    org_model_ws : str
-        directory to existing MODFLOW model files.  Required if model argument
-        is an str.  Default is None
-    pp_props : list
-        pilot point multiplier parameters for grid-based properties.
-        A nested list of grid-scale model properties to parameterize using
-        name, iterable pairs.  For 3D properties, the iterable is zero-based
-        layer indices.  For example, ["lpf.hk",[0,1,2,]] would setup pilot point multiplier
-        parameters for layer property file horizontal hydraulic conductivity for model
-        layers 1,2, and 3.  For time-varying properties (e.g. recharge), the
-        iterable is for zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
-        would setup pilot point multiplier parameters for recharge for stress
-        period 1,5,11,and 16.
-    const_props : list
-        constant (uniform) multiplier parameters for grid-based properties.
-        A nested list of grid-scale model properties to parameterize using
-        name, iterable pairs.  For 3D properties, the iterable is zero-based
-        layer indices.  For example, ["lpf.hk",[0,1,2,]] would setup constant (uniform) multiplier
-        parameters for layer property file horizontal hydraulic conductivity for model
-        layers 1,2, and 3.  For time-varying properties (e.g. recharge), the
-        iterable is for zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
-        would setup constant (uniform) multiplier parameters for recharge for stress
-        period 1,5,11,and 16.
-    temporal_list_props : list
-        list-type input stress-period level multiplier parameters.
-        A nested list of list-type input elements to parameterize using
-        name, iterable pairs.  The iterable is zero-based stress-period indices.
-        For example, to setup multipliers for WEL flux and for RIV conductance,
-        temporal_list_props = [["wel.flux",[0,1,2]],["riv.cond",None]] would setup
-        multiplier parameters for well flux for stress periods 1,2 and 3 and
-        would setup one single river conductance multiplier parameter that is applied
-        to all stress periods
-    spatial_list_props : list
-        lkst-type input spatial multiplier parameters.
-        A nested list of list-type elements to parameterize using
-        names (e.g. [["riv.cond",0],["wel.flux",1] to setup up cell-based parameters for
-        each list-type element listed.  These multipler parameters are applied across
-        all stress periods.  For this to work, there must be the same number of entries
-        for all stress periods.  If more than one list element of the same type is in a single
-        cell, only one parameter is used to multiply all lists in the same cell.
-    grid_props : list
-        grid-based (every active model cell) multiplier parameters.
-        A nested list of grid-scale model properties to parameterize using
-        name, iterable pairs.  For 3D properties, the iterable is zero-based
-        layer indices (e.g., ["lpf.hk",[0,1,2,]] would setup a multiplier
-        parameter for layer property file horizontal hydraulic conductivity for model
-        layers 1,2, and 3 in every active model cell).  For time-varying properties (e.g. recharge), the
-        iterable is for zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
-        would setup grid-based multiplier parameters in every active model cell
-        for recharge for stress period 1,5,11,and 16.
-    sfr_pars : bool or list
-        setup parameters for the stream flow routing modflow package.
-        If list is passed it defiend the parameters to set up.
-    sfr_temporal_pars : bool, list or dict
-        flag to include stress-period level spatially-global multipler parameters in addition to
-        the spatially-discrete `sfr_pars`.  Requires `sfr_pars` to be passed.  Default is False
-    grid_geostruct : pyemu.geostats.GeoStruct
-        the geostatistical structure to build the prior parameter covariance matrix
-        elements for grid-based parameters.  If None, a generic GeoStruct is created
-        using an "a" parameter that is 10 times the max cell size.  Default is None
-    pp_space : int
-        number of grid cells between pilot points.  If None, use the default
-        in pyemu.pp_utils.setup_pilot_points_grid.  Default is None
-    zone_props : list
-        zone-based multiplier parameters.
-        A nested list of zone-based model properties to parameterize using
-        name, iterable pairs.  For 3D properties, the iterable is zero-based
-        layer indices (e.g., ["lpf.hk",[0,1,2,]] would setup a multiplier
-        parameter for layer property file horizontal hydraulic conductivity for model
-        layers 1,2, and 3 for unique zone values in the ibound array.
-        For time-varying properties (e.g. recharge), the iterable is for
-        zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
-        would setup zone-based multiplier parameters for recharge for stress
-        period 1,5,11,and 16.
-    pp_geostruct : pyemu.geostats.GeoStruct
-        the geostatistical structure to use for building the prior parameter
-        covariance matrix for pilot point parameters.  If None, a generic
-        GeoStruct is created using pp_space and grid-spacing information.
-        Default is None
-    par_bounds_dict : dict
-        a dictionary of model property/boundary condition name, upper-lower bound pairs.
-        For example, par_bounds_dict = {"hk":[0.01,100.0],"flux":[0.5,2.0]} would
-        set the bounds for horizontal hydraulic conductivity to
-        0.001 and 100.0 and set the bounds for flux parameters to 0.5 and
-        2.0.  For parameters not found in par_bounds_dict,
-        pyemu.helpers.wildass_guess_par_bounds_dict is
-        used to set somewhat meaningful bounds.  Default is None
-    temporal_list_geostruct : pyemu.geostats.GeoStruct
-        the geostastical struture to build the prior parameter covariance matrix
-        for time-varying list-type multiplier parameters.  This GeoStruct
-        express the time correlation so that the 'a' parameter is the length of
-        time that boundary condition multiplier parameters are correlated across.
-        If None, then a generic GeoStruct is created that uses an 'a' parameter
-        of 3 stress periods.  Default is None
-    spatial_list_geostruct : pyemu.geostats.GeoStruct
-        the geostastical struture to build the prior parameter covariance matrix
-        for spatially-varying list-type multiplier parameters.
-        If None, a generic GeoStruct is created using an "a" parameter that
-        is 10 times the max cell size.  Default is None.
-    remove_existing : bool
-        a flag to remove an existing new_model_ws directory.  If False and
-        new_model_ws exists, an exception is raised.  If True and new_model_ws
-        exists, the directory is destroyed - user beware! Default is False.
-    k_zone_dict : dict
-        a dictionary of zero-based layer index, zone array pairs. e.g. {lay: np.2darray}  Used to
-        override using ibound zones for zone-based parameterization.  If None,
-        use ibound values greater than zero as zones. Alternatively a dictionary of dictionaries
-        can be passed to allow different zones to be defined for different parameters.
-        e.g. {"upw.hk" {lay: np.2darray}, "extra.rc11" {lay: np.2darray}}
-        or {"hk" {lay: np.2darray}, "rc11" {lay: np.2darray}}
-    use_pp_zones : bool
-         a flag to use ibound zones (or k_zone_dict, see above) as pilot
-         point zones.  If False, ibound values greater than zero are treated as
-         a single zone for pilot points.  Default is False
-    obssim_smp_pairs: list
-        a list of observed-simulated PEST-type SMP file pairs to get observations
-        from and include in the control file.  Default is []
-    external_tpl_in_pairs : list
-        a list of existing template file, model input file pairs to parse parameters
-        from and include in the control file.  Default is []
-    external_ins_out_pairs : list
-        a list of existing instruction file, model output file pairs to parse
-        observations from and include in the control file.  Default is []
-    extra_pre_cmds : list
-        a list of preprocessing commands to add to the forward_run.py script
-        commands are executed with os.system() within forward_run.py. Default
-        is None.
-    redirect_forward_output : bool
-        flag for whether to redirect forward model output to text files (True) or
-        allow model output to be directed to the screen (False)
-        Default is True
-    extra_post_cmds : list
-        a list of post-processing commands to add to the forward_run.py script.
-        Commands are executed with os.system() within forward_run.py.
-        Default is None.
-    tmp_files : list
-        a list of temporary files that should be removed at the start of the forward
-        run script.  Default is [].
-    model_exe_name : str
-        binary name to run modflow.  If None, a default from flopy is used,
-        which is dangerous because of the non-standard binary names
-        (e.g. MODFLOW-NWT_x64, MODFLOWNWT, mfnwt, etc). Default is None.
-    build_prior : bool
-        flag to build prior covariance matrix. Default is True
-    sfr_obs : bool
-        flag to include observations of flow and aquifer exchange from
-        the sfr ASCII output file
-    hfb_pars : bool
-        add HFB parameters.  uses pyemu.gw_utils.write_hfb_template().  the resulting
-        HFB pars have parval1 equal to the values in the original file and use the
-        spatial_list_geostruct to build geostatistical covariates between parameters
-    kl_props : list
-        karhunen-loeve based multiplier parameters.
-        A nested list of KL-based model properties to parameterize using
-        name, iterable pairs.  For 3D properties, the iterable is zero-based
-        layer indices (e.g., ["lpf.hk",[0,1,2,]] would setup a multiplier
-        parameter for layer property file horizontal hydraulic conductivity for model
-        layers 1,2, and 3 for unique zone values in the ibound array.
-        For time-varying properties (e.g. recharge), the iterable is for
-        zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
-        would setup zone-based multiplier parameters for recharge for stress
-        period 1,5,11,and 16.
-    kl_num_eig : int
-        number of KL-based eigenvector multiplier parameters to use for each
-        KL parameter set. default is 100
-    kl_geostruct: pyemu.geostats.Geostruct
-        the geostatistical structure to build the prior parameter covariance matrix
-        elements for KL-based parameters.  If None, a generic GeoStruct is created
-        using an "a" parameter that is 10 times the max cell size.  Default is None
+    Args:
+        model (`flopy.mbase`): a loaded flopy model instance. If model is an str, it is treated as a
+            MODFLOW nam file (requires org_model_ws)
+        new_model_ws (`str`): a directory where the new version of MODFLOW input files and PEST(++)
+            files will be written
+        org_model_ws (`str`): directory to existing MODFLOW model files.  Required if model argument
+            is an str.  Default is None
+        pp_props ([[`str`,[`int`]]]): pilot point multiplier parameters for grid-based properties.
+            A nested list of grid-scale model properties to parameterize using
+            name, iterable pairs.  For 3D properties, the iterable is zero-based
+            layer indices.  For example, ["lpf.hk",[0,1,2,]] would setup pilot point multiplier
+            parameters for layer property file horizontal hydraulic conductivity for model
+            layers 1,2, and 3.  For time-varying properties (e.g. recharge), the
+            iterable is for zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
+            would setup pilot point multiplier parameters for recharge for stress
+            period 1,5,11,and 16.
+        const_props ([[`str`,[`int`]]]): constant (uniform) multiplier parameters for grid-based properties.
+            A nested list of grid-scale model properties to parameterize using
+            name, iterable pairs.  For 3D properties, the iterable is zero-based
+            layer indices.  For example, ["lpf.hk",[0,1,2,]] would setup constant (uniform) multiplier
+            parameters for layer property file horizontal hydraulic conductivity for model
+            layers 1,2, and 3.  For time-varying properties (e.g. recharge), the
+            iterable is for zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
+            would setup constant (uniform) multiplier parameters for recharge for stress
+            period 1,5,11,and 16.
+        temporal_list_props ([[`str`,[`int`]]]): list-type input stress-period level multiplier parameters.
+            A nested list of list-type input elements to parameterize using
+            name, iterable pairs.  The iterable is zero-based stress-period indices.
+            For example, to setup multipliers for WEL flux and for RIV conductance,
+            temporal_list_props = [["wel.flux",[0,1,2]],["riv.cond",None]] would setup
+            multiplier parameters for well flux for stress periods 1,2 and 3 and
+            would setup one single river conductance multiplier parameter that is applied
+            to all stress periods
+        spatial_list_props ([[`str`,[`int`]]]):  list-type input for spatial multiplier parameters.
+            A nested list of list-type elements to parameterize using
+            names (e.g. [["riv.cond",0],["wel.flux",1] to setup up cell-based parameters for
+            each list-type element listed.  These multiplier parameters are applied across
+            all stress periods.  For this to work, there must be the same number of entries
+            for all stress periods.  If more than one list element of the same type is in a single
+            cell, only one parameter is used to multiply all lists in the same cell.
+        grid_props ([[`str`,[`int`]]]): grid-based (every active model cell) multiplier parameters.
+            A nested list of grid-scale model properties to parameterize using
+            name, iterable pairs.  For 3D properties, the iterable is zero-based
+            layer indices (e.g., ["lpf.hk",[0,1,2,]] would setup a multiplier
+            parameter for layer property file horizontal hydraulic conductivity for model
+            layers 1,2, and 3 in every active model cell).  For time-varying properties (e.g. recharge), the
+            iterable is for zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
+            would setup grid-based multiplier parameters in every active model cell
+            for recharge for stress period 1,5,11,and 16.
+        sfr_pars (`bool`): setup parameters for the stream flow routing modflow package.
+            If list is passed it defines the parameters to set up.
+        sfr_temporal_pars (`bool`)
+            flag to include stress-period level spatially-global multipler parameters in addition to
+            the spatially-discrete `sfr_pars`.  Requires `sfr_pars` to be passed.  Default is False
+        grid_geostruct (`pyemu.geostats.GeoStruct`): the geostatistical structure to build the prior parameter covariance matrix
+            elements for grid-based parameters.  If None, a generic GeoStruct is created
+            using an "a" parameter that is 10 times the max cell size.  Default is None
+        pp_space (`int`): number of grid cells between pilot points.  If None, use the default
+            in pyemu.pp_utils.setup_pilot_points_grid.  Default is None
+        zone_props ([[`str`,[`int`]]]): zone-based multiplier parameters.
+            A nested list of zone-based model properties to parameterize using
+            name, iterable pairs.  For 3D properties, the iterable is zero-based
+            layer indices (e.g., ["lpf.hk",[0,1,2,]] would setup a multiplier
+            parameter for layer property file horizontal hydraulic conductivity for model
+            layers 1,2, and 3 for unique zone values in the ibound array.
+            For time-varying properties (e.g. recharge), the iterable is for
+            zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
+            would setup zone-based multiplier parameters for recharge for stress
+            period 1,5,11,and 16.
+        pp_geostruct (`pyemu.geostats.GeoStruct`): the geostatistical structure to use for building the prior parameter
+            covariance matrix for pilot point parameters.  If None, a generic
+            GeoStruct is created using pp_space and grid-spacing information.
+            Default is None
+        par_bounds_dict (`dict`): a dictionary of model property/boundary condition name, upper-lower bound pairs.
+            For example, par_bounds_dict = {"hk":[0.01,100.0],"flux":[0.5,2.0]} would
+            set the bounds for horizontal hydraulic conductivity to
+            0.001 and 100.0 and set the bounds for flux parameters to 0.5 and
+            2.0.  For parameters not found in par_bounds_dict,
+            `pyemu.helpers.wildass_guess_par_bounds_dict` is
+            used to set somewhat meaningful bounds.  Default is None
+        temporal_list_geostruct (`pyemu.geostats.GeoStruct`): the geostastical struture to
+            build the prior parameter covariance matrix
+            for time-varying list-type multiplier parameters.  This GeoStruct
+            express the time correlation so that the 'a' parameter is the length of
+            time that boundary condition multiplier parameters are correlated across.
+            If None, then a generic GeoStruct is created that uses an 'a' parameter
+            of 3 stress periods.  Default is None
+        spatial_list_geostruct (`pyemu.geostats.GeoStruct`): the geostastical struture to
+            build the prior parameter covariance matrix
+            for spatially-varying list-type multiplier parameters.
+            If None, a generic GeoStruct is created using an "a" parameter that
+            is 10 times the max cell size.  Default is None.
+        remove_existing (`bool`): a flag to remove an existing new_model_ws directory.  If False and
+            new_model_ws exists, an exception is raised.  If True and new_model_ws
+            exists, the directory is destroyed - user beware! Default is False.
+        k_zone_dict (`dict`):  a dictionary of zero-based layer index, zone array pairs.
+            e.g. {lay: np.2darray}  Used to
+            override using ibound zones for zone-based parameterization.  If None,
+            use ibound values greater than zero as zones. Alternatively a dictionary of dictionaries
+            can be passed to allow different zones to be defined for different parameters.
+            e.g. {"upw.hk" {lay: np.2darray}, "extra.rc11" {lay: np.2darray}}
+            or {"hk" {lay: np.2darray}, "rc11" {lay: np.2darray}}
+        use_pp_zones (`bool`): a flag to use ibound zones (or k_zone_dict, see above) as pilot
+             point zones.  If False, ibound values greater than zero are treated as
+             a single zone for pilot points.  Default is False
+        obssim_smp_pairs ([[`str`,`str`]]: a list of observed-simulated PEST-type SMP file
+            pairs to get observations
+            from and include in the control file.  Default is []
+        external_tpl_in_pairs ([[`str`,`str`]]: a list of existing template file, model input
+            file pairs to parse parameters
+            from and include in the control file.  Default is []
+        external_ins_out_pairs ([[`str`,`str`]]: a list of existing instruction file,
+            model output file pairs to parse
+            observations from and include in the control file.  Default is []
+        extra_pre_cmds ([`str`]): a list of preprocessing commands to add to the forward_run.py script
+            commands are executed with os.system() within forward_run.py. Default is None.
+        redirect_forward_output (`bool`): flag for whether to redirect forward model output to text files (True) or
+            allow model output to be directed to the screen (False).  Default is True
+        extra_post_cmds ([`str`]): a list of post-processing commands to add to the forward_run.py script.
+            Commands are executed with os.system() within forward_run.py. Default is None.
+        tmp_files ([`str`]): a list of temporary files that should be removed at the start of the forward
+            run script.  Default is [].
+        model_exe_name (`str`): binary name to run modflow.  If None, a default from flopy is used,
+            which is dangerous because of the non-standard binary names
+            (e.g. MODFLOW-NWT_x64, MODFLOWNWT, mfnwt, etc). Default is None.
+        build_prior (`bool`): flag to build prior covariance matrix. Default is True
+        sfr_obs (`bool`): flag to include observations of flow and aquifer exchange from
+            the sfr ASCII output file
+        hfb_pars (`bool`): add HFB parameters.  uses pyemu.gw_utils.write_hfb_template().  the resulting
+            HFB pars have parval1 equal to the values in the original file and use the
+            spatial_list_geostruct to build geostatistical covariates between parameters
+        kl_props ([[`str`,[`int`]]]): karhunen-loeve based multiplier parameters.
+            A nested list of KL-based model properties to parameterize using
+            name, iterable pairs.  For 3D properties, the iterable is zero-based
+            layer indices (e.g., ["lpf.hk",[0,1,2,]] would setup a multiplier
+            parameter for layer property file horizontal hydraulic conductivity for model
+            layers 1,2, and 3 for unique zone values in the ibound array.
+            For time-varying properties (e.g. recharge), the iterable is for
+            zero-based stress period indices.  For example, ["rch.rech",[0,4,10,15]]
+            would setup zone-based multiplier parameters for recharge for stress
+            period 1,5,11,and 16.
+        kl_num_eig (`int`): the number of KL-based eigenvector multiplier parameters to use for each
+            KL parameter set. default is 100
+        kl_geostruct (`pyemu.geostats.Geostruct`): the geostatistical structure
+            to build the prior parameter covariance matrix
+            elements for KL-based parameters.  If None, a generic GeoStruct is created
+            using an "a" parameter that is 10 times the max cell size.  Default is None
 
 
     Notes:
+
         Setup up multiplier parameters for an existing MODFLOW model.
-            Does all kinds of coolness like building a
-            meaningful prior, assigning somewhat meaningful parameter groups and
-            bounds, writes a forward_run.py script with all the calls need to
-            implement multiplier parameters, run MODFLOW and post-process.
+
+        Does all kinds of coolness like building a
+        meaningful prior, assigning somewhat meaningful parameter groups and
+        bounds, writes a forward_run.py script with all the calls need to
+        implement multiplier parameters, run MODFLOW and post-process.
+
         Works a lot better if TEMPCHEK, INSCHEK and PESTCHEK are available in the
         system path variable
 
@@ -2144,11 +2121,11 @@ class PstFromFlopyModel(object):
 
         Notes:
             operates on parameters by groups to avoid having to construct a very large
-                covariance matrix for problems with more the 30K parameters.
+            covariance matrix for problems with more the 30K parameters.
+
             uses `helpers.geostatitical_draw()`
 
         Returns:
-        -------
             `pyemu.ParameterEnsemble`: The realized parameter ensemble
 
         """
@@ -2237,7 +2214,7 @@ class PstFromFlopyModel(object):
 
         Returns:
             `pyemu.Cov`: the full prior parameter covariance matrix, generated by processing parameters by
-                groups
+            groups
 
         """
 
@@ -2328,7 +2305,9 @@ class PstFromFlopyModel(object):
                 name if formed from the model namfile name.  Default is None.  The control
                 is saved in the `PstFromFlopy.m.model_ws` directory.
         Notes:
+
             calls pyemu.Pst.from_io_files
+
             calls PESTCHEK
 
         """
@@ -2475,7 +2454,7 @@ class PstFromFlopyModel(object):
 
         Notes:
             This method can be called repeatedly, especially after any
-                changed to the pre- and/or post-processing routines.
+            changed to the pre- and/or post-processing routines.
 
         """
         with open(os.path.join(self.m.model_ws,self.forward_run_file),'w') as f:
@@ -2951,9 +2930,10 @@ def apply_array_pars(arr_par_file="arr_pars.csv"):
 
     Notes:
         Used to implement the parameterization constructed by
-            PstFromFlopyModel during a forward run
+        PstFromFlopyModel during a forward run
+
         This function should be added to the forward_run.py script but can
-            be called on any correctly formatted csv
+        be called on any correctly formatted csv
 
     """
     df = pd.read_csv(arr_par_file)
@@ -3008,9 +2988,12 @@ def apply_list_pars():
 
     Notes:
         Used to implement the parameterization constructed by
-            PstFromFlopyModel during a forward run
+        PstFromFlopyModel during a forward run
+
         Requires either "temporal_list_pars.csv" or "spatial_list_pars.csv"
+
         Should be added to the forward_run.py script
+
 
     """
     temp_file = "temporal_list_pars.dat"
@@ -3283,7 +3266,7 @@ def build_jac_test_csv(pst,num_steps,par_names=None,forward=True):
 
     Returns:
         `pandas.DataFrame`: the sequence of model runs to evaluate
-            for the jactesting.
+        for the jactesting.
 
     """
     if isinstance(pst,str):
@@ -3354,27 +3337,6 @@ def build_jac_test_csv(pst,num_steps,par_names=None,forward=True):
 
 def _write_df_tpl(filename, df, sep=',', tpl_marker='~', **kwargs):
     """function write a pandas dataframe to a template file.
-    Parameters
-    ----------
-    filename : str
-        template filename
-    df : pandas.DataFrame
-        dataframe to write
-    sep : char
-        separate to pass to df.to_csv(). default is ','
-    tpl_marker : char
-        template file marker.  default is '~'
-    kwargs : dict
-        additional keyword args to pass to df.to_csv()
-
-    Returns
-    -------
-    None
-
-    Note
-    ----
-    If you don't use this function, make sure that you flush the
-    file handle before df.to_csv() and you pass mode='a' to to_csv()
 
     """
     if "line_terminator" not in kwargs:
@@ -3399,9 +3361,9 @@ def setup_fake_forward_run(pst,new_pst_name,org_cwd='.',bak_suffix="._bak",new_c
 
     Notes:
         The fake forward run simply copies existing backup versions of
-            model output files to the outfiles pest(pp) is looking
-            for.  This is really a development option for debugging
-            PEST++ issues.
+        model output files to the outfiles pest(pp) is looking
+        for.  This is really a development option for debugging
+        PEST++ issues.
 
     """
 

@@ -1,6 +1,3 @@
-"""module for error variance analysis, using FOSM
-assumptions.
-"""
 from __future__ import print_function, division
 import numpy as np
 import pandas as pd
@@ -11,7 +8,6 @@ class ErrVar(LinearAnalysis):
     """Error variance analysis.  Supports 2-term and
     3-term error variance analysis.
 
-    
     Args:
         jco (varies, optional): something that can be cast or loaded into a `pyemu.Jco`.  Can be a
             str for a filename or `pyemu.Matrix`/`pyemu.Jco` object.
@@ -61,8 +57,6 @@ class ErrVar(LinearAnalysis):
 
         ev = pyemu.ErrVar(jco="my.jco",omitted_parameters=["wel1","wel2"])
         df = ev.get_errvar_dataframe()
-
-
 
     """
 
@@ -263,7 +257,7 @@ class ErrVar(LinearAnalysis):
 
         Returns:
             `pyemu.Jco`: the jacobian matrix instance of non-zero-weighted observations and
-                omitted parameters
+            omitted parameters
 
         """
         if self.__omitted_jco is None:
@@ -278,7 +272,7 @@ class ErrVar(LinearAnalysis):
 
         Returns:
             `pyemu.Cov`: the prior parameter covariance matrix of the
-                omitted parameters
+            omitted parameters
         
         """
         if self.__omitted_parcov is None:
@@ -296,9 +290,9 @@ class ErrVar(LinearAnalysis):
 
         Returns:
             `pandas.DataFrame`: a multi-indexed pandas dataframe summarizing each of the
-                error variance terms for each nominated forecast. Rows are the singluar values
-                tested, columns are a multi-index of forecast name and error variance term number
-                (e.g. 1,2 or (optionally) 3).
+            error variance terms for each nominated forecast. Rows are the singluar values
+            tested, columns are a multi-index of forecast name and error variance term number
+            (e.g. 1,2 or (optionally) 3).
 
         Example::
 
@@ -334,7 +328,7 @@ class ErrVar(LinearAnalysis):
 
         Returns:
             `pandas.DataFrame`: A pandas dataframe of the right solution-space singular
-                vectors and identifiability (identifiabiity is in the column labeled "ident")
+            vectors and identifiability (identifiabiity is in the column labeled "ident")
 
         Examples::
 
@@ -379,6 +373,7 @@ class ErrVar(LinearAnalysis):
 
         Returns:
             `pyemu.Matrix`: resolution matrix at `singular_value`
+
         """
         if self.__R is not None and singular_value == self.__R_sv:
             return self.__R
@@ -467,7 +462,7 @@ class ErrVar(LinearAnalysis):
         Args:
             singular_value (`int`): singular value to calc first term at
 
-        Notes:
+        Note:
              This method is used to construct the error variance dataframe
 
              Just a wrapper around `ErrVar.first_forecast`
@@ -486,7 +481,7 @@ class ErrVar(LinearAnalysis):
         Args:
             singular_value (`int`): singular value to calc first term at
 
-        Notes:
+        Note:
              This method is used to construct the error variance dataframe
 
         Returns:
@@ -536,13 +531,14 @@ class ErrVar(LinearAnalysis):
         Args:
             singular_value (`int`): singular value to calc second term at
 
-        Notes:
+        Note:
             This method is used to construct error variance dataframe
+
             Just a thin wrapper around `ErrVar.second_prediction`
 
         Returns:
             `dict`:  dictionary of ("second",prediction_names), error variance
-                arising from the solution space contribution (y^t * G * obscov * G^T * y)
+            arising from the solution space contribution (y^t * G * obscov * G^T * y)
 
         """
         return self.second_prediction(singular_value)
@@ -554,13 +550,12 @@ class ErrVar(LinearAnalysis):
         Args:
             singular_value (`int`): singular value to calc second term at
 
-        Notes:
+        Note:
             This method is used to construct error variance dataframe
 
-        Returns:
-
+        Returns:\
             `dict`:  dictionary of ("second",prediction_names), error variance
-                arising from the solution space contribution (y^t * G * obscov * G^T * y)
+            arising from the solution space contribution (y^t * G * obscov * G^T * y)
 
         """
 
@@ -597,7 +592,7 @@ class ErrVar(LinearAnalysis):
 
         Returns:
             `pyemu.Cov`: the second term contribution to parameter error variance
-                (G * obscov * G^T)
+            (G * obscov * G^T)
 
         """
         self.log("calc second term parameter @" + str(singular_value))
@@ -612,7 +607,7 @@ class ErrVar(LinearAnalysis):
         Args:
             singular_value (`int`): singular value to calc third term at
 
-        Notes:
+        Note:
              used to construct error variance dataframe
              just a thin wrapper around `ErrVar.third_prediction()`
 
@@ -629,7 +624,7 @@ class ErrVar(LinearAnalysis):
         Args:
             singular_value (`int`): singular value to calc third term at
 
-        Notes:
+        Note:
              used to construct error variance dataframe
 
         Returns:
@@ -674,9 +669,9 @@ class ErrVar(LinearAnalysis):
 
         Returns:
             `pyemu.Cov`: the third term contribution to parameter error variance
-                calculated at `singular_value` (G * omitted_jco * Sigma_(omitted_pars) *
-                omitted_jco^T * G^T).  Returns 0.0 if third term calculations are not
-                being used.
+            calculated at `singular_value` (G * omitted_jco * Sigma_(omitted_pars) *
+            omitted_jco^T * G^T).  Returns 0.0 if third term calculations are not
+            being used.
 
         """
         if self.__need_omitted is False:
@@ -699,7 +694,7 @@ class ErrVar(LinearAnalysis):
                 value to keep in the range (solution) space of XtQX.  Not used if
                 `maxsing` is not `None`.  Default is 1.0e-6
 
-        Notes:
+        Note:
             used for null-space monte carlo operations.
 
         Returns:

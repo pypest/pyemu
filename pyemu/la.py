@@ -48,14 +48,18 @@ class LinearAnalysis(object):
             when calculating prior parameter covariance matrix from bounds.  This arg is onlyused if
             constructing parcov from parameter bounds.Default is True.
 
-    Notes:
-        Can be used directly, but for prior uncertainty analyses only.
-            The derived types (`pyemu.Schur`, `pyemu.ErrVar`) are for different
-            forms of FOMS-based posterior uncertainty analyses. This class tries
-            hard to not load items until they are needed; all arguments are optional.
-            The class makes heavy use of property decorator to encapsulatd private attributes
+    Note:
 
-    Examples::
+        Can be used directly, but for prior uncertainty analyses only.
+
+        The derived types (`pyemu.Schur`, `pyemu.ErrVar`) are for different
+        forms of FOMS-based posterior uncertainty analyses.
+
+        This class tries hard to not load items until they are needed; all arguments are optional.
+
+        The class makes heavy use of property decorator to encapsulated private attributes
+
+    Example::
 
         #assumes "my.pst" exists
         la = pyemu.LinearAnalysis(jco="my.jco",forecasts=["fore1","fore2"])
@@ -520,7 +524,7 @@ class LinearAnalysis(object):
         Returns:
             ['str`]: list of non-zero-weighted observation names
 
-        Notes:
+        Note:
             if `LinearAnalysis.pst` is `None`, returns `LinearAnalysis.jco.row_names`
         
         """
@@ -536,7 +540,7 @@ class LinearAnalysis(object):
         Returns:
             ['str`]: list of adjustable parameter names
 
-        Notes:
+        Note:
             if `LinearAnalysis.pst` is `None`, returns `LinearAnalysis.jco.col_names`
         
         """
@@ -577,7 +581,7 @@ class LinearAnalysis(object):
         Returns:
             `iterator`: iterator on prediction sensitivity vectors (matrix)
 
-        Notes:
+        Note:
             this is used for processing huge numbers of predictions
         """
         for fname in self.forecast_names:
@@ -590,10 +594,10 @@ class LinearAnalysis(object):
         Returns:
             `iterator`: iterator on forecasts (e.g. predictions) sensitivity vectors (matrix)
 
-        Notes:
-            this is used for processing huge numbers of predictions
+        Note:
+            This is used for processing huge numbers of predictions
 
-        synonym for LinearAnalysis.predictions_iter()
+            This is a synonym for LinearAnalysis.predictions_iter()
         """
         return self.predictions_iter
 
@@ -631,7 +635,7 @@ class LinearAnalysis(object):
 
         Returns:
             `pyemu.Matrix`: the Karhunen-Loeve scaling matrix based on the prior
-                parameter covariance matrix
+            parameter covariance matrix
 
         """
         if self.__fehalf != None:
@@ -946,7 +950,7 @@ class LinearAnalysis(object):
             resfile (`str`): residual file to use.  If None, residual
                 file with case name is sought. default is None
 
-        Notes:
+        Note:
             calls `pyemu.Pst.adjust_weights_resfile()`
 
         """
@@ -960,7 +964,7 @@ class LinearAnalysis(object):
 
         Returns:
             `pandas.DataFrame`: a dataframe of parameter names, PEST-style and
-                Hill-style composite scaled sensitivity
+            Hill-style composite scaled sensitivity
 
         """
 
@@ -987,13 +991,13 @@ class LinearAnalysis(object):
 
         Returns:
             `pandas.DataFrame`: dataframe of observation names and composite observation
-                sensitivity
+            sensitivity
 
-        Notes:
-             that this formulation deviates slightly from the PEST documentation in that the
-                values are divided by (npar-1) rather than by (npar).
+        Note:
+             That this formulation deviates slightly from the PEST documentation in that the
+             values are divided by (npar-1) rather than by (npar).
 
-                The equation is cso_j = ((Q^1/2*J*J^T*Q^1/2)^1/2)_jj/(NPAR-1)
+             The equation is cso_j = ((Q^1/2*J*J^T*Q^1/2)^1/2)_jj/(NPAR-1)
 
 
         """
@@ -1013,8 +1017,8 @@ class LinearAnalysis(object):
 
         Returns:
             `pandas.DataFrame`: a dataframe of observation names by
-                observation names with values equal to the PEST
-                competition statistic
+            observation names with values equal to the PEST
+            competition statistic
 
         """
         if self.jco is None:

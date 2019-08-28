@@ -1,5 +1,3 @@
-"""Matrix, Jco and Cov classes for easy linear algebra
-"""
 from __future__ import print_function, division
 import os
 import copy
@@ -64,8 +62,7 @@ def concat(mats):
         mats ([`Matrix`]): list of Matrix objects
 
     Returns:
-        matrix : Matrix
-            a concatenated `Matrix` instance
+        `pyemu.Matrix`: a concatenated `Matrix` instance
     """
     for mat in mats:
         if mat.isdiagonal:
@@ -121,9 +118,9 @@ def get_common_elements(list1, list2):
             names, depending on calling function)
 
     Returns:
-        result ([`str`]):  list of common strings shared by list1 and list2
+        [`str`]:  list of common strings shared by list1 and list2
 
-    Notes:
+    Note:
         `result` is not ordered WRT `list1` or `list2`
     """
     set2 = set(list2)
@@ -152,7 +149,7 @@ class Matrix(object):
         mat.to_binary("mat.jco")
 
 
-    Notes:
+    Note:
         this class makes heavy use of property decorators to encapsulate
         private attributes
 
@@ -235,7 +232,7 @@ class Matrix(object):
         """overload of object.__str__()
 
         Returns:
-            s (`str`): string representation
+            `str`: string representation
 
         """
         s = "shape:{0}:{1}".format(*self.shape)+" row names: " + str(self.row_names) + \
@@ -249,7 +246,7 @@ class Matrix(object):
             item (`object`): something that can be used as an index
 
         Returns:
-            mat (`Matrix`): an object that is a sub-matrix of `Matrix`
+            `Matrix`: an object that is a sub-matrix of `Matrix`
 
         """
         if self.isdiagonal and isinstance(item, tuple):
@@ -279,7 +276,7 @@ class Matrix(object):
                 ints = elementwise self raised to power
 
         Returns:
-            matrix (`Matrix`): a new Matrix object
+            `Matrix`: a new Matrix object
 
         """
         if power < 0:
@@ -313,9 +310,9 @@ class Matrix(object):
             other : (`int`,`float`,`numpy.ndarray`,`Matrix`): the thing to subtract
 
         Returns:
-            matrix (`Matrix`): the result of subtraction
+            `Matrix`: the result of subtraction
 
-        Notes:
+        Note:
             if `Matrix` and other (if applicable) have `autoalign` set to `True`,
             both `Matrix` and `other` are aligned based on row and column names.
             If names are not common between the two, this may result in a smaller
@@ -400,9 +397,9 @@ class Matrix(object):
             other : (`int`,`float`,`numpy.ndarray`,`Matrix`): the thing to add
 
         Returns:
-            matrix (`Matrix`): the result of addition
+            `Matrix`: the result of addition
 
-        Notes:
+        Note:
             if `Matrix` and other (if applicable) have `autoalign` set to `True`,
             both `Matrix` and `other` are aligned based on row and column names.
             If names are not common between the two, this may result in a smaller
@@ -481,9 +478,9 @@ class Matrix(object):
             other : (`int`,`float`,`numpy.ndarray`,`Matrix`): the thing to multiply
 
         Returns:
-            matrix (`Matrix`): the result of multiplication
+            `Matrix`: the result of multiplication
 
-        Notes:
+        Note:
             if `Matrix` and other (if applicable) have `autoalign` set to `True`,
             both `Matrix` and `other` are aligned based on row and column names.
             If names are not common between the two, this may result in a smaller
@@ -561,9 +558,9 @@ class Matrix(object):
             other : (`int`,`float`,`numpy.ndarray`,`Matrix`): the thing to dot product
 
         Returns:
-            matrix (`Matrix`): the result of dot product
+            `Matrix`: the result of dot product
 
-        Notes:
+        Note:
             if `Matrix` and other (if applicable) have `autoalign` set to `True`,
             both `Matrix` and `other` are aligned based on row and column names.
             If names are not common between the two, this may result in a smaller
@@ -651,9 +648,9 @@ class Matrix(object):
             other : (`int`,`float`,`numpy.ndarray`,`Matrix`): the thing to dot product
 
         Returns:
-            matrix (`Matrix`): the result of dot product
+            `Matrix`: the result of dot product
 
-        Notes:
+        Note:
             if `Matrix` and other (if applicable) have `autoalign` set to `True`,
             both `Matrix` and `other` are aligned based on row and column names.
             If names are not common between the two, this may result in a smaller
@@ -777,7 +774,8 @@ class Matrix(object):
             other (`Matrix`): the other matrix to check for alignment with
 
         Returns:
-            isaligned (`bool`): True if aligned, False if not aligned
+            `bool`: True if aligned, False if not aligned
+
         """
         assert isinstance(other, Matrix), \
             "Matrix.isaligned(): other argumnent must be type Matrix, not: " +\
@@ -795,7 +793,8 @@ class Matrix(object):
             other (`Matrix`): the other matrix to check for alignment with
 
         Returns:
-            isaligned (`bool`): True if aligned, False if not aligned
+            `bool`: True if aligned, False if not aligned
+
         """
         if not isinstance(other,Matrix):
             raise Exception("Matrix.isaligned(): other argument must be type Matrix, not: " +\
@@ -812,7 +811,7 @@ class Matrix(object):
         """return a copy of `Matrix.x` attribute
 
         Returns:
-            newx (`numpy.ndarray`): a copy `Matrix.x`
+            `numpy.ndarray`: a copy `Matrix.x`
 
         """
         return self.__x.copy()
@@ -823,7 +822,7 @@ class Matrix(object):
         """return a reference to `Matrix.x`
 
         Returns:
-            x (`numpy.ndarray`): reference to `Matrix.x`
+            `numpy.ndarray`: reference to `Matrix.x`
 
         """
         return self.__x
@@ -834,9 +833,8 @@ class Matrix(object):
         return reference to `Matrix.x`, otherwise, constructs and returns
         a 2D, diagonal ndarray
 
-        Returns
-        -------
-        numpy.ndarray : numpy.ndarray
+        Returns:
+            `numpy.ndarray` : numpy.ndarray
 
         """
         if not self.isdiagonal:
@@ -845,15 +843,14 @@ class Matrix(object):
 
 
     def to_2d(self):
-        """ get a 2D `Matrix` representation of `Matrix`.  If not ``Matrix.isdiagonal`, simply
+        """ get a 2D `Matrix` representation of `Matrix`.  If not `Matrix.isdiagonal`, simply
                 return a copy of `Matrix`, otherwise, constructs and returns a new `Matrix`
                 instance that is stored as diagonal
 
-            Returns
-            -------
-            new_matrix (`Martrix`): non-diagonal form of `Matrix`
+        Returns:
+            `Martrix`: non-diagonal form of `Matrix`
 
-                """
+        """
         if not self.isdiagonal:
             return self.copy()
         return type(self)(x=np.diag(self.x.flatten()),row_names=self.row_names,
@@ -864,7 +861,7 @@ class Matrix(object):
         """get the implied, 2D shape of `Matrix`
 
         Returns:
-            t ((`int`)): length of 2 tuple
+            `int`: length of 2 tuple
 
         """
         if self.__x is not None:
@@ -880,7 +877,7 @@ class Matrix(object):
         """ length of second dimension
 
         Returns:
-            ncol (`int`): number of columns
+            `int`: number of columns
 
         """
         return self.shape[1]
@@ -890,7 +887,7 @@ class Matrix(object):
         """ length of first dimension
 
         Returns:
-            nrow (`int`): number of rows
+            `int`: number of rows
 
         """
         return self.shape[0]
@@ -900,7 +897,7 @@ class Matrix(object):
         """wrapper function for `Matrix.transpose()` method
 
         Returns:
-            t (`Matrix`): transpose of `Matrix`
+            `Matrix`: transpose of `Matrix`
 
         """
         return self.transpose
@@ -911,7 +908,7 @@ class Matrix(object):
         """transpose operation of self
 
         Returns:
-            t (`Matrix`): transpose of `Matrix`
+            `Matrix`: transpose of `Matrix`
 
         """
         if not self.isdiagonal:
@@ -930,7 +927,7 @@ class Matrix(object):
         """inversion operation of `Matrix`
 
         Returns:
-            inv (`Matrix`): inverse of `Matrix`
+            `Matrix`: inverse of `Matrix`
 
         Note:
             uses `numpy.linalg.inv` for the inversion
@@ -970,9 +967,8 @@ class Matrix(object):
                 exist (e.g. MAXSING)
 
         Returns:
-
-            maxsing (`int`): number of singular components with a ratio greater than `eigthresh`
-                with the largest (primary) singular value
+            `int`: number of singular components with a ratio greater than `eigthresh`
+            with the largest (primary) singular value
 
         """
         #sthresh =np.abs((self.s.x / self.s.x[0]) - eigthresh)
@@ -1000,9 +996,11 @@ class Matrix(object):
                 zeroed out at locations greater than `maxsing` instead of truncated. Default is True
 
         Returns:
-        U (`Matrix`): (optionally) truncated left singular vectors
-        s (`Matrix`): (optionally) truncated singular value matrix
-        V (`Matrix`): (optionally) truncated right singular vectors
+            tuple containing
+
+            - **Matrix**: (optionally truncated) left singular vectors
+            - **Matrix**: (optionally truncated) singular value matrix
+            - **Matrix**: (optionally truncated) right singular vectors
 
         Example::
 
@@ -1047,7 +1045,7 @@ class Matrix(object):
                 1.0e-5
 
         Returns:
-              pseudo_inv (`Matrix`): the truncated-SVD pseudo inverse of `Matrix` (V_1 * s_1^-1 * U^T)
+              `Matrix`: the truncated-SVD pseudo inverse of `Matrix` (V_1 * s_1^-1 * U^T)
         """
         if maxsing is None:
             maxsing = self.get_maxsing(eigthresh=eigthresh)
@@ -1064,10 +1062,9 @@ class Matrix(object):
         """square root operation
 
         Returns:
+            `Matrix`: square root of `Matrix`
 
-            sqrt (`Matrix`): square root of `Matrix`
-
-        Notes
+        Note:
             uses `numpy.sqrt`
 
 
@@ -1091,7 +1088,7 @@ class Matrix(object):
         """ Get the full singular value matrix
 
         Returns:
-            s (`Matrix`): full singular value matrix.  Shape is `(max(Matrix.shape),max(Matrix.shape))`
+            `Matrix`: full singular value matrix.  Shape is `(max(Matrix.shape),max(Matrix.shape))`
             with zeros along the diagonal from `min(Matrix.shape)` to `max(Matrix.shape)`
 
         """
@@ -1108,7 +1105,7 @@ class Matrix(object):
         """the singular value (diagonal) Matrix
 
         Returns:
-            s (`Matrix`): singular value matrix.  shape is `(min(Matrix.shape),min(Matrix.shape))`
+            `Matrix`: singular value matrix.  shape is `(min(Matrix.shape),min(Matrix.shape))`
 
         """
         if self.__s is None:
@@ -1121,7 +1118,7 @@ class Matrix(object):
         """the left singular vector Matrix
 
         Returns:
-            u (`Matrix`): left singular vectors.  Shape is `(Matrix.shape[0], Matrix.shape[0])`
+            `Matrix`: left singular vectors.  Shape is `(Matrix.shape[0], Matrix.shape[0])`
 
         """
         if self.__u is None:
@@ -1134,7 +1131,7 @@ class Matrix(object):
         """the right singular vector Matrix
 
         Returns:
-            v (`Matrix`): right singular vectors.  Shape is `(Matrix.shape[1], Matrix.shape[1])`
+            `Matrix`: right singular vectors.  Shape is `(Matrix.shape[1], Matrix.shape[1])`
 
         """
         if self.__v is None:
@@ -1146,7 +1143,7 @@ class Matrix(object):
         """ get an 2D instance of self with all zeros
 
         Returns:
-            zero2d (`Matrix`): `Matrix of zeros`
+            `Matrix`: `Matrix of zeros`
 
         """
         return type(self)(x=np.atleast_2d(np.zeros((self.shape[0],self.shape[1]))),
@@ -1167,8 +1164,8 @@ class Matrix(object):
                 Default is `None`
 
         Returns:
-            idxs (`numpy.ndarray`): array of (integer) index locations.  If `axis` is
-                `None`, a 2 `numpy.ndarrays` of both row and column name indices is returned
+            `numpy.ndarray`: array of (integer) index locations.  If `axis` is
+            `None`, a 2 `numpy.ndarrays` of both row and column name indices is returned
 
         """
 
@@ -1217,10 +1214,10 @@ class Matrix(object):
                 Default is `None`
 
         Returns:
-            idxs (`numpy.ndarray`): array of (integer) index locations.  If `axis` is
-                `None`, a 2 `numpy.ndarrays` of both row and column name indices is returned
+            `numpy.ndarray`: array of (integer) index locations.  If `axis` is
+            `None`, a 2 `numpy.ndarrays` of both row and column name indices is returned
 
-        Notes:
+        Note:
             thin wrapper around `Matrix.find_rowcol_indices` static method
 
         """
@@ -1288,7 +1285,7 @@ class Matrix(object):
             drop (`bool`): flag to remove row_names and/or col_names from this `Matrix`
 
         Returns:
-            new_mat (`Matrix`): a new `Matrix`
+            `Matrix`: a new `Matrix`
 
         """
         if row_names is None and col_names is None:
@@ -1342,7 +1339,7 @@ class Matrix(object):
         """get a copy of `Matrix`
 
         Returns:
-            copy (`Matrix`): copy of this `Matrix`
+            `Matrix`: copy of this `Matrix`
 
         """
         return type(self)(x=self.newx,row_names=self.row_names,
@@ -1441,7 +1438,7 @@ class Matrix(object):
 
 
         Returns:
-            extract (`Matrix`): the extract sub-matrix defined by `row_names` and/or `col_names`
+            `Matrix`: the extract sub-matrix defined by `row_names` and/or `col_names`
 
         """
         if row_names is None and col_names is None:
@@ -1458,7 +1455,7 @@ class Matrix(object):
             col_name (`str`): the name of the single column in the new Matrix
 
         Returns:
-            diag (`Matrix`): vector-shaped `Matrix` instance of the diagonal of this `Matrix`
+            `Matrix`: vector-shaped `Matrix` instance of the diagonal of this `Matrix`
         """
         if self.shape[0] != self.shape[1]:
             raise Exception("not diagonal")
@@ -1633,7 +1630,7 @@ class Matrix(object):
             filename (`str`): filename to read
 
         Returns:
-            mat (`Matrix`)
+            `Matrix`: `Matrix` loaded from binary file
 
         Example::
 
@@ -1654,9 +1651,11 @@ class Matrix(object):
             filename (`str`): filename to read
 
         Returns:
-            data (`numpy.ndarry`): the numeric values in the file
-            row_names (['str']): list of row names
-            col_names ([`str`]): list of col_names
+            tuple containing
+
+            - **numpy.ndarray**: the numeric values in the file
+            - **['str']**: list of row names
+            - **[`str`]**: list of col_names
 
         """
         f = open(filename, 'rb')
@@ -1738,7 +1737,7 @@ class Matrix(object):
             filename (`str`): name of the binary matrix file
 
         Returns:
-            mat (`Matrix`)
+            `Matrix`
 
         """
         f = FortranFile(filename,mode='r')
@@ -1822,7 +1821,7 @@ class Matrix(object):
             filename (`str`): name of the file to read
 
         Returns:
-            mat (`Matrix`)
+            `Matrix`: `Matrix` loaded from ASCII file
 
         Example::
 
@@ -1842,10 +1841,12 @@ class Matrix(object):
             filename (`str`): file to read from
 
         Returns:
-            x (`numpy.ndarray`): numeric values
-            row_names (['str']): list of row names
-            col_names ([`str`]): list of column names
-            isdiagonal (`bool`): diagonal flag
+            tuple containing
+
+            - **numpy.ndarray**: numeric values
+            - **['str']**: list of row names
+            - **[`str`]**: list of column names
+            - **bool**: diagonal flag
 
         """
 
@@ -1939,7 +1940,7 @@ class Matrix(object):
             df (`pandas.DataFrame`): dataframe
 
         Returns:
-            mat (`Matrix`)
+            `Matrix`: `Matrix` instance derived from `df`.
 
         Example::
 
@@ -1969,7 +1970,7 @@ class Matrix(object):
                 If True, fill with random numbers, if False, fill with zeros
                 Default is False
         Returns:
-            mat (`Matrix`): the new Matrix instance
+            `Matrix`: the new Matrix instance
 
         """
         if random:
@@ -1984,7 +1985,7 @@ class Matrix(object):
         """return a pandas.DataFrame representation of `Matrix`
 
         Returns:
-            df (`pandas.DataFrame`)
+            `pandas.DataFrame`: a dataframe derived from `Matrix`
 
         """
         if self.isdiagonal:
@@ -2002,7 +2003,7 @@ class Matrix(object):
         inplace (`bool`): inplace = True not implemented
 
         Returns:
-            mat (`Matrix`): new, extended `Matrix`
+            `Matrix`: new, extended `Matrix`
 
 
         """
@@ -2053,9 +2054,8 @@ class Jco(Matrix):
     def par_names(self):
         """ thin wrapper around `Matrix.col_names`
 
-        Returns
-        -------
-            par_names ([`str`]): parameter names
+        Returns:
+            [`str`]: a list of parameter names
 
         """
         return self.col_names
@@ -2066,7 +2066,7 @@ class Jco(Matrix):
         """ thin wrapper around `Matrix.row_names`
 
         Returns:
-            obs_names (['str']): observation names
+            ['str']: a list of observation names
 
         """
         return self.row_names
@@ -2077,7 +2077,7 @@ class Jco(Matrix):
         """ number of parameters in the Jco
 
         Returns:
-            npar (`int`): number of parameters (columns)
+            `int`: number of parameters (columns)
 
         """
         return self.shape[1]
@@ -2088,7 +2088,7 @@ class Jco(Matrix):
         """ number of observations in the Jco
 
         Returns:
-            nobs (`int`): number of observations (rows)
+            `int`: number of observations (rows)
 
         """
         return self.shape[0]
@@ -2107,7 +2107,7 @@ class Jco(Matrix):
                 Default is False
 
         Returns:
-            jco (`Jco`): the new Jco instance
+            `Jco`: the new Jco instance
 
         """
 
@@ -2119,9 +2119,9 @@ class Jco(Matrix):
 class Cov(Matrix):
     """a subclass of Matrix for handling diagonal or dense Covariance matrices
 
-     Args:
+    Args:
         x (`numpy.ndarray`): numeric values
-        names ([`str`]): list of row and column names.
+        names ([`str`]): list of row and column names
         isdigonal (`bool`): flag if the Matrix is diagonal
         autoalign (`bool`): flag to control the autoalignment of Matrix during
             linear algebra operations
@@ -2133,7 +2133,7 @@ class Cov(Matrix):
         mat = pyemu.Cov(x=data,names=names)
         mat.to_binary("mat.jco")
 
-    Notes:
+    Note:
         `row_names` and `col_names` args are supported in the contructor
         so support inheritance.  However, users should only pass `names`
 
@@ -2168,7 +2168,7 @@ class Cov(Matrix):
         """get an identity `Cov` of the same shape
 
         Returns:
-            ident (`Cov`): new `Cov` instance with identity matrix
+            `Cov`: new `Cov` instance with identity matrix
 
         """
         if self.__identity is None:
@@ -2183,7 +2183,7 @@ class Cov(Matrix):
         """ get an instance of `Cov` with all zeros
 
         Returns:
-            zero (`Cov`): new `Cov` instance with zeros
+            `Cov`: new `Cov` instance with zeros
 
         """
         if self.__zero is None:
@@ -2202,7 +2202,7 @@ class Cov(Matrix):
             conditioning_elements (['str']): list of names of elements to condition on
 
         Returns:
-            cond (`Cov`): new conditional `Cov` that assumes `conditioning_elements` have become known
+            `Cov`: new conditional `Cov` that assumes `conditioning_elements` have become known
         """
         if not isinstance(conditioning_elements,list):
             conditioning_elements = [conditioning_elements]
@@ -2232,7 +2232,7 @@ class Cov(Matrix):
         """wrapper for getting row_names.  row_names == col_names for Cov
 
         Returns:
-            names ([`str`]): list of names
+            [`str`]: list of names
 
         """
         return self.row_names
@@ -2243,9 +2243,9 @@ class Cov(Matrix):
         if other is not diagonal, then this `Cov` becomes non diagonal
 
         Args:
-            other (`Cov`): the Cov to replace elements in this `Cov` with
+            `Cov`: the Cov to replace elements in this `Cov` with
 
-        Notes:
+        Note:
             operates in place
 
         """
@@ -2330,11 +2330,11 @@ class Cov(Matrix):
             pst_file (`str`): pest control file name
 
         Returns:
-            obscov (`Cov`): a diagonal observation noise covariance matrix derived from the
-                weights in the pest control file.  Zero-weighted observations
-                are included with a weight of 1.0e-30
+            `Cov`: a diagonal observation noise covariance matrix derived from the
+            weights in the pest control file.  Zero-weighted observations
+            are included with a weight of 1.0e-30
 
-        Notes:
+        Note:
             Calls `Cov.from_observation_data()`
 
         Example::
@@ -2355,9 +2355,9 @@ class Cov(Matrix):
             pst (`pyemu.Pst`): control file instance
 
         Returns:
-            obscov (`Cov`): a diagonal observation noise covariance matrix derived from the
-                weights in the pest control file.  Zero-weighted observations
-                are included with a weight of 1.0e-30
+            `Cov`: a diagonal observation noise covariance matrix derived from the
+            weights in the pest control file.  Zero-weighted observations
+            are included with a weight of 1.0e-30
 
         Example::
 
@@ -2393,9 +2393,9 @@ class Cov(Matrix):
                 offset can result in undefined (log) variance.  Default is True.
 
         Returns:
-            parcov (`Cov`): diagonal parameter `Cov` matrix
+            `Cov`: diagonal parameter `Cov` matrix created from parameter bounds
 
-        Notes:
+        Note:
             Calls `Cov.from_parameter_data()`
 
         """
@@ -2421,9 +2421,9 @@ class Cov(Matrix):
                 offset can result in undefined (log) variance.  Default is True.
 
         Returns:
-            parcov (`Cov`): diagonal parameter `Cov` matrix
+            `Cov`: diagonal parameter `Cov` matrix created from parameter bounds
 
-        Notes:
+        Note:
             Calls `Cov.from_parameter_data()`
 
         """
@@ -2470,7 +2470,7 @@ class Cov(Matrix):
             filename (`str`):  uncertainty file name
 
         Returns:
-            cov (`Cov`): `Cov` instance from uncertainty file
+            `Cov`: `Cov` instance from uncertainty file
 
         Example::
 
@@ -2552,16 +2552,6 @@ class Cov(Matrix):
     @staticmethod
     def _get_uncfile_dimensions(filename):
         """quickly read an uncertainty file to find the dimensions
-
-        Parameters
-        ----------
-        filename : str
-            uncertainty filename
-
-        Returns
-        -------
-        nentries : int
-            number of elements in file
         """
         f = open(filename, 'r')
         nentries = 0
@@ -2609,7 +2599,7 @@ class Cov(Matrix):
             other (`Matrix`):  other matrix - must be square
 
         Returns:
-            icov (`Cov`): new `Cov` with shape of `other`
+            `Cov`: new identity matrix `Cov` with shape of `other`
 
         """
         if other.shape[0] != other.shape[1]:
@@ -2622,8 +2612,8 @@ class Cov(Matrix):
         matrix
 
         Returns:
-            cc (`Matrox`): A `Matrix` of correlation coefs.  Return type is `Matrix`
-                on purpose so that it is clear the returned instance is not a Cov
+            `Matrix`: A `Matrix` of correlation coefs.  Return type is `Matrix`
+            on purpose so that it is clear the returned instance is not a Cov
 
         """
         std_dict = self.get_diagonal_vector().to_dataframe()["diag"].\

@@ -41,8 +41,8 @@ def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
 
     Returns:
         `pandas.DataFrame`: a dataframe of the smp file
-            information with the observation names and
-            instruction lines as additional columns.
+        information with the observation names and
+        instruction lines as additional columns.
 
     Example::
 
@@ -165,7 +165,7 @@ def smp_to_dataframe(smp_filename,datetime_format=None):
 
     Returns:
         `pandas.DataFrame`: a dataframe with index of datetime and columns of
-            site names.  Missing values are set to NaN.
+        site names.  Missing values are set to NaN.
 
     Example::
 

@@ -1,7 +1,3 @@
-"""This module contains most of the pyemu.Pst object definition.  This object
-is the primary mechanism for dealing with PEST control files.  Support is provided
-for constructing new control files as well as manipulating existing control files
-"""
 
 from __future__ import print_function, division
 import os
@@ -27,6 +23,10 @@ class Pst(object):
         load (`bool`, optional): flag to load the control file. Default is True
         resfile (`str`, optional): corresponding residual file.  If `None`, a residual file
             with the control file base name is sought.  Default is `None`
+
+    Note:
+        This class is the primary mechanism for dealing with PEST control files.  Support is provided
+        for constructing new control files as well as manipulating existing control files.
 
     Example::
 
@@ -125,7 +125,7 @@ class Pst(object):
             par_names ([`str`]): list of parameter names.  Default is [`par1`]
             obs_names ([`str`]): list of observation names.  Default is [`obs1`]
 
-        Notes:
+        Note:
             While this method works, it does not make template or instruction files.
             Users are encouraged to use `Pst.from_io_files()` for more usefulness
 
@@ -145,7 +145,7 @@ class Pst(object):
         Returns:
             `float`: sum of squared residuals
 
-        Notes:
+        Note:
             Requires `Pst.res` (the residuals file) to be available
 
         """
@@ -162,7 +162,7 @@ class Pst(object):
             `dict`: dictionary of observation group, contribution to total phi
 
 
-        Notes:
+        Note:
             Requires `Pst.res` (the residuals file) to be available
 
         """
@@ -222,9 +222,9 @@ class Pst(object):
 
         Returns:
             `dict`:  dictionary of observation group,
-                normalized contribution to total phi
+            normalized contribution to total phi
 
-        Notes:
+        Note:
             Requires `Pst.res` (the residuals file) to be available
 
 
@@ -252,9 +252,9 @@ class Pst(object):
 
         Returns:
             `pandas.DataFrame`: a dataframe containing the
-                residuals information.
+            residuals information.
 
-        Notes:
+        Note:
             if the Pst.__res attribute has not been loaded,
                 this call loads the res dataframe from a file
 
@@ -394,7 +394,7 @@ class Pst(object):
 
         Returns:
             [`str`]: a list of observation groups that contain at
-                least one non-zero weighted observation
+            least one non-zero weighted observation
 
         """
         obs = self.observation_data
@@ -407,7 +407,7 @@ class Pst(object):
 
         Returns:
             [`str`]: a list of parameter groups with
-                at least one adjustable parameter
+            at least one adjustable parameter
 
         """
         par = self.parameter_data
@@ -463,7 +463,7 @@ class Pst(object):
 
         Returns:
             [`str`]: list of adjustable (not fixed or tied)
-                parameter names
+            parameter names
 
         """
         par = self.parameter_data
@@ -510,7 +510,6 @@ class Pst(object):
         """ check if the control_data.pestmode is set to estimation
 
         Returns:
-
             `bool`: True if `control_data.pestmode` is estmation, False otherwise
 
         """
@@ -521,9 +520,9 @@ class Pst(object):
         """ list of tied parameter names
 
         Returns:
-            pandas.DataFrame: a dataframe of tied parameter information.
-                Columns of `tied` are `parnme` and `partied`.  Returns `None` if
-                no tied parameters are found.
+            `pandas.DataFrame`: a dataframe of tied parameter information.
+            Columns of `tied` are `parnme` and `partied`.  Returns `None` if
+            no tied parameters are found.
 
         """
         par = self.parameter_data
@@ -549,8 +548,7 @@ class Pst(object):
                 Default is None
 
         Returns:
-        -------
-        pandas.DataFrame`: dataframe of control file section info
+            `pandas.DataFrame`: dataframe of control file section info
 
         """
         seek_point = f.tell()
@@ -861,7 +859,7 @@ class Pst(object):
         Args:
             filename (`str`): pst filename
 
-        Notes:
+        Note:
             This method is called from the `Pst` construtor unless the `load` arg is `False`.
 
         """
@@ -899,15 +897,6 @@ class Pst(object):
 
     def _load_version1(self, filename):
         """load a version 1 pest control file information
-
-        Parameters
-        ----------
-        filename : str
-            pst filename
-
-        Raises
-        ------
-            lots of exceptions for incorrect format
 
         """
 
@@ -1146,13 +1135,13 @@ class Pst(object):
     def rectify_pgroups(self):
         """ synchronize parameter groups section with the parameter data section
 
-        Notes:
+        Note:
             This method is called during `Pst.write()` to make sure all parameter
-                groups named in `* parameter data` are included.  This is so users
-                don't have to manually keep this section up.  This method can also be
-                called during control file modifications to see what parameter groups
-                are present and prepare for modifying the default values in the `* parameter
-                group` section
+            groups named in `* parameter data` are included.  This is so users
+            don't have to manually keep this section up.  This method can also be
+            called during control file modifications to see what parameter groups
+            are present and prepare for modifying the default values in the `* parameter
+            group` section
 
         Example::
 
@@ -1281,10 +1270,10 @@ class Pst(object):
         parameter_data dataframe.
 
 
-        Notes:
+        Note:
             Equations that list fixed, tied or missing parameters
-                are removed completely even if adjustable parameters are also
-                listed in the equation. This method is called during Pst.write()
+            are removed completely even if adjustable parameters are also
+            listed in the equation. This method is called during Pst.write()
 
         """
         if self.prior_information.shape[0] == 0:
@@ -1332,9 +1321,9 @@ class Pst(object):
     def sanity_checks(self):
         """some basic check for strangeness
 
-        Notes:
+        Note:
             checks for duplicate names, atleast 1 adjustable parameter
-                and atleast 1 non-zero-weighted observation
+            and at least 1 non-zero-weighted observation
 
         """
 
@@ -1461,13 +1450,6 @@ class Pst(object):
     def _write_version1(self,new_filename,update_regul=False):
         """write a version 1 pest control file
 
-        Parameters
-        ----------
-        new_filename : str
-            name of the new pest control file
-        update_regul : (boolean)
-            flag to update zero-order Tikhonov prior information
-            equations to prefer the current parameter values
 
 
         """
@@ -1604,9 +1586,9 @@ class Pst(object):
         Returns:
             `Pst`: a new Pst instance
 
-        Notes:
+        Note:
             passing `par_names` as `None` and `obs_names` as `None` effectively
-                generates a copy of the current `Pst`
+            generates a copy of the current `Pst`
 
         """
 
@@ -1672,9 +1654,9 @@ class Pst(object):
             parfile (`str`, optional): parameter file to use.  If None, try to find and use
                 a parameter file that corresponds to the case name.
                 Default is None
-        enforce_bounds (`bool`, optional): flag to enforce parameter bounds after parameter values are updated.
-            This is useful because PEST and PEST++ round the parameter values in the
-            par file, which may cause slight bound violations.  Default is `True`
+            enforce_bounds (`bool`, optional): flag to enforce parameter bounds after parameter values are updated.
+                This is useful because PEST and PEST++ round the parameter values in the
+                par file, which may cause slight bound violations.  Default is `True`
 
         """
         if parfile is None:
@@ -1775,13 +1757,13 @@ class Pst(object):
         Args:
             resfile (`str`): residual file name.  If None, try to use a residual file
                 with the Pst case name.  Default is None
-        original_ceiling (`bool`): flag to keep weights from increasing - this is
-            generally a good idea. Default is True
-        bygroups (`bool`): flag to adjust weights by groups. If False, the weight
-            of each non-zero weighted observation is adjusted individually. If True,
-            intergroup weighting is preserved (the contribution to each group is used)
-            but this may result in some strangeness if some observations in a group have
-            a really low phi already.
+            original_ceiling (`bool`): flag to keep weights from increasing - this is
+                generally a good idea. Default is True
+            bygroups (`bool`): flag to adjust weights by groups. If False, the weight
+                of each non-zero weighted observation is adjusted individually. If True,
+                intergroup weighting is preserved (the contribution to each group is used)
+                but this may result in some strangeness if some observations in a group have
+                a really low phi already.
 
         Example::
 
@@ -1901,10 +1883,10 @@ class Pst(object):
         amount to the composite objective function
 
         Args:
-            obs_dict (`dict`): dictionary of observation name,new contribution pairs
-        obsgrp_dict (`dict`): dictionary of obs group name,contribution pairs
+            obs_dict (`dict`, optional): dictionary of observation name,new contribution pairs
+            obsgrp_dict (`dict`, optional): dictionary of obs group name,contribution pairs
 
-        Notes:
+        Note:
             if all observations in a named obs group have zero weight, they will all be
             assigned a non-zero weight so that the request phi contribution
             can be met.  Similarly, any observations listed in obs_dict with zero
@@ -1983,11 +1965,10 @@ class Pst(object):
         """ experimental method to calculate finite difference parameter
         pertubations.
 
-        Notes:
+        Note:
 
             The pertubation values are added to the
-                `Pst.parameter_data` attribute
-            user beware!
+            `Pst.parameter_data` attribute - user beware!
 
         """
         self.build_increments()
@@ -2021,7 +2002,7 @@ class Pst(object):
         """ experimental method to calculate parameter increments for use
         in the finite difference pertubation calculations
 
-        Notes:
+        Note:
             user beware!
 
         """
@@ -2058,9 +2039,9 @@ class Pst(object):
     def add_transform_columns(self):
         """ add transformed values to the `Pst.parameter_data` attribute
 
-        Notes:
+        Note:
             adds `parval1_trans`, `parlbnd_trans` and `parubnd_trans` to
-                `Pst.parameter_data`
+            `Pst.parameter_data`
 
 
         """
@@ -2079,9 +2060,8 @@ class Pst(object):
     def enforce_bounds(self):
         """ enforce bounds violation
 
-        Notes:
-            cheap enforcement of simply bringing violators back in
-                bounds
+        Note:
+            cheap enforcement of simply bringing violators back in bounds
 
         """
         too_big = self.parameter_data.loc[:,"parval1"] > \
@@ -2109,12 +2089,14 @@ class Pst(object):
 
         Returns:
             `Pst`: new control file instance with parameter and observation names
-                found in `tpl_files` and `ins_files`, repsectively.
+            found in `tpl_files` and `ins_files`, repsectively.
 
-        Notes:
+        Note:
             calls `pyemu.helpers.pst_from_io_files()`
+
             Assigns generic values for parameter info.  Tries to use INSCHEK
-                to set somewhat meaningful observation values
+            to set somewhat meaningful observation values
+
             all file paths are relatively to where python is running.
 
         TODO:
@@ -2150,13 +2132,13 @@ class Pst(object):
             pst_path (`str`): the path to append to the template_file and in_file in the control file.  If
                 not None, then any existing path in front of the template or in file is split off
                 and pst_path is prepended.  If python is being run in a directory other than where the control
-                    file will reside, it is useful to pass `pst_path` as `.`.  Default is None
+                file will reside, it is useful to pass `pst_path` as `.`.  Default is None
 
         Returns:
             `pandas.DataFrame`: the data for the new parameters that were added.
-                If no new parameters are in the new template file, returns None
+            If no new parameters are in the new template file, returns None
 
-        Notes:
+        Note:
             populates the new parameter information with default values
 
         Example:
@@ -2208,13 +2190,13 @@ class Pst(object):
             pst_path (`str`): the path to append to the instruction file and out file in the control file.  If
                 not None, then any existing path in front of the template or in file is split off
                 and pst_path is prepended.  If python is being run in a directory other than where the control
-                    file will reside, it is useful to pass `pst_path` as `.`.Default is None
+                file will reside, it is useful to pass `pst_path` as `.`.Default is None
             inschek (`bool`): flag to run inschek.  If successful, inscheck outputs are used as obsvals
 
         Returns:
             `pandas.DataFrame`: the data for the new observations that were added
 
-        Notes:
+        Note:
             populates the new observation information with default values
 
         Example::
@@ -2273,9 +2255,9 @@ class Pst(object):
     def write_input_files(self):
         """writes model input files using template files and current `parval1` values.
 
-        Notes:
+        Note:
             adds "parval1_trans" column to Pst.parameter_data that includes the
-                effect of scale and offset
+            effect of scale and offset
 
         Example::
 
@@ -2303,7 +2285,7 @@ class Pst(object):
         Returns:
             `pandas.Series`: model output values
 
-        Notes:
+        Note:
             requires a complete set of model input files at relative path
             from where python is running to `pst_path`
 
@@ -2321,7 +2303,7 @@ class Pst(object):
         Returns:
             `pd.DataFrame`: a dataframe with columns for groups names and indices of statistic name.
 
-        Notes:
+        Note:
             Stats are derived from the current obsvals, weights and grouping in
             `Pst.observation_data` and the `modelled` values in `Pst.res`.  The
             key here is 'current' because if obsval, weights and/or groupings have
@@ -2397,12 +2379,12 @@ class Pst(object):
 
         Args:
             kind (`str`): options are 'prior' (prior parameter histograms, '1to1' (line of equality
-            and sim vs res), 'obs_v_sim' (time series using datetime suffix), 'phi_pie'
-            (pie chart of phi components)
-        kwargs (`dict`): optional args for plots that are passed to pyemu plot helpers and ultimately
-            to matplotlib
+                and sim vs res), 'obs_v_sim' (time series using datetime suffix), 'phi_pie'
+                (pie chart of phi components)
+            kwargs (`dict`): optional args for plots that are passed to pyemu plot helpers and ultimately
+                to matplotlib
 
-        Notes:
+        Note:
             Depending on 'kind' argument, a multipage pdf is written
 
         Example::
@@ -2434,7 +2416,6 @@ class Pst(object):
 
         Returns:
             `pandas.DataFrame`: the summary parameter group dataframe
-
 
         Example::
 
@@ -2520,7 +2501,6 @@ class Pst(object):
 
         Returns:
             `pandas.DataFrame`: the summary observation group dataframe
-
 
         Example::
 
@@ -2634,10 +2614,10 @@ class Pst(object):
         are listed as active less than inequality constraints.
 
         Returns:
-            `pandas.Series`: names of obseravtions that are non-zero weighted
-                less than constraints (`obgnme` starts with "l_" or "less")
+            `pandas.Series`: names of obseravtions that are non-zero weighted less
+            than constraints (`obgnme` starts with 'l\_' or "less")
 
-        Notes:
+        Note:
              Zero-weighted obs are skipped
 
         """
@@ -2655,9 +2635,9 @@ class Pst(object):
 
         Returns:
             `pandas.Series`: names of prior information that are non-zero weighted
-                less than constraints (`obgnme` starts with "l_" or "less")
+            less than constraints (`obgnme` starts with "l\_" or "less")
 
-        Notes:
+        Note:
             Zero-weighted pi are skipped
 
         """
@@ -2679,9 +2659,9 @@ class Pst(object):
 
         Returns:
             `pandas.Series`: names obseravtions that are non-zero weighted
-                greater than constraints (`obgnme` startsiwth "g_" or "greater")
+            greater than constraints (`obgnme` startsiwth "g\_" or "greater")
 
-        Notes:
+        Note:
             Zero-weighted obs are skipped
 
         """
@@ -2700,10 +2680,10 @@ class Pst(object):
 
         Returns:
             `pandas.Series` names of prior information that are non-zero weighted
-                greater than constraints (`obgnme` startsiwth "g_" or "greater")
+            greater than constraints (`obgnme` startsiwth "g\_" or "greater")
 
 
-        Notes:
+        Note:
              Zero-weighted pi are skipped
 
         """
@@ -2721,13 +2701,14 @@ class Pst(object):
 
         Returns:
             `pandas.DataFrame`: a copy of `Pst.parameter_data`
-                with columns for relative and factor change limits
-        Note
-        ----
+            with columns for relative and factor change limits
+        Note:
+
             does not yet support absolute parameter change limits!
+
             Works in control file values space (not log transformed space).  Also
-                adds columns for effective upper and lower which account for par bounds and the
-                value of parchglim
+            adds columns for effective upper and lower which account for par bounds and the
+            value of parchglim
 
         """
         par = self.parameter_data
