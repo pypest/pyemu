@@ -430,6 +430,24 @@ class Ensemble(object):
         df.dropna(inplace=True,axis=1)
         return df
 
+
+    @staticmethod
+    def _get_svd_projection_matrix(x,maxsing=None,eigthresh=1.0e-7):
+
+        u,s,v = np.linalg.svd(x,full_matrices=True)
+        v = v.transpose()
+
+        if maxsing is None:
+            maxsing = pyemu.Matrix.get_maxsing_from_s(s,eigthresh=eigthresh)
+
+        # fill in full size svd component matrices
+        s_full = np.zeros((pst.nnz_obs, pst.nnz_obs))
+        s_full[:s.shape[0], :s.shape[1]] = np.sqrt(s.x)  # sqrt since sing vals are eigvals**2
+        v_full = np.zeros_like(s_full)
+        v_full[:v.shape[0], :v.shape[1]] = v.x
+
+
+
     @staticmethod
     def _get_eigen_projection_matrix(x):
         # eigen factorization

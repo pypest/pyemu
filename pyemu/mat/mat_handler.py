@@ -5,8 +5,8 @@ import struct
 import warnings
 import numpy as np
 import pandas as pd
-import scipy.linalg as la
-from scipy.io import FortranFile
+#import scipy.linalg as la
+
 
 from pyemu.pst.pst_handler import Pst
 from ..pyemu_warnings import PyemuWarning
@@ -740,12 +740,12 @@ class Matrix(object):
             x = self.x
         try:
 
-            u, s, v = la.svd(x, full_matrices=True)
+            u, s, v = np.la.svd(x, full_matrices=True)
             v = v.transpose()
         except Exception as e:
             print("standard SVD failed: {0}".format(str(e)))
             try:
-                v, s, u = la.svd(x.transpose(), full_matrices=True)
+                v, s, u = np.la.svd(x.transpose(), full_matrices=True)
                 u = u.transpose()
             except Exception as e:
                 np.savetxt("failed_svd.dat",x,fmt="%15.6E")
@@ -953,35 +953,61 @@ class Matrix(object):
                               col_names=self.col_names,
                               autoalign=self.autoalign)
         else:
-            return type(self)(x=la.inv(self.__x), row_names=self.row_names,
+            return type(self)(x=np.la.inv(self.__x), row_names=self.row_names,
                               col_names=self.col_names,
                               autoalign=self.autoalign)
+
+    @staticmethod
+    def get_maxsing_from_s(s,eigthresh=1.0e-5):
+        """static method to work out the maxsing for a
+        given singular spectrum
+
+        Args:
+            s (`numpy.ndarray`): 1-D array of singular values. This
+                array should come from calling either `numpy.linalg.svd`
+                or from the `pyemu.Matrix.s.x` attribute
+            eigthresh (`float`): the ratio of smallest to largest
+                singular value to retain.  Since it is assumed that
+                `s` is sorted from largest to smallest, once a singular value
+                is reached that yields a ratio with the first (largest)
+                singular value, the index of this singular is returned.
+
+        Returns:
+            `int`: the index of the singular value whos ratio with the
+            first singular value is less than or equal to `eigthresh`
+
+        """
+        sthresh = s.flatten() / s[0]
+        ising = 0
+        for st in sthresh:
+            if st > eigthresh:
+                ising += 1
+            else:
+                break
+        return max(1, ising)
 
     def get_maxsing(self,eigthresh=1.0e-5):
         """ Get the number of singular components with a singular
         value ratio greater than or equal to eigthresh
 
-        Args:
-            eigthresh (`float`): the ratio of the largest to smallest singular value
-                used to detemine how many significant singular components
-                exist (e.g. MAXSING)
+         Args:
+            eigthresh (`float`): the ratio of smallest to largest
+                singular value to retain.  Since it is assumed that
+                `s` is sorted from largest to smallest, once a singular value
+                is reached that yields a ratio with the first (largest)
+                singular value, the index of this singular is returned.
 
         Returns:
-            `int`: number of singular components with a ratio greater than `eigthresh`
-            with the largest (primary) singular value
+            `int`: the index of the singular value whos ratio with the
+            first singular value is less than or equal to `eigthresh`
+
+        Note:
+            this method calls the static method `Matrix.get_maxsing_from_s()`
+            with `Matrix.s.x`
 
         """
-        #sthresh =np.abs((self.s.x / self.s.x[0]) - eigthresh)
-        sthresh = self.s.x.flatten()/self.s.x[0]
-        ising = 0
-        for st in sthresh:
-            if st > eigthresh:
-                ising += 1
-                #return max(1,i)
-            else:
-                break
-        #return max(1,np.argmin(sthresh))
-        return max(1,ising)
+
+        return Matrix.get_maxsing_from_s(self.s.x, eigthresh=eigthresh)
 
     def pseudo_inv_components(self,maxsing=None,eigthresh=1.0e-5,truncate=True):
         """ Get the (optionally) truncated SVD components
@@ -1059,10 +1085,10 @@ class Matrix(object):
 
     @property
     def sqrt(self):
-        """square root operation
+        """element-wise square root operation
 
         Returns:
-            `Matrix`: square root of `Matrix`
+            `Matrix`: element-wise square root of `Matrix`
 
         Note:
             uses `numpy.sqrt`
@@ -1080,7 +1106,7 @@ class Matrix(object):
                               col_names=self.col_names,
                               autoalign=self.autoalign)
         else:
-            return type(self)(x=la.sqrtm(self.__x), row_names=self.row_names,
+            return type(self)(x=np.la.sqrt(self.__x), row_names=self.row_names,
                               col_names=self.col_names,
                               autoalign=self.autoalign)
     @property
@@ -1740,6 +1766,10 @@ class Matrix(object):
             `Matrix`
 
         """
+        try:
+            from scipy.io import FortranFile
+        except Exception as e:
+            raise Exception("Matrix.from_fortranfile requires scipy")
         f = FortranFile(filename,mode='r')
         itemp1, itemp2 = f.read_ints()
         icount = f.read_ints()
