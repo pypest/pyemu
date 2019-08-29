@@ -436,7 +436,7 @@ def emp_cov_test():
         print(p,cov_df.loc[p,p],emp_df.loc[p,p])
     diff = np.diag(cov.x) - np.diag(emp_cov.x)
     print(diff.max())
-    assert  diff.max() < 0.1,diff.max()
+    assert  diff.max() < 0.5,diff.max()
 
 def factor_draw_test():
     import os
@@ -512,7 +512,7 @@ if __name__ == "__main__":
     #obs_gauss_draw_consistency_test()
     #phi_vector_test()
     # add_base_test()
-    nz_test()
+    #nz_test()
     # deviations_test()
     # as_pyemu_matrix_test()
     # dropna_test()
@@ -522,7 +522,7 @@ if __name__ == "__main__":
     # uniform_draw_test()
     # fill_test()
     #factor_draw_test()
-    #emp_cov_test()
+    emp_cov_test()
     #emp_cov_draw_test()
 
 
