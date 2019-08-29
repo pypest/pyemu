@@ -27,8 +27,6 @@ matrix:
       env: TEST_SCRIPT="da_tests.py"
     - name: "moouu tests"
       env: TEST_SCRIPT="moouu_tests.py"
-    - name: "smoother tests"
-      env: TEST_SCRIPT="smoother_tests.py"
     - name: "full meal deal tests"
       env: TEST_SCRIPT="full_meal_deal_tests.py"
     - name: "plot tests"
@@ -94,6 +92,7 @@ install:
 script:
   - export PYTHONPATH=$PYTHONPATH:.
   - nosetests -v --with-id --nocapture --with-timer -w ./autotest --with-coverage --cover-package=pyemu $TEST_SCRIPT
+  
 after_success:
   - cd docs
   - make html
