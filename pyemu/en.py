@@ -354,6 +354,13 @@ class Ensemble(object):
         if retrans:
             self.transform()
 
+    @classmethod
+    def from_dataframe(cls,pst,df,istransformed=False):
+        warnings.warn("Ensemble.from_dataframe() is deprecated and has been "
+                      "replaced with the standard constructor, which takes"
+                      "the same arguments")
+        return cls(pst=pst,df=df,istransformed=istransformed)
+
 
     @staticmethod
     def _gaussian_draw(cov,mean_values,num_reals,grouper=None):
