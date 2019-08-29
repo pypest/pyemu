@@ -9,17 +9,7 @@ Welcome to pyEMU's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-
-  
-  
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
-
+   
 .. automodule:: pyemu.pst
 	:members: Pst,pst_utils
 .. automodule:: pyemu.mat
@@ -44,5 +34,17 @@ Indices and tables
 	:members:
 .. automodule:: pyemu.utils.geostats
 	:members:
+
+
+
+  
+  
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
 
 

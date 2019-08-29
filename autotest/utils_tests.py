@@ -1726,7 +1726,7 @@ def aniso_invest():
     plt.show()
 
 if __name__ == "__main__":
-    #specsim_test()
+    specsim_test()
     #aniso_invest()
     #fieldgen_dev()
     # smp_test()

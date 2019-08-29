@@ -165,7 +165,7 @@ class Ensemble(object):
             It only changes the `Ensemble._transformed` flag
 
         """
-        if self.transformed:
+        if self.istransformed:
             return
         self._transformed = True
         return

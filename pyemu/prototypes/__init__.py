@@ -9,7 +9,6 @@ GLUE and null-space Monte Carlo) and a prototype iterative Ensemble Smoother
 """
 
 from .ensemble_method import *
-from .smoother import *
 from .moouu import *
 from .pst_from import *
 from .da import *

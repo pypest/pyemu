@@ -44,7 +44,7 @@ def add_base_test():
 def nz_test():
     pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     num_reals = 10
-    oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst, fill=True, num_reals=num_reals)
     assert oe.shape[1] == pst.nobs
     oe_nz = oe.nonzero
     assert oe_nz.shape[1] == pst.nnz_obs
@@ -512,7 +512,7 @@ if __name__ == "__main__":
     #obs_gauss_draw_consistency_test()
     #phi_vector_test()
     # add_base_test()
-    # nz_test()
+    nz_test()
     # deviations_test()
     # as_pyemu_matrix_test()
     # dropna_test()
@@ -523,7 +523,7 @@ if __name__ == "__main__":
     # fill_test()
     #factor_draw_test()
     #emp_cov_test()
-    emp_cov_draw_test()
+    #emp_cov_draw_test()
 
 
 
