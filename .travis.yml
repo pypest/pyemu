@@ -17,7 +17,7 @@ matrix:
       env: TEST_SCRIPT="utils_tests.py"
     - name: "mat tests"
       env: TEST_SCRIPT="mat_tests.py"
-    - name: "mc tests"
+    - name: "en tests"
       env: TEST_SCRIPT="en_tests.py"
     - name: "la tests"
       env: TEST_SCRIPT="la_tests.py"
@@ -92,7 +92,7 @@ install:
 script:
   - export PYTHONPATH=$PYTHONPATH:.
   - nosetests -v --with-id --nocapture --with-timer -w ./autotest --with-coverage --cover-package=pyemu $TEST_SCRIPT
-  
+
 after_success:
   - cd docs
   - make html
