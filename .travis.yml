@@ -18,7 +18,7 @@ matrix:
     - name: "mat tests"
       env: TEST_SCRIPT="mat_tests.py"
     - name: "mc tests"
-      env: TEST_SCRIPT="mc_tests.py"
+      env: TEST_SCRIPT="en_tests.py"
     - name: "la tests"
       env: TEST_SCRIPT="la_tests.py"
     - name: "pst from tests"
