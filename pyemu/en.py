@@ -364,8 +364,12 @@ class Ensemble(object):
 
 
     @staticmethod
-    def _gaussian_draw(cov,mean_values,num_reals,grouper=None,fill=True):
+    def _gaussian_draw(cov,mean_values,num_reals,grouper=None,fill=True, factor="eigen"):
 
+        factor = factor.lower()
+        if factor not in ["eigen","svd"]:
+            raise Exception("Ensemble._gaussian_draw() error: unrecognized"+\
+                            "'factor': {0}".format(factor))
         # make sure all cov names are found in mean_values
         cov_names = set(cov.row_names)
         mv_names = set(mean_values.index.values)
@@ -401,26 +405,33 @@ class Ensemble(object):
                         std = np.sqrt(cov_grp.x)
                         reals[:, idxs] = mean_values.loc[names].values[0] + (snv * std)
                     else:
-                        try:
-                            cov_grp.inv
-                        except:
-                            covname = "trouble_{0}.cov".format(grp_name)
-                            cov_grp.to_ascii(covname)
-                            raise Exception("error inverting cov for group '{0}'," + \
-                                            "saved trouble cov to {1}".
-                                            format(grp_name, covname))
+                        if factor == "eigen":
+                            try:
+                                cov_grp.inv
+                            except:
+                                covname = "trouble_{0}.cov".format(grp_name)
+                                cov_grp.to_ascii(covname)
+                                raise Exception("error inverting cov for group '{0}'," + \
+                                                "saved trouble cov to {1}".
+                                                format(grp_name, covname))
 
 
-                    a = Ensemble._get_eigen_projection_matrix(cov_grp.as_2d)
-
-                    # process each realization
-                    group_mean_values = mean_values.loc[names]
-                    for i in range(num_reals):
-                        reals[i, idxs] = group_mean_values + np.dot(a, snv[i, :])
+                            a, i = Ensemble._get_eigen_projection_matrix(cov_grp.as_2d)
+                        elif factor == "svd":
+                            a, i = Ensemble._get_svd_projection_matrix(cov_grp.as_2d)
+                            snv[:,i:] = 0.0
+                        # process each realization
+                        group_mean_values = mean_values.loc[names]
+                        for i in range(num_reals):
+                            reals[i, idxs] = group_mean_values + np.dot(a, snv[i, :])
 
             else:
                 snv = np.random.randn(num_reals, cov.shape[0])
-                a = Ensemble._get_eigen_projection_matrix(cov.as_2d)
+                if factor == "eigen":
+                    a, i = Ensemble._get_eigen_projection_matrix(cov.as_2d)
+                elif factor == "svd":
+                    a, i = Ensemble._get_svd_projection_matrix(cov.as_2d)
+                    snv[:,i:] = 0.0
                 cov_mean_values = mean_values.loc[cov.row_names].values
                 idxs = [mv_map[name] for name in cov.row_names]
                 for i in range(num_reals):
@@ -433,19 +444,25 @@ class Ensemble(object):
 
     @staticmethod
     def _get_svd_projection_matrix(x,maxsing=None,eigthresh=1.0e-7):
-
+        if x.shape[0] != x.shape[1]:
+            raise Exception("matrix not square")
         u,s,v = np.linalg.svd(x,full_matrices=True)
         v = v.transpose()
 
         if maxsing is None:
             maxsing = pyemu.Matrix.get_maxsing_from_s(s,eigthresh=eigthresh)
+        u = u[:,:maxsing]
+        s = s[:maxsing]
+        v = v[:,:maxsing]
 
         # fill in full size svd component matrices
-        s_full = np.zeros((pst.nnz_obs, pst.nnz_obs))
-        s_full[:s.shape[0], :s.shape[1]] = np.sqrt(s.x)  # sqrt since sing vals are eigvals**2
+        s_full = np.zeros(x.shape)
+        s_full[:s.shape[0], :s.shape[1]] = np.sqrt(s)  # sqrt since sing vals are eigvals**2
         v_full = np.zeros_like(s_full)
-        v_full[:v.shape[0], :v.shape[1]] = v.x
-
+        v_full[:v.shape[0], :v.shape[1]] = v
+        # form the projection matrix
+        proj = np.dot(v_full, s_full)
+        return proj, maxsing
 
 
     @staticmethod
@@ -468,7 +485,7 @@ class Ensemble(object):
         v = np.diag(vsqrt)
         a = np.dot(w, v)
 
-        return a
+        return a, i
 
 
     def get_deviations(self,center_on=None):
@@ -490,8 +507,14 @@ class Ensemble(object):
             `center_on=None` yields the classic ensemble smoother/ensemble Kalman
             filter deviations
 
+            Deviations respect log-transformation status.
+
         """
 
+        retrans = False
+        if not self.istransformed:
+            self.transform()
+            retrans = True
         mean_vec = self.mean()
         if center_on is not None:
             if center_on not in self.index:
@@ -501,6 +524,8 @@ class Ensemble(object):
         df = self._df.copy()
         for col in df.columns:
             df.loc[:,col] -= mean_vec[col]
+        if retrans:
+            self.back_transform()
         return type(self)(pst=self.pst,df=df,istransformed=self.istransformed)
 
     def as_pyemu_matrix(self,typ=None):
@@ -541,14 +566,15 @@ class Ensemble(object):
             `pyemu.Cov`: the empirical (and optionally localized) covariance matrix
 
         """
-        devs = self.get_deviations(center_on=center_on).as_pyemu_matrix
+
+        devs = self.get_deviations(center_on=center_on).as_pyemu_matrix()
         devs *= (1.0 / np.sqrt(float(self.shape[0] - 1.0)))
 
         if localizer is not None:
-            delta = delta.T * delta
-            return delta.hadamard_product(localizer)
+            devs = devs.T * devs
+            return devs.hadamard_product(localizer)
 
-        return delta.T * delta
+        return pyemu.Cov((devs.T * devs).x,names=devs.col_names)
 
 
     def dropna(self, *args, **kwargs):
@@ -586,7 +612,8 @@ class ObservationEnsemble(Ensemble):
         super(ObservationEnsemble,self).__init__(pst,df,istransformed)
 
     @classmethod
-    def from_gaussian_draw(cls,pst,cov=None,num_reals=100,by_groups=True,fill=False):
+    def from_gaussian_draw(cls,pst,cov=None,num_reals=100,by_groups=True,fill=False,
+                           factor="eigen"):
         """generate an `ObservationEnsemble` from a (multivariate) gaussian
         distribution
 
@@ -603,13 +630,15 @@ class ObservationEnsemble(Ensemble):
                 assumes no correlation (covariates) between observation groups.
             fill (`bool`): flag to fill in zero-weighted observations with control file
                 values.  Default is False.
-
+            factor (`str`): how to factorize `cov` to form the projectin matrix.  Can
+                be "eigen" or "svd". The "eigen" option is default and is faster.  But
+                for (nearly) singular cov matrices (such as those generated empirically
+                from ensembles), "svd" is the only way.  Ignored for diagonal `cov`.
 
         Returns:
-            `ObservationEnsemble`
+            `ObservationEnsemble`: the realized `ObservationEnsemble` instance
 
         Notes:
-
             Only observations named in `cov` are sampled. Additional, `cov` is processed prior
             to sampling to only include non-zero-weighted observations depending on the value of `fill`.
             So users must take care to make sure observations have been assigned non-zero weights even if `cov`
@@ -654,7 +683,7 @@ class ObservationEnsemble(Ensemble):
                 grouper[grp] = list(grouper[grp])
         df = Ensemble._gaussian_draw(cov=nz_cov,mean_values=mean_values,
                                      num_reals=num_reals,grouper=grouper,
-                                     fill=fill)
+                                     fill=fill, factor=factor)
         if fill:
             df.loc[:,pst.zero_weight_obs_names] = pst.observation_data.loc[pst.zero_weight_obs_names,
                                                                            "obsval"].values
@@ -732,7 +761,8 @@ class ParameterEnsemble(Ensemble):
         super(ParameterEnsemble,self).__init__(pst,df,istransformed)
 
     @classmethod
-    def from_gaussian_draw(cls,pst,cov=None,num_reals=100,by_groups=True,fill=True):
+    def from_gaussian_draw(cls,pst,cov=None,num_reals=100,by_groups=True,
+                           fill=True, factor="eigen"):
         """generate a `ParameterEnsemble` from a (multivariate) (log) gaussian
         distribution
 
@@ -751,6 +781,10 @@ class ParameterEnsemble(Ensemble):
                 numbers of parameters, this help prevent memories but is slower.
             fill (`bool`): flag to fill in fixed and/or tied parameters with control file
                 values.  Default is True.
+            factor (`str`): how to factorize `cov` to form the projectin matrix.  Can
+                be "eigen" or "svd". The "eigen" option is default and is faster.  But
+                for (nearly) singular cov matrices (such as those generated empirically
+                from ensembles), "svd" is the only way.  Ignored for diagonal `cov`.
 
         Returns:
             `ParameterEnsemble`: the parameter ensemble realized from the gaussian

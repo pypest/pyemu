@@ -254,8 +254,11 @@ def from_flopy():
                                              use_pp_zones=False,
                                              k_zone_dict=k_zone_dict,
                                              hds_kperk=[0, 0], build_prior=False)
-    pe = helper.draw(100)
     pst = helper.pst
+    par = pst.parameter_data
+    par.loc[par.parubnd>100,"pariubnd"] = 100.0
+    par.loc[par.parlbnd<0.1,"parlbnd"] = 0.1
+    pe = helper.draw(100)
     obs = pst.observation_data
     obs.loc[:, "weight"] = 0.0
     obs.loc[obs.obsnme.apply(lambda x: x.startswith("cr")), "weight"] = 1.0
@@ -263,7 +266,7 @@ def from_flopy():
     pst.control_data.noptmax = 0
     pst.write(os.path.join(new_model_ws, "freyberg_pest.pst"))
     cov = helper.build_prior(fmt="none")
-    cov.to_coo(os.path.join("temp", "cov.coo"))
+    cov.to_coo(os.path.join(new_model_ws, "cov.coo"))
 
     from_flopy_zone_pars()
 
@@ -650,7 +653,7 @@ if __name__ == "__main__":
     #lt_gt_constraint_names_test()
     #csv_to_ins_test()
     #pst_from_flopy_geo_draw_test()
-    pst_from_flopy_specsim_draw_test()
+    #pst_from_flopy_specsim_draw_test()
     #try_process_ins_test()
     # write_tables_test()
     #res_stats_test()
@@ -661,7 +664,7 @@ if __name__ == "__main__":
     # run_array_pars()
     #from_flopy_zone_pars()
     #from_flopy_pp_test()
-    # from_flopy()
+    from_flopy()
     # add_obs_test()
     #from_flopy_kl_test()
     #from_flopy_reachinput()

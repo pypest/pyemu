@@ -12,7 +12,6 @@ def add_pi_obj_func_test():
     #pst._update_control_section()
     assert pst.control_data.nprior == 1
 
-
 def fac2real_test():
     import os
     import numpy as np
@@ -1646,43 +1645,47 @@ def specsim_test():
     else:
         raise Exception("should have failed")
 
-    variograms = [pyemu.geostats.ExpVario(contribution=contrib, a=a, anisotropy=10, bearing=0)]
-    gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="log", nugget=nugget)
-    np.random.seed(1)
+    bd = os.getcwd()
+    try:
+        variograms = [pyemu.geostats.ExpVario(contribution=contrib, a=a, anisotropy=10, bearing=0)]
+        gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="log", nugget=nugget)
+        np.random.seed(1)
 
-    ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
-    mean_value = 15.0
-    reals = ss.draw_arrays(num_reals=num_reals, mean_value=mean_value)
-    assert reals.shape == (num_reals, nrow, ncol),reals.shape
-    reals = np.log10(reals)
-    mean_value = np.log10(mean_value)
-    var = np.var(reals, axis=0).mean()
+        ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
+        mean_value = 15.0
+        reals = ss.draw_arrays(num_reals=num_reals, mean_value=mean_value)
+        assert reals.shape == (num_reals, nrow, ncol),reals.shape
+        reals = np.log10(reals)
+        mean_value = np.log10(mean_value)
+        var = np.var(reals, axis=0).mean()
 
-    mean = reals.mean()
+        mean = reals.mean()
 
-    theo_var = ss.geostruct.sill
-    print(var, theo_var)
-    print(mean, mean_value)
-    assert np.abs(var - theo_var) < 0.1
-    assert np.abs(mean - mean_value) < 0.1
+        theo_var = ss.geostruct.sill
+        print(var, theo_var)
+        print(mean, mean_value)
+        assert np.abs(var - theo_var) < 0.1
+        assert np.abs(mean - mean_value) < 0.1
 
-    np.random.seed(1)
-    variograms = [pyemu.geostats.ExpVario(contribution=contrib, a=a, anisotropy=10, bearing=0)]
-    gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="none", nugget=nugget)
+        np.random.seed(1)
+        variograms = [pyemu.geostats.ExpVario(contribution=contrib, a=a, anisotropy=10, bearing=0)]
+        gs = pyemu.geostats.GeoStruct(variograms=variograms, transform="none", nugget=nugget)
 
-    ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
-    mean_value = 25.0
-    reals = ss.draw_arrays(num_reals=num_reals,mean_value=mean_value)
-    assert reals.shape == (num_reals,nrow,ncol)
-    var = np.var(reals,axis=0).mean()
-    mean = reals.mean()
+        ss = pyemu.geostats.SpecSim2d(geostruct=gs, delx=delr, dely=delc)
+        mean_value = 25.0
+        reals = ss.draw_arrays(num_reals=num_reals,mean_value=mean_value)
+        assert reals.shape == (num_reals,nrow,ncol)
+        var = np.var(reals,axis=0).mean()
+        mean = reals.mean()
 
-    theo_var = ss.geostruct.sill
-    print(var,theo_var)
-    print(mean,mean_value)
-    assert np.abs(var - theo_var) < 0.1
-    assert np.abs(mean - mean_value) < 0.1
-
+        theo_var = ss.geostruct.sill
+        print(var,theo_var)
+        print(mean,mean_value)
+        assert np.abs(var - theo_var) < 0.1
+        assert np.abs(mean - mean_value) < 0.1
+    except Exception as e:
+        os.chdir(bd)
+        raise(e)
 
 def aniso_invest():
 
@@ -1784,7 +1787,7 @@ if __name__ == "__main__":
     # aniso_test()
     # struct_file_test()
     # covariance_matrix_test()
-    add_pi_obj_func_test()
+    # add_pi_obj_func_test()
     # ok_test()
     #ok_grid_test()
     # ok_grid_zone_test()

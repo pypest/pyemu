@@ -740,12 +740,12 @@ class Matrix(object):
             x = self.x
         try:
 
-            u, s, v = np.la.svd(x, full_matrices=True)
+            u, s, v = np.linalg.svd(x, full_matrices=True)
             v = v.transpose()
         except Exception as e:
             print("standard SVD failed: {0}".format(str(e)))
             try:
-                v, s, u = np.la.svd(x.transpose(), full_matrices=True)
+                v, s, u = np.linalg.svd(x.transpose(), full_matrices=True)
                 u = u.transpose()
             except Exception as e:
                 np.savetxt("failed_svd.dat",x,fmt="%15.6E")
@@ -953,7 +953,7 @@ class Matrix(object):
                               col_names=self.col_names,
                               autoalign=self.autoalign)
         else:
-            return type(self)(x=np.la.inv(self.__x), row_names=self.row_names,
+            return type(self)(x=np.linalg.inv(self.__x), row_names=self.row_names,
                               col_names=self.col_names,
                               autoalign=self.autoalign)
 
@@ -1106,7 +1106,7 @@ class Matrix(object):
                               col_names=self.col_names,
                               autoalign=self.autoalign)
         else:
-            return type(self)(x=np.la.sqrt(self.__x), row_names=self.row_names,
+            return type(self)(x=np.sqrt(self.__x), row_names=self.row_names,
                               col_names=self.col_names,
                               autoalign=self.autoalign)
     @property

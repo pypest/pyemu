@@ -417,9 +417,99 @@ def fill_test():
     assert pe.shape == (num_reals, pst.npar_adj), pe.shape
 
 
+def emp_cov_test():
+    import os
+    import numpy as np
+    import pyemu
+    pst = pyemu.Pst(os.path.join("en", "pest.pst"))
+    cov = pyemu.Cov.from_binary(os.path.join("en", "cov.jcb"))
+    print(pst.npar, cov.shape)
+    num_reals = 10000
+
+    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="eigen")
+    emp_cov = pe_eig.covariance_matrix()
+    assert isinstance(emp_cov,pyemu.Cov)
+    assert emp_cov.row_names == pst.adj_par_names
+    cov_df = cov.to_dataframe()
+    emp_df = emp_cov.to_dataframe()
+    for p in pst.adj_par_names:
+        print(p,cov_df.loc[p,p],emp_df.loc[p,p])
+    diff = np.diag(cov.x) - np.diag(emp_cov.x)
+    print(diff.max())
+    assert  diff.max() < 0.1,diff.max()
+
+def factor_draw_test():
+    import os
+    import numpy as np
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("en","pest.pst"))
+    cov = pyemu.Cov.from_binary(os.path.join("en","cov.jcb"))
+    print(pst.npar,cov.shape)
+    num_reals = 5000
+    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov=cov,num_reals=num_reals,factor="eigen")
+    pe_svd = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="svd")
+    pe_eig.transform()
+    pe_svd.transform()
+    mn_eig = pe_eig.mean()
+    mn_svd = pe_svd.mean()
+
+    sd_eig = pe_eig.std()
+    sd_svd = pe_svd.std()
+
+    pst.add_transform_columns()
+    par = pst.parameter_data
+    df = cov.to_dataframe()
+    for p in pst.adj_par_names:
+        print(p,par.loc[p,"parval1_trans"],mn_eig[p],mn_svd[p],np.sqrt(df.loc[p,p]),sd_eig[p],sd_svd[p])
+    d = (mn_eig - mn_svd).apply(np.abs)
+    assert d.max() < 0.5,d.sort_values()
+    d = (sd_eig - sd_svd).apply(np.abs)
+    assert d.max() < 0.5,d.sort_values()
+
+    num_reals = 10
+    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="eigen")
+
+    emp_cov = pe_eig.covariance_matrix()
+    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=emp_cov, num_reals=num_reals, factor="eigen")
+
+
+def emp_cov_draw_test():
+    import os
+    import numpy as np
+    import pyemu
+
+    pst = pyemu.Pst(os.path.join("en","pest.pst"))
+    cov = pyemu.Cov.from_binary(os.path.join("en","cov.jcb"))
+    num_reals = 10
+    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, factor="eigen")
+
+    emp_cov = pe_eig.covariance_matrix()
+    num_reals = 1000
+    pe_eig = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=emp_cov, num_reals=num_reals, factor="eigen")
+    pe_svd = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=emp_cov, num_reals=num_reals, factor="svd")
+    pe_eig.transform()
+    pe_svd.transform()
+    mn_eig = pe_eig.mean()
+    mn_svd = pe_svd.mean()
+
+    sd_eig = pe_eig.std()
+    sd_svd = pe_svd.std()
+
+    pst.add_transform_columns()
+    par = pst.parameter_data
+    df = cov.to_dataframe()
+    for p in pst.adj_par_names:
+        print(p,par.loc[p,"parval1_trans"],mn_eig[p],mn_svd[p],np.sqrt(df.loc[p,p]),sd_eig[p],sd_svd[p])
+    d = (mn_eig - mn_svd).apply(np.abs)
+    assert d.max() < 0.5,d.sort_values()
+    d = (sd_eig - sd_svd).apply(np.abs)
+    assert d.max() < 0.5,d.sort_values()
+
+
 if __name__ == "__main__":
     #par_gauss_draw_consistency_test()
-    obs_gauss_draw_consistency_test()
+    #obs_gauss_draw_consistency_test()
     #phi_vector_test()
     # add_base_test()
     # nz_test()
@@ -431,5 +521,9 @@ if __name__ == "__main__":
     # triangular_draw_test()
     # uniform_draw_test()
     # fill_test()
+    #factor_draw_test()
+    #emp_cov_test()
+    emp_cov_draw_test()
+
 
 
