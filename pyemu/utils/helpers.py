@@ -145,9 +145,9 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
                    cov.x[i,:] *= tpl_var
                 # no fixed values here
                 pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,cov=cov,num_reals=num_reals,
-                                                                group_chunks=False,fill_fixed=False)
+                                                                by_groups=False,fill=False)
                 #df = pe.iloc[:,:]
-                par_ens.append(pd.DataFrame(pe))
+                par_ens.append(pe._df)
                 pars_in_cov.update(set(pe.columns))
 
     if verbose: print("adding remaining parameters to diagonal")
@@ -160,8 +160,8 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
         #cov = full_cov.get(diff,diff)
         # here we fill in the fixed values
         pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=num_reals,
-                                                        fill_fixed=True)
-        par_ens.append(pd.DataFrame(pe))
+                                                        fill=False)
+        par_ens.append(pe._df)
     par_ens = pd.concat(par_ens,axis=1)
     par_ens = pyemu.ParameterEnsemble.from_dataframe(df=par_ens,pst=pst)
     return par_ens

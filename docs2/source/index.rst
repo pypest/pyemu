@@ -7,10 +7,11 @@ Welcome to pyEMU's documentation!
 =================================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Contents:
 
-
+  
+  
 Indices and tables
 ==================
 
@@ -29,10 +30,8 @@ Indices and tables
 	:members: Schur
 .. automodule:: pyemu.ev
 	:members: ErrVar
-.. autoclass:: pyemu.ObservationEnsemble
-	:members:
-.. autoclass:: pyemu.ParameterEnsemble
-	:members:
+.. automodule:: pyemu.en
+	:members: Ensemble, ParameterEnsemble, ObservationEnsemble
 .. autoclass:: pyemu.prototypes
 	:members:
 .. automodule:: pyemu.utils.gw_utils

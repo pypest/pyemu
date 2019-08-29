@@ -4,8 +4,6 @@ import platform
 if not os.path.exists("temp"):
     os.mkdir("temp")
 
-
-
 def from_flopy_kl_test():
     import shutil
     import numpy as np
@@ -614,8 +612,8 @@ def pst_from_flopy_specsim_draw_test():
     #pe2 = pyemu.ParameterEnsemble.from_gaussian_draw(ph.pst, ph.build_prior(sigma_range=2), num_reals=num_reals)
     pe2 = ph.draw(num_reals=num_reals,sigma_range=2)
 
-    pe1._transform()
-    pe2._transform()
+    pe1.transform()
+    pe2.transform()
     gr_df = ph.par_dfs[ph.gr_suffix]
     grps = gr_df.pargp.unique()
     gr_par = gr_df.loc[gr_df.pargp==grps[0],:]
@@ -636,10 +634,12 @@ def pst_from_flopy_specsim_draw_test():
 
     diff_mn = mn1 - mn2
     diff_sd = sd1 - sd2
-    print(diff_mn)
+    #print(diff_mn)
     assert diff_mn.apply(np.abs).max() < 0.1, diff_mn.apply(np.abs).max()
-    print(diff_sd)
-    assert diff_sd.apply(np.abs).max() < 0.1,diff_sd.apply(np.abs).max()
+    #print(sd1)
+    #print(sd2)
+    #print(diff_sd)
+    assert diff_sd.apply(np.abs).max() < 0.1,diff_sd.apply(np.abs).sort_values()
 
 
 

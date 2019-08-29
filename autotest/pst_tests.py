@@ -161,9 +161,7 @@ def tied_test():
     pst = pyemu.Pst(os.path.join(pst_dir, "br_opt_no_zero_weighted.pst"))
     print(pst.tied)
     pst.write(os.path.join("temp", "pest_tied_tester_1.pst"))
-    mc = pyemu.MonteCarlo(pst=pst)
-    mc.draw(1)
-    mc.write_psts(os.path.join("temp", "tiedtest_"))
+
 
     par = pst.parameter_data
     par.loc[pst.par_names[::3], "partrans"] = "tied"
@@ -760,7 +758,7 @@ if __name__ == "__main__":
     #csv_to_ins_test()
     #pst_from_flopy_geo_draw_test()
     #pst_from_flopy_specsim_draw_test()
-    try_process_ins_test()
+    #try_process_ins_test()
     # write_tables_test()
     #res_stats_test()
     # test_write_input_files()
@@ -780,7 +778,7 @@ if __name__ == "__main__":
     # adj_group_test()
     # regul_rectify_test()
     # derivative_increment_tests()
-    # tied_test()
+    tied_test()
     # smp_test()
     # smp_dateparser_test()
     # pst_manip_test()

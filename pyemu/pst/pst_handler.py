@@ -2191,7 +2191,8 @@ class Pst(object):
                 not None, then any existing path in front of the template or in file is split off
                 and pst_path is prepended.  If python is being run in a directory other than where the control
                 file will reside, it is useful to pass `pst_path` as `.`.Default is None
-            inschek (`bool`): flag to run inschek.  If successful, inscheck outputs are used as obsvals
+            inschek (`bool`): flag to try to process the existing output file using the `pyemu.InstructionFile`
+                class.  If successful, inscheck outputs are used as obsvals
 
         Returns:
             `pandas.DataFrame`: the data for the new observations that were added

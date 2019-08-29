@@ -56,7 +56,7 @@ def par_gauss_draw_consistency_test():
     pst.parameter_data.loc[pst.par_names[3::2],"partrans"] = "fixed"
     pst.parameter_data.loc[pst.par_names[0],"pargp"] = "test"
 
-    num_reals = 10000
+    num_reals = 5000
 
     pe1 = pyemu.ParameterEnsemble.from_gaussian_draw(pst,num_reals=num_reals)
     sigma_range = 4
@@ -113,7 +113,7 @@ def obs_gauss_draw_consistency_test():
 
     for oe in [oe1,oe2,oe3]:
         assert oe.shape[0] == num_reals
-        assert oe.shape[1] == pst.nobs
+        assert oe.shape[1] == pst.nnz_obs
         d = (oe.mean() - theo_mean).apply(np.abs)
         assert d.max() < 0.01,d.sort_values()
         d = (oe.loc[:,pst.nnz_obs_names].std() - theo_std)
@@ -134,7 +134,7 @@ def obs_gauss_draw_consistency_test():
         assert d.max().max() < 1.0e-10,d.max().sort_values(ascending=False)
 
 def phi_vector_test():
-    pst = pyemu.Pst(os.path.join("..", "..", "autotest", "pst", "pest.pst"))
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     num_reals = 10
     oe1 = pyemu.ObservationEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
     pv = oe1.phi_vector
@@ -292,20 +292,135 @@ def triangular_draw_test():
     import matplotlib.pyplot as plt
     import pyemu
 
-    pst = pyemu.Pst(os.path.join("..","..","autotest","pst","pest.pst"))
+    pst = pyemu.Pst(os.path.join("pst","pest.pst"))
     pst.parameter_data.loc[:,"partrans"] = "none"
     pe = pyemu.ParameterEnsemble.from_triangular_draw(pst,1000)
 
 def uniform_draw_test():
     import os
     import numpy as np
-    pst = pyemu.Pst(os.path.join("..", "..", "autotest", "pst", "pest.pst"))
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
     pe = pyemu.ParameterEnsemble.from_uniform_draw(pst, 5000)
 
+
+def fill_test():
+    import os
+    import numpy as np
+    pst = pyemu.Pst(os.path.join("pst", "pest.pst"))
+    num_reals = 100
+
+    oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst)
+    assert oe.shape == (num_reals,pst.nnz_obs),oe.shape
+    oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst,fill=True)
+    assert oe.shape == (num_reals,pst.nobs)
+    std = oe.std().loc[pst.zero_weight_obs_names].apply(np.abs)
+    assert std.max() < 1e-10
+    print(std)
+
+    obs = pst.observation_data
+    obs.loc[:,"weight"] = 0.0
+    oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst, fill=True)
+    assert oe.shape == (num_reals, pst.nobs)
+    std = oe.std().apply(np.abs)
+    print(std)
+    assert std.max() < 1e-10
+    return
+
+    par = pst.parameter_data
+
+    # first test that all ensembles are filled with parval1
+    par.loc[:,"partrans"] = "fixed"
+
+    pe = pyemu.ParameterEnsemble.from_uniform_draw(pst, num_reals=num_reals)
+    assert pe.shape == (num_reals,pst.npar)
+    std = pe._df.std().apply(np.abs)
+    assert std.max() == 0.0
+
+    pe = pyemu.ParameterEnsemble.from_triangular_draw(pst, num_reals=num_reals)
+    assert pe.shape == (num_reals, pst.npar)
+    std = pe._df.std().apply(np.abs)
+    assert std.max() == 0.0
+
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    assert pe.shape == (num_reals,pst.npar)
+    std = pe._df.std().apply(np.abs)
+    assert std.max() == 0.0
+
+    cov = pyemu.Cov.from_parameter_data(pst)
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov=cov, num_reals=num_reals)
+    assert pe.shape == (num_reals,pst.npar)
+    std = pe._df.std().apply(np.abs)
+    assert std.max() == 0.0
+
+    cov = cov.to_2d()
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals)
+    assert pe.shape == (num_reals, pst.npar)
+    std = pe._df.std().apply(np.abs)
+    assert std.max() == 0.0
+
+    # test that fill=False is working
+    pe = pyemu.ParameterEnsemble.from_uniform_draw(pst, num_reals=num_reals,fill=False)
+    assert pe.shape == (num_reals, pst.npar_adj),pe.shape
+
+    pe = pyemu.ParameterEnsemble.from_triangular_draw(pst, num_reals=num_reals,fill=False)
+    assert pe.shape == (num_reals, pst.npar_adj),pe.shape
+
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals,fill=False)
+    assert pe.shape == (num_reals, pst.npar_adj),pe.shape
+
+    cov = pyemu.Cov.from_parameter_data(pst)
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals,fill=False)
+    assert pe.shape == (num_reals, pst.npar_adj),pe.shape
+
+    cov = cov.to_2d()
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals,fill=False)
+    assert pe.shape == (num_reals, pst.npar_adj),pe.shape
+
+    # unfix one par
+    par.loc[pst.par_names[0],"partrans"] = "log"
+    pe = pyemu.ParameterEnsemble.from_uniform_draw(pst, num_reals=num_reals, fill=False)
+    print(pe.shape)
+    assert pe.shape == (num_reals, pst.npar_adj), pe.shape
+
+    pe = pyemu.ParameterEnsemble.from_triangular_draw(pst, num_reals=num_reals, fill=False)
+    assert pe.shape == (num_reals, pst.npar_adj), pe.shape
+
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals, fill=False)
+    assert pe.shape == (num_reals, pst.npar_adj), pe.shape
+
+    cov = pyemu.Cov.from_parameter_data(pst)
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, fill=False)
+    assert pe.shape == (num_reals, pst.npar_adj), pe.shape
+
+    cov = cov.to_2d()
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, fill=False)
+    assert pe.shape == (num_reals, pst.npar_adj), pe.shape
+
+    par.loc[pst.par_names[1], "partrans"] = "tied"
+    par.loc[pst.par_names[1], "partied"] = pst.par_names[0]
+
+    pe = pyemu.ParameterEnsemble.from_uniform_draw(pst, num_reals=num_reals, fill=False)
+    assert pe.shape == (num_reals, pst.npar_adj), pe.shape
+
+    pe = pyemu.ParameterEnsemble.from_triangular_draw(pst, num_reals=num_reals, fill=False)
+    assert pe.shape == (num_reals, pst.npar_adj), pe.shape
+
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals, fill=False)
+    assert pe.shape == (num_reals, pst.npar_adj), pe.shape
+
+    cov = pyemu.Cov.from_parameter_data(pst)
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, fill=False)
+    assert pe.shape == (num_reals, pst.npar_adj), pe.shape
+
+    cov = cov.to_2d()
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, cov=cov, num_reals=num_reals, fill=False)
+    assert pe.shape == (num_reals, pst.npar_adj), pe.shape
+
+
 if __name__ == "__main__":
-    par_gauss_draw_consistency_test()
-    #obs_gauss_draw_consistency_test()
-    # phi_vector_test()
+    #par_gauss_draw_consistency_test()
+    obs_gauss_draw_consistency_test()
+    #phi_vector_test()
     # add_base_test()
     # nz_test()
     # deviations_test()
@@ -315,5 +430,6 @@ if __name__ == "__main__":
     # pnulpar_test()
     # triangular_draw_test()
     # uniform_draw_test()
+    # fill_test()
 
 
