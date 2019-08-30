@@ -436,7 +436,7 @@ def emp_cov_test():
         print(p,cov_df.loc[p,p],emp_df.loc[p,p])
     diff = np.diag(cov.x) - np.diag(emp_cov.x)
     print(diff.max())
-    assert  diff.max() < 0.5,diff.max()
+    assert diff.max() < 0.5,diff.max()
 
 def factor_draw_test():
     import os

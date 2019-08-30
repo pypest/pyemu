@@ -1,7 +1,4 @@
-"""module for handing PEST-style site sample (smp) files.  This module
-relies heavily of pandas (don't we all?).
-
-
+"""PEST-style site sample (smp) file support utilities
 """
 import os
 import sys
@@ -23,11 +20,11 @@ def smp_to_ins(smp_filename,ins_filename=None,use_generic_names=False,
     Args:
         smp_filename (`str`):path and name of an existing smp file
         ins_filename (`str`, optional): the name of the instruction
-            file to create.  If None, `smp_filename`+".ins" is used.
+            file to create.  If None, `smp_filename` +".ins" is used.
             Default is None.
         use_generic_names (`bool`): flag to force observations names
             to use a generic `int` counter instead of trying to use a
-             datetime string.  Default is False
+            datetime string.  Default is False
         gwutils_compliant (`bool`): flag to use instruction set that
             is compliant with the PEST gw utils (fixed format instructions).
             If false, use free format (with whitespace) instruction set.

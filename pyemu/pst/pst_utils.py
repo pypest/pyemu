@@ -1,3 +1,4 @@
+"""Various PEST(++) control file peripheral operations"""
 from __future__ import print_function, division
 import os, sys
 import stat
@@ -172,28 +173,25 @@ def res_from_en(pst,enfile):
 
     """
     converters = {"name": str_con, "group": str_con}
-    try: #substitute ensemble for res, 'base' if there, otherwise mean
-        obs=pst.observation_data
-        if isinstance(enfile,str):
-            df=pd.read_csv(enfile,converters=converters)
-            df.columns=df.columns.str.lower()
-            df = df.set_index('real_name').T.rename_axis('name').rename_axis(None, 1)
-        else:
-            df = enfile.T
-        if 'base' in df.columns:
-            df['modelled']=df['base']
-            df['std']=df.std(axis=1)
-        else:
-            df['modelled']=df.mean(axis=1)
-            df['std']=df.std(axis=1)
-        #probably a more pandastic way to do this
-        res_df=df[['modelled','std']].copy()
-        res_df['group']=obs['obgnme'].copy()
-        res_df['measured']=obs['obsval'].copy()
-        res_df['weight']=obs['weight'].copy()
-        res_df['residual']=res_df['measured']-res_df['modelled']
-    except Exception as e:
-        raise Exception("Pst.res_from_en:{0}".format(str(e)))
+    obs=pst.observation_data
+    if isinstance(enfile,str):
+        df=pd.read_csv(enfile,converters=converters)
+        df.columns=df.columns.str.lower()
+        df = df.set_index('real_name').T.rename_axis('name').rename_axis(None, 1)
+    else:
+        df = enfile.T
+    if 'base' in df.columns:
+        modelled = df['base']
+        std = df.std(axis=1)
+    else:
+        modelled = df.mean(axis=1)
+        std = df.std(axis=1)
+    #probably a more pandastic way to do this
+    res_df = pd.DataFrame({"modelled":modelled,"std":std},index=obs.obsnme.values)
+    res_df['group']=obs['obgnme'].copy()
+    res_df['measured']=obs['obsval'].copy()
+    res_df['weight']=obs['weight'].copy()
+    res_df['residual']=res_df['measured']-res_df['modelled']
     return res_df
 
 def read_parfile(parfile):

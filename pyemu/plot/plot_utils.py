@@ -1,3 +1,4 @@
+"""Plotting functions for various PEST(++) and pyemu operations"""
 import os
 import shutil
 import numpy as np
@@ -170,8 +171,8 @@ def pst_helper(pst,kind=None,**kwargs):
     logger = pyemu.Logger("plot_pst_helper.log",echo=echo)
     logger.statement("plot_utils.pst_helper()")
 
-    kinds = {"prior":pst_prior,"1to1":res_1to1,"obs_v_sim":res_obs_v_sim,
-             "phi_pie":res_phi_pie,"weight_hist":pst_weight_hist,
+    kinds = {"prior":pst_prior,"1to1":res_1to1,
+             "phi_pie":res_phi_pie,
              "phi_progress":phi_progress}
 
     if kind is None:
@@ -273,6 +274,7 @@ def res_1to1(pst,logger=None,filename=None,plot_hexbin=False,histogram=False,**k
     logger.log("plot res_1to1")
 
     if "ensemble" in kwargs:
+        res = pst_utils.res_from_en(pst, kwargs['ensemble'])
         try:
             res=pst_utils.res_from_en(pst,kwargs['ensemble'])
         except Exception as e:
@@ -734,7 +736,7 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
         filename : str
             the name of the pdf to create.  If None, return figs without saving.  Default is None.
         func_dict : dict
-            a dictionary of unary functions (e.g., np.log10_ to apply to columns.  Key is
+            a dictionary of unary functions (e.g., `np.log10` to apply to columns.  Key is
             column name.  Default is None
         sync_bins : bool
             flag to use the same bin edges for all ensembles. Only applies if more than
@@ -759,7 +761,8 @@ def ensemble_helper(ensemble,bins=10,facecolor='0.5',plot_cols=None,
     logger = pyemu.Logger("ensemble_helper.log")
     logger.log("pyemu.plot_utils.ensemble_helper()")
     ensembles = _process_ensemble_arg(ensemble,facecolor,logger)
-
+    if len(ensembles) == 0:
+        raise Exception("plot_uitls.ensemble_helper() error processing `ensemble` arg")
     #apply any functions
     if func_dict is not None:
         logger.log("applying functions")
@@ -964,15 +967,15 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
         raise NotImplementedError()
     else:
         en_cols = set(ensemble1.columns)
-        if len(en_cols.symmetric_difference(set(pst.par_names))) == 0:
-            par = pst.parameter_data.loc[pst.adj_par_names,:]
+        if len(en_cols.difference(set(pst.par_names))) == 0:
+            par = pst.parameter_data.loc[en_cols,:]
             grouper = par.groupby(par.pargp).groups
             grouper["all"] = pst.adj_par_names
             li = par.loc[par.partrans == "log","parnme"]
             ensemble1.loc[:,li] = ensemble1.loc[:,li].apply(np.log10)
             ensemble2.loc[:, li] = ensemble2.loc[:, li].apply(np.log10)
-        elif len(en_cols.symmetric_difference(set(pst.obs_names))) == 0:
-            obs = pst.observation_data.loc[pst.nnz_obs_names,:]
+        elif len(en_cols.difference(set(pst.obs_names))) == 0:
+            obs = pst.observation_data.loc[en_cols,:]
             grouper = obs.groupby(obs.obgnme).groups
             grouper["all"] = pst.nnz_obs_names
         else:
@@ -1084,11 +1087,10 @@ def ensemble_change_summary(ensemble1, ensemble2, pst,bins=10, facecolor='0.5',l
 
 def _process_ensemble_arg(ensemble,facecolor, logger):
     ensembles = {}
-    if isinstance(ensemble, pd.DataFrame):
+    if isinstance(ensemble, pd.DataFrame) or isinstance(ensemble,pyemu.Ensemble):
         if not isinstance(facecolor, str):
             logger.lraise("facecolor must be str")
         ensembles[facecolor] = ensemble
-
     elif isinstance(ensemble, str):
         if not isinstance(facecolor, str):
             logger.lraise("facecolor must be str")
@@ -1115,15 +1117,15 @@ def _process_ensemble_arg(ensemble,facecolor, logger):
                 logger.log("loading ensemble from csv file {0}".format(en_arg))
                 logger.statement("ensemble {0} gets facecolor {1}".format(en_arg, fc))
 
-            elif isinstance(en_arg, pd.DataFrame):
+            elif isinstance(en_arg, pd.DataFrame) or isinstance(en_arg,pyemu.Ensemble):
                 en = en_arg
             else:
-                logger.lraise("unrecognized ensemble list arg:{0}".format(en_file))
+                logger.lraise("unrecognized ensemble list arg:{0}".format(en_arg))
             ensembles[fc] = en
 
     elif isinstance(ensemble, dict):
         for fc, en_arg in ensemble.items():
-            if isinstance(en_arg, pd.DataFrame):
+            if isinstance(en_arg, pd.DataFrame) or isinstance(en_arg,pyemu.Ensemble):
                 ensembles[fc] = en_arg
             elif isinstance(en_arg, str):
                 logger.log("loading ensemble from csv file {0}".format(en_arg))
@@ -1144,21 +1146,16 @@ def ensemble_res_1to1(ensemble, pst,facecolor='0.5',logger=None,filename=None,
                       skip_groups=[],base_ensemble=None,**kwargs):
     """helper function to plot ensemble 1-to-1 plots sbowing the simulated range
 
-    Parameters
-    ----------
-    ensemble : varies
-        the ensemble argument can be a pandas.DataFrame or derived type or a str, which
-        is treated as a fileanme.  Optionally, ensemble can be a list of these types or
-        a dict, in which case, the keys are treated as facecolor str (e.g., 'b', 'y', etc).
-    pst : pyemu.Pst
-        pst instance
-    facecolor : str
-        the histogram facecolor.  Only applies if ensemble is a single thing
-    filename : str
-        the name of the pdf to create. If None, return figs without saving.  Default is None.
-    base_ensemble : varies
-        an optional ensemble argument for the observations + noise ensemble.
-        This will be plotted as a transparent red bar on the 1to1 plot.
+    Args:
+        ensemble (varies):  the ensemble argument can be a pandas.DataFrame or derived type or a str, which
+            is treated as a fileanme.  Optionally, ensemble can be a list of these types or
+            a dict, in which case, the keys are treated as facecolor str (e.g., 'b', 'y', etc).
+        pst (`pyemu.Pst`): a control file instance
+        facecolor (`str`): the histogram facecolor.  Only applies if `ensemble` is a single thing
+        filename (`str`): the name of the pdf to create. If None, return figs
+            without saving.  Default is None.
+        base_ensemble (`varies`): an optional ensemble argument for the observations + noise ensemble.
+            This will be plotted as a transparent red bar on the 1to1 plot.
 
     """
     if logger is None:

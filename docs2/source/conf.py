@@ -23,8 +23,8 @@ print(os.listdir(os.path.abspath(os.path.join("..",".."))))
 # -- Project information -----------------------------------------------------
 
 project = 'pyEMU'
-copyright = '2019, me and you'
-author = 'me and you'
+copyright = '2019, pyEMU development team'
+author = 'pyEMU development team'
 
 # The full version, including alpha/beta/rc tags
 release = '0.4'
@@ -43,14 +43,20 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',
     'sphinx.ext.inheritance_diagram',
-    'sphinx_rtd_theme'
+    'sphinx_rtd_theme',
+    'sphinx.ext.autosummary'
 ]
 
+#autoclass_content = "both"  # include both class docstring and __init__
+
+autosummary_generate = True  # Make _autosummary files and include them
+napoleon_numpy_docstring = False  # Force consistency, leave only Google
+napoleon_use_rtype = False  # More legible
 
 autodoc_member_order = 'bysource'
-add_module_names = False
+# add_module_names = False
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = [os.path.join('source','_templates')]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

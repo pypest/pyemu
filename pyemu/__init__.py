@@ -24,4 +24,8 @@ from .prototypes import *
 
 from ._version import get_versions
 __version__ = get_versions()['version']
+__all__ = ["LinearAnalysis", "Schur", "ErrVar", "Ensemble",
+           "ParameterEnsemble", "ObservationEnsemble","Matrix",
+           "Jco","Cov","Pst","pst_utils","helpers","gw_utils",
+           "geostats","pp_utils","os_utils","smp_utils","plot_utils"]
 #del get_versions

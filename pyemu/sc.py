@@ -9,7 +9,7 @@ from pyemu.la import LinearAnalysis
 from pyemu.mat import Cov, Matrix
 
 class Schur(LinearAnalysis):
-    """FOSM-based prior and posterior uncertainty and data-worth analysis using Schur compliment
+    """FOSM-based uncertainty and data-worth analysis
 
     Args:
         jco (varies, optional): something that can be cast or loaded into a `pyemu.Jco`.  Can be a

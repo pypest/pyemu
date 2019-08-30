@@ -1,3 +1,5 @@
+"""Operating system utilities in the PEST(++) realm
+"""
 import os
 import sys
 import platform

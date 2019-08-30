@@ -76,9 +76,6 @@ def pst_plot_test():
     pst.plot(kind="1to1", include_zero=True, fig_title="1to1",histogram=True)
     #
     #
-    pst.plot(kind="obs_v_sim")
-    pst.plot(kind="obs_v_sim",include_zero=True)
-    pst.plot(kind="obs_v_sim", include_zero=True,fig_title="obs_v_sim")
     #
     ax = pst.plot(kind="phi_pie")
     ax = plt.subplot(111,aspect="equal")
@@ -96,7 +93,7 @@ def ensemble_plot_test():
     pst = pyemu.Pst(os.path.join("pst","pest.pst"))
     cov = pyemu.Cov.from_parameter_data(pst)
     num_reals = 100
-    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=num_reals)
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst,cov,num_reals=num_reals,fill=True)
     csv_file = os.path.join("temp", "pe.csv")
 
     pe.plot(filename=csv_file + ".pdf",plot_cols=pst.par_names[:10])
@@ -247,11 +244,11 @@ def ensemble_change_test():
     #plt.show()
 
 if __name__ == "__main__":
-    #plot_summary_test()
-    #pst_plot_test()
+    # plot_summary_test()
+    # pst_plot_test()
     #ensemble_summary_test()
-    ensemble_plot_test()
-    #ensemble_1to1_test()
-
-    #ensemble_change_test()
+    #ensemble_plot_test()
+    ensemble_1to1_test()
+    #
+    ensemble_change_test()
 

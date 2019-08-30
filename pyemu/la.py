@@ -14,7 +14,7 @@ from pyemu.utils.os_utils import _istextfile
 from .logger import Logger
 
 class LinearAnalysis(object):
-    """The super class for linear analysis.
+    """The base/parent class for linear analysis.
 
     Args:
         jco (varies, optional): something that can be cast or loaded into a `pyemu.Jco`.  Can be a
@@ -777,13 +777,13 @@ class LinearAnalysis(object):
     def apply_karhunen_loeve_scaling(self):
         """apply karhuene-loeve scaling to the jacobian matrix.
 
-        Notes
-        -----
+        Note:
+
             This scaling is not necessary for analyses using Schur's
-                complement, but can be very important for error variance
-                analyses.  This operation effectively transfers prior knowledge
-                specified in the parcov to the jacobian and reset parcov to the
-                identity matrix.
+            complement, but can be very important for error variance
+            analyses.  This operation effectively transfers prior knowledge
+            specified in the parcov to the jacobian and reset parcov to the
+            identity matrix.
 
         """
         cnames = copy.deepcopy(self.jco.col_names)

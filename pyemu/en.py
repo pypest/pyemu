@@ -202,7 +202,7 @@ class Ensemble(object):
         elif item in set(dir(self._df)):
             lhs = self._df.__getattr__(item)
             if type(lhs) == type(self._df):
-                return type(self)(pst=pst,df=lhs,istransformed=self.istransformed)
+                return type(self)(pst=self.pst,df=lhs,istransformed=self.istransformed)
             elif "DataFrame" in str(lhs):
                 warnings.warn("return type uncaught, losing Ensemble type, returing DataFrame",pyemu.PyemuWarning)
                 print("return type uncaught, losing Ensemble type, returing DataFrame")
@@ -592,7 +592,7 @@ class Ensemble(object):
 
 
 class ObservationEnsemble(Ensemble):
-    """observation noise ensemble class
+    """Observation noise ensemble in the PEST(++) realm
 
     Args:
         pst (`pyemu.Pst`): a control file instance
@@ -741,7 +741,7 @@ class ObservationEnsemble(Ensemble):
         return ObservationEnsemble(pst=self.pst.get(obs_names=self.pst.nnz_obs_names),df=df)
 
 class ParameterEnsemble(Ensemble):
-    """parameter ensemble class
+    """Parameter ensembles in the PEST(++) realm
 
    Args:
         pst (`pyemu.Pst`): a control file instance

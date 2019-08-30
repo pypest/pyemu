@@ -6,10 +6,35 @@
 Welcome to pyEMU's documentation!
 =================================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+Contents:
+
+.. autosummary::
+   :toctree: _autosummary
+   :nosignatures:
    
+   pyemu.Pst
+   pyemu.Matrix
+   pyemu.Cov
+   pyemu.Schur
+   pyemu.ErrVar
+   pyemu.ObservationEnsemble
+   pyemu.ParameterEnsemble
+   pyemu.helpers
+   pyemu.geostats
+   pyemu.gw_utils
+   pyemu.pp_utils
+   pyemu.smp_utils
+   pyemu.plot_utils
+   pyemu.pst_utils
+
+  
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
 .. automodule:: pyemu.pst
 	:members: Pst,pst_utils
 .. automodule:: pyemu.mat
@@ -34,17 +59,7 @@ Welcome to pyEMU's documentation!
 	:members:
 .. automodule:: pyemu.utils.geostats
 	:members:
-
-
-
-  
-  
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
+.. automodule:: pyemu.plot.plot_utils
+	:members:
 
 

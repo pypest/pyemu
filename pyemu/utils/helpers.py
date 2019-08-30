@@ -1,5 +1,4 @@
-""" module with high-level functions to help
-perform complex tasks
+"""High-level functions to help perform complex tasks
 """
 
 from __future__ import print_function, division

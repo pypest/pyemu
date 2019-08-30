@@ -129,8 +129,7 @@ def get_common_elements(list1, list2):
 
 
 class Matrix(object):
-    """a class for easy linear algebra and handling matrices and vectors
-    in the PEST realm
+    """Easy linear algebra in the PEST(++) realm
 
     Args:
         x (`numpy.ndarray`): numeric values
@@ -2147,7 +2146,7 @@ class Jco(Matrix):
         return Jco.from_names(pst.obs_names, pst.adj_par_names, random=random)
 
 class Cov(Matrix):
-    """a subclass of Matrix for handling diagonal or dense Covariance matrices
+    """Diagonal and/or dense Covariance matrices
 
     Args:
         x (`numpy.ndarray`): numeric values

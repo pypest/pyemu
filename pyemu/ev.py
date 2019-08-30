@@ -5,8 +5,7 @@ from pyemu.la import LinearAnalysis
 from pyemu.mat.mat_handler import Matrix, Jco, Cov
 
 class ErrVar(LinearAnalysis):
-    """Error variance analysis.  Supports 2-term and
-    3-term error variance analysis.
+    """FOSM-based error variance analysis
 
     Args:
         jco (varies, optional): something that can be cast or loaded into a `pyemu.Jco`.  Can be a

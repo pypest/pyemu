@@ -15,8 +15,7 @@ from pyemu.plot import plot_utils
 #from pyemu.utils.os_utils import run
 
 class Pst(object):
-    """basic class for handling pest control files to support linear analysis
-    as well as replicate some of the functionality of the pest utilities
+    """All things PEST(++) control file
 
     Args:
         filename (`str`):  the name of the control file
