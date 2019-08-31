@@ -556,7 +556,7 @@ class EvolAlg(EnsembleMethod):
             self.dv_ensemble_archive = dv_ensemble._df.loc[:,:]
         else:
             self.obs_ensemble_archive = self.obs_ensemble_archive.append(obs_ensemble._df.loc[:,:])
-            self.dv_ensemble_archive = self.dv_ensemble_archive.append(dv_ensemble._df.loc[:,:])
+            self.dv_ensemble_archive = self.dv_ensemble_archive.append(dv_ensemble.loc[:,:])
 
     def _calc_obs(self,dv_ensemble):
 
@@ -772,8 +772,8 @@ class EliteDiffEvol(EvolAlg):
 
                 self._drop_by_crowd(dv_dom,obs_dom,min(ndrop,dv_dom.shape[0]))
                 #add any remaining dominated solutions back
-                self.dv_ensemble = self.dv_ensemble.append(dv_dom)
-                self.obs_ensemble = self.obs_ensemble.append(obs_dom)
+                self.dv_ensemble = self.dv_ensemble.append(dv_dom._df)
+                self.obs_ensemble = self.obs_ensemble.append(obs_dom._df)
 
 
         # drop remaining nondom solutions as needed
