@@ -16,87 +16,88 @@ def tenpar_test():
     import pyemu
 
     bd = os.getcwd()
-    try:
-        os.chdir(os.path.join("moouu","10par_xsec"))
-        csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
-        [os.remove(csv_file) for csv_file in csv_files]
-        pst = pyemu.Pst("10par_xsec.pst")
+    os.chdir(os.path.join("moouu", "10par_xsec"))
+    #try:
 
-        obj_names = pst.nnz_obs_names
-        # pst.observation_data.loc[pst.obs_names[0],"obgnme"] = "greaterthan"
-        # pst.observation_data.loc[pst.obs_names[0], "weight"] = 1.0
-        # pst.observation_data.loc[pst.obs_names[0], "obsval"] *= 0.85
-        # pst.observation_data.loc[pst.obs_names[-1], "obgnme"] = "greaterthan"
-        # pst.observation_data.loc[pst.obs_names[-1], "weight"] = 1.0
-        # pst.observation_data.loc[pst.obs_names[-1], "obsval"] *= 0.85
+    csv_files = [f for f in os.listdir('.') if f.endswith(".csv")]
+    [os.remove(csv_file) for csv_file in csv_files]
+    pst = pyemu.Pst("10par_xsec.pst")
 
-        # pst.observation_data.loc["h01_10", "obgnme"] = "greaterthan"
-        # pst.observation_data.loc["h01_10", "weight"] = 1.0
-        #pst.observation_data.loc["h01_10", "obsval"] *= 0.85
+    obj_names = pst.nnz_obs_names
+    # pst.observation_data.loc[pst.obs_names[0],"obgnme"] = "greaterthan"
+    # pst.observation_data.loc[pst.obs_names[0], "weight"] = 1.0
+    # pst.observation_data.loc[pst.obs_names[0], "obsval"] *= 0.85
+    # pst.observation_data.loc[pst.obs_names[-1], "obgnme"] = "greaterthan"
+    # pst.observation_data.loc[pst.obs_names[-1], "weight"] = 1.0
+    # pst.observation_data.loc[pst.obs_names[-1], "obsval"] *= 0.85
 
-
-        par = pst.parameter_data
-        #par.loc[:,"partrans"] = "none"
-
-        obj_dict = {}
-        obj_dict[obj_names[0]] = "min"
-        obj_dict[obj_names[1]] = "max"
+    # pst.observation_data.loc["h01_10", "obgnme"] = "greaterthan"
+    # pst.observation_data.loc["h01_10", "weight"] = 1.0
+    #pst.observation_data.loc["h01_10", "obsval"] *= 0.85
 
 
-        # testing for reduce method
-        # oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst=pst, num_reals=5000)
-        # logger = pyemu.Logger("temp.log")
-        # obj_func = evol_proto.ParetoObjFunc(pst,obj_dict,logger)
-        # df = obj_func.reduce_stack_with_risk_shift(oe,50,0.05)
-        #
-        # import matplotlib.pyplot as plt
-        # ax = plt.subplot(111)
-        # oe.iloc[:, -1].hist(ax=ax)
-        # ylim = ax.get_ylim()
-        # val = df.iloc[0,-1]
-        # ax.plot([val, val], ylim)
-        # ax.set_ylim(ylim)
-        # plt.show()
-        # print(df.shape)
-        # return
+    par = pst.parameter_data
+    #par.loc[:,"partrans"] = "none"
 
-        pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,fill=False)
-        ea = EliteDiffEvol(pst, num_workers=8, port=4005, verbose=True)
-
-        dv = pyemu.ParameterEnsemble.from_uniform_draw(pst=pst,num_reals=5,fill=False)
-
-        ea.initialize(obj_dict,num_dv_reals=5,num_par_reals=5,risk=0.5)
-        ea.initialize(obj_dict, par_ensemble=pe, dv_ensemble=dv, risk=0.5)
-
-        ea.update()
+    obj_dict = {}
+    obj_dict[obj_names[0]] = "min"
+    obj_dict[obj_names[1]] = "max"
 
 
-        # test the infeas calcs
-        oe = ea.obs_ensemble
-        ea.obj_func.is_nondominated_continuous(oe)
-        ea.obj_func.is_nondominated_kung(oe)
-        is_feasible = ea.obj_func.is_feasible(oe)
-        oe.loc[is_feasible.index,"feas"] = is_feasible
-        obs = pst.observation_data
-        for lt_obs in pst.less_than_obs_constraints:
-            val = obs.loc[lt_obs,"obsval"]
-            infeas = oe.loc[:,lt_obs] >= val
-            assert np.all(~is_feasible.loc[infeas])
+    # testing for reduce method
+    # oe = pyemu.ObservationEnsemble.from_id_gaussian_draw(pst=pst, num_reals=5000)
+    # logger = pyemu.Logger("temp.log")
+    # obj_func = evol_proto.ParetoObjFunc(pst,obj_dict,logger)
+    # df = obj_func.reduce_stack_with_risk_shift(oe,50,0.05)
+    #
+    # import matplotlib.pyplot as plt
+    # ax = plt.subplot(111)
+    # oe.iloc[:, -1].hist(ax=ax)
+    # ylim = ax.get_ylim()
+    # val = df.iloc[0,-1]
+    # ax.plot([val, val], ylim)
+    # ax.set_ylim(ylim)
+    # plt.show()
+    # print(df.shape)
+    # return
 
-        for gt_obs in pst.greater_than_obs_constraints:
-            val = obs.loc[gt_obs,"obsval"]
-            infeas = oe.loc[:,gt_obs] <= val
-            assert np.all(~is_feasible.loc[infeas])
+    pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst=pst,num_reals=5,fill=False)
+    ea = EliteDiffEvol(pst, num_workers=8, port=4005, verbose=True)
 
-        # test that the end members are getting max distance
-        crowd_distance = ea.obj_func.crowd_distance(oe)
-        for name,direction in ea.obj_func.obs_dict.items():
-            assert crowd_distance.loc[oe.loc[:,name].idxmax()] >= ea.obj_func.max_distance,crowd_distance.loc[oe.loc[:,name].idxmax()]
-            assert crowd_distance.loc[oe.loc[:, name].idxmin()] >= ea.obj_func.max_distance,crowd_distance.loc[oe.loc[:, name].idxmin()]
-    except Exception as e:
-        os.chdir(os.path.join("..",".."))
-        raise Exception(str(e))
+    dv = pyemu.ParameterEnsemble.from_uniform_draw(pst=pst,num_reals=5,fill=False)
 
+    ea.initialize(obj_dict,num_dv_reals=5,num_par_reals=5,risk=0.5)
+    ea.initialize(obj_dict, par_ensemble=pe, dv_ensemble=dv, risk=0.5)
+
+    ea.update()
+
+
+    # test the infeas calcs
+    oe = ea.obs_ensemble
+    ea.obj_func.is_nondominated_continuous(oe)
+    ea.obj_func.is_nondominated_kung(oe)
+    is_feasible = ea.obj_func.is_feasible(oe)
+    oe.loc[is_feasible.index,"feas"] = is_feasible
+    obs = pst.observation_data
+    for lt_obs in pst.less_than_obs_constraints:
+        val = obs.loc[lt_obs,"obsval"]
+        infeas = oe.loc[:,lt_obs] >= val
+        assert np.all(~is_feasible.loc[infeas])
+
+    for gt_obs in pst.greater_than_obs_constraints:
+        val = obs.loc[gt_obs,"obsval"]
+        infeas = oe.loc[:,gt_obs] <= val
+        assert np.all(~is_feasible.loc[infeas])
+
+    # test that the end members are getting max distance
+    crowd_distance = ea.obj_func.crowd_distance(oe)
+    for name,direction in ea.obj_func.obs_dict.items():
+        assert crowd_distance.loc[oe.loc[:,name].idxmax()] >= ea.obj_func.max_distance,crowd_distance.loc[oe.loc[:,name].idxmax()]
+        assert crowd_distance.loc[oe.loc[:, name].idxmin()] >= ea.obj_func.max_distance,crowd_distance.loc[oe.loc[:, name].idxmin()]
+    # except Exception as e:
+    #     os.chdir(os.path.join("..",".."))
+    #     raise Exception(str(e))
+    #
     os.chdir(os.path.join("..",".."))
 
 

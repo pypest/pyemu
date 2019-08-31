@@ -743,7 +743,7 @@ class ObservationEnsemble(Ensemble):
 class ParameterEnsemble(Ensemble):
     """Parameter ensembles in the PEST(++) realm
 
-   Args:
+    Args:
         pst (`pyemu.Pst`): a control file instance
         df (`pandas.DataFrame`): a pandas dataframe.  Columns
             should be parameter names.  Index is
@@ -961,6 +961,124 @@ class ParameterEnsemble(Ensemble):
 
         new_pe = cls(pst=pst, df=df)
         return new_pe
+
+    @classmethod
+    def from_mixed_draws(cls, pst, how_dict, default="gaussian", num_reals=100, cov=None, sigma_range=6,
+                         enforce_bounds=True, partial=False, fill=True):
+        """generate a `ParameterEnsemble` using a mixture of
+        distributions.  Available distributions include (log) "uniform", (log) "triangular",
+        and (log) "gaussian". log transformation is respected.
+
+        Args:
+            pst (`pyemu.Pst`): a control file
+            how_dict (`dict`): a dictionary of parameter name keys and
+                "how" values, where "how" can be "uniform","triangular", or "gaussian".
+            default (`str`): the default distribution to use for parameter not listed
+                in how_dict.  Default is "gaussian".
+            num_reals (`int`): number of realizations to draw.  Default is 100.
+            cov (`pyemu.Cov`): an optional Cov instance to use for drawing from gaussian distribution.
+                If None, and "gaussian" is listed in `how_dict` (and/or `default`), then a diagonal
+                covariance matrix is constructed from the parameter bounds in `pst` (with `sigma_range`).
+                Default is None.
+            sigma_range (`float`): the number of standard deviations implied by the parameter bounds in the pst.
+                Only used if "gaussian" is in `how_dict` (and/or `default`) and `cov` is None.  Default is 6.
+            enforce_bounds (`bool`): flag to enforce parameter bounds in resulting `ParameterEnsemble`. Only
+                matters if "gaussian" is in values of `how_dict`.  Default is True.
+            partial (`bool`): flag to allow a partial ensemble (not all pars included).  If True, parameters
+                not name in `how_dict` will be sampled using the distribution named as `default`.
+                Default is `False`.
+            fill (`bool`): flag to fill in fixed and/or tied parameters with control file
+                values.  Default is True.
+
+        """
+
+        # error checking
+        accept = {"uniform", "triangular", "gaussian"}
+        assert default in accept, "ParameterEnsemble.from_mixed_draw() error: 'default' must be in {0}".format(accept)
+        par_org = pst.parameter_data.copy()
+        pset = set(pst.adj_par_names)
+        hset = set(how_dict.keys())
+        missing = pset.difference(hset)
+        if not partial and len(missing) > 0:
+            print("{0} par names missing in how_dict, these parameters will be sampled using {1} (the 'default')". \
+                  format(len(missing), default))
+            for m in missing:
+                how_dict[m] = default
+        missing = hset.difference(pset)
+        assert len(missing) == 0, "ParameterEnsemble.from_mixed_draws() error: the following par names are not in " + \
+                                  " in the pst: {0}".format(','.join(missing))
+
+        unknown_draw = []
+        for pname, how in how_dict.items():
+            if how not in accept:
+                unknown_draw.append("{0}:{1}".format(pname, how))
+        if len(unknown_draw) > 0:
+            raise Exception("ParameterEnsemble.from_mixed_draws() error: the following hows are not recognized:{0}" \
+                            .format(','.join(unknown_draw)))
+
+        # work out 'how' grouping
+        how_groups = {how: [] for how in accept}
+        for pname, how in how_dict.items():
+            how_groups[how].append(pname)
+
+        # gaussian
+        pes = []
+        if len(how_groups["gaussian"]) > 0:
+            gset = set(how_groups["gaussian"])
+            par_gaussian = par_org.loc[gset, :]
+            # par_gaussian.sort_values(by="parnme", inplace=True)
+            par_gaussian.sort_index(inplace=True)
+            pst.parameter_data = par_gaussian
+
+            if cov is not None:
+                cset = set(cov.row_names)
+                # gset = set(how_groups["gaussian"])
+                diff = gset.difference(cset)
+                assert len(diff) == 0, "ParameterEnsemble.from_mixed_draws() error: the 'cov' is not compatible with " + \
+                                       " the parameters listed as 'gaussian' in how_dict, the following are not in the cov:{0}". \
+                                           format(','.join(diff))
+            else:
+
+                cov = pyemu.Cov.from_parameter_data(pst, sigma_range=sigma_range)
+            pe_gauss = ParameterEnsemble.from_gaussian_draw(pst, cov, num_reals=num_reals)
+            pes.append(pe_gauss)
+
+        if len(how_groups["uniform"]) > 0:
+            par_uniform = par_org.loc[how_groups["uniform"], :]
+            # par_uniform.sort_values(by="parnme",inplace=True)
+            par_uniform.sort_index(inplace=True)
+            pst.parameter_data = par_uniform
+            pe_uniform = ParameterEnsemble.from_uniform_draw(pst, num_reals=num_reals)
+            pes.append(pe_uniform)
+
+        if len(how_groups["triangular"]) > 0:
+            par_tri = par_org.loc[how_groups["triangular"], :]
+            # par_tri.sort_values(by="parnme", inplace=True)
+            par_tri.sort_index(inplace=True)
+            pst.parameter_data = par_tri
+            pe_tri = ParameterEnsemble.from_triangular_draw(pst, num_reals=num_reals)
+            pes.append(pe_tri)
+
+        df = pd.DataFrame(index=np.arange(num_reals), columns=par_org.parnme.values)
+
+        df.loc[:, :] = np.NaN
+        if fill:
+            fixed_tied = par_org.loc[par_org.partrans.apply(lambda x: x in ["fixed", "tied"]), "parval1"].to_dict()
+            for p, v in fixed_tied.items():
+                df.loc[:, p] = v
+
+        for pe in pes:
+            df.loc[pe.index, pe.columns] = pe
+
+
+        # this dropna covers both "fill" and "partial"
+        df = df.dropna(axis=1)
+
+        pst.parameter_data = par_org
+        pe = ParameterEnsemble(df=df, pst=pst)
+        if enforce_bounds:
+            pe.enforce()
+        return pe
 
 
     @classmethod
