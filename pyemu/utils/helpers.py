@@ -626,7 +626,7 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
     """
     assert isinstance(cov,pyemu.Cov)
     print("getting CC matrix")
-    cc_mat = cov.get(pst.adj_par_names).to_pearson()
+    cc_mat = cov.to_pearson()
     #print(pst.parameter_data.dtypes)
     try:
         ptrans = pst.parameter_data.partrans.apply(lambda x:x.decode()).to_dict()
