@@ -2305,7 +2305,7 @@ class Cov(Matrix):
         #self.reset_x(self_x)
         #self.isdiagonal = False
 
-    def to_uncfile(self, unc_file, covmat_file="Cov.mat", var_mult=1.0, include_path=True):
+    def to_uncfile(self, unc_file, covmat_file="cov.mat", var_mult=1.0, include_path=True):
         """write a PEST-compatible uncertainty file
 
         Args:

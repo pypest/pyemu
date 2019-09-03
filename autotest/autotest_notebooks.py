@@ -1,6 +1,7 @@
 # Remove the temp directory and then create a fresh one
 import os
 import shutil
+import pyemu
 
 nbdir = os.path.join('..', 'examples')
 
@@ -26,14 +27,17 @@ def get_notebooks():
 
 
 def run_notebook(fn):
-    pth = os.path.join(nbdir, fn)
+    #pth = os.path.join(nbdir, fn)
+    pth = fn
     cmd = 'jupyter ' + 'nbconvert ' + \
           '--ExecutePreprocessor.kernel_name=python ' + \
           '--ExecutePreprocessor.timeout=6000 ' + '--to ' + 'notebook ' + \
           '--execute ' + '{} '.format(pth) + \
           '--output-dir ' + '{} '.format(testdir) + \
           '--output ' + '{}'.format(fn)
-    ival = os.system(cmd)
+    print(cmd)
+    #ival = os.system(cmd)
+    ival = pyemu.os_utils.run(cmd,cwd=nbdir)
     assert ival == 0, 'could not run {}'.format(fn)
 
 
