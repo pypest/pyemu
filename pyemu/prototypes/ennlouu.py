@@ -345,16 +345,26 @@ class EnsembleSQP(EnsembleMethod):
 
         return en_cov_crosscov
 
-    def _calc_delta_(self,ensemble):
+    def _calc_delta_(self,ensemble,use_dist_mean_for_delta=False):
         '''
         note: this is subtly different to self.calc_delta in EnsembleMethod
+
+        Parameters
+        -------
+        use_dist_mean_for_delta : bool
+            flag for method variation in which the mean is from ``prior'' dec var (i.e., from `parval1`).
+            see Fonseca et al. 2013. default False (only used for cov mat adaptation components)
         '''
-        mean = np.array(ensemble.mean(axis=0))
+        if use_dist_mean_for_delta:
+            mean = np.array(self.pst.parameter_data.parval1)
+        else:
+            mean = np.array(ensemble.mean(axis=0))
         delta = Matrix(x=ensemble.as_matrix(), row_names=ensemble.index, col_names=ensemble.columns)
         for i in range(ensemble.shape[0]):
             delta.x[i, :] -= mean
 
         return delta
+
 
     def _BFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,self_scale=True,scale_only=False,
                           damped=True):
@@ -576,19 +586,24 @@ class EnsembleSQP(EnsembleMethod):
         return self._filter, acceptance
 
 
-    def _cov_mat_adapt(self,en_cov,delta,rank_mu=True,rank_one=False,learning_rate=0.5,mu_prop=0.25):
+    def _cov_mat_adapt(self,en_cov,rank_mu=True,rank_one=False,learning_rate=0.5,mu_prop=0.25,
+                       use_dist_mean_for_delta=True):
         '''
         covariance matrix adaptation evolutionary strategy for dec var cov matrix
         see Fonseca et al. 2014 SPE
 
         rank_mu : bool
-            perform rank-mu matrix update (i.e., for current iteration). default is True.
+            perform rank-mu matrix update (i.e., use information within current iteration). default is True.
         rank_one : bool
-            perform rank-one matrix update (i.e., based on prev iterations). default is False.
+            perform rank-one matrix update (i.e., use information between prev iterations). default is False.
         learning_rate : float
             important variable ranging between 0.0 and 1.0. low values are ``safe'' but are of less benefit;
             too large values may cause matrix degeneration.
+        use_dist_mean_for_delta : bool
+            flag to use mean based on ``prior'' dec var (i.e., from `parval1`).
+            see Fonseca et al. 2013. default here is True
         #TODO: try only adapting diag for increased robustness?
+        #TODO: check use of ``distribution mean''
 
         '''
 
@@ -601,12 +616,17 @@ class EnsembleSQP(EnsembleMethod):
         if rank_mu:
             par_en = self.parensemble.copy()
             mu = int(par_en.shape[0] * mu_prop)
-            sorted_idx = self.obsensemble.sort_values(ascending=False, by=self.obsensemble.columns[0]).index
+            if self.opt_direction == "min":
+                sorted_idx = self.obsensemble.sort_values(ascending=True, by=self.obsensemble.columns[0]).index
+            else:
+                sorted_idx = self.obsensemble.sort_values(ascending=False, by=self.obsensemble.columns[0]).index
             par_en.index = sorted_idx
             par_en = par_en[:mu]
-            #TODO: separate _calc_en_cov_decvar func
-            sub_delta = self._calc_delta_(par_en)
+            sub_delta = self._calc_delta_(par_en,
+                                          use_dist_mean_for_delta=use_dist_mean_for_delta)
             en_cov = (1.0 - learning_rate) * en_cov + (learning_rate / mu) * (sub_delta.T * sub_delta)
+            if np.linalg.matrix_rank((sub_delta.T * sub_delta).x) > mu:
+                self.logger.lraise("matrix product should not be of rank greater than mu")
             if rank_one:
                 self.logger.lraise("TODO: implement rank-one cma")
         else:
@@ -728,7 +748,9 @@ class EnsembleSQP(EnsembleMethod):
 
             if cma:
                 self.logger.log("undertaking dec var cov mat adaptation")
-                self.en_cov_decvar = self._cov_mat_adapt(self.en_cov_decvar, self.delta_dec_var)
+                self.en_cov_decvar = self._cov_mat_adapt(self.en_cov_decvar)#, self._calc_delta_(self.parensemble))
+                # TODO: use distribution mean here instead
+                #self.en_cov_decvar = self._cov_mat_adapt(self.en_cov_decvar)
                 self.logger.log("undertaking dec var cov mat adaptation")
 
             # compute gradient vector and undertake gradient-related checks

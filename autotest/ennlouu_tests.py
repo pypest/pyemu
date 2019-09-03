@@ -457,8 +457,8 @@ if __name__ == "__main__":
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    rosenbrock_multiple_update(version="2par",nit=1)
-    rosenbrock_phi_progress(version="2par")
+    #rosenbrock_multiple_update(version="2par",nit=10)
+    #rosenbrock_phi_progress(version="2par")
     #rosenbrock_2par_grad_approx_invest()
 
     #rosenbrock_setup(version="high_dim")
@@ -479,5 +479,5 @@ if __name__ == "__main__":
     #filter_plot(problem="supply2", constraints=True, log_phi=True)
     #plot_mean_dev_var_bar(opt_par_en="supply2_pest.base.pst.5.2.0490312236469134e-07.parensemble.0000.csv",three_risk_cols=False,include_gwm=False)
 
-    #rosenbrock_multiple_update(version="2par",cma=True,nit=3)
-    #rosenbrock_phi_progress(version="2par",label="phi_progress_cma.pdf")
+    rosenbrock_multiple_update(version="2par",cma=True,nit=1)
+    rosenbrock_phi_progress(version="2par",label="phi_progress_cma.pdf")
