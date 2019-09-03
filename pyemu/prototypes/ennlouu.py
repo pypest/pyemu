@@ -622,6 +622,7 @@ class EnsembleSQP(EnsembleMethod):
                 sorted_idx = self.obsensemble.sort_values(ascending=False, by=self.obsensemble.columns[0]).index
             par_en.index = sorted_idx
             par_en = par_en[:mu]
+            # TODO: if using standard delta calc, use the already calcd one from origin cov call
             sub_delta = self._calc_delta_(par_en,
                                           use_dist_mean_for_delta=use_dist_mean_for_delta)
             en_cov = (1.0 - learning_rate) * en_cov + (learning_rate / mu) * (sub_delta.T * sub_delta)
@@ -638,7 +639,9 @@ class EnsembleSQP(EnsembleMethod):
     def update(self,step_mult=[1.0],alg="BFGS",hess_self_scaling=True,damped=True,
                grad_calc_only=False,finite_diff_grad=False,
                constraints=False,biobj_weight=1.0,biobj_transf=True,opt_direction="min",
-               cma=False):#localizer=None,run_subset=None,
+               cma=False,
+               rank_one=False, learning_rate=0.5, mu_prop=0.25,
+               use_dist_mean_for_delta=False):#localizer=None,run_subset=None,
         """
         Perform one quasi-Newton update
 
@@ -670,7 +673,9 @@ class EnsembleSQP(EnsembleMethod):
         opt_direction : str
             must be "min" or "max"
         cma : bool
-            to perform or not to perform (dec var) covariance matrix adaptation (evolutionary strategy)
+            to perform or not to perform (dec var) covariance matrix adaptation (evolutionary strategy).
+            rank_one, learning_rate, mu_prop and use_dist_mean_for_delta are all cma-related args #heuristic
+
 
         Example
         -------
@@ -748,9 +753,7 @@ class EnsembleSQP(EnsembleMethod):
 
             if cma:
                 self.logger.log("undertaking dec var cov mat adaptation")
-                self.en_cov_decvar = self._cov_mat_adapt(self.en_cov_decvar)#, self._calc_delta_(self.parensemble))
-                # TODO: use distribution mean here instead
-                #self.en_cov_decvar = self._cov_mat_adapt(self.en_cov_decvar)
+                self.en_cov_decvar = self._cov_mat_adapt(self.en_cov_decvar)
                 self.logger.log("undertaking dec var cov mat adaptation")
 
             # compute gradient vector and undertake gradient-related checks

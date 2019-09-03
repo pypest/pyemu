@@ -154,7 +154,9 @@ def rosenbrock_2par_grad_approx_invest():
 
 def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
                                constraints=False,biobj_weight=1.0,biobj_transf=True,
-                               cma=False): #filter_thresh=1e-2
+                               cma=False,
+                               rank_one=False,learning_rate=0.5,
+                               mu_prop=0.25,use_dist_mean_for_delta=False,): #filter_thresh=1e-2
     import pyemu
     import numpy as np
     if version == "2par":
@@ -176,7 +178,9 @@ def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(ext))#,num_slaves=10)
     esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=constraints)
     for it in range(nit):
-        esqp.update(step_mult=list(np.logspace(-6,0,14)),constraints=constraints,biobj_weight=biobj_weight,cma=cma)
+        esqp.update(step_mult=list(np.logspace(-6,0,14)),constraints=constraints,biobj_weight=biobj_weight,cma=cma,
+                    rank_one=rank_one,learning_rate=learning_rate,mu_prop=mu_prop,
+                    use_dist_mean_for_delta=use_dist_mean_for_delta)
     os.chdir(os.path.join("..", ".."))
 
    #  TODO: critical that draw_mult is refined as we go?
@@ -255,6 +259,35 @@ def invest(version):
         rosenbrock_phi_progress(version=version,label="phi_progress_ne{0}_initdv{1}_dm{2}.pdf".\
                                 format(v['en_size'],v['initial_decvars'],v['draw_mult']))
     print("done!")
+
+def cma_invest(version):
+    vars = {"learning_rate": [0.1,0.5,0.9],
+            "mu_prop": [0.1,0.25,0.5],
+            "dist_mean": [False,True],
+            "rank_one": [False,True],
+            }
+            #"initial_decvars": [1.6],
+            #"en_size": [20],
+
+    # TODO: add base run with no cma
+    runs = [{'learning_rate': a, 'mu_prop': b, 'dist_mean': c, 'rank_one': d} for a in vars['learning_rate']
+            for b in vars['mu_prop'] for c in vars['dist_mean'] for d in vars['rank_one']]
+
+    fails = []
+    for i,v in enumerate(runs):
+        #rosenbrock_setup(version=version,initial_decvars=v['initial_decvars'])
+        try:
+            rosenbrock_multiple_update(version=version,cma=True,
+                                       learning_rate=v['learning_rate'],mu_prop=v['mu_prop'],
+                                       dist_mean=v['dist_mean'], rank_one=v['rank_one'])
+        except:
+            fails.append(v)
+            os.chdir(os.path.join("..", ".."))
+        # TODO: strip plot back
+        rosenbrock_phi_progress(version=version,
+                                label="phi_progress_learn_rate{0}_mu_prop{1}_dist_mean{2}_rank_one{3}.pdf".
+                                format(v['learning_rate'],v['mu_prop'],v['dist_mean'],v['rank_one']))
+
 
 
 # TODO: copy test dirs and make changes in there...
@@ -479,5 +512,6 @@ if __name__ == "__main__":
     #filter_plot(problem="supply2", constraints=True, log_phi=True)
     #plot_mean_dev_var_bar(opt_par_en="supply2_pest.base.pst.5.2.0490312236469134e-07.parensemble.0000.csv",three_risk_cols=False,include_gwm=False)
 
-    rosenbrock_multiple_update(version="2par",cma=True,nit=1)
+    rosenbrock_multiple_update(version="2par",cma=True,nit=10)
     rosenbrock_phi_progress(version="2par",label="phi_progress_cma.pdf")
+    #cma_invest(version="2par")
