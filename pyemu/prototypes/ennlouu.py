@@ -327,17 +327,13 @@ class EnsembleSQP(EnsembleMethod):
         '''
         general func for calc of ensemble (approx) covariances and cross-covariances.
         '''
-        mean1 = np.array(ensemble1.mean(axis=0))
-        delta1 = ensemble1.as_pyemu_matrix()
-        if ensemble1.columns[0] != ensemble2.columns[0]:  # cross-cov
-            mean2 = np.array(ensemble2[self.phi_obs].mean(axis=0))
-            delta2 = Matrix(x=ensemble2.as_matrix(self.phi_obs),row_names=delta1.row_names,col_names=self.phi_obs)
+
+        delta1 = self._calc_delta_(ensemble1)  # always dec var cov
+        if type(ensemble1) != type(ensemble2):  # cross-cov
+            delta2 = self._calc_delta_(ensemble2.loc[:,self.phi_obs])
         else:  # cov
-            mean2 = np.array(ensemble2.mean(axis=0))
-            delta2 = ensemble2.as_pyemu_matrix()
-        #for i in range(ensemble1.shape[0]):
-        #    delta1.x[i, :] -= mean1
-        #    delta2.x[i, :] -= mean2
+            delta2 = self._calc_delta_(ensemble2)
+
         en_cov_crosscov = 1.0 / (ensemble1.shape[0] - 1.0) * ((delta1.x * delta2.x).sum(axis=0))
         if ensemble1.columns[0] == ensemble2.columns[0]:  # diag cov matrix
             en_cov_crosscov = np.diag(en_cov_crosscov)
@@ -347,9 +343,12 @@ class EnsembleSQP(EnsembleMethod):
             en_cov_crosscov = Matrix(x=(np.expand_dims(en_cov_crosscov, axis=0)),
                                      row_names=['cross-cov'],col_names=self.pst.par_names)
 
-        return en_cov_crosscov, delta1
+        return en_cov_crosscov
 
     def _calc_delta_(self,ensemble):
+        '''
+        note: this is subtly different to self.calc_delta in EnsembleMethod
+        '''
         mean = np.array(ensemble.mean(axis=0))
         delta = Matrix(x=ensemble.as_matrix(), row_names=ensemble.index, col_names=ensemble.columns)
         for i in range(ensemble.shape[0]):
@@ -715,7 +714,7 @@ class EnsembleSQP(EnsembleMethod):
             # compute dec var covariance and dec var-phi cross covariance matrices - they are actually vectors
             self.logger.log("compute dec var en covariance vector")
             # TODO: add check for parensemble var = 0 (all dec vars at (same) bounds). Or draw around mean on bound?
-            self.en_cov_decvar, self.delta_dec_var = self._calc_en_cov_decvar(self.parensemble)
+            self.en_cov_decvar = self._calc_en_cov_decvar(self.parensemble)
             # and need mean for upgrades
             if self.parensemble_mean is None:
                 self.parensemble_mean = np.array(self.parensemble.mean(axis=0))
@@ -724,8 +723,7 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("compute dec var en covariance vector")
 
             self.logger.log("compute dec var-phi en cross-covariance vector")
-            self.en_crosscov_decvar_phi, self.delta_dec_var = self._calc_en_crosscov_decvar_phi(self.parensemble,
-                                                                                                self.obsensemble)
+            self.en_crosscov_decvar_phi = self._calc_en_crosscov_decvar_phi(self.parensemble,self.obsensemble)
             self.logger.log("compute dec var-phi en cross-covariance vector")
 
             if cma:
