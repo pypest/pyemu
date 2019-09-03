@@ -905,8 +905,45 @@ def hds_timeseries_test():
     model_ws =os.path.join("..","examples","Freyberg_transient")
     org_hds_file = os.path.join(model_ws, "freyberg.hds")
     hds_file = os.path.join("temp", "freyberg.hds")
+
+    org_cbc_file = org_hds_file.replace(".hds",".cbc")
+    cbc_file = hds_file.replace(".hds", ".cbc")
+
     shutil.copy2(org_hds_file, hds_file)
-    kij_dict = {"test1":[0,0,0],"test2":(1,1,1)}
+    shutil.copy2(org_cbc_file, cbc_file)
+
+    m = flopy.modflow.Modflow.load("freyberg.nam", model_ws=model_ws, check=False)
+    kij_dict = {"test1": [0, 0, 0], "test2": (1, 1, 1), "test": (0, 10, 14)}
+    # m.change_model_ws("temp",reset_external=True)
+    # m.write_input()
+    # pyemu.os_utils.run("mfnwt freyberg.nam",cwd="temp")
+
+    cmd, df1 = pyemu.gw_utils.setup_hds_timeseries(cbc_file, kij_dict, include_path=True, prefix="stor",
+                                                   text="storage", fill=0.0)
+
+    cmd,df2 = pyemu.gw_utils.setup_hds_timeseries(cbc_file, kij_dict, model=m, include_path=True, prefix="stor",
+                                        text="storage",fill=0.0)
+
+    print(df1)
+    d = np.abs(df1.obsval.values - df2.obsval.values)
+    print(d.max())
+    assert d.max() == 0.0,d
+
+    try:
+        pyemu.gw_utils.setup_hds_timeseries(cbc_file, kij_dict, model=m, include_path=True, prefix="consthead",
+                                            text="constant head")
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+    try:
+        pyemu.gw_utils.setup_hds_timeseries(cbc_file, kij_dict, model=m, include_path=True, prefix="consthead",
+                                            text="JUNK")
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
 
     pyemu.gw_utils.setup_hds_timeseries(hds_file,kij_dict,include_path=True)
     pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, include_path=True,prefix="hds")
@@ -1726,7 +1763,7 @@ def aniso_invest():
     plt.show()
 
 if __name__ == "__main__":
-    specsim_test()
+    #specsim_test()
     #aniso_invest()
     #fieldgen_dev()
     # smp_test()
@@ -1746,7 +1783,7 @@ if __name__ == "__main__":
     # gw_sft_ins_test()
     #par_knowledge_test()
     # grid_obs_test()
-    #hds_timeseries_test()
+    hds_timeseries_test()
     #postprocess_inactive_conc_test()
     #plot_summary_test()
     # load_sgems_expvar_test()

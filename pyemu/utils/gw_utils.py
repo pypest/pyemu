@@ -416,13 +416,14 @@ def _write_mflist_ins(ins_filename,df,prefix):
             f.write("\n")
 
 
-def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
-                         model=None, postprocess_inact=None):
+def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
+                         model=None, postprocess_inact=None, text=None,
+                         fill=None):
     """a function to setup a forward process to extract time-series style values
-    from a binary modflow head save (or equivalent format - ucn, sub, etc).
+    from a binary modflow binary file (or equivalent format - hds, ucn, sub, cbb, etc).
 
     Args:
-        hds_file (`str`): path and name of existing modflow head-save format binary file
+        bin_file (`str`): path and name of existing modflow binary file - headsave, cell budget and MT3D UCN supported.
         kij_dict (`dict`): dictionary of site_name: [k,i,j] pairs. For example: `{"wel1":[0,1,1]}`.
         prefix (`str`, optional): string to prepend to site_name when forming observation names.  Default is None
         include_path (`bool`, optional): flag to setup the binary file processing in directory where the hds_file
@@ -433,6 +434,14 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
             If None, the observation names will have the zero-based stress period appended to them. Default is None.
         postprocess_inact (`float`, optional): Inactive value in heads/ucn file e.g. mt.btn.cinit.  If `None`, no
             inactive value processing happens.  Default is `None`.
+        text (`str`): the text record entry in the binary file (e.g. "constant_head").
+            Used to indicate that the binary file is a MODFLOW cell-by-cell budget file.
+            If None, headsave or MT3D unformatted concentration file
+            is assummed.  Default is None
+        fill (`float`): fill value for NaNs in the extracted timeseries dataframe.  If
+            `None`, no filling is done, which may yield model run failures as the resulting
+            processed timeseries CSV file (produced at runtime) may have missing values and
+            can't be processed with the cooresponding instruction file.  Default is `None`.
 
     Returns:
         tuple containing
@@ -458,35 +467,54 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
         print("error importing flopy, returning {0}".format(str(e)))
         return
 
-    assert os.path.exists(hds_file),"head save file not found"
-    if hds_file.lower().endswith(".ucn"):
+    assert os.path.exists(bin_file), "binary file not found"
+
+    if text is not None:
+        text = text.upper()
+        bf = flopy.utils.CellBudgetFile(bin_file)
         try:
-            hds = flopy.utils.UcnFile(hds_file)
+            bf = flopy.utils.CellBudgetFile(bin_file)
+        except Exception as e:
+            raise Exception("error instantiating CellBudgetFile:{0}".format(str(e)))
+        tl = [t.decode().strip() for t in bf.textlist]
+        if text not in tl:
+            raise Exception("'text' {0} not found in CellBudgetFile.textlist:{1}".\
+                            format(text,tl))
+    elif bin_file.lower().endswith(".ucn"):
+        try:
+            bf = flopy.utils.UcnFile(bin_file)
         except Exception as e:
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
     else:
         try:
-            hds = flopy.utils.HeadFile(hds_file)
+            bf = flopy.utils.HeadFile(bin_file)
         except Exception as e:
             raise Exception("error instantiating HeadFile:{0}".format(str(e)))
 
-    nlay,nrow,ncol = hds.nlay,hds.nrow,hds.ncol
+    if text is None:
+        text = "none"
+
+    nlay,nrow,ncol = bf.nlay,bf.nrow,bf.ncol
 
     #if include_path:
     #    pth = os.path.join(*[p for p in os.path.split(hds_file)[:-1]])
     #    config_file = os.path.join(pth,"{0}_timeseries.config".format(hds_file))
     #else:
-    config_file = "{0}_timeseries.config".format(hds_file)
+    config_file = "{0}_timeseries.config".format(bin_file)
     print("writing config file to {0}".format(config_file))
-
+    if fill is None:
+        fill = "none"
     f_config = open(config_file,'w')
     if model is not None:
         if model.dis.itmuni != 4:
             warnings.warn("setup_hds_timeseries only supports 'days' time units...",PyemuWarning)
-        f_config.write("{0},{1},d\n".format(os.path.split(hds_file)[-1],model.start_datetime))
+        f_config.write("{0},{1},d,{2},{3}\n".
+                       format(os.path.split(bin_file)[-1],
+                              model.start_datetime,text,fill))
         start = pd.to_datetime(model.start_datetime)
     else:
-        f_config.write("{0},none,none\n".format(os.path.split(hds_file)[-1]))
+        f_config.write("{0},none,none,{1},{2}\n".format(os.path.split(bin_file)[-1],
+                                                        text, fill))
     f_config.write("site,k,i,j\n")
     dfs = []
 
@@ -495,7 +523,10 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
         assert i >= 0 and i < nrow, i
         assert j >= 0 and j < ncol, j
         site = site.lower().replace(" ",'')
-        df = pd.DataFrame(data=hds.get_ts((k,i,j)),columns=["totim",site])
+        if text.upper() != "NONE":
+            df = pd.DataFrame(data=bf.get_ts((k, i, j),text=text), columns=["totim", site])
+        else:
+            df = pd.DataFrame(data=bf.get_ts((k,i,j)),columns=["totim",site])
 
         if model is not None:
             dts = start + pd.to_timedelta(df.totim,unit='d')
@@ -507,13 +538,13 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
 
     f_config.close()
     df = pd.concat(dfs,axis=1)
-    df.to_csv(hds_file+"_timeseries.processed",sep=' ')
+    df.to_csv(bin_file + "_timeseries.processed", sep=' ')
     if model is not None:
         t_str = df.index.map(lambda x: x.strftime("%Y%m%d"))
     else:
         t_str = df.index.map(lambda x: "{0:08.2f}".format(x))
 
-    ins_file = hds_file+"_timeseries.processed.ins"
+    ins_file = bin_file + "_timeseries.processed.ins"
     print("writing instruction file to {0}".format(ins_file))
     with open(ins_file,'w') as f:
         f.write('pif ~\n')
@@ -528,11 +559,11 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
                 f.write(" !{0}!".format(obsnme))
             f.write('\n')
     if postprocess_inact is not None:
-        _setup_postprocess_hds_timeseries(hds_file, df, config_file, prefix=prefix, model=model)
+        _setup_postprocess_hds_timeseries(bin_file, df, config_file, prefix=prefix, model=model)
     bd = '.'
     if include_path:
         bd = os.getcwd()
-        pth = os.path.join(*[p for p in os.path.split(hds_file)[:-1]])
+        pth = os.path.join(*[p for p in os.path.split(bin_file)[:-1]])
         os.chdir(pth)
     config_file = os.path.split(config_file)[-1]
     try:
@@ -557,7 +588,7 @@ def setup_hds_timeseries(hds_file,kij_dict,prefix=None,include_path=False,
 
 
 def apply_hds_timeseries(config_file=None, postprocess_inact=None):
-    """process a modflow headsave format binary file using a previously written
+    """process a modflow binary file using a previously written
     configuration file
 
     Args:
@@ -578,36 +609,51 @@ def apply_hds_timeseries(config_file=None, postprocess_inact=None):
     assert os.path.exists(config_file), config_file
     with open(config_file,'r') as f:
         line = f.readline()
-        hds_file,start_datetime,time_units = line.strip().split(',')
+        bf_file,start_datetime,time_units, text, fill = line.strip().split(',')
         site_df = pd.read_csv(f)
-
+    text = text.upper()
     #print(site_df)
 
-    assert os.path.exists(hds_file), "head save file not found"
-    if hds_file.lower().endswith(".ucn"):
+    assert os.path.exists(bf_file), "head save file not found"
+    if text != "NONE":
         try:
-            hds = flopy.utils.UcnFile(hds_file)
+            bf = flopy.utils.CellBudgetFile(bf_file)
+        except Exception as e:
+            raise Exception("error instantiating CellBudgetFile:{0}".format(str(e)))
+    elif bf_file.lower().endswith(".ucn"):
+        try:
+            bf = flopy.utils.UcnFile(bf_file)
         except Exception as e:
             raise Exception("error instantiating UcnFile:{0}".format(str(e)))
     else:
         try:
-            hds = flopy.utils.HeadFile(hds_file)
+            bf = flopy.utils.HeadFile(bf_file)
         except Exception as e:
             raise Exception("error instantiating HeadFile:{0}".format(str(e)))
 
-    nlay, nrow, ncol = hds.nlay, hds.nrow, hds.ncol
+    nlay, nrow, ncol = bf.nlay, bf.nrow, bf.ncol
 
     dfs = []
     for site,k,i,j in zip(site_df.site,site_df.k,site_df.i,site_df.j):
         assert k >= 0 and k < nlay
         assert i >= 0 and i < nrow
         assert j >= 0 and j < ncol
-        df = pd.DataFrame(data=hds.get_ts((k,i,j)),columns=["totim",site])
+        if text != "none":
+            df = pd.DataFrame(data=bf.get_ts((k, i, j), text=text), columns=["totim", site])
+
+
+        else:
+            df = pd.DataFrame(data=bf.get_ts((k,i,j)),columns=["totim",site])
         df.index = df.pop("totim")
         dfs.append(df)
     df = pd.concat(dfs,axis=1)
+    if df.shape != df.dropna().shape:
+        warnings.warn("NANs in processed timeseries file",PyemuWarning)
+        if fill.upper() != "NONE":
+            fill = float(fill)
+            df.fillna(fill,inplace=True)
     #print(df)
-    df.to_csv(hds_file+"_timeseries.processed",sep=' ')
+    df.to_csv(bf_file+"_timeseries.processed",sep=' ')
     if postprocess_inact is not None:
         _apply_postprocess_hds_timeseries(config_file, postprocess_inact)
     return df
