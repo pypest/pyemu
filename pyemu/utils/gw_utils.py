@@ -566,6 +566,7 @@ def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
         pth = os.path.join(*[p for p in os.path.split(bin_file)[:-1]])
         os.chdir(pth)
     config_file = os.path.split(config_file)[-1]
+    df = apply_hds_timeseries(config_file, postprocess_inact=postprocess_inact)
     try:
         df = apply_hds_timeseries(config_file, postprocess_inact=postprocess_inact)
     except Exception as e:
@@ -638,10 +639,8 @@ def apply_hds_timeseries(config_file=None, postprocess_inact=None):
         assert k >= 0 and k < nlay
         assert i >= 0 and i < nrow
         assert j >= 0 and j < ncol
-        if text != "none":
+        if text.upper() != "NONE":
             df = pd.DataFrame(data=bf.get_ts((k, i, j), text=text), columns=["totim", site])
-
-
         else:
             df = pd.DataFrame(data=bf.get_ts((k,i,j)),columns=["totim",site])
         df.index = df.pop("totim")

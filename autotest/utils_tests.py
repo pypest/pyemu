@@ -914,6 +914,9 @@ def hds_timeseries_test():
 
     m = flopy.modflow.Modflow.load("freyberg.nam", model_ws=model_ws, check=False)
     kij_dict = {"test1": [0, 0, 0], "test2": (1, 1, 1), "test": (0, 10, 14)}
+
+    pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, include_path=True)
+
     # m.change_model_ws("temp",reset_external=True)
     # m.write_input()
     # pyemu.os_utils.run("mfnwt freyberg.nam",cwd="temp")
@@ -945,7 +948,6 @@ def hds_timeseries_test():
         raise Exception("should have failed")
 
 
-    pyemu.gw_utils.setup_hds_timeseries(hds_file,kij_dict,include_path=True)
     pyemu.gw_utils.setup_hds_timeseries(hds_file, kij_dict, include_path=True,prefix="hds")
 
     m = flopy.modflow.Modflow.load("freyberg.nam",model_ws=model_ws,load_only=[],check=False)
