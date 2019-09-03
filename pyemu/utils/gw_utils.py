@@ -657,7 +657,6 @@ def apply_hds_timeseries(config_file=None, postprocess_inact=None):
         _apply_postprocess_hds_timeseries(config_file, postprocess_inact)
     return df
 
-
 def _setup_postprocess_hds_timeseries(hds_file, df, config_file, prefix=None, model=None):
     """Dirty function to setup post processing concentrations in inactive/dry cells"""
     warnings.warn(
@@ -696,7 +695,7 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
     assert os.path.exists(config_file), config_file
     with open(config_file,'r') as f:
         line = f.readline()
-        hds_file,start_datetime,time_units = line.strip().split(',')
+        hds_file,start_datetime,time_units,text,fill = line.strip().split(',')
         site_df = pd.read_csv(f)
 
     #print(site_df)
@@ -720,7 +719,10 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
         assert k >= 0 and k < nlay
         assert i >= 0 and i < nrow
         assert j >= 0 and j < ncol
-        df = pd.DataFrame(data=hds.get_ts((k, i, j)), columns=["totim", site])
+        if text.upper() != "NONE":
+            df = pd.DataFrame(data=hds.get_ts((k, i, j),text=text), columns=["totim", site])
+        else:
+            df = pd.DataFrame(data=hds.get_ts((k, i, j)), columns=["totim", site])
         df.index = df.pop("totim")
         inact_obs = df[site].apply(lambda x: np.isclose(x, cinact))
         if inact_obs.sum() > 0:
