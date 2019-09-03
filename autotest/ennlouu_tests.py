@@ -3,7 +3,7 @@ if not os.path.exists("temp"):
     os.mkdir("temp")
 
 
-def rosenbrock_setup(version,initial_decvars=0.45,constraints=False):
+def rosenbrock_setup(version,initial_decvars=1.6,constraints=False):
     import pyemu
     if version == "2par":
         if constraints:
@@ -154,7 +154,7 @@ def rosenbrock_2par_grad_approx_invest():
 
 def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
                                constraints=False,biobj_weight=1.0,biobj_transf=True,
-                               cma=True): #filter_thresh=1e-2
+                               cma=False): #filter_thresh=1e-2
     import pyemu
     import numpy as np
     if version == "2par":
@@ -187,7 +187,6 @@ def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
 
 
 def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
-    import pyemu
     import numpy as np
     import pandas as pd
     import matplotlib.pyplot as plt
@@ -205,9 +204,9 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
             it = int(obs_en.split(".")[2])
         else:
             it = 0
-        oe = pyemu.ObservationEnsemble.from_csv(path=obs_en)
+        oe = pd.read_csv(obs_en,index_col=0)
         oe.columns = [it]
-        oes = pd.concat((oes, oe),axis=1)  #TODO: better to scrape from self?
+        oes = pd.concat((oes, oe),axis=1)
     oes = oes.sort_index()
     oes = (np.log10(oes)).replace(-np.inf, 0)
 
@@ -454,12 +453,12 @@ def plot_mean_dev_var_bar(opt_par_en="supply2_pest.parensemble.0000.csv",three_r
 
 
 if __name__ == "__main__":
-    #rosenbrock_setup(version="2par")
+    rosenbrock_setup(version="2par")
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    #rosenbrock_multiple_update(version="2par")
-    #rosenbrock_phi_progress(version="2par")
+    rosenbrock_multiple_update(version="2par",nit=1)
+    rosenbrock_phi_progress(version="2par")
     #rosenbrock_2par_grad_approx_invest()
 
     #rosenbrock_setup(version="high_dim")
@@ -472,7 +471,7 @@ if __name__ == "__main__":
 
     #rosenbrock_setup(version="2par",constraints=True,initial_decvars=2.0)
     #rosenbrock_multiple_update(version="2par",constraints=True,en_size=20,biobj_weight=5.0)
-
+    #rosenbrock_phi_progress(version="2par", label="phi_progress_constrained.pdf")
     #filter_plot(version="2par", constraints=True, log_phi=True)
 
     #supply2_setup()
@@ -480,4 +479,5 @@ if __name__ == "__main__":
     #filter_plot(problem="supply2", constraints=True, log_phi=True)
     #plot_mean_dev_var_bar(opt_par_en="supply2_pest.base.pst.5.2.0490312236469134e-07.parensemble.0000.csv",three_risk_cols=False,include_gwm=False)
 
-    rosenbrock_multiple_update(version="2par",cma=True)
+    #rosenbrock_multiple_update(version="2par",cma=True,nit=3)
+    #rosenbrock_phi_progress(version="2par",label="phi_progress_cma.pdf")

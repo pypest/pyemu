@@ -580,7 +580,7 @@ class EnsembleSQP(EnsembleMethod):
     def _cov_mat_adapt(self,en_cov,delta,rank_mu=True,rank_one=False,learning_rate=0.5,mu_prop=0.25):
         '''
         covariance matrix adaptation evolutionary strategy for dec var cov matrix
-        see Fonseca et al. 2013 SPE
+        see Fonseca et al. 2014 SPE
 
         rank_mu : bool
             perform rank-mu matrix update (i.e., for current iteration). default is True.
