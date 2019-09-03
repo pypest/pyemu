@@ -35,10 +35,11 @@ def run_notebook(fn):
           '--execute ' + '{} '.format(pth) + \
           '--output-dir ' + '{} '.format(testdir) + \
           '--output ' + '{}'.format(fn)
-    print(cmd)
+    
     #ival = os.system(cmd)
     ival = pyemu.os_utils.run(cmd,cwd=nbdir)
-    assert ival == 0, 'could not run {}'.format(fn)
+    print(ival,cmd)
+    assert ival == 0 or ival is None, 'could not run {}'.format(fn)
 
 
 def test_notebooks():
@@ -46,7 +47,6 @@ def test_notebooks():
 
     for fn in files:
         yield run_notebook, fn
-
 
 if __name__ == '__main__':
     files = get_notebooks()
