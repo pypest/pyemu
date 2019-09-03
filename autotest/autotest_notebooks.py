@@ -21,7 +21,7 @@ if os.path.isdir(testdir):
 os.mkdir(testdir)
 
 
-def get_Notebooks():
+def get_notebooks():
     return [f for f in os.listdir(nbdir) if f.endswith('.ipynb') and not "notest" in f]
 
 
@@ -38,13 +38,13 @@ def run_notebook(fn):
 
 
 def test_notebooks():
-    files = get_Notebooks()
+    files = get_notebooks()
 
     for fn in files:
         yield run_notebook, fn
 
 
 if __name__ == '__main__':
-    files = get_Notebooks()
+    files = get_notebooks()
     for fn in files:
         run_notebook(fn)
