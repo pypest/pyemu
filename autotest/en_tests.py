@@ -230,14 +230,16 @@ def enforce_test():
     assert (pe.loc[0,pst.par_names[1:]] - pst.parameter_data.loc[pst.par_names[1:], "parval1"]).apply(np.abs).max() == 0
 
     #check that all pars are in bounds
+    pe.reseed()
     pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
+    print(pe.head())
     pe.enforce(how="scale")
     for ridx in pe._df.index:
         real = pe._df.loc[ridx,pst.adj_par_names]
         ub_diff = pe.ubnd - real
-        assert ub_diff.min() >= 0.0
+        assert ub_diff.min() >= 0.0,ub_diff
         lb_diff = real - pe.lbnd
-        assert lb_diff.min() >= 0.0
+        assert lb_diff.min() >= 0.0,lb_diff
 
 
     pe = pyemu.ParameterEnsemble.from_gaussian_draw(pst, num_reals=num_reals)
@@ -590,7 +592,7 @@ if __name__ == "__main__":
     # deviations_test()
     # as_pyemu_matrix_test()
     # dropna_test()
-    # enforce_test()
+    enforce_test()
     # pnulpar_test()
     # triangular_draw_test()
     # uniform_draw_test()
@@ -598,7 +600,7 @@ if __name__ == "__main__":
     #factor_draw_test()
     #emp_cov_test()
     #emp_cov_draw_test()
-    mixed_par_draw_test()
+    #mixed_par_draw_test()
 
 
 
