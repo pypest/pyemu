@@ -418,7 +418,7 @@ def _write_mflist_ins(ins_filename,df,prefix):
 
 def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
                          model=None, postprocess_inact=None, text=None,
-                         fill=None):
+                         fill=None,precision="single"):
     """a function to setup a forward process to extract time-series style values
     from a binary modflow binary file (or equivalent format - hds, ucn, sub, cbb, etc).
 
@@ -442,6 +442,8 @@ def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
             `None`, no filling is done, which may yield model run failures as the resulting
             processed timeseries CSV file (produced at runtime) may have missing values and
             can't be processed with the cooresponding instruction file.  Default is `None`.
+        precision (`str`): the precision of the binary file.  Can be "single" or "double".
+            Default is "single".
 
     Returns:
         tuple containing
@@ -471,9 +473,8 @@ def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
 
     if text is not None:
         text = text.upper()
-        bf = flopy.utils.CellBudgetFile(bin_file)
         try:
-            bf = flopy.utils.CellBudgetFile(bin_file)
+            bf = flopy.utils.CellBudgetFile(bin_file,precision=precision)
         except Exception as e:
             raise Exception("error instantiating CellBudgetFile:{0}".format(str(e)))
         tl = [t.decode().strip() for t in bf.textlist]
@@ -508,13 +509,13 @@ def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
     if model is not None:
         if model.dis.itmuni != 4:
             warnings.warn("setup_hds_timeseries only supports 'days' time units...",PyemuWarning)
-        f_config.write("{0},{1},d,{2},{3}\n".
+        f_config.write("{0},{1},d,{2},{3},{4}\n".
                        format(os.path.split(bin_file)[-1],
-                              model.start_datetime,text,fill))
+                              model.start_datetime,text,fill,precision))
         start = pd.to_datetime(model.start_datetime)
     else:
-        f_config.write("{0},none,none,{1},{2}\n".format(os.path.split(bin_file)[-1],
-                                                        text, fill))
+        f_config.write("{0},none,none,{1},{2},{3}\n".format(os.path.split(bin_file)[-1],
+                                                        text, fill,precision))
     f_config.write("site,k,i,j\n")
     dfs = []
 
@@ -610,7 +611,7 @@ def apply_hds_timeseries(config_file=None, postprocess_inact=None):
     assert os.path.exists(config_file), config_file
     with open(config_file,'r') as f:
         line = f.readline()
-        bf_file,start_datetime,time_units, text, fill = line.strip().split(',')
+        bf_file,start_datetime,time_units, text, fill, precision = line.strip().split(',')
         site_df = pd.read_csv(f)
     text = text.upper()
     #print(site_df)
@@ -618,7 +619,7 @@ def apply_hds_timeseries(config_file=None, postprocess_inact=None):
     assert os.path.exists(bf_file), "head save file not found"
     if text != "NONE":
         try:
-            bf = flopy.utils.CellBudgetFile(bf_file)
+            bf = flopy.utils.CellBudgetFile(bf_file,precision=precision)
         except Exception as e:
             raise Exception("error instantiating CellBudgetFile:{0}".format(str(e)))
     elif bf_file.lower().endswith(".ucn"):
@@ -695,7 +696,7 @@ def _apply_postprocess_hds_timeseries(config_file=None, cinact=1e30):
     assert os.path.exists(config_file), config_file
     with open(config_file,'r') as f:
         line = f.readline()
-        hds_file,start_datetime,time_units,text,fill = line.strip().split(',')
+        hds_file,start_datetime,time_units,text,fill,precision = line.strip().split(',')
         site_df = pd.read_csv(f)
 
     #print(site_df)

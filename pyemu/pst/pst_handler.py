@@ -2180,7 +2180,7 @@ class Pst(object):
 
 
     def add_observations(self,ins_file,out_file=None,pst_path=None,inschek=True):
-        """ add new obsevations to a control file
+        """ add new observations to a control file
 
         Args:
             ins_file (`str`): instruction file with exclusively new observation names
@@ -2189,9 +2189,9 @@ class Pst(object):
             pst_path (`str`): the path to append to the instruction file and out file in the control file.  If
                 not None, then any existing path in front of the template or in file is split off
                 and pst_path is prepended.  If python is being run in a directory other than where the control
-                file will reside, it is useful to pass `pst_path` as `.`.Default is None
+                file will reside, it is useful to pass `pst_path` as `.`. Default is None
             inschek (`bool`): flag to try to process the existing output file using the `pyemu.InstructionFile`
-                class.  If successful, inscheck outputs are used as obsvals
+                class.  If successful, processed outputs are used as obsvals
 
         Returns:
             `pandas.DataFrame`: the data for the new observations that were added
@@ -2245,7 +2245,10 @@ class Pst(object):
         self.output_files.append(out_file)
         df = None
         if inschek:
-            df = pst_utils._try_run_inschek(ins_file,out_file,cwd=cwd)
+            #df = pst_utils._try_run_inschek(ins_file,out_file,cwd=cwd)
+            ins_file = os.path.join(cwd,ins_file)
+            out_file = os.path.join(cwd,out_file)
+            df = pst_utils.try_process_output_file(ins_file=ins_file,output_file=out_file)
         if df is not None:
             #print(self.observation_data.index,df.index)
             self.observation_data.loc[df.index,"obsval"] = df.obsval
