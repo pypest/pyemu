@@ -51,7 +51,7 @@ class Schur(LinearAnalysis):
 
         This class replicates and extends the behavior of the PEST PREDUNC utilities.
 
-    Examples::
+    Example::
 
         #assumes "my.pst" exists
         sc = pyemu.Schur(jco="my.jco",forecasts=["fore1","fore2"])
@@ -295,7 +295,7 @@ class Schur(LinearAnalysis):
             "precent_reduction" column in dataframe is calculated as
             100.0 * (1.0 - (posterior variance / prior variance)
 
-        Examples::
+        Example::
 
             sc = pyemu.Schur(jco="my.jcb",forecasts=["fore1","fore2"])
             df = sc.get_parameter_summary()
@@ -409,7 +409,7 @@ class Schur(LinearAnalysis):
             This is the primary dataworth method for assessing the contribution of one or more
             parameters to forecast uncertainty.
 
-        Examples::
+        Example::
 
             sc = pyemu.Schur(jco="my.jco")
             parlist_dict = {"hk":["hk1","hk2"],"rech"["rech1","rech2"]}

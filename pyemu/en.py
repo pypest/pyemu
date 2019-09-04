@@ -17,7 +17,7 @@ class Loc(object):
     Args:
         ensemble (`pyemu.Ensemble`): an ensemble instance
 
-    Notes:
+    Note:
         Users do not need to mess with this class - it is added
         to each `Ensemble` instance
 
@@ -42,7 +42,7 @@ class Iloc(object):
     Args:
         ensemble (`pyemu.Ensemble`): an ensemble instance
 
-    Notes:
+    Note:
         Users do not need to mess with this class - it is added
         to each `Ensemble` instance
 
@@ -116,7 +116,7 @@ class Ensemble(object):
     def reseed():
         """reset the `numpy.random.seed`
 
-        Notes:
+        Note:
             reseeds using the pyemu.en.SEED global variable
 
         """
@@ -128,7 +128,7 @@ class Ensemble(object):
         Returns:
             `Ensemble`: copy of this `Ensemble`
 
-        Notes:
+        Note:
             copies both `Ensemble.pst` and `Ensemble._df`
 
         """
@@ -145,7 +145,7 @@ class Ensemble(object):
             transformed with respect to log_{10}.  Not used for (and has no effect
             on) `ObservationEnsemble`.
 
-        Notes:
+        Note:
             parameter transformation status is only related to log_{10} and does not
             include the effects of `scale` and/or `offset`
 
@@ -155,7 +155,7 @@ class Ensemble(object):
     def transform(self):
         """transform parameters with respect to `partrans` value.
 
-        Notes:
+        Note:
             operates in place (None is returned).
 
             Parameter transform is only related to log_{10} and does not
@@ -173,7 +173,7 @@ class Ensemble(object):
     def back_transform(self):
         """back transform parameters with respect to `partrans` value.
 
-        Notes:
+        Note:
             operates in place (None is returned).
 
             Parameter transform is only related to log_{10} and does not
@@ -278,11 +278,11 @@ class Ensemble(object):
                 to `pandas.read_csv()`.
         Returns:
             `Ensemble`
-        Notes:
+        Note:
             uses `pandas.read_csv()` to load numeric values from
             CSV file
 
-        Examples::
+        Example::
 
             pst = pyemu.Pst("my.pst")
             oe = pyemu.ObservationEnsemble.from_csv("obs.csv")
@@ -312,7 +312,7 @@ class Ensemble(object):
             oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst)
             oe.to_csv("obs.csv")
 
-        Notes:
+        Note:
             back transforms `ParameterEnsemble` before writing so that
             values are in arithmatic space
 
@@ -339,7 +339,7 @@ class Ensemble(object):
             oe = pyemu.ObservationEnsemble.from_gaussian_draw(pst)
             oe.to_binary("obs.csv")
 
-        Notes:
+        Note:
             back transforms `ParameterEnsemble` before writing so that
             values are in arithmatic space
 
@@ -500,7 +500,7 @@ class Ensemble(object):
         Returns:
             `Ensemble`: an ensemble of deviations around the centering point
 
-        Notes:
+        Note:
             deviations are the Euclidean distances from the `center_on` value to
             realized values for each column
 
@@ -638,7 +638,7 @@ class ObservationEnsemble(Ensemble):
         Returns:
             `ObservationEnsemble`: the realized `ObservationEnsemble` instance
 
-        Notes:
+        Note:
             Only observations named in `cov` are sampled. Additional, `cov` is processed prior
             to sampling to only include non-zero-weighted observations depending on the value of `fill`.
             So users must take care to make sure observations have been assigned non-zero weights even if `cov`
@@ -696,7 +696,7 @@ class ObservationEnsemble(Ensemble):
         Returns:
             `pandas.Series`: series of realization name (`Ensemble.index`) and phi values
 
-        Notes:
+        Note:
             The ObservationEnsemble.pst.weights can be updated prior to calling
             this method to evaluate new weighting strategies
 
@@ -715,7 +715,7 @@ class ObservationEnsemble(Ensemble):
     def add_base(self):
         """add the control file `obsval` values as a realization
 
-        Notes:
+        Note:
             adds the current `ObservationEnsemble.pst.observation_data.obsval` values
                 as a new realization named "base"
 
@@ -731,7 +731,7 @@ class ObservationEnsemble(Ensemble):
         Returns:
             `ObservationEnsemble`: non-zero weighted observation ensemble.
 
-        Notes:
+        Note:
             The `pst` attribute of the returned `ObservationEnsemble` also only includes
             non-zero weighted observations (and is therefore not valid for running
             with PEST or PEST++)
@@ -790,7 +790,7 @@ class ParameterEnsemble(Ensemble):
             `ParameterEnsemble`: the parameter ensemble realized from the gaussian
             distribution
 
-        Notes:
+        Note:
 
             Only parameters named in `cov` are sampled. Missing parameters are assigned values of
             `pst.parameter_data.parval1` along the corresponding columns of `ParameterEnsemble`
@@ -847,14 +847,14 @@ class ParameterEnsemble(Ensemble):
             distribution defined by the parameter upper and lower bounds and initial parameter
             values in `pst`
 
-        Notes:
+        Note:
             respects transformation status in `pst`: fixed and tied parameters are not realized,
             log-transformed parameters are drawn in log space.  The returned `ParameterEnsemble`
             is back transformed (not in log space)
 
             uses numpy.random.triangular
 
-        Examples:
+        Example::
 
             pst = pyemu.Pst("my.pst")
             pe = pyemu.ParameterEnsemble.from_triangular_draw(pst)
@@ -916,14 +916,14 @@ class ParameterEnsemble(Ensemble):
             `ParameterEnsemble`: a parameter ensemble drawn from the multivariate (log) uniform
             distribution defined by the parameter upper and lower bounds `pst`
 
-        Notes:
+        Note:
             respects transformation status in `pst`: fixed and tied parameters are not realized,
             log-transformed parameters are drawn in log space.  The returned `ParameterEnsemble`
             is back transformed (not in log space)
 
             uses numpy.random.uniform
 
-        Examples:
+        Example::
 
             pst = pyemu.Pst("my.pst")
             pe = pyemu.ParameterEnsemble.from_uniform_draw(pst)
@@ -1148,7 +1148,7 @@ class ParameterEnsemble(Ensemble):
     def back_transform(self):
         """back transform parameters with respect to `partrans` value.
 
-        Notes:
+        Note:
             operates in place (None is returned).
 
             Parameter transform is only related to log_{10} and does not
@@ -1167,7 +1167,7 @@ class ParameterEnsemble(Ensemble):
     def transform(self):
         """transform parameters with respect to `partrans` value.
 
-        Notes:
+        Note:
             operates in place (None is returned).
 
             Parameter transform is only related to log_{10} and does not
@@ -1185,9 +1185,9 @@ class ParameterEnsemble(Ensemble):
     def add_base(self):
         """add the control file `obsval` values as a realization
 
-        Notes:
+        Note:
             adds the current `ParameterEnsemble.pst.parameter_data.parval1` values
-                as a new realization named "base"
+            as a new realization named "base"
 
         """
         if "base" in self.index:
@@ -1424,7 +1424,7 @@ class ParameterEnsemble(Ensemble):
         """ enforce parameter bounds on the ensemble by dropping
         violating realizations
 
-        Notes:
+        Note:
             with a large (realistic) number of parameters, the
             probability that any one parameter is out of
             bounds is large, meaning most realization will

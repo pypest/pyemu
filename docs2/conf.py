@@ -36,25 +36,21 @@ release = '0.4'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx.ext.autodoc',
-    'sphinx.ext.doctest',
-    'sphinx.ext.todo',
-    'sphinx.ext.mathjax',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',
-    'sphinx.ext.inheritance_diagram',
     'sphinx_rtd_theme',
+    'sphinx.ext.todo',
     'sphinx.ext.autosummary'
 ]
 
-#autoclass_content = "both"  # include both class docstring and __init__
+autoclass_content = "both"  # include both class docstring and __init__
 
 autosummary_generate = True  # Make _autosummary files and include them
+autosummary_imported_members = True
 napoleon_numpy_docstring = False  # Force consistency, leave only Google
-napoleon_use_rtype = False  # More legible
+#napoleon_use_rtype = False  # More legible
 
-autodoc_member_order = 'bysource'
-# add_module_names = False
+# autodoc_member_order = 'bysource'
+add_module_names = True
 # Add any paths that contain templates here, relative to this directory.
 templates_path = [os.path.join('source','_templates')]
 
@@ -63,7 +59,7 @@ templates_path = [os.path.join('source','_templates')]
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
-master_doc = "index"
+#master_doc = "index"
 
 # -- Options for HTML output -------------------------------------------------
 

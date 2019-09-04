@@ -1,4 +1,5 @@
 """High-level functions to help perform complex tasks
+
 """
 
 from __future__ import print_function, division
@@ -46,7 +47,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
     Returns
         `pyemu.ParameterEnsemble`: the realized parameter ensemble.
 
-    Notes:
+    Note:
         parameters are realized by parameter group.  The variance of each
         parameter group is used to scale the resulting geostatistical
         covariance matrix Therefore, the sill of the geostatistical structures
@@ -162,7 +163,7 @@ def geostatistical_draws(pst, struct_dict,num_reals=100,sigma_range=4,verbose=Tr
                                                         fill=False)
         par_ens.append(pe._df)
     par_ens = pd.concat(par_ens,axis=1)
-    par_ens = pyemu.ParameterEnsemble.from_dataframe(df=par_ens,pst=pst)
+    par_ens = pyemu.ParameterEnsemble(pst=pst,df=par_ens)
     return par_ens
 
 
@@ -187,7 +188,7 @@ def geostatistical_prior_builder(pst, struct_dict,sigma_range=4,
         `pyemu.Cov`: a covariance matrix that includes all adjustable parameters in the control
         file.
 
-    Notes:
+    Note:
         The covariance of parameters associated with geostatistical structures is defined
         as a mixture of GeoStruct and bounds.  That is, the GeoStruct is used to construct a
         pyemu.Cov, then the entire pyemu.Cov is scaled by the uncertainty implied by the bounds and
@@ -356,7 +357,7 @@ def kl_setup(num_eig,sr,struct,prefixes,
     Returns:
         `pandas.DataFrame`: a dataframe of parameter information.
 
-    Notes:
+    Note:
         This is the companion function to `helpers.apply_kl()`
 
     Example::
@@ -480,7 +481,7 @@ def kl_apply(par_file, basis_file,par_to_file_dict,arr_shape):
         arr_shape (tuple): a length 2 tuple of number of rows and columns
             the resulting arrays should have.
 
-        Notes:
+        Note:
             This is the companion function to kl_setup.
             This function should be called during the forward run
 
@@ -612,7 +613,7 @@ def first_order_pearson_tikhonov(pst,cov,reset=True,abs_drop_tol=1.0e-3):
             abs_drop_tol, the prior information equation will not be included in
             the control file.
 
-    Notes:
+    Note:
         The weights on the prior information equations are the Pearson
         correlation coefficients implied by covariance matrix.
 
@@ -679,7 +680,7 @@ def simple_tpl_from_pars(parnames, tplfilename='model.input.tpl'):
         tplfilename (`str`): Name of the template file to create.  Default
             is "model.input.tpl"
 
-    Notes:
+    Note:
         writes a file `tplfilename` with each parameter name in `parnames` on a line
 
     """
@@ -698,7 +699,7 @@ def simple_ins_from_obs(obsnames, insfilename='model.output.ins'):
         insfilename (`str`): the name of the instruction file to
             create. Default is "model.output.ins"
 
-    Notes:
+    Note:
         writes a file `insfilename` with each observation read off
         of a single line
 
@@ -828,7 +829,7 @@ def jco_from_pestpp_runstorage(rnj_filename,pst_filename):
         rnj_filename (`str`): the name of the run storage file
         pst_filename (`str`): the name of the pst file
 
-    Notes:
+    Note:
         This can then be passed to Jco.to_binary or Jco.to_coo, etc., to write jco
         file in a subsequent step to avoid memory resource issues associated
         with very large problems.
@@ -903,7 +904,7 @@ def parse_dir_for_io_files(d):
     Args:
         d (`str`): directory to search for interface files
 
-    Notes:
+    Note:
         the return values from this function can be passed straight to
         `pyemu.Pst.from_io_files()` classmethod constructor. Assumes the
         template file names are <input_file>.tpl and instruction file names
@@ -942,7 +943,7 @@ def pst_from_io_files(tpl_files,in_files,ins_files,out_files,pst_filename=None):
         `Pst`: new control file instance with parameter and observation names
         found in `tpl_files` and `ins_files`, repsectively.
 
-    Notes:
+    Note:
         calls `pyemu.helpers.pst_from_io_files()`
 
         Assigns generic values for parameter info.  Tries to use INSCHEK
@@ -1168,7 +1169,7 @@ class PstFromFlopyModel(object):
             using an "a" parameter that is 10 times the max cell size.  Default is None
 
 
-    Notes:
+    Note:
 
         Setup up multiplier parameters for an existing MODFLOW model.
 
@@ -1839,7 +1840,7 @@ class PstFromFlopyModel(object):
                     self.logger.statement("saving krige factors file:{0}"
                                           .format(fac_file))
                     ok_pp = pyemu.geostats.OrdinaryKrige(self.pp_geostruct, pp_df_k)
-                    ok_pp.calc_factors_grid(self.m.sr, var_filename=var_file, zone_array=ib_k)
+                    ok_pp.calc_factors_grid(self.m.sr, var_filename=var_file, zone_array=ib_k,num_threads=10)
                     ok_pp.to_grid_factors_file(fac_file)
                     pp_processed.add(kattr_id)
                 fac_files[kp_id] = fac_file
@@ -2118,7 +2119,7 @@ class PstFromFlopyModel(object):
             use_specsim (`bool`): flag to use spectral simulation for grid-based
                 parameters.  Requires a regular grid but is wicked fast.  Default is False
 
-        Notes:
+        Note:
             operates on parameters by groups to avoid having to construct a very large
             covariance matrix for problems with more the 30K parameters.
 
@@ -2303,7 +2304,7 @@ class PstFromFlopyModel(object):
             filename (`str`): the filename to save the contorl file to.  If None, the
                 name if formed from the model namfile name.  Default is None.  The control
                 is saved in the `PstFromFlopy.m.model_ws` directory.
-        Notes:
+        Note:
 
             calls pyemu.Pst.from_io_files
 
@@ -2451,7 +2452,7 @@ class PstFromFlopyModel(object):
     def write_forward_run(self):
         """ write the forward run script forward_run.py
 
-        Notes:
+        Note:
             This method can be called repeatedly, especially after any
             changed to the pre- and/or post-processing routines.
 
@@ -2927,7 +2928,7 @@ def apply_array_pars(arr_par_file="arr_pars.csv"):
         arr_par_file (`str`): path to csv file detailing parameter array multipliers.
             This file is written by PstFromFlopy.
 
-    Notes:
+    Note:
         Used to implement the parameterization constructed by
         PstFromFlopyModel during a forward run
 
@@ -2985,7 +2986,7 @@ def apply_array_pars(arr_par_file="arr_pars.csv"):
 def apply_list_pars():
     """ a function to apply boundary condition multiplier parameters.
 
-    Notes:
+    Note:
         Used to implement the parameterization constructed by
         PstFromFlopyModel during a forward run
 
@@ -3358,7 +3359,7 @@ def setup_fake_forward_run(pst,new_pst_name,org_cwd='.',bak_suffix="._bak",new_c
             model output files when making backup copies.
         new_cwd (`str`): new working dir.  Default is ".".
 
-    Notes:
+    Note:
         The fake forward run simply copies existing backup versions of
         model output files to the outfiles pest(pp) is looking
         for.  This is really a development option for debugging

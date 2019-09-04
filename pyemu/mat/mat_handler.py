@@ -2316,7 +2316,7 @@ class Cov(Matrix):
                 and not `Cov.isdiagonal`
             var_mult (`float`): variance multiplier for the covmat_file entry
 
-        Example:
+        Example::
 
             cov = pyemu.Cov.from_parameter_data(pst)
             cov.to_uncfile("my.unc")

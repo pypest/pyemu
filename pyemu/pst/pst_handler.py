@@ -2140,7 +2140,7 @@ class Pst(object):
         Note:
             populates the new parameter information with default values
 
-        Example:
+        Example::
 
             pst = pyemu.Pst(os.path.join("template","my.pst"))
             pst.add_parameters(os.path.join("template","new_pars.dat.tpl",pst_path=".")
@@ -2496,8 +2496,8 @@ class Pst(object):
         Args:
             filename (`str`): latex filename. If `filename` is "none", no table is written.
                 If None, use <case>.par.tex. Default is None
-        group_names (`dict`): obs group names : table names. For example {"hds":"simulated groundwater level"}.
-            Default is None
+            group_names (`dict`): obs group names : table names. For example {"hds":"simulated groundwater level"}.
+                Default is None
 
         Returns:
             `pandas.DataFrame`: the summary observation group dataframe
