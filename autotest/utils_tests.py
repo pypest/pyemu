@@ -1770,7 +1770,7 @@ def run_test():
     import platform
 
     if "window" in platform.platform().lower():
-        pyemu.os_utils.run("dir")
+        pyemu.os_utils.run("echo test")
     else:
         pyemu.os_utils.run("ls")
     try:
