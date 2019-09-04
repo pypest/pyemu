@@ -1764,7 +1764,24 @@ def aniso_invest():
     #axes[1].set_title("bearing: 95")
     plt.show()
 
+def run_test():
+    import os
+    import pyemu
+    import platform
+
+    if "window" in platform.platform().lower():
+        pyemu.os_utils.run("dir")
+    else:
+        pyemu.os_utils.run("ls")
+    try:
+        pyemu.os_utils.run("junk")
+    except:
+        pass
+    else:
+        raise Exception("should have failed")
+
 if __name__ == "__main__":
+    run_test()
     #specsim_test()
     #aniso_invest()
     #fieldgen_dev()
@@ -1786,7 +1803,7 @@ if __name__ == "__main__":
     #par_knowledge_test()
     # grid_obs_test()
     #hds_timeseries_test()
-    postprocess_inactive_conc_test()
+    #postprocess_inactive_conc_test()
     #plot_summary_test()
     # load_sgems_expvar_test()
     # read_hydmod_test()

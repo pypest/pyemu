@@ -84,7 +84,7 @@ def run(cmd_str,cwd='.',verbose=False):
 
     Notes:
         uses `platform` to detect OS and adds .exe suffix or ./ prefix as appropriate
-        For Windows, if `os.system` returns non-zero, an exception is raised
+        if `os.system` returns non-zero, an exception is raised
 
     Example::
 
@@ -109,7 +109,6 @@ def run(cmd_str,cwd='.',verbose=False):
             if os.path.exists(exe_name) and not exe_name.startswith('./'):
                 cmd_str = "./" + cmd_str
 
-
     except Exception as e:
         os.chdir(bwd)
         raise Exception("run() error preprocessing command line :{0}".format(str(e)))
@@ -122,9 +121,14 @@ def run(cmd_str,cwd='.',verbose=False):
         os.chdir(bwd)
         raise Exception("run() raised :{0}".format(str(e)))
     os.chdir(bwd)
+
     if "window" in platform.platform().lower():
         if ret_val != 0:
-            raise Exception("run() returned non-zero")
+            raise Exception("run() returned non-zero: {0".format(ret_val))
+    else:
+        estat = os.WEXITSTATUS(ret_val)
+        if estat != 0:
+            raise Exception("run() returned non-zero: {0}".format(estat))
 
 
 def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_root="..",
