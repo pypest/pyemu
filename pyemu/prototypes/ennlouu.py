@@ -356,7 +356,7 @@ class EnsembleSQP(EnsembleMethod):
             see Fonseca et al. 2013. default False (only used for cov mat adaptation components)
         '''
         if use_dist_mean_for_delta:
-            mean = np.array(self.pst.parameter_data.parval1)
+            mean = np.array(self.pst.parameter_data.parval1)  # TODO: Eq (10) Hansen 2006 - use mean from all iters?
         else:
             mean = np.array(ensemble.mean(axis=0))
         delta = Matrix(x=ensemble.as_matrix(), row_names=ensemble.index, col_names=ensemble.columns)
@@ -587,7 +587,7 @@ class EnsembleSQP(EnsembleMethod):
 
 
     def _cov_mat_adapt(self,en_cov,rank_mu=True,rank_one=False,learning_rate=0.5,mu_prop=0.25,
-                       use_dist_mean_for_delta=True):
+                       use_dist_mean_for_delta=True,mu_learning_prop=0.5):
         '''
         covariance matrix adaptation evolutionary strategy for dec var cov matrix
         see Fonseca et al. 2014 SPE
@@ -602,7 +602,12 @@ class EnsembleSQP(EnsembleMethod):
         use_dist_mean_for_delta : bool
             flag to use mean based on ``prior'' dec var (i.e., from `parval1`).
             see Fonseca et al. 2013. default here is True
-        #TODO: try only adapting diag for increased robustness?
+        mu_learning_prop : float
+            proportion of learning (governed by learning_rate arg) via rank mu update (compared to rank one update).
+            Hansen (2011) suggest mu learning more important with larger ensemble size, and vice versa.
+
+        #TODO: try only adapting diag for increased robustness? as per Fonseca
+        #TODO: finish implementing rank-one update
         #TODO: check use of ``distribution mean''
 
         '''
@@ -622,14 +627,19 @@ class EnsembleSQP(EnsembleMethod):
                 sorted_idx = self.obsensemble.sort_values(ascending=False, by=self.obsensemble.columns[0]).index
             par_en.index = sorted_idx
             par_en = par_en[:mu]
-            # TODO: if using standard delta calc, use the already calcd one from origin cov call
             sub_delta = self._calc_delta_(par_en,
                                           use_dist_mean_for_delta=use_dist_mean_for_delta)
-            en_cov = (1.0 - learning_rate) * en_cov + (learning_rate / mu) * (sub_delta.T * sub_delta)
-            if np.linalg.matrix_rank((sub_delta.T * sub_delta).x) > mu:
-                self.logger.lraise("matrix product should not be of rank greater than mu")
-            if rank_one:
-                self.logger.lraise("TODO: implement rank-one cma")
+            if rank_one:  # in addition to rank mu update
+                # pseudo
+                #p = (1.0 - c) * prev mean + (c * (2 - c) * mu)**0.5 * ((sum(mean changes)) / step size)
+                #en_cov = (1.0 - learning_rate) * en_cov +\
+                         #(learning_rate * mu_learning_prop / mu) * (sub_delta.T * sub_delta) +\
+                         #(learning_rate * (1.0 / mu_learning_prop)) * (p * p.T)
+                self.logger.lraise("rank-one update not implemented... yet")
+            else:
+                en_cov = (1.0 - learning_rate) * en_cov + (learning_rate / mu) * (sub_delta.T * sub_delta)
+                if np.linalg.matrix_rank((sub_delta.T * sub_delta).x) > mu:
+                    self.logger.lraise("matrix product should not be of rank greater than mu here")
         else:
             self.logger.lraise("rank_mu not True--skipping cov matrix adaptation")
 
