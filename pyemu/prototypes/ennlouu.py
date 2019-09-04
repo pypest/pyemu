@@ -359,8 +359,9 @@ class EnsembleSQP(EnsembleMethod):
             mean = np.array(self.pst.parameter_data.parval1)  # TODO: Eq (10) Hansen 2006 - use mean from all iters?
         else:
             mean = np.array(ensemble.mean(axis=0))
-        delta = Matrix(x=ensemble.as_matrix(), row_names=ensemble.index, col_names=ensemble.columns)
-        for i in range(ensemble.shape[0]):
+        delta = ensemble.copy()
+        delta = Matrix(x=delta.values, row_names=ensemble.index, col_names=ensemble.columns)
+        for i in range(delta.shape[0]):
             delta.x[i, :] -= mean
 
         return delta
@@ -697,6 +698,7 @@ class EnsembleSQP(EnsembleMethod):
 
     	# TODO: calc par and obs delta wrt one another rather than mean?
     	# TODO: sub-setting
+    	# TODO: Langrangian formulation (and localization on constraint relationships)
         """
 
         if opt_direction is "min" or "max":
@@ -746,7 +748,6 @@ class EnsembleSQP(EnsembleMethod):
             self.logger.log("compute phi grad using finite diffs")
         else:
             self.logger.log("compute phi grad using ensemble approx")
-            # compute dec var covariance and dec var-phi cross covariance matrices - they are actually vectors
             self.logger.log("compute dec var en covariance vector")
             # TODO: add check for parensemble var = 0 (all dec vars at (same) bounds). Or draw around mean on bound?
             self.en_cov_decvar = self._calc_en_cov_decvar(self.parensemble)
@@ -819,7 +820,7 @@ class EnsembleSQP(EnsembleMethod):
         # TODO: handling of fixed, transformed etc. dec vars here
 
         self.parensemble_mean_next = None
-        step_lengths, mean_en_phi_per_alpha = [],pd.DataFrame()
+        step_lengths, mean_en_phi_per_alpha, curv_per_alpha = [], pd.DataFrame(), pd.DataFrame()
         #base_step = 1.0  # start with 1.0 and progressively make smaller (will be 1.0 eventually if convex..)
         # TODO: check notion of adjusting alpha wrt Hessian?  similar to line searching...
         base_step = ((self.pst.parameter_data.parubnd.mean()-self.pst.parameter_data.parlbnd.mean()) * 0.1) \
@@ -837,11 +838,11 @@ class EnsembleSQP(EnsembleMethod):
              #          self.parensemble_mean_1.x,fmt="%15.6e")
             # shift parval1  #TODO: change below line to adj dec var pars only..
             par = self.pst.parameter_data
-            par.loc[par['partrans']=="none","parval1"] = pd.Series(np.squeeze(self.parensemble_mean_1.x, axis=0),\
-                                                                   index=self.parensemble_mean_1.col_names,) * -1
+            par.loc[par['partrans'] == "none", "parval1"] = pd.Series(np.squeeze(self.parensemble_mean_1.x, axis=0),
+                                                                      index=self.parensemble_mean_1.col_names,) * -1
             # TODO: -1 here to account for par.scale
             #  and bound handling
-            out_of_bounds = par.loc[(par.parubnd < par.parval1) | (par.parlbnd > par.parval1),:]
+            out_of_bounds = par.loc[(par.parubnd < par.parval1) | (par.parlbnd > par.parval1), :]
             if out_of_bounds.shape[0] > 0:
                 self.logger.log("{0} mean dec vars for step {1} out-of-bounds: {2}..."
                                 .format(out_of_bounds.shape[0],step_size,list(out_of_bounds.parnme)))
@@ -859,23 +860,18 @@ class EnsembleSQP(EnsembleMethod):
             # self.parensemble_1 = ParameterEnsemble.from_uniform_draw(self.pst, num_reals=num_reals)
             self.parensemble_1 = ParameterEnsemble.from_gaussian_draw(self.pst, cov=self.parcov * self.draw_mult,
                                                                       num_reals=self.num_reals)
-            # TODO: update the parcov empirically based on success or otherwise of previous iteration in terms of phi
             # TODO: alternatively tighten/widen search region to reflect representativeness of gradient (mechanistic)
             # TODO: two sets of bounds: one hard on dec var and one (which can adapt during opt)
-            # TODO: for ensemble just to get grad
             #self.parensemble_1.enforce(enforce_bounds=self.enforce_bounds)  # suffic to check mean
             self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num,step_size)
                                       + self.paren_prefix.format(0))
-            self.parensemble_1.to_csv(self.pst.filename + ".current" + self.paren_prefix.format(0))  #for `covert.py` for supply2 problem only...
+            self.parensemble_1.to_csv(self.pst.filename + ".current" + self.paren_prefix.format(0))
+            # for `covert.py` for supply2 problem only...
             self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
 
             self.logger.log("undertaking calcs for step size (multiplier) : {0}...".format(step_size))
 
-            # TODO: localization (with respect to gradient-dec var relationship only?). Cov localization?
-
-            # run the ensemble for diff step size lengths
-            self.logger.log("evaluating ensembles for step size : {0}".
-                            format(','.join("{0:8.3E}".format(step_size))))
+            self.logger.log("evaluating ensembles for step size : {0}".format(','.join("{0:8.3E}".format(step_size))))
             failed_runs_1, self.obsensemble_1 = self._calc_obs(self.parensemble_1)  # run
             if "supply2" in self.pst.filename:  #TODO: temp only until pyemu can evaluate pi eqs
                 self.obsensemble = self._append_pi_to_obs(self.obsensemble,"obj_func_en.csv","obj_func",
@@ -909,9 +905,19 @@ class EnsembleSQP(EnsembleMethod):
                     self.parensemble_next = self.parensemble_1.copy()
                     [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
                                                             and x.split(".")[2] == str(self.iter_num))]
-                    # or (x.endswith("pst.obsensemble.0000.csv"))
                     self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
                                               + self.obsen_prefix.format(0))
+
+                    # test curv condition here too
+                    delta_parensemble_mean = self.parensemble_mean_next - self.parensemble_mean
+                    curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
+                                       row_names=self.phi_grad.row_names, col_names=self.phi_grad.col_names)
+                    y = self.phi_grad - curr_grad  # start with column vector
+                    s = delta_parensemble_mean.T  # start with column vector
+                    # curv condition related tests
+                    ys = y.T * s  # inner product
+                    curv_per_alpha["{0}".format(step_size)] = float(ys.x)
+
             self.logger.log("evaluating ensembles for step size : {0}".format(','.join("{0:8.3E}".format(step_size))))
 
         if constraints:
@@ -922,6 +928,8 @@ class EnsembleSQP(EnsembleMethod):
             best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
             best_alpha_per_it_df.to_csv("best_alpha_per_it.csv")
             self.logger.log("best step length (alpha): {0}".format("{0:8.3E}".format(best_alpha)))
+
+        curv_per_alpha.to_csv("curv_per_alpha_it{0}.csv".format(self.iter_num))
 
         # deal with unsuccessful iteration
         if self.parensemble_mean_next is None:
@@ -954,12 +962,10 @@ class EnsembleSQP(EnsembleMethod):
          #   hess_self_scaling = False # TODO: every iteration?
 
         if alg == "BFGS":
-            self.inv_hessian,hess_progress_d = self._BFGS_hess_update(self.inv_hessian,
-                                                                      self.curr_grad, self.phi_grad,
-                                                                      self.delta_parensemble_mean,
-                                                                      self_scale=hess_self_scaling,
-                                                                      scale_only=scale_only,
-                                                                      damped=damped)
+            self.inv_hessian, hess_progress_d = self._BFGS_hess_update(self.inv_hessian, self.curr_grad,
+                                                                       self.phi_grad, self.delta_parensemble_mean,
+                                                                       self_scale=hess_self_scaling,
+                                                                       scale_only=scale_only, damped=damped)
         else:  # LBFGS
             pass
             #self.inv_hessian = self._LBFGS_hess_update(self.inv_hessian,

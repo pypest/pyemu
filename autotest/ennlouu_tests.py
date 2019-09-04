@@ -264,8 +264,9 @@ def cma_invest(version):
     vars = {"learning_rate": [0.1,0.5,0.9],
             "mu_prop": [0.1,0.25,0.5],
             "dist_mean": [False,True],
-            "rank_one": [False,True],
             }
+            #"rank_one": [False, True],
+
             #"initial_decvars": [1.6],
             #"en_size": [20],
     #TODO: add rank-mu prop var
@@ -491,7 +492,7 @@ if __name__ == "__main__":
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    rosenbrock_multiple_update(version="2par",nit=15)
+    rosenbrock_multiple_update(version="2par",nit=15,en_size=20)
     rosenbrock_phi_progress(version="2par")
     #rosenbrock_2par_grad_approx_invest()
 
@@ -515,4 +516,4 @@ if __name__ == "__main__":
 
     #rosenbrock_multiple_update(version="2par",cma=True,nit=10)
     #rosenbrock_phi_progress(version="2par",label="phi_progress_cma.pdf")
-    cma_invest(version="2par")
+    #cma_invest(version="2par")
