@@ -1043,7 +1043,7 @@ class OrdinaryKrige(object):
             pty_array = point_data.y.values
             ptnames = point_data.name.values
         else:
-            pt_data = self.point_data
+            pt_data = point_data
             ptx_array = pt_data.loc[pt_data.zone == pt_zone, "x"].values
             pty_array = pt_data.loc[pt_data.zone == pt_zone, "y"].values
             ptnames = pt_data.loc[pt_data.zone == pt_zone, "name"].values
