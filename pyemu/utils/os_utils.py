@@ -124,7 +124,7 @@ def run(cmd_str,cwd='.',verbose=False):
 
     if "window" in platform.platform().lower():
         if ret_val != 0:
-            raise Exception("run() returned non-zero: {0".format(ret_val))
+            raise Exception("run() returned non-zero: {0}".format(ret_val))
     else:
         estat = os.WEXITSTATUS(ret_val)
         if estat != 0:
