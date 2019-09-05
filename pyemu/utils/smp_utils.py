@@ -151,7 +151,7 @@ def _date_parser(items):
 
 
 def smp_to_dataframe(smp_filename,datetime_format=None):
-    """ load an smp file into a pandas dataframe (stacked in wide format)
+    """ load an smp file into a pandas dataframe
 
     Args:
         smp_filename (`str`): path and nane of existing smp filename to load
