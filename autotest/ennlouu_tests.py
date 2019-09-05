@@ -486,6 +486,26 @@ def plot_mean_dev_var_bar(opt_par_en="supply2_pest.parensemble.0000.csv",three_r
     # plt.show()
     plt.savefig("dec_vars.pdf")
 
+def plot_2par_rosen():
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import pyemu
+
+    os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
+    pst = pyemu.Pst("rosenbrock_2par.pst")
+
+    f = lambda x1, x2: 100.0 * (x2 - x1 ** 2.0) ** 2.0 + (1 - x1) ** 2.0  # from rosenbrock_2par.py
+
+    n = 100  # dx and dy
+
+    X, Y = np.meshgrid(np.linspace(pst.parameter_data.parlbnd[0], pst.parameter_data.parubnd[0], n),
+                       np.linspace(pst.parameter_data.parlbnd[1], pst.parameter_data.parubnd[1], n))
+    Z = f(X, Y)
+
+    plt.contour(X, Y, Z, np.logspace(-0.5, 3.5, 30, base=10), cmap='gray')
+
+    plt.savefig("rosen_surf.pdf")
+
 
 if __name__ == "__main__":
     #rosenbrock_setup(version="2par")
@@ -493,8 +513,10 @@ if __name__ == "__main__":
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
     #rosenbrock_multiple_update(version="2par",nit=5,en_size=3)
-    rosenbrock_phi_progress(version="2par")
+    #rosenbrock_phi_progress(version="2par")
     #rosenbrock_2par_grad_approx_invest()
+
+    plot_2par_rosen()
 
     #rosenbrock_setup(version="high_dim")
     #rosenbrock_multiple_update(version="high_dim")

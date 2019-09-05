@@ -455,15 +455,19 @@ class EnsembleSQP(EnsembleMethod):
 
         if damped is True and float(ys.x) <= 0:
             # expanded form of Nocedal and Wright (18.16)
+            self.logger.log("updating Hessian using dampened form...")
             Hr = self.H * r
             rHr = r.T * Hr
             self.H += (float(rs.x + rHr.x)) * ssT.x / float((rs ** 2).x)  # TODO: add scalar handling to mat_handler (Exception on line 473)
             self.H -= float((Hr.T * self.s).x + (self.s.T * Hr).x) / float(rs.x)
+            self.logger.log("updating Hessian using dampened form...")
         else:
             # expanded form of Nocedal and Wright (6.17)
+            self.logger.log("updating Hessian using standard form...")
             self.H += (float(ys.x + yHy.x)) * ssT.x / float((ys ** 2).x)  # TODO: add scalar handling to mat_handler (Exception on line 473)
             #self.H += (ys + yHy) * ssT / (ys ** 2)
             self.H -= float((Hy.T * self.s).x + (self.s.T * Hy).x) / float(ys.x)
+            self.logger.log("updating Hessian using standard form...")
         self.logger.log("updating Hessian...")
 
         #  TODO: Hessian positive-definite-ness check? Unnecessary according to proposition (8.2) in Oliver et al...
