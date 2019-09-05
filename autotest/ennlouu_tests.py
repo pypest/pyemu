@@ -178,7 +178,7 @@ def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
     esqp = pyemu.EnsembleSQP(pst="rosenbrock_{}.pst".format(ext))#,num_slaves=10)
     esqp.initialize(num_reals=en_size,draw_mult=draw_mult,constraints=constraints)
     for it in range(nit):
-        esqp.update(step_mult=list(np.logspace(-6,0,14)),constraints=constraints,biobj_weight=biobj_weight,cma=cma,
+        esqp.update(step_mult=list(np.logspace(-6,0,13)),constraints=constraints,biobj_weight=biobj_weight,cma=cma,
                     rank_one=rank_one,learning_rate=learning_rate,mu_prop=mu_prop,
                     use_dist_mean_for_delta=use_dist_mean_for_delta)
     os.chdir(os.path.join("..", ".."))
@@ -488,11 +488,11 @@ def plot_mean_dev_var_bar(opt_par_en="supply2_pest.parensemble.0000.csv",three_r
 
 
 if __name__ == "__main__":
-    rosenbrock_setup(version="2par")
+    #rosenbrock_setup(version="2par")
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    rosenbrock_multiple_update(version="2par",nit=15,en_size=20)
+    #rosenbrock_multiple_update(version="2par",nit=5,en_size=3)
     rosenbrock_phi_progress(version="2par")
     #rosenbrock_2par_grad_approx_invest()
 

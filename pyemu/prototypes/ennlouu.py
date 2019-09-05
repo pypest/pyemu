@@ -399,36 +399,44 @@ class EnsembleSQP(EnsembleMethod):
                              .format(float(ys.x)) +
                              "  If we update (or scale) Hessian matrix now it will not be positive definite !!\n" +
                              "  Either skipping scaling/updating (not recommended) or dampening...")
-            if damped:  # damped where required only
+            if damped:  # damped (where required only--where curv cond violated)
                 self.logger.log("using damped version of BFGS alg implementation..")
-                damp_par = 0.2  # TODO: allow user to pass but with default??
+                damp_par = 0.2  # TODO: allow user to pass??
                 sHs = self.s.T * self.H * self.s  # a scalar
                 dampening_cond = damp_par * float(sHs.x)
-                if float(ys.x) < dampening_cond:
-                    damp_factor = float(((1 - damp_par) * self.s.T * self.H * self.s).x \
-                                        / (self.s.T * self.H * self.s).x - (self.s.T * self.y).x)
+                if abs(float(ys.x)) < dampening_cond:  #TODO: or float(ys.x) < dampening_cond
+                    damp_factor = float(((1 - damp_par) * sHs).x / sHs.x - (self.s.T * self.y).x)
                 else:
                     damp_factor = 1.0
                 r = (damp_factor * self.y.x) + ((1.0 - damp_factor) * (self.H * self.s).x)
                 r = Matrix(x=r,row_names=self.y.row_names,col_names=self.y.col_names)
                 rs = r.T * self.s.x
-                self.logger.log("using damped version of BFGS alg implementation..")
                 hess_scalar = float(rs.x / (r.T * r).x)  # Nocedal and Wright
-                if hess_scalar < 0:
+                self.logger.log("using damped version of BFGS alg implementation..")
+                if hess_scalar < 0:  # abort
+                    self.logger.warn("can't scale despite dampening...")
+                    if self.iter_num == 1:
+                        self.logger.warn("not unexpected for iter_num given absence of grad info at iter_num 0...")
                     self.hess_progress[self.iter_num] = "skip scaling despite using dampening"#.format(float(rs.x))
                     return self.H, self.hess_progress
-            else:
+                else:
+                    pass
+            else:  # abort
                 self.hess_progress[self.iter_num] = "yTs = {0:8.3E}".format(float(ys.x))
+                if self.iter_num == 1:
+                    self.logger.warn("not unexpected for iter_num given absence of grad info at iter_num 0...")
                 return self.H, self.hess_progress
 
         # scale
         if self_scale:
             self.logger.log("scaling Hessian...")
-            if not (float(ys.x) <= 0 and damped):
+            if not (float(ys.x) <= 0):  # not already scaled
                 # hess_scale = float((self.y.T * self.s).x / (self.y.T * self.H * self.y).x)  # Oliver et al.
                 hess_scalar = float(ys.x / (self.y.T * self.y).x)  # Nocedal and Wright
-            if hess_scalar < 0:
-                self.logger.lraise("hessian scalar is not strictly positive!")
+                if hess_scalar < 0:  # abort
+                    self.logger.lraise("hessian scalar is not strictly positive!")
+                    self.hess_progress[self.iter_num] = "skip scaling"
+                    return self.H, self.hess_progress
             self.H *= hess_scalar
             self.H_cp = self.H.copy()
             self.logger.log("scaling Hessian...")
@@ -445,7 +453,7 @@ class EnsembleSQP(EnsembleMethod):
         ssT = self.s * self.s.T  # outer prod
         Hy = self.H * self.y
 
-        if damped and float(ys.x) <= 0:
+        if damped is True and float(ys.x) <= 0:
             # expanded form of Nocedal and Wright (18.16)
             Hr = self.H * r
             rHr = r.T * Hr
@@ -458,10 +466,8 @@ class EnsembleSQP(EnsembleMethod):
             self.H -= float((Hy.T * self.s).x + (self.s.T * Hy).x) / float(ys.x)
         self.logger.log("updating Hessian...")
 
-        # TODO: revive this check (or a variation thereof)! If not pos def when skipping this, math above must be wrong!
-        # TODO: forgive very small neg eigenvals?  Yes. abs(1e-6). eigthresh=self.pst.svd_data.eigthresh
-        #  Hessian positive-definite-ness check? Unnecessary according to proposition (8.2) in Oliver et al.
-        if not np.all(np.linalg.eigvals(self.H.as_2d) > 0):
+        #  TODO: Hessian positive-definite-ness check? Unnecessary according to proposition (8.2) in Oliver et al...
+        if not np.all(np.linalg.eigvals(self.H.as_2d) > -1 * self.pst.svd_data.eigthresh):  #0): #  TODO: check accounting for noise
             if float(ys.x) <= 0 and damped:
                 self.logger.lraise("Hessian update causes pos-def status to be violated despite using dampening... \n")
             else:
@@ -475,7 +481,9 @@ class EnsembleSQP(EnsembleMethod):
 
     def _LBFGS_hess_update(self,curr_inv_hess,curr_grad,new_grad,delta_par,idx,trunc_thresh=5):
         '''
-        Use this for large problems
+        Use this for large problems.
+
+        This involves calling _BFGS_hess_update() only with truncation of old gradient information vectors.
         '''
         # TODO
 
@@ -838,10 +846,11 @@ class EnsembleSQP(EnsembleMethod):
              #          self.parensemble_mean_1.x,fmt="%15.6e")
             # shift parval1  #TODO: change below line to adj dec var pars only..
             par = self.pst.parameter_data
-            par.loc[par['partrans'] == "none", "parval1"] = pd.Series(np.squeeze(self.parensemble_mean_1.x, axis=0),
-                                                                      index=self.parensemble_mean_1.col_names,) * -1
-            # TODO: -1 here to account for par.scale
-            #  and bound handling
+            if "supply2" in self.pst.filename:  # TODO: temp hack: -1 here to account for par.scale
+                par.loc[par['partrans'] == "none", "parval1"] = self.parensemble_mean_1.T.x * -1
+            else:
+                par.loc[par['partrans'] == "none", "parval1"] = self.parensemble_mean_1.T.x
+            # and bound handling
             out_of_bounds = par.loc[(par.parubnd < par.parval1) | (par.parlbnd > par.parval1), :]
             if out_of_bounds.shape[0] > 0:
                 self.logger.log("{0} mean dec vars for step {1} out-of-bounds: {2}..."
@@ -908,7 +917,7 @@ class EnsembleSQP(EnsembleMethod):
                     self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
                                               + self.obsen_prefix.format(0))
 
-                    # test curv condition here too
+                    # test curv condition here too?
                     delta_parensemble_mean = self.parensemble_mean_next - self.parensemble_mean
                     curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
                                        row_names=self.phi_grad.row_names, col_names=self.phi_grad.col_names)
@@ -916,7 +925,7 @@ class EnsembleSQP(EnsembleMethod):
                     s = delta_parensemble_mean.T  # start with column vector
                     # curv condition related tests
                     ys = y.T * s  # inner product
-                    curv_per_alpha["{0}".format(step_size)] = float(ys.x)
+                    curv_per_alpha.loc["{}".format(step_size),"{}".format(self.iter_num)] = float(ys.x)
 
             self.logger.log("evaluating ensembles for step size : {0}".format(','.join("{0:8.3E}".format(step_size))))
 
@@ -951,6 +960,7 @@ class EnsembleSQP(EnsembleMethod):
 
         self.logger.log("scaling and/or updating Hessian via quasi-Newton")
         if self.iter_num == 1:  # no pre-existing grad or par delta info so scale only.. #TODO: direct query
+            # TODO: skip Hessian scaling and updating here?
             self.curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
                                     row_names=self.phi_grad.row_names,col_names=self.phi_grad.col_names)
             if hess_self_scaling:
