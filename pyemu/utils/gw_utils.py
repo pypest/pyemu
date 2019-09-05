@@ -474,7 +474,11 @@ def setup_hds_timeseries(bin_file, kij_dict, prefix=None, include_path=False,
     if text is not None:
         text = text.upper()
         try:
-            bf = flopy.utils.CellBudgetFile(bin_file,precision=precision,model=model)
+            # hack: if model is passed and its None, it trips up CellBudgetFile...
+            if model is not None:
+                bf = flopy.utils.CellBudgetFile(bin_file,precision=precision,model=model)
+            else:
+                bf = flopy.utils.CellBudgetFile(bin_file, precision=precision)
         except Exception as e:
             raise Exception("error instantiating CellBudgetFile:{0}".format(str(e)))
         tl = [t.decode().strip() for t in bf.textlist]

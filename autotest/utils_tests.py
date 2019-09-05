@@ -1781,7 +1781,7 @@ def run_test():
         raise Exception("should have failed")
 
 if __name__ == "__main__":
-    run_test()
+    #run_test()
     #specsim_test()
     #aniso_invest()
     #fieldgen_dev()
@@ -1802,7 +1802,7 @@ if __name__ == "__main__":
     # gw_sft_ins_test()
     #par_knowledge_test()
     # grid_obs_test()
-    #hds_timeseries_test()
+    hds_timeseries_test()
     #postprocess_inactive_conc_test()
     #plot_summary_test()
     # load_sgems_expvar_test()
