@@ -133,7 +133,7 @@ def run(cmd_str,cwd='.',verbose=False):
 
 def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_root="..",
                  port=4004,rel_path=None,local=True,cleanup=True,master_dir=None,
-                 verbose=False,silent_master=False):
+                 verbose=False,silent_master=False, reuse_master=False):
     """ start a group of pest(++) workers on the local machine
 
     Args:
@@ -165,6 +165,9 @@ def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_r
         silent_master (`bool`, optional): flag to pipe master output to devnull and instead print
             a simple message to stdout every few seconds.  This is only for
             pestpp Travis testing so that log file sizes dont explode. Default is False
+        reuse_master (`bool`): flag to use an existing `master_dir` as is - this is an advanced user
+            option for cases where you want to construct your own `master_dir` then have an async
+            process started in it by this function.
 
     Notes:
         if all workers (and optionally master) exit gracefully, then the worker
@@ -220,13 +223,13 @@ def start_workers(worker_dir,exe_rel_path,pst_rel_path,num_workers=None,worker_r
                 exe_rel_path = "./" + exe_rel_path
 
     if master_dir is not None:
-        if master_dir != '.' and os.path.exists(master_dir):
+        if master_dir != '.' and os.path.exists(master_dir) and not reuse_master:
             try:
                 shutil.rmtree(master_dir, onerror=_remove_readonly)#, onerror=del_rw)
             except Exception as e:
                 raise Exception("unable to remove existing master dir:" + \
                                 "{0}\n{1}".format(master_dir,str(e)))
-        if master_dir != '.':
+        if master_dir != '.' and not reuse_master:
             try:
                 shutil.copytree(worker_dir,master_dir)
             except Exception as e:
