@@ -169,7 +169,8 @@ def rosenbrock_multiple_update(version,nit=20,draw_mult=3e-5,en_size=20,
             raise Exception
         else:
             os.chdir(os.path.join("ennlouu","rosenbrock_high_dim"))
-    [os.remove(x) for x in os.listdir() if (x.endswith("obsensemble.0000.csv"))]
+    [os.remove(x) for x in os.listdir() if x.endswith("obsensemble.0000.csv")]
+    [os.remove(x) for x in os.listdir() if x.endswith("parensemble.0000.csv")]
     [os.remove(x) for x in os.listdir() if (x.startswith("filter.") and "csv" in x)]
     if constraints:
         ext = version + "_constrained"
@@ -489,6 +490,7 @@ def plot_mean_dev_var_bar(opt_par_en="supply2_pest.parensemble.0000.csv",three_r
 def plot_2par_rosen():
     import numpy as np
     import matplotlib.pyplot as plt
+    import pandas as pd
     import pyemu
 
     os.chdir(os.path.join("ennlouu", "rosenbrock_2par"))
@@ -502,9 +504,16 @@ def plot_2par_rosen():
                        np.linspace(pst.parameter_data.parlbnd[1], pst.parameter_data.parubnd[1], n))
     Z = f(X, Y)
 
-    plt.contour(X, Y, Z, np.logspace(-0.5, 3.5, 30, base=10), cmap='gray')
+    plt.contour(X, Y, Z, np.logspace(-0.5, 3.5, 10, base=10), cmap='gray')
+
+    par_ens = [x for x in os.listdir() if x.endswith(".parensemble.0000.csv")]
+    for pe in par_ens:
+        df = pd.read_csv(pe,index_col=0)
+        #plt.scatter(x=df[pst.parameter_data.parnme[0]],y=df[pst.parameter_data.parnme[1]])
+        plt.scatter(x=df[pst.parameter_data.parnme[0]].mean(axis=0), y=df[pst.parameter_data.parnme[1]].mean(axis=0))
 
     plt.savefig("rosen_surf.pdf")
+    plt.show()
 
 
 if __name__ == "__main__":
@@ -512,11 +521,11 @@ if __name__ == "__main__":
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    #rosenbrock_multiple_update(version="2par",nit=5,en_size=3)
+    rosenbrock_multiple_update(version="2par",nit=5,en_size=3)
     #rosenbrock_phi_progress(version="2par")
     #rosenbrock_2par_grad_approx_invest()
 
-    plot_2par_rosen()
+    #plot_2par_rosen()
 
     #rosenbrock_setup(version="high_dim")
     #rosenbrock_multiple_update(version="high_dim")

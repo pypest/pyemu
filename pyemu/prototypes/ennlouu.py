@@ -876,9 +876,9 @@ class EnsembleSQP(EnsembleMethod):
             # TODO: alternatively tighten/widen search region to reflect representativeness of gradient (mechanistic)
             # TODO: two sets of bounds: one hard on dec var and one (which can adapt during opt)
             #self.parensemble_1.enforce(enforce_bounds=self.enforce_bounds)  # suffic to check mean
-            self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num,step_size)
-                                      + self.paren_prefix.format(0))
-            self.parensemble_1.to_csv(self.pst.filename + ".current" + self.paren_prefix.format(0))
+            #self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num,step_size)
+             #                         + self.paren_prefix.format(0))
+            #self.parensemble_1.to_csv(self.pst.filename + ".current" + self.paren_prefix.format(0))
             # for `covert.py` for supply2 problem only...
             self.logger.log("drawing {0} dec var realizations centred around new mean".format(self.num_reals))
 
@@ -906,6 +906,8 @@ class EnsembleSQP(EnsembleMethod):
 
                     self.parensemble_mean_next = self.parensemble_mean_1.copy()
                     self.parensemble_next = self.parensemble_1.copy()
+                    self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size) +
+                                              self.paren_prefix.format(0))
                     [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
                                                             and x.split(".")[2] == str(self.iter_num))]
                     self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
@@ -916,12 +918,14 @@ class EnsembleSQP(EnsembleMethod):
                 if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
                     self.parensemble_mean_next = self.parensemble_mean_1.copy()
                     self.parensemble_next = self.parensemble_1.copy()
+                    self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size) +
+                                              self.paren_prefix.format(0))
                     [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
                                                             and x.split(".")[2] == str(self.iter_num))]
                     self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
                                               + self.obsen_prefix.format(0))
 
-                    # test curv condition here too?
+                    # TODO: test curv condition here too?
                     delta_parensemble_mean = self.parensemble_mean_next - self.parensemble_mean
                     curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
                                        row_names=self.phi_grad.row_names, col_names=self.phi_grad.col_names)
