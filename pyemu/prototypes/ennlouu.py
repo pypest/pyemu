@@ -404,19 +404,20 @@ class EnsembleSQP(EnsembleMethod):
                 damp_par = 0.2  # TODO: allow user to pass??
                 sHs = self.s.T * self.H * self.s  # a scalar
                 dampening_cond = damp_par * float(sHs.x)
-                if abs(float(ys.x)) < dampening_cond:  #TODO: or float(ys.x) < dampening_cond
-                    damp_factor = float(((1 - damp_par) * sHs).x / sHs.x - (self.s.T * self.y).x)
+                if float(ys.x) < dampening_cond:
+                    damp_factor = float(((1.0 - damp_par) * sHs).x / (sHs.x - ys.x))
                 else:
-                    damp_factor = 1.0
+                    damp_factor = 1.0  #  r = y
                 r = (damp_factor * self.y.x) + ((1.0 - damp_factor) * (self.H * self.s).x)
                 r = Matrix(x=r,row_names=self.y.row_names,col_names=self.y.col_names)
-                rs = r.T * self.s.x
-                hess_scalar = float(rs.x / (r.T * r).x)  # Nocedal and Wright
+                rs = r.T * self.s
+                #hess_scalar = float((self.r.T * self.r.x) / rs.x)  # Dakota (Sandia)  #TODO: compare hess_scalars
+                hess_scalar = float(rs.x / (r.T * self.H * r).x)  # Nocedal and Wright, Oliver et al.
                 self.logger.log("using damped version of BFGS alg implementation..")
                 if hess_scalar < 0:  # abort
                     self.logger.warn("can't scale despite dampening...")
                     if self.iter_num == 1:
-                        self.logger.warn("...this is expected given absence of grad info at iter_num 0...")
+                        self.logger.warn("...this is expected given absence of grad info at iter_num 0...")  # TODO: skip--do not even attempt for it0
                     self.hess_progress[self.iter_num] = "skip scaling despite using dampening"#.format(float(rs.x))
                     return self.H, self.hess_progress
                 else:
@@ -431,8 +432,8 @@ class EnsembleSQP(EnsembleMethod):
         if self_scale:
             self.logger.log("scaling Hessian...")
             if not (float(ys.x) <= 0):  # not already scaled
-                # hess_scale = float((self.y.T * self.s).x / (self.y.T * self.H * self.y).x)  # Oliver et al.
-                hess_scalar = float(ys.x / (self.y.T * self.y).x)  # Nocedal and Wright
+                #hess_scalar = float((self.y.T * self.y.x) / ys.x)  # Dakota (Sandia)  #TODO: compare hess_scalars
+                hess_scalar = float(ys.x / (self.y.T * self.H * self.y).x)  # Nocedal and Wright, Oliver et al.
                 if hess_scalar < 0:  # abort
                     self.logger.lraise("hessian scalar is not strictly positive!")
                     self.hess_progress[self.iter_num] = "skip scaling"
@@ -968,13 +969,13 @@ class EnsembleSQP(EnsembleMethod):
 
         self.logger.log("scaling and/or updating Hessian via quasi-Newton")
         if self.iter_num == 1:  # no pre-existing grad or par delta info so scale only.. #TODO: direct query
-            # TODO: skip Hessian scaling and updating here?
             self.curr_grad = Matrix(x=np.zeros((self.phi_grad.shape)),
                                     row_names=self.phi_grad.row_names,col_names=self.phi_grad.col_names)
             if hess_self_scaling:
-                scale_only = True  # TODO: don't scale for iteration 1?
+                scale_only = True
         else:
-            scale_only = False  # try scale only for first it
+            scale_only = False  # scale only for first it
+            # TODO: Test only scale for first iteration? Test. See Oliver et al.
 
         #if self.hess_scale_status:
          #   hess_self_scaling = False # TODO: every iteration?

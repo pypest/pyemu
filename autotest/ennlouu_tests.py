@@ -237,7 +237,7 @@ def rosenbrock_phi_progress(version,label="phi_progress.pdf"):
         ax.text(x=float(i),y=(ylim[1]+(0.05 * (ylim[1]-ylim[0]))),s="{0};\nalpha: {1}".format(v[0],v[1]),
                 fontsize=5,rotation=45,color='r',ha='center', va='center')
     #plt.legend()
-    #plt.show()
+    plt.show()
     plt.savefig(label)
     os.chdir(os.path.join("..", ".."))
 
@@ -532,7 +532,7 @@ if __name__ == "__main__":
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
     rosenbrock_multiple_update(version="2par",nit=30,en_size=10,draw_mult=1e-2)
-    #rosenbrock_phi_progress(version="2par")
+    rosenbrock_phi_progress(version="2par")
     #rosenbrock_2par_grad_approx_invest()
 
     plot_2par_rosen()
