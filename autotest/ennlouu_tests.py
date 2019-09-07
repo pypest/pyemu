@@ -25,7 +25,11 @@ def rosenbrock_setup(version,initial_decvars=1.6,constraints=False):
     pst = pyemu.helpers.pst_from_io_files(tpl_file,in_file,ins_file,out_file)
     par = pst.parameter_data
     par.loc[:,"partrans"] = "none"
-    par.loc[:,"parval1"] = initial_decvars
+    if version == "2par" and type(initial_decvars) is not float:
+        par.loc[par.parnme[0], "parval1"] = initial_decvars[0]
+        par.loc[par.parnme[1], "parval1"] = initial_decvars[1]
+    else:
+        par.loc[:,"parval1"] = initial_decvars
     par.loc[:,"parubnd"] = 2.2
     par.loc[:,"parlbnd"] = -2.2
     # TODO: repeat with log transform
@@ -498,34 +502,40 @@ def plot_2par_rosen():
 
     f = lambda x1, x2: 100.0 * (x2 - x1 ** 2.0) ** 2.0 + (1 - x1) ** 2.0  # from rosenbrock_2par.py
 
-    n = 100  # dx and dy
+    n = 200  # dx and dy
 
     X, Y = np.meshgrid(np.linspace(pst.parameter_data.parlbnd[0], pst.parameter_data.parubnd[0], n),
                        np.linspace(pst.parameter_data.parlbnd[1], pst.parameter_data.parubnd[1], n))
     Z = f(X, Y)
 
-    plt.contour(X, Y, Z, np.logspace(-0.5, 3.5, 10, base=10), cmap='gray')
+    plt.contour(X, Y, Z, np.logspace(-0.5, 3.5, 20, base=10), cmap='gray')
 
     par_ens = [x for x in os.listdir() if x.endswith(".parensemble.0000.csv")]
     for pe in par_ens:
+        if pe.split(".")[2] == "parensemble":
+            it = 0
+        else:
+            it = int(pe.split(".")[2])
         df = pd.read_csv(pe,index_col=0)
-        #plt.scatter(x=df[pst.parameter_data.parnme[0]],y=df[pst.parameter_data.parnme[1]])
-        plt.scatter(x=df[pst.parameter_data.parnme[0]].mean(axis=0), y=df[pst.parameter_data.parnme[1]].mean(axis=0))
+        plt.scatter(x=df[pst.parameter_data.parnme[0]],y=df[pst.parameter_data.parnme[1]],
+                    c="b",alpha=(it+1)/len(par_ens))
+        #plt.scatter(x=df[pst.parameter_data.parnme[0]].mean(axis=0), y=df[pst.parameter_data.parnme[1]].mean(axis=0),
+        #            c="b",alpha=(it+1)/len(par_ens))
 
     plt.savefig("rosen_surf.pdf")
     plt.show()
 
 
 if __name__ == "__main__":
-    #rosenbrock_setup(version="2par")
+    rosenbrock_setup(version="2par",initial_decvars=[1.0,-1.5])
     #rosenbrock_2par_initialize()
     #rosenbrock_2par_initialize_diff_args_test()
     #rosenbrock_2par_single_update()
-    rosenbrock_multiple_update(version="2par",nit=5,en_size=3)
+    rosenbrock_multiple_update(version="2par",nit=30,en_size=10,draw_mult=1e-2)
     #rosenbrock_phi_progress(version="2par")
     #rosenbrock_2par_grad_approx_invest()
 
-    #plot_2par_rosen()
+    plot_2par_rosen()
 
     #rosenbrock_setup(version="high_dim")
     #rosenbrock_multiple_update(version="high_dim")

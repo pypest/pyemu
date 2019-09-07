@@ -180,7 +180,7 @@ class EnsembleSQP(EnsembleMethod):
             self.parensemble_0.enforce(enforce_bounds=enforce_bounds)
             self.parensemble = self.parensemble_0.copy()
             self.parensemble_0.to_csv(self.pst.filename + self.paren_prefix.format(0))
-            self.parensemble_0.to_csv(self.pst.filename + ".current" + self.paren_prefix.format(0))  # for `covert.py` for supply2 problem only...
+            #self.parensemble_0.to_csv(self.pst.filename + ".current" + self.paren_prefix.format(0))  # for `covert.py` for supply2 problem only...
             self.logger.log("initializing by drawing {0} par realizations".format(num_reals))
 
         self.num_reals = self.parensemble.shape[0]  # defined here if par ensemble passed
@@ -416,7 +416,7 @@ class EnsembleSQP(EnsembleMethod):
                 if hess_scalar < 0:  # abort
                     self.logger.warn("can't scale despite dampening...")
                     if self.iter_num == 1:
-                        self.logger.warn("not unexpected for iter_num given absence of grad info at iter_num 0...")
+                        self.logger.warn("...this is expected given absence of grad info at iter_num 0...")
                     self.hess_progress[self.iter_num] = "skip scaling despite using dampening"#.format(float(rs.x))
                     return self.H, self.hess_progress
                 else:
@@ -424,7 +424,7 @@ class EnsembleSQP(EnsembleMethod):
             else:  # abort
                 self.hess_progress[self.iter_num] = "yTs = {0:8.3E}".format(float(ys.x))
                 if self.iter_num == 1:
-                    self.logger.warn("not unexpected for iter_num given absence of grad info at iter_num 0...")
+                    self.logger.warn("skipping Hessian updates is expected given absence of grad info at iter_num 0...")
                 return self.H, self.hess_progress
 
         # scale
@@ -918,8 +918,6 @@ class EnsembleSQP(EnsembleMethod):
                 if float(mean_en_phi_per_alpha.idxmin(axis=1)) == step_size:
                     self.parensemble_mean_next = self.parensemble_mean_1.copy()
                     self.parensemble_next = self.parensemble_1.copy()
-                    self.parensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size) +
-                                              self.paren_prefix.format(0))
                     [os.remove(x) for x in os.listdir() if (x.endswith(".obsensemble.0000.csv")
                                                             and x.split(".")[2] == str(self.iter_num))]
                     self.obsensemble_1.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, step_size)
@@ -945,6 +943,8 @@ class EnsembleSQP(EnsembleMethod):
             best_alpha_per_it_df = pd.DataFrame.from_dict([self.best_alpha_per_it])
             best_alpha_per_it_df.to_csv("best_alpha_per_it.csv")
             self.logger.log("best step length (alpha): {0}".format("{0:8.3E}".format(best_alpha)))
+            self.parensemble_next.to_csv(self.pst.filename + ".{0}.{1}".format(self.iter_num, best_alpha) +
+                                         self.paren_prefix.format(0))
 
         curv_per_alpha.to_csv("curv_per_alpha_it{0}.csv".format(self.iter_num))
 
